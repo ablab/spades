@@ -160,6 +160,10 @@ private:
 
         //returns true iff limits were exceeded
         bool Go() {
+            if (!dijkstra_.DistanceCounted(end_) || dijkstra_.GetDistance(end_) > max_len_) {
+                return false;
+            }
+
             bool code = Go(end_, min_len_);
             VERIFY(curr_len_ == 0);
             VERIFY(curr_depth_ == 0);
