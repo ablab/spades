@@ -1056,12 +1056,44 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
         <li><code>&lt;output_dir>/corrected/</code> directory contains reads corrected by BayesHammer in <code>*.fastq.gz</code> files; if compression is disabled, reads are stored in uncompressed  <code>*.fastq</code> files</li>
         <li><code>&lt;output_dir>/contigs.fasta</code> contains resulting contigs</li>
         <li><code>&lt;output_dir>/scaffolds.fasta</code> contains resulting scaffolds</li>
-        <li><code>&lt;output_dir>/assembly_graph.fastg</code> contains  SPAdes assembly graph in <a href="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf" target="_blank">FASTG format</a></li>
+        <li><code>&lt;output_dir>/assembly_graph.fastg</code> contains SPAdes assembly graph in <a href="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf" target="_blank">FASTG format</a></li>
+        <li><code>&lt;output_dir>/contigs.paths</code> paths in the assembly graph corresponding to contigs.fasta (see details below)</li>
+        <li><code>&lt;output_dir>/scaffolds.paths</code> paths in the assembly graph corresponding to scaffolds.fasta (see details below)</li>
     </ul>
 
 <p>
-   To view FASTG files we recommend to use <a href="http://rrwick.github.io/Bandage/" target="_blank">Bandage tool</a>. Note that sequences stored in <code>assembly_graph.fastg</code> correspond to contigs before repeat resolution (edges of the assembly graph). Contigs after repeat resolution (scaffolding) are stored in <code>contigs.fasta</code> (<code>scaffolds.fasta</code>) and can be represented as paths in the assembly graph.
-    
+   To view FASTG files we recommend to use <a href="http://rrwick.github.io/Bandage/" target="_blank">Bandage visualization tool</a>. Note that sequences stored in <code>assembly_graph.fastg</code> correspond to contigs before repeat resolution (edges of the assembly graph). Paths corresponding to contigs after repeat resolution (scaffolding) are stored in <code>contigs.paths</code> (<code>scaffolds.paths</code>) in the format accepted by Bandage (see <a href="https://github.com/rrwick/Bandage/wiki/Graph-paths" target="_blank">Bandage wiki</a> for details). The example is given below.
+
+<p> Let the contig with the name <code>NODE_1_length_100000_cov_215.651_ID_5</code> consist of the following edges of the assembly graph:
+<pre>
+    <code>
+    >EDGE_<b>2</b>_length_33280_cov_199.702
+    >EDGE_<b>5</b>_length_84_cov_321.414<b>'</b>
+    >EDGE_<b>3</b>_length_111_cov_175.304
+    >EDGE_<b>5</b>_length_84_cov_321.414<b>'</b>
+    >EDGE_<b>4</b>_length_66661_cov_223.548
+    </code>
+</pre>
+<p>
+Then, <code>contigs.paths</code> will contain the following record:
+<pre>
+    <code>
+    NODE_1_length_100000_cov_215.651_ID_5
+    2+,5-,3+,5-,4+
+    </code>
+</pre>
+
+<p>
+Since the current version of Bandage does not accept paths with gaps, paths corresponding contigs/scaffolds jumping over a gap in the assembly graph are splitted by semicolon at the gap positions. For example, the following record
+<pre>
+    <code>
+    NODE_1_length_237403_cov_243.207_ID_45
+    21-,17-,15+,17-,16+;
+    31+,23-,22+,23-,4-
+    </code>
+</pre>
+states that <code>NODE_1_length_237403_cov_243.207_ID_45</code> corresponds to the path with 10 edges, but jumps over a gap between edges <code>EDGE_16_length_21503_cov_482.709</code> and <code>EDGE_31_length_140767_cov_220.239</code>.
+
 <p>
 The full list of <code>&lt;output_dir></code> content is presented below: 
 </p>

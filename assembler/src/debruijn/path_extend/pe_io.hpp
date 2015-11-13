@@ -69,7 +69,12 @@ protected:
 
         string res = ids_.at(path.Front()).short_id_;
         for (size_t i = 1; i < path.Size(); ++i) {
-            res += "," + ids_.at(path[i]).short_id_;
+            if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i])) {
+                res += ";\n" + ids_.at(path[i]).short_id_;
+            }
+            else {
+                res += "," + ids_.at(path[i]).short_id_;
+            }
         }
         return res;
     }
