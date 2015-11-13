@@ -144,7 +144,7 @@ def CheckTestSuccess(options, log):
     if not (os.path.getsize(output) > 20000 and os.path.getsize(output) < 20100):
         log.info("TruSPAdes test launch failed: incorrect output files")
         sys.exit(1)
-    log.info("TruSPAdes test passed corectly")
+    log.info("TruSPAdes test passed correctly")
 
 
 
