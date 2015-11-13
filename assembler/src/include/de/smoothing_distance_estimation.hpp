@@ -174,14 +174,13 @@ private:
       EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
 
-      if (ep > pi.ConjugatePair(ep))
-          continue;
+      VERIFY(ep <= pi.ConjugatePair(ep));
 
       TRACE("Processing edge pair " << this->graph().int_id(e1)
             << " " << this->graph().int_id(e2));
       const GraphLengths& forward = entry.second;
 
-      TempHistogram hist = inner_map[e2].Unwrap();
+      TempHistogram hist = pi.Get(e1, e2).Unwrap();
       EstimHist estimated;
       //DEBUG("Extending paired information");
       //DEBUG("Extend left");

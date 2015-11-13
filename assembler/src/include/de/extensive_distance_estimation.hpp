@@ -76,7 +76,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       EdgePair ep(e1, e2);
 
       const GraphLengths& forward = entry.second;
-      TempHistogram hist = inner_map[e2].Unwrap();
+      TempHistogram hist = pi.Get(e1, e2).Unwrap();
       DEBUG("Extending paired information");
       double weight_0 = WeightSum(hist);
       DEBUG("Extend left");
