@@ -20,3 +20,8 @@ add_executable(annotation_propagator
 
 target_link_libraries(annotation_propagator input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
+add_executable(read_binning
+               read_binning.cpp)
+
+target_link_libraries(read_binning input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
+
