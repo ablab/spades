@@ -11,5 +11,7 @@ install(FILES __init__.py disk.py format_stack.py
              func_inspect.py _compat.py hashing.py
              logger.py  memory.py my_exceptions.py 
              numpy_pickle.py  parallel.py testing.py
+             _memory_helpers.py _multiprocessing_helpers.py
+             pool.py
         DESTINATION share/spades/joblib3
         COMPONENT runtime)

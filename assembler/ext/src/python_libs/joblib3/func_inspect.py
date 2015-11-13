@@ -13,7 +13,8 @@ import re
 import os
 
 from ._compat import _basestring
-
+from .logger import pformat
+from ._memory_helpers import open_py_source
 
 def get_func_code(func):
     """ Attempts to retrieve a reliable function code hash.
@@ -53,7 +54,7 @@ def get_func_code(func):
                 source_file = '<doctest %s>' % source_file
             return source_code, source_file, line_no
         # Try to retrieve the source code.
-        with open(source_file) as source_file_obj:
+        with open_py_source(source_file) as source_file_obj:
             first_line = code.co_firstlineno
             # All the lines after the function definition:
             source_lines = list(islice(source_file_obj, first_line - 1, None))
@@ -73,12 +74,13 @@ def get_func_code(func):
 
 
 def _clean_win_chars(string):
-    "Windows cannot encode some characters in filenames"
+    """Windows cannot encode some characters in filename."""
     import urllib
     if hasattr(urllib, 'quote'):
         quote = urllib.quote
     else:
         # In Python 3, quote is elsewhere
+        import urllib.parse
         quote = urllib.parse.quote
     for char in ('<', '>', '!', ':', '\\'):
         string = string.replace(char, quote(char))
@@ -173,9 +175,7 @@ def filter_args(func, ignore_lst, args=(), kwargs=dict()):
         Returns
         -------
         filtered_args: list
-            List of filtered positional arguments.
-        filtered_kwdargs: dict
-            List of filtered Keyword arguments.
+            List of filtered positional and keyword arguments.
     """
     args = list(args)
     if isinstance(ignore_lst, _basestring):
@@ -263,3 +263,41 @@ def filter_args(func, ignore_lst, args=(), kwargs=dict()):
                                                    )))
     # XXX: Return a sorted list of pairs?
     return arg_dict
+
+
+def format_signature(func, *args, **kwargs):
+    # XXX: Should this use inspect.formatargvalues/formatargspec?
+    module, name = get_func_name(func)
+    module = [m for m in module if m]
+    if module:
+        module.append(name)
+        module_path = '.'.join(module)
+    else:
+        module_path = name
+    arg_str = list()
+    previous_length = 0
+    for arg in args:
+        arg = pformat(arg, indent=2)
+        if len(arg) > 1500:
+            arg = '%s...' % arg[:700]
+        if previous_length > 80:
+            arg = '\n%s' % arg
+        previous_length = len(arg)
+        arg_str.append(arg)
+    arg_str.extend(['%s=%s' % (v, pformat(i)) for v, i in kwargs.items()])
+    arg_str = ', '.join(arg_str)
+
+    signature = '%s(%s)' % (name, arg_str)
+    return module_path, signature
+
+
+def format_call(func, args, kwargs, object_name="Memory"):
+    """ Returns a nicely formatted statement displaying the function
+        call with the given arguments.
+    """
+    path, signature = format_signature(func, *args, **kwargs)
+    msg = '%s\n[%s] Calling %s...\n%s' % (80 * '_', object_name,
+                                          path, signature)
+    return msg
+    # XXX: Not using logging framework
+    #self.debug(msg)
