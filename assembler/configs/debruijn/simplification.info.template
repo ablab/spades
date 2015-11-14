@@ -451,6 +451,14 @@ meta
        condition               "{ ec_lb 30, icb 2.5 }"
     }
     
+    ; tip clipper:
+    tc
+    {
+        ; rctc: tip_cov < rctc * not_tip_cov
+        ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
+        condition               "{ tc_lb 3.5, cb 10000 } { lb 6, cb 2.5 }"
+    }
+
     ; relative coverage erroneous component remover:
     rcc
     {
@@ -490,7 +498,7 @@ meta
     {
         ; rctc: tip_cov < rctc * not_tip_cov
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
-        condition               "{ tc_lb 30, cb 20, rctc 0.2 }"
+        condition               "{ lb 500, cb 3., rctc 1.0 } { lb 1500, cb 20., rctc 0.2 }"
     }
 
     ; final bulge remover:
