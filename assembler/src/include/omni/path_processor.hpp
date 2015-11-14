@@ -178,7 +178,7 @@ private:
 public:
 
     PathProcessor(const Graph& g, VertexId start, size_t length_bound) :
-    		  g_(g),
+    		      g_(g),
               start_(start),
               dijkstra_(DijkstraHelper<Graph>::CreateBoundedDijkstra(g, length_bound, MAX_DIJKSTRA_VERTICES)) {
         TRACE("Dijkstra launched");
@@ -253,6 +253,22 @@ public:
 
 private:
 	vector<typename PathProcessor<Graph>::Callback*> processors_;
+};
+
+template<class Graph>
+class AdaptorCallback: public PathProcessor<Graph>::Callback {
+    typedef typename Graph::EdgeId EdgeId;
+	typedef vector<EdgeId> Path;
+    std::function<void(const Path&)> func_;
+public:
+
+    AdaptorCallback(const std::function<void(const Path&)>& func) :
+        func_(func) {}
+
+    void HandleReversedPath(const Path& path) override {
+        func_(path);
+	}
+
 };
 
 template<class Graph, class Comparator>

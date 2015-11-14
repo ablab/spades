@@ -10,6 +10,14 @@ typedef string bin_id;
 typedef string contig_id;
 typedef pair<contig_id, vector<bin_id>> ContigAnnotation;
 
+inline contig_id GetId(const io::SingleRead& contig) {
+     std::smatch m;
+     std::regex e ("ID_(\\d+)$");
+     bool success = std::regex_search(contig.name(), m, e);
+     VERIFY(success);
+     return m[1];
+}
+
 class AnnotationStream {
     std::ifstream inner_stream_;
 
@@ -54,19 +62,33 @@ public:
     }
 };
 
+class AnnotationOutStream {
+    std::ofstream inner_stream_;
+public:
+
+    AnnotationOutStream(const std::string& fn) : inner_stream_(fn) {
+    }
+
+    AnnotationOutStream& operator <<(const ContigAnnotation& annotation) {
+        inner_stream_ << annotation.first;
+        string delim = " : ";
+        for (bin_id bin : annotation.second) {
+            inner_stream_ << delim << bin;
+            delim = " ";
+        }
+        return *this;
+    }
+
+    void close() {
+        inner_stream_.close();
+    }
+};
+
 class EdgeAnnotation {
     const conj_graph_pack& gp_;
     set<bin_id> bins_of_interest_;
     shared_ptr<SequenceMapper<Graph>> mapper_;
     map<EdgeId, set<bin_id>> edge_annotation_;
-
-    contig_id GetId(const io::SingleRead& contig) {
-         std::smatch m;
-         std::regex e ("ID_(\\d+)$");
-         bool success = std::regex_search(contig.name(), m, e);
-         VERIFY(success);
-         return m[1];
-     }
 
     vector<bin_id> FilterInteresting(const vector<bin_id>& bins) const {
         vector<bin_id> answer;
@@ -76,6 +98,14 @@ class EdgeAnnotation {
             }
         }
         return answer;
+    }
+
+    template<class BinCollection>
+    void InnerStickAnnotation(EdgeId e, const BinCollection& bins) {
+        auto& annotation = edge_annotation_[e];
+        for (bin_id bin : bins) {
+            annotation.insert(bin);
+        }
     }
 
 public:
@@ -88,14 +118,12 @@ public:
 
     template<class BinCollection>
     void StickAnnotation(EdgeId e, const BinCollection& bins) {
-        auto& annotation = edge_annotation_[e];
-        for (bin_id bin : bins) {
-            annotation.insert(bin);
-        }
+        InnerStickAnnotation(e, bins);
+        InnerStickAnnotation(gp_.g.conjugate(e), bins);
     }
 
     void StickAnnotation(EdgeId e, const bin_id& bin) {
-        StickAnnotation(e, vector<EdgeId>{bin});
+        StickAnnotation(e, vector<bin_id>{bin});
     }
 
     template<class EdgeCollection>
@@ -106,11 +134,18 @@ public:
     }
 
     void Fill(io::SingleStream& contigs, AnnotationStream& annotation_stream) {
+        set<bin_id> all_bins;
+
         map<contig_id, vector<bin_id>> annotation_map;
         ContigAnnotation contig_annotation;
         while (!annotation_stream.eof()) {
             annotation_stream >> contig_annotation;
-            auto bins = FilterInteresting(contig_annotation.second);
+            auto bins = contig_annotation.second;
+            if (!bins_of_interest_.empty()) {
+                bins = FilterInteresting(bins);
+            } else {
+                insert_all(all_bins, bins);
+            }
             if (!bins.empty()) {
                 annotation_map[contig_annotation.first] = bins;
             }
@@ -129,6 +164,10 @@ public:
                     StickAnnotation(e, bins);
                 }
             }
+        }
+
+        if (bins_of_interest_.empty()) {
+            bins_of_interest_ = all_bins;
         }
     }
 

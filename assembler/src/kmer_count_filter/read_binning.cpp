@@ -66,9 +66,9 @@ public:
 int main(int argc, char** argv) {
     using namespace debruijn_graph;
 
-    if (argc < 9) {
+    if (argc < 8) {
         cout << "Usage: read_binning <K> <saves path> <contigs path> <contigs binning info> "
-                "<left reads> <right reads> <output prefix> (<bins of interest>)+"  << endl;
+                "<left reads> <right reads> <output prefix> (<bins of interest>)*"  << endl;
         exit(1);
     }
 
