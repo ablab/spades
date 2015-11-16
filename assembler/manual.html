@@ -398,7 +398,7 @@ SPAdes supports mate-pair only assembly. However, we recommend to use only high-
 <p>
     By using command line interface, you can specify up to five different single-read libraries. To input more libraries, you can use <a href="#yaml">YAML data set file</a>. 
 <p>
-    Single librairies are assumed to have high quality and a reasonable coverage. For example, you can provide PacBio CSS reads as a single-read library. Additionally, if you have merged a paired-end library with overlapping read-pairs (for example, using <a href="http://ccb.jhu.edu/software/FLASH/" target="_blank">FLASh</a>), you can provide the resulting reads as a single-read library.
+    Single librairies are assumed to have high quality and a reasonable coverage. For example, you can provide PacBio CCS reads as a single-read library. Additionally, if you have merged a paired-end library with overlapping read-pairs (for example, using <a href="http://ccb.jhu.edu/software/FLASH/" target="_blank">FLASh</a>), you can provide the resulting reads as a single-read library.
 <p>
     Note, that you should not specify PacBio CLR, Sanger reads or additional contigs as single-read libraries, each of them has a separate <a href="#inputdata">option</a>.
 
@@ -741,7 +741,7 @@ and PacBio CCS and CLR reads:
 
 <pre class="code">
 <code>
-    pacbio_css.fastq
+    pacbio_ccs.fastq
     pacbio_clr.fastq
 </code>
 </pre>
