@@ -27,7 +27,7 @@ typedef io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> Sequ
 typedef std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
 typedef unordered_map<size_t, debruijn_graph::EdgeId> EdgeIdMap;
 
-
+//More compact representation of aligned read for storing in map
 class MapperReadT {
 public:
     MapperReadT(): contig_id_(""), pos_(-1), len_(-1), is_forward_(true),
@@ -83,7 +83,7 @@ private:
     uint32_t left_soft_clip_:16, right_soft_clip_:16;
 };
 
-
+//Base class for aligned read processor (simple analog of SequenceMapperListener)
 class BWAPairedReadProcessor {
 public:
     virtual void ProcessPairedRead(const MapperReadT& l, const MapperReadT& r) = 0;
@@ -93,6 +93,7 @@ public:
     }
 };
 
+//Class that corrects mapping positions according to lib orientation and clippings
 class BWACorrectingProcessor: public BWAPairedReadProcessor {
 protected:
     const SequencingLibraryT& lib_;
@@ -125,7 +126,7 @@ public:
     virtual void ProcessPairedRead(const MapperReadT& l, const MapperReadT& r);
 };
 
-
+//Insert size counter
 class BWAISCounter: public BWACorrectingProcessor {
 private:
     HistType hist_;
@@ -154,7 +155,7 @@ public:
 
 };
 
-
+//Pair info filler
 class BWAIndexFiller: public BWACorrectingProcessor {
 
 private:
@@ -175,7 +176,7 @@ public:
     virtual void ProcessAlignments(const MappedPositionT& l, const MappedPositionT& r);
 };
 
-
+//Class for running BWA, managing and parsing SAM files
 class BWAPairInfoFiller {
 public:
     DECL_LOGGER("BWAPairInfo");
@@ -184,6 +185,8 @@ private:
     const debruijn_graph::Graph& g_;
 
     string bwa_path_;
+
+    string base_dir_;
 
     string work_dir_;
 
@@ -199,20 +202,27 @@ private:
 
 private:
 
+    //Save graph in fasta format
     void OutputEdges(const string& filename) const;
 
+    //Construct int_id -> EdgeId map
     void FillEdgeIdMap();
 
+    //Run bwa index
     bool CreateIndex(const string& contigs);
 
+    //Initialize for read aligment (includes all above)
     bool Init();
 
+    //Run bwa mem on single file
     bool RunBWA(const string& reads_file, const string& out_sam_file) const;
 
+    //Process single read library
     bool AlignLib(const SequencingLibraryT& lib,
                       const string& sam_file_base,
                       vector<pair<string, string>>& resulting_sam_files);
 
+    //Parse a pair of same files and analyze alignments with processor
     void ProcessSAMFiles(const string &left_sam, const string &right_sam,
                          BWAPairedReadProcessor& processor);
 
@@ -223,7 +233,7 @@ public:
                       const string& work_dir,
                       size_t nthreads = 1,
                       bool remove_tmp = true):
-        g_(g), bwa_path_(bwa_path), work_dir_(work_dir),
+        g_(g), bwa_path_(bwa_path), base_dir_(work_dir), work_dir_(""),
         nthreads_(nthreads), index_base_(""), index_constructed_(false),
         remove_tmp_files_(remove_tmp),
         edge_id_map_() {
@@ -234,6 +244,7 @@ public:
             path::remove_if_exists(work_dir_);
     }
 
+    //Count IS and fill pair info index for the given lib
     bool ProcessLib(size_t lib_index,
                     SequencingLibraryT& lib,
                     PairedInfoIndexT& paired_index,

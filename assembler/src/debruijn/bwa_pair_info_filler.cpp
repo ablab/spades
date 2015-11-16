@@ -41,6 +41,7 @@ void MapperReadT::ParseCigar(const string& cigar) {
     }
 }
 
+//Correct read algnment according to orieantation and clippings
 void BWACorrectingProcessor::ProcessPairedRead(const MapperReadT& l, const MapperReadT& r) {
     using io::LibraryOrientation;
 
@@ -52,6 +53,7 @@ void BWACorrectingProcessor::ProcessPairedRead(const MapperReadT& l, const Mappe
     MappedPositionT left_pos(edge_id_map_.at(stoi(l.get_contig_id())), l.get_pos());
     MappedPositionT right_pos(edge_id_map_.at(stoi(r.get_contig_id())), r.get_pos());
 
+    //This function if overloaded in BWAISCounter and BWAIndexFiller
     if (!CheckAlignments(left_pos, right_pos)) {
         return;
     }
@@ -75,9 +77,50 @@ void BWACorrectingProcessor::ProcessPairedRead(const MapperReadT& l, const Mappe
     right_pos.pos_ = right_pos.pos_ + r_from_pos_to_right_end;
     left_pos.pos_ = left_pos.pos_ - l_from_pos_to_left_end;
 
+    //This function if overloaded in BWAISCounter and BWAIndexFiller
     ProcessAlignments(left_pos, right_pos);
 }
 
+// ==== insert size counter overloads ====
+bool BWAISCounter::CheckAlignments(const MappedPositionT& l, const MappedPositionT& r) {
+    return l.e_ == r.e_ && g_.length(l.e_) >= min_contig_len_;
+}
+
+void BWAISCounter::ProcessAlignments(const MappedPositionT& l, const MappedPositionT& r) {
+    ++mapped_count_;
+
+    int is = r.pos_ - l.pos_;
+    if (is > 0 || !ignore_negative_) {
+        hist_[is] += 1;
+    } else {
+        ++negative_count_;
+    }
+}
+
+bool BWAISCounter::RefineInsertSize(SequencingLibraryT& reads) const {
+    using namespace omnigraph;
+    size_t correctly_mapped = mapped_count_ - negative_count_;
+    INFO(correctly_mapped << " paired reads (" << ((double) correctly_mapped * 100.0 / (double) count_) << "% of all) aligned to long edges");
+
+    if (negative_count_ > 3 * correctly_mapped)
+        WARN("Too much reads aligned with negative insert size. Is the library orientation set properly?");
+    if (mapped_count_ == 0)
+        return false;
+
+    std::map<size_t, size_t> percentiles;
+    find_mean(hist_, reads.data().mean_insert_size, reads.data().insert_size_deviation, percentiles);
+    find_median(hist_, reads.data().median_insert_size, reads.data().insert_size_mad, reads.data().insert_size_distribution);
+    if (reads.data().median_insert_size < reads.data().read_length) {
+        return false;
+    }
+
+    std::tie(reads.data().insert_size_left_quantile, reads.data().insert_size_right_quantile) =
+        GetISInterval(0.8, reads.data().insert_size_distribution);
+
+    return !reads.data().insert_size_distribution.empty();
+}
+
+// ==== pair info index filler overloads ====
 EdgePair BWAIndexFiller::ConjugatePair(EdgePair ep) const {
     return make_pair(g_.conjugate(ep.second), g_.conjugate(ep.first));
 }
@@ -102,6 +145,7 @@ bool BWAIndexFiller::CheckAlignments(const MappedPositionT& l, const MappedPosit
 }
 
 
+//Main class realization
 void BWAPairInfoFiller::OutputEdges(const string &filename) const {
     io::osequencestream_simple oss(filename);
     for (auto it = g_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
@@ -180,9 +224,12 @@ bool BWAPairInfoFiller::AlignLib(const SequencingLibraryT& lib,
 
 void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &right_sam,
                                         BWAPairedReadProcessor& processor) {
+
+    //Left and right reads are stored in maps until pair is detected
     unordered_map<string, MapperReadT> left_reads;
     unordered_map<string, MapperReadT> right_reads;
     size_t counter = 0;
+    //Check for duplicating read IDs
     bool left_duplicated = false;
     bool right_duplicated = false;
 
@@ -210,6 +257,7 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
                                         left_read.get_cigar());
             }
             else if (!left_read.is_main_alignment()) {
+                //If not primary alignment ignore mapping
                 TRACE("Ignoring left read");
                 l_name = "";
             }
@@ -226,6 +274,7 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
                                          right_read.get_cigar());
             }
             else if (!right_read.is_main_alignment()) {
+                //If not primary alignment ignore mapping
                 TRACE("Ignoring right read");
                 r_name = "";
             }
@@ -233,6 +282,7 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
 
         if (l_name == r_name) {
             TRACE("Equal processing");
+            //Process immideately if ids are equal in both SAM entries
             processor.ProcessPairedRead(left_data, right_data);
             VERBOSE_POWER2(++counter, "Processed " << counter << " paired reads");
             continue;
@@ -241,17 +291,21 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
         if (r_name != "") {
             auto it = left_reads.find(r_name);
             if (it != left_reads.end())  {
+                //Right read's mate found in map
                 TRACE("Right read's mate found, processing");
                 processor.ProcessPairedRead(it->second, right_data);
                 VERBOSE_POWER2(++counter, "Processed " << counter << " paired reads");
+                //Remove mate as used
                 left_reads.erase(it);
             }
             else {
                 TRACE("Right read's mate not found, adding to map");
                 if (right_reads.count(r_name) == 0) {
+                    //Insert read without mate for further analysis
                     right_reads.emplace(r_name, right_data);
                 } else {
                     DEBUG("Right read " << r_name << " is duplicated!");
+                    //Report duplication
                     right_duplicated = true;
                 }
             }
@@ -260,17 +314,21 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
         if (l_name != "") {
             auto it = right_reads.find(l_name);
             if (it != right_reads.end()) {
+                //Left read's mate found in map
                 TRACE("Left read's mate found, processing");
                 processor.ProcessPairedRead(left_data, it->second);
                 VERBOSE_POWER2(++counter, "Processed " << counter << " paired reads");
+                //Remove mate as used
                 right_reads.erase(it);
             }
             else {
                 TRACE("Left read's mate not found, adding to map");
                 if (left_reads.count(l_name) == 0) {
+                    //Insert read without mate for further analysis
                     left_reads.emplace(l_name, left_data);
                 } else {
                     DEBUG("Left read " << r_name << " is duplicated!");
+                    //Report duplication
                     left_duplicated = true;
                 }
 
@@ -287,7 +345,8 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
 bool BWAPairInfoFiller::Init() {
     if (!index_constructed_) {
         INFO("Initializing bwa pair info counter, working dir " << work_dir_);
-        path::make_dir(work_dir_);
+        path::make_dir(base_dir_);
+        work_dir_ = path::make_temp_dir(base_dir_, "");
         index_base_= path::append_path(work_dir_, "long_edges.fasta");
         INFO("Saving edges to " << index_base_);
         OutputEdges(index_base_);
@@ -302,7 +361,7 @@ bool BWAPairInfoFiller::ProcessLib(size_t lib_index,
                                    PairedInfoIndexT& paired_index,
                                    size_t counter_edge_len,
                                    size_t index_filler_edge_len) {
-
+    //Initialize if needed
     Init();
     string lib_dir =  path::append_path(work_dir_, ToString(lib_index));
     path::make_dir(lib_dir);
@@ -348,41 +407,5 @@ bool BWAPairInfoFiller::ProcessLib(size_t lib_index,
     return result;
 }
 
-bool BWAISCounter::CheckAlignments(const MappedPositionT& l, const MappedPositionT& r) {
-    return l.e_ == r.e_ && g_.length(l.e_) >= min_contig_len_;
-}
 
-void BWAISCounter::ProcessAlignments(const MappedPositionT& l, const MappedPositionT& r) {
-    ++mapped_count_;
-
-    int is = r.pos_ - l.pos_;
-    if (is > 0 || !ignore_negative_) {
-        hist_[is] += 1;
-    } else {
-        ++negative_count_;
-    }
-}
-
-bool BWAISCounter::RefineInsertSize(SequencingLibraryT& reads) const {
-    using namespace omnigraph;
-    size_t correctly_mapped = mapped_count_ - negative_count_;
-    INFO(correctly_mapped << " paired reads (" << ((double) correctly_mapped * 100.0 / (double) count_) << "% of all) aligned to long edges");
-
-    if (negative_count_ > 3 * correctly_mapped)
-        WARN("Too much reads aligned with negative insert size. Is the library orientation set properly?");
-    if (mapped_count_ == 0)
-        return false;
-
-    std::map<size_t, size_t> percentiles;
-    find_mean(hist_, reads.data().mean_insert_size, reads.data().insert_size_deviation, percentiles);
-    find_median(hist_, reads.data().median_insert_size, reads.data().insert_size_mad, reads.data().insert_size_distribution);
-    if (reads.data().median_insert_size < reads.data().read_length) {
-        return false;
-    }
-
-    std::tie(reads.data().insert_size_left_quantile, reads.data().insert_size_right_quantile) =
-        GetISInterval(0.8, reads.data().insert_size_distribution);
-
-    return !reads.data().insert_size_distribution.empty();
-}
 }

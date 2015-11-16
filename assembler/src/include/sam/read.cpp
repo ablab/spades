@@ -7,8 +7,6 @@
 
 #include "read.hpp"
 
-#include "logger/log_writers.hpp"
-
 using namespace std;
 
 namespace sam_reader {
