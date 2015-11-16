@@ -278,7 +278,8 @@ struct detail_info_printer {
             string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
                                               ToString(call_cnt++, 2) + "_" + pos_name + "/");
             path::make_dirs(saves_folder);
-            graphio::PrintGraphPack(saves_folder + "graph", gp_);
+            graphio::ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp_.g);
+            graphio::PrintBasicGraph(saves_folder + "graph", printer);
         }
 
         if (config.extended_stats) {
