@@ -28,6 +28,13 @@ SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqm
 # other libs types:
 LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "trusted-contigs", "untrusted-contigs"]
 
+# final contigs and scaffolds names
+contigs_name = "contigs.fasta"
+scaffolds_name = "scaffolds.fasta"
+assembly_graph_name = "assembly_graph.fastg"
+contigs_paths = "contigs.paths"
+scaffolds_paths = "scaffolds.paths"
+
 #other constants
 MIN_K = 1
 MAX_K = 127

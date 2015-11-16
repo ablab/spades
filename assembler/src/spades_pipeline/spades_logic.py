@@ -330,6 +330,13 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
         if os.path.isfile(os.path.join(latest, "assembly_graph.fastg")):
             if not os.path.isfile(cfg.result_graph) or not options_storage.continue_mode:
                 shutil.copyfile(os.path.join(latest, "assembly_graph.fastg"), cfg.result_graph)
+        if os.path.isfile(os.path.join(latest, "final_contigs.paths")):
+            if not os.path.isfile(cfg.result_contigs_paths) or not options_storage.continue_mode:
+                shutil.copyfile(os.path.join(latest, "final_contigs.paths"), cfg.result_contigs_paths)
+        if os.path.isfile(os.path.join(latest, "scaffolds.paths")):
+            if not os.path.isfile(cfg.result_scaffolds_paths) or not options_storage.continue_mode:
+                shutil.copyfile(os.path.join(latest, "scaffolds.paths"), cfg.result_scaffolds_paths)
+
 
     if cfg.developer_mode:
         # saves

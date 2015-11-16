@@ -650,9 +650,11 @@ def main(args):
             if options_storage.stop_after == 'ec':
                 support.finish_here(log)
 
-        result_contigs_filename = os.path.join(cfg["common"].output_dir, "contigs.fasta")
-        result_scaffolds_filename = os.path.join(cfg["common"].output_dir, "scaffolds.fasta")
-        result_assembly_graph_filename = os.path.join(cfg["common"].output_dir, "assembly_graph.fastg")
+        result_contigs_filename = os.path.join(cfg["common"].output_dir, options_storage.contigs_name)
+        result_scaffolds_filename = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_name)
+        result_assembly_graph_filename = os.path.join(cfg["common"].output_dir, options_storage.assembly_graph_name)
+        result_contigs_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.contigs_paths)
+        result_scaffolds_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_paths)
         truseq_long_reads_file_base = os.path.join(cfg["common"].output_dir, "truseq_long_reads")
         truseq_long_reads_file = truseq_long_reads_file_base + ".fasta"
         misc_dir = os.path.join(cfg["common"].output_dir, "misc")
@@ -665,6 +667,8 @@ def main(args):
             spades_cfg.__dict__["result_contigs"] = result_contigs_filename
             spades_cfg.__dict__["result_scaffolds"] = result_scaffolds_filename
             spades_cfg.__dict__["result_graph"] = result_assembly_graph_filename
+            spades_cfg.__dict__["result_contigs_paths"] = result_contigs_paths_filename
+            spades_cfg.__dict__["result_scaffolds_paths"] = result_scaffolds_paths_filename
 
             if options_storage.continue_mode and (os.path.isfile(spades_cfg.result_contigs)
                                                   or ("mismatch_corrector" in cfg and
@@ -831,6 +835,14 @@ def main(args):
                 log.info(message)
             if "assembly" in cfg and os.path.isfile(result_assembly_graph_filename):
                 message = " * Assembly graph is in " + support.process_spaces(result_assembly_graph_filename)
+                log.info(message)
+            if "assembly" in cfg and os.path.isfile(result_contigs_paths_filename):
+                message = " * Paths in the assembly graph corresponding to the contigs are in " + \
+                          support.process_spaces(result_contigs_paths_filename)
+                log.info(message)
+            if "assembly" in cfg and os.path.isfile(result_scaffolds_paths_filename):
+                message = " * Paths in the assembly graph corresponding to the scaffolds are in " + \
+                          support.process_spaces(result_scaffolds_paths_filename)
                 log.info(message)
             #log.info("")
 
