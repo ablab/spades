@@ -1062,7 +1062,7 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
     </ul>
 
 <p>
-   Contigs/scaffolds names in SPAdes output FASTA files have the following format: <br><code>>NODE_3_length_237403_cov_243.207_ID_45</code><br> Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is the sequence length in nucleotides and <code>243.207</code> is the k-mer coverage for the last (largest) k value used. Note that the k-mer coverage is always lower then the read (per-base) coverage. 
+   Contigs/scaffolds names in SPAdes output FASTA files have the following format: <br><code>>NODE_3_length_237403_cov_243.207_ID_45</code><br> Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is the sequence length in nucleotides and <code>243.207</code> is the k-mer coverage for the last (largest) k value used. Note that the k-mer coverage is always lower than the read (per-base) coverage. 
 
 <p>
    To view FASTG files we recommend to use <a href="http://rrwick.github.io/Bandage/" target="_blank">Bandage visualization tool</a>. Note that sequences stored in <code>assembly_graph.fastg</code> correspond to contigs before repeat resolution (edges of the assembly graph). Paths corresponding to contigs after repeat resolution (scaffolding) are stored in <code>contigs.paths</code> (<code>scaffolds.paths</code>) in the format accepted by Bandage (see <a href="https://github.com/rrwick/Bandage/wiki/Graph-paths" target="_blank">Bandage wiki</a> for details). The example is given below.
