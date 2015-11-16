@@ -251,45 +251,56 @@ struct detail_info_printer {
     }
 
     void operator() (info_printer_pos pos,
-                    string const& folder_suffix = "") {
+                    const string& folder_suffix = "") {
         string pos_name = details::info_printer_pos_name(pos);
 
-        VertexEdgeStat<conj_graph_pack::graph_t> stats(gp_.g);
-        TRACE("Number of vertices : " << stats.vertices() << ", number of edges : " << stats.edges() << ", sum length of edges : " << stats.edge_length());
-        ProduceDetailedInfo(ToString(call_cnt(), 2) + "_" + pos_name + folder_suffix, pos);
+        ProduceDetailedInfo(pos_name + folder_suffix, pos);
     }
 
   private:
 
-    static size_t call_cnt() {
-        static size_t cnt = 0;
-        return cnt++;
-    }
-
     void ProduceDetailedInfo(const string &pos_name,
                              info_printer_pos pos) {
-        string base_folder = path::append_path(folder_, "pictures/");
-        make_dir(base_folder);
-        string folder = path::append_path(base_folder, pos_name + "/");
-    
+        static size_t call_cnt = 0;
+
         auto it = cfg::get().info_printers.find(pos);
         VERIFY(it != cfg::get().info_printers.end());
     
         const debruijn_config::info_printer & config = it->second;
     
-        if (!(config.print_stats || config.write_error_loc ||
+        if (config.basic_stats) {
+            VertexEdgeStat<conj_graph_pack::graph_t> stats(gp_.g);
+            INFO("Number of vertices : " << stats.vertices() << ", number of edges : "
+                  << stats.edges() << ", sum length of edges : " << stats.edge_length());
+        }
+
+        if (config.save_full_graph) {
+            string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
+                                              ToString(call_cnt++, 2) + "_" + pos_name + "/");
+            path::make_dirs(saves_folder);
+            graphio::PrintGraphPack(saves_folder + "graph", gp_);
+        }
+
+        if (config.extended_stats) {
+            VERIFY(cfg::get().developer_mode);
+            CountStats(gp_);
+        }
+
+        if (!(config.write_error_loc ||
             config.write_full_graph ||
             config.write_full_nc_graph ||
             config.write_components ||
             !config.components_for_kmer.empty() ||
             config.write_components_along_genome ||
-            config.write_components_along_contigs || config.save_full_graph ||
+            config.write_components_along_contigs ||
             !config.components_for_genome_pos.empty())) {
-    
             return;
         } 
-    
-        make_dir(folder);
+
+        VERIFY(cfg::get().developer_mode);
+        string pics_folder = path::append_path(path::append_path(folder_, "pictures/"),
+                                          ToString(call_cnt++, 2) + "_" + pos_name + "/");
+        path::make_dirs(pics_folder);
         PrepareForDrawing(gp_);
     
         auto path1 = FindGenomeMappingPath(gp_.genome.GetSequence(), gp_.g, gp_.index,
@@ -297,31 +308,26 @@ struct detail_info_printer {
     
         auto colorer = DefaultColorer(gp_);
     
-        if (config.print_stats) {
-            INFO("Printing statistics for " << details::info_printer_pos_name(pos));
-            CountStats(gp_);
-        }
-    
         if (config.write_error_loc) {
-            make_dir(folder + "error_loc/");
-            WriteErrorLoc(gp_.g, folder + "error_loc/", colorer, labeler_);
+            make_dir(pics_folder + "error_loc/");
+            WriteErrorLoc(gp_.g, pics_folder + "error_loc/", colorer, labeler_);
         }
     
         if (config.write_full_graph) {
-            WriteComponent(GraphComponent<Graph>(gp_.g, gp_.g.begin(), gp_.g.end()), folder + "full_graph.dot", colorer, labeler_);
+            WriteComponent(GraphComponent<Graph>(gp_.g, gp_.g.begin(), gp_.g.end()), pics_folder + "full_graph.dot", colorer, labeler_);
         }
     
         if (config.write_full_nc_graph) {
-            WriteSimpleComponent(GraphComponent<Graph>(gp_.g, gp_.g.begin(), gp_.g.end()), folder + "nc_full_graph.dot", colorer, labeler_);
+            WriteSimpleComponent(GraphComponent<Graph>(gp_.g, gp_.g.begin(), gp_.g.end()), pics_folder + "nc_full_graph.dot", colorer, labeler_);
         }
     
         if (config.write_components) {
-            make_dir(folder + "components/");
-            omnigraph::visualization::WriteComponents(gp_.g, folder + "components/", omnigraph::ReliableSplitter<Graph>(gp_.g), colorer, labeler_);
+            make_dir(pics_folder + "components/");
+            omnigraph::visualization::WriteComponents(gp_.g, pics_folder + "components/", omnigraph::ReliableSplitter<Graph>(gp_.g), colorer, labeler_);
         }
     
         if (!config.components_for_kmer.empty()) {
-            string kmer_folder = path::append_path(base_folder, "kmer_loc/");
+            string kmer_folder = path::append_path(pics_folder, "kmer_loc/");
             make_dir(kmer_folder);
             auto kmer = runtime_k::RtSeq(gp_.k_value + 1, config.components_for_kmer.substr(0, gp_.k_value + 1).c_str());
             string file_name = path::append_path(kmer_folder, pos_name + ".dot");
@@ -329,29 +335,24 @@ struct detail_info_printer {
         }
     
         if (config.write_components_along_genome) {
-            make_dir(folder + "along_genome/");
-            omnigraph::visualization::WriteComponentsAlongPath(gp_.g, path1.sequence(), folder + "along_genome/", colorer, labeler_);
+            make_dir(pics_folder + "along_genome/");
+            omnigraph::visualization::WriteComponentsAlongPath(gp_.g, path1.sequence(), pics_folder + "along_genome/", colorer, labeler_);
         }
     
         if (config.write_components_along_contigs) {
-            make_dir(folder + "along_contigs/");
+            make_dir(pics_folder + "along_contigs/");
             NewExtendedSequenceMapper<Graph, Index> mapper(gp_.g, gp_.index, gp_.kmer_mapper);
-            WriteGraphComponentsAlongContigs(gp_.g, mapper, folder + "along_contigs/", colorer, labeler_);
+            WriteGraphComponentsAlongContigs(gp_.g, mapper, pics_folder + "along_contigs/", colorer, labeler_);
         }
-    
-        if (config.save_full_graph) {
-            make_dir(folder + "full_graph_save/");
-            graphio::PrintGraphPack(folder + "full_graph_save/graph", gp_);
-        }
-    
+
         if (!config.components_for_genome_pos.empty()) {
-            string pos_loc_folder = path::append_path(base_folder, "pos_loc/");
+            string pos_loc_folder = path::append_path(pics_folder, "pos_loc/");
             make_dir(pos_loc_folder);
             vector<string> positions;
             boost::split(positions, config.components_for_genome_pos,
                          boost::is_any_of(" ,"), boost::token_compress_on);
             for (auto it = positions.begin(); it != positions.end(); ++it) {
-                optional < runtime_k::RtSeq > close_kp1mer = FindCloseKP1mer(gp_,
+                boost::optional<runtime_k::RtSeq> close_kp1mer = FindCloseKP1mer(gp_,
                                                                              boost::lexical_cast<int>(*it), gp_.k_value);
                 if (close_kp1mer) {
                     string locality_folder = path::append_path(pos_loc_folder, *it + "/");

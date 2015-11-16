@@ -492,7 +492,8 @@ struct debruijn_config {
     };
 
     struct info_printer {
-        bool print_stats;
+        bool basic_stats;
+        bool extended_stats;
         bool write_components;
         std::string components_for_kmer;
         std::string components_for_genome_pos;

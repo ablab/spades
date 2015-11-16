@@ -509,7 +509,8 @@ void load(debruijn_config::simplification& simp,
 void load(debruijn_config::info_printer& printer,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
-  load(printer.print_stats, pt, "print_stats", complete);
+  load(printer.basic_stats, pt, "basic_stats", complete);
+  load(printer.extended_stats, pt, "extended_stats", complete);
   load(printer.write_components, pt, "write_components", complete);
   load(printer.components_for_kmer, pt, "components_for_kmer", complete);
   load(printer.components_for_genome_pos, pt, "components_for_genome_pos",
@@ -524,17 +525,17 @@ void load(debruijn_config::info_printer& printer,
   load(printer.write_error_loc, pt, "write_error_loc", complete);
 }
 
-void clear(debruijn_config::info_printer& printer) {
-    printer.print_stats = false;
-    printer.write_components = false;
-    printer.components_for_kmer = "";
-    printer.components_for_genome_pos = "";
-    printer.write_components_along_genome = false;
-    printer.save_full_graph = false;
-    printer.write_full_graph = false;
-    printer.write_full_nc_graph = false;
-    printer.write_error_loc = false;
-}
+//void clear(debruijn_config::info_printer& printer) {
+//    printer.print_stats = false;
+//    printer.write_components = false;
+//    printer.components_for_kmer = "";
+//    printer.components_for_genome_pos = "";
+//    printer.write_components_along_genome = false;
+//    printer.save_full_graph = false;
+//    printer.write_full_graph = false;
+//    printer.write_full_nc_graph = false;
+//    printer.write_error_loc = false;
+//}
 
 
 void load(debruijn_config::info_printers_t& printers,
@@ -733,11 +734,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.flanking_range, pt, "flanking_range");
 
   load(cfg.info_printers, pt, "info_printers");
-  if (!cfg.developer_mode) {
-      for (auto iter = cfg.info_printers.begin(); iter != cfg.info_printers.end(); ++iter) {
-          clear(iter->second);
-      }
-  }
   load_reads(cfg.ds, cfg.input_dir);
   load_reference_genome(cfg.ds, cfg.input_dir);
 
