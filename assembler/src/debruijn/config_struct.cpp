@@ -735,6 +735,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.info_printers, pt, "info_printers");
   load_reads(cfg.ds, cfg.input_dir);
+
   load_reference_genome(cfg.ds, cfg.input_dir);
 
   cfg.need_mapping = cfg.developer_mode || cfg.correct_mismatches 

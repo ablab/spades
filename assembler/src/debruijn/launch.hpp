@@ -28,6 +28,11 @@ namespace spades {
 
 void assemble_genome() {
     INFO("SPAdes started");
+    if (cfg::get().ds.meta && cfg::get().ds.reads.lib_count() != 1) {
+        ERROR("Sorry, current version of metaSPAdes can work with single library only (paired-end only).");
+        exit(239);
+    }
+
     INFO("Starting from stage: " << cfg::get().entry_point);
 
     bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable && cfg::get().ds.meta;
