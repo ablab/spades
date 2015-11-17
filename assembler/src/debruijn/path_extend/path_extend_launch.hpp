@@ -556,6 +556,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     DebugOutputPaths(gp, output_dir, paths, "before_traverse_pe");
     if (traversLoops) {
         TraverseLoops(paths, cover_map, mainPE);
+        FinalizePaths(paths, cover_map, max_over);
     }
     DebugOutputPaths(gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
     writer.OutputPaths(paths, output_dir + (mp_exist ? "pe_scaffolds" : contigs_name));
@@ -602,6 +603,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     writer.OutputPaths(last_paths, GetEtcDir(output_dir) + "mp_before_traversal");
     DebugOutputPaths(gp, output_dir, last_paths, "before_traverse_mp");
     TraverseLoops(last_paths, clone_map, last_extender);
+    FinalizePaths(last_paths, clone_map, max_over);
 
 //result
     if (broken_contigs.is_initialized()) {
