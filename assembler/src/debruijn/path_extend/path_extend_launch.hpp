@@ -365,7 +365,7 @@ inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const conj_graph_pac
     INFO("for lib " << lib_index);
 
     //TODO:: temporary solution
-   if (gp.paired_indices[lib_index].size() > gp.clustered_indices[lib_index].size()) {
+    if (gp.paired_indices[lib_index].size() > gp.clustered_indices[lib_index].size()) {
         INFO("Paired unclustered indices not empty, using them");
         lib = MakeNewLib(gp.g, gp.paired_indices, lib_index);
     } else if (gp.clustered_indices[lib_index].size() != 0 ) {
@@ -376,14 +376,12 @@ inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const conj_graph_pac
     }
 
     shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, lib);
-    //TODO::was copypasted from MakeScaffoldingExtender
-    //TODO::REWRITE
-    double prior_coef = GetPriorityCoeff(lib, pset);
+//TODO::was copypasted from MakeScaffoldingExtender
+//TODO::REWRITE
     double var_coeff = 3.0;
     DEBUG("here creating extchooser");
-    //TODO: 2 is relative weight cutoff, to config!
-    auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g, counter, prior_coef, var_coeff, storage, 2, lib_index);
-    //);
+//TODO: 2 is relative weight cutoff, to config!
+    auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g, counter, var_coeff, storage, 2, lib_index);
     auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
                                                          int(math::round((double) gp.g.k() - var_coeff * (double) lib->GetIsVar())),
                                                          (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),

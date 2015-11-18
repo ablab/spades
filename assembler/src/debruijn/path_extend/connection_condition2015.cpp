@@ -1,9 +1,8 @@
-//
-// Created by lab42 on 9/29/15.
-//
+
 
 #include "connection_condition2015.hpp"
 namespace path_extend {
+
     PairedLibConnectionCondition::PairedLibConnectionCondition(const debruijn_graph::Graph &graph,
                                  shared_ptr <PairedInfoLibrary> lib,
                                  size_t lib_index,
@@ -12,6 +11,7 @@ namespace path_extend {
             lib_(lib),
             lib_index_(lib_index),
             min_read_count_(min_read_count),
+//TODO reconsider condition
             left_dist_delta_(5 * (int) lib_->GetIsVar()),
             right_dist_delta_(5 * (int) lib_->GetISMax()) {
     }
@@ -27,14 +27,6 @@ namespace path_extend {
 
         set <debruijn_graph::EdgeId> result;
         for (auto edge : all_edges) {
-
-//conjugate check
-            set <debruijn_graph::EdgeId> c_edges;
-            lib_->FindJumpEdges(graph_.conjugate(edge), c_edges,
-                                (int) graph_.length(edge) - left_dist_delta_,
-                                (int) graph_.length(edge) + right_dist_delta_);
-            VERIFY(c_edges.count(graph_.conjugate(e)) > 0);
-
             if (edge != e && edge != graph_.conjugate(e) &&
                 math::ge(GetWeight(e, edge), (double) min_read_count_)) {
                 result.insert(edge);
@@ -53,7 +45,7 @@ namespace path_extend {
         return res;
     }
 
-//We use same part of index twice, is it necessary?
+//TODO: We use same part of index twice, is it necessary?
     int PairedLibConnectionCondition::GetMedianGap(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const {
         std::vector<int> distances;
         std::vector<double> weights;
@@ -95,7 +87,7 @@ namespace path_extend {
         for (auto connected: g_.OutgoingEdges(g_.EdgeEnd(e))) {
             result.insert(connected);
         }
-
+//TODO: optimization possible. Precompute all pairs of interesting connected vertex.
         DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
                 DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, max_connection_length_));
         dijkstra.run(g_.EdgeEnd(e));
