@@ -42,7 +42,7 @@ inline string GetEtcDir(const std::string& output_dir) {
     return output_dir + cfg::get().pe_params.etc_dir + "/";
 }
 
-inline void DebugOutputPaths(const ContigWriter& writer, const conj_graph_pack& gp,
+inline void DebugOutputPaths(const conj_graph_pack& gp,
                       const std::string& output_dir, const PathContainer& paths,
                       const string& name) {
     PathInfoWriter path_writer;
@@ -52,12 +52,11 @@ inline void DebugOutputPaths(const ContigWriter& writer, const conj_graph_pack& 
         return;
     }
     if (cfg::get().pe_params.output.write_paths) {
-        writer.writePathEdges(paths, etcDir + name + ".dat");
+        path_writer.WritePaths(paths, etcDir + name + ".paths");
     }
     if (cfg::get().pe_params.viz.print_paths) {
         visualizer.writeGraphWithPathsSimple(gp, etcDir + name + ".dot", name,
                                              paths);
-        path_writer.writePaths(paths, etcDir + name + ".data");
     }
 }
 
@@ -107,8 +106,7 @@ inline void OutputBrokenScaffolds(PathContainer& paths, int k,
     ScaffoldBreaker breaker(min_gap);
     breaker.Split(paths);
     breaker.container().SortByLength();
-    //writer.writePaths(breaker.container(), filename + ".fasta");
-    writer.writePaths(breaker.container(), filename + ".fasta");
+    writer.OutputPaths(breaker.container(), filename);
 }
 
 inline void AddPathsToContainer(const conj_graph_pack& gp,
@@ -358,16 +356,22 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
     //FIXME remove max_must_overlap from config
     double var_coeff = 3.0;
     auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, var_coeff);
-    auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
-                                                 int(math::round((double) gp.g.k() - var_coeff * (double) lib->GetIsVar())),
-                                                 (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
-                                                 pset.scaffolder_options.short_overlap,
-                                                 (int) 2 * cfg::get().ds.RL(), pset.scaffolder_options.artificial_gap,
-                                                 cfg::get().pe_params.param_set.scaffolder_options.use_old_score);
-    auto new_gap_joiner = std::make_shared<LAGapJoiner>(gp.g, pset.scaffolder_options.min_overlap_length,
+
+    vector<shared_ptr<GapJoiner>> joiners;
+    joiners.push_back(std::make_shared<LAGapJoiner>(gp.g, pset.scaffolder_options.min_overlap_length,
                                                 pset.scaffolder_options.flank_multiplication_coefficient,
-                                                pset.scaffolder_options.flank_addition_coefficient);
-    auto composite_gap_joiner = std::make_shared<CompositeGapJoiner>(gp.g, new_gap_joiner, gap_joiner);
+                                                pset.scaffolder_options.flank_addition_coefficient));
+
+    joiners.push_back(std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
+                                                 pset.scaffolder_options.short_overlap,
+                                                 (int) 2 * cfg::get().ds.RL()));
+
+    auto composite_gap_joiner = std::make_shared<CompositeGapJoiner>(gp.g, 
+                                                joiners, 
+                                                size_t(pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
+                                                int(math::round((double) gp.g.k() - var_coeff * (double) lib->GetIsVar())),
+                                                pset.scaffolder_options.artificial_gap);
+
     return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, composite_gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
 }
 
@@ -525,12 +529,12 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 //extend pe + long reads
     PathExtendResolver resolver(gp.g);
     auto seeds = resolver.makeSimpleSeeds();
-    DebugOutputPaths(writer, gp, output_dir, seeds, "init_paths");
+    DebugOutputPaths(gp, output_dir, seeds, "init_paths");
     seeds.SortByLength();
     INFO("Growing paths using paired-end and long single reads");
     auto paths = resolver.extendSeeds(seeds, *mainPE);
     paths.SortByLength();
-    DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
+    DebugOutputPaths(gp, output_dir, paths, "pe_overlaped_paths");
 
     PathContainer clone_paths;
     GraphCoverageMap clone_map(gp.g);
@@ -545,13 +549,13 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
                               output_dir + (mp_exist ? "pe_contigs" : broken_contigs.get()));
     }
-    writer.writePaths(paths, GetEtcDir(output_dir) + "pe_before_traversal.fasta");
-    DebugOutputPaths(writer, gp, output_dir, paths, "before_traverse_pe");
+    writer.OutputPaths(paths, GetEtcDir(output_dir) + "pe_before_traversal");
+    DebugOutputPaths(gp, output_dir, paths, "before_traverse_pe");
     if (traversLoops) {
         TraverseLoops(paths, cover_map, mainPE);
     }
-    DebugOutputPaths(writer, gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
-    writer.writePaths(paths,output_dir + (mp_exist ? "pe_scaffolds" : contigs_name) + ".fasta" );
+    DebugOutputPaths(gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
+    writer.OutputPaths(paths, output_dir + (mp_exist ? "pe_scaffolds" : contigs_name));
 
     cover_map.Clear();
     paths.DeleteAllPaths();
@@ -560,7 +564,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     }
 
 //MP
-    DebugOutputPaths(writer, gp, output_dir, clone_paths, "before_mp_paths");
+    DebugOutputPaths(gp, output_dir, clone_paths, "before_mp_paths");
 
     INFO("SUBSTAGE = mate-pair libraries ")
     exspander_stage = PathExtendStage::MPStage;
@@ -572,12 +576,12 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     INFO("Growing paths using mate-pairs");
     auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
     FinalizePaths(mp_paths, clone_map, max_over, true);
-    DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
-    writer.writePaths(mp_paths, GetEtcDir(output_dir) + "mp_prefinal.fasta");
+    DebugOutputPaths(gp, output_dir, mp_paths, "mp_final_paths");
+    writer.OutputPaths(mp_paths, GetEtcDir(output_dir) + "mp_prefinal");
 
     DEBUG("Paths are grown with mate-pairs");
     if (cfg::get().pe_params.debug_output) {
-        writer.writePaths(mp_paths, output_dir + "mp_paths.fasta");
+        writer.OutputPaths(mp_paths, output_dir + "mp_paths");
     }
 //MP end
 
@@ -592,16 +596,16 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
     FinalizePaths(last_paths, clone_map, max_over);
 
-    writer.writePaths(last_paths, GetEtcDir(output_dir) + "mp_before_traversal.fasta");
-    DebugOutputPaths(writer, gp, output_dir, last_paths, "before_traverse_mp");
+    writer.OutputPaths(last_paths, GetEtcDir(output_dir) + "mp_before_traversal");
+    DebugOutputPaths(gp, output_dir, last_paths, "before_traverse_mp");
     TraverseLoops(last_paths, clone_map, last_extender);
 
 //result
     if (broken_contigs.is_initialized()) {
         OutputBrokenScaffolds(last_paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
     }
-    DebugOutputPaths(writer, gp, output_dir, last_paths, "last_paths");
-    writer.writePaths(last_paths, output_dir + contigs_name + ".fasta");
+    DebugOutputPaths(gp, output_dir, last_paths, "last_paths");
+    writer.OutputPaths(last_paths, output_dir + contigs_name);
 
     last_paths.DeleteAllPaths();
     seeds.DeleteAllPaths();

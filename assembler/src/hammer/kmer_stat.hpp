@@ -71,7 +71,7 @@ class NibbleString {
         if (offset + bits >= StorageBits) {
           size_t rbits = StorageBits - offset;
           uint64_t mask = MaxValue >> rbits;
-          uint8_t remaining = (value >> rbits) & mask;
+          uint8_t remaining = uint8_t((value >> rbits) & mask);
 
           storage_[idx + 1] = (storage_[idx + 1] & ~mask) | remaining;
         }

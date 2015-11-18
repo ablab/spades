@@ -1421,9 +1421,9 @@ private:
     }
     
     //fixme codestyle
+    CoverageAwareIdealInfoProvider provider_;
     const size_t max_edge_length_in_repeat_;
     const double delta_;
-    CoverageAwareIdealInfoProvider provider_;
 protected:
     DECL_LOGGER("CoordCoverageExtensionChooser");
 };

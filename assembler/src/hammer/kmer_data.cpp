@@ -509,19 +509,24 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   }
 
   // Check, whether we'll ever have enough memory for running BH and bail out earlier
-  if (1.25 * kmers * (sizeof(KMerStat) + sizeof(hammer::KMer)) > (double) get_memory_limit())
+  if (1.25 * (double)kmers * (sizeof(KMerStat) + sizeof(hammer::KMer)) > (double) get_memory_limit())
       FATAL_ERROR("The reads contain too many k-mers to fit into available memory limit. Increase memory limit and restart");
 
   {
-    auto kmer_it = io::make_kmer_iterator<hammer::KMer>(final_kmers, hammer::K);
-
     INFO("Arranging kmers in hash map order");
     data.kmers_.set_size(kmers);
     data.kmers_.set_data(new hammer::KMer::DataType[kmers * hammer::KMer::GetDataSize(hammer::K)]);
 
-    for (; kmer_it.good(); ++kmer_it) {
-      size_t kidx = data.index_.seq_idx(hammer::KMer(hammer::K, *kmer_it));
-      memcpy(data.kmers_[kidx].data(), *kmer_it, hammer::KMer::TotalBytes);
+    unsigned nthreads = std::min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
+    auto kmers_its = io::make_kmer_iterator<hammer::KMer>(final_kmers, hammer::K, 16*nthreads);
+
+#   pragma omp parallel for num_threads(nthreads) schedule(guided)
+    for (size_t i = 0; i < kmers_its.size(); ++i) {
+        auto &kmer_it = kmers_its[i];
+        for (; kmer_it.good(); ++kmer_it) {
+            size_t kidx = data.index_.seq_idx(hammer::KMer(hammer::K, *kmer_it));
+            memcpy(data.kmers_[kidx].data(), *kmer_it, hammer::KMer::TotalBytes);
+        }
     }
 
     unlink(counter.GetFinalKMersFname().c_str());

@@ -99,7 +99,7 @@ static void processBlockQuadratic(ConcurrentDSU  &uf,
     for (size_t j = i + 1; j < block_size; j++) {
       size_t y = block[j];
       hammer::KMer kmery = data.kmer(y);
-      if (uf.find_set(x) != uf.find_set(y) &&
+      if (!uf.same(x, y) &&
           canMerge(uf, x, y) &&
           hamdistKMer(kmerx, kmery, tau) <= tau) {
         uf.unite(x, y);
@@ -201,4 +201,88 @@ void KMerHamClusterer::cluster(const std::string &prefix,
 
     INFO("Merge done, saw " << big_blocks2 << " big blocks out of " << nblocks << " processed.");
   }
+}
+
+enum {
+  UNLOCKED = 0,
+  PARTIALLY_LOCKED = 1,
+  FULLY_LOCKED = 3
+};
+
+static bool canMerge2(const ConcurrentDSU &uf, size_t kidx, size_t cidx) {
+    // If either of indices is fully locked - bail out
+    uint64_t kaux = uf.root_aux(kidx), caux = uf.root_aux(cidx);
+    if (kaux == FULLY_LOCKED || caux == FULLY_LOCKED)
+        return false;
+
+    // Otherwise there is a possibility to merge stuff.
+    if (0 && (kaux == PARTIALLY_LOCKED || caux == PARTIALLY_LOCKED)) {
+        // We cannot merge two partially locked clusters.
+        return kaux != caux;
+    }
+
+    return true;
+}
+
+static void ClusterChunk(size_t start_idx, size_t end_idx, const KMerData &data, ConcurrentDSU &uf) {
+    unsigned nthreads = cfg::get().general_max_nthreads;
+
+    // INFO("Cluster: " << start_idx << ":" << end_idx);
+#   pragma omp parallel num_threads(nthreads)
+    {
+#       pragma omp for
+        for (size_t idx = start_idx; idx < end_idx; ++idx) {
+            hammer::KMer kmer = data.kmer(idx);
+
+            if (kmer.GetHash() > (!kmer).GetHash())
+                continue;
+
+            size_t kidx = data.seq_idx(kmer);
+            size_t rckidx = -1ULL;
+            // INFO("" << kmer << ":" << kidx);
+
+            for (size_t k = 0; k < hammer::K; ++k) {
+                hammer::KMer candidate = kmer;
+                char c = candidate[k];
+                for (char nc = 0; nc < 4; ++nc) {
+                    if (nc == c)
+                        continue;
+                    candidate.set(k, nc);
+                    size_t cidx = data.checking_seq_idx(candidate);
+                    // INFO("" << candidate << ":" << cidx);
+                    if (cidx != -1ULL && canMerge2(uf, kidx, cidx)) {
+                        uf.unite(kidx, cidx);
+
+                        size_t rccidx = data.seq_idx(!candidate);
+                        if (rckidx == -1ULL)
+                            rckidx = data.seq_idx(!kmer);
+                        uf.unite(rckidx, rccidx);
+                    }
+                }
+            }
+        }
+#       pragma omp barrier
+        //INFO("Lock: " << start_idx << ":" << end_idx);
+#       pragma omp for
+        for (size_t idx = start_idx; idx < end_idx; ++idx) {
+            if (uf.set_size(idx) < 2500)
+                continue;
+
+            if (uf.root_aux(idx) != FULLY_LOCKED)
+                uf.set_root_aux(idx, FULLY_LOCKED);
+        }
+    }
+}
+
+void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, ConcurrentDSU &uf) {
+    size_t start_idx = 0;
+    while (start_idx < data.size()) {
+        size_t end_idx = start_idx + 64*1024;
+        if (end_idx > data.size())
+            end_idx = data.size();
+
+        ClusterChunk(start_idx, end_idx, data, uf);
+
+        start_idx = end_idx;
+    }
 }

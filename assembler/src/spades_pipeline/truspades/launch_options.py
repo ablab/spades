@@ -99,15 +99,16 @@ def print_usage_and_exit(code, show_hidden = False):
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Basic options:" + "\n")
-    sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
-    sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
+    sys.stderr.write("-h/--help\t\t\tprints this usage message" + "\n")
+    sys.stderr.write("--test\t\t\t\trun truSPAdes on toy dataset" + "\n")
+    sys.stderr.write("-o\t\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
     sys.stderr.write("-t/--threads\t<int>\t\tnumber of threads" + "\n")
-    sys.stderr.write("--continue\t\tcontinue interrupted launch" + "\n")
+    sys.stderr.write("--continue\t\t\tcontinue interrupted launch" + "\n")
     sys.stderr.write("--construct-dataset\t\tparse dataset from input folder")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Input options:" + "\n")
     sys.stderr.write("--input-dir\t<directory>\tdirectory with input data. Note that the directory should contain only files with reads. This option can be used several times to provide several input directories." + "\n")
-    sys.stderr.write("--dataset\t<file>\tfile with dataset description" + "\n")
+    sys.stderr.write("--dataset\t<file>\t\tfile with dataset description" + "\n")
     if show_hidden:
         pass
         #ToDo
