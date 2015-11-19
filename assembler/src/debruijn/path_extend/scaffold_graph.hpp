@@ -9,36 +9,43 @@
 #include "paired_library.hpp"
 #include "connection_condition2015.hpp"
 
-namespace path_extend { namespace scaffold_graph {
+namespace path_extend {
+namespace scaffold_graph {
 
 using namespace path_extend;
-//do NOT add using debruijn_graph due to EdgeId conflict
+//do NOT add "using namespace debruijn_graph" in order not to confuse between EdgeId typdefs
 
 class ScaffoldGraph {
 
 public:
-
+    //EdgeId in de Bruijn graph is vertex in scaffolding graph
     typedef debruijn_graph::EdgeId ScaffoldVertex;
 
+    //Unique edge id
     typedef size_t ScaffoldEdgeIdT;
 
+    //Scaffold edge indormation class
     struct ScaffoldEdge {
     private:
+        //unique id
         ScaffoldEdgeIdT id_;
+        //id counter
         static std::atomic<ScaffoldEdgeIdT> scaffold_edge_id_;
 
         ScaffoldVertex start_;
         ScaffoldVertex end_;
+        //color = lib#
         size_t color_;
+        //read pair weight or anything else
         double weight_;
 
     public:
 
-        ScaffoldEdge(ScaffoldVertex start, ScaffoldVertex end, size_t lib_id = (size_t) -1, double weight = 0):
-                id_(scaffold_edge_id_++),
-                start_(start), end_(end),
-                color_(lib_id),
-                weight_(weight) {
+        ScaffoldEdge(ScaffoldVertex start, ScaffoldVertex end, size_t lib_id = (size_t) -1, double weight = 0) :
+            id_(scaffold_edge_id_++),
+            start_(start), end_(end),
+            color_(lib_id),
+            weight_(weight) {
         }
 
         ScaffoldEdgeIdT getId() const {
@@ -62,19 +69,24 @@ public:
             return end_;
         }
 
-        bool operator==(const ScaffoldEdge& e) const {
+        bool operator==(const ScaffoldEdge &e) const {
             return color_ == e.color_ && weight_ == e.weight_ && start_ == e.start_ && end_ == e.end_;
         }
 
-        bool operator==(const ScaffoldEdge& e)  {
+        bool operator==(const ScaffoldEdge &e) {
             return color_ == e.color_ && weight_ == e.weight_ && start_ == e.start_ && end_ == e.end_;
         }
     };
 
+    //typedef for possibility to use in templated graph visualizers
     typedef ScaffoldVertex VertexId;
     typedef ScaffoldEdge EdgeId;
+
+    //All vertices are stored in set
     typedef std::set<ScaffoldVertex> VertexStorage;
+    //Edges are stored in map: Id -> Edge Information
     typedef std::unordered_map<ScaffoldEdgeIdT, ScaffoldEdge> EdgeStotage;
+    //Adjacency list contains vertrx and edge id (instead of whole edge information)
     typedef std::unordered_multimap<ScaffoldVertex, ScaffoldEdgeIdT> AdjacencyStorage;
 
     struct ConstScaffoldEdgeIterator {
@@ -82,15 +94,14 @@ public:
         EdgeStotage::const_iterator iter_;
 
     public:
-        ConstScaffoldEdgeIterator(EdgeStotage::const_iterator iter): iter_(iter) {
-
+        ConstScaffoldEdgeIterator(EdgeStotage::const_iterator iter) : iter_(iter) {
         }
 
         ScaffoldEdge operator*() const {
             return iter_->second;
         }
 
-        const ScaffoldEdge* operator->() const {
+        const ScaffoldEdge *operator->() const {
             return &iter_->second;
         }
 
@@ -102,364 +113,169 @@ public:
             return ConstScaffoldEdgeIterator(iter_++);
         }
 
-        bool operator==(const ConstScaffoldEdgeIterator& that) const {
+        bool operator==(const ConstScaffoldEdgeIterator &that) const {
             return this->iter_ == that.iter_;
         }
 
-        bool operator!=(const ConstScaffoldEdgeIterator& that) const {
+        bool operator!=(const ConstScaffoldEdgeIterator &that) const {
             return !this->operator==(that);
         }
     };
 
 private:
-    const debruijn_graph::Graph& assembly_graph_;
+    const debruijn_graph::Graph &assembly_graph_;
 
     VertexStorage vertices_;
 
     EdgeStotage edges_;
 
+    //Map for storing conjugate scaffolding edges
     std::unordered_map<ScaffoldEdgeIdT, ScaffoldEdgeIdT> conjugate_;
 
     AdjacencyStorage outgoing_edges_;
 
     AdjacencyStorage incoming_edges_;
 
-    void AddEdgeSimple(const ScaffoldEdge& e, size_t conjugate_id) {
-        edges_.emplace(e.getId(), e);
-        outgoing_edges_.emplace(e.getStart(), e.getId());
-        incoming_edges_.emplace(e.getEnd(), e.getId());
-        conjugate_[e.getId()] = conjugate_id;
-    }
+    //Add edge without any checks and conjugate
+    void AddEdgeSimple(const ScaffoldEdge &e, size_t conjugate_id);
 
-    void DeleteOutgoing(const ScaffoldEdge& e) {
-        auto e_range = outgoing_edges_.equal_range(e.getStart());
-        for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
-            if (edges_.at(edge_id->second) == e) {
-                outgoing_edges_.erase(edge_id);
-            }
-        }
-    }
+    //Delete outgoing edge from adjancecy list without checks
+    //and removing conjugate and respective incoming edge
+    void DeleteOutgoing(const ScaffoldEdge &e);
 
-    void DeleteIncoming(const ScaffoldEdge& e) {
-        auto e_range = incoming_edges_.equal_range(e.getEnd());
-        for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
-            if (edges_.at(edge_id->second) == e) {
-                incoming_edges_.erase(edge_id);
-            }
-        }
-    }
+    //Delete incoming edge from adjancecy list without checks
+    //and removing conjugate and respective outoging edge
+    void DeleteIncoming(const ScaffoldEdge &e);
 
-    void DeleteEdgeFromStorage(const ScaffoldEdge& e) {
-        VERIFY(!Exists(e));
+    //Delete all edge info from storage
+    void DeleteEdgeFromStorage(const ScaffoldEdge &e);
 
-        size_t conjugate_id = conjugate_[e.getId()];
-        edges_.erase(e.getId());
-        edges_.erase(conjugate_id);
-        conjugate_.erase(e.getId());
-        conjugate_.erase(conjugate_id);
-    }
+    //Detelte all outgoing from v edges from  adjacency lists
+    void DeleteAllOutgoingEdgesSimple(ScaffoldVertex v);
 
-    void DeleteAllOutgoingEdgesSimple(ScaffoldVertex v) {
-        auto e_range = outgoing_edges_.equal_range(v);
-        for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
-            DeleteIncoming(edges_.at(edge_id->second));
-        }
-        outgoing_edges_.erase(v);
-    }
-
-    void DeleteAllIncomingEdgesSimple(ScaffoldVertex v) {
-        auto e_range = incoming_edges_.equal_range(v);
-        for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
-            DeleteOutgoing(edges_.at(edge_id->second));
-        }
-        incoming_edges_.erase(v);
-    }
-
+    //Detelte all incoming from v edges from  adjacency lists
+    void DeleteAllIncomingEdgesSimple(ScaffoldVertex v);
 
 public:
-
-    ScaffoldGraph(const debruijn_graph::Graph& g): assembly_graph_(g) {
+    ScaffoldGraph(const debruijn_graph::Graph &g) : assembly_graph_(g) {
     }
 
+    bool Exists(ScaffoldVertex assembly_graph_edge) const;
 
-    bool Exists(ScaffoldVertex assembly_graph_edge) const {
-        return vertices_.count(assembly_graph_edge) != 0;
-    }
+    bool Exists(const ScaffoldEdge &e) const;
 
-    bool Exists(const ScaffoldEdge &e) const {
-        auto e_range = outgoing_edges_.equal_range(e.getStart());
-        for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
-            if (edges_.at(edge_id->second) == e) {
-                return true;
-            }
-        }
-        return false;
-    }
+    ScaffoldVertex conjugate(ScaffoldVertex assembly_graph_edge) const;
 
-    ScaffoldVertex conjugate(ScaffoldVertex assembly_graph_edge) const {
-        return assembly_graph_.conjugate(assembly_graph_edge);
-    }
+    //Return structure thay is equal to conjugate of e (not exactrly the same structure as in graph)
+    ScaffoldEdge conjugate(const ScaffoldEdge &e) const;
 
-    ScaffoldEdge conjugate(const ScaffoldEdge& e) const {
-        auto iter = conjugate_.find(e.getId());
-        if (iter != conjugate_.end()) {
-            return edges_.at(iter->second);
-        }
-        return ScaffoldEdge(conjugate(e.getEnd()), conjugate(e.getStart()), e.getColor(), e.getWeight());
-    }
+    //Add isolated vertex to the graph if not exitsts
+    bool AddVertex(ScaffoldVertex assembly_graph_edge);
 
-    bool AddVertex(ScaffoldVertex assembly_graph_edge) {
-        if (!Exists(assembly_graph_edge)) {
-            VERIFY(!Exists(conjugate(assembly_graph_edge)));
-            vertices_.insert(assembly_graph_edge);
-            vertices_.insert(conjugate(assembly_graph_edge));
-            return true;
-        }
-        return false;
-    }
+    void AddVertices(const set<ScaffoldVertex> &vertices);
 
-    void AddVertices(const set<ScaffoldVertex>& vertices) {
-        for (auto v : vertices) {
-            AddVertex(v);
-        }
-    }
+    //Add edge (and conjugate) if not exists
+    //v1 and v2 must exist
+    bool AddEdge(ScaffoldVertex v1, ScaffoldVertex v2, size_t lib_id, double weight);
 
-    bool AddEdge(ScaffoldVertex v1, ScaffoldVertex v2, size_t lib_id, double weight) {
-        VERIFY(Exists(v1));
-        VERIFY(Exists(v2));
+    bool AddEdge(const ScaffoldEdge &e);
 
-        ScaffoldEdge e(v1, v2, lib_id, weight);
-        if (Exists(e)) {
-            VERIFY(Exists(conjugate(e)));
-            return false;
-        }
+    //Rempve edge from edge container and all adjacency lists
+    bool RemoveEdge(const ScaffoldEdge &e);
 
-        auto conj = conjugate(e);
-        AddEdgeSimple(e, conj.getId());
-        AddEdgeSimple(conj, e.getId());
-        return true;
-    }
+    //Remove vertex and all adjacent edges
+    bool RemoveVertex(ScaffoldVertex assembly_graph_edge);
 
-    bool AddEdge(const ScaffoldEdge& e) {
-        return AddEdge(e.getStart(), e.getEnd(), e.getColor(), e.getWeight());
-    }
+    bool IsVertexIsolated(ScaffoldVertex assembly_graph_edge) const;
 
-    bool RemoveEdge(const ScaffoldEdge& e) {
-        if (Exists(e)) {
-            VERIFY(Exists(conjugate(e)));
-            DeleteOutgoing(e);
-            DeleteIncoming(e);
-            DeleteOutgoing(conjugate(e));
-            DeleteIncoming(conjugate(e));
-            DeleteEdgeFromStorage(e);
+    VertexStorage::const_iterator vbegin() const;
 
-            return true;
-        }
-        return false;
-    }
+    VertexStorage::const_iterator vend() const;
 
-    bool RemoveVertex(ScaffoldVertex assembly_graph_edge) {
-        if (Exists(assembly_graph_edge)) {
-            VERIFY(Exists(conjugate(assembly_graph_edge)));
+    ConstScaffoldEdgeIterator ebegin() const;
 
-            DeleteAllOutgoingEdgesSimple(assembly_graph_edge);
-            DeleteAllIncomingEdgesSimple(assembly_graph_edge);
-            DeleteAllOutgoingEdgesSimple(conjugate(assembly_graph_edge));
-            DeleteAllIncomingEdgesSimple(conjugate(assembly_graph_edge));
+    ConstScaffoldEdgeIterator eend() const;
 
-            VERIFY(incoming_edges_.count(assembly_graph_edge) == 0);
-            VERIFY(outgoing_edges_.count(assembly_graph_edge) == 0);
-            VERIFY(incoming_edges_.count(conjugate(assembly_graph_edge)) == 0);
-            VERIFY(outgoing_edges_.count(conjugate(assembly_graph_edge)) == 0);
+    size_t int_id(ScaffoldVertex v) const;
 
-            vertices_.erase(assembly_graph_edge);
-            vertices_.erase(conjugate(assembly_graph_edge));
+    size_t int_id(ScaffoldEdge e) const;
 
-            return true;
-        }
-        return false;
-    }
+    ScaffoldVertex EdgeStart(ScaffoldEdge e) const;
 
-    bool IsVertexIsolated(ScaffoldVertex assembly_graph_edge) const {
-        bool result = incoming_edges_.count(assembly_graph_edge) == 0 && outgoing_edges_.count(assembly_graph_edge) == 0;
-        VERIFY((incoming_edges_.count(conjugate(assembly_graph_edge)) == 0 && incoming_edges_.count(assembly_graph_edge) == 0) == result);
-        return result;
-    }
+    ScaffoldVertex EdgeEnd(ScaffoldEdge e) const;
 
-    VertexStorage::const_iterator vbegin() const {
-        return vertices_.cbegin();
-    }
+    size_t VertexCount() const;
 
-    VertexStorage::const_iterator vend() const {
-        return vertices_.cend();
-    }
+    size_t EdgeCount() const;
 
-    ConstScaffoldEdgeIterator ebegin() const {
-        return ConstScaffoldEdgeIterator(edges_.cbegin());
-    }
+    const debruijn_graph::Graph & AssemblyGraph() const;
 
-    ConstScaffoldEdgeIterator eend() const {
-        return ConstScaffoldEdgeIterator(edges_.cend());
-    }
+    vector<ScaffoldEdge> OutgoingEdges(ScaffoldVertex assembly_graph_edge) const;
 
-    size_t int_id(ScaffoldVertex v) const {
-        return assembly_graph_.int_id(v);
-    }
+    vector<ScaffoldEdge> IncomingEdges(ScaffoldVertex assembly_graph_edge) const;
 
-    size_t int_id(ScaffoldEdge e) const {
-        return e.getId();
-    }
+    size_t OutgoingEdgeCount(ScaffoldVertex assembly_graph_edge) const;
 
-    ScaffoldVertex EdgeStart(ScaffoldEdge e) const {
-        return e.getStart();
-    }
+    size_t IncomingEdgeCount(ScaffoldVertex assembly_graph_edge) const;
 
-    ScaffoldVertex EdgeEnd(ScaffoldEdge e) const {
-        return e.getEnd();
-    }
+    bool HasUniqueOutgoing(ScaffoldVertex assembly_graph_edge) const;
 
-    size_t VertexCount() const {
-        return vertices_.size();
-    }
+    bool HasUniqueIncoming(ScaffoldVertex assembly_graph_edge) const;
 
-    size_t EdgeCount() const {
-        return edges_.size();
-    }
+    ScaffoldEdge UniqueOutgoing(ScaffoldVertex assembly_graph_edge) const;
 
-    const debruijn_graph::Graph& AssemblyGraph() const {
-        return assembly_graph_;
-    }
+    ScaffoldEdge UniqueIncoming(ScaffoldVertex assembly_graph_edge) const;
 
-    vector<ScaffoldEdge> OutgoingEdges(ScaffoldVertex assembly_graph_edge) const {
-        vector<ScaffoldEdge> result;
-        auto e_range = outgoing_edges_.equal_range(assembly_graph_edge);
-        for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
-            result.push_back(edges_.at(edge_id->second));
-        }
-        return result;
-    }
-
-    vector<ScaffoldEdge> IncomingEdges(ScaffoldVertex assembly_graph_edge) const {
-        vector<ScaffoldEdge> result;
-        auto e_range = incoming_edges_.equal_range(assembly_graph_edge);
-        for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
-            result.push_back(edges_.at(edge_id->second));
-        }
-        return result;
-    }
-
-    size_t OutgoingEdgeCount(ScaffoldVertex assembly_graph_edge) const {
-        return outgoing_edges_.count(assembly_graph_edge);
-    }
-
-    size_t IncomingEdgeCount(ScaffoldVertex assembly_graph_edge) const {
-        return incoming_edges_.count(assembly_graph_edge);
-    }
-
-    bool HasUniqueOutgoing(ScaffoldVertex assembly_graph_edge) const {
-        return OutgoingEdgeCount(assembly_graph_edge) == 1;
-    }
-
-    bool HasUniqueIncoming(ScaffoldVertex assembly_graph_edge) const {
-        return IncomingEdgeCount(assembly_graph_edge) == 1;
-    }
-
-    ScaffoldEdge UniqueOutgoing(ScaffoldVertex assembly_graph_edge) const {
-        VERIFY(HasUniqueOutgoing(assembly_graph_edge));
-        return edges_.at(outgoing_edges_.find(assembly_graph_edge)->second);
-    }
-
-    ScaffoldEdge UniqueIncoming(ScaffoldVertex assembly_graph_edge) const {
-        VERIFY(HasUniqueIncoming(assembly_graph_edge));
-        return edges_.at(incoming_edges_.find(assembly_graph_edge)->second);
-    }
-
-    void Print(ostream& os) const {
-        for (auto v: vertices_) {
-            os << "Vertex " << int_id(v) << " ~ " << int_id(conjugate(v))
-                    << ": len = " << assembly_graph_.length(v) << ", cov = " << assembly_graph_.coverage(v) << endl;
-        }
-        for (auto e_iter = ebegin(); e_iter != eend(); ++e_iter) {
-            os << "Edge " << e_iter->getId() << " ~ " << conjugate(*e_iter).getId() <<
-                    ": " << int_id(e_iter->getStart()) << " -> " << int_id(e_iter->getEnd()) <<
-                    ", lib index = " << e_iter->getColor() << ", weight " << e_iter->getWeight() << endl;
-        }
-    }
+    void Print(ostream &os) const;
 
 };
 
+
+//De Bruijn graph edge condition interface
 class EdgeCondition {
 public:
     virtual bool IsSuitable(debruijn_graph::EdgeId e) const = 0;
 
-    virtual ~EdgeCondition() {}
+    virtual ~EdgeCondition() { }
 
 };
 
+//Edge length condition
 class LengthEdgeCondition: public EdgeCondition {
-    const debruijn_graph::Graph& graph_;
+    const debruijn_graph::Graph &graph_;
 
     size_t min_length_;
 
 public:
-    LengthEdgeCondition(const debruijn_graph::Graph& graph, size_t min_len): graph_(graph), min_length_(min_len) {
-
+    LengthEdgeCondition(const debruijn_graph::Graph &graph, size_t min_len) : graph_(graph), min_length_(min_len) {
     }
 
-    bool IsSuitable(debruijn_graph::EdgeId e) const {
-        return graph_.length(e) >= min_length_;
-    }
+    bool IsSuitable(debruijn_graph::EdgeId e) const;
 };
 
-
+//Main scaffold graph constructor
 class ScaffoldGraphConstructor {
 private:
-    ScaffoldGraph& graph_;
+    ScaffoldGraph &graph_;
 
-    void ConstructFromSingleCondition(const shared_ptr<ConnectionCondition> condition, bool use_terminal_vertices_only) {
-        for (auto v = graph_.vbegin(); v != graph_.vend(); ++v) {
-            TRACE("Vertex " << graph_.int_id(*v));
-
-            if (use_terminal_vertices_only && graph_.OutgoingEdgeCount(*v) > 0)
-                continue;
-
-            auto connected_with = condition->ConnectedWith(*v);
-            for (auto connected : connected_with) {
-                TRACE("Connected with " << graph_.int_id(connected));
-                if (graph_.Exists(connected)) {
-                    if (use_terminal_vertices_only && graph_.IncomingEdgeCount(connected) > 0)
-                        continue;
-                    graph_.AddEdge(*v, connected, condition->GetLibIndex(), condition->GetWeight(*v, connected));
-                }
-            }
-        }
-    }
+    void ConstructFromSingleCondition(const shared_ptr<ConnectionCondition> condition,
+                                          bool use_terminal_vertices_only);
 
 public:
-    ScaffoldGraphConstructor(ScaffoldGraph& graph): graph_(graph) {
+    ScaffoldGraphConstructor(ScaffoldGraph &graph) : graph_(graph) {
     }
 
-    void ConstructFromConditions(vector<shared_ptr<ConnectionCondition>>& connection_conditions, bool use_terminal_vertices_only = false) {
-        for (auto condition : connection_conditions) {
-            ConstructFromSingleCondition(condition, use_terminal_vertices_only);
-        }
-    }
+    void ConstructFromConditions(vector<shared_ptr<ConnectionCondition>> &connection_conditions,
+                                     bool use_terminal_vertices_only = false);
 
-    void ConstructFromSet(set<EdgeId> edge_set, vector<shared_ptr<ConnectionCondition>>& connection_conditions, bool use_terminal_vertices_only = false) {
-        graph_.AddVertices(edge_set);
-        ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
-    }
+    void ConstructFromSet(set<EdgeId> edge_set,
+                              vector<shared_ptr<ConnectionCondition>> &connection_conditions,
+                              bool use_terminal_vertices_only = false);
 
-    void ConstructFromEdgeConditions(const EdgeCondition& edge_condition, vector<shared_ptr<ConnectionCondition>>& connection_conditions, bool use_terminal_vertices_only = false) {
-        for (auto e = graph_.AssemblyGraph().ConstEdgeBegin(); !e.IsEnd(); ++e) {
-            if (edge_condition.IsSuitable(*e)) {
-                graph_.AddVertex(*e);
-            }
-        }
-        ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
-    }
+    void ConstructFromEdgeConditions(const EdgeCondition &edge_condition,
+                                         vector<shared_ptr<ConnectionCondition>> &connection_conditions,
+                                         bool use_terminal_vertices_only = false);
 };
-
 
 } //scaffold_graph
 } //path_extend

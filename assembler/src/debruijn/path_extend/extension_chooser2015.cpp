@@ -54,7 +54,7 @@ ExtensionChooser::EdgeContainer ExtensionChooser2015::FindNextUniqueEdge(const E
     return result;
 }
 
-ExtensionChooser::EdgeContainer ExtensionChooser2015::Filter(const BidirectionalPath& path, const ExtensionChooser::EdgeContainer& edges) const {
+ExtensionChooser::EdgeContainer ExtensionChooser2015::Filter(const BidirectionalPath& path, const ExtensionChooser::EdgeContainer& /*edges*/) const {
 //    set<EdgeId> candidates = FindCandidates(path);
     pair<EdgeId, int> last_unique = FindLastUniqueInPath(path);
     EdgeContainer result;

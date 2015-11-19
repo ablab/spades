@@ -296,7 +296,7 @@ public:
                 max_over = over;
             }
         }
-        return max_over;
+        return (size_t) max_over;
     }
 
     int FindFirst(const BidirectionalPath& path, size_t from = 0) const {
