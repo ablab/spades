@@ -91,6 +91,10 @@ template<class Index>
 struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
 
 private:
+/* Only information from e is taken in account. No info from conjugate(e) is used. bool conj is used to check whether
+ * the dist should be recount or not.
+ */
+
     void FindJumpEdgesNoConj(EdgeId e, std::set<EdgeId>& result, int min_dist, int max_dist, size_t min_len, bool conj) const {
         if (index_.contains(e)) {
             const auto &infos = index_.GetEdgeInfoMap(e);
@@ -135,6 +139,7 @@ public:
         result.clear();
 
         FindJumpEdgesNoConj(e, result, min_dist, max_dist, min_len, false);
+//Collecting the information saved from conjugate edge
         FindJumpEdgesNoConj(g_.conjugate(e), result, min_dist, max_dist, min_len, true);
 
         return result.size();

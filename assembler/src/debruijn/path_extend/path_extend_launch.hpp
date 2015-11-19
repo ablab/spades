@@ -414,6 +414,7 @@ inline bool instanceof(const T *ptr) {
     return dynamic_cast<const Base*>(ptr) != nullptr;
 }
 
+//Used for debug purpose only
 inline void PrintExtenders(vector<shared_ptr<PathExtender> >& extenders) {
     INFO("Extenders in vector:");
     for(size_t i = 0; i < extenders.size(); ++i) {
@@ -616,12 +617,13 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         boost::optional<std::string> broken_contigs) {
 
     INFO("ExSPAnder repeat resolving tool started");
-
+//Setting scaffolding2015 parameters
     auto min_unique_length  = cfg::get().pe_params.scaffolding2015.min_unique_length;
     auto unique_variaton = cfg::get().pe_params.scaffolding2015.unique_coverage_variation;
     if (cfg::get().pe_params.scaffolding2015.autodetect) {
         INFO("Autodetecting unique edge set parameters...");
         bool pe_found = false;
+//TODO constant
         size_t min_MP_IS = 10000;
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
 
@@ -694,7 +696,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     if (mp_exist) {
         ClonePathContainer(paths, clone_paths, clone_map);
     }
-
+//We do not run overlap removal in 2015 mode
     if (!(sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined))
         FinalizePaths(paths, cover_map, max_over);
     if (broken_contigs.is_initialized()) {

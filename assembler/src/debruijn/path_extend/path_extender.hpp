@@ -696,7 +696,7 @@ private:
             if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
                 INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             }
-            //TODO: coverage_map should be exterminated later
+//In 2015 modes do not use a seed already used in paths.
             auto sc_mode = cfg::get().pe_params.param_set.sm;
             if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
                 bool was_used = false;
@@ -709,10 +709,11 @@ private:
                     }
                 }
                 if (was_used) {
-                    DEBUG("skupping already used seed");
+                    DEBUG("skipping already used seed");
                     continue;
                 }
             }
+//TODO: coverage_map should be exterminated
             if (!cover_map_.IsCovered(*paths.Get(i))) {
                 usedPaths.AddPair(paths.Get(i), paths.GetConjugate(i));
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
@@ -976,6 +977,8 @@ public:
             DEBUG("push");
             auto sc_mode = cfg::get().pe_params.param_set.sm;
             EdgeId eid = candidates.back().e_;
+//In 2015 modes when trying to use already used unique edge, it is not added and path growing stops.
+//That allows us to avoid overlap removal hacks used earlier.
             if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
                 if (used_storage_->IsUsedAndUnique(eid)) {
                     return false;
@@ -1040,6 +1043,7 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
     std::shared_ptr<ExtensionChooser> extension_chooser_;
     ExtensionChooser::EdgeContainer sources_;
     std::shared_ptr<GapJoiner> gap_joiner_;
+//When check_sink_ set to false we can scaffold not only tips
     bool check_sink_;
     void InitSources() {
         sources_.clear();
@@ -1068,7 +1072,6 @@ public:
     }
 
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
-        //TODO :: removed condition  !IsSink(path.Back()); check.
         if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back())) ) {
             return false;
         }

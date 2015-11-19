@@ -1,18 +1,13 @@
-//
-// Created by lab42 on 8/18/15.
-//
-
 #pragma once
 #include "graph_pack.hpp"
 #include "logger/logger.hpp"
 
 namespace path_extend {
     typedef debruijn_graph::EdgeId EdgeId;
-    class ScaffoldingGenomeRepresentation {
 
-
-    };
-
+/* Storage of presumably unique, relatively long edges. Filled by ScaffoldingUniqueEdgeAnalyzer
+ *
+ */
     class ScaffoldingUniqueEdgeStorage {
         friend class ScaffoldingUniqueEdgeAnalyzer;
     private:
@@ -53,7 +48,9 @@ namespace path_extend {
 
     };
 
-
+/* Auxillary class required to fillin the unique edge storage.
+ *
+ */
     class ScaffoldingUniqueEdgeAnalyzer {
 
     ;
@@ -65,16 +62,10 @@ namespace path_extend {
     protected:
         DECL_LOGGER("ScaffoldingUniqueEdgeAnalyzer")
 
-        void SetInsertSizeBasedCutoff() {
-//TODO: here should be something interesting, like max(cutoff, max(IS))
-            return;
-        }
 
         void SetCoverageBasedCutoff();
     public:
-//default: 1000, 1.5 ?
         ScaffoldingUniqueEdgeAnalyzer(const debruijn_graph::conj_graph_pack &gp, size_t apriori_length_cutoff, double max_relative_coverage):gp_(gp), length_cutoff_(apriori_length_cutoff), relative_coverage_variation_(max_relative_coverage){
-            SetInsertSizeBasedCutoff();
             SetCoverageBasedCutoff();
         }
         void FillUniqueEdgeStorage(ScaffoldingUniqueEdgeStorage &storage_);

@@ -333,6 +333,7 @@ public:
         DEBUG("Contigs written");
     }
 //TODO: exterminate code dup
+//Output path with misassemblies check
     void WritePathsToFASTG(const PathContainer& paths, const string& filename, const string& fastafilename, const debruijn_graph::conj_graph_pack &gp, shared_ptr<ScaffoldingUniqueEdgeStorage> storage) const {
         BidirectionalPathMap< string > ids;
         BidirectionalPathMap< set<string> > next_ids;
