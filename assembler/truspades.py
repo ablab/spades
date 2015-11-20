@@ -9,22 +9,13 @@ import logging
 
 import os
 import sys
+import spades_init
+spades_init.init()
+truspades_home = spades_init.spades_home
+bin_home = spades_init.bin_home
+spades_version = spades_init.spades_version
 
-truspades_home = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-bin_home = os.path.join(truspades_home, 'bin')
-python_modules_home = os.path.join(truspades_home, 'src')
-
-if os.path.isfile(os.path.join(truspades_home, 'spades')):
-    install_prefix = os.path.dirname(truspades_home)
-    bin_home = os.path.join(install_prefix, 'bin')
-    truspades_home = os.path.join(install_prefix, 'share', 'spades')
-    python_modules_home = truspades_home
-
-sys.path.append(os.path.join(python_modules_home, "spades_pipeline", "common"))
-sys.path.append(os.path.join(python_modules_home, "spades_pipeline", "truspades"))
-sys.path.append(os.path.join(python_modules_home, "spades_pipeline"))
-
-import SeqIO
+import SeqIO  # TODO: add to ext/scr/python_libs
 import parallel_launcher
 import reference_construction
 import launch_options
@@ -149,7 +140,7 @@ def CheckTestSuccess(options, log):
 
 
 def main(argv):
-    options = launch_options.Options(argv, bin_home, truspades_home)
+    options = launch_options.Options(argv, bin_home, truspades_home, spades_version)
     support.ensure_dir_existence(options.output_dir)
     log = create_log(options)
     dataset_file = os.path.join(options.output_dir, "dataset.info")

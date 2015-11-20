@@ -145,8 +145,11 @@ reads_options = list(map(lambda x: "--" + x.split('=')[0], reads_options))
 reads_options += OLD_STYLE_READS_OPTIONS
 
 
-def version(spades_version):
-    sys.stderr.write("SPAdes v" + str(spades_version) + "\n")
+def version(spades_version, mode=None):
+    sys.stderr.write("SPAdes v" + str(spades_version))
+    if mode is not None:
+        sys.stderr.write(" (" + mode + " mode)")
+    sys.stderr.write("\n")
     sys.stderr.flush()
 
 
@@ -154,7 +157,8 @@ def usage(spades_version, show_hidden=False, dipspades=False):
     if not dipspades:
         sys.stderr.write("SPAdes genome assembler v" + str(spades_version) + "\n\n")
     else:
-        sys.stderr.write("dipSPAdes 1.0: genome assembler designed for diploid genomes with high heterozygosity rate\n\n")
+        sys.stderr.write("dipSPAdes v" + str(spades_version) +
+                         ": genome assembler designed for diploid genomes with high heterozygosity rate\n\n")
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Basic options:" + "\n")

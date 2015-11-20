@@ -17,6 +17,9 @@ import support
 import options_storage
 import dipspades_logic
 import spades_init
+spades_init.init()
+spades_version = spades_init.spades_version
+
 
 def main():
     all_long_options = list(set(options_storage.long_options + dipspades_logic.DS_Args_List.long_options))
@@ -30,11 +33,11 @@ def main():
     except getopt.GetoptError:
         _, exc, _ = sys.exc_info()
         sys.stderr.write(str(exc) + "\n")
-        options_storage.usage("", dipspades=True)
+        options_storage.usage(spades_version, dipspades=True)
         sys.stderr.flush()
         sys.exit(1)
     if not options:
-        options_storage.usage("", dipspades=True)
+        options_storage.usage(spades_version, dipspades=True)
         sys.stderr.flush()
         sys.exit(1)
 
@@ -53,11 +56,14 @@ def main():
             output_dir = abspath(expanduser(arg))
         elif opt == '--careful' or opt == '--mismatch-correction':
             continue
+        if opt == '-v' or opt == '--version':
+            options_storage.version(spades_version, mode="dipSPAdes")
+            sys.exit(0)
         if opt == '-h' or opt == '--help':
-            options_storage.usage("", dipspades=True)
+            options_storage.usage(spades_version, dipspades=True)
             sys.exit(0)
         elif opt == "--help-hidden":
-            options_storage.usage("", show_hidden=True, dipspades=True)
+            options_storage.usage(spades_version, show_hidden=True, dipspades=True)
             sys.exit(0)
         # for all other options
         cur_opt_arg = [opt]
