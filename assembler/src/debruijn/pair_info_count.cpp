@@ -212,11 +212,16 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         const auto& lib = cfg::get().ds.reads[i];
-        if (lib.is_contig_lib() && !lib.is_pacbio_alignable()) {
+        if (lib.is_pacbio_alignable()) {
+            INFO("Library #" << i << " was mapped by PacBio mapper, skipping");
+            continue;
+        }
+        else if (lib.is_contig_lib()) {
             INFO("Mapping contigs library #" << i);
             ProcessSingleReads(gp, i, false);
 		}
         else if (cfg::get().bwa.on && lib.is_bwa_alignable()) {
+            INFO("Library #" << i << " was mapped by BWA, skipping");
             continue;
         }
         else {

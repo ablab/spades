@@ -164,8 +164,8 @@ class SequencingLibraryBase {
       return is_graph_contructable();
   }
 
-  bool needs_binary_coversion() {
-      return is_graph_contructable() || is_mismatch_correctable() || (is_paired() && !is_bwa_alignable());
+  bool is_binary_covertable() {
+      return is_graph_contructable() || is_mismatch_correctable() || is_paired();
   }
 
   bool is_paired() const {

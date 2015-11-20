@@ -26,7 +26,7 @@ namespace debruijn_graph {
 class ReadConverter {
 
 private:
-    const static size_t current_binary_format_version = 9;
+    const static size_t current_binary_format_version = 10;
 
     void convert_reads_to_binary() {
         if (path::FileExists(cfg::get().temp_bin_reads_info)) {
@@ -55,6 +55,7 @@ private:
 
                 auto &dataset = cfg::get_writable().ds.reads;
                 for (size_t i = 0; i < dataset.lib_count(); ++i) {
+                    info >> dataset[i].data().binary_coverted;
                     info >> dataset[i].data().read_length;
                     info >> dataset[i].data().total_nucls;
 
@@ -78,7 +79,11 @@ private:
 
         INFO("Converting reads to binary format (takes a while)");
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
-            if (dataset[i].needs_binary_coversion() || (dataset[i].is_bwa_alignable() && !cfg::get().bwa.on)) {
+            if (cfg::get().bwa.on && dataset[i].is_bwa_alignable()) {
+                INFO("Library #" << i << " will be used by BWA only and thus will not be converted");
+                continue;
+            }
+            else if (dataset[i].is_binary_covertable()) {
                 INFO("Paired reads for library #" << i);
                 dataset[i].data().thread_num = cfg::get().max_threads;
                 dataset[i].data().paired_read_prefix = cfg::get().paired_read_prefix + "_" + ToString(i);
@@ -101,6 +106,10 @@ private:
                 paired_stat.merge(single_stat);
                 dataset[i].data().read_length = paired_stat.max_len_;
                 dataset[i].data().total_nucls = paired_stat.total_len_;
+                dataset[i].data().binary_coverted = true;
+            }
+            else {
+                INFO("Library #" << i << " doesn't need to be converted");
             }
         }
         info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
@@ -108,7 +117,9 @@ private:
                 total_stat.read_count_ << " " << total_stat.max_len_ << " " << total_stat.total_len_ << "\n";
 
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
-            info << dataset[i].data().read_length << " " << dataset[i].data().total_nucls << "\n";
+            info << dataset[i].data().binary_coverted
+                << " " << dataset[i].data().read_length
+                << " " << dataset[i].data().total_nucls << "\n";
         }
         info.close();
     }
@@ -130,6 +141,7 @@ io::BinaryPairedStreams raw_paired_binary_readers(const io::SequencingLibrary<de
                                                                    bool followed_by_rc,
                                                                    size_t insert_size = 0) {
     convert_if_needed();
+    VERIFY_MSG(lib.data().binary_coverted, "Lib was not converted to binary, cannot produce binary stream");
 
     io::ReadStreamList<io::PairedReadSeq> paired_streams;
     for (size_t i = 0; i < lib.data().thread_num; ++i) {
@@ -143,6 +155,7 @@ io::BinarySingleStreams raw_single_binary_readers(const io::SequencingLibrary<de
                                                                    bool followed_by_rc,
                                                                    bool including_paired_reads) {
     convert_if_needed();
+    VERIFY_MSG(lib.data().binary_coverted, "Lib was not converted to binary, cannot produce binary stream");
 
     io::BinarySingleStreams single_streams;
     for (size_t i = 0; i < lib.data().thread_num; ++i) {

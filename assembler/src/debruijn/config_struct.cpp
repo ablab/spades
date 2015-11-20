@@ -37,6 +37,7 @@ struct convert<io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetDat
       node["insert size distribution"]   = data.insert_size_distribution;
       node["average coverage"]           = data.average_coverage;
       node["pi threshold"]               = data.pi_threshold;
+      node["binary converted"]           = data.binary_coverted;
       node["single reads mapped"]        = data.single_reads_mapped;
 
       return node;
@@ -60,6 +61,7 @@ struct convert<io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetDat
 
       data.average_coverage           = node["average coverage"].as<double>(0.0);
       data.pi_threshold               = node["pi threshold"].as<double>(0.0);
+      data.binary_coverted            = node["binary converted"].as<bool>(false);
       data.single_reads_mapped        = node["single reads mapped"].as<bool>(false);
 
       return true;

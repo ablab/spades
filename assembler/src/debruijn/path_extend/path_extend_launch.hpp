@@ -443,19 +443,19 @@ inline bool instanceof(const T *ptr) {
 
 //Used for debug purpose only
 inline void PrintExtenders(vector<shared_ptr<PathExtender> >& extenders) {
-    INFO("Extenders in vector:");
+    DEBUG("Extenders in vector:");
     for(size_t i = 0; i < extenders.size(); ++i) {
         string type = typeid(*extenders[i]).name();
-        INFO("Extender #i" << type);
+        DEBUG("Extender #i" << type);
         if (instanceof<SimpleExtender>(extenders[i].get())) {
             auto ec = ((SimpleExtender *) extenders[i].get())->GetExtensionChooser();
             string chooser_type = typeid(*ec).name();
-            INFO("    Extender #i" << chooser_type);
+            DEBUG("    Extender #i" << chooser_type);
         }
         else if (instanceof<ScaffoldingPathExtender>(extenders[i].get())) {
             auto ec = ((ScaffoldingPathExtender *) extenders[i].get())->GetExtensionChooser();
             string chooser_type = typeid(*ec).name();
-            INFO("    Extender #i" << chooser_type);
+            DEBUG("    Extender #i" << chooser_type);
         }
     }
 }

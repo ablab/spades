@@ -426,6 +426,7 @@ struct debruijn_config {
         double insert_size_mad;
         std::map<int, size_t> insert_size_distribution;
 
+        bool binary_coverted;
         bool single_reads_mapped;
 
         uint64_t total_nucls;
@@ -443,6 +444,7 @@ struct debruijn_config {
                 insert_size_right_quantile(0.0),
                 median_insert_size(0.0),
                 insert_size_mad(0.0),
+                binary_coverted(false),
                 single_reads_mapped(false),
                 total_nucls(0),
                 average_coverage(0.0),
