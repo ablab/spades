@@ -90,7 +90,7 @@ namespace path_extend {
 //TODO: optimization possible. Precompute all pairs of interesting connected vertex.
         DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
                 DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, max_connection_length_));
-        dijkstra.run(g_.EdgeEnd(e));
+        dijkstra.Run(g_.EdgeEnd(e));
         for (auto v: dijkstra.ReachedVertices()) {
             for (auto connected: g_.OutgoingEdges(v)) {
                 result.insert(connected);

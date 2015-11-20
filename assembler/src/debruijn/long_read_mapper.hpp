@@ -54,16 +54,29 @@ public:
     }
 
     virtual void ProcessPairedRead(size_t ,
+                                   const io::PairedReadSeq&,
                                    const MappingPath<EdgeId>& ,
+                                   const MappingPath<EdgeId>&) {
+        //nothing to do
+    }
+
+    virtual void ProcessPairedRead(size_t ,
+                                   const io::PairedRead&,
                                    const MappingPath<EdgeId>& ,
-                                   size_t ) {
+                                   const MappingPath<EdgeId>&) {
         //nothing to do
     }
 
     virtual void ProcessSingleRead(size_t thread_index,
+                                   const io::SingleRead&,
                                    const MappingPath<EdgeId>& read) {
-        vector<EdgeId> path = ProcessSingleRead(read);
-        buffer_storages_[thread_index]->AddPath(path, 1, true);
+        ProcessSingleRead(thread_index, read);
+    }
+
+    virtual void ProcessSingleRead(size_t thread_index,
+                                   const io::SingleReadSeq&,
+                                   const MappingPath<EdgeId>& read) {
+        ProcessSingleRead(thread_index, read);
     }
 
     PathStorage<conj_graph_pack::graph_t>& GetPaths() {
@@ -71,8 +84,10 @@ public:
     }
 
 private:
-    vector<EdgeId> ProcessSingleRead(const MappingPath<EdgeId>& path) const {
-        return mapper_->FindReadPath(path);
+
+    void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& read) {
+        vector<EdgeId> path = mapper_->FindReadPath(read);
+        buffer_storages_[thread_index]->AddPath(path, 1, true);
     }
 
     conj_graph_pack& gp_;

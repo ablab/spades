@@ -71,11 +71,10 @@ class SplitPathConstructor {
         TRACE("Preparing path_processor for this base edge");
         size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), (size_t) is, is_var);
 
-        PathStorageCallback<Graph> callback(graph_);
+        //FIXME is path_upper_bound enough?
         PathProcessor<Graph> path_processor(graph_,
-                                            path_upper_bound,
-                                            path_upper_bound,
-                                            graph_.EdgeEnd(cur_edge), graph_.EdgeStart(cur_edge), callback);
+                                            graph_.EdgeEnd(cur_edge),
+                                            path_upper_bound);
 
         TRACE("Path_processor is done");
 
@@ -88,6 +87,7 @@ class SplitPathConstructor {
             DEBUG("SPC: pi " << cur_info);
             vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge, cur_info.second,
                                                            (size_t) (cur_info.d() - cur_info.var()),
+                                                           //FIXME is it a bug?!
                                                            (size_t) (cur_info.d() - cur_info.var()),
                                                            path_processor);
             DEBUG("Found common part of size " << common_part.size());

@@ -1,6 +1,5 @@
 ############################################################################
 # Copyright (c) 2015 Saint Petersburg State University
-# Copyright (c) 2011-2014 Saint Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
@@ -18,7 +17,7 @@ __author__ = 'anton'
 class Barcode:
     def __init__(self, id, libs):
         self.id = id
-        self.libs = libs
+        self.libs = list(libs)
         if id == None:
             self.set_lcs_id()
 
@@ -54,7 +53,7 @@ def check_int_ids(ids):
     return True
 
 def generate_barcode_list(barcodes):
-    ids = zip(barcodes, generate_ids(barcodes))
+    ids = list(zip(barcodes, generate_ids(barcodes)))
     if check_int_ids(ids):
         ids = sorted(ids, key=lambda barcode: int(barcode[1]))
     return [(bid, "BC_" + short_id) for bid, short_id in ids]
@@ -66,7 +65,7 @@ def GroupBy(norm, l):
     result = dict()
     for line in l:
         key = norm(line)
-        if not result.has_key(key):
+        if not key in result:
             result[key] = []
         result[key].append(line)
     return result
@@ -86,9 +85,9 @@ def ExtractBarcodes(dirs):
         for file in [os.path.abspath(os.path.join(dir, file)) for file in os.listdir(dir) if os.path.isfile(os.path.join(dir, file))]:
             files.append(file)
     barcode_dict = GroupBy(Normalize, files)
-    if not CheckSameSize(barcode_dict.itervalues()):
+    if not CheckSameSize(barcode_dict.values()):
         return None
-    for bid in list(barcode_dict.iterkeys()):
+    for bid in barcode_dict.keys():
         barcode_dict[bid] = GroupBy(NormalizeR, barcode_dict[bid]).values()
         if not CheckSameSize(barcode_dict[bid], 2):
             return None
@@ -105,7 +104,7 @@ def ReadDataset(file, log):
             line = line.strip()
             if line == "":
                 continue
-            split = line.split(" ")
+            split = line.split()
             id = split[0]
             datasets = []
             for i in range(1, len(split), 2):
@@ -118,6 +117,6 @@ def ReadDataset(file, log):
         sys.exit(1)
 
 def print_dataset(dataset, output_file, log):
-    log.info("Printing dataset to " + output_file + "\n")
+    log.info("Printing dataset to " + output_file)
     open(output_file, "w").write("\n".join([str(line).strip() for line in dataset]) + "\n")
 

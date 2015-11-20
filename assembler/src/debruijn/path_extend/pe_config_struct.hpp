@@ -172,6 +172,10 @@ struct pe_config {
       size_t artificial_gap;
 
       bool use_old_score;
+
+      size_t min_overlap_length;
+      double flank_addition_coefficient;
+      double flank_multiplication_coefficient;
     } scaffolder_options;
 
 
@@ -181,6 +185,13 @@ struct pe_config {
     } loop_removal;
 
     bool remove_overlaps;
+    bool use_coordinated_coverage;
+
+    struct CoordinatedCoverageT {
+      size_t max_edge_length_in_repeat;
+      double delta;
+    } coordinated_coverage;
+
   };
 
   struct LongReads {

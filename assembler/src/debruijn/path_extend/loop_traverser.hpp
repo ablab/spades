@@ -145,7 +145,7 @@ private:
                 nLen = 0;
             } else {
                 DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, 1000, 3000));
-                dijkstra.run(lastVertex);
+                dijkstra.Run(lastVertex);
                 vector<EdgeId> shortest_path = dijkstra.GetShortestPathTo(g_.EdgeStart(endPath->Front()));
 
                 if (shortest_path.size() == 0) {
@@ -166,7 +166,7 @@ private:
 			startPath->PushBack(endPath->At(commonSize), (int) nLen);
 		}
 		for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
-            startPath->PushBack(endPath->At(i), endPath->GapAt(i));
+            startPath->PushBack(endPath->At(i), endPath->GapAt(i), endPath->TrashPreviousAt(i), endPath->TrashCurrentAt(i));
 		}
 		DEBUG("travers");
 		startPath->Print();

@@ -64,7 +64,7 @@ protected:
 
     MapDataT * empty_;
 
-    virtual void EdgeAdded(EdgeId e, BidirectionalPath * path, int /*gap*/) {
+    virtual void EdgeAdded(EdgeId e, BidirectionalPath * path, Gap /*gap*/) {
         auto iter = edgeCoverage_.find(e);
         if (iter == edgeCoverage_.end()) {
             edgeCoverage_.insert(std::make_pair(e, new MapDataT()));
@@ -127,11 +127,11 @@ public:
 		}
 	}
 
-    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap) {
+    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) {
         EdgeAdded(e, path, gap);
     }
 
-    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, int gap) {
+    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) {
         EdgeAdded(e, path, gap);
     }
 
@@ -420,7 +420,7 @@ private:
             ++i;
 
             while(i < path.Size() and path.GapAt(i) <= min_gap_) {
-                p->PushBack(path[i], path.GapAt(i));
+                p->PushBack(path[i], path.GapAt(i), path.TrashPreviousAt(i), path.TrashCurrentAt(i));
                 ++i;
             }
             if (i < path.Size()) {

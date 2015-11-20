@@ -1,8 +1,9 @@
-//****************************************************************************
-//* Copyright (c) 2011-2014 Saint-Petersburg Academic University
+//***************************************************************************
+//* Copyright (c) 2015 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
-//****************************************************************************
+//***************************************************************************
 
 #include "standard.hpp"
 #include "graph_simplification.hpp"
@@ -25,8 +26,10 @@ void ProcessReadsBatch(conj_graph_pack &gp,
                                               pacbio::GapStorage<Graph>(gp.g, min_gap_quantity));
     vector<pacbio::StatsCounter> stats_by_thread(cfg::get().max_threads);
 
+    size_t longer_500 = 0;
     size_t aligned = 0;
     size_t nontrivial_aligned = 0;
+
 #   pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n, aligned, nontrivial_aligned)
     for (size_t i = 0; i < buf_size; ++i) {
         if (i % 1000 == 0) {
@@ -51,13 +54,17 @@ void ProcessReadsBatch(conj_graph_pack &gp,
 #       pragma omp critical
         {
 //            INFO(current_read_mapping.seed_num);
-            if (aligned_edges.size() > 0) {
-                aligned ++;
-                stats_by_thread[thread_num].seeds_percentage[size_t (floor(double(current_read_mapping.seed_num) * 1000.0 / (double) seq.size()))] ++;
-                for (size_t j = 0; j < aligned_edges.size(); j ++){
-                    if (aligned_edges[j].size() > 1) {
-                        nontrivial_aligned ++;
-                        break;
+            if (seq.size() > 500) {
+                longer_500++;
+                if (aligned_edges.size() > 0) {
+                    aligned++;
+                    stats_by_thread[thread_num].seeds_percentage[size_t(
+                            floor(double(current_read_mapping.seed_num) * 1000.0 / (double) seq.size()))]++;
+                    for (size_t j = 0; j < aligned_edges.size(); j++) {
+                        if (aligned_edges[j].size() > 1) {
+                            nontrivial_aligned++;
+                            break;
+                        }
                     }
                 }
             }
@@ -67,7 +74,8 @@ void ProcessReadsBatch(conj_graph_pack &gp,
             VERBOSE_POWER(n, " reads processed");
         }
     }
-    INFO("Read batch of size: " << buf_size << " processed; reads aligned: " << aligned << "; paths of more than one edge received: " << nontrivial_aligned );
+    INFO("Read batch of size: " << buf_size << " processed; "<< longer_500 << " of them longer than 500; among long reads aligned: " << aligned << "; paths of more than one edge received: " << nontrivial_aligned );
+
     for (size_t i = 0; i < cfg::get().max_threads; i++) {
         long_reads.AddStorage(long_reads_by_thread[i]);
         gaps.AddStorage(gaps_by_thread[i]);
@@ -112,7 +120,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
                                                          cfg::get().K, cfg::get().pb.ignore_middle_alignment);
 
 //    path_extend::ContigWriter cw(gp.g);
-//    cw.writeEdges("before_rr_with_ids.fasta");
+//    cw.WriteEdges("before_rr_with_ids.fasta");
 //    ofstream filestr("pacbio_mapped.mpr");
 //    filestr.close();
     for (auto iter = streams.begin(); iter != streams.end(); ++iter) {
@@ -132,8 +140,9 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     INFO("For lib " << lib_id << " of " << ss <<" :");
     stats.report();
     map<EdgeId, EdgeId> replacement;
+    size_t min_stats_cutoff =(rtype == 1 ? 1  : 0);
     long_reads.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
-                          replacement, true);
+                          replacement, min_stats_cutoff, true);
     gaps.DumpToFile(cfg::get().output_saves + "gaps.mpr");
     gaps.PadGapStrings();
     gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");

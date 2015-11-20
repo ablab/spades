@@ -41,10 +41,11 @@ protected:
         make_dir(curr_env.folder_);
         stringstream namestream;
         namestream << curr_env.folder_ << "/" << curr_env.GetFormattedPictureCounter() << "_" << curr_env.file_name_base_ << "/";
-        make_dir(namestream.str());
+        string directory = namestream.str();
+        make_dir(directory);
         namestream << label << "_";
         omnigraph::visualization::WriteComponentsAlongPath<Graph>(curr_env.graph(), path, namestream.str(), curr_env.coloring_, curr_env.labeler());
-        LOG("The pictures is written to " << namestream.str());
+        LOG("The pictures is written to " << directory);
 
         curr_env.picture_counter_++;
     }
@@ -68,7 +69,7 @@ protected:
         namestream << label;
         make_dir(namestream.str());
         omnigraph::visualization::WriteSizeLimitedComponents<Graph>(curr_env.graph(), namestream.str(), omnigraph::ConnectedSplitter<Graph>(curr_env.graph()), curr_env.coloring_, curr_env.labeler(), min_size, max_size, 10000000);
-        cout << "The pictures is written to " << namestream.str() << endl;
+        LOG("The pictures is written to " << namestream.str());
         curr_env.picture_counter_++;
     }
 

@@ -72,10 +72,9 @@ class PrintPathsCommand : public LocalCommand<DebruijnEnvironment> {
 
     TRACE("Looking for the paths");
     PathStorageCallback<Graph> callback(curr_env.graph());
-    PathProcessor<Graph> pp(graph, 0, max_length,
+    ProcessPaths(graph, 0, max_length,
         curr_env.finder().ReturnVertexId(from),
         curr_env.finder().ReturnVertexId(to), callback);
-    pp.Process();
     const vector<Path>& paths = callback.paths();
 
     cout << paths.size() << " path(s) have been found : " << endl;

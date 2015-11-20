@@ -272,7 +272,7 @@ public:
 };
 
 class CoverageAwareIdealInfoProvider : public BasicIdealInfoProvider {
-    static constexpr double MAGIC_COEFF = 1.6;
+    static constexpr double MAGIC_COEFF = 2.;
 	const Graph& g_;
     size_t read_length_; 
     size_t estimation_edge_length_;

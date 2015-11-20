@@ -1,6 +1,5 @@
 ############################################################################
 # Copyright (c) 2015 Saint Petersburg State University
-# Copyright (c) 2011-2014 Saint Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
@@ -22,7 +21,7 @@ def align_bwa_pe_lib(command, index, reads_file1, reads_file2, work_dir, log, th
     result = os.path.join(work_dir, "alignment.sam")
     log.info("Starting alignment of reads using bwa. See detailed log in " + log_file)
     log.info("Starting read alignment. See detailed log in " + log_file)
-    support.universal_sys_call([command, "mem", index, reads_file1, reads_file2, "-t", str(threads), "-S", "-M"], log, result, err_log_file)
+    support.universal_sys_call([command, "mem", "-t", str(threads), "-S", "-M", index, reads_file1, reads_file2], log, result, err_log_file)
     log.info("Done. See result in " + result)
     return result
 
@@ -35,8 +34,8 @@ def index_bwa(command, log, reference, work_dir, algorithm = "is"):
     index = os.path.join(work_dir, "index")
     log_file = os.path.join(work_dir, "output.log")
     err_log_file = os.path.join(work_dir, "err_output")
-    log.info(" ".join([command, "index", "-a", algorithm, reference, "-p", index]))
-    support.universal_sys_call([command, "index", "-a", algorithm, reference, "-p", index], log, log_file, err_log_file)
+    log.info(" ".join([command, "index", "-a", algorithm, "-p", index, reference]))
+    support.universal_sys_call([command, "index", "-a", algorithm, "-p", index, reference], log, log_file, err_log_file)
     log.info("Index constructed.")
     return index
 

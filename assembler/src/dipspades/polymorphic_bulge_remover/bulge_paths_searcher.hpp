@@ -38,7 +38,7 @@ public:
 	vector<VertexId> VerticesReachedFrom(VertexId start_vertex) {
 		auto bounded_dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(this->graph_,
 				this->search_depth_, this->max_neigh_number_);
-		bounded_dijkstra.run(start_vertex);
+		bounded_dijkstra.Run(start_vertex);
 		TRACE("Reached vertices size - " << bounded_dijkstra.ReachedVertices());
 		return bounded_dijkstra.ReachedVertices();
 	}
@@ -46,7 +46,7 @@ public:
 	vector<vector<EdgeId> > GetAllPathsTo(VertexId start_vertex, VertexId end_vertex) {
 		auto bounded_dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(this->graph_,
 				this->search_depth_, this->max_neigh_number_);
-		bounded_dijkstra.run(start_vertex);
+		bounded_dijkstra.Run(start_vertex);
 
 		vector<vector<EdgeId> > alternative_paths;
 		auto shortest_path = bounded_dijkstra.GetShortestPathTo(end_vertex);
@@ -82,15 +82,14 @@ public:
 	vector<VertexId> VerticesReachedFrom(VertexId start_vertex) {
 		auto bounded_dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(this->graph_,
 				this->search_depth_);
-		bounded_dijkstra.run(start_vertex);
+		bounded_dijkstra.Run(start_vertex);
 		return bounded_dijkstra.ReachedVertices();
 	}
 
 	vector<vector<EdgeId> > GetAllPathsTo(VertexId start_vertex, VertexId end_vertex) {
 		PathStorageCallback<Graph> callback(this->graph_);
-		PathProcessor<Graph> path_processor(this->graph_, 0, this->search_depth_,
+		ProcessPaths(this->graph_, 0, this->search_depth_,
 				start_vertex, end_vertex, callback);
-		path_processor.Process();
 		return callback.paths();
 	}
 };

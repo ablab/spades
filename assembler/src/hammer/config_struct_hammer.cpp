@@ -39,7 +39,8 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt) {
   load(cfg.count_numfiles, pt, "count_numfiles");
   load(cfg.count_merge_nthreads, pt, "count_merge_nthreads");
   load(cfg.count_split_buffer, pt, "count_split_buffer");
-
+  load(cfg.count_filter_singletons, pt, "count_filter_singletons");
+  
   load(cfg.hamming_do, pt, "hamming_do");
   load(cfg.hamming_blocksize_quadratic_threshold, pt, "hamming_blocksize_quadratic_threshold");
 
@@ -53,6 +54,7 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt) {
   load(cfg.bayes_hammer_mode, pt, "bayes_hammer_mode");
   load(cfg.bayes_write_bad_kmers, pt, "bayes_write_bad_kmers");
   load(cfg.bayes_write_solid_kmers, pt, "bayes_write_solid_kmers");
+  load(cfg.bayes_initial_refine, pt, "bayes_initial_refine");
 
   load(cfg.expand_do, pt, "expand_do");
   load(cfg.expand_max_iterations, pt, "expand_max_iterations");

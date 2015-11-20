@@ -59,13 +59,14 @@ class GraphDistanceFinder {
 
     DistancesLengthsCallback<Graph> callback(graph_);
 
-    PathProcessor<Graph> paths_proc(graph_, path_lower_bounds, path_upper_bound,
-                                    graph_.EdgeEnd(e1), end_points, callback);
+    PathProcessor<Graph> paths_proc(graph_, graph_.EdgeEnd(e1), path_upper_bound);
 
-    paths_proc.Process();
+    for (size_t i = 0; i < end_points.size(); ++i) {
+        //FIXME should max dist also depend on the point?
+        paths_proc.Process(end_points[i], path_lower_bounds[i], path_upper_bound, callback);
+    }
 
     vector<GraphLengths> result;
-
 
     size_t i = 0;
     for (auto& entry : second_edges) {

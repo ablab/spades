@@ -149,4 +149,13 @@ class KMerHamClusterer {
   DECL_LOGGER("Hamming Clustering");
 };
 
+class TauOneKMerHamClusterer {
+ public:
+  TauOneKMerHamClusterer() {} 
+  void cluster(const std::string &prefix, const KMerData &data, ConcurrentDSU &uf);
+ private:
+  DECL_LOGGER("tau = 1 Hamming Clustering");
+};
+
+
 #endif // HAMMER_SUBKMER_SORTER_HPP

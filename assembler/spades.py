@@ -398,6 +398,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if options_storage.bh_heap_check:
             cfg["error_correction"].__dict__["heap_check"] = options_storage.bh_heap_check
         cfg["error_correction"].__dict__["iontorrent"] = options_storage.iontorrent
+        if options_storage.meta:
+            cfg["error_correction"].__dict__["count_filter_singletons"] = 1
 
     # assembly
     if not options_storage.only_error_correction:
@@ -651,8 +653,11 @@ def main(args):
             if options_storage.stop_after == 'ec':
                 support.finish_here(log)
 
-        result_contigs_filename = os.path.join(cfg["common"].output_dir, "contigs.fasta")
-        result_scaffolds_filename = os.path.join(cfg["common"].output_dir, "scaffolds.fasta")
+        result_contigs_filename = os.path.join(cfg["common"].output_dir, options_storage.contigs_name)
+        result_scaffolds_filename = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_name)
+        result_assembly_graph_filename = os.path.join(cfg["common"].output_dir, options_storage.assembly_graph_name)
+        result_contigs_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.contigs_paths)
+        result_scaffolds_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_paths)
         truseq_long_reads_file_base = os.path.join(cfg["common"].output_dir, "truseq_long_reads")
         truseq_long_reads_file = truseq_long_reads_file_base + ".fasta"
         misc_dir = os.path.join(cfg["common"].output_dir, "misc")
@@ -664,6 +669,9 @@ def main(args):
             spades_cfg = merge_configs(cfg["assembly"], cfg["common"])
             spades_cfg.__dict__["result_contigs"] = result_contigs_filename
             spades_cfg.__dict__["result_scaffolds"] = result_scaffolds_filename
+            spades_cfg.__dict__["result_graph"] = result_assembly_graph_filename
+            spades_cfg.__dict__["result_contigs_paths"] = result_contigs_paths_filename
+            spades_cfg.__dict__["result_scaffolds_paths"] = result_scaffolds_paths_filename
 
             if options_storage.continue_mode and (os.path.isfile(spades_cfg.result_contigs)
                                                   or ("mismatch_corrector" in cfg and
@@ -680,10 +688,9 @@ def main(args):
             else:
                 old_result_files = [result_contigs_filename, result_scaffolds_filename,
                                     assembled_contigs_filename, assembled_scaffolds_filename]
-                for format in [".fasta", ".fastg"]:
-                    for old_result_file in old_result_files:
-                        if os.path.isfile(old_result_file[:-6] + format):
-                            os.remove(old_result_file[:-6] + format)
+                for old_result_file in old_result_files:
+                    if os.path.isfile(old_result_file):
+                        os.remove(old_result_file)
 
                 if options_storage.restart_from == 'as':
                     support.continue_from_here(log)
@@ -769,9 +776,8 @@ def main(args):
                 for assembly_type, (old, new) in to_correct.items():
                     if options_storage.continue_mode and os.path.isfile(new):
                         continue
-                    for format in [".fasta", ".fastg"]:
-                        if os.path.isfile(old[:-6] + format):
-                            shutil.move(old[:-6] + format, new[:-6] + format)
+                    if os.path.isfile(old):
+                        shutil.move(old, new)
 
                 if options_storage.continue_mode and os.path.isfile(result_contigs_filename) and \
                     (os.path.isfile(result_scaffolds_filename) or not os.path.isfile(assembled_scaffolds_filename)) \
@@ -813,10 +819,6 @@ def main(args):
                         tmp_d = os.path.join(tmp_dir_for_corrector, "tmp")
                         if os.path.isdir(tmp_d) and not cfg["common"].developer_mode:
                             shutil.rmtree(tmp_d)
-
-                        assembled_fastg = assembled[:-6] + ".fastg"
-                        if os.path.isfile(assembled_fastg):
-                            support.create_fastg_from_fasta(corrected, assembled_fastg, log)
                     log.info("\n===== %s finished.\n" % STAGE_NAME)
                 if options_storage.stop_after == 'mc':
                     support.finish_here(log)
@@ -830,13 +832,20 @@ def main(args):
                 log.info(" * Corrected reads are in " + support.process_spaces(os.path.dirname(corrected_dataset_yaml_filename) + "/"))
             if "assembly" in cfg and os.path.isfile(result_contigs_filename):
                 message = " * Assembled contigs are in " + support.process_spaces(result_contigs_filename)
-                if os.path.isfile(result_contigs_filename[:-6] + ".fastg"):
-                    message += " (" + os.path.basename(result_contigs_filename[:-6] + ".fastg") + ")"
                 log.info(message)
             if "assembly" in cfg and os.path.isfile(result_scaffolds_filename):
                 message = " * Assembled scaffolds are in " + support.process_spaces(result_scaffolds_filename)
-                if os.path.isfile(result_scaffolds_filename[:-6] + ".fastg"):
-                    message += " (" + os.path.basename(result_scaffolds_filename[:-6] + ".fastg") + ")"
+                log.info(message)
+            if "assembly" in cfg and os.path.isfile(result_assembly_graph_filename):
+                message = " * Assembly graph is in " + support.process_spaces(result_assembly_graph_filename)
+                log.info(message)
+            if "assembly" in cfg and os.path.isfile(result_contigs_paths_filename):
+                message = " * Paths in the assembly graph corresponding to the contigs are in " + \
+                          support.process_spaces(result_contigs_paths_filename)
+                log.info(message)
+            if "assembly" in cfg and os.path.isfile(result_scaffolds_paths_filename):
+                message = " * Paths in the assembly graph corresponding to the scaffolds are in " + \
+                          support.process_spaces(result_scaffolds_paths_filename)
                 log.info(message)
             #log.info("")
 

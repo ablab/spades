@@ -1,10 +1,3 @@
-//***************************************************************************
-//* Copyright (c) 2015 Saint Petersburg State University
-//* Copyright (c) 2011-2014 Saint Petersburg Academic University
-//* All Rights Reserved
-//* See file LICENSE for details.
-//***************************************************************************
-
 #ifndef COMPLETE_STRIPED_SMITH_WATERMAN_CPP_H_
 #define COMPLETE_STRIPED_SMITH_WATERMAN_CPP_H_
 
@@ -15,7 +8,7 @@
 namespace StripedSmithWaterman {
 
 struct Alignment {
-  uint16_t sw_score;           // The best alignment score 
+  uint16_t sw_score;           // The best alignment score
   uint16_t sw_score_next_best; // The next best alignment score
   int32_t  ref_begin;          // Reference begin position of the best alignment
   int32_t  ref_end;            // Reference end position of the best alignment
@@ -46,12 +39,12 @@ struct Filter {
   //       sw_score; sw_score_next_best; ref_end; query_end; ref_end_next_best.
   // NOTE: Only need score of alignments, please set 'report_begin_position'
   //       and 'report_cigar' false.
-  
-  bool report_begin_position;    // Give ref_begin and query_begin. 
+
+  bool report_begin_position;    // Give ref_begin and query_begin.
                                  //   If it is not set, ref_begin and query_begin are -1.
   bool report_cigar;             // Give cigar_string and cigar.
                                  //   report_begin_position is automatically TRUE.
-  
+
   // When *report_cigar* is true and alignment passes these two filters,
   //   cigar_string and cigar will be given.
   uint16_t score_filter;         // score >= score_filter
@@ -64,6 +57,13 @@ struct Filter {
     , score_filter(0)
     , distance_filter(32767)
   {};
+
+  Filter(const bool& pos, const bool& cigar, const uint16_t& score, const uint16_t& dis)
+    : report_begin_position(pos)
+    , report_cigar(cigar)
+    , score_filter(score)
+    , distance_filter(dis)
+    {};
 };
 
 class Aligner {
@@ -75,7 +75,7 @@ class Aligner {
   //             use the other constructor and pass the corresponding matrix in.
   // =========
   Aligner(void);
-  
+
   // =========
   // @function Construct an Aligner by assigning scores.
   //             The function will build the {A.C,G,T,N} aligner.
@@ -86,22 +86,22 @@ class Aligner {
           const uint8_t& mismatch_penalty,
 	  const uint8_t& gap_opening_penalty,
 	  const uint8_t& gap_extending_penalty);
-  
+
   // =========
   // @function Construct an Aligner by the specific matrixs.
   // =========
-  Aligner(const int8_t* score_matrix, 
+  Aligner(const int8_t* score_matrix,
           const int&    score_matrix_size,
           const int8_t* translation_matrix,
 	  const int&    translation_matrix_size);
-  
+
   ~Aligner(void);
 
   // =========
-  // @function Build the reference sequence and thus make 
+  // @function Build the reference sequence and thus make
   //             Align(const char* query, s_align* alignment) function;
   //             otherwise the reference should be given when aligning.
-  //           [NOTICE] If there exists a sequence, that one will be deleted 
+  //           [NOTICE] If there exists a sequence, that one will be deleted
   //                    and replaced.
   // @param    seq    The reference bases;
   //                  [NOTICE] It is not necessary null terminated.
@@ -122,7 +122,7 @@ class Aligner {
   };
 
   // =========
-  // @function Align the query againt the reference that is set by 
+  // @function Align the query againt the reference that is set by
   //             SetReferenceSequence.
   // @param    query     The query sequence.
   // @param    filter    The filter for the alignment.
@@ -133,7 +133,7 @@ class Aligner {
 
   // =========
   // @function Align the query againt the reference.
-  //           [NOTICE] The reference won't replace the reference 
+  //           [NOTICE] The reference won't replace the reference
   //                      set by SetReferenceSequence.
   // @param    query     The query sequence.
   // @param    ref       The reference sequence.
@@ -143,7 +143,7 @@ class Aligner {
   // @param    alignment The container contains the result.
   // @return   True: succeed; false: fail.
   // =========
-  bool Align(const char* query, const char* ref, const int& ref_len, 
+  bool Align(const char* query, const char* ref, const int& ref_len,
              const Filter& filter, Alignment* alignment) const;
 
   // @function Clear up all containers and thus the aligner is disabled.
@@ -167,24 +167,22 @@ class Aligner {
           const uint8_t& mismatch_penalty,
 	  const uint8_t& gap_opening_penalty,
 	  const uint8_t& gap_extending_penalty);
-  
+
   // =========
   // @function Construct an Aligner by the specific matrixs.
   //           [NOTICE] If the aligner is not cleaned, rebuilding will fail.
   // @return   True: succeed; false: fail.
   // =========
   bool ReBuild(
-          const int8_t* score_matrix, 
+          const int8_t* score_matrix,
           const int&    score_matrix_size,
           const int8_t* translation_matrix,
 	  const int&    translation_matrix_size);
-  
+
  private:
   int8_t* score_matrix_;
   int     score_matrix_size_;
   int8_t* translation_matrix_;
-  bool    default_matrix_;
-  bool    matrix_built_;
 
   uint8_t match_score_;           // default: 2
   uint8_t mismatch_penalty_;      // default: 2
@@ -197,9 +195,10 @@ class Aligner {
   int TranslateBase(const char* bases, const int& length, int8_t* translated) const;
   void SetAllDefault(void);
   void BuildDefaultMatrix(void);
-  
+  void ClearMatrices(void);
+
   Aligner& operator= (const Aligner&);
-  Aligner (const Aligner&); 
+  Aligner (const Aligner&);
 }; // class Aligner
 
 
@@ -208,11 +207,11 @@ class Aligner {
 // ================
 inline void Aligner::CleanReferenceSequence(void) {
   if (reference_length_ == 0) return;
-  
+
   // delete the current buffer
   if (reference_length_ > 1) delete [] translated_reference_;
   else delete translated_reference_;
-  
+
   reference_length_ = 0;
 }
 } // namespace StripedSmithWaterman

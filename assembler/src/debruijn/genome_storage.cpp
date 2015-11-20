@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2015 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 //
 // Created by lab42 on 8/19/15.
 //
@@ -27,7 +33,12 @@ namespace debruijn_graph {
         }
         return Sequence(ss.str());
     }
-
+    void GenomeStorage::SetSequence(const Sequence &s) {
+        s_ = s.str();
+    }
+    string GenomeStorage::str() const{
+        return s_;
+    }
     size_t GenomeStorage::size() const {
         return s_.size();
     }

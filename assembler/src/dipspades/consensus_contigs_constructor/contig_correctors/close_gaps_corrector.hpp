@@ -32,7 +32,7 @@ class CloseGapsCorrector : public AbstractContigCorrector{
 				VertexId end = g_.EdgeStart(path[i + 1]);
 				auto dijkstra = DijkstraHelper<Graph>::CreateTargeredBoundedDijkstra(g_,
 						end, dsp_cfg::get().pbr.max_bulge_nucls_len); //DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, dsp_cfg::get().pbr.max_bulge_nucls_len);
-				dijkstra.run(start);
+				dijkstra.Run(start);
 				if(dijkstra.DistanceCounted(end)){
 					vector<EdgeId> add_path = dijkstra.GetShortestPathTo(end);
 					for(auto e = add_path.begin(); e != add_path.end(); e++)
@@ -42,7 +42,7 @@ class CloseGapsCorrector : public AbstractContigCorrector{
 				else{
 					// second attempt
 					VertexId prev_start = g_.EdgeStart(cur_edge);
-					dijkstra.run(prev_start);
+					dijkstra.Run(prev_start);
 	               if(dijkstra.DistanceCounted(end)){
 	                    vector<EdgeId> add_path = dijkstra.GetShortestPathTo(end);
 						new_path.erase(new_path.begin() + new_path.size() - 1);

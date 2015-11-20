@@ -8,6 +8,7 @@
 #pragma once
 #include "perfcounter.hpp"
 
+#include <vector>
 #include <unordered_map>
 #include <string>
 #include <sstream>

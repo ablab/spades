@@ -1,6 +1,5 @@
 //***************************************************************************
 //* Copyright (c) 2015 Saint Petersburg State University
-//* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
@@ -31,7 +30,7 @@ void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
 	INFO("Preparing second phase");
 	gp.ClearRRIndices();
 
-	std::string old_pe_contigs_filename = cfg::get().output_dir + "scaffolds.fasta";
+	std::string old_pe_contigs_filename = cfg::get().output_dir + "final_contigs.fasta";
 	std::string new_pe_contigs_filename = cfg::get().output_dir + "first_pe_contigs.fasta";
 
     VERIFY(path::check_existence(old_pe_contigs_filename));

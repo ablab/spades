@@ -48,13 +48,18 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         stats::PrepareForDrawing(gp);
     }
 
-    VERIFY(cfg::get().pe_params.param_set.remove_overlaps);
     if (preliminary_) {
+        VERIFY(cfg::get().pe_params.param_set.remove_overlaps);
         INFO("Overlap removal disabled for first-stage rr")
         cfg::get_writable().pe_params.param_set.remove_overlaps = false;
     }
 
-    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", true);
+    OutputContigs(gp.g, cfg::get().output_dir + "before_rr");
+    OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph");
+    if (!preliminary_ && cfg::get().ds.meta) {
+        INFO("Coordinated coverage enabled")
+        cfg::get_writable().pe_params.param_set.use_coordinated_coverage = true;
+    }
 
     bool no_valid_libs = !HasValidLibs();
 
@@ -63,7 +68,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
 
     if ((no_valid_libs || cfg::get().rm == debruijn_graph::resolving_mode::rm_none) && !use_single_reads) {
-        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", true);
+        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs");
         return;
     }
     if (cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
@@ -71,7 +76,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         PEResolving(gp);
     } else {
         INFO("Unsupported repeat resolver");
-        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", true);
+        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs");
     }
 
     if (preliminary_) {
@@ -80,10 +85,11 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
 }
 
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
-    OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs", false, cfg::get().use_unipaths,
+    OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs", cfg::get().use_unipaths,
                   cfg::get().simp.tec.plausibility_length);
-    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", true);
-    OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", true);
+    OutputContigs(gp.g, cfg::get().output_dir + "before_rr");
+    OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph");
+    OutputContigs(gp.g, cfg::get().output_dir + "final_contigs");
 }
 
 } // debruijn_graph

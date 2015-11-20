@@ -30,7 +30,7 @@ using std::vector;
  * consistent. Now high level events are merge, glue and split. This list can be extended in near future.
  */
 template<typename VertexId, typename EdgeId>
-class ActionHandler : boost::noncopyable {
+class ActionHandler : private boost::noncopyable {
     const std::string handler_name_;
   private:
     bool attached_;

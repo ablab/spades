@@ -41,13 +41,14 @@ class OnlineVisualizer {
     DEBUG("Commands added");
     DEBUG("Adding auto-completion option");
     InitAutocompletion(command_mapping_.GetCommandNamesList());
-    const Command<Env>& load_command = command_mapping_.GetCommand("load");
-    DEBUG("Loading current environment");
-    load_command.Execute(current_environment_, loaded_environments_, ss);
+    //const Command<Env>& load_command = command_mapping_.GetCommand("load");
+    //DEBUG("Loading current environment");
+    //load_command.Execute(current_environment_, loaded_environments_, ss);
     DEBUG("Environment loaded");
   }
 
   string read_line() {
+    cout << "[end]" << endl;
       char* line = readline(prompt);
       if (!line)
         exit(1);

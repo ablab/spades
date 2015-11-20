@@ -1,8 +1,9 @@
-//****************************************************************************
-//* Copyright (c) 2011-2014 Saint-Petersburg Academic University
+//***************************************************************************
+//* Copyright (c) 2015 Saint Petersburg State University
+//* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
-//****************************************************************************
+//***************************************************************************
 
 #include "standard.hpp"
 #include "graph_simplification.hpp"
@@ -71,7 +72,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     debruijn::simplification::RemoveIsolatedEdges(gp.g, cfg::get().simp.ier, cfg::get().ds.RL(), std::function<void(EdgeId)>(0), cfg::get().max_threads);
 
     double low_threshold = gp.ginfo.trusted_bound();
-    if (math::ge(low_threshold, 0.0)) {
+    if (math::gr(low_threshold, 0.0)) {
         INFO("Removing all the edges having coverage " << low_threshold << " and less");
         omnigraph::EdgeRemovingAlgorithm<Graph> removing_algo(gp.g,
                                                               std::make_shared<func::AlwaysTrue<EdgeId>>(), 0);

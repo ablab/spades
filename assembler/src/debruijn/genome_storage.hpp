@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2015 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 //
 // Created by lab42 on 8/19/15.
 //
@@ -19,6 +25,8 @@ namespace debruijn_graph {
         }
 
         Sequence GetSequence() const;
+        void SetSequence(const Sequence &s);
+        std::string str() const;
         size_t size() const;
     };
 }

@@ -11,7 +11,7 @@ import os
 import sys
 import support
 
-SUPPORTED_PYTHON_VERSIONS = ['2.4', '2.5', '2.6', '2.7', '3.2', '3.3']
+SUPPORTED_PYTHON_VERSIONS = ['2.4', '2.5', '2.6', '2.7', '3.2', '3.3', '3.4', '3.5']
 # allowed reads extensions for BayesHammer and for thw whole SPAdes pipeline
 BH_ALLOWED_READS_EXTENSIONS = ['.fq', '.fastq', '.bam']
 CONTIGS_ALLOWED_READS_EXTENSIONS = ['.fa', '.fasta']
@@ -27,6 +27,13 @@ OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s"]
 SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs", "nxmate": "nxmate"}
 # other libs types:
 LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "trusted-contigs", "untrusted-contigs"]
+
+# final contigs and scaffolds names
+contigs_name = "contigs.fasta"
+scaffolds_name = "scaffolds.fasta"
+assembly_graph_name = "assembly_graph.fastg"
+contigs_paths = "contigs.paths"
+scaffolds_paths = "scaffolds.paths"
 
 #other constants
 MIN_K = 1
@@ -140,7 +147,7 @@ reads_options += OLD_STYLE_READS_OPTIONS
 
 def usage(spades_version, show_hidden=False, dipspades=False):
     if not dipspades:
-        sys.stderr.write("SPAdes genome assembler v." + str(spades_version) + "\n")
+        sys.stderr.write("SPAdes genome assembler v" + str(spades_version) + "\n")
     else:
         sys.stderr.write("dipSPAdes 1.0: genome assembler designed for diploid genomes with high heterozygosity rate\n\n")
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")

@@ -25,19 +25,35 @@ namespace path_extend {
 
 class BidirectionalPath;
 
+struct Gap {
+    int gap_;
+    uint32_t trash_previous_;
+    uint32_t trash_current_;
+    Gap(int gap)
+    : gap_(gap), trash_previous_(0), trash_current_(0)
+    { }
+
+    Gap(int gap, uint32_t trash_previous, uint32_t trash_current)
+     : gap_(gap), trash_previous_(trash_previous), trash_current_(trash_current)
+     { }
+};
+
+
 class PathListener {
 public:
-    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap = 0) = 0;
-    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, int gap = 0) = 0;
+    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) = 0;
+    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) = 0;
     virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
     virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
     virtual ~PathListener() {
     }
 };
 
+
 class BidirectionalPath : public PathListener {
 private:
     static std::atomic<uint64_t> path_id_;
+
 
 public:
     BidirectionalPath(const Graph& g)
@@ -126,7 +142,7 @@ public:
         if (gap_len_.size() == 0 || cumulative_len_.size() == 0) {
             return 0;
         }
-        return cumulative_len_[0] + gap_len_[0];
+        return cumulative_len_[0] + gap_len_[0].gap_;
     }
 
     EdgeId operator[](size_t index) const {
@@ -148,7 +164,15 @@ public:
     }
 
     int GapAt(size_t index) const {
-        return gap_len_[index];
+        return gap_len_[index].gap_;
+    }
+
+    uint32_t TrashCurrentAt(size_t index) const {
+        return gap_len_[index].trash_current_;
+    }
+
+    uint32_t TrashPreviousAt(size_t index) const {
+        return gap_len_[index].trash_previous_;
     }
 
     size_t GetId() const {
@@ -163,7 +187,15 @@ public:
         return data_.front();
     }
 
-    void PushBack(EdgeId e, int gap = 0) {
+    void PushBack(EdgeId e, int gap = 0, uint32_t trash_previous = 0, uint32_t trash_current = 0) {
+        data_.push_back(e);
+        Gap gap_struct(gap, trash_previous, trash_current);
+        gap_len_.push_back(gap_struct);
+        IncreaseLengths(g_.length(e), gap_struct);
+        NotifyBackEdgeAdded(e, gap_struct);
+    }
+
+    void PushBack(EdgeId e, Gap gap) {
         data_.push_back(e);
         gap_len_.push_back(gap);
         IncreaseLengths(g_.length(e), gap);
@@ -172,7 +204,7 @@ public:
 
     void PushBack(const BidirectionalPath& path) {
         for (size_t i = 0; i < path.Size(); ++i) {
-            PushBack(path.At(i), path.GapAt(i));
+            PushBack(path.At(i), path.GapAt(i), path.TrashPreviousAt(i), path.TrashCurrentAt(i));
         }
     }
 
@@ -202,7 +234,15 @@ public:
     virtual void FrontEdgeAdded(EdgeId, BidirectionalPath*, int) {
     }
 
+    virtual void FrontEdgeAdded(EdgeId, BidirectionalPath*, Gap) {
+    }
+
+
     virtual void BackEdgeAdded(EdgeId e, BidirectionalPath*, int gap) {
+        PushFront(g_.conjugate(e), gap);
+    }
+
+    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath*, Gap gap) {
         PushFront(g_.conjugate(e), gap);
     }
 
@@ -233,6 +273,15 @@ public:
 
     bool Contains(EdgeId e) const {
         return FindFirst(e) != -1;
+    }
+
+    bool Contains(VertexId v) const {
+        for(auto edge : data_) {
+            if(g_.EdgeEnd(edge) == v || g_.EdgeStart(edge) == v ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     vector<size_t> FindAll(EdgeId e, size_t start = 0) const {
@@ -379,7 +428,7 @@ public:
                         continue;
                     }
                     if (between > palindrom_len) {
-                        DEBUG("to big part between");
+                        DEBUG("too big part between");
                         continue;
                     }
                 }
@@ -428,7 +477,7 @@ public:
         }
         result.PushBack(g_.conjugate(Back()), 0);
         for (int i = ((int) Size()) - 2; i >= 0; --i) {
-            result.PushBack(g_.conjugate(data_[i]), gap_len_[i + 1]);
+            result.PushBack(g_.conjugate(data_[i]), gap_len_[i + 1].gap_ + gap_len_[i + 1].trash_current_ - gap_len_[i + 1].trash_previous_, gap_len_[i + 1].trash_current_, gap_len_[i + 1].trash_previous_);
         }
 
         return result;
@@ -485,9 +534,9 @@ public:
         DEBUG("Path " << id_);
         DEBUG("Length " << Length());
         DEBUG("Weight " << weight_);
-        DEBUG("#, edge, length, gap length, total length, total length from begin");
+        DEBUG("#, edge, length, gap length, trash length, total length, total length from begin");
         for (size_t i = 0; i < Size(); ++i) {
-            DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i) << ", " << LengthAt(i) << ", " << Length() - LengthAt(i));
+            DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i) << ", " << TrashPreviousAt(i)<< "-" << TrashCurrentAt(i) <<", " << LengthAt(i) << ", " << ((Length() < LengthAt(i)) ? 0 : Length() - LengthAt(i)));
         }
     }
 
@@ -563,16 +612,16 @@ private:
         }
     }
 
-    void IncreaseLengths(size_t length, size_t gap) {
+    void IncreaseLengths(size_t length, Gap gap_struct) {
         for (auto iter = cumulative_len_.begin(); iter != cumulative_len_.end(); ++iter) {
-            *iter += length + gap;
+            *iter += length + gap_struct.gap_ - gap_struct.trash_previous_;
         }
-
         cumulative_len_.push_back(length);
     }
 
     void DecreaseLengths() {
-        size_t length = g_.length(data_.back()) + gap_len_.back();
+        size_t length = g_.length(data_.back()) + gap_len_.back().gap_ - gap_len_.back().trash_previous_;
+
         for (auto iter = cumulative_len_.begin(); iter != cumulative_len_.end(); ++iter) {
             *iter -= length;
         }
@@ -585,7 +634,19 @@ private:
         }
     }
 
+    void NotifyFrontEdgeAdded(EdgeId e, Gap gap) {
+        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
+            (*i)->FrontEdgeAdded(e, this, gap);
+        }
+    }
+
     void NotifyBackEdgeAdded(EdgeId e, int gap) {
+        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
+            (*i)->BackEdgeAdded(e, this, gap);
+        }
+    }
+
+    void NotifyBackEdgeAdded(EdgeId e, Gap gap) {
         for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
             (*i)->BackEdgeAdded(e, this, gap);
         }
@@ -603,27 +664,34 @@ private:
         }
     }
 
-    void PushFront(EdgeId e, int gap = 0) {
+    void PushFront(EdgeId e, Gap gap) {
+        PushFront(e, gap.gap_ + gap.trash_current_ - gap.trash_previous_, gap.trash_current_, gap.trash_previous_);
+    }
+
+    void PushFront(EdgeId e, int gap = 0, uint32_t trash_previous = 0, uint32_t trash_current = 0) {
         data_.push_front(e);
         if (gap_len_.size() > 0) {
-            gap_len_[0] += gap;
+            gap_len_[0].gap_ += gap;
+            gap_len_[0].trash_previous_ += trash_previous;
+            gap_len_[0].trash_current_ += trash_current;
         }
-        gap_len_.push_front(0);
+        gap_len_.push_front(Gap(0, 0, 0));
+
         int length = (int) g_.length(e);
         if (cumulative_len_.empty()) {
             cumulative_len_.push_front(length);
         } else {
-            cumulative_len_.push_front(length + gap + cumulative_len_.front());
+            cumulative_len_.push_front(length + cumulative_len_.front() + gap - trash_previous );
         }
         NotifyFrontEdgeAdded(e, gap);
     }
 
     void PopFront() {
         EdgeId e = data_.front();
-        int cur_gap = gap_len_.front();
         if (gap_len_.size() > 1) {
-            cur_gap += GapAt(1);
-            gap_len_[1] = 0;
+            gap_len_[1].gap_ = 0;
+            gap_len_[1].trash_previous_ = 0;
+            gap_len_[1].trash_current_ = 0;
         }
         data_.pop_front();
         gap_len_.pop_front();
@@ -649,7 +717,7 @@ private:
     std::deque<EdgeId> data_;
     BidirectionalPath* conj_path_;
     std::deque<size_t> cumulative_len_;  // Length from beginning of i-th edge to path end for forward directed path: L(e1 + e2 + ... + eN) ... L(eN)
-    std::deque<int> gap_len_;  // e1 - gap2 - e2 - ... - gapN - eN
+    std::deque<Gap> gap_len_;  // e1 - gap2 - e2 - ... - gapN - eN
     std::vector<PathListener *> listeners_;
     const uint64_t id_;  //Unique ID
     float weight_;

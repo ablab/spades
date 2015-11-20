@@ -869,7 +869,7 @@ inline void NextPathSearcher::JoinPathsByPI(ConstructedPathT& constructed_paths)
                 path2.Print();
                 path1.PushBack(path2.Front(), 100);
                 for (int i = 1; i < (int) path2.Size(); ++i) {
-                    path1.PushBack(path2[i], path2.GapAt(i));
+                    path1.PushBack(path2[i], path2.GapAt(i), path2.TrashPreviousAt(i), path2.TrashCurrentAt(i));
                 }
                 DEBUG("new path");
                 path1.Print();
@@ -919,7 +919,7 @@ inline map<PathWithDistance*, size_t> NextPathSearcher::FindDistances(const Bidi
     DEBUG("find distances from e " << g_.int_id(p.Back()))
 	map<PathWithDistance*, size_t> result;
     DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, search_dist_, 3000));
-    dijkstra.run(g_.EdgeEnd(p.Back()));
+    dijkstra.Run(g_.EdgeEnd(p.Back()));
     DEBUG("paths size " << paths.size());
     for (auto ipath = paths.begin(); ipath != paths.end(); ++ipath) {
         vector<EdgeId> shortest_path = dijkstra.GetShortestPathTo(g_.EdgeStart((*ipath)->p_.Front()));
@@ -968,7 +968,7 @@ inline void NextPathSearcher::ConnectPaths(const BidirectionalPath& init_path, v
             gap = distances.count(res[i]) > 0 ? distances[res[i]] : 100 + g_.k();
             path1.PushBack(path2.Front(), (int)gap);
             for (int i = 1; i < (int) path2.Size(); ++i) {
-                path1.PushBack(path2[i], path2.GapAt(i));
+                path1.PushBack(path2[i], path2.GapAt(i), path2.TrashPreviousAt(i), path2.TrashCurrentAt(i));
             }
             path2.Clear();
         }

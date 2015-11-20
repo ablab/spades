@@ -13,6 +13,7 @@ add_executable(online_vis
                ${CMAKE_SOURCE_DIR}/debruijn/stage.cpp
                ${CMAKE_SOURCE_DIR}/debruijn/genomic_info_filler.cpp
                ${CMAKE_SOURCE_DIR}/debruijn/path_extend/pe_config_struct.cpp
+               ${CMAKE_SOURCE_DIR}/debruijn/genome_storage.cpp
                autocompletion.cpp
                main.cpp)
 

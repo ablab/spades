@@ -50,13 +50,25 @@ public:
     }
 
     virtual void ProcessPairedRead(size_t thread_index,
+                                   const io::PairedRead& r,
                                    const MappingPath<EdgeId>& read1,
-                                   const MappingPath<EdgeId>& read2,
-                                   size_t dist) {
-        ProcessPairedRead(buffer_pi_[thread_index], read1, read2, dist);
+                                   const MappingPath<EdgeId>& read2) {
+        ProcessPairedRead(buffer_pi_[thread_index], read1, read2, r.distance());
+    }
+
+    virtual void ProcessPairedRead(size_t thread_index,
+                                   const io::PairedReadSeq& r,
+                                   const MappingPath<EdgeId>& read1,
+                                   const MappingPath<EdgeId>& read2) {
+        ProcessPairedRead(buffer_pi_[thread_index], read1, read2, r.distance());
     }
 
     virtual void ProcessSingleRead(size_t,
+                                   const io::SingleReadSeq&,
+                                   const MappingPath<EdgeId>&) {}
+
+    virtual void ProcessSingleRead(size_t,
+                                   const io::SingleRead&,
                                    const MappingPath<EdgeId>&) {}
 
     virtual void MergeBuffer(size_t thread_index) {

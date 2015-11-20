@@ -28,19 +28,19 @@ add_library(debruijn STATIC
             repeat_resolving.cpp
             genomic_info_filler.cpp
             pacbio_aligning.cpp
-            genome_storage.cpp 
-            path_extend/scaffold_graph.cpp 
+            path_extend/scaffold_graph.cpp
             path_extend/scaffold_graph_visualizer.cpp 
             path_extend/connection_condition2015.cpp
-            bwa_pair_info_filler.cpp)
+            bwa_pair_info_filler.cpp
+            genome_storage.cpp)
   
-# We have to do this to minimize changes in ConsensusCore itself
 target_include_directories(debruijn PRIVATE ${EXT_DIR}/include/ConsensusCore)
-target_link_libraries(debruijn ConsensusCore input samtools mph_index nlopt BamTools yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(debruijn ConsensusCore input samtools mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
 add_executable(spades
                main.cpp)
 target_link_libraries(spades debruijn)
+
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)

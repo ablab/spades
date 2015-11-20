@@ -11,16 +11,15 @@ default
     ; enable advanced ec removal algo
     topology_simplif_enabled false
     
-	; tip clipper:
-	tc
-	{
+    ; tip clipper:
+    tc
+    {
         ; rctc: tip_cov < rctc * not_tip_cov
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
         ; todo think about params one more time
         condition               "{ tc_lb 3.5, cb 1000000, rctc 2.0 } { tc_lb 10., cb auto }"
-	}
+    }
   
-
 	; bulge remover:
 	br
 	{
@@ -31,6 +30,9 @@ default
 		max_relative_coverage		1.1	; bulge_cov < this * not_bulge_cov
 		max_delta			3
 		max_relative_delta		0.1
+        max_number_edges        1000
+        parallel false
+        chunk_size 10000
 	}
 	
 	; erroneous connections remover:
@@ -41,11 +43,11 @@ default
        ; to_ec_lb: max_ec_length = 2*tip_length(to_ec_lb) - 1
         condition               "{ to_ec_lb 5, icb auto }"
        ; condition               "{ ec_lb 9, icb 40.0 }"
-	}
-	
-	; relative coverage erroneous component remover:
-	rcc
-	{
+    }
+    
+    ; relative coverage erroneous component remover:
+    rcc
+    {
         enabled false
         coverage_gap    5.
         max_length_coeff    2.0
@@ -53,85 +55,99 @@ default
         max_vertex_cnt      30
         max_ec_length_coefficient   30
         max_coverage_coeff  2.0
-	}
-	
-	; topology based erroneous connection remover
-	tec
-	{
-		max_ec_length_coefficient	55	; max_ec_length = k + max_ec_length_coefficient
-		uniqueness_length		5000
-		plausibility_length		200
-	}
-
-	; topology and reliability based erroneous connection remover
-	trec
-	{
-		max_ec_length_coefficient	100	; max_ec_length = k + max_ec_length_coefficient
-		uniqueness_length		1500
-		unreliable_coverage		2.5
-	}
-	
-	; interstrand erroneous connection remover (thorn remover)
-	isec
-	{
-		max_ec_length_coefficient	100	; max_ec_length = k + max_ec_length_coefficient
-		uniqueness_length		1500
-		span_distance		15000
-	}
-
-	; max flow erroneous connection remover
-	mfec
-	{
+    }
+    
+    ; relative edge disconnector:
+    relative_ed
+    {
         enabled false
-		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
-		uniqueness_length		1500
-		plausibility_length		200
-	}
-	
-	piec
-	{
-		max_ec_length_coefficient	30	; max_ec_length = k + max_ec_length_coefficient
-		min_neighbour_length		100
-	}
+        diff_mult  20.
+    }
+    
+    ; topology based erroneous connection remover
+    tec
+    {
+        max_ec_length_coefficient   55  ; max_ec_length = k + max_ec_length_coefficient
+        uniqueness_length       5000
+        plausibility_length     200
+    }
 
-	; isolated edges remover
-	ier
-	{
+    ; topology and reliability based erroneous connection remover
+    trec
+    {
+        max_ec_length_coefficient   100 ; max_ec_length = k + max_ec_length_coefficient
+        uniqueness_length       1500
+        unreliable_coverage     2.5
+    }
+    
+    ; interstrand erroneous connection remover (thorn remover)
+    isec
+    {
+        max_ec_length_coefficient   100 ; max_ec_length = k + max_ec_length_coefficient
+        uniqueness_length       1500
+        span_distance       15000
+    }
+
+    ; max flow erroneous connection remover
+    mfec
+    {
+        enabled false
+        max_ec_length_coefficient   30  ; max_ec_length = k + max_ec_length_coefficient
+        uniqueness_length       1500
+        plausibility_length     200
+    }
+    
+    piec
+    {
+        max_ec_length_coefficient   30  ; max_ec_length = k + max_ec_length_coefficient
+        min_neighbour_length        100
+    }
+
+    ; isolated edges remover
+    ier
+    {
         max_length                  0
         max_coverage                2
         max_length_any_cov          150 ; will be taken max with read_length 
-	}
-	
-	; topology tip clipper:
-	ttc
-	{
+    }
+    
+    ; topology tip clipper:
+    ttc
+    {
         length_coeff    3.5
         plausibility_length 250
         uniqueness_length   1500
-	}
+    }
 
-	; complex tip clipper
-	complex_tc
-	{
-	enabled 0
-	}		
+    ; complex tip clipper
+    complex_tc
+    {
+    enabled 0
+    }       
 
-	; complex bulge remover
-	cbr
-	{
-		enabled	false
-		max_relative_length	5.
-		max_length_difference	5
-	}
+    ; complex bulge remover
+    cbr
+    {
+        enabled false
+        max_relative_length 5.
+        max_length_difference   5
+    }
 
-	; hidden ec remover
-	her
-	{
-	    enabled false
-	    uniqueness_length           1500
-	    unreliability_threshold     4
-	    relative_threshold          5     
-	}
+    ; hidden ec remover
+    her
+    {
+        enabled false
+        uniqueness_length           1500
+        unreliability_threshold     4
+        relative_threshold          5     
+    }
+
+    init_clean
+    {
+        self_conj_condition "{ ec_lb 100, cb 1.0 }"
+        tip_condition   ""
+        ec_condition    ""
+    }
     
     ;master switch over presimp, persistent iterators and disabling br
     fast_features true
@@ -155,7 +171,7 @@ default
     }
 
     persistent_cycle_iterators true
-    disable_br_in_cycle false
+    disable_br_in_cycle false    
 }
 
 sc
@@ -163,9 +179,9 @@ sc
     ; enable advanced ec removal algo
     topology_simplif_enabled true 
 
-	; tip clipper:
-	tc
-	{
+    ; tip clipper:
+    tc
+    {
         ; rctc: tip_cov < rctc * not_tip_cov
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
         condition               "{ tc_lb 3.5, cb 100000, rctc 10000 }"
@@ -181,6 +197,9 @@ sc
 		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
 		max_delta			3
 		max_relative_delta		0.1
+        max_number_edges        1000
+        parallel false
+        chunk_size 10000
 	}
 	
 	; erroneous connections remover:
@@ -190,11 +209,11 @@ sc
        ; icb: iterative coverage bound
        ; condition               "{ ec_lb 30, icb 20.0 }"
        condition               "{ ec_lb 30, icb auto }"
-	}
-	
-	; relative coverage erroneous component remover:
-	rcc
-	{
+    }
+    
+    ; relative coverage erroneous component remover:
+    rcc
+    {
         enabled true
         coverage_gap    20.
         max_length_coeff    2.0
@@ -202,45 +221,45 @@ sc
         max_vertex_cnt      30
         max_ec_length_coefficient   30
         max_coverage_coeff  5.0
-	}
-	
-	tec
-	{
-		max_ec_length_coefficient	55	; max_ec_length = k + max_ec_length_coefficient
-		uniqueness_length		1500
-		plausibility_length		200
-	}
-	
-	; topology and reliability based erroneous connection remover
-	trec
-	{
-		max_ec_length_coefficient	100	; max_ec_length = k + max_ec_length_coefficient
-		uniqueness_length		1500
-		unreliable_coverage		2.5
-	}
-	
-	; topology tip clipper:
-	ttc
-	{
+    }
+    
+    tec
+    {
+        max_ec_length_coefficient   55  ; max_ec_length = k + max_ec_length_coefficient
+        uniqueness_length       1500
+        plausibility_length     200
+    }
+    
+    ; topology and reliability based erroneous connection remover
+    trec
+    {
+        max_ec_length_coefficient   100 ; max_ec_length = k + max_ec_length_coefficient
+        uniqueness_length       1500
+        unreliable_coverage     2.5
+    }
+    
+    ; topology tip clipper:
+    ttc
+    {
         length_coeff    3.5
         plausibility_length 250
         uniqueness_length   1500
-	}
+    }
 
-	; complex bulge remover
-	cbr
-	{
-		enabled	true
-	}
+    ; complex bulge remover
+    cbr
+    {
+        enabled true
+    }
 
-	; hidden ec remover
-	her
-	{
-	    enabled                     true
-	    uniqueness_length           1500
-	    unreliability_threshold     0.2
-	    relative_threshold          5     
-	}
+    ; hidden ec remover
+    her
+    {
+        enabled                     true
+        uniqueness_length           1500
+        unreliability_threshold     0.2
+        relative_threshold          5     
+    }
 
     fast_features false
 }
@@ -250,38 +269,41 @@ moleculo
     ; enable advanced ec removal algo
     topology_simplif_enabled false 
 
-	; tip clipper:
-	tc
-	{
+    ; tip clipper:
+    tc
+    {
         ; rctc: tip_cov < rctc * not_tip_cov
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
         condition               "{ tc_lb 2.5, cb 3, rctc 10000 } { tc_lb 4.5, mmm 2 }"
-	}
+    }
 
-	; bulge remover:
-	br
-	{
-		enabled				true
-		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
-        	max_additive_length_coefficient 100
-		max_coverage			3
-		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
-		max_delta			3
-		max_relative_delta		0.1
-	}
-	
-	; erroneous connections remover:
-	ec
-	{
+    ; bulge remover:
+    br
+    {
+        enabled             true
+        max_bulge_length_coefficient    3.      ; max_bulge_length = max_bulge_length_coefficient * k
+        max_additive_length_coefficient 100
+        max_coverage            3
+        max_relative_coverage       100000.     ; bulge_cov < this * not_bulge_cov
+        max_delta           3
+        max_relative_delta      0.1
+        max_number_edges        1000
+        parallel false
+        chunk_size 10000
+    }
+    
+    ; erroneous connections remover:
+    ec
+    {
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
        ; condition               "{ ec_lb 30, icb 20.0 }"
        condition               "{ ec_lb 30, icb 3.1 }"
-	}
-	
-	; relative coverage erroneous component remover:
-	rcc
-	{
+    }
+    
+    ; relative coverage erroneous component remover:
+    rcc
+    {
         enabled true
         coverage_gap    20.
         max_length_coeff    2.0
@@ -289,49 +311,49 @@ moleculo
         max_vertex_cnt      30
         max_ec_length_coefficient   30
         max_coverage_coeff  5.0
-	}
-	
-	tec
-	{
-		max_ec_length_coefficient	55	; max_ec_length = k + max_ec_length_coefficient
-		uniqueness_length		1500
-		plausibility_length		200
-	}
-	
-	; topology and reliability based erroneous connection remover
-	trec
-	{
-		max_ec_length_coefficient	100	; max_ec_length = k + max_ec_length_coefficient
-		uniqueness_length		1500
-		unreliable_coverage		2.5
-	}
-	
-	; topology tip clipper:
-	ttc
-	{
+    }
+    
+    tec
+    {
+        max_ec_length_coefficient   55  ; max_ec_length = k + max_ec_length_coefficient
+        uniqueness_length       1500
+        plausibility_length     200
+    }
+    
+    ; topology and reliability based erroneous connection remover
+    trec
+    {
+        max_ec_length_coefficient   100 ; max_ec_length = k + max_ec_length_coefficient
+        uniqueness_length       1500
+        unreliable_coverage     2.5
+    }
+    
+    ; topology tip clipper:
+    ttc
+    {
         length_coeff    3.5
         plausibility_length 250
         uniqueness_length   1500
-	}
+    }
 
-	; complex bulge remover
-	cbr
-	{
-		enabled	1
-		pics_enabled 0
+    ; complex bulge remover
+    cbr
+    {
+        enabled 1
+        pics_enabled 0
         folder  complex_br_components 
-		max_relative_length	5.
-		max_length_difference	5
-	}
+        max_relative_length 5.
+        max_length_difference   5
+    }
 
-	; hidden ec remover
-	her
-	{
-	    enabled                     true
-	    uniqueness_length           1500
-	    unreliability_threshold     0.2
-	    relative_threshold          5     
-	}
+    ; hidden ec remover
+    her
+    {
+        enabled                     true
+        uniqueness_length           1500
+        unreliability_threshold     0.2
+        relative_threshold          5     
+    }
 
     presimp 
     {
@@ -345,29 +367,32 @@ moleculo
 
 careful
 {
-	; bulge remover:
-	br
-	{
-		enabled				true
-		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
-       	max_additive_length_coefficient 100
-		max_coverage			1000000.0
-		max_relative_coverage		1.5		; bulge_cov < this * not_bulge_cov
-		max_delta			3
-		max_relative_delta		0.1
-	}
-	
-	; complex bulge remover
-	cbr
-	{
-		enabled	false
-	}
-
-	; relative coverage erroneous component remover:
-	rcc
-	{
+    ; bulge remover:
+    br
+    {
+        enabled             true
+        max_bulge_length_coefficient    3.      ; max_bulge_length = max_bulge_length_coefficient * k
+        max_additive_length_coefficient 100
+        max_coverage            1000000.0
+        max_relative_coverage       1.5     ; bulge_cov < this * not_bulge_cov
+        max_delta           3
+        max_relative_delta      0.1
+        max_number_edges        1000
+        parallel false
+        chunk_size 10000
+    }
+    
+    ; complex bulge remover
+    cbr
+    {
         enabled false
-	}
+    }
+
+    ; relative coverage erroneous component remover:
+    rcc
+    {
+        enabled false
+    }
 
     fast_features false
 }
@@ -381,11 +406,14 @@ diploid_simp
 	{
 		enabled				false
 		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
-        	max_additive_length_coefficient 100
+       	max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		1.5		; bulge_cov < this * not_bulge_cov
 		max_delta			3
 		max_relative_delta		0.1
+        max_number_edges        1000
+        parallel false
+        chunk_size 10000
 	}
 }
 
@@ -396,25 +424,32 @@ meta
     ; enable advanced ec removal algo
     topology_simplif_enabled false
 
-	; erroneous connections remover:
-	ec
-	{
+    ; erroneous connections remover:
+    ec
+    {
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
        ; condition               "{ ec_lb 30, icb 20.0 }"
        condition               "{ ec_lb 30, icb 2.5 }"
-	}
-	
-	; relative coverage erroneous component remover:
-	rcc
-	{
+    }
+    
+    ; relative coverage erroneous component remover:
+    rcc
+    {
         enabled true
         coverage_gap    5.
-        max_length_coeff    2.0
+        max_length_coeff    3.0
         max_length_with_tips_coeff   5.0
         max_vertex_cnt      100
         max_ec_length_coefficient   300
         max_coverage_coeff  -1.0
+	}
+
+	; relative edge disconnector:
+	relative_ed
+	{
+        enabled true
+        diff_mult  20.
 	}
 
 	; bulge remover:
@@ -427,6 +462,9 @@ meta
 		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
 		max_delta			10
 		max_relative_delta		0.1
+        max_number_edges        1000
+        parallel true
+        chunk_size 10000
 	}
 
     fast_features true
@@ -435,34 +473,59 @@ meta
     {
        enabled true
        parallel false
-       tip_condition   "{ tc_lb 3.5, cb 100 }"
+       tip_condition   "{ tc_lb 3.5, cb 2.0 }"
        ec_condition    "{ ec_lb 10, cb 1.5 }"
     }
 
-	; final tip clipper:
-	final_tc
-	{
+    ; final tip clipper:
+    final_tc
+    {
         ; rctc: tip_cov < rctc * not_tip_cov
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
-        condition               "{ tc_lb 30, cb 20, rctc 0.5 }"
-	}
+        condition               "{ tc_lb 30, cb 20, rctc 0.2 }"
+    }
 
-	; final bulge remover:
-	final_br
-	{
-		enabled				true
-		max_bulge_length_coefficient	50.		; max_bulge_length = max_bulge_length_coefficient * k
-       	max_additive_length_coefficient 100
-		max_coverage			1000000.0
-		max_relative_coverage		0.5		; bulge_cov < this * not_bulge_cov
-		max_delta			1500
-		max_relative_delta		0.1
-	}
+    ; final bulge remover:
+    final_br
+    {
+        enabled             true
+        max_bulge_length_coefficient    50.     ; max_bulge_length = max_bulge_length_coefficient * k
+        max_additive_length_coefficient 100
+        max_coverage            1000000.0
+        max_relative_coverage       0.5     ; bulge_cov < this * not_bulge_cov
+        max_delta           50
+        max_relative_delta      0.1
+        max_number_edges        1000
+        parallel true
+        chunk_size 10000
+    }
+
+    ; second final bulge remover:
+    second_final_br
+    {
+        enabled             true
+        max_bulge_length_coefficient    50.     ; max_bulge_length = max_bulge_length_coefficient * k
+        max_additive_length_coefficient 100
+        max_coverage            1000000.0
+        max_relative_coverage       0.5     ; bulge_cov < this * not_bulge_cov
+        max_delta           1500
+        max_relative_delta      0.1
+        max_number_edges        3
+        parallel true
+        chunk_size 10000
+    }
 
 }
 
 preliminary
 {
+    init_clean
+    {
+        self_conj_condition "{ ec_lb 100, cb 20.0 }"
+        tip_condition   "{ lb 20, cb 1.1 }"
+        ec_condition    "{ ec_lb 0, cb 0.9 }"
+    }
+
     post_simplif_enabled false
 
 	; bulge remover:
@@ -475,6 +538,9 @@ preliminary
 		max_relative_coverage		0.5		; bulge_cov < this * not_bulge_cov
 		max_delta			10
 		max_relative_delta		0.1
+        max_number_edges        1000
+        parallel true
+        chunk_size 10000
 	}
 	
 }

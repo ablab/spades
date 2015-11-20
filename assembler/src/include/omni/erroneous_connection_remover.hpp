@@ -163,7 +163,7 @@ class ThornCondition : public EdgeCondition<Graph> {
             return false;
 
         auto dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(this->g(), dijkstra_depth_);
-        dij.run(this->g().EdgeStart(e));
+        dij.Run(this->g().EdgeStart(e));
         vector<VertexId> reached = dij.ReachedVertices();
         for (auto it = reached.begin(); it != reached.end(); ++it) {
             if (*it != this->g().EdgeEnd(e)

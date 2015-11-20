@@ -160,7 +160,7 @@ public:
 		map <EdgeId, EdgeId> auxilary;
 		DumpToFile(filename, auxilary);
 	}
-	void DumpToFile(const string filename, map<EdgeId, EdgeId> &replacement, bool need_log = false) const {
+	void DumpToFile(const string filename, map<EdgeId, EdgeId> &replacement, size_t stats_weight_cutoff = 1, bool need_log = false) const {
 		ofstream filestr(filename);
 		set<EdgeId> continued_edges;
 
@@ -169,12 +169,12 @@ public:
 			int non1 = 0;
 			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
 				filestr << " Weight: " << j_iter->getWeight();
-				if (j_iter->getWeight() > 1)
+				if (j_iter->getWeight() > stats_weight_cutoff)
 					non1++;
 
 				filestr << " length: " << j_iter->path.size() << " ";
 				for (auto p_iter = j_iter->path.begin(); p_iter != j_iter->path.end(); ++p_iter) {
-					if (p_iter != j_iter->path.end() - 1 && j_iter->getWeight() > 1) {
+					if (p_iter != j_iter->path.end() - 1 && j_iter->getWeight() > stats_weight_cutoff) {
 						continued_edges.insert(*p_iter);
 					}
 

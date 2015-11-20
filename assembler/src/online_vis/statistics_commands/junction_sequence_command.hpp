@@ -11,7 +11,7 @@
 #include "../command.hpp"
 #include "../errors.hpp"
 #include "omni/omni_utils.hpp"
-#include "omni/path_processor.hpp"
+#include "sequence_mapper.hpp"
 #include "utils.hpp"
 
 namespace online_visualization {
@@ -58,7 +58,7 @@ public:
 
         LOG(ss.str());
 
-        MappingPathFixer<Graph> path_fixer(curr_env.graph());
+        debruijn_graph::MappingPathFixer<Graph> path_fixer(curr_env.graph());
         edges = path_fixer.TryFixPath(edges, insert_size);
 
         if (path_fixer.CheckContiguous(edges)) {

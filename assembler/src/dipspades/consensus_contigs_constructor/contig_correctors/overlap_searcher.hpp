@@ -242,10 +242,10 @@ class OverlapCorrector : public LoopBulgeDeletionCorrector{
 
 					auto path_searcher = DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(g_,
 							dsp_cfg::get().pbr.max_bulge_nucls_len);
-					path_searcher.run(start1);
+					path_searcher.Run(start1);
 					auto reached_vert1 = path_searcher.ReachedVertices();
 
-					path_searcher.run(start2);
+					path_searcher.Run(start2);
 					auto reached_vert2 = path_searcher.ReachedVertices();
 
 					for(size_t i = 0; i < first_start; i++){
@@ -282,10 +282,10 @@ class OverlapCorrector : public LoopBulgeDeletionCorrector{
 
 					auto path_searcher = DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(g_,
 							dsp_cfg::get().pbr.max_bulge_nucls_len);
-					path_searcher.run(end1);
+					path_searcher.Run(end1);
 					auto reached_vert1 = path_searcher.ReachedVertices();
 
-					path_searcher.run(end2);
+					path_searcher.Run(end2);
 					auto reached_vert2 = path_searcher.ReachedVertices();
 
 					for(size_t i = last_end; i < last_path.size(); i++){

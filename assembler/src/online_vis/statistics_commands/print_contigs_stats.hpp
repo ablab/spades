@@ -26,8 +26,7 @@ namespace online_visualization {
                 PathStorageCallback<Graph> path_storage(graph);
 
                 //  todo reduce value after investigation
-                PathProcessor<Graph> path_processor(graph, 0, 50, v1, v2, path_storage);
-                path_processor.Process();
+                ProcessPaths(graph, 0, 50, v1, v2, path_storage);
 
                 if (path_storage.size() == 0) {
                     TRACE("Failed to find closing path");

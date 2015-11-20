@@ -120,22 +120,53 @@ double KMerClustering::ClusterBIC(const std::vector<Center> &centers,
 }
 
 
-double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &kmerinds, const std::vector<hammer::ExpandedKMer> &kmers,
-                                        std::vector<size_t> & indices, std::vector<Center> &centers) {
+double KMerClustering::lMeansClustering(unsigned l, const std::vector<hammer::ExpandedKMer> &kmers,
+                                        std::vector<size_t> &indices, std::vector<Center> &centers) {
   centers.resize(l); // there are l centers
 
   // if l==1 then clustering is trivial
   if (l == 1) {
     centers[0].center_ = Consensus(kmers);
     centers[0].count_ = kmers.size();
-    for (size_t i = 0; i < kmerinds.size(); ++i)
+    for (size_t i = 0; i < kmers.size(); ++i)
       indices[i] = 0;
     return ClusterBIC(centers, indices, kmers);
   }
 
-  // We assume that kmerinds are sorted wrt the count.
-  for (size_t j = 0; j < l; ++j)
-    centers[j].center_ = kmers[j].seq();
+  // Provide the initial approximation.
+  double totalLikelihood = 0.0;
+  if (cfg::get().bayes_initial_refine) {
+    // Refine the current approximation
+    centers[l-1].center_ = kmers[l-1].seq();
+    for (size_t i = 0; i < kmers.size(); ++i) {
+      size_t cidx = indices[i];
+      unsigned cdist = kmers[i].hamdist(centers[cidx].center_, K);
+      unsigned mdist = kmers[i].hamdist(centers[l-1].center_, cdist);
+      if (mdist < cdist) {
+        indices[i] = l - 1;
+        cidx = l - 1;
+      }
+      totalLikelihood += kmers[i].logL(centers[cidx].center_);
+    }
+  } else {
+    // We assume that kmers are sorted wrt the count.
+    for (size_t j = 0; j < l; ++j)
+      centers[j].center_ = kmers[j].seq();
+
+    for (size_t i = 0; i < kmers.size(); ++i) {
+      unsigned mdist = K;
+      unsigned cidx = 0;
+      for (unsigned j = 0; j < l; ++j) {
+        unsigned cdist = kmers[i].hamdist(centers[j].center_, mdist);
+        if (cdist < mdist) {
+          mdist = cdist;
+          cidx = j;
+        }
+      }
+      indices[i] = cidx;
+      totalLikelihood += kmers[i].logL(centers[cidx].center_);
+    }
+  }
 
   if (cfg::get().bayes_debug_output > 1) {
 #   pragma omp critical
@@ -145,22 +176,6 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
         std::cout << "    " << centers[i].center_ << "\n";
       }
     }
-  }
-
-  // Provide the initial approximation.
-  double totalLikelihood = 0.0;
-  for (size_t i = 0; i < kmers.size(); ++i) {
-    unsigned mdist = K;
-    unsigned cidx = 0;
-    for (unsigned j = 0; j < l; ++j) {
-      unsigned cdist = kmers[i].hamdist(centers[j].center_, mdist);
-      if (cdist < mdist) {
-        mdist = cdist;
-        cidx = j;
-      }
-    }
-    indices[i] = cidx;
-    totalLikelihood += kmers[i].logL(centers[cidx].center_);
   }
 
   // Main loop
@@ -181,7 +196,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
     double curlik = 0;
 
     // E step: find which clusters we belong to
-    for (size_t i = 0; i < kmerinds.size(); ++i) {
+    for (size_t i = 0; i < kmers.size(); ++i) {
       size_t newInd = 0;
       if (cfg::get().bayes_use_hamming_dist) {
         for (unsigned j = 0; j < l; ++j)
@@ -273,7 +288,6 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   }
   
   maxcls = std::min(maxcls, maxgcnt) + 1;
-
   if (cfg::get().bayes_debug_output > 0) {
     #pragma omp critical
     {
@@ -292,10 +306,9 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   std::vector<size_t> bestIndices(origBlockSize);
 
   unsigned max_l = cfg::get().bayes_hammer_mode ? 1 : (unsigned) origBlockSize;
+  std::vector<Center> centers;
   for (unsigned l = 1; l <= max_l; ++l) {
-    std::vector<Center> centers(l);
-
-    double curLikelihood = lMeansClustering(l, block, kmers, indices, centers);
+    double curLikelihood = lMeansClustering(l, kmers, indices, centers);
     if (cfg::get().bayes_debug_output > 0) {
       #pragma omp critical
       {
@@ -307,7 +320,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
     }
     if (curLikelihood > bestLikelihood) {
       bestLikelihood = curLikelihood;
-      bestCenters = std::move(centers); bestIndices.swap(indices);
+      bestCenters = centers; bestIndices = indices;
     } else if (l >= maxcls)
       break;
   }

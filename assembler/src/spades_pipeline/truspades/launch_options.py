@@ -1,6 +1,5 @@
 ############################################################################
 # Copyright (c) 2015 Saint Petersburg State University
-# Copyright (c) 2011-2014 Saint Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
@@ -25,13 +24,16 @@ class Options:
         self.reference = ""
         self.mode = "run_truspades"
         self.possible_modes = ["run_truspades", "generate_dataset", "construct_subreferences"]
+        self.test = False
 
-    def __init__(self, argv):
+    def __init__(self, argv, bin, home):
         if len(argv) == 1:
             print_usage_and_exit(1)
-        long_params = "help-hidden construct-dataset reference= reference-index= do= continue threads= help dataset= input-dir= additional-options".split(" ")
+        long_params = "test help-hidden construct-dataset reference= reference-index= do= continue threads= help dataset= input-dir= additional-options".split(" ")
         short_params = "o:t:h"
         self.set_default_options()
+        self.bin = bin
+        self.home = home
         try:
             options_list, self.spades_options = getopt.gnu_getopt(argv[1:], short_params, long_params)
         except getopt.GetoptError:
@@ -41,6 +43,11 @@ class Options:
         for (key, value) in options_list:
             if key == "--help" or key == "-h":
                 print_usage_and_exit(1)
+            elif key == "--test":
+                dir = os.path.abspath("spades_test") + "_truspades"
+                self.output_dir = dir
+                self.input_dirs = [os.path.join(self.home, "test_dataset_truspades")]
+                self.test = True
             elif key == "--do":
                 self.mode = value
             elif key == "--construct-dataset":
@@ -92,15 +99,16 @@ def print_usage_and_exit(code, show_hidden = False):
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Basic options:" + "\n")
-    sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
-    sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
+    sys.stderr.write("-h/--help\t\t\tprints this usage message" + "\n")
+    sys.stderr.write("--test\t\t\t\trun truSPAdes on toy dataset" + "\n")
+    sys.stderr.write("-o\t\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
     sys.stderr.write("-t/--threads\t<int>\t\tnumber of threads" + "\n")
-    sys.stderr.write("--continue\t\tcontinue interrupted launch" + "\n")
+    sys.stderr.write("--continue\t\t\tcontinue interrupted launch" + "\n")
     sys.stderr.write("--construct-dataset\t\tparse dataset from input folder")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Input options:" + "\n")
     sys.stderr.write("--input-dir\t<directory>\tdirectory with input data. Note that the directory should contain only files with reads. This option can be used several times to provide several input directories." + "\n")
-    sys.stderr.write("--dataset\t<file>\tfile with dataset description" + "\n")
+    sys.stderr.write("--dataset\t<file>\t\tfile with dataset description" + "\n")
     if show_hidden:
         pass
         #ToDo

@@ -30,7 +30,9 @@ public:
 				double_graph_pack_(double_graph_pack),
 				default_storage_(default_storage),
 				composite_storage_(composite_storage),
-				redundancy_map_(redundancy_map) { }
+				redundancy_map_(redundancy_map) {
+            double_graph_pack_.kmer_mapper.Attach();
+	 }
 
 	void Run() {
 		INFO("Contigs separation starts");

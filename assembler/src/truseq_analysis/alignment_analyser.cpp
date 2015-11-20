@@ -56,7 +56,7 @@ namespace alignment_analysis {
             }
             VertexId gap_start = graph_.EdgeEnd(back.first);
             VertexId gap_end = graph_.EdgeStart(front.first);
-            d.run(gap_start);
+            d.Run(gap_start);
             if (d.DistanceCounted(gap_end)) {
                 vector <EdgeId> path = d.GetShortestPathTo(gap_end);
                 int s = (int(graph_.length(back.first)) - int(back.second.end_pos)) + int(front.second.start_pos);

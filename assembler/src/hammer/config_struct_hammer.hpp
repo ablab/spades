@@ -47,6 +47,7 @@ struct hammer_config {
   unsigned count_numfiles;
   unsigned count_merge_nthreads;
   size_t count_split_buffer;
+  bool count_filter_singletons;
 
   bool hamming_do;
   unsigned hamming_blocksize_quadratic_threshold;
@@ -61,6 +62,7 @@ struct hammer_config {
   bool bayes_hammer_mode;
   bool bayes_write_solid_kmers;
   bool bayes_write_bad_kmers;
+  bool bayes_initial_refine;
 
   bool expand_do;
   unsigned expand_max_iterations;

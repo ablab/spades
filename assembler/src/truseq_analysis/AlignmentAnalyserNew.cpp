@@ -49,7 +49,7 @@ namespace alignment_analysis {
                 VertexId start = result[pos].EndVertex();
                 TRACE("Start vertex: " << start);
                 DijkstraHelper<Graph>::BoundedDijkstra d = DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_, 3000 + graph_.k(), 1000);
-                d.run(start);
+                d.Run(start);
                 size_t best = i;
                 for (size_t j = i, cur_step = 0; j < path.size() && cur_step < step_; j++) {
                     TRACE("Checking candidate #" << j << ": " << path[j]);

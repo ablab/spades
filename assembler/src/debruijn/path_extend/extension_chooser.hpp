@@ -221,7 +221,7 @@ public:
     {
     }
 
-    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
+    EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
         EdgeContainer e1 = first_->Filter(path, edges);
         return second_->Filter(path, e1);
     }
@@ -234,7 +234,7 @@ public:
     TrivialExtensionChooser(Graph& g): ExtensionChooser(g)  {
     }
 
-    virtual EdgeContainer Filter(BidirectionalPath& /*path*/, EdgeContainer& edges) {
+    EdgeContainer Filter(const BidirectionalPath& /*path*/, const EdgeContainer& edges) const override {
         if (edges.size() == 1) {
              return edges;
         }
@@ -250,7 +250,7 @@ public:
             ExtensionChooser(g, wc, weight_threshold) {
     }
 
-    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
+    EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
         if (edges.size() == 1) {
             double weight = wc_->CountWeight(path, edges.back().e_, std::set<size_t>());
             NotifyAll(weight);
@@ -443,7 +443,7 @@ protected:
 		wc_->lib().CountDistances(e1, e2, dist, w);
 	}
 
-    virtual void CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) const {
+    void CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) const {
         for (size_t j = 0; j < path.Size(); ++j) {
             std::vector<int> distances;
             std::vector<double> weights;
@@ -506,7 +506,7 @@ public:
         is_scatter_coeff_(is_scatter_coeff) {
     }
 
-    virtual EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
+    EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
         if (edges.empty()) {
             return edges;
         }
@@ -527,7 +527,6 @@ inline bool EdgeWithWeightCompareReverse(const pair<EdgeId, double>& p1,
 class LongReadsUniqueEdgeAnalyzer {
 private:
     DECL_LOGGER("LongReadsUniqueEdgeAnalyzer")
-
 public:
     LongReadsUniqueEdgeAnalyzer(const Graph& g, const GraphCoverageMap& cov_map,
                        double filter_threshold, double prior_threshold)
@@ -868,7 +867,7 @@ public:
               search_dist_(lib->GetISMax()),
               weight_counter_(g, lib, 10),
               cov_map_(g_, paths),
-              path_searcher_(g_, cov_map_, lib_->GetISMax(), PathsWeightCounter(g, lib, 30), max_number_of_paths_to_search),
+              path_searcher_(g_, cov_map_, lib_->GetISMax(), PathsWeightCounter(g, lib, (size_t) lib->GetSingleThreshold()), max_number_of_paths_to_search),
               unique_edge_analyzer_(g, cov_map_, 0., 1000.),
               simple_scaffolder_(g) {
     }
@@ -930,7 +929,7 @@ private:
         if (!next_paths.empty() && next_paths.back()->Size() > 0) {
             BidirectionalPath* res = next_paths.back();
             for (size_t i = 0; i < res->Size() - 1; ++i) {
-                path.PushBack(res->At(i), res->GapAt(i));
+                path.PushBack(res->At(i), res->GapAt(i), res->TrashPreviousAt(i), res->TrashCurrentAt(i));
             }
             result = EdgeContainer(1, EdgeWithDistance(res->Back(), res->GapAt(res->Size() - 1)));
         }
@@ -1297,5 +1296,142 @@ private:
 
     DECL_LOGGER("MatePairExtensionChooser");
 };
+
+class CoordinatedCoverageExtensionChooser: public ExtensionChooser {
+public:
+    CoordinatedCoverageExtensionChooser(const Graph& g, CoverageAwareIdealInfoProvider& coverage_provider, size_t max_edge_length_in_repeat, double delta) :
+            ExtensionChooser(g), provider_(coverage_provider), max_edge_length_in_repeat_(max_edge_length_in_repeat), delta_(delta) {
+    }
+
+    EdgeContainer Filter(const BidirectionalPath& path,
+            const EdgeContainer& edges) const override {
+
+
+        double path_coverage = provider_.EstimatePathCoverage(path);
+        if (math::eq(path_coverage, -1.0)) {
+            DEBUG("Path coverage can't be calculated");
+            return EdgeContainer();
+        }
+        DEBUG("Path coverage is " << path_coverage);
+
+        for (auto e_d : edges) {
+            if (path.Contains(g_.EdgeEnd(e_d.e_))) {
+                DEBUG("Avoid to create loops");
+                return EdgeContainer();
+            }
+        }
+        return FindExtensionTroughRepeat(edges, path_coverage);
+    }
+
+private:
+
+    void UpdateCanBeProcessed(VertexId v,
+            std::queue<VertexId>& can_be_processed) const {
+        DEBUG("Updating can be processed");
+        for (EdgeId e : g_.OutgoingEdges(v)) {
+            VertexId neighbour_v = this->g_.EdgeEnd(e);
+            if (g_.length(e) < max_edge_length_in_repeat_) {
+                DEBUG(
+                        "Adding vertex " << neighbour_v.int_id()
+                                << "through edge " << g_.str(e));
+                can_be_processed.push(neighbour_v);
+            }
+        }
+    }
+
+    GraphComponent<Graph> GetRepeatComponent(const VertexId start) const {
+        set<VertexId> vertices_of_component;
+        vertices_of_component.insert(start);
+        std::queue<VertexId> can_be_processed;
+        UpdateCanBeProcessed(start, can_be_processed);
+        while (!can_be_processed.empty()) {
+            VertexId v = can_be_processed.front();
+            can_be_processed.pop();
+            if (vertices_of_component.count(v) != 0) {
+
+                DEBUG("Component is too complex");
+                return GraphComponent<Graph>(g_, false);
+            }
+            DEBUG("Adding vertex " << g_.str(v) << " to component set");
+            vertices_of_component.insert(v);
+            UpdateCanBeProcessed(v, can_be_processed);
+        }
+
+        GraphComponent<Graph> gc(g_, vertices_of_component.begin(),
+                vertices_of_component.end());
+        return gc;
+    }
+
+    EdgeContainer FinalFilter(const EdgeContainer& edges,
+            EdgeId edge_to_extend) const {
+        EdgeContainer result;
+        for (auto e_with_d : edges) {
+            if (e_with_d.e_ == edge_to_extend) {
+                result.push_back(e_with_d);
+            }
+        }
+        return result;
+    }
+
+    bool GoodExtension(EdgeId e, double path_coverage) const {
+        if (math::ge(g_.coverage(e), path_coverage - path_coverage * delta_)) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    EdgeContainer FindExtensionTroughRepeat(const EdgeContainer& edges, double path_coverage) const {
+        set<EdgeId> good_extensions;
+        for(auto edge : edges) {
+
+            if(g_.length(edge.e_) > max_edge_length_in_repeat_) {
+                if(GoodExtension(edge.e_, path_coverage)) {
+                    good_extensions.insert(edge.e_);
+                    continue;
+                }
+            }
+
+            GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(edge.e_));
+            if(gc.v_size() == 0) {
+                return EdgeContainer();
+            }
+
+            for (auto e : gc.edges()) {
+                if (g_.length(e) > max_edge_length_in_repeat_) {
+                    DEBUG("Repeat component contains long edges");
+                    return EdgeContainer();
+                }
+            }
+
+            for (auto v : gc.sinks()) {
+                for (auto e : g_.OutgoingEdges(v)) {
+                    if(GoodExtension(e, path_coverage)) {
+                        good_extensions.insert(edge.e_);
+                    }
+                }
+            }
+        }
+
+        DEBUG("Number of good extensions is " << good_extensions.size());
+
+        if (good_extensions.size() != 1) {
+            DEBUG("Returning");
+            return EdgeContainer();
+        }
+
+        DEBUG("Filtering... Extend with edge " << good_extensions.begin()->int_id());
+        return FinalFilter(edges, *good_extensions.begin());
+    }
+    
+    //fixme codestyle
+    CoverageAwareIdealInfoProvider provider_;
+    const size_t max_edge_length_in_repeat_;
+    const double delta_;
+protected:
+    DECL_LOGGER("CoordCoverageExtensionChooser");
+};
+
 }
 #endif /* EXTENSION_HPP_ */

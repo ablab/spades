@@ -42,7 +42,7 @@ class DebruijnEnvironment : public Environment {
               max_vertices_(40),
               edge_length_bound_(1000),
               gp_(K, "./tmp", cfg::get().ds.reads.lib_count(), 
-                  cfg::get().ds.reference_genome,
+                  "",
                   cfg::get().flanking_range,
                   cfg::get().pos.max_mapping_gap,
                   cfg::get().pos.max_gap_diff),
@@ -50,7 +50,6 @@ class DebruijnEnvironment : public Environment {
               mapper_(new MapperClass(gp_.g, gp_.index, gp_.kmer_mapper)),
               filler_(gp_.g, mapper_, gp_.edge_pos),
               labeler_(gp_.g, gp_.edge_pos) {
-
             DEBUG("Environment constructor");
             gp_.kmer_mapper.Attach();
             debruijn_graph::graphio::ScanAll(path_, gp_);
@@ -85,14 +84,14 @@ class DebruijnEnvironment : public Environment {
 
             //Loading Genome and Handlers
             DEBUG("Colorer done");
-            Path<EdgeId> path1 = mapper_->MapSequence(gp_.genome).path();
-            Path<EdgeId> path2 = mapper_->MapSequence(!gp_.genome).path();
+            Path<EdgeId> path1 = mapper_->MapSequence(gp_.genome.GetSequence()).path();
+            Path<EdgeId> path2 = mapper_->MapSequence(!gp_.genome.GetSequence()).path();
         	coloring_ = omnigraph::visualization::DefaultColorer(gp_.g, path1, path2);
             ResetPositions();
         }
 
         void LoadNewGenome(const Sequence& genome) {
-            gp_.genome = genome;
+            gp_.genome.SetSequence(genome);
             ResetPositions();
         }
 
@@ -101,8 +100,8 @@ class DebruijnEnvironment : public Environment {
                 gp_.edge_pos.Attach();
 
             gp_.edge_pos.clear();
-            filler_.Process(gp_.genome, "ref0");
-            filler_.Process(!gp_.genome, "ref1");
+            filler_.Process(gp_.genome.GetSequence(), "ref0");
+            filler_.Process(!gp_.genome.GetSequence(), "ref1");
         }
 
         string GetFormattedPictureCounter() const {
@@ -141,8 +140,8 @@ class DebruijnEnvironment : public Environment {
             return gp_.g;
         }
 
-        const Sequence& genome() const {
-            return gp_.genome;
+        Sequence genome() const {
+            return gp_.genome.GetSequence();
         }
 
         const MapperClass& mapper() const {

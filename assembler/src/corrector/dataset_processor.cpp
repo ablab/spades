@@ -161,7 +161,7 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
         return "";
     }
 */
-    string last_line = corr_cfg::get().bwa + string(" mem ") + genome_file_ + " " + left + " " + right + "  > "
+    string last_line = corr_cfg::get().bwa + string(" mem ") + genome_file_ + " " + left + " " + right + " -t " + nthreads_str + "  > "
             + tmp_sam_filename + " 2>" + isize_txt_filename;
     INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
@@ -204,7 +204,7 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
         INFO("bwa failed, skipping sublib");
         return "";
     }*/
-    string last_line = corr_cfg::get().bwa + " mem " + genome_file_ + " "  + single + "  > " + tmp_sam_filename + " 2>"
+    string last_line = corr_cfg::get().bwa + " mem " + genome_file_ + " "  + single + " -t " + nthreads_str + "  > " + tmp_sam_filename + " 2>"
             + isize_txt_filename;
     INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
@@ -253,7 +253,7 @@ void DatasetProcessor::ProcessDataset() {
                     SplitPairedLibrary(samf, lib_num);
                     lib_num++;
                 } else {
-                    WARN("Failed to align paired reads " << left << " and " << right);
+                    FATAL_ERROR("Failed to align paired reads " << left << " and " << right);
                 }
             }
             for (auto iter = dataset.single_begin(); iter != dataset.single_end(); iter++) {
@@ -268,7 +268,7 @@ void DatasetProcessor::ProcessDataset() {
                     SplitSingleLibrary(samf, lib_num);
                     lib_num++;
                 } else {
-                    WARN("Failed to align single reads " << left);
+                    FATAL_ERROR("Failed to align single reads " << left);
                 }
             }
         }

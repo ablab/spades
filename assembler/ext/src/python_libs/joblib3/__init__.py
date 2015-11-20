@@ -14,7 +14,7 @@ data and has specific optimizations for `numpy` arrays. It is
 
 
     ============================== ============================================
-    **User documentation**:        http://packages.python.org/joblib
+    **User documentation**:        http://pythonhosted.org/joblib
 
     **Download packages**:         http://pypi.python.org/pypi/joblib#downloads
 
@@ -28,9 +28,7 @@ Vision
 --------
 
 The vision is to provide tools to easily achieve better performance and
-reproducibility when working with long running jobs. In addition, Joblib
-can also be used to provide a light-weight make replacement or caching
-solution.
+reproducibility when working with long running jobs.
 
  *  **Avoid computing twice the same thing**: code is rerun over an
     over, for instance when prototyping computational-heavy jobs (as in
@@ -60,7 +58,6 @@ Main features
    inputs and  outputs: Python functions. Joblib can save their
    computation to disk and rerun it only if necessary::
 
-      >>> import numpy as np
       >>> from joblib import Memory
       >>> mem = Memory(cachedir='/tmp/joblib')
       >>> import numpy as np
@@ -102,10 +99,26 @@ Main features
 
 """
 
-__version__ = '0.7.1'
+# PEP0440 compatible formatted version, see:
+# https://www.python.org/dev/peps/pep-0440/
+#
+# Generic release markers:
+# X.Y
+# X.Y.Z # For bugfix releases
+#
+# Admissible pre-release markers:
+# X.YaN # Alpha release
+# X.YbN # Beta release
+# X.YrcN # Release Candidate
+# X.Y # Final release
+#
+# Dev branch marker is: 'X.Y.dev' or 'X.Y.devN' where N is an integer.
+# 'X.Y.dev0' is the canonical version of 'X.Y.dev'
+#
+__version__ = '0.9.3'
 
 
-from .memory import Memory
+from .memory import Memory, MemorizedResult
 from .logger import PrintTime
 from .logger import Logger
 from .hashing import hash

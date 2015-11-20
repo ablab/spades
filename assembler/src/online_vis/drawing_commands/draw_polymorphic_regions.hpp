@@ -19,11 +19,10 @@ class DrawPolymorphicRegions : public DrawingCommand {
     GraphComponent<Graph> ConstructComponent(DebruijnEnvironment& curr_env, EdgeId firstEdge, EdgeId secondEdge, size_t windowSize) const
     {
         PathStorageCallback<Graph> callback(curr_env.graph());
-        PathProcessor<Graph> path_processor(curr_env.graph(), 0, windowSize*4,
-                                            curr_env.graph().EdgeEnd(firstEdge), curr_env.graph().EdgeStart(secondEdge),
-                                            callback);
-        path_processor.Process();
-        vector<vector<EdgeId> > paths = callback.paths();
+        ProcessPaths(curr_env.graph(), 0, windowSize*4,
+                        curr_env.graph().EdgeEnd(firstEdge), curr_env.graph().EdgeStart(secondEdge),
+                        callback);
+        vector<vector<EdgeId>> paths = callback.paths();
         vector<VertexId> verticesToAdd;
         verticesToAdd.push_back(curr_env.graph().EdgeEnd(firstEdge));
         for(auto edges : paths)
@@ -101,7 +100,7 @@ protected:
         return 0;
     }
 
-    bool CheckCorrectness(const vector<string>& args) const {
+    bool CheckCorrectness(const vector<string>&) const {
         return true;
     }
 

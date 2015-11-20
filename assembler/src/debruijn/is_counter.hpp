@@ -65,39 +65,25 @@ public:
     }
 
     virtual void ProcessPairedRead(size_t thread_index,
+                                   const io::PairedRead& r,
                                    const MappingPath<EdgeId>& read1,
-                                   const MappingPath<EdgeId>& read2,
-                                   size_t dist) {
-
-        ++total_.arr_[thread_index];
-
-        if (read1.size() == 1 && read2.size() == 1 &&
-                read2.simple_path().front() == read1.simple_path().front() &&
-                gp_.g.length(read1.simple_path().front()) >= edge_length_threshold_) {
-
-            auto mapping_edge_1 = read1.front().second;
-            auto mapping_edge_2 = read2.front().second;
-
-            int read1_start = (int) mapping_edge_1.mapped_range.start_pos - (int) mapping_edge_1.initial_range.start_pos ;
-            TRACE("Read 1: " << (int) mapping_edge_1.mapped_range.start_pos << " - " << (int) mapping_edge_1.initial_range.start_pos << " = " << read1_start);
-            int read2_start = (int) mapping_edge_2.mapped_range.start_pos - (int) mapping_edge_2.initial_range.start_pos;
-            TRACE("Read 2: " << (int) mapping_edge_2.mapped_range.start_pos << " - " << (int) mapping_edge_2.initial_range.start_pos << " = " << read2_start);
-            int is = read2_start - read1_start + (int) dist;
-            TRACE("IS: " << read2_start << " - " <<  read1_start << " + " << (int) dist << "(" << dist << ") = " << is);
-
-            if (is > 0 || !ignore_negative_) {
-                (*tmp_hists_[thread_index])[is] += 1;
-                ++counted_.arr_[thread_index];
-            } else {
-                ++negative_.arr_[thread_index];
-            }
-
-        }
-
+                                   const MappingPath<EdgeId>& read2) {
+        ProcessPairedRead(thread_index, read1, read2, (int) r.second().size(),
+                          (int) r.first().GetLeftOffset() + (int) r.second().GetRightOffset());
     }
 
-    virtual void ProcessSingleRead(size_t /*thread_index*/, const MappingPath<EdgeId>& /*read*/) {
+    virtual void ProcessPairedRead(size_t thread_index,
+                                   const io::PairedReadSeq& r,
+                                   const MappingPath<EdgeId>& read1,
+                                   const MappingPath<EdgeId>& read2) {
+        ProcessPairedRead(thread_index, read1, read2, (int) r.second().size(),
+                          (int) r.first().GetLeftOffset() + (int) r.second().GetRightOffset());
+    }
 
+    virtual void ProcessSingleRead(size_t /*thread_index*/, const io::SingleRead&, const MappingPath<EdgeId>& /*read*/) {
+    }
+
+    virtual void ProcessSingleRead(size_t /*thread_index*/, const io::SingleReadSeq&, const MappingPath<EdgeId>& /*read*/) {
     }
 
     virtual void MergeBuffer(size_t thread_index) {
@@ -118,7 +104,38 @@ public:
     }
 
 private:
+    virtual void ProcessPairedRead(size_t thread_index,
+                                   const MappingPath<EdgeId>& read1,
+                                   const MappingPath<EdgeId>& read2,
+                                   int read2_size,
+                                   int is_delta) {
 
+        ++total_.arr_[thread_index];
+
+        if (read1.size() == 1 && read2.size() == 1 &&
+            read2.simple_path().front() == read1.simple_path().front() &&
+            gp_.g.length(read1.simple_path().front()) >= edge_length_threshold_) {
+
+            auto mapping_edge_1 = read1.front().second;
+            auto mapping_edge_2 = read2.front().second;
+
+            int read1_start = (int) mapping_edge_1.mapped_range.start_pos - (int) mapping_edge_1.initial_range.start_pos ;
+            TRACE("Read 1: " << (int) mapping_edge_1.mapped_range.start_pos << " - " << (int) mapping_edge_1.initial_range.start_pos << " = " << read1_start);
+            int read2_start = (int) mapping_edge_2.mapped_range.start_pos - (int) mapping_edge_2.initial_range.start_pos;
+            TRACE("Read 2: " << (int) mapping_edge_2.mapped_range.start_pos << " - " << (int) mapping_edge_2.initial_range.start_pos << " = " << read2_start);
+            int is = read2_start - read1_start + read2_size + is_delta;
+            TRACE("IS: " << read2_start << " - " <<  read1_start << " + " << (int) is_delta << " = " << is);
+
+            if (is > 0 || !ignore_negative_) {
+                (*tmp_hists_[thread_index])[is] += 1;
+                ++counted_.arr_[thread_index];
+            } else {
+                ++negative_.arr_[thread_index];
+            }
+
+        }
+
+    }
     struct count_data {
       size_t total_;
       vector<size_t> arr_;

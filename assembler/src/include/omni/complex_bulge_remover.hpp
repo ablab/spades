@@ -103,9 +103,7 @@ public:
 		for (VertexId end_v : end_vertices_) {
 			PathStorageCallback<Graph> path_storage(g_);
 			Range r = vertex_depth_.find(end_v)->second;
-			PathProcessor<Graph> best_path_finder(g_, r.start_pos, r.end_pos,
-					start_vertex_, end_v, path_storage);
-			best_path_finder.Process();
+			ProcessPaths(g_, r.start_pos, r.end_pos, start_vertex_, end_v, path_storage);
 			answer += path_storage.size();
 		}
 		return answer;
@@ -1109,7 +1107,7 @@ public:
 
 	bool Run() {
         size_t cnt = 0;
-		INFO("Complex bulge remover started");
+		DEBUG("Complex bulge remover started");
 		if (!pics_folder_.empty()) {
 //			remove_dir(pics_folder_);
 			make_dir(pics_folder_);
@@ -1146,8 +1144,8 @@ public:
 				g_.CompressVertex(v);
 			}
 		}
-		INFO("Complex bulge remover finished");
-        INFO("Bulges processed " << cnt);
+		DEBUG("Complex bulge remover finished");
+        DEBUG("Bulges processed " << cnt);
 		return something_done_flag;
 	}
 

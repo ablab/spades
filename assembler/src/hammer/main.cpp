@@ -118,7 +118,7 @@ int main(int argc, char * argv[]) {
     hammer::InitializeSubKMerPositions();
 
     INFO("Size of aux. kmer data " << sizeof(KMerStat) << " bytes");
-    
+
     int max_iterations = cfg::get().general_max_iterations;
 
     // now we can begin the iterations
@@ -151,10 +151,15 @@ int main(int argc, char * argv[]) {
       std::vector<std::vector<size_t> > classes;
       if (cfg::get().hamming_do || do_everything) {
         ConcurrentDSU uf(Globals::kmer_data->size());
-        KMerHamClusterer clusterer(cfg::get().general_tau);
+        std::string ham_prefix = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls");
         INFO("Clustering Hamming graph.");
-        clusterer.cluster(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls"),
-                          *Globals::kmer_data, uf);
+        if (cfg::get().general_tau > 1) {
+          KMerHamClusterer(cfg::get().general_tau).cluster(ham_prefix, *Globals::kmer_data, uf);
+        } else {
+          TauOneKMerHamClusterer().cluster(ham_prefix, *Globals::kmer_data, uf);
+        }
+
+        INFO("Extracting clusters");
         size_t num_classes = uf.extract_to_file(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"));
 
 #if 0
@@ -271,6 +276,10 @@ int main(int argc, char * argv[]) {
   } catch (std::exception const& e) {
     std::cerr << "Exception caught " << e.what() << std::endl;
     return EINTR;
+  } catch (const std::string& ex) {
+    std::cerr << "Exception caught: " << ex << std::endl;
+  } catch (const char* s) {
+    std::cerr << "Exception caught: " << s << std::endl;
   } catch (...) {
     std::cerr << "Unknown exception caught " << std::endl;
     return EINTR;

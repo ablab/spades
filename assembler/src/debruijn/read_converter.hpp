@@ -26,7 +26,7 @@ namespace debruijn_graph {
 class ReadConverter {
 
 private:
-    const static size_t current_binary_format_version = 8;
+    const static size_t current_binary_format_version = 9;
 
     void convert_reads_to_binary() {
         if (path::FileExists(cfg::get().temp_bin_reads_info)) {

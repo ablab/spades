@@ -1,5 +1,5 @@
 //***************************************************************************
-///* Copyright (c) 2011-2014 Saint-Petersburg Academic University
+//* Copyright (c) 2011-2014 Saint-Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //****************************************************************************
@@ -16,7 +16,9 @@
 
 #include "extension_chooser.hpp"
 #include "path_filter.hpp"
+#include "../overlap_analysis.hpp"
 #include <cmath>
+
 
 namespace path_extend {
 
@@ -181,7 +183,6 @@ public:
     }
 };
 
-
 class GapJoiner {
 
 public:
@@ -189,13 +190,11 @@ public:
     GapJoiner(const Graph& g)
             : g_(g) { }
 
-    virtual int FixGap(EdgeId sink, EdgeId source, int initial_gap) const = 0;
+    virtual Gap FixGap( EdgeId source, EdgeId sink, int initial_gap) const = 0;
 
     virtual ~GapJoiner() { }
 protected:
     const Graph& g_;
-    DECL_LOGGER("PathExtender")
-
 };
 
 class SimpleGapJoiner : public GapJoiner {
@@ -203,31 +202,140 @@ class SimpleGapJoiner : public GapJoiner {
 public:
     SimpleGapJoiner(const Graph& g) : GapJoiner(g) { }
 
-    virtual int FixGap(EdgeId sink, EdgeId source, int initial_gap) const {
+    Gap FixGap(EdgeId source, EdgeId sink, int initial_gap) const override {
         if (initial_gap > 2 * (int) g_.k()) {
-            return initial_gap;
+            return Gap(initial_gap);
         }
         for (int l = (int) g_.k(); l > 0; --l) {
-            if (g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l) == g_.EdgeNucls(source).Subseq(0, l)) {
+            if (g_.EdgeNucls(sink).Subseq(g_.length(source) + g_.k() - l) == g_.EdgeNucls(sink).Subseq(0, l)) {
                 DEBUG("Found correct gap length");
                 DEBUG("Inintial: " << initial_gap << ", new gap: " << g_.k() - l);
-                return (int) g_.k() - l;
+                return Gap((int) g_.k() - l);
             }
         }
         DEBUG("Perfect overlap is not found, inintial: " << initial_gap);
-        return initial_gap;
+        return Gap(initial_gap);
     }
 };
 
 class HammingGapJoiner: public GapJoiner {
-    static const size_t DEFAULT_PADDING_LENGTH = 10;
     const double min_gap_score_;
-    const int must_overlap_threshold_;
-    const size_t may_overlap_threshold_;
     const size_t short_overlap_threshold_;
     const size_t basic_overlap_length_;
-    const size_t artificial_gap_;
-    const bool use_old_score_;
+
+    vector<size_t> DiffPos(const Sequence& s1, const Sequence& s2) const {
+        VERIFY(s1.size() == s2.size());
+        vector < size_t > answer;
+        for (size_t i = 0; i < s1.size(); ++i)
+            if (s1[i] != s2[i])
+                answer.push_back(i);
+        return answer;
+    }
+
+    size_t HammingDistance(const Sequence& s1, const Sequence& s2) const {
+        VERIFY(s1.size() == s2.size());
+        size_t dist = 0;
+        for (size_t i = 0; i < s1.size(); ++i) {
+            if (s1[i] != s2[i]) {
+                dist++;
+            }
+        }
+        return dist;
+    }
+
+//    double ScoreGap(const Sequence& s1, const Sequence& s2, int gap, int initial_gap) const {
+//        VERIFY(s1.size() == s2.size());
+//        return 1.0 - (double) HammingDistance(s1, s2) / (double) s1.size()
+//                - (double) abs(gap - initial_gap) / (double) (2 * g_.k());
+//    }
+
+
+    double ScoreGap(const Sequence& s1, const Sequence& s2) const {
+        VERIFY(s1.size() == s2.size());
+        return 1.0 - (double) HammingDistance(s1, s2) / (double) s1.size();
+    }
+
+public:
+
+    //todo review parameters in usages
+    HammingGapJoiner(const Graph& g,
+            double min_gap_score,
+            size_t short_overlap_threshold,
+            size_t basic_overlap_length):
+                GapJoiner(g),
+                min_gap_score_(min_gap_score),
+                short_overlap_threshold_(short_overlap_threshold),
+                basic_overlap_length_(basic_overlap_length)
+    {
+        DEBUG("HammingGapJoiner params: \n min_gap_score " << min_gap_score_ <<
+              "\n short_overlap_threshold " << short_overlap_threshold_ <<
+              "\n basic_overlap_length " << basic_overlap_length_);
+    }
+
+    //estimated_gap is in k-mers
+    Gap FixGap(EdgeId source, EdgeId sink, int estimated_gap) const override {
+
+        size_t corrected_start_overlap = basic_overlap_length_;
+        if (estimated_gap < 0) {
+            corrected_start_overlap -= estimated_gap;
+        }
+
+        corrected_start_overlap = min(corrected_start_overlap,
+                                      g_.k() + min(g_.length(source), g_.length(sink)));
+
+        DEBUG("Corrected max overlap " << corrected_start_overlap);
+
+        double best_score = min_gap_score_;
+        int fixed_gap = INVALID_GAP;
+
+        double overlap_coeff = 0.3;
+        size_t min_overlap = 1ul;
+        if (estimated_gap < 0) {
+            size_t estimated_overlap = g_.k() - estimated_gap;
+            min_overlap = max(size_t(math::round(overlap_coeff * double(estimated_overlap))), 1ul);
+        }
+        //todo better usage of estimated overlap
+        DEBUG("Min overlap " << min_overlap);
+
+        for (size_t l = corrected_start_overlap; l >= min_overlap; --l) {
+            //TRACE("Sink: " << g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l).str());
+            //TRACE("Source: " << g_.EdgeNucls(source).Subseq(0, l));
+            double score = 0;
+            score = ScoreGap(g_.EdgeNucls(source).Subseq(g_.length(source) + g_.k() - l),
+                                    g_.EdgeNucls(sink).Subseq(0, l));
+            if (math::gr(score, best_score)) {
+                TRACE("Curr overlap " << l);
+                TRACE("Score: " << score);
+                best_score = score;
+                fixed_gap = int(g_.k() - l);
+            }
+
+            if (l == short_overlap_threshold_ && fixed_gap != INVALID_GAP) {
+                //look at "short" overlaps only if long overlaps couldn't be found
+                DEBUG("Not looking at short overlaps");
+                break;
+            }
+        }
+
+        if (fixed_gap != INVALID_GAP) {
+            DEBUG("Found candidate gap length with score " << best_score);
+            DEBUG("Estimated gap: " << estimated_gap <<
+                  ", fixed gap: " << fixed_gap << " (overlap " << g_.k() - fixed_gap<< ")");
+        }
+        return Gap(fixed_gap);
+    }
+
+private:
+    DECL_LOGGER("HammingGapJoiner");
+};
+
+//deprecated!
+//fixme reduce code duplication with HammingGapJoiner
+class LikelihoodHammingGapJoiner: public GapJoiner {
+    static const size_t DEFAULT_PADDING_LENGTH = 10;
+    const double min_gap_score_;
+    const size_t short_overlap_threshold_;
+    const size_t basic_overlap_length_;
 
     vector<size_t> DiffPos(const Sequence& s1, const Sequence& s2) const {
         VERIFY(s1.size() == s2.size());
@@ -267,48 +375,25 @@ class HammingGapJoiner: public GapJoiner {
         return 2.*double(n) + double(n - mismatches) * log_match_prob + double(mismatches) * log_mismatch_prob;
     }
 
-    double OldScoreGap(const Sequence& s1, const Sequence& s2) const {
-        VERIFY(s1.size() == s2.size());
-        return 1.0 - (double) HammingDistance(s1, s2) / (double) s1.size();
-    }
-
 public:
 
     //todo review parameters in usages
-    HammingGapJoiner(const Graph& g,
+    LikelihoodHammingGapJoiner(const Graph& g,
             double min_gap_score,
-            int must_overlap_threshold,
-            size_t may_overlap_threshold,
             size_t short_overlap_threshold,
-            size_t basic_overlap_length,
-            size_t artificial_gap = DEFAULT_PADDING_LENGTH,
-            bool use_old_score = false):
+            size_t basic_overlap_length):
                 GapJoiner(g),
                 min_gap_score_(min_gap_score),
-                must_overlap_threshold_(must_overlap_threshold),
-                may_overlap_threshold_(may_overlap_threshold),
                 short_overlap_threshold_(short_overlap_threshold),
-                basic_overlap_length_(basic_overlap_length),
-                artificial_gap_(artificial_gap),
-                use_old_score_(use_old_score)
+                basic_overlap_length_(basic_overlap_length)
     {
-        DEBUG("HammingGapJoiner params: \n min_gap_score " << min_gap_score_ <<
-              "\n must_overlap_threshold " << must_overlap_threshold_ <<
-              "\n may_overlap_threshold " << may_overlap_threshold_ <<
+        DEBUG("LikelihoodHammingGapJoiner params: \n min_gap_score " << min_gap_score_ <<
               "\n short_overlap_threshold " << short_overlap_threshold_ <<
-              "\n basic_overlap_length " << basic_overlap_length_ <<
-              "\n artificial_gap " << artificial_gap_);
+              "\n basic_overlap_length " << basic_overlap_length_);
     }
 
     //estimated_gap is in k-mers
-    virtual int FixGap(EdgeId sink, EdgeId source, int estimated_gap) const {
-        DEBUG("Trying to fix estimated gap " << estimated_gap <<
-              " between " << g_.str(sink) << " and " << g_.str(source));
-
-        if (estimated_gap > int(g_.k() + may_overlap_threshold_)) {
-            DEBUG("Edges are supposed to be too far to check overlaps");
-            return estimated_gap;
-        }
+    Gap FixGap(EdgeId source, EdgeId sink, int estimated_gap) const override {
 
         size_t corrected_start_overlap = basic_overlap_length_;
         if (estimated_gap < 0) {
@@ -316,7 +401,7 @@ public:
         }
 
         corrected_start_overlap = min(corrected_start_overlap,
-                                      g_.k() + min(g_.length(sink), g_.length(source)));
+                                      g_.k() + min(g_.length(source), g_.length(sink)));
 
         DEBUG("Corrected max overlap " << corrected_start_overlap);
 
@@ -336,12 +421,8 @@ public:
             //TRACE("Sink: " << g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l).str());
             //TRACE("Source: " << g_.EdgeNucls(source).Subseq(0, l));
             double score = 0;
-            if(use_old_score_)
-                score = OldScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l),
-                                    g_.EdgeNucls(source).Subseq(0, l));
-            else
-                score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l),
-                                    g_.EdgeNucls(source).Subseq(0, l));
+            score = ScoreGap(g_.EdgeNucls(source).Subseq(g_.length(source) + g_.k() - l),
+                                    g_.EdgeNucls(sink).Subseq(0, l));
             if (math::gr(score, best_score)) {
                 TRACE("Curr overlap " << l);
                 TRACE("Score: " << score);
@@ -360,22 +441,161 @@ public:
             DEBUG("Found candidate gap length with score " << best_score);
             DEBUG("Estimated gap: " << estimated_gap <<
                   ", fixed gap: " << fixed_gap << " (overlap " << g_.k() - fixed_gap<< ")");
-        } else {
-            //couldn't find decent overlap
-            if (estimated_gap < must_overlap_threshold_) {
-                DEBUG("Estimated gap looks unreliable");
-            } else {
-                DEBUG("Overlap was not found");
-                fixed_gap = max(estimated_gap, int(g_.k() + artificial_gap_));
-            }
         }
-        DEBUG("Final fixed gap " << fixed_gap);
-        return fixed_gap;
+        return Gap(fixed_gap);
     }
 
 private:
-    DECL_LOGGER("HammingGapJoiner");
+    DECL_LOGGER("LikelihoodHammingGapJoiner");
 };
+
+//if I was in LA
+class LAGapJoiner: public GapJoiner {
+public:
+    LAGapJoiner(const Graph& g, size_t min_la_length,
+            double flank_multiplication_coefficient,
+            double flank_addition_coefficient) :
+            GapJoiner(g), min_la_length_(min_la_length), flank_addition_coefficient_(
+                    flank_addition_coefficient), flank_multiplication_coefficient_(
+                    flank_multiplication_coefficient) {
+        DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_); DEBUG("flank_addition_coefficient_  - " << flank_addition_coefficient_ );
+    }
+
+    Gap FixGap(EdgeId source, EdgeId sink, int initial_gap) const override {
+
+        DEBUG("Overlap doesn't exceed " << size_t(abs(initial_gap) * ESTIMATED_GAP_MULTIPLIER) + GAP_ADDITIONAL_COEFFICIENT);
+        SWOverlapAnalyzer overlap_analyzer(
+                size_t(abs(initial_gap) * ESTIMATED_GAP_MULTIPLIER) + GAP_ADDITIONAL_COEFFICIENT);
+
+        auto overlap_info = overlap_analyzer.AnalyzeOverlap(g_, source,
+                sink);
+
+        DEBUG(overlap_info);
+
+        if (overlap_info.size() < min_la_length_) {
+            DEBUG("Low alignment size");
+            return Gap(INVALID_GAP);
+        }
+
+        size_t max_flank_length = max(overlap_info.r2.start_pos,
+                g_.length(source) + g_.k() - overlap_info.r1.end_pos);
+        DEBUG("Max flank length - " << max_flank_length);
+
+        if ((double) max_flank_length * flank_multiplication_coefficient_
+                + flank_addition_coefficient_ > overlap_info.size()) {
+            DEBUG("Too long flanks for such alignment");
+            return Gap(INVALID_GAP);
+        }
+
+        if (overlap_info.identity() < IDENTITY_RATIO) {
+            DEBUG("Low identity score");
+            return Gap(INVALID_GAP);
+        }
+
+        if ((g_.length(source) + g_.k())  - overlap_info.r1.end_pos > g_.length(source)) {
+            DEBUG("Save kmers. Don't want to have edges shorter than k");
+            return Gap(INVALID_GAP);
+        }
+
+        if (overlap_info.r2.start_pos > g_.length(sink)) {
+            DEBUG("Save kmers. Don't want to have edges shorter than k");
+            return Gap(INVALID_GAP);
+        }
+
+        return Gap(
+                (int) (-overlap_info.r1.size() - overlap_info.r2.start_pos
+                        + g_.k()),
+                (uint32_t) (g_.length(source) + g_.k()
+                        - overlap_info.r1.end_pos),
+                (uint32_t) overlap_info.r2.start_pos);
+    }
+
+private:
+    DECL_LOGGER("LAGapJoiner");
+    const size_t min_la_length_;
+    const double flank_addition_coefficient_;
+    const double flank_multiplication_coefficient_;
+    constexpr static double IDENTITY_RATIO = 0.9;
+    constexpr static double ESTIMATED_GAP_MULTIPLIER = 2.0;
+    const size_t GAP_ADDITIONAL_COEFFICIENT = 30;
+};
+
+
+class CompositeGapJoiner: public GapJoiner {
+public:
+
+    CompositeGapJoiner(const Graph& g, 
+                       const vector<shared_ptr<GapJoiner>>& joiners, 
+                       size_t may_overlap_threhold, 
+                       int must_overlap_threhold, 
+                       size_t artificail_gap) :
+            GapJoiner(g), 
+            joiners_(joiners), 
+            may_overlap_threshold_(may_overlap_threhold), 
+            must_overlap_threshold_(must_overlap_threhold), 
+            artificial_gap_(artificail_gap)
+            {  }
+
+    Gap FixGap(EdgeId source, EdgeId sink, int estimated_gap) const override {
+        DEBUG("Trying to fix estimated gap " << estimated_gap <<
+                " between " << g_.str(source) << " and " << g_.str(sink));
+
+        if (estimated_gap > int(g_.k() + may_overlap_threshold_)) {
+            DEBUG("Edges are supposed to be too far to check overlaps");
+            return Gap(estimated_gap);
+        }
+
+        for (auto joiner : joiners_) {
+            Gap gap = joiner->FixGap(source, sink, estimated_gap);
+            if (gap.gap_ != GapJoiner::INVALID_GAP) {
+                return gap;
+            }
+        }
+
+        //couldn't find decent overlap
+        if (estimated_gap < must_overlap_threshold_) {
+            DEBUG("Estimated gap looks unreliable");
+            return Gap(INVALID_GAP);
+        } else {
+            DEBUG("Overlap was not found");
+            return Gap(max(estimated_gap, int(g_.k() + artificial_gap_)));
+        }
+    }
+
+private:
+    vector<shared_ptr<GapJoiner>> joiners_;
+    const size_t may_overlap_threshold_;
+    const int must_overlap_threshold_;
+    const size_t artificial_gap_;
+
+    DECL_LOGGER("CompositeGapJoiner");
+};
+
+//FIXME move to tests
+//Just for test. Look at overlap_analysis_tests
+inline Gap MimicLAGapJoiner(Sequence& s1, Sequence& s2) {
+    const int INVALID_GAP = -1000000;
+    constexpr static double IDENTITY_RATIO = 0.9;
+
+    SWOverlapAnalyzer overlap_analyzer_(10000);
+    auto overlap_info = overlap_analyzer_.AnalyzeOverlap(s1, s2);
+    size_t min_la_length_ = 4;
+    if (overlap_info.size() < min_la_length_) {
+        DEBUG("Low alignment size");
+        return Gap(INVALID_GAP);
+    }
+    if (overlap_info.identity() < IDENTITY_RATIO) {
+        DEBUG("Low identity score");
+        return Gap(INVALID_GAP);
+    }
+    std::cout << overlap_info;
+
+    return Gap(
+            (int) (-overlap_info.r1.size() - overlap_info.r2.start_pos),
+            (uint32_t) (s1.size() - overlap_info.r1.end_pos),
+            (uint32_t) overlap_info.r2.start_pos);
+}
+
 
 //Detects a cycle as a minsuffix > IS present earlier in the path. Overlap is allowed.
 class InsertSizeLoopDetector {
@@ -390,6 +610,16 @@ public:
 
     size_t GetMinCycleLenth() const {
         return min_cycle_len_;
+    }
+
+    bool CheckCycledNonIS(const BidirectionalPath& path) const {
+        if (path.Size() <= 2) {
+            return false;
+        }
+        BidirectionalPath last = path.SubPath(path.Size() - 2);
+        int pos = path.FindFirst(last);
+        VERIFY(pos >= 0);
+        return size_t(pos) != path.Size() - 2;
     }
 
     bool CheckCycled(const BidirectionalPath& path) const {
@@ -852,6 +1082,10 @@ public:
         return false;
     }
 
+    bool DetectCycleScaffolding(BidirectionalPath& path) {
+          return is_detector_.CheckCycledNonIS(path);
+    }
+
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) = 0;
 
     virtual bool ResolveShortLoopByCov(BidirectionalPath& path) = 0;
@@ -1043,8 +1277,10 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
     std::shared_ptr<ExtensionChooser> extension_chooser_;
     ExtensionChooser::EdgeContainer sources_;
     std::shared_ptr<GapJoiner> gap_joiner_;
+
 //When check_sink_ set to false we can scaffold not only tips
     bool check_sink_;
+
     void InitSources() {
         sources_.clear();
 
@@ -1080,17 +1316,41 @@ public:
         path.Print();
         ExtensionChooser::EdgeContainer candidates = extension_chooser_->Filter(path, sources_);
         DEBUG("scaffolding candidates " << candidates.size() << " from sources " << sources_.size());
+
         if (candidates.size() == 1) {
             if (candidates[0].e_ == path.Back() || (cfg::get().avoid_rc_connections && candidates[0].e_ == g_.conjugate(path.Back()))) {
                 return false;
             }
-            int gap = cfg::get().pe_params.param_set.scaffolder_options.fix_gaps ?
-                            gap_joiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_) : candidates.back().d_;
+            BidirectionalPath temp_path(path);
+            temp_path.PushBack(candidates[0].e_);
+            if(this->DetectCycleScaffolding(temp_path)) {
+                return false;
+            }
 
-            if (gap != GapJoiner::INVALID_GAP) {
-                DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << gap);
-                auto sc_mode = cfg::get().pe_params.param_set.sm;
-                EdgeId eid = candidates.back().e_;
+            auto sc_mode = cfg::get().pe_params.param_set.sm;
+            EdgeId eid = candidates.back().e_;
+            if(cfg::get().pe_params.param_set.scaffolder_options.fix_gaps) {
+                Gap gap = gap_joiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_);
+                if (gap.gap_ != GapJoiner::INVALID_GAP) {
+                    DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << gap.gap_ << ", trash length: " << gap.trash_previous_ << "-" <<  gap.trash_current_);
+
+                    if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
+                        if (used_storage_->IsUsedAndUnique(eid)) {
+                            return false;
+                        } else {
+                            used_storage_->insert(eid);
+                        }
+                    }
+                    path.PushBack(eid, gap);
+                    return true;
+                }
+                else {
+                        DEBUG("Looks like wrong scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << candidates.back().d_);
+                        return false;
+                }
+            }
+            else {
+                DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << candidates.back().d_ );
                 if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
                     if (used_storage_->IsUsedAndUnique(eid)) {
                         return false;
@@ -1098,13 +1358,8 @@ public:
                         used_storage_->insert(eid);
                     }
                 }
-                path.PushBack(eid, gap);
+                path.PushBack(candidates.back().e_, candidates.back().d_);
                 return true;
-
-
-            } else {
-                DEBUG("Looks like wrong scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << candidates.back().d_);
-                return false;
             }
         }
         DEBUG("scaffolding end");

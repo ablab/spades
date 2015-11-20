@@ -21,7 +21,6 @@ main_iteration  true
 additional_contigs	tmp_contigs.fasta
 load_from         latest/saves/ ; tmp or latest 
 
-
 ; Multithreading options
 temp_bin_reads_dir	.bin_reads/
 max_threads		8

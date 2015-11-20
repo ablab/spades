@@ -2,7 +2,6 @@
 
 ############################################################################
 # Copyright (c) 2015 Saint Petersburg State University
-# Copyright (c) 2011-2014 Saint Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
@@ -11,9 +10,20 @@ import logging
 import os
 import sys
 
-sys.path.append("src/spades_pipeline/common")
-sys.path.append("src/spades_pipeline/truspades")
-sys.path.append("src/spades_pipeline")
+truspades_home = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+bin_home = os.path.join(truspades_home, 'bin')
+python_modules_home = os.path.join(truspades_home, 'src')
+
+if os.path.isfile(os.path.join(truspades_home, 'spades')):
+    install_prefix = os.path.dirname(truspades_home)
+    bin_home = os.path.join(install_prefix, 'bin')
+    truspades_home = os.path.join(install_prefix, 'share', 'spades')
+    python_modules_home = truspades_home
+
+sys.path.append(os.path.join(python_modules_home, "spades_pipeline", "common"))
+sys.path.append(os.path.join(python_modules_home, "spades_pipeline", "truspades"))
+sys.path.append(os.path.join(python_modules_home, "spades_pipeline"))
+
 import SeqIO
 import parallel_launcher
 import reference_construction
@@ -49,9 +59,9 @@ def reads_line(libs):
 def command_line(barcode, output_dir, params, continue_launch):
 #    logfile = os.path.join(output_dir, "logs", barcode.id + ".out")
     if continue_launch and os.path.exists(os.path.join(output_dir, barcode.id,  "params.txt")):
-        result = ["./spades.py", "--truseq", "-o", os.path.join(output_dir, barcode.id), "--continue", " ".join(params)]
+        result = ["python " + os.path.join(bin_home, "spades.py"), "--truseq", "-o", os.path.join(output_dir, barcode.id), "--continue", " ".join(params)]
     else:
-       result = ["./spades.py", "--truseq", "-t", "1", "-o", os.path.join(output_dir, barcode.id), reads_line(barcode.libs), " ".join(params)]
+       result = ["python " + os.path.join(bin_home, "spades.py"), "--truseq", "-t", "1", "-o", os.path.join(output_dir, barcode.id), reads_line(barcode.libs), " ".join(params)]
 #    result = ["./truspades.py", "-o", os.path.join(output_dir, barcode.id), reads_line(barcode.libs), " ".join(params), "\n"]
     return " ".join(result)
 
@@ -107,7 +117,7 @@ def RunTruSPAdes(dataset, log_dir, options, log):
     collect_contigs(dataset, barcodes_dir, output_base, "fasta")
     collect_contigs(dataset, barcodes_dir, output_base, "fastq")
     log.info("Assembled virtual long TruSeq reads can be found in " + os.path.join(options.output_dir,
-                                                                                           "TSLRs.fasta"))
+                                                                                           "TSLR.fasta"))
 
 
 def create_log(options):
@@ -126,8 +136,20 @@ def create_log(options):
     return log
 
 
+def CheckTestSuccess(options, log):
+    output = os.path.join(options.output_dir, "TSLR.fasta")
+    if not os.path.isfile(output):
+        log.info("TruSPAdes test launch failed: can not find output files")
+        sys.exit(1)
+    if not (os.path.getsize(output) > 20000 and os.path.getsize(output) < 20100):
+        log.info("TruSPAdes test launch failed: incorrect output files")
+        sys.exit(1)
+    log.info("TruSPAdes test passed correctly")
+
+
+
 def main(argv):
-    options = launch_options.Options(argv)
+    options = launch_options.Options(argv, bin_home, truspades_home)
     support.ensure_dir_existence(options.output_dir)
     log = create_log(options)
     dataset_file = os.path.join(options.output_dir, "dataset.info")
@@ -152,7 +174,9 @@ def main(argv):
         RunTruSPAdes(dataset, log_dir, options, log)
     elif options.mode == "construct_subreferences":
         reference_construction.ConstructSubreferences(dataset, options.reference, options.output_dir, options.index, options.threads, log = None)
-    sys.stdout.write("TruSPAdes launch successfully finished\n")
+    log.info("TruSPAdes launch successfully finished")
+    if options.test:
+        CheckTestSuccess(options, log)
 
 if __name__ == '__main__':
     main(sys.argv)

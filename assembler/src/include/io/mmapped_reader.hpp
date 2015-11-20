@@ -25,6 +25,7 @@
 #include <cerrno>
 
 #include <string>
+#include <algorithm>
 
 class MMappedReader {
   int StreamFile;
@@ -38,12 +39,19 @@ class MMappedReader {
       munmap(MappedRegion, BlockSize);
 
     BlockOffset += BlockSize;
+
+    if (BlockOffset + BlockSize > FileSize)
+      BlockSize = FileSize - BlockOffset;
+
     // We do not add PROT_WRITE here intentionaly - remapping and write access
     // is pretty error-prone.
-    MappedRegion =
-        (uint8_t*)mmap(NULL, BlockSize,
-                       PROT_READ, MAP_FILE | MAP_PRIVATE,
-                       StreamFile, BlockOffset);
+    if (BlockSize)
+      MappedRegion =
+          (uint8_t*)mmap(NULL, BlockSize,
+                         PROT_READ, MAP_FILE | MAP_PRIVATE,
+                         StreamFile, InitialOffset + BlockOffset);
+    else
+      MappedRegion = NULL;
     VERIFY_MSG((intptr_t)MappedRegion != -1L,
                "mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
   }
@@ -56,22 +64,24 @@ class MMappedReader {
  protected:
   uint8_t* MappedRegion;
   size_t FileSize, BlockOffset, BytesRead, BlockSize;
+  off_t InitialOffset;
 
  public:
   MMappedReader()
-      : StreamFile(-1), Unlink(false), FileName(""), MappedRegion(0), FileSize(0), BytesRead(0)
+      : StreamFile(-1), Unlink(false), FileName(""), MappedRegion(0), FileSize(0), BytesRead(0), InitialOffset(0)
     {}
 
   MMappedReader(const std::string &filename, bool unlink = false,
-                size_t blocksize = 64*1024*1024, size_t off = 0, size_t sz = 0)
+                size_t blocksize = 64*1024*1024, off_t off = 0, size_t sz = 0)
       : Unlink(unlink), FileName(filename), BlockSize(blocksize) {
     struct stat buf;
 
-    FileSize = (sz ? sz : (stat(FileName.c_str(), &buf) != 0 ? 0 : buf.st_size));
+    InitialOffset = off;
+    FileSize = (sz ? sz : (stat(FileName.c_str(), &buf) != 0 ? 0 : buf.st_size - InitialOffset));
 
     StreamFile = open(FileName.c_str(), O_RDONLY);
     VERIFY_MSG(StreamFile != -1,
-               "open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+               "open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno << ". File: " << FileName);
 
     if (BlockSize != -1ULL) {
       size_t PageSize = getpagesize();
@@ -82,7 +92,7 @@ class MMappedReader {
     if (BlockSize) {
       MappedRegion =
           (uint8_t*)mmap(NULL, BlockSize, PROT_READ | PROT_WRITE, MAP_FILE | MAP_PRIVATE,
-                         StreamFile, off);
+                         StreamFile, InitialOffset);
       VERIFY_MSG((intptr_t)MappedRegion != -1L,
                  "mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
     } else
@@ -101,11 +111,12 @@ class MMappedReader {
     FileName = std::move(other.FileName);
     Unlink = other.Unlink;
     StreamFile = other.StreamFile;
+    InitialOffset = other.InitialOffset;
 
     // Now, zero out inside other, so we won't do crazy thing in dtor
-    StreamFile = -1;
-    Unlink = false;
-    MappedRegion = 0;
+    other.StreamFile = -1;
+    other.Unlink = false;
+    other.MappedRegion = 0;
   }
 
   MMappedReader& operator=(MMappedReader &&other) {
@@ -190,7 +201,7 @@ class MMappedRecordReader : public MMappedReader {
 
   MMappedRecordReader(const std::string &FileName, bool unlink = true,
                       size_t blocksize = 64*1024*1024 / (sizeof(T) * (unsigned)getpagesize()) * (sizeof(T) * (unsigned)getpagesize()),
-                      size_t off = 0, size_t sz = 0):
+                      off_t off = 0, size_t sz = 0):
       MMappedReader(FileName, unlink, blocksize, off, sz) {
     VERIFY(FileSize % sizeof(T) == 0);
   }
@@ -266,7 +277,7 @@ class MMappedRecordArrayReader : public MMappedReader {
   MMappedRecordArrayReader(const std::string &FileName,
                            size_t elcnt = 1,
                            bool unlink = true,
-                           size_t off = 0, size_t sz = 0):
+                           off_t off = 0, size_t sz = 0):
       MMappedReader(FileName, unlink, -1ULL, off, sz), elcnt_(elcnt) {
     VERIFY(FileSize % (sizeof(T) * elcnt_) == 0);
   }
@@ -291,6 +302,10 @@ class MMappedRecordArrayReader : public MMappedReader {
   const_iterator cend() const { return const_iterator(data() + size()*elcnt_, elcnt_); }
 };
 
+static inline size_t round_up(size_t value, size_t boundary) {
+    return (value + boundary - 1) / boundary * boundary;
+}
+
 template<class T>
 class MMappedFileRecordArrayIterator :
         public boost::iterator_facade<MMappedFileRecordArrayIterator<T>,
@@ -299,28 +314,37 @@ class MMappedFileRecordArrayIterator :
                                       const T*> {
   public:
     // Default ctor, used to implement "end" iterator
-    MMappedFileRecordArrayIterator(): value_(NULL), reader_(), elcnt_(0), good_(false) {}
-    MMappedFileRecordArrayIterator(const std::string &FileName, size_t elcnt)
+    MMappedFileRecordArrayIterator(): value_(NULL), array_size_(0), reader_(), good_(false) {}
+    MMappedFileRecordArrayIterator(const std::string &FileName,
+                                   size_t elcnt,
+                                   off_t offset = 0, size_t filesize = 0)
             : value_(NULL),
+              array_size_(sizeof(T) * elcnt),
               reader_(FileName, false,
-                      64*1024*1024 / (sizeof(T) * (unsigned)getpagesize() * elcnt) * (sizeof(T) * (unsigned)getpagesize() * elcnt)),
-              elcnt_(elcnt), good_(true) {
+                      round_up(filesize > 0 ? std::min(size_t(64 * 1024 * 1024), filesize) : 64 * 1024 * 1024, array_size_ * (unsigned)getpagesize()),
+                      offset, filesize),
+              good_(false) {
         increment();
     }
     MMappedFileRecordArrayIterator(MMappedRecordReader<T> &&reader, size_t elcnt)
-            : value_(NULL), reader_(std::move(reader)), elcnt_(elcnt), good_(true) {
+            : value_(NULL), array_size_(sizeof(T) * elcnt), reader_(std::move(reader)), good_(false) {
         increment();
     }
+    MMappedFileRecordArrayIterator(const MMappedFileRecordArrayIterator&) = delete;
+
+    MMappedFileRecordArrayIterator(MMappedFileRecordArrayIterator&& other)
+            : value_(other.value_), array_size_(other.array_size_),
+              reader_(std::move(other.reader_)), good_(other.good_) {}
 
     bool good() const { return good_; }
+    const MMappedRecordReader<T>& reader() const { return reader_; }
 
   private:
     friend class boost::iterator_core_access;
 
     void increment() {
         good_ = reader_.good();
-        if (good_)
-            value_ = (T*)reader_.skip(elcnt_ * sizeof(T));
+        value_ = (good_ ? (T*)reader_.skip(array_size_) : NULL);
     }
     bool equal(const MMappedFileRecordArrayIterator &other) const {
         return value_ == other.value_;
@@ -328,8 +352,8 @@ class MMappedFileRecordArrayIterator :
     const T* dereference() const { return value_; }
 
     T* value_;
+    size_t array_size_;
     MMappedRecordReader<T> reader_;
-    size_t elcnt_;
     bool good_;
 };
 
