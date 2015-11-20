@@ -122,11 +122,11 @@ dict_of_rel2abs = dict()
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc iontorrent meta "\
                "only-error-correction only-assembler "\
                "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
-               "help test debug debug:false reference= config-file= dataset= "\
+               "help version test debug debug:false reference= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false "\
                "continue restart-from= diploid truseq cov-cutoff= configs-dir= stop-after=".split()
-short_options = "o:1:2:s:k:t:m:i:h"
+short_options = "o:1:2:s:k:t:m:i:hv"
 
 # adding multiple paired-end, mate-pair and other (long reads) libraries support
 reads_options = []
@@ -145,9 +145,14 @@ reads_options = list(map(lambda x: "--" + x.split('=')[0], reads_options))
 reads_options += OLD_STYLE_READS_OPTIONS
 
 
+def version(spades_version):
+    sys.stderr.write("SPAdes v" + str(spades_version) + "\n")
+    sys.stderr.flush()
+
+
 def usage(spades_version, show_hidden=False, dipspades=False):
     if not dipspades:
-        sys.stderr.write("SPAdes genome assembler v" + str(spades_version) + "\n")
+        sys.stderr.write("SPAdes genome assembler v" + str(spades_version) + "\n\n")
     else:
         sys.stderr.write("dipSPAdes 1.0: genome assembler designed for diploid genomes with high heterozygosity rate\n\n")
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
@@ -160,6 +165,7 @@ def usage(spades_version, show_hidden=False, dipspades=False):
     sys.stderr.write("--iontorrent\t\tthis flag is required for IonTorrent data" + "\n")
     sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
     sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
+    sys.stderr.write("-v/--version\t\tprints version" + "\n")
 
     sys.stderr.write("" + "\n")
     if not dipspades:
