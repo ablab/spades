@@ -86,7 +86,8 @@ inline void find_median(const HistType& hist, double& median, double& mad, HistT
     mad = get_mad(cropped_hist, median);
 }
 
-
+//Moved from insert size counter.
+//TODO: Please explain constants like 1.4826.
 inline void find_mean(const HistType& hist, double& mean, double& delta, std::map<size_t, size_t>& percentiles) {
     double median = get_median(hist);
     double mad = get_mad(hist, median);

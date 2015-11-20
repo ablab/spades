@@ -5,12 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * read.hpp
- *
- *  Created on: Jun 26, 2014
- *      Author: lab42
- */
 #include "samtools/bam.h"
 
 #include <string>

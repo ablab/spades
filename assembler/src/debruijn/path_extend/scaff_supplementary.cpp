@@ -1,7 +1,3 @@
-//
-// Created by lab42 on 8/18/15.
-//
-
 #include "scaff_supplementary.hpp"
 #include <algorithm>
 
@@ -9,7 +5,6 @@ using namespace std;
 namespace path_extend {
 
 
-//default: 1000, 1.5 ?
 void ScaffoldingUniqueEdgeAnalyzer::SetCoverageBasedCutoff() {
     vector <pair<double, size_t>> coverages;
     map <EdgeId, size_t> long_component;

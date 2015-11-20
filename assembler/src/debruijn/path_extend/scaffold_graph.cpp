@@ -1,7 +1,3 @@
-//
-// Created by andrey on 17.09.15.
-//
-
 #include "scaffold_graph.hpp"
 
 

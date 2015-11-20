@@ -41,7 +41,7 @@ void MapperReadT::ParseCigar(const string& cigar) {
     }
 }
 
-//Correct read algnment according to orieantation and clippings
+//Correct read algnment according to orientation and clippings
 void BWACorrectingProcessor::ProcessPairedRead(const MapperReadT& l, const MapperReadT& r) {
     using io::LibraryOrientation;
 

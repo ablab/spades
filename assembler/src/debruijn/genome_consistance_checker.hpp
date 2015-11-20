@@ -5,12 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * genome_consistance_checker.hpp
- *
- *  Created on: Oct 24, 2013
- *      Author: anton
- */
 
 #pragma once
 #include "omni/visualization/graph_labeler.hpp"
@@ -53,6 +47,7 @@ private:
 	bool consequent(const MappingRange &mr1, const MappingRange &mr2) ;
 
     PathScore CountMisassembliesWithStrand(const BidirectionalPath &path, const string strand) const;
+//Refills genomic positions uniting alingments separated with small gaps
     void RefillPos();
     void RefillPos(const string &strand);
     void RefillPos(const string &strand, const EdgeId &e);
@@ -71,8 +66,6 @@ public:
         FillPos(gp_, !gp_.genome.GetSequence(), "1");
         RefillPos();
 	}
-//first - number of misassemblies without respect to gap size between unique edges
-//second - number of wrong gap size between two consecutive unique edges in path
 	PathScore CountMisassemblies(const BidirectionalPath &path) const;
 //spells genome in language of long unique edges from storage;
     void SpellGenome() const;

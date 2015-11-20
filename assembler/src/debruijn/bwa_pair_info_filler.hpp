@@ -122,7 +122,7 @@ public:
     virtual bool CheckAlignments(const MappedPositionT& l, const MappedPositionT& r) = 0;
 
     virtual void ProcessAlignments(const MappedPositionT& l, const MappedPositionT& r) = 0;
-
+//Correct read algnment according to orientation and clippings
     virtual void ProcessPairedRead(const MapperReadT& l, const MapperReadT& r);
 };
 

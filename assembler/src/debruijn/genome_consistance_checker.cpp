@@ -1,7 +1,3 @@
-///
-// Created by lab42 on 9/1/15.
-//
-
 #include "genome_consistance_checker.hpp"
 #include "debruijn_graph.hpp"
 #include <algorithm>
@@ -24,8 +20,6 @@ bool GenomeConsistenceChecker::consequent(const Range &mr1, const Range &mr2) {
 }
 bool GenomeConsistenceChecker::consequent(const MappingRange &mr1, const MappingRange &mr2) {
     //do not want to think about handling gaps near 0 position.
-//    if (mr2.initial_range.start_pos <= absolute_max_gap_ && mr1.initial_range.end_pos + absolute_max_gap_ >= genome_.size() )
-//        return true;
     if (!consequent(mr1.initial_range, mr2.initial_range) || !consequent(mr1.mapped_range, mr2.mapped_range))
         return false;
     size_t initial_gap = gap(mr1.initial_range, mr2.initial_range);
@@ -35,56 +29,7 @@ bool GenomeConsistenceChecker::consequent(const MappingRange &mr1, const Mapping
         return false;
     return true;
 }
-/*
-set<MappingRange> GenomeConsistenceChecker::FillPositionGaps(const set<MappingRange> &info, size_t gap) {
-    set<MappingRange> result;
-    auto cur = info.begin();
-    while(cur != info.end()) {
-        MappingRange new_range = *cur;
-        ++cur;
-        while(cur != info.end() && consequent(new_range, *cur, gap)) {
-            new_range = new_range.Merge(*cur);
-            ++cur;
-        }
-        result.insert(new_range);
-    }
-    return result;
-}
 
-void GenomeConsistenceChecker::GenomeConsistenceChecker::Merge(set<MappingRange> &ranges, set<MappingRange> &to_merge, int shift) {
-    for(set<MappingRange>::iterator it = to_merge.begin(); it != to_merge.end(); ++it) {
-        ranges.insert(genome_mapping_.EraseAndExtract(ranges, it->Shift(shift)));
-    }
-}
-
-bool GenomeConsistenceChecker::IsConsistentWithGenomeStrand(const vector<EdgeId> &path, const string &strand) const {
-    size_t len = graph_.length(path[0]);
-    for (size_t i = 1; i < path.size(); i++) {
-        Merge(res, .GetEdgePositions(path[i], strand));
-        len += graph_.length(path[i]);
-    }
-    FillPositionGaps(res, len);
-    if (res.size() > 0) {
-        for (size_t i = 0; i < res.size(); i++) {
-            size_t m_len = res[i].initial_range.size();
-            if (abs(int(res[i].initial_range.size()) - int(len)) < max(1.0 * max_gap_, 0.07 * len))
-                return true;
-        }
-    }
-    return false;
-}
-
-bool GenomeConsistenceChecker::IsConsistentWithGenome(vector<EdgeId> path) const {
-    if (path.size() == 0)
-        return false;
-    for (size_t i = 0; i + 1 < path.size(); i++) {
-        if (graph_.EdgeStart(path[i + 1]) != graph_.EdgeEnd(path[i]))
-            return false;
-    }
-    return IsConsistentWithGenomeStrand(path, "0") || IsConsistentWithGenomeStrand(path, "1");
-}
-
-*/
 PathScore GenomeConsistenceChecker::CountMisassemblies(const BidirectionalPath &path) const {
     PathScore straight = CountMisassembliesWithStrand(path, "0");
     PathScore reverse = CountMisassembliesWithStrand(path, "1");

@@ -647,10 +647,6 @@ inline bool MPLibsExist() {
     return false;
 }
 
-inline void FinalizeUniquenessPaths(){
-//TODO::compilation placeholder
-}
-
 
 inline void ResolveRepeatsPe(conj_graph_pack& gp,
         const std::string& output_dir,
@@ -664,7 +660,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     auto sc_mode = cfg::get().pe_params.param_set.sm;
 
     if (sc_mode != sm_old) {
-        //TODO: Separate function!!
+//TODO: Separate function!!
         //Setting scaffolding2015 parameters
         auto min_unique_length = cfg::get().pe_params.scaffolding2015.min_unique_length;
         auto unique_variaton = cfg::get().pe_params.scaffolding2015.unique_coverage_variation;
