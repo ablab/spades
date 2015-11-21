@@ -238,6 +238,14 @@ BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
     pi.Add(1, 3, {3, 1, 0});
     pi.Remove(1, 3);
     BOOST_CHECK(!pi.contains(1, 3));
+    //Check for nonexisting remove
+    pi.Remove(1, 3, {1, 1, 0});
+    BOOST_CHECK(!pi.contains(1, 3));
+    BOOST_CHECK_EQUAL(pi.Remove(1, 2, {2, 2, 0}), 0);
+    BOOST_CHECK(pi.contains(1, 2));
+    //Check for auto-prune
+    BOOST_CHECK_EQUAL(pi.Remove(1, 2, {1, 1, 0}), 2);
+    BOOST_CHECK(!pi.contains(1, 2));
     //Check for neighbours remove
     pi.Add(1, 3, {3, 1, 0});
     pi.Add(2, 13, {7, 1, 0});

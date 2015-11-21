@@ -488,9 +488,8 @@ public:
     size_t Remove(EdgeId e1, EdgeId e2, Point point) {
         auto res = RemoveImpl(e1, e2, point);
         auto conj = ConjugatePair(e1, e2);
-        auto conj_point = point;
         point.d += CalcOffset(e2, e1);
-        res += RemoveImpl(conj.first, conj.second, conj_point);
+        res += RemoveImpl(conj.first, conj.second, point);
         return res;
     }
 
@@ -524,13 +523,16 @@ private:
             auto i2 = map.find(e2);
             if (i2 != map.end()) {
                 Histogram& hist = i2->second;
-                if (hist.erase(point))
+                if (hist.erase(point)) {
                     --size_;
-                if (hist.empty())
-                    map.erase(e2);
-                if (map.empty())
-                    storage_.erase(e1);
-                return 1;
+                    if (hist.empty()) {
+                        map.erase(e2);
+                        if (map.empty())
+                            storage_.erase(e1);
+                    }
+                    return 1;
+                }
+                return 0;
             }
         }
         return 0;
