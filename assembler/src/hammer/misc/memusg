@@ -13,7 +13,7 @@ set -um
 
 pgid=`ps -o pgid= $$`
 # make sure we're in a separate process group
-if [ x$pgid = x$(ps -o pgid= $(ps -o ppid= $$)) ]; then
+if [ x$pgid == x$(ps -o pgid= $(ps -o ppid= $$)) ]; then
     cmd=
     set -- "$0" "$@"
     for a; do cmd+="'${a//"'"/"'\\''"}' "; done
