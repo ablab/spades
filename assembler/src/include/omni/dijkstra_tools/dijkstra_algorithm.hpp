@@ -135,9 +135,9 @@ public:
         vertex_number_(0),
         vertex_limit_exceeded_(false) {}
 
-    Dijkstra(Dijkstra&& other) = default; 
+    Dijkstra(Dijkstra&&) = default;
 
-    Dijkstra& operator=(Dijkstra&& other) = default;
+    Dijkstra& operator=(Dijkstra&&) = default;
 
     bool finished() const {
         return finished_;

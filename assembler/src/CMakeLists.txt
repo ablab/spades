@@ -86,7 +86,7 @@ add_subdirectory(spades_pipeline)
 add_subdirectory(dipspades)
 add_subdirectory(corrector)
 add_subdirectory(scaffold_correction)
-add_subdirectory(kmer_count_filter)
+add_subdirectory(mts)
 
 # Main pipeline script
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"

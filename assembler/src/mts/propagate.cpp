@@ -112,13 +112,14 @@ public:
         size_t iteration_cnt = 2;
         ConnectingPathPropagator edge_propagator(gp_, 5000);
 
-        EdgeAnnotation propagated_annotation(edge_annotation);
+        auto annotation_ptr = make_shared<EdgeAnnotation>(edge_annotation);
         for (size_t i = 0; i < iteration_cnt; ++i) {
-             propagated_annotation = edge_propagator.Propagate(propagated_annotation);
+             annotation_ptr = make_shared<EdgeAnnotation>(
+                                             edge_propagator.Propagate(*annotation_ptr));
         }
 
         contigs.reset();
-        DumpContigAnnotation(contigs, propagated_annotation, annotation_out_fn);
+        DumpContigAnnotation(contigs, *annotation_ptr, annotation_out_fn);
     }
 };
 
