@@ -149,17 +149,17 @@ public:
          * @todo Simplify
          */
         Point max() const {
-            //Our histograms are ordered, so the minimum is `rbegin` of either
+            //Our histograms are ordered, so the maximum is `rbegin` of either
             //straight or conjugate half, but we should beware of emptiness.
             VERIFY(!empty());
-            auto i1 = --end();
+            auto i1 = end();
             if (full) {
                 auto i2 = Iterator(hist_.conj_begin(), offset_);
                 if (i1 == i2 || i2 == begin())
-                    return *i1;
-                return std::max(*i1, *--i2);
+                    return *--i1;
+                return std::max(*--i1, *--i2);
             } else {
-                return *i1;
+                return *--i1;
             }
         }
 
