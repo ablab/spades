@@ -108,9 +108,15 @@ public:
         AnnotationStream annotation_in(annotation_in_fn);
         EdgeAnnotation edge_annotation(gp_, bins_of_interest_);
         edge_annotation.Fill(contigs, annotation_in);
-        //FIXME magic constant
+        //FIXME magic constants
+        size_t iteration_cnt = 2;
         ConnectingPathPropagator edge_propagator(gp_, 5000);
-        EdgeAnnotation propagated_annotation = edge_propagator.Propagate(edge_annotation);
+
+        EdgeAnnotation propagated_annotation(edge_annotation);
+        for (size_t i = 0; i < iteration_cnt; ++i) {
+             propagated_annotation = edge_propagator.Propagate(propagated_annotation);
+        }
+
         contigs.reset();
         DumpContigAnnotation(contigs, propagated_annotation, annotation_out_fn);
     }
