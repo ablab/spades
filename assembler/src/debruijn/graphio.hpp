@@ -57,14 +57,16 @@ void SaveKmerMapper(const string& file_name,
 }
 
 template<class KmerMapper>
-void LoadKmerMapper(const string& file_name,
+bool LoadKmerMapper(const string& file_name,
                     KmerMapper& kmer_mapper) {
     kmer_mapper.clear();
     std::ifstream file;
     file.open((file_name + ".kmm").c_str(),
               std::ios_base::binary | std::ios_base::in);
+    if (!file.is_open()) {
+        return false;
+    }
     INFO("Reading kmer mapper, " << file_name <<" started");
-    VERIFY(file.is_open());
 
     uint32_t k_;
     file.read((char *) &k_, sizeof(uint32_t));
@@ -73,6 +75,7 @@ void LoadKmerMapper(const string& file_name,
     kmer_mapper.BinRead(file);
 
     file.close();
+    return true;
 }
 
 template<class EdgeIndex>
@@ -891,7 +894,9 @@ void ScanGraphPack(const string& file_name,
     scanner.LoadPositions(file_name, gp.edge_pos);
     //load kmer_mapper only if needed
     if (gp.kmer_mapper.IsAttached())
-        LoadKmerMapper(file_name, gp.kmer_mapper);
+        if (!LoadKmerMapper(file_name, gp.kmer_mapper)) {
+            WARN("Cannot load kmer_mapper, information on projected kmers will be missed");
+        }
     if (!scanner.LoadFlankingCoverage(file_name, gp.flanking_cov)) {
         gp.flanking_cov.Fill(gp.index.inner_index());
     }
