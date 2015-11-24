@@ -243,9 +243,6 @@ BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
     BOOST_CHECK(!pi.contains(1, 3));
     BOOST_CHECK_EQUAL(pi.Remove(1, 2, {2, 2, 0}), 0);
     BOOST_CHECK(pi.contains(1, 2));
-    //Check for auto-prune
-    BOOST_CHECK_EQUAL(pi.Remove(1, 2, {1, 1, 0}), 2);
-    BOOST_CHECK(!pi.contains(1, 2));
     //Check for neighbours remove
     pi.Add(1, 3, {3, 1, 0});
     pi.Add(2, 13, {7, 1, 0});
@@ -255,6 +252,23 @@ BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
     pi.Remove(1); //TODO: fix that
     EdgeSet test3 = {3, 8};
     BOOST_CHECK_EQUAL(GetNeighbours(pi, 14), test3);
+}
+
+BOOST_AUTO_TEST_CASE(PairedInfoPrune) {
+    MockGraph graph;
+    ClMockIndex pi(graph); //Deleting currently works only with the clustered index
+    pi.Add(1, 2, {1, 1, 0});
+    pi.Add(1, 3, {2, 2, 0});
+    //Check for auto-prune
+    BOOST_CHECK_EQUAL(pi.Remove(1, 2, {1, 1, 0}), 2);
+    BOOST_CHECK(!pi.contains(1, 2));
+    BOOST_CHECK_EQUAL(pi.Remove(1, 3, {2, 1, 0}), 2);
+    BOOST_CHECK(!pi.contains(1, 3));
+    BOOST_CHECK(!pi.contains(1));
+    //Check for nonexisting remove
+    BOOST_CHECK_EQUAL(pi.Remove(1, 2, {1, 1, 0}), 0);
+    BOOST_CHECK_EQUAL(pi.Remove(1, 3, {1, 1, 0}), 0);
+    BOOST_CHECK_EQUAL(pi.Remove(1), 0);
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoUnexistingEdges) {

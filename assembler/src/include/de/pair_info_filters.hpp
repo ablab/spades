@@ -239,22 +239,26 @@ public:
     {}
 
     void Filter(PairedInfoIndexT<Graph>& index) {
+        INFO("Start filtering; index size: " << index.size());
         //We can't filter while traversing, because Remove may invalidate iterators
         //So let's save edge pairs first
-        INFO("Start filtering; index size: " << index.size());
         using EdgePair = std::pair<EdgeId, EdgeId>;
         std::vector<EdgePair> pairs;
-        std::map<EdgePair, HistogramWithWeight> to_remove;
         for (auto i = pair_begin(index); i != pair_end(index); ++i)
             if (pair_info_checker_.Check(i.first(), i.second()))
                 pairs.push_back({i.first(), i.second()});
 
         //TODO: implement fast removing of the whole set of points
-        for (auto pair : pairs)
+        for (const auto& pair : pairs) {
+            //Same thing with invalidation
+            HistogramWithWeight hist;
             for (auto point : index[pair])
-                if (!pair_info_checker_.Check(PairInfoT(pair.first, pair.second, point))) {
-                    index.Remove(pair.first, pair.second, point);
-                }
+                if (pair_info_checker_.Check(PairInfoT(pair.first, pair.second, point)))
+                    hist.insert(point);
+            //index.RemoveMany(pair_hist.first.first, pair_hist.first.second, pair_hist.second);
+            for (const auto& point : hist)
+                index.Remove(pair.first, pair.second, point);
+        }
 
         INFO("Done filtering");
     }
