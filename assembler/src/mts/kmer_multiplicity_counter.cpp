@@ -25,7 +25,7 @@ const string KMC_EXTENSION = ".kmc";
 const string KMER_SORTED_EXTENSION = ".sorted";
 
 void PrintUsageInfo() {
-    std::cout << "Usage: kmer-abundance-filter [options] <sample_desc_1> [<sample_desc_2> ...]" << std::endl;
+    std::cout << "Usage: kmer_multiplicity_counter [options] <sample_desc_1> [<sample_desc_2> ...]" << std::endl;
     std::cout << "Options:" << std::endl;
     std::cout << "-k - kmer length" << std::endl;
     std::cout << "-o - output file" << std::endl;
@@ -34,10 +34,10 @@ void PrintUsageInfo() {
     std::cout << "sample_desc_X is a file with list of fastq files (gzipped or not) related to sample X" << std::endl;
 }
 
-void ParseKmc(const string& filename, const size_t k) {
+void ParseKmc(const string& filename, size_t k) {
     CKMCFile kmcFile;
     kmcFile.OpenForListing(filename + KMC_EXTENSION);
-    CKmerAPI kmer(k);
+    CKmerAPI kmer((unsigned int) k);
     uint32 count;
 
     std::ofstream output(filename + KMER_PARSED_EXTENSION, std::ios::binary);
@@ -60,7 +60,7 @@ void SortKmersCountFile(const string& filename, const size_t k) {
 
 string CountSample(const string& filename, size_t min_mult, size_t k) {
     stringstream cmd;
-    cmd << "~/libs/kmc/kmc -k" << k << " -ci" << min_mult << " @" << filename << " " << filename << KMC_EXTENSION << " .";
+    cmd << "kmc -k" << k << " -ci" << min_mult << " @" << filename << " " << filename << KMC_EXTENSION << " .";
     system(cmd.str().c_str());
     ParseKmc(filename, k);
     system(("rm -f " + filename + KMC_EXTENSION + "*").c_str());
@@ -100,15 +100,15 @@ void FilterKmers(const std::vector<string>& files, size_t all_min, size_t k, con
     RtSeq::less3 kmer_less;
     while (true) {
         boost::optional<RtSeq> min_kmer;
-        int cnt_min = 0;
+        size_t cnt_min = 0;
         for (size_t i = 0; i < n; ++i) {
             if (alive[i]) {
                 RtSeq& cur_kmer = top_kmer[i].first;
-                bool t1, t2;
-                if (min_kmer) {
-                    t1 = kmer_less(cur_kmer, *min_kmer);
-                    t2 = cur_kmer == *min_kmer;
-                }
+//                bool t1, t2;
+//                if (min_kmer) {
+//                    t1 = kmer_less(cur_kmer, *min_kmer);
+//                    t2 = cur_kmer == *min_kmer;
+//                }
                 if (!min_kmer || kmer_less(cur_kmer, *min_kmer)) {
                     min_kmer = boost::optional<RtSeq>(cur_kmer);
                     cnt_min = 0;
@@ -198,5 +198,9 @@ int main(int argc, char *argv[]) {
     }
 
     FilterKmers(kmer_cnt_files, min_sample_count, k, output);
+
+    for (const auto& file: kmer_cnt_files) {
+        remove(file.c_str());
+    }
     return 0;
 }

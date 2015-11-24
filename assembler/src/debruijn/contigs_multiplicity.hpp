@@ -3,6 +3,7 @@
 #include <array>
 #include <string>
 #include <iostream>
+#include "verify.hpp"
 #include "path_extend/bidirectional_path.hpp"
 
 namespace debruijn_graph {
@@ -14,7 +15,7 @@ class ContigAbundanceCounter {
 private:
 
     typedef typename std::array<uint, MAX_SAMPLE_CNT> MplVector;
-    typedef typename std::array<uint, MAX_SAMPLE_CNT> AbundanceVector;
+    typedef typename std::array<double, MAX_SAMPLE_CNT> AbundanceVector;
     typedef typename debruijn_graph::conj_graph_pack conj_graph_pack;
     typedef typename InvertableStoring::immutant_inverter<MplVector> InverterT;
 
@@ -38,7 +39,7 @@ private:
         std::ifstream kmers_in(kmers_mpl_file + ".kmer");
         std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl");
         while (true) {
-            string kmer_str;
+            std::string kmer_str;
             kmers_in >> kmer_str;
             if (kmers_in.fail()) {
                 break;
@@ -64,7 +65,7 @@ private:
         }
     }
 
-    void AddToAbundances(vector<vector<uint32_t>>& storage, const MplVector kmer_mpls) const {
+    void AddToAbundances(std::vector<std::vector<uint32_t>>& storage, const MplVector kmer_mpls) const {
         bool invalid = (kmer_mpls[0] == INVALID_MPL);
         for (size_t i = 0; i < sample_cnt_; ++i) {
             if (invalid) {
@@ -77,7 +78,7 @@ private:
     };
 
     AbundanceVector PathAbundance(const path_extend::BidirectionalPath& path) const {
-        vector<vector<uint>> abundance_storage(sample_cnt_);
+        std::vector<std::vector<uint>> abundance_storage(sample_cnt_);
 
         for (size_t i = 0; i < path.Size(); ++i) {
             Sequence seq = gp_.g.EdgeNucls(path[i]);
@@ -113,35 +114,37 @@ public:
                                kmer_mpl_(gp_.index.k(),
                                gp_.index.inner_index().workdir(),
                                gp_.index.inner_index().index_ptr()) {
-        INFO("Filling kmer multiplicities");
+        INFO("Filling kmer multiplicities. Sample cnt " << sample_cnt);
         FillMplMap(kmers_mpl_file);
     }
 
     void operator()(const path_extend::PathContainer& paths,
-                          const std::string& contigs_mpl_file) {
+                          const std::string& contigs_mpl_file) const {
         INFO("Calculating multiplicities");
         std::ofstream id_out(contigs_mpl_file + ".id");
         std::ofstream mpl_out(contigs_mpl_file + ".mpl");
 
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             const auto& path = *iter.get();
+            INFO("Processing path " << path.GetId());
             VERIFY(path.Length() > 0);
 
             auto abundance_vec = PathAbundance(path);
 
-            id_out << path.GetId() << endl;
+            id_out << path.GetId() << std::endl;
 
-            string delim = "";
-            for (double a : abundance_vec) {
-                mpl_out << delim << a;
+            std::string delim = "";
+            for (size_t i = 0; i < sample_cnt_; ++i) {
+                mpl_out << delim << abundance_vec[i];
                 delim = " ";
             }
-            mpl_out << endl;
+            mpl_out << std::endl;
         }
         id_out.close();
         mpl_out.close();
     }
-
+private:
+    DECL_LOGGER("ContigAbundanceCounter");
 };
 
 }
