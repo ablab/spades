@@ -253,7 +253,7 @@ public:
             //Same thing with invalidation
             HistogramWithWeight hist;
             for (auto point : index[pair])
-                if (pair_info_checker_.Check(PairInfoT(pair.first, pair.second, point)))
+                if (!pair_info_checker_.Check(PairInfoT(pair.first, pair.second, point)))
                     hist.insert(point);
             //index.RemoveMany(pair_hist.first.first, pair_hist.first.second, pair_hist.second);
             for (const auto& point : hist)
