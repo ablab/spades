@@ -1,37 +1,29 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import os
 import sys
+from itertools import izip
 
-CONTIGS_MPL_DIR = "contigs-mpl"
-CANOPY = "/home/toxa31/libs/canopy/cc.bin"
-OUTPUT_DIR = "canopy"
-INPUT_FILE = "contigs.in"
+print " ".join(sys.argv)
+if len(sys.argv) < 3: 
+    print "Usage: %s <output file> (<contig .id file>)+" % sys.argv[0]
+    print ".mpl file should be at the same folders with same names"
+    sys.exit(1) 
 
-files = [f[:-3] for f in os.listdir(CONTIGS_MPL_DIR) if os.path.isfile(os.path.join(CONTIGS_MPL_DIR, f)) and f[-3:] == ".id"]
 
-if not os.path.exists(OUTPUT_DIR):
-	os.makedirs(OUTPUT_DIR)
-else:
-	os.system("rm -rf " + OUTPUT_DIR + "/*")
+with open(sys.argv[1], "w") as out:
+    files = sys.argv[2:]
+    
+    for f in files:
+        if (f[-3:] != ".id"):
+            print ".id files are supposed as input"
+            sys.exit(2)
 
-inp = open(os.path.join(OUTPUT_DIR, INPUT_FILE), "w")
-
-for f in files:
-	ctg_id = open(os.path.join(CONTIGS_MPL_DIR, f + ".id"), "r")
-	ctg_mpl = open(os.path.join(CONTIGS_MPL_DIR, f + ".mpl"), "r")
-	while True:
-		cid = ctg_id.readline().strip()
-		cmpl = ctg_mpl.readline().strip()
-		if ((cid == "") != (cmpl == "")):
-			print("Unexpected end of file")
-			sys.exit(1)
-		if (cid == ""):
-			break
-
-		inp.write(f + "-" + cid + " " + cmpl + "\n")
-
-	ctg_id.close()
-	ctg_mpl.close()
-
-inp.close()
+        print "Processing abundances from %s" % f
+        name = os.path.splitext(os.path.basename(f))[0]
+        
+        with open(f, "r") as ctg_id, open(f[:-3] + ".mpl", "r") as ctg_mpl: 
+            for cid, cmpl in izip(ctg_id, ctg_mpl):
+                cid = cid.strip()
+                cmpl = cmpl.strip()
+                print >>out, name + "-" + cid + " " + cmpl

@@ -133,16 +133,19 @@ public:
 
     void operator()(io::SingleStream& contigs,
                           const std::string& contigs_mpl_file) const {
-        INFO("Calculating multiplicities");
+        INFO("Calculating contig abundancies");
         std::ofstream id_out(contigs_mpl_file + ".id");
         std::ofstream mpl_out(contigs_mpl_file + ".mpl");
-
 
         io::SingleRead contig;
         while (!contigs.eof()) {
             contigs >> contig;
             contig_id id = GetId(contig);
-            INFO("Processing contig " << id);
+            if (contig.size() < min_length_bound_) {
+                DEBUG("Contig " << id << " too short");
+            } else {
+                DEBUG("Processing contig " << id);
+            }
 
             id_out << id << std::endl;
 
@@ -175,7 +178,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    TmpFolderFixture("tmp");
+    TmpFolderFixture fixture("tmp");
     create_console_logger();
     size_t k = boost::lexical_cast<size_t>(argv[1]);
     std::string saves_path = argv[2];
@@ -190,6 +193,7 @@ int main(int argc, char** argv) {
     }
 
     conj_graph_pack gp(k, "tmp", 0);
+    gp.kmer_mapper.Attach();
     INFO("Load graph from " << saves_path);
     graphio::ScanGraphPack(saves_path, gp);
     auto contigs_stream_ptr = io::EasyStream(contigs_path, false);

@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    TmpFolderFixture("tmp");
+    TmpFolderFixture fixture("tmp");
     create_console_logger();
     size_t k = lexical_cast<size_t>(argv[1]);
     string saves_path = argv[2];
@@ -88,6 +88,7 @@ int main(int argc, char** argv) {
     }
 
     conj_graph_pack gp(k, "tmp", 0);
+    gp.kmer_mapper.Attach();
     INFO("Load graph from " << saves_path);
     graphio::ScanGraphPack(saves_path, gp);
 

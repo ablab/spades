@@ -603,9 +603,6 @@ struct debruijn_config {
     size_t max_threads;
     size_t max_memory;
 
-    std::string kmer_mult_path;
-    size_t sample_cnt;
-
     estimation_mode est_mode;
 
     resolving_mode rm;

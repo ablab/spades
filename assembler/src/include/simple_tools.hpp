@@ -131,7 +131,7 @@ public:
     TmpFolderFixture(std::string tmp_folder = "tmp") :
         tmp_folder_(tmp_folder)
     {
-        path::make_dir(tmp_folder_);
+        path::make_dirs(tmp_folder_);
     }
 
     ~TmpFolderFixture()
