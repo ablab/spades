@@ -25,8 +25,6 @@
 #include "seq.hpp"
 #include "simple_seq.hpp"
 
-#include "mph_index/MurmurHash3.h"
-
 #include <cstring>
 #include <iostream>
 
@@ -665,9 +663,7 @@ class RuntimeSeq {
   }
 
   static size_t GetHash(const DataType *data, size_t sz, uint32_t seed = 0) {
-    uint64_t res[2];
-    MurmurHash3_x64_128(data, sz * sizeof(DataType), 0x9E3779B9 ^ seed, res);
-    return res[0] ^ res[1];
+    return CityHash64WithSeed((const char*)data, sz * sizeof(DataType), 0x9E3779B9 ^ seed);
   }
 
   size_t GetHash(unsigned seed = 0) const {

@@ -152,7 +152,9 @@ public:
       qual_[i] = (char)(qual_[i] - offset);
     }
   }
-
+  void setName(const char* s) {
+    name_ = s;
+  }
 
   Read()
       : valid_(false), ltrim_(0), rtrim_(0), initial_size_(0) {
@@ -180,9 +182,6 @@ private:
   int initial_size_;
   friend class ireadstream;
   friend uint32_t TrimBadQuality(Read*, int);
-  void setName(const char* s) {
-    name_ = s;
-  }
   bool updateValid() const {
     if (seq_.size() == 0) {
       return false;

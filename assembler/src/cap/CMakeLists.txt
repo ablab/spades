@@ -46,7 +46,7 @@ endif()
 include_directories(./drawing_commands)
 include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 
-set(CAP_LIBS input mph_index nlopt ${COMMON_LIBRARIES})
+set(CAP_LIBS input cityhash nlopt ${COMMON_LIBRARIES})
 if (READLINE_FOUND AND CURSES_FOUND)
   set(CAP_LIBS ${CAP_LIBS} ${READLINE_LIBRARY} ${CURSES_NCURSES_LIBRARY})
 endif()

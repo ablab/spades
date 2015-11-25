@@ -16,7 +16,7 @@ file(GLOB ${CMAKE_CURRENT_SOURCE_DIR}
 )
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
-target_link_libraries(cclean ssw input mph_index ${COMMON_LIBRARIES})
+target_link_libraries(cclean ssw input cityhash ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(cclean PROPERTIES LINK_SEARCH_END_STATIC 1)

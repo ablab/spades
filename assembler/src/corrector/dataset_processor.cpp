@@ -253,7 +253,7 @@ void DatasetProcessor::ProcessDataset() {
                     SplitPairedLibrary(samf, lib_num);
                     lib_num++;
                 } else {
-                    WARN("Failed to align paired reads " << left << " and " << right);
+                    FATAL_ERROR("Failed to align paired reads " << left << " and " << right);
                 }
             }
             for (auto iter = dataset.single_begin(); iter != dataset.single_end(); iter++) {
@@ -268,7 +268,7 @@ void DatasetProcessor::ProcessDataset() {
                     SplitSingleLibrary(samf, lib_num);
                     lib_num++;
                 } else {
-                    WARN("Failed to align single reads " << left);
+                    FATAL_ERROR("Failed to align single reads " << left);
                 }
             }
         }
