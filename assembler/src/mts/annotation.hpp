@@ -2,21 +2,9 @@
 #include "graph_pack.hpp"
 #include "sequence_mapper.hpp"
 #include "io/io_helper.hpp"
-#include <regex>
+#include "formats.hpp"
 
 namespace debruijn_graph {
-
-typedef string bin_id;
-typedef string contig_id;
-typedef pair<contig_id, vector<bin_id>> ContigAnnotation;
-
-inline contig_id GetId(const io::SingleRead& contig) {
-     std::smatch m;
-     std::regex e ("ID_(\\d+)$");
-     bool success = std::regex_search(contig.name(), m, e);
-     VERIFY(success);
-     return m[1];
-}
 
 class AnnotationStream {
     std::ifstream inner_stream_;
@@ -113,7 +101,8 @@ public:
     EdgeAnnotation(const conj_graph_pack& gp,
                    const vector<bin_id>& bins_of_interest) :
                        gp_(gp),
-                       bins_of_interest_(bins_of_interest.begin(), bins_of_interest.end()) {
+                       bins_of_interest_(bins_of_interest.begin(), bins_of_interest.end()),
+                       mapper_(MapperInstance(gp)) {
     }
 
     template<class BinCollection>

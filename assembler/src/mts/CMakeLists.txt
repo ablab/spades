@@ -25,3 +25,7 @@ add_executable(read_binning
 
 target_link_libraries(read_binning input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
+add_executable(contig_abundance_counter
+               contig_abundance_counter.cpp)
+
+target_link_libraries(contig_abundance_counter input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})

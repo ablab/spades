@@ -1,10 +1,18 @@
-#pragma once
-
 #include <array>
 #include <string>
 #include <iostream>
 #include "verify.hpp"
-#include "path_extend/bidirectional_path.hpp"
+#include "logger/log_writers.hpp"
+#include "logger/logger.hpp"
+#include "formats.hpp"
+#include "graph_pack.hpp"
+#include "graphio.hpp"
+
+void create_console_logger() {
+    logging::logger *log = logging::create_logger("", logging::L_INFO);
+    log->add_writer(std::make_shared<logging::console_writer>());
+    logging::attach_logger(log);
+}
 
 namespace debruijn_graph {
 
@@ -16,18 +24,20 @@ private:
 
     typedef typename std::array<uint, MAX_SAMPLE_CNT> MplVector;
     typedef typename std::array<double, MAX_SAMPLE_CNT> AbundanceVector;
-    typedef typename debruijn_graph::conj_graph_pack conj_graph_pack;
     typedef typename InvertableStoring::immutant_inverter<MplVector> InverterT;
 
     const conj_graph_pack& gp_;
     size_t k_;
     size_t sample_cnt_;
+    size_t min_length_bound_;
+    std::shared_ptr<SequenceMapper<Graph>> mapper_;
     InverterT inverter_;
 
     PerfectHashMap<conj_graph_pack::seq_t,
         MplVector,
         kmer_index_traits<conj_graph_pack::seq_t>,
         InvertableStoring> kmer_mpl_;
+
 
     void FillMplMap(const std::string& kmers_mpl_file) {
         //INFO("Fill start");
@@ -77,11 +87,11 @@ private:
         }
     };
 
-    AbundanceVector PathAbundance(const path_extend::BidirectionalPath& path) const {
+    AbundanceVector PathAbundance(const std::vector<EdgeId>& path) const {
         std::vector<std::vector<uint>> abundance_storage(sample_cnt_);
 
-        for (size_t i = 0; i < path.Size(); ++i) {
-            Sequence seq = gp_.g.EdgeNucls(path[i]);
+        for (EdgeId e : path) {
+            Sequence seq = gp_.g.EdgeNucls(e);
             VERIFY(seq.size() > k_);
             auto kwh = kmer_mpl_.ConstructKWH(conj_graph_pack::seq_t(k_+1, seq));
             kwh >>= 'A';
@@ -108,9 +118,12 @@ private:
 public:
     ContigAbundanceCounter(const conj_graph_pack& gp,
                            size_t sample_cnt,
-                           const std::string& kmers_mpl_file) :
+                           const std::string& kmers_mpl_file,
+                           size_t min_length_bound) :
                                gp_(gp), k_(gp_.k_value),
                                sample_cnt_(sample_cnt),
+                               min_length_bound_(min_length_bound),
+                               mapper_(MapperInstance(gp)),
                                kmer_mpl_(gp_.index.k(),
                                gp_.index.inner_index().workdir(),
                                gp_.index.inner_index().index_ptr()) {
@@ -118,20 +131,22 @@ public:
         FillMplMap(kmers_mpl_file);
     }
 
-    void operator()(const path_extend::PathContainer& paths,
+    void operator()(io::SingleStream& contigs,
                           const std::string& contigs_mpl_file) const {
         INFO("Calculating multiplicities");
         std::ofstream id_out(contigs_mpl_file + ".id");
         std::ofstream mpl_out(contigs_mpl_file + ".mpl");
 
-        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            const auto& path = *iter.get();
-            INFO("Processing path " << path.GetId());
-            VERIFY(path.Length() > 0);
 
-            auto abundance_vec = PathAbundance(path);
+        io::SingleRead contig;
+        while (!contigs.eof()) {
+            contigs >> contig;
+            contig_id id = GetId(contig);
+            INFO("Processing contig " << id);
 
-            id_out << path.GetId() << std::endl;
+            id_out << id << std::endl;
+
+            auto abundance_vec = PathAbundance(mapper_->MapRead(contig).simple_path());
 
             std::string delim = "";
             for (size_t i = 0; i < sample_cnt_; ++i) {
@@ -140,6 +155,7 @@ public:
             }
             mpl_out << std::endl;
         }
+
         id_out.close();
         mpl_out.close();
     }
@@ -147,4 +163,39 @@ private:
     DECL_LOGGER("ContigAbundanceCounter");
 };
 
+}
+
+int main(int argc, char** argv) {
+    using namespace debruijn_graph;
+
+    if (argc < 7) {
+        std::cout << "Usage: contig_abundance_counter <K> <saves path> <contigs path> "
+                "<sample cnt> <kmer multiplicities path> "
+                "<contigs abundance path> [contig length bound (default: infinity)]"  << std::endl;
+        exit(1);
+    }
+
+    TmpFolderFixture("tmp");
+    create_console_logger();
+    size_t k = boost::lexical_cast<size_t>(argv[1]);
+    std::string saves_path = argv[2];
+    std::string contigs_path = argv[3];
+    size_t sample_cnt = boost::lexical_cast<size_t>(argv[4]);
+    std::string kmer_mult_fn = argv[5];
+    std::string contigs_abundance_fn = argv[6];
+
+    size_t length_bound = std::numeric_limits<size_t>::max();
+    if (argc > 7) {
+        length_bound = boost::lexical_cast<size_t>(argv[7]);
+    }
+
+    conj_graph_pack gp(k, "tmp", 0);
+    INFO("Load graph from " << saves_path);
+    graphio::ScanGraphPack(saves_path, gp);
+    auto contigs_stream_ptr = io::EasyStream(contigs_path, false);
+
+    ContigAbundanceCounter abundance_counter(gp, sample_cnt, kmer_mult_fn, length_bound);
+    abundance_counter(*contigs_stream_ptr, contigs_abundance_fn);
+
+    return 0;
 }

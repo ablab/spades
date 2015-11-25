@@ -27,9 +27,6 @@ max_threads		8
 max_memory      120; in Gigabytes
 buffer_size	      	512; in Megabytes
 
-kmer_mult_path ""
-sample_cnt 5
-
 entry_point construction
 ;entry_point simplification
 ;entry_point pacbio_aligning
