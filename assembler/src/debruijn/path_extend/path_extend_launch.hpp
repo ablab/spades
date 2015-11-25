@@ -530,6 +530,10 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     DebugOutputPaths(gp, output_dir, seeds, "init_paths");
 
     seeds.SortByLength();
+    //FIXME for debug purposes
+    writer.OutputPaths(seeds, output_dir + "scaffolds");
+    return;
+    //debug end
 
     INFO("Growing paths using paired-end and long single reads");
     auto paths = resolver.extendSeeds(seeds, *mainPE);
