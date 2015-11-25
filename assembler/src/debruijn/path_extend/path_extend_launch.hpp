@@ -47,12 +47,18 @@ inline void DebugOutputPaths(const conj_graph_pack& gp,
                       const string& name) {
     PathInfoWriter path_writer;
     PathVisualizer visualizer;
+
+    DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(gp.g);
+    DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(gp.g, corrector);
+    ContigWriter writer(gp.g, constructor);
+
     string etcDir = GetEtcDir(output_dir);
     if (!cfg::get().pe_params.debug_output) {
         return;
     }
+    writer.OutputPaths(paths, etcDir + name + ".fasta");
     if (cfg::get().pe_params.output.write_paths) {
-        path_writer.WritePaths(paths, etcDir + name + ".paths");
+        path_writer.WritePaths(paths, etcDir + name + ".dat");
     }
     if (cfg::get().pe_params.viz.print_paths) {
         visualizer.writeGraphWithPathsSimple(gp, etcDir + name + ".dot", name,
@@ -534,7 +540,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     INFO("Growing paths using paired-end and long single reads");
     auto paths = resolver.extendSeeds(seeds, *mainPE);
     paths.SortByLength();
-    DebugOutputPaths(gp, output_dir, paths, "pe_overlaped_paths");
+    DebugOutputPaths(gp, output_dir, paths, "pe_before_overlap");
 
     PathContainer clone_paths;
     GraphCoverageMap clone_map(gp.g);
@@ -549,12 +555,11 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
                               output_dir + (mp_exist ? "pe_contigs" : broken_contigs.get()));
     }
-    writer.OutputPaths(paths, GetEtcDir(output_dir) + "pe_before_traversal");
-    DebugOutputPaths(gp, output_dir, paths, "before_traverse_pe");
+    DebugOutputPaths(gp, output_dir, paths, "pe_before_traverse");
     if (traversLoops) {
         TraverseLoops(paths, cover_map, mainPE);
     }
-    DebugOutputPaths(gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
+    DebugOutputPaths(gp, output_dir, paths, (mp_exist ? "pe_final_paths" : "final_paths"));
     writer.OutputPaths(paths, output_dir + (mp_exist ? "pe_scaffolds" : contigs_name));
 
     cover_map.Clear();
@@ -564,7 +569,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     }
 
 //MP
-    DebugOutputPaths(gp, output_dir, clone_paths, "before_mp_paths");
+    DebugOutputPaths(gp, output_dir, clone_paths, "mp_before_extend");
 
     INFO("SUBSTAGE = mate-pair libraries ")
     exspander_stage = PathExtendStage::MPStage;
@@ -575,14 +580,9 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("Growing paths using mate-pairs");
     auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
+    DebugOutputPaths(gp, output_dir, mp_paths, "mp_before_overlap");
     FinalizePaths(mp_paths, clone_map, max_over, true);
-    DebugOutputPaths(gp, output_dir, mp_paths, "mp_final_paths");
-    writer.OutputPaths(mp_paths, GetEtcDir(output_dir) + "mp_prefinal");
-
-    DEBUG("Paths are grown with mate-pairs");
-    if (cfg::get().pe_params.debug_output) {
-        writer.OutputPaths(mp_paths, output_dir + "mp_paths");
-    }
+    DebugOutputPaths(gp, output_dir, mp_paths, "mp_removed_overlaps");
 //MP end
 
 //pe again
@@ -594,9 +594,9 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over);
 
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
+    DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_overlap");
     FinalizePaths(last_paths, clone_map, max_over);
 
-    writer.OutputPaths(last_paths, GetEtcDir(output_dir) + "mp_before_traversal");
     DebugOutputPaths(gp, output_dir, last_paths, "before_traverse_mp");
     TraverseLoops(last_paths, clone_map, last_extender);
 
