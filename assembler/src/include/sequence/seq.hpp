@@ -173,6 +173,10 @@ class Seq {
   template<typename S>
   explicit Seq(const S &s, size_t offset = 0, size_t number_to_read = size_,
                bool raw = false) {
+    if (this->size(s) == 0) {
+        return;
+    }
+    VERIFY(offset < this->size(s));
     VERIFY(is_dignucl(s[offset]) || is_nucl(s[offset]));
     if (!raw)
       VERIFY(offset + number_to_read <= this->size(s));
