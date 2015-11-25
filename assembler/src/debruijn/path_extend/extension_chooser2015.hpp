@@ -12,7 +12,7 @@
 namespace path_extend {
 class ExtensionChooser2015: public ScaffoldingExtensionChooser {
 private:
-    shared_ptr<ScaffoldingUniqueEdgeStorage>& unique_edges_;
+    shared_ptr<ScaffoldingUniqueEdgeStorage> unique_edges_;
 // for possible connections e1 and e2 if weight(e1) > relative_weight_threshold_ * weight(e2) then e2 will be ignored
     double relative_weight_threshold_;
     PairedLibConnectionCondition paired_connection_condition_;
