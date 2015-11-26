@@ -56,7 +56,7 @@ inline void DebugOutputPaths(const conj_graph_pack& gp,
     if (!cfg::get().pe_params.debug_output) {
         return;
     }
-    writer.OutputPaths(paths, etcDir + name + ".fasta");
+    writer.OutputPaths(paths, etcDir + name);
     if (cfg::get().pe_params.output.write_paths) {
         path_writer.WritePaths(paths, etcDir + name + ".dat");
     }
@@ -601,14 +601,14 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_overlap");
     FinalizePaths(last_paths, clone_map, max_over);
 
-    DebugOutputPaths(gp, output_dir, last_paths, "before_traverse_mp");
+    DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_traverse");
     TraverseLoops(last_paths, clone_map, last_extender);
 
 //result
     if (broken_contigs.is_initialized()) {
         OutputBrokenScaffolds(last_paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
     }
-    DebugOutputPaths(gp, output_dir, last_paths, "last_paths");
+    DebugOutputPaths(gp, output_dir, last_paths, "mp2_final_paths");
     writer.OutputPaths(last_paths, output_dir + contigs_name);
 
     last_paths.DeleteAllPaths();
