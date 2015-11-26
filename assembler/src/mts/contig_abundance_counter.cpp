@@ -75,7 +75,7 @@ private:
         }
     }
 
-    void AddToAbundances(std::vector<std::vector<uint32_t>>& storage, const MplVector kmer_mpls) const {
+    bool AddToAbundances(std::vector<std::vector<uint32_t>>& storage, const MplVector& kmer_mpls) const {
         bool invalid = (kmer_mpls[0] == INVALID_MPL);
         for (size_t i = 0; i < sample_cnt_; ++i) {
             if (invalid) {
@@ -85,11 +85,13 @@ private:
                 storage[i].push_back(kmer_mpls[i]);
             }
         }
+        return !invalid;
     };
 
-    AbundanceVector PathAbundance(const std::vector<EdgeId>& path) const {
+    boost::optional<AbundanceVector> PathAbundance(const std::vector<EdgeId>& path) const {
         std::vector<std::vector<uint>> abundance_storage(sample_cnt_);
 
+        size_t contributing_kmer_cnt = 0;
         for (EdgeId e : path) {
             Sequence seq = gp_.g.EdgeNucls(e);
             VERIFY(seq.size() > k_);
@@ -99,20 +101,29 @@ private:
             for (size_t j = k_; j < seq.size(); ++j) {
                 kwh <<= seq[j];
                 VERIFY(gp_.index.inner_index().contains(kwh));
-                AddToAbundances(abundance_storage, kmer_mpl_.get_value(kwh, inverter_));
+                //kmer_mpl_ contains values for all k+1-mers in the graph (potentially INVALID)
+                if (AddToAbundances(abundance_storage, kmer_mpl_.get_value(kwh, inverter_))) {
+                    contributing_kmer_cnt++;
+                }
             }
+        }
+
+        //FIXME magic constant
+        if (contributing_kmer_cnt * 5 < CumulativeLength(gp_.g, path)) {
+            return boost::none;
         }
 
         AbundanceVector contig_abundance;
         contig_abundance.fill(-1.);
 
         for (size_t i = 0; i < sample_cnt_; ++i) {
+            VERIFY(abundance_storage[i].size() == contributing_kmer_cnt);
             std::sort(abundance_storage[i].begin(), abundance_storage[i].end());
-
             //set contig abundance as median across kmer multiplicities
             contig_abundance[i] = abundance_storage[i][abundance_storage[i].size() / 2];
         }
-        return contig_abundance;
+
+        return boost::optional<AbundanceVector>(contig_abundance);
     }
 
 public:
@@ -143,20 +154,25 @@ public:
             contig_id id = GetId(contig);
             if (contig.size() < min_length_bound_) {
                 DEBUG("Contig " << id << " too short");
+                continue;
             } else {
                 DEBUG("Processing contig " << id);
             }
 
-            id_out << id << std::endl;
-
             auto abundance_vec = PathAbundance(mapper_->MapRead(contig).simple_path());
 
-            std::string delim = "";
-            for (size_t i = 0; i < sample_cnt_; ++i) {
-                mpl_out << delim << abundance_vec[i];
-                delim = " ";
+            if (abundance_vec) {
+                id_out << id << std::endl;
+
+                std::string delim = "";
+                for (size_t i = 0; i < sample_cnt_; ++i) {
+                    mpl_out << delim << (*abundance_vec)[i];
+                    delim = " ";
+                }
+                mpl_out << std::endl;
+            } else {
+                DEBUG("Failed to estimate abundance of contig " << id);
             }
-            mpl_out << std::endl;
         }
 
         id_out.close();
@@ -174,7 +190,7 @@ int main(int argc, char** argv) {
     if (argc < 7) {
         std::cout << "Usage: contig_abundance_counter <K> <saves path> <contigs path> "
                 "<sample cnt> <kmer multiplicities path> "
-                "<contigs abundance path> [contig length bound (default: infinity)]"  << std::endl;
+                "<contigs abundance path> [contig length bound (default: 0)]"  << std::endl;
         exit(1);
     }
 
@@ -187,9 +203,9 @@ int main(int argc, char** argv) {
     std::string kmer_mult_fn = argv[5];
     std::string contigs_abundance_fn = argv[6];
 
-    size_t length_bound = std::numeric_limits<size_t>::max();
+    size_t min_length_bound = 0;
     if (argc > 7) {
-        length_bound = boost::lexical_cast<size_t>(argv[7]);
+        min_length_bound = boost::lexical_cast<size_t>(argv[7]);
     }
 
     conj_graph_pack gp(k, "tmp", 0);
@@ -198,7 +214,7 @@ int main(int argc, char** argv) {
     graphio::ScanGraphPack(saves_path, gp);
     auto contigs_stream_ptr = io::EasyStream(contigs_path, false);
 
-    ContigAbundanceCounter abundance_counter(gp, sample_cnt, kmer_mult_fn, length_bound);
+    ContigAbundanceCounter abundance_counter(gp, sample_cnt, kmer_mult_fn, min_length_bound);
     abundance_counter(*contigs_stream_ptr, contigs_abundance_fn);
 
     return 0;

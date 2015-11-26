@@ -40,13 +40,17 @@ public:
 
     EdgeAnnotation Propagate(const EdgeAnnotation& edge_annotation) const {
         EdgeAnnotation extended_annotation(edge_annotation);
+        DEBUG("Propagating");
         for (bin_id bin : edge_annotation.interesting_bins()) {
+            DEBUG("Processing bin " << bin);
             extended_annotation.StickAnnotation(PropagateEdges(edge_annotation.EdgesOfBin(bin)), bin);
         }
         return extended_annotation;
     }
 
     virtual ~EdgeAnnotationPropagator() {}
+private:
+    DECL_LOGGER("EdgeAnnotationPropagator");
 };
 
 class ConnectingPathPropagator : public EdgeAnnotationPropagator {
@@ -69,44 +73,52 @@ class ConnectingPathPropagator : public EdgeAnnotationPropagator {
                 auto callback = AdaptorCallback<Graph>([&](vector<EdgeId> path) {
                     insert_all(answer, path);
                 });
+                DEBUG("Launching path search between edge " << g().str(e) << " and vertex " 
+                        << g().str(v) << " with length bound " << path_length_threshold_);
                 path_searcher.Process(v, 0, path_length_threshold_, callback);
             }
         }
-        return edges;
+        return answer;
     }
 
 public:
     ConnectingPathPropagator(const conj_graph_pack& gp, size_t path_length_threshold) :
         EdgeAnnotationPropagator(gp), path_length_threshold_(path_length_threshold) {}
 
+private:
+    DECL_LOGGER("ConnectingPathPropagator");
 };
 
 //todo add unbranching reach and pair-info aware propagation
 
 class AnnotationPropagator {
     const conj_graph_pack& gp_;
-    vector<bin_id> bins_of_interest_;
 
     void DumpContigAnnotation(io::SingleStream& contigs,
-                              const EdgeAnnotation& annotation, const string& annotation_out_fn) const {
+                              const EdgeAnnotation& annotation, 
+                              const string& annotation_out_fn) const {
         AnnotationOutStream annotation_out(annotation_out_fn);
         io::SingleRead contig;
         while (!contigs.eof()) {
             contigs >> contig;
             auto relevant_bins = annotation.RelevantBins(contig);
-            annotation_out << ContigAnnotation(GetId(contig), vector<bin_id>(relevant_bins.begin(), relevant_bins.end()));
+            if (!relevant_bins.empty()) {
+                annotation_out << ContigAnnotation(GetId(contig), 
+                                    vector<bin_id>(relevant_bins.begin(), relevant_bins.end()));
+            }
         }
     }
 
 public:
-    AnnotationPropagator(const conj_graph_pack& gp,
-                         const vector<bin_id>& bins_of_interest) :
-                     gp_(gp), bins_of_interest_(bins_of_interest) {
+    AnnotationPropagator(const conj_graph_pack& gp) :
+                     gp_(gp) {
     }
 
-    void Run(io::SingleStream& contigs, const string& annotation_in_fn, const string& annotation_out_fn) {
+    void Run(io::SingleStream& contigs, const string& annotation_in_fn,
+                         const vector<bin_id>& bins_of_interest, 
+                         const string& annotation_out_fn) {
         AnnotationStream annotation_in(annotation_in_fn);
-        EdgeAnnotation edge_annotation(gp_, bins_of_interest_);
+        EdgeAnnotation edge_annotation(gp_, bins_of_interest);
         edge_annotation.Fill(contigs, annotation_in);
         //FIXME magic constants
         size_t iteration_cnt = 2;
@@ -153,9 +165,8 @@ int main(int argc, char** argv) {
     graphio::ScanGraphPack(saves_path, gp);
     auto contigs_stream_ptr = io::EasyStream(contigs_path, false);
 
-    vector<bin_id> interesting_bins;
-    AnnotationPropagator propagator(gp, interesting_bins);
-    propagator.Run(*contigs_stream_ptr, annotation_in_fn, annotation_out_fn);
+    AnnotationPropagator propagator(gp);
+    propagator.Run(*contigs_stream_ptr, annotation_in_fn, bins_of_interest, annotation_out_fn);
 
     return 0;
 }

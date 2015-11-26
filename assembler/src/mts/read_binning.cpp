@@ -32,13 +32,14 @@ public:
                      edge_annotation_(gp, bins_of_interest) {
     }
 
-    void Init(const string& output_dir, io::SingleStream& contigs, AnnotationStream& annotation_stream) {
+    void Init(const string& output_root, const string& sample_name, io::SingleStream& contigs, AnnotationStream& annotation_stream) {
         edge_annotation_.Fill(contigs, annotation_stream);
         for (bin_id bin : edge_annotation_.interesting_bins()) {
-            string out_prefix = output_dir + ToString(bin);
+            string out_dir = output_root + "/" + ToString(bin) + "/";
+            path::make_dirs(out_dir);
             out_streams_.insert(make_pair(bin,
-                                          make_shared<io::PairedOutputSequenceStream>(out_prefix + "_1.fasta",
-                                                                                      out_prefix + "_2.fasta")));
+                                          make_shared<io::PairedOutputSequenceStream>(out_dir + sample_name + "_1.fasta",
+                                                                                      out_dir + sample_name + "_2.fasta")));
         }
     }
 
@@ -66,9 +67,9 @@ public:
 int main(int argc, char** argv) {
     using namespace debruijn_graph;
 
-    if (argc < 8) {
+    if (argc < 9) {
         cout << "Usage: read_binning <K> <saves path> <contigs path> <contigs binning info> "
-                "<left reads> <right reads> <output prefix> (<bins of interest>)*"  << endl;
+                "<left reads> <right reads> <output root> <sample name> (<bins of interest>)*"  << endl;
         exit(1);
     }
 
@@ -80,10 +81,11 @@ int main(int argc, char** argv) {
     string contigs_binning_path = argv[4];
     string left_reads = argv[5];
     string right_reads = argv[6];
-    string out_prefix = argv[7];
+    string out_root = argv[7];
+    string sample_name = argv[8];
 
     std::vector<bin_id> bins_of_interest;
-    for (int i = 8; i < argc; ++i) {
+    for (int i = 9; i < argc; ++i) {
         bins_of_interest.push_back(argv[i]);
     }
 
@@ -97,7 +99,7 @@ int main(int argc, char** argv) {
     auto contigs_stream_ptr = io::EasyStream(contigs_path, false);
     AnnotationStream binning_stream(contigs_binning_path);
 
-    binner.Init(out_prefix, *contigs_stream_ptr, binning_stream);
+    binner.Init(out_root, sample_name, *contigs_stream_ptr, binning_stream);
 
     auto paired_stream = io::PairedEasyStream(left_reads, right_reads, false, 0);
     binner.Run(*paired_stream);

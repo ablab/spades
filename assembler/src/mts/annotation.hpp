@@ -8,6 +8,7 @@ namespace debruijn_graph {
 
 class AnnotationStream {
     std::ifstream inner_stream_;
+    std::string line_;
 
     ContigAnnotation Parse(const std::string& s) const {
         ContigAnnotation annotation;
@@ -29,7 +30,7 @@ class AnnotationStream {
 public:
 
     AnnotationStream(const std::string& fn) : inner_stream_(fn) {
-
+        std::getline(inner_stream_, line_);
     }
 
     bool eof() const {
@@ -38,10 +39,9 @@ public:
 
     AnnotationStream& operator >>(ContigAnnotation& annotation) {
         VERIFY(!inner_stream_.eof())
-        std::string s;
-        inner_stream_ >> s;
 
-        annotation = Parse(s);
+        annotation = Parse(line_);
+        std::getline(inner_stream_, line_);
         return *this;
     }
 
@@ -64,6 +64,7 @@ public:
             inner_stream_ << delim << bin;
             delim = " ";
         }
+        inner_stream_ << endl;
         return *this;
     }
 

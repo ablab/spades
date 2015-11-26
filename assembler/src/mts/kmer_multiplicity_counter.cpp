@@ -153,7 +153,7 @@ void FilterKmers(const std::vector<string>& files, size_t all_min, size_t k, con
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         PrintUsageInfo();
-        return 0;
+        return 1;
     }
     size_t min_mult = -1ul;
     size_t min_sample_count = -1ul;
