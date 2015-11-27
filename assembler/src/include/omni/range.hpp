@@ -51,6 +51,11 @@ public:
         return Range(this->start_pos, other.end_pos);
     }
 
+    Range Invert(size_t base_length) const {
+        VERIFY(base_length >= end_pos);
+        return Range(base_length - end_pos, base_length - start_pos);
+    }
+
     bool empty() const {
         return start_pos == end_pos;
     }

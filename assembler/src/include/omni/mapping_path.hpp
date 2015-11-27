@@ -145,7 +145,7 @@ inline std::ostream& operator<<(std::ostream& os, const MappingRange& map_range)
     return os;
 }
 
-    template<typename ElementId>
+template<typename ElementId>
 class MappingPath {
  public:
     MappingPath() {}
@@ -207,7 +207,7 @@ class MappingPath {
     std::vector<MappingRange> range_mappings_;
 };
 
-    template <typename ElementId>
+template <typename ElementId>
 inline std::ostream& operator<<(std::ostream& os, const MappingPath<ElementId>& mp) {
     os << "MappingPath ( ";
     for(size_t i = 0; i < mp.size(); i++) {
