@@ -111,8 +111,8 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
             if (coef < 0)
                 coef = double(cfg::get().ds.RL() - cfg::get().K + 1) / double(cfg::get().ds.RL());
             gp.ginfo.set_trusted_bound(CovModel.converged() && cfg::get().kcm.coverage_threshold == 0.0 ?
-                                       CovModel.GetLowThreshold() :
-                                       double(cfg::get().kcm.coverage_threshold) * coef);
+                                       double(CovModel.GetLowThreshold()) :
+                                       cfg::get().kcm.coverage_threshold * coef);
         }
 
     }
