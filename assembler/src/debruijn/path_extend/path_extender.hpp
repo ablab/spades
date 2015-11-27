@@ -1329,10 +1329,12 @@ public:
 
             auto sc_mode = cfg::get().pe_params.param_set.sm;
             EdgeId eid = candidates.back().e_;
-            if(cfg::get().pe_params.param_set.scaffolder_options.fix_gaps) {
+            if(cfg::get().pe_params.param_set.scaffolder_options.fix_gaps && check_sink_) {
                 Gap gap = gap_joiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_);
                 if (gap.gap_ != GapJoiner::INVALID_GAP) {
-                    DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << gap.gap_ << ", trash length: " << gap.trash_previous_ << "-" <<  gap.trash_current_);
+                    DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() <<
+                                                                                         ", fixed gap length: " << gap.gap_ << ", trash length: " << gap.trash_previous_ << "-" <<
+                                                                                         gap.trash_current_);
 
                     if (is_2015_scaffolder_enabled(sc_mode)) {
                         if (used_storage_->IsUsedAndUnique(eid)) {
@@ -1345,11 +1347,13 @@ public:
                     return true;
                 }
                 else {
-                        DEBUG("Looks like wrong scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << candidates.back().d_);
-                        return false;
+                    DEBUG("Looks like wrong scaffolding. PathId: " << path.GetId() << " path length: " <<
+                                                                                      path.Length() << ", fixed gap length: " << candidates.back().d_);
+                    return false;
                 }
             }
             else {
+                DEBUG("Gap joiners off");
                 DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << candidates.back().d_ );
                 if (is_2015_scaffolder_enabled(sc_mode)) {
                     if (used_storage_->IsUsedAndUnique(eid)) {
