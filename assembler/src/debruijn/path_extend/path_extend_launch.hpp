@@ -306,9 +306,12 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& g
                                                    GetSingleReadsWeightPriorityThreshold(lib.type()),
                                                    GetSingleReadsUniqueEdgePriorityThreshold(lib.type()));
 
-    size_t max_repeat_length = std::max(10000ul, lib.data().read_length);
-    INFO("max_repeat_length set to " << max_repeat_length);
-    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, max_repeat_length,  
+    size_t resolvable_repeat_length_bound = 10000ul;
+    if (!lib.is_contig_lib()) {
+        resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().read_length);
+    }
+    INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
+    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, resolvable_repeat_length_bound,  
             pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(lib.type()));
 }
 
