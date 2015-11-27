@@ -41,9 +41,9 @@ namespace path_extend {
                                      shared_ptr <PairedInfoLibrary> lib,
                                      size_t lib_index,
                                      size_t min_read_count);
-        size_t GetLibIndex() const;
-        set <debruijn_graph::EdgeId> ConnectedWith(debruijn_graph::EdgeId e) const;
-        double GetWeight(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const;
+        size_t GetLibIndex() const override;
+        set <debruijn_graph::EdgeId> ConnectedWith(debruijn_graph::EdgeId e) const override;
+        double GetWeight(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const override;
 //Returns median gap size
         int GetMedianGap (debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const;
     };
@@ -60,9 +60,9 @@ namespace path_extend {
     public:
         AssemblyGraphConnectionCondition(const debruijn_graph::Graph &g, size_t max_connection_length);
 
-        set <debruijn_graph::EdgeId> ConnectedWith(debruijn_graph::EdgeId e) const;
-        double GetWeight(debruijn_graph::EdgeId, debruijn_graph::EdgeId) const;
-        size_t GetLibIndex() const;
+        set <debruijn_graph::EdgeId> ConnectedWith(debruijn_graph::EdgeId e) const override;
+        double GetWeight(debruijn_graph::EdgeId, debruijn_graph::EdgeId) const override;
+        size_t GetLibIndex() const override;
     };
 }
 

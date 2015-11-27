@@ -7,10 +7,10 @@ using omnigraph::MappingRange;
 using namespace std;
 
 //gap or overlap size. WITHOUT SIGN!
-size_t gap(const Range &a, const Range &b) {
+static size_t gap(const Range &a, const Range &b) {
     return max(a.end_pos, b.start_pos) - min (a.end_pos, b.start_pos);
 }
-bool GenomeConsistenceChecker::consequent(const Range &mr1, const Range &mr2) {
+bool GenomeConsistenceChecker::consequent(const Range &mr1, const Range &mr2) const{
     if (mr1.end_pos > mr2.start_pos + absolute_max_gap_)
         return false;
     if (mr1.end_pos + absolute_max_gap_ < mr2.start_pos)
@@ -18,7 +18,7 @@ bool GenomeConsistenceChecker::consequent(const Range &mr1, const Range &mr2) {
     return true;
 
 }
-bool GenomeConsistenceChecker::consequent(const MappingRange &mr1, const MappingRange &mr2) {
+bool GenomeConsistenceChecker::consequent(const MappingRange &mr1, const MappingRange &mr2) const {
     //do not want to think about handling gaps near 0 position.
     if (!consequent(mr1.initial_range, mr2.initial_range) || !consequent(mr1.mapped_range, mr2.mapped_range))
         return false;
@@ -47,7 +47,7 @@ PathScore GenomeConsistenceChecker::CountMisassemblies(const BidirectionalPath &
     }
 }
 
-void GenomeConsistenceChecker::SpellGenome() const {
+void GenomeConsistenceChecker::SpellGenome() {
     vector<pair<EdgeId, MappingRange> > to_sort;
     for(auto e: storage_) {
         if (excluded_unique_.find(e) == excluded_unique_.end() ) {

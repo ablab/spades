@@ -10,8 +10,8 @@
 #include "omni/visualization/graph_labeler.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/mapping_path.hpp"
-#include "../include/omni/edges_position_handler.hpp"
-#include "../include/sequence/sequence.hpp"
+#include "omni/edges_position_handler.hpp"
+#include "sequence/sequence.hpp"
 #include "graph_pack.hpp"
 #include "positions.hpp"
 #include "path_extend/bidirectional_path.hpp"
@@ -43,8 +43,8 @@ private:
     EdgeId circular_edge_;
 //map from unique edges to their order in genome spelling;
     mutable map<EdgeId, size_t> genome_spelled_;
-    bool consequent(const Range &mr1, const Range &mr2);
-	bool consequent(const MappingRange &mr1, const MappingRange &mr2) ;
+    bool consequent(const Range &mr1, const Range &mr2) const;
+	bool consequent(const MappingRange &mr1, const MappingRange &mr2) const ;
 
     PathScore CountMisassembliesWithStrand(const BidirectionalPath &path, const string strand) const;
 //Refills genomic positions uniting alingments separated with small gaps
@@ -68,7 +68,7 @@ public:
 	}
 	PathScore CountMisassemblies(const BidirectionalPath &path) const;
 //spells genome in language of long unique edges from storage;
-    void SpellGenome() const;
+    void SpellGenome();
 
 };
 

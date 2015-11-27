@@ -846,7 +846,7 @@ public:
     bool MakeGrowStep(BidirectionalPath& path, bool detect_repeats_online = true) {
         DEBUG("make grow step composite extender");
         auto sc_mode = cfg::get().pe_params.param_set.sm;
-        if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
+        if (is_2015_scaffolder_enabled(sc_mode)) {
             DEBUG("force switch off online repeats detect, 2015 on");
             detect_repeats_online = false;
         }
@@ -1213,7 +1213,7 @@ public:
             EdgeId eid = candidates.back().e_;
 //In 2015 modes when trying to use already used unique edge, it is not added and path growing stops.
 //That allows us to avoid overlap removal hacks used earlier.
-            if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
+            if (is_2015_scaffolder_enabled(sc_mode)) {
                 if (used_storage_->IsUsedAndUnique(eid)) {
                     return false;
                 } else {
@@ -1334,7 +1334,7 @@ public:
                 if (gap.gap_ != GapJoiner::INVALID_GAP) {
                     DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << gap.gap_ << ", trash length: " << gap.trash_previous_ << "-" <<  gap.trash_current_);
 
-                    if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
+                    if (is_2015_scaffolder_enabled(sc_mode)) {
                         if (used_storage_->IsUsedAndUnique(eid)) {
                             return false;
                         } else {
@@ -1351,7 +1351,7 @@ public:
             }
             else {
                 DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << candidates.back().d_ );
-                if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
+                if (is_2015_scaffolder_enabled(sc_mode)) {
                     if (used_storage_->IsUsedAndUnique(eid)) {
                         return false;
                     } else {

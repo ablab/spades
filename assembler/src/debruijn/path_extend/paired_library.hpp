@@ -131,10 +131,10 @@ public:
         : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
           index_(index) {}
 
-    virtual size_t FindJumpEdges(EdgeId e,
+    size_t FindJumpEdges(EdgeId e,
                                  std::set<EdgeId>& result,
                                  int min_dist, int max_dist,
-                                 size_t min_len = 0) const {
+                                 size_t min_len = 0) const override{
         VERIFY(index_.Size() != 0);
         result.clear();
 

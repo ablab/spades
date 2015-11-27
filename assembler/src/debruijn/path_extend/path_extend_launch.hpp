@@ -376,7 +376,7 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
 
 
 inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                                        size_t lib_index, const pe_config::ParamSetT& pset, shared_ptr<ScaffoldingUniqueEdgeStorage> storage) {
+                                                        size_t lib_index, const pe_config::ParamSetT& pset, const shared_ptr<ScaffoldingUniqueEdgeStorage> storage) {
     shared_ptr<PairedInfoLibrary> lib;
     INFO("for lib " << lib_index);
 
@@ -522,7 +522,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                 if (pset.sm == sm_old || pset.sm == sm_combined) {
                     mps.push_back(MakeMPExtender(gp, cov_map, paths_for_mp, i, pset));
                 }
-                if (pset.sm == sm_old_pe_2015 || pset.sm == sm_2015 || pset.sm == sm_combined) {
+                if (is_2015_scaffolder_enabled(pset.sm)) {
                     mps.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
             }
@@ -775,7 +775,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("Growing paths using mate-pairs");
     auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
-    if (!(sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined))
+    if (!is_2015_scaffolder_enabled(pset.sm))
         FinalizePaths(mp_paths, clone_map, max_over, true);
     DebugOutputPaths(gp, output_dir, mp_paths, "mp_final_paths");
     writer.OutputPaths(mp_paths, GetEtcDir(output_dir) + "mp_prefinal");
@@ -795,7 +795,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over, storage);
 
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
-    if (!(sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined))
+    if (!is_2015_scaffolder_enabled(pset.sm))
         FinalizePaths(last_paths, clone_map, max_over);
 
     writer.OutputPaths(last_paths, GetEtcDir(output_dir) + "mp_before_traversal");

@@ -40,6 +40,10 @@ enum scaffolding_mode {
     sm_old_pe_2015
 };
 
+inline bool is_2015_scaffolder_enabled(const scaffolding_mode mode) {
+    return (mode != sm_old);
+}
+
 // struct for path extend subproject's configuration file
 struct pe_config {
 
