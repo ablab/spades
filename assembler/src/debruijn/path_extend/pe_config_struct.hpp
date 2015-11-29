@@ -158,7 +158,6 @@ struct pe_config {
   };
 
   struct MainPEParamsT {
-    std::string name;
     output_broken_scaffolds obs;
 
     bool debug_output;
@@ -175,13 +174,12 @@ struct pe_config {
 
 };
 
-
-
-void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bool complete);
-void load(pe_config& pe_cfg, boost::property_tree::ptree const& pt, bool complete);
+void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool complete = true);
+void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bool complete = true);
+//void load(pe_config& pe_cfg, boost::property_tree::ptree const& pt, bool complete);
 
 }
 
-typedef config_common::config<path_extend::pe_config> pe_cfg;
+//typedef config_common::config<path_extend::pe_config> pe_cfg;
 
 #endif /* CONFIG_STRUCT_HPP_ */
