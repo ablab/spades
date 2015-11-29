@@ -715,14 +715,15 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   else {
       load(cfg.de, pt, (cfg.ds.single_cell ? "old_sc_de" : "old_usual_de"));
   }
-  cfg.pe_params.name = "multicell";
-  if (cfg.ds.meta)
-    cfg.pe_params.name = "meta";
-  else if (cfg.ds.single_cell)
-    cfg.pe_params.name = "singlecell";
-  else if (cfg.ds.moleculo)
-    cfg.pe_params.name = "moleculo";
+
   load(cfg.pe_params, pt, "path_extend_params");
+  load(cfg.pe_params.param_set, pt.get_child("path_extend_params"), "multicell");
+  if (cfg.ds.single_cell)
+      load(cfg.pe_params.param_set, pt.get_child("path_extend_params"), "singlecell", false);
+  if (cfg.ds.meta)
+      load(cfg.pe_params.param_set, pt.get_child("path_extend_params"), "meta", false);
+  if (cfg.ds.moleculo)
+      load(cfg.pe_params.param_set, pt.get_child("path_extend_params"), "moleculo", false);
 
   if (!cfg.developer_mode) {
       cfg.pe_params.debug_output = false;
