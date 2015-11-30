@@ -95,7 +95,7 @@ fi
 canopy_output=$out_dir/canopy.out
 
 #FIXME add canopy launch
-cp $out_dir/../canopy.out $canopy_output
+cp $in_dir/../canopy.out $canopy_output
 
 if [ -f $out_dir/sample1.ann ] && ! $recount ;
 then
