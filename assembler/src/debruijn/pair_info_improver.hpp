@@ -155,7 +155,7 @@ class PairInfoImprover {
         DEBUG("Resulting size " << to_remove[0].size());
 
         DEBUG("Deleting paired infos, liable to removing");
-        for (auto I = omnigraph::de::pair_begin(to_remove[0]); I != omnigraph::de::pair_end(to_remove[0]); ++I) {
+        for (auto I = omnigraph::de::raw_pair_begin(to_remove[0]); I != omnigraph::de::raw_pair_end(to_remove[0]); ++I) {
             cnt += DeleteIfExist(I.first(), I.second(), *I);
         }
         to_remove[0].Clear();
