@@ -52,8 +52,8 @@ public:
 private:
     void ReadContig();
 //Moved from read.hpp
-    int CountPositions(const SingleSamRead &read, std::unordered_map<size_t, position_description> &ps) const;
-    int CountPositions(const PairedSamRead &read, std::unordered_map<size_t, position_description> &ps) const;
+    bool CountPositions(const SingleSamRead &read, std::unordered_map<size_t, position_description> &ps) const;
+    bool CountPositions(const PairedSamRead &read, std::unordered_map<size_t, position_description> &ps) const;
 
     void UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm);
     //returns: number of changed nucleotides;

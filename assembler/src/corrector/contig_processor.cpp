@@ -124,21 +124,21 @@ size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordere
 }
 
 
-int ContigProcessor::CountPositions(const SingleSamRead &read, unordered_map<size_t, position_description> &ps) const {
+bool ContigProcessor::CountPositions(const SingleSamRead &read, unordered_map<size_t, position_description> &ps) const {
 
     if (read.get_contig_id() < 0) {
         DEBUG("not this contig");
-        return -1;
+        return false;
     }
     //TODO: maybe change to read.is_properly_aligned() ?
     if (read.get_map_qual() == 0) {
         DEBUG("zero qual");
-        return -1;
+        return false;
     }
     int pos = read.get_pos();
     if (pos < 0) {
         WARN("Negative position " << pos << " found on read " << read.get_name() << ", skipping");
-        return -1;
+        return false;
     }
     size_t position = size_t(pos);
     int mate = 1;  // bonus for mate mapped can be here;
@@ -149,16 +149,16 @@ int ContigProcessor::CountPositions(const SingleSamRead &read, unordered_map<siz
     uint32_t *cigar = read.get_cigar_ptr();
     //* in cigar;
     if (l_cigar == 0)
-        return -1;
+        return false;
     if (bam_cigar_opchr(cigar[0]) == '*')
-        return -1;
+        return false;
     for (size_t i = 0; i < l_cigar; i++)
         if (bam_cigar_opchr(cigar[i]) == 'M')
             aligned_length += bam_cigar_oplen(cigar[i]);
 //It's about bad aligned reads, but whether it is necessary?
     double read_len_double = (double) l_read;
     if ((aligned_length < min(read_len_double * 0.4, 40.0)) && (position > read_len_double / 2) && (contig_.length() > read_len_double / 2 + (double) position)) {
-        return -1;
+        return false;
     }
     int state_pos = 0;
     int shift = 0;
@@ -223,26 +223,26 @@ int ContigProcessor::CountPositions(const SingleSamRead &read, unordered_map<siz
         }
         insertion_string = "";
     }
-    return 0;
+    return true;
 }
 
 
-int ContigProcessor::CountPositions(const PairedSamRead &read, unordered_map<size_t, position_description> &ps) const {
+bool ContigProcessor::CountPositions(const PairedSamRead &read, unordered_map<size_t, position_description> &ps) const {
 
     TRACE("starting pairing");
-    int t1 = CountPositions(read.GetLeft(), ps );
+    bool t1 = CountPositions(read.GetLeft(), ps );
     unordered_map<size_t, position_description> tmp;
-    int t2 = CountPositions(read.GetRight(), tmp);
+    bool t2 = CountPositions(read.GetRight(), tmp);
     //overlaps.. multimap? Look on qual?
     if (ps.size() == 0 || tmp.size() == 0) {
         //We do not need paired reads which are not really paired
         ps.clear();
-        return -1;
+        return false;
     }
     TRACE("counted, uniting maps of " << tmp.size() << " and " << ps.size());
     ps.insert(tmp.begin(), tmp.end());
     TRACE("united");
-    return t1 + t2;
+    return (t1 && t2);
 }
 
 size_t ContigProcessor::ProcessMultipleSamFiles() {
