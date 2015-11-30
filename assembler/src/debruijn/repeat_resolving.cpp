@@ -52,11 +52,11 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(ipp_before_repeat_resolution);
 
-    //FIXME introduce separate pe config for preliminary mode
+    //todo awful hack to get around PE using cfg::get everywhere...
+    auto tmp_params_storage = cfg::get().pe_params;
     if (preliminary_) {
-        VERIFY(cfg::get().pe_params.param_set.remove_overlaps);
-        INFO("Overlap removal disabled for first-stage rr")
-        cfg::get_writable().pe_params.param_set.remove_overlaps = false;
+        INFO("Setting up preliminary path extend settings")
+        cfg::get_writable().pe_params = cfg::get().prelim_pe_params;
     }
 
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr");
@@ -67,6 +67,8 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         INFO("Coordinated coverage enabled")
         cfg::get_writable().pe_params.param_set.use_coordinated_coverage = true;
     }
+=======
+>>>>>>> 85fa9fd... prelim_pe params configured and used
 
     bool no_valid_libs = !HasValidLibs();
 
@@ -85,9 +87,9 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         INFO("Unsupported repeat resolver");
         OutputContigs(gp.g, cfg::get().output_dir + "final_contigs");
     }
-
     if (preliminary_) {
-        cfg::get_writable().pe_params.param_set.remove_overlaps = true;
+        INFO("Restoring initial path extend settings")
+        cfg::get_writable().pe_params = tmp_params_storage;
     }
 }
 
