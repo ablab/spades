@@ -47,12 +47,18 @@ inline void DebugOutputPaths(const conj_graph_pack& gp,
                       const string& name) {
     PathInfoWriter path_writer;
     PathVisualizer visualizer;
+
+    DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(gp.g);
+    DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(gp.g, corrector);
+    ContigWriter writer(gp.g, constructor);
+
     string etcDir = GetEtcDir(output_dir);
     if (!cfg::get().pe_params.debug_output) {
         return;
     }
+    writer.OutputPaths(paths, etcDir + name + ".fasta");
     if (cfg::get().pe_params.output.write_paths) {
-        path_writer.WritePaths(paths, etcDir + name + ".paths");
+        path_writer.WritePaths(paths, etcDir + name + ".dat");
     }
     if (cfg::get().pe_params.viz.print_paths) {
         visualizer.writeGraphWithPathsSimple(gp, etcDir + name + ".dot", name,
@@ -326,10 +332,13 @@ inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& 
 inline shared_ptr<SimpleExtender> MakeMetaExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                        size_t lib_index, const pe_config::ParamSetT& pset, bool investigate_loops) {
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+    VERIFY(!lib->IsMp());
 
     shared_ptr<WeightCounter> wc = make_shared<MetagenomicWeightCounter>(gp.g, lib, /*read_length*/cfg::get().ds.RL(), 
                             /*normalized_threshold*/ 0.3, /*raw_threshold*/ 3, /*estimation_edge_length*/ 300);
-    shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc, GetWeightThreshold(lib, pset), GetPriorityCoeff(lib, pset));
+    shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc, 
+                                                        pset.extension_options.weight_threshold, 
+                                                        pset.extension_options.priority_coeff);
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
 
@@ -431,6 +440,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             }
             if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage) {
                 if (cfg::get().ds.meta) {
+                    //TODO proper configuration via config
                     pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, false));
                 } else {
                     if (cfg::get().ds.moleculo)
@@ -534,7 +544,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     INFO("Growing paths using paired-end and long single reads");
     auto paths = resolver.extendSeeds(seeds, *mainPE);
     paths.SortByLength();
-    DebugOutputPaths(gp, output_dir, paths, "pe_overlaped_paths");
+    DebugOutputPaths(gp, output_dir, paths, "pe_before_overlap");
 
     PathContainer clone_paths;
     GraphCoverageMap clone_map(gp.g);
@@ -549,12 +559,11 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
                               output_dir + (mp_exist ? "pe_contigs" : broken_contigs.get()));
     }
-    writer.OutputPaths(paths, GetEtcDir(output_dir) + "pe_before_traversal");
-    DebugOutputPaths(gp, output_dir, paths, "before_traverse_pe");
+    DebugOutputPaths(gp, output_dir, paths, "pe_before_traverse");
     if (traversLoops) {
         TraverseLoops(paths, cover_map, mainPE);
     }
-    DebugOutputPaths(gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
+    DebugOutputPaths(gp, output_dir, paths, (mp_exist ? "pe_final_paths" : "final_paths"));
     writer.OutputPaths(paths, output_dir + (mp_exist ? "pe_scaffolds" : contigs_name));
 
     cover_map.Clear();
@@ -564,7 +573,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     }
 
 //MP
-    DebugOutputPaths(gp, output_dir, clone_paths, "before_mp_paths");
+    DebugOutputPaths(gp, output_dir, clone_paths, "mp_before_extend");
 
     INFO("SUBSTAGE = mate-pair libraries ")
     exspander_stage = PathExtendStage::MPStage;
@@ -575,14 +584,9 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("Growing paths using mate-pairs");
     auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
+    DebugOutputPaths(gp, output_dir, mp_paths, "mp_before_overlap");
     FinalizePaths(mp_paths, clone_map, max_over, true);
-    DebugOutputPaths(gp, output_dir, mp_paths, "mp_final_paths");
-    writer.OutputPaths(mp_paths, GetEtcDir(output_dir) + "mp_prefinal");
-
-    DEBUG("Paths are grown with mate-pairs");
-    if (cfg::get().pe_params.debug_output) {
-        writer.OutputPaths(mp_paths, output_dir + "mp_paths");
-    }
+    DebugOutputPaths(gp, output_dir, mp_paths, "mp_removed_overlaps");
 //MP end
 
 //pe again
@@ -594,9 +598,9 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over);
 
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
+    DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_overlap");
     FinalizePaths(last_paths, clone_map, max_over);
 
-    writer.OutputPaths(last_paths, GetEtcDir(output_dir) + "mp_before_traversal");
     DebugOutputPaths(gp, output_dir, last_paths, "before_traverse_mp");
     TraverseLoops(last_paths, clone_map, last_extender);
 

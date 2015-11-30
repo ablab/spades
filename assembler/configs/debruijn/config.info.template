@@ -6,6 +6,7 @@
 #include "detail_info_printer.info"
 #include "coverage_based_rr.info"
 #include "tsa.info"
+#include "path_extend/pe_params.info"
 
 K		55
 
@@ -94,10 +95,6 @@ max_repeat_length_sc 8000
 resolving_mode path_extend
 
 use_scaffolder  true
-
-path_extend_params {
-	#include "path_extend/pe_params.info"
-}
 
 avoid_rc_connections true
 

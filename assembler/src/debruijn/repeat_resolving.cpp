@@ -48,18 +48,15 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         stats::PrepareForDrawing(gp);
     }
 
+    //todo awful hack to get around PE using cfg::get everywhere...
+    auto tmp_params_storage = cfg::get().pe_params;
     if (preliminary_) {
-        VERIFY(cfg::get().pe_params.param_set.remove_overlaps);
-        INFO("Overlap removal disabled for first-stage rr")
-        cfg::get_writable().pe_params.param_set.remove_overlaps = false;
+        INFO("Setting up preliminary path extend settings")
+        cfg::get_writable().pe_params = cfg::get().prelim_pe_params;
     }
 
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr");
     OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph");
-    if (!preliminary_ && cfg::get().ds.meta) {
-        INFO("Coordinated coverage enabled")
-        cfg::get_writable().pe_params.param_set.use_coordinated_coverage = true;
-    }
 
     bool no_valid_libs = !HasValidLibs();
 
@@ -78,9 +75,9 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         INFO("Unsupported repeat resolver");
         OutputContigs(gp.g, cfg::get().output_dir + "final_contigs");
     }
-
     if (preliminary_) {
-        cfg::get_writable().pe_params.param_set.remove_overlaps = true;
+        INFO("Restoring initial path extend settings")
+        cfg::get_writable().pe_params = tmp_params_storage;
     }
 }
 
