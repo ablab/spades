@@ -149,14 +149,14 @@ params {
         weight_threshold           0.6
     }
     
-    ;FIXME WAT?!
-    use_coordinated_coverage false
+    use_coordinated_coverage true
 }
 }
 
 prelim_pe {
 params {
-    ;remove_overlaps     false
+    use_coordinated_coverage false
+    remove_overlaps     false
 }
 }
 
