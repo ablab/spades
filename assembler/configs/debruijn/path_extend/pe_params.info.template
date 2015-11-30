@@ -140,12 +140,14 @@ params {
 ;NB decsends from sc_pe
 meta_pe {
 params {
-    ;FIXME overriden in code
-    ; extension selection
+    ;TODO proper configuration of different extenders is not supported 
+    ;TODO most settings ard hardcoded for now 
+
+    ;normalize_weight        NA
     extension_options
     {
-        use_default_single_threshold true
-        single_threshold           0.035
+        ;use_default_single_threshold NA
+        ;single_threshold           NA 
         weight_threshold           0.6
     }
     
