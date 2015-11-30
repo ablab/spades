@@ -167,9 +167,9 @@ struct pe_config {
     VisualizeParamsT viz;
     ParamSetT param_set;
     AllLongReads long_reads;
-  } params;
+  }; //params;
 
-  std::string dataset_name;
+//  std::string dataset_name;
 
 
 };

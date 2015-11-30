@@ -117,6 +117,7 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,
     load(p.output, pt, "output", complete);
     load(p.viz, pt, "visualize", complete);
     load(p.obs, pt, "output_broken_scaffolds", complete);
+    load(p.param_set, pt, "params", complete);
     load(p.long_reads, pt, "long_reads", complete);
     if (!p.debug_output) {
         p.output.DisableAll();
