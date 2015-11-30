@@ -12,7 +12,9 @@ add_library(input STATIC
             path_helper.cpp
             copy_file.cpp
             library.cpp
-            logger_impl.cpp)
+            logger_impl.cpp
+            sam/read.cpp
+            sam/sam_reader.cpp)
 
-target_link_libraries(input BamTools yaml-cpp)
+target_link_libraries(input BamTools samtools yaml-cpp)
 

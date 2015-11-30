@@ -89,7 +89,9 @@ public:
     //Adjacency list contains vertrx and edge id (instead of whole edge information)
     typedef std::unordered_multimap<ScaffoldVertex, ScaffoldEdgeIdT> AdjacencyStorage;
 
-    struct ConstScaffoldEdgeIterator {
+    struct ConstScaffoldEdgeIterator: public boost::iterator_facade<ConstScaffoldEdgeIterator,
+                                                                    const ScaffoldEdge,
+                                                                    boost::forward_traversal_tag> {
     private:
         EdgeStotage::const_iterator iter_;
 
@@ -97,28 +99,19 @@ public:
         ConstScaffoldEdgeIterator(EdgeStotage::const_iterator iter) : iter_(iter) {
         }
 
-        ScaffoldEdge operator*() const {
+    private:
+        friend class boost::iterator_core_access;
+
+        void increment() {
+            ++iter_;
+        }
+
+        bool equal(const ConstScaffoldEdgeIterator &other) const {
+            return iter_ == other.iter_;
+        }
+
+        ScaffoldEdge dereference() const {
             return iter_->second;
-        }
-
-        const ScaffoldEdge *operator->() const {
-            return &iter_->second;
-        }
-
-        ConstScaffoldEdgeIterator operator++() {
-            return ConstScaffoldEdgeIterator(++iter_);
-        }
-
-        ConstScaffoldEdgeIterator operator++(int) {
-            return ConstScaffoldEdgeIterator(iter_++);
-        }
-
-        bool operator==(const ConstScaffoldEdgeIterator &that) const {
-            return this->iter_ == that.iter_;
-        }
-
-        bool operator!=(const ConstScaffoldEdgeIterator &that) const {
-            return !this->operator==(that);
         }
     };
 

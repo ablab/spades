@@ -5,13 +5,13 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "read.hpp"
+#include <io/sam/read.hpp>
 
 using namespace std;
 
 namespace sam_reader {
 
-string SingleSamRead::get_cigar() const {
+string SingleSamRead::cigar() const {
     uint32_t *cigar = bam1_cigar(data_);
     string res;
     res.reserve(data_->core.n_cigar);
@@ -23,12 +23,12 @@ string SingleSamRead::get_cigar() const {
     return res;
 }
 
-string SingleSamRead::get_name() const {
+string SingleSamRead::name() const {
     string res(bam1_qname(data_));
     return res;
 }
 
-string SingleSamRead::get_seq() const {
+string SingleSamRead::seq() const {
     string res = "";
     auto b = bam1_seq(data_);
     for (int k = 0; k < data_->core.l_qseq; ++k) {

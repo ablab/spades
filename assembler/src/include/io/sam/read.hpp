@@ -36,15 +36,15 @@ public:
         return *this;
     }
 
-    int32_t get_data_len() const {
+    int32_t data_len() const {
         return data_->core.l_qseq;
     }
 
-    uint32_t get_cigar_len() const {
+    uint32_t cigar_len() const {
         return data_->core.n_cigar;
     }
 
-    int get_contig_id() const {
+    int contig_id() const {
         return data_->core.tid;
     }
 
@@ -57,32 +57,32 @@ public:
     }
 
     bool is_properly_aligned() const {
-        return is_aligned() && is_main_alignment() && get_map_qual() != 0;
+        return is_aligned() && is_main_alignment() && map_qual() != 0;
     }
 
-    bool get_strand() const {
+    bool strand() const {
         return (data_->core.flag & 0x10) == 0;
     }
 
-    uint32_t get_map_qual() const {
+    uint32_t map_qual() const {
         return data_->core.qual;
     }
 
-    int32_t get_pos() const {
+    int32_t pos() const {
         return data_->core.pos;
     }
 
-    uint32_t* get_cigar_ptr() const {
+    uint32_t* cigar_ptr() const {
         return bam1_cigar(data_);
     }
 
-    uint8_t* get_seq_ptr() const {
+    uint8_t* seq_ptr() const {
         return bam1_seq(data_);
     }
 
-    std::string get_cigar() const;
-    std::string get_name() const;
-    std::string get_seq() const;
+    std::string cigar() const;
+    std::string name() const;
+    std::string seq() const;
 
     void set_data(bam1_t *seq_) {
         bam_destroy1(data_);
@@ -104,11 +104,11 @@ public:
         r2 = a2;
     }
 
-    const SingleSamRead& GetLeft() const {
+    const SingleSamRead& Left() const {
         return r1;
     }
 
-    const SingleSamRead& GetRight() const {
+    const SingleSamRead& Right() const {
         return r2;
     }
 };

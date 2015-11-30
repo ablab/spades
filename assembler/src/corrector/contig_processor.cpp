@@ -40,10 +40,10 @@ void ContigProcessor::ReadContig() {
 
 void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm) {
     unordered_map<size_t, position_description> all_positions;
-    if (tmp.get_contig_id() < 0) {
+    if (tmp.contig_id() < 0) {
         return;
     }
-    auto cur_s = sm.get_contig_name(tmp.get_contig_id());
+    auto cur_s = sm.get_contig_name(tmp.contig_id());
     if (contig_name_.compare(cur_s) != 0) {
         return;
     }
@@ -126,27 +126,27 @@ size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordere
 
 bool ContigProcessor::CountPositions(const SingleSamRead &read, unordered_map<size_t, position_description> &ps) const {
 
-    if (read.get_contig_id() < 0) {
+    if (read.contig_id() < 0) {
         DEBUG("not this contig");
         return false;
     }
     //TODO: maybe change to read.is_properly_aligned() ?
-    if (read.get_map_qual() == 0) {
+    if (read.map_qual() == 0) {
         DEBUG("zero qual");
         return false;
     }
-    int pos = read.get_pos();
+    int pos = read.pos();
     if (pos < 0) {
-        WARN("Negative position " << pos << " found on read " << read.get_name() << ", skipping");
+        WARN("Negative position " << pos << " found on read " << read.name() << ", skipping");
         return false;
     }
     size_t position = size_t(pos);
     int mate = 1;  // bonus for mate mapped can be here;
-    size_t l_read = (size_t) read.get_data_len();
-    size_t l_cigar = read.get_cigar_len();
+    size_t l_read = (size_t) read.data_len();
+    size_t l_cigar = read.cigar_len();
 
     int aligned_length = 0;
-    uint32_t *cigar = read.get_cigar_ptr();
+    uint32_t *cigar = read.cigar_ptr();
     //* in cigar;
     if (l_cigar == 0)
         return false;
@@ -165,7 +165,7 @@ bool ContigProcessor::CountPositions(const SingleSamRead &read, unordered_map<si
     size_t skipped = 0;
     size_t deleted = 0;
     string insertion_string = "";
-    auto seq = read.get_seq_ptr();
+    auto seq = read.seq_ptr();
     for (size_t i = 0; i < l_read; i++) {
         DEBUG(i << " " << position << " " << skipped);
         if (shift + bam_cigar_oplen(cigar[state_pos]) <= i) {
@@ -185,7 +185,7 @@ bool ContigProcessor::CountPositions(const SingleSamRead &read, unordered_map<si
             VERIFY(i >= deleted);
             if (i + position < skipped) {
                 WARN(i << " " << position << " " << skipped);
-                INFO(read.get_name());
+                INFO(read.name());
             }
             VERIFY(i + position >= skipped);
 
@@ -230,9 +230,9 @@ bool ContigProcessor::CountPositions(const SingleSamRead &read, unordered_map<si
 bool ContigProcessor::CountPositions(const PairedSamRead &read, unordered_map<size_t, position_description> &ps) const {
 
     TRACE("starting pairing");
-    bool t1 = CountPositions(read.GetLeft(), ps );
+    bool t1 = CountPositions(read.Left(), ps );
     unordered_map<size_t, position_description> tmp;
-    bool t2 = CountPositions(read.GetRight(), tmp);
+    bool t2 = CountPositions(read.Right(), tmp);
     //overlaps.. multimap? Look on qual?
     if (ps.size() == 0 || tmp.size() == 0) {
         //We do not need paired reads which are not really paired

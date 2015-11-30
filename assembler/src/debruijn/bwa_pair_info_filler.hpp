@@ -5,10 +5,12 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "sam/sam_reader.hpp"
 #include "standard.hpp"
 #include "debruijn_graph.hpp"
 #include "config_struct.hpp"
+
+#include <io/sam/sam_reader.hpp>
+#include <io/sam/read.hpp>
 
 #include <io/osequencestream.hpp>
 #include <de/paired_info.hpp>
@@ -52,25 +54,25 @@ public:
     const string &get_contig_id() const {
         return contig_id_;
     }
-    int32_t get_pos() const {
+    int32_t pos() const {
         return pos_;
     }
-    int32_t get_len() const {
+    int32_t len() const {
         return len_;
     }
     bool is_forward() const {
         return is_forward_;
     }
-    uint32_t get_left_soft_clip() const {
+    uint32_t left_soft_clip() const {
         return left_soft_clip_;
     }
-    uint32_t get_right_soft_clip() const {
+    uint32_t right_soft_clip() const {
         return right_soft_clip_;
     }
-    uint32_t get_left_hard_clip() const {
+    uint32_t left_hard_clip() const {
         return left_hard_clip_;
     }
-    uint32_t get_right_hard_clip() const {
+    uint32_t right_hard_clip() const {
         return right_hard_clip_;
     }
 
@@ -130,15 +132,10 @@ public:
 class BWAISCounter: public BWACorrectingProcessor {
 private:
     HistType hist_;
-
     size_t min_contig_len_;
-
     bool ignore_negative_;
-
     size_t mapped_count_;
-
     size_t negative_count_;
-
 
 public:
     BWAISCounter(const SequencingLibraryT& lib, const EdgeIdMap& edge_id_map, const debruijn_graph::Graph& g,
@@ -147,9 +144,9 @@ public:
         ignore_negative_(ignore_negative), mapped_count_(0), negative_count_(0) {
     }
 
-    virtual bool CheckAlignments(const MappedPositionT& l, const MappedPositionT& r);
+    bool CheckAlignments(const MappedPositionT& l, const MappedPositionT& r) override;
 
-    virtual void ProcessAlignments(const MappedPositionT& l, const MappedPositionT& r);
+    void ProcessAlignments(const MappedPositionT& l, const MappedPositionT& r) override;
 
     bool RefineInsertSize(SequencingLibraryT& reads) const ;
 
@@ -171,9 +168,9 @@ public:
         BWACorrectingProcessor(lib, edge_id_map, g), paired_index_(paired_index), min_contig_len_(min_contig_len) {
     }
 
-    virtual bool CheckAlignments(const MappedPositionT& l, const MappedPositionT& r);
+    bool CheckAlignments(const MappedPositionT& l, const MappedPositionT& r) override;
 
-    virtual void ProcessAlignments(const MappedPositionT& l, const MappedPositionT& r);
+    void ProcessAlignments(const MappedPositionT& l, const MappedPositionT& r) override;
 };
 
 //Class for running BWA, managing and parsing SAM files

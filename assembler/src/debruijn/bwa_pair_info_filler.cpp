@@ -50,28 +50,28 @@ void BWACorrectingProcessor::ProcessPairedRead(const MapperReadT& l, const Mappe
     }
     ++count_;
 
-    MappedPositionT left_pos(edge_id_map_.at(stoi(l.get_contig_id())), l.get_pos());
-    MappedPositionT right_pos(edge_id_map_.at(stoi(r.get_contig_id())), r.get_pos());
+    MappedPositionT left_pos(edge_id_map_.at(stoi(l.get_contig_id())), l.pos());
+    MappedPositionT right_pos(edge_id_map_.at(stoi(r.get_contig_id())), r.pos());
 
     //This function if overloaded in BWAISCounter and BWAIndexFiller
     if (!CheckAlignments(left_pos, right_pos)) {
         return;
     }
 
-    int r_from_pos_to_right_end = r.get_len() + r.get_right_hard_clip() - r.get_left_soft_clip();
-    int l_from_pos_to_left_end = l.get_left_soft_clip() + l.get_left_hard_clip();
+    int r_from_pos_to_right_end = r.len() + r.right_hard_clip() - r.left_soft_clip();
+    int l_from_pos_to_left_end = l.left_soft_clip() + l.left_hard_clip();
 
     if ((!l.is_forward() && (lib_.orientation() == LibraryOrientation::FF || lib_.orientation() == LibraryOrientation::FR)) ||
         (l.is_forward() && (lib_.orientation() == LibraryOrientation::RF || lib_.orientation() == LibraryOrientation::RR))) {
         left_pos.e_ = g_.conjugate(left_pos.e_);
-        left_pos.pos_ = (int) g_.length(left_pos.e_) - left_pos.pos_ - (l.get_len() - l.get_left_soft_clip() - l.get_right_soft_clip()) + (int) g_.k();
-        l_from_pos_to_left_end = l.get_right_soft_clip() + l.get_right_hard_clip();
+        left_pos.pos_ = (int) g_.length(left_pos.e_) - left_pos.pos_ - (l.len() - l.left_soft_clip() - l.right_soft_clip()) + (int) g_.k();
+        l_from_pos_to_left_end = l.right_soft_clip() + l.right_hard_clip();
     }
     if ((!r.is_forward() && (lib_.orientation() == LibraryOrientation::FF || lib_.orientation() == LibraryOrientation::RF)) ||
         (r.is_forward() && (lib_.orientation() == LibraryOrientation::FR || lib_.orientation() == LibraryOrientation::RR))) {
         right_pos.e_ = g_.conjugate(right_pos.e_);
-        right_pos.pos_ = (int) g_.length(right_pos.e_) - right_pos.pos_ - (r.get_len() - r.get_left_soft_clip() - r.get_right_soft_clip()) + (int) g_.k();
-        r_from_pos_to_right_end = r.get_len() + r.get_left_hard_clip() - r.get_right_soft_clip();
+        right_pos.pos_ = (int) g_.length(right_pos.e_) - right_pos.pos_ - (r.len() - r.left_soft_clip() - r.right_soft_clip()) + (int) g_.k();
+        r_from_pos_to_right_end = r.len() + r.left_hard_clip() - r.right_soft_clip();
     }
 
     right_pos.pos_ = right_pos.pos_ + r_from_pos_to_right_end;
@@ -247,14 +247,14 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
 
         if (!lf.eof()) {
             lf >> left_read;
-            l_name = left_read.get_name();
+            l_name = left_read.name();
             if (left_read.is_properly_aligned()) {
                 TRACE("Left read " << l_name);
-                left_data = MapperReadT(string(lf.get_contig_name(left_read.get_contig_id())),
-                                        left_read.get_pos(),
-                                        left_read.get_data_len(),
-                                        left_read.get_strand(),
-                                        left_read.get_cigar());
+                left_data = MapperReadT(string(lf.get_contig_name(left_read.contig_id())),
+                                        left_read.pos(),
+                                        left_read.data_len(),
+                                        left_read.strand(),
+                                        left_read.cigar());
             }
             else if (!left_read.is_main_alignment()) {
                 //If not primary alignment ignore mapping
@@ -264,14 +264,14 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
         }
         if (!rf.eof()) {
             rf >> right_read;
-            r_name = right_read.get_name();
+            r_name = right_read.name();
             if (right_read.is_properly_aligned()) {
                 TRACE("Right read " << r_name);
-                right_data = MapperReadT(string(rf.get_contig_name(right_read.get_contig_id())),
-                                         right_read.get_pos(),
-                                         right_read.get_data_len(),
-                                         right_read.get_strand(),
-                                         right_read.get_cigar());
+                right_data = MapperReadT(string(rf.get_contig_name(right_read.contig_id())),
+                                         right_read.pos(),
+                                         right_read.data_len(),
+                                         right_read.strand(),
+                                         right_read.cigar());
             }
             else if (!right_read.is_main_alignment()) {
                 //If not primary alignment ignore mapping
@@ -280,6 +280,7 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
             }
         }
 
+        //Think about custom read names
         if (l_name == r_name) {
             TRACE("Equal processing");
             //Process immideately if ids are equal in both SAM entries
@@ -302,6 +303,7 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
                 TRACE("Right read's mate not found, adding to map");
                 if (right_reads.count(r_name) == 0) {
                     //Insert read without mate for further analysis
+                    //TODO inspect map size and performance
                     right_reads.emplace(r_name, right_data);
                 } else {
                     DEBUG("Right read " << r_name << " is duplicated!");
@@ -325,6 +327,7 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
                 TRACE("Left read's mate not found, adding to map");
                 if (left_reads.count(l_name) == 0) {
                     //Insert read without mate for further analysis
+                    //TODO inspect map size and performance
                     left_reads.emplace(l_name, left_data);
                 } else {
                     DEBUG("Left read " << r_name << " is duplicated!");

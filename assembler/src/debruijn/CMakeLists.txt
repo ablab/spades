@@ -8,14 +8,15 @@
 project(spades CXX)
 
 add_library(debruijn STATIC
-            ../include/sam/read.cpp
-            ../include/sam/sam_reader.cpp
             kmer_coverage_model.cpp
             config_struct.cpp
             path_extend/pe_config_struct.cpp
             path_extend/bidirectional_path.cpp
             path_extend/scaff_supplementary.cpp
             path_extend/extension_chooser2015.cpp
+            path_extend/scaffold_graph.cpp
+            path_extend/scaffold_graph_visualizer.cpp
+            path_extend/connection_condition2015.cpp
             genome_consistance_checker.cpp
             stage.cpp
             construction.cpp
@@ -28,14 +29,11 @@ add_library(debruijn STATIC
             repeat_resolving.cpp
             genomic_info_filler.cpp
             pacbio_aligning.cpp
-            path_extend/scaffold_graph.cpp
-            path_extend/scaffold_graph_visualizer.cpp 
-            path_extend/connection_condition2015.cpp
             bwa_pair_info_filler.cpp
             genome_storage.cpp)
   
 target_include_directories(debruijn PRIVATE ${EXT_DIR}/include/ConsensusCore)
-target_link_libraries(debruijn ConsensusCore input samtools mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(debruijn ConsensusCore input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
 add_executable(spades
                main.cpp)

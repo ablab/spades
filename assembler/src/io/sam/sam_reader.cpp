@@ -5,15 +5,15 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "read.hpp"
-#include "sam_reader.hpp"
+#include <io/sam/read.hpp>
+#include <io/sam/sam_reader.hpp>
 
 using namespace std;
 
 namespace sam_reader {
 
 bool MappedSamStream::eof() const {
-    return eof_;
+        return eof_;
 }
 
 bool MappedSamStream::is_open() const {
@@ -37,9 +37,9 @@ MappedSamStream& MappedSamStream::operator >>(PairedSamRead& read) {
     MappedSamStream::operator >>(r2);
 
     read = PairedSamRead(r1, r2);
-    TRACE(r1.get_seq());
-    TRACE(r2.get_seq());
-    TRACE(r1.get_name());
+    TRACE(r1.seq());
+    TRACE(r2.seq());
+    TRACE(r1.name());
     return *this;
 }
 

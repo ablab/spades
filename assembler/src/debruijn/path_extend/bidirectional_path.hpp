@@ -145,6 +145,7 @@ public:
         return cumulative_len_[0] + gap_len_[0].gap_;
     }
 
+    //TODO iterators forward/reverse
     EdgeId operator[](size_t index) const {
         return data_[index];
     }

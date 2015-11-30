@@ -13,13 +13,13 @@
  */
 
 #pragma once
-#include "sam/sam_reader.hpp"
-#include "sam/read.hpp"
 #include "interesting_pos_processor.hpp"
 #include "positional_read.hpp"
-
-#include "io/library.hpp"
 #include "openmp_wrapper.h"
+
+#include <io/sam/sam_reader.hpp>
+#include <io/sam/read.hpp>
+#include <io/library.hpp>
 
 #include <string>
 #include <vector>
