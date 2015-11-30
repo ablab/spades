@@ -105,9 +105,7 @@ long_reads {
 
 sc_pe {
 params {
-    split_edge_length       99
     normalize_weight        true
-    cut_all_overlaps  false
 
     ; extension selection
     extension_options
@@ -115,59 +113,13 @@ params {
         use_default_single_threshold false
         single_threshold           0.001
         weight_threshold           0.6
-        priority_coeff             1.5
     }
 
-    mate_pair_options
-    {
-        use_default_single_threshold true
-        single_threshold           30
-        weight_threshold           0.5
-        priority_coeff             1.5
-    }
-
-    scaffolder {
-        on              true
-        cutoff          2
-        rel_cutoff      0.1
-        sum_threshold   3  
-
-        cluster_info    true
-        cl_threshold    0
-
-        fix_gaps        true
-	;next param should be 0.51 - 1.0 if use_old_score = true and 3.0 otherwise
-        min_gap_score   0.7
-
-        max_must_overlap  -2
-        max_can_overlap   0.5
-        short_overlap     6
-        artificial_gap    10
-        use_old_score   true
-
-        min_overlap_length 10
-        flank_addition_coefficient -5.9
-        flank_multiplication_coefficient 0.97
-    }
-    
-    loop_removal
-    {
-        max_loops       10
-        mp_max_loops    10
-    }
-    use_coordinated_coverage false
-    remove_overlaps     true
-    coordinated_coverage
-    {
-       max_edge_length_repeat 300
-       delta                  0.4
-    }
 }
 }
 
 moleculo_pe {
 params {
-    split_edge_length       99
     normalize_weight        true
     cut_all_overlaps  true
 
@@ -177,122 +129,34 @@ params {
         use_default_single_threshold false
         single_threshold           0.001
         weight_threshold           0.6
-        priority_coeff             1.5
-    }
-
-    mate_pair_options
-    {
-	use_default_single_threshold true
-        single_threshold           30
-        weight_threshold           0.5
-        priority_coeff             1.5
     }
 
     scaffolder {
-        on              true
-        cutoff          2
-        rel_cutoff      0.1
-        sum_threshold   3  
-
-        cluster_info    true
-        cl_threshold    0
-
-        fix_gaps        true
-        min_gap_score   0.7
-
-        max_must_overlap  -2
-        max_can_overlap   0.5
         short_overlap     10
-        artificial_gap    10
-        use_old_score     true
-
-        min_overlap_length 10
-        flank_addition_coefficient -5.9
-        flank_multiplication_coefficient 0.97
-    }
-    
-    loop_removal
-    {
-        max_loops       10
-        mp_max_loops    10
-    }
-
-    remove_overlaps     true
-    use_coordinated_coverage false
-    coordinated_coverage
-    {
-       max_edge_length_repeat 300
-       delta                  0.4
     }
 }
 }
 
+;NB decsends from sc_pe
 meta_pe {
 params {
-    split_edge_length       99
-    normalize_weight        true
-    cut_all_overlaps  false
-
+    ;FIXME overriden in code
     ; extension selection
     extension_options
     {
         use_default_single_threshold true
         single_threshold           0.035
         weight_threshold           0.6
-        priority_coeff             1.5
-    }
-
-    mate_pair_options
-    {
-        use_default_single_threshold true
-        single_threshold           30
-        weight_threshold           0.5
-        priority_coeff             1.5
-    }
-
-    scaffolder {
-        on              true
-        cutoff          2
-        rel_cutoff      0.1
-        sum_threshold   3  
-
-        cluster_info    true
-        cl_threshold    0
-
-        fix_gaps        true
-	;next param should be 0.51 - 1.0 if use_old_score = true and 3.0 otherwise
-        min_gap_score   0.7
-
-        max_must_overlap  -2
-        max_can_overlap   0.5
-        short_overlap     6
-        artificial_gap    10
-        use_old_score   true
-
-        min_overlap_length 10
-        flank_addition_coefficient -5.9
-        flank_multiplication_coefficient 0.97
     }
     
-    loop_removal
-    {
-        max_loops       10
-        mp_max_loops    10
-    }
-
-    remove_overlaps     true
+    ;FIXME WAT?!
     use_coordinated_coverage false
-    
-    coordinated_coverage
-    {
-       max_edge_length_repeat 300
-       delta                  0.4
-    }
 }
 }
 
 prelim_pe {
 params {
+    ;remove_overlaps     false
 }
 }
 
