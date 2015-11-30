@@ -702,14 +702,23 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
       load(cfg.de, pt, (cfg.ds.single_cell ? "old_sc_de" : "old_usual_de"));
   }
 
-  load(cfg.pe_params, pt, "path_extend_params");
-  load(cfg.pe_params.param_set, pt.get_child("path_extend_params"), "multicell");
-  if (cfg.ds.single_cell)
-      load(cfg.pe_params.param_set, pt.get_child("path_extend_params"), "singlecell", false);
-  if (cfg.ds.meta)
-      load(cfg.pe_params.param_set, pt.get_child("path_extend_params"), "meta", false);
-  if (cfg.ds.moleculo)
-      load(cfg.pe_params.param_set, pt.get_child("path_extend_params"), "moleculo", false);
+  load(cfg.pe_params, pt, "default_pe");
+  if (cfg.ds.single_cell) {
+      VERIFY(pt.count("sc_pe"));
+      load(cfg.pe_params, pt, "sc_pe", false);
+  }
+  if (cfg.ds.meta) {
+      VERIFY(pt.count("meta_pe"));
+      load(cfg.pe_params, pt, "meta_pe", false);
+  }
+  if (cfg.ds.moleculo) {
+      VERIFY(pt.count("moleculo_pe"));
+      load(cfg.pe_params, pt, "moleculo_pe", false);
+  }
+
+  cfg.prelim_pe_params = cfg.pe_params;
+  VERIFY(pt.count("prelim_pe"));
+  load(cfg.prelim_pe_params, pt, "prelim_pe", false);
 
   if (!cfg.developer_mode) {
       cfg.pe_params.debug_output = false;
