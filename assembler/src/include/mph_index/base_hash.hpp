@@ -4,8 +4,8 @@
 #include <tuple>
 #include <algorithm>
 #include <cstring>
+#include <city/city.h>
 #include "common.hpp"
-
 
 namespace emphf {
 
@@ -223,6 +223,71 @@ namespace emphf {
 
         seed_t m_seed;
 
+    };
+
+
+    struct city_hasher {
+        typedef uint64_t seed_t;
+        typedef uint64_t hash_t;
+        typedef std::tuple<hash_t, hash_t, hash_t> hash_triple_t;
+
+        city_hasher()
+        {}
+
+        city_hasher(uint64_t seed)
+            : m_seed(seed)
+        {}
+
+        template <typename Rng>
+        static city_hasher generate(Rng& rng) {
+            return city_hasher(rng());
+        }
+
+        hash_triple_t operator()(byte_range_t s) const {
+            city_uint128 ch = CityHash128WithSeed((char*)s.first, s.second - s.first, {m_seed, 0x9e3779b97f4a7c13ULL});
+            hash_triple_t h(ch.first, 0x9e3779b97f4a7c13ULL, ch.second);
+            mix(h);
+            
+            return h;
+        }
+
+        void swap(city_hasher& other) {
+            std::swap(m_seed, other.m_seed);
+        }
+
+        void save(std::ostream& os) const {
+            os.write(reinterpret_cast<char const*>(&m_seed), sizeof(m_seed));
+        }
+
+        void load(std::istream& is) {
+            is.read(reinterpret_cast<char*>(&m_seed), sizeof(m_seed));
+        }
+
+        seed_t seed() const {
+            return m_seed;
+        }
+
+    protected:
+        seed_t m_seed;
+
+        static void mix(hash_triple_t& h) {
+            uint64_t& a = std::get<0>(h);
+            uint64_t& b = std::get<1>(h);
+            uint64_t& c = std::get<2>(h);
+
+            a -= b; a -= c; a ^= (c >> 43);
+            b -= c; b -= a; b ^= (a << 9);
+            c -= a; c -= b; c ^= (b >> 8);
+            a -= b; a -= c; a ^= (c >> 38);
+            b -= c; b -= a; b ^= (a << 23);
+            c -= a; c -= b; c ^= (b >> 5);
+            a -= b; a -= c; a ^= (c >> 35);
+            b -= c; b -= a; b ^= (a << 49);
+            c -= a; c -= b; c ^= (b >> 11);
+            a -= b; a -= c; a ^= (c >> 12);
+            b -= c; b -= a; b ^= (a << 18);
+            c -= a; c -= b; c ^= (b >> 22);
+        }
     };
 
 }

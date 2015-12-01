@@ -33,7 +33,7 @@ add_library(debruijn STATIC
             genome_storage.cpp)
   
 target_include_directories(debruijn PRIVATE ${EXT_DIR}/include/ConsensusCore)
-target_link_libraries(debruijn ConsensusCore input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(debruijn ConsensusCore input cityhash nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
 add_executable(spades
                main.cpp)

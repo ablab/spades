@@ -83,7 +83,7 @@ void CorrectReadsBatch(std::vector<bool> &res,
   bool correct_threshold = cfg::get().correct_use_threshold;
   bool discard_bad = cfg::get().correct_discard_bad;
 
-  ReadCorrector corrector(data);
+  ReadCorrector corrector(data, cfg::get().correct_stats);
 # pragma omp parallel for shared(reads, res, data) num_threads(correct_nthreads)
   for (size_t i = 0; i < buf_size; ++i) {
     if (reads[i].size() >= K) {

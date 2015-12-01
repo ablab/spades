@@ -1,3 +1,5 @@
+default_pe {
+
 ; output options
 
 debug_output    false
@@ -15,200 +17,8 @@ visualize {
 ; none | break_gaps | break_all
 output_broken_scaffolds     break_gaps
 
-finalize_paths true
 
-singlecell {
-    ; old | 2015 | combined | old_pe_2015
-    scaffolding_mode old
-
-    split_edge_length       99
-    normalize_weight        true
-    cut_all_overlaps  false
-
-    ; extension selection
-    extension_options
-    {
-        use_default_single_threshold false
-        single_threshold           0.001
-        weight_threshold           0.6
-        priority_coeff             1.5
-    }
-
-    mate_pair_options
-    {
-        use_default_single_threshold true
-        single_threshold           30
-        weight_threshold           0.5
-        priority_coeff             1.5
-    }
-
-    scaffolder {
-        on              true
-        cutoff          2
-        rel_cutoff      0.1
-        sum_threshold   3  
-
-        cluster_info    true
-        cl_threshold    0
-
-        fix_gaps        true
-	;next param should be 0.51 - 1.0 if use_old_score = true and 3.0 otherwise
-        min_gap_score   0.7
-
-        max_must_overlap  -2
-        max_can_overlap   0.5
-        short_overlap     6
-        artificial_gap    10
-        use_old_score   true
-
-        min_overlap_length 10
-        flank_addition_coefficient -5.9
-        flank_multiplication_coefficient 0.97
-    }
-    
-    loop_removal
-    {
-        max_loops       10
-        mp_max_loops    10
-    }
-    use_coordinated_coverage false
-    remove_overlaps     true
-    coordinated_coverage
-    {
-       max_edge_length_repeat 300
-       delta                  0.4
-    }
-}
-
-meta {
-    ; old | 2015 | combined | old_pe_2015
-    scaffolding_mode old
-
-    split_edge_length       99
-    normalize_weight        true
-    cut_all_overlaps  false
-
-    ; extension selection
-    extension_options
-    {
-        use_default_single_threshold true
-        single_threshold           0.035
-        weight_threshold           0.6
-        priority_coeff             1.5
-    }
-
-    mate_pair_options
-    {
-        use_default_single_threshold true
-        single_threshold           30
-        weight_threshold           0.5
-        priority_coeff             1.5
-    }
-
-    scaffolder {
-        on              true
-        cutoff          2
-        rel_cutoff      0.1
-        sum_threshold   3  
-
-        cluster_info    true
-        cl_threshold    0
-
-        fix_gaps        true
-	;next param should be 0.51 - 1.0 if use_old_score = true and 3.0 otherwise
-        min_gap_score   0.7
-
-        max_must_overlap  -2
-        max_can_overlap   0.5
-        short_overlap     6
-        artificial_gap    10
-        use_old_score   true
-
-        min_overlap_length 10
-        flank_addition_coefficient -5.9
-        flank_multiplication_coefficient 0.97
-    }
-    
-    loop_removal
-    {
-        max_loops       10
-        mp_max_loops    10
-    }
-
-    remove_overlaps     true
-    use_coordinated_coverage false
-    
-    coordinated_coverage
-    {
-       max_edge_length_repeat 300
-       delta                  0.4
-    }
-}
-
-moleculo {
-    ; old | 2015 | combined | old_pe_2015
-    scaffolding_mode old
-
-    split_edge_length       99
-    normalize_weight        true
-    cut_all_overlaps  true
-
-    ; extension selection
-    extension_options
-    {
-        use_default_single_threshold false
-        single_threshold           0.001
-        weight_threshold           0.6
-        priority_coeff             1.5
-    }
-
-    mate_pair_options
-    {
-	use_default_single_threshold true
-        single_threshold           30
-        weight_threshold           0.5
-        priority_coeff             1.5
-    }
-
-    scaffolder {
-        on              true
-        cutoff          2
-        rel_cutoff      0.1
-        sum_threshold   3  
-
-        cluster_info    true
-        cl_threshold    0
-
-        fix_gaps        true
-        min_gap_score   0.7
-
-        max_must_overlap  -2
-        max_can_overlap   0.5
-        short_overlap     10
-        artificial_gap    10
-        use_old_score     true
-
-        min_overlap_length 10
-        flank_addition_coefficient -5.9
-        flank_multiplication_coefficient 0.97
-    }
-    
-    loop_removal
-    {
-        max_loops       10
-        mp_max_loops    10
-    }
-
-    remove_overlaps     true
-    use_coordinated_coverage false
-    coordinated_coverage
-    {
-       max_edge_length_repeat 300
-       delta                  0.4
-    }
-}
-
-multicell {
+params {
     ; old | 2015 | combined | old_pe_2015
     scaffolding_mode old
 
@@ -273,6 +83,21 @@ multicell {
        max_edge_length_repeat 300
        delta                  0.4
     }
+
+    scaffolding2015 {
+        autodetect      true
+        min_unique_length 10000
+        unique_coverage_variation 0.5
+        ; (median * (1+variation) > unique > median * (1 - variation))
+    }
+
+    scaffold_graph {
+        construct    false
+        output       false
+        min_read_count 20
+        graph_connectivity false
+        max_path_length 10000
+    }
 }
 
 
@@ -295,18 +120,64 @@ long_reads {
         unique_edge_priority 2.0
     }
 }
+}
+sc_pe {
+params {
+    normalize_weight        true
 
-scaffolding2015 {
-    autodetect      true
-    min_unique_length 10000
-    unique_coverage_variation 0.5
-    ; (median * (1+variation) > unique > median * (1 - variation))
+    ; extension selection
+    extension_options
+    {
+        use_default_single_threshold false
+        single_threshold           0.001
+        weight_threshold           0.6
+    }
+
+}
 }
 
-scaffold_graph {
-    construct    false
-    output       false
-    min_read_count 20
-    graph_connectivity false
-    max_path_length 10000
+moleculo_pe {
+params {
+    normalize_weight        true
+    cut_all_overlaps  true
+
+    ; extension selection
+    extension_options
+    {
+        use_default_single_threshold false
+        single_threshold           0.001
+        weight_threshold           0.6
+    }
+
+    scaffolder {
+        short_overlap     10
+    }
 }
+}
+
+;NB decsends from sc_pe
+meta_pe {
+params {
+    ;TODO proper configuration of different extenders is not supported 
+    ;TODO most settings ard hardcoded for now 
+
+    ;normalize_weight        NA
+    extension_options
+    {
+        ;use_default_single_threshold NA
+        ;single_threshold           NA 
+        weight_threshold           0.6
+    }
+    
+    use_coordinated_coverage true
+}
+}
+
+prelim_pe {
+params {
+    use_coordinated_coverage false
+    remove_overlaps     false
+}
+}
+
+

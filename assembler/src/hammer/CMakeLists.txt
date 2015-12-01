@@ -22,7 +22,7 @@ add_executable(hammer
 #  add_subdirectory(quake_count)
 #  add_subdirectory(gen_test_data)
 
-target_link_libraries(hammer input mph_index BamTools yaml-cpp format input ${COMMON_LIBRARIES})
+target_link_libraries(hammer input cityhash BamTools yaml-cpp format input ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(hammer PROPERTIES LINK_SEARCH_END_STATIC 1)

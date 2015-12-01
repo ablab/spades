@@ -124,13 +124,7 @@ struct pe_config {
     }
   };
 
-  struct ScaffoldGraphParamsT {
-      bool construct;
-      bool output;
-      size_t min_read_count;
-      bool graph_connectivity;
-      size_t max_path_length;
-  };
+
 
   struct VisualizeParamsT {
     bool print_overlaped_paths;
@@ -195,7 +189,18 @@ struct pe_config {
       size_t max_edge_length_in_repeat;
       double delta;
     } coordinated_coverage;
-
+      struct Scaffolding2015 {
+          bool autodetect;
+          size_t min_unique_length;
+          double unique_coverage_variation;
+      } scaffolding2015;
+      struct ScaffoldGraphParamsT {
+          bool construct;
+          bool output;
+          size_t min_read_count;
+          bool graph_connectivity;
+          size_t max_path_length;
+      } scaffold_graph_params;
   };
 
   struct LongReads {
@@ -210,14 +215,8 @@ struct pe_config {
       LongReads contigs;
   };
 
-    struct Scaffolding2015 {
-        bool autodetect;
-        size_t min_unique_length;
-        double unique_coverage_variation;
-    };
 
   struct MainPEParamsT {
-    std::string name;
     output_broken_scaffolds obs;
 
     bool finalize_paths;
@@ -228,22 +227,20 @@ struct pe_config {
     VisualizeParamsT viz;
     ParamSetT param_set;
     AllLongReads long_reads;
-    Scaffolding2015 scaffolding2015;
-    ScaffoldGraphParamsT scaffold_graph_params;
-  } params;
+  }; // params;
 
-  std::string dataset_name;
+
+//  std::string dataset_name;
 
 
 };
 
-
-
-void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bool complete);
-void load(pe_config& pe_cfg, boost::property_tree::ptree const& pt, bool complete);
+void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool complete = true);
+void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bool complete = true);
+//void load(pe_config& pe_cfg, boost::property_tree::ptree const& pt, bool complete);
 
 }
 
-typedef config_common::config<path_extend::pe_config> pe_cfg;
+//typedef config_common::config<path_extend::pe_config> pe_cfg;
 
 #endif /* CONFIG_STRUCT_HPP_ */

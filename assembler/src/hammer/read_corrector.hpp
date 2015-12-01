@@ -22,10 +22,13 @@ class ReadCorrector {
   size_t changed_nucleotides_;
   size_t uncorrected_nucleotides_;
   size_t total_nucleotides_;
+  bool   correct_stats_;
 
  public:
-  ReadCorrector(const KMerData& data)
-      : data_(data), changed_reads_(0), changed_nucleotides_(0), uncorrected_nucleotides_(0), total_nucleotides_(0) {}
+    ReadCorrector(const KMerData& data, bool correct_stats = false)
+            : data_(data),
+              changed_reads_(0), changed_nucleotides_(0), uncorrected_nucleotides_(0), total_nucleotides_(0),
+              correct_stats_(correct_stats) {}
 
   size_t changed_reads() const {
     return changed_reads_;

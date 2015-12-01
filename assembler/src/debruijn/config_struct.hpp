@@ -616,6 +616,7 @@ struct debruijn_config {
 
     resolving_mode rm;
     path_extend::pe_config::MainPEParamsT pe_params;
+    path_extend::pe_config::MainPEParamsT prelim_pe_params;
     bool avoid_rc_connections;
 
     construction con;

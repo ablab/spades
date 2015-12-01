@@ -78,7 +78,6 @@ endif()
 
 # sub projects
 add_subdirectory(io)
-add_subdirectory(mph_index)
 add_subdirectory(debruijn)
 add_subdirectory(hammer)
 add_subdirectory(ionhammer)

@@ -42,6 +42,7 @@ elif sys.version.startswith('3.'):
 import moleculo_postprocessing
 import alignment
 
+
 def print_used_values(cfg, log):
     def print_value(cfg, section, param, pretty_param="", margin="  "):
         if not pretty_param:
@@ -301,6 +302,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.mismatch_corrector = False
             options_storage.careful = False
 
+        elif opt == '-v' or opt == "--version":
+            show_version()
         elif opt == '-h' or opt == "--help":
             show_usage(0)
         elif opt == "--help-hidden":
@@ -492,6 +495,11 @@ def get_options_from_params(params_filename, spades_py_name=None):
     if spades_py_pos == -1:
         return None, None
     return cmd_line, cmd_line[spades_py_pos + len(spades_py_name):].split()
+
+
+def show_version():
+    options_storage.version(spades_version)
+    sys.exit(0)
 
 
 def show_usage(code, show_hidden=False):
