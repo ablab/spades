@@ -116,6 +116,7 @@ struct pe_config {
       double cl_threshold;
 
       bool fix_gaps;
+      bool use_la_gap_joiner;
       double min_gap_score;
       double max_must_overlap;
       double max_can_overlap;
