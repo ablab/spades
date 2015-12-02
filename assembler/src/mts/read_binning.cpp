@@ -10,7 +10,7 @@
 #include "logger/log_writers.hpp"
 
 #include "graphio.hpp"
-#include "io/io_helper.hpp"
+#include "io/file_reader.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
 
     ContigBinner binner(gp, bins_of_interest);
 
-    auto contigs_stream_ptr = io::EasyStream(contigs_path, false);
+    auto contigs_stream_ptr = make_shared<io::FileReadStream>(contigs_path);
     AnnotationStream binning_stream(contigs_binning_path);
 
     binner.Init(out_root, sample_name, *contigs_stream_ptr, binning_stream);

@@ -104,11 +104,6 @@ void FilterKmers(const std::vector<string>& files, size_t all_min, size_t k, con
         for (size_t i = 0; i < n; ++i) {
             if (alive[i]) {
                 RtSeq& cur_kmer = top_kmer[i].first;
-//                bool t1, t2;
-//                if (min_kmer) {
-//                    t1 = kmer_less(cur_kmer, *min_kmer);
-//                    t2 = cur_kmer == *min_kmer;
-//                }
                 if (!min_kmer || kmer_less(cur_kmer, *min_kmer)) {
                     min_kmer = boost::optional<RtSeq>(cur_kmer);
                     cnt_min = 0;
@@ -121,33 +116,28 @@ void FilterKmers(const std::vector<string>& files, size_t all_min, size_t k, con
         if (!min_kmer) {
             break;
         }
-        std::vector<uint32> cnt_vector(n, 0);
         if (cnt_min >= all_min) {
+            std::vector<uint32> cnt_vector(n, 0);
 //            min_kmer.get().BinWrite(output_kmer);
             output_kmer << min_kmer.get().str() << std::endl;
             for (size_t i = 0; i < n; ++i) {
-                if (i != 0) {
-                    output_cnt << " ";
-                }
                 if (alive[i] && top_kmer[i].first == *min_kmer) {
                     cnt_vector[i] += top_kmer[i].second;
                 }
             }
+            string delim = "";
+            for (auto cnt : cnt_vector) {
+                output_cnt << delim << cnt;
+                delim = " ";
+            }
+            output_cnt << std::endl;
         }
-        string delim = "";
-        for (auto cnt : cnt_vector) {
-            output_cnt << delim << cnt;
-            delim = " ";
-        }
-        output_cnt << std::endl;
         for (size_t i = 0; i < n; ++i) {
             if (alive[i] && top_kmer[i].first == *min_kmer) {
                 alive[i] = ReadKmerWithCount(*infiles[i], top_kmer[i]);
             }
         }
     }
-    output_kmer.close();
-    output_cnt.close();
 }
 
 int main(int argc, char *argv[]) {

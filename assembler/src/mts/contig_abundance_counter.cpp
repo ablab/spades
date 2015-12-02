@@ -6,6 +6,7 @@
 #include "logger/logger.hpp"
 #include "formats.hpp"
 #include "graph_pack.hpp"
+#include "io/file_reader.hpp"
 #include "graphio.hpp"
 
 void create_console_logger() {
@@ -212,7 +213,7 @@ int main(int argc, char** argv) {
     gp.kmer_mapper.Attach();
     INFO("Load graph from " << saves_path);
     graphio::ScanGraphPack(saves_path, gp);
-    auto contigs_stream_ptr = io::EasyStream(contigs_path, false);
+    auto contigs_stream_ptr = make_shared<io::FileReadStream>(contigs_path);
 
     ContigAbundanceCounter abundance_counter(gp, sample_cnt, kmer_mult_fn, min_length_bound);
     abundance_counter(*contigs_stream_ptr, contigs_abundance_fn);

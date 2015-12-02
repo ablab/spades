@@ -15,7 +15,7 @@ if [ "$#" -lt 2 ]; then
     exit 1
 fi
 
-SPADES_PATH=~/git/algorithmic-biology/assembler/
+SPADES_PATH=/home/snurk/build_30.11/SPAdes-3.7.0-dev-Linux/bin/
 SCRIPT_PATH=~/git/algorithmic-biology/assembler/src/mts/scripts/
 BIN=~/git/algorithmic-biology/assembler/build/release/bin/
 
@@ -49,7 +49,7 @@ else
     #TODO set number of threads for kmc2
     #TODO make kmc2 launch explicit
     echo "Gathering $(($K + 1))-mer multiplicities from $descs"
-    $BIN/kmer_multiplicity_counter -k $(($K + 1)) -o $out_dir/kmers --mult 3 --sample 2 $descs
+    $BIN/kmer_multiplicity_counter -k $(($K + 1)) -o $out_dir/kmers --mult 1 --sample 2 $descs
     recount=true
 fi
 
@@ -66,7 +66,7 @@ for s_dir in $in_dir/sample* ; do
 #TODO return BH?
 #TODO longer k sequence?
 #TODO saves instead of debug
-        $SPADES_PATH/spades.py --debug -t $thread_cnt -k $K --only-assembler -1 $s_dir/left.fastq -2 $s_dir/right.fastq -o $assembly_dir
+        $SPADES_PATH/spades.py --meta --debug -t $thread_cnt -k $K --only-assembler -1 $s_dir/left.fastq -2 $s_dir/right.fastq -o $assembly_dir
 
         cp $assembly_dir/scaffolds.fasta $contigs
         recount=true
@@ -93,9 +93,16 @@ else
 fi
 
 canopy_output=$out_dir/canopy.out
+canopy_profile=$out_dir/canopy.prof
 
 #FIXME add canopy launch
-cp $in_dir/../canopy.out $canopy_output
+#cp $in_dir/../canopy.out $canopy_output
+if [ -f $canopy_output ] && ! $recount ;
+then
+    echo "Canopy clustering done already"
+else
+    $SCRIPT_PATH/canopy_launch.sh $canopy_input $canopy_output $canopy_profile
+fi
 
 if [ -f $out_dir/sample1.ann ] && ! $recount ;
 then

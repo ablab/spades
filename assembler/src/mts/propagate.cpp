@@ -11,7 +11,7 @@
 
 #include "graphio.hpp"
 #include "graph_pack.hpp"
-#include "io/io_helper.hpp"
+#include "io/file_reader.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
     gp.kmer_mapper.Attach();
     INFO("Load graph from " << saves_path);
     graphio::ScanGraphPack(saves_path, gp);
-    auto contigs_stream_ptr = io::EasyStream(contigs_path, false);
+    auto contigs_stream_ptr = make_shared<io::FileReadStream>(contigs_path);
 
     AnnotationPropagator propagator(gp);
     propagator.Run(*contigs_stream_ptr, annotation_in_fn, bins_of_interest, annotation_out_fn);
