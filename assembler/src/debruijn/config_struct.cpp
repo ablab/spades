@@ -108,13 +108,12 @@ void load_lib_data(const std::string& prefix) {
   cfg::get_writable().ds.reads.load(prefix + ".lib_data");
 
   // Now, infer the common parameters
-  const auto& reads = cfg::get().ds.reads;
   size_t max_rl = 0;
   double avg_cov = 0.0;
   double avg_rl = 0.0;
-  for (auto it = reads.library_begin(), et = reads.library_end(); it != et; ++it) {
-      auto const& data = it->data();
-      if (it->is_graph_contructable())
+  for (const auto& lib : cfg::get().ds.reads.libraries()) {
+      auto const& data = lib.data();
+      if (lib.is_graph_contructable())
           max_rl = std::max(max_rl, data.read_length);
       if (data.average_coverage > 0)
           avg_cov = data.average_coverage;

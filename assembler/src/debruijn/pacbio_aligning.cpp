@@ -85,10 +85,10 @@ void ProcessReadsBatch(conj_graph_pack &gp,
 
 void align_pacbio(conj_graph_pack &gp, int lib_id) {
     io::ReadStreamList<io::SingleRead> streams;
-    for (auto it = cfg::get().ds.reads[lib_id].single_begin(); it != cfg::get().ds.reads[lib_id].single_end(); ++it) {
-          //do we need input_file function here?
-        streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(*it)));
-    }
+    for (const auto& reads : cfg::get().ds.reads[lib_id].single_reads())
+      //do we need input_file function here?
+      streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(reads)));
+
     //make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
     //    auto pacbio_read_stream = single_easy_reader(cfg::get().ds.reads[lib_id],
 //    false, false);
@@ -101,8 +101,8 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     size_t min_gap_quantity = 2;
     size_t rtype = 0;
     if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::PacBioReads || 
-            cfg::get().ds.reads[lib_id].type() == io::LibraryType::SangerReads || 
-            cfg::get().ds.reads[lib_id].type() == io::LibraryType::NanoporeReads) {
+        cfg::get().ds.reads[lib_id].type() == io::LibraryType::SangerReads || 
+        cfg::get().ds.reads[lib_id].type() == io::LibraryType::NanoporeReads) {
         min_gap_quantity = cfg::get().pb.pacbio_min_gap_quantity;
         rtype = 1;
     } else {
