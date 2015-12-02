@@ -24,8 +24,8 @@ io::PairedStreamPtr paired_easy_reader(const io::SequencingLibrary<debruijn_conf
                                        bool use_orientation = true,
                                        io::OffsetType offset_type = io::PhredOffset) {
   io::ReadStreamList<io::PairedRead> streams;
-  for (auto it = lib.paired_begin(); it != lib.paired_end(); ++it) {
-      streams.push_back(io::PairedEasyStream(it->first, it->second, followed_by_rc, insert_size, change_read_order,
+  for (auto read_pair : lib.paired_reads()) {
+      streams.push_back(io::PairedEasyStream(read_pair.first, read_pair.second, followed_by_rc, insert_size, change_read_order,
                                              use_orientation, lib.orientation(), offset_type));
   }
   return io::MultifileWrap<io::PairedRead>(streams);
@@ -39,13 +39,13 @@ io::ReadStreamList<io::SingleRead> single_easy_readers(const io::SequencingLibra
                                        io::OffsetType offset_type = io::PhredOffset) {
   io::ReadStreamList<io::SingleRead> streams;
   if (including_paired_reads) {
-    for (auto it = lib.reads_begin(); it != lib.reads_end(); ++it) {
+    for (const auto& read : lib.reads()) {
       //do we need input_file function here?
-      streams.push_back(io::EasyStream(*it, followed_by_rc, handle_Ns, offset_type));
+      streams.push_back(io::EasyStream(read, followed_by_rc, handle_Ns, offset_type));
     }
   } else {
-    for (auto it = lib.single_begin(); it != lib.single_end(); ++it) {
-      streams.push_back(io::EasyStream(*it, followed_by_rc, handle_Ns, offset_type));
+    for (const auto& read : lib.single_reads()) {
+      streams.push_back(io::EasyStream(read, followed_by_rc, handle_Ns, offset_type));
     }
   }
   return streams;

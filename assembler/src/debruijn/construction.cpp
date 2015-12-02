@@ -51,8 +51,8 @@ void Construction::run(conj_graph_pack &gp, const char*) {
         if (lib.type() != io::LibraryType::TrustedContigs)
             continue;
 
-        for (auto it = lib.single_begin(); it != lib.single_end(); ++it) {
-            trusted_contigs.push_back(io::EasyStream(*it, true));
+        for (const auto& read : lib.single_reads()) {
+            trusted_contigs.push_back(io::EasyStream(read, true));
             trusted_contigs_exist = true;
         }
     }
