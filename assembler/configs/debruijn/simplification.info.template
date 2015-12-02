@@ -553,7 +553,7 @@ preliminary
         {
             enabled true
         }
-        tip_condition   "{ lb 20, cb 1.1 }"
+        tip_condition   "{ lb 20, cb 1.1, mmm 2 }"
         ec_condition    "{ ec_lb 0, cb 0.9 }"
     }
 
