@@ -57,10 +57,12 @@ class GapCloserPairedIndexFiller {
             if (OutTipIter != OutTipMap.end()) {
                 for (size_t j = 0; j < path2.size(); ++j) {
                     auto InTipIter = InTipMap.find(path2[j]);
-                    if (InTipIter != InTipMap.end())
-                        paired_index.Add(OutTipIter->second.first,
-                                         InTipIter->second.first,
-                                         omnigraph::de::RawPoint(1000000., 1.));
+                    if (InTipIter != InTipMap.end()) {
+                        auto e1 = OutTipIter->second.first;
+                        auto e2 = InTipIter->second.first;
+                        paired_index.SwapConj(e1, e2);
+                        paired_index.Add(e1, e2, omnigraph::de::RawPoint(1000000., 1.));
+                    }   
                 }
             }
         }
@@ -408,7 +410,9 @@ class GapCloser {
 
             for (auto i : tips_paired_idx_.Get(first_edge)) {
                 EdgeId second_edge = i.first;
-                for (auto point : i.second) {
+                //std::array<float, 2> weights = {0.0f, 0.0f};
+                for (auto point : i.second) { //weights[math::ge(point.d, 0.0f)] += point.weight;
+                //for (auto weight : weights) {
                     if (first_edge != second_edge && math::ge(point.weight, weight_threshold_)) {
                         if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) || !g_.IsDeadStart(g_.EdgeStart(second_edge))) {
                             // WARN("Topologically wrong tips");

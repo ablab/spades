@@ -337,7 +337,7 @@ public:
     inline EdgePair ConjugatePair(EdgePair ep) const {
         return ConjugatePair(ep.first, ep.second);
     }
-private:
+
     bool SwapConj(EdgeId &e1, EdgeId &e2) const {
         EdgePair ep = {e1, e2}, ep_conj = ConjugatePair(ep);
         if (ep > ep_conj) {
@@ -348,6 +348,7 @@ private:
         return false;
     }
 
+private:
     bool SwapConj(EdgeId &e1, EdgeId &e2, Point &p) const {
         if (SwapConj(e1, e2)) {
             p.d += CalcOffset(e1, e2);
