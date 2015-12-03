@@ -413,6 +413,8 @@ class GapCloser {
                 std::pair<EdgeId, omnigraph::de::Point> entry = *it;
                 EdgeId second_edge = entry.first;
                 const omnigraph::de::Point& point = entry.second;
+                if (math::ls(point.d, 0))
+                    continue;
                 if (first_edge != second_edge && math::ge(point.weight, weight_threshold_)) {
                     if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) || !g_.IsDeadStart(g_.EdgeStart(second_edge))) {
                         // WARN("Topologically wrong tips");
