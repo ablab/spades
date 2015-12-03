@@ -16,7 +16,8 @@
 
 #include "extension_chooser.hpp"
 #include "path_filter.hpp"
-#include "../overlap_analysis.hpp"
+#include "overlap_analysis.hpp"
+#include "scaffolder2015/scaff_supplementary.hpp"
 #include <cmath>
 
 

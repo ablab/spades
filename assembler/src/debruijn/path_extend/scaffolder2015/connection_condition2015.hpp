@@ -3,7 +3,7 @@
 #define CONNECTION_CONDITION2015_HPP
 #include "genome_consistance_checker.hpp"
 #include "logger/logger.hpp"
-#include "paired_library.hpp"
+#include "path_extend/paired_library.hpp"
 #include <map>
 #include <set>
 

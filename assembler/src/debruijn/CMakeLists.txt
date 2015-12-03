@@ -12,11 +12,11 @@ add_library(debruijn STATIC
             config_struct.cpp
             path_extend/pe_config_struct.cpp
             path_extend/bidirectional_path.cpp
-            path_extend/scaff_supplementary.cpp
-            path_extend/extension_chooser2015.cpp
-            path_extend/scaffold_graph.cpp
-            path_extend/scaffold_graph_visualizer.cpp
-            path_extend/connection_condition2015.cpp
+            path_extend/scaffolder2015/scaff_supplementary.cpp
+            path_extend/scaffolder2015/extension_chooser2015.cpp
+            path_extend/scaffolder2015/scaffold_graph.cpp
+            path_extend/scaffolder2015/scaffold_graph_visualizer.cpp
+            path_extend/scaffolder2015/connection_condition2015.cpp
             genome_consistance_checker.cpp
             stage.cpp
             construction.cpp

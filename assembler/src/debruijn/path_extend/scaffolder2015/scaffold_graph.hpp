@@ -6,7 +6,7 @@
 #include "logger/logger.hpp"
 #include "standard_base.hpp"
 #include "debruijn_graph.hpp"
-#include "paired_library.hpp"
+#include "path_extend/paired_library.hpp"
 #include "connection_condition2015.hpp"
 
 namespace path_extend {

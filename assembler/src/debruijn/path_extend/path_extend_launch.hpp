@@ -23,10 +23,10 @@
 #include "loop_traverser.hpp"
 #include "long_read_storage.hpp"
 #include "next_path_searcher.hpp"
-#include "extension_chooser2015.hpp"
-#include "../genome_consistance_checker.hpp"
-#include "scaffold_graph.hpp"
-#include "scaffold_graph_visualizer.hpp"
+#include "scaffolder2015/extension_chooser2015.hpp"
+#include "genome_consistance_checker.hpp"
+#include "scaffolder2015/scaffold_graph.hpp"
+#include "scaffolder2015/scaffold_graph_visualizer.hpp"
 
 namespace path_extend {
 

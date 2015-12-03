@@ -22,7 +22,7 @@
 #include "pe_utils.hpp"
 #include "next_path_searcher.hpp"
 
-#include "scaff_supplementary.hpp"
+//#include "scaff_supplementary.hpp"
 
 namespace path_extend {
 
