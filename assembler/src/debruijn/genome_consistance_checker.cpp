@@ -127,28 +127,7 @@ void GenomeConsistenceChecker::RefillPos(const string &strand) {
     }
 }
 
-void GenomeConsistenceChecker::RefillPos(const string &strand, const EdgeId &e) {
-
-    set<MappingRange> old_mappings = gp_.edge_pos.GetEdgePositions(e, strand);
-    TRACE("old mappings sz " << old_mappings.size() );
-    size_t total_mapped = 0;
-    for (auto mp:old_mappings) {
-        total_mapped += mp.initial_range.size();
-    }
-    if (total_mapped  > (double) gp_.g.length(e) * 1.5) {
-       INFO ("Edge " << gp_.g.int_id(e) << "is not unique, excluding");
-       excluded_unique_.insert(e);
-       return;
-    }
-//TODO: support non-unique edges;
-    if (total_mapped  < (double) gp_.g.length(e) * 0.5) {
-        DEBUG ("Edge " << gp_.g.int_id(e) << "is not mapped on strand "<< strand <<", not used");
-        //excluded_unique_.insert(e);
-        return;
-    }
-    TRACE(total_mapped << " " << gp_.g.length(e));
-    string new_strand = "fxd" + strand;
-    vector<MappingRange> res;
+void GenomeConsistenceChecker::FindBestRangeSequence(const set<MappingRange>& old_mappings, vector<MappingRange>& used_mappings) const {
     vector<MappingRange> to_process (old_mappings.begin(), old_mappings.end());
     sort(to_process.begin(), to_process.end(), [](const MappingRange & a, const MappingRange & b) -> bool
     {
@@ -156,8 +135,7 @@ void GenomeConsistenceChecker::RefillPos(const string &strand, const EdgeId &e) 
     } );
     size_t sz = to_process.size();
 //max weight path in orgraph of mappings
-    TRACE("constructing mapping graph");
-    TRACE(sz << " vertices");
+    TRACE("constructing mapping graph" << sz << " vertices");
     vector<vector<size_t>> consecutive_mappings(sz);
     for(size_t i = 0; i < sz; i++) {
         for (size_t j = i + 1; j < sz; j++) {
@@ -170,9 +148,7 @@ void GenomeConsistenceChecker::RefillPos(const string &strand, const EdgeId &e) 
             }
         }
     }
-    TRACE("graph constructed");
-    vector<size_t> scores(sz);
-    vector<size_t> prev(sz);
+    vector<size_t> scores(sz), prev(sz);
     for(size_t i = 0; i < sz; i++) {
         scores[i] = to_process[i].initial_range.size();
         prev[i] = std::numeric_limits<std::size_t>::max();
@@ -188,37 +164,57 @@ void GenomeConsistenceChecker::RefillPos(const string &strand, const EdgeId &e) 
     }
     size_t cur_max = 0;
     size_t cur_i = 0;
-
-    vector<size_t> used_mappings;
     for(size_t i = 0; i < sz; i++) {
         if (scores[i] > cur_max) {
             cur_max = scores[i];
             cur_i = i;
         }
     }
+    used_mappings.clear();
     while (cur_i != std::numeric_limits<std::size_t>::max()) {
-        used_mappings.push_back(cur_i);
+        used_mappings.push_back(to_process[cur_i]);
         cur_i = prev[cur_i];
     }
     reverse(used_mappings.begin(), used_mappings.end());
+};
 
+void GenomeConsistenceChecker::RefillPos(const string &strand, const EdgeId &e) {
+    set<MappingRange> old_mappings = gp_.edge_pos.GetEdgePositions(e, strand);
+    TRACE("old mappings sz " << old_mappings.size() );
+    size_t total_mapped = 0;
+    for (auto mp:old_mappings) {
+        total_mapped += mp.initial_range.size();
+    }
+    if (total_mapped  > (double) gp_.g.length(e) * 1.5) {
+       INFO ("Edge " << gp_.g.int_id(e) << "is not unique, excluding");
+       excluded_unique_.insert(e);
+       return;
+    }
+//TODO: support non-unique edges;
+    if (total_mapped  < (double) gp_.g.length(e) * 0.5) {
+        DEBUG ("Edge " << gp_.g.int_id(e) << "is not mapped on strand "<< strand <<", not used");
+        return;
+    }
+    TRACE(total_mapped << " " << gp_.g.length(e));
+    string new_strand = "fxd" + strand;
+    vector<MappingRange> used_mappings;
+    FindBestRangeSequence(old_mappings, used_mappings);
 
-    cur_i = 0;
+    size_t cur_i = 0;
     MappingRange new_mapping;
-    new_mapping = to_process[used_mappings[cur_i]];
+    new_mapping = used_mappings[cur_i];
     size_t used_mapped = new_mapping.initial_range.size();
     TRACE ("Edge " << gp_.g.int_id(e) << " length "<< gp_.g.length(e));
     TRACE ("new_mapping mp_range "<< new_mapping.mapped_range.start_pos << " - " << new_mapping.mapped_range.end_pos
          << " init_range " << new_mapping.initial_range.start_pos << " - " << new_mapping.initial_range.end_pos );
     while (cur_i  < used_mappings.size() - 1) {
         cur_i ++;
-        used_mapped += to_process[used_mappings[cur_i]].initial_range.size();
-        new_mapping = new_mapping.Merge(to_process[used_mappings[cur_i]]);
+        used_mapped += used_mappings[cur_i].initial_range.size();
+        new_mapping = new_mapping.Merge(used_mappings[cur_i]);
         TRACE("new_mapping mp_range "<< new_mapping.mapped_range.start_pos << " - " << new_mapping.mapped_range.end_pos
              << " init_range " << new_mapping.initial_range.start_pos << " - " << new_mapping.initial_range.end_pos );
-
-
     }
+//used less that 0.9 of aligned length
     if (total_mapped * 10  >=  used_mapped * 10  + gp_.g.length(e)) {
         INFO ("Edge " << gp_.g.int_id(e) << " length "<< gp_.g.length(e)  << "is potentially misassembled! mappings: ");
         for (auto mp:old_mappings) {
@@ -233,8 +229,6 @@ void GenomeConsistenceChecker::RefillPos(const string &strand, const EdgeId &e) 
 
     }
     gp_.edge_pos.AddEdgePosition(e, new_strand, new_mapping);
-
-
 }
 
 

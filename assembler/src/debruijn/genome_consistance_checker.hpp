@@ -15,7 +15,7 @@
 #include "graph_pack.hpp"
 #include "positions.hpp"
 #include "path_extend/bidirectional_path.hpp"
-#include "path_extend/scaff_supplementary.hpp"
+#include "path_extend/scaffolder2015/scaff_supplementary.hpp"
 
 namespace debruijn_graph {
 
@@ -47,6 +47,8 @@ private:
 	bool consequent(const MappingRange &mr1, const MappingRange &mr2) const ;
 
     PathScore CountMisassembliesWithStrand(const BidirectionalPath &path, const string strand) const;
+//constructs longest sequence of consequetive ranges, stores result in used_mappings
+    void FindBestRangeSequence(const set<MappingRange>& old_mappings, vector<MappingRange>& used_mappings) const;
 //Refills genomic positions uniting alingments separated with small gaps
     void RefillPos();
     void RefillPos(const string &strand);
