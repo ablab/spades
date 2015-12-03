@@ -28,6 +28,11 @@ namespace spades {
 
 void assemble_genome() {
     INFO("SPAdes started");
+    if (cfg::get().ds.meta && cfg::get().ds.reads.lib_count() != 1) {
+        ERROR("Sorry, current version of metaSPAdes can work with single library only (paired-end only).");
+        exit(239);
+    }
+
     INFO("Starting from stage: " << cfg::get().entry_point);
 
     bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable && cfg::get().ds.meta;
@@ -66,7 +71,7 @@ void assemble_genome() {
 
     SPAdes.add(new debruijn_graph::SimplificationCleanup());
     //currently cannot be used with two step rr
-    if (cfg::get().correct_mismatches && !two_step_rr)
+    if (cfg::get().correct_mismatches && !cfg::get().ds.meta)
         SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().rr_enable) {
         if (two_step_rr) {

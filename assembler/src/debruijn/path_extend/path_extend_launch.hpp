@@ -305,9 +305,12 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& g
                                                    GetSingleReadsWeightPriorityThreshold(lib.type()),
                                                    GetSingleReadsUniqueEdgePriorityThreshold(lib.type()));
 
-    size_t max_repeat_length = std::max(10000ul, lib.data().read_length);
-    INFO("max_repeat_length set to " << max_repeat_length);
-    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, max_repeat_length,  
+    size_t resolvable_repeat_length_bound = 10000ul;
+    if (!lib.is_contig_lib()) {
+        resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().read_length);
+    }
+    INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
+    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, resolvable_repeat_length_bound,  
             pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(lib.type()));
 }
 
@@ -557,6 +560,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     DebugOutputPaths(gp, output_dir, paths, "before_traverse_pe");
     if (traversLoops) {
         TraverseLoops(paths, cover_map, mainPE);
+        FinalizePaths(paths, cover_map, max_over);
     }
     DebugOutputPaths(gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
     writer.OutputPaths(paths, output_dir + (mp_exist ? "pe_scaffolds" : contigs_name));
@@ -607,6 +611,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     writer.OutputPaths(last_paths, GetEtcDir(output_dir) + "mp_before_traversal");
     DebugOutputPaths(gp, output_dir, last_paths, "before_traverse_mp");
     TraverseLoops(last_paths, clone_map, last_extender);
+    FinalizePaths(last_paths, clone_map, max_over);
 
 //result
     if (broken_contigs.is_initialized()) {

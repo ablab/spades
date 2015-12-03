@@ -383,7 +383,7 @@ public:
     }
 
     ~RelativeCoverageDisconnector() {
-        INFO("Disconnected edge cnt " << cnt_);
+        DEBUG("Disconnected edge cnt " << cnt_);
     }
 
 protected:

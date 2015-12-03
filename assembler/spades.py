@@ -331,6 +331,9 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.save_restart_options(log)
         else:  # overriding previous run parameters
             options_storage.load_restart_options()
+    if options_storage.meta:
+        if options_storage.careful or options_storage.mismatch_corrector or options_storage.cov_cutoff != "off":
+            support.error("you cannot specify --careful, --mismatch-correction or --cov-cutoff in metagenomic mode!", log)
     if options_storage.continue_mode:
         return None, None
 
@@ -426,7 +429,6 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         cfg["mismatch_corrector"].__dict__["output-dir"] = options_storage.output_dir
     cfg["run_truseq_postprocessing"] = options_storage.run_truseq_postprocessing
     return cfg, dataset_data
-
 
 def check_cfg_for_partial_run(cfg, type='restart-from'):  # restart-from ot stop-after
     if type == 'restart-from':

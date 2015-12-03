@@ -48,6 +48,11 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         stats::PrepareForDrawing(gp);
     }
 
+    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
+    printer(ipp_before_repeat_resolution);
+
+    //FIXME introduce separate pe config for preliminary mode
     if (preliminary_) {
         VERIFY(cfg::get().pe_params.param_set.remove_overlaps);
         INFO("Overlap removal disabled for first-stage rr")
@@ -56,6 +61,8 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
 
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr");
     OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph");
+
+    //FIXME introduce separate pe config for preliminary mode
     if (!preliminary_ && cfg::get().ds.meta) {
         INFO("Coordinated coverage enabled")
         cfg::get_writable().pe_params.param_set.use_coordinated_coverage = true;

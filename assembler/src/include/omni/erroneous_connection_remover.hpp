@@ -25,11 +25,10 @@
 namespace omnigraph {
 
 template<class Graph>
-shared_ptr<func::Predicate<typename Graph::EdgeId>> AddAlternativesPresenceCondition(const Graph& g,
-                                                                  shared_ptr<func::Predicate<typename Graph::EdgeId>> condition) {
-    return func::And<typename Graph::EdgeId>(
-            make_shared<AlternativesPresenceCondition<Graph>>(g),
-            condition);
+shared_ptr<func::Predicate<typename Graph::EdgeId>>
+NecessaryECCondition(const Graph& g, size_t max_length, double max_coverage) {
+    return AddAlternativesPresenceCondition(g, func::And<typename Graph::EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
+                               make_shared<CoverageUpperBound<Graph>>(g, max_coverage)));
 }
 
 template<class Graph>
