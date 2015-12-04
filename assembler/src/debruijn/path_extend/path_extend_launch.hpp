@@ -787,12 +787,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         FinalizePaths(mp_paths, clone_map, max_over, true);
     }
     DebugOutputPaths(gp, output_dir, mp_paths, "mp_final_paths");
-    writer.OutputPaths(mp_paths, GetEtcDir(output_dir) + "mp_prefinal");
-
     DEBUG("Paths are grown with mate-pairs");
-    if (cfg::get().pe_params.debug_output) {
-        writer.OutputPaths(mp_paths, output_dir + "mp_paths");
-    }
 
 //MP end
 
@@ -806,11 +801,11 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
     DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_overlap");
-    if (!is_2015_scaffolder_enabled(pset.sm))
+    if (!is_2015_scaffolder_enabled(pset.sm)) {
         FinalizePaths(last_paths, clone_map, max_over);
-    DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_traverse");
+        DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_traverse");
+    }
 
-    writer.OutputPaths(last_paths, GetEtcDir(output_dir) + "mp_before_traversal");
     TraverseLoops(last_paths, clone_map, last_extender);
 
 //result

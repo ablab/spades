@@ -215,6 +215,14 @@ ScaffoldGraph::VertexStorage::const_iterator ScaffoldGraph::vbegin() const {
     return vertices_.cbegin();
 }
 
+adt::iterator_range<ScaffoldGraph::VertexStorage::const_iterator> ScaffoldGraph::vertices() const {
+    return adt::make_range(vbegin(), vend());
+}
+
+adt::iterator_range<ScaffoldGraph::ConstScaffoldEdgeIterator> ScaffoldGraph::edges() const {
+    return adt::make_range(ebegin(), eend());
+}
+
 bool ScaffoldGraph::IsVertexIsolated(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
     bool
         result = incoming_edges_.count(assembly_graph_edge) == 0 && outgoing_edges_.count(assembly_graph_edge) == 0;

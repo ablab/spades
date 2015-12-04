@@ -9,6 +9,7 @@
 #include "connection_condition2015.hpp"
 
 #include <standard_base.hpp>
+#include <adt/iterator_range.hpp>
 
 namespace path_extend {
 namespace scaffold_graph {
@@ -85,7 +86,7 @@ public:
     //All vertices are stored in set
     typedef std::set<ScaffoldVertex> VertexStorage;
     //Edges are stored in map: Id -> Edge Information
-    typedef std::unordered_map<ScaffoldEdgeIdT, ScaffoldEdge> EdgeStotage;
+    typedef std::unordered_map<ScaffoldEdgeIdT, ScaffoldEdge> EdgeStorage;
     //Adjacency list contains vertrx and edge id (instead of whole edge information)
     typedef std::unordered_multimap<ScaffoldVertex, ScaffoldEdgeIdT> AdjacencyStorage;
 
@@ -93,10 +94,10 @@ public:
                                                                     const ScaffoldEdge,
                                                                     boost::forward_traversal_tag> {
     private:
-        EdgeStotage::const_iterator iter_;
+        EdgeStorage::const_iterator iter_;
 
     public:
-        ConstScaffoldEdgeIterator(EdgeStotage::const_iterator iter) : iter_(iter) {
+        ConstScaffoldEdgeIterator(EdgeStorage::const_iterator iter) : iter_(iter) {
         }
 
     private:
@@ -120,7 +121,7 @@ private:
 
     VertexStorage vertices_;
 
-    EdgeStotage edges_;
+    EdgeStorage edges_;
 
     //Map for storing conjugate scaffolding edges
     std::unordered_map<ScaffoldEdgeIdT, ScaffoldEdgeIdT> conjugate_;
@@ -185,9 +186,13 @@ public:
 
     VertexStorage::const_iterator vend() const;
 
+    adt::iterator_range<VertexStorage::const_iterator> vertices() const;
+
     ConstScaffoldEdgeIterator ebegin() const;
 
     ConstScaffoldEdgeIterator eend() const;
+
+    adt::iterator_range<ScaffoldGraph::ConstScaffoldEdgeIterator> edges() const;
 
     size_t int_id(ScaffoldVertex v) const;
 

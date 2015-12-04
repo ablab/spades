@@ -39,19 +39,19 @@ void BaseScaffoldGraphConstructor::ConstructFromConditions(vector<shared_ptr<Con
 
 void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const shared_ptr<ConnectionCondition> condition,
                                                             bool use_terminal_vertices_only) {
-    for (auto v = graph_->vbegin(); v != graph_->vend(); ++v) {
-        TRACE("Vertex " << graph_->int_id(*v));
+    for (auto v : graph_->vertices()) {
+        TRACE("Vertex " << graph_->int_id(v));
 
-        if (use_terminal_vertices_only && graph_->OutgoingEdgeCount(*v) > 0)
+        if (use_terminal_vertices_only && graph_->OutgoingEdgeCount(v) > 0)
             continue;
 
-        auto connected_with = condition->ConnectedWith(*v);
+        auto connected_with = condition->ConnectedWith(v);
         for (auto connected : connected_with) {
             TRACE("Connected with " << graph_->int_id(connected));
             if (graph_->Exists(connected)) {
                 if (use_terminal_vertices_only && graph_->IncomingEdgeCount(connected) > 0)
                     continue;
-                graph_->AddEdge(*v, connected, condition->GetLibIndex(), condition->GetWeight(*v, connected));
+                graph_->AddEdge(v, connected, condition->GetLibIndex(), condition->GetWeight(v, connected));
             }
         }
     }

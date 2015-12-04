@@ -32,8 +32,8 @@ string ScaffoldGraphLabeler::label(VertexId v) const {
 void ScaffoldGraphVisualizer::Visualize(GraphPrinter<ScaffoldGraph> &printer) {
     printer.open();
     printer.AddVertices(graph_.vbegin(), graph_.vend());
-    for (auto e_it = graph_.ebegin(); e_it != graph_.eend(); ++e_it) {
-        printer.AddEdge(*e_it);
+    for (auto e : graph_.edges()) {
+        printer.AddEdge(e);
     }
     printer.close();
 }
