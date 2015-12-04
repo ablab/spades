@@ -109,10 +109,10 @@ protected:
 public:
 
     struct MappedPositionT {
-        EdgeId e_;
-        int pos_;
+        EdgeId e;
+        int pos;
 
-        MappedPositionT(EdgeId e, int pos): e_(e), pos_(pos) {
+        MappedPositionT(EdgeId e_, int pos_): e(e_), pos(pos_) {
 
         }
     };

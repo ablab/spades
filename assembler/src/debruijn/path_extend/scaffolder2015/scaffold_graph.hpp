@@ -4,15 +4,15 @@
 #pragma once
 
 #include "logger/logger.hpp"
-#include "standard_base.hpp"
 #include "debruijn_graph.hpp"
 #include "path_extend/paired_library.hpp"
 #include "connection_condition2015.hpp"
 
+#include <standard_base.hpp>
+
 namespace path_extend {
 namespace scaffold_graph {
 
-using namespace path_extend;
 //do NOT add "using namespace debruijn_graph" in order not to confuse between EdgeId typdefs
 
 class ScaffoldGraph {
@@ -221,53 +221,6 @@ public:
 
     void Print(ostream &os) const;
 
-};
-
-
-//De Bruijn graph edge condition interface
-class EdgeCondition {
-public:
-    virtual bool IsSuitable(debruijn_graph::EdgeId e) const = 0;
-
-    virtual ~EdgeCondition() { }
-
-};
-
-//Edge length condition
-class LengthEdgeCondition: public EdgeCondition {
-    const debruijn_graph::Graph &graph_;
-
-    size_t min_length_;
-
-public:
-    LengthEdgeCondition(const debruijn_graph::Graph &graph, size_t min_len) : graph_(graph), min_length_(min_len) {
-    }
-
-    bool IsSuitable(debruijn_graph::EdgeId e) const;
-};
-
-//Main scaffold graph constructor
-class ScaffoldGraphConstructor {
-private:
-    ScaffoldGraph &graph_;
-
-    void ConstructFromSingleCondition(const shared_ptr<ConnectionCondition> condition,
-                                          bool use_terminal_vertices_only);
-
-public:
-    ScaffoldGraphConstructor(ScaffoldGraph &graph) : graph_(graph) {
-    }
-
-    void ConstructFromConditions(vector<shared_ptr<ConnectionCondition>> &connection_conditions,
-                                     bool use_terminal_vertices_only = false);
-
-    void ConstructFromSet(set<EdgeId> edge_set,
-                              vector<shared_ptr<ConnectionCondition>> &connection_conditions,
-                              bool use_terminal_vertices_only = false);
-
-    void ConstructFromEdgeConditions(const EdgeCondition &edge_condition,
-                                         vector<shared_ptr<ConnectionCondition>> &connection_conditions,
-                                         bool use_terminal_vertices_only = false);
 };
 
 } //scaffold_graph

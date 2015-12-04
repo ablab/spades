@@ -263,53 +263,5 @@ bool ScaffoldGraph::AddEdge(const ScaffoldGraph::ScaffoldEdge &e) {
     return AddEdge(e.getStart(), e.getEnd(), e.getColor(), e.getWeight());
 }
 
-bool LengthEdgeCondition::IsSuitable(debruijn_graph::EdgeId e) const {
-    return graph_.length(e) >= min_length_;
-}
-
-void ScaffoldGraphConstructor::ConstructFromEdgeConditions(const EdgeCondition &edge_condition,
-                                                           vector<shared_ptr<ConnectionCondition>> &connection_conditions,
-                                                           bool use_terminal_vertices_only) {
-    for (auto e = graph_.AssemblyGraph().ConstEdgeBegin(); !e.IsEnd(); ++e) {
-        if (edge_condition.IsSuitable(*e)) {
-            graph_.AddVertex(*e);
-        }
-    }
-    ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
-}
-
-void ScaffoldGraphConstructor::ConstructFromSet(set<EdgeId> edge_set,
-                                                vector<shared_ptr<ConnectionCondition>> &connection_conditions,
-                                                bool use_terminal_vertices_only) {
-    graph_.AddVertices(edge_set);
-    ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
-}
-
-void ScaffoldGraphConstructor::ConstructFromConditions(vector<shared_ptr<ConnectionCondition>> &connection_conditions,
-                                                       bool use_terminal_vertices_only) {
-    for (auto condition : connection_conditions) {
-        ConstructFromSingleCondition(condition, use_terminal_vertices_only);
-    }
-}
-
-void ScaffoldGraphConstructor::ConstructFromSingleCondition(const shared_ptr<ConnectionCondition> condition,
-                                                            bool use_terminal_vertices_only) {
-    for (auto v = graph_.vbegin(); v != graph_.vend(); ++v) {
-        TRACE("Vertex " << graph_.int_id(*v));
-
-        if (use_terminal_vertices_only && graph_.OutgoingEdgeCount(*v) > 0)
-            continue;
-
-        auto connected_with = condition->ConnectedWith(*v);
-        for (auto connected : connected_with) {
-            TRACE("Connected with " << graph_.int_id(connected));
-            if (graph_.Exists(connected)) {
-                if (use_terminal_vertices_only && graph_.IncomingEdgeCount(connected) > 0)
-                    continue;
-                graph_.AddEdge(*v, connected, condition->GetLibIndex(), condition->GetWeight(*v, connected));
-            }
-        }
-    }
-}
 } //scaffold_graph
 } //path_extend

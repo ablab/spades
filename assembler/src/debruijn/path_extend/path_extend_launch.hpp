@@ -15,6 +15,7 @@
 #ifndef PATH_EXTEND_LAUNCH_HPP_
 #define PATH_EXTEND_LAUNCH_HPP_
 
+#include <path_extend/scaffolder2015/scaffold_graph_constructor.hpp>
 #include "pe_config_struct.hpp"
 #include "pe_resolver.hpp"
 #include "path_extender.hpp"
@@ -592,12 +593,9 @@ inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const co
     INFO("Total conditions " << conditions.size());
 
     INFO("Constructing scaffold graph");
-    auto scaffoldGraph = make_shared<ScaffoldGraph>(gp.g);
-    ScaffoldGraphConstructor constructor(*scaffoldGraph);
-    constructor.ConstructFromSet(edge_storage->GetSet(), conditions);
-
     LengthEdgeCondition edge_condition(gp.g, edge_storage->GetMinLength());
-    constructor.ConstructFromEdgeConditions(edge_condition, conditions);
+    DefaultScaffoldGraphConstructor constructor(gp.g, edge_storage->GetSet(), conditions, edge_condition);
+    auto scaffoldGraph = constructor.Construct();
 
     INFO("Scaffold graph contains " << scaffoldGraph->VertexCount() << " vertices and " << scaffoldGraph->EdgeCount() << " edges");
     return scaffoldGraph;

@@ -63,19 +63,19 @@ void BWACorrectingProcessor::ProcessPairedRead(const MapperReadT& l, const Mappe
 
     if ((!l.is_forward() && (lib_.orientation() == LibraryOrientation::FF || lib_.orientation() == LibraryOrientation::FR)) ||
         (l.is_forward() && (lib_.orientation() == LibraryOrientation::RF || lib_.orientation() == LibraryOrientation::RR))) {
-        left_pos.e_ = g_.conjugate(left_pos.e_);
-        left_pos.pos_ = (int) g_.length(left_pos.e_) - left_pos.pos_ - (l.len() - l.left_soft_clip() - l.right_soft_clip()) + (int) g_.k();
+        left_pos.e = g_.conjugate(left_pos.e);
+        left_pos.pos = (int) g_.length(left_pos.e) - left_pos.pos - (l.len() - l.left_soft_clip() - l.right_soft_clip()) + (int) g_.k();
         l_from_pos_to_left_end = l.right_soft_clip() + l.right_hard_clip();
     }
     if ((!r.is_forward() && (lib_.orientation() == LibraryOrientation::FF || lib_.orientation() == LibraryOrientation::RF)) ||
         (r.is_forward() && (lib_.orientation() == LibraryOrientation::FR || lib_.orientation() == LibraryOrientation::RR))) {
-        right_pos.e_ = g_.conjugate(right_pos.e_);
-        right_pos.pos_ = (int) g_.length(right_pos.e_) - right_pos.pos_ - (r.len() - r.left_soft_clip() - r.right_soft_clip()) + (int) g_.k();
+        right_pos.e = g_.conjugate(right_pos.e);
+        right_pos.pos = (int) g_.length(right_pos.e) - right_pos.pos - (r.len() - r.left_soft_clip() - r.right_soft_clip()) + (int) g_.k();
         r_from_pos_to_right_end = r.len() + r.left_hard_clip() - r.right_soft_clip();
     }
 
-    right_pos.pos_ = right_pos.pos_ + r_from_pos_to_right_end;
-    left_pos.pos_ = left_pos.pos_ - l_from_pos_to_left_end;
+    right_pos.pos = right_pos.pos + r_from_pos_to_right_end;
+    left_pos.pos = left_pos.pos - l_from_pos_to_left_end;
 
     //This function if overloaded in BWAISCounter and BWAIndexFiller
     ProcessAlignments(left_pos, right_pos);
@@ -83,13 +83,13 @@ void BWACorrectingProcessor::ProcessPairedRead(const MapperReadT& l, const Mappe
 
 // ==== insert size counter overloads ====
 bool BWAISCounter::CheckAlignments(const MappedPositionT& l, const MappedPositionT& r) {
-    return l.e_ == r.e_ && g_.length(l.e_) >= min_contig_len_;
+    return l.e == r.e && g_.length(l.e) >= min_contig_len_;
 }
 
 void BWAISCounter::ProcessAlignments(const MappedPositionT& l, const MappedPositionT& r) {
     ++mapped_count_;
 
-    int is = r.pos_ - l.pos_;
+    int is = r.pos - l.pos;
     if (is > 0 || !ignore_negative_) {
         hist_[is] += 1;
     } else {
@@ -126,14 +126,14 @@ EdgePair BWAIndexFiller::ConjugatePair(EdgePair ep) const {
 }
 
 void BWAIndexFiller::ProcessAlignments(const MappedPositionT& l, const MappedPositionT& r) {
-    EdgePair ep{l.e_, r.e_};
-    TRACE("Lpos " << l.pos_ << ", Rpos " << r.pos_);
-    int edge_distance = (int) lib_.data().mean_insert_size  - r.pos_ + l.pos_;
+    EdgePair ep{l.e, r.e};
+    TRACE("Lpos " << l.pos << ", Rpos " << r.pos);
+    int edge_distance = (int) lib_.data().mean_insert_size  - r.pos + l.pos;
     TRACE("Distance " << edge_distance);
 
     if (ep > ConjugatePair(ep)) {
         ep = ConjugatePair(ep);
-        edge_distance = edge_distance + (int) g_.length(r.e_) - (int) g_.length(l.e_);
+        edge_distance = edge_distance + (int) g_.length(r.e) - (int) g_.length(l.e);
         TRACE("New distance " << edge_distance);
     }
 
@@ -141,7 +141,7 @@ void BWAIndexFiller::ProcessAlignments(const MappedPositionT& l, const MappedPos
 }
 
 bool BWAIndexFiller::CheckAlignments(const MappedPositionT& l, const MappedPositionT& r) {
-    return g_.length(l.e_) >= min_contig_len_ && g_.length(r.e_) >= min_contig_len_;
+    return g_.length(l.e) >= min_contig_len_ && g_.length(r.e) >= min_contig_len_;
 }
 
 
