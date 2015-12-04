@@ -3,7 +3,8 @@ info_printers
     default
     {
        basic_stats                      false
-       save_full_graph                  false
+       save_graph                       false
+       save_graph_pack                  false
        extended_stats                   false
        detailed_dot_write               false
        write_components                 false
