@@ -140,6 +140,9 @@ params {
 ;NB decsends from sc_pe
 meta_pe {
 params {
+    remove_overlaps     true
+    cut_all_overlaps  true
+
     ;TODO proper configuration of different extenders is not supported 
     ;TODO most settings ard hardcoded for now 
 
@@ -161,5 +164,3 @@ params {
     remove_overlaps     false
 }
 }
-
-

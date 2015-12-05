@@ -67,8 +67,6 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         INFO("Coordinated coverage enabled")
         cfg::get_writable().pe_params.param_set.use_coordinated_coverage = true;
     }
-=======
->>>>>>> 85fa9fd... prelim_pe params configured and used
 
     bool no_valid_libs = !HasValidLibs();
 
