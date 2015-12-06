@@ -82,6 +82,7 @@ void load(pe_config::ParamSetT::ScaffolderOptionsT& so,
   load(so.cl_threshold      , pt, "cl_threshold", complete);
 
   load(so.fix_gaps      , pt, "fix_gaps", complete);
+  load(so.use_la_gap_joiner      , pt, "use_la_gap_joiner", complete);
   load(so.min_gap_score      , pt, "min_gap_score", complete);
   load(so.max_must_overlap      , pt, "max_must_overlap", complete);
   load(so.max_can_overlap      , pt, "max_can_overlap", complete);

@@ -367,9 +367,12 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
     auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, var_coeff);
 
     vector<shared_ptr<GapJoiner>> joiners;
-    joiners.push_back(std::make_shared<LAGapJoiner>(gp.g, pset.scaffolder_options.min_overlap_length,
-                                                pset.scaffolder_options.flank_multiplication_coefficient,
-                                                pset.scaffolder_options.flank_addition_coefficient));
+
+    if (pset.scaffolder_options.use_la_gap_joiner) {
+        joiners.push_back(std::make_shared<LAGapJoiner>(gp.g, pset.scaffolder_options.min_overlap_length,
+                                                    pset.scaffolder_options.flank_multiplication_coefficient,
+                                                    pset.scaffolder_options.flank_addition_coefficient));
+    }
 
     joiners.push_back(std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
                                                  pset.scaffolder_options.short_overlap,
