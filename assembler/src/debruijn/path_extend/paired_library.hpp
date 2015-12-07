@@ -90,107 +90,59 @@ protected:
 template<class Index>
 struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
 
-private:
-/* Only information from e is taken in account. No info from conjugate(e) is used. bool conj is used to check whether
- * the dist should be recount or not.
- */
-
-    void FindJumpEdgesNoConj(EdgeId e, std::set<EdgeId>& result, int min_dist, int max_dist, size_t min_len, bool conj) const {
-        if (index_.contains(e)) {
-            const auto &infos = index_.GetEdgeInfoMap(e);
-            // We do not care about iteration order here - all the edges collected
-            // will be inside std::set<EdgeId>
-            for (const auto &it : infos) {
-                EdgeId e2 = it.first;
-                if (e2 == e)
-                    continue;
-                if (g_.length(e2) < min_len)
-                    continue;
-
-                for (const auto &point : it.second) {
-                    int dist = rounded_d(point);
-                    if (conj) {
-                        dist =  - dist + (int) g_.length(e) - (int) g_.length(e2);
-                        if (dist >= min_dist&& dist <= max_dist)
-                            result.insert(g_.conjugate(e2));
-                    }
-                    else {
-                        if (dist >= min_dist && dist <= max_dist)
-                            result.insert(e2);
-                    }
-                }
-            }
-        }
-    }
-
-public:
-
     PairedInfoLibraryWithIndex(size_t k, const Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, size_t is_div,
                                const Index& index, bool is_mp,
                                const std::map<int, size_t>& is_distribution)
         : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
           index_(index) {}
 
-    size_t FindJumpEdges(EdgeId e,
-                                 std::set<EdgeId>& result,
-                                 int min_dist, int max_dist,
-                                 size_t min_len = 0) const override{
-        VERIFY(index_.Size() != 0);
+    virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist, int max_dist, size_t min_len = 0) const {
+        VERIFY(index_.size() > 0);
         result.clear();
 
-        FindJumpEdgesNoConj(e, result, min_dist, max_dist, min_len, false);
-//Collecting the information saved from conjugate edge
-        FindJumpEdgesNoConj(g_.conjugate(e), result, min_dist, max_dist, min_len, true);
-
+        auto infos = index_.Get(e);
+        // We do not care about iteration order here - all the edges collected
+        // will be inside std::set<EdgeId>
+        for (auto it : infos) {
+            EdgeId e2 = it.first;
+            if (e2 == e)
+                continue;
+            if (g_.length(e2) < min_len)
+                continue;
+            for (auto point : it.second) {
+                omnigraph::de::DEDistance dist = point.d;
+                if (math::le(dist, (omnigraph::de::DEDistance) max_dist) &&
+                    math::ge(dist, (omnigraph::de::DEDistance) min_dist)) {
+                    result.insert(e2);
+                }
+            }
+        }
         return result.size();
     }
 
 
     virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const {
-        VERIFY(index_.Size() != 0);
+        VERIFY(index_.size() > 0);
         if (e1 == e2)
             return;
 
-        auto pairs = index_.GetEdgePairInfo(e1, e2);
-        if (!index_.conj_symmetry()) {
-            auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
-            for (auto entry : cpairs) {
-                Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
-                auto it = pairs.find(cp);
-                if (it != pairs.end())
-                    it->weight += cp.weight;
-                else
-                    pairs.insert(cp);
-            }
-        }
-        for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
-            int pairedDistance = rounded_d(*pointIter);
-            //if (pairedDistance >= 0) {
+        for (auto point : index_.Get(e1, e2)) {
+            int pairedDistance = rounded_d(point);
+            if (pairedDistance >= 0) {
                 dist.push_back(pairedDistance);
-                w.push_back(pointIter->weight);
-            //}
+                w.push_back(point.weight);
+            }
         }
     }
 
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int distance,
                                    bool from_interval = false) const {
-        VERIFY(index_.Size() != 0);
+        VERIFY(index_.size() > 0);
         double weight = 0.0;
-        auto pairs = index_.GetEdgePairInfo(e1, e2);
-        if (!index_.conj_symmetry()) {
-            auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
-            for (auto entry : cpairs) {
-                Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
-                auto it = pairs.find(cp);
-                if (it != pairs.end())
-                    it->weight += cp.weight;
-                else
-              pairs.insert(cp);
-            }
-        }
-        for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
-            int pairedDistance = rounded_d(*pointIter);
-            int distanceDev = (int) pointIter->variation();  //max((int) pointIter->var, (int) is_variation_);
+
+        for (auto point : index_.Get(e1, e2)) {
+            int pairedDistance = rounded_d(point);
+            int distanceDev = (int) point.variation();  //max((int) pointIter->var, (int) is_variation_);
             //Can be modified according to distance comparison
             int d_min = distance - distanceDev;
             int d_max = distance + distanceDev;
@@ -200,31 +152,20 @@ public:
                 d_max += (int) (is_max_ - is_);
             }
             if (pairedDistance >= d_min && pairedDistance <= d_max) {
-                weight += pointIter->weight;
+                weight += point.weight;
             }
         }
         return weight;
     }
 
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int dist_min, int dist_max) const {
-        VERIFY(index_.Size() != 0);
+        VERIFY(index_.size() > 0);
         double weight = 0.0;
-        auto pairs = index_.GetEdgePairInfo(e1, e2);
-        if (!index_.conj_symmetry()) {
-            auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
-            for (auto entry : cpairs) {
-                Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
-                auto it = pairs.find(cp);
-                if (it != pairs.end())
-                    it->weight += cp.weight;
-                else
-                    pairs.insert(cp);
-            }
-        }
-        for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
-            int dist = rounded_d(*pointIter);
-            if (dist >= dist_min and dist <= dist_max)
-                weight += pointIter->weight;
+
+        for (auto point : index_.Get(e1, e2)) {
+            int dist = rounded_d(point);
+            if (dist > 0 and (size_t)dist >= dist_min and (size_t)dist <= dist_max)
+                weight += point.weight;
         }
         return weight;
     }

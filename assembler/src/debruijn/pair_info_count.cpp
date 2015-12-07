@@ -25,8 +25,8 @@
 #include "bwa_pair_info_filler.hpp"
 
 namespace debruijn_graph {
-    typedef io::SequencingLibrary<debruijn_config::DataSetData> SequencingLib;
 
+typedef io::SequencingLibrary<debruijn_config::DataSetData> SequencingLib;
 
 bool RefineInsertSizeForLib(conj_graph_pack& gp, size_t ilib, size_t edge_length_threshold) {
 

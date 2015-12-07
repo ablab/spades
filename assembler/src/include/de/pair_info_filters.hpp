@@ -8,108 +8,11 @@
 #ifndef PAIR_INFO_FILTERS_HPP_
 #define PAIR_INFO_FILTERS_HPP_
 
+#include "paired_info_helpers.hpp"
+
 namespace omnigraph {
 
 namespace de {
-
-/*
-template<class Graph>
-class AbstractPairInfoFilter {
-
- private:
-  typedef typename Graph::VertexId VertexId;
-  typedef typename Graph::EdgeId EdgeId;
-  typedef PairInfo<EdgeId> PairInfoT;
-
- protected:
-  virtual bool Check(const PairInfoT&) const {
-    return true;
-  }
-
-  virtual bool Check(EdgeId, EdgeId, const Point&) const {
-    return true;
-  }
-
-  const Graph& graph_;
-
- public:
-  AbstractPairInfoFilter(const Graph& graph) :
-          graph_(graph) {}
-
-  void Filter(PairedInfoIndexT<Graph>& index) const {
-    TRACE("index size: " << index.size());
-    for (auto it = index.begin(); it != index.end(); ++it) {
-      // This is dirty hack, but it's safe here
-      Histogram& infos = const_cast<Histogram&>(*it);
-      const EdgeId& e1 = it.first();
-      const EdgeId& e2 = it.second();
-
-      for (auto p_iter = infos.begin(); p_iter != infos.end(); ) {
-        const Point& point = *p_iter;
-        if (!Check(e1, e2, point))
-            p_iter = infos.erase(p_iter);
-        else
-            ++p_iter;
-      }
-    }
-
-    INFO("Pruning the index");
-    index.Prune();
-  }
-
-  virtual ~AbstractPairInfoFilter() {}
-};
-
-template<class Graph>
-class PairInfoWeightFilter: public AbstractPairInfoFilter<Graph> {
-
- private:
-  typedef typename Graph::EdgeId EdgeId;
-  typedef PairInfo<EdgeId> PairInfoT;
-  double weight_threshold_;
-
- public:
-  PairInfoWeightFilter(const Graph& graph, double weight_threshold) :
-    AbstractPairInfoFilter<Graph>(graph), weight_threshold_(weight_threshold) {
-  }
-
- protected:
-  virtual bool Check(EdgeId, EdgeId, const Point& p) const {
-    return math::ge(p.weight, weight_threshold_);
-  }
-
-  virtual bool Check(const PairInfoT& info) const {
-    return math::ge(info.weight(), weight_threshold_);
-  }
-};
-
-
-template<class Graph>
-class PairInfoWeightFilterWithCoverage: public AbstractPairInfoFilter<Graph> {
-
- private:
-  typedef typename Graph::EdgeId EdgeId;
-  typedef PairInfo<EdgeId> PairInfoT;
-  double weight_threshold_;
-
- public:
-  PairInfoWeightFilterWithCoverage(const Graph& graph, double weight_threshold) :
-          AbstractPairInfoFilter<Graph>(graph), weight_threshold_(weight_threshold)
-    {}
-
- protected:
-  virtual bool Check(EdgeId e1, EdgeId e2, const Point& p) const {
-    double info_weight = p.weight;
-    return math::ge(info_weight, weight_threshold_) ||
-           math::ge(info_weight, 0.1 * this->graph_.coverage(e1)) ||
-           math::ge(info_weight, 0.1 * this->graph_.coverage(e2));
-  }
-
-  virtual bool Check(const PairInfoT& info) const {
-    return Check(info.first, info.second, info.point);
-  }
-};
-*/
 
 template<class Graph>
 class AbstractPairInfoChecker{
@@ -192,7 +95,7 @@ class AmbiguousPairInfoChecker : public AbstractPairInfoChecker<Graph> {
   }
 
   bool IsPairInfoGood(EdgeId edge1, EdgeId edge2){
-	  return index_.GetEdgePairInfo(edge1, edge2).size() <= 1;
+	  return index_.Get(edge1, edge2).size() <= 1;
   }
 
   bool EdgesAreFromSimpleBulgeWithAmbPI(const PairInfoT& info){
@@ -239,9 +142,8 @@ class AmbiguousPairInfoChecker : public AbstractPairInfoChecker<Graph> {
   }
 
   double GetPairInfoWeight(EdgeId edge1, EdgeId edge2){
-	  if(index_.GetEdgePairInfo(edge1, edge2).size() == 1)
-		  return index_.GetEdgePairInfo(edge1, edge2).begin()->weight;
-	  return 0;
+      auto hist = index_.Get(edge1, edge2);
+      return (hist.size() == 1) ? float(hist.begin()->weight) : 0.0f;
   }
 
   bool InnerCheck(const PairInfoT& info){
@@ -324,37 +226,42 @@ private:
 template<class Graph>
 class PairInfoFilter{
 private:
-  typedef typename Graph::VertexId VertexId;
-  typedef typename Graph::EdgeId EdgeId;
-  typedef PairInfo<EdgeId> PairInfoT;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef PairInfo<EdgeId> PairInfoT;
 
 protected:
-  AbstractPairInfoChecker<Graph> &pair_info_checker_;
+    AbstractPairInfoChecker<Graph> &pair_info_checker_;
 
 public:
-  PairInfoFilter(AbstractPairInfoChecker<Graph> &pair_info_checker) :
-	pair_info_checker_(pair_info_checker){
-  }
+    PairInfoFilter(AbstractPairInfoChecker<Graph> &pair_info_checker) :
+            pair_info_checker_(pair_info_checker)
+    {}
 
-  void Filter(PairedInfoIndexT<Graph>& index){
-    TRACE("Index size: " << index.size());
-    for (auto it = index.begin(); it != index.end(); ++it) {
-      auto points = *it;
-      auto e1 = it.first();
-      auto e2 = it.second();
-      if (pair_info_checker_.Check(e1, e2)) {
-        for (auto p_iter = points.begin(); p_iter != points.end(); ) {
-          const Point& point = *p_iter++;
-          if (!pair_info_checker_.Check(PairInfoT(e1, e2, point))) {
-            index.DeletePairInfo(e1, e2, point);
-            index.DeletePairInfo(e2, e1, -point);
-          }
+    void Filter(PairedInfoIndexT<Graph>& index) {
+        INFO("Start filtering; index size: " << index.size());
+        //We can't filter while traversing, because Remove may invalidate iterators
+        //So let's save edge pairs first
+        using EdgePair = std::pair<EdgeId, EdgeId>;
+        std::vector<EdgePair> pairs;
+        for (auto i = pair_begin(index); i != pair_end(index); ++i)
+            if (pair_info_checker_.Check(i.first(), i.second()))
+                pairs.push_back({i.first(), i.second()});
+
+        //TODO: implement fast removing of the whole set of points
+        for (const auto& pair : pairs) {
+            //Same thing with invalidation
+            HistogramWithWeight hist;
+            for (auto point : index[pair])
+                if (!pair_info_checker_.Check(PairInfoT(pair.first, pair.second, point)))
+                    hist.insert(point);
+            //index.RemoveMany(pair_hist.first.first, pair_hist.first.second, pair_hist.second);
+            for (const auto& point : hist)
+                index.Remove(pair.first, pair.second, point);
         }
-      }
+
+        INFO("Done filtering");
     }
-    INFO("Pruning the index");
-    index.Prune();
-  }
 };
 
 }

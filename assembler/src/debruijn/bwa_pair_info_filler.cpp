@@ -131,13 +131,7 @@ void BWAIndexFiller::ProcessAlignments(const MappedPositionT& l, const MappedPos
     int edge_distance = (int) lib_.data().mean_insert_size  - r.pos + l.pos;
     TRACE("Distance " << edge_distance);
 
-    if (ep > ConjugatePair(ep)) {
-        ep = ConjugatePair(ep);
-        edge_distance = edge_distance + (int) g_.length(r.e) - (int) g_.length(l.e);
-        TRACE("New distance " << edge_distance);
-    }
-
-    paired_index_.AddPairInfo(ep.first, ep.second, { (double) edge_distance, 1.0 });
+    paired_index_.Add(ep.first, ep.second, { (double) edge_distance, 1.0 });
 }
 
 bool BWAIndexFiller::CheckAlignments(const MappedPositionT& l, const MappedPositionT& r) {
@@ -379,7 +373,7 @@ bool BWAPairInfoFiller::ProcessLib(size_t lib_index,
 
     INFO("Estimating insert size for library #" << lib_index);
     BWAISCounter counter(lib, edge_id_map_, g_, counter_edge_len);
-    for (auto sam_pair : sam_files) {
+    for (const auto& sam_pair : sam_files) {
         ProcessSAMFiles(sam_pair.first, sam_pair.second, counter);
     }
 
@@ -396,11 +390,10 @@ bool BWAPairInfoFiller::ProcessLib(size_t lib_index,
             ", read length = " << lib.data().read_length);
 
         INFO("Collecting paired information for library #" << lib_index);
-        for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ++it)
-            paired_index.AddPairInfo(*it, *it, {0., 0.});
+        paired_index.Init();
 
         BWAIndexFiller filler(lib, edge_id_map_, g_, paired_index, index_filler_edge_len);
-        for (auto sam_pair : sam_files) {
+        for (const auto& sam_pair : sam_files) {
             ProcessSAMFiles(sam_pair.first, sam_pair.second, filler);
         }
         result = true;

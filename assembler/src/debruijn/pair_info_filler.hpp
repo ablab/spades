@@ -36,17 +36,15 @@ public:
     }
 
     virtual void StartProcessLibrary(size_t threads_count) {
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
-            paired_index_.AddPairInfo(*it, *it, { 0., 0. });
-        for (size_t i = 0; i < threads_count; ++i)
-            buffer_pi_.emplace_back();
+        paired_index_.Init();
+        buffer_pi_ = {graph_, threads_count};
     }
 
     virtual void StopProcessLibrary() {
         for (size_t i = 0; i < buffer_pi_.size(); ++i)
             MergeBuffer(i);
 
-        buffer_pi_.clear();
+        buffer_pi_.Clear();
     }
 
     virtual void ProcessPairedRead(size_t thread_index,
@@ -72,17 +70,13 @@ public:
                                    const MappingPath<EdgeId>&) {}
 
     virtual void MergeBuffer(size_t thread_index) {
-        paired_index_.AddAll(buffer_pi_[thread_index]);
+        paired_index_.Merge(buffer_pi_[thread_index]);
         buffer_pi_[thread_index].Clear();
     }
 
     virtual ~LatePairedIndexFiller() {}
 
 private:
-    EdgePair ConjugatePair(EdgePair ep) const {
-        return std::make_pair(graph_.conjugate(ep.second), graph_.conjugate(ep.first));
-    }
-
     void ProcessPairedRead(omnigraph::de::PairedInfoBuffer<Graph>& paired_index,
                            const MappingPath<EdgeId>& path1,
                            const MappingPath<EdgeId>& path2, size_t read_distance) const {
@@ -93,7 +87,7 @@ private:
 
                 EdgePair ep{mapping_edge_1.first, mapping_edge_2.first};
 
-                if (ep > ConjugatePair(ep))
+                if (ep > paired_index.ConjugatePair(ep))
                     continue;
 
                 double weight = weight_f_(mapping_edge_1.second,
@@ -105,8 +99,8 @@ private:
                         + (int) mapping_edge_1.second.mapped_range.start_pos
                         - (int) mapping_edge_2.second.mapped_range.end_pos;
 
-                paired_index.AddPairInfo(mapping_edge_1.first, mapping_edge_2.first,
-                                         { (double) edge_distance, weight });
+                paired_index.Add(mapping_edge_1.first, mapping_edge_2.first,
+                                         omnigraph::de::RawPoint(edge_distance, weight));
             }
         }
     }
@@ -115,7 +109,7 @@ private:
     const Graph& graph_;
     WeightF weight_f_;
     omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index_;
-    std::vector<omnigraph::de::PairedInfoBuffer<Graph> > buffer_pi_;
+    omnigraph::de::PairedInfoBuffersT<Graph> buffer_pi_;
 
     DECL_LOGGER("LatePairedIndexFiller")
     ;

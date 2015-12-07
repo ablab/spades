@@ -26,8 +26,9 @@ protected:
   typedef ExtensiveDistanceEstimator<Graph> base;
   typedef typename base::InPairedIndex InPairedIndex;
   typedef typename base::OutPairedIndex OutPairedIndex;
-  typedef typename InPairedIndex::Histogram InHistogram;
-  typedef typename OutPairedIndex::Histogram OutHistogram;
+  typedef typename base::InHistogram InHistogram;
+  typedef typename base::OutHistogram OutHistogram;
+  typedef typename InPairedIndex::Histogram TempHistogram;
 
  public:
   SmoothingDistanceEstimator(const Graph& graph,
@@ -92,7 +93,7 @@ private:
     size_t first_len = this->graph().length(ep.first);
     size_t second_len = this->graph().length(ep.second);
     TRACE("Lengths are " << first_len << " " << second_len);
-    InHistogram data;
+    TempHistogram data;
     for (auto I = raw_hist.begin(), E = raw_hist.end(); I != E; ++I) {
       Point p = *I;
       if (math::ge(2 * (long) rounded_d(p) + (long) second_len, (long) first_len))
@@ -159,12 +160,13 @@ private:
     return new_result;
     }
 
-  virtual void ProcessEdge(EdgeId e1,
-                           const typename InPairedIndex::InnerMap& inner_map,
-                           PairedInfoBuffer<Graph>& result) const {
+  void ProcessEdge(EdgeId e1,
+                   const InPairedIndex& pi,
+                   PairedInfoBuffer<Graph>& result) const override {
     typename base::LengthMap second_edges;
-    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
-      second_edges[I->first];
+    auto inner_map = pi.RawGet(e1);
+    for (auto I : inner_map)
+      second_edges[I.first];
 
     this->FillGraphDistancesLengths(e1, second_edges);
 
@@ -172,13 +174,13 @@ private:
       EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
 
-      if (ep > this->ConjugatePair(ep))
-          continue;
+      VERIFY(ep <= pi.ConjugatePair(ep));
 
       TRACE("Processing edge pair " << this->graph().int_id(e1)
             << " " << this->graph().int_id(e2));
       const GraphLengths& forward = entry.second;
-      InHistogram hist = inner_map.find(e2)->second;
+
+      TempHistogram hist = pi.Get(e1, e2).Unwrap();
       EstimHist estimated;
       //DEBUG("Extending paired information");
       //DEBUG("Extend left");
@@ -194,7 +196,6 @@ private:
       DEBUG(gap_distances << " distances between gap edge pairs have been found");
       OutHistogram res = this->ClusterResult(ep, estimated);
       this->AddToResult(res, ep, result);
-      this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
     }
   }
 
