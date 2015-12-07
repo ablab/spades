@@ -45,7 +45,9 @@ class Path {
 };
 
 struct MappingRange {
+// on genome/contig/whatever
     Range initial_range;
+//on edge
     Range mapped_range;
 
     MappingRange() {
@@ -110,6 +112,11 @@ struct MappingRange {
     	if(this->initial_range != other.initial_range)
     		return this->initial_range < other.initial_range;
     	return this->mapped_range < other.mapped_range;
+    }
+    MappingRange operator = (const MappingRange & other) {
+        initial_range = other.initial_range;
+        mapped_range = other.mapped_range;
+        return *this;
     }
 
     bool Intersect(const MappingRange &other) {

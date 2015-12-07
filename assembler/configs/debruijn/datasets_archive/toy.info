@@ -1,5 +1,5 @@
 reads	toy.yaml
-single_cell	true
+single_cell	false
 reference_genome ../../../test_dataset/reference_1K.fa.gz
 ; RL	100
 

@@ -15,6 +15,7 @@
 #ifndef PATH_EXTEND_LAUNCH_HPP_
 #define PATH_EXTEND_LAUNCH_HPP_
 
+#include <path_extend/scaffolder2015/scaffold_graph_constructor.hpp>
 #include "pe_config_struct.hpp"
 #include "pe_resolver.hpp"
 #include "path_extender.hpp"
@@ -23,7 +24,10 @@
 #include "loop_traverser.hpp"
 #include "long_read_storage.hpp"
 #include "next_path_searcher.hpp"
-
+#include "scaffolder2015/extension_chooser2015.hpp"
+#include "genome_consistance_checker.hpp"
+#include "scaffolder2015/scaffold_graph.hpp"
+#include "scaffolder2015/scaffold_graph_visualizer.hpp"
 
 namespace path_extend {
 
@@ -56,7 +60,7 @@ inline void DebugOutputPaths(const conj_graph_pack& gp,
     if (!cfg::get().pe_params.debug_output) {
         return;
     }
-    writer.OutputPaths(paths, etcDir + name + ".fasta");
+    writer.OutputPaths(paths, etcDir + name);
     if (cfg::get().pe_params.output.write_paths) {
         path_writer.WritePaths(paths, etcDir + name + ".dat");
     }
@@ -74,25 +78,19 @@ inline double GetPriorityCoeff(shared_ptr<PairedInfoLibrary> lib, const pe_confi
     return lib->IsMp() ? pset.mate_pair_options.priority_coeff : pset.extension_options.priority_coeff;
 }
 
-inline double SetSingleThresholdForLib(shared_ptr<PairedInfoLibrary> lib, const pe_config::ParamSetT &pset, double threshold, double correction_coeff = 1.0) {
-    const pe_config::ParamSetT::ExtensionOptionsT& opt = lib->IsMp() ? pset.mate_pair_options : pset.extension_options;
-    double t;
-
-    if (opt.use_default_single_threshold) {
-        t = opt.single_threshold;
-    }
-    else if (math::le(threshold, 0.0)) {
-        WARN("Threshold was not estimated or was estimated incorrectly, setting to the default value")
-        t = opt.single_threshold;
+inline void SetSingleThresholdForLib(shared_ptr<PairedInfoLibrary> lib, const pe_config::ParamSetT &pset, double threshold, double correction_coeff = 1.0) {
+    if  (lib->IsMp()) {
+        lib->SetSingleThreshold(pset.mate_pair_options.use_default_single_threshold || math::le(threshold, 0.0) ?
+                                pset.mate_pair_options.single_threshold : threshold);
     }
     else {
-        t = threshold;
+        double t = pset.extension_options.use_default_single_threshold || math::le(threshold, 0.0) ?
+                   pset.extension_options.single_threshold : threshold;
+        t = correction_coeff * t;
+        lib->SetSingleThreshold(t);
     }
-    t = correction_coeff * t;
-
-    lib->SetSingleThreshold(t);
-    return t;
 }
+
 
 inline string MakeNewName(const std::string& contigs_name, const std::string& subname) {
     return contigs_name.substr(0, contigs_name.rfind(".fasta")) + "_" + subname + ".fasta";
@@ -281,6 +279,7 @@ enum class PathExtendStage {
     PEStage,
     MPStage,
     FinalizingPEStage,
+    Scaffold2015,
 };
 
 template<class Index>
@@ -329,6 +328,7 @@ inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& 
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
 
+
 inline shared_ptr<SimpleExtender> MakeMetaExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                        size_t lib_index, const pe_config::ParamSetT& pset, bool investigate_loops) {
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
@@ -367,9 +367,12 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
     auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, var_coeff);
 
     vector<shared_ptr<GapJoiner>> joiners;
-    joiners.push_back(std::make_shared<LAGapJoiner>(gp.g, pset.scaffolder_options.min_overlap_length,
-                                                pset.scaffolder_options.flank_multiplication_coefficient,
-                                                pset.scaffolder_options.flank_addition_coefficient));
+
+    if (pset.scaffolder_options.use_la_gap_joiner) {
+        joiners.push_back(std::make_shared<LAGapJoiner>(gp.g, pset.scaffolder_options.min_overlap_length,
+                                                    pset.scaffolder_options.flank_multiplication_coefficient,
+                                                    pset.scaffolder_options.flank_addition_coefficient));
+    }
 
     joiners.push_back(std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
                                                  pset.scaffolder_options.short_overlap,
@@ -383,6 +386,39 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
 
     return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, composite_gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
 }
+
+
+inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+                                                        size_t lib_index, const pe_config::ParamSetT& pset, const shared_ptr<ScaffoldingUniqueEdgeStorage> storage) {
+    shared_ptr<PairedInfoLibrary> lib;
+    INFO("for lib " << lib_index);
+
+    //TODO:: temporary solution
+    if (gp.paired_indices[lib_index].size() > gp.clustered_indices[lib_index].size()) {
+        INFO("Paired unclustered indices not empty, using them");
+        lib = MakeNewLib(gp.g, gp.paired_indices, lib_index);
+    } else if (gp.clustered_indices[lib_index].size() != 0 ) {
+        INFO("clustered indices not empty, using them");
+        lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+    } else {
+        ERROR("All paired indices are empty!");
+    }
+
+    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, lib);
+//TODO::was copypasted from MakeScaffoldingExtender
+//TODO::REWRITE
+    double var_coeff = 3.0;
+    DEBUG("here creating extchooser");
+//TODO: 2 is relative weight cutoff, to config!
+    auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g, counter, var_coeff, storage, 2, lib_index);
+
+    auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
+                                                         pset.scaffolder_options.short_overlap,
+                                                         (int) 2 * cfg::get().ds.RL());
+
+    return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false , false);
+}
+
 
 inline shared_ptr<SimpleExtender> MakeMPExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, const PathContainer& paths,
                                        size_t lib_index, const pe_config::ParamSetT& pset) {
@@ -413,12 +449,36 @@ inline bool InsertSizeCompare(const shared_ptr<PairedInfoLibrary> lib1,
     return lib1->GetISMax() < lib2->GetISMax();
 }
 
+template<typename Base, typename T>
+inline bool instanceof(const T *ptr) {
+    return dynamic_cast<const Base*>(ptr) != nullptr;
+}
+
+//Used for debug purpose only
+inline void PrintExtenders(vector<shared_ptr<PathExtender> >& extenders) {
+    DEBUG("Extenders in vector:");
+    for(size_t i = 0; i < extenders.size(); ++i) {
+        string type = typeid(*extenders[i]).name();
+        DEBUG("Extender #i" << type);
+        if (instanceof<SimpleExtender>(extenders[i].get())) {
+            auto ec = ((SimpleExtender *) extenders[i].get())->GetExtensionChooser();
+            string chooser_type = typeid(*ec).name();
+            DEBUG("    Extender #i" << chooser_type);
+        }
+        else if (instanceof<ScaffoldingPathExtender>(extenders[i].get())) {
+            auto ec = ((ScaffoldingPathExtender *) extenders[i].get())->GetExtensionChooser();
+            string chooser_type = typeid(*ec).name();
+            DEBUG("    Extender #i" << chooser_type);
+        }
+    }
+}
 
 inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage, const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                            const pe_config::ParamSetT& pset, const PathContainer& paths_for_mp = PathContainer()) {
+                                            const pe_config::ParamSetT& pset, shared_ptr<ScaffoldingUniqueEdgeStorage> storage, const PathContainer& paths_for_mp = PathContainer()) {
 
     vector<shared_ptr<PathExtender> > result;
     vector<shared_ptr<PathExtender> > pes;
+    vector<shared_ptr<PathExtender> > pes2015;
     vector<shared_ptr<PathExtender> > pe_loops;
     vector<shared_ptr<PathExtender> > pe_scafs;
     vector<shared_ptr<PathExtender> > mps;
@@ -434,46 +494,64 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             if (lib.type() != lt)
                 continue;
 
-            if (IsForSingleReadExtender(lib)) {
+            //TODO: scaff2015 does not need any single read libs?
+            if (IsForSingleReadExtender(lib) && pset.sm != sm_2015) {
                 result.push_back(MakeLongReadsExtender(gp, cov_map, i, pset));
                 ++single_read_libs;
             }
-            if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage) {
-                if (cfg::get().ds.meta) {
-                    //TODO proper configuration via config
-                    pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, false));
-                } else {
-                    if (cfg::get().ds.moleculo)
+            if (IsForPEExtender(lib)) {
+                ++pe_libs;
+                if (stage == PathExtendStage::PEStage
+                    && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
+                    if (cfg::get().ds.meta)
+                        //TODO proper configuration via config
+                        pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, false));
+                    else if (cfg::get().ds.moleculo)
                         pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, false));
-                    pes.push_back(MakePEExtender(gp, cov_map, i, pset, false));
+                    else
+                        pes.push_back(MakePEExtender(gp, cov_map, i, pset, false));
+                }
+                else if (pset.sm == sm_2015) {
+                    pes2015.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
             }
-            if (IsForShortLoopExtender(lib)) {
+            if (IsForShortLoopExtender(lib) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
                 if (cfg::get().ds.meta) {
                     pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, true));
                 } else {
                     pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));
                 }
-                ++pe_libs;
             }
             if (IsForScaffoldingExtender(lib) && cfg::get().use_scaffolder && pset.scaffolder_options.on) {
-                pe_scafs.push_back(MakeScaffoldingExtender(gp, cov_map, i, pset));
                 ++scf_pe_libs;
+                if (pset.sm == sm_old || pset.sm == sm_combined) {
+                    pe_scafs.push_back(MakeScaffoldingExtender(gp, cov_map, i, pset));
+                }
+                if (pset.sm == sm_old_pe_2015 || pset.sm == sm_combined) {
+                    pe_scafs.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
+                }
             }
             if (IsForMPExtender(lib) && stage == PathExtendStage::MPStage) {
-                mps.push_back(MakeMPExtender(gp, cov_map, paths_for_mp, i, pset));
                 ++mp_libs;
+                if (pset.sm == sm_old || pset.sm == sm_combined) {
+                    mps.push_back(MakeMPExtender(gp, cov_map, paths_for_mp, i, pset));
+                }
+                if (is_2015_scaffolder_enabled(pset.sm)) {
+                    mps.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
+                }
             }
         }
 
         //std::sort(scaff_libs.begin(), scaff_libs.end(), InsertSizeCompare);
         result.insert(result.end(), pes.begin(), pes.end());
+        result.insert(result.end(), pes2015.begin(), pes2015.end());
         result.insert(result.end(), pe_loops.begin(), pe_loops.end());
         result.insert(result.end(), pe_scafs.begin(), pe_scafs.end());
         result.insert(result.end(), mps.begin(), mps.end());
         pes.clear();
         pe_loops.clear();
         pe_scafs.clear();
+        pes2015.clear();
         mps.clear();
     }
 
@@ -482,14 +560,83 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     INFO("Using " << mp_libs << " mate-pair " << LibStr(mp_libs));
     INFO("Using " << single_read_libs << " single read " << LibStr(single_read_libs));
     INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
+
     if(pset.use_coordinated_coverage) {
         INFO("Using additional coordinated coverage extender");
         result.push_back(MakeCoordCoverageExtender(gp, cov_map, pset));
     }
+
+    PrintExtenders(result);
     return result;
 }
 
-size_t FindOverlapLenForStage(PathExtendStage stage) {
+inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const conj_graph_pack& gp,
+                                                                        shared_ptr<ScaffoldingUniqueEdgeStorage> edge_storage,
+                                                                        const pe_config::ParamSetT::ScaffoldGraphParamsT& params) {
+    using namespace scaffold_graph;
+    vector<shared_ptr<ConnectionCondition>> conditions;
+
+    INFO("Constructing connections");
+    if (params.graph_connectivity) {
+        conditions.push_back(make_shared<AssemblyGraphConnectionCondition>(gp.g, params.max_path_length));
+    }
+    for (size_t lib_index = 0; lib_index < cfg::get().ds.reads.lib_count(); ++lib_index) {
+        auto lib = cfg::get().ds.reads[lib_index];
+        if (lib.is_paired()) {
+            shared_ptr<PairedInfoLibrary> paired_lib;
+            if (IsForMPExtender(lib))
+                paired_lib = MakeNewLib(gp.g, gp.paired_indices, lib_index);
+            else if (IsForPEExtender(lib))
+                paired_lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+            else
+                INFO("Unusable paired lib #" << lib_index);
+            conditions.push_back(make_shared<PairedLibConnectionCondition>(gp.g, paired_lib, lib_index, params.min_read_count));
+        }
+    }
+    INFO("Total conditions " << conditions.size());
+
+    INFO("Constructing scaffold graph");
+    LengthEdgeCondition edge_condition(gp.g, edge_storage->GetMinLength());
+    DefaultScaffoldGraphConstructor constructor(gp.g, edge_storage->GetSet(), conditions, edge_condition);
+    auto scaffoldGraph = constructor.Construct();
+
+    INFO("Scaffold graph contains " << scaffoldGraph->VertexCount() << " vertices and " << scaffoldGraph->EdgeCount() << " edges");
+    return scaffoldGraph;
+}
+
+
+inline void PrintScaffoldGraph(shared_ptr<scaffold_graph::ScaffoldGraph> scaffoldGraph,
+                               const set<EdgeId> main_edge_set,
+                               const string& filename) {
+    using namespace scaffold_graph;
+
+    auto vcolorer = make_shared<ScaffoldVertexSetColorer>(main_edge_set);
+    auto ecolorer = make_shared<ScaffoldEdgeColorer>();
+    CompositeGraphColorer <ScaffoldGraph> colorer(vcolorer, ecolorer);
+
+    INFO("Visualizing single grpah");
+    ScaffoldGraphVisualizer singleVisualizer(*scaffoldGraph, false);
+    std::ofstream single_dot;
+    single_dot.open((filename + "_single.dot").c_str());
+    singleVisualizer.Visualize(single_dot, colorer);
+    single_dot.close();
+
+    INFO("Visualizing paired grpah");
+    ScaffoldGraphVisualizer pairedVisualizer(*scaffoldGraph, true);
+    std::ofstream paired_dot;
+    paired_dot.open((filename + "_paired.dot").c_str());
+    pairedVisualizer.Visualize(paired_dot, colorer);
+    paired_dot.close();
+
+    INFO("Printing scaffold grpah");
+    std::ofstream data_stream;
+    data_stream.open((filename + ".data").c_str());
+    scaffoldGraph->Print(data_stream);
+    data_stream.close();
+}
+
+
+inline size_t FindOverlapLenForStage(PathExtendStage stage) {
     size_t res = 0;
     for (const auto& lib : cfg::get().ds.reads) {
         if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage) {
@@ -520,9 +667,61 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("ExSPAnder repeat resolving tool started");
 
+    auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
+    auto sc_mode = cfg::get().pe_params.param_set.sm;
+
+    if (sc_mode != sm_old) {
+//TODO: Separate function!!
+        //Setting scaffolding2015 parameters
+        auto min_unique_length = cfg::get().pe_params.param_set.scaffolding2015.min_unique_length;
+        auto unique_variaton = cfg::get().pe_params.param_set.scaffolding2015.unique_coverage_variation;
+        if (cfg::get().pe_params.param_set.scaffolding2015.autodetect) {
+            INFO("Autodetecting unique edge set parameters...");
+            bool pe_found = false;
+//TODO constant
+            size_t min_MP_IS = 10000;
+            for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+
+                if (IsForPEExtender(cfg::get().ds.reads[i])) {
+                    pe_found = true;
+                }
+                if (IsForMPExtender(cfg::get().ds.reads[i])) {
+                    min_MP_IS = min(min_MP_IS, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
+                }
+            }
+            if (pe_found) {
+//TODO constants;
+                unique_variaton = 0.5;
+                INFO("PE lib found, we believe in coverage");
+            } else {
+                unique_variaton = 50;
+                INFO("No paired libs found, we do not believe in coverage");
+            }
+            min_unique_length = min_MP_IS;
+            INFO("Minimal unique edge length set to the smallest MP library IS: " << min_unique_length);
+
+        } else {
+            INFO("Unique edge set constructed with parameters from config : length " << min_unique_length
+                     << " variation " << unique_variaton);
+        }
+        ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, min_unique_length, unique_variaton);
+        unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
+    }
+
+
     make_dir(output_dir);
     make_dir(GetEtcDir(output_dir));
-    const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
+    const pe_config::ParamSetT &pset = cfg::get().pe_params.param_set;
+
+    //Scaffold graph
+    shared_ptr<scaffold_graph::ScaffoldGraph> scaffoldGraph;
+    if (cfg::get().pe_params.param_set.scaffold_graph_params.construct) {
+        scaffoldGraph = ConstructScaffoldGraph(gp, storage, cfg::get().pe_params.param_set.scaffold_graph_params);
+        if (cfg::get().pe_params.param_set.scaffold_graph_params.output) {
+            PrintScaffoldGraph(scaffoldGraph, storage->GetSet(), GetEtcDir(output_dir) + "scaffold_graph");
+        }
+    }
+
 
     DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(gp.g);
     DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(gp.g, corrector);
@@ -532,9 +731,10 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     GraphCoverageMap cover_map(gp.g);
     INFO("SUBSTAGE = paired-end libraries")
     PathExtendStage exspander_stage = PathExtendStage::PEStage;
-    vector<shared_ptr<PathExtender> > all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset);
+    vector<shared_ptr<PathExtender> > all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset, storage);
+
     size_t max_over = max(FindOverlapLenForStage(exspander_stage), gp.g.k() + 100);
-    shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs, max_over);
+    shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs, max_over, storage);
 
 //extend pe + long reads
     PathExtendResolver resolver(gp.g);
@@ -553,8 +753,9 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     if (mp_exist) {
         ClonePathContainer(paths, clone_paths, clone_map);
     }
-
-    FinalizePaths(paths, cover_map, max_over);
+//We do not run overlap removal in 2015 mode
+    if (!(sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined))
+        FinalizePaths(paths, cover_map, max_over);
     if (broken_contigs.is_initialized()) {
         OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
                               output_dir + (mp_exist ? "pe_contigs" : broken_contigs.get()));
@@ -578,38 +779,46 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     INFO("SUBSTAGE = mate-pair libraries ")
     exspander_stage = PathExtendStage::MPStage;
     all_libs.clear();
-    all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, clone_paths);
+    all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, storage, clone_paths);
     max_over = FindOverlapLenForStage(exspander_stage);
-    shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over);
+    shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over, storage);
 
     INFO("Growing paths using mate-pairs");
     auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
-    DebugOutputPaths(gp, output_dir, mp_paths, "mp_before_overlap");
-    FinalizePaths(mp_paths, clone_map, max_over, true);
-    DebugOutputPaths(gp, output_dir, mp_paths, "mp_removed_overlaps");
+    if (!is_2015_scaffolder_enabled(pset.sm)) {
+        DebugOutputPaths(gp, output_dir, mp_paths, "mp_before_overlap");
+        FinalizePaths(mp_paths, clone_map, max_over, true);
+    }
+    DebugOutputPaths(gp, output_dir, mp_paths, "mp_final_paths");
+    DEBUG("Paths are grown with mate-pairs");
+
 //MP end
 
 //pe again
     INFO("SUBSTAGE = polishing paths")
     exspander_stage = PathExtendStage::FinalizingPEStage;
     all_libs.clear();
-    all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset);
+    all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset, storage);
     max_over = FindOverlapLenForStage(exspander_stage);
-    shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over);
+    shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over, storage);
 
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
     DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_overlap");
-    FinalizePaths(last_paths, clone_map, max_over);
+    if (!is_2015_scaffolder_enabled(pset.sm)) {
+        FinalizePaths(last_paths, clone_map, max_over);
+        DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_traverse");
+    }
 
-    DebugOutputPaths(gp, output_dir, last_paths, "before_traverse_mp");
     TraverseLoops(last_paths, clone_map, last_extender);
 
 //result
     if (broken_contigs.is_initialized()) {
         OutputBrokenScaffolds(last_paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
     }
-    DebugOutputPaths(gp, output_dir, last_paths, "last_paths");
+    DebugOutputPaths(gp, output_dir, last_paths, "mp2_final_paths");
     writer.OutputPaths(last_paths, output_dir + contigs_name);
+
+    //FinalizeUniquenessPaths();
 
     last_paths.DeleteAllPaths();
     seeds.DeleteAllPaths();

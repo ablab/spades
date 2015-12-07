@@ -153,7 +153,7 @@ public:
 	void recordVertex(Vertex vertex) {
 		this->recordVertexId(vertex.id_);
 		this->os() << "[";
-		this->recordParameter("label", vertex.label_);
+		this->recordParameterInQuotes("label", vertex.label_);
 		this->os() << ",";
 		this->recordParameter("style", "filled");
 		this->os() << ",";

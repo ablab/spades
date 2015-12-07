@@ -12,6 +12,13 @@ add_library(debruijn STATIC
             config_struct.cpp
             path_extend/pe_config_struct.cpp
             path_extend/bidirectional_path.cpp
+            path_extend/scaffolder2015/scaff_supplementary.cpp
+            path_extend/scaffolder2015/extension_chooser2015.cpp
+            path_extend/scaffolder2015/scaffold_graph.cpp
+            path_extend/scaffolder2015/scaffold_graph_constructor.cpp
+            path_extend/scaffolder2015/scaffold_graph_visualizer.cpp
+            path_extend/scaffolder2015/connection_condition2015.cpp
+            genome_consistance_checker.cpp
             stage.cpp
             construction.cpp
             gap_closer.cpp
@@ -23,12 +30,11 @@ add_library(debruijn STATIC
             repeat_resolving.cpp
             genomic_info_filler.cpp
             pacbio_aligning.cpp
+            bwa_pair_info_filler.cpp
             genome_storage.cpp)
   
-# We have to do this to minimize changes in ConsensusCore itself
 target_include_directories(debruijn PRIVATE ${EXT_DIR}/include/ConsensusCore)
 target_link_libraries(debruijn ConsensusCore input cityhash nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
-
 
 add_executable(spades
                main.cpp)

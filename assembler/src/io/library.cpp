@@ -116,12 +116,12 @@ Node convert<SequencingLibraryBase>::encode(const io::SequencingLibraryBase& rhs
     node["orientation"] = rhs.orientation();
     node["type"] = rhs.type();
 
-    for (auto it = rhs.paired_begin(), et = rhs.paired_end(); et != it; ++it) {
-      node["left reads"].push_back(it->first);
-      node["right reads"].push_back(it->second);
+    for (const auto& read_pair : rhs.paired_reads()) {
+      node["left reads"].push_back(read_pair.first);
+      node["right reads"].push_back(read_pair.second);
     }
-    for (auto it = rhs.single_begin(), et = rhs.single_end(); et != it; ++it)
-      node["single reads"].push_back(*it);
+    for (const auto& reads : rhs.single_reads())
+      node["single reads"].push_back(reads);
 
     return node;
 }

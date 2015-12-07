@@ -173,7 +173,7 @@ struct Point : public RawPoint {
     }
 };
 
-inline int rounded_d(Point p) {
+inline int rounded_d(const RawPoint& p) {
     return math::round_to_zero(p.d);
 }
 

@@ -21,14 +21,14 @@
 
 #include "xmath.h"
 
+namespace path_extend {
+
 using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;
 
 using omnigraph::de::PairedInfoIndexT;
 typedef omnigraph::de::PairInfo<EdgeId> DePairInfo;
 using omnigraph::de::Point;
-
-namespace path_extend {
 
 struct PairedInfoLibrary {
     PairedInfoLibrary(size_t k, const Graph& g, size_t readS, size_t is,
@@ -53,10 +53,10 @@ struct PairedInfoLibrary {
     void SetCoverage(double cov) { coverage_coeff_ = cov; }
     void SetSingleThreshold(double threshold) { single_threshold_ = threshold; }
 
-    virtual size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) const = 0;
+    virtual size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist, int max_dist, size_t min_len = 0) const = 0;
     virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const = 0;
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int distance, bool from_interval = false) const = 0;
-    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const = 0;
+    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int dist_min, int dist_max) const = 0;
 
     double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance, bool additive = false) const {
         return ideal_pi_counter_.IdealPairedInfo(e1, e2, distance, additive);
@@ -89,13 +89,49 @@ protected:
 
 template<class Index>
 struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
+
+private:
+/* Only information from e is taken in account. No info from conjugate(e) is used. bool conj is used to check whether
+ * the dist should be recount or not.
+ */
+
+    void FindJumpEdgesNoConj(EdgeId e, std::set<EdgeId>& result, int min_dist, int max_dist, size_t min_len, bool conj) const {
+        if (index_.contains(e)) {
+            const auto &infos = index_.GetEdgeInfoMap(e);
+            // We do not care about iteration order here - all the edges collected
+            // will be inside std::set<EdgeId>
+            for (const auto &it : infos) {
+                EdgeId e2 = it.first;
+                if (e2 == e)
+                    continue;
+                if (g_.length(e2) < min_len)
+                    continue;
+
+                for (const auto &point : it.second) {
+                    int dist = rounded_d(point);
+                    if (conj) {
+                        dist =  - dist + (int) g_.length(e) - (int) g_.length(e2);
+                        if (dist >= min_dist&& dist <= max_dist)
+                            result.insert(g_.conjugate(e2));
+                    }
+                    else {
+                        if (dist >= min_dist && dist <= max_dist)
+                            result.insert(e2);
+                    }
+                }
+            }
+        }
+    }
+
+public:
+
     PairedInfoLibraryWithIndex(size_t k, const Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, size_t is_div,
                                const Index& index, bool is_mp,
                                const std::map<int, size_t>& is_distribution)
         : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
           index_(index) {}
 
-    virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) const {
+    virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist = 0, int max_dist, size_t min_len = 0) const {
         VERIFY(index_.size() > 0);
         result.clear();
 
@@ -118,6 +154,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         }
         return result.size();
     }
+
 
     virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const {
         VERIFY(index_.size() > 0);
@@ -156,7 +193,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         return weight;
     }
 
-    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
+    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int dist_min, int dist_max) const {
         VERIFY(index_.size() > 0);
         double weight = 0.0;
 

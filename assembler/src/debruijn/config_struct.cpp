@@ -37,6 +37,7 @@ struct convert<io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetDat
       node["insert size distribution"]   = data.insert_size_distribution;
       node["average coverage"]           = data.average_coverage;
       node["pi threshold"]               = data.pi_threshold;
+      node["binary converted"]           = data.binary_coverted;
       node["single reads mapped"]        = data.single_reads_mapped;
 
       return node;
@@ -60,6 +61,7 @@ struct convert<io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetDat
 
       data.average_coverage           = node["average coverage"].as<double>(0.0);
       data.pi_threshold               = node["pi threshold"].as<double>(0.0);
+      data.binary_coverted            = node["binary converted"].as<bool>(false);
       data.single_reads_mapped        = node["single reads mapped"].as<bool>(false);
 
       return true;
@@ -108,13 +110,12 @@ void load_lib_data(const std::string& prefix) {
   cfg::get_writable().ds.reads.load(prefix + ".lib_data");
 
   // Now, infer the common parameters
-  const auto& reads = cfg::get().ds.reads;
   size_t max_rl = 0;
   double avg_cov = 0.0;
   double avg_rl = 0.0;
-  for (auto it = reads.library_begin(), et = reads.library_end(); it != et; ++it) {
-      auto const& data = it->data();
-      if (it->is_graph_contructable())
+  for (const auto& lib : cfg::get().ds.reads.libraries()) {
+      auto const& data = lib.data();
+      if (lib.is_graph_contructable())
           max_rl = std::max(max_rl, data.read_length);
       if (data.average_coverage > 0)
           avg_cov = data.average_coverage;
@@ -373,6 +374,14 @@ void load(debruijn_config::truseq_analysis& tsa,
   load(tsa.genome_file, pt, "genome_file");
 }
 
+void load(debruijn_config::bwa_aligner& bwa,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(bwa.enabled, pt, "enabled");
+    load(bwa.debug, pt, "debug");
+    load(bwa.path_to_bwa, pt, "path_to_bwa");
+    load(bwa.min_contig_len, pt, "min_contig_len");
+}
 
 void load(debruijn_config::pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
@@ -787,6 +796,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   cfg.preliminary_simp = cfg.simp;
   load(cfg.preliminary_simp, pt, "preliminary", false);
+  load(cfg.bwa, pt, "bwa_aligner", false);
 }
 
 void load(debruijn_config& cfg, const std::string &filename) {

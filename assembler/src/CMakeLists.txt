@@ -56,8 +56,10 @@ include(libs)
 
 include(GetGitRevisionDescription)
 get_git_head_revision(SPADES_GIT_REFSPEC SPADES_GIT_SHA1)
-if (SPADES_GIT_REFSPEC STREQUAL "GITDIR-NOTFOUND")
+if ((NOT SPADES_GIT_REFSPEC) OR (SPADES_GIT_REFSPEC STREQUAL "GITDIR-NOTFOUND"))
   set(SPADES_GIT_REFSPEC "N/A")
+endif()
+if (NOT SPADES_GIT_SHA1)
   set(SPADES_GIT_SHA1 "N/A")
 endif()
 

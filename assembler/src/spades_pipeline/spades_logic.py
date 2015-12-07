@@ -20,7 +20,7 @@ import options_storage
 BASE_STAGE = "construction"
 READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]
 
-def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one):
+def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home):
     subst_dict = dict()
 
     subst_dict["K"] = str(K)
@@ -61,6 +61,7 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
         else:
             subst_dict["coverage_threshold"] = cfg.cov_cutoff
 
+    subst_dict["path_to_bwa"] =  os.path.join(execution_home, "bwa-spades")
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
@@ -156,7 +157,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     if "read_buffer_size" in cfg.__dict__:
         construction_cfg_file_name = os.path.join(dst_configs, "construction.info")
         process_cfg.substitute_params(construction_cfg_file_name, {"read_buffer_size": cfg.read_buffer_size}, log)
-    prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one)
+    prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home)
 
     command = [os.path.join(execution_home, "spades"), cfg_file_name]
     support.sys_call(command, log)

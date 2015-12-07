@@ -19,7 +19,7 @@
 #include "bidirectional_path.hpp"
 #include "contig_output.hpp"
 #include "io/osequencestream.hpp"
-
+#include "genome_consistance_checker.hpp"
 namespace path_extend {
 
 using namespace debruijn_graph;
@@ -219,6 +219,22 @@ public:
         DEBUG("Contigs written");
     }
 
+
+    //TODO: DimaA insert somewhere
+    /*
+            auto map_res = genome_checker.CountMisassemblies(*path);
+            if (map_res.misassemblies > 0) {
+                INFO ("there are "<< map_res.misassemblies<<  " misassemblies in path: ");
+                path->PrintInfo();
+                total_mis += map_res.misassemblies;
+            }
+            if (map_res.wrong_gap_size > 0) {
+                INFO ("there are "<<map_res.wrong_gap_size <<" wrong gaps in path: ");
+                path->PrintInfo();
+                gap_mis += map_res.wrong_gap_size;
+            }
+      */
+
     void WriteFASTGPaths(const PathContainer& paths, const string& filename) const {
         INFO("Writing FASTG paths to " << filename);
         std::ofstream oss(filename.c_str());
@@ -235,7 +251,9 @@ public:
     void OutputPaths(const PathContainer& paths, const string& filename_base) const {
         WritePathsToFASTA(paths, filename_base);
     }
+
 };
+
 
 
 class PathInfoWriter {

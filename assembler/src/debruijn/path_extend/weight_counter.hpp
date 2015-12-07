@@ -132,6 +132,10 @@ public:
 		return *lib_;
 	}
 
+    const shared_ptr<PairedInfoLibrary> get_libptr() const {
+        return lib_;
+    };
+
 private:
     DECL_LOGGER("WeightCounter");
 };
@@ -311,6 +315,7 @@ public:
 
 //FIXME optimize number of calls of EstimatePathCoverage(path)
 class MetagenomicWeightCounter: public WeightCounter {
+    static const size_t LENGTH_BOUND = 500;
     shared_ptr<CoverageAwareIdealInfoProvider> cov_info_provider_;
     shared_ptr<WeightCounter> normalizing_wc_;
     shared_ptr<WeightCounter> raw_wc_;
@@ -319,7 +324,7 @@ public:
 
 	MetagenomicWeightCounter(const Graph& g, const shared_ptr<PairedInfoLibrary>& lib,
                              size_t read_length, double normalized_threshold, double raw_threshold, 
-                             size_t estimation_edge_length) :
+                             size_t estimation_edge_length = LENGTH_BOUND) :
 			WeightCounter(g, lib) {
         cov_info_provider_ = make_shared<CoverageAwareIdealInfoProvider>(g, lib, read_length, estimation_edge_length);
         normalizing_wc_ = make_shared<PathCoverWeightCounter>(g, lib, true, normalized_threshold, cov_info_provider_);
@@ -531,7 +536,7 @@ inline double PathsWeightCounter::IdealPI(EdgeId e1, EdgeId e2, int dist) const 
 }
 
 inline bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
-    return lib_->CountPairedInfo(e1, e2, dist_min, dist_max) > min_read_count_;
+    return lib_->CountPairedInfo(e1, e2, (int) dist_min, (int) dist_max) > min_read_count_;
 }
 };
 
