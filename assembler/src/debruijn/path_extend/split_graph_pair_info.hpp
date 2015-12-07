@@ -80,7 +80,7 @@ struct PairInfo {
     double distance_;
     size_t count_;
 
-    PairInfo() 
+    PairInfo()
             : weight_(0.), distance_(0.), count_(0) {}
 
     PairInfo(double weight, double distance, size_t count = 0)
@@ -266,50 +266,46 @@ public:
 
     }
 
-    virtual void StartProcessLibrary(size_t threads_count) {
+    void StartProcessLibrary(size_t threads_count) override {
         baskets_buffer_.clear();
-        for (size_t i = 0; i < threads_count; ++i) {
-            baskets_buffer_.push_back(
-                    new BasketsPairInfoIndex(gp_, basket_size_));
-        }
+        for (size_t i = 0; i < threads_count; ++i)
+            baskets_buffer_.emplace_back(gp_, basket_size_);
     }
 
-    virtual void ProcessPairedRead(size_t thread_index,
-                                   const io::PairedRead& r,
-                                   const MappingPath<EdgeId>& read1,
-                                   const MappingPath<EdgeId>& read2) {
-        ProcessPairedRead(*baskets_buffer_[thread_index], r.first().size(), r.second().size(),
-                            read1, read2, r.distance());
+    void ProcessPairedRead(size_t thread_index,
+                           const io::PairedRead& r,
+                           const MappingPath<EdgeId>& read1,
+                           const MappingPath<EdgeId>& read2) override {
+        ProcessPairedRead(baskets_buffer_[thread_index], r.first().size(), r.second().size(),
+                          read1, read2, r.distance());
     }
 
-    virtual void ProcessPairedRead(size_t thread_index,
-                                   const io::PairedReadSeq& r,
-                                   const MappingPath<EdgeId>& read1,
-                                   const MappingPath<EdgeId>& read2) {
-        ProcessPairedRead(*baskets_buffer_[thread_index], r.first().size(), r.second().size(),
-                            read1, read2, r.distance());
+    void ProcessPairedRead(size_t thread_index,
+                           const io::PairedReadSeq& r,
+                           const MappingPath<EdgeId>& read1,
+                           const MappingPath<EdgeId>& read2) override {
+        ProcessPairedRead(baskets_buffer_[thread_index], r.first().size(), r.second().size(),
+                          read1, read2, r.distance());
     }
 
-    virtual void ProcessSingleRead(size_t, const io::SingleRead&, const MappingPath<EdgeId>&) {
+    void ProcessSingleRead(size_t, const io::SingleRead&, const MappingPath<EdgeId>&) override {
         //only paired reads are interesting
     }
 
-    virtual void ProcessSingleRead(size_t, const io::SingleReadSeq&, const MappingPath<EdgeId>&) {
+    void ProcessSingleRead(size_t, const io::SingleReadSeq&, const MappingPath<EdgeId>&) override {
         //only paired reads are interesting
     }
-    virtual void MergeBuffer(size_t thread_index) {
-        basket_index_.AddAll(*baskets_buffer_[thread_index]);
-        baskets_buffer_[thread_index]->Clear();
+    void MergeBuffer(size_t thread_index) override {
+        basket_index_.AddAll(baskets_buffer_[thread_index]);
+        baskets_buffer_[thread_index].Clear();
     }
 
-    virtual void StopProcessLibrary() {
-        for (size_t i = 0; i < baskets_buffer_.size(); ++i) {
+    void StopProcessLibrary() override {
+        for (size_t i = 0; i < baskets_buffer_.size(); ++i)
             MergeBuffer(i);
-        }
+
         FindThreshold();
-        for (size_t i = 0; i < baskets_buffer_.size(); ++i) {
-            delete baskets_buffer_[i];
-        }
+
         baskets_buffer_.clear();
     }
 
@@ -319,22 +315,23 @@ public:
 
 private:
     void FindThreshold() {
-        std::ofstream ideal;
         size_t min_long_edge = basket_size_;
         const Graph& g = gp_.g;
         vector<double> good_pi;
         vector<double> bad_pi;
         double insert_size_min = (double) is_ - 2. * (double) is_var_;
         double insert_size_max = (double) is_ + 2. * (double) is_var_;
-        for (auto edge = g.ConstEdgeBegin(); !edge.IsEnd(); ++edge) {
-            if (g.length(*edge) > min_long_edge) {
-                if (g.int_id(*edge) <= 0)
+        for (auto e = g.ConstEdgeBegin(); !e.IsEnd(); ++e) {
+            EdgeId edge = *e;
+
+            if (g.length(edge) > min_long_edge) {
+                if (g.int_id(edge) <= 0)
                     continue;
 
-                EdgePairInfo& edge_pi = basket_index_.GetEdgePairInfo(*edge);
+                EdgePairInfo& edge_pi = basket_index_.GetEdgePairInfo(edge);
                 if (edge_pi.size() == 0)
                     continue;
-                size_t count_backets = LastBasketIndex(*edge, (int) insert_size_max,
+                size_t count_backets = LastBasketIndex(edge, (int) insert_size_max,
                                                        edge_pi);
                 for (size_t index = 0; index <= count_backets; ++index) {
                     map<Basket, PairInfo>& basket_info = edge_pi.GetInfo(index);
@@ -342,12 +339,10 @@ private:
                                                           (int) insert_size_min,
                                                           (int) insert_size_max,
                                                           edge_pi);
-                    for (auto iter = basket_info.begin();
-                            iter != basket_info.end(); ++iter) {
+                    for (auto iter = basket_info.begin(); iter != basket_info.end(); ++iter) {
                         PairInfo& pi = iter->second;
-                        if (iter->first.edgeId() == *edge
-                                && pair_baskets.find(iter->first.index())
-                                        != pair_baskets.end()) {
+                        if (iter->first.edgeId() == edge &&
+                            pair_baskets.find(iter->first.index()) != pair_baskets.end()) {
                             good_pi.push_back(GetNormalizedWeight(pi));
                         } else {
                             bad_pi.push_back(GetNormalizedWeight(pi));
@@ -444,7 +439,7 @@ private:
     size_t is_max_;
     size_t basket_size_;
     BasketsPairInfoIndex basket_index_;
-    vector<BasketsPairInfoIndex*> baskets_buffer_;
+    vector<BasketsPairInfoIndex> baskets_buffer_;
     double threshold_;
     IdealPairInfoCounter ideal_pi_counter_;
 };
