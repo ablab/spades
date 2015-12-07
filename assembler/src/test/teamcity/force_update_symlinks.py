@@ -16,7 +16,7 @@ import os
 import glob
 
 def force_symlinks_for_suffix(contig_dir, suffix, name):
-    contigs = sorted(glob.glob(os.path.join(contig_dir, "*master_" + suffix + ".fasta")))
+    contigs = sorted(glob.glob(os.path.join(contig_dir, "*" + suffix + "_master.fasta")))
     if len(contigs) == 0:
         return
     clink = os.path.join(contig_dir, name)
