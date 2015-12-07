@@ -411,6 +411,7 @@ try:
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('info', metavar='CONFIG_FILE', type=str,  help='teamcity.py info config')
     parser.add_argument("--run_name", "-n", help="output dir custom suffix", type=str)
+    parser.add_argument("--contig_name", "-s", help="contig name custom suffix", type=str)
     parser.add_argument("--spades_cfg_dir", "-c", help="SPAdes config directory", type=str)
     parser.add_argument("--local_output_dir", "-o", help="use this output dir, override output directory provided in config", type=str)
     args = parser.parse_args()
@@ -564,7 +565,6 @@ try:
 
     #comparing misassemblies
     rewrite_latest = True
-    latest_found = True
     enable_comparison = True
     if 'meta' in dataset_info.__dict__ and dataset_info.meta:
         enable_comparison = False
@@ -574,20 +574,7 @@ try:
       and 'assess' in dataset_info.__dict__ and dataset_info.assess:
 
         latest_ctg = os.path.join(contig_dir, "latest_contigs.fasta")
-
-        if not os.path.exists(latest_ctg):
-            import glob
-            prev_contigs = sorted(glob.glob(os.path.join(contig_dir, "*_ctg.fasta")))
-
-            if len(prev_contigs) == 0:
-                print("No previous contigs detected")
-                latest_found = False
-            else:
-                os.chdir(contig_dir)
-                os.symlink(os.path.basename(prev_contigs[-1]), "latest_contigs.fasta")
-                os.chdir(working_dir)
-
-        if latest_found:
+        if os.path.exists(latest_ctg):
             quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS_CMP")
             qcode = run_quast(dataset_info, [os.path.join(output_dir, contigs[0][1] + ".fasta"), latest_ctg], quast_output_dir)
 
@@ -601,22 +588,10 @@ try:
     if enable_comparison and contig_dir != '' and \
       'quast_params' in dataset_info.__dict__ and dataset_info.quast_params and '-R' in dataset_info.quast_params and \
       'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess and \
-      os.path.exists(os.path.join(output_dir, "scaffolds.fasta")) and latest_found:
+      os.path.exists(os.path.join(output_dir, "scaffolds.fasta")):
 
         latest_ctg = os.path.join(contig_dir, "latest_scaffolds.fasta")
-        if not os.path.exists(latest_ctg):
-            import glob
-            prev_contigs = sorted(glob.glob(os.path.join(contig_dir, "*_scafs.fasta")))
-
-            if len(prev_contigs) == 0:
-                print("No previous scaffolds detected")
-                latest_found = False
-            else:
-                os.chdir(contig_dir)
-                os.symlink(os.path.basename(prev_contigs[-1]), "latest_scaffolds.fasta")
-                os.chdir(working_dir)
-
-        if latest_found:
+        if os.path.exists(latest_ctg):
             scaffolds = "scaffolds.fasta"
             quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS_CMP_SC")
             qcode = run_quast(dataset_info, [os.path.join(output_dir, scaffolds), latest_ctg], quast_output_dir)
@@ -640,40 +615,48 @@ try:
         #        if args.run_name:
         #            name_prefix += "_" + args.run_name
         print("Contigs have prefix " + name_prefix)
+        ctg_suffix = ""
+        if args.contig_name:
+            ctg_suffix = "_" + args.contig_name
+            print("Contigs have suffix " + ctg_suffix)
 
-        shutil.copy(os.path.join(output_dir, contigs[0][1] + ".fasta"), os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
-        print("Contigs saved to " + os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
+        saved_ctg_name = name_prefix + "_ctg" + ctg_suffix + ".fasta"
+        shutil.copy(os.path.join(output_dir, contigs[0][1] + ".fasta"), os.path.join(contig_dir, saved_ctg_name))
+        print("Contigs saved to " + os.path.join(contig_dir, saved_ctg_name))
 
         if rewrite_latest:
             print("Creating latest symlink")
             os.chdir(contig_dir)
             if os.path.islink("latest_contigs.fasta"):
                 os.remove("latest_contigs.fasta")
-            os.symlink(name_prefix + "_ctg.fasta", "latest_contigs.fasta")
+            os.symlink(saved_ctg_name, "latest_contigs.fasta")
             os.chdir(working_dir)
 
         scafs = os.path.join(output_dir, "scaffolds.fasta")
         if os.path.exists(scafs):
-            shutil.copy(scafs, os.path.join(contig_dir, name_prefix + "_scafs.fasta"))
-            print("Scaffolds saved to " + os.path.join(contig_dir, name_prefix + "_scafs.fasta"))
+            saved_scf_name = name_prefix + "_scafs" + ctg_suffix + ".fasta"
+            shutil.copy(scafs, os.path.join(contig_dir, saved_scf_name))
+            print("Scaffolds saved to " + os.path.join(contig_dir, saved_scf_name))
 
             if rewrite_latest:
                 print("Creating latest symlink")
                 os.chdir(contig_dir)
                 if os.path.islink("latest_scaffolds.fasta"):
                     os.remove("latest_scaffolds.fasta")
-                os.symlink(name_prefix + "_scafs.fasta", "latest_scaffolds.fasta")
+                os.symlink(saved_scf_name, "latest_scaffolds.fasta")
                 os.chdir(working_dir)
 
         before_rr = os.path.join(output_dir, "before_rr.fasta")
         if os.path.exists(before_rr):
-            shutil.copy(before_rr, os.path.join(contig_dir, name_prefix + "_before_rr.fasta"))
-            print("Contigs before resolve saved to " + os.path.join(contig_dir, name_prefix + "_before_rr.fasta"))
+            saved_brr_name = name_prefix + "_before_rr" + ctg_suffix + ".fasta"
+            shutil.copy(before_rr, os.path.join(contig_dir, saved_brr_name))
+            print("Contigs before resolve saved to " + os.path.join(contig_dir, saved_brr_name))
 
         preliminary_ctgs = os.path.join(output_dir, "first_pe_contigs.fasta")
         if os.path.exists(preliminary_ctgs):
-            shutil.copy(before_rr, os.path.join(contig_dir, name_prefix + "_prelim.fasta"))
-            print("Preliminary contigs after first RR saved to " + os.path.join(contig_dir, name_prefix + "_prelim.fasta"))
+            saved_prelim_name = name_prefix + "_prelim" + ctg_suffix + ".fasta"
+            shutil.copy(before_rr, os.path.join(contig_dir, saved_prelim_name))
+            print("Preliminary contigs after first RR saved to " + os.path.join(contig_dir, saved_prelim_name))
 
     #    before_corr = os.path.join(output_dir, "assembled_contigs.fasta")
     #    if os.path.exists(before_corr):
