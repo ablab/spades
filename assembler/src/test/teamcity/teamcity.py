@@ -448,17 +448,17 @@ try:
     os.makedirs(output_dir)
 
     run_info = open(os.path.join(output_dir, "test_run.info"), "w")
-    run_info.write(".info file: " + args.info);
+    run_info.write(".info file: " + args.info + "\n");
     if args.run_name:
-        run_info.write("run name: " + args.run_name);
+        run_info.write("run name: " + args.run_name + "\n");
     if args.contig_archive:
-        run_info.write("save contigs archive: " + args.contig_archive);
+        run_info.write("save contigs archive: " + str(args.contig_archive) + "\n");
     if args.contig_name:
-        run_info.write("contig custom name: " + args.contig_name);
+        run_info.write("contig custom name: " + args.contig_name + "\n");
     if args.contig_name:
-        run_info.write("spades config direrctory: " + args.contig_name);
+        run_info.write("spades config direrctory: " + args.contig_name + "\n");
     if args.local_output_dir:
-        run_info.write("local output dir: " + args.local_output_dir);
+        run_info.write("local output dir: " + args.local_output_dir + "\n");
     run_info.close()
     
 
