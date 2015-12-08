@@ -411,7 +411,9 @@ try:
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('info', metavar='CONFIG_FILE', type=str,  help='teamcity.py info config')
     parser.add_argument("--run_name", "-n", help="output dir custom suffix", type=str)
-    parser.add_argument("--contig_name", "-s", help="contig name custom suffix", type=str)
+    parser.add_argument("--no_contig_archive", dest="contig_archive", help="don't save contigs to common contig archive", action='store_false')
+    parser.set_defaults(contig_archive=True)
+    parser.add_argument("--contig_name", "-s", help="archive contig name custom suffix", type=str)
     parser.add_argument("--spades_cfg_dir", "-c", help="SPAdes config directory", type=str)
     parser.add_argument("--local_output_dir", "-o", help="use this output dir, override output directory provided in config", type=str)
     args = parser.parse_args()
@@ -444,6 +446,21 @@ try:
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
     os.makedirs(output_dir)
+
+    run_info = open(os.path.join(output_dir, "test_run.info"), "w")
+    run_info.write(".info file: " + args.info);
+    if args.run_name:
+        run_info.write("run name: " + args.run_name);
+    if args.contig_archive:
+        run_info.write("save contigs archive: " + args.contig_archive);
+    if args.contig_name:
+        run_info.write("contig custom name: " + args.contig_name);
+    if args.contig_name:
+        run_info.write("spades config direrctory: " + args.contig_name);
+    if args.local_output_dir:
+        run_info.write("local output dir: " + args.local_output_dir);
+    run_info.close()
+    
 
     #clean
     if ('prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg) and ('spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile):
@@ -557,9 +574,8 @@ try:
             exit_code = 12
 
     contig_dir = ''
-    if 'contig_storage' in dataset_info.__dict__:
+    if 'contig_storage' in dataset_info.__dict__ and args.contig_archive:
         contig_dir = dataset_info.contig_storage
-
         if args.run_name:
             contig_dir += "_" + args.run_name
 

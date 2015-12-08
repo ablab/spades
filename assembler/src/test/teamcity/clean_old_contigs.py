@@ -22,8 +22,12 @@ def remove_in_dir(contig_dir, days_difference):
     for c in contigs:
         diff = datetime.datetime.now() - datetime.datetime.fromtimestamp(os.path.getmtime(c))
         if diff.days >= days_difference:
-            os.remove(c)
-            print("Removed " + c)
+            try:
+                os.remove(c)
+                print("Removed " + c)
+            except OSError:
+                print("Error occured while trying to remove " + c)
+
 
 
 def remove_recursive(storage_dir, days_difference):
