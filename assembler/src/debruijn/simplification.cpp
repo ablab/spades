@@ -324,10 +324,13 @@ public:
                 "Low coverage edge remover",
                 algos);
 
-        for (size_t i = 0; i < simplif_cfg_.cycle_iter_count; i++) {
-            INFO("PROCEDURE == Simplification cycle, iteration " << i + 1);
-            RunAlgos(algos);
-            //cannot stop even if nothing changed, since threshold change on every iteration
+        size_t iteration = 0;
+        bool graph_changed = true;
+        //cannot stop simply if nothing changed, since threshold change on every iteration
+        while (iteration < simplif_cfg_.cycle_iter_count || graph_changed) {
+            INFO("PROCEDURE == Simplification cycle, iteration " << iteration + 1);
+            graph_changed = RunAlgos(algos);
+            ++iteration;
         }
 
         printer_(ipp_before_post_simplification);
