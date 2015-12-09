@@ -262,6 +262,7 @@ struct detail_info_printer {
     void ProduceDetailedInfo(const string &pos_name,
                              info_printer_pos pos) {
         static size_t call_cnt = 0;
+        ++call_cnt;
 
         auto it = cfg::get().info_printers.find(pos);
         VERIFY(it != cfg::get().info_printers.end());
@@ -275,7 +276,7 @@ struct detail_info_printer {
         }
 
         string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
-                                          ToString(call_cnt++, 2) + "_" + pos_name + "/");
+                                          ToString(call_cnt, 2) + "_" + pos_name + "/");
         if (config.save_graph) {
             path::make_dirs(saves_folder);
             graphio::ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp_.g);
@@ -306,7 +307,7 @@ struct detail_info_printer {
 
         VERIFY(cfg::get().developer_mode);
         string pics_folder = path::append_path(path::append_path(folder_, "pictures/"),
-                                          ToString(call_cnt++, 2) + "_" + pos_name + "/");
+                                          ToString(call_cnt, 2) + "_" + pos_name + "/");
         path::make_dirs(pics_folder);
         PrepareForDrawing(gp_);
     
