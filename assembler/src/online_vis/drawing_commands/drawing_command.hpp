@@ -22,7 +22,6 @@ protected:
     void DrawPicture(DebruijnEnvironment& curr_env, VertexId vertex, string label = "") const {
         make_dir(curr_env.folder_);
 
-
         stringstream namestream;
         namestream << curr_env.folder_ << "/" << curr_env.GetFormattedPictureCounter() << "_" << curr_env.file_name_base_ << "_" << label << "_" << ".dot";
         string file_name = namestream.str();
@@ -40,7 +39,7 @@ protected:
     void DrawPicturesAlongPath(DebruijnEnvironment& curr_env, const vector<EdgeId>& path, string label = "") const {
         make_dir(curr_env.folder_);
         stringstream namestream;
-        namestream << curr_env.folder_ << "/" << curr_env.GetFormattedPictureCounter() << "_" << curr_env.file_name_base_ << "/";
+        namestream << curr_env.folder_ << "/" << label << "_" << curr_env.file_name_base_  << "_" << curr_env.GetFormattedPictureCounter() << "/";
         string directory = namestream.str();
         make_dir(directory);
         namestream << label << "_";

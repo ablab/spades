@@ -728,8 +728,10 @@ private:
 				break;
 			} else {
 				vertices.insert(next.v_begin(), next.v_end());
-				name += ";";
-				name += next.name();
+                if (next.name() != "") {
+                    name += ";";
+                    name += next.name();
+                }
 			}
 		}
 		return GraphComponent<Graph>(this->graph(), vertices.begin(), vertices.end(), CutName(name, 60));
