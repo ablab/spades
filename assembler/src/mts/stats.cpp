@@ -132,6 +132,7 @@ int main(int argc, char** argv) {
     std::size_t total_edgelen_cntr = 0;
 
     auto genome_graph_path = mapper->MapRead(genome).simple_path();
+    std::set<EdgeId> unbinned_edges;
 
     gp.EnsurePos();
     for (EdgeId e : genome_graph_path) {
@@ -144,13 +145,17 @@ int main(int argc, char** argv) {
         } else if (edge_annotation.Annotation(e).empty() &&
                    prop_edge_annotation.Annotation(e).empty()) {
             // Only check for prop_annotation is necessary
-            unbinned_edge_cntr++;
-            unbinned_edgelen_cntr += gp.g.length(e);
-            std::cout << "Edge id: " + std::to_string(e.int_id()) << std::endl;
-            std::string dot_export_path("/Users/idmit/edge");
-            dot_export_path += std::to_string(e.int_id()) + ".dot";
-            PrintColoredAnnotatedGraphAroundEdge(gp, e, prop_edge_annotation,
-                                                 dot_export_path);
+            if (unbinned_edges.count(e) == 0) {
+                unbinned_edges.insert(e);
+                unbinned_edge_cntr++;
+                unbinned_edgelen_cntr += gp.g.length(e);
+                std::cout << "Edge id: " + std::to_string(e.int_id())
+                          << std::endl;
+                std::string dot_export_path("/Users/idmit/edge");
+                dot_export_path += std::to_string(e.int_id()) + ".dot";
+                PrintColoredAnnotatedGraphAroundEdge(
+                    gp, e, prop_edge_annotation, dot_export_path);
+            }
         }
     }
 
