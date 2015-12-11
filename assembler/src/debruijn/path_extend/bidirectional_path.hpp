@@ -602,6 +602,15 @@ public:
     bool IsOverlap() const {
         return overlap_;
     }
+
+    void ResetOverlaps() {
+        overlap_ = false;
+        has_overlaped_begin_ = false;
+        has_overlaped_end_ = false;
+        conj_path_->overlap_ = false;
+        conj_path_->has_overlaped_begin_ = false;
+        conj_path_->has_overlaped_end_ = false;
+    }
 private:
 
     void RecountLengths() {

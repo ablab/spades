@@ -232,6 +232,10 @@ inline void FinalizePaths(PathContainer& paths, GraphCoverageMap& cover_map, siz
         resolver.addUncoveredEdges(paths, cover_map);
     }
     paths.SortByLength();
+    for(auto& path : paths) {
+        path.first->ResetOverlaps();
+    }
+
 }
 
 inline void TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map, shared_ptr<ContigsMaker> extender) {
