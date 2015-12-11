@@ -54,7 +54,13 @@ class AnnotatedGraphColorer
     : public omnigraph::visualization::GraphColorer<Graph> {
    public:
     AnnotatedGraphColorer(const EdgeAnnotation& annotation)
-        : _annotation(annotation) {}
+        : _annotation(annotation) {
+        std::size_t i = 0;
+        for (const auto& b_id : _annotation.interesting_bins()) {
+            _color_map[b_id] = i;
+            ++i;
+        }
+    }
 
     string GetValue(typename Graph::VertexId) const { return "black"; }
 
@@ -62,12 +68,24 @@ class AnnotatedGraphColorer
         if (_annotation.Annotation(edge).empty()) {
             return "black";
         }
-        return "red";
+        bin_id b_id = _annotation.Annotation(edge)[0];
+        std::string color = _colors[_color_map[b_id]];
+        for (std::size_t i = 1; i < _annotation.Annotation(edge).size(); ++i) {
+            b_id = _annotation.Annotation(edge)[i];
+            color += ":" + _colors[_color_map[b_id]];
+        }
+        return color;
     }
 
    private:
     EdgeAnnotation _annotation;
+    static std::vector<std::string> _colors;
+    mutable std::map<bin_id, std::size_t> _color_map;
 };
+
+template <class Graph>
+std::vector<std::string> AnnotatedGraphColorer<Graph>::_colors = {
+    "red", "blue", "green", "yellow", "orange", "purple", "pink"};
 
 void PrintColoredAnnotatedGraphAroundEdge(const conj_graph_pack& gp,
                                           const EdgeId& edge,
