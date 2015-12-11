@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
     string prop_annotation_in_fn = argv[6];
 
     std::vector<bin_id> bins_of_interest;
-    for (int i = 6; i < argc; ++i) {
+    for (int i = 7; i < argc; ++i) {
         bins_of_interest.push_back(argv[i]);
     }
 
