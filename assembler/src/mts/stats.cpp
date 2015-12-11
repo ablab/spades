@@ -20,6 +20,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include "io/file_reader.hpp"
 #include "annotation.hpp"
+#include "omni/visualization/graph_colorer.hpp"
 
 using namespace debruijn_graph;
 
@@ -46,6 +47,39 @@ EdgeAnnotation LoadAnnotation(const conj_graph_pack& gp,
     AnnotationStream annotation_stream(annotation_path);
     edge_annotation.Fill(*contigs_stream_ptr, annotation_stream);
     return edge_annotation;
+}
+
+template <class Graph>
+class AnnotatedGraphColorer
+    : public omnigraph::visualization::GraphColorer<Graph> {
+   public:
+    AnnotatedGraphColorer(const EdgeAnnotation& annotation)
+        : _annotation(annotation) {}
+
+    string GetValue(typename Graph::VertexId) const { return "black"; }
+
+    string GetValue(typename Graph::EdgeId edge) const {
+        if (_annotation.Annotation(edge).empty()) {
+            return "black";
+        }
+        return "red";
+    }
+
+   private:
+    EdgeAnnotation _annotation;
+};
+
+void PrintColoredAnnotatedGraphAroundEdge(const conj_graph_pack& gp,
+                                          const EdgeId& edge,
+                                          const EdgeAnnotation& annotation,
+                                          const string& output_filename) {
+    std::cout << output_filename << std::endl;
+    DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    auto colorer_ptr =
+        std::make_shared<AnnotatedGraphColorer<Graph>>(annotation);
+    GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(gp.g, edge);
+    omnigraph::visualization::WriteComponent<Graph>(component, output_filename,
+                                                    colorer_ptr, labeler);
 }
 
 int main(int argc, char** argv) {
@@ -87,21 +121,51 @@ int main(int argc, char** argv) {
         gp, bins_of_interest, contigs_stream_ptr.get(), prop_annotation_in_fn);
 
     shared_ptr<SequenceMapper<Graph>> mapper(MapperInstance(gp));
+
+    std::size_t prop_binned_edge_cntr = 0;
     std::size_t prop_binned_edgelen_cntr = 0;
+
+    std::size_t unbinned_edge_cntr = 0;
     std::size_t unbinned_edgelen_cntr = 0;
-    for (EdgeId e : mapper->MapRead(genome).simple_path()) {
+
+    std::size_t total_edge_cntr = 0;
+    std::size_t total_edgelen_cntr = 0;
+
+    auto genome_graph_path = mapper->MapRead(genome).simple_path();
+
+    gp.EnsurePos();
+    for (EdgeId e : genome_graph_path) {
+        total_edge_cntr++;
+        total_edgelen_cntr += gp.g.length(e);
         if (edge_annotation.Annotation(e).empty() &&
             !prop_edge_annotation.Annotation(e).empty()) {
-            prop_binned_edgelen_cntr += gp.g.EdgeNucls(e).size();
+            prop_binned_edge_cntr++;
+            prop_binned_edgelen_cntr += gp.g.length(e);
         } else if (edge_annotation.Annotation(e).empty() &&
                    prop_edge_annotation.Annotation(e).empty()) {
             // Only check for prop_annotation is necessary
-            unbinned_edgelen_cntr += gp.g.EdgeNucls(e).size();
+            unbinned_edge_cntr++;
+            unbinned_edgelen_cntr += gp.g.length(e);
+            std::cout << "Edge id: " + std::to_string(e.int_id()) << std::endl;
+            std::string dot_export_path("/Users/idmit/edge");
+            dot_export_path += std::to_string(e.int_id()) + ".dot";
+            PrintColoredAnnotatedGraphAroundEdge(gp, e, prop_edge_annotation,
+                                                 dot_export_path);
         }
     }
 
-    std::cout << "Total length of unbinned sequnces: " << unbinned_edgelen_cntr
+    std::cout << "Total number of edges in genome alignment: "
+              << total_edge_cntr << std::endl;
+    std::cout << "Total length of edges in genome alignment: "
+              << total_edgelen_cntr << std::endl;
+
+    std::cout << "Total number of unbinned edges: " << unbinned_edge_cntr
               << std::endl;
-    std::cout << "Total length of sequences binned due to propagation: "
+    std::cout << "Total length of unbinned edges: " << unbinned_edgelen_cntr
+              << std::endl;
+
+    std::cout << "Total number of edges binned due to propagation: "
+              << prop_binned_edge_cntr << std::endl;
+    std::cout << "Total length of edges binned due to propagation: "
               << prop_binned_edgelen_cntr << std::endl;
 }

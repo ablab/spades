@@ -26,7 +26,8 @@ add_executable(read_binning
 target_link_libraries(read_binning input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
 add_executable(stats
-               stats.cpp)
+               stats.cpp
+               ../debruijn/genome_storage.cpp)
                
 target_link_libraries(stats input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})            
 

@@ -19,6 +19,7 @@
 #include "long_read_storage.hpp"
 #include "detail_coverage.hpp"
 #include "genome_storage.hpp"
+#include "positions.hpp"
 
 namespace debruijn_graph {
 
