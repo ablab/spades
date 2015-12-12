@@ -56,6 +56,9 @@ public:
 
 	virtual bool Check(T t) const = 0;
 
+    bool operator()(T t) const { return Check(t); }
+    
+
 	virtual ~Predicate() {
 	}
 };

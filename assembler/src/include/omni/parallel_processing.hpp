@@ -206,18 +206,18 @@ class SemiParallelEdgeRemovingAlgorithm {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     Graph& g_;
-    shared_ptr<func::Predicate<EdgeId>> condition_;
+    adt::TypedPredicate<EdgeId> condition_;
     EdgeRemover<Graph> edge_remover_;
 
 public:
     SemiParallelEdgeRemovingAlgorithm(Graph& g,
-                                      shared_ptr<func::Predicate<EdgeId>> condition,
+                                      adt::TypedPredicate<EdgeId> condition,
                                       std::function<void(EdgeId)> removal_handler = 0) :
             g_(g), condition_(condition), edge_remover_(g, removal_handler) {
     }
 
     bool IsOfInterest(EdgeId e) const {
-        return condition_->Check(e);
+        return condition_(e);
     }
 
     bool Process(EdgeId e) {
