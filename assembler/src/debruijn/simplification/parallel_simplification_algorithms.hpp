@@ -289,7 +289,7 @@ class ParallelLowCoverageFunctor {
 
     Graph& g_;
     typename Graph::HelperT helper_;
-    shared_ptr<func::Predicate<EdgeId>> ec_condition_;
+    adt::TypedPredicate<EdgeId> ec_condition_;
     HandlerF handler_f_;
 
     omnigraph::GraphElementMarker<EdgeId> edge_marker_;
@@ -313,17 +313,13 @@ public:
     ParallelLowCoverageFunctor(Graph& g, size_t max_length, double max_coverage, HandlerF handler_f = 0)
             : g_(g),
               helper_(g_.GetConstructionHelper()),
-              ec_condition_(
-                      func::And<EdgeId>(
-                              func::And<EdgeId>(make_shared<omnigraph::LengthUpperBound<Graph>>(g, max_length),
-                                                make_shared<omnigraph::CoverageUpperBound<Graph>>(g, max_coverage)),
-                              make_shared<omnigraph::AlternativesPresenceCondition<Graph>>(g))),
-              handler_f_(handler_f) {
-
-    }
+              ec_condition_(adt::And(adt::And(omnigraph::LengthUpperBound<Graph>(g, max_length),
+                                              omnigraph::CoverageUpperBound<Graph>(g, max_coverage)),
+                                     omnigraph::AlternativesPresenceCondition<Graph>(g))),
+                            handler_f_(handler_f) {}
 
     bool IsOfInterest(EdgeId e) const {
-        return !edge_marker_.is_marked(e) && ec_condition_->Check(e);
+        return !edge_marker_.is_marked(e) && ec_condition_(e);
     }
 
     void PrepareForProcessing(size_t /*interesting_cnt*/) {

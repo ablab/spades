@@ -75,10 +75,10 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     if (math::gr(low_threshold, 0.0)) {
         INFO("Removing all the edges having coverage " << low_threshold << " and less");
         omnigraph::EdgeRemovingAlgorithm<Graph> removing_algo(gp.g,
-                                                              std::make_shared<func::AlwaysTrue<EdgeId>>(), 0);
+                                                              adt::AlwaysTrue<EdgeId>(), 0);
 
         removing_algo.Run(CoverageComparator<Graph>(gp.g),
-                              std::make_shared<CoverageUpperBound<Graph>>(gp.g, low_threshold));
+                          CoverageUpperBound<Graph>(gp.g, low_threshold));
     }
 
     printer(ipp_final_simplified);
