@@ -59,7 +59,7 @@ public:
         }
 
         bool equal(const Iterator &other) const {
-            return iter_ == other.iter_ && conj_ == other.conj_;
+            return conj_ == other.conj_ && iter_ == other.iter_;
         }
 
         typename C::const_reference dereference() const {
@@ -93,7 +93,8 @@ public:
             conj_cont_(conj_cont) { }
 
     /**
-     * @brief Iteration always starts from the beginning of the straight half.
+     * @brief Iteration always starts from the beginning of the leftmost non-empty half.
+     *        If there is no such one, it essentially equals to `end`.
      */
     Iterator begin() const {
         auto conj = cont_.empty();
@@ -133,16 +134,6 @@ public:
 private:
     const Container &cont_, &conj_cont_;
 };
-
-/**
- * @brief An extension of conjugate proxy which can find min-max of its elements.
- *        For this, the container must be ordered.
- */
-/*template<typename T>
-class ConjOrdered : public ConjProxy {
-public:
-
-};*/
 
 }
 

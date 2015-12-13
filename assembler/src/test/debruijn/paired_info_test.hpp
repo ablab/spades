@@ -22,6 +22,7 @@ public:
     MockGraph() {
         std::pair<EdgeId, EdgeId> data[] = {{1,  2},
                                             {3,  4},
+                                            {5,  7},
                                             {8,  9},
                                             {13, 14}};
         for (const auto &pair : data) {
@@ -417,3 +418,4 @@ BOOST_AUTO_TEST_CASE(PairedInfoPairTraverse) {
 BOOST_AUTO_TEST_SUITE_END()
 
 }
+
