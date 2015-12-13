@@ -455,8 +455,8 @@ try:
         run_info.write("save contigs archive: " + str(args.contig_archive) + "\n");
     if args.contig_name:
         run_info.write("contig custom name: " + args.contig_name + "\n");
-    if args.contig_name:
-        run_info.write("spades config direrctory: " + args.contig_name + "\n");
+    if args.spades_cfg_dir:
+        run_info.write("spades config direrctory: " + args.spades_cfg_dir + "\n");
     if args.local_output_dir:
         run_info.write("local output dir: " + args.local_output_dir + "\n");
     run_info.close()
