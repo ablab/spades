@@ -128,10 +128,8 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
 
         for (auto point : index_.Get(e1, e2)) {
             int pairedDistance = rounded_d(point);
-            if (pairedDistance >= 0) {
-                dist.push_back(pairedDistance);
-                w.push_back(point.weight);
-            }
+            dist.push_back(pairedDistance);
+            w.push_back(point.weight);
         }
     }
 
@@ -164,7 +162,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
 
         for (auto point : index_.Get(e1, e2)) {
             int dist = rounded_d(point);
-            if (dist > 0 && dist >= dist_min && dist <= dist_max)
+            if (dist >= dist_min && dist <= dist_max)
                 weight += point.weight;
         }
         return weight;
