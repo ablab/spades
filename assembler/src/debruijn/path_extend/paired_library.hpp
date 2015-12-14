@@ -96,7 +96,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
           index_(index) {}
 
-    virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist, int max_dist, size_t min_len = 0) const {
+    size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist, int max_dist, size_t min_len = 0) const override {
         VERIFY(index_.size() > 0);
         result.clear();
 
@@ -121,7 +121,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
     }
 
 
-    virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const {
+    void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const override {
         VERIFY(index_.size() > 0);
         if (e1 == e2)
             return;
@@ -135,9 +135,9 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         }
     }
 
-    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int distance,
-                                   bool from_interval = false) const {
-        VERIFY(index_.size() > 0);
+    double CountPairedInfo(EdgeId e1, EdgeId e2, int distance,
+                           bool from_interval = false) const override {
+        VERIFY(index_.size() != 0);
         double weight = 0.0;
 
         for (auto point : index_.Get(e1, e2)) {
@@ -158,13 +158,13 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         return weight;
     }
 
-    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int dist_min, int dist_max) const {
-        VERIFY(index_.size() > 0);
+    double CountPairedInfo(EdgeId e1, EdgeId e2, int dist_min, int dist_max) const override {
+        VERIFY(index_.size() != 0);
         double weight = 0.0;
 
         for (auto point : index_.Get(e1, e2)) {
             int dist = rounded_d(point);
-            if (dist > 0 and (size_t)dist >= dist_min and (size_t)dist <= dist_max)
+            if (dist > 0 && dist >= dist_min && dist <= dist_max)
                 weight += point.weight;
         }
         return weight;

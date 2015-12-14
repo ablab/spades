@@ -102,7 +102,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
     return result;
   }
 
-  virtual const string Name() const {
+  const string Name() const override {
     static const string my_name = "WEIGHTED";
     return my_name;
   }

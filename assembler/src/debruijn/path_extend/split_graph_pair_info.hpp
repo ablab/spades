@@ -427,8 +427,8 @@ private:
     }
 
     void ProcessPairedRead(BasketsPairInfoIndex& basket_index,
-                           size_t r1_length,
-                           size_t r2_length,
+                           size_t /* r1_length */,
+                           size_t /* r2_length */,
                            const MappingPath<EdgeId>& path1,
                            const MappingPath<EdgeId>& path2,
                            size_t read_distance) {

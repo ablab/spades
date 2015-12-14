@@ -197,7 +197,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     }
   }
 
-  virtual const string Name() const {
+  const string Name() const override {
     static const string my_name = "EXTENSIVE";
     return my_name;
   }

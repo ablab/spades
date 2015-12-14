@@ -65,9 +65,9 @@ protected:
   typedef vector<PairInfo<EdgeId> > PairInfos;
   typedef vector<size_t> GraphLengths;
 
-  virtual EstimHist EstimateEdgePairDistances(EdgePair /*ep*/,
-                                              const InHistogram& /*raw_data*/,
-                                              const vector<size_t>& /*forward*/) const {
+  EstimHist EstimateEdgePairDistances(EdgePair /*ep*/,
+                                      const InHistogram& /*raw_data*/,
+                                      const vector<size_t>& /*forward*/) const override {
     VERIFY_MSG(false, "Sorry, the SMOOOOTHING estimator is not available anymore." <<
                "SPAdes is going to terminate");
 
@@ -206,7 +206,7 @@ private:
             this->graph().OutgoingEdgeCount(this->graph().EdgeStart(e2)) == 1);
   }
 
-  virtual const string Name() const {
+  const string Name() const override {
     static const string my_name = "SMOOTHING";
     return my_name;
   }
