@@ -212,7 +212,7 @@ void KMerCoverageModel::Fit() {
     ccov += cov_[i];
   }
 
-  if (abs(cov_[Valley_] - cov_[MaxCov_] < 3))
+  if (MaxCov_ - Valley_ < 3)
     WARN("Too much erroneous kmers, the estimates might be unreliable");
 
   std::vector<size_t> mvals(1 + MaxCov_ - Valley_);
