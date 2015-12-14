@@ -138,8 +138,8 @@ public:
             return true;
         }
         auto alternatives = this->g().OutgoingEdges(this->g().EdgeStart(e));
-        for (auto it = alternatives.begin(); it != alternatives.end(); ++it) {
-            if (e != *it && this->g().length(e) < this->g().length(*it) && Hamming(e, *it) <= max_diff_) {
+        for(auto it = alternatives.begin(); it != alternatives.end(); ++it) {
+            if(e != *it && this->g().length(e) < this->g().length(*it) && Hamming(e, *it) <= max_diff_) {
                 return true;
             }
         }
@@ -149,23 +149,27 @@ public:
 };
 
 template<class Graph>
-adt::TypedPredicate<typename Graph::EdgeId> AddTipCondition(const Graph& g,
-                                                            adt::TypedPredicate<typename Graph::EdgeId> condition) {
-    return adt::And(TipCondition<Graph>(g), condition);
+shared_ptr<func::Predicate<typename Graph::EdgeId>> AddTipCondition(const Graph& g,
+                                                                  shared_ptr<func::Predicate<typename Graph::EdgeId>> condition) {
+    return func::And<typename Graph::EdgeId>(
+            make_shared<TipCondition<Graph>>(g),
+            condition);
 }
 
 template<class Graph>
-bool ClipTips(Graph& g,
-              size_t max_length,
-              adt::TypedPredicate<typename Graph::EdgeId> condition = adt::AlwaysTrue<typename Graph::EdgeId>(),
-              std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+bool ClipTips(
+        Graph& g,
+        size_t max_length,
+        shared_ptr<Predicate<typename Graph::EdgeId>> condition
+            = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
+        std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 
     omnigraph::EdgeRemovingAlgorithm<Graph> tc(g,
                                                AddTipCondition(g, condition),
                                                removal_handler);
 
     return tc.Run(LengthComparator<Graph>(g),
-                  LengthUpperBound<Graph>(g, max_length));
+                      make_shared<LengthUpperBound<Graph>>(g, max_length));
 }
 
 } // namespace omnigraph

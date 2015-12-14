@@ -485,12 +485,12 @@ public:
         DEBUG("Filling edge buffer chunk size " << chunk_size_);
         perf_counter perf;
         VERIFY(buffer.empty());
-        auto proceed_condition = CoverageUpperBound<Graph>(g_, max_coverage_);
+        auto proceed_condition = make_shared<CoverageUpperBound<Graph>>(g_, max_coverage_);
 
         for (; !it.IsEnd(); ++it) {
             EdgeId e = *it;
             TRACE("Current edge " << g_.str(e));
-            if (!proceed_condition(e)) {
+            if (!proceed_condition->Check(e)) {
                 TRACE("Stop condition was reached.");
                 //need to release last element of the iterator to make it replacable by new elements
                 it.ReleaseCurrent();
@@ -597,7 +597,7 @@ public:
 
         DEBUG("Processing remaining interacting bulges " << interacting_edges.size());
         triggered |= usual_br_.RunFromIterator(interacting_edges,
-                                               CoverageUpperBound<Graph>(g_, max_coverage_));
+                              make_shared<CoverageUpperBound<Graph>>(g_, max_coverage_));
 
         DEBUG("Interacting edges processed in " << perf.time() << " seconds");
         return triggered;

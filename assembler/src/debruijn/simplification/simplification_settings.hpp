@@ -163,8 +163,8 @@ private:
         }
     }
 
-    adt::TypedPredicate<EdgeId> ParseCondition(size_t& min_length_bound,
-                                               double& min_coverage_bound) {
+    shared_ptr<Predicate<EdgeId>> ParseCondition(size_t& min_length_bound,
+                                                 double& min_coverage_bound) {
         if (next_token_ == "tc_lb") {
             double length_coeff = lexical_cast<double>(ReadNext());
 
@@ -175,7 +175,7 @@ private:
             DEBUG("Length bound" << length_bound);
 
             RelaxMin(min_length_bound, length_bound);
-            return LengthUpperBound<Graph>(g_, length_bound);
+            return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
         } else if (next_token_ == "to_ec_lb") {
             double length_coeff = lexical_cast<double>(ReadNext());
 
@@ -187,7 +187,7 @@ private:
             DEBUG("Length bound" << length_bound);
 
             RelaxMin(min_length_bound, length_bound);
-            return LengthUpperBound<Graph>(g_, length_bound);
+            return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
         } else if (next_token_ == "ec_lb") {
             size_t length_coeff = lexical_cast<size_t>(ReadNext());
 
@@ -197,52 +197,55 @@ private:
                         g_.k(), length_coeff);
 
             RelaxMin(min_length_bound, length_bound);
-            return LengthUpperBound<Graph>(g_, length_bound);
+            return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
         } else if (next_token_ == "lb") {
             size_t length_bound = lexical_cast<size_t>(ReadNext());
 
             DEBUG("Creating length bound. Value " << length_bound);
 
             RelaxMin(min_length_bound, length_bound);
-            return LengthUpperBound<Graph>(g_, length_bound);
+            return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
         } else if (next_token_ == "cb") {
             ReadNext();
             double cov_bound = GetCoverageBound();
             DEBUG("Creating coverage upper bound " << cov_bound);
             RelaxMin(min_coverage_bound, cov_bound);
-            return CoverageUpperBound<Graph>(g_, cov_bound);
+            return make_shared<CoverageUpperBound<Graph>>(g_, cov_bound);
         } else if (next_token_ == "icb") {
             ReadNext();
             double cov_bound = GetCoverageBound();
             cov_bound = cov_bound / (double) settings_.iteration_count() * (double) (settings_.iteration() + 1);
             DEBUG("Creating iterative coverage upper bound " << cov_bound);
             RelaxMin(min_coverage_bound, cov_bound);
-            return CoverageUpperBound<Graph>(g_, cov_bound);
+            return make_shared<CoverageUpperBound<Graph>>(g_, cov_bound);
         } else if (next_token_ == "rctc") {
             ReadNext();
             DEBUG("Creating relative cov tip cond " << next_token_);
-            return RelativeCoverageTipCondition<Graph>(g_, lexical_cast<double>(next_token_));
+            return make_shared<RelativeCoverageTipCondition<Graph>>(
+                g_, lexical_cast<double>(next_token_));
         } else if (next_token_ == "disabled") {
             DEBUG("Creating disabling condition");
-            return adt::AlwaysFalse<EdgeId>();
+            return make_shared<func::AlwaysFalse<EdgeId>>();
         } else if (next_token_ == "mmm") {
             ReadNext();
             DEBUG("Creating max mismatches cond " << next_token_);
-            return MismatchTipCondition<Graph>(g_, lexical_cast<size_t>(next_token_));
+            return make_shared < MismatchTipCondition<Graph>> (g_, lexical_cast < size_t > (next_token_));
         } else {
             VERIFY(false);
-            return adt::AlwaysTrue<EdgeId>();
+            return make_shared<func::AlwaysTrue<EdgeId>>();
         }
     }
 
-    adt::TypedPredicate<EdgeId> ParseConjunction(size_t& min_length_bound,
-                                                 double& min_coverage_bound) {
-        auto answer = adt::AlwaysTrue<EdgeId>();
+    shared_ptr<Predicate<EdgeId>> ParseConjunction(size_t& min_length_bound,
+                                                   double& min_coverage_bound) {
+        shared_ptr<Predicate<EdgeId>> answer =
+                make_shared<AlwaysTrue<EdgeId>>();
         VERIFY(next_token_ == "{");
         ReadNext();
         while (next_token_ != "}") {
-            answer = adt::And(answer,
-                              ParseCondition(min_length_bound, min_coverage_bound));
+            answer = make_shared<AndOperator<EdgeId>>(
+                answer,
+                ParseCondition(min_length_bound, min_coverage_bound));
             ReadNext();
         }
         return answer;
@@ -267,15 +270,17 @@ public:
         ReadNext();
     }
 
-    adt::TypedPredicate<EdgeId> operator()() {
+    shared_ptr<Predicate<EdgeId>> operator()() {
         DEBUG("Parsing");
-        auto answer = adt::AlwaysFalse<EdgeId>();
+        shared_ptr<Predicate<EdgeId>> answer = make_shared<NotOperator<EdgeId>>(
+            make_shared<AlwaysTrue<EdgeId>>());
         VERIFY_MSG(next_token_ == "{", "Expected \"{\", but next token was " << next_token_);
         while (next_token_ == "{") {
             size_t min_length_bound = numeric_limits<size_t>::max();
             double min_coverage_bound = numeric_limits<double>::max();
-            answer = adt::Or(answer,
-                             ParseConjunction(min_length_bound, min_coverage_bound));
+            answer = make_shared<OrOperator<EdgeId>>(
+                answer,
+                ParseConjunction(min_length_bound, min_coverage_bound));
             RelaxMax(max_length_bound_, min_length_bound);
             RelaxMax(max_coverage_bound_, min_coverage_bound);
             ReadNext();

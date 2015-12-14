@@ -8,8 +8,8 @@
 #pragma once
 
 #include "func.hpp"
-#include "adt/pred.hpp"
 #include "omni_utils.hpp"
+
 namespace omnigraph {
 
 using namespace func;
@@ -147,9 +147,10 @@ class PathLengthLowerBound : public EdgeCondition<Graph> {
 };
 
 template<class Graph, class PathFinder>
-PathLengthLowerBound<Graph, PathFinder>
+std::shared_ptr<PathLengthLowerBound<Graph, PathFinder> >
 MakePathLengthLowerBound(const Graph& g, const PathFinder& path_finder, size_t min_length) {
-    return PathLengthLowerBound<Graph, PathFinder>(g, path_finder, min_length);
+    return std::make_shared<PathLengthLowerBound<Graph, PathFinder>>(g, path_finder,
+                                                                min_length);
 }
 
 template<class Graph>
@@ -205,18 +206,18 @@ class PredicateUniquenessPlausabilityCondition :
         public UniquenessPlausabilityCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef adt::TypedPredicate<EdgeId> EdgePredicate;
+    typedef shared_ptr<Predicate<EdgeId>> EdgePredicate;
     typedef UniquenessPlausabilityCondition<Graph> base;
 
     EdgePredicate uniqueness_condition_;
     EdgePredicate plausiblity_condition_;
 
     bool CheckUniqueness(EdgeId e, bool) const {
-        return uniqueness_condition_(e);
+        return uniqueness_condition_->Check(e);
     }
 
     bool CheckPlausibility(EdgeId e, bool) const {
-        return plausiblity_condition_(e);
+        return plausiblity_condition_->Check(e);
     }
 
  public:
@@ -236,7 +237,7 @@ class DefaultUniquenessPlausabilityCondition :
         public PredicateUniquenessPlausabilityCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef adt::TypedPredicate<EdgeId> EdgePredicate;
+    typedef shared_ptr<Predicate<EdgeId>> EdgePredicate;
     typedef PredicateUniquenessPlausabilityCondition<Graph> base;
 
  public:
@@ -245,10 +246,13 @@ class DefaultUniquenessPlausabilityCondition :
                                            size_t uniqueness_length,
                                            size_t plausibility_length)
             : base(g,
-                   MakePathLengthLowerBound(g,
-                                            UniquePathFinder<Graph>(g), uniqueness_length),
-                   MakePathLengthLowerBound(g,
-                                            PlausiblePathFinder<Graph>(g, 2 * plausibility_length), plausibility_length)) {
+                   MakePathLengthLowerBound(g, UniquePathFinder<Graph>(g),
+                                            uniqueness_length),
+                   MakePathLengthLowerBound(
+                           g,
+                           PlausiblePathFinder<Graph>(g,
+                                                      2 * plausibility_length),
+                           plausibility_length)) {
     }
 
 };
