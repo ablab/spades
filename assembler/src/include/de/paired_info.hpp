@@ -376,7 +376,7 @@ public:
      */
     template<typename TH>
     void AddMany(EdgeId e1, EdgeId e2, const TH& hist) {
-        float offset = SwapConj(e1, e2) ? CalcOffset(e1, e2) : 0.0;
+        float offset = SwapConj(e1, e2) ? CalcOffset(e1, e2) : 0.0f;
         for (auto point : hist) {
             point.d += offset;
             InsertOrMerge(e1, e2, point);

@@ -410,9 +410,7 @@ class GapCloser {
 
             for (auto i : tips_paired_idx_.Get(first_edge)) {
                 EdgeId second_edge = i.first;
-                //std::array<float, 2> weights = {0.0f, 0.0f};
-                for (auto point : i.second) { //weights[math::ge(point.d, 0.0f)] += point.weight;
-                //for (auto weight : weights) {
+                for (auto point : i.second) {
                     if (first_edge != second_edge && math::ge(point.weight, weight_threshold_)) {
                         if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) || !g_.IsDeadStart(g_.EdgeStart(second_edge))) {
                             // WARN("Topologically wrong tips");

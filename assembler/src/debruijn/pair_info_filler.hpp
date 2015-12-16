@@ -87,8 +87,6 @@ private:
 
                 EdgePair ep{mapping_edge_1.first, mapping_edge_2.first};
 
-                if (ep > paired_index.ConjugatePair(ep))
-                    continue;
 
                 double weight = weight_f_(mapping_edge_1.second,
                                           mapping_edge_2.second);
@@ -111,8 +109,7 @@ private:
     omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index_;
     omnigraph::de::PairedInfoBuffersT<Graph> buffer_pi_;
 
-    DECL_LOGGER("LatePairedIndexFiller")
-    ;
+    DECL_LOGGER("LatePairedIndexFiller");
 };
 
 

@@ -427,14 +427,14 @@ private:
     }
 
     void ProcessPairedRead(BasketsPairInfoIndex& basket_index,
-                           size_t /* r1_length */,
-                           size_t /* r2_length */,
+                           size_t r1_length,
+                           size_t r2_length,
                            const MappingPath<EdgeId>& path1,
                            const MappingPath<EdgeId>& path2,
                            size_t read_distance) {
         InnerProcess(basket_index, path1, path2, read_distance);
-        //InnerProcess(basket_index, ConjugateMapping(gp_.g, path2, r2_length), 
-        //                ConjugateMapping(gp_.g, path1, r1_length), read_distance);
+        InnerProcess(basket_index, ConjugateMapping(gp_.g, path2, r2_length),
+                     ConjugateMapping(gp_.g, path1, r1_length), read_distance);
     }
 
     const conj_graph_pack& gp_;
