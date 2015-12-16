@@ -69,6 +69,7 @@ def log():
 
 @app.route("/login", methods=['GET'])
 def login():
+    session.permanent = True
     global shellders
     if "username" not in session:
         name = request.args.get("username")
