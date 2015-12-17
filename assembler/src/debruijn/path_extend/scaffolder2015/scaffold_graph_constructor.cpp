@@ -32,14 +32,18 @@ void BaseScaffoldGraphConstructor::ConstructFromSet(const set<EdgeId> edge_set,
 
 void BaseScaffoldGraphConstructor::ConstructFromConditions(vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                                                        bool use_terminal_vertices_only) {
+//TODO :: awful. It depends on ordering of connected conditions.
     for (auto condition : connection_conditions) {
-        ConstructFromSingleCondition(condition, use_terminal_vertices_only);
+        if (condition->GetLibIndex() == (size_t) -1)
+            ConstructFromSingleCondition(condition, true);
+        else
+            ConstructFromSingleCondition(condition, use_terminal_vertices_only);
     }
 }
 
 void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const shared_ptr<ConnectionCondition> condition,
                                                             bool use_terminal_vertices_only) {
-    for (auto v : graph_->vertices()) {
+    for (const auto& v : graph_->vertices()) {
         TRACE("Vertex " << graph_->int_id(v));
 
         if (use_terminal_vertices_only && graph_->OutgoingEdgeCount(v) > 0)

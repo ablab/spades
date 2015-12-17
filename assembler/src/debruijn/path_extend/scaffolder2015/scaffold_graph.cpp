@@ -120,10 +120,10 @@ void ScaffoldGraph::Print(ostream &os) const {
         os << "Vertex " << int_id(v) << " ~ " << int_id(conjugate(v))
             << ": len = " << assembly_graph_.length(v) << ", cov = " << assembly_graph_.coverage(v) << endl;
     }
-    for (auto e_iter = ebegin(); e_iter != eend(); ++e_iter) {
-        os << "Edge " << e_iter->getId() << " ~ " << conjugate(*e_iter).getId() <<
-            ": " << int_id(e_iter->getStart()) << " -> " << int_id(e_iter->getEnd()) <<
-            ", lib index = " << e_iter->getColor() << ", weight " << e_iter->getWeight() << endl;
+    for (auto e_iter = edges_.begin(); e_iter != edges_.end(); ++e_iter) {
+        os << "Edge " << e_iter->second.getId() << " ~ " << conjugate(e_iter->second).getId() <<
+            ": " << int_id(e_iter->second.getStart()) << " -> " << int_id(e_iter->second.getEnd()) <<
+            ", lib index = " << e_iter->second.getColor() << ", weight " << e_iter->second.getWeight() << endl;
     }
 }
 

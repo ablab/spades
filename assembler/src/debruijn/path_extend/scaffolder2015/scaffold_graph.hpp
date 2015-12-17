@@ -111,17 +111,18 @@ public:
             return iter_ == other.iter_;
         }
 
-        ScaffoldEdge dereference() const {
+        const ScaffoldEdge& dereference() const {
             return iter_->second;
         }
     };
 
+//TODO:: fix this. Seems that only ebegin and eend are broken.
 private:
-    const debruijn_graph::Graph &assembly_graph_;
+    EdgeStorage edges_;
 
     VertexStorage vertices_;
 
-    EdgeStorage edges_;
+    const debruijn_graph::Graph &assembly_graph_;
 
     //Map for storing conjugate scaffolding edges
     std::unordered_map<ScaffoldEdgeIdT, ScaffoldEdgeIdT> conjugate_;

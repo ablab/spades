@@ -28,7 +28,9 @@ void load(pe_config::ParamSetT::ScaffoldGraphParamsT& sg, boost::property_tree::
     using config_common::load;
     load(sg.construct,          pt, "construct"         );
     load(sg.output,             pt, "output"            );
-    load(sg.min_read_count,     pt, "min_read_count"    );
+    load(sg.always_add,         pt, "always_add"        );
+    load(sg.never_add,          pt, "never_add"         );
+    load(sg.relative_threshod,  pt, "relative_threshod" );
     load(sg.graph_connectivity, pt, "graph_connectivity");
     load(sg.max_path_length,    pt, "max_path_length"   );
 }

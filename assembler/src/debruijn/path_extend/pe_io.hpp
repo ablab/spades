@@ -239,7 +239,6 @@ public:
 };
 
 
-
 class PathInfoWriter {
 protected:
     DECL_LOGGER("PathExtendIO")

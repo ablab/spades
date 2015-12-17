@@ -36,7 +36,9 @@ PathScore GenomeConsistenceChecker::CountMisassemblies(const BidirectionalPath &
     size_t total_length = path.LengthAt(0);
 //TODO: constant;
     if (total_length > std::max(straight.mapped_length, reverse.mapped_length) * 2) {
-        DEBUG("mapped less than half of the path, skipping");
+        if (total_length > 10000) {
+            INFO ("For path length " << total_length <<" mapped less than half of the path, skipping");
+        }
         return PathScore(0,0,0);
     } else {
         if (straight.mapped_length > reverse.mapped_length) {

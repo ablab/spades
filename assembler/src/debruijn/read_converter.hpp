@@ -79,7 +79,7 @@ private:
 
         INFO("Converting reads to binary format (takes a while)");
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
-            if (cfg::get().bwa.enabled && dataset[i].is_bwa_alignable()) {
+            if (cfg::get().bwa.bwa_enable && dataset[i].is_bwa_alignable()) {
                 INFO("Library #" << i << " will be used by BWA only and thus will not be converted");
                 continue;
             }

@@ -67,13 +67,14 @@ ExtensionChooser::EdgeContainer ExtensionChooser2015::Filter(const Bidirectional
     result = FindNextUniqueEdge(last_unique.first);
 //Backward check. We connected edges iff they are best continuation to each other.
     if (result.size() == 1) {
+        //We should reduce gap size with length of the edges that came after last unique.
+        result[0].d_ -= int (path.LengthAt(last_unique.second) - g_.length(last_unique.first));
+
         DEBUG("For edge " << g_.int_id(last_unique.first) << " unique next edge "<< result[0].e_ <<" found, doing backwards check ");
         EdgeContainer backwards_check = FindNextUniqueEdge(g_.conjugate(result[0].e_));
         if ((backwards_check.size() != 1) || (g_.conjugate(backwards_check[0].e_) != last_unique.first)) {
             result.clear();
         }
-//We should reduce gap size with length of the edges that came after last unique.
-        result[0].d_ -= int (path.LengthAt(last_unique.second) - g_.length(last_unique.first));
     }
     return result;
 }

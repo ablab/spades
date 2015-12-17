@@ -127,7 +127,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
             return;
 
         for (auto point : index_.Get(e1, e2)) {
-            int pairedDistance = rounded_d(point);
+            int pairedDistance = de::rounded_d(point);
             dist.push_back(pairedDistance);
             w.push_back(point.weight);
         }
@@ -139,7 +139,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         double weight = 0.0;
 
         for (auto point : index_.Get(e1, e2)) {
-            int pairedDistance = rounded_d(point);
+            int pairedDistance = de::rounded_d(point);
             int distanceDev = (int) point.variance();  //max((int) pointIter->var, (int) is_variation_);
             //Can be modified according to distance comparison
             int d_min = distance - distanceDev;
@@ -159,9 +159,8 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
     double CountPairedInfo(EdgeId e1, EdgeId e2, int dist_min, int dist_max) const override {
         VERIFY(index_.size() != 0);
         double weight = 0.0;
-
-        for (auto point : index_.Get(e1, e2)) {
-            int dist = rounded_d(point);
+        for (const auto &point : index_.Get(e1, e2)) {
+            int dist = de::rounded_d(point);
             if (dist >= dist_min && dist <= dist_max)
                 weight += point.weight;
         }

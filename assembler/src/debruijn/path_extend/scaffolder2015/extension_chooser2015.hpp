@@ -34,7 +34,7 @@ public:
             ScaffoldingExtensionChooser(g, wc, is_scatter_coeff), unique_edges_(unique_edges), relative_weight_threshold_(relative_threshold), paired_connection_condition_(g,
             wc->get_libptr(), lib_index,
 //TODO: constants are subject to reconsider
-            0), graph_connection_condition_(g, 2*unique_edges_->GetMinLength()), absolute_weight_threshold_(2), graph_connection_bonus_(2) {
+            0), graph_connection_condition_(g, 2*unique_edges_->GetMinLength(), unique_edges), absolute_weight_threshold_(2), graph_connection_bonus_(2) {
         INFO("ExtensionChooser2015 created");
     }
 /* @param edges are really not used and left for compatibility

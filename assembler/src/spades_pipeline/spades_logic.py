@@ -61,6 +61,10 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
         else:
             subst_dict["coverage_threshold"] = cfg.cov_cutoff
 
+    #TODO: make something about spades.py and config param substitution 
+    if "bwa_paired" in cfg.__dict__:
+        subst_dict["bwa_enable"] = bool_to_str(True)
+
     subst_dict["path_to_bwa"] =  os.path.join(execution_home, "bwa-spades")
     process_cfg.substitute_params(filename, subst_dict, log)
 
@@ -157,6 +161,10 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     if "read_buffer_size" in cfg.__dict__:
         construction_cfg_file_name = os.path.join(dst_configs, "construction.info")
         process_cfg.substitute_params(construction_cfg_file_name, {"read_buffer_size": cfg.read_buffer_size}, log)
+    if "scaffolding_mode" in cfg.__dict__:
+        construction_cfg_file_name = os.path.join(dst_configs, "path_extend/pe_params.info")
+        process_cfg.substitute_params(construction_cfg_file_name, {"scaffolding_mode": cfg.scaffolding_mode}, log)
+
     prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home)
 
     command = [os.path.join(execution_home, "spades"), cfg_file_name]

@@ -172,7 +172,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         const auto& lib = cfg::get().ds.reads[i];
 
-        if (cfg::get().bwa.enabled && lib.is_bwa_alignable()) {
+        if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
             //Run insert size estimation and pair index filler together to save disc space (removes SAM file right after processing the lib)
             bwa_counter.ProcessLib(i, cfg::get_writable().ds.reads[i], gp.paired_indices[i],
                                    edge_length_threshold, cfg::get().bwa.min_contig_len);
@@ -220,7 +220,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
             INFO("Mapping contigs library #" << i);
             ProcessSingleReads(gp, i, false);
 		}
-        else if (cfg::get().bwa.enabled && lib.is_bwa_alignable()) {
+        else if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
             INFO("Library #" << i << " was mapped by BWA, skipping");
             continue;
         }

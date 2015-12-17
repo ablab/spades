@@ -92,6 +92,8 @@ def print_used_values(cfg, log):
             log.info("  Single-cell mode")
         elif cfg["dataset"].meta:
             log.info("  Metagenomic mode")
+        elif cfg["dataset"].large_genome:
+            log.info("  Large genome mode")
         elif cfg["dataset"].truseq:
             log.info(" Illumina TruSeq mode")
         else:
@@ -219,6 +221,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.single_cell = True
         elif opt == "--meta":
             options_storage.meta = True
+        elif opt == "--large-genome":
+            options_storage.large_genome = True
         elif opt == "--iontorrent":
             options_storage.iontorrent = True
         elif opt == "--disable-gzip-output":
@@ -389,6 +393,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     cfg["dataset"].__dict__["single_cell"] = options_storage.single_cell
     cfg["dataset"].__dict__["iontorrent"] = options_storage.iontorrent
     cfg["dataset"].__dict__["meta"] = options_storage.meta
+    cfg["dataset"].__dict__["large_genome"] = options_storage.large_genome
     cfg["dataset"].__dict__["yaml_filename"] = options_storage.dataset_yaml_filename
     cfg["dataset"].__dict__["truseq"] = options_storage.truseq_mode
     if options_storage.developer_mode and options_storage.reference:
@@ -404,7 +409,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if options_storage.bh_heap_check:
             cfg["error_correction"].__dict__["heap_check"] = options_storage.bh_heap_check
         cfg["error_correction"].__dict__["iontorrent"] = options_storage.iontorrent
-        if options_storage.meta:
+        if options_storage.meta or options_storage.large_genome:
             cfg["error_correction"].__dict__["count_filter_singletons"] = 1
 
     # assembly
@@ -424,7 +429,9 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if options_storage.read_buffer_size:
             cfg["assembly"].__dict__["read_buffer_size"] = options_storage.read_buffer_size
         cfg["assembly"].__dict__["correct_scaffolds"] = options_storage.correct_scaffolds
-
+        if options_storage.large_genome:
+            cfg["assembly"].__dict__["bwa_paired"] = True
+            cfg["assembly"].__dict__["scaffolding_mode"] = "old_pe_2015"
     #corrector can work only if contigs exist (not only error correction)
     if (not options_storage.only_error_correction) and options_storage.mismatch_corrector:
         cfg["mismatch_corrector"] = empty_config()
@@ -729,6 +736,7 @@ def main(args):
                     import process_cfg
                     dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
                     dataset_file.write("meta" + '\t' + process_cfg.bool_to_str(cfg["dataset"].meta) + '\n')
+                    dataset_file.write("large_genome" + '\t' + process_cfg.bool_to_str(cfg["dataset"].large_genome) + '\n')
                     dataset_file.write("moleculo" + '\t' + process_cfg.bool_to_str(cfg["dataset"].truseq) + '\n')
                     if os.path.isfile(corrected_dataset_yaml_filename):
                         dataset_file.write("reads" + '\t' + process_cfg.process_spaces(corrected_dataset_yaml_filename) + '\n')

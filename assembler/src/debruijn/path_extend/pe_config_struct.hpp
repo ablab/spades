@@ -41,7 +41,7 @@ enum scaffolding_mode {
 };
 
 inline bool is_2015_scaffolder_enabled(const scaffolding_mode mode) {
-    return (mode != sm_old);
+    return (mode == sm_old_pe_2015 || mode == sm_2015 || mode == sm_combined);
 }
 
 // struct for path extend subproject's configuration file
@@ -199,7 +199,9 @@ struct pe_config {
       struct ScaffoldGraphParamsT {
           bool construct;
           bool output;
-          size_t min_read_count;
+          size_t always_add;
+          size_t never_add;
+          double relative_threshod;
           bool graph_connectivity;
           size_t max_path_length;
       } scaffold_graph_params;
