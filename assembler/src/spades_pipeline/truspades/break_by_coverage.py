@@ -144,7 +144,7 @@ class PatternBreaker:
             l1 = 0
         if l2 == -1:
             l2 = 0
-        l = max(l1, l2) + len(self.pattern)
+        l = max(l1, l2)
         if l > len(seq) - self.max_cut:
             return l
         else:
