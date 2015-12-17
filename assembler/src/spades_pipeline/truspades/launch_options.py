@@ -31,7 +31,7 @@ class Options:
         if len(argv) == 1:
             print_usage_and_exit(1, version)
         long_params = "test help-hidden construct-dataset reference= reference-index= do= continue " \
-                      "threads= help version dataset= input-dir= additional-options".split(" ")
+                      "threads= help version dataset= input-dir= additional-options=".split(" ")
         short_params = "o:t:hv"
         self.set_default_options()
         self.bin = bin
