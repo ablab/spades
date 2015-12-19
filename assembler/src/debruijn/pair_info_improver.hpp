@@ -233,7 +233,10 @@ class PairInfoImprover {
                     EdgeId e1 = I.first();
                     EdgeId e2 = I.second();
                     for (auto p : *I)
-                        cnt += TryToAddPairInfo(index_, e1, e2, p);
+                        //Same info can income both from straight and conjugate edge pairs in any order
+                        //and we save only the first, so we need do normalization to make saves stable
+                        if (math::ge(p.d, 0.0f))
+                            cnt += TryToAddPairInfo(index_, e1, e2, p);
                 }
             }
 
