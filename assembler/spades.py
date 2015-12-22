@@ -406,6 +406,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
 
     # assembly
     if not options_storage.only_error_correction:
+        if options_storage.k_mers == 'auto' and options_storage.restart_from is None:
+            options_storage.k_mers = None
         if options_storage.k_mers:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
         else:
