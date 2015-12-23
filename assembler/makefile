@@ -63,9 +63,6 @@ dts:
 dt:
 	$(MAKE) ddt
 	$(MAKE) dit
-clean:
-	$(MAKE) -C build/debug/cclean
-	$(MAKE) -C build/release/cclean
 
 all:
 	$(MAKE) -C build/release all

@@ -122,7 +122,7 @@ public:
         edge_annotation.Fill(contigs, annotation_in);
         //FIXME magic constants
         size_t iteration_cnt = 2;
-        ConnectingPathPropagator edge_propagator(gp_, 5000);
+        ConnectingPathPropagator edge_propagator(gp_, 6000);
 
         auto annotation_ptr = make_shared<EdgeAnnotation>(edge_annotation);
         for (size_t i = 0; i < iteration_cnt; ++i) {
@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
                 "<init binning info> <final binning info> (<bins of interest>)*"  << endl;
         exit(1);
     }
-    TmpFolderFixture fixture("tmp");
+    //TmpFolderFixture fixture("tmp");
     create_console_logger();
     size_t k = lexical_cast<size_t>(argv[1]);
     string saves_path = argv[2];

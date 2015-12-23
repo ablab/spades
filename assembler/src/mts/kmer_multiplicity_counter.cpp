@@ -9,9 +9,11 @@
 #include <io/mmapped_reader.hpp>
 #include <libcxx/sort.hpp>
 #include "kmc_api/kmc_file.h"
+#include "omp.h"
 #include <runtime_k.hpp>
 #include <boost/optional/optional.hpp>
 #include <boost/lexical_cast.hpp>
+#include "path_helper.hpp"
 
 using std::string;
 using std::vector;
@@ -60,12 +62,15 @@ void SortKmersCountFile(const string& filename, const size_t k) {
 
 string CountSample(const string& filename, size_t min_mult, size_t k) {
     stringstream cmd;
-    cmd << "kmc -k" << k << " -ci" << min_mult << " @" << filename << " " << filename << KMC_EXTENSION << " .";
+    std::string tmp_dir = filename + "_tmp";
+    path::make_dir(tmp_dir);
+    cmd << "kmc -k" << k << " -t8 -ci" << min_mult << " @" << filename << " " << filename << KMC_EXTENSION << " " << tmp_dir;
     system(cmd.str().c_str());
     ParseKmc(filename, k);
     system(("rm -f " + filename + KMC_EXTENSION + "*").c_str());
     SortKmersCountFile(filename, k);
     system(("rm -f " + filename + KMER_PARSED_EXTENSION).c_str());
+    system(("rm -rf " + tmp_dir).c_str());
     return filename + KMER_SORTED_EXTENSION;
 }
 
@@ -168,7 +173,7 @@ int main(int argc, char *argv[]) {
         }
         i += 2;
     }
-    if (argc - i < 3 || (argc - i - 1) % 2 != 0
+    if (i > argc 
         || min_mult == -1ul
         || min_sample_count == -1ul
         || k == -1ul
@@ -182,9 +187,11 @@ int main(int argc, char *argv[]) {
         input_files.push_back(argv[i]);
     }
 
-    vector<string> kmer_cnt_files;
-    for (const auto& file : input_files) {
-        kmer_cnt_files.push_back(CountSample(file, min_mult, k));
+    vector<string> kmer_cnt_files(input_files.size());
+    #pragma omp parallel for num_threads(4)
+    for (size_t i = 0; i < input_files.size(); i++) {
+        std::cout << "Processing " << input_files[i] << std::endl;
+        kmer_cnt_files[i] = CountSample(input_files[i], min_mult, k);
     }
 
     FilterKmers(kmer_cnt_files, min_sample_count, k, output);

@@ -13,6 +13,8 @@ add_executable(kmer_multiplicity_counter
         kmc_api/mmer.cpp
         kmer_multiplicity_counter.cpp)
 
+target_link_libraries(kmer_multiplicity_counter input ${COMMON_LIBRARIES})
+
 add_executable(annotation_propagator
                propagate.cpp)
 

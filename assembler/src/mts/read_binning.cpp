@@ -83,8 +83,8 @@ public:
             string out_dir = output_root + "/" + ToString(bin) + "/";
             path::make_dirs(out_dir);
             out_streams_.insert(make_pair(bin,
-                                          make_shared<io::OPairedReadStream>(out_dir + sample_name + "_1.fasta",
-                                                                                      out_dir + sample_name + "_2.fasta")));
+                                          make_shared<io::OPairedReadStream>(out_dir + sample_name + "_1.fastq",
+                                                                                      out_dir + sample_name + "_2.fastq")));
         }
     }
 
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    TmpFolderFixture fixture("tmp");
+    //TmpFolderFixture fixture("tmp");
     create_console_logger();
     size_t k = lexical_cast<size_t>(argv[1]);
     string saves_path = argv[2];

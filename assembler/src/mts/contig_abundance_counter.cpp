@@ -195,7 +195,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    TmpFolderFixture fixture("tmp");
+    //TmpFolderFixture fixture("tmp");
     create_console_logger();
     size_t k = boost::lexical_cast<size_t>(argv[1]);
     std::string saves_path = argv[2];
