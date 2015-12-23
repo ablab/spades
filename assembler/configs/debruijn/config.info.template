@@ -166,4 +166,4 @@ sc_cor
 }
 
 ;flanking coverage range
-flanking_range 50
+flanking_range 30

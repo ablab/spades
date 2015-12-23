@@ -687,6 +687,77 @@ AlgoPtr<Graph> ParallelBRInstance(Graph& g,
             /*track_changes*/true);
 }
 
+//todo make this all work for start of the edges also? switch to canonical iteration?
+//todo rename, since checking topology also
+template<class Graph>
+class FlankingCovBound : public EdgeCondition<Graph> {
+    typedef EdgeCondition<Graph> base;
+    typedef typename Graph::EdgeId EdgeId;
+    const FlankingCoverage<Graph>& flanking_cov_;
+    double max_coverage_;
+public:
+    FlankingCovBound(const Graph& g,
+                     const FlankingCoverage<Graph>& flanking_cov,
+                     double max_coverage)
+        : base(g),
+          flanking_cov_(flanking_cov),
+          max_coverage_(max_coverage) {
+    }
+
+    bool Check(EdgeId e) const override {
+        return this->g().length(e) > 1 
+                    && this->g().IncomingEdgeCount(this->g().EdgeEnd(e)) > 1 
+                    && math::le(flanking_cov_.CoverageOfEnd(e), max_coverage_);
+    }
+
+};
+
+template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
+class ParallelDisconnectionAlgorithm : public PersistentProcessingAlgorithm<Graph,
+                                                typename Graph::EdgeId,
+                                                ParallelInterestingElementFinder<Graph>, Comparator> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef PersistentProcessingAlgorithm<Graph, EdgeId,
+            ParallelInterestingElementFinder<Graph>, Comparator> base;
+    std::shared_ptr<func::Predicate<EdgeId>> condition_;
+    omnigraph::simplification::relative_coverage::EdgeDisconnector<Graph> disconnector_;
+
+public:
+    ParallelDisconnectionAlgorithm(Graph& g,
+                                    std::shared_ptr<func::Predicate<EdgeId>> condition,
+                                    size_t chunk_cnt,
+                                    HandlerF<Graph> removal_handler,
+                                    const Comparator& comp = Comparator(),
+                                    bool track_changes = true)
+            : base(g,
+                   ParallelInterestingElementFinder<Graph>(g, condition, chunk_cnt),
+                           /*canonical_only*/false, comp, track_changes),
+                   condition_(condition),
+                   disconnector_(g, removal_handler) {
+    }
+
+    bool Process(EdgeId e) override {
+        if (condition_->Check(e)) {
+            disconnector_(e);
+            return true;
+        }
+        return false;
+    }
+
+};
+
+template<class Graph>
+AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph& g,
+                                           const FlankingCoverage<Graph>& flanking_cov,
+                                           double cov_bound,
+                                           const SimplifInfoContainer& info,
+                                           HandlerF<Graph> removal_handler) {
+    return make_shared<ParallelDisconnectionAlgorithm<Graph>>(g,
+                                                        make_shared<FlankingCovBound<Graph>>(g, flanking_cov, cov_bound),
+                                                        info.chunk_cnt(),
+                                                        removal_handler);
+}
+
 ////todo add chunk_cnt
 //template<class Graph>
 //bool ClipTips(

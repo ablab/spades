@@ -116,6 +116,13 @@ class GraphSimplifier {
                               removal_handler_),
                     "Initial ec remover",
                     algos);
+
+            PushValid(
+                    LowFlankDisconnectorInstance(g_, gp_.flanking_cov,
+                                                 0.9, info_container_,
+                                                 removal_handler_),
+                    "Disconnecting edges with low flanking coverage",
+                    algos);
         }
 
         RunAlgos(algos);
