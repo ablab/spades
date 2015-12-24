@@ -205,18 +205,18 @@ BOOST_AUTO_TEST_CASE(PairedInfoRawAccess) {
     auto proxy1 = pi.RawGet(1);
     BOOST_CHECK_EQUAL(proxy1[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy1[3].Unwrap(), test1);
-    RawHistogram test2;
-    test2.insert({-2, 1});
-    test2.insert({-3, 2});
     auto proxy3 = pi.RawGet(3);
     BOOST_CHECK_EQUAL(proxy3[7].Unwrap(), test0);
-    BOOST_CHECK_EQUAL(proxy3[1].Unwrap(), test2);
+    BOOST_CHECK_EQUAL(proxy3[1].Unwrap(), test0);
     auto proxy2 = pi.RawGet(2);
     BOOST_CHECK_EQUAL(proxy2[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy2[4].Unwrap(), test0);
+    RawHistogram test4;
+    test4.insert({4, 2});
+    test4.insert({5, 1});
     auto proxy4 = pi.RawGet(4);
     BOOST_CHECK_EQUAL(proxy4[1].Unwrap(), test0);
-    BOOST_CHECK_EQUAL(proxy4[2].Unwrap(), test0);
+    BOOST_CHECK_EQUAL(proxy4[2].Unwrap(), test4);
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoRemove) {

@@ -77,7 +77,7 @@ public:
 
             Point dereference() const {
                 Point result = *iter_;
-                if (full && iter_.Conj())
+                if (iter_.Conj())
                     result.d += offset_;
                 return result;
             }
@@ -111,6 +111,9 @@ public:
             return res;
         }
 
+        /**
+         * @brief Returns a wrapper for an ordinary histogram (for implicit conversions)
+         */
         HistProxy(const Histogram& hist, float offset = 0)
                 : hist_(hist, HistProxy::empty_hist())
                 , offset_(offset)
@@ -121,8 +124,9 @@ public:
         }
 
         Iterator end() const {
-            auto i = full ? hist_.end() : hist_.conj_begin();
-            return Iterator(i, offset_);
+            //auto i = full ? hist_.end() : hist_.conj_begin();
+            //return Iterator(i, offset_);
+            return Iterator(hist_.end(), offset_);
         }
 
         /**
@@ -299,9 +303,18 @@ public:
 
         HistProxy<full> operator[](EdgeId e2) const {
             //TODO: optimize
-            const auto& hist = index_.GetImpl(edge_, e2);
-            const auto& conj_hist = full ? index_.GetImpl(index_.ConjugatePair(edge_, e2)) : HistProxy<full>::empty_hist();
-            return HistProxy<full>(hist, conj_hist, index_.CalcOffset(edge_, e2));
+            EdgeId e1 = edge_;
+            auto offset = index_.CalcOffset(e1, e2);
+            if (full) {
+                const auto& hist = index_.GetImpl(edge_, e2);
+                const auto& conj_hist = index_.GetImpl(index_.ConjugatePair(edge_, e2));
+                return HistProxy<full>(hist, conj_hist, offset);
+            } else {
+                if (index_.SwapConj(e1, e2))
+                    return HistProxy<full>(HistProxy<full>::empty_hist(), index_.GetImpl(e1, e2), offset);
+                else
+                    return HistProxy<full>(index_.GetImpl(e1, e2));
+            }
         }
 
         inline bool empty() const {
@@ -313,6 +326,14 @@ public:
         const ConjProxy<InnerMap> map_;
         EdgeId edge_;
     };
+
+    /*template<> HistProxy<true> EdgeProxy<true>::operator[](EdgeId e2) const {
+        return index_.Get(edge_, e2);
+    }
+
+    template<> HistProxy<false> EdgeProxy<false>::operator[](EdgeId e2) const {
+        return index_.RawGet(edge_, e2);
+    }*/
 
     typedef typename EdgeProxy<true>::Iterator EdgeIterator;
     typedef typename EdgeProxy<false>::Iterator RawEdgeIterator;
@@ -584,21 +605,21 @@ public:
     /**
      * @brief Underlying raw implementation data (for custom iterator helpers).
      */
-    inline ImplIterator data_begin() const {
+    ImplIterator data_begin() const {
         return storage_.begin();
     }
 
     /**
      * @brief Underlying raw implementation data (for custom iterator helpers).
      */
-    inline ImplIterator data_end() const {
+    ImplIterator data_end() const {
         return storage_.end();
     }
 
     /**
      * @brief Returns a full proxy map to the neighbourhood of some edge.
      */
-    inline EdgeProxy<> Get(EdgeId id) const {
+    EdgeProxy<> Get(EdgeId id) const {
         return EdgeProxy<>(*this, GetImpl(id), GetImpl(graph_.conjugate(id)), id);
     }
 
@@ -607,14 +628,14 @@ public:
      * @detail You should use it when you don't care for backward
      *         and conjugate info, or don't want to process them twice.
      */
-    inline EdgeProxy<false> RawGet(EdgeId id) const {
+    EdgeProxy<false> RawGet(EdgeId id) const {
         return EdgeProxy<false>(*this, GetImpl(id), empty_map_, id);
     }
 
     /**
      * @brief Operator alias of Get(id).
      */
-    inline EdgeProxy<> operator[](EdgeId id) const {
+    EdgeProxy<> operator[](EdgeId id) const {
         return Get(id);
     }
 
@@ -663,8 +684,10 @@ public:
      * @brief Returns a raw histogram proxy for only straight points between two edges.
      */
     HistProxy<false> RawGet(EdgeId e1, EdgeId e2) const {
-        SwapConj(e1, e2);
-        return HistProxy<false>(GetImpl(e1, e2), HistProxy<false>::empty_hist(), 0);
+        if (SwapConj(e1, e2))
+            return HistProxy<false>(HistProxy<false>::empty_hist(), GetImpl(e1, e2), CalcOffset(e1, e2));
+        else
+            return HistProxy<false>(GetImpl(e1, e2), HistProxy<false>::empty_hist(), 0);
     }
 
     /**
