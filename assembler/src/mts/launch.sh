@@ -55,7 +55,7 @@ function assemble {
     else
         #TODO longer k sequence?
         $SPADES_PATH/spades.py --meta -t $3 -1 $1/left.fastq -2 $1/right.fastq -o ${2}_assembly
-        cp $assembly_dir/scaffolds.fasta $contigs
+        cp ${2}_assembly/scaffolds.fasta $contigs
         touch $out_dir/recount.tmp
     fi
 }
@@ -177,3 +177,4 @@ else
 fi
 
 rm -rf tmp
+rm -rf $out_dir/recount*
