@@ -34,8 +34,8 @@ void assemble_genome() {
     INFO("Two-step RR enabled: " << two_step_rr);
 
     StageManager SPAdes({cfg::get().developer_mode,
-                          cfg::get().load_from,
-                          cfg::get().output_saves});
+                         cfg::get().load_from,
+                         cfg::get().output_saves});
 
     size_t read_index_cnt = cfg::get().ds.reads.lib_count();
     if (two_step_rr)
@@ -54,8 +54,8 @@ void assemble_genome() {
         conj_gp.kmer_mapper.Attach();
     }
     // Build the pipeline
-    SPAdes.add(new debruijn_graph::Construction());
-    SPAdes.add(new debruijn_graph::GenomicInfoFiller());
+    SPAdes.add(new debruijn_graph::Construction())
+          .add(new debruijn_graph::GenomicInfoFiller());
     if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
         SPAdes.add(new debruijn_graph::GapClosing("early_gapcloser"));
 
@@ -70,11 +70,11 @@ void assemble_genome() {
         SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().rr_enable) {
         if (two_step_rr) {
-            SPAdes.add(new debruijn_graph::PairInfoCount(true));
-            SPAdes.add(new debruijn_graph::DistanceEstimation(true));
-            SPAdes.add(new debruijn_graph::RepeatResolution(true));
-            SPAdes.add(new debruijn_graph::SecondPhaseSetup());
-            SPAdes.add(new debruijn_graph::Simplification());
+            SPAdes.add(new debruijn_graph::PairInfoCount(true))
+                  .add(new debruijn_graph::DistanceEstimation(true))
+                  .add(new debruijn_graph::RepeatResolution(true))
+                  .add(new debruijn_graph::SecondPhaseSetup())
+                  .add(new debruijn_graph::Simplification());
         }
 
         //begin pacbio
@@ -92,9 +92,9 @@ void assemble_genome() {
         }
         //end pacbio
 
-        SPAdes.add(new debruijn_graph::PairInfoCount());
-        SPAdes.add(new debruijn_graph::DistanceEstimation());
-        SPAdes.add(new debruijn_graph::RepeatResolution());
+        SPAdes.add(new debruijn_graph::PairInfoCount())
+              .add(new debruijn_graph::DistanceEstimation())
+              .add(new debruijn_graph::RepeatResolution());
     } else {
         SPAdes.add(new debruijn_graph::ContigOutput());
     }
