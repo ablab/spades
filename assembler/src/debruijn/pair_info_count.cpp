@@ -22,10 +22,11 @@
 #include "pair_info_filler.hpp"
 #include "stats/debruijn_stats.hpp"
 #include "path_extend/split_graph_pair_info.hpp"
+#include "bwa_pair_info_filler.hpp"
 
 namespace debruijn_graph {
-    typedef io::SequencingLibrary<debruijn_config::DataSetData> SequencingLib;
 
+typedef io::SequencingLibrary<debruijn_config::DataSetData> SequencingLib;
 
 bool RefineInsertSizeForLib(conj_graph_pack& gp, size_t ilib, size_t edge_length_threshold) {
 
@@ -103,7 +104,7 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads)
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[ilib]);
     notifier.Subscribe(ilib, &pif);
 
-    auto paired_streams = paired_binary_readers(reads, true, (size_t) reads.data().mean_insert_size);
+    auto paired_streams = paired_binary_readers(reads, false, (size_t) reads.data().mean_insert_size);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
     cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
 
@@ -163,14 +164,24 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     //fixme implement better universal logic 
     size_t edge_length_threshold = cfg::get().ds.meta ? 1000 : stats::Nx(gp.g, 50);
     INFO("Min edge length for estimation: " << edge_length_threshold);
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        INFO("Estimating insert size for library #" << i);
-        const auto& lib = cfg::get().ds.reads[i];
-        const auto& lib_data = lib.data();
-        size_t rl = lib_data.read_length;
-        size_t k = cfg::get().K;
-        if (lib.is_paired()) {
+    bwa_pair_info::BWAPairInfoFiller bwa_counter(gp.g,
+                                                 cfg::get().bwa.path_to_bwa,
+                                                 path::append_path(cfg::get().output_dir, "bwa_count"),
+                                                 cfg::get().max_threads, !cfg::get().bwa.debug);
 
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        const auto& lib = cfg::get().ds.reads[i];
+
+        if (cfg::get().bwa.enabled && lib.is_bwa_alignable()) {
+            //Run insert size estimation and pair index filler together to save disc space (removes SAM file right after processing the lib)
+            bwa_counter.ProcessLib(i, cfg::get_writable().ds.reads[i], gp.paired_indices[i],
+                                   edge_length_threshold, cfg::get().bwa.min_contig_len);
+        }
+        else if (lib.is_paired()) {
+            INFO("Estimating insert size for library #" << i);
+            const auto& lib_data = lib.data();
+            size_t rl = lib_data.read_length;
+            size_t k = cfg::get().K;
             bool insert_size_refined = RefineInsertSizeForLib(gp, i, edge_length_threshold);
 
             if (!insert_size_refined) {
@@ -185,7 +196,6 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
                 }
                 continue;
             } else {
-                INFO("  Estimated insert size for paired library #" << i);
                 INFO("  Insert size = " << lib_data.mean_insert_size <<
                         ", deviation = " << lib_data.insert_size_deviation <<
                         ", left quantile = " << lib_data.insert_size_left_quantile <<
@@ -201,12 +211,21 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     }
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        INFO("Mapping library #" << i);
         const auto& lib = cfg::get().ds.reads[i];
-        if (lib.is_contig_lib() && !lib.is_pacbio_alignable()) {
-            INFO("Mapping contigs library");
+        if (lib.is_pacbio_alignable()) {
+            INFO("Library #" << i << " was mapped by PacBio mapper, skipping");
+            continue;
+        }
+        else if (lib.is_contig_lib()) {
+            INFO("Mapping contigs library #" << i);
             ProcessSingleReads(gp, i, false);
-		} else {
+		}
+        else if (cfg::get().bwa.enabled && lib.is_bwa_alignable()) {
+            INFO("Library #" << i << " was mapped by BWA, skipping");
+            continue;
+        }
+        else {
+            INFO("Mapping library #" << i);
             bool map_single_reads = ShouldMapSingleReads(i);
             cfg::get_writable().use_single_reads |= map_single_reads;
 
@@ -222,7 +241,6 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
                 INFO("Total paths obtained from single reads: " << gp.single_long_reads[i].size());
             }
         }
-
     }
 
     SensitiveReadMapper<Graph>::EraseIndices();

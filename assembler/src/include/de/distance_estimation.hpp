@@ -99,7 +99,7 @@ class AbstractDistanceEstimator {
  protected:
   typedef UnclusteredPairedInfoIndexT<Graph> InPairedIndex;
   typedef PairedInfoIndexT<Graph> OutPairedIndex;
-  typedef typename InPairedIndex::Histogram InHistogram;
+  typedef typename InPairedIndex::FullHistProxy InHistogram;
   typedef typename OutPairedIndex::Histogram OutHistogram;
 
  public:
@@ -148,9 +148,7 @@ class AbstractDistanceEstimator {
   }
 
   void AddToResult(const OutHistogram& clustered, EdgePair ep, PairedInfoBuffer<Graph>& result) const {
-    for (auto it = clustered.begin(); it != clustered.end(); ++it) {
-      result.AddPairInfo(ep, *it);
-    }
+      result.AddMany(ep.first, ep.second, clustered);
   }
 
 private:
@@ -171,10 +169,10 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
   typedef pair<EdgeId, EdgeId> EdgePair;
 
  protected:
-  typedef typename AbstractDistanceEstimator<Graph>::InPairedIndex InPairedIndex;
-  typedef typename AbstractDistanceEstimator<Graph>::OutPairedIndex OutPairedIndex;
-  typedef typename InPairedIndex::Histogram InHistogram;
-  typedef typename OutPairedIndex::Histogram OutHistogram;
+  typedef typename base::InPairedIndex InPairedIndex;
+  typedef typename base::OutPairedIndex OutPairedIndex;
+  typedef typename base::InHistogram InHistogram;
+  typedef typename base::OutHistogram OutHistogram;
 
  public:
   DistanceEstimator(const Graph& graph,
@@ -199,36 +197,21 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       edges.push_back(*it);
 
     DEBUG("Processing");
-    std::vector<PairedInfoBuffer<Graph> > buffer(nthreads);
+    PairedInfoBuffersT<Graph> buffer(this->graph(), nthreads);
 #   pragma omp parallel for num_threads(nthreads) schedule(guided, 10)
     for (size_t i = 0; i < edges.size(); ++i) {
       EdgeId edge = edges[i];
-      const auto& inner_map = index.GetEdgeInfoMap(edge);
-      ProcessEdge(edge, inner_map, buffer[omp_get_thread_num()]);
+      ProcessEdge(edge, index, buffer[omp_get_thread_num()]);
     }
 
-    INFO("Merging maps");
     for (size_t i = 0; i < nthreads; ++i) {
-      result.AddAll(buffer[i]);
+      result.Merge(buffer[i]);
       buffer[i].Clear();
     }
   }
 
  protected:
   const size_t max_distance_;
-
-  OutHistogram ConjugateInfos(EdgePair ep, const OutHistogram& histogram) const {
-    OutHistogram answer;
-    const Graph& g = this->graph();
-    for (auto point : histogram)
-      answer.insert(ConjugatePoint(g.length(ep.first), g.length(ep.second), point));
-
-    return answer;
-  }
-
-  EdgePair ConjugatePair(EdgePair ep) const {
-    return std::make_pair(this->graph().conjugate(ep.second), this->graph().conjugate(ep.first));
-  }
 
   virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
                                               const InHistogram& histogram,
@@ -237,7 +220,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     using namespace math;
     EdgeId e1 = ep.first, e2 = ep.second;
     size_t first_len  = this->graph().length(e1), second_len = this->graph().length(e2);
-    int maxD = rounded_d(*histogram.rbegin()), minD = rounded_d(*histogram.begin());
+    int minD = rounded_d(histogram.min()), maxD = rounded_d(histogram.max());
 
     TRACE("Bounds are " << minD << " " << maxD);
     EstimHist result;
@@ -288,28 +271,28 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 
  private:
   virtual void ProcessEdge(EdgeId e1,
-                           const typename InPairedIndex::InnerMap& inner_map,
+                           const InPairedIndex& pi,
                            PairedInfoBuffer<Graph>& result) const {
     typename base::LengthMap second_edges;
-    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
-      second_edges[I->first];
+    auto inner_map = pi.RawGet(e1);
+    for (auto i : inner_map)
+        second_edges[i.first];
 
     this->FillGraphDistancesLengths(e1, second_edges);
 
     for (const auto& entry: second_edges) {
       EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
-      if (ep > ConjugatePair(ep))
-          continue;
+
+      VERIFY(ep <= pi.ConjugatePair(ep));
 
       const GraphLengths& forward = entry.second;
       TRACE("Edge pair is " << this->graph().int_id(ep.first)
             << " " << this->graph().int_id(ep.second));
-      const InHistogram& hist = inner_map.find(e2)->second;
+      auto hist = pi.Get(e1, e2);
       const EstimHist& estimated = this->EstimateEdgePairDistances(ep, hist, forward);
       OutHistogram res = this->ClusterResult(ep, estimated);
       this->AddToResult(res, ep, result);
-      this->AddToResult(ConjugateInfos(ep, res), ConjugatePair(ep), result);
     }
   }
 

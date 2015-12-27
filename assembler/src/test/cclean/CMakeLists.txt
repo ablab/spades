@@ -17,4 +17,4 @@ file(GLOB ${CMAKE_CURRENT_SOURCE_DIR}
 )
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
-target_link_libraries(cclean_test ${COMMON_LIBRARIES} input mph_index otkpp ssw ${ZLIB_LIBRARIES})
+target_link_libraries(cclean_test ${COMMON_LIBRARIES} input cityhash otkpp ssw ${ZLIB_LIBRARIES})

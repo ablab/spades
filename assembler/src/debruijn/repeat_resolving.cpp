@@ -62,12 +62,6 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr");
     OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph");
 
-    //FIXME introduce separate pe config for preliminary mode
-    if (!preliminary_ && cfg::get().ds.meta) {
-        INFO("Coordinated coverage enabled")
-        cfg::get_writable().pe_params.param_set.use_coordinated_coverage = true;
-    }
-
     bool no_valid_libs = !HasValidLibs();
 
     bool use_single_reads = cfg::get().use_single_reads;

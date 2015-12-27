@@ -18,11 +18,37 @@
 //#include "all_commands.hpp"
 #include "base_commands.hpp"
 
+#include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+
+
 namespace online_visualization {
+
+std::atomic<bool> ctrlc_handler_;
+
+inline void * wait_for_second_ctrlc(void *) {
+    ctrlc_handler_ = true;
+    cerr << endl << "Hit Ctrl+C within 1 second once more to exit" << endl;
+    sleep(1);
+    ctrlc_handler_ = false;
+    return NULL;
+}
+
+inline void ctrlc_handler(int /*s*/) {
+    if (!ctrlc_handler_) {
+        pthread_t thread;
+        pthread_create( &thread, NULL, wait_for_second_ctrlc, NULL);
+    }
+    else {
+        exit(-1);
+    }
+}
 
 template <class Env = Environment>
 class OnlineVisualizer {
-
  public:
   OnlineVisualizer() : command_mapping_() {
   }
@@ -34,17 +60,17 @@ class OnlineVisualizer {
     string p = path::append_path(cfg::get().load_from, "simplification"); // just for default
 
     path::make_dir("tmp");
-    stringstream ss("load default " + p);
     DEBUG("Adding Commands");
     AddBaseCommands();
     AddSpecificCommands();
     DEBUG("Commands added");
     DEBUG("Adding auto-completion option");
     InitAutocompletion(command_mapping_.GetCommandNamesList());
+    //stringstream ss("load default " + p);
     //const Command<Env>& load_command = command_mapping_.GetCommand("load");
     //DEBUG("Loading current environment");
     //load_command.Execute(current_environment_, loaded_environments_, ss);
-    DEBUG("Environment loaded");
+    //DEBUG("Environment loaded");
   }
 
   string read_line() {
@@ -58,6 +84,13 @@ class OnlineVisualizer {
   }
 
   void run(const string& batch_file = "") {
+    ctrlc_handler_ = false;
+    struct sigaction sigIntHandler;
+    sigIntHandler.sa_handler = ctrlc_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    sigaction(SIGINT, &sigIntHandler, NULL);
+
     History& history = History::GetHistory();
 
     string command_with_args;
@@ -83,7 +116,7 @@ class OnlineVisualizer {
         command.Execute(current_environment_, loaded_environments_, arg_list);
         DEBUG("Command " << processed_command << " executed");
 
-        history.AddEntry(processed_command);
+        history.AddEntry(command_with_args);
         DEBUG("Command " << processed_command << " added to history");
 
       }

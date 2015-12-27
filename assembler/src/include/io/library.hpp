@@ -129,6 +129,10 @@ class SequencingLibraryBase {
     return paired_reads_iterator(left_paired_reads_.end(), right_paired_reads_.end());
   }
 
+  adt::iterator_range<paired_reads_iterator> paired_reads() const {
+    return adt::make_range(paired_begin(), paired_end());
+  }  
+    
   single_reads_iterator reads_begin() const {
     // NOTE: We have a contract with single_end here. Single reads always go last!
     single_reads_iterator res(left_paired_reads_.begin(), left_paired_reads_.end());
@@ -142,6 +146,10 @@ class SequencingLibraryBase {
     return single_reads_iterator(single_reads_.end(), single_reads_.end());
   }
 
+  adt::iterator_range<single_reads_iterator> reads() const {
+    return adt::make_range(reads_begin(), reads_end());
+  }  
+    
   single_reads_iterator single_begin() const {
     return single_reads_iterator(single_reads_.begin(), single_reads_.end());
   }
@@ -150,10 +158,26 @@ class SequencingLibraryBase {
     return single_reads_iterator(single_reads_.end(), single_reads_.end());
   }
 
+  adt::iterator_range<single_reads_iterator> single_reads() const {
+    return adt::make_range(single_begin(), single_end());
+  }
+    
   bool is_graph_contructable() const {
     return (type_ == io::LibraryType::PairedEnd ||
             type_ == io::LibraryType::SingleReads ||
             type_ == io::LibraryType::HQMatePairs);
+  }
+
+  bool is_bwa_alignable() const {
+    return type_ == io::LibraryType::MatePairs;
+  }
+
+  bool is_mismatch_correctable() const {
+      return is_graph_contructable();
+  }
+
+  bool is_binary_covertable() {
+      return is_graph_contructable() || is_mismatch_correctable() || is_paired();
   }
 
   bool is_paired() const {
@@ -276,11 +300,11 @@ class DataSet {
   iterator end() { return libraries_.end(); }
   const_iterator end() const { return libraries_.end(); }
 
-  iterator_range<iterator> libraries() {
-      return iterator_range<iterator>(library_begin(), library_end());
+  adt::iterator_range<iterator> libraries() {
+    return adt::make_range(library_begin(), library_end());
   }
-  iterator_range<const_iterator> libraries() const {
-      return iterator_range<const_iterator>(library_begin(), library_end());
+  adt::iterator_range<const_iterator> libraries() const {
+    return adt::make_range(library_begin(), library_end());
   }
 
   single_reads_iterator reads_begin() const {
@@ -295,8 +319,8 @@ class DataSet {
   single_reads_iterator reads_end() const {
     return single_reads_iterator(libraries_.back().reads_end(), libraries_.back().reads_end());
   }
-  iterator_range<single_reads_iterator> reads() {
-      return iterator_range<iterator>(reads_begin(), reads_end());
+  adt::iterator_range<single_reads_iterator> reads() {
+    return adt::make_range(reads_begin(), reads_end());
   }
 
   single_reads_iterator single_begin() const {
@@ -311,10 +335,9 @@ class DataSet {
   single_reads_iterator single_end() const {
     return single_reads_iterator(libraries_.back().single_end(), libraries_.back().single_end());
   }
-  iterator_range<single_reads_iterator> single_reads() {
-    return iterator_range<single_reads_iterator>(single_begin(), single_end());
+  adt::iterator_range<single_reads_iterator> single_reads() {
+    return adt::make_range(single_begin(), single_end());
   }
-
 
   paired_reads_iterator paired_begin() const {
     auto it = libraries_.begin();
@@ -328,9 +351,10 @@ class DataSet {
   paired_reads_iterator paired_end() const {
     return paired_reads_iterator(libraries_.back().paired_end(), libraries_.back().paired_end());
   }
-  iterator_range<paired_reads_iterator> paired_reads() {
-      return iterator_range<paired_reads_iterator>(paired_begin(), paired_end());
-  }
+
+  adt::iterator_range<paired_reads_iterator> paired_reads() const {
+    return adt::make_range(paired_begin(), paired_end());
+  } 
 
  private:
   LibraryStorage libraries_;

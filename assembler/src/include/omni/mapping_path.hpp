@@ -45,7 +45,9 @@ class Path {
 };
 
 struct MappingRange {
+// on genome/contig/whatever
     Range initial_range;
+//on edge
     Range mapped_range;
 
     MappingRange() {
@@ -111,6 +113,11 @@ struct MappingRange {
     		return this->initial_range < other.initial_range;
     	return this->mapped_range < other.mapped_range;
     }
+    MappingRange operator = (const MappingRange & other) {
+        initial_range = other.initial_range;
+        mapped_range = other.mapped_range;
+        return *this;
+    }
 
     bool Intersect(const MappingRange &other) {
     	return initial_range.Intersect(other.initial_range) && mapped_range.Intersect(other.mapped_range);
@@ -145,7 +152,7 @@ inline std::ostream& operator<<(std::ostream& os, const MappingRange& map_range)
     return os;
 }
 
-    template<typename ElementId>
+template<typename ElementId>
 class MappingPath {
  public:
     MappingPath() {}
@@ -207,7 +214,7 @@ class MappingPath {
     std::vector<MappingRange> range_mappings_;
 };
 
-    template <typename ElementId>
+template <typename ElementId>
 inline std::ostream& operator<<(std::ostream& os, const MappingPath<ElementId>& mp) {
     os << "MappingPath ( ";
     for(size_t i = 0; i < mp.size(); i++) {

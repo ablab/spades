@@ -83,7 +83,7 @@ void CorrectReadsBatch(std::vector<bool> &res,
   bool correct_threshold = cfg::get().correct_use_threshold;
   bool discard_bad = cfg::get().correct_discard_bad;
 
-  ReadCorrector corrector(data);
+  ReadCorrector corrector(data, cfg::get().correct_stats);
 # pragma omp parallel for shared(reads, res, data) num_threads(correct_nthreads)
   for (size_t i = 0; i < buf_size; ++i) {
     if (reads[i].size() >= K) {
@@ -222,7 +222,7 @@ size_t CorrectAllReads() {
       std::string usuffix =  std::to_string(ilib) + "_" +
                              std::to_string(iread) + ".cor.fastq";
 
-      std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired";
+      std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired.fastq";
 
       std::string outcorl = getReadsFilename(cfg::get().output_dir, I->first,  Globals::iteration_no, usuffix);
       std::string outcorr = getReadsFilename(cfg::get().output_dir, I->second, Globals::iteration_no, usuffix);

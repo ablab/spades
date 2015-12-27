@@ -18,6 +18,7 @@
 #include "logger/logger.hpp"
 #include "de/paired_info.hpp"
 #include "omni/path_processor.hpp"
+#include "../include/de/paired_info.hpp"
 
 namespace debruijn_graph {
 
@@ -61,12 +62,16 @@ class SplitPathConstructor {
   public:
     SplitPathConstructor(const Graph &graph): graph_(graph) {}
 
-    vector<PathInfo> ConvertPIToSplitPaths(const std::vector<PairInfo>& pair_infos, double is, double is_var) const {
+    vector<PathInfo> ConvertPIToSplitPaths(EdgeId cur_edge, const omnigraph::de::PairedInfoIndexT<Graph> &pi, double is, double is_var) const {
+        vector<PairInfo> pair_infos; //TODO: this is an adaptor for the old implementation
+        for (auto i : pi.Get(cur_edge))
+            for (auto j : i.second)
+                pair_infos.emplace_back(cur_edge, i.first, j);
+
         vector<PathInfo> result;
-        if (pair_infos.size() == 0)
+        if (pair_infos.empty())
             return result;
 
-        EdgeId cur_edge = pair_infos[0].first;
         vector<bool> pair_info_used(pair_infos.size());
         TRACE("Preparing path_processor for this base edge");
         size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), (size_t) is, is_var);
@@ -87,7 +92,7 @@ class SplitPathConstructor {
             DEBUG("SPC: pi " << cur_info);
             vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge, cur_info.second,
                                                            (size_t) (cur_info.d() - cur_info.var()),
-                                                           //FIXME is it a bug?!
+                    //FIXME is it a bug?!
                                                            (size_t) (cur_info.d() - cur_info.var()),
                                                            path_processor);
             DEBUG("Found common part of size " << common_part.size());

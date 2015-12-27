@@ -30,7 +30,8 @@ struct graph_pack: private boost::noncopyable {
     typedef typename Graph::EdgeId EdgeId;
     typedef SeqType seq_t;
     typedef EdgeIndex<graph_t, seq_t, KmerEdgeIndex> index_t;
-    typedef omnigraph::de::PairedInfoIndicesT<Graph> PairedInfoIndicesT;
+    using PairedInfoIndicesT = omnigraph::de::PairedInfoIndicesT<Graph>;
+    //typedef omnigraph::de::PairedInfoIndicesT<Graph> PairedInfoIndicesT;
     typedef omnigraph::de::UnclusteredPairedInfoIndicesT<Graph> UnclusteredPairedInfoIndicesT;
     typedef LongReadContainer<Graph> LongReadContainerT;
 
@@ -48,10 +49,10 @@ struct graph_pack: private boost::noncopyable {
 
     GenomeStorage genome;
 	EdgeQuality<Graph> edge_qual;
-    EdgesPositionHandler<graph_t> edge_pos;
+    mutable EdgesPositionHandler<graph_t> edge_pos;
  
     graph_pack(size_t k, const std::string &workdir, size_t lib_count,
-                        const string &genome = "",
+                        const std::string &genome = "",
                         size_t flanking_range = 50,
                         size_t max_mapping_gap = 0,
                         size_t max_gap_diff = 0,
@@ -59,7 +60,7 @@ struct graph_pack: private boost::noncopyable {
             : k_value(k), g(k), index(g, workdir),
               kmer_mapper(g),
               flanking_cov(g, flanking_range),
-              paired_indices(lib_count),
+              paired_indices(g, lib_count),
               clustered_indices(g, lib_count),
               scaffolding_indices(g, lib_count),
               single_long_reads(g, lib_count),
@@ -149,6 +150,5 @@ typedef conj_graph_pack::UnclusteredPairedInfoIndicesT UnclusteredPairedIndicesT
 typedef conj_graph_pack::LongReadContainerT LongReadContainerT;
 typedef omnigraph::de::PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
 typedef omnigraph::de::UnclusteredPairedInfoIndexT<ConjugateDeBruijnGraph> UnclusteredPairedIndexT;
-
 
 } // namespace debruijn_graph

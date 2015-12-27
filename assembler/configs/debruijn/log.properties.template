@@ -42,3 +42,11 @@ default=INFO
 #PathExtendPI=DEBUG
 #LoopTraverser=DEBUG
 #PEResolver=DEBUG
+#ExtensionChooser2015=DEBUG
+#ScaffoldingUniqueEdgeStorage=DEBUG
+#ScaffoldingUniqueEdgeAnalyzer=DEBUG
+#LoopDetectingPathExtender=DEBUG
+#SimpleExtender=DEBUG
+#ScaffoldingPathExtender=DEBUG
+
+#BWAPairInfo=TRACE

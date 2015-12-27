@@ -15,11 +15,13 @@
 #ifndef IDEAL_PAIR_INFO_HPP_
 #define IDEAL_PAIR_INFO_HPP_
 #import <vector>
+#include "graph_pack.hpp"
+
+namespace path_extend {
 
 using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;
 
-namespace path_extend {
 class IdealPairInfoCounter {
 public:
     IdealPairInfoCounter(const Graph& g, int d_min, int d_max, size_t read_size,

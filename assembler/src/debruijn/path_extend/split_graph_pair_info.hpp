@@ -266,8 +266,6 @@ public:
 
     }
 
-    ~SplitGraphPairInfo() {}
-
     virtual void StartProcessLibrary(size_t threads_count) {
         baskets_buffer_.clear();
         for (size_t i = 0; i < threads_count; ++i) {
@@ -280,14 +278,16 @@ public:
                                    const io::PairedRead& r,
                                    const MappingPath<EdgeId>& read1,
                                    const MappingPath<EdgeId>& read2) {
-        ProcessPairedRead(*baskets_buffer_[thread_index], read1, read2, r.distance());
+        ProcessPairedRead(*baskets_buffer_[thread_index], r.first().size(), r.second().size(),
+                            read1, read2, r.distance());
     }
 
     virtual void ProcessPairedRead(size_t thread_index,
                                    const io::PairedReadSeq& r,
                                    const MappingPath<EdgeId>& read1,
                                    const MappingPath<EdgeId>& read2) {
-        ProcessPairedRead(*baskets_buffer_[thread_index], read1, read2, r.distance());
+        ProcessPairedRead(*baskets_buffer_[thread_index], r.first().size(), r.second().size(),
+                            read1, read2, r.distance());
     }
 
     virtual void ProcessSingleRead(size_t, const io::SingleRead&, const MappingPath<EdgeId>&) {
@@ -396,8 +396,8 @@ private:
                 / ideal_pi_counter_.IdealPairedInfo(basket_size_, basket_size_,
                                                     (int) pi.distance_);
     }
-
-    void ProcessPairedRead(BasketsPairInfoIndex& basket_index,
+    
+    void InnerProcess(BasketsPairInfoIndex& basket_index,
                            const MappingPath<EdgeId>& path1,
                            const MappingPath<EdgeId>& path2,
                            size_t read_distance) {
@@ -424,6 +424,17 @@ private:
                         (double) edge_distance);
             }
         }
+    }
+
+    void ProcessPairedRead(BasketsPairInfoIndex& basket_index,
+                           size_t r1_length,
+                           size_t r2_length,
+                           const MappingPath<EdgeId>& path1,
+                           const MappingPath<EdgeId>& path2,
+                           size_t read_distance) {
+        InnerProcess(basket_index, path1, path2, read_distance);
+        InnerProcess(basket_index, ConjugateMapping(gp_.g, path2, r2_length),
+                     ConjugateMapping(gp_.g, path1, r1_length), read_distance);
     }
 
     const conj_graph_pack& gp_;

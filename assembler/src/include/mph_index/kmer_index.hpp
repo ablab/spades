@@ -14,7 +14,6 @@
 #include "base_hash.hpp"
 #include "hypergraph.hpp"
 #include "hypergraph_sorter_seq.hpp"
-#include "MurmurHash3.h"
 
 #include "openmp_wrapper.h"
 
@@ -131,7 +130,7 @@ class KMerIndex {
   typedef size_t IdxType;
 
  private:
-  using KMerDataIndex = emphf::mphf<emphf::jenkins64_hasher>;
+  using KMerDataIndex = emphf::mphf<emphf::city_hasher>;
   typedef KMerIndex __self;
 
  public:

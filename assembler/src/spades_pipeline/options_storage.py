@@ -11,7 +11,7 @@ import os
 import sys
 import support
 
-SUPPORTED_PYTHON_VERSIONS = ['2.4', '2.5', '2.6', '2.7', '3.2', '3.3']
+SUPPORTED_PYTHON_VERSIONS = ['2.4', '2.5', '2.6', '2.7', '3.2', '3.3', '3.4', '3.5']
 # allowed reads extensions for BayesHammer and for thw whole SPAdes pipeline
 BH_ALLOWED_READS_EXTENSIONS = ['.fq', '.fastq', '.bam']
 CONTIGS_ALLOWED_READS_EXTENSIONS = ['.fa', '.fasta']
@@ -22,11 +22,18 @@ CONTIGS_ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in CONTIGS_ALLOWED_READS_EX
 ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in ALLOWED_READS_EXTENSIONS]
 
 # we support up to MAX_LIBS_NUMBER libs for each type of short-reads libs
-MAX_LIBS_NUMBER = 5
+MAX_LIBS_NUMBER = 9
 OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s"]
 SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs", "nxmate": "nxmate"}
 # other libs types:
 LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "trusted-contigs", "untrusted-contigs"]
+
+# final contigs and scaffolds names
+contigs_name = "contigs.fasta"
+scaffolds_name = "scaffolds.fasta"
+assembly_graph_name = "assembly_graph.fastg"
+contigs_paths = "contigs.paths"
+scaffolds_paths = "scaffolds.paths"
 
 #other constants
 MIN_K = 1
@@ -115,11 +122,11 @@ dict_of_rel2abs = dict()
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc iontorrent meta "\
                "only-error-correction only-assembler "\
                "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
-               "help test debug debug:false reference= config-file= dataset= "\
+               "help version test debug debug:false reference= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false "\
                "continue restart-from= diploid truseq cov-cutoff= configs-dir= stop-after=".split()
-short_options = "o:1:2:s:k:t:m:i:h"
+short_options = "o:1:2:s:k:t:m:i:hv"
 
 # adding multiple paired-end, mate-pair and other (long reads) libraries support
 reads_options = []
@@ -138,11 +145,20 @@ reads_options = list(map(lambda x: "--" + x.split('=')[0], reads_options))
 reads_options += OLD_STYLE_READS_OPTIONS
 
 
+def version(spades_version, mode=None):
+    sys.stderr.write("SPAdes v" + str(spades_version))
+    if mode is not None:
+        sys.stderr.write(" (" + mode + " mode)")
+    sys.stderr.write("\n")
+    sys.stderr.flush()
+
+
 def usage(spades_version, show_hidden=False, dipspades=False):
     if not dipspades:
-        sys.stderr.write("SPAdes genome assembler v" + str(spades_version) + "\n")
+        sys.stderr.write("SPAdes genome assembler v" + str(spades_version) + "\n\n")
     else:
-        sys.stderr.write("dipSPAdes 1.0: genome assembler designed for diploid genomes with high heterozygosity rate\n\n")
+        sys.stderr.write("dipSPAdes v" + str(spades_version) +
+                         ": genome assembler designed for diploid genomes with high heterozygosity rate\n\n")
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Basic options:" + "\n")
@@ -153,6 +169,7 @@ def usage(spades_version, show_hidden=False, dipspades=False):
     sys.stderr.write("--iontorrent\t\tthis flag is required for IonTorrent data" + "\n")
     sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
     sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
+    sys.stderr.write("-v/--version\t\tprints version" + "\n")
 
     sys.stderr.write("" + "\n")
     if not dipspades:
@@ -165,41 +182,41 @@ def usage(spades_version, show_hidden=False, dipspades=False):
     sys.stderr.write("-2\t<filename>\tfile with reverse paired-end reads" + "\n")
     sys.stderr.write("-s\t<filename>\tfile with unpaired reads" + "\n")
     sys.stderr.write("--pe<#>-12\t<filename>\tfile with interlaced"\
-                         " reads for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " reads for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--pe<#>-1\t<filename>\tfile with forward reads"\
-                         " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--pe<#>-2\t<filename>\tfile with reverse reads"\
-                         " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--pe<#>-s\t<filename>\tfile with unpaired reads"\
-                         " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--pe<#>-<or>\torientation of reads"\
-                         " for paired-end library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+                         " for paired-end library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
     sys.stderr.write("--s<#>\t\t<filename>\tfile with unpaired reads"\
-                     " for single reads library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                     " for single reads library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--mp<#>-12\t<filename>\tfile with interlaced"\
-                         " reads for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " reads for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--mp<#>-1\t<filename>\tfile with forward reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--mp<#>-2\t<filename>\tfile with reverse reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--mp<#>-s\t<filename>\tfile with unpaired reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--mp<#>-<or>\torientation of reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+                         " for mate-pair library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
     sys.stderr.write("--hqmp<#>-12\t<filename>\tfile with interlaced"\
-                     " reads for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                     " reads for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--hqmp<#>-1\t<filename>\tfile with forward reads"\
-                     " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                     " for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--hqmp<#>-2\t<filename>\tfile with reverse reads"\
-                     " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                     " for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--hqmp<#>-s\t<filename>\tfile with unpaired reads"\
-                     " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                     " for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--hqmp<#>-<or>\torientation of reads"\
-                     " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+                     " for high-quality mate-pair library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
     sys.stderr.write("--nxmate<#>-1\t<filename>\tfile with forward reads"\
-                         " for Lucigen NxMate library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for Lucigen NxMate library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--nxmate<#>-2\t<filename>\tfile with reverse reads"\
-                         " for Lucigen NxMate library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for Lucigen NxMate library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
     sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
     sys.stderr.write("--nanopore\t<filename>\tfile with Nanopore reads\n")

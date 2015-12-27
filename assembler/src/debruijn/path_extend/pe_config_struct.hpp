@@ -27,13 +27,22 @@
 
 namespace path_extend {
 
-const char * const pe_cfg_filename = "./config/debruijn/path_extend/lc_config.info";
-
 enum output_broken_scaffolds {
     obs_none,
     obs_break_gaps,
     obs_break_all
 };
+
+enum scaffolding_mode {
+    sm_old,
+    sm_2015,
+    sm_combined,
+    sm_old_pe_2015
+};
+
+inline bool is_2015_scaffolder_enabled(const scaffolding_mode mode) {
+    return (mode != sm_old);
+}
 
 // struct for path extend subproject's configuration file
 struct pe_config {
@@ -58,7 +67,7 @@ struct pe_config {
   static const std::string& output_broken_scaffolds_name(output_broken_scaffolds obs) {
     auto it = output_broken_scaffolds_info().right.find(obs);
     VERIFY_MSG(it != output_broken_scaffolds_info().right.end(),
-               "No name for working stage id = " << obs);
+               "No name for output broken scaffolds mode id = " << obs);
 
     return it->second;
   }
@@ -66,7 +75,41 @@ struct pe_config {
   static output_broken_scaffolds output_broken_scaffolds_id(std::string name) {
     auto it = output_broken_scaffolds_info().left.find(name);
     VERIFY_MSG(it != output_broken_scaffolds_info().left.end(),
-               "There is no working stage with name = " << name);
+               "There is no output broken scaffolds mode with name = " << name);
+
+    return it->second;
+  }
+
+  typedef boost::bimap<std::string, scaffolding_mode> scaffolding_mode_id_mapping;
+
+  static const scaffolding_mode_id_mapping FillSMInfo() {
+      scaffolding_mode_id_mapping::value_type info[] = {
+              scaffolding_mode_id_mapping::value_type("old", sm_old),
+              scaffolding_mode_id_mapping::value_type("2015", sm_2015),
+              scaffolding_mode_id_mapping::value_type("combined", sm_combined),
+              scaffolding_mode_id_mapping::value_type("old_pe_2015", sm_old_pe_2015)
+    };
+
+    return scaffolding_mode_id_mapping(info, utils::array_end(info));
+  }
+
+  static const scaffolding_mode_id_mapping& scaffolding_mode_info() {
+    static scaffolding_mode_id_mapping scaffolding_mode_info = FillSMInfo();
+    return scaffolding_mode_info;
+  }
+
+  static const std::string& scaffolding_mode_name(scaffolding_mode sm) {
+    auto it = scaffolding_mode_info().right.find(sm);
+    VERIFY_MSG(it != scaffolding_mode_info().right.end(),
+               "No name for scaffolding mode id = " << sm);
+
+    return it->second;
+  }
+
+  static scaffolding_mode scaffolding_mode_id(std::string name) {
+    auto it = scaffolding_mode_info().left.find(name);
+    VERIFY_MSG(it != scaffolding_mode_info().left.end(),
+               "There is no scaffolding mode with name = " << name);
 
     return it->second;
   }
@@ -81,6 +124,8 @@ struct pe_config {
     }
   };
 
+
+
   struct VisualizeParamsT {
     bool print_overlaped_paths;
     bool print_paths;
@@ -92,6 +137,8 @@ struct pe_config {
   };
 
   struct ParamSetT {
+    scaffolding_mode sm;
+
     bool normalize_weight;
     size_t split_edge_length;
     bool cut_all_overlaps;
@@ -116,6 +163,7 @@ struct pe_config {
       double cl_threshold;
 
       bool fix_gaps;
+      bool use_la_gap_joiner;
       double min_gap_score;
       double max_must_overlap;
       double max_can_overlap;
@@ -142,7 +190,18 @@ struct pe_config {
       size_t max_edge_length_in_repeat;
       double delta;
     } coordinated_coverage;
-
+      struct Scaffolding2015 {
+          bool autodetect;
+          size_t min_unique_length;
+          double unique_coverage_variation;
+      } scaffolding2015;
+      struct ScaffoldGraphParamsT {
+          bool construct;
+          bool output;
+          size_t min_read_count;
+          bool graph_connectivity;
+          size_t max_path_length;
+      } scaffold_graph_params;
   };
 
   struct LongReads {
@@ -157,9 +216,11 @@ struct pe_config {
       LongReads contigs;
   };
 
+
   struct MainPEParamsT {
     output_broken_scaffolds obs;
 
+    bool finalize_paths;
     bool debug_output;
     std::string etc_dir;
 
@@ -167,10 +228,7 @@ struct pe_config {
     VisualizeParamsT viz;
     ParamSetT param_set;
     AllLongReads long_reads;
-  }; //params;
-
-//  std::string dataset_name;
-
+  }; // params;
 
 };
 

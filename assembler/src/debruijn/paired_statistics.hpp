@@ -262,8 +262,8 @@ public:
 
   bool ContainsPositiveDistance(EdgeId e1, const Histogram& infos) const {
     int first_len = int(graph_.length(e1));
-    for (auto it = infos.begin(); it != infos.end(); ++it) {
-      if (rounded_d(*it) > first_len)
+    for (auto point : infos) {
+      if (rounded_d(point) > first_len)
         return true;
     }
     return false;

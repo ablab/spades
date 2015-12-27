@@ -107,11 +107,11 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
             INFO("Failed to estimate mean coverage");
 
         if (cfg::get().kcm.use_coverage_threshold) {
-            double coef = (cfg::get().ds.aRL() - cfg::get().K + 1) / cfg::get().ds.aRL();
+            double coef = (cfg::get().ds.aRL() - double(cfg::get().K) + 1) / cfg::get().ds.aRL();
             if (coef < 0)
-                coef = (cfg::get().ds.RL() - cfg::get().K + 1) / cfg::get().ds.RL();
+                coef = double(cfg::get().ds.RL() - cfg::get().K + 1) / double(cfg::get().ds.RL());
             gp.ginfo.set_trusted_bound(CovModel.converged() && cfg::get().kcm.coverage_threshold == 0.0 ?
-                                       CovModel.GetLowThreshold() :
+                                       double(CovModel.GetLowThreshold()) :
                                        cfg::get().kcm.coverage_threshold * coef);
         }
 

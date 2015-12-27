@@ -410,6 +410,7 @@ struct debruijn_config {
         double insert_size_mad;
         std::map<int, size_t> insert_size_distribution;
 
+        bool binary_coverted;
         bool single_reads_mapped;
 
         uint64_t total_nucls;
@@ -427,6 +428,7 @@ struct debruijn_config {
                 insert_size_right_quantile(0.0),
                 median_insert_size(0.0),
                 insert_size_mad(0.0),
+                binary_coverted(false),
                 single_reads_mapped(false),
                 total_nucls(0),
                 average_coverage(0.0),
@@ -516,6 +518,13 @@ struct debruijn_config {
         double strong_probability_threshold;
         double coverage_threshold;
         bool use_coverage_threshold;
+    };
+
+    struct bwa_aligner {
+        bool enabled;
+        bool debug;
+        std::string path_to_bwa;
+        size_t min_contig_len;
     };
 
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
@@ -608,6 +617,7 @@ struct debruijn_config {
     graph_read_corr_cfg graph_read_corr;
     info_printers_t info_printers;
     kmer_coverage_model kcm;
+    bwa_aligner bwa;
 
     size_t flanking_range;
 

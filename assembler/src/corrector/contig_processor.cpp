@@ -40,14 +40,14 @@ void ContigProcessor::ReadContig() {
 
 void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm) {
     unordered_map<size_t, position_description> all_positions;
-    if (tmp.get_contig_id() < 0) {
+    if (tmp.contig_id() < 0) {
         return;
     }
-    auto cur_s = sm.get_contig_name(tmp.get_contig_id());
+    auto cur_s = sm.get_contig_name(tmp.contig_id());
     if (contig_name_.compare(cur_s) != 0) {
         return;
     }
-    tmp.CountPositions(all_positions, contig_.length());
+    CountPositions(tmp, all_positions);
     size_t error_num = 0;
 
     for (auto &pos : all_positions) {
@@ -123,6 +123,128 @@ size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordere
     }
 }
 
+
+bool ContigProcessor::CountPositions(const SingleSamRead &read, unordered_map<size_t, position_description> &ps) const {
+
+    if (read.contig_id() < 0) {
+        DEBUG("not this contig");
+        return false;
+    }
+    //TODO: maybe change to read.is_properly_aligned() ?
+    if (read.map_qual() == 0) {
+        DEBUG("zero qual");
+        return false;
+    }
+    int pos = read.pos();
+    if (pos < 0) {
+        WARN("Negative position " << pos << " found on read " << read.name() << ", skipping");
+        return false;
+    }
+    size_t position = size_t(pos);
+    int mate = 1;  // bonus for mate mapped can be here;
+    size_t l_read = (size_t) read.data_len();
+    size_t l_cigar = read.cigar_len();
+
+    int aligned_length = 0;
+    uint32_t *cigar = read.cigar_ptr();
+    //* in cigar;
+    if (l_cigar == 0)
+        return false;
+    if (bam_cigar_opchr(cigar[0]) == '*')
+        return false;
+    for (size_t i = 0; i < l_cigar; i++)
+        if (bam_cigar_opchr(cigar[i]) == 'M')
+            aligned_length += bam_cigar_oplen(cigar[i]);
+//It's about bad aligned reads, but whether it is necessary?
+    double read_len_double = (double) l_read;
+    if ((aligned_length < min(read_len_double * 0.4, 40.0)) && (position > read_len_double / 2) && (contig_.length() > read_len_double / 2 + (double) position)) {
+        return false;
+    }
+    int state_pos = 0;
+    int shift = 0;
+    size_t skipped = 0;
+    size_t deleted = 0;
+    string insertion_string = "";
+    auto seq = read.seq_ptr();
+    for (size_t i = 0; i < l_read; i++) {
+        DEBUG(i << " " << position << " " << skipped);
+        if (shift + bam_cigar_oplen(cigar[state_pos]) <= i) {
+            shift += bam_cigar_oplen(cigar[state_pos]);
+            state_pos += 1;
+        }
+        if (insertion_string != "" and bam_cigar_opchr(cigar[state_pos]) != 'I') {
+            VERIFY(i + position >= skipped + 1);
+            size_t ind = i + position - skipped - 1;
+            if (ind >= contig_.length())
+                break;
+            ps[ind].insertions[insertion_string] += 1;
+            insertion_string = "";
+        }
+        char cur_state = bam_cigar_opchr(cigar[state_pos]);
+        if (cur_state == 'M') {
+            VERIFY(i >= deleted);
+            if (i + position < skipped) {
+                WARN(i << " " << position << " " << skipped);
+                INFO(read.name());
+            }
+            VERIFY(i + position >= skipped);
+
+            size_t ind = i + position - skipped;
+            size_t cur = var_to_pos[(int) bam_nt16_rev_table[bam1_seqi(seq, i - deleted)]];
+            if (ind >= contig_.length())
+                continue;
+            ps[ind].votes[cur] = ps[ind].votes[cur] + mate;
+
+        } else {
+            if (cur_state == 'I' || cur_state == 'H' || cur_state == 'S' ) {
+                if (cur_state == 'I') {
+                    if (insertion_string == "") {
+                        size_t ind = i + position - skipped - 1;
+                        if (ind >= contig_.length())
+                            break;
+                        ps[ind].votes[Variants::Insertion] += mate;
+                    }
+                    insertion_string += bam_nt16_rev_table[bam1_seqi(seq, i - deleted)];
+                }
+                skipped += 1;
+            } else if (bam_cigar_opchr(cigar[state_pos]) == 'D') {
+                if (i + position - skipped >= contig_.length())
+                    break;
+                ps[i + position - skipped].votes[Variants::Deletion] += mate;
+                deleted += 1;
+            }
+        }
+    }
+    if (insertion_string != "" and bam_cigar_opchr(cigar[state_pos]) != 'I') {
+        VERIFY(l_read + position >= skipped + 1);
+        size_t ind = l_read + position - skipped - 1;
+        if (ind < contig_.length()) {
+            ps[ind].insertions[insertion_string] += 1;
+        }
+        insertion_string = "";
+    }
+    return true;
+}
+
+
+bool ContigProcessor::CountPositions(const PairedSamRead &read, unordered_map<size_t, position_description> &ps) const {
+
+    TRACE("starting pairing");
+    bool t1 = CountPositions(read.Left(), ps );
+    unordered_map<size_t, position_description> tmp;
+    bool t2 = CountPositions(read.Right(), tmp);
+    //overlaps.. multimap? Look on qual?
+    if (ps.size() == 0 || tmp.size() == 0) {
+        //We do not need paired reads which are not really paired
+        ps.clear();
+        return false;
+    }
+    TRACE("counted, uniting maps of " << tmp.size() << " and " << ps.size());
+    ps.insert(tmp.begin(), tmp.end());
+    TRACE("united");
+    return (t1 && t2);
+}
+
 size_t ContigProcessor::ProcessMultipleSamFiles() {
     error_counts_.resize(kMaxErrorNum);
     for (const auto &sf : sam_files_) {
@@ -144,11 +266,11 @@ size_t ContigProcessor::ProcessMultipleSamFiles() {
             if (sf.second == io::LibraryType::PairedEnd ) {
                 PairedSamRead tmp;
                 sm >> tmp;
-                tmp.CountPositions(ps, contig_.length());
+                CountPositions(tmp, ps);
             } else {
                 SingleSamRead tmp;
                 sm >> tmp;
-                tmp.CountPositions(ps, contig_.length());
+                CountPositions(tmp, ps);
             }
             ipp_.UpdateInterestingRead(ps);
         }

@@ -9,25 +9,13 @@ import logging
 
 import os
 import sys
+import spades_init
+spades_init.init()
+truspades_home = spades_init.spades_home
+spades_home = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+spades_version = spades_init.spades_version
 
-truspades_home = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-bin_home = os.path.join(truspades_home, 'bin')
-python_modules_home = os.path.join(truspades_home, 'src')
-
-if os.path.isfile(os.path.join(truspades_home, 'spades')):
-    install_prefix = os.path.dirname(truspades_home)
-    bin_home = os.path.join(install_prefix, 'bin')
-    truspades_home = os.path.join(install_prefix, 'share', 'spades')
-    python_modules_home = truspades_home
-
-print os.path.join(python_modules_home, "spades_pipeline", "common")
-print os.path.join(python_modules_home, "spades_pipeline", "truspades")
-print os.path.join(python_modules_home, "spades_pipeline")
-sys.path.append(os.path.join(python_modules_home, "spades_pipeline", "common"))
-sys.path.append(os.path.join(python_modules_home, "spades_pipeline", "truspades"))
-sys.path.append(os.path.join(python_modules_home, "spades_pipeline"))
-
-import SeqIO
+import SeqIO  # TODO: add to ext/scr/python_libs
 import parallel_launcher
 import reference_construction
 import launch_options
@@ -62,9 +50,9 @@ def reads_line(libs):
 def command_line(barcode, output_dir, params, continue_launch):
 #    logfile = os.path.join(output_dir, "logs", barcode.id + ".out")
     if continue_launch and os.path.exists(os.path.join(output_dir, barcode.id,  "params.txt")):
-        result = ["python " + os.path.join(bin_home, "spades.py"), "--truseq", "-o", os.path.join(output_dir, barcode.id), "--continue", " ".join(params)]
+        result = ["python " + os.path.join(spades_home, "spades.py"), "--truseq", "-o", os.path.join(output_dir, barcode.id), "--continue", params]
     else:
-       result = ["python " + os.path.join(bin_home, "spades.py"), "--truseq", "-t", "1", "-o", os.path.join(output_dir, barcode.id), reads_line(barcode.libs), " ".join(params)]
+       result = ["python " + os.path.join(spades_home, "spades.py"), "--truseq", "-t", "1", "-o", os.path.join(output_dir, barcode.id), reads_line(barcode.libs), params]
 #    result = ["./truspades.py", "-o", os.path.join(output_dir, barcode.id), reads_line(barcode.libs), " ".join(params), "\n"]
     return " ".join(result)
 
@@ -147,13 +135,15 @@ def CheckTestSuccess(options, log):
     if not (os.path.getsize(output) > 20000 and os.path.getsize(output) < 20100):
         log.info("TruSPAdes test launch failed: incorrect output files")
         sys.exit(1)
-    log.info("TruSPAdes test passed corectly")
+    log.info("TruSPAdes test passed correctly")
 
 
 
 def main(argv):
-    options = launch_options.Options(argv, bin_home, truspades_home)
+    options = launch_options.Options(argv, spades_home, truspades_home, spades_version)
     support.ensure_dir_existence(options.output_dir)
+    if options.test:
+        support.recreate_dir(options.output_dir)
     log = create_log(options)
     dataset_file = os.path.join(options.output_dir, "dataset.info")
     if options.continue_launch:

@@ -165,5 +165,14 @@ sc_cor
     max_cut_length 50
 }
 
+
+bwa_aligner
+{
+    enabled false
+    debug false
+    path_to_bwa ./bin/bwa-spades
+    min_contig_len 0
+}
+
 ;flanking coverage range
 flanking_range 30

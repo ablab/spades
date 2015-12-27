@@ -23,7 +23,7 @@
 #include <utility>
 #include <cstdlib>
 #include <cstdio>
-#include "paired_info.hpp"
+#include "index_point.hpp"
 #include "omni/omni_utils.hpp"
 
 namespace omnigraph {

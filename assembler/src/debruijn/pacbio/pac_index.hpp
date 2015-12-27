@@ -59,8 +59,6 @@ private:
     size_t read_count;
     bool ignore_map_to_middle;
 
-    map<VertexId, map<VertexId, size_t> > cashed_dijkstra;
-
 public:
     MappingDescription Locate(const Sequence &s) const;
 
@@ -110,11 +108,8 @@ public:
         } else if (b.read_position == a.read_position) {
             return (abs(int(b.edge_position) + shift - int(a.edge_position)) < 2);
         } else {
-            return ((b.edge_position + shift - a.edge_position
-                    >= (b.read_position - a.read_position) * compression_cutoff)
-                    && (b.edge_position + shift - a.edge_position
-                            <= (b.read_position - a.read_position)
-                                    / compression_cutoff));
+            return ((b.edge_position + shift - a.edge_position >= (b.read_position - a.read_position) * compression_cutoff) &&
+	            ((b.edge_position + shift - a.edge_position) * compression_cutoff <= (b.read_position - a.read_position)));
         }
     }
 
@@ -482,54 +477,6 @@ public:
             cur_color ++;
 
         }
-        if (cur_color > 1) {
-/*            auto iter = mapping_descr.begin();
-            INFO("not evident clusters selection");
-            for (int i = 0; i < len; i++, iter ++) {
-                INFO(colors[i] <<" " << iter->str(g_));
-            }
-*/        }
-        vector<size_t> long_counts(cur_color);
-        i = 0;
-
-        auto prev_iter = mapping_descr.end();
-        for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
-                    ++i_iter, ++i) {
-            if (g_.length(i_iter->edgeId) > 500) {
-                if (colors[i] == DELETED_COLOR) {
-                    if (i_iter->size > 100) {
-                        DEBUG("dominated huge cluster " << i_iter->str(g_));
-                    }
-                    continue;
-                }
-                if (prev_iter != mapping_descr.end()) {
-                    if (i_iter->edgeId != prev_iter->edgeId && ! TopologyGap(i_iter->edgeId, prev_iter->edgeId, true)){
-                        VertexId start_v = g_.EdgeEnd(prev_iter->edgeId);
-                        VertexId end_v = g_.EdgeStart(i_iter->edgeId);
-                        if (cashed_dijkstra.find(start_v) == cashed_dijkstra.end()) {
-                            auto dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, 5000);
-                            dij.Run(start_v);
-                            auto distances = dij.GetDistances();
-                            cashed_dijkstra[start_v] = std::map<VertexId, size_t>(distances.first, distances.second);
-                        }
-                        if (cashed_dijkstra[start_v].find(end_v) == cashed_dijkstra[start_v].end()) {
-                            bad_follow++;
-//                            INFO("bad follow edge_ids" << " " << g_.int_id(prev_iter->edgeId) << "( " << prev_iter->size << "),  " << g_.int_id(i_iter->edgeId) << "(" << i_iter->size << ")");
-                        } else if (cashed_dijkstra[start_v][end_v] + i_iter->average_edge_position +
-                                g_.length(prev_iter->edgeId) - prev_iter->average_edge_position >
-                            1.5 *  double(i_iter->average_read_position - prev_iter->average_read_position)) {
-                            half_bad_follow++;
-//                            INFO("ugly follow edge_ids" << " " << g_.int_id(prev_iter->edgeId) << " " << g_.int_id(i_iter->edgeId));
-
-                        } else {
-                            good_follow ++;
-                        }
-                    }
-                }
-                prev_iter = i_iter;
-            }
-        }
-
         return colors;
     }
 

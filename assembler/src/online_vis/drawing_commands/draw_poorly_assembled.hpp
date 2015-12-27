@@ -140,7 +140,9 @@ public:
 class PairedInfoChecker : public RepeatProcessor {
 
     bool CheckInfo(const omnigraph::de::PairedInfoIndexT<Graph>& clustered_pi_idx, EdgeId e1, EdgeId e2) const {
-        return !clustered_pi_idx.GetEdgePairInfo(e1, e2).empty();
+        //return !clustered_pi_idx.Get(e1, e2).empty();
+        //We don't store empty histograms, do we?
+        return clustered_pi_idx.contains(e1, e2);
     }
 
 public:

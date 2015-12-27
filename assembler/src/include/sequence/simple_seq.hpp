@@ -62,11 +62,6 @@ public:
     const static size_t TotalBytes = sizeof(T) * DataSize;
 
 private:
-    /* *
-     * @variable Just some prime number to count the hash function of the kmer
-     * */
-    const static size_t PrimeNum = 239;
-
     // number of nucleotides in the last data_ bucket
     const static size_t NuclsRemain = size_ & (TNucl - 1);
 
@@ -112,33 +107,21 @@ public:
         memcpy(dst, (const void *) data_.data(), TotalBytes);
     }
 
-    size_t GetHash() const {
-        size_t hash = PrimeNum;
-        for (size_t i = 0; i < DataSize; i++) {
-            hash = ((hash << 5) - hash) + data_[i];
-        }
-        return hash;
+    static size_t GetHash(const DataType *data, size_t sz, uint32_t seed = 0) {
+        return CityHash64WithSeed((const char*)data, sz * sizeof(DataType), 0x9E3779B9 ^ seed);
+    }
+
+    size_t GetHash(uint32_t seed = 0) const {
+        return GetHash(data_.data(), DataSize, seed);
     }
 
     struct hash {
-        size_t operator()(const SimpleSeq<size_, T>& seq) const {
-            size_t hash = PrimeNum;
-            for (size_t i = 0; i < seq.DataSize; i++) {
-                hash = ((hash << 5) - hash) + seq.data_[i];
-            }
-            return hash;
+        size_t operator()(const SimpleSeq<size_, T>& seq, uint32_t seed = 0) const {
+            return seq.GetHash(seed);
         }
-    };
 
-    struct multiple_hash {
-        size_t operator()(const SimpleSeq<size_, T>& seq, size_t hash_num,
-                size_t h) const {
-//            WARN("using multiple hash");
-            ++hash_num;
-            for (size_t i = 0; i < seq.DataSize; i++) {
-                h = (h << hash_num) + seq.data_[i];
-            }
-            return h;
+        size_t operator()(const DataType *data, size_t sz, unsigned seed = 0) {
+            return GetHash(data, sz, seed);
         }
     };
 

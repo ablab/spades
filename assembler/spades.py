@@ -42,6 +42,7 @@ elif sys.version.startswith('3.'):
 import moleculo_postprocessing
 import alignment
 
+
 def print_used_values(cfg, log):
     def print_value(cfg, section, param, pretty_param="", margin="  "):
         if not pretty_param:
@@ -301,6 +302,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.mismatch_corrector = False
             options_storage.careful = False
 
+        elif opt == '-v' or opt == "--version":
+            show_version()
         elif opt == '-h' or opt == "--help":
             show_usage(0)
         elif opt == "--help-hidden":
@@ -406,6 +409,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
 
     # assembly
     if not options_storage.only_error_correction:
+        if options_storage.k_mers == 'auto' and options_storage.restart_from is None:
+            options_storage.k_mers = None
         if options_storage.k_mers:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
         else:
@@ -494,6 +499,11 @@ def get_options_from_params(params_filename, spades_py_name=None):
     if spades_py_pos == -1:
         return None, None
     return cmd_line, cmd_line[spades_py_pos + len(spades_py_name):].split()
+
+
+def show_version():
+    options_storage.version(spades_version)
+    sys.exit(0)
 
 
 def show_usage(code, show_hidden=False):
@@ -655,9 +665,11 @@ def main(args):
             if options_storage.stop_after == 'ec':
                 support.finish_here(log)
 
-        result_contigs_filename = os.path.join(cfg["common"].output_dir, "contigs.fasta")
-        result_scaffolds_filename = os.path.join(cfg["common"].output_dir, "scaffolds.fasta")
-        result_assembly_graph_filename = os.path.join(cfg["common"].output_dir, "assembly_graph.fastg")
+        result_contigs_filename = os.path.join(cfg["common"].output_dir, options_storage.contigs_name)
+        result_scaffolds_filename = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_name)
+        result_assembly_graph_filename = os.path.join(cfg["common"].output_dir, options_storage.assembly_graph_name)
+        result_contigs_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.contigs_paths)
+        result_scaffolds_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_paths)
         truseq_long_reads_file_base = os.path.join(cfg["common"].output_dir, "truseq_long_reads")
         truseq_long_reads_file = truseq_long_reads_file_base + ".fasta"
         misc_dir = os.path.join(cfg["common"].output_dir, "misc")
@@ -670,6 +682,8 @@ def main(args):
             spades_cfg.__dict__["result_contigs"] = result_contigs_filename
             spades_cfg.__dict__["result_scaffolds"] = result_scaffolds_filename
             spades_cfg.__dict__["result_graph"] = result_assembly_graph_filename
+            spades_cfg.__dict__["result_contigs_paths"] = result_contigs_paths_filename
+            spades_cfg.__dict__["result_scaffolds_paths"] = result_scaffolds_paths_filename
 
             if options_storage.continue_mode and (os.path.isfile(spades_cfg.result_contigs)
                                                   or ("mismatch_corrector" in cfg and
@@ -836,6 +850,14 @@ def main(args):
                 log.info(message)
             if "assembly" in cfg and os.path.isfile(result_assembly_graph_filename):
                 message = " * Assembly graph is in " + support.process_spaces(result_assembly_graph_filename)
+                log.info(message)
+            if "assembly" in cfg and os.path.isfile(result_contigs_paths_filename):
+                message = " * Paths in the assembly graph corresponding to the contigs are in " + \
+                          support.process_spaces(result_contigs_paths_filename)
+                log.info(message)
+            if "assembly" in cfg and os.path.isfile(result_scaffolds_paths_filename):
+                message = " * Paths in the assembly graph corresponding to the scaffolds are in " + \
+                          support.process_spaces(result_scaffolds_paths_filename)
                 log.info(message)
             #log.info("")
 

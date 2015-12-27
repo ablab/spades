@@ -22,7 +22,7 @@ SESSION_TYPE = "filesystem"
 app.config.from_object(__name__)
 Session(app)
 
-FILENAME_REGEXP = r"(?:\.{0,2}\/)?(?:[\w\-]+\/)+(?:[\w\-\.]+)?"
+FILENAME_REGEXP = r"(?:\.{0,2}\/)[^\s]*"
 SVG = ".svg"
 JSON = ".json"
 DOT = ".dot"
@@ -42,7 +42,7 @@ def make_url(string):
             method = "ls"
         if method is not None:
             url = "<a href=\"/%s?path=%s\">%s</a>" % (method, quote(f), f)
-            res = res.replace(f, url)
+            res = res.replace(f, url, 1)
     return res
 
 def format_output(lines):
@@ -69,6 +69,7 @@ def log():
 
 @app.route("/login", methods=['GET'])
 def login():
+    session.permanent = True
     global shellders
     if "username" not in session:
         name = request.args.get("username")
@@ -83,10 +84,10 @@ def login():
             try:
                 launch = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)
                 shellders[name] = launch
-            except IOError as e:
+                session["log"] = launch.get_output()
+            except Exception as e:
                 message = "Cannot start online_vis session: " + str(e);
                 return flask.render_template("logout.html", message=message)
-            session["log"] = shellders[name].get_output()
         else:
             session["log"] = ["(the previous session log has been lost)"]
         session["username"] = name
@@ -106,16 +107,16 @@ def logout():
 @app.route("/command", methods=['GET'])
 def command():
     if session["username"] not in shellders:
-        return "online_vis is disconnected"
-    sh = shellders[session["username"]]
-    com = request.args.get("command", "")
-    if len(com):
-        _debug("Sending `%s`..." % com)
-        session["log"].append(">" + com)
-        sh.send(com)
-    (result, complete) = sh.get_output(5)
-    session["log"].extend(result)
-    #return result
+        (result, complete) = (["online_vis is disconnected, please restart the session"], True)
+    else:
+        sh = shellders[session["username"]]
+        com = request.args.get("command", "")
+        if len(com):
+            _debug("Sending `%s`..." % com)
+            session["log"].append(">" + com)
+            sh.send(com)
+        (result, complete) = sh.get_output(5)
+        session["log"].extend(result)
     return flask.jsonify(log=format_output(result), complete=complete)
 
 @app.route("/get")

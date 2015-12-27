@@ -20,6 +20,22 @@
 namespace debruijn_graph {
 
 template<class Graph>
+MappingPath<typename Graph::EdgeId> ConjugateMapping(const Graph& g, 
+                                              const MappingPath<typename Graph::EdgeId>& mp, 
+                                              size_t sequence_length) {
+    MappingPath<typename Graph::EdgeId> answer;
+    for (size_t i = mp.size(); i > 0; --i) {
+        auto p = mp[i-1];
+        auto e = p.first;
+        MappingRange mr = p.second;
+        answer.push_back(g.conjugate(e), 
+                        MappingRange(mr.initial_range.Invert(sequence_length - g.k()), 
+                        mr.mapped_range.Invert(g.length(e))));
+    }
+    return answer;
+}
+
+template<class Graph>
 class SequenceMapper {
 public:
     typedef typename Graph::EdgeId EdgeId;
