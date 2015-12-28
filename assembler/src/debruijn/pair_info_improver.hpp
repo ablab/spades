@@ -61,7 +61,7 @@ class PairInfoImprover {
 
     class ContradictionalRemover {
       public:
-        ContradictionalRemover(std::vector<omnigraph::de::PairedInfoIndexT<Graph> > &to_remove,
+        ContradictionalRemover(omnigraph::de::PairedInfoIndicesT<Graph> &to_remove,
                                const Graph &g,
                                omnigraph::de::PairedInfoIndexT<Graph>& index)
                 : to_remove_(to_remove), graph_(g), index_(index) {}
@@ -129,7 +129,7 @@ class PairInfoImprover {
             }
         }
 
-        std::vector<Index> &to_remove_;
+        omnigraph::de::PairedInfoIndicesT<Graph> &to_remove_;
         const Graph &graph_;
         Index& index_;
     };
@@ -137,9 +137,7 @@ class PairInfoImprover {
     size_t RemoveContradictional(unsigned nthreads) {
         size_t cnt = 0;
 
-        std::vector<Index> to_remove;
-        for (size_t i = 0; i < nthreads; ++i)
-            to_remove.emplace_back(graph_);
+        omnigraph::de::PairedInfoIndicesT<Graph> to_remove(graph_, nthreads);
 
         // FIXME: Replace with lambda
         ContradictionalRemover remover(to_remove, graph_, index_);
@@ -155,7 +153,8 @@ class PairInfoImprover {
         DEBUG("Resulting size " << to_remove[0].size());
 
         DEBUG("Deleting paired infos, liable to removing");
-        for (auto I = omnigraph::de::raw_pair_begin(to_remove[0]); I != omnigraph::de::raw_pair_end(to_remove[0]); ++I) {
+        for (auto I = omnigraph::de::raw_pair_begin(to_remove[0]);
+            I != omnigraph::de::raw_pair_end(to_remove[0]); ++I) {
             cnt += DeleteIfExist(I.first(), I.second(), *I);
         }
         to_remove[0].Clear();
@@ -166,79 +165,47 @@ class PairInfoImprover {
 
     }
 
-    class MissingFiller {
-      public:
-        MissingFiller(std::vector<std::vector<Index>> &to_add,
-                      const Graph &graph,
-                      const Index &index,
-                      const SplitPathConstructor<Graph> &spc,
-                      const io::SequencingLibrary<debruijn_config::DataSetData> &lib)
-                : to_add_(to_add), graph_(graph), index_(index), spc_(spc), lib_(lib) {}
-
-        bool operator()(EdgeId e) {
-            std::vector<PathInfoClass<Graph> > paths =
-                    spc_.ConvertPIToSplitPaths(e, index_,
-                                               lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
-            for (const auto& path : paths) {
-                TRACE("Path " << path.PrintPath(graph_));
-                for (const auto& pi : path) {
-                    EdgeId e1 = pi.first;
-                    EdgeId e2 = pi.second;
-                    auto ep = std::make_pair(e1, e2);
-                    if (ep <= ConjugatePair(ep))
-                        TryToAddPairInfo(to_add_[omp_get_thread_num()][0], e1, e2, pi.point);
-                    else
-                        TryToAddPairInfo(to_add_[omp_get_thread_num()][1], e1, e2, pi.point);
-                }
-            }
-
-            return false;
-        }
-
-      private:
-        EdgePair ConjugatePair(EdgePair ep) const {
-            return std::make_pair(graph_.conjugate(ep.second), graph_.conjugate(ep.first));
-        }
-
-        std::vector<std::vector<Index>> &to_add_;
-        const Graph &graph_;
-        const omnigraph::de::PairedInfoIndexT<Graph> &index_;
-        const SplitPathConstructor<Graph> &spc_;
-        const io::SequencingLibrary<debruijn_config::DataSetData>& lib_;
-    };
-
     size_t FillMissing(unsigned nthreads) {
-        TRACE("Fill missing: Creating indexes");
-        std::vector<std::vector<Index> > to_add(nthreads);
-        for (size_t i = 0; i < nthreads; ++i) {
-            to_add[i].emplace_back(graph_);
-            to_add[i].emplace_back(graph_);
-        }
+        DEBUG("Fill missing: Creating indexes");
+        const size_t NUM_CHUNKS = omp_get_num_threads() * 16;
+        omnigraph::de::PairedInfoIndicesT<Graph> to_add(graph_, NUM_CHUNKS);
 
         SplitPathConstructor<Graph> spc(graph_);
-        // FIXME: Replace with lambda
-        MissingFiller filler(to_add, graph_, index_, spc, lib_);
+        ParallelIterationHelper<Graph> edges(graph_);
+        auto iters = edges.EdgeChunks(NUM_CHUNKS);
+
         DEBUG("Fill missing: Start threads");
-        ParallelEdgeProcessor<Graph>(graph_, nthreads).Run(filler);
+        #pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < iters.size() - 1; ++i) {
+            TRACE("Processing chunk #" << i);
+            for (auto e = iters[i]; e != iters[i + 1]; ++e) {
+                TRACE("Checking for edge " << *e);
+                auto paths = spc.ConvertPIToSplitPaths(*e, index_,
+                                                       lib_.data().mean_insert_size,
+                                                       lib_.data().insert_size_deviation);
+                for (const auto &path : paths) {
+                    TRACE("Path " << path.PrintPath(graph_));
+                    for (const auto &pi : path)
+                        TryToAddPairInfo(to_add[i], pi.first, pi.second, pi.point);
+                }
+            }
+        }
+        //ParallelEdgeProcessor<Graph>(graph_, nthreads).Run(filler);
         DEBUG("Fill missing: Threads finished");
 
         size_t cnt = 0;
-        for (size_t j = 0; j < 2; ++j)
-            for (size_t i = 0; i < nthreads; ++i) {
-                DEBUG("Adding map #" << i << " " << j);
-                for (auto I = omnigraph::de::raw_pair_begin(to_add[i][j]);
-                     I != omnigraph::de::raw_pair_end(to_add[i][j]);
-                     ++I)
-                {
-                    EdgeId e1 = I.first();
-                    EdgeId e2 = I.second();
-                    for (auto p : *I)
-                        //Same info can income both from straight and conjugate edge pairs in any order
-                        //and we save only the first, so we need do normalization to make saves stable
-                        if (math::ge(p.d, 0.0f))
-                            cnt += TryToAddPairInfo(index_, e1, e2, p);
-                }
+        for (size_t i = 0; i < iters.size() - 1; ++i) {
+            DEBUG("Adding map #" << i);
+            for (auto I = omnigraph::de::raw_pair_begin(to_add[i]);
+                I != omnigraph::de::raw_pair_end(to_add[i]);
+                ++I) {
+                EdgeId e1 = I.first();
+                EdgeId e2 = I.second();
+                for (auto p : *I)
+                    cnt += TryToAddPairInfo(index_, e1, e2, p);
             }
+            to_add[i].Clear();
+        }
 
         DEBUG("Size of paired index " << index_.size());
 
