@@ -411,6 +411,7 @@ class GapCloser {
             for (auto i : tips_paired_idx_.Get(first_edge)) {
                 EdgeId second_edge = i.first;
                 for (auto point : i.second) {
+                    bool stop = false;
                     if (first_edge != second_edge && math::ge(point.weight, weight_threshold_)) {
                         if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) || !g_.IsDeadStart(g_.EdgeStart(second_edge))) {
                             // WARN("Topologically wrong tips");
@@ -419,9 +420,12 @@ class GapCloser {
                         ++gaps_checked;
                         if (ProcessPair(first_edge, second_edge)) {
                             ++gaps_filled;
+                            stop = true;
                             break;
                         }
                     }
+                    if (stop)
+                        break;
                 }
             }
         }
