@@ -167,7 +167,7 @@ class PairInfoImprover {
 
     size_t FillMissing(unsigned nthreads) {
         DEBUG("Fill missing: Creating indexes");
-        const size_t NUM_CHUNKS = omp_get_num_threads() * 16;
+        const size_t NUM_CHUNKS = nthreads * 16;
         omnigraph::de::PairedInfoIndicesT<Graph> to_add(graph_, NUM_CHUNKS);
 
         SplitPathConstructor<Graph> spc(graph_);
