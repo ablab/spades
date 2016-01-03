@@ -7,12 +7,14 @@
 
 #pragma once
 
-#include <btree/btree_set.h>
+#include "conj_iterator.hpp"
+#include "index_point.hpp"
+
+#include <adt/iterator_range.hpp>
+
 #include <btree/safe_btree_map.h>
 #include <sparsehash/sparse_hash_map>
 
-#include "conj_iterator.hpp"
-#include "index_point.hpp"
 
 namespace omnigraph {
 
@@ -615,6 +617,10 @@ public:
     ImplIterator data_end() const {
         return storage_.end();
     }
+
+    adt::iterator_range<ImplIterator> data() const {
+        return adt::make_range(data_begin(), data_end());
+    }    
 
     /**
      * @brief Returns a full proxy map to the neighbourhood of some edge.
