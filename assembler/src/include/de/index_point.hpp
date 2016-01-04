@@ -357,6 +357,11 @@ class Histogram {
     }
 };
 
+template <typename T>
+inline std::ostream& operator<<(std::ostream &os, const Histogram<T> &b) {
+  b.dump(os);
+  return os;
+}
 
 typedef Histogram<RawPoint> RawHistogram;
 typedef Histogram<Point> HistogramWithWeight;
