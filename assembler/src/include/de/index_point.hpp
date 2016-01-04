@@ -58,7 +58,7 @@ private:
 
 struct RawPoint {
     DEDistance d;
-    DEWeight   weight;
+    mutable DEWeight weight;
 
     RawPoint()
             : d(0.0), weight(0.0) {}
@@ -68,6 +68,12 @@ struct RawPoint {
 
     RawPoint(DEDistance distance, DEWeight weight, DEDistance)
             : d(distance), weight(weight) {}
+
+
+    const RawPoint operator+=(const RawPoint &rhs) const {
+        weight += rhs.weight;
+        return *this;
+    }
 
     std::string str() const {
         stringstream ss;
@@ -297,6 +303,58 @@ class Histogram {
 
   protected:
     Tree tree_;
+
+  private:
+    // This is template voodoo which creates function overload depending on
+    // whether Point has const operator+= or not.
+    template<class>
+    struct true_helper : std::true_type {};
+    template<class T = Point>
+    static auto test_can_merge(int) -> true_helper<decltype(std::declval<const T>().operator+=(std::declval<const T>()))>;
+    template<class>
+    static auto test_can_merge(long) -> std::false_type;
+    template<class T = Point>
+    struct can_merge : decltype(test_can_merge<T>(0)) {};
+
+  public:
+    // This function overload is enabled only when Point has const operator+= (e.g. RawPoint)
+    // and therefore we can update it inplace.
+    template<class OtherHist, class U = Point>
+    typename std::enable_if<can_merge<U>::value, size_t>::type
+    merge(const OtherHist &other) {
+        size_t added = 0;
+        for (const auto& new_point : other) {
+            // First, try to insert a point
+            const auto& result = insert(new_point);
+            if (!result.second) {
+                // We already having something there. Try to merge stuff in.
+                *result.first += new_point;
+            } else
+                added += 1;
+        }
+
+        return added;
+    }
+
+    // Otherwise this overload is used, which removes the point from set,
+    // updates it and re-inserts back.
+    template<class OtherHist, class U = Point>
+    typename std::enable_if<!can_merge<U>::value, size_t>::type
+    merge(const OtherHist &other) {
+        size_t added = 0;
+        for (const auto& new_point : other) {
+            // First, try to insert a point
+            auto result = insert(new_point);
+            if (!result.second) {
+                Point updated = *result.first + new_point;
+                auto after_removed = erase(result.first);
+                insert(after_removed, updated);
+            } else
+                added += 1;
+        }
+
+        return added;
+    }
 };
 
 

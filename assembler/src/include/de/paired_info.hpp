@@ -381,7 +381,7 @@ private:
     }
 
     float CalcOffset(EdgeId e1, EdgeId e2) const {
-        return float(graph_.length(e1)) - graph_.length(e2);
+        return float(graph_.length(e1)) - float(graph_.length(e2));
     }
 
 public:
@@ -420,8 +420,7 @@ private:
                 auto ri = reversed.find(rp);
                 MergeData(reversed, ri, rp);
             }
-        }
-        else {
+        } else {
             InsertPoint(straight, sp);
             if (!IsSymmetric(e1, e2, sp)) {
                 auto &reversed = storage_[e2][e1];
@@ -486,18 +485,9 @@ private:
     template<class OtherMap>
     void MergeInnerMaps(const OtherMap& map_to_add,
                         InnerMap& map) {
-        typedef typename Histogram::iterator hist_iterator;
-        for (const auto& i : map_to_add) {
-            Histogram& hist_exists = map[i.first];
-            const auto& hist_to_add = i.second;
-
-            for (const auto& new_point : hist_to_add) {
-                const std::pair<hist_iterator, bool>& result = hist_exists.insert(new_point);
-                if (!result.second) { // in this case we need to merge two points
-                    MergeData(hist_exists, result.first, new_point);
-                } else
-                    ++size_;
-            }
+        for (const auto& to_add : map_to_add) {
+            Histogram &hist_exists = map[to_add.first];
+            size_ += hist_exists.merge(to_add.second);
         }
     }
 
