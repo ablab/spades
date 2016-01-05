@@ -752,6 +752,11 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph& g,
                                            double cov_bound,
                                            const SimplifInfoContainer& info,
                                            HandlerF<Graph> removal_handler) {
+    if (math::ls(cov_bound, 0.)) {
+        INFO("Flanking coverage based disconnection disabled");
+        return nullptr;
+    }
+
     return make_shared<ParallelDisconnectionAlgorithm<Graph>>(g,
                                                         make_shared<FlankingCovBound<Graph>>(g, flanking_cov, cov_bound),
                                                         info.chunk_cnt(),

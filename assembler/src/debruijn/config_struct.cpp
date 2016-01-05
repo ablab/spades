@@ -263,6 +263,7 @@ void load(debruijn_config::simplification::init_cleaning& init_clean,
   load(init_clean.ier, pt, "ier", complete);
   load(init_clean.tip_condition, pt, "tip_condition", complete);
   load(init_clean.ec_condition, pt, "ec_condition", complete);
+  load(init_clean.disconnect_flank_cov, pt, "disconnect_flank_cov", complete);
 }
 
 void load(debruijn_config::simplification::complex_bulge_remover& cbr,
@@ -751,6 +752,10 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.con, pt, "construction");
   load(cfg.sensitive_map, pt, "sensitive_mapper");
   load(cfg.flanking_range, pt, "flanking_range");
+  if (cfg.ds.meta) {
+    INFO("Flanking range overwritten to 30 for meta mode");
+    cfg.flanking_range = 30;
+  }
 
   load(cfg.info_printers, pt, "info_printers");
   load_reads(cfg.ds, cfg.input_dir);

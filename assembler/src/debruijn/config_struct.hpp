@@ -310,6 +310,7 @@ struct debruijn_config {
             isolated_edges_remover ier;
             std::string tip_condition;
             std::string ec_condition;
+            double disconnect_flank_cov;
         };
 
         size_t cycle_iter_count;

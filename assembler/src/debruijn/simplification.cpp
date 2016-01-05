@@ -119,7 +119,7 @@ class GraphSimplifier {
 
             PushValid(
                     LowFlankDisconnectorInstance(g_, gp_.flanking_cov,
-                                                 0.9, info_container_,
+                                                 simplif_cfg_.init_clean.disconnect_flank_cov, info_container_,
                                                  removal_handler_),
                     "Disconnecting edges with low flanking coverage",
                     algos);

@@ -175,4 +175,4 @@ bwa_aligner
 }
 
 ;flanking coverage range
-flanking_range 30
+flanking_range 55
