@@ -62,7 +62,7 @@ class GapCloserPairedIndexFiller {
                         auto e2 = InTipIter->second.first;
                         paired_index.SwapConj(e1, e2);
                         paired_index.Add(e1, e2, omnigraph::de::RawPoint(1000000., 1.));
-                    }   
+                    }
                 }
             }
         }
@@ -418,21 +418,22 @@ class GapCloser {
                     continue;
                 }
 
+                bool closed = false;
                 for (auto point : i.second) {
-                    bool stop = false;
-                    if (math::ge(point.weight, weight_threshold_)) {
-                        ++gaps_checked;
-                        if (ProcessPair(first_edge, second_edge)) {
-                            ++gaps_filled;
-                            stop = true;
-                            break;
-                        }
-                    }
-                    if (stop)
+                    if (math::ls(point.weight, weight_threshold_))
+                        continue;
+
+                    ++gaps_checked;
+                    closed = ProcessPair(first_edge, second_edge);
+                    if (closed) {
+                        ++gaps_filled;
                         break;
+                    }
                 }
-            }
-        }
+                if (closed)
+                    break;
+            } // second edge
+        } // first edge
 
         INFO("Closing short gaps complete: filled " << gaps_filled
              << " gaps after checking " << gaps_checked
