@@ -29,6 +29,8 @@
 
 #include "openmp_wrapper.h"
 
+#include "version.hpp"
+
 #include <yaml-cpp/yaml.h>
 #include <fstream>
 #include <iomanip>

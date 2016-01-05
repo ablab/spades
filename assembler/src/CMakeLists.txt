@@ -67,6 +67,8 @@ message("Building SPAdes from ${SPADES_GIT_REFSPEC}, sha: ${SPADES_GIT_SHA1}")
 
 configure_file("${SPADES_MAIN_INCLUDE_DIR}/config.hpp.in"
                "${SPADES_BUILT_INCLUDE_DIR}/config.hpp")
+configure_file("${SPADES_MAIN_INCLUDE_DIR}/version.hpp.in"
+               "${SPADES_BUILT_INCLUDE_DIR}/version.hpp")
 
 # Build external dependencies (if any)
 add_subdirectory("${EXT_DIR}/src" "${Project_BINARY_DIR}/ext")
