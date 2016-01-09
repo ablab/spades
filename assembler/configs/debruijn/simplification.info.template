@@ -31,7 +31,7 @@ default
 		max_delta			3
 		max_relative_delta		0.1
         max_number_edges        1000
-        parallel false
+        parallel true
         chunk_size 10000
 	}
 	
@@ -106,6 +106,7 @@ default
     ; isolated edges remover
     ier
     {
+        enabled                     true
         max_length                  0
         max_coverage                2
         max_length_any_cov          150 ; will be taken max with read_length 
@@ -145,33 +146,26 @@ default
     init_clean
     {
         self_conj_condition "{ ec_lb 100, cb 1.0 }"
-        tip_condition   ""
-        ec_condition    ""
+        early_it_only   false
+       ; will be enabled only if average coverage \leq activate_cov
+        activation_cov  10.
+
+        ; isolated edges remover
+        ier
+        {
+            enabled                     true
+            max_length                  0
+            max_coverage                0
+            max_length_any_cov          0 ; will be taken max with read_length 
+        }
+
+        tip_condition   "{ tc_lb 3.5, cb auto }"
+        ec_condition    "{ ec_lb 10, cb 2.0 }"
+        ; edges with flank cov around alternative less than value will be disconnected 
+        ; negative value to disable
+        disconnect_flank_cov    -1.0
     }
     
-    ;master switch over presimp, persistent iterators and disabling br
-    fast_features true
-    fast_activation_cov 10.
-
-    presimp 
-    {
-       enabled true
-       parallel false
-       ; will be enabled only if average coverage \leq activate_cov
-       tip_condition   "{ tc_lb 3.5, cb auto }"
-       ec_condition    "{ ec_lb 10, cb 2.0 }"
-
-       ; isolated edges remover
-       ier
-       {
-           max_length                  0
-           max_coverage                0
-           max_length_any_cov          0 ; will be taken max with read_length 
-       }
-    }
-
-    persistent_cycle_iterators true
-    disable_br_in_cycle false    
 }
 
 sc
@@ -198,7 +192,7 @@ sc
 		max_delta			3
 		max_relative_delta		0.1
         max_number_edges        1000
-        parallel false
+        parallel true
         chunk_size 10000
 	}
 	
@@ -261,7 +255,17 @@ sc
         relative_threshold          5     
     }
 
-    fast_features false
+    init_clean
+    {
+        activation_cov  -1.
+        ier
+        {
+            enabled false
+        }
+
+        tip_condition   ""
+        ec_condition    ""
+    }
 }
 
 moleculo
@@ -288,7 +292,7 @@ moleculo
         max_delta           3
         max_relative_delta      0.1
         max_number_edges        1000
-        parallel false
+        parallel true
         chunk_size 10000
     }
     
@@ -355,15 +359,20 @@ moleculo
         relative_threshold          5     
     }
 
-    presimp 
+    init_clean
     {
-        enabled false
+        early_it_only   true
+
+        activation_cov  -1.
+        ier
+        {
+            enabled                     false
+        }
+
+        tip_condition   ""
+        ec_condition    ""
     }
-
-    stats_mode 0
 }
-
-
 
 careful
 {
@@ -378,7 +387,7 @@ careful
         max_delta           3
         max_relative_delta      0.1
         max_number_edges        1000
-        parallel false
+        parallel true
         chunk_size 10000
     }
     
@@ -394,7 +403,19 @@ careful
         enabled false
     }
 
-    fast_features false
+    init_clean
+    {
+        early_it_only   true
+
+        activation_cov  -1.
+        ier
+        {
+            enabled                     false
+        }
+
+        tip_condition   ""
+        ec_condition    ""
+    }
 }
 
 diploid_simp
@@ -412,7 +433,7 @@ diploid_simp
 		max_delta			3
 		max_relative_delta		0.1
         max_number_edges        1000
-        parallel false
+        parallel true
         chunk_size 10000
 	}
 }
@@ -433,6 +454,14 @@ meta
        condition               "{ ec_lb 30, icb 2.5 }"
     }
     
+    ; tip clipper:
+    tc
+    {
+        ; rctc: tip_cov < rctc * not_tip_cov
+        ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
+        condition               "{ tc_lb 3.5, cb 10000 } { tc_lb 6., cb 2.5 }"
+    }
+
     ; relative coverage erroneous component remover:
     rcc
     {
@@ -467,22 +496,12 @@ meta
         chunk_size 10000
 	}
 
-    fast_features true
-
-    presimp 
-    {
-       enabled true
-       parallel false
-       tip_condition   "{ tc_lb 3.5, cb 2.0 }"
-       ec_condition    "{ ec_lb 10, cb 1.5 }"
-    }
-
     ; final tip clipper:
     final_tc
     {
         ; rctc: tip_cov < rctc * not_tip_cov
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
-        condition               "{ tc_lb 30, cb 20, rctc 0.2 }"
+        condition               "{ lb 500, cb 3., rctc 1.0 } { lb 1500, cb 20., rctc 0.2 }"
     }
 
     ; final bulge remover:
@@ -515,6 +534,16 @@ meta
         chunk_size 10000
     }
 
+    init_clean
+    {
+       early_it_only   true
+       ier {
+           enabled true
+       }
+       tip_condition   "{ tc_lb 3.5, cb 2.0 }"
+       ec_condition    "{ ec_lb 10, cb 0.5 }"
+    }
+
 }
 
 preliminary
@@ -522,8 +551,14 @@ preliminary
     init_clean
     {
         self_conj_condition "{ ec_lb 100, cb 20.0 }"
-        tip_condition   "{ lb 20, cb 1.1 }"
+        early_it_only   false
+        ier
+        {
+            enabled true
+        }
+        tip_condition   "{ lb 20, cb 1.1, mmm 2 }"
         ec_condition    "{ ec_lb 0, cb 0.9 }"
+        disconnect_flank_cov    0.9
     }
 
     post_simplif_enabled false

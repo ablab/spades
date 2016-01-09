@@ -235,13 +235,13 @@ public:
 		processors_.push_back(&processor);
 	}
 
-	virtual void Flush() {
+	void Flush() override {
 		for (auto it = processors_.begin(); it != processors_.end(); ++it) {
 			(*it)->Flush();
 		}
 	}
 
-	virtual void HandleReversedPath(const Path& path) {
+	void HandleReversedPath(const Path& path) override {
 		for (auto it = processors_.begin(); it != processors_.end(); ++it) {
 			(*it)->HandleReversedPath(path);
 		}
@@ -260,7 +260,7 @@ public:
             g_(g), cnt_(0), comparator_(comparator) {
     }
 
-    virtual void HandleReversedPath(const vector<EdgeId>& path) {
+    void HandleReversedPath(const vector<EdgeId>& path) override {
         cnt_++;
         if(best_path_.size() == 0 || comparator_(path, best_path_))
             best_path_ = path;
@@ -292,12 +292,12 @@ public:
 			g_(g) {
 	}
 
-	virtual void Flush() {
+	void Flush() override {
 		all_paths_.push_back(cur_paths_);
 		cur_paths_.clear();
 	}
 
-	virtual void HandleReversedPath(const vector<EdgeId>& path) {
+	void HandleReversedPath(const vector<EdgeId>& path) override {
 		cur_paths_.push_back(this->ReversePath(path));
 	}
 
@@ -325,13 +325,13 @@ public:
 			g_(g), count_(0) {
 	}
 
-	virtual void Flush() {
+	void Flush() override {
 		all_paths_.push_back(cur_paths_);
 		counts_.push_back(count_);
 		cur_paths_.clear();
 	}
 
-	virtual void HandleReversedPath(const Path& path) {
+	void HandleReversedPath(const Path& path) override {
 		if (path.size() > 0) {
 			++count_;
 			cur_paths_.push_back(this->ReversePath(path));
@@ -365,13 +365,13 @@ public:
 			g_(g), count_(0) {
 	}
 
-	virtual void Flush() {
+	void Flush() override {
 		all_vertices_.push_back(vertices_);
 		vertices_.clear();
 		counts_.push_back(count_);
 	}
 
-	virtual void HandleReversedPath(const Path& path) {
+	void HandleReversedPath(const Path& path) override {
 		for (auto it = path.rbegin(); it != path.rend(); ++it) {
 			if (path.size() > 0) {
 				vertices_.insert(g_.EdgeStart(*it));
@@ -407,12 +407,12 @@ public:
 			g_(g) {
 	}
 
-	virtual void Flush() {
+	void Flush() override {
 		all_distances_.push_back(distances_);
 		distances_.clear();
 	}
 
-	virtual void HandleReversedPath(const Path& path) {
+	void HandleReversedPath(const Path& path) override {
 		size_t path_length = PathLength(path);
 		distances_.insert(path_length);
 	}

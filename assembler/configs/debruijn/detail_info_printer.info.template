@@ -2,61 +2,42 @@ info_printers
 {
     default
     {
-       ;print_stats                      true
-       print_stats                      false
+       basic_stats                      false
+       save_full_graph                  false
+       extended_stats                   false
        detailed_dot_write               false
        write_components                 false
        components_for_genome_pos        "" ; (k+1)-mers starting on this positions will be investigated
 	   components_for_kmer              ""
        write_components_along_genome    false
        write_components_along_contigs   false
-       save_full_graph                  false
        write_error_loc                  false
        write_full_graph                 false
        write_full_nc_graph              false
-}
+    }
 
-;	before_simplification
-;	tip_clipping
-;	bulge_removal
-;	err_con_removal
-;	before_post_simplification
-;	final_err_con_removal
-;	final_tip_clipping
-;	final_bulge_removal
-;	removing_isolated_edges
-;	final_simplified
-;	before_repeat_resolution
-
+	before_first_gap_closer
+    {
+    }
 
 	before_simplification
     {
-;       write_components                 true
-;       write_components_along_genome    true
-;       ;detailed_dot_write		true
     }
 
     before_post_simplification    
     {
-;       write_components                 true
-;       write_components_along_genome    true
-;       write_error_loc                  true
     }
 
     final_simplified
     {
-;       write_components                 true
-;       write_components_along_genome    true
-;       write_error_loc                  true
     }
 
-;    before_repeat_resolution
-;    {
-;       ;write_components                 true
-;       ;write_components_along_genome    true
-;       ;write_error_loc                  true
-;	write_full_nc_graph              true
-;
-;   }
+    final_gap_closed
+    {
+    }
+
+    before_repeat_resolution
+    {
+    }
 
 }  

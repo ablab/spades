@@ -18,6 +18,7 @@
 
 #include "omni_utils.hpp"
 #include "xmath.h"
+#include "func.hpp"
 #include "basic_edge_conditions.hpp"
 #include "graph_processing_algorithm.hpp"
 
@@ -61,7 +62,7 @@ public:
 			base(g), max_relative_coverage_(max_relative_coverage) {
 	}
 
-	bool Check(EdgeId e) const {
+	bool Check(EdgeId e) const override {
 		//+1 is a trick to deal with edges of 0 coverage from iterative run
 		double max_coverage = MaxCompetitorCoverage(e) + 1;
 		return math::le(this->g().coverage(e),
@@ -94,7 +95,7 @@ public:
      * @param edge edge vertex to be checked
      * @return true if edge judged to be tip and false otherwise.
      */
-    /*virtual*/ bool Check(EdgeId e) const {
+    bool Check(EdgeId e) const override {
         return (IsTip(this->g().EdgeEnd(e)) || IsTip(this->g().EdgeStart(e)))
                 && (this->g().OutgoingEdgeCount(this->g().EdgeStart(e))
                         + this->g().IncomingEdgeCount(this->g().EdgeEnd(e)) > 2);
@@ -106,11 +107,11 @@ public:
 template<class Graph>
 class MismatchTipCondition : public EdgeCondition<Graph> {
     typedef EdgeCondition<Graph> base;
-
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 
     size_t max_diff_;
+
     size_t Hamming(EdgeId edge1, EdgeId edge2) const {
         size_t len = std::min(this->g().length(edge1), this->g().length(edge2));
         size_t cnt = 0;
@@ -123,27 +124,23 @@ class MismatchTipCondition : public EdgeCondition<Graph> {
         return cnt;
     }
 
-public:
-    static const size_t INF = size_t(-1);
-    MismatchTipCondition(const Graph& g, size_t max_diff) : base(g), max_diff_(max_diff) {
-    }
-
-    /**
-     * This method checks if given edge topologically looks like a tip.
-     * @param edge edge vertex to be checked
-     * @return true if edge judged to be tip and false otherwise.
-     */
-    /*virtual*/ bool Check(EdgeId e) const {
-        if(max_diff_ == INF) {
-            return true;
-        }
-        auto alternatives = this->g().OutgoingEdges(this->g().EdgeStart(e));
-        for(auto it = alternatives.begin(); it != alternatives.end(); ++it) {
-            if(e != *it && this->g().length(e) < this->g().length(*it) && Hamming(e, *it) <= max_diff_) {
+    bool InnerCheck(EdgeId e) const {
+        size_t len = this->g().length(e);
+        for (auto alt : this->g().OutgoingEdges(this->g().EdgeStart(e))) {
+            if (e != alt && len < this->g().length(alt) && Hamming(e, alt) <= max_diff_) {
                 return true;
             }
         }
         return false;
+    }
+
+public:
+    MismatchTipCondition(const Graph& g, size_t max_diff) : 
+        base(g), max_diff_(max_diff) {
+    }
+
+    bool Check(EdgeId e) const override {
+        return InnerCheck(e) || InnerCheck(this->g().conjugate(e));
     }
 
 };
@@ -157,19 +154,26 @@ shared_ptr<func::Predicate<typename Graph::EdgeId>> AddTipCondition(const Graph&
 }
 
 template<class Graph>
-bool ClipTips(
-        Graph& g,
-        size_t max_length,
-        shared_ptr<Predicate<typename Graph::EdgeId>> condition
-            = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
-        std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-
-    omnigraph::EdgeRemovingAlgorithm<Graph> tc(g,
-                                               AddTipCondition(g, condition),
-                                               removal_handler);
-
-    return tc.Run(LengthComparator<Graph>(g),
-                      make_shared<LengthUpperBound<Graph>>(g, max_length));
+shared_ptr<func::Predicate<typename Graph::EdgeId>>
+NecessaryTipCondition(const Graph& g, size_t max_length, double max_coverage) {
+    return AddTipCondition(g, func::And<typename Graph::EdgeId>(std::make_shared<LengthUpperBound<Graph>>(g, max_length),
+                               std::make_shared<CoverageUpperBound<Graph>>(g, max_coverage)));
 }
+
+//template<class Graph>
+//bool ClipTips(
+//        Graph& g,
+//        size_t max_length,
+//        shared_ptr<Predicate<typename Graph::EdgeId>> condition
+//            = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
+//        std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+//
+//    omnigraph::EdgeRemovingAlgorithm<Graph> tc(g,
+//                                               AddTipCondition(g, condition),
+//                                               removal_handler);
+//
+//    return tc.Run(LengthComparator<Graph>(g),
+//                      make_shared<LengthUpperBound<Graph>>(g, max_length));
+//}
 
 } // namespace omnigraph

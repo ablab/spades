@@ -366,24 +366,49 @@ private:
     DECL_LOGGER("RelativelyLowCoveredComponentChecker");
 };
 
+//Removes last (k+1)-mer of graph edge
+template<class Graph>
+class EdgeDisconnector {
+    typedef typename Graph::EdgeId EdgeId;
+    Graph& g_;
+    EdgeRemover<Graph> edge_remover_;
 
+public:
+    EdgeDisconnector(Graph& g,
+                     HandlerF<Graph> removal_handler = nullptr):
+                                 g_(g), edge_remover_(g, removal_handler) {
+    }
 
+    EdgeId operator()(EdgeId e/*, bool start = false*/) {
+        VERIFY(g_.length(e) > 1);
+        pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, g_.length(e) - 1);
+        edge_remover_.DeleteEdge(split_res.second);
+        return split_res.first;
+    }
+};
+
+//todo make parallel
 template<class Graph>
 class RelativeCoverageDisconnector: public EdgeProcessingAlgorithm<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef std::function<double(EdgeId, VertexId)> LocalCoverageFT;
     typedef EdgeProcessingAlgorithm<Graph> base;
+
     const RelativeCoverageHelper<Graph> rel_helper_;
+    EdgeDisconnector<Graph> disconnector_;
     size_t cnt_;
 public:
     RelativeCoverageDisconnector(Graph& g,
             LocalCoverageFT local_coverage_f, double diff_mult) :
-            base(g, false), rel_helper_(g, local_coverage_f, diff_mult), cnt_(0) {
+            base(g, false),
+            rel_helper_(g, local_coverage_f, diff_mult),
+            disconnector_(g),
+            cnt_(0) {
     }
 
     ~RelativeCoverageDisconnector() {
-        INFO("Disconnected edge cnt " << cnt_);
+        DEBUG("Disconnected edge cnt " << cnt_);
     }
 
 protected:
@@ -394,10 +419,13 @@ protected:
         DEBUG("Local flanking coverage - " << coverage_edge_around_v);
         DEBUG("Max local coverage incoming  - " << rel_helper_.MaxLocalCoverage(this->g().IncomingEdges(v), v));
         DEBUG("Max local coverage outgoing  - " << rel_helper_.MaxLocalCoverage(this->g().OutgoingEdges(v), v));
-        if(rel_helper_.CheckAnyHighlyCovered(this->g().IncomingEdges(v), v, coverage_edge_around_v) &&
+        if (this->g().length(edge) > 1 &&
+                rel_helper_.CheckAnyHighlyCovered(this->g().IncomingEdges(v), v, coverage_edge_around_v) &&
                 rel_helper_.CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, coverage_edge_around_v)) {
             DEBUG("Disconnecting");
-            return DisconnectEdge(edge);
+            disconnector_(edge);
+            cnt_++;
+            return true;
         } else {
             DEBUG("No need to disconnect");
             return false;
@@ -406,20 +434,7 @@ protected:
 
 private:
 
-
-    bool DisconnectEdge(EdgeId edge) {
-        size_t len = this->g().length(edge);
-        if (len > 1) {
-            pair<EdgeId, EdgeId> split_res = this->g().SplitEdge(edge, len - 1);
-            EdgeRemover<Graph> edge_remover(this->g());
-            edge_remover.DeleteEdge(split_res.second);
-            cnt_++;
-            return true;
-        }
-        return false;
-    }
-    DECL_LOGGER("RelativeCoverageDisconnector")
-    ;
+    DECL_LOGGER("RelativeCoverageDisconnector");
 };
 
 template<class Graph>

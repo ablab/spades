@@ -50,6 +50,8 @@ class NotOperator;
 template<class T>
 class Predicate: public Func<T, bool> {
 public:
+    typedef T checked_type;
+
 	bool Apply(T t) const {
 		return Check(t);
 	}
@@ -90,20 +92,20 @@ public:
 //}
 
 template<class T>
-const shared_ptr<Predicate<T>> And(const shared_ptr<Predicate<T>>& a,
-		const shared_ptr<Predicate<T>>& b) {
-	return make_shared<AndOperator<T>>(a, b);
+const std::shared_ptr<Predicate<T>> And(const std::shared_ptr<Predicate<T>>& a,
+		const std::shared_ptr<Predicate<T>>& b) {
+	return std::make_shared<AndOperator<T>>(a, b);
 }
 
 template<class T>
-const shared_ptr<Predicate<T>> Or(const shared_ptr<Predicate<T>>& a,
-		const shared_ptr<Predicate<T>>& b) {
-	return make_shared<OrOperator<T>>(a, b);
+const std::shared_ptr<Predicate<T>> Or(const std::shared_ptr<Predicate<T>>& a,
+		const std::shared_ptr<Predicate<T>>& b) {
+	return std::make_shared<OrOperator<T>>(a, b);
 }
 
 template<class T>
-const shared_ptr<Predicate<T>> Not(const shared_ptr<Predicate<T>>& a) {
-	return make_shared<NotOperator<T>>(a);
+const std::shared_ptr<Predicate<T>> Not(const std::shared_ptr<Predicate<T>>& a) {
+	return std::make_shared<NotOperator<T>>(a);
 }
 
 template<class T>
@@ -128,10 +130,10 @@ public:
 
 template<class T>
 class NotOperator: public Predicate<T> {
-	shared_ptr<Predicate<T>> a_;
+	std::shared_ptr<Predicate<T>> a_;
 
 public:
-	NotOperator(const shared_ptr<Predicate<T>>& a) :
+	NotOperator(const std::shared_ptr<Predicate<T>>& a) :
 			a_(a) {
 	}
 
@@ -142,12 +144,12 @@ public:
 
 template<class T>
 class AndOperator: public Predicate<T> {
-	shared_ptr<Predicate<T>> a_;
-	shared_ptr<Predicate<T>> b_;
+	std::shared_ptr<Predicate<T>> a_;
+	std::shared_ptr<Predicate<T>> b_;
 
 public:
-	AndOperator(const shared_ptr<Predicate<T>>& a,
-			const shared_ptr<Predicate<T>>& b) :
+	AndOperator(const std::shared_ptr<Predicate<T>>& a,
+			const std::shared_ptr<Predicate<T>>& b) :
 			a_(a), b_(b) {
 	}
 
@@ -158,12 +160,12 @@ public:
 
 template<class T>
 class OrOperator: public Predicate<T> {
-	shared_ptr<Predicate<T>> a_;
-	shared_ptr<Predicate<T>> b_;
+	std::shared_ptr<Predicate<T>> a_;
+	std::shared_ptr<Predicate<T>> b_;
 
 public:
-	OrOperator(const shared_ptr<Predicate<T>>& a,
-			const shared_ptr<Predicate<T>>& b) :
+	OrOperator(const std::shared_ptr<Predicate<T>>& a,
+			const std::shared_ptr<Predicate<T>>& b) :
 			a_(a), b_(b) {
 	}
 

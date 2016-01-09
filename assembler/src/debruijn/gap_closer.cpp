@@ -401,13 +401,13 @@ class GapCloser {
     }
 
   public:
+    //TODO extract methods
     void CloseShortGaps() {
         INFO("Closing short gaps");
         size_t gaps_filled = 0;
         size_t gaps_checked = 0;
         for (auto edge = g_.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
             EdgeId first_edge = *edge;
-
             for (auto i : tips_paired_idx_.Get(first_edge)) {
                 EdgeId second_edge = i.first;
                 if (first_edge == second_edge)
@@ -420,6 +420,8 @@ class GapCloser {
 
                 bool closed = false;
                 for (auto point : i.second) {
+                    if (math::ls(point.d, 0))
+                        continue;
                     if (math::ls(point.weight, weight_threshold_))
                         continue;
 

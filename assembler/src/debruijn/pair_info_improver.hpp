@@ -171,8 +171,8 @@ class PairInfoImprover {
         omnigraph::de::PairedInfoIndicesT<Graph> to_add(graph_, NUM_CHUNKS);
 
         SplitPathConstructor<Graph> spc(graph_);
-        ParallelIterationHelper<Graph> edges(graph_);
-        auto iters = edges.EdgeChunks(NUM_CHUNKS);
+        IterationHelper<Graph, EdgeId> edges(graph_);
+        auto iters = edges.Chunks(NUM_CHUNKS);
 
         DEBUG("Fill missing: Start threads");
         #pragma omp parallel for schedule(guided)
