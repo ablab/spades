@@ -43,7 +43,7 @@ private:
             length = curr_env.edge_length_bound();
         }
 
-        shared_ptr<func::Predicate<EdgeId>> condition = make_shared<LengthUpperBound<Graph>>(curr_env.graph(), length);
+        adt::TypedPredicate<EdgeId> condition = LengthUpperBound<Graph>(curr_env.graph(), length);
         if (args.size() > 2 && (args[2] == "Y" || args[2] == "y")) {
             cout << "Trying to activate genome quality condition" << endl;
             if (curr_env.genome().size() == 0) {
@@ -54,8 +54,8 @@ private:
                 curr_env.graph_pack().ClearQuality();
                 curr_env.graph_pack().FillQuality();
 //                condition = make_shared<make_shared<debruijn_graph::ZeroQualityCondition<Graph, Index>>(curr_env.graph(), edge_qual);
-                condition = make_shared<func::AdaptorPredicate<EdgeId>>(boost::bind(&debruijn_graph::EdgeQuality<Graph>::IsZeroQuality
-                                                                                    , boost::ref(curr_env.graph_pack().edge_qual), _1));
+                condition = std::bind(&debruijn_graph::EdgeQuality<Graph>::IsZeroQuality,
+                                      std::ref(curr_env.graph_pack().edge_qual), std::placeholders::_1);
             }
         }
         debruijn::simplification::SimplifInfoContainer info;

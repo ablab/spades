@@ -763,9 +763,8 @@ public:
         VERIFY(chunk_iterators.size() > 1);
         SmartSetIterator<Graph, ElementType, Comparator> it(g_, false, comp);
 
-        std::shared_ptr<func::Predicate<ElementType>> predicate =
-                std::make_shared<AdaptorPredicate<ElementType>>(std::bind(&Algo::IsOfInterest, std::ref(algo), std::placeholders::_1));
-        FillInterestingFromChunkIterators(chunk_iterators, it, *predicate);
+        FillInterestingFromChunkIterators(chunk_iterators, it,
+                                          std::bind(&Algo::IsOfInterest, std::ref(algo), std::placeholders::_1));
 
         bool changed = false;
         for (; !it.IsEnd(); ++it) {
@@ -785,12 +784,12 @@ class SemiParallelEdgeRemovingAlgorithm {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     Graph& g_;
-    shared_ptr<func::Predicate<EdgeId>> condition_;
+    adt::TypedPredicate<EdgeId> condition_;
     EdgeRemover<Graph> edge_remover_;
 
 public:
     SemiParallelEdgeRemovingAlgorithm(Graph& g,
-                                      shared_ptr<func::Predicate<EdgeId>> condition,
+                                      adt::TypedPredicate<EdgeId> condition,
                                       std::function<void(EdgeId)> removal_handler = 0) :
             g_(g), condition_(condition), edge_remover_(g, removal_handler) {
     }
