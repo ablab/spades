@@ -1,0 +1,7 @@
+#ifndef __SPADES_VERSION_HPP__
+#define __SPADES_VERSION_HPP__
+
+#cmakedefine SPADES_GIT_REFSPEC "${SPADES_GIT_REFSPEC}"
+#cmakedefine SPADES_GIT_SHA1 "${SPADES_GIT_SHA1}"
+
+#endif // __SPADES_VERSION_HPP__

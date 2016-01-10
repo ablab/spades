@@ -122,13 +122,17 @@ class StageManager {
     StageManager(SavesPolicy policy = SavesPolicy())
             : saves_policy_(policy) {}
 
-    void add(AssemblyStage *stage) {
+    StageManager& add(AssemblyStage *stage) {
         stages_.push_back(std::unique_ptr<AssemblyStage>(stage));
         stages_.back()->parent_ = this;
+
+        return *this;
     }
-    void add(std::initializer_list<AssemblyStage*> stages) {
+    StageManager& add(std::initializer_list<AssemblyStage*> stages) {
         for (auto it = stages.begin(), et = stages.end(); it != et; ++it)
             add(*it);
+
+        return *this;
     }
 
     void run(debruijn_graph::conj_graph_pack& g,

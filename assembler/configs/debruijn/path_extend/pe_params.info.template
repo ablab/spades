@@ -17,7 +17,6 @@ visualize {
 ; none | break_gaps | break_all
 output_broken_scaffolds     break_gaps
 
-
 params {
     ; old | 2015 | combined | old_pe_2015
     scaffolding_mode old
@@ -122,6 +121,7 @@ long_reads {
     }
 }
 }
+
 sc_pe {
 params {
     normalize_weight        true
@@ -160,6 +160,9 @@ params {
 ;NB decsends from sc_pe
 meta_pe {
 params {
+    remove_overlaps     true
+    cut_all_overlaps  true
+
     ;TODO proper configuration of different extenders is not supported 
     ;TODO most settings ard hardcoded for now 
 
@@ -181,5 +184,3 @@ params {
     remove_overlaps     false
 }
 }
-
-

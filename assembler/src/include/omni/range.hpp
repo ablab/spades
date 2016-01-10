@@ -51,7 +51,12 @@ public:
         return Range(this->start_pos, other.end_pos);
     }
 
-    Range operator = (const Range & other){
+    Range Invert(size_t base_length) const {
+        VERIFY(base_length >= end_pos);
+        return Range(base_length - end_pos, base_length - start_pos);
+    }
+
+    Range& operator=(const Range& other) {
         start_pos = other.start_pos;
         end_pos = other.end_pos;
         return *this;

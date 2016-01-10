@@ -23,8 +23,8 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
   typedef DistanceEstimator<Graph> base;
   typedef typename base::InPairedIndex InPairedIndex;
   typedef typename base::OutPairedIndex OutPairedIndex;
-  typedef typename InPairedIndex::Histogram InHistogram;
-  typedef typename OutPairedIndex::Histogram OutHistogram;
+  typedef typename base::InHistogram InHistogram;
+  typedef typename base::OutHistogram OutHistogram;
 
  public:
   WeightedDistanceEstimator(const Graph &graph,
@@ -47,7 +47,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
 
   virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
                                               const InHistogram& histogram,
-                                              const GraphLengths& raw_forward) const {
+                                              const GraphLengths& raw_forward) const override {
     using std::abs;
     using namespace math;
     TRACE("Estimating with weight function");
@@ -55,11 +55,9 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
     size_t second_len = this->graph().length(ep.second);
 
     EstimHist result;
-    int maxD = rounded_d(*histogram.rend());
-    int minD = rounded_d(*histogram.rbegin());
+    int maxD = rounded_d(histogram.max()), minD = rounded_d(histogram.min());
     vector<int> forward;
-    for (auto I = raw_forward.begin(), E = raw_forward.end(); I != E; ++I) {
-      int length = (int) *I;
+    for (auto length : raw_forward) {
       if (minD - (int) this->max_distance_ <= length && length <= maxD + (int) this->max_distance_) {
         forward.push_back(length);
       }
@@ -104,7 +102,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
     return result;
   }
 
-  virtual const string Name() const {
+  const string Name() const override {
     static const string my_name = "WEIGHTED";
     return my_name;
   }

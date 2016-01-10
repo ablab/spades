@@ -11,8 +11,8 @@
 #include "command.hpp"
 #include "errors.hpp"
 #include "argument_list.hpp"
-#include "omni/tip_clipper.hpp"
 #include "genomic_quality.hpp"
+#include "simplification/graph_simplification.hpp"
 
 namespace online_visualization {
 
@@ -43,7 +43,7 @@ private:
             length = curr_env.edge_length_bound();
         }
 
-        shared_ptr<func::Predicate<EdgeId>> condition = make_shared<AlwaysTrue<EdgeId>>();
+        shared_ptr<func::Predicate<EdgeId>> condition = make_shared<LengthUpperBound<Graph>>(curr_env.graph(), length);
         if (args.size() > 2 && (args[2] == "Y" || args[2] == "y")) {
             cout << "Trying to activate genome quality condition" << endl;
             if (curr_env.genome().size() == 0) {
@@ -58,7 +58,9 @@ private:
                                                                                     , boost::ref(curr_env.graph_pack().edge_qual), _1));
             }
         }
-        omnigraph::ClipTips(curr_env.graph(), length, condition);
+        debruijn::simplification::SimplifInfoContainer info;
+        info.set_chunk_cnt(10);
+        debruijn::simplification::TipClipperInstance(curr_env.graph(), condition, info, (omnigraph::HandlerF<Graph>)nullptr)->Run();
     }
 };
 }

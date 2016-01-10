@@ -230,10 +230,6 @@ struct pe_config {
     AllLongReads long_reads;
   }; // params;
 
-
-//  std::string dataset_name;
-
-
 };
 
 void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool complete = true);

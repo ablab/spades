@@ -13,6 +13,8 @@ namespace adt {
 template<typename T>
 class TypedPredicate {
  public:
+  typedef T checked_type;
+  
   template<typename P>
   TypedPredicate(P p)
       : self_(std::make_shared<TypedPredicateModel<P> >(std::move(p))) {}
@@ -45,6 +47,8 @@ class TypedPredicate {
 template<typename T>
 class AlwaysTrueOperator {
  public:
+  typedef T checked_type;
+
   bool operator()(T) const {
     return true;
   }
@@ -52,6 +56,8 @@ class AlwaysTrueOperator {
 
 template<typename T>
 class AlwaysFalseOperator {
+  typedef T checked_type;
+
  public:
   bool operator()(T) const {
     return false;
@@ -61,6 +67,8 @@ class AlwaysFalseOperator {
 template<typename T>
 class AndOperator {
  public:
+  typedef T checked_type;
+
   AndOperator(TypedPredicate<T> lhs, TypedPredicate<T> rhs)
       : lhs_(std::move(lhs)),
         rhs_(std::move(rhs)) { }
@@ -76,6 +84,8 @@ class AndOperator {
 template<typename T>
 class OrOperator {
  public:
+  typedef T checked_type;
+
   OrOperator(TypedPredicate<T> lhs, TypedPredicate<T> rhs)
       : lhs_(std::move(lhs)), rhs_(std::move(rhs)) { }
 
@@ -90,6 +100,8 @@ class OrOperator {
 template<typename T>
 class NotOperator {
  public:
+  typedef T checked_type;
+
   NotOperator(const TypedPredicate<T> p)
       : p_(std::move(p)) {}
 

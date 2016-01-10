@@ -22,16 +22,52 @@
 
 namespace omnigraph {
 
+template<class Graph>
+class VertexCondition : public Predicate<typename Graph::VertexId> {
+    typedef typename Graph::VertexId VertexId;
+    const Graph& g_;
+ protected:
+
+    VertexCondition(const Graph& g)
+            : g_(g) {
+    }
+
+    const Graph& g() const {
+        return g_;
+    }
+
+};
+
+template<class Graph>
+class CompressCondition : public VertexCondition<Graph> {
+    typedef typename Graph::VertexId VertexId;
+
+public:
+    CompressCondition(const Graph& g) :
+        VertexCondition<Graph>(g) {
+    }
+
+    bool Check(VertexId v) const override {
+        return this->g().CanCompressVertex(v);
+    }
+};
+
 /**
  * Compressor compresses vertices with unique incoming and unique outgoing edge in linear time while
  * simple one-by-one compressing has square complexity.
  */
 template<class Graph>
-class Compressor {
+class Compressor : public PersistentProcessingAlgorithm<Graph,
+                                        typename Graph::VertexId,
+                                        ParallelInterestingElementFinder<Graph, typename Graph::VertexId>> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
+	typedef PersistentProcessingAlgorithm<Graph,
+            VertexId, ParallelInterestingElementFinder<Graph, VertexId>> base;
+	typedef CompressCondition<Graph> ConditionT;
 
 	Graph &graph_;
+	ConditionT compress_condition_;
 	bool safe_merging_;
 
 	bool GoUniqueWayForward(EdgeId &e) {
@@ -78,22 +114,27 @@ class Compressor {
 
 	}
 
-	//todo use graph method!
-	bool CanCompressVertex(VertexId v) const {
-		if (!graph_.CheckUniqueOutgoingEdge(v)
-			|| !graph_.CheckUniqueIncomingEdge(v)) {
-			TRACE(
-					"Vertex "
-							<< graph_.str(v)
-							<< " judged NOT compressible. Proceeding to the next vertex");
-			TRACE("Processing vertex " << graph_.str(v) << " finished");
-			return false;
-		}
-		return true;
-	}
+//	//todo use graph method!
+//	bool CanCompressVertex(VertexId v) const {
+//		if (!graph_.CheckUniqueOutgoingEdge(v)
+//			|| !graph_.CheckUniqueIncomingEdge(v)) {
+//			TRACE(
+//					"Vertex "
+//							<< graph_.str(v)
+//							<< " judged NOT compressible. Proceeding to the next vertex");
+//			TRACE("Processing vertex " << graph_.str(v) << " finished");
+//			return false;
+//		}
+//		return true;
+//	}
 public:
-	Compressor(Graph &graph, bool safe_merging = true) :
+	Compressor(Graph &graph, size_t chunk_cnt = 1, bool safe_merging = true) :
+	        base(graph,
+	             ParallelInterestingElementFinder<Graph, VertexId>(graph,
+	                                                               ConditionT(graph), chunk_cnt),
+	             /*canonical only*/true),
 			graph_(graph),
+			compress_condition_(graph),
 			safe_merging_(safe_merging) {
 	}
 
@@ -104,7 +145,7 @@ public:
 	 */
 	bool CompressVertex(VertexId v) {
 		TRACE("Processing vertex " << graph_.str(v) << " started");
-		if (! CanCompressVertex(v)) {
+		if (! compress_condition_.Check(v)) {
 			return false;
 		}
 		TRACE("Vertex " << graph_.str(v) << " judged compressible");
@@ -112,22 +153,27 @@ public:
 		return true;
 	}
 
-	EdgeId CompressVertexEdgeId(VertexId v){
+	EdgeId CompressVertexEdgeId(VertexId v) {
 		TRACE("Processing vertex " << graph_.str(v) << " started");
-		if (! CanCompressVertex(v)) {
+		if (! compress_condition_.Check(v)) {
 			return EdgeId(0);
 		}
 		TRACE("Vertex " << graph_.str(v) << " judged compressible");
 		return CompressWithoutChecks(v);
-
 	}
 
-	bool IsOfInterest(VertexId v) const {
-	    return CanCompressVertex(v);
-	}
+//	bool IsOfInterest(VertexId v) const {
+//	    return CanCompressVertex(v);
+//	}
 
-	bool Process(VertexId v) {
-	    return CompressVertex(v);
+protected:
+	bool Process(VertexId v) override {
+        if (compress_condition_.Check(v)) {
+            CompressWithoutChecks(v);
+            return true;
+        } else {
+            return false;
+        }
 	}
 
 private:
@@ -139,30 +185,56 @@ private:
  */
 template<class Graph>
 bool CompressAllVertices(Graph& g, bool safe_merging = true, size_t chunk_cnt = 1) {
-    SemiParallelAlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
-    Compressor<Graph> compressor(g, safe_merging);
-    return RunVertexAlgorithm(g, runner, compressor, chunk_cnt);
+    Compressor<Graph> compressor(g, chunk_cnt, safe_merging);
+    return compressor.Run();
 }
 
 template<class Graph>
-class Cleaner {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-
-	Graph& g_;
+class IsolatedVertexCondition : public VertexCondition<Graph> {
+    typedef typename Graph::VertexId VertexId;
 
 public:
-	Cleaner(Graph& g) :
-			g_(g) {
-	}
-
-    bool IsOfInterest(VertexId v) const {
-        return g_.IsDeadStart(v) && g_.IsDeadEnd(v);
+    IsolatedVertexCondition(const Graph& g) :
+        VertexCondition<Graph>(g) {
     }
 
+    bool Check(VertexId v) const override {
+        return this->g().IsDeadStart(v) && this->g().IsDeadEnd(v);
+    }
+};
+
+
+template<class Graph>
+class Cleaner : public PersistentProcessingAlgorithm<Graph,
+                            typename Graph::VertexId,
+                            ParallelInterestingElementFinder<Graph, typename Graph::VertexId>> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef PersistentProcessingAlgorithm<Graph,
+            VertexId, ParallelInterestingElementFinder<Graph, VertexId>> base;
+    typedef IsolatedVertexCondition<Graph> ConditionT;
+
+	Graph& g_;
+	ConditionT isolated_condition_;
+
+public:
+	Cleaner(Graph& g, size_t chunk_cnt = 1) :
+	        base(g,
+                 ParallelInterestingElementFinder<Graph, VertexId>(g,
+                                                                   ConditionT(g), chunk_cnt),
+                 /*canonical only*/true),
+			g_(g), isolated_condition_(g) {
+	}
+
+protected:
+
     bool Process(VertexId v) {
-        g_.DeleteVertex(v);
-        return true;
+        if (isolated_condition_.Check(v)) {
+            g_.DeleteVertex(v);
+            return true;
+        } else {
+            return false;
+        }
     }
 
 //	void Clean() {
@@ -173,8 +245,6 @@ public:
 //		}
 //	}
 
-private:
-	DECL_LOGGER("Cleaner")
 };
 
 /**
@@ -182,9 +252,8 @@ private:
  */
 template<class Graph>
 bool CleanGraph(Graph& g, size_t chunk_cnt = 1) {
-    SemiParallelAlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
-    Cleaner<Graph> cleaner(g);
-    return RunVertexAlgorithm(g, runner, cleaner, chunk_cnt);
+    Cleaner<Graph> cleaner(g, chunk_cnt);
+    return cleaner.Run();
 }
 
 template<class Graph>

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../include/config_singl.hpp"
+#include "config_singl.hpp"
 #include <boost/property_tree/ptree_fwd.hpp>
 
 struct dipspades_config {

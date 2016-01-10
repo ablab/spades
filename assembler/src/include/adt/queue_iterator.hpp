@@ -49,6 +49,10 @@ public:
 		return res;
 	}
 
+	void clear() {
+	    storage_.clear();
+	}
+
 	bool empty() const {
 		return storage_.empty();
 	}
@@ -92,6 +96,12 @@ public:
 			current_deleted_ = true;
 		}
 		queue_.erase(to_remove);
+	}
+
+	void clear() {
+	    queue_.clear();
+	    current_actual_ = false;
+	    current_deleted_ = false;
 	}
 
 	bool IsEnd() const {

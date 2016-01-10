@@ -30,6 +30,8 @@
 #include "logger/logger.hpp"
 #include "logger/log_writers.hpp"
 
+#include "version.hpp"
+
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>

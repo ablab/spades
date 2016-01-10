@@ -105,14 +105,14 @@ class ContigBreaker:
 
     def Break(self, contig):
         result = []
-#        print contig.id
-#        print self.sam.gettid(contig.id)
+        #print contig.id
+        #print self.sam.gettid(contig.id)
         for part in self.part_list_[self.sam.gettid(contig.id)]:
             result.append(contig.subseq(part[0], part[1]))
         return result
 
     def OutputBroken(self, output_file):
-        output = open(output_file, "r")
+        output = open(output_file, "w")
         for contig in self.contigs:
             for subcontig in self.Break(contig):
                 SeqIO.write(subcontig, output, "fasta")
@@ -144,7 +144,7 @@ class PatternBreaker:
             l1 = 0
         if l2 == -1:
             l2 = 0
-        l = max(l1, l2) + len(self.pattern)
+        l = max(l1, l2)
         if l > len(seq) - self.max_cut:
             return l
         else:
@@ -178,5 +178,5 @@ class NBreaker:
             result.append(contig.subseq(last_break, len(contig)))
         return result
 
-if __name__ == '__main__':
-    ContigBreaker(sys.argv[1], sys.argv[3], int(sys.argv[4]), int(sys.argv[5])).OutputBroken(sys.argv[2])
+#if __name__ == '__main__':
+#    ContigBreaker(sys.argv[1], sys.argv[3], int(sys.argv[4]), int(sys.argv[5])).OutputBroken(sys.argv[2])

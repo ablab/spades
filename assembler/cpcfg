@@ -36,13 +36,10 @@ case $arg in
   'sp')  $cmd spades_config.info.template spades_config.info;;
   'pep') $cmd configs/debruijn/path_extend/pe_params.info.template   configs/debruijn/path_extend/pe_params.info;;
   'con') $cmd configs/debruijn/construction.info.template   configs/debruijn/construction.info;;
-  'cov') $cmd configs/debruijn/coverage_based_rr.info.template   configs/debruijn/coverage_based_rr.info;;
   'ds') $cmd configs/dipspades/config.info.template configs/dipspades/config.info;;
   'tsa') $cmd configs/debruijn/tsa.info.template   configs/debruijn/tsa.info;;
   'logds') $cmd configs/dipspades/log.properties.template configs/dipspades/log.properties;;
   '-all')
- # 		echo ----------------------spades_config.info------------------------
- #       $cmd spades_config.info.template                            spades_config.info
 		echo -----------------configs/debruijn/config.info-------------------
         $cmd configs/debruijn/config.info.template                  configs/debruijn/config.info
 		echo ------------------configs/hammer/config.info--------------------
@@ -59,8 +56,6 @@ case $arg in
         $cmd configs/debruijn/path_extend/pe_params.info.template   configs/debruijn/path_extend/pe_params.info
 		echo --------------configs/debruijn/construction.info----------------
         $cmd configs/debruijn/construction.info.template   configs/debruijn/construction.info
-		echo --------------configs/debruijn/coverage_based_rr.info-----------
-        $cmd configs/debruijn/coverage_based_rr.info.template   configs/debruijn/coverage_based_rr.info
 		echo ------------------configs/dipspades/configs.info----------------
     	$cmd configs/dipspades/config.info.template	    configs/dipspades/config.info
                 echo --------------------configs/dipspades/tsa.info------------------

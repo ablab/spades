@@ -38,7 +38,7 @@ def error(err_str, log=None, dipspades=False, prefix=SPADES_PY_ERROR_MESSAGE):
         binary_name = "dipSPAdes"
     if log:
         log.info("\n\n" + prefix + " " + err_str)
-        log_warnings(log)
+        log_warnings(log, with_error=True)
         log.info("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@bioinf.spbau.ru")
         log.info("Please provide us with params.txt and " + binary_name.lower() + ".log files from the output directory.")
     else:
@@ -280,12 +280,19 @@ def save_data_to_file(data, file):
     os.chmod(file, stat.S_IWRITE | stat.S_IREAD | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-def get_warnings(log_filename):
+def get_important_messages_from_log(log_filename, warnings=True):
     def already_saved(list_to_check, suffix): # for excluding duplicates (--continue-from may cause them)
         for item in list_to_check:
             if item.endswith(suffix):
                 return True
         return False
+
+    if warnings:
+        spades_py_message = SPADES_PY_WARN_MESSAGE
+        spades_message = SPADES_WARN_MESSAGE
+    else:  # errors
+        spades_py_message = SPADES_PY_ERROR_MESSAGE
+        spades_message = SPADES_ERROR_MESSAGE
 
     ### for capturing correct warnings in case of continue_mode
     if continue_logfile_offset:
@@ -303,23 +310,23 @@ def get_warnings(log_filename):
     else:
         lines_to_check = open(log_filename, 'r').readlines()
 
-    spades_py_warns = []
-    spades_warns = []
-    WARN_SUMMARY_PREFIX = ' * '
+    spades_py_msgs = []
+    spades_msgs = []
+    IMPORTANT_MESSAGE_SUMMARY_PREFIX = ' * '
     for line in lines_to_check:
-        if line.startswith(WARN_SUMMARY_PREFIX):
+        if line.startswith(IMPORTANT_MESSAGE_SUMMARY_PREFIX):
             continue
-        if line.find(SPADES_PY_WARN_MESSAGE) != -1:
-            suffix = line[line.find(SPADES_PY_WARN_MESSAGE) + len(SPADES_PY_WARN_MESSAGE):].strip()
-            line = line.replace(SPADES_PY_WARN_MESSAGE, '').strip()
-            if not already_saved(spades_py_warns, suffix):
-                spades_py_warns.append(WARN_SUMMARY_PREFIX + line)
-        elif line.find(SPADES_WARN_MESSAGE) != -1:
-            suffix = line[line.find(SPADES_WARN_MESSAGE) + len(SPADES_WARN_MESSAGE):].strip()
+        if line.find(spades_py_message) != -1:
+            suffix = line[line.find(spades_py_message) + len(spades_py_message):].strip()
+            line = line.replace(spades_py_message, '').strip()
+            if not already_saved(spades_py_msgs, suffix):
+                spades_py_msgs.append(IMPORTANT_MESSAGE_SUMMARY_PREFIX + line)
+        elif line.find(spades_message) != -1:
+            suffix = line[line.find(spades_message) + len(spades_message):].strip()
             line = line.strip()
-            if not already_saved(spades_warns, suffix):
-                spades_warns.append(WARN_SUMMARY_PREFIX + line)
-    return spades_py_warns, spades_warns
+            if not already_saved(spades_msgs, suffix):
+                spades_msgs.append(IMPORTANT_MESSAGE_SUMMARY_PREFIX + line)
+    return spades_py_msgs, spades_msgs
 
 
 def get_logger_filename(log):
@@ -330,15 +337,18 @@ def get_logger_filename(log):
     return log_file
 
 
-def log_warnings(log):
+def log_warnings(log, with_error=False):
     log_file = get_logger_filename(log)
     if not log_file:
         return False
     for h in log.__dict__['handlers']:
         h.flush()
-    spades_py_warns, spades_warns = get_warnings(log_file)
+    spades_py_warns, spades_warns = get_important_messages_from_log(log_file, warnings=True)
     if spades_py_warns or spades_warns:
-        log.info("\n======= SPAdes pipeline finished WITH WARNINGS!")
+        if with_error:
+            log.info("\n======= SPAdes pipeline finished abnormally and WITH WARNINGS!")
+        else:
+            log.info("\n======= SPAdes pipeline finished WITH WARNINGS!")
         warnings_filename = os.path.join(os.path.dirname(log_file), "warnings.log")
         warnings_handler = logging.FileHandler(warnings_filename, mode='w')
         log.addHandler(warnings_handler)
@@ -354,6 +364,12 @@ def log_warnings(log):
                 log.info(line)
         log.info("======= Warnings saved to " + warnings_filename)
         log.removeHandler(warnings_handler)
+        if with_error:
+            spades_py_errors, spades_errors = get_important_messages_from_log(log_file, warnings=False)
+            log.info("")
+            log.info("=== ERRORs:")
+            for line in (spades_errors + spades_py_errors):
+                log.info(line)
         return True
     return False
 

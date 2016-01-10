@@ -31,14 +31,16 @@ class Options:
         if len(argv) == 1:
             print_usage_and_exit(1, version)
         long_params = "test help-hidden construct-dataset reference= reference-index= do= continue " \
-                      "threads= help version dataset= input-dir= additional-options".split(" ")
+                      "threads= help version dataset= input-dir= additional-options=".split(" ")
         short_params = "o:t:hv"
         self.set_default_options()
         self.bin = bin
         self.home = home
         self.version = version
         try:
-            options_list, self.spades_options = getopt.gnu_getopt(argv[1:], short_params, long_params)
+            options_list, tmp = getopt.gnu_getopt(argv[1:], short_params, long_params)
+            if len(tmp) != 0:
+                print_usage_and_exit(1, self.version)
         except getopt.GetoptError:
             _, exc, _ = sys.exc_info()
             sys.stderr.write(str(exc) + "\n")

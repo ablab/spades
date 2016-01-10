@@ -22,7 +22,7 @@ CONTIGS_ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in CONTIGS_ALLOWED_READS_EX
 ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in ALLOWED_READS_EXTENSIONS]
 
 # we support up to MAX_LIBS_NUMBER libs for each type of short-reads libs
-MAX_LIBS_NUMBER = 5
+MAX_LIBS_NUMBER = 9
 OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s"]
 SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs", "nxmate": "nxmate"}
 # other libs types:
@@ -182,41 +182,41 @@ def usage(spades_version, show_hidden=False, dipspades=False):
     sys.stderr.write("-2\t<filename>\tfile with reverse paired-end reads" + "\n")
     sys.stderr.write("-s\t<filename>\tfile with unpaired reads" + "\n")
     sys.stderr.write("--pe<#>-12\t<filename>\tfile with interlaced"\
-                         " reads for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " reads for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--pe<#>-1\t<filename>\tfile with forward reads"\
-                         " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--pe<#>-2\t<filename>\tfile with reverse reads"\
-                         " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--pe<#>-s\t<filename>\tfile with unpaired reads"\
-                         " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--pe<#>-<or>\torientation of reads"\
-                         " for paired-end library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+                         " for paired-end library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
     sys.stderr.write("--s<#>\t\t<filename>\tfile with unpaired reads"\
-                     " for single reads library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                     " for single reads library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--mp<#>-12\t<filename>\tfile with interlaced"\
-                         " reads for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " reads for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--mp<#>-1\t<filename>\tfile with forward reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--mp<#>-2\t<filename>\tfile with reverse reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--mp<#>-s\t<filename>\tfile with unpaired reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--mp<#>-<or>\torientation of reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+                         " for mate-pair library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
     sys.stderr.write("--hqmp<#>-12\t<filename>\tfile with interlaced"\
-                     " reads for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                     " reads for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--hqmp<#>-1\t<filename>\tfile with forward reads"\
-                     " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                     " for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--hqmp<#>-2\t<filename>\tfile with reverse reads"\
-                     " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                     " for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--hqmp<#>-s\t<filename>\tfile with unpaired reads"\
-                     " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                     " for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--hqmp<#>-<or>\torientation of reads"\
-                     " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+                     " for high-quality mate-pair library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
     sys.stderr.write("--nxmate<#>-1\t<filename>\tfile with forward reads"\
-                         " for Lucigen NxMate library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for Lucigen NxMate library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--nxmate<#>-2\t<filename>\tfile with reverse reads"\
-                         " for Lucigen NxMate library number <#> (<#> = 1,2,3,4,5)" + "\n")
+                         " for Lucigen NxMate library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
     sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
     sys.stderr.write("--nanopore\t<filename>\tfile with Nanopore reads\n")

@@ -52,6 +52,10 @@ function sendCommand(command, callback) {
     success: function(response) {
       stopWheel("#console_container");
       callback(response);
+    },
+    error: function(xhr, status, errmsg) {
+      stopWheel("#console_container");
+      callback(status + " " + errmsg);
     }
   });
 }
@@ -136,8 +140,11 @@ $(function() {
     commandValidate: function(line) {
       return (line != "");
     },
+    //Sending the command on return
     commandHandle: function(line) {
       cArgs = line.split(" ");
+      //Some special commands don't have handlers in online_vis,
+      //let's process 'em ad-hoc way
       if (specialFunctions[cArgs[0]]) {
         specialFunctions[cArgs[0]](cArgs[1]);
       } else {
@@ -145,7 +152,7 @@ $(function() {
           $(function() {
             controller.report(response.log);
             if (!response.complete)
-            sendCommand("", getLog);
+              sendCommand("", getLog);
           });
         });
       }

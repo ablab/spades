@@ -6,6 +6,7 @@
 
 import os.path
 import sys
+import logging
 
 from id_generation import generate_ids
 from string_dist_utils import lcs, dist
@@ -94,7 +95,7 @@ def ExtractBarcodes(dirs):
     short_barcodes = generate_barcode_list(list(barcode_dict.keys()))
     return [Barcode(short, barcode_dict[bid]) for bid, short in short_barcodes]
 
-def ReadDataset(file, log):
+def ReadDataset(file, log = logging.getLogger("ReadDataset")):
     log.info("Reading dataset from " + file + "\n")
     if os.path.exists(file) and os.path.isfile(file):
         result = []

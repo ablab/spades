@@ -25,8 +25,8 @@
 #include "bwa_pair_info_filler.hpp"
 
 namespace debruijn_graph {
-    typedef io::SequencingLibrary<debruijn_config::DataSetData> SequencingLib;
 
+typedef io::SequencingLibrary<debruijn_config::DataSetData> SequencingLib;
 
 bool RefineInsertSizeForLib(conj_graph_pack& gp, size_t ilib, size_t edge_length_threshold) {
 
@@ -104,7 +104,7 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads)
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[ilib]);
     notifier.Subscribe(ilib, &pif);
 
-    auto paired_streams = paired_binary_readers(reads, true, (size_t) reads.data().mean_insert_size);
+    auto paired_streams = paired_binary_readers(reads, false, (size_t) reads.data().mean_insert_size);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
     cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
 

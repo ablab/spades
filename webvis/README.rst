@@ -74,8 +74,12 @@ Check if the web server has started. Try to refresh the page and/or re-login. If
 Clean the cache folder, or run a clean restart:
 - ./run.sh clean
 
+*When I send a command, I get a response from the previous one
+There is a desynchronization between client and the server. Currently it's only healed with the server restart.
+
+*Command response is messed up, like "No such command `adrw_cnig`"
 *Can't launch the server, the port is busy*
-Probably a hanging *online_vis* process holds it. Kill it with fire^W^W.
+There is a background *online_vis* process using the same communication pipes from the previous launch, which was not correctly terminated. Find and kill it with fire^W^W.
 
 *The browser spits out Python error messages*
 There is a bug, report that to the developer_.

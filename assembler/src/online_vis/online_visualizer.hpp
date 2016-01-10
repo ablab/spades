@@ -60,17 +60,17 @@ class OnlineVisualizer {
     string p = path::append_path(cfg::get().load_from, "simplification"); // just for default
 
     path::make_dir("tmp");
-    stringstream ss("load default " + p);
     DEBUG("Adding Commands");
     AddBaseCommands();
     AddSpecificCommands();
     DEBUG("Commands added");
     DEBUG("Adding auto-completion option");
     InitAutocompletion(command_mapping_.GetCommandNamesList());
+    //stringstream ss("load default " + p);
     //const Command<Env>& load_command = command_mapping_.GetCommand("load");
     //DEBUG("Loading current environment");
     //load_command.Execute(current_environment_, loaded_environments_, ss);
-    DEBUG("Environment loaded");
+    //DEBUG("Environment loaded");
   }
 
   string read_line() {
@@ -116,7 +116,7 @@ class OnlineVisualizer {
         command.Execute(current_environment_, loaded_environments_, arg_list);
         DEBUG("Command " << processed_command << " executed");
 
-        history.AddEntry(processed_command);
+        history.AddEntry(command_with_args);
         DEBUG("Command " << processed_command << " added to history");
 
       }

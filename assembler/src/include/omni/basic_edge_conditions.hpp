@@ -52,6 +52,13 @@ public:
 };
 
 template<class Graph>
+inline bool HasAlternatives(const Graph& g, typename Graph::EdgeId e) {
+    return g.OutgoingEdgeCount(g.EdgeStart(e)) > 1
+                    && g.IncomingEdgeCount(g.EdgeEnd(e)) > 1;
+}
+
+
+template<class Graph>
 class AlternativesPresenceCondition : public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
@@ -65,11 +72,16 @@ class AlternativesPresenceCondition : public EdgeCondition<Graph> {
     }
 
     bool Check(EdgeId e) const {
-        return this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) > 1
-                && this->g().IncomingEdgeCount(this->g().EdgeEnd(e)) > 1;
+        return HasAlternatives(this->g(), e);
     }
 
 };
+
+template<class Graph>
+adt::TypedPredicate<typename Graph::EdgeId> AddAlternativesPresenceCondition(const Graph& g,
+                                                                             adt::TypedPredicate<typename Graph::EdgeId> condition) {
+    return adt::And(AlternativesPresenceCondition<Graph>(g), condition);
+}
 
 template<class Graph>
 class CoverageUpperBound : public EdgeCondition<Graph> {

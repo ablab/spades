@@ -20,6 +20,7 @@
 #include "runtime_k.hpp"
 
 #include "config_struct.hpp"
+#include "version.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>

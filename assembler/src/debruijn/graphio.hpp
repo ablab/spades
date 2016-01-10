@@ -57,14 +57,16 @@ void SaveKmerMapper(const string& file_name,
 }
 
 template<class KmerMapper>
-void LoadKmerMapper(const string& file_name,
+bool LoadKmerMapper(const string& file_name,
                     KmerMapper& kmer_mapper) {
     kmer_mapper.clear();
     std::ifstream file;
     file.open((file_name + ".kmm").c_str(),
               std::ios_base::binary | std::ios_base::in);
+    if (!file.is_open()) {
+        return false;
+    }
     INFO("Reading kmer mapper, " << file_name <<" started");
-    VERIFY(file.is_open());
 
     uint32_t k_;
     file.read((char *) &k_, sizeof(uint32_t));
@@ -73,6 +75,7 @@ void LoadKmerMapper(const string& file_name,
     kmer_mapper.BinRead(file);
 
     file.close();
+    return true;
 }
 
 template<class EdgeIndex>
@@ -229,12 +232,11 @@ class DataPrinter {
         size_t comp_size = 0;
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            const auto& inner_map = paired_index.GetEdgeInfoMap(e1);
-            for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
-                EdgeId e2 = II->first;
-                const auto& hist = II->second;
-                if (component_.contains(e2)) { // if the second edge also lies in the same component
-                    comp_size += hist.size();
+            auto inner_map = paired_index.Get(e1);
+            for (auto entry : inner_map) {
+                if (component_.contains(entry.first)) { // if the second edge also lies in the same component
+                    comp_size += entry.second.size();
+                    continue;
                 }
             }
         }
@@ -243,12 +245,12 @@ class DataPrinter {
 
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            const auto& inner_map = paired_index.GetEdgeInfoMap(e1);
-            std::map<typename Graph::EdgeId, typename Index::Histogram> ordermap(inner_map.begin(), inner_map.end());
-            for (const auto& entry : ordermap) {
-                EdgeId e2 = entry.first; const auto& hist = entry.second;
+            const auto& inner_map = paired_index.RawGet(e1);
+            std::map<typename Graph::EdgeId, typename Index::RawHistProxy> ordermap(inner_map.begin(), inner_map.end());
+            for (auto entry : ordermap) {
+                EdgeId e2 = entry.first;
                 if (component_.contains(e2))
-                  for (Point point : hist)
+                  for (auto point : entry.second)
                     fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
                             e1.int_id(), e2.int_id(), math::eq((double)point.d, .0) ? .0 : (double)point.d, (double)point.weight, (double)point.variation());
             }
@@ -412,8 +414,9 @@ class DataScanner {
         return true;
     }
 
+    template<typename Index>
     void LoadPaired(const string& file_name,
-                    PairedInfoIndexT<Graph>& paired_index,
+                    Index& paired_index,
                     bool force_exists = true) {
         typedef typename Graph::EdgeId EdgeId;
         FILE* file = fopen((file_name + ".prd").c_str(), "r");
@@ -429,7 +432,7 @@ class DataScanner {
         size_t paired_count;
         int read_count = fscanf(file, "%zu \n", &paired_count);
         VERIFY(read_count == 1);
-        for (size_t i = 0; i < paired_count; i++) {
+        while (!feof(file)) {
             size_t first_real_id, second_real_id;
             double w, d, v;
             read_count = fscanf(file, "%zu %zu %lf %lf %lf .\n",
@@ -442,43 +445,7 @@ class DataScanner {
             if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
                 continue;
             TRACE(e1 << " " << e2 << " " << d << " " << w);
-            paired_index.AddPairInfo(e1, e2, { d, w, v }, false);
-        }
-        DEBUG("PII SIZE " << paired_index.size());
-        fclose(file);
-    }
-
-      void LoadPaired(const string& file_name,
-                      UnclusteredPairedInfoIndexT<Graph>& paired_index,
-                      bool force_exists = true) {
-        typedef typename Graph::EdgeId EdgeId;
-        FILE* file = fopen((file_name + ".prd").c_str(), "r");
-        INFO((file_name + ".prd"));
-        if (force_exists) {
-            VERIFY(file != NULL);
-        } else if (file == NULL) {
-            INFO("Paired info not found, skipping");
-            return;
-        }
-        INFO("Reading paired info from " << file_name << " started");
-
-        size_t paired_count;
-        int read_count = fscanf(file, "%zu \n", &paired_count);
-        VERIFY(read_count == 1);
-        for (size_t i = 0; i < paired_count; i++) {
-            size_t first_real_id, second_real_id;
-            double w, d, v;
-            read_count = fscanf(file, "%zu %zu %lf %lf %lf .\n",
-                                &first_real_id, &second_real_id, &d, &w, &v);
-            VERIFY(read_count == 5);
-            TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w);
-            VERIFY(this->edge_id_map().find(first_real_id) != this->edge_id_map().end())
-            EdgeId e1 = this->edge_id_map()[first_real_id];
-            EdgeId e2 = this->edge_id_map()[second_real_id];
-            if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
-                continue;
-            TRACE(e1 << " " << e2 << " " << d << " " << w);
-            paired_index.AddPairInfo(e1, e2, { d, w }, false);
+            paired_index.Add(e1, e2, { d, w, v });
         }
         DEBUG("PII SIZE " << paired_index.size());
         fclose(file);
@@ -891,7 +858,9 @@ void ScanGraphPack(const string& file_name,
     scanner.LoadPositions(file_name, gp.edge_pos);
     //load kmer_mapper only if needed
     if (gp.kmer_mapper.IsAttached())
-        LoadKmerMapper(file_name, gp.kmer_mapper);
+        if (!LoadKmerMapper(file_name, gp.kmer_mapper)) {
+            WARN("Cannot load kmer_mapper, information on projected kmers will be missed");
+        }
     if (!scanner.LoadFlankingCoverage(file_name, gp.flanking_cov)) {
         gp.flanking_cov.Fill(gp.index.inner_index());
     }

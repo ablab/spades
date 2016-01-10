@@ -222,7 +222,7 @@ size_t CorrectAllReads() {
       std::string usuffix =  std::to_string(ilib) + "_" +
                              std::to_string(iread) + ".cor.fastq";
 
-      std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired";
+      std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired.fastq";
 
       std::string outcorl = getReadsFilename(cfg::get().output_dir, I->first,  Globals::iteration_no, usuffix);
       std::string outcorr = getReadsFilename(cfg::get().output_dir, I->second, Globals::iteration_no, usuffix);

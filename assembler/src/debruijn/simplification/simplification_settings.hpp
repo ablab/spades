@@ -38,8 +38,7 @@ class SimplifInfoContainer {
     size_t read_length_;
     double detected_mean_coverage_;
     double detected_coverage_bound_;
-    size_t iteration_count_;
-    size_t iteration_;
+    bool main_iteration_;
     size_t chunk_cnt_;
 
 public: 
@@ -47,8 +46,7 @@ public:
         read_length_(-1ul),
         detected_mean_coverage_(-1.0),
         detected_coverage_bound_(-1.0),
-        iteration_count_(-1ul),
-        iteration_(-1ul),
+        main_iteration_(false),
         chunk_cnt_(-1ul) {
     }
 
@@ -67,16 +65,10 @@ public:
         return detected_coverage_bound_;
     }
 
-    size_t iteration_count() const {
-        VERIFY(iteration_count_ != -1ul);
-        return iteration_count_;
+    bool main_iteration() const {
+        return main_iteration_;
     }
 
-    size_t iteration() const {
-        VERIFY(iteration_ != -1ul);
-        return iteration_;
-    }
-    
     size_t chunk_cnt() const {
         VERIFY(chunk_cnt_ != -1ul);
         return chunk_cnt_;
@@ -97,13 +89,8 @@ public:
         return *this;
     }
 
-    SimplifInfoContainer& set_iteration_count(size_t iteration_count) {
-        iteration_count_ = iteration_count;
-        return *this;
-    }
-
-    SimplifInfoContainer& set_iteration(size_t iteration) {
-        iteration_ = iteration;
+    SimplifInfoContainer& set_main_iteration(bool main_iteration) {
+        main_iteration_ = main_iteration;
         return *this;
     }
 
@@ -111,188 +98,6 @@ public:
         chunk_cnt_ = chunk_cnt;
         return *this;
     }
-};
-
-template<class Graph>
-class ConditionParser {
-private:
-    typedef typename Graph::EdgeId EdgeId;
-
-    const Graph& g_;
-    string next_token_;
-    string input_;
-    const SimplifInfoContainer settings_;
-    queue<string> tokenized_input_;
-
-    size_t max_length_bound_;
-    double max_coverage_bound_;
-
-    string ReadNext() {
-        if (!tokenized_input_.empty()) {
-            next_token_ = tokenized_input_.front();
-            tokenized_input_.pop();
-        } else {
-            next_token_ = "";
-        }
-        return next_token_;
-    }
-
-    template<typename T>
-    bool RelaxMax(T& cur_max, T t) {
-        if (t > cur_max) {
-            cur_max = t;
-            return true;
-        }
-        return false;
-    }
-
-    template<typename T>
-    bool RelaxMin(T& cur_min, T t) {
-        if (t < cur_min) {
-            cur_min = t;
-            return true;
-        }
-        return false;
-    }
-
-    double GetCoverageBound() {
-        if (next_token_ == "auto") {
-            return settings_.detected_coverage_bound();
-        } else {
-            return lexical_cast<double>(next_token_);
-        }
-    }
-
-    adt::TypedPredicate<EdgeId> ParseCondition(size_t& min_length_bound,
-                                               double& min_coverage_bound) {
-        if (next_token_ == "tc_lb") {
-            double length_coeff = lexical_cast<double>(ReadNext());
-
-            DEBUG("Creating tip length bound. Coeff " << length_coeff);
-            size_t length_bound = LengthThresholdFinder::MaxTipLength(
-                settings_.read_length(), g_.k(), length_coeff);
-
-            DEBUG("Length bound" << length_bound);
-
-            RelaxMin(min_length_bound, length_bound);
-            return LengthUpperBound<Graph>(g_, length_bound);
-        } else if (next_token_ == "to_ec_lb") {
-            double length_coeff = lexical_cast<double>(ReadNext());
-
-            DEBUG( "Creating length bound for erroneous connections originated from tip merging. Coeff " << length_coeff);
-            size_t length_bound =
-                    LengthThresholdFinder::MaxTipOriginatedECLength(
-                        settings_.read_length(), g_.k(), length_coeff);
-
-            DEBUG("Length bound" << length_bound);
-
-            RelaxMin(min_length_bound, length_bound);
-            return LengthUpperBound<Graph>(g_, length_bound);
-        } else if (next_token_ == "ec_lb") {
-            size_t length_coeff = lexical_cast<size_t>(ReadNext());
-
-            DEBUG("Creating ec length bound. Coeff " << length_coeff);
-            size_t length_bound =
-                    LengthThresholdFinder::MaxErroneousConnectionLength(
-                        g_.k(), length_coeff);
-
-            RelaxMin(min_length_bound, length_bound);
-            return LengthUpperBound<Graph>(g_, length_bound);
-        } else if (next_token_ == "lb") {
-            size_t length_bound = lexical_cast<size_t>(ReadNext());
-
-            DEBUG("Creating length bound. Value " << length_bound);
-
-            RelaxMin(min_length_bound, length_bound);
-            return LengthUpperBound<Graph>(g_, length_bound);
-        } else if (next_token_ == "cb") {
-            ReadNext();
-            double cov_bound = GetCoverageBound();
-            DEBUG("Creating coverage upper bound " << cov_bound);
-            RelaxMin(min_coverage_bound, cov_bound);
-            return CoverageUpperBound<Graph>(g_, cov_bound);
-        } else if (next_token_ == "icb") {
-            ReadNext();
-            double cov_bound = GetCoverageBound();
-            cov_bound = cov_bound / (double) settings_.iteration_count() * (double) (settings_.iteration() + 1);
-            DEBUG("Creating iterative coverage upper bound " << cov_bound);
-            RelaxMin(min_coverage_bound, cov_bound);
-            return CoverageUpperBound<Graph>(g_, cov_bound);
-        } else if (next_token_ == "rctc") {
-            ReadNext();
-            DEBUG("Creating relative cov tip cond " << next_token_);
-            return RelativeCoverageTipCondition<Graph>(g_, lexical_cast<double>(next_token_));
-        } else if (next_token_ == "disabled") {
-            DEBUG("Creating disabling condition");
-            return adt::AlwaysFalse<EdgeId>();
-        } else if (next_token_ == "mmm") {
-            ReadNext();
-            DEBUG("Creating max mismatches cond " << next_token_);
-            return MismatchTipCondition<Graph>(g_, lexical_cast<size_t>(next_token_));
-        } else {
-            VERIFY(false);
-            return adt::AlwaysTrue<EdgeId>();
-        }
-    }
-
-    adt::TypedPredicate<EdgeId> ParseConjunction(size_t& min_length_bound,
-                                                 double& min_coverage_bound) {
-        auto answer = adt::AlwaysTrue<EdgeId>();
-        VERIFY(next_token_ == "{");
-        ReadNext();
-        while (next_token_ != "}") {
-            answer = adt::And(answer,
-                              ParseCondition(min_length_bound, min_coverage_bound));
-            ReadNext();
-        }
-        return answer;
-    }
-
-public:
-
-    ConditionParser(const Graph& g, string input, const SimplifInfoContainer& settings)
-            : g_(g),
-              input_(input),
-              settings_(settings),
-              max_length_bound_(0),
-              max_coverage_bound_(0.) {
-        DEBUG("Creating parser for string " << input);
-        using namespace boost;
-        vector<string> tmp_tokenized_input;
-        split(tmp_tokenized_input, input_, is_any_of(" ,;"), token_compress_on);
-        for (auto it = tmp_tokenized_input.begin();
-             it != tmp_tokenized_input.end(); ++it) {
-            tokenized_input_.push(*it);
-        }
-        ReadNext();
-    }
-
-    adt::TypedPredicate<EdgeId> operator()() {
-        DEBUG("Parsing");
-        auto answer = adt::AlwaysFalse<EdgeId>();
-        VERIFY_MSG(next_token_ == "{", "Expected \"{\", but next token was " << next_token_);
-        while (next_token_ == "{") {
-            size_t min_length_bound = numeric_limits<size_t>::max();
-            double min_coverage_bound = numeric_limits<double>::max();
-            answer = adt::Or(answer,
-                             ParseConjunction(min_length_bound, min_coverage_bound));
-            RelaxMax(max_length_bound_, min_length_bound);
-            RelaxMax(max_coverage_bound_, min_coverage_bound);
-            ReadNext();
-        }
-        return answer;
-    }
-
-    size_t max_length_bound() const {
-        return max_length_bound_;
-    }
-
-    double max_coverage_bound() const {
-        return max_coverage_bound_;
-    }
-
-private:
-    DECL_LOGGER("ConditionParser");
 };
 
 }

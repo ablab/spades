@@ -537,7 +537,11 @@ public:
         DEBUG("Weight " << weight_);
         DEBUG("#, edge, length, gap length, trash length, total length, total length from begin");
         for (size_t i = 0; i < Size(); ++i) {
-            DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i) << ", " << TrashPreviousAt(i)<< "-" << TrashCurrentAt(i) <<", " << LengthAt(i) << ", " << ((Length() < LengthAt(i)) ? 0 : Length() - LengthAt(i)));
+            DEBUG(i << ", " << g_.int_id(At(i)) << ", " 
+                    << g_.length(At(i)) << ", " << GapAt(i) << ", " 
+                    << TrashPreviousAt(i) << "-" << TrashCurrentAt(i) 
+                    << ", " << LengthAt(i) << ", " 
+                    << ((Length() < LengthAt(i)) ? 0 : Length() - LengthAt(i)));
         }
     }
 
@@ -601,6 +605,15 @@ public:
 
     bool IsOverlap() const {
         return overlap_;
+    }
+
+    void ResetOverlaps() {
+        overlap_ = false;
+        has_overlaped_begin_ = false;
+        has_overlaped_end_ = false;
+        conj_path_->overlap_ = false;
+        conj_path_->has_overlaped_begin_ = false;
+        conj_path_->has_overlaped_end_ = false;
     }
 private:
 

@@ -6,11 +6,11 @@
 //***************************************************************************
 
 #include "standard.hpp"
-#include "graph_simplification.hpp"
 #include "pacbio/pac_index.hpp"
 #include "pacbio/pacbio_gap_closer.hpp"
 #include "long_read_storage.hpp"
-
+#include "io/wrapper_collection.hpp"
+#include "stats/debruijn_stats.hpp"
 #include "pacbio_aligning.hpp"
 
 namespace debruijn_graph {
@@ -83,7 +83,7 @@ void ProcessReadsBatch(conj_graph_pack &gp,
     }
 }
 
-void align_pacbio(conj_graph_pack &gp, int lib_id) {
+void align_pacbio(conj_graph_pack &gp, int lib_id, bool make_additional_saves) {
     io::ReadStreamList<io::SingleRead> streams;
     for (const auto& reads : cfg::get().ds.reads[lib_id].single_reads())
       //do we need input_file function here?
@@ -141,11 +141,13 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     stats.report();
     map<EdgeId, EdgeId> replacement;
     size_t min_stats_cutoff =(rtype == 1 ? 1  : 0);
-    long_reads.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
+    if (make_additional_saves)
+        long_reads.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
                           replacement, min_stats_cutoff, true);
     gaps.DumpToFile(cfg::get().output_saves + "gaps.mpr");
     gaps.PadGapStrings();
-    gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");
+    if (make_additional_saves)
+        gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");
     pacbio::PacbioGapCloser<Graph> gap_closer(gp.g);
     gap_closer.ConstructConsensus(cfg::get().max_threads, gaps);
     gap_closer.CloseGapsInGraph(replacement);
@@ -163,10 +165,11 @@ void PacBioAligning::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
     omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     int lib_id = -1;
+    bool make_additional_saves = parent_->saves_policy().make_saves_;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         if ( cfg::get().ds.reads[i].is_pacbio_alignable() ) {
             lib_id = (int) i;
-            align_pacbio(gp, lib_id);
+            align_pacbio(gp, lib_id, make_additional_saves);
         }
     }
 

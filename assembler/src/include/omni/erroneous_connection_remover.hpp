@@ -25,9 +25,10 @@
 namespace omnigraph {
 
 template<class Graph>
-adt::TypedPredicate<typename Graph::EdgeId> AddAlternativesPresenceCondition(const Graph& g,
-                                                                              adt::TypedPredicate<typename Graph::EdgeId> condition) {
-    return adt::And(AlternativesPresenceCondition<Graph>(g), condition);
+adt::TypedPredicate<typename Graph::EdgeId>
+NecessaryECCondition(const Graph& g, size_t max_length, double max_coverage) {
+    return AddAlternativesPresenceCondition(g, adt::And(LengthUpperBound<Graph>(g, max_length),
+                                                        CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
 template<class Graph>

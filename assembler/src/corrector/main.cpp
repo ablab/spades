@@ -11,6 +11,8 @@
 #include "logger/log_writers.hpp"
 #include "segfault_handler.hpp"
 
+#include "version.hpp"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string>
@@ -46,7 +48,7 @@ int main(int argc, char** argv) {
         path::make_dir(corr_cfg::get().work_dir);
 
     INFO("Starting MismatchCorrector, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
-    
+
     corrector::DatasetProcessor dp(contig_name, corr_cfg::get().work_dir, corr_cfg::get().output_dir, corr_cfg::get().max_nthreads);
     dp.ProcessDataset();
     unsigned ms = (unsigned) pc.time_ms();

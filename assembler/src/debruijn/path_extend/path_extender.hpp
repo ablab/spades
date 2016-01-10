@@ -1180,7 +1180,7 @@ public:
         return extensionChooser_;
     }
 
-    virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
+    bool MakeSimpleGrowStep(BidirectionalPath& path) override {
         if (path.Size() == 0) {
             return false;
         }
@@ -1233,7 +1233,7 @@ public:
         return extensionChooser_->WeightCounterBased();
     }
 
-    virtual bool ResolveShortLoopByCov(BidirectionalPath& path) {
+    bool ResolveShortLoopByCov(BidirectionalPath& path) override {
         LoopDetector loop_detector(&path, cov_map_);
         size_t init_len = path.Length();
         bool result = false;
@@ -1249,7 +1249,7 @@ public:
         return true;
     }
 
-    virtual bool ResolveShortLoopByPI(BidirectionalPath& path) {
+    bool ResolveShortLoopByPI(BidirectionalPath& path) override {
         if (extensionChooser_->WeightCounterBased()) {
             LoopResolver loop_resolver(g_, extensionChooser_->wc());
             LoopDetector loop_detector(&path, cov_map_);

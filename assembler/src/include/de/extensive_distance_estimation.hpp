@@ -28,8 +28,10 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   typedef WeightedDistanceEstimator<Graph> base;
   typedef typename base::InPairedIndex InPairedIndex;
   typedef typename base::OutPairedIndex OutPairedIndex;
-  typedef typename InPairedIndex::Histogram InHistogram;
-  typedef typename OutPairedIndex::Histogram OutHistogram;
+  typedef typename base::InHistogram InHistogram;
+  typedef typename base::OutHistogram OutHistogram;
+
+  typedef typename InPairedIndex::Histogram TempHistogram;
 
  public:
   ExtensiveDistanceEstimator(const Graph &graph,
@@ -47,11 +49,11 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   typedef vector<pair<int, double> > EstimHist;
   typedef vector<size_t> GraphLengths;
 
-  void ExtendInfoLeft(EdgeId e1, EdgeId e2, InHistogram& data, size_t max_shift) const {
+  void ExtendInfoLeft(EdgeId e1, EdgeId e2, TempHistogram& data, size_t max_shift) const {
     ExtendLeftDFS(e1, e2, data, 0, max_shift);
   }
 
-  void ExtendInfoRight(EdgeId e1, EdgeId e2, InHistogram& data, size_t max_shift) const {
+  void ExtendInfoRight(EdgeId e1, EdgeId e2, TempHistogram& data, size_t max_shift) const {
     ExtendRightDFS(e1, e2, data, 0, max_shift);
   }
 
@@ -60,11 +62,12 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   typedef pair<EdgeId, EdgeId> EdgePair;
 
   virtual void ProcessEdge(EdgeId e1,
-                           const typename InPairedIndex::InnerMap& inner_map,
-                           PairedInfoBuffer<Graph>& result) const {
+                           const InPairedIndex& pi,
+                           PairedInfoBuffer<Graph>& result) const override {
+    auto inner_map = pi.RawGet(e1);
     typename base::LengthMap second_edges;
-    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
-      second_edges[I->first];
+    for (auto i : inner_map)
+      second_edges[i.first];
 
     this->FillGraphDistancesLengths(e1, second_edges);
 
@@ -72,11 +75,8 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
 
-      if (ep > this->ConjugatePair(ep))
-          continue;
-
       const GraphLengths& forward = entry.second;
-      InHistogram hist = inner_map.find(e2)->second;
+      TempHistogram hist = pi.Get(e1, e2).Unwrap();
       DEBUG("Extending paired information");
       double weight_0 = WeightSum(hist);
       DEBUG("Extend left");
@@ -87,14 +87,13 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       const EstimHist& estimated = this->EstimateEdgePairDistances(ep, hist, forward);
       OutHistogram res = this->ClusterResult(ep, estimated);
       this->AddToResult(res, ep, result);
-      this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
     }
   }
 
   double WeightSum(const InHistogram& hist) const {
     double answer = 0.;
-    for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-      answer += iter->weight;
+    for (const auto& p : hist) {
+      answer += p.weight;
     }
     return answer;
   }
@@ -104,23 +103,22 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return true;
 
     auto prev = hist.begin()->d;
-    for (auto it = hist.begin(); it != hist.end(); ++it) {
-      if (math::gr(prev, it->d))
+    for (auto p : hist) {
+      if (math::gr(prev, p.d))
         return false;
 
-      prev = it->d;
+      prev = p.d;
     }
     return true;
   }
 
-  void MergeInto(const InHistogram& what, InHistogram& where, int shift) const {
+  void MergeInto(const TempHistogram& what, TempHistogram& where, int shift) const {
     // assuming they are sorted already
     if (what.size() == 0)
       return;
 
     if (where.size() == 0) {
-      for (auto iter = what.begin(); iter != what.end(); ++iter) {
-        Point to_be_added = *iter;
+      for (auto to_be_added : what) {
         to_be_added.d += shift;
         where.insert(to_be_added);
       }
@@ -133,14 +131,12 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     // straightforwardly.
     if (math::ls(where.rbegin()->d, what.begin()->d + shift) ||
         math::gr(where.begin()->d, what.rbegin()->d + shift)) {
-      for (auto iter = what.begin(); iter != what.end(); ++iter) {
-        Point to_be_added = *iter;
+      for (auto to_be_added : what) {
         to_be_added.d += shift;
         where.insert(to_be_added);
       }
     } else {
-      for (auto iter = what.begin(); iter != what.end(); ++iter) {
-        Point to_be_added(*iter);
+      for (auto to_be_added : what) {
         to_be_added.d += shift;
         auto low_bound = std::lower_bound(where.begin(), where.end(), to_be_added);
         if (to_be_added == *low_bound) {
@@ -154,21 +150,18 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     VERIFY(IsSorted(where));
   }
 
-  InHistogram FilterPositive(const InHistogram& hist, size_t first_len, size_t second_len) const {
+  TempHistogram FilterPositive(const typename InPairedIndex::FullHistProxy& hist, size_t first_len, size_t second_len) const {
     // assuming it is sorted
-    if (hist.size() == 0)
-      return hist;
-
-    InHistogram answer;
-    for (auto iterator = hist.begin(); iterator != hist.end(); ++iterator) {
-      if (math::ge(2. * iterator->d + (double) second_len, (double) first_len))
-        answer.insert(*iterator);
+    TempHistogram answer;
+    for (auto point : hist) {
+      if (math::ge(2. * point.d + (double) second_len, (double) first_len))
+        answer.insert(point);
     }
     return answer;
   }
 
   // left edge being extended to the left, shift is negative always
-  void ExtendLeftDFS(EdgeId current, const EdgeId& last, InHistogram& data, int shift, size_t max_shift) const {
+  void ExtendLeftDFS(EdgeId current, const EdgeId& last, TempHistogram& data, int shift, size_t max_shift) const {
     VertexId start = this->graph().EdgeStart(current);
     if (current == last)
       return;
@@ -176,7 +169,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return;
 
     for (EdgeId next : this->graph().IncomingEdges(start)) {
-      auto hist = this->index().GetEdgePairInfo(next, last);
+      auto hist = this->index().Get(next, last);
       if (-shift < (int) max_shift)
         ExtendLeftDFS(next, last, data, shift - (int) this->graph().length(next), max_shift);
       auto filtered_infos = FilterPositive(hist, this->graph().length(next), this->graph().length(last));
@@ -186,7 +179,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   }
 
   // right edge being extended to the right, shift is negative always
-  void ExtendRightDFS(const EdgeId& first, EdgeId current, InHistogram& data, int shift, size_t max_shift) const {
+  void ExtendRightDFS(const EdgeId& first, EdgeId current, TempHistogram& data, int shift, size_t max_shift) const {
     VertexId end = this->graph().EdgeEnd(current);
     if (current == first)
       return;
@@ -194,7 +187,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return;
 
     for (EdgeId next : this->graph().OutgoingEdges(end)) {
-      auto hist = this->index().GetEdgePairInfo(first, next);
+      auto hist = this->index().Get(first, next);
       if (-shift < (int) max_shift)
         ExtendRightDFS(first, next, data, shift - (int) this->graph().length(current), max_shift);
 
@@ -204,7 +197,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     }
   }
 
-  virtual const string Name() const {
+  const string Name() const override {
     static const string my_name = "EXTENSIVE";
     return my_name;
   }

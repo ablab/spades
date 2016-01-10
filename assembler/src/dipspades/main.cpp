@@ -30,7 +30,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "../include/segfault_handler.hpp"
+#include "segfault_handler.hpp"
+#include "version.hpp"
 
 void make_dirs(){
     make_dir(dsp_cfg::get().io.output_base);
