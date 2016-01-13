@@ -16,11 +16,11 @@ namespace de {
 template<typename Index, bool full>
 class EdgePairIterator :
         public boost::iterator_facade<EdgePairIterator<Index, full>,
-                typename Index::FullHistProxy,
+                typename Index::FlatHistProxy,
                 boost::forward_traversal_tag,
-                typename Index::FullHistProxy>
+                typename Index::FlatHistProxy>
 {
-    typedef typename ConjProxy<typename Index::StorageMap>::Iterator OuterIterator;
+    typedef typename Index::StorageMap::const_iterator OuterIterator;
     typedef boost::optional<typename Index::InnerMap::const_iterator> InnerIterator;
 
 protected:
@@ -36,7 +36,7 @@ protected:
         return ep > index_.ConjugatePair(ep);
     }
 
-    inline void Skip() { //For a raw iterator, skip conjugate pairs
+    inline void Skip() { //For a half iterator, skip conjugate pairs
         while (!full && j_ && FakePair()) {
             IncImpl();
         }
@@ -58,7 +58,7 @@ public:
 
 private:
     void StartOver() {
-        if (i_.Iter() == index_.data_end()) {
+        if (i_ == index_.data_end()) {
             j_.reset();
         } else {
             j_ = i_->second.begin();
@@ -68,35 +68,28 @@ private:
 
 public:
 
-    typename Index::FullHistProxy dereference() const {
+    typename Index::FlatHistProxy dereference() const {
         return index_.Get(first(), second()); //TODO: optimize
     }
 
     bool equal(const EdgePairIterator &other) const {
-        return (j_ == other.j_) && (i_.Conj() == other.i_.Conj());
+        return j_ == other.j_;
     }
 
     typename Index::EdgeId first() const {
-        if (i_.Conj())
-            return index_.graph().conjugate((*j_)->first);
         return i_->first;
     }
 
     typename Index::EdgeId second() const {
-        if (i_.Conj())
-            return index_.graph().conjugate(i_->first);
         return (*j_)->first;
     }
 
     static EdgePairIterator begin(const Index& index) {
-        auto i = OuterIterator(index.data_begin(), index.data_end(), index.data_begin(), !index.size());
-        return EdgePairIterator(index, i);
+        return EdgePairIterator(index, index.data_begin());
     }
 
     static EdgePairIterator end(const Index& index) {
-        auto stop = full ? index.data_end() : index.data_begin();
-        auto i = OuterIterator(stop, index.data_end(), index.data_begin(), true);
-        return EdgePairIterator(index, i);
+        return EdgePairIterator(index, index.data_end());
     }
 
 private:
@@ -116,12 +109,12 @@ inline EdgePairIterator<Storage, true> pair_end(const Storage &s) {
 }
 
 template<typename Storage>
-inline EdgePairIterator<Storage, false> raw_pair_begin(const Storage &s) {
+inline EdgePairIterator<Storage, false> half_pair_begin(const Storage &s) {
     return EdgePairIterator<Storage, false>::begin(s);
 }
 
 template<typename Storage>
-inline EdgePairIterator<Storage, false> raw_pair_end(const Storage &s) {
+inline EdgePairIterator<Storage, false> half_pair_end(const Storage &s) {
     return EdgePairIterator<Storage, false>::end(s);
 }
 

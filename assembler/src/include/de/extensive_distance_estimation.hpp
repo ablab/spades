@@ -64,7 +64,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   virtual void ProcessEdge(EdgeId e1,
                            const InPairedIndex& pi,
                            PairedInfoBuffer<Graph>& result) const override {
-    auto inner_map = pi.RawGet(e1);
+    auto inner_map = pi.GetHalf(e1);
     typename base::LengthMap second_edges;
     for (auto i : inner_map)
       second_edges[i.first];
@@ -150,7 +150,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     VERIFY(IsSorted(where));
   }
 
-  TempHistogram FilterPositive(const typename InPairedIndex::FullHistProxy& hist, size_t first_len, size_t second_len) const {
+  TempHistogram FilterPositive(const typename InPairedIndex::FlatHistProxy& hist, size_t first_len, size_t second_len) const {
     // assuming it is sorted
     TempHistogram answer;
     for (auto point : hist) {
