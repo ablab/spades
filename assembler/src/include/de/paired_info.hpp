@@ -355,7 +355,7 @@ private:
         auto si = straight.find(sp);
         if (si != straight.end()) {
             MergeData(straight, si, sp);
-            if (!IsSymmetric(e1, e2, sp)) {
+            if (!IsSelfConj(e1, e2)) {
                 SwapConj(e1, e2, sp);
                 auto& conjugate = storage_[e1][e2];
                 auto ri = conjugate.find(sp);
@@ -364,7 +364,7 @@ private:
             }
         } else {
             InsertPoint(straight, sp);
-            if (!IsSymmetric(e1, e2, sp)) {
+            if (!IsSelfConj(e1, e2)) {
                 SwapConj(e1, e2, sp);
                 auto& conjugate = storage_[e1][e2];
                 InsertPoint(conjugate, sp);
@@ -374,6 +374,11 @@ private:
 
     static bool IsSymmetric(EdgeId e1, EdgeId e2, Point point) {
         return (e1 == e2) && math::eq(point.d, 0.f);
+    }
+
+    bool IsSelfConj(EdgeId e1, EdgeId e2) {
+        //FIXME: is that right?
+        return e1 == graph_.conjugate(e2);
     }
 
     // modifying the histogram
@@ -598,7 +603,7 @@ public:
      * @brief Returns a full backwards histogram proxy for all points between two edges.
      */
     HistProxy<true> GetBack(EdgeId e1, EdgeId e2) const {
-        return HistProxy<true>(GetImpl(e1, e2));
+        return HistProxy<true>(GetImpl(e2, e1));
     }
 
     /**
