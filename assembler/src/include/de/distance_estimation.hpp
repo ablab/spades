@@ -99,7 +99,7 @@ class AbstractDistanceEstimator {
  protected:
   typedef UnclusteredPairedInfoIndexT<Graph> InPairedIndex;
   typedef PairedInfoIndexT<Graph> OutPairedIndex;
-  typedef typename InPairedIndex::FlatHistProxy InHistogram;
+  typedef typename InPairedIndex::FullHistProxy InHistogram;
   typedef typename OutPairedIndex::Histogram OutHistogram;
 
  public:

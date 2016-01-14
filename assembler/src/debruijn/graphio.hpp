@@ -246,7 +246,7 @@ class DataPrinter {
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
             const auto& inner_map = paired_index.GetHalf(e1);
-            std::map<typename Graph::EdgeId, typename Index::FlatHistProxy> ordermap(inner_map.begin(), inner_map.end());
+            std::map<typename Graph::EdgeId, typename Index::FullHistProxy> ordermap(inner_map.begin(), inner_map.end());
             for (auto entry : ordermap) {
                 EdgeId e2 = entry.first;
                 if (component_.contains(e2))

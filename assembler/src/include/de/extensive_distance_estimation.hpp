@@ -150,7 +150,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     VERIFY(IsSorted(where));
   }
 
-  TempHistogram FilterPositive(const typename InPairedIndex::FlatHistProxy& hist, size_t first_len, size_t second_len) const {
+  TempHistogram FilterPositive(const typename InPairedIndex::FullHistProxy & hist, size_t first_len, size_t second_len) const {
     // assuming it is sorted
     TempHistogram answer;
     for (auto point : hist) {

@@ -127,32 +127,19 @@ BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
     MockIndex pi(graph);
     pi.Add(1, 8, RawPoint(1, 3));
     //Check for normal info
+    BOOST_CHECK(pi.contains(1));
+    BOOST_CHECK(pi.contains(1, 8));
     BOOST_CHECK(Contains(pi, 1, 8, 1));
     //Check for conjugate info
+    BOOST_CHECK(pi.contains(9));
+    BOOST_CHECK(pi.contains(9, 2));
     BOOST_CHECK(Contains(pi, 9, 2, 8));
-    //TODO: Check for reversed info?
-    //BOOST_CHECK(Contains(pi, 8, 1, -1));
-    //BOOST_CHECK(Contains(pi, 2, 9, -8));
+    //Check for more points
     pi.Add(1, 3, {2, 2});
     pi.Add(1, 3, {3, 1});
     BOOST_CHECK(Contains(pi, 1, 8, 1));
     BOOST_CHECK(Contains(pi, 1, 3, 2));
     BOOST_CHECK(Contains(pi, 4, 2, 4));
-    //BOOST_CHECK(Contains(pi, 2, 4, -4));
-    RawHistogram test1;
-    test1.insert({2, 1});
-    test1.insert({3, 2});
-    //pi.PrintAll();
-    BOOST_CHECK_EQUAL(pi.Get(1, 3).Unwrap(), test1);
-    RawHistogram test2;
-    //test2.insert({-2, 1});
-    //test2.insert({-3, 2});
-    //BOOST_CHECK_EQUAL(pi.Get(3, 1).Unwrap(), test2);
-    //Check for adding conjugate info
-    pi.Add(4, 2, {4, 2});
-    BOOST_CHECK_EQUAL(pi.Get(1, 3).Unwrap(), test1);
-    //BOOST_CHECK_EQUAL(pi.Get(3, 1).Unwrap(), test2);
-    //pi.Add(2, 4, {-5, 1});
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoAccess) {
@@ -173,23 +160,17 @@ BOOST_AUTO_TEST_CASE(PairedInfoAccess) {
     test2.insert({-3, 2});
     auto proxy3 = pi.Get(3);
     BOOST_CHECK_EQUAL(proxy3[7].Unwrap(), test0);
-    //BOOST_CHECK_EQUAL(proxy3[1].Unwrap(), test2);
     RawHistogram test3;
     test3.insert({-4, 1});
     test3.insert({-5, 2});
     auto proxy2 = pi.Get(2);
     BOOST_CHECK_EQUAL(proxy2[1].Unwrap(), test0);
-    //BOOST_CHECK_EQUAL(proxy2[4].Unwrap(), test3);
     RawHistogram test4;
     test4.insert({4, 1});
     test4.insert({5, 2});
     auto proxy4 = pi.Get(4);
     BOOST_CHECK_EQUAL(proxy4[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy4[2].Unwrap(), test4);
-    //pi.Add(2, 14, {10, 1});
-    //RawHistogram test5;
-    //test5.insert({-22, 1});
-    //BOOST_CHECK_EQUAL(proxy1[13].Unwrap(), test5);
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoHalfAccess) {
@@ -253,23 +234,6 @@ BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
     //BOOST_CHECK_EQUAL(GetNeighbours(pi, 14), test3);
 }
 
-BOOST_AUTO_TEST_CASE(PairedInfoPrune) {
-    MockGraph graph;
-    MockClIndex pi(graph); //Deleting currently works only with the clustered index
-    pi.Add(1, 2, {1, 1, 0});
-    pi.Add(1, 3, {2, 2, 0});
-    //Check for auto-prune
-    BOOST_CHECK_EQUAL(pi.Remove(1, 2, {1, 1, 0}), 2);
-    BOOST_CHECK(!pi.contains(1, 2));
-    BOOST_CHECK_EQUAL(pi.Remove(1, 3, {2, 1, 0}), 2);
-    BOOST_CHECK(!pi.contains(1, 3));
-    BOOST_CHECK(!pi.contains(1));
-    //Check for nonexisting remove
-    BOOST_CHECK_EQUAL(pi.Remove(1, 2, {1, 1, 0}), 0);
-    BOOST_CHECK_EQUAL(pi.Remove(1, 3, {1, 1, 0}), 0);
-    BOOST_CHECK_EQUAL(pi.Remove(1), 0);
-}
-
 BOOST_AUTO_TEST_CASE(PairedInfoUnexistingEdges) {
     //Check that accessing missing edges doesn't broke index
     MockGraph graph;
@@ -285,7 +249,24 @@ BOOST_AUTO_TEST_CASE(PairedInfoUnexistingEdges) {
     BOOST_CHECK_EQUAL(pi.Get(1, 8).Unwrap(), empty_hist);
 }
 
-/*BOOST_AUTO_TEST_CASE(PairedInfoConjugate) {
+BOOST_AUTO_TEST_CASE(PairedInfoPrune) {
+    MockGraph graph;
+    MockClIndex pi(graph); //Deleting currently works only with the clustered index
+    pi.Add(1, 2, {1, 1, 0});
+    pi.Add(1, 3, {2, 2, 0});
+    //Check for auto-prune
+    BOOST_CHECK_EQUAL(pi.Remove(1, 2, {1, 1, 0}), 1);
+    BOOST_CHECK(!pi.contains(1, 2));
+    BOOST_CHECK_EQUAL(pi.Remove(1, 3, {2, 1, 0}), 2);
+    BOOST_CHECK(!pi.contains(1, 3));
+    BOOST_CHECK(!pi.contains(1));
+    //Check for nonexisting remove
+    BOOST_CHECK_EQUAL(pi.Remove(1, 2, {1, 1, 0}), 0);
+    BOOST_CHECK_EQUAL(pi.Remove(1, 3, {1, 1, 0}), 0);
+    BOOST_CHECK_EQUAL(pi.Remove(1), 0);
+}
+
+/*BOOST_AUTO_TEST_CASE(PairedInfoBackAccess) {
     MockGraph graph;
     MockIndex pi(graph);
     pi.Add(1, 1, {0, 2});
@@ -337,7 +318,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoNeighbours) {
     //BOOST_CHECK_EQUAL(GetNeighbourInfo(pi, 3), testF3);
 }
 
-BOOST_AUTO_TEST_CASE(PairedInfoRawData) {
+BOOST_AUTO_TEST_CASE(PairedInfoHalfData) {
     MockGraph graph;
     MockIndex pi(graph);
     pi.Add(1, 3, RawPoint(2, 1));
@@ -354,7 +335,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoRawData) {
     //BOOST_CHECK_EQUAL(pi.GetHalf(2, 4).Unwrap(), test3);
 }
 
-BOOST_AUTO_TEST_CASE(PairedInfoRawNeighbours) {
+BOOST_AUTO_TEST_CASE(PairedInfoHalfNeighbours) {
     MockGraph graph;
     MockIndex pi(graph);
     pi.Add(1, 3, RawPoint(1, 1));

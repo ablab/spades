@@ -132,7 +132,7 @@ public:
         }
 
         Iterator end() const {
-            return IterHelper<Histogram, back>::begin(hist_);
+            return IterHelper<Histogram, back>::end(hist_);
         }
         /**
          * @brief Finds the point with the minimal distance.
@@ -171,34 +171,35 @@ public:
     };
 
     /**
-     * @brief Type synonym for full histogram proxies (with added and conjugated points)
+     * @brief Type synonym for straight histogram proxies
+     */
+    typedef HistProxy<false> FullHistProxy;
+
+    /**
+     * @brief Type synonym for reversed histogram proxies
      */
     typedef HistProxy<true> BackHistProxy;
-    /**
-     * @brief Type synonym for raw histogram proxies (only with directly added points)
-     */
-    typedef HistProxy<false> FlatHistProxy;
 
-    typedef typename HistProxy<true>::Iterator BackHistIterator;
-    typedef typename HistProxy<false>::Iterator HistIterator;
+    typedef typename FullHistProxy::Iterator HistIterator;
+    typedef typename BackHistProxy::Iterator BackHistIterator;
 
     //---- Traversing edge neighbours ----
 
-    template<bool full = true>
-    using EdgeHist = std::pair<EdgeId, HistProxy<full>>;
+    template<bool back = false>
+    using EdgeHist = std::pair<EdgeId, HistProxy<back>>;
 
     /**
      * @brief A proxy map representing neighbourhood of an edge,
      *        where `Key` is the graph edge ID and `Value` is the proxy histogram.
-     * @param full When true, represents all neighbours (consisting both of directly added data
+     * @param half When false, represents all neighbours (consisting both of directly added data
      *             and "restored" conjugates).
-     *             When false, proxifies only the added edges.
+     *             When true, proxifies only half of the added edges.
      * @detail You can work with the proxy just like with any constant map.
      *         The only major difference is that it returns all consisting pairs by value,
      *         becauses some of them don't exist in the underlying sets and are
      *         restored from the conjugate info on-the-fly.
      */
-    template<bool full = true>
+    template<bool half = false>
     class EdgeProxy {
     public:
 
@@ -207,19 +208,20 @@ public:
          * @param full When true, traverses both straight and conjugate pairs.
          *             When false, traverses only lesser pairs of edges.
          */
-        class Iterator: public boost::iterator_facade<Iterator, EdgeHist<full>, boost::forward_traversal_tag, EdgeHist<full>> {
+        class Iterator: public boost::iterator_facade<Iterator, EdgeHist<>, boost::forward_traversal_tag, EdgeHist<>> {
 
             typedef typename InnerMap::const_iterator InnerIterator;
 
-            void Skip() { //For a raw iterator, skip conjugate pairs
-                while (!full && iter_->first < edge_)
+            void Skip() { //For a half iterator, skip conjugate pairs
+                while (half && iter_ != stop_ && iter_->first < edge_)
                     ++iter_;
             }
 
         public:
-            Iterator(const PairedIndex &index, InnerIterator iter, EdgeId edge)
+            Iterator(const PairedIndex &index, InnerIterator iter, InnerIterator stop, EdgeId edge)
                     : index_ (index)
                     , iter_(iter)
+                    , stop_(stop)
                     , edge_(edge)
             {
                 Skip();
@@ -234,6 +236,7 @@ public:
                 //TODO: is this risky without an assertion?
                 //We shouldn't reassign iterators from one index onto another
                 iter_ = other.iter_;
+                stop_ = other.stop_;
                 edge_ = other.edge_;
             }
 
@@ -244,14 +247,14 @@ public:
                 return iter_ == other.iter_;
             }
 
-            EdgeHist<full> dereference() const {
+            EdgeHist<> dereference() const {
                 const auto& hist = iter_->second;
-                return std::make_pair(iter_->first, HistProxy<full>(hist));
+                return std::make_pair(iter_->first, HistProxy<>(hist));
             }
 
         private:
             const PairedIndex &index_;
-            InnerIterator iter_;
+            InnerIterator iter_, stop_;
             EdgeId edge_;
         };
 
@@ -260,11 +263,11 @@ public:
         {}
 
         Iterator begin() const {
-            return Iterator(index_, map_.begin(), edge_);
+            return Iterator(index_, map_.begin(), map_.end(), edge_);
         }
 
         Iterator end() const {
-            return Iterator(index_, map_.end(), edge_);
+            return Iterator(index_, map_.end(), map_.end(), edge_);
         }
 
         HistProxy<> operator[](EdgeId e2) const {
@@ -285,8 +288,8 @@ public:
         EdgeId edge_;
     };
 
-    typedef typename EdgeProxy<true>::Iterator EdgeIterator;
-    typedef typename EdgeProxy<false>::Iterator HalfEdgeIterator;
+    typedef typename EdgeProxy<false>::Iterator EdgeIterator;
+    typedef typename EdgeProxy<>::Iterator HalfEdgeIterator;
 
     //--Constructor--
 
@@ -354,17 +357,17 @@ private:
             MergeData(straight, si, sp);
             if (!IsSymmetric(e1, e2, sp)) {
                 SwapConj(e1, e2, sp);
-                auto& reversed = storage_[e1][e2];
-                auto ri = reversed.find(sp);
-                VERIFY(ri != reversed.end());
-                MergeData(reversed, ri, sp);
+                auto& conjugate = storage_[e1][e2];
+                auto ri = conjugate.find(sp);
+                VERIFY(ri != conjugate.end());
+                MergeData(conjugate, ri, sp);
             }
         } else {
             InsertPoint(straight, sp);
             if (!IsSymmetric(e1, e2, sp)) {
                 SwapConj(e1, e2, sp);
-                auto& reversed = storage_[e1][e2];
-                InsertPoint(reversed, sp);
+                auto& conjugate = storage_[e1][e2];
+                InsertPoint(conjugate, sp);
             }
         }
     }
@@ -382,6 +385,7 @@ private:
     void MergeData(Histogram& hist, typename Histogram::iterator to_update, const Point& to_merge) {
         //We can't just modify the existing point, because if variation is non-zero,
         //resulting distance will differ
+        //TODO: Use @akorobeynikov's smart merging
         auto to_add = *to_update + to_merge;
         auto after_removed = hist.erase(to_update);
         hist.insert(after_removed, to_add);
@@ -526,16 +530,16 @@ public:
         return adt::make_range(data_begin(), data_end());
     }
 
-    template<bool full>
-    EdgeProxy<full> GetT(EdgeId e) const {
-        return EdgeProxy<full>(*this, GetImpl(e), e);
+    template<bool half = false>
+    EdgeProxy<half> GetT(EdgeId e) const {
+        return EdgeProxy<half>(*this, GetImpl(e), e);
     }
 
     /**
      * @brief Returns a full proxy map to the neighbourhood of some edge.
      */
     EdgeProxy<> Get(EdgeId e) const {
-        return GetT<true>(e);
+        return GetT<>(e);
     }
 
     /**
@@ -543,8 +547,8 @@ public:
      * @detail You should use it when you don't care for conjugate info,
      *         or don't want to process them twice.
      */
-    EdgeProxy<false> GetHalf(EdgeId e) const {
-        return GetT<false>(e);
+    EdgeProxy<true> GetHalf(EdgeId e) const {
+        return GetT<true>(e);
     }
 
     /**
@@ -571,7 +575,7 @@ private:
             if (j != i->second.end())
                 return j->second;
         }
-        return HistProxy<true>::empty_hist();
+        return HistProxy<>::empty_hist();
     }
 
 public:
@@ -580,7 +584,7 @@ public:
      * @brief Returns a full histogram proxy for all points between two edges.
      */
     HistProxy<> Get(EdgeId e1, EdgeId e2) const {
-        return HistProxy<false>(GetImpl(e1, e2));
+        return HistProxy<>(GetImpl(e1, e2));
     }
 
     /**
@@ -593,7 +597,7 @@ public:
     /**
      * @brief Returns a full backwards histogram proxy for all points between two edges.
      */
-    HistProxy<> GetBack(EdgeId e1, EdgeId e2) const {
+    HistProxy<true> GetBack(EdgeId e1, EdgeId e2) const {
         return HistProxy<true>(GetImpl(e1, e2));
     }
 
