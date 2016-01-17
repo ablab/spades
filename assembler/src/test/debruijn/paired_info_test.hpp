@@ -126,6 +126,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
     MockGraph graph;
     MockIndex pi(graph);
     pi.Add(1, 8, RawPoint(1, 3));
+    BOOST_CHECK_EQUAL(pi.size(), 2);
     //Check for normal info
     BOOST_CHECK(pi.contains(1));
     BOOST_CHECK(pi.contains(1, 8));
@@ -140,10 +141,16 @@ BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
     BOOST_CHECK(Contains(pi, 1, 8, 1));
     BOOST_CHECK(Contains(pi, 1, 3, 2));
     BOOST_CHECK(Contains(pi, 4, 2, 4));
+    BOOST_CHECK_EQUAL(pi.size(), 6);
     //Check for loops
     pi.Add(1, 1, {0, 1});
+    BOOST_CHECK_EQUAL(pi.size(), 8);
     BOOST_CHECK(Contains(pi, 1, 1, 0));
     BOOST_CHECK(Contains(pi, 2, 2, 0));
+    //Check for self-conjugates
+    //pi.Add(1, 2, {1, 1});
+    //BOOST_CHECK_EQUAL(pi.size(), 9);
+    //BOOST_CHECK(Contains(pi, 1, 2, 1));
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoAccess) {
@@ -225,26 +232,31 @@ BOOST_AUTO_TEST_CASE(PairedInfoBackData) {
 BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
     MockGraph graph;
     MockClIndex pi(graph); //Deleting currently works only with the clustered index
-    pi.Add(1, 2, {1, 1, 0});
+    pi.Add(1, 8, {1, 1, 0});
     pi.Add(1, 3, {2, 2, 0});
     pi.Add(1, 3, {3, 1, 0});
+    BOOST_CHECK_EQUAL(pi.size(), 6);
     //Check for single pair remove
     BOOST_CHECK_EQUAL(pi.Remove(1, 3, {2, 1, 0}), 2);
+    BOOST_CHECK_EQUAL(pi.size(), 4);
     HistogramWithWeight test1;
     test1.insert({3, 2, 0});
     BOOST_CHECK_EQUAL(pi.Get(1, 3).Unwrap(), test1);
     BOOST_CHECK_EQUAL(pi.Remove(1, 3, {3, 1, 0}), 2);
     BOOST_CHECK(!pi.contains(1, 3));
+    BOOST_CHECK_EQUAL(pi.size(), 2);
     //Check for full remove
     pi.Add(1, 3, {2, 2, 0});
     pi.Add(1, 3, {3, 1, 0});
     pi.Remove(1, 3);
     BOOST_CHECK(!pi.contains(1, 3));
+    BOOST_CHECK_EQUAL(pi.size(), 2);
     //Check for nonexisting remove
     BOOST_CHECK_EQUAL(pi.Remove(1, 3, {1, 1, 0}), 0);
     BOOST_CHECK(!pi.contains(1, 3));
     BOOST_CHECK_EQUAL(pi.Remove(1, 2, {2, 2, 0}), 0);
-    BOOST_CHECK(pi.contains(1, 2));
+    BOOST_CHECK(pi.contains(1, 8));
+    BOOST_CHECK_EQUAL(pi.size(), 2);
     //Check for neighbours remove
     //pi.Add(1, 3, {3, 1, 0});
     //pi.Add(2, 13, {7, 1, 0});
@@ -260,7 +272,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoUnexistingEdges) {
     //Check that accessing missing edges doesn't broke index
     MockGraph graph;
     MockIndex pi(graph);
-    pi.Add(1, 2, {1, 1});
+    pi.Add(1, 8, {1, 1});
     pi.Add(1, 3, {2, 2});
     EdgeSet empty;
     BOOST_CHECK(pi.Get(14).empty());
@@ -268,16 +280,16 @@ BOOST_AUTO_TEST_CASE(PairedInfoUnexistingEdges) {
     BOOST_CHECK_EQUAL(GetNeighbours(pi, 8), empty);
     RawHistogram empty_hist;
     BOOST_CHECK_EQUAL(pi.Get(1, 5).Unwrap(), empty_hist);
-    BOOST_CHECK_EQUAL(pi.Get(1, 8).Unwrap(), empty_hist);
+    BOOST_CHECK_EQUAL(pi.Get(8, 1).Unwrap(), empty_hist);
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoPrune) {
     MockGraph graph;
     MockClIndex pi(graph); //Deleting currently works only with the clustered index
-    pi.Add(1, 2, {1, 1, 0});
+    pi.Add(1, 8, {1, 1, 0});
     pi.Add(1, 3, {2, 2, 0});
     //Check for auto-prune
-    BOOST_CHECK_EQUAL(pi.Remove(1, 2, {1, 1, 0}), 1);
+    BOOST_CHECK_EQUAL(pi.Remove(1, 8, {1, 1, 0}), 2);
     BOOST_CHECK(!pi.contains(1, 2));
     BOOST_CHECK_EQUAL(pi.Remove(1, 3, {2, 1, 0}), 2);
     BOOST_CHECK(!pi.contains(1, 3));
@@ -336,8 +348,10 @@ BOOST_AUTO_TEST_CASE(PairedInfoHalfNeighbours) {
     BOOST_CHECK_EQUAL(GetHalfNeighbours(pi, 1), test1);
     EdgeSet test2 = {13};
     BOOST_CHECK_EQUAL(GetHalfNeighbours(pi, 2), test2);
-    EdgeSet test3;
-    BOOST_CHECK_EQUAL(GetHalfNeighbours(pi, 14), test3);
+    EdgeSet test3 = {14};
+    BOOST_CHECK_EQUAL(GetHalfNeighbours(pi, 3), test3);
+    EdgeSet test4;
+    BOOST_CHECK_EQUAL(GetHalfNeighbours(pi, 14), test4);
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoMoreNeighbours) {
@@ -356,6 +370,23 @@ BOOST_AUTO_TEST_CASE(PairedInfoMoreNeighbours) {
     BOOST_CHECK_EQUAL(GetNeighbours(pi, 1), test1);
     EdgeSet test2 = {2, 4};
     BOOST_CHECK_EQUAL(GetNeighbours(pi, 2), test2);
+}
+
+
+BOOST_AUTO_TEST_CASE(PairedInfoMerge) {
+    MockGraph graph;
+    MockIndex pi(graph), spi(graph), tpi(graph);
+    RawPoint p = {1, 1};
+    tpi.Add(1, 1, p);
+    pi.Merge(tpi);
+    BOOST_CHECK_EQUAL(pi.size(), 2);
+    spi.Add(1, 9, p);
+    spi.Add(3, 13, p);
+    BOOST_CHECK_EQUAL(spi.size(), 4);
+    pi.Merge(spi);
+    BOOST_CHECK_EQUAL(pi.size(), 6);
+    BOOST_CHECK(Contains(pi, 1, 9, 1));
+    BOOST_CHECK(Contains(pi, 3, 13, 1));
 }
 
 

@@ -212,8 +212,13 @@ public:
 
             typedef typename InnerMap::const_iterator InnerIterator;
 
+            bool SkipPair(EdgeId e1, EdgeId e2) {
+                auto ep = std::make_pair(e1, e2);
+                return ep > index_.ConjugatePair(ep);
+            }
+
             void Skip() { //For a half iterator, skip conjugate pairs
-                while (half && iter_ != stop_ && iter_->first < edge_)
+                while (half && iter_ != stop_ && SkipPair(edge_, iter_->first))
                     ++iter_;
             }
 
@@ -302,13 +307,13 @@ public:
     /**
      * @brief Returns a conjugate pair for two edges.
      */
-    inline EdgePair ConjugatePair(EdgeId e1, EdgeId e2) const {
+    EdgePair ConjugatePair(EdgeId e1, EdgeId e2) const {
         return std::make_pair(graph_.conjugate(e2), graph_.conjugate(e1));
     }
     /**
      * @brief Returns a conjugate pair for a pair of edges.
      */
-    inline EdgePair ConjugatePair(EdgePair ep) const {
+    EdgePair ConjugatePair(EdgePair ep) const {
         return ConjugatePair(ep.first, ep.second);
     }
 
@@ -334,7 +339,7 @@ public:
      *        merging weights if there's already one with the same distance.
      */
     void Add(EdgeId e1, EdgeId e2, Point point) {
-        InsertOrMerge(e1, e2, point);
+        InsertWithConj(e1, e2, point);
     }
 
     /**
@@ -343,33 +348,18 @@ public:
     template<typename TH>
     void AddMany(EdgeId e1, EdgeId e2, const TH& hist) {
         for (auto point : hist) {
-            InsertOrMerge(e1, e2, point);
+            InsertWithConj(e1, e2, point);
         }
     }
 
 private:
 
-    void InsertOrMerge(EdgeId e1, EdgeId e2,
+    void InsertWithConj(EdgeId e1, EdgeId e2,
                        Point sp) {
-        auto& straight = storage_[e1][e2];
-        auto si = straight.find(sp);
-        if (si != straight.end()) {
-            MergeData(straight, si, sp);
-            if (!IsSelfConj(e1, e2)) {
-                SwapConj(e1, e2, sp);
-                auto& conjugate = storage_[e1][e2];
-                auto ri = conjugate.find(sp);
-                VERIFY(ri != conjugate.end());
-                MergeData(conjugate, ri, sp);
-            }
-        } else {
-            InsertPoint(straight, sp);
-            if (!IsSelfConj(e1, e2)) {
-                SwapConj(e1, e2, sp);
-                auto& conjugate = storage_[e1][e2];
-                InsertPoint(conjugate, sp);
-            }
-        }
+        size_ += storage_[e1][e2].merge_point(sp);
+        //TODO: deal with loops and self-conj
+        SwapConj(e1, e2, sp);
+        size_ += storage_[e1][e2].merge_point(sp);
     }
 
     static bool IsSymmetric(EdgeId e1, EdgeId e2, Point point) {
@@ -377,7 +367,6 @@ private:
     }
 
     bool IsSelfConj(EdgeId e1, EdgeId e2) {
-        //FIXME: is that right?
         return e1 == graph_.conjugate(e2);
     }
 
@@ -385,15 +374,6 @@ private:
     inline void InsertPoint(Histogram& histogram, Point point) {
         histogram.insert(point);
         ++size_;
-    }
-
-    void MergeData(Histogram& hist, typename Histogram::iterator to_update, const Point& to_merge) {
-        //We can't just modify the existing point, because if variation is non-zero,
-        //resulting distance will differ
-        //TODO: Use @akorobeynikov's smart merging
-        auto to_add = *to_update + to_merge;
-        auto after_removed = hist.erase(to_update);
-        hist.insert(after_removed, to_add);
     }
 
 public:
@@ -410,6 +390,7 @@ public:
             InnerMap& map_already_exists = base_index[e1_to_add];
             MergeInnerMaps(map_to_add, map_already_exists);
         }
+        VERIFY(size() >= index_to_add.size());
     }
 
 private:
@@ -432,10 +413,9 @@ public:
      */
     size_t Remove(EdgeId e1, EdgeId e2, Point point) {
         auto res = RemoveSingle(e1, e2, point);
-        if (!IsSymmetric(e1, e2, point)) {
-            SwapConj(e1, e2, point);
-            res += RemoveSingle(e1, e2, point);
-        }
+        //TODO: deal with loops and self-conj
+        SwapConj(e1, e2, point);
+        res += RemoveSingle(e1, e2, point);
         return res;
     }
 
@@ -446,7 +426,7 @@ public:
      */
     size_t Remove(EdgeId e1, EdgeId e2) {
         auto res = RemoveAll(e1, e2);
-        if (e1 != e2) { //TODO: what if self-conjugate?
+        if (!IsSelfConj(e1, e2)) { //TODO: loops?
             SwapConj(e1, e2);
             res += RemoveAll(e1, e2);
         }
@@ -637,7 +617,7 @@ public:
     void Init() {
         //VERIFY(size() == 0);
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
-            storage_[*it][*it].insert(Point());
+            Add(*it, *it, Point());
     }
 
     /**
