@@ -407,7 +407,7 @@ class BulgeRemover: public PersistentProcessingAlgorithm<Graph,
 protected:
 
     /*virtual*/
-    bool ProcessEdge(EdgeId e) {
+    bool Process(EdgeId e) {
         TRACE("Considering edge " << this->g().str(e)
                       << " of length " << this->g().length(e)
                       << " and avg coverage " << this->g().coverage(e));
@@ -417,7 +417,7 @@ protected:
             return false;
         }
 
-        vector<EdgeId> alternative = alternatives_analyzer(e);
+        vector<EdgeId> alternative = alternatives_analyzer_(e);
         if (!alternative.empty()) {
             gluer_(e, alternative);
             return true;
@@ -458,8 +458,8 @@ public:
                  SimpleInterestingElementFinder<Graph, EdgeId>(g,
                                                     NecessaryBulgeCondition(g, alternatives_analyzer.max_length(),
                                                                             alternatives_analyzer.max_coverage())),
+                 /*canonical_only*/true,
                  CoverageComparator<Graph>(g),
-                 true,
                  track_changes),
             alternatives_analyzer_(alternatives_analyzer),
             gluer_(g, opt_callback, removal_handler) {

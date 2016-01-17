@@ -671,20 +671,49 @@ AlgoPtr<Graph> TopologyTipClipperInstance(
                     condition, info, removal_handler, /*track changes*/false);
 }
 
+//template<class Graph>
+//AlgoPtr<Graph> ParallelBRInstance(Graph& g,
+//                                           const debruijn_config::simplification::bulge_remover& br_config,
+//                                           const SimplifInfoContainer& /*info*/,
+//                                           HandlerF<Graph> removal_handler,
+//                                           size_t /*iteration_cnt*/ = 1) {
+//    VERIFY(br_config.parallel);
+//    auto alternatives_analyzer = ParseBRConfig(g, br_config);
+//    return make_shared<ParallelBulgeRemover<Graph>>(g,
+//            br_config.chunk_size,
+//            alternatives_analyzer,
+//            nullptr,
+//            removal_handler,
+//            /*track_changes*/true);
+//}
+
 template<class Graph>
-AlgoPtr<Graph> ParallelBRInstance(Graph& g,
+AlgoPtr<Graph> BRInstance(Graph& g,
                                            const debruijn_config::simplification::bulge_remover& br_config,
                                            const SimplifInfoContainer& /*info*/,
                                            HandlerF<Graph> removal_handler,
                                            size_t /*iteration_cnt*/ = 1) {
-    VERIFY(br_config.parallel);
+    if (!br_config.enabled) {
+        return nullptr;
+    }
+
     auto alternatives_analyzer = ParseBRConfig(g, br_config);
-    return make_shared<ParallelBulgeRemover<Graph>>(g,
-            br_config.chunk_size,
-            alternatives_analyzer,
-            nullptr,
-            removal_handler,
-            /*track_changes*/true);
+    if (br_config.parallel) {
+        INFO("Creating parallel br instance");
+        return make_shared<ParallelBulgeRemover<Graph>>(g,
+                br_config.chunk_size,
+                alternatives_analyzer,
+                nullptr,
+                removal_handler,
+                /*track_changes*/true);
+    } else {
+        INFO("Creating br instance");
+        return make_shared<BulgeRemover<Graph>>(g,
+                alternatives_analyzer,
+                nullptr,
+                removal_handler,
+                /*track_changes*/true);
+    }
 }
 
 //todo make this all work for start of the edges also? switch to canonical iteration?
