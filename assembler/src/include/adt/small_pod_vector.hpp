@@ -52,7 +52,16 @@ public:
   typedef T* pointer;
   typedef const T* const_pointer;
 
-  static_assert(std::is_trivially_copyable<value_type>::value, "Value type for SmallPODVector should be trivially copyable");
+// workaround missing "is_trivially_copyable" in g++ < 5.0
+#if __GNUG__ && __GNUC__ < 5
+#define IS_TRIVIALLY_COPYABLE(T) __has_trivial_copy(T)
+#else
+#define IS_TRIVIALLY_COPYABLE(T) std::is_trivially_copyable<T>::value
+#endif
+
+  static_assert(IS_TRIVIALLY_COPYABLE(value_type), "Value type for SmallPODVector should be trivially copyable");
+
+#undef IS_TRIVIALLY_COPYABLE
 
 private:
   vector_type* vector() const {
@@ -125,7 +134,6 @@ public:
     data_ = that.data_;
     that.data_.setPointer(nullptr);
     that.data_.setInt(0);
-    return *this;
   }
 
   const self& operator=(const self&& that) {

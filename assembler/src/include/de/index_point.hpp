@@ -9,6 +9,7 @@
 
 #include <btree/btree_set.h>
 #include "adt/flat_set.hpp"
+#include "adt/small_pod_vector.hpp"
 
 namespace omnigraph {
 
@@ -181,7 +182,7 @@ class Histogram {
     typedef Histogram<Point> self_type;
     typedef typename std::less<Point> key_compare;
     typedef typename std::allocator<Point> allocator_type;
-    typedef typename adt::flat_set<Point, key_compare, allocator_type> Tree;
+    typedef typename adt::flat_set<Point, key_compare, adt::SmallPODVector> Tree;
 
   public:
     typedef typename Tree::key_type key_type;
