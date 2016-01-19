@@ -57,12 +57,13 @@ private:
     float d_;
 };
 
-struct RawPoint {
+struct __attribute__((aligned(8))) RawPoint {
     DEDistance d;
     mutable DEWeight weight;
 
     RawPoint()
-            : d(0.0), weight(0.0) {}
+            : RawPoint(0, 0) { }
+    
 
     RawPoint(DEDistance distance, DEWeight weight)
             : d(distance), weight(weight) {}
@@ -81,13 +82,6 @@ struct RawPoint {
         ss << "Point: " << " distance = " << this->d
            << ", weight = " << this->weight;
         return ss.str();
-    }
-
-    RawPoint& operator=(const RawPoint& rhs) {
-        using namespace math;
-        update_value_if_needed<DEDistance>(d, rhs.d);
-        update_value_if_needed<DEWeight>(weight, rhs.weight);
-        return *this;
     }
 
     bool operator<(const RawPoint& rhs) const {
@@ -122,25 +116,15 @@ struct RawPoint {
 
 struct Point : public RawPoint {
     DEDistance var;
+
     Point()
-            : var(0.0) {}
+            : Point(0, 0, 0) { }
 
     Point(DEDistance distance, DEWeight weight, DEDistance variance)
             : RawPoint(distance, weight), var(variance) {}
 
-    Point(const Point &rhs)
-            : RawPoint(rhs), var(rhs.var) {}
-
     Point(const RawPoint &rhs)
             : RawPoint(rhs), var(0.0) {}
-
-    Point& operator=(const Point& rhs) {
-        using namespace math;
-        update_value_if_needed<DEDistance>(d, rhs.d);
-        update_value_if_needed<DEWeight>(weight, rhs.weight);
-        update_value_if_needed<DEDistance>(var, rhs.var);
-        return *this;
-    }
 
     bool operator<(const Point& rhs) const {
         return math::ls(this->d, rhs.d);
