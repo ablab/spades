@@ -10,19 +10,17 @@
 
 namespace adt {
 
-template<typename T, typename Comp = std::less<T>,
-         typename Allocator = std::allocator<T>>
+template<typename T, typename Comp = std::less<T>, template<typename, typename...> class Container = std::vector >
 struct flat_set {
     typedef T key_type;
     typedef T value_type;
     typedef Comp key_compare;
     typedef Comp value_compare;
-    typedef Allocator allocator_type;
     typedef value_type& reference;
     typedef const value_type& const_reference;
-    typedef typename std::allocator_traits<allocator_type>::pointer pointer;
-    typedef typename std::allocator_traits<allocator_type>::const_pointer const_pointer;
-    typedef std::vector<value_type, allocator_type> container_type;
+    typedef Container<value_type> container_type;
+    typedef typename container_type::pointer pointer;
+    typedef typename container_type::const_pointer const_pointer;
     typedef typename container_type::iterator iterator;
     typedef typename container_type::const_iterator const_iterator;
     typedef typename container_type::reverse_iterator reverse_iterator;
@@ -183,9 +181,6 @@ struct flat_set {
     std::pair<const_iterator, const_iterator> equal_range(const value_type &key) const {
         return std::equal_range(begin(), end(), key, Comp());
     }
-    allocator_type get_allocator() const {
-        return data_.get_allocator();
-    }
 
     bool operator==(const flat_set &other) const {
         return data_ == other.data_;
@@ -225,8 +220,8 @@ struct flat_set {
     }
 };
 
-template<typename V, typename C, typename A>
-void swap(flat_set<V, C, A> & lhs, flat_set<V, C, A> & rhs) {
+template<typename V, typename C, template<typename, typename...> class Container>
+void swap(flat_set<V, C, Container> & lhs, flat_set<V, C, Container> & rhs) {
     lhs.swap(rhs);
 }
 
