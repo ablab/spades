@@ -18,7 +18,8 @@ bool TopologyRemoveErroneousEdges(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
 
-    auto condition = DefaultUniquenessPlausabilityCondition<Graph>(g, tec_config.uniqueness_length, tec_config.plausibility_length);
+    pred::TypedPredicate<typename Graph::EdgeId>
+            condition(DefaultUniquenessPlausabilityCondition<Graph>(g, tec_config.uniqueness_length, tec_config.plausibility_length));
 
     return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }
@@ -32,10 +33,10 @@ bool MultiplicityCountingRemoveErroneousEdges(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
 
-    auto condition
-        = MultiplicityCountingCondition<Graph>(g, tec_config.uniqueness_length,
-                                               /*plausibility*/ MakePathLengthLowerBound(g,
-                                                                                         PlausiblePathFinder<Graph>(g, 2 * tec_config.plausibility_length), tec_config.plausibility_length));
+    pred::TypedPredicate<typename Graph::EdgeId>
+            condition(MultiplicityCountingCondition<Graph>(g, tec_config.uniqueness_length,
+                                          /*plausibility*/ MakePathLengthLowerBound(g,
+                                                                                    PlausiblePathFinder<Graph>(g, 2 * tec_config.plausibility_length), tec_config.plausibility_length)));
 
     return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }
