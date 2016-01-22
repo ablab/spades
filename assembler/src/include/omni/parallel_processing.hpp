@@ -55,11 +55,11 @@ class SimpleInterestingElementFinder {
     typedef GraphEdgeIterator<Graph> EdgeIt;
 
     const Graph& g_;
-    adt::TypedPredicate<ElementId> condition_;
+    pred::TypedPredicate<ElementId> condition_;
 public:
 
     SimpleInterestingElementFinder(const Graph& g,
-                                   adt::TypedPredicate<ElementId> condition = adt::AlwaysTrue<ElementId>())
+                                   pred::TypedPredicate<ElementId> condition = pred::AlwaysTrue<ElementId>())
             :  g_(g), condition_(condition) {}
 
     template<class SmartIt>
@@ -78,12 +78,12 @@ class ParallelInterestingElementFinder {
     typedef GraphEdgeIterator<Graph> EdgeIt;
 
     const Graph& g_;
-    adt::TypedPredicate<ElementId> condition_;
+    pred::TypedPredicate<ElementId> condition_;
     const size_t chunk_cnt_;
 public:
 
     ParallelInterestingElementFinder(const Graph& g,
-                                     adt::TypedPredicate<ElementId> condition,
+                                     pred::TypedPredicate<ElementId> condition,
                                      size_t chunk_cnt)
             : g_(g), condition_(condition), chunk_cnt_(chunk_cnt) {}
 
@@ -240,7 +240,7 @@ class ConditionEdgeRemovingAlgorithm : public PersistentEdgeRemovingAlgorithm<Gr
                                                                               InterestingEdgeFinder, Comparator> {
     typedef typename Graph::EdgeId EdgeId;
     typedef PersistentEdgeRemovingAlgorithm<Graph, InterestingEdgeFinder, Comparator> base;
-    adt::TypedPredicate<EdgeId> remove_condition_;
+    pred::TypedPredicate<EdgeId> remove_condition_;
 protected:
 
     bool ShouldRemove(EdgeId e) const override {
@@ -250,7 +250,7 @@ protected:
 public:
     ConditionEdgeRemovingAlgorithm(Graph& g,
                                    const InterestingEdgeFinder& interest_edge_finder,
-                                   adt::TypedPredicate<EdgeId> remove_condition,
+                                   pred::TypedPredicate<EdgeId> remove_condition,
                                    std::function<void(EdgeId)> removal_handler = boost::none,
                                    bool canonical_only = false,
                                    const Comparator& comp = Comparator(),
@@ -272,7 +272,7 @@ class ParallelEdgeRemovingAlgorithm : public ConditionEdgeRemovingAlgorithm<Grap
 
 public:
     ParallelEdgeRemovingAlgorithm(Graph& g,
-                                  adt::TypedPredicate<EdgeId> remove_condition,
+                                  pred::TypedPredicate<EdgeId> remove_condition,
                                   size_t chunk_cnt,
                                   std::function<void(EdgeId)> removal_handler = boost::none,
                                   bool canonical_only = false,

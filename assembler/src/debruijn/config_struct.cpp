@@ -196,20 +196,20 @@ inline void load(estimation_mode& est_mode,
 }
 
 void load(debruijn_config::simplification::bulge_remover& br,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
+          boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
-  load(br.enabled                           , pt,   "enabled"					);
-  load(br.max_bulge_length_coefficient		, pt,   "max_bulge_length_coefficient");
+  load(br.enabled                           , pt,   "enabled"					  , complete);
+  load(br.max_bulge_length_coefficient		, pt,   "max_bulge_length_coefficient", complete);
   load(br.max_additive_length_coefficient	, pt,
-       "max_additive_length_coefficient");
-  load(br.max_coverage,                     pt,     "max_coverage");
-  load(br.max_relative_coverage,            pt,     "max_relative_coverage");
-  load(br.max_delta,                        pt,     "max_delta");
-  load(br.max_relative_delta,               pt,     "max_relative_delta");
-  load(br.max_number_edges,                 pt,     "max_number_edges");
-  load(br.parallel,                         pt,     "parallel");
-  load(br.chunk_size,                       pt,     "chunk_size");
+       "max_additive_length_coefficient", complete);
+  load(br.max_coverage,                     pt,     "max_coverage", complete);
+  load(br.max_relative_coverage,            pt,     "max_relative_coverage", complete);
+  load(br.max_delta,                        pt,     "max_delta", complete);
+  load(br.max_relative_delta,               pt,     "max_relative_delta", complete);
+  load(br.max_number_edges,                 pt,     "max_number_edges", complete);
+  load(br.parallel,                         pt,     "parallel", complete);
+  load(br.chunk_size,                       pt,     "chunk_size", complete);
 }
 
 void load(debruijn_config::simplification::topology_tip_clipper& ttc,

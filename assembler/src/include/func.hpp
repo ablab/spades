@@ -65,19 +65,5 @@ public:
 	}
 };
 
-template<class T>
-class AdaptorPredicate: public Predicate<T> {
-    typedef std::function<bool(T)> pred_func_t;
-    pred_func_t pred_f_;
-public:
-    AdaptorPredicate(pred_func_t pred_f) :
-        pred_f_(pred_f) {
-    }
-
-    bool Check(T t) const {
-        return pred_f_(t);
-    }
-};
-
 
 }

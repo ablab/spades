@@ -8,7 +8,7 @@
 #pragma once
 
 #include "func.hpp"
-#include "adt/pred.hpp"
+#include "pred.hpp"
 #include "omni_utils.hpp"
 namespace omnigraph {
 
@@ -78,9 +78,9 @@ class AlternativesPresenceCondition : public EdgeCondition<Graph> {
 };
 
 template<class Graph>
-adt::TypedPredicate<typename Graph::EdgeId> AddAlternativesPresenceCondition(const Graph& g,
-                                                                             adt::TypedPredicate<typename Graph::EdgeId> condition) {
-    return adt::And(AlternativesPresenceCondition<Graph>(g), condition);
+pred::TypedPredicate<typename Graph::EdgeId> AddAlternativesPresenceCondition(const Graph& g,
+                                                                             pred::TypedPredicate<typename Graph::EdgeId> condition) {
+    return pred::And(AlternativesPresenceCondition<Graph>(g), condition);
 }
 
 template<class Graph>
@@ -217,7 +217,7 @@ class PredicateUniquenessPlausabilityCondition :
         public UniquenessPlausabilityCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef adt::TypedPredicate<EdgeId> EdgePredicate;
+    typedef pred::TypedPredicate<EdgeId> EdgePredicate;
     typedef UniquenessPlausabilityCondition<Graph> base;
 
     EdgePredicate uniqueness_condition_;
@@ -248,7 +248,7 @@ class DefaultUniquenessPlausabilityCondition :
         public PredicateUniquenessPlausabilityCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef adt::TypedPredicate<EdgeId> EdgePredicate;
+    typedef pred::TypedPredicate<EdgeId> EdgePredicate;
     typedef PredicateUniquenessPlausabilityCondition<Graph> base;
 
  public:

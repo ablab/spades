@@ -43,7 +43,7 @@ private:
             length = curr_env.edge_length_bound();
         }
 
-        adt::TypedPredicate<EdgeId> condition = LengthUpperBound<Graph>(curr_env.graph(), length);
+        pred::TypedPredicate<EdgeId> condition = LengthUpperBound<Graph>(curr_env.graph(), length);
         if (args.size() > 2 && (args[2] == "Y" || args[2] == "y")) {
             cout << "Trying to activate genome quality condition" << endl;
             if (curr_env.genome().size() == 0) {

@@ -197,7 +197,7 @@ class GraphSimplifier {
                 algos);
 
         PushValid(
-                ParallelBRInstance(g_, simplif_cfg_.br,
+                BRInstance(g_, simplif_cfg_.br,
                                    info_container_, removal_handler_),
                 "Bulge remover",
                 algos);
@@ -219,13 +219,13 @@ class GraphSimplifier {
                     algos);
 
             PushValid(
-                    ParallelBRInstance(g_, simplif_cfg_.final_br,
+                    BRInstance(g_, simplif_cfg_.final_br,
                                        info_container_, removal_handler_),
                     "Final bulge remover",
                     algos);
 
             PushValid(
-                    ParallelBRInstance(g_, simplif_cfg_.second_final_br,
+                    BRInstance(g_, simplif_cfg_.second_final_br,
                                        info_container_, removal_handler_),
                     "Yet another final bulge remover",
                     algos);
@@ -323,7 +323,7 @@ public:
                 "Tip clipper",
                 algos);
         PushValid(
-                ParallelBRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_, simplif_cfg_.cycle_iter_count),
+                BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_, simplif_cfg_.cycle_iter_count),
                 "Bulge remover",
                 algos);
         PushValid(

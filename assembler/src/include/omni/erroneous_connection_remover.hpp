@@ -25,15 +25,15 @@
 namespace omnigraph {
 
 template<class Graph>
-adt::TypedPredicate<typename Graph::EdgeId>
+pred::TypedPredicate<typename Graph::EdgeId>
 NecessaryECCondition(const Graph& g, size_t max_length, double max_coverage) {
-    return AddAlternativesPresenceCondition(g, adt::And(LengthUpperBound<Graph>(g, max_length),
+    return AddAlternativesPresenceCondition(g, pred::And(LengthUpperBound<Graph>(g, max_length),
                                                         CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
 template<class Graph>
 bool RemoveErroneousEdgesInCoverageOrder(Graph &g,
-                                         adt::TypedPredicate<typename Graph::EdgeId> removal_condition,
+                                         pred::TypedPredicate<typename Graph::EdgeId> removal_condition,
                                          double max_coverage,
                                          std::function<void(typename Graph::EdgeId)> removal_handler) {
     omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
@@ -46,7 +46,7 @@ bool RemoveErroneousEdgesInCoverageOrder(Graph &g,
 
 template<class Graph>
 bool RemoveErroneousEdgesInLengthOrder(Graph &g,
-                                       adt::TypedPredicate<typename Graph::EdgeId> removal_condition,
+                                       pred::TypedPredicate<typename Graph::EdgeId> removal_condition,
                                        size_t max_length,
                                        std::function<void(typename Graph::EdgeId)> removal_handler) {
     omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
@@ -218,7 +218,7 @@ template<class Graph>
 class MultiplicityCountingCondition : public UniquenessPlausabilityCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef adt::TypedPredicate<EdgeId> EdgePredicate;
+    typedef pred::TypedPredicate<EdgeId> EdgePredicate;
     typedef UniquenessPlausabilityCondition<Graph> base;
 
     MultiplicityCounter<Graph> multiplicity_counter_;
@@ -340,7 +340,7 @@ public:
               unreliability_threshold_(unreliability_threshold * ec_threshold), ec_threshold_(ec_threshold),
               relative_threshold_(relative_threshold), flanking_coverage_(flanking_coverage),
               edge_remover_(g, removal_handler),
-              condition_(g, uniqueness_length, adt::AlwaysTrue<EdgeId>()) {
+              condition_(g, uniqueness_length, pred::AlwaysTrue<EdgeId>()) {
     }
 
 private:

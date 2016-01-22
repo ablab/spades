@@ -302,7 +302,7 @@ class ParallelLowCoverageFunctor {
 
     Graph& g_;
     typename Graph::HelperT helper_;
-    adt::TypedPredicate<EdgeId> ec_condition_;
+    pred::TypedPredicate<EdgeId> ec_condition_;
     HandlerF handler_f_;
 
     omnigraph::GraphElementMarker<EdgeId> edge_marker_;
@@ -326,7 +326,7 @@ public:
     ParallelLowCoverageFunctor(Graph& g, size_t max_length, double max_coverage, HandlerF handler_f = 0)
             : g_(g),
               helper_(g_.GetConstructionHelper()),
-              ec_condition_(adt::And(adt::And(omnigraph::LengthUpperBound<Graph>(g, max_length),
+              ec_condition_(pred::And(pred::And(omnigraph::LengthUpperBound<Graph>(g, max_length),
                                               omnigraph::CoverageUpperBound<Graph>(g, max_coverage)),
                                      omnigraph::AlternativesPresenceCondition<Graph>(g))),
                             handler_f_(handler_f) {}
@@ -784,12 +784,12 @@ class SemiParallelEdgeRemovingAlgorithm {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     Graph& g_;
-    adt::TypedPredicate<EdgeId> condition_;
+    pred::TypedPredicate<EdgeId> condition_;
     EdgeRemover<Graph> edge_remover_;
 
 public:
     SemiParallelEdgeRemovingAlgorithm(Graph& g,
-                                      adt::TypedPredicate<EdgeId> condition,
+                                      pred::TypedPredicate<EdgeId> condition,
                                       std::function<void(EdgeId)> removal_handler = 0) :
             g_(g), condition_(condition), edge_remover_(g, removal_handler) {
     }

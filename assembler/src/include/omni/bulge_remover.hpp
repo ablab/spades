@@ -303,10 +303,10 @@ private:
 };
 
 template<class Graph>
-adt::TypedPredicate<typename Graph::EdgeId>
+pred::TypedPredicate<typename Graph::EdgeId>
 NecessaryBulgeCondition(const Graph& g, size_t max_length, double max_coverage) {
     return AddAlternativesPresenceCondition(g,
-                                            adt::And(LengthUpperBound<Graph>(g, max_length),
+                                            pred::And(LengthUpperBound<Graph>(g, max_length),
                                                      CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
@@ -407,7 +407,7 @@ class BulgeRemover: public PersistentProcessingAlgorithm<Graph,
 protected:
 
     /*virtual*/
-    bool ProcessEdge(EdgeId e) {
+    bool Process(EdgeId e) {
         TRACE("Considering edge " << this->g().str(e)
                       << " of length " << this->g().length(e)
                       << " and avg coverage " << this->g().coverage(e));
@@ -417,7 +417,7 @@ protected:
             return false;
         }
 
-        vector<EdgeId> alternative = alternatives_analyzer(e);
+        vector<EdgeId> alternative = alternatives_analyzer_(e);
         if (!alternative.empty()) {
             gluer_(e, alternative);
             return true;
@@ -458,8 +458,8 @@ public:
                  SimpleInterestingElementFinder<Graph, EdgeId>(g,
                                                     NecessaryBulgeCondition(g, alternatives_analyzer.max_length(),
                                                                             alternatives_analyzer.max_coverage())),
+                 /*canonical_only*/true,
                  CoverageComparator<Graph>(g),
-                 true,
                  track_changes),
             alternatives_analyzer_(alternatives_analyzer),
             gluer_(g, opt_callback, removal_handler) {
@@ -564,7 +564,7 @@ class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
     }
 
     //false if time to stop
-    bool FillEdgeBuffer(vector<EdgeId>& buffer, adt::TypedPredicate<EdgeId> proceed_condition) {
+    bool FillEdgeBuffer(vector<EdgeId>& buffer, pred::TypedPredicate<EdgeId> proceed_condition) {
         VERIFY(buffer.empty());
         DEBUG("Filling edge buffer chunk size " << chunk_size_);
         perf_counter perf;
@@ -719,7 +719,7 @@ public:
     bool Run(bool force_primary_launch = false) override {
         bool primary_launch = force_primary_launch ? true : curr_iteration_ == 0;
         //todo remove it if not needed
-        auto proceed_condition = adt::AlwaysTrue<EdgeId>();
+        auto proceed_condition = pred::AlwaysTrue<EdgeId>();
 
         if (!it_.IsAttached()) {
             it_.Attach();

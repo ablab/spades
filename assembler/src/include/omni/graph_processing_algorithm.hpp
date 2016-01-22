@@ -10,7 +10,7 @@
 #include "graph_iterators.hpp"
 #include "graph_component.hpp"
 #include "coverage.hpp"
-#include "adt/pred.hpp"
+#include "pred.hpp"
 #include "logger/logger.hpp"
 
 namespace omnigraph {
@@ -21,7 +21,7 @@ using HandlerF = std::function<void(typename Graph::EdgeId)>;
 template<class Graph>
 class EdgeProcessingAlgorithm {
     typedef typename Graph::EdgeId EdgeId;
-    typedef adt::TypedPredicate<EdgeId> ProceedConditionT;
+    typedef pred::TypedPredicate<EdgeId> ProceedConditionT;
 
     Graph& g_;
     bool conjugate_symmetry_;
@@ -53,7 +53,7 @@ class EdgeProcessingAlgorithm {
 
     template<class Comparator = std::less<EdgeId>>
     bool Run(const Comparator& comp = Comparator(),
-             ProceedConditionT proceed_condition = adt::AlwaysTrue<EdgeId>()) {
+             ProceedConditionT proceed_condition = pred::AlwaysTrue<EdgeId>()) {
         TRACE("Start processing");
         bool triggered = false;
         for (auto it = g_.SmartEdgeBegin(comp, conjugate_symmetry_); !it.IsEnd(); ++it) {
@@ -171,7 +171,7 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
     typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
 
-    adt::TypedPredicate<EdgeId> remove_condition_;
+    pred::TypedPredicate<EdgeId> remove_condition_;
     EdgeRemover<Graph> edge_remover_;
 
  protected:
@@ -188,7 +188,7 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
 
  public:
     EdgeRemovingAlgorithm(Graph& g,
-                          adt::TypedPredicate<EdgeId> remove_condition,
+                          pred::TypedPredicate<EdgeId> remove_condition,
                           std::function<void (EdgeId)> removal_handler = boost::none,
                           bool conjugate_symmetry = false)
             : base(g, conjugate_symmetry),

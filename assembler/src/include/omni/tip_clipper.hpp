@@ -146,15 +146,15 @@ public:
 };
 
 template<class Graph>
-adt::TypedPredicate<typename Graph::EdgeId> AddTipCondition(const Graph& g,
-                                                            adt::TypedPredicate<typename Graph::EdgeId> condition) {
-    return adt::And(TipCondition<Graph>(g), condition);
+pred::TypedPredicate<typename Graph::EdgeId> AddTipCondition(const Graph& g,
+                                                            pred::TypedPredicate<typename Graph::EdgeId> condition) {
+    return pred::And(TipCondition<Graph>(g), condition);
 }
 
 template<class Graph>
-adt::TypedPredicate<typename Graph::EdgeId>
+pred::TypedPredicate<typename Graph::EdgeId>
 NecessaryTipCondition(const Graph& g, size_t max_length, double max_coverage) {
-    return AddTipCondition(g, adt::And(LengthUpperBound<Graph>(g, max_length),
+    return AddTipCondition(g, pred::And(LengthUpperBound<Graph>(g, max_length),
                                        CoverageUpperBound<Graph>(g, max_coverage)));
 }
 

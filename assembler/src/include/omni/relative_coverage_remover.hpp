@@ -540,7 +540,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     typedef typename Graph::VertexId VertexId;
     typedef std::function<double(EdgeId, VertexId)> LocalCoverageFT;
     typedef typename ComponentRemover<Graph>::HandlerF HandlerF;
-    typedef adt::TypedPredicate<EdgeId> ProceedConditionT;
+    typedef pred::TypedPredicate<EdgeId> ProceedConditionT;
 
     RelativeCoverageHelper<Graph> rel_helper_;
     size_t length_bound_;

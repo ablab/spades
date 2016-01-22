@@ -28,7 +28,8 @@ debruijn_config::simplification::bulge_remover standard_br_config_generation() {
 	br_config.max_delta = 3;
 	br_config.max_number_edges = -1ul;
 	br_config.max_relative_delta = 0.1;
-	br_config.parallel = true;
+    //fixme test both
+	br_config.parallel = false;//true;
 	br_config.chunk_size = 10000;
 	return br_config;
 }
@@ -130,7 +131,7 @@ void DefaultClipTips(Graph& graph) {
 }
 
 void DefaultRemoveBulges(Graph& graph) {
-	debruijn::simplification::ParallelBRInstance(graph, standard_br_config(), standard_simplif_relevant_info(), (HandlerF<Graph>)nullptr)->Run();
+	debruijn::simplification::BRInstance(graph, standard_br_config(), standard_simplif_relevant_info(), (HandlerF<Graph>)nullptr)->Run();
 }
 
 BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {

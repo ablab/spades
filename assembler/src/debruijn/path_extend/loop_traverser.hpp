@@ -117,6 +117,12 @@ private:
 			DEBUG("TraverseLoop STRANGE SITUATION: start " << coveredStartPaths.size() << " end " << coveredEndPaths.size());
 			return;
 		}
+
+        if (coveredStartPaths.size() > 1 or coveredEndPaths.size() > 1) {
+            DEBUG("Ambiguous situation in path joining, quitting");
+            return;
+        }
+
 		BidirectionalPath* startPath = *coveredStartPaths.begin();
 		BidirectionalPath* endPath = *coveredEndPaths.begin();
 		if ((*startPath) == endPath->Conjugate()){

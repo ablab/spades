@@ -50,7 +50,7 @@ bool RemoveThorns(
         g.k(), isec_config.max_ec_length_coefficient);
 
     auto condition
-            = adt::And(LengthUpperBound<Graph>(g, max_length),
+            = pred::And(LengthUpperBound<Graph>(g, max_length),
                        ThornCondition<Graph>(g, isec_config.uniqueness_length, isec_config.span_distance));
 
     return omnigraph::RemoveErroneousEdgesInCoverageOrder(g, condition, numeric_limits<double>::max(), removal_handler);
@@ -66,10 +66,10 @@ bool TopologyReliabilityRemoveErroneousEdges(
         g.k(), trec_config.max_ec_length_coefficient);
 
     auto condition
-            = adt::And(CoverageUpperBound<Graph>(g, trec_config.unreliable_coverage),
+            = pred::And(CoverageUpperBound<Graph>(g, trec_config.unreliable_coverage),
                        PredicateUniquenessPlausabilityCondition<Graph>(g,
                                                                        /*uniqueness*/MakePathLengthLowerBound(g, UniquePathFinder<Graph>(g), trec_config.uniqueness_length),
-                                                                       /*plausibility*/adt::AlwaysTrue<typename Graph::EdgeId>()));
+                                                                       /*plausibility*/pred::AlwaysTrue<typename Graph::EdgeId>()));
 
     return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }
