@@ -75,11 +75,13 @@ void assemble_genome() {
         SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().rr_enable) {
         if (two_step_rr) {
-            SPAdes.add(new debruijn_graph::PairInfoCount(true))
-                  .add(new debruijn_graph::DistanceEstimation(true))
-                  .add(new debruijn_graph::RepeatResolution(true))
-                  .add(new debruijn_graph::SecondPhaseSetup())
-                  .add(new debruijn_graph::Simplification());
+            if (cfg::get().use_intermediate_contigs)
+                SPAdes.add(new debruijn_graph::PairInfoCount(true))
+                      .add(new debruijn_graph::DistanceEstimation(true))
+                      .add(new debruijn_graph::RepeatResolution(true))
+                      .add(new debruijn_graph::SecondPhaseSetup());
+
+            SPAdes.add(new debruijn_graph::Simplification());
         }
 
         //begin pacbio

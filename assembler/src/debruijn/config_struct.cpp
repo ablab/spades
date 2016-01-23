@@ -651,6 +651,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.rr_enable, pt, "rr_enable");
   load(cfg.two_step_rr, pt, "two_step_rr");
+  load(cfg.use_intermediate_contigs, pt, "use_intermediate_contigs");
   load(cfg.single_reads_rr, pt, "single_reads_rr");
   cfg.use_single_reads = false;
 
