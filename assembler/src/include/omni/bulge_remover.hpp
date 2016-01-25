@@ -221,7 +221,7 @@ class AlternativesAnalyzer {
 
     /**
      * Checks if alternative path is simple (doesn't contain conjugate edges, edge e or conjugate(e))
-     * and its average coverage is greater than max_relative_coverage_ * g.coverage(e)
+     * and its average coverage * max_relative_coverage_ is greater than g.coverage(e)
      */
     bool BulgeCondition(EdgeId e, const vector<EdgeId>& path,
             double path_coverage) const {
