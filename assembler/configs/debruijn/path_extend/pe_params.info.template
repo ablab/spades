@@ -23,7 +23,7 @@ params {
 
     split_edge_length    99
     normalize_weight     false
-    cut_all_overlaps  false
+    cut_all_overlaps  true
     
     ; extension selection
     extension_options
