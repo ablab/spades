@@ -776,6 +776,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   if (cfg.ds.moleculo)
     load(cfg.simp, pt, "moleculo", false);
+
   if (cfg.diploid_mode)
     load(cfg.simp, pt, "diploid_simp", false);
 
