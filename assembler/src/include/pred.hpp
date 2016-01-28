@@ -25,7 +25,7 @@ class TypedPredicate {
 
  private:
   struct TypedPredicateConcept {
-    virtual ~TypedPredicateConcept() = default;
+    virtual ~TypedPredicateConcept() {};
     virtual bool operator()(T x) const = 0;
   };
 
