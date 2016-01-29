@@ -22,7 +22,7 @@ SESSION_TYPE = "filesystem"
 app.config.from_object(__name__)
 Session(app)
 
-FILENAME_REGEXP = r"(?:\.{0,2}\/)[^\s]*"
+FILENAME_REGEXP = r"(?:[^\s]*\/)[^\s]+\/?"
 SVG = ".svg"
 JSON = ".json"
 DOT = ".dot"
@@ -49,6 +49,7 @@ def format_output(lines):
     return "".join(make_url(str(flask.escape(line))) + "<br/>" for line in lines)
 
 env_path = ""
+caching = False
 cache_path = "static/cache/"
 shellders = dict()
 
@@ -177,7 +178,9 @@ def vertex(name):
         return flask.abort(500)
     shellder = shellders[session["username"]]
     vertex_id, ext = path.splitext(name)
-    res_path = next((augment(f) for f in listdir(cache_path) if f.endswith(name)), None)
+    res_path = None
+    if caching:
+        res_path = next((augment(f) for f in listdir(cache_path) if f.endswith(name)), None)
     if res_path is None:
         #Render a new file
         shellder.send("draw_vertex " + vertex_id)
