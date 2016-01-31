@@ -411,6 +411,8 @@ try:
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('info', metavar='CONFIG_FILE', type=str,  help='teamcity.py info config')
     parser.add_argument("--run_name", "-n", help="output dir custom suffix", type=str)
+    parser.add_argument("--no_cfg_and_compilation", dest="cfg_compilation", help="don't copy configs or compile SPAdes even if .info file states otherwise", action='store_false')
+    parser.set_defaults(no_cfg_and_compilation=True)
     parser.add_argument("--no_contig_archive", dest="contig_archive", help="don't save contigs to common contig archive", action='store_false')
     parser.set_defaults(contig_archive=True)
     parser.add_argument("--contig_name", "-s", help="archive contig name custom suffix", type=str)
@@ -463,20 +465,26 @@ try:
     
 
     #clean
-    if ('prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg) and ('spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile):
+    if not args.cfg_compilation:
+        print("Forced to use current SPAdes build, leaving build directories");
+    elif ('prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg) and ('spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile):
         shutil.rmtree('bin', True)
         shutil.rmtree('build', True)
         shutil.rmtree('build_spades', True)
 
     #prepare cfg
-    if 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
+    if not args.cfg_compilation:
+        print("Forced to use current SPAdes configs, cpcfg will not run");
+    elif 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
         ecode = os.system('./prepare_cfg')
         if ecode != 0:
             print("Preparing configuration files finished abnormally with exit code " + str(ecode))
             sys.exit(2)
 
     #compile
-    if 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
+    if not args.cfg_compilation:
+        print("Forced to use current SPAdes build, spades_compile will not run");
+    elif 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
         comp_params = ' '
         if 'compilation_params' in dataset_info.__dict__:
             comp_params = " ".join(dataset_info.compilation_params)
