@@ -227,9 +227,9 @@ struct debruijn_config {
             double max_relative_delta;
             size_t max_number_edges;
             bool parallel;
-            size_t chunk_size;
-            double chunk_cov_diff;
-            double chunk_cov_rel_diff;
+            size_t buff_size;
+            double buff_cov_diff;
+            double buff_cov_rel_diff;
         };
 
         struct erroneous_connections_remover {

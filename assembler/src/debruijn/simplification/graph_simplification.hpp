@@ -659,10 +659,10 @@ AlgoPtr<Graph> TopologyTipClipperInstance(
 
 template<class Graph>
 AlgoPtr<Graph> BRInstance(Graph& g,
-                                           const debruijn_config::simplification::bulge_remover& br_config,
-                                           const SimplifInfoContainer& /*info*/,
-                                           HandlerF<Graph> removal_handler,
-                                           size_t /*iteration_cnt*/ = 1) {
+                          const debruijn_config::simplification::bulge_remover& br_config,
+                          const SimplifInfoContainer& info,
+                          HandlerF<Graph> removal_handler,
+                          size_t /*iteration_cnt*/ = 1) {
     if (!br_config.enabled) {
         return nullptr;
     }
@@ -671,9 +671,10 @@ AlgoPtr<Graph> BRInstance(Graph& g,
     if (br_config.parallel) {
         INFO("Creating parallel br instance");
         return make_shared<ParallelBulgeRemover<Graph>>(g,
-                br_config.chunk_size,
-                br_config.chunk_cov_diff,
-                br_config.chunk_cov_rel_diff,
+                info.chunk_cnt(),
+                br_config.buff_size,
+                br_config.buff_cov_diff,
+                br_config.buff_cov_rel_diff,
                 alternatives_analyzer,
                 nullptr,
                 removal_handler,
@@ -681,6 +682,7 @@ AlgoPtr<Graph> BRInstance(Graph& g,
     } else {
         INFO("Creating br instance");
         return make_shared<BulgeRemover<Graph>>(g,
+                info.chunk_cnt(),
                 alternatives_analyzer,
                 nullptr,
                 removal_handler,
