@@ -394,15 +394,15 @@ inline double AbsoluteMaxCoverage(const std::vector<AlternativesAnalyzer<Graph>>
 }
 
 //fixme maybe switch on parallel finder?
-template<class Graph>
+template<class Graph, class InterestingElementFinder>
 class BulgeRemover: public PersistentProcessingAlgorithm<Graph,
                                                         typename Graph::EdgeId,
-                                                        ParallelInterestingElementFinder<Graph, typename Graph::EdgeId>,
+                                                        InterestingElementFinder,
                                                         CoverageComparator<Graph>> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef PersistentProcessingAlgorithm<Graph, EdgeId,
-            ParallelInterestingElementFinder<Graph, EdgeId>, CoverageComparator<Graph>> base;
+            InterestingElementFinder, CoverageComparator<Graph>> base;
 
 protected:
 
@@ -449,16 +449,13 @@ public:
 //                                                    max_delta, max_relative_delta, max_edge_cnt));
 //    }
 
-    BulgeRemover(Graph& g, size_t chunk_cnt,
+    BulgeRemover(Graph& g, const InterestingElementFinder& interesting_finder,
             const AlternativesAnalyzer<Graph>& alternatives_analyzer,
             BulgeCallbackF opt_callback = 0,
             std::function<void(EdgeId)> removal_handler = 0,
             bool track_changes = true) :
             base(g,
-                 ParallelInterestingElementFinder<Graph, EdgeId>(g, 
-                                                    NecessaryBulgeCondition(g, alternatives_analyzer.max_length(),
-                                                                            alternatives_analyzer.max_coverage()),
-                                                    chunk_cnt),
+                 interesting_finder,
                  /*canonical_only*/true,
                  CoverageComparator<Graph>(g),
                  track_changes),
@@ -473,7 +470,7 @@ private:
     DECL_LOGGER("BulgeRemover")
 };
 
-template<class Graph>
+template<class Graph, class InterestingElementFinder>
 class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
@@ -484,7 +481,7 @@ class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
     double buff_cov_rel_diff_;
     AlternativesAnalyzer<Graph> alternatives_analyzer_;
     BulgeGluer<Graph> gluer_;
-    ParallelInterestingElementFinder<Graph, EdgeId> interesting_edge_finder_;
+    InterestingElementFinder interesting_edge_finder_;
     //todo remove
     bool tracking_;
 
@@ -712,7 +709,8 @@ public:
 
     typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
 
-    ParallelBulgeRemover(Graph& g, size_t chunk_cnt, size_t buff_size, double buff_cov_diff, 
+    ParallelBulgeRemover(Graph& g, const InterestingElementFinder& interesting_edge_finder, 
+                         size_t buff_size, double buff_cov_diff, 
                          double buff_cov_rel_diff, const AlternativesAnalyzer<Graph>& alternatives_analyzer,
                          BulgeCallbackF opt_callback = 0,
                          std::function<void(EdgeId)> removal_handler = 0,
@@ -723,11 +721,7 @@ public:
                          buff_cov_rel_diff_(buff_cov_rel_diff),
                          alternatives_analyzer_(alternatives_analyzer),
                          gluer_(g, opt_callback, removal_handler),
-                         interesting_edge_finder_(g,
-                                       NecessaryBulgeCondition(g,
-                                                               alternatives_analyzer.max_length(),
-                                                               alternatives_analyzer.max_coverage()), 
-                                       chunk_cnt),
+                         interesting_edge_finder_(interesting_edge_finder),
                          tracking_(track_changes),
                          curr_iteration_(0),
                          it_(g, true, CoverageComparator<Graph>(g), true) {

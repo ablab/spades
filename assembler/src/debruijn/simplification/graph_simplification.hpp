@@ -663,15 +663,24 @@ AlgoPtr<Graph> BRInstance(Graph& g,
                           const SimplifInfoContainer& info,
                           HandlerF<Graph> removal_handler,
                           size_t /*iteration_cnt*/ = 1) {
+    typedef ParallelInterestingElementFinder<Graph, 
+                                    typename Graph::EdgeId> InterestingEdgeFinder;
     if (!br_config.enabled) {
         return nullptr;
     }
 
     auto alternatives_analyzer = ParseBRConfig(g, br_config);
+
+     
+    InterestingEdgeFinder interesting_edge_finder(g,
+                                                  NecessaryBulgeCondition(g,
+                                                                          alternatives_analyzer.max_length(),
+                                                                          alternatives_analyzer.max_coverage()), 
+                                                  info.chunk_cnt());
     if (br_config.parallel) {
         INFO("Creating parallel br instance");
-        return make_shared<ParallelBulgeRemover<Graph>>(g,
-                info.chunk_cnt(),
+        return make_shared<ParallelBulgeRemover<Graph, InterestingEdgeFinder>>(g,
+                interesting_edge_finder,
                 br_config.buff_size,
                 br_config.buff_cov_diff,
                 br_config.buff_cov_rel_diff,
@@ -681,8 +690,8 @@ AlgoPtr<Graph> BRInstance(Graph& g,
                 /*track_changes*/true);
     } else {
         INFO("Creating br instance");
-        return make_shared<BulgeRemover<Graph>>(g,
-                info.chunk_cnt(),
+        return make_shared<BulgeRemover<Graph, InterestingEdgeFinder>>(g,
+                interesting_edge_finder,
                 alternatives_analyzer,
                 nullptr,
                 removal_handler,
