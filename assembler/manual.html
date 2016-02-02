@@ -42,11 +42,11 @@ SPAdes version 3.7.0 was released under GPLv2 on February ##, 2016 and can be do
 <p>
     The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.
 <p>
-    Version 3.7.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. 
+    Version 3.7.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on single-cell and standard bacterial and fungal data sets. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
 <p>
-    Note, that SPAdes was initially designed for small genomes. It was tested on single-cell and standard bacterial and fungal data sets. SPAdes is not intended for larger genomes (e.g. mammalian size genomes) and metagenomic projects. For such purposes you can use it at your own risk.
+    SPAdes 3.7.0 also includes metaSPAdes &ndash; a pipeline designed specially for metagenomic data sets. To learn more see <a href="#meta">options</a>.
 <p>
-    SPAdes has also a separate modules for assembling highly polymorphic diploid genomes and for TruSeq barcode assembly. For more information see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a> and <a href="truspades_manual.html" target="_blank">truSPAdes manual</a> .
+    Additionally, SPAdes has a separate modules for assembling highly polymorphic diploid genomes and for TruSeq barcode assembly. For more information see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a> and <a href="truspades_manual.html" target="_blank">truSPAdes manual</a> .
 
 
 <a name="sec1.2"></a>
@@ -452,9 +452,10 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
     &nbsp;&nbsp;&nbsp;&nbsp;This flag is required for MDA (single-cell) data.
 </p>
 
+<a name="meta"></a>
 <p>
     <code>--meta </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling metagenomic data (runs metaSPAdes).
+    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling metagenomic data sets (runs metaSPAdes). Note, that metaSPAdes supports only a <b>single</b> paired-end library and does not support careful mode (mismatch correction is not available).
 </p>
 
 <p>
