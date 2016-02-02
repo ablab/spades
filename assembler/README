@@ -8,21 +8,20 @@ Developed in Algorithmic Biology Lab of St. Petersburg Academic University of th
 Current SPAdes contributors:
 
     Dmitry Antipov,
-    Anton Bankevich.
+    Anton Bankevich,
+    Yuriy Gorshkov,
     Alexey Gurevich,
     Anton Korobeynikov,
+    Dmitriy Meleshko,
     Sergey Nurk,
     Andrey Prjibelski,
     Yana Safonova,
-    Artem Tarasov,
-    Irina Vasilinetc,
-    Alla Lapidus,
-    Glenn Tesler,
-    Max Alekseyev and
+    Alla Lapidus and
     Pavel Pevzner
 
 Also contributed:
 
+    Max Alekseyev,
     Mikhail Dvorkin,
     Alexander Kulikov,
     Valery Lesin,
@@ -32,6 +31,9 @@ Also contributed:
     Vladislav Saveliev,
     Alexander Sirotkin,
     Yakov Sirotkin,
+    Artem Tarasov,
+    Glenn Tesler,
+    Irina Vasilinetc,
     Nikolay Vyahhi
 
 Installation instructions and manual can be found on the website:
