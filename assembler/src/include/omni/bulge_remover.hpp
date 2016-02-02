@@ -479,6 +479,8 @@ class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
     typedef SmartSetIterator<Graph, EdgeId, CoverageComparator<Graph>> SmartEdgeSet;
 
     size_t chunk_size_;
+    double chunk_cov_diff_;
+    double chunk_cov_rel_diff_;
     AlternativesAnalyzer<Graph> alternatives_analyzer_;
     BulgeGluer<Graph> gluer_;
     SimpleInterestingElementFinder<Graph, EdgeId> interesting_edge_finder_;
@@ -568,6 +570,8 @@ class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
         VERIFY(buffer.empty());
         DEBUG("Filling edge buffer chunk size " << chunk_size_);
         perf_counter perf;
+        double low_cov = 0.;
+        double cov_diff = 0.;
         while (!it_.IsEnd() && buffer.size() < chunk_size_) {
             EdgeId e = *it_;
             TRACE("Current edge " << this->g().str(e));
@@ -578,6 +582,17 @@ class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
                 return false;
             }
 
+            double cov = this->g().coverage(e);
+            if (buffer.empty()) {
+                low_cov = cov;
+                cov_diff = max(chunk_cov_diff_, chunk_cov_rel_diff_ * low_cov);
+            } else {
+                if (math::gr(cov, low_cov + cov_diff)) {
+                    //need to release last element of the iterator to make it replaceable by new elements
+                    it_.ReleaseCurrent();
+                    return true;
+                }
+            }
             TRACE("Potential bulge edge");
             buffer.push_back(e);
             ++it_;
@@ -696,13 +711,15 @@ public:
 
     typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
 
-    ParallelBulgeRemover(Graph& g, size_t chunk_size,
-                         const AlternativesAnalyzer<Graph>& alternatives_analyzer,
+    ParallelBulgeRemover(Graph& g, size_t chunk_size, double chunk_cov_diff, 
+                         double chunk_cov_rel_diff, const AlternativesAnalyzer<Graph>& alternatives_analyzer,
                          BulgeCallbackF opt_callback = 0,
                          std::function<void(EdgeId)> removal_handler = 0,
                          bool track_changes = true) :
                          PersistentAlgorithmBase<Graph>(g),
                          chunk_size_(chunk_size),
+                         chunk_cov_diff_(chunk_cov_diff),
+                         chunk_cov_rel_diff_(chunk_cov_rel_diff),
                          alternatives_analyzer_(alternatives_analyzer),
                          gluer_(g, opt_callback, removal_handler),
                          interesting_edge_finder_(g,
@@ -718,7 +735,8 @@ public:
 
     bool Run(bool force_primary_launch = false) override {
         bool primary_launch = force_primary_launch ? true : curr_iteration_ == 0;
-        //todo remove it if not needed
+        //todo remove if not needed; 
+        //potentially can vary coverage threshold in coordination with ec threshold
         auto proceed_condition = pred::AlwaysTrue<EdgeId>();
 
         if (!it_.IsAttached()) {

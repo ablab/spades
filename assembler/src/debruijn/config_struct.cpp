@@ -210,6 +210,8 @@ void load(debruijn_config::simplification::bulge_remover& br,
   load(br.max_number_edges,                 pt,     "max_number_edges", complete);
   load(br.parallel,                         pt,     "parallel", complete);
   load(br.chunk_size,                       pt,     "chunk_size", complete);
+  load(br.chunk_cov_diff,                   pt,     "chunk_cov_diff", complete);
+  load(br.chunk_cov_rel_diff,               pt,     "chunk_cov_rel_diff", complete);
 }
 
 void load(debruijn_config::simplification::topology_tip_clipper& ttc,

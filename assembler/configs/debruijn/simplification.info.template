@@ -33,6 +33,8 @@ default
         max_number_edges        1000
         parallel true
         chunk_size 10000
+        chunk_cov_diff 2.
+        chunk_cov_rel_diff 0.2
 	}
 	
 	; erroneous connections remover:
