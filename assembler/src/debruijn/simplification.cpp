@@ -175,7 +175,7 @@ class GraphSimplifier {
 
         changed |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov, simplif_cfg_.relative_ed);
 
-        if (simplif_cfg_.topology_simplif_enabled && cfg::get().main_iteration) {
+        if (simplif_cfg_.topology_simplif_enabled && info_container_.main_iteration()) {
             changed |= AllTopology();
             changed |= MaxFlowRemoveErroneousEdges(gp_.g, simplif_cfg_.mfec,
                                                    removal_handler_);
@@ -197,9 +197,21 @@ class GraphSimplifier {
                 algos);
 
         PushValid(
+                TipClipperInstance(g_, simplif_cfg_.final_tc,
+                                   info_container_, removal_handler_),
+                "Final tip clipper",
+                algos);
+
+        PushValid(
                 BRInstance(g_, simplif_cfg_.br,
                                    info_container_, removal_handler_),
                 "Bulge remover",
+                algos);
+
+        PushValid(
+                BRInstance(g_, simplif_cfg_.final_br,
+                                   info_container_, removal_handler_),
+                "Final bulge remover",
                 algos);
 
         if (simplif_cfg_.topology_simplif_enabled) {
@@ -211,19 +223,7 @@ class GraphSimplifier {
         }
 
         //FIXME need better configuration
-        if (cfg::get().ds.meta && info_container_.main_iteration()) {
-            PushValid(
-                    TipClipperInstance(g_, simplif_cfg_.final_tc,
-                                       info_container_, removal_handler_),
-                    "Final tip clipper",
-                    algos);
-
-            PushValid(
-                    BRInstance(g_, simplif_cfg_.final_br,
-                                       info_container_, removal_handler_),
-                    "Final bulge remover",
-                    algos);
-
+        if (cfg::get().ds.meta) {
             PushValid(
                     BRInstance(g_, simplif_cfg_.second_final_br,
                                        info_container_, removal_handler_),

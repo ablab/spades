@@ -665,7 +665,7 @@ AlgoPtr<Graph> BRInstance(Graph& g,
                           size_t /*iteration_cnt*/ = 1) {
     typedef ParallelInterestingElementFinder<Graph, 
                                     typename Graph::EdgeId> InterestingEdgeFinder;
-    if (!br_config.enabled) {
+    if (!br_config.enabled || (br_config.main_iteration_only && !info.main_iteration())) {
         return nullptr;
     }
 

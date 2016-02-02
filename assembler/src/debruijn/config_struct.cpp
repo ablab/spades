@@ -200,6 +200,7 @@ void load(debruijn_config::simplification::bulge_remover& br,
   using config_common::load;
 
   load(br.enabled                           , pt,   "enabled"					  , complete);
+  load(br.main_iteration_only               , pt,   "main_iteration_only"	      , complete);
   load(br.max_bulge_length_coefficient		, pt,   "max_bulge_length_coefficient", complete);
   load(br.max_additive_length_coefficient	, pt,
        "max_additive_length_coefficient", complete);
@@ -508,13 +509,9 @@ void load(debruijn_config::simplification& simp,
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
   load(simp.init_clean, pt, "init_clean", complete); // presimplification
-
-  simp.final_tc = simp.tc; // final tip clipper:
-  load(simp.final_tc, pt, "final_tc", false);
-  //final bulge removers:
-  simp.final_br = simp.br; // final bulge remover:
-  load(simp.final_br, pt, "final_br", false);
-  simp.second_final_br = simp.br; // second final bulge remover:
+  load(simp.final_tc, pt, "final_tc", complete);
+  load(simp.final_br, pt, "final_br", complete);
+  simp.second_final_br = simp.final_br; 
   load(simp.second_final_br, pt, "second_final_br", false);
 }
 
