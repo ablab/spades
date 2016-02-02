@@ -455,7 +455,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 <a name="meta"></a>
 <p>
     <code>--meta </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling metagenomic data sets (runs metaSPAdes). Note, that metaSPAdes supports only a <b>single</b> paired-end library and does not support careful mode (mismatch correction is not available).
+    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling metagenomic data sets (runs metaSPAdes). Note, that metaSPAdes supports only a <b>single</b> paired-end library and does not support <a href="#correctoropt">careful mode</a> (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes.
 </p>
 
 <p>
@@ -496,7 +496,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 <a name="correctoropt">
 <p>
     <code>--careful</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Tries to reduce the number of mismatches and short indels. Also runs MismatchCorrector &ndash; a post processing tool, which uses <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool (comes with SPAdes). This option is recommended. 
+    &nbsp;&nbsp;&nbsp;&nbsp;Tries to reduce the number of mismatches and short indels. Also runs MismatchCorrector &ndash; a post processing tool, which uses <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool (comes with SPAdes). This option is recommended for single-genome assembly, but is not supported by metaSPAdes metagenomic pipeline. 
 
 </p>
 
@@ -836,7 +836,7 @@ and PacBio CCS and CLR reads:
 
 <p>
     <code>--cov-cutoff &lt;float></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Read coverage cutoff value. Must be a positive float value, or 'auto', or 'off'. Default value is 'off'. When set to 'auto' SPAdes automatically computes coverage threshold using conservative strategy.
+    &nbsp;&nbsp;&nbsp;&nbsp;Read coverage cutoff value. Must be a positive float value, or 'auto', or 'off'. Default value is 'off'. When set to 'auto' SPAdes automatically computes coverage threshold using conservative strategy. Note, that this option is not supported by metaSPAdes.
 </p>
 
 
