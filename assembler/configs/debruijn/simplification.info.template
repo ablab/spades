@@ -205,16 +205,9 @@ sc
     {
         ; rctc: tip_cov < rctc * not_tip_cov
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
-        condition               "{ tc_lb 3.5, cb 100000, rctc 10000 }"
+        condition               "{ tc_lb 3.5, cb 1000000, rctc 2.0 }"
 	}
 
-	; bulge remover:
-	br
-	{
-		max_coverage			1000000.0
-		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
-	}
-	
 	; erroneous connections remover:
 	ec
 	{
@@ -224,6 +217,19 @@ sc
        condition               "{ ec_lb 30, icb auto }"
     }
     
+    final_tc
+    {
+        condition               "{ tc_lb 3.5, cb 100000, rctc 10000 }"
+    }
+
+	; bulge remover:
+	final_br
+	{
+        enabled true
+		max_coverage			1000000.0
+		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
+	}
+	
     ; relative coverage erroneous component remover:
     rcc
     {
