@@ -56,9 +56,10 @@ public:
         }
     }
 
-    void RemoveSimilarPaths(PathContainer& paths, size_t max_overlap, bool del_only_equal, bool del_subpaths, bool del_begins, bool del_all, bool add_overlap_begins) const {
+    void RemoveSimilarPaths(PathContainer& paths, size_t min_edge_len, size_t max_path_diff, bool del_only_equal, bool del_subpaths, bool del_begins, bool del_all, bool add_overlap_begins) const {
         DEBUG("== Removing similar paths ==");
-        DEBUG("Max overlap " << max_overlap << ", only equal " << del_only_equal << ", subpaths " << del_subpaths << ", starts " << del_begins << ", all " << del_all << ", add starts " << add_overlap_begins);
+        DEBUG("Min edge len " << min_edge_len << ", max path diff " << max_path_diff)
+        DEBUG("Only equal " << del_only_equal << ", subpaths " << del_subpaths << ", starts " << del_begins << ", all " << del_all << ", add starts " << add_overlap_begins);
         std::vector<EdgeId> edges = GetSortedEdges();
         for (size_t edgeIndex = 0; edgeIndex < edges.size(); ++edgeIndex) {
             EdgeId edge = edges.at(edgeIndex);
@@ -88,10 +89,10 @@ public:
                         cov_paths = coverage_map_.GetCoveringPaths(edge);
                         continue;
                     }
-                    if (g_.length(edge) <= max_overlap || path1->IsOverlap() || path2->IsOverlap() || del_only_equal) {
+                    if (g_.length(edge) <= min_edge_len || path1->IsOverlap() || path2->IsOverlap() || del_only_equal) {
                         continue;
                     }
-                    CompareAndCut(paths, edge, path1, path2, (int) max_overlap,
+                    CompareAndCut(paths, edge, path1, path2, max_path_diff,
                                   del_subpaths, del_begins, del_all, add_overlap_begins);
                     cov_paths = coverage_map_.GetCoveringPaths(edge);
                 }
@@ -109,7 +110,9 @@ private:
         }
     }
 
-    void CompareAndCut(PathContainer& paths, EdgeId edge, BidirectionalPath* path1, BidirectionalPath* path2, size_t max_overlap, bool del_subpaths, bool del_begins,
+    void CompareAndCut(PathContainer& paths, EdgeId edge, BidirectionalPath* path1, BidirectionalPath* path2,
+                       size_t max_path_diff,
+                       bool del_subpaths, bool del_begins,
                        bool del_all, bool add_overlap_begins) const {
         vector<size_t> positions1 = path1->FindAll(edge);
         vector<size_t> positions2 = path2->FindAll(edge);
@@ -120,7 +123,7 @@ private:
             while (i2 < positions2.size()) {
                 DEBUG("CompareAndCutFromPos paths " << g_.int_id(edge));
                 CompareAndCutFromPos(paths, path1, (int) positions1[i1], path2,
-                                     (int) positions2[i2], (int) max_overlap,
+                                     (int) positions2[i2], max_path_diff,
                                      del_subpaths, del_begins, del_all, add_overlap_begins);
 
                 if (positions1[i1] >= path1->Size() || path1->At(positions1[i1]) != edge || positions2[i2] >= path2->Size() || path2->At(positions2[i2]) != edge) {
@@ -152,36 +155,36 @@ private:
     }
 
     void CompareAndCutFromPos(PathContainer& paths, BidirectionalPath* path1, int pos1,
-                       BidirectionalPath* path2, int pos2, int max_overlap,
-                       bool delete_subpaths, bool delete_begins,
-                       bool delete_all, bool add_overlap_begins) const {
+                              BidirectionalPath* path2, int pos2,
+                              size_t max_path_diff,
+                              bool delete_subpaths, bool delete_begins,
+                              bool delete_all, bool add_overlap_begins) const {
         int last2 = pos2;
         int last1 = pos1;
         if (last1 >= (int) path1->Size() || last2 >= (int) path2->Size()) {
             return;
         }
         vector<int> other_path_end;
-        pair<int, int> posRes = ComparePaths(last1, last2, *path1, *path2,
-                                             max_overlap);
+        pair<int, int> posRes = ComparePaths(last1, last2, *path1, *path2, max_path_diff);
         last1 = posRes.first;
         last2 = posRes.second;
         BidirectionalPath* conj1 = path1->GetConjPath();
         BidirectionalPath* conj2 = path2->GetConjPath();
         size_t first1 = conj1->Size() - pos1 - 1;
         size_t first2 = conj2->Size() - pos2 - 1;
-        posRes = ComparePaths(first1, first2, *conj1, *conj2, max_overlap);
+        posRes = ComparePaths(first1, first2, *conj1, *conj2, max_path_diff);
         first2 = conj2->Size() - posRes.second - 1;
         first1 = conj1->Size() - posRes.first - 1;
-        if ((int)path2->LengthAt(last2) - (int)g_.length(path2->At(last2)) < (int)max_overlap) {
+        if ((int)path2->LengthAt(last2) - (int)g_.length(path2->At(last2)) < (int) max_path_diff) {
             last2 = (int)path2->Size() - 1;
         }
-        if ((int)path2->Length() - (int)path2->LengthAt(first2) < (int)max_overlap) {
+        if ((int)path2->Length() - (int)path2->LengthAt(first2) < (int) max_path_diff) {
             first2 = 0;
         }
-        if ((int)path1->LengthAt(last1) - (int)g_.length(path1->At(last1)) < (int)max_overlap) {
+        if ((int)path1->LengthAt(last1) - (int)g_.length(path1->At(last1)) < (int) max_path_diff) {
             last1 = (int)path1->Size() - 1;
         }
-        if ((int)path1->Length() - (int)path1->LengthAt(first1) < (int)max_overlap) {
+        if ((int)path1->Length() - (int)path1->LengthAt(first1) < (int) max_path_diff) {
             first1 = 0;
         }
 
@@ -451,7 +454,7 @@ public:
     }
 
     void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
-                        size_t max_overlap, bool cut_overlaps,  bool add_overlaps_begin) {
+                        size_t min_edge_len, size_t max_path_diff, bool cut_overlaps,  bool add_overlaps_begin) {
         if (!cut_overlaps) {
             return;
         }
@@ -461,15 +464,15 @@ public:
         //writer.WritePathsToFASTA(paths, output_dir + "/before.fasta");
         //DEBUG("Removing subpaths");
         //delete not only eq,
-        remover.RemoveSimilarPaths(paths, max_overlap, false, true, false, false, add_overlaps_begin);
+        remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, false, true, false, false, add_overlaps_begin);
         //writer.WritePathsToFASTA(paths, output_dir + "/remove_similar.fasta");
         //DEBUG("Remove overlaps")
         remover.RemoveOverlaps(paths);
         //writer.WritePathsToFASTA(paths, output_dir + "/after_remove_overlaps.fasta");
-        remover.RemoveSimilarPaths(paths, max_overlap, true, false, false, false, add_overlaps_begin);
+        remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, true, false, false, false, add_overlaps_begin);
         //writer.WritePathsToFASTA(paths, output_dir + "/remove_equal.fasta");
         //DEBUG("remove similar path. Max difference " << max_overlap);
-        remover.RemoveSimilarPaths(paths, max_overlap, false, true, true, true, add_overlaps_begin);
+        remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, false, true, true, true, add_overlaps_begin);
         DEBUG("end removing");
     }
 

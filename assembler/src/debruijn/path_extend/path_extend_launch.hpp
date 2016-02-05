@@ -218,15 +218,16 @@ inline void ClonePathContainer(PathContainer& spaths, PathContainer& tpaths, Gra
     }
 }
 
-inline void FinalizePaths(PathContainer& paths, GraphCoverageMap& cover_map, size_t max_overlap, bool mate_pairs = false) {
+inline void FinalizePaths(PathContainer& paths, GraphCoverageMap& cover_map, size_t min_edge_len, size_t max_path_diff, bool mate_pairs = false) {
     DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(cover_map.graph());
     DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(cover_map.graph(), corrector);
     ContigWriter writer(cover_map.graph(), constructor);
     PathExtendResolver resolver(cover_map.graph());
 
-    resolver.removeOverlaps(paths, cover_map, max_overlap, cfg::get().pe_params.param_set.remove_overlaps, cfg::get().pe_params.param_set.cut_all_overlaps);
+    resolver.removeOverlaps(paths, cover_map, min_edge_len, max_path_diff,
+                            cfg::get().pe_params.param_set.remove_overlaps, cfg::get().pe_params.param_set.cut_all_overlaps);
     if (mate_pairs) {
-        resolver.RemoveMatePairEnds(paths, max_overlap);
+        resolver.RemoveMatePairEnds(paths, min_edge_len);
     }
     if (cfg::get().avoid_rc_connections) {
         paths.FilterInterstandBulges();
@@ -740,8 +741,12 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     PathExtendStage exspander_stage = PathExtendStage::PEStage;
     vector<shared_ptr<PathExtender> > all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset, storage);
 
-    size_t max_over = max(FindOverlapLenForStage(exspander_stage), gp.g.k() + 100);
-    shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs, max_over, storage);
+    //Parameters are subject to change
+    size_t max_is_right_quantile = max(FindOverlapLenForStage(exspander_stage), gp.g.k() + 100);
+    size_t min_edge_len = max(size_t(100), max_is_right_quantile / 2);
+
+    shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
+                                                                          max_is_right_quantile, storage);
 
 //extend pe + long reads
     PathExtendResolver resolver(gp.g);
@@ -762,7 +767,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     }
 //We do not run overlap removal in 2015 mode
     if (!(sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined))
-        FinalizePaths(paths, cover_map, max_over);
+        FinalizePaths(paths, cover_map, min_edge_len, max_is_right_quantile);
     if (broken_contigs.is_initialized()) {
         OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
                               output_dir + (mp_exist ? "pe_contigs" : broken_contigs.get()));
@@ -770,7 +775,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     DebugOutputPaths(gp, output_dir, paths, "pe_before_traverse");
     if (traversLoops) {
         TraverseLoops(paths, cover_map, mainPE);
-        FinalizePaths(paths, cover_map, max_over);
+        FinalizePaths(paths, cover_map, min_edge_len, max_is_right_quantile);
     }
     DebugOutputPaths(gp, output_dir, paths, (mp_exist ? "pe_final_paths" : "final_paths"));
     writer.OutputPaths(paths, output_dir + (mp_exist ? "pe_scaffolds" : contigs_name));
@@ -788,14 +793,15 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     exspander_stage = PathExtendStage::MPStage;
     all_libs.clear();
     all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, storage, clone_paths);
-    max_over = FindOverlapLenForStage(exspander_stage);
-    shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over, storage);
+    max_is_right_quantile = FindOverlapLenForStage(exspander_stage);
+    shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
+                                                                              max_is_right_quantile, storage);
 
     INFO("Growing paths using mate-pairs");
     auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
     if (!is_2015_scaffolder_enabled(pset.sm)) {
         DebugOutputPaths(gp, output_dir, mp_paths, "mp_before_overlap");
-        FinalizePaths(mp_paths, clone_map, max_over, true);
+        FinalizePaths(mp_paths, clone_map, max_is_right_quantile, max_is_right_quantile, true);
     }
     DebugOutputPaths(gp, output_dir, mp_paths, "mp_final_paths");
     DEBUG("Paths are grown with mate-pairs");
@@ -807,18 +813,19 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     exspander_stage = PathExtendStage::FinalizingPEStage;
     all_libs.clear();
     all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset, storage);
-    max_over = FindOverlapLenForStage(exspander_stage);
-    shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over, storage);
+    max_is_right_quantile = FindOverlapLenForStage(exspander_stage);
+    shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
+                                                                                 max_is_right_quantile, storage);
 
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
     DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_overlap");
     if (!is_2015_scaffolder_enabled(pset.sm)) {
-        FinalizePaths(last_paths, clone_map, max_over);
+        FinalizePaths(last_paths, clone_map, min_edge_len, max_is_right_quantile);
         DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_traverse");
     }
 
     TraverseLoops(last_paths, clone_map, last_extender);
-    FinalizePaths(last_paths, clone_map, max_over);
+    FinalizePaths(last_paths, clone_map, min_edge_len, max_is_right_quantile);
 
 //result
     if (broken_contigs.is_initialized()) {
