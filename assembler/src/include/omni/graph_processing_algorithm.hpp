@@ -52,9 +52,7 @@ class EdgeProcessingAlgorithm {
 //    }
 
     template<class Comparator = std::less<EdgeId>>
-    bool Run(const Comparator& comp = Comparator(),
-             ProceedConditionT proceed_condition = pred::AlwaysTrue<EdgeId>()) {
-        TRACE("Start processing");
+    bool Run(const Comparator& comp = Comparator(), ProceedConditionT proceed_condition = pred::AlwaysTrue<EdgeId>()) {
         bool triggered = false;
         for (auto it = g_.SmartEdgeBegin(comp, conjugate_symmetry_); !it.IsEnd(); ++it) {
             EdgeId e = *it;
@@ -66,8 +64,7 @@ class EdgeProcessingAlgorithm {
 
             TRACE("Processing edge " << this->g().str(e));
             triggered |= ProcessEdge(e);
-        }
-        TRACE("Finished processing. Triggered = " << triggered);
+        };
         return triggered;
     }
 

@@ -262,6 +262,10 @@ class GraphSimplifier {
 
             cnt_callback_.Report();
         }
+
+        INFO("Disrupting self-conjugate edges");
+        SelfConjugateDisruptor<Graph>(gp_.g, removal_handler_).Run();
+        cnt_callback_.Report();
     }
 
     //inline
