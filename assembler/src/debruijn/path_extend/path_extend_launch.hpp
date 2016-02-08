@@ -743,7 +743,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     //Parameters are subject to change
     size_t max_is_right_quantile = max(FindOverlapLenForStage(exspander_stage), gp.g.k() + 100);
-    size_t min_edge_len = max(size_t(100), max_is_right_quantile / 2);
+    size_t min_edge_len = 100;
 
     shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
                                                                           max_is_right_quantile, storage);
