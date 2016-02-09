@@ -335,8 +335,8 @@ class Histogram {
 
 template <typename T>
 inline std::ostream& operator<<(std::ostream &os, const Histogram<T> &b) {
-  b.dump(os);
-  return os;
+    os << b;
+    return os;
 }
 
 typedef Histogram<RawPoint> RawHistogram;
