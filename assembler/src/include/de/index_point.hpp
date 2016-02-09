@@ -255,7 +255,7 @@ class Histogram {
     void insert(InputIterator b, InputIterator e) { tree_.insert(b, e); }
 
     // Deletion routines.
-    int erase(const key_type &key) { return tree_.erase(key); }
+    size_type erase(const key_type &key) { return tree_.erase(key); }
     // Erase the specified iterator from the btree. The iterator must be valid
     // (i.e. not equal to end()).  Return an iterator pointing to the node after
     // the one that was erased (or end() if none exists).
