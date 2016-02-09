@@ -183,7 +183,7 @@ public:
             : g_(g),
               local_coverage_f_(local_coverage_f),
               min_coverage_gap_(min_coverage_gap) {
-
+        VERIFY(math::gr(min_coverage_gap, 1.));
     }
 
     double LocalCoverage(EdgeId e, VertexId v) const {
@@ -379,10 +379,10 @@ public:
                                  g_(g), edge_remover_(g, removal_handler) {
     }
 
-    EdgeId operator()(EdgeId e/*, bool start = false*/) {
+    EdgeId operator()(EdgeId e) {
         VERIFY(g_.length(e) > 1);
-        pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, g_.length(e) - 1);
-        edge_remover_.DeleteEdge(split_res.second);
+        pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, 1);
+        edge_remover_.DeleteEdge(split_res.first);
         return split_res.first;
     }
 };
@@ -414,7 +414,7 @@ public:
 protected:
     bool ProcessEdge(EdgeId edge) {
         DEBUG("Processing edge " << this->g().int_id(edge));
-        VertexId v = this->g().EdgeEnd(edge);
+        VertexId v = this->g().EdgeStart(edge);
         double coverage_edge_around_v = rel_helper_.LocalCoverage(edge, v);
         DEBUG("Local flanking coverage - " << coverage_edge_around_v);
         DEBUG("Max local coverage incoming  - " << rel_helper_.MaxLocalCoverage(this->g().IncomingEdges(v), v));

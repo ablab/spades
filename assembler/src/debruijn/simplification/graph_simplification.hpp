@@ -699,7 +699,7 @@ AlgoPtr<Graph> BRInstance(Graph& g,
     }
 }
 
-//todo make this all work for start of the edges also? switch to canonical iteration?
+//todo make this all work for end of the edges also? switch to canonical iteration?
 //todo rename, since checking topology also
 template<class Graph>
 class FlankingCovBound : public EdgeCondition<Graph> {
@@ -718,8 +718,8 @@ public:
 
     bool Check(EdgeId e) const override {
         return this->g().length(e) > 1 
-                    && this->g().IncomingEdgeCount(this->g().EdgeEnd(e)) > 1 
-                    && math::le(flanking_cov_.CoverageOfEnd(e), max_coverage_);
+                    && this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) > 1 
+                    && math::le(flanking_cov_.CoverageOfStart(e), max_coverage_);
     }
 
 };
