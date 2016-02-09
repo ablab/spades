@@ -102,13 +102,14 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
     load(p.sm, pt, "scaffolding_mode", complete);
     load(p.normalize_weight, pt,  "normalize_weight", complete);
     load(p.cut_all_overlaps, pt, "cut_all_overlaps", complete);
+    load(p.remove_overlaps, pt, "remove_overlaps", complete);
+    load(p.multi_path_extend, pt, "multi_path_extend", complete);
     load(p.split_edge_length, pt, "split_edge_length", complete);
     load(p.extension_options, pt, "extension_options", complete);
     load(p.mate_pair_options, pt, "mate_pair_options", complete);
     load(p.scaffolder_options, pt, "scaffolder", complete);
     load(p.loop_removal, pt, "loop_removal", complete);
     load(p.coordinated_coverage, pt, "coordinated_coverage", complete);
-    load(p.remove_overlaps, pt, "remove_overlaps", complete);
     load(p.use_coordinated_coverage, pt, "use_coordinated_coverage", complete);
     load(p.scaffolding2015, pt, "scaffolding2015", complete);
     load(p.scaffold_graph_params, pt, "scaffold_graph", complete);

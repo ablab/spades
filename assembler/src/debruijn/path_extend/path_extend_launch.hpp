@@ -225,8 +225,13 @@ inline void ClonePathContainer(PathContainer& spaths, PathContainer& tpaths, Gra
 inline void FinalizePaths(PathContainer& paths, GraphCoverageMap& cover_map, size_t min_edge_len, size_t max_path_diff, bool mate_pairs = false) {
     PathExtendResolver resolver(cover_map.graph());
 
-    resolver.removeOverlaps(paths, cover_map, min_edge_len, max_path_diff,
-                            cfg::get().pe_params.param_set.remove_overlaps, cfg::get().pe_params.param_set.cut_all_overlaps);
+
+    if (cfg::get().pe_params.param_set.remove_overlaps) {
+        resolver.removeOverlaps(paths, cover_map, min_edge_len, max_path_diff, cfg::get().pe_params.param_set.cut_all_overlaps);
+    }
+    else {
+        resolver.removeEqualPaths(paths, cover_map, min_edge_len);
+    }
     if (mate_pairs) {
         resolver.RemoveMatePairEnds(paths, min_edge_len);
     }
@@ -453,6 +458,40 @@ inline shared_ptr<SimpleExtender> MakeCoordCoverageExtender(const conj_graph_pac
     return make_shared<SimpleExtender>(gp, cov_map, chooser, -1ul, pset.loop_removal.mp_max_loops, true, false);
 }
 
+inline shared_ptr<SimpleExtender> MakeRNAExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+                                                 size_t lib_index, const pe_config::ParamSetT& pset, bool investigate_loops) {
+    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+    SetSingleThresholdForLib(lib, pset, cfg::get().ds.reads[lib_index].data().pi_threshold);
+    INFO("Threshold for lib #" << lib_index << ": " << lib->GetSingleThreshold());
+
+    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, pset.normalize_weight);
+    shared_ptr<RNAExtensionChooser> extension = make_shared<RNAExtensionChooser>(gp.g, wc, GetWeightThreshold(lib, pset), GetPriorityCoeff(lib, pset));
+    return make_shared<MultiExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
+}
+
+inline shared_ptr<SimpleExtender> MakeRNALongReadsExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t lib_index,
+                                                        const pe_config::ParamSetT& pset) {
+    VERIFY_MSG(false, "Long reads rna extender us not implemented yet")
+    PathContainer paths;
+    AddPathsToContainer(gp, gp.single_long_reads[lib_index].GetAllPaths(), 1, paths);
+
+    const auto& lib = cfg::get().ds.reads[lib_index];
+    shared_ptr<ExtensionChooser> longReadEC =
+        make_shared<LongReadsExtensionChooser>(gp.g, paths, GetSingleReadsFilteringThreshold(lib.type()),
+                                               GetSingleReadsWeightPriorityThreshold(lib.type()),
+                                               GetSingleReadsUniqueEdgePriorityThreshold(lib.type()),
+                                               pset.extension_options.max_repeat_length);
+
+    size_t resolvable_repeat_length_bound = 10000ul;
+    if (!lib.is_contig_lib()) {
+        resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().read_length);
+    }
+    INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
+    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, resolvable_repeat_length_bound,
+                                       pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(lib.type()));
+}
+
+
 
 inline bool InsertSizeCompare(const shared_ptr<PairedInfoLibrary> lib1,
                               const shared_ptr<PairedInfoLibrary> lib2) {
@@ -518,6 +557,8 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                         pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, false));
                     else if (cfg::get().ds.moleculo)
                         pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, false));
+                    else if (cfg::get().ds.rna)
+                        pes.push_back(MakeRNAExtender(gp, cov_map, i, pset, false));
                     else
                         pes.push_back(MakePEExtender(gp, cov_map, i, pset, false));
                 }
@@ -526,11 +567,12 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                 }
             }
             if (IsForShortLoopExtender(lib) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
-                if (cfg::get().ds.meta) {
+                if (cfg::get().ds.meta)
                     pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, true));
-                } else {
+                else if (cfg::get().ds.rna)
+                    pes.push_back(MakeRNAExtender(gp, cov_map, i, pset, true));
+                else
                     pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));
-                }
             }
             if (IsForScaffoldingExtender(lib) && cfg::get().use_scaffolder && pset.scaffolder_options.on) {
                 ++scf_pe_libs;

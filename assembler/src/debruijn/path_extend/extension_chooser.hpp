@@ -28,14 +28,25 @@ namespace path_extend {
 
 typedef std::multimap<double, EdgeWithDistance> AlternativeContainer;
 
+
 class PathAnalyzer {
+protected:
     const Graph& g_;
 
 public:
     PathAnalyzer(const Graph& g): g_(g) {
     }
 
-    int ExcludeTrivial(const BidirectionalPath& path, std::set<size_t>& edges, int from = -1) const {
+    void RemoveTrivial(const BidirectionalPath& path, std::set<size_t>& to_exclude, bool exclude_bulges = true) const {
+        if (exclude_bulges) {
+            ExcludeTrivialWithBulges(path, to_exclude);
+        } else {
+            ExcludeTrivial(path, to_exclude);
+        }
+    }
+
+protected:
+    virtual int ExcludeTrivial(const BidirectionalPath& path, std::set<size_t>& edges, int from = -1) const {
         int edgeIndex = (from == -1) ? (int) path.Size() - 1 : from;
         if ((int) path.Size() <= from) {
             return edgeIndex;
@@ -51,7 +62,7 @@ public:
         return edgeIndex;
     }
 
-    int ExcludeTrivialWithBulges(const BidirectionalPath& path, std::set<size_t>& edges) const {
+    virtual int ExcludeTrivialWithBulges(const BidirectionalPath& path, std::set<size_t>& edges) const {
 
         if (path.Empty()) {
             return 0;
@@ -65,17 +76,11 @@ public:
                 VertexId v = g_.EdgeEnd(path[lastEdge]);
                 VertexId u = g_.EdgeStart(path[lastEdge]);
                 auto bulgeCandidates = g_.IncomingEdges(v);
-                bool bulge = true;
 
                 for (auto iter = bulgeCandidates.begin(); iter != bulgeCandidates.end(); ++iter) {
                     if (g_.EdgeStart(*iter) != u) {
-                        bulge = false;
                         break;
                     }
-                }
-
-                if (!bulge) {
-                    break;
                 }
 
                 --lastEdge;
@@ -87,6 +92,66 @@ public:
 
 protected:
     DECL_LOGGER("PathAnalyzer")
+};
+
+
+class PreserveSimplePathsAnalyzer: public PathAnalyzer {
+
+public:
+    PreserveSimplePathsAnalyzer(const Graph &g) : PathAnalyzer(g) {
+    }
+
+    int ExcludeTrivial(const BidirectionalPath& path, std::set<size_t>& edges, int from = -1) const override {
+        int edgeIndex = PathAnalyzer::ExcludeTrivial(path, edges, from);
+
+        //Preserving simple path
+        if (edgeIndex == -1) {
+            edges.clear();
+            return (from == -1) ? (int) path.Size() - 1 : from;;
+        }
+        return edgeIndex;
+    }
+
+    int ExcludeTrivialWithBulges(const BidirectionalPath& path, std::set<size_t>& edges) const override {
+
+        if (path.Empty()) {
+            return 0;
+        }
+
+        int lastEdge = (int) path.Size() - 1;
+        bool has_bulge = false;
+        do {
+            lastEdge = PathAnalyzer::ExcludeTrivial(path, edges, lastEdge);
+
+            if (lastEdge >= 0) {
+                VertexId v = g_.EdgeEnd(path[lastEdge]);
+                VertexId u = g_.EdgeStart(path[lastEdge]);
+                auto bulgeCandidates = g_.IncomingEdges(v);
+                has_bulge = true;
+
+                for (auto iter = bulgeCandidates.begin(); iter != bulgeCandidates.end(); ++iter) {
+                    if (g_.EdgeStart(*iter) != u) {
+                        has_bulge = false;
+                        break;
+                    }
+                }
+
+                --lastEdge;
+            }
+        } while (lastEdge >= 0);
+
+        //Preserving simple path
+        if (!has_bulge && lastEdge == -1) {
+            edges.clear();
+            lastEdge = (int) path.Size() - 1;
+        }
+
+        return lastEdge;
+    }
+
+protected:
+    DECL_LOGGER("PathAnalyzer")
+
 };
 
 
@@ -115,19 +180,12 @@ protected:
     //FIXME memory leak?!
     std::vector<ExtensionChooserListener *> listeners_;
 
-private:
     double weight_threshold_;
-    PathAnalyzer analyzer_;
-
-    bool excludeTrivial_;
-    bool excludeTrivialWithBulges_;
-
 
 public:
-    ExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc = nullptr, double weight_threshold = -1.): 
+    ExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc = nullptr, double weight_threshold = -1.):
         g_(g), wc_(wc), 
-        weight_threshold_(weight_threshold), analyzer_(g), 
-        excludeTrivial_(true), excludeTrivialWithBulges_(true) {
+        weight_threshold_(weight_threshold) {
     }
 
     virtual ~ExtensionChooser() {
@@ -135,24 +193,6 @@ public:
     }
 
     virtual EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const = 0;
-
-    bool isExcludeTrivial() const
-    {
-        return excludeTrivial_;
-    }
-
-    bool isExcludeTrivialWithBulges() const
-    {
-        return excludeTrivialWithBulges_;
-    }
-
-    void setExcludeTrivial(bool excludeTrivial) {
-        this->excludeTrivial_ = excludeTrivial;
-    }
-
-    void setExcludeTrivialWithBulges(bool excludeTrivialWithBulges) {
-        this->excludeTrivialWithBulges_ = excludeTrivialWithBulges;
-    }
 
     bool CheckThreshold(double weight) const {
         return math::ge(weight, weight_threshold_);
@@ -184,14 +224,6 @@ public:
     }
 
 protected:
-    void RemoveTrivial(const BidirectionalPath& path, std::set<size_t>& to_exclude) const {
-        if (excludeTrivialWithBulges_) {
-            analyzer_.ExcludeTrivialWithBulges(path, to_exclude);
-        } else if (excludeTrivial_) {
-            analyzer_.ExcludeTrivial(path, to_exclude);
-        }
-    }
-
     bool HasIdealInfo(EdgeId e1, EdgeId e2, size_t dist) const {
         return math::gr(wc_->lib().IdealPairedInfo(e1, e2, (int) dist), 0.);
 	}
@@ -265,6 +297,8 @@ public:
 
 class ExcludingExtensionChooser: public ExtensionChooser {
     //FIXME what is the logic behind it?
+protected:
+    shared_ptr<PathAnalyzer> analyzer_;
     double prior_coeff_;
 
     AlternativeContainer FindWeights(const BidirectionalPath& path, const EdgeContainer& edges, const std::set<size_t>& to_exclude) const {
@@ -305,8 +339,8 @@ protected:
     virtual void ExcludeEdges(const BidirectionalPath& path, const EdgeContainer& edges, std::set<size_t>& to_exclude) const = 0;
 
 public:
-    ExcludingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
-            ExtensionChooser(g, wc, weight_threshold), prior_coeff_(priority) {
+    ExcludingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, shared_ptr<PathAnalyzer> analyzer, double weight_threshold, double priority) :
+            ExtensionChooser(g, wc, weight_threshold), analyzer_(analyzer), prior_coeff_(priority) {
 
     }
 
@@ -317,7 +351,7 @@ public:
             return edges;
         }
         std::set<size_t> to_exclude;
-        RemoveTrivial(path, to_exclude);
+        analyzer_->RemoveTrivial(path, to_exclude);
         path.Print();
         EdgeContainer result = edges;
         ExcludeEdges(path, result, to_exclude);
@@ -377,8 +411,24 @@ protected:
 public:
 
 	SimpleExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
-	    ExcludingExtensionChooser(g, wc, weight_threshold, priority) {
+	    ExcludingExtensionChooser(g, wc, make_shared<PathAnalyzer>(g), weight_threshold, priority) {
 	}
+
+private:
+    DECL_LOGGER("SimpleExtensionChooser");
+};
+
+
+class RNAExtensionChooser: public ExcludingExtensionChooser {
+protected:
+    void ExcludeEdges(const BidirectionalPath& /*path*/, const EdgeContainer& /*edges*/, std::set<size_t>& /*to_exclude*/) const override {
+    }
+
+public:
+
+    RNAExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
+        ExcludingExtensionChooser(g, wc, make_shared<PreserveSimplePathsAnalyzer>(g), weight_threshold, priority) {
+    }
 
 private:
     DECL_LOGGER("SimpleExtensionChooser");
@@ -405,7 +455,7 @@ protected:
     }
 public:
     LongEdgeExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
-        ExcludingExtensionChooser(g, wc, weight_threshold, priority) {
+        ExcludingExtensionChooser(g, wc, make_shared<PathAnalyzer>(g), weight_threshold, priority) {
     }
 };
 

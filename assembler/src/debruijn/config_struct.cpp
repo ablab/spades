@@ -467,11 +467,13 @@ void load(debruijn_config::dataset& ds,
   load(ds.reads_filename, pt, "reads");
 
   ds.single_cell = pt.get("single_cell", false);
+  ds.rna = pt.get("rna", false);
   ds.meta = pt.get("meta", false);
   ds.moleculo = pt.get("moleculo", false);
 
+
   //fixme temporary solution
-  if (ds.meta)
+  if (ds.meta || ds.rna)
       ds.single_cell = true;
 
   ds.reference_genome_filename = "";
@@ -743,8 +745,13 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
       VERIFY(pt.count("moleculo_pe"));
       load(cfg.pe_params, pt, "moleculo_pe", false);
   }
+  if (cfg.ds.rna) {
+      VERIFY(pt.count("rna_pe"));
+      load(cfg.pe_params, pt, "rna_pe", false);
+  }
 
-  cfg.prelim_pe_params = cfg.pe_params;
+
+    cfg.prelim_pe_params = cfg.pe_params;
   VERIFY(pt.count("prelim_pe"));
   load(cfg.prelim_pe_params, pt, "prelim_pe", false);
 
@@ -788,8 +795,8 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   if (cfg.ds.single_cell)
     load(cfg.simp, pt, "sc", false);
 
-  if (cfg.mismatch_careful)
-    load(cfg.simp, pt, "careful", false);
+  if (cfg.ds.rna)
+    load(cfg.simp, pt, "rna", false);
 
   if (cfg.ds.moleculo)
     load(cfg.simp, pt, "moleculo", false);

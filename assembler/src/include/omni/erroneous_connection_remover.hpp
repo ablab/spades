@@ -254,6 +254,111 @@ public:
     ;
 };
 
+
+template<class Graph>
+class ECLoopRemover : public EdgeProcessingAlgorithm<Graph> {
+    typedef std::less<typename Graph::EdgeId> Comparator;
+    typedef EdgeProcessingAlgorithm<Graph> base;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    double ec_threshold_;
+    double relative_threshold_;
+    const AbstractFlankingCoverage<Graph> &flanking_coverage_;
+    EdgeRemover<Graph> edge_remover_;
+    int coverage_loops_removed = 0;
+    int dead_loops_removed = 0;
+    int not_dead_loops_removed = 0;
+    int coverage_rc_loops_removed = 0;
+    int dead_rc_loops_removed = 0;
+    int not_dead_rc_loops_removed = 0;
+
+    bool IsLoop(EdgeId e) {
+        return this->g().EdgeStart(e) == this->g().EdgeEnd(e);
+    }
+
+    bool IsRCLoop(EdgeId e) {
+        return this->g().EdgeStart(e) == this->g().conjugate(this->g().EdgeEnd(e));
+    }
+
+    bool IsAnyLoop(EdgeId e) {
+        return IsRCLoop(e) || IsLoop(e);
+    }
+
+    void RemoveHiddenLoopEC(EdgeId e, bool break_on_end) {
+        if (IsLoop(e))
+            coverage_loops_removed++;
+        else
+            coverage_rc_loops_removed++;
+        if (this->g().length(e) <= this->g().k())
+            edge_remover_.DeleteEdge(e);
+        else {
+            if (break_on_end) {
+                auto split_result = this->g().SplitEdge(e, this->g().length(e) - this->g().k());
+                edge_remover_.DeleteEdge(split_result.second);
+            } else {
+                auto split_result = this->g().SplitEdge(e, this->g().k());
+                edge_remover_.DeleteEdge(split_result.first);
+            }
+        }
+
+    }
+    void RemoveLoopWithNoCheck(EdgeId e) {
+        if (IsLoop(e)) {
+            if (this->g().IncomingEdgeCount(this->g().EdgeStart(e)) == 1 || this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) == 1)
+                dead_loops_removed++;
+            else
+                not_dead_loops_removed++;
+        } else {
+            if (this->g().IncomingEdgeCount(this->g().EdgeStart(e)) == 2)
+                dead_rc_loops_removed++;
+            else
+                not_dead_rc_loops_removed++;
+
+        }
+        edge_remover_.DeleteEdge(e);
+    }
+
+    bool FindHiddenLoopEC(EdgeId e) {
+        if(flanking_coverage_.GetInCov(e) * relative_threshold_ < flanking_coverage_.GetOutCov(e) && flanking_coverage_.GetInCov(e) < ec_threshold_) {
+            //start is bad, end is OK.
+            RemoveHiddenLoopEC(e, false);
+            return true;
+        } else if(flanking_coverage_.GetOutCov(e) * relative_threshold_ < flanking_coverage_.GetInCov(e) && flanking_coverage_.GetOutCov(e) < ec_threshold_) {
+            //end is bad, start is OK.
+            RemoveHiddenLoopEC(e, true);
+            return true;
+        }
+        RemoveLoopWithNoCheck(e);
+        return false;
+    }
+
+    bool ProcessEdge(EdgeId e) {
+        if (IsAnyLoop(e)) {
+            DEBUG("Susp loop: " << this->g().int_id(e) << endl);
+            bool res = FindHiddenLoopEC(e);
+            if (res) {DEBUG ("was removed");} else {DEBUG("was not removed"); }
+            return res;
+        }
+        return false;
+    }
+
+
+public:
+    ECLoopRemover(Graph &g, const AbstractFlankingCoverage<Graph> &flanking_coverage, double ec_threshold, double relative_threshold,
+                  HandlerF<Graph> removal_handler = 0): base(g),ec_threshold_(ec_threshold),
+                                                                            relative_threshold_(relative_threshold), flanking_coverage_(flanking_coverage),
+                                                                            edge_remover_(g, removal_handler){
+    }
+    void PrintLoopStats(){
+        INFO("Loops: accurately removed/deadend removed/other: "<< coverage_loops_removed <<"/" << dead_loops_removed << "/" <<not_dead_loops_removed);
+        INFO("RC loops: accurately removed/deadend removed/other: "<< coverage_rc_loops_removed <<"/" << dead_rc_loops_removed << "/" <<not_dead_rc_loops_removed);
+    }
+private:
+    DECL_LOGGER("ECLoopRemover");
+};
+
+
 template<class Graph>
 class HiddenECRemover: public EdgeProcessingAlgorithm<Graph> {
 	typedef EdgeProcessingAlgorithm<Graph> base;

@@ -11,6 +11,7 @@
 #include "omni/visualization/graph_labeler.hpp"
 #include "io/single_read.hpp"
 #include "positions.hpp"
+#include "simplification/parallel_simplification_algorithms.hpp"
 
 #include "simplification.hpp"
 
@@ -66,6 +67,7 @@ class GraphSimplifier {
 //    }
 
     bool PerformInitCleaning() {
+
         if (simplif_cfg_.init_clean.early_it_only && info_container_.main_iteration()) {
             INFO("Most init cleaning disabled on main iteration");
             return false;
@@ -81,6 +83,18 @@ class GraphSimplifier {
         return true;
     }
 
+    void RemoveShortPolyATEdges(size_t max_length,
+                                HandlerF removal_handler = 0, size_t chunk_cnt = 1) {
+        INFO("Removing short polyAT");
+        EdgeRemover<Graph> er(g_, removal_handler);
+        auto condition = make_shared<ATCondition<Graph>>(g_, 0.8, max_length, false);
+        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
+            if (g_.length(*iter) == 1 && condition->Check(*iter)) {
+                er.DeleteEdgeWithNoCompression(*iter);
+            }
+        }
+        ParallelCompress(g_, chunk_cnt);
+    }
     void InitialCleaning() {
         INFO("PROCEDURE == InitialCleaning");
 
@@ -92,7 +106,11 @@ class GraphSimplifier {
                                                  info_container_, removal_handler_),
                 "Self conjugate edge remover",
                 algos);
-
+        if (cfg::get().ds.rna){
+            RemoveShortPolyATEdges(1, removal_handler_, info_container_.chunk_cnt());
+            PushValid(ShortPolyATEdgesRemoverInstance(g_, 1, removal_handler_, info_container_.chunk_cnt()), "Short PolyA/T Edges",algos) ;
+            PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
+        }
         if (PerformInitCleaning()) {
             PushValid(
                     IsolatedEdgeRemoverInstance(g_,
@@ -124,8 +142,11 @@ class GraphSimplifier {
                     "Disconnecting edges with low flanking coverage",
                     algos);
         }
-
         RunAlgos(algos);
+        if (cfg::get().ds.rna) {
+            RemoveHiddenLoopEC(g_, gp_.flanking_cov, info_container_.detected_coverage_bound(), simplif_cfg_.her, removal_handler_);
+            cnt_callback_.Report();
+        }
     }
 
     bool AllTopology() {
@@ -229,6 +250,9 @@ class GraphSimplifier {
                                        info_container_, removal_handler_),
                     "Yet another final bulge remover",
                     algos);
+        }
+        if (cfg::get().ds.rna){
+            PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
         }
 
         bool enable_flag = true;

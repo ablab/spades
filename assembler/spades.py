@@ -96,6 +96,8 @@ def print_used_values(cfg, log):
             log.info("  Large genome mode")
         elif cfg["dataset"].truseq:
             log.info(" Illumina TruSeq mode")
+        elif cfg["dataset"].rna:
+            log.info(" RNA-seq mode")
         else:
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
                      " was obtained with MDA (single-cell) technology"\
@@ -223,6 +225,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.meta = True
         elif opt == "--large-genome":
             options_storage.large_genome = True
+        elif opt == "--rna":
+            options_storage.rna = True
         elif opt == "--iontorrent":
             options_storage.iontorrent = True
         elif opt == "--disable-gzip-output":
@@ -233,7 +237,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.disable_rr = True
         elif opt == "--disable-rr:false":
             options_storage.disable_rr = False
-
+        
         elif opt == "--only-error-correction":
             if options_storage.only_assembler:
                 support.error('you cannot specify --only-error-correction and --only-assembler simultaneously')
@@ -391,6 +395,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
 
     # dataset section
     cfg["dataset"].__dict__["single_cell"] = options_storage.single_cell
+    cfg["dataset"].__dict__["rna"] = options_storage.rna
     cfg["dataset"].__dict__["iontorrent"] = options_storage.iontorrent
     cfg["dataset"].__dict__["meta"] = options_storage.meta
     cfg["dataset"].__dict__["large_genome"] = options_storage.large_genome
@@ -735,6 +740,7 @@ def main(args):
                     dataset_file = open(dataset_filename, 'w')
                     import process_cfg
                     dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
+                    dataset_file.write("rna" + '\t' + process_cfg.bool_to_str(cfg["dataset"].rna) + '\n')
                     dataset_file.write("meta" + '\t' + process_cfg.bool_to_str(cfg["dataset"].meta) + '\n')
                     dataset_file.write("large_genome" + '\t' + process_cfg.bool_to_str(cfg["dataset"].large_genome) + '\n')
                     dataset_file.write("moleculo" + '\t' + process_cfg.bool_to_str(cfg["dataset"].truseq) + '\n')

@@ -479,6 +479,7 @@ struct debruijn_config {
         }
 
         bool single_cell;
+        bool rna;
         bool meta;
         bool moleculo;
         std::string reference_genome_filename;

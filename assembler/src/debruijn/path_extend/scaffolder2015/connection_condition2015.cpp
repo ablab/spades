@@ -1,5 +1,3 @@
-\
-
 #include "connection_condition2015.hpp"
 namespace path_extend {
 

@@ -18,21 +18,21 @@ visualize {
 output_broken_scaffolds     break_gaps
 
 params {
+    multi_path_extend   false
     ; old | 2015 | combined | old_pe_2015
     scaffolding_mode old
 
+    remove_overlaps     true
+    cut_all_overlaps  false
+
     split_edge_length    99
     normalize_weight     false
-    cut_all_overlaps  false
     
     ; extension selection
     extension_options
     {
         use_default_single_threshold false
         single_threshold           1.75676
-;    A.mirum threshold 0.076
-;    E.coli RL36 threshold 0.717949
-;    E.coli IS220 threshold 1.75676
         weight_threshold           0.5
         priority_coeff             1.5
         max_repeat_length          8000
@@ -78,7 +78,6 @@ params {
         mp_max_loops    10
     }
 
-    remove_overlaps     true
     use_coordinated_coverage false
     coordinated_coverage
     {
@@ -194,6 +193,14 @@ params {
 prelim_pe {
 params {
     use_coordinated_coverage false
+    remove_overlaps     false
+}
+}
+
+rna_pe {
+
+params {
+    multi_path_extend   true
     remove_overlaps     false
 }
 }

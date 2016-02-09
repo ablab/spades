@@ -760,11 +760,11 @@ public:
 
     virtual ~ContigsMaker() { }
 
-    virtual void GrowPath(BidirectionalPath& path) = 0;
+    virtual void GrowPath(BidirectionalPath& path, PathContainer* paths_storage = 0) = 0;
 
-    virtual void GrowPathSimple(BidirectionalPath& path) = 0;
+    virtual void GrowPathSimple(BidirectionalPath& path, PathContainer* paths_storage = 0) = 0;
 
-    virtual void GrowAll(PathContainer & paths, PathContainer * result) = 0;
+    virtual void GrowAll(PathContainer & paths, PathContainer& paths_storage) = 0;
 
 protected:
     const Graph& g_;
@@ -789,8 +789,11 @@ struct UsedUniqueStorage {
 class PathExtender {
 public:
     PathExtender(const Graph & g): g_(g){ }
+
     virtual ~PathExtender() { }
-    virtual bool MakeGrowStep(BidirectionalPath& path) = 0;
+
+    virtual bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage = 0) = 0;
+
     void AddUniqueEdgeStorage(shared_ptr<UsedUniqueStorage> used_storage) {
         used_storage_ = used_storage;
     }
@@ -828,23 +831,22 @@ public:
         pe->AddUniqueEdgeStorage(used_storage_);
     }
 
-    virtual void GrowAll(PathContainer& paths, PathContainer * result) {
-        result->clear();
-        PathContainer usedPaths;
-        GrowAll(paths, usedPaths, result);
+    void GrowAll(PathContainer& paths, PathContainer& result) override {
+        result.clear();
+        GrowAllPaths(paths, result);
         LengthPathFilter filter(g_, 0);
-        filter.filter(*result);
+        filter.filter(result);
     }
 
-    virtual void GrowPath(BidirectionalPath& path) {
-        while (MakeGrowStep(path)) { }
+    void GrowPath(BidirectionalPath& path, PathContainer* paths_storage) override {
+        while (MakeGrowStep(path, paths_storage)) { }
     }
 
-    virtual void GrowPathSimple(BidirectionalPath& path) {
-        while (MakeGrowStep(path, false)) { }
+    void GrowPathSimple(BidirectionalPath& path, PathContainer* paths_storage) override {
+        while (MakeGrowStep(path, paths_storage, false)) { }
     }
 
-    bool MakeGrowStep(BidirectionalPath& path, bool detect_repeats_online = true) {
+    bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage, bool detect_repeats_online = true) {
         DEBUG("make grow step composite extender");
         auto sc_mode = cfg::get().pe_params.param_set.sm;
         if (is_2015_scaffolder_enabled(sc_mode)) {
@@ -899,7 +901,7 @@ public:
         size_t current = 0;
         while (current < extenders_.size()) {
             DEBUG("step " << current << " from " <<extenders_.size());
-            if (extenders_[current]->MakeGrowStep(path)) {
+            if (extenders_[current]->MakeGrowStep(path, paths_storage)) {
                 return true;
             }
            ++current;
@@ -913,6 +915,7 @@ private:
     vector<shared_ptr<PathExtender> > extenders_;
     size_t max_diff_len_;
     shared_ptr<UsedUniqueStorage> used_storage_;
+
     void SubscribeCoverageMap(BidirectionalPath * path) {
         path->Subscribe(&cover_map_);
         for (size_t i = 0; i < path->Size(); ++i) {
@@ -920,7 +923,7 @@ private:
         }
     }
 
-    void GrowAll(PathContainer& paths, PathContainer& usedPaths, PathContainer * result) {
+    void GrowAllPaths(PathContainer& paths, PathContainer& result) {
         cover_map_.Clear();
         for (size_t i = 0; i < paths.size(); ++i) {
             VERBOSE_POWER_T2(i, 100, "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
@@ -946,10 +949,9 @@ private:
             }
 //TODO: coverage_map should be exterminated
             if (!cover_map_.IsCovered(*paths.Get(i))) {
-                usedPaths.AddPair(paths.Get(i), paths.GetConjugate(i));
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
                 BidirectionalPath * conjugatePath = new BidirectionalPath(*paths.GetConjugate(i));
-                result->AddPair(path, conjugatePath);
+                result.AddPair(path, conjugatePath);
                 SubscribeCoverageMap(path);
                 SubscribeCoverageMap(conjugatePath);
                 size_t count_trying = 0;
@@ -957,8 +959,8 @@ private:
                 do {
                     current_path_len = path->Length();
                     count_trying++;
-                    GrowPath(*path);
-                    GrowPath(*conjugatePath);
+                    GrowPath(*path, &result);
+                    GrowPath(*conjugatePath, &result);
                 } while (count_trying < 10 && (path->Length() != current_path_len));
                 path->CheckConjugateEnd(cfg::get().max_repeat_length);
                 DEBUG("result path " << path->GetId());
@@ -1087,7 +1089,7 @@ public:
           return is_detector_.CheckCycledNonIS(path);
     }
 
-    virtual bool MakeSimpleGrowStep(BidirectionalPath& path) = 0;
+    virtual bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* paths_storage = 0) = 0;
 
     virtual bool ResolveShortLoopByCov(BidirectionalPath& path) = 0;
 
@@ -1097,7 +1099,7 @@ public:
         return false;
     }
 
-    virtual bool MakeGrowStep(BidirectionalPath& path) {
+    bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override {
         if (InExistingLoop(path)) {
             DEBUG("in existing loop");
             return false;
@@ -1115,7 +1117,7 @@ public:
             result = ResolveShortLoop(path);
         } else {
             DEBUG("Making step");
-            result = MakeSimpleGrowStep(path);
+            result = MakeSimpleGrowStep(path, paths_storage);
             DEBUG("Made step");
             if (DetectCycle(path)) {
                 result = false;
@@ -1180,55 +1182,6 @@ public:
         return extensionChooser_;
     }
 
-    bool MakeSimpleGrowStep(BidirectionalPath& path) override {
-        if (path.Size() == 0) {
-            return false;
-        }
-        DEBUG("Simple grow step");
-        path.Print();
-        ExtensionChooser::EdgeContainer candidates;
-        FindFollowingEdges(path, &candidates);
-        DEBUG("found candidates");
-        DEBUG(candidates.size())
-        if (candidates.size() == 1) {
-            LoopDetector loop_detector(&path, cov_map_);
-            if (!investigateShortLoops_ && (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
-                    && extensionChooser_->WeightCounterBased()) {
-                return false;
-            }
-        }
-        DEBUG("more filtering");
-        candidates = extensionChooser_->Filter(path, candidates);
-        DEBUG("found candidates 2");
-        DEBUG(candidates.size())
-        if (candidates.size() == 1) {
-            LoopDetector loop_detector(&path, cov_map_);
-            DEBUG("loop detecor");
-            if (!investigateShortLoops_ &&
-                    (loop_detector.EdgeInShortLoop(path.Back())  or loop_detector.EdgeInShortLoop(candidates.back().e_))
-                    && extensionChooser_->WeightCounterBased()) {
-                return false;
-            }
-            DEBUG("push");
-            auto sc_mode = cfg::get().pe_params.param_set.sm;
-            EdgeId eid = candidates.back().e_;
-//In 2015 modes when trying to use already used unique edge, it is not added and path growing stops.
-//That allows us to avoid overlap removal hacks used earlier.
-            if (is_2015_scaffolder_enabled(sc_mode)) {
-                if (used_storage_->IsUsedAndUnique(eid)) {
-                    return false;
-                } else {
-                    used_storage_->insert(eid);
-                }
-            }
-            path.PushBack(eid, candidates.back().d_);
-            DEBUG("push done");
-            return true;
-        }
-        return false;
-    }
-
-
     bool CanInvestigateShortLoop() const override {
         return extensionChooser_->WeightCounterBased();
     }
@@ -1269,10 +1222,122 @@ public:
         return false;
     }
 
+    bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override {
+        ExtensionChooser::EdgeContainer candidates;
+        return FilterCandidates(path, candidates) and AddCandidates(path, paths_storage, candidates);
+    }
+
+protected:
+    virtual bool FilterCandidates(BidirectionalPath& path, ExtensionChooser::EdgeContainer& candidates) {
+        if (path.Size() == 0) {
+            return false;
+        }
+        DEBUG("Simple grow step");
+        path.Print();
+        FindFollowingEdges(path, &candidates);
+        DEBUG("found candidates");
+        DEBUG(candidates.size())
+        if (candidates.size() == 1) {
+            LoopDetector loop_detector(&path, cov_map_);
+            if (!investigateShortLoops_ && (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
+                && extensionChooser_->WeightCounterBased()) {
+                return false;
+            }
+        }
+        DEBUG("more filtering");
+        candidates = extensionChooser_->Filter(path, candidates);
+        DEBUG("filtered candidates");
+        DEBUG(candidates.size())
+        return true;
+    }
+
+    virtual bool AddCandidates(BidirectionalPath& path, PathContainer* /*paths_storage*/, ExtensionChooser::EdgeContainer& candidates) {
+        if (candidates.size() != 1)
+            return false;
+
+        LoopDetector loop_detector(&path, cov_map_);
+        DEBUG("loop detecor");
+        if (!investigateShortLoops_ &&
+            (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
+            && extensionChooser_->WeightCounterBased()) {
+            return false;
+        }
+        DEBUG("push");
+        auto sc_mode = cfg::get().pe_params.param_set.sm;
+        EdgeId eid = candidates.back().e_;
+//In 2015 modes when trying to use already used unique edge, it is not added and path growing stops.
+//That allows us to avoid overlap removal hacks used earlier.
+        if (is_2015_scaffolder_enabled(sc_mode)) {
+            if (used_storage_->IsUsedAndUnique(eid)) {
+                return false;
+            } else {
+                used_storage_->insert(eid);
+            }
+        }
+        path.PushBack(eid, candidates.back().d_);
+        DEBUG("push done");
+        return true;
+    }
+
 protected:
     DECL_LOGGER("SimpleExtender")
 
 };
+
+
+class MultiExtender: public SimpleExtender {
+
+protected:
+    size_t max_candidates_;
+
+public:
+
+    MultiExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, shared_ptr<ExtensionChooser> ec,
+                  size_t is, size_t max_loops, bool investigate_short_loops, bool use_short_loop_cov_resolver,
+                  size_t max_candidates = 0):
+        SimpleExtender(gp, cov_map, ec, is, max_loops, investigate_short_loops, use_short_loop_cov_resolver),
+        max_candidates_(max_candidates) {
+    }
+
+protected:
+    virtual bool AddCandidates(BidirectionalPath& path, PathContainer* paths_storage, ExtensionChooser::EdgeContainer& candidates) override {
+        bool res = false;
+        if (candidates.size() >= 1 && (max_candidates_ == 0 || candidates.size() <= max_candidates_)) {
+            LoopDetector loop_detector(&path, cov_map_);
+            DEBUG("loop detector");
+            if (!investigateShortLoops_ && loop_detector.EdgeInShortLoop(path.Back())
+                && extensionChooser_->WeightCounterBased()) {
+                return false;
+            }
+            else if (not (!investigateShortLoops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
+                && extensionChooser_->WeightCounterBased())) {
+                DEBUG("push");
+                path.PushBack(candidates.front().e_, candidates.front().d_);
+                DEBUG("push done");
+                res = true;
+            }
+            if (candidates.size() > 1) {
+                DEBUG("Found " << candidates.size() << " candidates");
+            }
+            for (size_t i = 1; i < candidates.size(); ++i) {
+                if (not (!investigateShortLoops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
+                    && extensionChooser_->WeightCounterBased())) {
+                    BidirectionalPath *p = new BidirectionalPath(path);
+                    p->PushBack(candidates[i].e_, candidates[i].d_);
+                    BidirectionalPath *cp = new BidirectionalPath(p->Conjugate());
+                    paths_storage->AddPair(p, cp);
+                }
+            }
+        }
+
+        return res;
+    }
+
+protected:
+    DECL_LOGGER("MultiExtender")
+
+};
+
 
 class ScaffoldingPathExtender: public LoopDetectingPathExtender {
     std::shared_ptr<ExtensionChooser> extension_chooser_;
@@ -1308,7 +1373,7 @@ public:
         InitSources();
     }
 
-    virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
+    bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
         if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back())) ) {
             return false;
         }
@@ -1371,11 +1436,11 @@ public:
         return false;
     }
 
-    virtual bool ResolveShortLoopByCov(BidirectionalPath&) {
+    bool ResolveShortLoopByCov(BidirectionalPath&) override {
         return false;
     }
 
-	virtual bool ResolveShortLoopByPI(BidirectionalPath&) {
+	bool ResolveShortLoopByPI(BidirectionalPath&) override {
 		return false;
 	}
 

@@ -449,15 +449,18 @@ public:
 
     PathContainer extendSeeds(PathContainer& seeds, ContigsMaker& pathExtender) {
         PathContainer paths;
-        pathExtender.GrowAll(seeds, &paths);
+        pathExtender.GrowAll(seeds, paths);
         return paths;
     }
 
-    void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
-                        size_t min_edge_len, size_t max_path_diff, bool cut_overlaps,  bool add_overlaps_begin) {
-        if (!cut_overlaps) {
-            return;
-        }
+    void removeEqualPaths(PathContainer& paths, GraphCoverageMap& coverage_map,
+                          size_t max_overlap) {
+
+        SimpleOverlapRemover remover(g_, coverage_map);
+        remover.RemoveSimilarPaths(paths, max_overlap, max_overlap, true, false, false, false, false);
+    }
+
+    void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map, size_t min_edge_len, size_t max_path_diff,  bool add_overlaps_begin) {
         SimpleOverlapRemover remover(g_, coverage_map);
         if (cfg::get().ds.moleculo)
             remover.CutPseudoSelfConjugatePaths(paths);

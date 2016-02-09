@@ -141,6 +141,9 @@ struct pe_config {
 
     bool normalize_weight;
     size_t split_edge_length;
+
+    bool multi_path_extend;
+    bool remove_overlaps;
     bool cut_all_overlaps;
 
     struct ExtensionOptionsT {
@@ -184,7 +187,7 @@ struct pe_config {
       size_t mp_max_loops;
     } loop_removal;
 
-    bool remove_overlaps;
+
     bool use_coordinated_coverage;
 
     struct CoordinatedCoverageT {

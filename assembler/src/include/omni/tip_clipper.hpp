@@ -146,6 +146,59 @@ public:
 };
 
 template<class Graph>
+class ATCondition: public EdgeCondition<Graph> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef EdgeCondition<Graph> base;
+    const double max_AT_percentage_;
+    const size_t max_tip_length_;
+    const bool check_tip_ ;
+
+public:
+
+    ATCondition(const Graph& g, double max_AT_percentage, size_t max_tip_length, bool check_tip) :
+            base(g), max_AT_percentage_(max_AT_percentage), max_tip_length_(max_tip_length), check_tip_(check_tip) {
+    }
+
+    bool Check(EdgeId e) const {
+        //+1 is a trick to deal with edges of 0 coverage from iterative run
+        size_t start = 0;
+        //TODO: Do we need this check?
+        if(this->g().length(e) > max_tip_length_)
+            return false;
+        size_t end = this->g().length(e) + this->g().k();
+        if (check_tip_) {
+            if (this->g().OutgoingEdgeCount(this->g().EdgeEnd(e)) == 0)
+                start = this->g().k();
+            else if (this->g().IncomingEdgeCount(this->g().EdgeStart(e)) == 0)
+                end = this->g().length(e);
+            else return false;
+        }
+        vector<size_t> counts(4);
+        const Sequence &s_edge = this->g().EdgeNucls(e);
+
+        for (size_t position = start; position < end; position ++) {
+            counts[s_edge[position]] ++;
+        }
+        size_t curm = 0;
+        for (auto count: counts) {
+            curm = max(curm, count);
+        }
+        if (curm > (end - start) * max_AT_percentage_) {
+            DEBUG("deleting edge" << s_edge.str());;
+            DEBUG("start end cutoff" << start << " " << end << " " << this->g().length(e) * max_AT_percentage_);
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+private:
+    DECL_LOGGER("ATCondition")
+};
+
+template<class Graph>
 pred::TypedPredicate<typename Graph::EdgeId> AddTipCondition(const Graph& g,
                                                             pred::TypedPredicate<typename Graph::EdgeId> condition) {
     return pred::And(TipCondition<Graph>(g), condition);

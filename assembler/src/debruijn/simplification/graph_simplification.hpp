@@ -534,6 +534,18 @@ bool ClipComplexTips(Graph& g, debruijn_config::simplification::complex_tip_clip
     tip_clipper.Run();
     return true;
 }
+template<class Graph>
+
+AlgoPtr<Graph> ShortPolyATEdgesRemoverInstance (Graph &g, size_t max_length, HandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1){
+    auto condition = pred::And(ATCondition<Graph>(g, 0.8, max_length, false), LengthUpperBound<Graph>(g, 1));
+    return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g, condition, chunk_cnt, removal_handler, true);
+}
+
+AlgoPtr<Graph> ATTipClipperInstance (Graph &g, HandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
+//TODO: review params 0.8, 200?
+    auto condition = ATCondition<Graph>(g, 0.8, 200, true);
+    return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g, condition, chunk_cnt, removal_handler, true);
+}
 
 template<class Graph>
 AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
@@ -543,14 +555,11 @@ AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
     if (!ier.enabled) {
         return nullptr;
     }
-
-    //todo document behavior
     size_t max_length_any_cov = std::max(info.read_length(), ier.max_length_any_cov);
 
-//    INFO("Removing isolated edges");
-//    INFO("All edges shorter than " << max_length_any_cov << " will be removed");
-//    INFO("Also edges shorter than " << ier.max_length << " and coverage smaller than " << ier.max_coverage << " will be removed");
-    //todo add warn on max_length_any_cov > max_length
+    INFO("Removing isolated edges");
+    INFO("All isolated edges shorter than " << max_length_any_cov << " will be removed");
+    INFO("Also isolated edges shorter than " << ier.max_length << " and coverage smaller than " << ier.max_coverage << " will be removed");
 
     auto condition = pred::And(IsolatedEdgeCondition<Graph>(g),
                               pred::Or(LengthUpperBound<Graph>(g, max_length_any_cov),
@@ -774,6 +783,25 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph& g,
                                                               info.chunk_cnt(),
                                                               removal_handler);
 }
+
+template<class Graph>
+bool RemoveHiddenLoopEC(Graph& g,
+                        const FlankingCoverage<Graph>& flanking_cov,
+                        double determined_coverage_threshold,
+                        debruijn_config::simplification::hidden_ec_remover her_config,
+                        HandlerF<Graph> removal_handler) {
+    if (her_config.enabled) {
+        INFO("Removing loops and rc loops with erroneous connections");
+        ECLoopRemover<Graph> hc(g, flanking_cov,
+                                determined_coverage_threshold,
+                                cfg::get().simp.her.relative_threshold, removal_handler);
+        bool res = hc.Run();
+        hc.PrintLoopStats();
+        return res;
+    }
+    return false;
+}
+
 
 ////todo add chunk_cnt
 //template<class Graph>
