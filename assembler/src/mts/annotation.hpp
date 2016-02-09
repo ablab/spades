@@ -79,22 +79,21 @@ class EdgeAnnotation {
     shared_ptr<SequenceMapper<Graph>> mapper_;
     map<EdgeId, set<bin_id>> edge_annotation_;
 
-    vector<bin_id> FilterInteresting(const vector<bin_id>& bins) const {
-        vector<bin_id> answer;
-        for (bin_id bin : bins) {
+    Bins FilterInteresting(const Bins& bins) const {
+        Bins answer;
+        for (const bin_id& bin : bins) {
             if (bins_of_interest_.count(bin)) {
                 answer.push_back(bin);
             }
         }
-        return answer;
+        return bins;
     }
 
     template<class BinCollection>
     void InnerStickAnnotation(EdgeId e, const BinCollection& bins) {
         auto& annotation = edge_annotation_[e];
-        for (bin_id bin : bins) {
+        for (const bin_id& bin : bins)
             annotation.insert(bin);
-        }
     }
 
 public:
@@ -126,7 +125,7 @@ public:
     void Fill(io::SingleStream& contigs, AnnotationStream& annotation_stream) {
         set<bin_id> all_bins;
 
-        map<contig_id, vector<bin_id>> annotation_map;
+        map<contig_id, std::set<bin_id>> annotation_map;
         ContigAnnotation contig_annotation;
         while (!annotation_stream.eof()) {
             annotation_stream >> contig_annotation;
@@ -137,7 +136,8 @@ public:
                 insert_all(all_bins, bins);
             }
             if (!bins.empty()) {
-                annotation_map[contig_annotation.first] = bins;
+                auto& target = annotation_map[GetBaseId(contig_annotation.first)];
+                target.insert(bins.begin(), bins.end());
             }
         }
 
@@ -145,13 +145,10 @@ public:
         while (!contigs.eof()) {
             contigs >> contig;
             contig_id id = GetId(contig);
-            vector<bin_id> bins;
-            if (annotation_map.count(id)) {
-                bins = annotation_map[id];
-            }
-            if (!bins.empty()) {
+            auto bins = annotation_map.find(id);
+            if (bins != annotation_map.end() && !(bins->second.empty())) {
                 for (EdgeId e : mapper_->MapRead(contig).simple_path()) {
-                    StickAnnotation(e, bins);
+                    StickAnnotation(e, bins->second);
                 }
             }
         }

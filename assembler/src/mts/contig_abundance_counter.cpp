@@ -17,6 +17,7 @@ void create_console_logger() {
 
 namespace debruijn_graph {
 
+static const size_t CONTIG_SPLIT_LENGTH = 10000;
 static const size_t MAX_SAMPLE_CNT = 20;
 static const uint INVALID_MPL = uint(-1);
 
@@ -149,30 +150,32 @@ public:
         std::ofstream id_out(contigs_mpl_file + ".id");
         std::ofstream mpl_out(contigs_mpl_file + ".mpl");
 
-        io::SingleRead contig;
+        io::SingleRead full_contig;
+        size_t len = CONTIG_SPLIT_LENGTH; //TODO: adaptive?
         while (!contigs.eof()) {
-            contigs >> contig;
-            contig_id id = GetId(contig);
-            if (contig.size() < min_length_bound_) {
-                DEBUG("Contig " << id << " too short");
-                continue;
-            } else {
+            contigs >> full_contig;
+
+            for (size_t i = 0; i < full_contig.size(); i += len) {
+                if (full_contig.size() - i < min_length_bound_)
+                    break;
+                io::SingleRead contig = full_contig.Substr(i, std::min(i + len, full_contig.size()));
+                contig_id id = GetId(contig);
                 DEBUG("Processing contig " << id);
-            }
 
-            auto abundance_vec = PathAbundance(mapper_->MapRead(contig).simple_path());
+                auto abundance_vec = PathAbundance(mapper_->MapRead(contig).simple_path());
 
-            if (abundance_vec) {
-                id_out << id << std::endl;
+                if (abundance_vec) {
+                    id_out << id << std::endl;
 
-                std::string delim = "";
-                for (size_t i = 0; i < sample_cnt_; ++i) {
-                    mpl_out << delim << (*abundance_vec)[i];
-                    delim = " ";
+                    std::string delim = "";
+                    for (size_t i = 0; i < sample_cnt_; ++i) {
+                        mpl_out << delim << (*abundance_vec)[i];
+                        delim = " ";
+                    }
+                    mpl_out << std::endl;
+                } else {
+                    DEBUG("Failed to estimate abundance of contig " << id);
                 }
-                mpl_out << std::endl;
-            } else {
-                DEBUG("Failed to estimate abundance of contig " << id);
             }
         }
 
@@ -206,6 +209,7 @@ int main(int argc, char** argv) {
 
     size_t min_length_bound = 0;
     if (argc > 7) {
+
         min_length_bound = boost::lexical_cast<size_t>(argv[7]);
     }
 
