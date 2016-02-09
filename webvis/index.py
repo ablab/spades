@@ -13,7 +13,7 @@ from os import listdir
 from os.path import isfile, join
 #App imports
 from shellder import *
-from dotjson import dot_to_json
+#from dotjson import dot_to_json
 from ConfigParser import ConfigParser
 
 # General app settings
