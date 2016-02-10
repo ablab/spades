@@ -446,3 +446,10 @@ inline bool IsSymmetric(PairInfo<EdgeId> const& pi) {
 }
 
 }
+
+namespace std {
+template<>
+class numeric_limits<omnigraph::de::DEDistance> : public numeric_limits<float> {};
+template<>
+class numeric_limits<omnigraph::de::DEWeight> : public numeric_limits<float> {};
+}
