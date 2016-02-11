@@ -269,7 +269,7 @@ private:
 	MultiplicityCountingCondition<Graph> condition_;
 private:
 	void RemoveHiddenEC(EdgeId edge) {
-		if (this->g().length(edge) <= this->g().k())
+		if (this->g().length(edge) <= this->g().k() || (edge == this->g().conjugate(edge) && this->g().length(edge) <= 2 * this->g().k()))
 			edge_remover_.DeleteEdge(edge);
 		else {
 			auto split_result = this->g().SplitEdge(edge, this->g().k());
@@ -278,9 +278,9 @@ private:
 	}
 
 	void RemoveHiddenECWithNoCompression(EdgeId edge) {
-		if (this->g().length(edge) <= this->g().k())
+		if (this->g().length(edge) <= this->g().k() || (edge == this->g().conjugate(edge) && this->g().length(edge) <= 2 * this->g().k())) {
 			edge_remover_.DeleteEdgeWithNoCompression(edge);
-		else {
+		} else {
 			auto split_result = this->g().SplitEdge(edge, this->g().k());
 			edge_remover_.DeleteEdgeWithNoCompression(split_result.first);
 		}
