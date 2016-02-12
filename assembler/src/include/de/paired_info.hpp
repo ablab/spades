@@ -231,9 +231,16 @@ public:
 
             typedef typename ConjProxy<InnerMap>::Iterator InnerIterator;
 
-            void Skip() { //For a raw iterator, skip conjugate pairs
-                while (!full && !iter_.Conj() && iter_->first < edge_)
-                    ++iter_;
+            void Skip() {
+                if (full) { //For a full iterator, skip possibly repeated edges
+                    while (!iter_.Conj() &&
+                            index_.GetImpl(index_.graph().conjugate(edge_), index_.graph().conjugate(iter_->first)).size())
+                        ++iter_;
+
+                } else { //For a raw iterator, skip conjugate pairs
+                    while (!iter_.Conj() && iter_->first < edge_)
+                        ++iter_;
+                }
             }
 
         public:
@@ -265,22 +272,20 @@ public:
             }
 
             EdgeHist<full> dereference() const {
+                EdgeId e2 = iter_->first;
                 if (full) {
-                    float offset = index_.CalcOffset(edge_, iter_->first);
-                    EdgePair conj = index_.ConjugatePair(edge_, iter_->first);
+                    float offset = index_.CalcOffset(edge_, e2);
+                    EdgePair conj = index_.ConjugatePair(edge_, e2);
                     if (iter_.Conj()) {
                         return std::make_pair(conj.first,
                             HistProxy<full>(index_.GetImpl(edge_, conj.first),
-                                            index_.GetImpl(iter_->first, conj.second),
+                                            index_.GetImpl(e2, conj.second),
                                             offset));
                     } else {
-                        return std::make_pair(iter_->first,
-                            HistProxy<full>(iter_->second, index_.GetImpl(conj), offset));
+                        return std::make_pair(e2, HistProxy<full>(iter_->second, index_.GetImpl(conj), offset));
                     }
                 } else {
-                    const auto& hist = iter_->second;
-                    const auto& conj_hist = index_.GetImpl(index_.ConjugatePair(edge_, iter_->first));
-                    return std::make_pair(iter_->first, HistProxy<full>(hist, conj_hist));
+                    return std::make_pair(e2, HistProxy<full>(iter_->second));
                 }
             }
 

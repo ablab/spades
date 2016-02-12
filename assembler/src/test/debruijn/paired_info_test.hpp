@@ -337,6 +337,41 @@ BOOST_AUTO_TEST_CASE(PairedInfoNeighbours) {
     BOOST_CHECK_EQUAL(GetNeighbourInfo(pi, 3), testF3);
 }
 
+BOOST_AUTO_TEST_CASE(PairedInfoDoubledInfo) {
+    MockGraph graph;
+    MockIndex pi(graph);
+
+    pi.Add(1, 3, RawPoint(1, 1));
+    pi.Add(1, 8, RawPoint(1, 1));
+    pi.Add(2, 4, RawPoint(1, 1));
+
+    EdgeSet test0;
+    EdgeSet neighbours;
+    //Check that neighbours don't repeat
+    for (auto ep : pi.Get(1)) {
+        BOOST_CHECK(neighbours.insert(ep.first).second);
+        BOOST_CHECK(!ep.second.empty());
+    }
+    BOOST_CHECK_EQUAL(neighbours, EdgeSet({3, 8}));
+    BOOST_CHECK_EQUAL(GetNeighbours(pi, 1), EdgeSet({3, 8}));
+    neighbours.clear();
+    for (auto ep : pi.Get(2)) {
+        BOOST_CHECK(neighbours.insert(ep.first).second);
+        BOOST_CHECK(!ep.second.empty());
+    }
+    BOOST_CHECK_EQUAL(neighbours, EdgeSet({4, 9}));
+    BOOST_CHECK_EQUAL(GetNeighbours(pi, 2), EdgeSet({4, 9}));
+    //Check that the info is full
+    EdgeDataSet testF1 = {{1, 3, RawPoint(1, 1)}, {1, 8, RawPoint(1, 1)}, {1, 3, RawPoint(-3, 1)}};
+    BOOST_CHECK_EQUAL(GetNeighbourInfo(pi, 1), testF1);
+    EdgeDataSet testF2 = {{2, 4, RawPoint(1, 1)}, {2, 4, RawPoint(-3, 1)}, {2, 9, RawPoint(-8, 1)}};
+    BOOST_CHECK_EQUAL(GetNeighbourInfo(pi, 2), testF2);
+    //Check for raw info
+    BOOST_CHECK_EQUAL(GetRawNeighbours(pi, 1), EdgeSet({3, 8}));
+    BOOST_CHECK_EQUAL(GetRawNeighbours(pi, 2), EdgeSet({4}));
+    BOOST_CHECK_EQUAL(GetRawNeighbours(pi, 4), test0);
+}
+
 BOOST_AUTO_TEST_CASE(PairedInfoRawData) {
     MockGraph graph;
     MockIndex pi(graph);
