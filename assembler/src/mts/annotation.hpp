@@ -86,14 +86,12 @@ class EdgeAnnotation {
                 answer.push_back(bin);
             }
         }
-        return bins;
+        return answer;
     }
 
     template<class BinCollection>
     void InnerStickAnnotation(EdgeId e, const BinCollection& bins) {
-        auto& annotation = edge_annotation_[e];
-        for (const bin_id& bin : bins)
-            annotation.insert(bin);
+        edge_annotation_[e].insert(bins.begin(), bins.end());
     }
 
 public:
@@ -136,8 +134,8 @@ public:
                 insert_all(all_bins, bins);
             }
             if (!bins.empty()) {
-                auto& target = annotation_map[GetBaseId(contig_annotation.first)];
-                target.insert(bins.begin(), bins.end());
+                annotation_map[GetBaseId(contig_annotation.first)]
+                                .insert(bins.begin(), bins.end());
             }
         }
 
