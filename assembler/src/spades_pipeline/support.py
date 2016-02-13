@@ -145,7 +145,7 @@ def which(program):
     if fpath:
         if is_exe(program):
             return program
-    else:
+    elif "PATH" in os.environ:
         for path in os.environ["PATH"].split(os.pathsep):
             path = path.strip('"')
             exe_file = os.path.join(path, program)
