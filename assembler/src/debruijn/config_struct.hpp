@@ -401,6 +401,7 @@ struct debruijn_config {
       size_t long_seq_limit; //400
       size_t pacbio_min_gap_quantity; //2
       size_t contigs_min_gap_quantity; //1
+      size_t max_contigs_gap_length; // 10000
     };
 
     struct DataSetData {

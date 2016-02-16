@@ -307,36 +307,43 @@ private:
             if (next_iter == storage.inner_index[e].end() || next_iter->end != cl_start->end) {
                 if (cur_len >= storage.min_gap_quantity && !storage.IsIgnored(make_pair(cl_start->start, cl_start->end))) {
                     vector<string> gap_variants;
+
                     for (auto j_iter = cl_start; j_iter != next_iter; j_iter++) {
                         string s = j_iter->gap_seq.str();
                         transform(s.begin(), s.end(), s.begin(), ::toupper);
                         gap_variants.push_back(s);
                     }
-                    map<EdgeId, pair<size_t, string> > tmp;
-                    string tmp_string;
-                    string s = g_.EdgeNucls(cl_start->start).Subseq(0, cl_start->edge_gap_start_position).str();
-                    if (consensus_gap_closing) {
-                        const ConsensusCore::PoaConsensus *pc = ConsensusCore::PoaConsensus::FindConsensus(gap_variants,
-                                                                                                               ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
-                        tmp_string = pc->Sequence();
-                    } else {
-                        tmp_string = gap_variants[0];
-                        if (gap_variants.size() > 1) {
+                    if (consensus_gap_closing || (gap_variants.size() > 0 && gap_variants[0].length() < cfg::get().pb.max_contigs_gap_length)) {
+                        map <EdgeId, pair<size_t, string>> tmp;
+                        string tmp_string;
+                        string s = g_.EdgeNucls(cl_start->start).Subseq(0, cl_start->edge_gap_start_position).str();
+                        if (consensus_gap_closing) {
+                            const ConsensusCore::PoaConsensus *pc = ConsensusCore::PoaConsensus::FindConsensus(
+                                    gap_variants,
+                                    ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
+                            tmp_string = pc->Sequence();
+                        } else {
+                            tmp_string = gap_variants[0];
+                            if (gap_variants.size() > 1) {
 
-                            stringstream ss;
-                            for (int i = 0; i < gap_variants.size(); i++)
-                                ss << gap_variants[i].length() << " ";
-                            INFO( gap_variants.size() << " gap closing variant for contigs, lengths: " << ss.str());
+                                stringstream ss;
+                                for (int i = 0; i < gap_variants.size(); i++)
+                                    ss << gap_variants[i].length() << " ";
+                                INFO(gap_variants.size() << " gap closing variant for contigs, lengths: " << ss.str());
+                            }
                         }
+
+                        DEBUG("consenus for " << g_.int_id(cl_start->start) << " and " << g_.int_id(cl_start->end) <<
+                                                                                          "found: ");
+                        DEBUG(tmp_string);
+                        s += tmp_string;
+                        s += g_.EdgeNucls(cl_start->end).Subseq(cl_start->edge_gap_end_position,
+                                                                g_.length(cl_start->end) + g_.k()).str();
+                        tmp.insert(make_pair(cl_start->end, make_pair(cur_len, s)));
+                        new_edges[cl_start->start] = tmp;
+                    } else {
+                        INFO ("Skipping gap of size " << gap_variants[0].length() << " multiplicity " << gap_variants.size());
                     }
-
-                    DEBUG("consenus for " << g_.int_id(cl_start->start) << " and " << g_.int_id(cl_start->end) << "found: ");
-                    DEBUG(tmp_string);
-                    s += tmp_string;
-                    s += g_.EdgeNucls(cl_start->end).Subseq(cl_start->edge_gap_end_position, g_.length(cl_start->end) + g_.k()).str();
-                    tmp.insert(make_pair(cl_start->end, make_pair(cur_len, s)));
-                    new_edges[cl_start->start] = tmp;
-
                 }
                 cl_start = next_iter;
                 cur_len = 0;
