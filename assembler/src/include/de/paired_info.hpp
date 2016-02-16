@@ -686,7 +686,7 @@ public:
      */
     HistProxy<false> RawGet(EdgeId e1, EdgeId e2) const {
         if (SwapConj(e1, e2))
-            return HistProxy<false>(HistProxy<false>::empty_hist(), GetImpl(e1, e2), CalcOffset(e1, e2));
+            return HistProxy<false>(HistProxy<false>::empty_hist(), GetImpl(e1, e2), CalcOffset(e2, e1));
         else
             return HistProxy<false>(GetImpl(e1, e2), HistProxy<false>::empty_hist(), 0);
     }

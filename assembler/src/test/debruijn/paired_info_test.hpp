@@ -387,6 +387,12 @@ BOOST_AUTO_TEST_CASE(PairedInfoRawData) {
     RawHistogram test3;
     test3.insert({-3, 1});
     BOOST_CHECK_EQUAL(pi.RawGet(2, 4).Unwrap(), test3);
+    RawHistogram test2b;
+    test2b.insert({-1, 1});
+    BOOST_CHECK_EQUAL(pi.RawGet(3, 1).Unwrap(), test2b);
+    RawHistogram test3b;
+    test3b.insert({4, 1});
+    BOOST_CHECK_EQUAL(pi.RawGet(4, 2).Unwrap(), test3b);
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoRawNeighbours) {
