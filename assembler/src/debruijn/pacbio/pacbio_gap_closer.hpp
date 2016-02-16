@@ -321,11 +321,11 @@ private:
                         tmp_string = pc->Sequence();
                     } else {
                         tmp_string = gap_variants[0];
-                        if (gap_variants.size() > 0) {
+                        if (gap_variants.size() > 1) {
 
                             stringstream ss;
                             for (int i = 0; i < gap_variants.size(); i++)
-                                ss << gap_variants.size() << " ";
+                                ss << gap_variants[i].length() << " ";
                             INFO( gap_variants.size() << " gap closing variant for contigs, lengths: " << ss.str());
                         }
                     }
