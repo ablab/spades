@@ -563,6 +563,7 @@ private:
                     return false;
                 }
                 if (!ConsistentPath(**it1, pos1[0], **it2, pos2[0])) {
+                    DEBUG("Checking inconsistency");
                     if (CheckInconsistence(**it1, pos1[0], **it2, pos2[0],
                                            cov_paths)) {
                         DEBUG("***not unique " << g_.int_id(e) << " len " << g_.length(e) << "***");
@@ -780,14 +781,19 @@ public:
         set<EdgeId> filtered_cands;
         map<EdgeId, BidirectionalPathSet > support_paths_ends;
         auto support_paths = cov_map_.GetCoveringPaths(path.Back());
+        DEBUG("Found " << support_paths.size() << " covering paths!!!");
         for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
             auto positions = (*it)->FindAll(path.Back());
+            (*it)->Print();
             for (size_t i = 0; i < positions.size(); ++i) {
                 if ((int) positions[i] < (int) (*it)->Size() - 1
                         && EqualBegins(path, (int) path.Size() - 1, **it,
-                                       positions[i], true)) {
+                                       positions[i], false)) {
+                    DEBUG("Checking unique path_back for " << (*it)->GetId());
 
                     if (UniqueBackPath(**it, positions[i])) {
+                        DEBUG("Success");
+
                         EdgeId next = (*it)->At(positions[i] + 1);
                         weights_cands[next] += (*it)->GetWeight();
                         filtered_cands.insert(next);

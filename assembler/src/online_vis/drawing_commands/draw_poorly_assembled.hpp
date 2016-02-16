@@ -357,7 +357,7 @@ protected:
                 continue;
             } 
 
-            vector<EdgeId> ref_path = mapper_ptr->FindReadPath(ref_mapping_path);
+            vector<EdgeId> ref_path = curr_env.path_finder().FindReadPath(ref_mapping_path);
             if (ref_path.empty()) {
                 DEBUG("Couldn't fix ref path");
                 ref_path = ref_mapping_path.simple_path();
