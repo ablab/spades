@@ -236,6 +236,7 @@ private:
     int closed_gaps;
     int not_unique_gaps;
     int chained_gaps;
+    bool consensus_gap_closing;
 public:
     void CloseGapsInGraph(map<EdgeId, EdgeId> &replacement) {
         for (auto iter = new_edges_.begin(); iter != new_edges_.end(); ++iter) {
@@ -312,11 +313,23 @@ private:
                         gap_variants.push_back(s);
                     }
                     map<EdgeId, pair<size_t, string> > tmp;
+                    string tmp_string;
                     string s = g_.EdgeNucls(cl_start->start).Subseq(0, cl_start->edge_gap_start_position).str();
+                    if (consensus_gap_closing) {
+                        const ConsensusCore::PoaConsensus *pc = ConsensusCore::PoaConsensus::FindConsensus(gap_variants,
+                                                                                                               ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
+                        tmp_string = pc->Sequence();
+                    } else {
+                        tmp_string = gap_variants[0];
+                        if (gap_variants.size() > 0) {
 
-                    const ConsensusCore::PoaConsensus* pc = ConsensusCore::PoaConsensus::FindConsensus(gap_variants,
-                                                                                                       ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
-                    string tmp_string = pc->Sequence();
+                            stringstream ss;
+                            for (int i = 0; i < gap_variants.size(); i++)
+                                ss << gap_variants.size() << " ";
+                            INFO( gap_variants.size() << " gap closing variant for contigs, lengths: " << ss.str());
+                        }
+                    }
+
                     DEBUG("consenus for " << g_.int_id(cl_start->start) << " and " << g_.int_id(cl_start->end) << "found: ");
                     DEBUG(tmp_string);
                     s += tmp_string;
@@ -332,8 +345,8 @@ private:
     }
 
 public:
-    PacbioGapCloser(Graph &g)
-            : g_(g) {
+    PacbioGapCloser(Graph &g, bool consensus_gap )
+            : g_(g), consensus_gap_closing(consensus_gap) {
         closed_gaps = 0;
         not_unique_gaps = 0;
         chained_gaps = 0;

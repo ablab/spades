@@ -100,11 +100,13 @@ void align_pacbio(conj_graph_pack &gp, int lib_id, bool make_additional_saves) {
     pacbio::StatsCounter stats;
     size_t min_gap_quantity = 2;
     size_t rtype = 0;
+    bool consensus_gap_closing = false;
     if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::PacBioReads || 
         cfg::get().ds.reads[lib_id].type() == io::LibraryType::SangerReads || 
         cfg::get().ds.reads[lib_id].type() == io::LibraryType::NanoporeReads) {
         min_gap_quantity = cfg::get().pb.pacbio_min_gap_quantity;
         rtype = 1;
+        consensus_gap_closing = true;
     } else {
         min_gap_quantity = cfg::get().pb.contigs_min_gap_quantity;
         rtype = 2;
@@ -148,7 +150,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id, bool make_additional_saves) {
     gaps.PadGapStrings();
     if (make_additional_saves)
         gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");
-    pacbio::PacbioGapCloser<Graph> gap_closer(gp.g);
+    pacbio::PacbioGapCloser<Graph> gap_closer(gp.g, consensus_gap_closing);
     gap_closer.ConstructConsensus(cfg::get().max_threads, gaps);
     gap_closer.CloseGapsInGraph(replacement);
     long_reads.ReplaceEdges(replacement);
