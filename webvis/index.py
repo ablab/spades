@@ -11,6 +11,8 @@ from urllib import quote, unquote
 import os
 from os import listdir
 from os.path import isfile, join
+import signal
+import sys
 #App imports
 from shellder import *
 #from dotjson import dot_to_json
@@ -84,6 +86,7 @@ def login():
         if name not in shellders:
             try:
                 launch = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)
+                _debug("Started an instance", launch.pid())
                 shellders[name] = launch
                 session["log"] = launch.get_output()
             except Exception as e:
@@ -101,7 +104,10 @@ def logout():
         name = session.pop("username")
         shellder = shellders.pop(name, None)
         if shellder is not None:
+            _debug("Stopping instance", shellder.pid())
             shellder.close()
+        else:
+            _debug("No launched instance")
         message = "You have been logged out."
     return flask.render_template("logout.html", message=message)
 
@@ -231,6 +237,14 @@ def ls():
         return err.strerror
 
 if __name__ == "__main__":
+    #We need to stop all online_vis instances manually on exit
+    def handler(signum, frame):
+        _debug("Stopping instances...")
+        for _, sh in shellders.items():
+            sh.close()
+            sys.exit(0)
+    signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGTERM, handler)
     config = ConfigParser()
     config.readfp(open("webvis.cfg"))
     env_path = config.get("server", "env")
