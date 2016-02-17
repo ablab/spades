@@ -507,7 +507,7 @@ meta
         main_iteration_only true
         max_bulge_length_coefficient    50.     ; max_bulge_length = max_bulge_length_coefficient * k
         max_coverage			1000000.0
-        max_relative_coverage       0.5     ; bulge_cov < this * not_bulge_cov
+        max_relative_coverage       2.     ; bulge_cov < this * not_bulge_cov
         max_delta           50
         max_relative_delta		0.1
     }
@@ -516,6 +516,7 @@ meta
     ; only in meta mode, inherits settings of final_br
     second_final_br
     {
+        max_relative_coverage   .5
         max_delta           1500
         max_number_edges        3
     }
