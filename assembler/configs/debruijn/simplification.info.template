@@ -479,7 +479,7 @@ meta
 	relative_ed
 	{
         enabled true
-        diff_mult  20.
+        diff_mult  10.
 	}
 
 	; bulge remover:
