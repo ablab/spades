@@ -114,7 +114,7 @@ long_reads {
         unique_edge_priority 1000.0
     }
 
-    coverage_base_rr {
+    contigs {
         filtering   0.0
         weight_priority    1.5
         unique_edge_priority 2.0
