@@ -15,6 +15,8 @@ import re
 import time
 import commands
 
+timeout = 10
+
 def get_memory_stats(pid):
     pstree = os.path.join(os.path.abspath(sys.path[0]), "./pstree")
     output = commands.getoutput(pstree + " " + str(pid))
@@ -57,11 +59,11 @@ while (os.path.exists("/proc/" + str(pid))):
   if (len(output.splitlines()) > 1):
     elapsed = output.splitlines()[1].strip()
   #print output
-  time.sleep(10)
+  time.sleep(timeout)
 #except:
 #   pass
 
 ###
 print >> sys.stderr, "Total stats:"
 print >> sys.stderr, "time elapsed: ", elapsed
-print >> sys.stderr, "max mem_used: ", max_mem_used / 1024, "M"
+print >> sys.stderr, "max mem_used: %db %dM %.1fG" % (max_mem_used * 1024, max_mem_used // 1024, max_mem_used // 1024 / 1024.0)
