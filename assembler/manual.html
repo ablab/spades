@@ -74,7 +74,7 @@ SPAdes comes in several separate modules:
         <li> <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/" target="_blank">MDA single-cell <i>E. coli</i></a>; 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp </li>
     </ul>
 <p>
-    We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately 30-40 minutes and takes up to 8Gb of RAM to perform read error correction on each data set. Assembly takes about 10 minutes for the <i>E. coli</i> isolate data set and 20 minutes for the <i>E. coli</i> single-cell data set. Both data sets require 9Gb of RAM (see notes below). MismatchCorrector runs for about an hour on standard <i>E. coli</i>, a bit more on the single-cell data set, and requires less than 1Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.
+    We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately 40-50 minutes and takes up to 8Gb of RAM to perform read error correction on each data set. Assembly takes about 20 minutes for the <i>E. coli</i> isolate data set and 30 minutes for the <i>E. coli</i> single-cell data set. Both data sets require about 9Gb of RAM (see notes below). MismatchCorrector runs for about 30 minutes on both data sets, and requires less than 2Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.
 
 <p>
     <table border="1" cellpadding="4" cellspacing="0">
@@ -96,42 +96,42 @@ SPAdes comes in several separate modules:
 
         <tr>
             <td> BayesHammer </td>
-            <td align="center"> 33m </td> 
+            <td align="center"> 43m </td>
+            <td align="center"> 7.7 </td>
+            <td align="center"> 8.4 </td>
+            <td align="center"> 53m </td>
             <td align="center"> 7.5 </td>
-            <td align="center"> 9 </td>
-            <td align="center"> 41m </td> 
-            <td align="center"> 7 </td>
-            <td align="center"> 10 </td>
+            <td align="center"> 8.8 </td>
         </tr>
 
         <tr>
             <td> SPAdes </td>
-            <td align="center"> 12m </td> 
-            <td align="center"> 9 </td>
-            <td align="center"> 1.5 </td>
-            <td align="center"> 22m </td> 
-            <td align="center"> 9 </td>
-            <td align="center"> 2.5 </td>
+            <td align="center"> 18m </td>
+            <td align="center"> 8.6 </td>
+            <td align="center"> 1.6 </td>
+            <td align="center"> 32m </td>
+            <td align="center"> 8.6 </td>
+            <td align="center"> 2.7 </td>
         </tr>
 
         <tr>
             <td> MismatchCorrector </td>
-            <td align="center"> 1h 7m </td> 
-            <td align="center"> 1 </td>
-            <td align="center"> 22 </td>
-            <td align="center"> 1h 18m </td> 
-            <td align="center"> 1 </td>
-            <td align="center"> 24 </td>
+            <td align="center"> 27m </td> 
+            <td align="center"> 1.8 </td>
+            <td align="center"> 21.8 </td>
+            <td align="center"> 31m </td> 
+            <td align="center"> 1.8 </td>
+            <td align="center"> 22.9 </td>
         </tr>
 
         <tr>
             <td> Whole pipeline </td>
-            <td align="center"> 1h 52m </td> 
-            <td align="center"> 9 </td>
-            <td align="center"> 24 </td>
-            <td align="center"> 2h 21m </td> 
-            <td align="center"> 9 </td>
-            <td align="center"> 26 </td>
+            <td align="center"> 1h 28m </td>
+            <td align="center"> 8.6 </td>
+            <td align="center"> 24.2 </td>
+            <td align="center"> 1h 56m </td>
+            <td align="center"> 8.6 </td>
+            <td align="center"> 25.5 </td>
         </tr>
     </table>
 
