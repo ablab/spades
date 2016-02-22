@@ -16,8 +16,6 @@
 
 namespace omnigraph {
 
-using std::vector;
-using std::set;
 template<class DataMaster>
 class ObservableGraph: public GraphCore<DataMaster> {
 public:
@@ -51,9 +49,9 @@ public:
         return HelperT(*this);
     }
 
-   const Applier& GetHandlerApplier() const {
-       return *applier_;
-   }
+    const Applier& GetHandlerApplier() const {
+        return *applier_;
+    }
 
     void AddActionHandler(Handler* action_handler) const;
 
@@ -81,31 +79,31 @@ public:
 
     bool VerifyAllDetached();
 
-   //smart iterators
-   template<typename Comparator>
-   SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin(
-           const Comparator& comparator, bool canonical_only = false) const {
-       return SmartVertexIterator<ObservableGraph, Comparator>(*this,
-                                                               comparator, canonical_only);
-   }
+    //smart iterators
+    template<typename Comparator>
+    SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin(
+            const Comparator& comparator, bool canonical_only = false) const {
+        return SmartVertexIterator<ObservableGraph, Comparator>(*this,
+                                                                comparator, canonical_only);
+    }
 
-   SmartVertexIterator<ObservableGraph> SmartVertexBegin(bool canonical_only = false) const {
-       return SmartVertexIterator<ObservableGraph>(*this, std::less<VertexId>(), canonical_only);
-   }
+    SmartVertexIterator<ObservableGraph> SmartVertexBegin(bool canonical_only = false) const {
+        return SmartVertexIterator<ObservableGraph>(*this, std::less<VertexId>(), canonical_only);
+    }
 
-   template<typename Comparator>
-   SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin(
-           const Comparator& comparator, bool canonical_only = false) const {
-       return SmartEdgeIterator<ObservableGraph, Comparator>(*this, comparator, canonical_only);
-   }
+    template<typename Comparator>
+    SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin(
+            const Comparator& comparator, bool canonical_only = false) const {
+        return SmartEdgeIterator<ObservableGraph, Comparator>(*this, comparator, canonical_only);
+    }
 
-   SmartEdgeIterator<ObservableGraph> SmartEdgeBegin(bool canonical_only = false) const {
-       return SmartEdgeIterator<ObservableGraph>(*this, std::less<EdgeId>(), canonical_only);
-   }
+    SmartEdgeIterator<ObservableGraph> SmartEdgeBegin(bool canonical_only = false) const {
+        return SmartEdgeIterator<ObservableGraph>(*this, std::less<EdgeId>(), canonical_only);
+    }
 
-   ConstEdgeIterator<ObservableGraph> ConstEdgeBegin(bool canonical_only = false) const {
-       return ConstEdgeIterator<ObservableGraph>(*this, canonical_only);
-   }
+    ConstEdgeIterator<ObservableGraph> ConstEdgeBegin(bool canonical_only = false) const {
+        return ConstEdgeIterator<ObservableGraph>(*this, canonical_only);
+    }
 
     void FireDeletePath(const std::vector<EdgeId>& edges_to_delete, const std::vector<VertexId>& vertices_to_delete) const;
 
@@ -128,6 +126,7 @@ public:
     void ForceDeleteVertex(VertexId v);
     
     using base::GetGraphIdDistributor;
+    using base::conjugate;
 
     EdgeId AddEdge(const EdgeData &data) {
         return AddEdge(data, GetGraphIdDistributor());
@@ -246,7 +245,7 @@ typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::Unsafe
 
 template<class DataMaster>
 std::vector<typename ObservableGraph<DataMaster>::EdgeId> ObservableGraph<DataMaster>::EdgesToDelete(const std::vector<EdgeId>& path) const {
-    set<EdgeId> edgesToDelete;
+    std::set<EdgeId> edgesToDelete;
     edgesToDelete.insert(path[0]);
     for (size_t i = 0; i + 1 < path.size(); i++) {
         EdgeId e = path[i + 1];
@@ -258,7 +257,7 @@ std::vector<typename ObservableGraph<DataMaster>::EdgeId> ObservableGraph<DataMa
 
 template<class DataMaster>
 vector<typename ObservableGraph<DataMaster>::VertexId> ObservableGraph<DataMaster>::VerticesToDelete(const vector<EdgeId>& path) const {
-    set<VertexId> verticesToDelete;
+    std::set<VertexId> verticesToDelete;
     for (size_t i = 0; i + 1 < path.size(); i++) {
         EdgeId e = path[i + 1];
         VertexId v = base::EdgeStart(e);
@@ -459,11 +458,14 @@ typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::MergeP
 
 template<class DataMaster>
 std::pair<typename ObservableGraph<DataMaster>::EdgeId, typename ObservableGraph<DataMaster>::EdgeId> ObservableGraph<DataMaster>::SplitEdge(EdgeId edge, size_t position) {
-    VERIFY_MSG(position > 0 && position < base::length(edge), "Edge length is " << base::length(edge) << " but split pos was " << position);;
-    std::pair<VertexData, std::pair<EdgeData, EdgeData> > newData = base::master().SplitData(base::data(edge), position);
+    bool sc_flag = (edge == conjugate(edge));
+    VERIFY_MSG(position > 0 && position < (sc_flag ? base::length(edge) / 2 + 1 : base::length(edge)),
+            "Edge length is " << base::length(edge) << " but split pos was " << position);
+    std::pair<VertexData, std::pair<EdgeData, EdgeData> > newData = base::master().SplitData(base::data(edge), position, sc_flag);
     VertexId splitVertex = base::HiddenAddVertex(newData.first);
     EdgeId new_edge1 = base::HiddenAddEdge(base::EdgeStart(edge), splitVertex, newData.second.first);
-    EdgeId new_edge2 = base::HiddenAddEdge(splitVertex, base::EdgeEnd(edge), newData.second.second);
+    EdgeId new_edge2 = base::HiddenAddEdge(splitVertex, sc_flag ? conjugate(splitVertex) : base::EdgeEnd(edge), newData.second.second);
+    VERIFY(!sc_flag || new_edge2 == conjugate(new_edge2))
     FireSplit(edge, new_edge1, new_edge2);
     FireDeleteEdge(edge);
     FireAddVertex(splitVertex);

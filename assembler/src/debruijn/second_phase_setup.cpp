@@ -38,9 +38,6 @@ void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
 	int code = rename(old_pe_contigs_filename.c_str(), new_pe_contigs_filename.c_str());
     VERIFY(code == 0);
 
-	io::ReadStreamList<io::SingleRead> additional_contigs;
-	additional_contigs.push_back(io::EasyStream(cfg::get().output_dir + "first_pe_contigs.fasta", true));
-
 	io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> untrusted_contigs;
 	untrusted_contigs.push_back_single(new_pe_contigs_filename);
 	untrusted_contigs.set_orientation(io::LibraryOrientation::Undefined);

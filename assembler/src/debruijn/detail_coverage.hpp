@@ -132,6 +132,9 @@ public:
         //todo maybe improve later
         SetCoverageSimilarToAverageFlanking(new_edge_1, old_edge);
         SetCoverageSimilarToAverageGlobal(new_edge_2, old_edge);
+        if (old_edge == g_.conjugate(old_edge)) {
+            SetCoverageSimilarToAverageGlobal(g_.conjugate(new_edge_1), old_edge);
+        }
     }
 
     virtual void HandleDelete(EdgeId e) {

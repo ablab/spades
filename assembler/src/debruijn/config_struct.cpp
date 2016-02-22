@@ -196,20 +196,23 @@ inline void load(estimation_mode& est_mode,
 }
 
 void load(debruijn_config::simplification::bulge_remover& br,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
+          boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
-  load(br.enabled                           , pt,   "enabled"					);
-  load(br.max_bulge_length_coefficient		, pt,   "max_bulge_length_coefficient");
+  load(br.enabled                           , pt,   "enabled"					  , complete);
+  load(br.main_iteration_only               , pt,   "main_iteration_only"	      , complete);
+  load(br.max_bulge_length_coefficient		, pt,   "max_bulge_length_coefficient", complete);
   load(br.max_additive_length_coefficient	, pt,
-       "max_additive_length_coefficient");
-  load(br.max_coverage,                     pt,     "max_coverage");
-  load(br.max_relative_coverage,            pt,     "max_relative_coverage");
-  load(br.max_delta,                        pt,     "max_delta");
-  load(br.max_relative_delta,               pt,     "max_relative_delta");
-  load(br.max_number_edges,                 pt,     "max_number_edges");
-  load(br.parallel,                         pt,     "parallel");
-  load(br.chunk_size,                       pt,     "chunk_size");
+       "max_additive_length_coefficient", complete);
+  load(br.max_coverage,                     pt,     "max_coverage", complete);
+  load(br.max_relative_coverage,            pt,     "max_relative_coverage", complete);
+  load(br.max_delta,                        pt,     "max_delta", complete);
+  load(br.max_relative_delta,               pt,     "max_relative_delta", complete);
+  load(br.max_number_edges,                 pt,     "max_number_edges", complete);
+  load(br.parallel,                         pt,     "parallel", complete);
+  load(br.buff_size,                        pt,     "buff_size", complete);
+  load(br.buff_cov_diff,                    pt,     "buff_cov_diff", complete);
+  load(br.buff_cov_rel_diff,                pt,     "buff_cov_rel_diff", complete);
 }
 
 void load(debruijn_config::simplification::topology_tip_clipper& ttc,
@@ -399,6 +402,8 @@ void load(debruijn_config::pacbio_processor& pb,
   load(pb.long_seq_limit, pt, "long_seq_limit");
   load(pb.pacbio_min_gap_quantity, pt, "pacbio_min_gap_quantity");
   load(pb.contigs_min_gap_quantity, pt, "contigs_min_gap_quantity");
+  load(pb.max_contigs_gap_length, pt, "max_contigs_gap_length");
+
 }
 
 
@@ -506,13 +511,9 @@ void load(debruijn_config::simplification& simp,
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
   load(simp.init_clean, pt, "init_clean", complete); // presimplification
-
-  simp.final_tc = simp.tc; // final tip clipper:
-  load(simp.final_tc, pt, "final_tc", false);
-  //final bulge removers:
-  simp.final_br = simp.br; // final bulge remover:
-  load(simp.final_br, pt, "final_br", false);
-  simp.second_final_br = simp.br; // second final bulge remover:
+  load(simp.final_tc, pt, "final_tc", complete);
+  load(simp.final_br, pt, "final_br", complete);
+  simp.second_final_br = simp.final_br; 
   load(simp.second_final_br, pt, "second_final_br", false);
 }
 
@@ -651,6 +652,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.rr_enable, pt, "rr_enable");
   load(cfg.two_step_rr, pt, "two_step_rr");
+  load(cfg.use_intermediate_contigs, pt, "use_intermediate_contigs");
   load(cfg.single_reads_rr, pt, "single_reads_rr");
   cfg.use_single_reads = false;
 
@@ -775,6 +777,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   if (cfg.ds.moleculo)
     load(cfg.simp, pt, "moleculo", false);
+
   if (cfg.diploid_mode)
     load(cfg.simp, pt, "diploid_simp", false);
 

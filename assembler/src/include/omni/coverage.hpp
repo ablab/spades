@@ -302,8 +302,15 @@ class CoverageIndex : public GraphActionHandler<Graph> {
 //		SetCoverage(newEdge1, coverage1);
 //		SetCoverage(newEdge2, coverage2);
         double avg_cov = coverage(old_edge);
-        SetRawCoverage(new_edge1, std::max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge1))));
-        SetRawCoverage(new_edge2, std::max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge2))));
+        if (old_edge == g_.conjugate(old_edge)) {
+            int raw1 = std::max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge1)));
+            SetRawCoverage(new_edge1, raw1);
+            SetRawCoverage(g_.conjugate(new_edge1), raw1);
+            SetRawCoverage(new_edge2, std::max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge2))));
+        } else {
+            SetRawCoverage(new_edge1, std::max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge1))));
+            SetRawCoverage(new_edge2, std::max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge2))));
+        }
     }
 
     void Save(EdgeId e, std::ostream& out) const {

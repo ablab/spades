@@ -167,6 +167,10 @@ public:
 	}
 
 	virtual void HandleSplit(EdgeId oldEdge, EdgeId newEdge1, EdgeId newEdge2) {
+	    if (oldEdge == this->g().conjugate(oldEdge)) {
+	        WARN("EdgesPositionHandler does not support self-conjugate splits");
+	        return;
+	    }
 		if (edges_positions_.count(oldEdge) != 0) {
 			auto contig_map = edges_positions_[oldEdge];
 			AddAndShiftEdgePositions(newEdge1, contig_map, 0);

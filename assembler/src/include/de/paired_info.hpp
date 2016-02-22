@@ -585,7 +585,7 @@ public:
     HistProxy<true> GetBack(EdgeId e1, EdgeId e2) const {
         return HistProxy<true>(GetImpl(e2, e1));
     }
-
+    
     /**
      * @brief Checks if an edge (or its conjugated twin) is consisted in the index.
      */
@@ -705,50 +705,6 @@ using PairedInfoBuffer = PairedIndex<Graph, RawHistogram, unordered_map>;
 
 template<class Graph>
 using PairedInfoBuffersT = PairedIndices<PairedInfoBuffer<Graph>>;
-
-/*
-//Debug
-template<typename T>
-std::ostream& operator<<(std::ostream& str, const PairedInfoBuffer<T>& pi) {
-    str << "--- PI of size " << pi.size() << "---\n";
-
-    for (auto i = pi.data_begin(); i != pi.data_end(); ++i) {
-        auto e1 = i->first;
-        str << e1 << " has: \n";
-
-        for (auto j = i->second.begin(); j != i->second.end(); ++j) {
-            str << "- " << j->first << ": ";
-            for (auto p : j->second)
-                str << p << ", ";
-            str << std::endl;
-        }
-    }
-
-    str << "-------\n";
-    return str;
-}
-
-//Debug
-template<typename T>
-std::ostream& operator<<(std::ostream& str, const PairedInfoIndexT<T>& pi) {
-    str << "--- PI of size " << pi.size() << "---\n";
-
-    for (auto i = pi.data_begin(); i != pi.data_end(); ++i) {
-        auto e1 = i->first;
-        str << e1 << " has: \n";
-
-        for (auto j = i->second.begin(); j != i->second.end(); ++j) {
-            str << "- " << j->first << ": ";
-            for (auto p : j->second)
-                str << p << ", ";
-            str << std::endl;
-        }
-    }
-
-    str << "-------\n";
-    return str;
-}
-*/
 
 }
 

@@ -9,7 +9,7 @@
 
 #include "adt/queue_iterator.hpp"
 #include "io/read_processor.hpp"
-#include "func.hpp"
+#include "pred.hpp"
 #include "action_handlers.hpp"
 #include "simple_tools.hpp"
 #include <boost/iterator/iterator_facade.hpp>
@@ -28,13 +28,13 @@ class SmartIterator : public GraphActionHandler<Graph> {
     bool add_new_;
     bool canonical_only_;
     //todo think of checking it in HandleAdd
-    std::shared_ptr<func::Predicate<ElementId>> add_condition_;
+    pred::TypedPredicate<ElementId> add_condition_;
 
 protected:
 
     void push(const ElementId& el) {
-        if ((!canonical_only_ || el <= this->g().conjugate(el))
-                && add_condition_->Check(el)) {
+        if ((!canonical_only_ || el <= this->g().conjugate(el)) &&
+            add_condition_(el)) {
             inner_it_.push(el);
         }
     }
@@ -58,8 +58,7 @@ protected:
 
     SmartIterator(const Graph &g, const std::string &name, bool add_new,
                   const Comparator& comparator, bool canonical_only,
-                  std::shared_ptr<func::Predicate<ElementId>> add_condition
-                                  = std::make_shared<func::AlwaysTrue<ElementId>>())
+                  pred::TypedPredicate<ElementId> add_condition = pred::AlwaysTrue<ElementId>())
             : base(g, name),
               inner_it_(comparator),
               add_new_(add_new),
@@ -121,8 +120,7 @@ public:
                      bool add_new = false,
                      const Comparator& comparator = Comparator(),
                      bool canonical_only = false,
-                     std::shared_ptr<func::Predicate<ElementId>> add_condition
-                                                       = std::make_shared<func::AlwaysTrue<ElementId>>())
+                     pred::TypedPredicate<ElementId> add_condition = pred::AlwaysTrue<ElementId>())
             : base(g, "SmartSet " + ToString(this), add_new, comparator, canonical_only, add_condition) {
     }
 
@@ -131,8 +129,7 @@ public:
                      bool add_new = false,
                      const Comparator& comparator = Comparator(),
                      bool canonical_only = false,
-                     std::shared_ptr<func::Predicate<ElementId>> add_condition
-                                                       = std::make_shared<func::AlwaysTrue<ElementId>>())
+                     pred::TypedPredicate<ElementId> add_condition = pred::AlwaysTrue<ElementId>())
             : SmartSetIterator(g, add_new, comparator, canonical_only, add_condition) {
         insert(begin, end);
     }

@@ -40,8 +40,10 @@ scaffold_correction_mode false
 ; enabled (1) or disabled (0) repeat resolution (former "paired_mode")
 rr_enable true
 
-; enables or disables two-step repeat resolution process (currently in meta mode only)
+; two-step pipeline (currently in meta mode only)
 two_step_rr true
+; enables/disables usage of intermediate contigs in two-step pipeline
+use_intermediate_contigs true
 
 ;use single reads for rr (all | only_single_libs | none )
 single_reads_rr only_single_libs
@@ -142,6 +144,7 @@ pacbio_processor
 	long_seq_limit 400
 	pacbio_min_gap_quantity 2
 	contigs_min_gap_quantity 1
+    max_contigs_gap_length 10000
 }
 ; consensus
 need_consensus  false ; output is VERY large(gigabytes).

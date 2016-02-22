@@ -133,7 +133,7 @@ void load(pe_config::AllLongReads& p, boost::property_tree::ptree const& pt,
     using config_common::load;
     load(p.pacbio_reads, pt, "pacbio_reads", complete);
     load(p.single_reads, pt, "single_reads", complete);
-    load(p.contigs, pt, "coverage_base_rr", complete);
+    load(p.contigs, pt, "contigs", complete);
 }
 
 void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,

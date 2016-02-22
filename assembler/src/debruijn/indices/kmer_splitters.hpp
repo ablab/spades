@@ -6,12 +6,6 @@
 //***************************************************************************
 
 #pragma once
-/*
- * kmer_splitters.hpp
- *
- *  Created on: May 24, 2013
- *      Author: anton
- */
 
 #include "io/io_helper.hpp"
 #include "storing_traits.hpp"
@@ -250,7 +244,7 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
   }
 
   INFO("Used " << counter << " reads. Maximum read length " << rl);
-  INFO("Average read length " << 1.0 * bases / counter);
+  INFO("Average read length " << double(bases) / double(counter));
   rs_ = { counter, rl, bases };
 
   return out;

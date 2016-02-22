@@ -25,38 +25,36 @@
 namespace omnigraph {
 
 template<class Graph>
-shared_ptr<func::Predicate<typename Graph::EdgeId>>
+pred::TypedPredicate<typename Graph::EdgeId>
 NecessaryECCondition(const Graph& g, size_t max_length, double max_coverage) {
-    return AddAlternativesPresenceCondition(g, func::And<typename Graph::EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
-                               make_shared<CoverageUpperBound<Graph>>(g, max_coverage)));
+    return AddAlternativesPresenceCondition(g, pred::And(LengthUpperBound<Graph>(g, max_length),
+                                                        CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
 template<class Graph>
 bool RemoveErroneousEdgesInCoverageOrder(Graph &g,
-                                         shared_ptr<func::Predicate<typename Graph::EdgeId>> removal_condition,
+                                         pred::TypedPredicate<typename Graph::EdgeId> removal_condition,
                                          double max_coverage,
                                          std::function<void(typename Graph::EdgeId)> removal_handler) {
-
     omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
                                                                    AddAlternativesPresenceCondition(g, removal_condition),
                                                                    removal_handler);
 
     return erroneous_edge_remover.Run(CoverageComparator<Graph>(g),
-                                          make_shared<CoverageUpperBound<Graph>>(g, max_coverage));
+                                      CoverageUpperBound<Graph>(g, max_coverage));
 }
 
 template<class Graph>
 bool RemoveErroneousEdgesInLengthOrder(Graph &g,
-                                       shared_ptr<func::Predicate<typename Graph::EdgeId>> removal_condition,
+                                       pred::TypedPredicate<typename Graph::EdgeId> removal_condition,
                                        size_t max_length,
                                        std::function<void(typename Graph::EdgeId)> removal_handler) {
-
     omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
                                                                    AddAlternativesPresenceCondition(g, removal_condition),
                                                                    removal_handler);
 
     return erroneous_edge_remover.Run(LengthComparator<Graph>(g),
-                                          make_shared<LengthUpperBound<Graph>>(g, max_length));
+                                      LengthUpperBound<Graph>(g, max_length));
 }
 
 template<class Graph>
@@ -217,11 +215,10 @@ class ThornCondition : public EdgeCondition<Graph> {
 };
 
 template<class Graph>
-class MultiplicityCountingCondition : public UniquenessPlausabilityCondition<
-        Graph> {
+class MultiplicityCountingCondition : public UniquenessPlausabilityCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef shared_ptr<Predicate<EdgeId>> EdgePredicate;
+    typedef pred::TypedPredicate<EdgeId> EdgePredicate;
     typedef UniquenessPlausabilityCondition<Graph> base;
 
     MultiplicityCounter<Graph> multiplicity_counter_;
@@ -238,7 +235,7 @@ public:
     }
 
     bool CheckPlausibility(EdgeId e, bool) const {
-        return plausiblity_condition_->Check(e);
+        return plausiblity_condition_(e);
     }
 
     MultiplicityCountingCondition(const Graph& g, size_t uniqueness_length,
@@ -269,10 +266,10 @@ private:
 	double relative_threshold_;
 	const AbstractFlankingCoverage<Graph> &flanking_coverage_;
 	EdgeRemover<Graph> edge_remover_;
-	shared_ptr<MultiplicityCountingCondition<Graph>> condition_;
+	MultiplicityCountingCondition<Graph> condition_;
 private:
 	void RemoveHiddenEC(EdgeId edge) {
-		if (this->g().length(edge) <= this->g().k())
+		if (this->g().length(edge) <= this->g().k() || (edge == this->g().conjugate(edge) && this->g().length(edge) <= 2 * this->g().k()))
 			edge_remover_.DeleteEdge(edge);
 		else {
 			auto split_result = this->g().SplitEdge(edge, this->g().k());
@@ -281,9 +278,9 @@ private:
 	}
 
 	void RemoveHiddenECWithNoCompression(EdgeId edge) {
-		if (this->g().length(edge) <= this->g().k())
+		if (this->g().length(edge) <= this->g().k() || (edge == this->g().conjugate(edge) && this->g().length(edge) <= 2 * this->g().k())) {
 			edge_remover_.DeleteEdgeWithNoCompression(edge);
-		else {
+		} else {
 			auto split_result = this->g().SplitEdge(edge, this->g().k());
 			edge_remover_.DeleteEdgeWithNoCompression(split_result.first);
 		}
@@ -321,7 +318,7 @@ private:
 			return false;
 		}
 		vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
-		return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1] && condition_->CheckUniqueness(this->g().GetUniqueIncomingEdge(v), false)) || this->g().length(this->g().GetUniqueIncomingEdge(v)) >= uniqueness_length_;
+		return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1] && condition_.CheckUniqueness(this->g().GetUniqueIncomingEdge(v), false)) || this->g().length(this->g().GetUniqueIncomingEdge(v)) >= uniqueness_length_;
 	}
 
 	bool ProcessEdge(EdgeId e) {
@@ -343,13 +340,42 @@ public:
               unreliability_threshold_(unreliability_threshold * ec_threshold), ec_threshold_(ec_threshold),
               relative_threshold_(relative_threshold), flanking_coverage_(flanking_coverage),
               edge_remover_(g, removal_handler),
-              condition_(new MultiplicityCountingCondition<Graph>(g, uniqueness_length,
-                              make_shared<func::AlwaysTrue<EdgeId>>())) {
-
+              condition_(g, uniqueness_length, pred::AlwaysTrue<EdgeId>()) {
     }
 
 private:
 	DECL_LOGGER("HiddenECRemover");
 };
 
+template<class Graph>
+class SelfConjugateDisruptor: public EdgeProcessingAlgorithm<Graph> {
+    typedef EdgeProcessingAlgorithm<Graph> base;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    EdgeRemover<Graph> edge_remover_;
+protected:
+
+    bool ProcessEdge(EdgeId e) override {
+        if (e == this->g().conjugate(e)) {
+            TRACE("Disrupting self-conjugate edge " << this->g().str(e));
+            EdgeId to_del = e;
+            size_t len = this->g().length(e);
+            if (len > 1) {
+                to_del = this->g().SplitEdge(e, len / 2).second;
+            }
+            edge_remover_.DeleteEdge(to_del);
+            return true;
+        }
+        return false;
+    }
+
+public:
+    SelfConjugateDisruptor(Graph& g,
+                           std::function<void(EdgeId)> removal_handler = 0)
+            : base(g, true), edge_remover_(g, removal_handler) {
+    }
+
+private:
+    DECL_LOGGER("SelfConjugateDisruptor");
+};
 }

@@ -228,6 +228,7 @@ public:
 	}
 
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1, EdgeId /*new_edge_2*/) {
+	    VERIFY(old_edge != g_.conjugate(old_edge));
 		VertexId start = g_.EdgeStart(old_edge);
 		VertexId end = g_.EdgeEnd(old_edge);
 		if (contains(start)) {
@@ -328,6 +329,7 @@ public:
 
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
 			EdgeId new_edge_2) {
+	    VERIFY(old_edge != br_comp_.g().conjugate(old_edge));
 		if (Contains(old_edge)) {
 			edges_.erase(old_edge);
 			vertices_.insert(br_comp_.g().EdgeEnd(new_edge_1));
@@ -474,6 +476,7 @@ public:
 
 	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
 			EdgeId /*new_edge_2*/) {
+	    VERIFY(old_edge != comp_.g().conjugate(old_edge));
 		if (comp_.contains(old_edge)) {
 			CountAndSetVertexColor(comp_.g().EdgeEnd(new_edge_1));
 		}

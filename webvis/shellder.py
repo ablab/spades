@@ -37,7 +37,7 @@ class Shellder:
             #pin = open(self.pipe_in, "r+")
             #pout = open(self.pipe_out, "w+")
             self.proc = subprocess.Popen(["./run", "rv"], cwd=self.dir,
-                stdin=self.cin, stdout=self.cout, stderr=self.cout)
+                 stdin=self.cin, stdout=self.cout, stderr=self.cout)
 
         #Launch the reader thread
         if self.reader is None or not self.reader.is_alive():
@@ -90,3 +90,6 @@ class Shellder:
         self.proc.kill()
         self.pout.close()
         self.pin.close()
+
+    def pid(self):
+        return self.proc.pid

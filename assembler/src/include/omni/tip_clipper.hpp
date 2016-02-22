@@ -146,18 +146,16 @@ public:
 };
 
 template<class Graph>
-shared_ptr<func::Predicate<typename Graph::EdgeId>> AddTipCondition(const Graph& g,
-                                                                  shared_ptr<func::Predicate<typename Graph::EdgeId>> condition) {
-    return func::And<typename Graph::EdgeId>(
-            make_shared<TipCondition<Graph>>(g),
-            condition);
+pred::TypedPredicate<typename Graph::EdgeId> AddTipCondition(const Graph& g,
+                                                            pred::TypedPredicate<typename Graph::EdgeId> condition) {
+    return pred::And(TipCondition<Graph>(g), condition);
 }
 
 template<class Graph>
-shared_ptr<func::Predicate<typename Graph::EdgeId>>
+pred::TypedPredicate<typename Graph::EdgeId>
 NecessaryTipCondition(const Graph& g, size_t max_length, double max_coverage) {
-    return AddTipCondition(g, func::And<typename Graph::EdgeId>(std::make_shared<LengthUpperBound<Graph>>(g, max_length),
-                               std::make_shared<CoverageUpperBound<Graph>>(g, max_coverage)));
+    return AddTipCondition(g, pred::And(LengthUpperBound<Graph>(g, max_length),
+                                       CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
 //template<class Graph>

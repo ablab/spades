@@ -175,7 +175,7 @@ class GraphSimplifier {
 
         changed |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov, simplif_cfg_.relative_ed);
 
-        if (simplif_cfg_.topology_simplif_enabled && cfg::get().main_iteration) {
+        if (simplif_cfg_.topology_simplif_enabled && info_container_.main_iteration()) {
             changed |= AllTopology();
             changed |= MaxFlowRemoveErroneousEdges(gp_.g, simplif_cfg_.mfec,
                                                    removal_handler_);
@@ -197,9 +197,21 @@ class GraphSimplifier {
                 algos);
 
         PushValid(
-                ParallelBRInstance(g_, simplif_cfg_.br,
+                TipClipperInstance(g_, simplif_cfg_.final_tc,
+                                   info_container_, removal_handler_),
+                "Final tip clipper",
+                algos);
+
+        PushValid(
+                BRInstance(g_, simplif_cfg_.br,
                                    info_container_, removal_handler_),
                 "Bulge remover",
+                algos);
+
+        PushValid(
+                BRInstance(g_, simplif_cfg_.final_br,
+                                   info_container_, removal_handler_),
+                "Final bulge remover",
                 algos);
 
         if (simplif_cfg_.topology_simplif_enabled) {
@@ -211,21 +223,9 @@ class GraphSimplifier {
         }
 
         //FIXME need better configuration
-        if (cfg::get().ds.meta && info_container_.main_iteration()) {
+        if (cfg::get().ds.meta) {
             PushValid(
-                    TipClipperInstance(g_, simplif_cfg_.final_tc,
-                                       info_container_, removal_handler_),
-                    "Final tip clipper",
-                    algos);
-
-            PushValid(
-                    ParallelBRInstance(g_, simplif_cfg_.final_br,
-                                       info_container_, removal_handler_),
-                    "Final bulge remover",
-                    algos);
-
-            PushValid(
-                    ParallelBRInstance(g_, simplif_cfg_.second_final_br,
+                    BRInstance(g_, simplif_cfg_.second_final_br,
                                        info_container_, removal_handler_),
                     "Yet another final bulge remover",
                     algos);
@@ -262,6 +262,10 @@ class GraphSimplifier {
 
             cnt_callback_.Report();
         }
+
+        INFO("Disrupting self-conjugate edges");
+        SelfConjugateDisruptor<Graph>(gp_.g, removal_handler_).Run();
+        cnt_callback_.Report();
     }
 
     //inline
@@ -323,7 +327,7 @@ public:
                 "Tip clipper",
                 algos);
         PushValid(
-                ParallelBRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_, simplif_cfg_.cycle_iter_count),
+                BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_, simplif_cfg_.cycle_iter_count),
                 "Bulge remover",
                 algos);
         PushValid(
@@ -404,13 +408,13 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     double low_threshold = gp.ginfo.trusted_bound();
     if (math::gr(low_threshold, 0.0)) {
         INFO("Removing all the edges having coverage " << low_threshold << " and less");
-
-        ParallelEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> cov_cleaner(gp.g,
-                                                std::make_shared<CoverageUpperBound<Graph>>(gp.g, low_threshold),
-                                                info_container.chunk_cnt(),
-                                                (HandlerF<Graph>)nullptr,
-                                                /*canonical_only*/true,
-                                                CoverageComparator<Graph>(gp.g));
+        ParallelEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>>
+                cov_cleaner(gp.g,
+                            CoverageUpperBound<Graph>(gp.g, low_threshold),
+                            info_container.chunk_cnt(),
+                            (HandlerF<Graph>)nullptr,
+                            /*canonical_only*/true,
+                            CoverageComparator<Graph>(gp.g));
         cov_cleaner.Run();
     }
 

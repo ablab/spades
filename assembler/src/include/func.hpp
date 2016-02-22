@@ -58,120 +58,12 @@ public:
 
 	virtual bool Check(T t) const = 0;
 
+    bool operator()(T t) const { return Check(t); }
+    
+
 	virtual ~Predicate() {
 	}
 };
 
-template<class T>
-class AdaptorPredicate: public Predicate<T> {
-    typedef std::function<bool(T)> pred_func_t;
-    pred_func_t pred_f_;
-public:
-    AdaptorPredicate(pred_func_t pred_f) :
-        pred_f_(pred_f) {
-    }
-
-    bool Check(T t) const {
-        return pred_f_(t);
-    }
-};
-
-//template<class T>
-//const shared_ptr<Predicate<T>> operator &&(const shared_ptr<Predicate<T>>& a, const shared_ptr<Predicate<T>>& b) {
-//	return AndOperator<T>(a, b);
-//}
-//
-//template<class T>
-//const shared_ptr<Predicate<T>> operator ||(const shared_ptr<Predicate<T>>& a, const shared_ptr<Predicate<T>>& b) {
-//	return OrOperator<T>(a, b);
-//}
-//
-//template<class T>
-//const shared_ptr<Predicate<T>> operator !(const shared_ptr<Predicate<T>>& a) {
-//	return NotOperator<T>(a);
-//}
-
-template<class T>
-const std::shared_ptr<Predicate<T>> And(const std::shared_ptr<Predicate<T>>& a,
-		const std::shared_ptr<Predicate<T>>& b) {
-	return std::make_shared<AndOperator<T>>(a, b);
-}
-
-template<class T>
-const std::shared_ptr<Predicate<T>> Or(const std::shared_ptr<Predicate<T>>& a,
-		const std::shared_ptr<Predicate<T>>& b) {
-	return std::make_shared<OrOperator<T>>(a, b);
-}
-
-template<class T>
-const std::shared_ptr<Predicate<T>> Not(const std::shared_ptr<Predicate<T>>& a) {
-	return std::make_shared<NotOperator<T>>(a);
-}
-
-template<class T>
-class AlwaysTrue: public Predicate<T> {
-public:
-
-	bool Check(T /*t*/) const {
-		return true;
-	}
-
-};
-
-template<class T>
-class AlwaysFalse: public Predicate<T> {
-public:
-
-	bool Check(T /*t*/) const {
-		return false;
-	}
-
-};
-
-template<class T>
-class NotOperator: public Predicate<T> {
-	std::shared_ptr<Predicate<T>> a_;
-
-public:
-	NotOperator(const std::shared_ptr<Predicate<T>>& a) :
-			a_(a) {
-	}
-
-	bool Check(T t) const {
-		return !a_->Check(t);
-	}
-};
-
-template<class T>
-class AndOperator: public Predicate<T> {
-	std::shared_ptr<Predicate<T>> a_;
-	std::shared_ptr<Predicate<T>> b_;
-
-public:
-	AndOperator(const std::shared_ptr<Predicate<T>>& a,
-			const std::shared_ptr<Predicate<T>>& b) :
-			a_(a), b_(b) {
-	}
-
-	bool Check(T t) const {
-		return a_->Check(t) && b_->Check(t);
-	}
-};
-
-template<class T>
-class OrOperator: public Predicate<T> {
-	std::shared_ptr<Predicate<T>> a_;
-	std::shared_ptr<Predicate<T>> b_;
-
-public:
-	OrOperator(const std::shared_ptr<Predicate<T>>& a,
-			const std::shared_ptr<Predicate<T>>& b) :
-			a_(a), b_(b) {
-	}
-
-	bool Check(T t) const {
-		return a_->Check(t) || b_->Check(t);
-	}
-};
 
 }

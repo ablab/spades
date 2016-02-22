@@ -21,6 +21,10 @@
 #include <unordered_map>
 #include <atomic>
 
+// Silence bogus gcc warnings
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+
 class ConcurrentDSU {
   struct atomic_set_t {
       uint64_t data  : 61;
@@ -286,5 +290,7 @@ private:
 
   mutable std::vector<std::atomic<atomic_set_t> > data_;
 };
+
+#pragma GCC diagnostic pop
 
 #endif /* CONCURRENTDSU_HPP_ */

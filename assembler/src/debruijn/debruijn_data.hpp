@@ -9,6 +9,7 @@
 #include <vector>
 #include <set>
 #include <cstring>
+#include "verify.hpp"
 #include "logger/logger.hpp"
 #include "sequence/sequence_tools.hpp"
 
@@ -106,7 +107,7 @@ public:
 
     const EdgeData MergeData(const std::vector<const EdgeData*>& to_merge, bool safe_merging = true) const;
 
-    std::pair<VertexData, std::pair<EdgeData, EdgeData>> SplitData(const EdgeData& edge, size_t position) const;
+    std::pair<VertexData, std::pair<EdgeData, EdgeData>> SplitData(const EdgeData& edge, size_t position, bool is_self_conj = false) const;
 
     EdgeData GlueData(const EdgeData&, const EdgeData& data2) const;
 
@@ -149,8 +150,16 @@ inline const DeBruijnEdgeData DeBruijnDataMaster::MergeData(const std::vector<co
     return EdgeData(MergeOverlappingSequences(ss, k_, safe_merging));
 }
 
-inline std::pair<DeBruijnVertexData, std::pair<DeBruijnEdgeData, DeBruijnEdgeData>> DeBruijnDataMaster::SplitData(const EdgeData& edge, size_t position) const {
-    return std::make_pair(VertexData(), std::make_pair(EdgeData(edge.nucls().Subseq(0, position + k_)), EdgeData(edge.nucls().Subseq(position))));
+inline std::pair<DeBruijnVertexData, std::pair<DeBruijnEdgeData, DeBruijnEdgeData>> DeBruijnDataMaster::SplitData(const EdgeData& edge,
+                                                                                                                  size_t position, 
+                                                                                                                  bool is_self_conj) const {
+    const Sequence& nucls = edge.nucls();
+    size_t end = nucls.size();
+    if (is_self_conj) {
+        VERIFY(position < end);
+        end -= position;
+    }
+    return std::make_pair(VertexData(), std::make_pair(EdgeData(edge.nucls().Subseq(0, position + k_)), EdgeData(nucls.Subseq(position, end))));
 }
 
 inline DeBruijnEdgeData DeBruijnDataMaster::GlueData(const DeBruijnEdgeData&, const DeBruijnEdgeData& data2) const {

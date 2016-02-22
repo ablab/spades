@@ -21,6 +21,7 @@ BOOST_FIXTURE_TEST_SUITE(graph_simplification_tests, TmpFolderFixture)
 debruijn_config::simplification::bulge_remover standard_br_config_generation() {
 	debruijn_config::simplification::bulge_remover br_config;
 	br_config.enabled = true;
+    br_config.main_iteration_only = false;
 	br_config.max_bulge_length_coefficient = 4;
 	br_config.max_additive_length_coefficient = 0;
 	br_config.max_coverage = 1000.;
@@ -28,8 +29,11 @@ debruijn_config::simplification::bulge_remover standard_br_config_generation() {
 	br_config.max_delta = 3;
 	br_config.max_number_edges = -1ul;
 	br_config.max_relative_delta = 0.1;
-	br_config.parallel = true;
-	br_config.chunk_size = 10000;
+    //fixme test both
+	br_config.parallel = false;//true;
+    br_config.buff_size = 10000;
+    br_config.buff_cov_diff = 2.;
+    br_config.buff_cov_rel_diff = 0.2;
 	return br_config;
 }
 
@@ -130,7 +134,7 @@ void DefaultClipTips(Graph& graph) {
 }
 
 void DefaultRemoveBulges(Graph& graph) {
-	debruijn::simplification::ParallelBRInstance(graph, standard_br_config(), standard_simplif_relevant_info(), (HandlerF<Graph>)nullptr)->Run();
+	debruijn::simplification::BRInstance(graph, standard_br_config(), standard_simplif_relevant_info(), (HandlerF<Graph>)nullptr)->Run();
 }
 
 BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {

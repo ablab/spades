@@ -782,6 +782,7 @@ inline size_t FirstNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
             cur_pos1--;
             cur_pos2--;
         } else {
+            DEBUG("Not Equal at " << cur_pos1 << " and " << cur_pos2);
             return cur_pos1;
         }
         if (cur_pos1 >= 0 && cur_pos2 >= 0) {
@@ -794,9 +795,11 @@ inline size_t FirstNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
             gap2 = path2.GapAt(cur_pos2);
         }
     }
+    DEBUG("Equal!!");
     return -1UL;
 }
 inline bool EqualBegins(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2, bool use_gaps) {
+    DEBUG("Checking for equal begins");
     return FirstNotEqualPosition(path1, pos1, path2, pos2, use_gaps) == -1UL;
 }
 

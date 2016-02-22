@@ -23,7 +23,7 @@ namespace debruijn_graph {
 class SimpleLongReadMapper: public SequenceMapperListener {
 public:
     SimpleLongReadMapper(conj_graph_pack& gp, PathStorage<conj_graph_pack::graph_t>& storage)
-            : gp_(gp), storage_(storage) {
+            : gp_(gp), storage_(storage), path_finder_(gp_.g) {
         mapper_ = MapperInstance(gp_);
     }
 
@@ -81,14 +81,17 @@ public:
 private:
 
     void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& read) {
-        std::vector<EdgeId> path = mapper_->FindReadPath(read);
-        buffer_storages_[thread_index].AddPath(path, 1, true);
+        vector<vector<EdgeId>> paths = path_finder_.FindReadPathWithGaps(read);
+        for(auto path : paths) {
+            buffer_storages_[thread_index].AddPath(path, 1, false);
+        }
     }
 
     conj_graph_pack& gp_;
     PathStorage<conj_graph_pack::graph_t>& storage_;
     std::shared_ptr<const NewExtendedSequenceMapper<conj_graph_pack::graph_t,
                     conj_graph_pack::index_t> > mapper_;
+    ReadPathFinder<conj_graph_pack::graph_t> path_finder_;
     std::vector<PathStorage<conj_graph_pack::graph_t> > buffer_storages_;
 };
 

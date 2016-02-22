@@ -25,7 +25,7 @@ void FillInterestingFromChunkIterators(const ItVec& chunk_iterators,
     for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
         for (auto it = chunk_iterators[i], end = chunk_iterators[i + 1]; it != end; ++it) {
             ElementType t = *it;
-            if (predicate.Check(t)) {
+            if (predicate(t)) {
                 of_interest[omp_get_thread_num()].push_back(t);
             }
         }
@@ -55,19 +55,17 @@ class SimpleInterestingElementFinder {
     typedef GraphEdgeIterator<Graph> EdgeIt;
 
     const Graph& g_;
-    std::shared_ptr<func::Predicate<ElementId>> condition_;
+    pred::TypedPredicate<ElementId> condition_;
 public:
 
     SimpleInterestingElementFinder(const Graph& g,
-                                std::shared_ptr<func::Predicate<ElementId>> condition =
-                                        make_shared<func::AlwaysTrue<ElementId>>()) :
-    g_(g), condition_(condition) {
-    }
+                                   pred::TypedPredicate<ElementId> condition = pred::AlwaysTrue<ElementId>())
+            :  g_(g), condition_(condition) {}
 
     template<class SmartIt>
     bool Run(SmartIt& interest) const {
         for (EdgeIt it = EdgeIt(g_, g_.begin()), end = EdgeIt(g_, g_.end()); it != end; ++it) {
-            if (condition_->Check(*it)) {
+            if (condition_(*it)) {
                 interest.push(*it);
             }
         }
@@ -80,21 +78,20 @@ class ParallelInterestingElementFinder {
     typedef GraphEdgeIterator<Graph> EdgeIt;
 
     const Graph& g_;
-    const std::shared_ptr<func::Predicate<ElementId>> condition_;
+    pred::TypedPredicate<ElementId> condition_;
     const size_t chunk_cnt_;
 public:
 
     ParallelInterestingElementFinder(const Graph& g,
-                                std::shared_ptr<func::Predicate<ElementId>> condition,
-                                size_t chunk_cnt) :
-                                    g_(g), condition_(condition), chunk_cnt_(chunk_cnt) {
-    }
+                                     pred::TypedPredicate<ElementId> condition,
+                                     size_t chunk_cnt)
+            : g_(g), condition_(condition), chunk_cnt_(chunk_cnt) {}
 
     template<class SmartIt>
     bool Run(SmartIt& it) const {
         TRACE("Looking for interesting elements");
         TRACE("Splitting graph into " << chunk_cnt_ << " chunks");
-        FillInterestingFromChunkIterators(IterationHelper<Graph, ElementId>(g_).Chunks(chunk_cnt_), it, *condition_);
+        FillInterestingFromChunkIterators(IterationHelper<Graph, ElementId>(g_).Chunks(chunk_cnt_), it, condition_);
         TRACE("Found " << it.size() << " interesting elements");
         return false;
     }
@@ -107,26 +104,18 @@ class PersistentAlgorithmBase {
     Graph& g_;
 protected:
 
-    PersistentAlgorithmBase(Graph& g) : g_(g) {
-    }
+    PersistentAlgorithmBase(Graph& g) : g_(g) {}
 
-    Graph& g() {
-        return g_;
-    }
-
-    const Graph& g() const {
-        return g_;
-    }
-
+    Graph& g() { return g_; }
+    const Graph& g() const { return g_; }
 public:
     virtual ~PersistentAlgorithmBase() {}
-
     virtual bool Run(bool force_primary_launch = false) = 0;
 };
 
 //todo use add_condition in it_
 template<class Graph, class ElementId, class InterestingElementFinder,
-                class Comparator = std::less<ElementId>>
+         class Comparator = std::less<ElementId>>
 class PersistentProcessingAlgorithm : public PersistentAlgorithmBase<Graph> {
     InterestingElementFinder interest_el_finder_;
 
@@ -140,13 +129,9 @@ class PersistentProcessingAlgorithm : public PersistentAlgorithmBase<Graph> {
 protected:
 
     virtual bool Process(ElementId el) = 0;
+    virtual bool Proceed(ElementId /*el*/) const { return true; }
 
-    virtual bool Proceed(ElementId /*el*/) const {
-        return true;
-    }
-
-    virtual void PrepareIteration(size_t /*it_cnt*/, size_t /*total_it_estimate*/) {
-    }
+    virtual void PrepareIteration(size_t /*it_cnt*/, size_t /*total_it_estimate*/) {}
 
 public:
 
@@ -210,7 +195,7 @@ public:
 };
 
 template<class Graph, class InterestingEdgeFinder,
-            class Comparator = std::less<typename Graph::EdgeId>>
+         class Comparator = std::less<typename Graph::EdgeId>>
 class PersistentEdgeRemovingAlgorithm : public PersistentProcessingAlgorithm<Graph,
                                                                             typename Graph::EdgeId,
                                                                             InterestingEdgeFinder, Comparator> {
@@ -250,33 +235,32 @@ protected:
 };
 
 template<class Graph, class InterestingEdgeFinder,
-            class Comparator = std::less<typename Graph::EdgeId>>
+         class Comparator = std::less<typename Graph::EdgeId>>
 class ConditionEdgeRemovingAlgorithm : public PersistentEdgeRemovingAlgorithm<Graph,
-                                                                            InterestingEdgeFinder, Comparator> {
+                                                                              InterestingEdgeFinder, Comparator> {
     typedef typename Graph::EdgeId EdgeId;
     typedef PersistentEdgeRemovingAlgorithm<Graph, InterestingEdgeFinder, Comparator> base;
-    std::shared_ptr<func::Predicate<EdgeId>> remove_condition_;
+    pred::TypedPredicate<EdgeId> remove_condition_;
 protected:
 
     bool ShouldRemove(EdgeId e) const override {
-        return remove_condition_->Check(e);
+        return remove_condition_(e);
     }
 
 public:
     ConditionEdgeRemovingAlgorithm(Graph& g,
-                                    const InterestingEdgeFinder& interest_edge_finder,
-                                    std::shared_ptr<func::Predicate<EdgeId>> remove_condition,
-                                    std::function<void(EdgeId)> removal_handler = boost::none,
-                                    bool canonical_only = false,
-                                    const Comparator& comp = Comparator(),
-                                    bool track_changes = true)
+                                   const InterestingEdgeFinder& interest_edge_finder,
+                                   pred::TypedPredicate<EdgeId> remove_condition,
+                                   std::function<void(EdgeId)> removal_handler = boost::none,
+                                   bool canonical_only = false,
+                                   const Comparator& comp = Comparator(),
+                                   bool track_changes = true)
             : base(g, interest_edge_finder,
                    removal_handler,
                    canonical_only, comp, track_changes),
                    remove_condition_(remove_condition) {
 
     }
-
 };
 
 template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
@@ -288,12 +272,12 @@ class ParallelEdgeRemovingAlgorithm : public ConditionEdgeRemovingAlgorithm<Grap
 
 public:
     ParallelEdgeRemovingAlgorithm(Graph& g,
-                                    std::shared_ptr<func::Predicate<EdgeId>> remove_condition,
-                                    size_t chunk_cnt,
-                                    std::function<void(EdgeId)> removal_handler = boost::none,
-                                    bool canonical_only = false,
-                                    const Comparator& comp = Comparator(),
-                                    bool track_changes = true)
+                                  pred::TypedPredicate<EdgeId> remove_condition,
+                                  size_t chunk_cnt,
+                                  std::function<void(EdgeId)> removal_handler = boost::none,
+                                  bool canonical_only = false,
+                                  const Comparator& comp = Comparator(),
+                                  bool track_changes = true)
             : base(g,
                    ParallelInterestingElementFinder<Graph>(g, remove_condition, chunk_cnt),
                    remove_condition, removal_handler,

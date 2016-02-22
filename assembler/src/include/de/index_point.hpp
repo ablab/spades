@@ -8,6 +8,8 @@
 #pragma once
 
 #include <btree/btree_set.h>
+#include "adt/flat_set.hpp"
+#include "adt/small_pod_vector.hpp"
 
 namespace omnigraph {
 
@@ -56,12 +58,13 @@ private:
     float d_;
 };
 
-struct RawPoint {
+struct __attribute__((aligned(8))) RawPoint {
     DEDistance d;
     mutable DEWeight weight;
 
     RawPoint()
-            : d(0.0), weight(0.0) {}
+            : RawPoint(0, 0) { }
+    
 
     RawPoint(DEDistance distance, DEWeight weight)
             : d(distance), weight(weight) {}
@@ -80,13 +83,6 @@ struct RawPoint {
         ss << "Point: " << " distance = " << this->d
            << ", weight = " << this->weight;
         return ss.str();
-    }
-
-    RawPoint& operator=(const RawPoint& rhs) {
-        using namespace math;
-        update_value_if_needed<DEDistance>(d, rhs.d);
-        update_value_if_needed<DEWeight>(weight, rhs.weight);
-        return *this;
     }
 
     bool operator<(const RawPoint& rhs) const {
@@ -121,25 +117,15 @@ struct RawPoint {
 
 struct Point : public RawPoint {
     DEDistance var;
+
     Point()
-            : var(0.0) {}
+            : Point(0, 0, 0) { }
 
     Point(DEDistance distance, DEWeight weight, DEDistance variance)
             : RawPoint(distance, weight), var(variance) {}
 
-    Point(const Point &rhs)
-            : RawPoint(rhs), var(rhs.var) {}
-
     Point(const RawPoint &rhs)
             : RawPoint(rhs), var(0.0) {}
-
-    Point& operator=(const Point& rhs) {
-        using namespace math;
-        update_value_if_needed<DEDistance>(d, rhs.d);
-        update_value_if_needed<DEWeight>(weight, rhs.weight);
-        update_value_if_needed<DEDistance>(var, rhs.var);
-        return *this;
-    }
 
     bool operator<(const Point& rhs) const {
         return math::ls(this->d, rhs.d);
@@ -196,10 +182,9 @@ class Histogram {
     typedef Histogram<Point> self_type;
     typedef typename std::less<Point> key_compare;
     typedef typename std::allocator<Point> allocator_type;
-    typedef typename btree::btree<btree::btree_set_params<Point, key_compare, allocator_type, 1024> > Tree;
+    typedef typename adt::flat_set<Point, key_compare, adt::SmallPODVector> Tree;
 
   public:
-    typedef typename Tree::params_type params_type;
     typedef typename Tree::key_type key_type;
     typedef typename Tree::value_type value_type;
     typedef typename Tree::pointer pointer;
@@ -213,20 +198,20 @@ class Histogram {
     typedef typename Tree::reverse_iterator reverse_iterator;
     typedef typename Tree::const_reverse_iterator const_reverse_iterator;
 
+    enum {
+        kValueSize = sizeof(Point)
+    };
+    
  public:
     // Default constructor.
-    Histogram()
-            : tree_(key_compare(), allocator_type()) {
-    }
+    Histogram() = default;
 
     // Copy constructor.
     Histogram(const self_type &x)
-            : tree_(x.tree_) {
-    }
+            : tree_(x.tree_) {}
 
     template <class InputIterator>
-    Histogram(InputIterator b, InputIterator e)
-            : tree_(key_compare(), allocator_type()) {
+    Histogram(InputIterator b, InputIterator e) {
         insert(b, e);
     }
 
@@ -251,35 +236,26 @@ class Histogram {
     // Utility routines.
     void clear() { tree_.clear(); }
     void swap(self_type &x) { tree_.swap(x.tree_); }
-    void dump(std::ostream &os) const { tree_.dump(os); }
-    void verify() const { tree_.verify(); }
 
     // Size routines.
     size_type size() const { return tree_.size(); }
     size_type max_size() const { return tree_.max_size(); }
     bool empty() const { return tree_.empty(); }
-    size_type height() const { return tree_.height(); }
-    size_type internal_nodes() const { return tree_.internal_nodes(); }
-    size_type leaf_nodes() const { return tree_.leaf_nodes(); }
-    size_type nodes() const { return tree_.nodes(); }
     size_type bytes_used() const { return tree_.bytes_used(); }
-    static double average_bytes_per_value() { return Tree::average_bytes_per_value(); }
-    double fullness() const { return tree_.fullness(); }
-    double overhead() const { return tree_.overhead(); }
 
     // Lookup routines.
-    iterator find(const key_type &key) { return tree_.find_unique(key); }
-    const_iterator find(const key_type &key) const { return tree_.find_unique(key); }
-    size_type count(const key_type &key) const { return tree_.count_unique(key); }
+    iterator find(const key_type &key) { return tree_.find(key); }
+    const_iterator find(const key_type &key) const { return tree_.find(key); }
+    size_type count(const key_type &key) const { return tree_.count(key); }
 
     // Insertion routines.
-    std::pair<iterator,bool> insert(const value_type &x) { return tree_.insert_unique(x); }
-    iterator insert(iterator position, const value_type &x) { return tree_.insert_unique(position, x); }
+    std::pair<iterator,bool> insert(const value_type &x) { return tree_.insert(x); }
+    iterator insert(iterator position, const value_type &x) { return tree_.insert(position, x); }
     template <typename InputIterator>
-    void insert(InputIterator b, InputIterator e) { tree_.insert_unique(b, e); }
+    void insert(InputIterator b, InputIterator e) { tree_.insert(b, e); }
 
     // Deletion routines.
-    int erase(const key_type &key) { return tree_.erase_unique(key); }
+    size_type erase(const key_type &key) { return tree_.erase(key); }
     // Erase the specified iterator from the btree. The iterator must be valid
     // (i.e. not equal to end()).  Return an iterator pointing to the node after
     // the one that was erased (or end() if none exists).
@@ -357,8 +333,8 @@ class Histogram {
 
 template <typename T>
 inline std::ostream& operator<<(std::ostream &os, const Histogram<T> &b) {
-  b.dump(os);
-  return os;
+    os << b;
+    return os;
 }
 
 typedef Histogram<RawPoint> RawHistogram;
@@ -467,4 +443,11 @@ inline bool IsSymmetric(PairInfo<EdgeId> const& pi) {
 
 }
 
+}
+
+namespace std {
+template<>
+class numeric_limits<omnigraph::de::DEDistance> : public numeric_limits<float> {};
+template<>
+class numeric_limits<omnigraph::de::DEWeight> : public numeric_limits<float> {};
 }

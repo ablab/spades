@@ -51,7 +51,7 @@ template<class Graph>
 using AlgoPtr = std::shared_ptr<omnigraph::PersistentAlgorithmBase<Graph>>;
 
 template<class Graph>
-using EdgeConditionT = std::shared_ptr<func::Predicate<typename Graph::EdgeId>>;
+using EdgeConditionT = pred::TypedPredicate<typename Graph::EdgeId>;
 
 template<class Graph>
 class ConditionParser {
@@ -105,8 +105,8 @@ private:
         }
     }
 
-    std::shared_ptr<Predicate<EdgeId>> ParseCondition(size_t& min_length_bound,
-                                                 double& min_coverage_bound) {
+    pred::TypedPredicate<EdgeId> ParseCondition(size_t& min_length_bound,
+                                               double& min_coverage_bound) {
         if (next_token_ == "tc_lb") {
             double length_coeff = boost::lexical_cast<double>(ReadNext());
 
@@ -117,7 +117,7 @@ private:
             DEBUG("Length bound " << length_bound);
 
             RelaxMin(min_length_bound, length_bound);
-            return std::make_shared<LengthUpperBound<Graph>>(g_, length_bound);
+            return LengthUpperBound<Graph>(g_, length_bound);
         } else if (next_token_ == "to_ec_lb") {
             double length_coeff = boost::lexical_cast<double>(ReadNext());
 
@@ -129,7 +129,7 @@ private:
             DEBUG("Length bound " << length_bound);
 
             RelaxMin(min_length_bound, length_bound);
-            return std::make_shared<LengthUpperBound<Graph>>(g_, length_bound);
+            return LengthUpperBound<Graph>(g_, length_bound);
         } else if (next_token_ == "ec_lb") {
             size_t length_coeff = boost::lexical_cast<size_t>(ReadNext());
 
@@ -141,20 +141,20 @@ private:
             DEBUG("Length bound " << length_bound);
 
             RelaxMin(min_length_bound, length_bound);
-            return std::make_shared<LengthUpperBound<Graph>>(g_, length_bound);
+            return LengthUpperBound<Graph>(g_, length_bound);
         } else if (next_token_ == "lb") {
             size_t length_bound = boost::lexical_cast<size_t>(ReadNext());
 
             DEBUG("Creating length bound. Value " << length_bound);
 
             RelaxMin(min_length_bound, length_bound);
-            return std::make_shared<LengthUpperBound<Graph>>(g_, length_bound);
+            return LengthUpperBound<Graph>(g_, length_bound);
         } else if (next_token_ == "cb") {
             ReadNext();
             double cov_bound = GetCoverageBound();
             DEBUG("Creating coverage upper bound " << cov_bound);
             RelaxMin(min_coverage_bound, cov_bound);
-            return std::make_shared<CoverageUpperBound<Graph>>(g_, cov_bound);
+            return CoverageUpperBound<Graph>(g_, cov_bound);
         } else if (next_token_ == "icb") {
             VERIFY(iteration_cnt_ != -1ul && curr_iteration_ != -1ul);
             ReadNext();
@@ -162,35 +162,32 @@ private:
             cov_bound = cov_bound / (double) iteration_cnt_ * (double) (curr_iteration_ + 1);
             DEBUG("Creating iterative coverage upper bound " << cov_bound);
             RelaxMin(min_coverage_bound, cov_bound);
-            return std::make_shared<CoverageUpperBound<Graph>>(g_, cov_bound);
+            return CoverageUpperBound<Graph>(g_, cov_bound);
         } else if (next_token_ == "rctc") {
             ReadNext();
             DEBUG("Creating relative cov tip cond " << next_token_);
-            return make_shared<RelativeCoverageTipCondition<Graph>>(
-                g_, boost::lexical_cast<double>(next_token_));
+            return RelativeCoverageTipCondition<Graph>(g_, boost::lexical_cast<double>(next_token_));
         } else if (next_token_ == "disabled") {
             DEBUG("Creating disabling condition");
-            return std::make_shared<func::AlwaysFalse<EdgeId>>();
+            return pred::AlwaysFalse<EdgeId>();
         } else if (next_token_ == "mmm") {
             ReadNext();
             DEBUG("Creating max mismatches cond " << next_token_);
-            return std::make_shared <MismatchTipCondition<Graph>>(g_, lexical_cast<size_t>(next_token_));
+            return MismatchTipCondition<Graph>(g_, lexical_cast<size_t>(next_token_));
         } else {
             VERIFY(false);
-            return std::make_shared<func::AlwaysTrue<EdgeId>>();
+            return pred::AlwaysTrue<EdgeId>();
         }
     }
 
-    std::shared_ptr<func::Predicate<EdgeId>> ParseConjunction(size_t& min_length_bound,
+    pred::TypedPredicate<EdgeId> ParseConjunction(size_t& min_length_bound,
                                                    double& min_coverage_bound) {
-        std::shared_ptr<func::Predicate<EdgeId>> answer =
-                std::make_shared<func::AlwaysTrue<EdgeId>>();
+        pred::TypedPredicate<EdgeId> answer = pred::AlwaysTrue<EdgeId>();
         VERIFY(next_token_ == "{");
         ReadNext();
         while (next_token_ != "}") {
-            answer = make_shared<AndOperator<EdgeId>>(
-                answer,
-                ParseCondition(min_length_bound, min_coverage_bound));
+            answer = pred::And(answer,
+                              ParseCondition(min_length_bound, min_coverage_bound));
             ReadNext();
         }
         return answer;
@@ -218,17 +215,15 @@ public:
         ReadNext();
     }
 
-    std::shared_ptr<func::Predicate<EdgeId>> operator()() {
+    pred::TypedPredicate<EdgeId> operator()() {
         DEBUG("Parsing");
-        std::shared_ptr<Predicate<EdgeId>> answer = std::make_shared<NotOperator<EdgeId>>(
-            make_shared<AlwaysTrue<EdgeId>>());
+        pred::TypedPredicate<EdgeId> answer = pred::AlwaysFalse<EdgeId>();
         VERIFY_MSG(next_token_ == "{", "Expected \"{\", but next token was " << next_token_);
         while (next_token_ == "{") {
             size_t min_length_bound = numeric_limits<size_t>::max();
             double min_coverage_bound = numeric_limits<double>::max();
-            answer = make_shared<OrOperator<EdgeId>>(
-                answer,
-                ParseConjunction(min_length_bound, min_coverage_bound));
+            answer = pred::Or(answer,
+                             ParseConjunction(min_length_bound, min_coverage_bound));
             RelaxMax(max_length_bound_, min_length_bound);
             RelaxMax(max_coverage_bound_, min_coverage_bound);
             ReadNext();
@@ -338,13 +333,13 @@ HandlerF<typename gp_t::graph_t> WrapWithProjectionCallback(
 
 template<class Graph, class InterestingEdgeFinder>
 class LowCoverageEdgeRemovingAlgorithm : public PersistentEdgeRemovingAlgorithm<Graph,
-                                                                            InterestingEdgeFinder, CoverageComparator<Graph>> {
+                                                                                InterestingEdgeFinder, CoverageComparator<Graph>> {
     typedef typename Graph::EdgeId EdgeId;
     typedef PersistentEdgeRemovingAlgorithm<Graph, InterestingEdgeFinder, CoverageComparator<Graph>> base;
     SimplifInfoContainer simplif_info_;
     std::string condition_str_;
-    std::shared_ptr<func::Predicate<EdgeId>> remove_condition_;
-    std::shared_ptr<func::Predicate<EdgeId>> proceed_condition_;
+    pred::TypedPredicate<EdgeId> remove_condition_;
+    pred::TypedPredicate<EdgeId> proceed_condition_;
 
 protected:
 
@@ -352,20 +347,18 @@ protected:
         TRACE("Preparing iteration " << it_cnt << " out of total estimate " << total_it_estimate);
         ConditionParser<Graph> parser(this->g(), condition_str_,
                                       simplif_info_, it_cnt, total_it_estimate);
-        remove_condition_ =
-                omnigraph::AddAlternativesPresenceCondition(this->g(), parser());
+        remove_condition_ = omnigraph::AddAlternativesPresenceCondition(this->g(), parser());
         TRACE("Updated remove condition");
-        proceed_condition_ =
-                std::make_shared<CoverageUpperBound<Graph>>(this->g(), parser.max_coverage_bound());
+        proceed_condition_ = CoverageUpperBound<Graph>(this->g(), parser.max_coverage_bound());
         TRACE("Updated proceed condition up to coverage " << parser.max_coverage_bound());
     }
 
     bool Proceed(EdgeId e) const override {
-        return proceed_condition_->Check(e);
+        return proceed_condition_(e);
     }
 
     bool ShouldRemove(EdgeId e) const override {
-        return remove_condition_->Check(e);
+        return remove_condition_(e);
     }
 
 public:
@@ -378,21 +371,22 @@ public:
                                     bool track_changes = true,
                                     size_t total_iteration_estimate = -1ul)
             : base(g, interest_edge_finder,
-                       removal_handler,
-                       canonical_only,
-                       CoverageComparator<Graph>(g),
-                       track_changes,
-                       total_iteration_estimate),
-               simplif_info_(simplif_info),
-               condition_str_(condition_str) {
-    }
+                   removal_handler,
+                   canonical_only,
+                   CoverageComparator<Graph>(g),
+                   track_changes,
+                   total_iteration_estimate),
+            simplif_info_(simplif_info),
+            condition_str_(condition_str),
+            remove_condition_(pred::AlwaysFalse<EdgeId>()),
+            proceed_condition_(pred::AlwaysTrue<EdgeId>()) {}
 private:
     DECL_LOGGER("LowCoverageEdgeRemovingAlgorithm");
 };
 
 template<class Graph>
 AlternativesAnalyzer<Graph> ParseBRConfig(const Graph& g,
-                                                             const debruijn_config::simplification::bulge_remover& config) {
+                                          const debruijn_config::simplification::bulge_remover& config) {
     size_t max_length = LengthThresholdFinder::MaxBulgeLength(
         g.k(), config.max_bulge_length_coefficient,
         config.max_additive_length_coefficient);
@@ -412,13 +406,13 @@ AlgoPtr<Graph> SelfConjugateEdgeRemoverInstance(Graph &g, const string& conditio
                 const SimplifInfoContainer& info,
                 HandlerF<Graph> removal_handler = 0) {
     ConditionParser<Graph> parser(g, condition_str, info);
-    auto condition = func::And<typename Graph::EdgeId>(make_shared<SelfConjugateCondition<Graph>>(g), parser());
+    auto condition = pred::And(SelfConjugateCondition<Graph>(g), parser());
     
     return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g,
-                                        condition,
-                                        info.chunk_cnt(),
-                                        removal_handler,
-                                        /*canonical_only*/true);
+                                                                  condition,
+                                                                  info.chunk_cnt(),
+                                                                  removal_handler,
+                                                                  /*canonical_only*/true);
 }
 
 template<class Graph>
@@ -543,11 +537,9 @@ bool ClipComplexTips(Graph& g, debruijn_config::simplification::complex_tip_clip
 
 template<class Graph>
 AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
-                                         debruijn_config::simplification::isolated_edges_remover ier,
-                                         const SimplifInfoContainer& info,
-                                         HandlerF<Graph> removal_handler = 0) {
-    typedef typename Graph::EdgeId EdgeId;
-
+                                           debruijn_config::simplification::isolated_edges_remover ier,
+                                           const SimplifInfoContainer& info,
+                                           HandlerF<Graph> removal_handler = 0) {
     if (!ier.enabled) {
         return nullptr;
     }
@@ -560,34 +552,30 @@ AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
 //    INFO("Also edges shorter than " << ier.max_length << " and coverage smaller than " << ier.max_coverage << " will be removed");
     //todo add warn on max_length_any_cov > max_length
 
-    auto condition = func::And<EdgeId>(
-            make_shared<IsolatedEdgeCondition<Graph>>(g),
-            func::Or<EdgeId>(
-                make_shared<LengthUpperBound<Graph>>(g, max_length_any_cov),
-                func::And<EdgeId>(
-                    make_shared<LengthUpperBound<Graph>>(g, ier.max_length),
-                    make_shared<CoverageUpperBound<Graph>>(g, ier.max_coverage)
-                )));
+    auto condition = pred::And(IsolatedEdgeCondition<Graph>(g),
+                              pred::Or(LengthUpperBound<Graph>(g, max_length_any_cov),
+                                      pred::And(LengthUpperBound<Graph>(g, ier.max_length),
+                                               CoverageUpperBound<Graph>(g, ier.max_coverage))));
 
     return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g,
-                                        condition,
-                                        info.chunk_cnt(),
-                                        removal_handler,
-                                        /*canonical_only*/true);
+                                                                  condition,
+                                                                  info.chunk_cnt(),
+                                                                  removal_handler,
+                                                                  /*canonical_only*/true);
 }
 
 template<class Graph>
-shared_ptr<func::Predicate<typename Graph::EdgeId>> NecessaryBulgeCondition(const Graph& g,
-                                                              const debruijn_config::simplification::bulge_remover& br_config,
-                                                              const SimplifInfoContainer&) {
+pred::TypedPredicate<typename Graph::EdgeId> NecessaryBulgeCondition(const Graph& g,
+                                                                    const debruijn_config::simplification::bulge_remover& br_config,
+                                                                    const SimplifInfoContainer&) {
     auto analyzer = ParseBRConfig(g, br_config);
     return omnigraph::NecessaryBulgeCondition(g, analyzer.max_length(), analyzer.max_coverage());
 }
 
 template<class Graph>
-shared_ptr<func::Predicate<typename Graph::EdgeId>> NecessaryTipCondition(const Graph& g,
-                                                              const debruijn_config::simplification::tip_clipper& tc_config,
-                                                              const SimplifInfoContainer& info) {
+pred::TypedPredicate<typename Graph::EdgeId> NecessaryTipCondition(const Graph& g,
+                                                                  const debruijn_config::simplification::tip_clipper& tc_config,
+                                                                  const SimplifInfoContainer& info) {
     ConditionParser<Graph> parser(g, tc_config.condition, info);
     auto condition = parser();
     return omnigraph::NecessaryTipCondition(g, parser.max_length_bound(),
@@ -595,21 +583,21 @@ shared_ptr<func::Predicate<typename Graph::EdgeId>> NecessaryTipCondition(const 
 }
 
 template<class Graph>
-shared_ptr<func::Predicate<typename Graph::EdgeId>> NecessaryECCondition(const Graph& g,
-                                                              const debruijn_config::simplification::erroneous_connections_remover& ec_config,
-                                                              const SimplifInfoContainer& info, size_t current_iteration = 0, size_t iteration_cnt = 1) {
+pred::TypedPredicate<typename Graph::EdgeId> NecessaryECCondition(const Graph& g,
+                                                                 const debruijn_config::simplification::erroneous_connections_remover& ec_config,
+                                                                 const SimplifInfoContainer& info, size_t current_iteration = 0, size_t iteration_cnt = 1) {
     ConditionParser<Graph> parser(g, ec_config.condition, info, current_iteration, iteration_cnt);
     auto condition = parser();
     return omnigraph::NecessaryECCondition(g, parser.max_length_bound(),
-                                            parser.max_coverage_bound());
+                                           parser.max_coverage_bound());
 }
 
 template<class Graph>
 AlgoPtr<Graph> ECRemoverInstance(Graph& g,
-                                                                       const debruijn_config::simplification::erroneous_connections_remover& ec_config,
-                                                                       const SimplifInfoContainer& info,
-                                                                       HandlerF<Graph> removal_handler,
-                                                                       size_t iteration_cnt = 1) {
+                                 const debruijn_config::simplification::erroneous_connections_remover& ec_config,
+                                 const SimplifInfoContainer& info,
+                                 HandlerF<Graph> removal_handler,
+                                 size_t iteration_cnt = 1) {
     if (ec_config.condition.empty())
         return nullptr;
 
@@ -624,11 +612,11 @@ AlgoPtr<Graph> ECRemoverInstance(Graph& g,
 
 template<class Graph>
 AlgoPtr<Graph> TipClipperInstance(Graph& g,
-                                           const EdgeConditionT<Graph>& condition,
-                                           const SimplifInfoContainer& info,
-                                           HandlerF<Graph> removal_handler,
-                                           bool track_changes = true,
-                                           size_t /*iteration_cnt*/ = 1) {
+                                  const EdgeConditionT<Graph>& condition,
+                                  const SimplifInfoContainer& info,
+                                  HandlerF<Graph> removal_handler,
+                                  bool track_changes = true,
+                                  size_t /*iteration_cnt*/ = 1) {
     return make_shared<ParallelEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>>>(g,
                                                                         AddTipCondition(g, condition),
                                                                         info.chunk_cnt(),
@@ -658,36 +646,60 @@ AlgoPtr<Graph> TopologyTipClipperInstance(
     const debruijn_config::simplification::topology_tip_clipper& ttc_config,
     const SimplifInfoContainer& info,
     HandlerF<Graph> removal_handler) {
-    typedef typename Graph::EdgeId EdgeId;
 
-    shared_ptr<Predicate<EdgeId>> condition
-        = func::And<EdgeId>(
-                make_shared<LengthUpperBound<Graph>>(g, LengthThresholdFinder::MaxTipLength(
-                        info.read_length(), g.k(), ttc_config.length_coeff)),
-                make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(g,
-                        ttc_config.uniqueness_length, ttc_config.plausibility_length));
+    auto condition
+            = pred::And(LengthUpperBound<Graph>(g,
+                                               LengthThresholdFinder::MaxTipLength(info.read_length(), g.k(), ttc_config.length_coeff)),
+                       DefaultUniquenessPlausabilityCondition<Graph>(g,
+                                                                     ttc_config.uniqueness_length, ttc_config.plausibility_length));
 
     return TipClipperInstance(g,
-                    condition, info, removal_handler, /*track changes*/false);
+                              condition, info, removal_handler, /*track changes*/false);
 }
 
 template<class Graph>
-AlgoPtr<Graph> ParallelBRInstance(Graph& g,
-                                           const debruijn_config::simplification::bulge_remover& br_config,
-                                           const SimplifInfoContainer& /*info*/,
-                                           HandlerF<Graph> removal_handler,
-                                           size_t /*iteration_cnt*/ = 1) {
-    VERIFY(br_config.parallel);
+AlgoPtr<Graph> BRInstance(Graph& g,
+                          const debruijn_config::simplification::bulge_remover& br_config,
+                          const SimplifInfoContainer& info,
+                          HandlerF<Graph> removal_handler,
+                          size_t /*iteration_cnt*/ = 1) {
+    typedef ParallelInterestingElementFinder<Graph, 
+                                    typename Graph::EdgeId> InterestingEdgeFinder;
+    if (!br_config.enabled || (br_config.main_iteration_only && !info.main_iteration())) {
+        return nullptr;
+    }
+
     auto alternatives_analyzer = ParseBRConfig(g, br_config);
-    return make_shared<ParallelBulgeRemover<Graph>>(g,
-            br_config.chunk_size,
-            alternatives_analyzer,
-            nullptr,
-            removal_handler,
-            /*track_changes*/true);
+
+     
+    InterestingEdgeFinder interesting_edge_finder(g,
+                                                  NecessaryBulgeCondition(g,
+                                                                          alternatives_analyzer.max_length(),
+                                                                          alternatives_analyzer.max_coverage()), 
+                                                  info.chunk_cnt());
+    if (br_config.parallel) {
+        INFO("Creating parallel br instance");
+        return make_shared<ParallelBulgeRemover<Graph, InterestingEdgeFinder>>(g,
+                interesting_edge_finder,
+                br_config.buff_size,
+                br_config.buff_cov_diff,
+                br_config.buff_cov_rel_diff,
+                alternatives_analyzer,
+                nullptr,
+                removal_handler,
+                /*track_changes*/true);
+    } else {
+        INFO("Creating br instance");
+        return make_shared<BulgeRemover<Graph, InterestingEdgeFinder>>(g,
+                interesting_edge_finder,
+                alternatives_analyzer,
+                nullptr,
+                removal_handler,
+                /*track_changes*/true);
+    }
 }
 
-//todo make this all work for start of the edges also? switch to canonical iteration?
+//todo make this all work for end of the edges also? switch to canonical iteration?
 //todo rename, since checking topology also
 template<class Graph>
 class FlankingCovBound : public EdgeCondition<Graph> {
@@ -706,8 +718,8 @@ public:
 
     bool Check(EdgeId e) const override {
         return this->g().length(e) > 1 
-                    && this->g().IncomingEdgeCount(this->g().EdgeEnd(e)) > 1 
-                    && math::le(flanking_cov_.CoverageOfEnd(e), max_coverage_);
+                    && this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) > 1 
+                    && math::le(flanking_cov_.CoverageOfStart(e), max_coverage_);
     }
 
 };
@@ -719,12 +731,12 @@ class ParallelDisconnectionAlgorithm : public PersistentProcessingAlgorithm<Grap
     typedef typename Graph::EdgeId EdgeId;
     typedef PersistentProcessingAlgorithm<Graph, EdgeId,
             ParallelInterestingElementFinder<Graph>, Comparator> base;
-    std::shared_ptr<func::Predicate<EdgeId>> condition_;
+    pred::TypedPredicate<EdgeId> condition_;
     omnigraph::simplification::relative_coverage::EdgeDisconnector<Graph> disconnector_;
 
 public:
     ParallelDisconnectionAlgorithm(Graph& g,
-                                    std::shared_ptr<func::Predicate<EdgeId>> condition,
+                                    pred::TypedPredicate<EdgeId> condition,
                                     size_t chunk_cnt,
                                     HandlerF<Graph> removal_handler,
                                     const Comparator& comp = Comparator(),
@@ -737,7 +749,7 @@ public:
     }
 
     bool Process(EdgeId e) override {
-        if (condition_->Check(e)) {
+        if (condition_(e)) {
             disconnector_(e);
             return true;
         }
@@ -758,9 +770,9 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph& g,
     }
 
     return make_shared<ParallelDisconnectionAlgorithm<Graph>>(g,
-                                                        make_shared<FlankingCovBound<Graph>>(g, flanking_cov, cov_bound),
-                                                        info.chunk_cnt(),
-                                                        removal_handler);
+                                                              FlankingCovBound<Graph>(g, flanking_cov, cov_bound),
+                                                              info.chunk_cnt(),
+                                                              removal_handler);
 }
 
 ////todo add chunk_cnt

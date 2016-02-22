@@ -219,6 +219,7 @@ struct debruijn_config {
 
         struct bulge_remover {
             bool enabled;
+            bool main_iteration_only;
             double max_bulge_length_coefficient;
             size_t max_additive_length_coefficient;
             double max_coverage;
@@ -227,7 +228,9 @@ struct debruijn_config {
             double max_relative_delta;
             size_t max_number_edges;
             bool parallel;
-            size_t chunk_size;
+            size_t buff_size;
+            double buff_cov_diff;
+            double buff_cov_rel_diff;
         };
 
         struct erroneous_connections_remover {
@@ -398,6 +401,7 @@ struct debruijn_config {
       size_t long_seq_limit; //400
       size_t pacbio_min_gap_quantity; //2
       size_t contigs_min_gap_quantity; //1
+      size_t max_contigs_gap_length; // 10000
     };
 
     struct DataSetData {
@@ -570,6 +574,7 @@ struct debruijn_config {
 
     bool rr_enable;
     bool two_step_rr;
+    bool use_intermediate_contigs;
 
     single_read_resolving_mode single_reads_rr;
     bool use_single_reads;

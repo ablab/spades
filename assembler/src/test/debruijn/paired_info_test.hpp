@@ -331,6 +331,51 @@ BOOST_AUTO_TEST_CASE(PairedInfoNeighbours) {
     BOOST_CHECK_EQUAL(GetNeighbourInfo(pi, 3), testF3);
 }
 
+BOOST_AUTO_TEST_CASE(PairedInfoDoubledInfo) {
+    MockGraph graph;
+    MockIndex pi(graph);
+
+    pi.Add(1, 3, RawPoint(1, 1));
+    pi.Add(1, 8, RawPoint(1, 1));
+    pi.Add(4, 2, RawPoint(1, 1));
+
+    EdgeSet test0;
+    EdgeSet neighbours;
+    //Check that neighbours don't repeat
+    for (auto ep : pi.Get(1)) {
+        BOOST_CHECK(neighbours.insert(ep.first).second);
+        BOOST_CHECK(!ep.second.empty());
+    }
+    BOOST_CHECK_EQUAL(neighbours, EdgeSet({3, 8}));
+    BOOST_CHECK_EQUAL(GetNeighbours(pi, 1), EdgeSet({3, 8}));
+    //Check that the info is full
+    EdgeDataSet testF1 = {{1, 3, RawPoint(1, 1)}, {1, 8, RawPoint(1, 1)}, {1, 3, RawPoint(-1, 1)}};
+    BOOST_CHECK_EQUAL(GetNeighbourInfo(pi, 1), testF1);
+}
+
+/*BOOST_AUTO_TEST_CASE(PairedInfoRawData) {
+    MockGraph graph;
+    MockIndex pi(graph);
+    pi.Add(1, 3, RawPoint(2, 1));
+    pi.Add(2, 4, RawPoint(-3, 1));
+    RawHistogram test1;
+    test1.insert({1, 1});
+    test1.insert({2, 1});
+    BOOST_CHECK_EQUAL(pi.Get(1, 3).Unwrap(), test1);
+    RawHistogram test2;
+    test2.insert({2, 1});
+    BOOST_CHECK_EQUAL(pi.RawGet(1, 3).Unwrap(), test2);
+    RawHistogram test3;
+    test3.insert({-3, 1});
+    BOOST_CHECK_EQUAL(pi.RawGet(2, 4).Unwrap(), test3);
+    RawHistogram test2b;
+    test2b.insert({-1, 1});
+    BOOST_CHECK_EQUAL(pi.RawGet(3, 1).Unwrap(), test2b);
+    RawHistogram test3b;
+    test3b.insert({4, 1});
+    BOOST_CHECK_EQUAL(pi.RawGet(4, 2).Unwrap(), test3b);
+}*/
+
 BOOST_AUTO_TEST_CASE(PairedInfoHalfNeighbours) {
     MockGraph graph;
     MockIndex pi(graph);

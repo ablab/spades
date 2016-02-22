@@ -7,11 +7,11 @@
 
 #pragma once
 
-#include "logger/logger.hpp"
-#include "func.hpp"
 #include "graph_iterators.hpp"
 #include "graph_component.hpp"
 #include "coverage.hpp"
+#include "pred.hpp"
+#include "logger/logger.hpp"
 
 namespace omnigraph {
 
@@ -21,7 +21,7 @@ using HandlerF = std::function<void(typename Graph::EdgeId)>;
 template<class Graph>
 class EdgeProcessingAlgorithm {
     typedef typename Graph::EdgeId EdgeId;
-    typedef std::shared_ptr<func::Predicate<EdgeId>> ProceedConditionT;
+    typedef pred::TypedPredicate<EdgeId> ProceedConditionT;
 
     Graph& g_;
     bool conjugate_symmetry_;
@@ -52,22 +52,19 @@ class EdgeProcessingAlgorithm {
 //    }
 
     template<class Comparator = std::less<EdgeId>>
-    bool Run(const Comparator& comp = Comparator(),
-                 ProceedConditionT proceed_condition = make_shared<func::AlwaysTrue<EdgeId>>()) {
-        TRACE("Start processing");
+    bool Run(const Comparator& comp = Comparator(), ProceedConditionT proceed_condition = pred::AlwaysTrue<EdgeId>()) {
         bool triggered = false;
         for (auto it = g_.SmartEdgeBegin(comp, conjugate_symmetry_); !it.IsEnd(); ++it) {
             EdgeId e = *it;
             TRACE("Current edge " << g_.str(e));
-            if (!proceed_condition->Check(e)) {
+            if (!proceed_condition(e)) {
                 TRACE("Stop condition was reached.");
                 break;
             }
 
             TRACE("Processing edge " << this->g().str(e));
             triggered |= ProcessEdge(e);
-        }
-        TRACE("Finished processing. Triggered = " << triggered);
+        };
         return triggered;
     }
 
@@ -171,13 +168,13 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
     typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
 
-    shared_ptr<func::Predicate<EdgeId>> remove_condition_;
+    pred::TypedPredicate<EdgeId> remove_condition_;
     EdgeRemover<Graph> edge_remover_;
 
  protected:
     bool ProcessEdge(EdgeId e) {
         TRACE("Checking edge " << this->g().str(e) << " for the removal condition");
-        if (remove_condition_->Check(e)) {
+        if (remove_condition_(e)) {
             TRACE("Check passed, removing");
             edge_remover_.DeleteEdge(e);
             return true;
@@ -187,16 +184,13 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
     }
 
  public:
-    EdgeRemovingAlgorithm(
-            Graph& g,
-            shared_ptr<func::Predicate<EdgeId>> remove_condition,
-            std::function<void (EdgeId)> removal_handler = boost::none,
-            bool conjugate_symmetry = false)
+    EdgeRemovingAlgorithm(Graph& g,
+                          pred::TypedPredicate<EdgeId> remove_condition,
+                          std::function<void (EdgeId)> removal_handler = boost::none,
+                          bool conjugate_symmetry = false)
             : base(g, conjugate_symmetry),
               remove_condition_(remove_condition),
-              edge_remover_(g, removal_handler) {
-
-    }
+              edge_remover_(g, removal_handler) {}
 
  private:
     DECL_LOGGER("EdgeRemovingAlgorithm");

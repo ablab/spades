@@ -221,7 +221,7 @@ class AlternativesAnalyzer {
 
     /**
      * Checks if alternative path is simple (doesn't contain conjugate edges, edge e or conjugate(e))
-     * and its average coverage is greater than max_relative_coverage_ * g.coverage(e)
+     * and its average coverage * max_relative_coverage_ is greater than g.coverage(e)
      */
     bool BulgeCondition(EdgeId e, const vector<EdgeId>& path,
             double path_coverage) const {
@@ -303,11 +303,11 @@ private:
 };
 
 template<class Graph>
-shared_ptr<func::Predicate<typename Graph::EdgeId>>
+pred::TypedPredicate<typename Graph::EdgeId>
 NecessaryBulgeCondition(const Graph& g, size_t max_length, double max_coverage) {
     return AddAlternativesPresenceCondition(g,
-                     func::And<typename Graph::EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
-                               make_shared<CoverageUpperBound<Graph>>(g, max_coverage)));
+                                            pred::And(LengthUpperBound<Graph>(g, max_length),
+                                                     CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
 /**
@@ -394,20 +394,20 @@ inline double AbsoluteMaxCoverage(const std::vector<AlternativesAnalyzer<Graph>>
 }
 
 //fixme maybe switch on parallel finder?
-template<class Graph>
+template<class Graph, class InterestingElementFinder>
 class BulgeRemover: public PersistentProcessingAlgorithm<Graph,
                                                         typename Graph::EdgeId,
-                                                        SimpleInterestingElementFinder<Graph, typename Graph::EdgeId>,
+                                                        InterestingElementFinder,
                                                         CoverageComparator<Graph>> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef PersistentProcessingAlgorithm<Graph, EdgeId,
-            SimpleInterestingElementFinder<Graph, EdgeId>, CoverageComparator<Graph>> base;
+            InterestingElementFinder, CoverageComparator<Graph>> base;
 
 protected:
 
     /*virtual*/
-    bool ProcessEdge(EdgeId e) {
+    bool Process(EdgeId e) {
         TRACE("Considering edge " << this->g().str(e)
                       << " of length " << this->g().length(e)
                       << " and avg coverage " << this->g().coverage(e));
@@ -417,7 +417,7 @@ protected:
             return false;
         }
 
-        vector<EdgeId> alternative = alternatives_analyzer(e);
+        vector<EdgeId> alternative = alternatives_analyzer_(e);
         if (!alternative.empty()) {
             gluer_(e, alternative);
             return true;
@@ -449,17 +449,15 @@ public:
 //                                                    max_delta, max_relative_delta, max_edge_cnt));
 //    }
 
-    BulgeRemover(Graph& g,
+    BulgeRemover(Graph& g, const InterestingElementFinder& interesting_finder,
             const AlternativesAnalyzer<Graph>& alternatives_analyzer,
             BulgeCallbackF opt_callback = 0,
             std::function<void(EdgeId)> removal_handler = 0,
             bool track_changes = true) :
             base(g,
-                 SimpleInterestingElementFinder<Graph, EdgeId>(g,
-                                                    NecessaryBulgeCondition(g, alternatives_analyzer.max_length(),
-                                                                            alternatives_analyzer.max_coverage())),
+                 interesting_finder,
+                 /*canonical_only*/true,
                  CoverageComparator<Graph>(g),
-                 true,
                  track_changes),
             alternatives_analyzer_(alternatives_analyzer),
             gluer_(g, opt_callback, removal_handler) {
@@ -472,16 +470,18 @@ private:
     DECL_LOGGER("BulgeRemover")
 };
 
-template<class Graph>
+template<class Graph, class InterestingElementFinder>
 class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef SmartSetIterator<Graph, EdgeId, CoverageComparator<Graph>> SmartEdgeSet;
 
-    size_t chunk_size_;
+    size_t buff_size_;
+    double buff_cov_diff_;
+    double buff_cov_rel_diff_;
     AlternativesAnalyzer<Graph> alternatives_analyzer_;
     BulgeGluer<Graph> gluer_;
-    SimpleInterestingElementFinder<Graph, EdgeId> interesting_edge_finder_;
+    InterestingElementFinder interesting_edge_finder_;
     //todo remove
     bool tracking_;
 
@@ -564,27 +564,40 @@ class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
     }
 
     //false if time to stop
-    bool FillEdgeBuffer(vector<EdgeId>& buffer, const std::shared_ptr<func::Predicate<EdgeId>>& proceed_condition) {
+    bool FillEdgeBuffer(vector<EdgeId>& buffer, pred::TypedPredicate<EdgeId> proceed_condition) {
         VERIFY(buffer.empty());
-        DEBUG("Filling edge buffer chunk size " << chunk_size_);
+        DEBUG("Filling edge buffer of size " << buff_size_);
         perf_counter perf;
-        while (!it_.IsEnd() && buffer.size() < chunk_size_) {
+        double low_cov = 0.;
+        double cov_diff = 0.;
+        while (!it_.IsEnd() && buffer.size() < buff_size_) {
             EdgeId e = *it_;
             TRACE("Current edge " << this->g().str(e));
-            if (!proceed_condition->Check(e)) {
+            if (!proceed_condition(e)) {
                 TRACE("Stop condition was reached.");
                 //need to release last element of the iterator to make it replaceable by new elements
                 it_.ReleaseCurrent();
                 return false;
             }
 
+            double cov = this->g().coverage(e);
+            if (buffer.empty()) {
+                low_cov = cov;
+                cov_diff = max(buff_cov_diff_, buff_cov_rel_diff_ * low_cov);
+            } else {
+                if (math::gr(cov, low_cov + cov_diff)) {
+                    //need to release last element of the iterator to make it replaceable by new elements
+                    it_.ReleaseCurrent();
+                    return true;
+                }
+            }
             TRACE("Potential bulge edge");
             buffer.push_back(e);
             ++it_;
         }
 
         DEBUG("Filled in " << perf.time() << " seconds");
-        if (buffer.size() == chunk_size_) {
+        if (buffer.size() == buff_size_) {
             TRACE("Buffer filled");
             return true;
         } else {
@@ -696,30 +709,31 @@ public:
 
     typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
 
-    ParallelBulgeRemover(Graph& g, size_t chunk_size,
-                         const AlternativesAnalyzer<Graph>& alternatives_analyzer,
+    ParallelBulgeRemover(Graph& g, const InterestingElementFinder& interesting_edge_finder, 
+                         size_t buff_size, double buff_cov_diff, 
+                         double buff_cov_rel_diff, const AlternativesAnalyzer<Graph>& alternatives_analyzer,
                          BulgeCallbackF opt_callback = 0,
                          std::function<void(EdgeId)> removal_handler = 0,
                          bool track_changes = true) :
                          PersistentAlgorithmBase<Graph>(g),
-                         chunk_size_(chunk_size),
+                         buff_size_(buff_size),
+                         buff_cov_diff_(buff_cov_diff),
+                         buff_cov_rel_diff_(buff_cov_rel_diff),
                          alternatives_analyzer_(alternatives_analyzer),
                          gluer_(g, opt_callback, removal_handler),
-                         interesting_edge_finder_(g,
-                                       NecessaryBulgeCondition(g,
-                                                               alternatives_analyzer.max_length(),
-                                                               alternatives_analyzer.max_coverage())),
+                         interesting_edge_finder_(interesting_edge_finder),
                          tracking_(track_changes),
                          curr_iteration_(0),
                          it_(g, true, CoverageComparator<Graph>(g), true) {
-        VERIFY(chunk_size_ > 0);
+        VERIFY(buff_size_ > 0);
         it_.Detach();
     }
 
     bool Run(bool force_primary_launch = false) override {
         bool primary_launch = force_primary_launch ? true : curr_iteration_ == 0;
-        //todo remove it if not needed
-        auto proceed_condition = std::make_shared<func::AlwaysTrue<EdgeId>>();
+        //todo remove if not needed; 
+        //potentially can vary coverage threshold in coordination with ec threshold
+        auto proceed_condition = pred::AlwaysTrue<EdgeId>();
 
         if (!it_.IsAttached()) {
             it_.Attach();
@@ -739,7 +753,7 @@ public:
         bool proceed = true;
         while (proceed) {
             std::vector<EdgeId> edge_buffer;
-            edge_buffer.reserve(chunk_size_);
+            edge_buffer.reserve(buff_size_);
             proceed = FillEdgeBuffer(edge_buffer, proceed_condition);
 
             std::vector<BulgeInfo> bulges = MergeBuffers(FindBulges(edge_buffer));

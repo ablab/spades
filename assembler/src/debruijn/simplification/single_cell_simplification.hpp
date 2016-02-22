@@ -18,7 +18,8 @@ bool TopologyRemoveErroneousEdges(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
 
-    shared_ptr<Predicate<typename Graph::EdgeId>> condition = make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(g, tec_config.uniqueness_length, tec_config.plausibility_length);
+    pred::TypedPredicate<typename Graph::EdgeId>
+            condition(DefaultUniquenessPlausabilityCondition<Graph>(g, tec_config.uniqueness_length, tec_config.plausibility_length));
 
     return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }
@@ -32,9 +33,10 @@ bool MultiplicityCountingRemoveErroneousEdges(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
 
-    shared_ptr<func::Predicate<typename Graph::EdgeId>> condition
-        = make_shared<MultiplicityCountingCondition<Graph>>(g, tec_config.uniqueness_length,
-            /*plausibility*/MakePathLengthLowerBound(g, PlausiblePathFinder<Graph>(g, 2 * tec_config.plausibility_length), tec_config.plausibility_length));
+    pred::TypedPredicate<typename Graph::EdgeId>
+            condition(MultiplicityCountingCondition<Graph>(g, tec_config.uniqueness_length,
+                                          /*plausibility*/ MakePathLengthLowerBound(g,
+                                                                                    PlausiblePathFinder<Graph>(g, 2 * tec_config.plausibility_length), tec_config.plausibility_length)));
 
     return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }
@@ -48,9 +50,9 @@ bool RemoveThorns(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), isec_config.max_ec_length_coefficient);
 
-    shared_ptr<func::Predicate<typename Graph::EdgeId>> condition
-            = func::And<typename Graph::EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
-                                       make_shared<ThornCondition<Graph>>(g, isec_config.uniqueness_length, isec_config.span_distance));
+    auto condition
+            = pred::And(LengthUpperBound<Graph>(g, max_length),
+                       ThornCondition<Graph>(g, isec_config.uniqueness_length, isec_config.span_distance));
 
     return omnigraph::RemoveErroneousEdgesInCoverageOrder(g, condition, numeric_limits<double>::max(), removal_handler);
 }
@@ -64,12 +66,11 @@ bool TopologyReliabilityRemoveErroneousEdges(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), trec_config.max_ec_length_coefficient);
 
-    shared_ptr<func::Predicate<typename Graph::EdgeId>> condition
-            = func::And<typename Graph::EdgeId>(make_shared<CoverageUpperBound<Graph>>(g, trec_config.unreliable_coverage),
-                                       make_shared<PredicateUniquenessPlausabilityCondition<Graph>>(
-                                               g,
-                                               /*uniqueness*/MakePathLengthLowerBound(g, UniquePathFinder<Graph>(g), trec_config.uniqueness_length),
-                                               /*plausibility*/make_shared<func::AlwaysTrue<typename Graph::EdgeId>>()));
+    auto condition
+            = pred::And(CoverageUpperBound<Graph>(g, trec_config.unreliable_coverage),
+                       PredicateUniquenessPlausabilityCondition<Graph>(g,
+                                                                       /*uniqueness*/MakePathLengthLowerBound(g, UniquePathFinder<Graph>(g), trec_config.uniqueness_length),
+                                                                       /*plausibility*/pred::AlwaysTrue<typename Graph::EdgeId>()));
 
     return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }

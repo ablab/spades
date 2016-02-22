@@ -131,7 +131,7 @@ public:
 	Compressor(Graph &graph, size_t chunk_cnt = 1, bool safe_merging = true) :
 	        base(graph,
 	             ParallelInterestingElementFinder<Graph, VertexId>(graph,
-	                                                               make_shared<ConditionT>(graph), chunk_cnt),
+	                                                               ConditionT(graph), chunk_cnt),
 	             /*canonical only*/true),
 			graph_(graph),
 			compress_condition_(graph),
@@ -221,7 +221,7 @@ public:
 	Cleaner(Graph& g, size_t chunk_cnt = 1) :
 	        base(g,
                  ParallelInterestingElementFinder<Graph, VertexId>(g,
-                                                                   make_shared<ConditionT>(g), chunk_cnt),
+                                                                   ConditionT(g), chunk_cnt),
                  /*canonical only*/true),
 			g_(g), isolated_condition_(g) {
 	}

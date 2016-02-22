@@ -9,7 +9,6 @@
 
 #include "environment.hpp"
 #include "graphio.hpp"
-
 namespace online_visualization {
 
 class DebruijnEnvironment : public Environment {
@@ -27,6 +26,7 @@ class DebruijnEnvironment : public Environment {
         std::shared_ptr<MapperClass> mapper_;
         FillerClass filler_;
         omnigraph::DefaultLabeler<Graph> labeler_;
+        debruijn_graph::ReadPathFinder<Graph> path_finder_;
         ColoringClass coloring_;
         //CompositeLabeler<Graph> labeler_;
 
@@ -49,7 +49,8 @@ class DebruijnEnvironment : public Environment {
               element_finder_(gp_.g),
               mapper_(new MapperClass(gp_.g, gp_.index, gp_.kmer_mapper)),
               filler_(gp_.g, mapper_, gp_.edge_pos),
-              labeler_(gp_.g, gp_.edge_pos) {
+              labeler_(gp_.g, gp_.edge_pos),
+              path_finder_(gp_.g) {
             DEBUG("Environment constructor");
             gp_.kmer_mapper.Attach();
             debruijn_graph::graphio::ScanGraphPack(path_, gp_);
@@ -146,6 +147,10 @@ class DebruijnEnvironment : public Environment {
 
         const MapperClass& mapper() const {
             return *mapper_;
+        }
+
+        const debruijn_graph::ReadPathFinder<Graph>& path_finder() const {
+                    return path_finder_;
         }
 
         const EdgeIndexT& index() const {

@@ -76,6 +76,11 @@ public:
 
     virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
             EdgeId new_edge2) {
+        if (old_edge == this->g().conjugate(old_edge)) {
+            WARN("EdgeQuality does not support self-conjugate splits");
+            return;
+        }
+        VERIFY(old_edge != this->g().conjugate(old_edge));
         quality_[new_edge1] = quality_[old_edge] * this->g().length(new_edge1)
                 / (this->g().length(new_edge1) + this->g().length(new_edge2));
         quality_[new_edge2] = quality_[old_edge] * this->g().length(new_edge2)

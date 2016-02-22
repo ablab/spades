@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>SPAdes 3.6.0 Manual</title>
+    <title>SPAdes 3.7.0 Manual</title>
     <style type="text/css">
         .code {
             background-color: lightgray;
@@ -8,7 +8,7 @@
     </style>
 </head>
 <body>
-<h1>SPAdes 3.6.0 Manual</h1>
+<h1>SPAdes 3.7.0 Manual</h1>
 
 1. <a href="#sec1">About SPAdes</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.1. <a href="#sec1.1">Supported data types</a><br>
@@ -35,19 +35,18 @@
 <h2>1. About SPAdes</h2>
 <p>
     SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. 
-SPAdes version 3.6.1 was released under GPLv2 on October 4, 2015 and can be downloaded from  <a href="http://bioinf.spbau.ru/en/spades" target="_blank">http://bioinf.spbau.ru/en/spades</a>.
-
+SPAdes version 3.7.0 was released under GPLv2 on February ##, 2016 and can be downloaded from  <a href="http://bioinf.spbau.ru/en/spades" target="_blank">http://bioinf.spbau.ru/en/spades</a>.
 
 <a name="sec1.1"></a>
 <h3>1.1 Supported data types</h3>
 <p>
     The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.
 <p>
-    Version 3.6.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. 
+    Version 3.7.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on single-cell and standard bacterial and fungal data sets. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
 <p>
-    Note, that SPAdes was initially designed for small genomes. It was tested on single-cell and standard bacterial and fungal data sets. SPAdes is not intended for larger genomes (e.g. mammalian size genomes) and metagenomic projects. For such purposes you can use it at your own risk.
+    SPAdes 3.7.0 also includes metaSPAdes &ndash; a pipeline designed specially for metagenomic data sets. To learn more see <a href="#meta">options</a>.
 <p>
-    SPAdes has also a separate modules for assembling highly polymorphic diploid genomes and for TruSeq barcode assembly. For more information see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a> and <a href="truspades_manual.html" target="_blank">truSPAdes manual</a> .
+    Additionally, SPAdes has a separate modules for assembling highly polymorphic diploid genomes and for TruSeq barcode assembly. For more information see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a> and <a href="truspades_manual.html" target="_blank">truSPAdes manual</a> .
 
 
 <a name="sec1.2"></a>
@@ -75,7 +74,7 @@ SPAdes comes in several separate modules:
         <li> <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/" target="_blank">MDA single-cell <i>E. coli</i></a>; 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp </li>
     </ul>
 <p>
-    We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately 30-40 minutes and takes up to 8Gb of RAM to perform read error correction on each data set. Assembly takes about 10 minutes for the <i>E. coli</i> isolate data set and 20 minutes for the <i>E. coli</i> single-cell data set. Both data sets require 9Gb of RAM (see notes below). MismatchCorrector runs for about an hour on standard <i>E. coli</i>, a bit more on the single-cell data set, and requires less than 1Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.
+    We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately 30-40 minutes and takes up to 8Gb of RAM to perform read error correction on each data set. Assembly takes about 15 minutes for the <i>E. coli</i> isolate data set and 30 minutes for the <i>E. coli</i> single-cell data set. Both data sets require about 9Gb of RAM (see notes below). MismatchCorrector runs for about 25 minutes on both data sets, and requires less than 2Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.
 
 <p>
     <table border="1" cellpadding="4" cellspacing="0">
@@ -97,42 +96,42 @@ SPAdes comes in several separate modules:
 
         <tr>
             <td> BayesHammer </td>
-            <td align="center"> 33m </td> 
+            <td align="center"> 34m </td>
+            <td align="center"> 7.7 </td>
+            <td align="center"> 8.4 </td>
+            <td align="center"> 40m </td>
             <td align="center"> 7.5 </td>
-            <td align="center"> 9 </td>
-            <td align="center"> 41m </td> 
-            <td align="center"> 7 </td>
-            <td align="center"> 10 </td>
+            <td align="center"> 8.8 </td>
         </tr>
 
         <tr>
             <td> SPAdes </td>
-            <td align="center"> 12m </td> 
-            <td align="center"> 9 </td>
-            <td align="center"> 1.5 </td>
-            <td align="center"> 22m </td> 
-            <td align="center"> 9 </td>
-            <td align="center"> 2.5 </td>
+            <td align="center"> 16m </td>
+            <td align="center"> 8.6 </td>
+            <td align="center"> 1.6 </td>
+            <td align="center"> 28m </td>
+            <td align="center"> 8.6 </td>
+            <td align="center"> 2.7 </td>
         </tr>
 
         <tr>
             <td> MismatchCorrector </td>
-            <td align="center"> 1h 7m </td> 
-            <td align="center"> 1 </td>
-            <td align="center"> 22 </td>
-            <td align="center"> 1h 18m </td> 
-            <td align="center"> 1 </td>
-            <td align="center"> 24 </td>
+            <td align="center"> 22m </td>
+            <td align="center"> 1.8 </td>
+            <td align="center"> 21.8 </td>
+            <td align="center"> 26m </td>
+            <td align="center"> 1.8 </td>
+            <td align="center"> 22.9 </td>
         </tr>
 
         <tr>
             <td> Whole pipeline </td>
-            <td align="center"> 1h 52m </td> 
-            <td align="center"> 9 </td>
-            <td align="center"> 24 </td>
-            <td align="center"> 2h 21m </td> 
-            <td align="center"> 9 </td>
-            <td align="center"> 26 </td>
+            <td align="center"> 1h 12m </td>
+            <td align="center"> 8.6 </td>
+            <td align="center"> 24.2 </td>
+            <td align="center"> 1h 34m </td>
+            <td align="center"> 8.6 </td>
+            <td align="center"> 25.5 </td>
         </tr>
     </table>
 
@@ -142,26 +141,27 @@ SPAdes comes in several separate modules:
         <li> Running SPAdes without preliminary read error correction (e.g. without BayesHammer or IonHammer) will likely require more time and memory. </li>
         <li> Each module removes its temporary files as soon as it finishes. </li>
         <li> SPAdes uses 512 Mb per thread for buffers, which results in higher memory consumption. If you set memory limit manually, SPAdes will use smaller buffers and thus less RAM. </li>
-        <li> Performance statistics is given for SPAdes version 3.6. </li>
+        <li> Performance statistics is given for SPAdes version 3.7.0. </li>
     </ul>
 
 
 <a name="sec2"></a>
 <h2>2. Installation</h2>
 <p>
+
     SPAdes requires a 64-bit Linux system or Mac OS and Python (supported versions are 2.4, 2.5, 2.6, 2.7, 3.2, 3.3, 3.4 and 3.5) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself.
 
 <a name="sec2.1"></a>
 <h3>2.1 Downloading SPAdes Linux binaries</h3>
 
 <p>
-    To download <a href="http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
+    To download <a href="http://spades.bioinf.spbau.ru/release3.7.0/SPAdes-3.7.0-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0-Linux.tar.gz
-    tar -xzf SPAdes-3.6.0-Linux.tar.gz
-    cd SPAdes-3.6.0-Linux/bin/
+    wget http://spades.bioinf.spbau.ru/release3.7.0/SPAdes-3.7.0-Linux.tar.gz
+    tar -xzf SPAdes-3.7.0-Linux.tar.gz
+    cd SPAdes-3.7.0-Linux/bin/
 </code>
 </pre>
 
@@ -187,13 +187,13 @@ SPAdes comes in several separate modules:
 <h3>2.2 Downloading SPAdes binaries for Mac</h3>
 
 <p>
-    To obtain <a href="http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
+    To obtain <a href="http://spades.bioinf.spbau.ru/release3.7.0/SPAdes-3.7.0-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    curl http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0-Darwin.tar.gz -o SPAdes-3.6.0-Darwin.tar.gz
-    tar -zxf SPAdes-3.6.0-Darwin.tar.gz
-    cd SPAdes-3.6.0-Darwin/bin/
+    curl http://spades.bioinf.spbau.ru/release3.7.0/SPAdes-3.7.0-Darwin.tar.gz -o SPAdes-3.7.0-Darwin.tar.gz
+    tar -zxf SPAdes-3.7.0-Darwin.tar.gz
+    cd SPAdes-3.7.0-Darwin/bin/
 </code>
 </pre>
 
@@ -228,13 +228,13 @@ SPAdes comes in several separate modules:
     </ul>
 
 <p>
-    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0.tar.gz">SPAdes source code</a>: 
+    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release3.7.0/SPAdes-3.7.0.tar.gz">SPAdes source code</a>: 
 
 <pre class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0.tar.gz
-    tar -xzf SPAdes-3.6.0.tar.gz
-    cd SPAdes-3.6.0
+    wget http://spades.bioinf.spbau.ru/release3.7.0/SPAdes-3.7.0.tar.gz
+    tar -xzf SPAdes-3.7.0.tar.gz
+    cd SPAdes-3.7.0
 </code>
 </pre>
 
@@ -338,7 +338,7 @@ Thank you for using SPAdes!
     SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.
 
 <p>
-    To run SPAdes 3.6.0 you need at least one library of the following types:
+    To run SPAdes 3.7.0 you need at least one library of the following types:
     <ul>
         <li>Illumina paired-end/high-quality mate-pairs/unpaired reads</li>
         <li>IonTorrent paired-end/high-quality mate-pairs/unpaired reads</li>
@@ -398,7 +398,7 @@ SPAdes supports mate-pair only assembly. However, we recommend to use only high-
 <p>
     By using command line interface, you can specify up to nine different single-read libraries. To input more libraries, you can use <a href="#yaml">YAML data set file</a>.
 <p>
-    Single librairies are assumed to have high quality and a reasonable coverage. For example, you can provide PacBio CSS reads as a single-read library. Additionally, if you have merged a paired-end library with overlapping read-pairs (for example, using <a href="http://ccb.jhu.edu/software/FLASH/" target="_blank">FLASh</a>), you can provide the resulting reads as a single-read library.
+    Single librairies are assumed to have high quality and a reasonable coverage. For example, you can provide PacBio CCS reads as a single-read library. Additionally, if you have merged a paired-end library with overlapping read-pairs (for example, using <a href="http://ccb.jhu.edu/software/FLASH/" target="_blank">FLASh</a>), you can provide the resulting reads as a single-read library.
 <p>
     Note, that you should not specify PacBio CLR, Sanger reads or additional contigs as single-read libraries, each of them has a separate <a href="#inputdata">option</a>.
 
@@ -416,9 +416,7 @@ SPAdes supports mate-pair only assembly. However, we recommend to use only high-
     For PacBio you just need to have filtered subreads in FASTQ/FASTA format. Provide these filtered subreads using <code>--pacbio</code> option. Oxford Nanopore reads are provided with <code>--nanopore</code> option.
 
 <p>
-    PacBio CCS reads or pre-corrected (using third-party software) PacBio CLR / Oxford Nanopore reads can be simply provided as single reads to SPAdes.
-
-
+    PacBio CCS/Reads of Insert reads or pre-corrected (using third-party software) PacBio CLR / Oxford Nanopore reads can be simply provided as single reads to SPAdes.
 
 <h4>Additional contigs</h4>
 <p>
@@ -454,6 +452,12 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
     &nbsp;&nbsp;&nbsp;&nbsp;This flag is required for MDA (single-cell) data.
 </p>
 
+<a name="meta"></a>
+<p>
+    <code>--meta </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling metagenomic data sets (runs metaSPAdes). Note, that metaSPAdes supports only a <b>single</b> paired-end library and does not support <a href="#correctoropt">careful mode</a> (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes.
+</p>
+
 <p>
     <code>--iontorrent </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling IonTorrent data. Allows BAM files as input. Carefully read <a href="#sec3.3">section 3.3</a> before using this option.
@@ -472,7 +476,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 
 <p>
     <code>-v</code> (or <code>--version</code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Prints version.
+    &nbsp;&nbsp;&nbsp;&nbsp;Prints SPAdes version.
 </p>
 
 
@@ -492,7 +496,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 <a name="correctoropt">
 <p>
     <code>--careful</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Tries to reduce the number of mismatches and short indels. Also runs MismatchCorrector &ndash; a post processing tool, which uses <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool (comes with SPAdes). This option is recommended. 
+    &nbsp;&nbsp;&nbsp;&nbsp;Tries to reduce the number of mismatches and short indels. Also runs MismatchCorrector &ndash; a post processing tool, which uses <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool (comes with SPAdes). This option is recommended for single-genome assembly, but is not supported by metaSPAdes metagenomic pipeline. 
 
 </p>
 
@@ -559,7 +563,7 @@ In comparison to the <code>--continue</code> option, you can change some of the 
 
 <p>
     <code>--s<b>&lt;#></b> &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File for single-read library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5). For example, for the first paired-end library the option is:
+    &nbsp;&nbsp;&nbsp;&nbsp;File for single-read library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9). For example, for the first paired-end library the option is:
     <code>--s1 &lt;file_name> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;Do not use <code>-s</code> options for single-read libraries, since it specifies unpaired reads for the first paired-end library.
 </p>
@@ -569,29 +573,29 @@ In comparison to the <code>--continue</code> option, you can change some of the 
 
 <p>
     <code>--pe<b>&lt;#></b>-12 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5). For example, for the first single-read library the option is:
+    &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9). For example, for the first single-read library the option is:
     <code>--pe1-12 &lt;file_name> </code><br>
 </p>
 
 <p>
     <code>--pe<b>&lt;#></b>-1 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with left reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+    &nbsp;&nbsp;&nbsp;&nbsp;File with left reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9).
 </p>
 
 <p>
     <code>--pe<b>&lt;#></b>-2 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+    &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9).
 </p>
 
 <p>
     <code>--pe<b>&lt;#></b>-s &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads from paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5) <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads from paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9) <br>
     &nbsp;&nbsp;&nbsp;&nbsp;For example, paired reads can become unpaired during the error correction procedure.
 </p>
 
 <p>
     <code>--pe<b>&lt;#></b>-<b>&lt;or></b> &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Orientation of reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5; <code><b>&lt;or></b></code> = "fr","rf","ff"). <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Orientation of reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9; <code><b>&lt;or></b></code> = "fr","rf","ff"). <br>
     &nbsp;&nbsp;&nbsp;&nbsp;The default orientation for paired-end libraries is forward-reverse. For example, to specify reverse-forward orientation for the second paired-end library, you should use the flag:
     <code>--pe2-rf </code><br>
 </p>
@@ -599,21 +603,21 @@ In comparison to the <code>--continue</code> option, you can change some of the 
 <li><b>&nbsp;Mate-pair libraries</b></li>
 <p>
     <code>--mp<b>&lt;#></b>-12 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+    &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9).
 </p>
 
 <p>
     <code>--mp<b>&lt;#></b>-1 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with left reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+    &nbsp;&nbsp;&nbsp;&nbsp;File with left reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9).
 </p>
 
 <p>
     <code>--mp<b>&lt;#></b>-2 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+    &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9).
 </p>
 <p>
     <code>--mp<b>&lt;#></b>-<b>&lt;or></b> &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Orientation of reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5; <code><b>&lt;or></b></code> = "fr","rf","ff"). <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Orientation of reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9; <code><b>&lt;or></b></code> = "fr","rf","ff"). <br>
     &nbsp;&nbsp;&nbsp;&nbsp;The default orientation for mate-pair libraries is reverse-forward. For example, to specify forward-forward orientation for the first mate-pair library, you should use the flag:
     <code>--mp1-ff </code><br>
 </p>
@@ -623,26 +627,26 @@ In comparison to the <code>--continue</code> option, you can change some of the 
 
 <p>
     <code>--hqmp<b>&lt;#></b>-12 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+    &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9).
 </p>
 
 <p>
     <code>--hqmp<b>&lt;#></b>-1 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with left reads for high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+    &nbsp;&nbsp;&nbsp;&nbsp;File with left reads for high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9).
 </p>
 
 <p>
     <code>--hqmp<b>&lt;#></b>-2 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+    &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9).
 </p>
 <p>
     <code>--hqmp<b>&lt;#></b>-s &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads from high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5) <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads from high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9) <br>
 </p>
 
 <p>
     <code>--hqmp<b>&lt;#></b>-<b>&lt;or></b> &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Orientation of reads for high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5; <code><b>&lt;or></b></code> = "fr","rf","ff"). <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Orientation of reads for high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9; <code><b>&lt;or></b></code> = "fr","rf","ff"). <br>
     &nbsp;&nbsp;&nbsp;&nbsp;The default orientation for high-quality mate-pair libraries is forward-reverse. For example, to specify reverse-forward orientation for the first high-quality mate-pair library, you should use the flag:
     <code>--hqmp1-rf </code><br>
 </p>
@@ -654,12 +658,12 @@ In comparison to the <code>--continue</code> option, you can change some of the 
 
 <p>
     <code>--nxmate<b>&lt;#></b>-1 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with left reads for Lucigen NxSeq&reg; Long Mate Pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+    &nbsp;&nbsp;&nbsp;&nbsp;File with left reads for Lucigen NxSeq&reg; Long Mate Pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9).
 </p>
 
 <p>
     <code>--nxmate<b>&lt;#></b>-2 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for Lucigen NxSeq&reg; Long Mate Pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+    &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for Lucigen NxSeq&reg; Long Mate Pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9).
 </p>
 
 </p>
@@ -747,7 +751,7 @@ and PacBio CCS and CLR reads:
 
 <pre class="code">
 <code>
-    pacbio_css.fastq
+    pacbio_ccs.fastq
     pacbio_clr.fastq
 </code>
 </pre>
@@ -832,7 +836,7 @@ and PacBio CCS and CLR reads:
 
 <p>
     <code>--cov-cutoff &lt;float></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Read coverage cutoff value. Must be a positive float value, or 'auto', or 'off'. Default value is 'off'. When set to 'auto' SPAdes automatically computes coverage threshold using conservative strategy.
+    &nbsp;&nbsp;&nbsp;&nbsp;Read coverage cutoff value. Must be a positive float value, or 'auto', or 'off'. Default value is 'off'. When set to 'auto' SPAdes automatically computes coverage threshold using conservative strategy. Note, that this option is not supported by metaSPAdes.
 </p>
 
 
@@ -1069,14 +1073,17 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
         <li><code>&lt;output_dir>/contigs.fasta</code> contains resulting contigs</li>
         <li><code>&lt;output_dir>/scaffolds.fasta</code> contains resulting scaffolds</li>
         <li><code>&lt;output_dir>/assembly_graph.fastg</code> contains SPAdes assembly graph in <a href="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf" target="_blank">FASTG format</a></li>
-        <li><code>&lt;output_dir>/contigs.paths</code> paths in the assembly graph corresponding to contigs.fasta (see details below)</li>
-        <li><code>&lt;output_dir>/scaffolds.paths</code> paths in the assembly graph corresponding to scaffolds.fasta (see details below)</li>
+        <li><code>&lt;output_dir>/contigs.paths</code> contains paths in the assembly graph corresponding to contigs.fasta (see details below)</li>
+        <li><code>&lt;output_dir>/scaffolds.paths</code> contains paths in the assembly graph corresponding to scaffolds.fasta (see details below)</li>
     </ul>
+
+<p>
+   Contigs/scaffolds names in SPAdes output FASTA files have the following format: <br><code>>NODE_3_length_237403_cov_243.207_ID_45</code><br> Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is the sequence length in nucleotides and <code>243.207</code> is the k-mer coverage for the last (largest) k value used. Note that the k-mer coverage is always lower than the read (per-base) coverage. 
 
 <p>
    To view FASTG files we recommend to use <a href="http://rrwick.github.io/Bandage/" target="_blank">Bandage visualization tool</a>. Note that sequences stored in <code>assembly_graph.fastg</code> correspond to contigs before repeat resolution (edges of the assembly graph). Paths corresponding to contigs after repeat resolution (scaffolding) are stored in <code>contigs.paths</code> (<code>scaffolds.paths</code>) in the format accepted by Bandage (see <a href="https://github.com/rrwick/Bandage/wiki/Graph-paths" target="_blank">Bandage wiki</a> for details). The example is given below.
 
-<p> Let the contig with the name <code>NODE_1_length_100000_cov_215.651_ID_5</code> consist of the following edges of the assembly graph:
+<p> Let the contig with the name <code>NODE_5_length_100000_cov_215.651_ID_5</code> consist of the following edges of the assembly graph:
 <pre>
     <code>
     >EDGE_<b>2</b>_length_33280_cov_199.702
@@ -1090,7 +1097,7 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
 Then, <code>contigs.paths</code> will contain the following record:
 <pre>
     <code>
-    NODE_1_length_100000_cov_215.651_ID_5
+    NODE_5_length_100000_cov_215.651_ID_5
     2+,5-,3+,5-,4+
     </code>
 </pre>
@@ -1099,12 +1106,12 @@ Then, <code>contigs.paths</code> will contain the following record:
 Since the current version of Bandage does not accept paths with gaps, paths corresponding contigs/scaffolds jumping over a gap in the assembly graph are splitted by semicolon at the gap positions. For example, the following record
 <pre>
     <code>
-    NODE_1_length_237403_cov_243.207_ID_45
+    NODE_3_length_237403_cov_243.207_ID_45
     21-,17-,15+,17-,16+;
     31+,23-,22+,23-,4-
     </code>
 </pre>
-states that <code>NODE_1_length_237403_cov_243.207_ID_45</code> corresponds to the path with 10 edges, but jumps over a gap between edges <code>EDGE_16_length_21503_cov_482.709</code> and <code>EDGE_31_length_140767_cov_220.239</code>.
+states that <code>NODE_3_length_237403_cov_243.207_ID_45</code> corresponds to the path with 10 edges, but jumps over a gap between edges <code>EDGE_16_length_21503_cov_482.709</code> and <code>EDGE_31_length_140767_cov_220.239</code>.
 
 <p>
 The full list of <code>&lt;output_dir></code> content is presented below: 
@@ -1112,8 +1119,10 @@ The full list of <code>&lt;output_dir></code> content is presented below:
 <pre>
     <code>contigs.fasta</code> &ndash; <i>resulting contigs</i>
     <code>scaffolds.fasta</code> &ndash; <i>resulting scaffolds </i>
-    <code>before_rr.fasta</code> &ndash; <i>contigs before repeat resolution</i>
     <code>assembly_graph.fastg</code> &ndash; <i>assembly graph</i>
+    <code>contigs.paths</code> &ndash; <i>contigs paths in the assembly graph</i>
+    <code>scaffolds.paths</code> &ndash; <i>scaffolds paths in the assembly graph</i>
+    <code>before_rr.fasta</code> &ndash; <i>contigs before repeat resolution</i>
 
     <code>corrected/</code> &ndash; <i>files from read error correction</i>
         <code>configs/</code> &ndash; <i>configuration files for read error correction</i>
@@ -1144,8 +1153,13 @@ The full list of <code>&lt;output_dir></code> content is presented below:
 <a name="sec4">
 <h2>4. Citation</h2>
 <p>
-    If you use SPAdes in your research, please include <a href="http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13" target="_blank">Nurk, Bankevich et al., 2013</a> in your reference list. You can also add 
-<a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021" target="_blank">Bankevich, Nurk et al., 2012</a> instead.
+    If you use SPAdes in your research, please include <a href="http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13" target="_blank">Nurk, Bankevich et al., 2013</a> in your reference list. You may also add <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021" target="_blank">Bankevich, Nurk et al., 2012</a> instead.
+
+<p>
+    If you use PacBio or Nanopore reads, you may also cite  <a href="http://bioinformatics.oxfordjournals.org/content/early/2015/11/20/bioinformatics.btv688.short" target="_blank">Antipov et al., 2014</a>. If you use multiple paired-end and/or mate-pair libraries you may also cite papers describing SPAdes repeat resolution algorithms <a href="http://bioinformatics.oxfordjournals.org/content/30/12/i293.short" target="_blank">Prjibelski et al., 2014</a> and <a href="http://bioinformatics.oxfordjournals.org/content/31/20/3262.abstract" target="_blank">Vasilinetc et al., 2015</a>.
+
+<p>  
+    For the information about dipSPAdes and truSPAdes papers see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a> and <a href="truspades_manual.html" target="_blank">truSPAdes manual</a> respectively.
 
 <p>
     In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <a href="mailto:spades.support@bioinf.spbau.ru" target="_blank">spades.support@bioinf.spbau.ru</a>.
