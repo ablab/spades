@@ -11,7 +11,6 @@ cp -r assembler/src/ionhammer $SRC_DIR/
 cp -r assembler/src/scaffold_correction $SRC_DIR/
 cp -r assembler/src/include $SRC_DIR/
 cp -r assembler/src/io $SRC_DIR/
-cp -r assembler/src/mph_index $SRC_DIR/
 cp -r assembler/src/cmake $SRC_DIR/
 cp -r assembler/src/corrector $SRC_DIR/
 cp -r assembler/src/spades_pipeline $SRC_DIR/
