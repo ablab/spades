@@ -19,20 +19,6 @@ namespace omnigraph {
 
 namespace de {
 
-template<typename Histogram, bool back> struct IterHelper;
-
-template<typename Histogram> struct IterHelper<Histogram, false> {
-    typedef typename Histogram::const_iterator Iterator;
-    static Iterator begin(const Histogram& h) { return h.begin(); }
-    static Iterator end(const Histogram& h) { return h.end(); }
-};
-
-template<typename Histogram> struct IterHelper<Histogram, true> {
-    typedef typename Histogram::const_reverse_iterator Iterator;
-    static Iterator begin(const Histogram& h) { return h.rbegin(); }
-    static Iterator end(const Histogram& h) { return h.rend(); }
-};
-
 /**
  * @brief Paired reads info storage. Arranged as a map of map of info points.
  * @param G graph type
@@ -58,65 +44,59 @@ public:
 public:
     /**
      * @brief Smart proxy set representing a composite histogram of points between two edges.
-     * @param full When true, represents the whole histogram (consisting both of directly added points
-     *             and "restored" conjugates).
-     *             When false, proxifies only the added points.
      * @detail You can work with the proxy just like with any constant set.
      *         The only major difference is that it returns all consisting points by value,
-     *         becauses some of them don't exist in the underlying sets and are
+     *         because some of them don't exist in the underlying sets and are
      *         restored from the conjugate info on-the-fly.
      */
-    template<bool back = false>
     class HistProxy {
 
     public:
         /**
          * @brief Iterator over a proxy set of points.
-         * @warning Generally, the proxy is unordered even if the set is ordered.
-         *          If you require that, convert it into a flat histogram with Unwrap().
-         * @param full When true, traverses both straight and conjugate points,
-         *             and automatically recalculates the distance for latter.
-         *             When false, traverses only the added points and skips the rest.
          */
         class Iterator: public boost::iterator_facade<Iterator, Point, boost::bidirectional_traversal_tag, Point> {
 
-            typedef typename IterHelper<Histogram, back>::Iterator InnerIterator;
+            typedef typename Histogram::const_iterator InnerIterator;
 
         public:
-            Iterator(InnerIterator iter)
-                    : iter_(iter)
+            Iterator(InnerIterator iter, bool back)
+                    : iter_(iter), back_(back)
             {}
 
         private:
             friend class boost::iterator_core_access;
 
             Point dereference() const {
-                Point result = *iter_;
-                if (back)
+                if (back_) {
+                    Point result = *(iter_ - 1);
                     result.d = -result.d;
-                return result;
+                    return result;
+                } else
+                    return *iter_;
             }
 
             void increment() {
-                ++iter_;
+                back_ ? --iter_ : ++iter_;
             }
 
             void decrement() {
-                --iter_;
+                back_ ? ++iter_ : --iter_;
             }
 
             inline bool equal(const Iterator &other) const {
-                return iter_ == other.iter_;
+                return iter_ == other.iter_ && back_ == other.back_;
             }
 
             InnerIterator iter_; //current position
+            bool back_;
         };
 
         /**
          * @brief Returns a wrapper for a histogram.
          */
-        HistProxy(const Histogram& hist)
-            : hist_(hist)
+        HistProxy(const Histogram& hist, bool back = false)
+            : hist_(hist), back_(back)
         {}
 
         /**
@@ -128,12 +108,13 @@ public:
         }
 
         Iterator begin() const {
-            return IterHelper<Histogram, back>::begin(hist_);
+            return Iterator(back_ ? hist_.end() : hist_.begin(), back_);
         }
 
         Iterator end() const {
-            return IterHelper<Histogram, back>::end(hist_);
+            return Iterator(back_ ? hist_.begin() : hist_.end(), back_);
         }
+
         /**
          * @brief Finds the point with the minimal distance.
          */
@@ -167,39 +148,23 @@ public:
 
     private:
         const Histogram& hist_;
-        float offset_;
+        bool back_;
     };
 
-    /**
-     * @brief Type synonym for straight histogram proxies
-     */
-    typedef HistProxy<false> FullHistProxy;
-
-    /**
-     * @brief Type synonym for reversed histogram proxies
-     */
-    typedef HistProxy<true> BackHistProxy;
-
-    typedef typename FullHistProxy::Iterator HistIterator;
-    typedef typename BackHistProxy::Iterator BackHistIterator;
+    typedef typename HistProxy::Iterator HistIterator;
 
     //---- Traversing edge neighbours ----
 
-    template<bool back = false>
-    using EdgeHist = std::pair<EdgeId, HistProxy<back>>;
+    using EdgeHist = std::pair<EdgeId, HistProxy>;
 
     /**
      * @brief A proxy map representing neighbourhood of an edge,
      *        where `Key` is the graph edge ID and `Value` is the proxy histogram.
-     * @param half When false, represents all neighbours (consisting both of directly added data
-     *             and "restored" conjugates).
-     *             When true, proxifies only half of the added edges.
      * @detail You can work with the proxy just like with any constant map.
      *         The only major difference is that it returns all consisting pairs by value,
      *         becauses some of them don't exist in the underlying sets and are
      *         restored from the conjugate info on-the-fly.
      */
-    template<bool half = false>
     class EdgeProxy {
     public:
 
@@ -208,7 +173,7 @@ public:
          * @param full When true, traverses both straight and conjugate pairs.
          *             When false, traverses only lesser pairs of edges.
          */
-        class Iterator: public boost::iterator_facade<Iterator, EdgeHist<>, boost::forward_traversal_tag, EdgeHist<>> {
+        class Iterator: public boost::iterator_facade<Iterator, EdgeHist, boost::forward_traversal_tag, EdgeHist> {
 
             typedef typename InnerMap::const_iterator InnerIterator;
 
@@ -218,16 +183,17 @@ public:
             }
 
             void Skip() { //For a half iterator, skip conjugate pairs
-                while (half && iter_ != stop_ && SkipPair(edge_, iter_->first))
+                while (half_ && iter_ != stop_ && SkipPair(edge_, iter_->first))
                     ++iter_;
             }
 
         public:
-            Iterator(const PairedIndex &index, InnerIterator iter, InnerIterator stop, EdgeId edge)
+            Iterator(const PairedIndex &index, InnerIterator iter, InnerIterator stop, EdgeId edge, bool half)
                     : index_ (index)
                     , iter_(iter)
                     , stop_(stop)
                     , edge_(edge)
+                    , half_(half)
             {
                 Skip();
             }
@@ -239,10 +205,12 @@ public:
 
             void operator=(const Iterator &other) {
                 //TODO: is this risky without an assertion?
+                //VERIFY(index_ == other.index_);
                 //We shouldn't reassign iterators from one index onto another
                 iter_ = other.iter_;
                 stop_ = other.stop_;
                 edge_ = other.edge_;
+                half_ = other.half_;
             }
 
         private:
@@ -252,36 +220,38 @@ public:
                 return iter_ == other.iter_;
             }
 
-            EdgeHist<> dereference() const {
+            EdgeHist dereference() const {
                 const auto& hist = iter_->second;
-                return std::make_pair(iter_->first, HistProxy<>(hist));
+                return std::make_pair(iter_->first, HistProxy(hist));
             }
 
         private:
             const PairedIndex &index_;
             InnerIterator iter_, stop_;
             EdgeId edge_;
+            bool half_;
         };
 
-        EdgeProxy(const PairedIndex &index, const InnerMap& map, EdgeId edge)
-            : index_(index), map_(map), edge_(edge)
+        EdgeProxy(const PairedIndex &index, const InnerMap& map, EdgeId edge, bool half = false)
+            : index_(index), map_(map), edge_(edge), half_(half)
         {}
 
         Iterator begin() const {
-            return Iterator(index_, map_.begin(), map_.end(), edge_);
+            return Iterator(index_, map_.begin(), map_.end(), edge_, half_);
         }
 
         Iterator end() const {
-            return Iterator(index_, map_.end(), map_.end(), edge_);
+            return Iterator(index_, map_.end(), map_.end(), edge_, half_);
         }
 
-        HistProxy<> operator[](EdgeId e2) const {
+        HistProxy operator[](EdgeId e2) const {
             return index_.Get(edge_, e2);
         }
 
-        HistProxy<true> GetBack(EdgeId e2) const {
+        //Currently unused
+        /*HistProxy<true> GetBack(EdgeId e2) const {
             return index_.GetBack(edge_, e2);
-        }
+        }*/
 
         bool empty() const {
             return map_.empty();
@@ -291,10 +261,12 @@ public:
         const PairedIndex& index_;
         const InnerMap& map_;
         EdgeId edge_;
+        //When false, represents all neighbours (consisting both of directly added data and "restored" conjugates).
+        //When true, proxifies only half of the added edges.
+        bool half_;
     };
 
-    typedef typename EdgeProxy<false>::Iterator EdgeIterator;
-    typedef typename EdgeProxy<>::Iterator HalfEdgeIterator;
+    typedef typename EdgeProxy::Iterator EdgeIterator;
 
     //--Constructor--
 
@@ -368,12 +340,6 @@ private:
 
     bool IsSelfConj(EdgeId e1, EdgeId e2) {
         return e1 == graph_.conjugate(e2);
-    }
-
-    // modifying the histogram
-    inline void InsertPoint(Histogram& histogram, Point point) {
-        histogram.insert(point);
-        ++size_;
     }
 
 public:
@@ -515,34 +481,6 @@ public:
         return adt::make_range(data_begin(), data_end());
     }
 
-    template<bool half = false>
-    EdgeProxy<half> GetT(EdgeId e) const {
-        return EdgeProxy<half>(*this, GetImpl(e), e);
-    }
-
-    /**
-     * @brief Returns a full proxy map to the neighbourhood of some edge.
-     */
-    EdgeProxy<> Get(EdgeId e) const {
-        return GetT<>(e);
-    }
-
-    /**
-     * @brief Returns a half proxy map to normalized neighboring edges
-     * @detail You should use it when you don't care for conjugate info,
-     *         or don't want to process them twice.
-     */
-    EdgeProxy<true> GetHalf(EdgeId e) const {
-        return GetT<true>(e);
-    }
-
-    /**
-     * @brief Operator alias of Get(id).
-     */
-    EdgeProxy<> operator[](EdgeId e) const {
-        return Get(e);
-    }
-
 private:
     //When there is no such edge, returns a fake empty map for safety
     const InnerMap& GetImpl(EdgeId e) const {
@@ -560,31 +498,50 @@ private:
             if (j != i->second.end())
                 return j->second;
         }
-        return HistProxy<>::empty_hist();
+        return HistProxy::empty_hist();
     }
 
 public:
 
     /**
+     * @brief Returns a proxy map to the neighbourhood of some edge.
+     * @param e ID of starting edge
+     * @param half true if edge pairs (a,b) where a > b should be skipped,
+     *        when you don't care for conjugate info, or don't want to process them twice.
+     *        Default is false.
+     */
+    EdgeProxy Get(EdgeId e, bool half = false) const {
+        return EdgeProxy(*this, GetImpl(e), e, half);
+    }
+
+    /**
+     * @brief Operator alias of Get(id).
+     */
+    EdgeProxy operator[](EdgeId e) const {
+        return Get(e);
+    }
+
+    /**
      * @brief Returns a full histogram proxy for all points between two edges.
      */
-    HistProxy<> Get(EdgeId e1, EdgeId e2) const {
-        return HistProxy<>(GetImpl(e1, e2));
+    HistProxy Get(EdgeId e1, EdgeId e2) const {
+        return HistProxy(GetImpl(e1, e2));
     }
 
     /**
      * @brief Operator alias of Get(e1, e2).
      */
-    HistProxy<> operator[](EdgePair p) const {
+    HistProxy operator[](EdgePair p) const {
         return Get(p.first, p.second);
     }
 
+    //Currently unused
     /**
      * @brief Returns a full backwards histogram proxy for all points between two edges.
      */
-    HistProxy<true> GetBack(EdgeId e1, EdgeId e2) const {
+    /*HistProxy<true> GetBack(EdgeId e1, EdgeId e2) const {
         return HistProxy<true>(GetImpl(e2, e1));
-    }
+    }*/
     
     /**
      * @brief Checks if an edge (or its conjugated twin) is consisted in the index.

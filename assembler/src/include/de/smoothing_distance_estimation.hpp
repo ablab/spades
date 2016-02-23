@@ -164,7 +164,7 @@ private:
                    const InPairedIndex& pi,
                    PairedInfoBuffer<Graph>& result) const override {
     typename base::LengthMap second_edges;
-    auto inner_map = pi.GetHalf(e1);
+    auto inner_map = pi.Get(e1, true);
     for (auto I : inner_map)
       second_edges[I.first];
 

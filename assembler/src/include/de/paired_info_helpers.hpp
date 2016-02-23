@@ -16,9 +16,9 @@ namespace de {
 template<typename Index, bool full>
 class EdgePairIterator :
         public boost::iterator_facade<EdgePairIterator<Index, full>,
-                typename Index::FullHistProxy,
+                typename Index::HistProxy,
                 boost::forward_traversal_tag,
-                typename Index::FullHistProxy>
+                typename Index::HistProxy>
 {
     typedef typename Index::StorageMap::const_iterator OuterIterator;
     typedef boost::optional<typename Index::InnerMap::const_iterator> InnerIterator;
@@ -68,7 +68,7 @@ private:
 
 public:
 
-    typename Index::FullHistProxy dereference() const {
+    typename Index::HistProxy dereference() const {
         return index_.Get(first(), second()); //TODO: optimize
     }
 

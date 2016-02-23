@@ -71,7 +71,7 @@ EdgeSet GetNeighbours(const Index &pi, MockGraph::EdgeId e) {
 
 EdgeSet GetHalfNeighbours(const MockIndex &pi, MockGraph::EdgeId e) {
     EdgeSet result;
-    for (auto i : pi.GetHalf(e))
+    for (auto i : pi.Get(e, true))
         result.insert(i.first);
     return result;
 }
@@ -194,24 +194,25 @@ BOOST_AUTO_TEST_CASE(PairedInfoHalfAccess) {
     RawHistogram test1;
     test1.insert({2, 1});
     test1.insert({3, 2});
-    auto proxy1 = pi.GetHalf(1);
+    auto proxy1 = pi.Get(1, true);
     BOOST_CHECK_EQUAL(proxy1[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy1[3].Unwrap(), test1);
-    auto proxy3 = pi.GetHalf(3);
+    auto proxy3 = pi.Get(3, true);
     BOOST_CHECK_EQUAL(proxy3[7].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy3[1].Unwrap(), test0);
-    auto proxy2 = pi.GetHalf(2);
+    auto proxy2 = pi.Get(2, true);
     BOOST_CHECK_EQUAL(proxy2[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy2[4].Unwrap(), test0);
     RawHistogram test4;
     test4.insert({4, 2});
     test4.insert({5, 1});
-    auto proxy4 = pi.GetHalf(4);
+    auto proxy4 = pi.Get(4, true);
     BOOST_CHECK_EQUAL(proxy4[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy4[2].Unwrap(), test4);
 }
 
-BOOST_AUTO_TEST_CASE(PairedInfoBackData) {
+//Backwards info is currently unused
+/*BOOST_AUTO_TEST_CASE(PairedInfoBackData) {
     MockGraph graph;
     MockIndex pi(graph);
     pi.Add(1, 8, {1, 3});
@@ -227,7 +228,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoBackData) {
     test2.insert({-4, 2});
     test2.insert({-5, 1});
     BOOST_CHECK_EQUAL(pi.GetBack(2, 4).Unwrap(), test2);
-}
+}*/
 
 BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
     MockGraph graph;

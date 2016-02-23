@@ -64,7 +64,7 @@ class GapCloserPairedIndexFiller {
                         auto sp = std::make_pair(e1, e2);
                         auto cp = paired_index.ConjugatePair(e1, e2);
                         auto ip = std::min(sp, cp);
-                        paired_index.Add(sp.first, sp.second, omnigraph::de::RawPoint(1000000., 1.));
+                        paired_index.Add(ip.first, ip.second, omnigraph::de::RawPoint(1000000., 1.));
                     }
                 }
             }
