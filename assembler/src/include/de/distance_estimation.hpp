@@ -274,7 +274,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
                            const InPairedIndex& pi,
                            PairedInfoBuffer<Graph>& result) const {
     typename base::LengthMap second_edges;
-    auto inner_map = pi.Get(e1, true);
+    auto inner_map = pi.GetHalf(e1);
     for (auto i : inner_map)
         second_edges[i.first];
 

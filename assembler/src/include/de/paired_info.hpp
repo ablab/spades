@@ -20,7 +20,16 @@ namespace omnigraph {
 namespace de {
 
 /**
- * @brief Paired reads info storage. Arranged as a map of map of info points.
+ * @brief Index of paired reads information. For each pair of edges, we store so-called histogram which is a set
+ *        of points with distance between those edges. Index is internally arranged as a map of map of histograms:
+ *        edge1 -> (edge2 -> histogram)
+ *        When we add a point (a,b)->p into the index, we automatically insert a conjugate point (b',a')->p',
+ *        (self-conjugate edge pairs are the sole exception), so the index is always conjugate-symmetrical.
+ *        Index provides access for a lot of different information:
+ *        - if you need to have a histogram between two edges, use Get(edge1, edge2);
+ *        - if you need to get a neighbourhood of some edge (second edges with corresponding histograms), use Get(edge1);
+ *        - if you need to skip a symmetrical half of that neighbourhood, use GetHalf(edge1);
+ *        Backward information (e.g., (b,a)->-p) is currently inaccessible.
  * @param G graph type
  * @param H map-like container type (parameterized by key and value type)
  */
@@ -44,7 +53,7 @@ public:
 public:
     /**
      * @brief Smart proxy set representing a composite histogram of points between two edges.
-     * @detail You can work with the proxy just like with any constant set.
+     * @detail You can work with the proxy just like any constant set.
      *         The only major difference is that it returns all consisting points by value,
      *         because some of them don't exist in the underlying sets and are
      *         restored from the conjugate info on-the-fly.
@@ -162,16 +171,15 @@ public:
      *        where `Key` is the graph edge ID and `Value` is the proxy histogram.
      * @detail You can work with the proxy just like with any constant map.
      *         The only major difference is that it returns all consisting pairs by value,
-     *         becauses some of them don't exist in the underlying sets and are
-     *         restored from the conjugate info on-the-fly.
+     *         because proxies are constructed on-the-fly.
      */
     class EdgeProxy {
     public:
 
         /**
          * @brief Iterator over a proxy map.
-         * @param full When true, traverses both straight and conjugate pairs.
-         *             When false, traverses only lesser pairs of edges.
+         * @detail For a full proxy, traverses both straight and conjugate pairs.
+         *         For a half proxy, traverses only lesser pairs (i.e., (a,b) where (a,b)<=(b',a')) of edges.
          */
         class Iterator: public boost::iterator_facade<Iterator, EdgeHist, boost::forward_traversal_tag, EdgeHist> {
 
@@ -373,7 +381,7 @@ public:
     //--Data deleting methods--
 
     /**
-     * @brief Removes the specific entry from the index.
+     * @brief Removes the specific entry from the index, and its conjugate.
      * @warning Don't use it on unclustered index, because hashmaps require set_deleted_item
      * @return The number of deleted entries (0 if there wasn't such entry)
      */
@@ -386,7 +394,7 @@ public:
     }
 
     /**
-     * @brief Removes the whole histogram from the index.
+     * @brief Removes the whole histogram from the index, and its conjugate.
      * @warning Don't use it on unclustered index, because hashmaps require set_deleted_item
      * @return The number of deleted entries
      */
@@ -443,22 +451,19 @@ public:
 
     /**
      * @brief Removes all neighbourhood of an edge (all edges referring to it, and their histograms)
-     * @warning Currently doesn't check the conjugate info (should it?), so it may actually
-     *          skip some data.
+     * @warning To keep the symmetricity, it also deletes all conjugates, so the actual complexity is O(size).
      * @return The number of deleted entries
      */
     size_t Remove(EdgeId edge) {
         InnerMap &inner_map = storage_[edge];
-        for (auto iter = inner_map.begin(); iter != inner_map.end(); ++iter) {
-            EdgeId e2 = iter->first;
-            if (edge != e2) {
-                this->Remove(e2, edge);
-            }
-        }
-        size_t size_of_removed = inner_map.size();
-        storage_.erase(edge);
-        size_ -= size_of_removed;
-        return size_of_removed;
+        std::vector<EdgeId> to_remove;
+        to_remove.reserve(inner_map.size());
+        size_t old_size = this->size();
+        for (const auto& ep : inner_map)
+            to_remove.push_back(ep.first);
+        for (auto e2 : to_remove)
+            this->Remove(edge, e2);
+        return old_size - this->size();
     }
 
     // --Accessing--
@@ -504,14 +509,19 @@ private:
 public:
 
     /**
-     * @brief Returns a proxy map to the neighbourhood of some edge.
+     * @brief Returns a whole proxy map to the neighbourhood of some edge.
      * @param e ID of starting edge
-     * @param half true if edge pairs (a,b) where a > b should be skipped,
-     *        when you don't care for conjugate info, or don't want to process them twice.
-     *        Default is false.
      */
-    EdgeProxy Get(EdgeId e, bool half = false) const {
-        return EdgeProxy(*this, GetImpl(e), e, half);
+    EdgeProxy Get(EdgeId e) const {
+        return EdgeProxy(*this, GetImpl(e), e);
+    }
+
+    /**
+     * @brief Returns a half proxy map to the neighbourhood of some edge.
+     * @param e ID of starting edge
+     */
+    EdgeProxy GetHalf(EdgeId e) const {
+        return EdgeProxy(*this, GetImpl(e), e, true);
     }
 
     /**
@@ -522,7 +532,7 @@ public:
     }
 
     /**
-     * @brief Returns a full histogram proxy for all points between two edges.
+     * @brief Returns a histogram proxy for all points between two edges.
      */
     HistProxy Get(EdgeId e1, EdgeId e2) const {
         return HistProxy(GetImpl(e1, e2));
@@ -537,7 +547,7 @@ public:
 
     //Currently unused
     /**
-     * @brief Returns a full backwards histogram proxy for all points between two edges.
+     * @brief Returns a backwards histogram proxy for all points between two edges.
      */
     /*HistProxy<true> GetBack(EdgeId e1, EdgeId e2) const {
         return HistProxy<true>(GetImpl(e2, e1));
@@ -551,7 +561,7 @@ public:
     }
 
     /**
-     * @brief Checks if there is a histogram for two points.
+     * @brief Checks if there is a histogram for two points (or their conjugated pair).
      */
     bool contains(EdgeId e1, EdgeId e2) const {
         auto i1 = storage_.find(e1);
@@ -568,7 +578,7 @@ public:
     const Graph &graph() const { return graph_; }
 
     /**
-     * @brief Inits the index with graph data. Used in clustered indexes.
+     * @brief Inits the index with graph data. For each edge, adds a loop with zero weight.
      * @warning Do not call this on non-empty indexes.
      */
     void Init() {
@@ -586,7 +596,7 @@ public:
     }
 
     /**
-     * @brief Returns the physical index size (total count of all edge pairs)
+     * @brief Returns the physical index size (total count of all histograms).
      */
     size_t size() const { return size_; }
 

@@ -232,7 +232,7 @@ class DataPrinter {
         size_t comp_size = 0;
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            auto inner_map = paired_index.Get(e1, true);
+            auto inner_map = paired_index.GetHalf(e1);
             for (auto entry : inner_map) {
                 if (component_.contains(entry.first)) { // if the second edge also lies in the same component
                     comp_size += entry.second.size();
@@ -245,7 +245,7 @@ class DataPrinter {
 
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            const auto& inner_map = paired_index.Get(e1, true);
+            const auto& inner_map = paired_index.GetHalf(e1);
             std::map<typename Graph::EdgeId, typename Index::HistProxy> ordermap(inner_map.begin(), inner_map.end());
             for (auto entry : ordermap) {
                 EdgeId e2 = entry.first;

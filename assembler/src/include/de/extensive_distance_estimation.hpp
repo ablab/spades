@@ -64,7 +64,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   virtual void ProcessEdge(EdgeId e1,
                            const InPairedIndex& pi,
                            PairedInfoBuffer<Graph>& result) const override {
-    auto inner_map = pi.Get(e1, true);
+    auto inner_map = pi.GetHalf(e1);
     typename base::LengthMap second_edges;
     for (auto i : inner_map)
       second_edges[i.first];
@@ -112,7 +112,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     return true;
   }
 
-  void MergeInto(const TempHistogram& what, TempHistogram& where, int shift) const {
+  void MergeInto(const InHistogram& what, TempHistogram& where, int shift) const {
     // assuming they are sorted already
     if (what.size() == 0)
       return;
@@ -130,7 +130,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     // Check, whether two histograms intersect. If not, we can just merge them
     // straightforwardly.
     if (math::ls(where.rbegin()->d, what.begin()->d + shift) ||
-        math::gr(where.begin()->d, what.rbegin()->d + shift)) {
+        math::gr(where.begin()->d, what.max().d + shift)) {
       for (auto to_be_added : what) {
         to_be_added.d += shift;
         where.insert(to_be_added);
@@ -150,17 +150,6 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     VERIFY(IsSorted(where));
   }
 
-  //TODO: check if that is needed
-  TempHistogram FilterPositive(const typename InPairedIndex::HistProxy & hist, size_t first_len, size_t second_len) const {
-    // assuming it is sorted
-    TempHistogram answer;
-    for (auto point : hist) {
-      if (math::ge(2. * point.d + (double) second_len, (double) first_len))
-        answer.insert(point);
-    }
-    return answer;
-  }
-
   // left edge being extended to the left, shift is negative always
   void ExtendLeftDFS(EdgeId current, const EdgeId& last, TempHistogram& data, int shift, size_t max_shift) const {
     VertexId start = this->graph().EdgeStart(current);
@@ -173,9 +162,8 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       auto hist = this->index().Get(next, last);
       if (-shift < (int) max_shift)
         ExtendLeftDFS(next, last, data, shift - (int) this->graph().length(next), max_shift);
-      auto filtered_infos = FilterPositive(hist, this->graph().length(next), this->graph().length(last));
-      if (filtered_infos.size() > 0)
-        MergeInto(filtered_infos, data, shift - (int) this->graph().length(next));
+      if (hist.size() > 0)
+        MergeInto(hist, data, shift - (int) this->graph().length(next));
     }
   }
 
@@ -192,9 +180,8 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       if (-shift < (int) max_shift)
         ExtendRightDFS(first, next, data, shift - (int) this->graph().length(current), max_shift);
 
-      auto filtered_infos = FilterPositive(hist, this->graph().length(first), this->graph().length(next));
-      if (filtered_infos.size() > 0)
-        MergeInto(filtered_infos, data, shift - (int) this->graph().length(current));
+      if (hist.size() > 0)
+        MergeInto(hist, data, shift - (int) this->graph().length(current));
     }
   }
 

@@ -71,7 +71,7 @@ EdgeSet GetNeighbours(const Index &pi, MockGraph::EdgeId e) {
 
 EdgeSet GetHalfNeighbours(const MockIndex &pi, MockGraph::EdgeId e) {
     EdgeSet result;
-    for (auto i : pi.Get(e, true))
+    for (auto i : pi.GetHalf(e))
         result.insert(i.first);
     return result;
 }
@@ -194,19 +194,19 @@ BOOST_AUTO_TEST_CASE(PairedInfoHalfAccess) {
     RawHistogram test1;
     test1.insert({2, 1});
     test1.insert({3, 2});
-    auto proxy1 = pi.Get(1, true);
+    auto proxy1 = pi.GetHalf(1);
     BOOST_CHECK_EQUAL(proxy1[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy1[3].Unwrap(), test1);
-    auto proxy3 = pi.Get(3, true);
+    auto proxy3 = pi.GetHalf(3);
     BOOST_CHECK_EQUAL(proxy3[7].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy3[1].Unwrap(), test0);
-    auto proxy2 = pi.Get(2, true);
+    auto proxy2 = pi.GetHalf(2);
     BOOST_CHECK_EQUAL(proxy2[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy2[4].Unwrap(), test0);
     RawHistogram test4;
     test4.insert({4, 2});
     test4.insert({5, 1});
-    auto proxy4 = pi.Get(4, true);
+    auto proxy4 = pi.GetHalf(4);
     BOOST_CHECK_EQUAL(proxy4[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy4[2].Unwrap(), test4);
 }
@@ -251,6 +251,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
     pi.Add(1, 3, {3, 1, 0});
     pi.Remove(1, 3);
     BOOST_CHECK(!pi.contains(1, 3));
+    BOOST_CHECK(!pi.contains(4, 2));
     BOOST_CHECK_EQUAL(pi.size(), 2);
     //Check for nonexisting remove
     BOOST_CHECK_EQUAL(pi.Remove(1, 3, {1, 1, 0}), 0);
@@ -259,14 +260,13 @@ BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
     BOOST_CHECK(pi.contains(1, 8));
     BOOST_CHECK_EQUAL(pi.size(), 2);
     //Check for neighbours remove
-    //pi.Add(1, 3, {3, 1, 0});
-    //pi.Add(2, 13, {7, 1, 0});
-    //pi.Add(8, 14, {3, 1, 0});
-    //pi.Add(13, 4, {5, 1, 0});
-    //BOOST_CHECK(pi.contains(1, 14));
-    //pi.Remove(1); //TODO: fix (?) that
-    //EdgeSet test3 = {3, 8};
-    //BOOST_CHECK_EQUAL(GetNeighbours(pi, 14), test3);
+    pi.Add(1, 3, {3, 1, 0});
+    pi.Add(13, 2, {7, 1, 0});
+    pi.Remove(1);
+    BOOST_CHECK(!pi.contains(1, 3));
+    BOOST_CHECK(!pi.contains(4, 2));
+    BOOST_CHECK(!pi.contains(1, 14));
+    BOOST_CHECK(!pi.contains(13, 2));
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoUnexistingEdges) {
