@@ -173,8 +173,8 @@ def get_available_memory():
 
 def process_readline(line, is_python3=sys.version.startswith('3.')):
     if is_python3:
-        return str(line, 'utf-8')
-    return line
+        return str(line, 'utf-8').rstrip()
+    return line.rstrip()
 
 
 def process_spaces(str):
@@ -196,7 +196,7 @@ def sys_call(cmd, log=None, cwd=None):
 
     output = ''
     while not proc.poll():
-        line = process_readline(proc.stdout.readline()).rstrip()
+        line = process_readline(proc.stdout.readline())
         if line:
             if log:
                 log.info(line)
@@ -206,7 +206,7 @@ def sys_call(cmd, log=None, cwd=None):
             break
 
     for line in proc.stdout.readlines():
-        line = process_readline(line).rstrip()
+        line = process_readline(line)
         if line:
             if log:
                 log.info(line)
@@ -244,11 +244,11 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     if log and (not out_filename or not err_filename):
         while not proc.poll():
             if not out_filename:
-                line = process_readline(proc.stdout.readline()).rstrip()
+                line = process_readline(proc.stdout.readline())
                 if line:
                     log.info(line)
             if not err_filename:
-                line = process_readline(proc.stderr.readline()).rstrip()
+                line = process_readline(proc.stderr.readline())
                 if line:
                     log.info(line)
             if proc.returncode is not None:
@@ -257,11 +257,11 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
         if not out_filename:
             for line in proc.stdout.readlines():
                 if line != '':
-                    log.info(process_readline(line).rstrip())
+                    log.info(process_readline(line))
         if not err_filename:
             for line in proc.stderr.readlines():
                 if line != '':
-                    log.info(process_readline(line).rstrip())
+                    log.info(process_readline(line))
     else:
         proc.wait()
 
@@ -688,30 +688,41 @@ def process_Ns_in_additional_contigs(dataset_data, dst, log):
 
 
 def split_interlaced_reads(dataset_data, dst, log):
-    def write_single_read(in_file, out_file, fasta_read_name=None, is_fastq=False, is_python3=False):
-        next_read_str = "" # if there is no next read: empty string
-        if not is_fastq and fasta_read_name is not None:
-            read_name = fasta_read_name
-        else:
+    def write_single_read(in_file, out_file, read_name=None, is_fastq=False, is_python3=False):
+        if read_name is None:
             read_name = process_readline(in_file.readline(), is_python3)
         if not read_name:
-            return next_read_str
+            return ''  # no next read
         read_value = process_readline(in_file.readline(), is_python3)
         line = process_readline(in_file.readline(), is_python3)
-        while line and ((is_fastq and not line.startswith('+')) or (not is_fastq and not line.startswith('>'))):
+        fpos = in_file.tell()
+        while (is_fastq and not line.startswith('+')) or (not is_fastq and not line.startswith('>')):
             read_value += line
             line = process_readline(in_file.readline(), is_python3)
-        next_read_str = line # if there is a next read: "+" (for fastq) or next read name (for fasta)
-        out_file.write(read_name)
-        out_file.write(read_value)
+            if not line:
+                if fpos == in_file.tell():
+                    break
+                fpos = in_file.tell()
+        out_file.write(read_name + '\n')
+        out_file.write(read_value + '\n')
 
         if is_fastq:
             read_quality = process_readline(in_file.readline(), is_python3)
-            while len(read_value) != len(read_quality):
-                read_quality += process_readline(in_file.readline(), is_python3)
-            out_file.write("+\n")
-            out_file.write(read_quality)
-        return next_read_str
+            line = process_readline(in_file.readline(), is_python3)
+            while not line.startswith('@'):
+                read_quality += line
+                line = process_readline(in_file.readline(), is_python3)
+                if not line:
+                    if fpos == in_file.tell():
+                        break
+                    fpos = in_file.tell()
+            if len(read_value) != len(read_quality):
+                error('The length of sequence and quality lines should be the same! '
+                      'Check read %s (SEQ length is %d, QUAL length is %d)' %
+                      (read_name, len(read_value), len(read_quality)), log)
+            out_file.write('+\n')
+            out_file.write(read_quality + '\n')
+        return line  # next read name or empty string
 
     new_dataset_data = list()
     for reads_library in dataset_data:
@@ -753,16 +764,14 @@ def split_interlaced_reads(dataset_data, dst, log):
                         log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
                         out_files = [open(out_left_filename, 'w'), open(out_right_filename, 'w')]
                         i = 0
-                        next_read_str = write_single_read(input_file, out_files[i], None, is_fastq,
-                            sys.version.startswith('3.') and was_compressed)
-                        while next_read_str:
+                        next_read_name = write_single_read(input_file, out_files[i], None, is_fastq,
+                                                           sys.version.startswith('3.') and was_compressed)
+                        while next_read_name:
                             i = (i + 1) % 2
-                            next_read_str = write_single_read(input_file, out_files[i], next_read_str, is_fastq,
-                                sys.version.startswith('3.') and was_compressed)
-                        if (is_fastq and i % 2 == 1) or (not is_fastq and i % 2 == 0):
-                        # when fastq, the number of writes is equal to number of READS (should be EVEN)
-                        # when fasta, the number of writes is equal to number of NEXT READS (should be ODD)
-                            error("The number of reads in file with interlaced reads (" + interlaced_reads + ") is ODD!", log)
+                            next_read_name = write_single_read(input_file, out_files[i], next_read_name, is_fastq,
+                                                               sys.version.startswith('3.') and was_compressed)
+                        if i == 0:
+                            error("The number of reads in file with interlaced reads (" + interlaced_reads + ") should be EVEN!", log)
                         out_files[0].close()
                         out_files[1].close()
                     input_file.close()
