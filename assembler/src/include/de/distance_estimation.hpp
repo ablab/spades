@@ -99,7 +99,7 @@ class AbstractDistanceEstimator {
  protected:
   typedef UnclusteredPairedInfoIndexT<Graph> InPairedIndex;
   typedef PairedInfoIndexT<Graph> OutPairedIndex;
-  typedef typename InPairedIndex::FullHistProxy InHistogram;
+  typedef typename InPairedIndex::HistProxy InHistogram;
   typedef typename OutPairedIndex::Histogram OutHistogram;
 
  public:
@@ -274,7 +274,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
                            const InPairedIndex& pi,
                            PairedInfoBuffer<Graph>& result) const {
     typename base::LengthMap second_edges;
-    auto inner_map = pi.RawGet(e1);
+    auto inner_map = pi.GetHalf(e1);
     for (auto i : inner_map)
         second_edges[i.first];
 

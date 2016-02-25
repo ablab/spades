@@ -153,8 +153,8 @@ class PairInfoImprover {
         DEBUG("Resulting size " << to_remove[0].size());
 
         DEBUG("Deleting paired infos, liable to removing");
-        for (auto I = omnigraph::de::raw_pair_begin(to_remove[0]);
-            I != omnigraph::de::raw_pair_end(to_remove[0]); ++I) {
+        for (auto I = omnigraph::de::half_pair_begin(to_remove[0]);
+            I != omnigraph::de::half_pair_end(to_remove[0]); ++I) {
             cnt += DeleteIfExist(I.first(), I.second(), *I);
         }
         to_remove[0].Clear();
@@ -196,8 +196,8 @@ class PairInfoImprover {
         size_t cnt = 0;
         for (size_t i = 0; i < iters.size() - 1; ++i) {
             DEBUG("Adding map #" << i);
-            for (auto I = omnigraph::de::raw_pair_begin(to_add[i]);
-                I != omnigraph::de::raw_pair_end(to_add[i]);
+            for (auto I = omnigraph::de::half_pair_begin(to_add[i]);
+                I != omnigraph::de::half_pair_end(to_add[i]);
                 ++I) {
                 EdgeId e1 = I.first();
                 EdgeId e2 = I.second();
@@ -215,7 +215,7 @@ class PairInfoImprover {
     }
 
   private:
-    size_t DeleteIfExist(EdgeId e1, EdgeId e2, const typename Index::FullHistProxy& infos) {
+    size_t DeleteIfExist(EdgeId e1, EdgeId e2, const typename Index::HistProxy& infos) {
         size_t cnt = 0;
         for (auto point : infos) {
             cnt += index_.Remove(e1, e2, point);

@@ -295,40 +295,38 @@ class Histogram {
   public:
     // This function overload is enabled only when Point has const operator+= (e.g. RawPoint)
     // and therefore we can update it inplace.
-    template<class OtherHist, class U = Point>
+    template<class U = Point>
     typename std::enable_if<can_merge<U>::value, size_t>::type
-    merge(const OtherHist &other) {
-        size_t added = 0;
-        for (const auto& new_point : other) {
-            // First, try to insert a point
-            const auto& result = insert(new_point);
-            if (!result.second) {
-                // We already having something there. Try to merge stuff in.
-                *result.first += new_point;
-            } else
-                added += 1;
-        }
-
-        return added;
+    merge_point(const U &new_point) {
+        // First, try to insert a point
+        const auto& result = insert(new_point);
+        if (result.second)
+            return 1;
+        // We already having something there. Try to merge stuff in.
+        *result.first += new_point;
+        return 0;
     }
 
     // Otherwise this overload is used, which removes the point from set,
     // updates it and re-inserts back.
-    template<class OtherHist, class U = Point>
+    template<class U = Point>
     typename std::enable_if<!can_merge<U>::value, size_t>::type
-    merge(const OtherHist &other) {
+    merge_point(const U &new_point) {
+        auto result = insert(new_point);
+        if (result.second)
+            return 1;
+        Point updated = *result.first + new_point;
+        auto after_removed = erase(result.first);
+        insert(after_removed, updated);
+        return 0;
+    }
+
+    template<class OtherHist>
+    size_t merge(const OtherHist &other) {
         size_t added = 0;
         for (const auto& new_point : other) {
-            // First, try to insert a point
-            auto result = insert(new_point);
-            if (!result.second) {
-                Point updated = *result.first + new_point;
-                auto after_removed = erase(result.first);
-                insert(after_removed, updated);
-            } else
-                added += 1;
+            added += merge_point(new_point);
         }
-
         return added;
     }
 };

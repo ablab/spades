@@ -60,8 +60,11 @@ class GapCloserPairedIndexFiller {
                     if (InTipIter != InTipMap.end()) {
                         auto e1 = OutTipIter->second.first;
                         auto e2 = InTipIter->second.first;
-                        paired_index.SwapConj(e1, e2);
-                        paired_index.Add(e1, e2, omnigraph::de::RawPoint(1000000., 1.));
+                        //FIXME: Normalize fake points
+                        auto sp = std::make_pair(e1, e2);
+                        auto cp = paired_index.ConjugatePair(e1, e2);
+                        auto ip = std::min(sp, cp);
+                        paired_index.Add(ip.first, ip.second, omnigraph::de::RawPoint(1000000., 1.));
                     }
                 }
             }
