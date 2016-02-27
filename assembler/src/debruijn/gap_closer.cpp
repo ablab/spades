@@ -423,8 +423,6 @@ class GapCloser {
 
                 bool closed = false;
                 for (auto point : i.second) {
-                    if (math::ls(point.d, 0))
-                        continue;
                     if (math::ls(point.weight, weight_threshold_))
                         continue;
 

@@ -28,7 +28,7 @@ enum construction_mode {
 };
 
 enum estimation_mode {
-    em_simple, em_weighted, em_extensive, em_smoothing
+    em_simple, em_weighted, em_smoothing
 };
 
 enum resolving_mode {
@@ -92,7 +92,6 @@ struct debruijn_config {
         estimation_mode_id_mapping::value_type info[] = {
             estimation_mode_id_mapping::value_type("simple", em_simple),
             estimation_mode_id_mapping::value_type("weighted", em_weighted),
-            estimation_mode_id_mapping::value_type("extensive", em_extensive),
             estimation_mode_id_mapping::value_type("smoothing", em_smoothing)
         };
         return estimation_mode_id_mapping(info, utils::array_end(info));

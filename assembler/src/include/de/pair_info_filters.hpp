@@ -141,9 +141,9 @@ class AmbiguousPairInfoChecker : public AbstractPairInfoChecker<Graph> {
       return true;
   }
 
-  double GetPairInfoWeight(EdgeId edge1, EdgeId edge2){
+  DEWeight GetPairInfoWeight(EdgeId edge1, EdgeId edge2){
       auto hist = index_.Get(edge1, edge2);
-      return (hist.size() == 1) ? float(hist.begin()->weight) : 0.0f;
+      return (hist.size() == 1) ? hist.begin()->weight : DEWeight(0);
   }
 
   bool InnerCheck(const PairInfoT& info){

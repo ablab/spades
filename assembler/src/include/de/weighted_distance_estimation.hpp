@@ -68,8 +68,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
     DEDistance max_dist = this->max_distance_;
     size_t cur_dist = 0;
     vector<double> weights(forward.size());
-    for (auto iter = histogram.begin(); iter != histogram.end(); ++iter) {
-      Point point = *iter;
+    for (auto point : histogram) {
       if (ls(2. * point.d + (double) second_len, (double) first_len))
         continue;
       while (cur_dist + 1 < forward.size() && (double) forward[cur_dist + 1] < point.d) {

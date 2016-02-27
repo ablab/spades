@@ -92,8 +92,7 @@ class SplitPathConstructor {
             DEBUG("SPC: pi " << cur_info);
             vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge, cur_info.second,
                                                            (size_t) (cur_info.d() - cur_info.var()),
-                    //FIXME is it a bug?!
-                                                           (size_t) (cur_info.d() - cur_info.var()),
+                                                           (size_t) (cur_info.d() + cur_info.var()),
                                                            path_processor);
             DEBUG("Found common part of size " << common_part.size());
             PathInfoClass<Graph> sub_res(cur_edge);

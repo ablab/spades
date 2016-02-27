@@ -12,18 +12,18 @@
 #include "omni/omni_utils.hpp"
 #include "data_divider.hpp"
 #include "peak_finder.hpp"
-#include "extensive_distance_estimation.hpp"
+#include "weighted_distance_estimation.hpp"
 
 namespace omnigraph {
 
 namespace de {
 
 template<class Graph>
-class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
+class SmoothingDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   //FIXME configure
   static const size_t OVERLAP_TOLERANCE = 1000;
 protected:
-  typedef ExtensiveDistanceEstimator<Graph> base;
+  typedef WeightedDistanceEstimator<Graph> base;
   typedef typename base::InPairedIndex InPairedIndex;
   typedef typename base::OutPairedIndex OutPairedIndex;
   typedef typename base::InHistogram InHistogram;
@@ -89,7 +89,7 @@ private:
   mutable size_t gap_distances;
 
   EstimHist FindEdgePairDistances(EdgePair ep,
-                                  const InHistogram& raw_hist) const {
+                                  const TempHistogram& raw_hist) const {
     size_t first_len = this->graph().length(ep.first);
     size_t second_len = this->graph().length(ep.second);
     TRACE("Lengths are " << first_len << " " << second_len);
@@ -180,7 +180,7 @@ private:
             << " " << this->graph().int_id(e2));
       const GraphLengths& forward = entry.second;
 
-      TempHistogram hist = pi.Get(e1, e2).Unwrap();
+      auto hist = pi.Get(e1, e2).Unwrap();
       EstimHist estimated;
       //DEBUG("Extending paired information");
       //DEBUG("Extend left");
@@ -191,6 +191,10 @@ private:
         estimated = FindEdgePairDistances(ep, hist);
         ++gap_distances;
       } else if (forward.size() > 0 && (!only_scaffolding_)) {
+        //TODO: remove THIS
+        InPairedIndex temp_index(this->graph());
+        temp_index.AddMany(e1, e2, hist);
+        auto hist = temp_index.Get(e1, e2);
         estimated = this->base::EstimateEdgePairDistances(ep, hist, forward);
       }
       DEBUG(gap_distances << " distances between gap edge pairs have been found");
@@ -204,6 +208,65 @@ private:
             this->graph().IncomingEdgeCount(this->graph().EdgeEnd(e1)) == 1 &&
             this->graph().IncomingEdgeCount(this->graph().EdgeStart(e2)) == 0 &&
             this->graph().OutgoingEdgeCount(this->graph().EdgeStart(e2)) == 1);
+  }
+
+  void ExtendInfoRight(EdgeId e1, EdgeId e2, TempHistogram& data, size_t max_shift) const {
+    ExtendRightDFS(e1, e2, data, 0, max_shift);
+  }
+
+  void MergeInto(const InHistogram& what, TempHistogram& where, int shift) const {
+    // assuming they are sorted already
+    if (what.size() == 0)
+      return;
+
+    if (where.size() == 0) {
+      for (auto to_be_added : what) {
+        to_be_added.d += shift;
+        where.insert(to_be_added);
+      }
+
+      return;
+    }
+
+    // Check, whether two histograms intersect. If not, we can just merge them
+    // straightforwardly.
+    if (math::ls(where.rbegin()->d, what.min().d + shift) ||
+        math::gr(where.begin()->d, what.max().d + shift)) {
+      for (auto to_be_added : what) {
+        to_be_added.d += shift;
+        where.insert(to_be_added);
+      }
+    } else {
+      for (auto to_be_added : what) {
+        to_be_added.d += shift;
+        auto low_bound = std::lower_bound(where.begin(), where.end(), to_be_added);
+        if (to_be_added == *low_bound) {
+          to_be_added.weight += low_bound->weight;
+          where.erase(to_be_added);
+          where.insert(to_be_added);
+        } else
+          where.insert(low_bound, to_be_added);
+      }
+    }
+  }
+
+  void ExtendRightDFS(const EdgeId& first, EdgeId current, TempHistogram& data, int shift, size_t max_shift) const {
+    auto end = this->graph().EdgeEnd(current);
+    if (current == first)
+      return;
+    if (this->graph().IncomingEdgeCount(end) > 1)
+      return;
+
+    for (EdgeId next : this->graph().OutgoingEdges(end)) {
+      auto hist = this->index().Get(first, next);
+      if (-shift < (int) max_shift)
+        ExtendRightDFS(first, next, data, shift - (int) this->graph().length(current), max_shift);
+
+      //auto filtered_infos = FilterPositive(hist, this->graph().length(first), this->graph().length(next));
+      //if (filtered_infos.size() > 0)
+      //  MergeInto(filtered_infos, data, shift - (int) this->graph().length(current));
+      MergeInto(hist, data, shift - (int) this->graph().length(current));
+    }
   }
 
   const string Name() const override {

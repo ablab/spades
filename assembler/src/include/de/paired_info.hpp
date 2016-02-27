@@ -13,7 +13,7 @@
 
 #include <type_traits>
 
-#include "index_point.hpp"
+#include "histogram.hpp"
 
 namespace omnigraph {
 
@@ -31,20 +31,28 @@ namespace de {
  *        - if you need to skip a symmetrical half of that neighbourhood, use GetHalf(edge1);
  *        Backward information (e.g., (b,a)->-p) is currently inaccessible.
  * @param G graph type
- * @param H map-like container type (parameterized by key and value type)
+ * @param Traits Policy-like structure with associated types of inner and resulting points, and how to convert between them
+ * @param C map-like container type (parameterized by key and value type)
  */
-template<typename G, typename H, template<typename, typename> class Container>
+template<typename G, typename Traits, template<typename, typename> class Container>
 class PairedIndex {
+
+private:
+    typedef typename Traits::Gapped InnerPoint;
+    typedef omnigraph::de::Histogram<InnerPoint> InnerHistogram;
 
 public:
     typedef G Graph;
-    typedef H Histogram;
+
+    typedef typename Traits::Expanded Point;
+    typedef omnigraph::de::Histogram<Point> Histogram;
     typedef typename Graph::EdgeId EdgeId;
     typedef std::pair<EdgeId, EdgeId> EdgePair;
-    typedef typename Histogram::value_type Point;
 
-    typedef Container<EdgeId, Histogram> InnerMap;
+    typedef Container<EdgeId, InnerHistogram> InnerMap;
     typedef Container<EdgeId, InnerMap> StorageMap;
+
+    typedef PairedIndex<G, Traits, Container> Self;
 
     //--Data access types--
 
@@ -66,23 +74,23 @@ public:
          */
         class Iterator: public boost::iterator_facade<Iterator, Point, boost::bidirectional_traversal_tag, Point> {
 
-            typedef typename Histogram::const_iterator InnerIterator;
+            typedef typename InnerHistogram::const_iterator InnerIterator;
 
         public:
-            Iterator(InnerIterator iter, bool back)
-                    : iter_(iter), back_(back)
+            Iterator(InnerIterator iter, DEDistance offset, bool back = false)
+                    : iter_(iter), offset_(offset), back_(back)
             {}
 
         private:
             friend class boost::iterator_core_access;
 
             Point dereference() const {
-                if (back_) {
-                    Point result = *(iter_ - 1);
+                auto i = iter_;
+                if (back_) --i;
+                Point result = Traits::Expand(*i, offset_);
+                if (back_)
                     result.d = -result.d;
-                    return result;
-                } else
-                    return *iter_;
+                return result;
             }
 
             void increment() {
@@ -98,30 +106,38 @@ public:
             }
 
             InnerIterator iter_; //current position
+            DEDistance offset_; //edge length
             bool back_;
         };
 
         /**
          * @brief Returns a wrapper for a histogram.
          */
-        HistProxy(const Histogram& hist, bool back = false)
-            : hist_(hist), back_(back)
+        HistProxy(const InnerHistogram& hist, DEDistance offset = 0, bool back = false)
+            : hist_(hist), offset_(offset), back_(back)
         {}
 
         /**
          * @brief Returns an empty proxy (effectively a Null object pattern).
          */
-        static const Histogram& empty_hist() {
-            static Histogram res;
+        static const InnerHistogram& empty_hist() {
+            static InnerHistogram res;
             return res;
         }
 
+        /**
+         * @brief Adds a point to the histogram.
+         */
+        //void insert(Point p) {
+        //    hist_.insert(Traits::Shrink(p, offset_));
+        //}
+
         Iterator begin() const {
-            return Iterator(back_ ? hist_.end() : hist_.begin(), back_);
+            return Iterator(back_ ? hist_.end() : hist_.begin(), offset_, back_);
         }
 
         Iterator end() const {
-            return Iterator(back_ ? hist_.begin() : hist_.end(), back_);
+            return Iterator(back_ ? hist_.begin() : hist_.end(), offset_, back_);
         }
 
         /**
@@ -141,7 +157,7 @@ public:
         }
 
         /**
-         * @brief Returns the copy of all points in a simple histogram.
+         * @brief Returns the copy of all points in a simple flat histogram.
          */
         Histogram Unwrap() const {
             return Histogram(begin(), end());
@@ -156,7 +172,8 @@ public:
         }
 
     private:
-        const Histogram& hist_;
+        const InnerHistogram& hist_;
+        DEDistance offset_;
         bool back_;
     };
 
@@ -185,13 +202,8 @@ public:
 
             typedef typename InnerMap::const_iterator InnerIterator;
 
-            bool SkipPair(EdgeId e1, EdgeId e2) {
-                auto ep = std::make_pair(e1, e2);
-                return ep > index_.ConjugatePair(ep);
-            }
-
             void Skip() { //For a half iterator, skip conjugate pairs
-                while (half_ && iter_ != stop_ && SkipPair(edge_, iter_->first))
+                while (half_ && iter_ != stop_ && index_.GreaterPair(edge_, iter_->first))
                     ++iter_;
             }
 
@@ -230,11 +242,11 @@ public:
 
             EdgeHist dereference() const {
                 const auto& hist = iter_->second;
-                return std::make_pair(iter_->first, HistProxy(hist));
+                return std::make_pair(iter_->first, HistProxy(hist, index_.CalcOffset(edge_)));
             }
 
         private:
-            const PairedIndex &index_;
+            const PairedIndex &index_; //TODO: get rid of this somehow
             InnerIterator iter_, stop_;
             EdgeId edge_;
             bool half_;
@@ -253,6 +265,8 @@ public:
         }
 
         HistProxy operator[](EdgeId e2) const {
+            if (half_ && index_.GreaterPair(edge_, e2))
+                return HistProxy::empty_hist();
             return index_.Get(edge_, e2);
         }
 
@@ -276,13 +290,12 @@ public:
 
     typedef typename EdgeProxy::Iterator EdgeIterator;
 
-    //--Constructor--
+    //---------------- Constructor ----------------
 
     PairedIndex(const Graph &graph)
         : size_(0), graph_(graph)
     {}
 
-    //--Inserting--
 public:
     /**
      * @brief Returns a conjugate pair for two edges.
@@ -298,28 +311,30 @@ public:
     }
 
 private:
+    bool GreaterPair(EdgeId e1, EdgeId e2) const {
+        auto ep = std::make_pair(e1, e2);
+        return ep > ConjugatePair(ep);
+    }
+
     void SwapConj(EdgeId &e1, EdgeId &e2) const {
         auto tmp = e1;
         e1 = graph_.conjugate(e2);
         e2 = graph_.conjugate(tmp);
     }
 
-    void SwapConj(EdgeId &e1, EdgeId &e2, Point &p) const {
-        SwapConj(e1, e2);
-        p.d += CalcOffset(e1, e2);
-    }
-
-    float CalcOffset(EdgeId e1, EdgeId e2) const {
-        return float(graph_.length(e1)) - float(graph_.length(e2));
+    size_t CalcOffset(EdgeId e) const {
+        return this->graph().length(e);
     }
 
 public:
+    //---------------- Data inserting methods ----------------
     /**
      * @brief Adds a point between two edges to the index,
      *        merging weights if there's already one with the same distance.
      */
-    void Add(EdgeId e1, EdgeId e2, Point point) {
-        InsertWithConj(e1, e2, point);
+    void Add(EdgeId e1, EdgeId e2, Point p) {
+        InnerPoint sp = Traits::Shrink(p, CalcOffset(e1));
+        InsertWithConj(e1, e2, sp);
     }
 
     /**
@@ -327,23 +342,19 @@ public:
      */
     template<typename TH>
     void AddMany(EdgeId e1, EdgeId e2, const TH& hist) {
-        for (auto point : hist) {
-            InsertWithConj(e1, e2, point);
+        for (auto p : hist) {
+            InnerPoint sp = Traits::Shrink(p, CalcOffset(e1));
+            InsertWithConj(e1, e2, sp);
         }
     }
 
 private:
 
-    void InsertWithConj(EdgeId e1, EdgeId e2,
-                       Point sp) {
-        size_ += storage_[e1][e2].merge_point(sp);
+    void InsertWithConj(EdgeId e1, EdgeId e2, InnerPoint p) {
+        size_ += storage_[e1][e2].merge_point(p);
         //TODO: deal with loops and self-conj
-        SwapConj(e1, e2, sp);
-        size_ += storage_[e1][e2].merge_point(sp);
-    }
-
-    static bool IsSymmetric(EdgeId e1, EdgeId e2, Point point) {
-        return (e1 == e2) && math::eq(point.d, 0.f);
+        SwapConj(e1, e2);
+        size_ += storage_[e1][e2].merge_point(p);
     }
 
     bool IsSelfConj(EdgeId e1, EdgeId e2) {
@@ -372,23 +383,24 @@ private:
     void MergeInnerMaps(const OtherMap& map_to_add,
                         InnerMap& map) {
         for (const auto& to_add : map_to_add) {
-            Histogram &hist_exists = map[to_add.first];
+            InnerHistogram& hist_exists = map[to_add.first];
             size_ += hist_exists.merge(to_add.second);
         }
     }
 
 public:
-    //--Data deleting methods--
+    //---------------- Data deleting methods ----------------
 
     /**
      * @brief Removes the specific entry from the index, and its conjugate.
      * @warning Don't use it on unclustered index, because hashmaps require set_deleted_item
      * @return The number of deleted entries (0 if there wasn't such entry)
      */
-    size_t Remove(EdgeId e1, EdgeId e2, Point point) {
+    size_t Remove(EdgeId e1, EdgeId e2, Point p) {
+        InnerPoint point = Traits::Shrink(p, graph_.length(e1));
         auto res = RemoveSingle(e1, e2, point);
         //TODO: deal with loops and self-conj
-        SwapConj(e1, e2, point);
+        SwapConj(e1, e2);
         res += RemoveSingle(e1, e2, point);
         return res;
     }
@@ -410,7 +422,7 @@ public:
 private:
 
     //TODO: remove duplicode
-    size_t RemoveSingle(EdgeId e1, EdgeId e2, Point point) {
+    size_t RemoveSingle(EdgeId e1, EdgeId e2, InnerPoint point) {
         auto i1 = storage_.find(e1);
         if (i1 == storage_.end())
             return 0;
@@ -418,7 +430,7 @@ private:
         auto i2 = map.find(e2);
         if (i2 == map.end())
             return 0;
-        Histogram& hist = i2->second;
+        InnerHistogram& hist = i2->second;
         if (!hist.erase(point))
            return 0;
         --size_;
@@ -438,7 +450,7 @@ private:
         auto i2 = map.find(e2);
         if (i2 == map.end())
             return 0;
-        Histogram& hist = i2->second;
+        InnerHistogram& hist = i2->second;
         size_t size_decrease = hist.size();
         map.erase(i2);
         size_ -= size_decrease;
@@ -466,7 +478,7 @@ public:
         return old_size - this->size();
     }
 
-    // --Accessing--
+    //---------------- Data accessing methods ----------------
 
     /**
      * @brief Underlying raw implementation data (for custom iterator helpers).
@@ -496,7 +508,7 @@ private:
     }
 
     //When there is no such histogram, returns a fake empty histogram for safety
-    const Histogram& GetImpl(EdgeId e1, EdgeId e2) const {
+    const InnerHistogram& GetImpl(EdgeId e1, EdgeId e2) const {
         auto i = storage_.find(e1);
         if (i != storage_.end()) {
             auto j = i->second.find(e2);
@@ -535,7 +547,7 @@ public:
      * @brief Returns a histogram proxy for all points between two edges.
      */
     HistProxy Get(EdgeId e1, EdgeId e2) const {
-        return HistProxy(GetImpl(e1, e2));
+        return HistProxy(GetImpl(e1, e2), CalcOffset(e1));
     }
 
     /**
@@ -550,9 +562,9 @@ public:
      * @brief Returns a backwards histogram proxy for all points between two edges.
      */
     /*HistProxy<true> GetBack(EdgeId e1, EdgeId e2) const {
-        return HistProxy<true>(GetImpl(e2, e1));
+        return HistProxy<true>(GetImpl(e2, e1), CalcOffset(e2));
     }*/
-    
+
     /**
      * @brief Checks if an edge (or its conjugated twin) is consisted in the index.
      */
@@ -570,7 +582,7 @@ public:
         return false;
     }
 
-    // --Miscellaneous--
+    //---------------- Miscellaneous ----------------
 
     /**
      * Returns the graph the index is based on. Needed for custom iterators.
@@ -601,6 +613,27 @@ public:
     size_t size() const { return size_; }
 
 private:
+    PairedIndex(size_t size, const Graph& graph, const StorageMap& storage)
+        : size_(size), graph_(graph), storage_(storage) {}
+
+public:
+    /**
+     * @brief Returns a copy of sub-index.
+     * @deprecated Needed only in smoothing distance estimator.
+     */
+    Self SubIndex(EdgeId e1, EdgeId e2) const {
+        InnerMap tmp;
+        const auto& h1 = GetImpl(e1, e2);
+        size_t size = h1.size();
+        tmp[e1][e2] = h1;
+        SwapConj(e1, e2);
+        const auto& h2 = GetImpl(e1, e2);
+        size += h2.size();
+        tmp[e1][e2] = h2;
+        return Self(size, graph_, tmp);
+    };
+
+private:
     size_t size_;
     const Graph& graph_;
     StorageMap storage_;
@@ -611,12 +644,12 @@ private:
 template<typename K, typename V>
 using safe_btree_map = btree::safe_btree_map<K, V>; //Two-parameters wrapper
 template<typename Graph>
-using PairedInfoIndexT = PairedIndex<Graph, HistogramWithWeight, safe_btree_map>;
+using PairedInfoIndexT = PairedIndex<Graph, PointTraits, safe_btree_map>;
 
 template<typename K, typename V>
 using sparse_hash_map = google::sparse_hash_map<K, V>; //Two-parameters wrapper
 template<typename Graph>
-using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawHistogram, sparse_hash_map>;
+using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawPointTraits, sparse_hash_map>;
 
 /**
  * @brief A collection of paired indexes which can be manipulated as one.
@@ -668,7 +701,7 @@ using UnclusteredPairedInfoIndicesT = PairedIndices<UnclusteredPairedInfoIndexT<
 template<typename K, typename V>
 using unordered_map = std::unordered_map<K, V>; //Two-parameters wrapper
 template<class Graph>
-using PairedInfoBuffer = PairedIndex<Graph, RawHistogram, unordered_map>;
+using PairedInfoBuffer = PairedIndex<Graph, RawPointTraits, unordered_map>;
 
 template<class Graph>
 using PairedInfoBuffersT = PairedIndices<PairedInfoBuffer<Graph>>;

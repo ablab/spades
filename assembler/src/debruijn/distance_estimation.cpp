@@ -13,7 +13,6 @@
 #include "de/pair_info_filters.hpp"
 #include "de/distance_estimation.hpp"
 #include "de/weighted_distance_estimation.hpp"
-#include "de/extensive_distance_estimation.hpp"
 #include "de/smoothing_distance_estimation.hpp"
 
 #include "utils.hpp"
@@ -78,8 +77,8 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
                     total_weight += inner_it->weight;
                     if (math::eq(inner_it->d + prev_it->d, 0.f)) {
                         success = true;
-                        double center = 0.;
-                        double var = inner_it->d + inner_it->var;
+                        DEDistance center = 0.;
+                        DEVariance var = inner_it->d + inner_it->var;
                         for (auto inner_it_2 = prev_it; inner_it_2 != inner_it; ++inner_it_2) {
                             TRACE("Removing pair info " << *inner_it_2);
                             clustered_index.Remove(first_edge, second_edge, *inner_it_2);
@@ -117,9 +116,8 @@ void estimate_distance(conj_graph_pack& gp,
 
     std::function<double(int)> weight_function;
 
-    if (config.est_mode == em_weighted   ||                                     // in these cases we need a weight function
-        config.est_mode == em_smoothing  ||                                     // to estimate graph distances in the
-        config.est_mode == em_extensive) {                                      // histogram
+    if (config.est_mode == em_weighted   ||                    // in these cases we need a weight function
+        config.est_mode == em_smoothing) {                     // to estimate graph distances in the histogram
         if (lib.data().insert_size_distribution.size() == 0) {
             WARN("No insert size distribution found, stopping distance estimation");
             return;
@@ -151,15 +149,6 @@ void estimate_distance(conj_graph_pack& gp,
                     estimator =
                     WeightedDistanceEstimator<Graph>(gp.g, paired_index,
                                                      dist_finder, weight_function, linkage_distance, max_distance);
-
-            estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
-            break;
-        }
-        case em_extensive: {
-            const AbstractDistanceEstimator<Graph>&
-                    estimator =
-                    ExtensiveDistanceEstimator<Graph>(gp.g, paired_index,
-                                                      dist_finder, weight_function, linkage_distance, max_distance);
 
             estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
             break;

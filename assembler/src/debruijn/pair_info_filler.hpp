@@ -88,8 +88,8 @@ private:
                 EdgePair ep{mapping_edge_1.first, mapping_edge_2.first};
 
 
-                double weight = weight_f_(mapping_edge_1.second,
-                                          mapping_edge_2.second);
+                omnigraph::de::DEWeight weight =
+                        weight_f_(mapping_edge_1.second, mapping_edge_2.second);
                 size_t kmer_distance = read_distance
                         + mapping_edge_2.second.initial_range.end_pos
                         - mapping_edge_1.second.initial_range.start_pos;

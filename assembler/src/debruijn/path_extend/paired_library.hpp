@@ -140,7 +140,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
 
         for (auto point : index_.Get(e1, e2)) {
             int pairedDistance = rounded_d(point);
-            int distanceDev = (int) point.variation();  //max((int) pointIter->var, (int) is_variation_);
+            int distanceDev = (int) point.variance();  //max((int) pointIter->var, (int) is_variation_);
             //Can be modified according to distance comparison
             int d_min = distance - distanceDev;
             int d_max = distance + distanceDev;

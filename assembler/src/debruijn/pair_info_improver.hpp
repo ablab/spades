@@ -16,15 +16,21 @@
 
 namespace debruijn_graph {
 
+inline bool ClustersIntersect(omnigraph::de::Point p1, omnigraph::de::Point p2) {
+    return math::le(p1.d, p2.d + p1.var + p2.var) &&
+           math::le(p2.d, p1.d + p1.var + p2.var);
+}
+
 template<class Graph>
 static
 bool TryToAddPairInfo(omnigraph::de::PairedInfoIndexT<Graph>& clustered_index,
                       typename Graph::EdgeId e1, typename Graph::EdgeId e2,
                       const omnigraph::de::Point& point_to_add) {
     auto histogram = clustered_index.Get(e1, e2);
-    for (auto i : histogram)
+    for (auto i : histogram) {
         if (ClustersIntersect(i, point_to_add))
             return false;
+    }
 
     clustered_index.Add(e1, e2, point_to_add);
     return true;
@@ -88,8 +94,8 @@ class PairInfoImprover {
             TRACE("   PI " << p1  << " tr "  << omp_get_thread_num());
             TRACE("vs PI " << p2  << " tr "  << omp_get_thread_num());
 
-            if (math::le(pi_dist, double(first_length) + var) &&
-                math::le(double(first_length), pi_dist + var)) {
+            if (math::le(pi_dist, first_length + var) &&
+                math::le((double)first_length, pi_dist + var)) {
                 if (graph_.EdgeEnd(e1) == graph_.EdgeStart(e2))
                     return true;
 
@@ -118,7 +124,7 @@ class PairInfoImprover {
                     for (auto p1 : i1.second) {
                         for (auto p2 : i2.second) {
                             if (!IsConsistent(base_edge, e1, e2, p1, p2)) {
-                                if (math::le(p1.weight, p2.weight))
+                                if (p1.lt(p2))
                                     pi.Add(base_edge, e1, p1);
                                 else
                                     pi.Add(base_edge, e2, p2);

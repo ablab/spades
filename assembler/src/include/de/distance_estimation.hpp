@@ -211,7 +211,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
   }
 
  protected:
-  const size_t max_distance_;
+  const DEDistance max_distance_;
 
   virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
                                               const InHistogram& histogram,
@@ -235,9 +235,9 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       return result;
 
     size_t cur_dist = 0;
-    vector<double> weights(forward.size(), 0.);
+    vector<DEWeight> weights(forward.size(), 0);
     for (auto point : histogram) {
-      if (ls(2. * point.d + second_len, first_len))
+      if (ls(2 * point.d + second_len, DEDistance(first_len)))
           continue;
       while (cur_dist + 1 < forward.size() && forward[cur_dist + 1] < point.d)
         ++cur_dist;
@@ -246,23 +246,23 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
           ls(forward[cur_dist + 1] - point.d, point.d - forward[cur_dist])) {
         ++cur_dist;
 
-        if (le(abs(forward[cur_dist] - point.d), (DEDistance)max_distance_))
+        if (le(abs(forward[cur_dist] - point.d), max_distance_))
           weights[cur_dist] += point.weight;
       } else if (cur_dist + 1 < forward.size() &&
                  eq(forward[cur_dist + 1] - point.d, point.d - forward[cur_dist])) {
-        if (le(abs(forward[cur_dist] - point.d), (DEDistance)max_distance_))
+        if (le(abs(forward[cur_dist] - point.d), max_distance_))
           weights[cur_dist] += point.weight * 0.5;
         ++cur_dist;
-        if (le(abs(forward[cur_dist] - point.d), (DEDistance)max_distance_))
+        if (le(abs(forward[cur_dist] - point.d), max_distance_))
           weights[cur_dist] += point.weight * 0.5;
       } else {
-        if (le(abs(forward[cur_dist] - point.d), (DEDistance)max_distance_))
+        if (le(abs(forward[cur_dist] - point.d), max_distance_))
           weights[cur_dist] += point.weight;
       }
     }
 
     for (size_t i = 0; i < forward.size(); ++i)
-      if (ge(weights[i], 0.))
+      if (ge(weights[i], DEWeight(0)))
         result.push_back(make_pair(forward[i], weights[i]));
 
     VERIFY(result.size() == forward.size());

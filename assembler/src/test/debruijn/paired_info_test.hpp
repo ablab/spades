@@ -103,23 +103,6 @@ bool Contains(const MockIndex &pi, MockGraph::EdgeId e1, MockGraph::EdgeId e2, f
     return false;
 }
 
-void PrintPI(const MockIndex &pi) {
-    std::cout << "--- PI of size " << pi.size() << "---\n";
-
-    for (auto i = pi.data_begin(); i != pi.data_end(); ++i) {
-        auto e1 = i->first;
-        std::cout << e1 << " has: \n";
-
-        for (auto j = i->second.begin(); j != i->second.end(); ++j) {
-            std::cout << "- " << j->first << ": ";
-            for (auto p : j->second)
-                std::cout << p << ", ";
-            std::cout << std::endl;
-        }
-    }
-    std::cout << "----border----";
-}
-
 BOOST_AUTO_TEST_SUITE(pair_info_tests)
 
 BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
@@ -166,16 +149,12 @@ BOOST_AUTO_TEST_CASE(PairedInfoAccess) {
     auto proxy1 = pi.Get(1);
     BOOST_CHECK_EQUAL(proxy1[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy1[3].Unwrap(), test1);
-    RawHistogram test2;
-    test2.insert({-2, 1});
-    test2.insert({-3, 2});
     auto proxy3 = pi.Get(3);
     BOOST_CHECK_EQUAL(proxy3[7].Unwrap(), test0);
-    RawHistogram test3;
-    test3.insert({-4, 1});
-    test3.insert({-5, 2});
+    BOOST_CHECK_EQUAL(proxy3[1].Unwrap(), test0);
     auto proxy2 = pi.Get(2);
     BOOST_CHECK_EQUAL(proxy2[1].Unwrap(), test0);
+    BOOST_CHECK_EQUAL(proxy2[4].Unwrap(), test0);
     RawHistogram test4;
     test4.insert({4, 1});
     test4.insert({5, 2});
@@ -208,7 +187,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoHalfAccess) {
     test4.insert({5, 1});
     auto proxy4 = pi.GetHalf(4);
     BOOST_CHECK_EQUAL(proxy4[1].Unwrap(), test0);
-    BOOST_CHECK_EQUAL(proxy4[2].Unwrap(), test4);
+    BOOST_CHECK_EQUAL(proxy4[2].Unwrap(), test0);
 }
 
 //Backwards info is currently unused

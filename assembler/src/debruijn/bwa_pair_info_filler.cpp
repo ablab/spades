@@ -10,7 +10,6 @@
 
 namespace bwa_pair_info {
 
-
 void MapperReadT::ParseCigar(const string& cigar) {
     string num = "";
     bool left_side = true;
@@ -131,7 +130,7 @@ void BWAIndexFiller::ProcessAlignments(const MappedPositionT& l, const MappedPos
     int edge_distance = (int) lib_.data().mean_insert_size  - r.pos + l.pos;
     TRACE("Distance " << edge_distance);
 
-    paired_index_.Add(ep.first, ep.second, { (double) edge_distance, 1.0 });
+    paired_index_.Add(ep.first, ep.second, omnigraph::de::RawPoint(edge_distance, 1.0));
 }
 
 bool BWAIndexFiller::CheckAlignments(const MappedPositionT& l, const MappedPositionT& r) {

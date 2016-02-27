@@ -134,6 +134,28 @@ void SaveDetailCoverage(const std::string& pathInCov, const std::string& pathOut
     SaveMapCoverage(pathOutCov, index.outCoverage);
 }
 
+inline void SerializePoint(FILE* file, size_t e1, size_t e2, const RawPoint &p) {
+    fprintf(file, "%zu %zu %.2f %.2f 0.00 .\n", e1, e2, (double)p.d, (double)p.weight);
+}
+
+inline void SerializePoint(FILE* file, size_t e1, size_t e2, const Point &p) {
+    fprintf(file, "%zu %zu %.2f %.2f %.2f .\n", e1, e2, (double)p.d, (double)p.weight, (double)p.var);
+}
+
+inline void DeserializePoint(FILE* file, size_t& e1, size_t& e2, RawPoint &p) {
+    float unused;
+    size_t read_count = fscanf(file, "%zu %zu %f %f %f.\n", &e1, &e2,
+        (float *)&p.d, (float *)&p.weight, (float *)&unused);
+    VERIFY(read_count == 4);
+
+}
+
+inline void DeserializePoint(FILE* file, size_t& e1, size_t& e2, Point &p) {
+    size_t read_count = fscanf(file, "%zu %zu %f %f %f .\n", &e1, &e2,
+                               (float *)&p.d, (float *)&p.weight, (float *)&p.var);
+    VERIFY(read_count == 5);
+}
+
 
 template<class Graph>
 class DataPrinter {
@@ -250,9 +272,8 @@ class DataPrinter {
             for (auto entry : ordermap) {
                 EdgeId e2 = entry.first;
                 if (component_.contains(e2))
-                  for (auto point : entry.second)
-                    fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
-                            e1.int_id(), e2.int_id(), math::eq((double)point.d, .0) ? .0 : (double)point.d, (double)point.weight, (double)point.variation());
+                    for (auto point : entry.second)
+                        SerializePoint(file, e1.int_id(), e2.int_id(), point);
             }
         }
 
@@ -434,18 +455,18 @@ class DataScanner {
         VERIFY(read_count == 1);
         while (!feof(file)) {
             size_t first_real_id, second_real_id;
-            double w, d, v;
-            read_count = fscanf(file, "%zu %zu %lf %lf %lf .\n",
-                                &first_real_id, &second_real_id, &d, &w, &v);
-            VERIFY(read_count == 5);
-            TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
+
+            typename Index::Point point;
+            DeserializePoint(file, first_real_id, second_real_id, point);
+
+            TRACE(first_real_id << " " << second_real_id << " " << point);
             VERIFY(this->edge_id_map().find(first_real_id) != this->edge_id_map().end())
             EdgeId e1 = this->edge_id_map()[first_real_id];
             EdgeId e2 = this->edge_id_map()[second_real_id];
             if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
                 continue;
-            TRACE(e1 << " " << e2 << " " << d << " " << w);
-            paired_index.Add(e1, e2, { d, w, v });
+            TRACE(e1 << " " << e2 << " " << point);
+            paired_index.Add(e1, e2, point);
         }
         DEBUG("PII SIZE " << paired_index.size());
         fclose(file);

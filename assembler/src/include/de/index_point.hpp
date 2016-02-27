@@ -7,17 +7,21 @@
 
 #pragma once
 
-#include <btree/btree_set.h>
-#include "adt/flat_set.hpp"
-#include "adt/small_pod_vector.hpp"
+#include <algorithm>
+#include <cstdint>
+#include <limits>
 
 namespace omnigraph {
 
 namespace de {
 
-// Define several storage-only POD types which can be
-// implicitly converted to / from double.
-
+/**
+ * @brief Type for measuring distance between edges.
+ *        ---edge1--->      --edge2->
+ *        |----distance-----|
+ *        Can be negative if edges are overlapped.
+ *        For paired reads, distance roughly equals to insert size.
+ */
 class DEDistance {
 public:
     DEDistance() = default;
@@ -40,6 +44,10 @@ private:
     float d_;
 };
 
+/**
+ * @brief Scalar type for measuring the weight of a point.
+ *        Should not be negative.
+ */
 class DEWeight {
 public:
     DEWeight() = default;
@@ -58,292 +66,233 @@ private:
     float d_;
 };
 
-struct __attribute__((aligned(8))) RawPoint {
-    DEDistance d;
-    mutable DEWeight weight;
+/**
+ * @brief Scalar type for measuring the variance of point distance in clustered index.
+ *        |---- max distance ----|
+ *             |min distance|
+ *        |var-|
+ *        Should not be negative.
+ */
+typedef float DEVariance;
 
-    RawPoint()
-            : RawPoint(0, 0) { }
-    
+/**
+ * @brief A proof-of-concept bicyclish wrapper for small integer types with saturated arithmetics.
+ *        All operations are in the interval of [-OFFSET .. MAX_VAL - OFFSET]
+ *        where MAX_VAL is 2^sizeof(T) - 1.
+ */
+template<typename T, T OFFSET = 0>
+class DESat {
+public:
+    DESat(): _val(OFFSET) {}
+    DESat(int val): _val(shrink(val)) {}
+    DESat(float val): _val(shrink((int)val)) {}
 
-    RawPoint(DEDistance distance, DEWeight weight)
-            : d(distance), weight(weight) {}
+    operator float() const {
+        return (float)_val - OFFSET;
+    }
 
-    RawPoint(DEDistance distance, DEWeight weight, DEDistance)
-            : d(distance), weight(weight) {}
+    DESat& operator+=(DESat rhs) {
+        _val = sadd(_val, rhs._val);
+        if (_val > OFFSET) //subtract the second offset came from the rhs
+            _val -= OFFSET;
+        else
+            _val = 0;
+    }
 
+    static DESat Max() {
+        return DESat(std::numeric_limits<T>::max());
+    }
 
-    const RawPoint operator+=(const RawPoint &rhs) const {
+private:
+    DESat(T val): _val(val) {}
+
+    T _val;
+    static const T MAX_VAL = std::numeric_limits<T>::max();
+
+    template<typename F>
+    static T shrink(F d) {
+        //Saturate to the allowed interval
+        //TODO: optimize
+        F t = d + OFFSET;
+        t = std::max(F(0), t);
+        t = std::min(F(MAX_VAL), t);
+        return (T)t;
+    }
+
+    static T sadd(T a, T b) {
+        //TODO: check
+        return (a > MAX_VAL - b) ? MAX_VAL : a + b;
+    }
+};
+
+/**
+ * @brief Type for measuring a small gap between edges.
+ *        Gap equals to distance minus the length of the first edge, and can be slightly negative in case of overlaps.
+ *        ---edge1--->      --edge2->
+ *                   |-gap--|
+ */
+//typedef DESat<uint16_t, 512> DEGap;
+typedef float DEGap;
+
+/**
+ * @brief Type for weighting points in a paired info index.
+ */
+//typedef DESat<uint16_t> DECropWeight;
+typedef float DECropWeight;
+
+/**
+ * @brief Raw point of unclustered index. Parameterized by distance and weight types.
+ */
+template<typename D, typename W>
+struct __attribute((aligned(sizeof(D) + sizeof(W)))) RawPointT {
+    typedef RawPointT<D, W> Self;
+    D d;
+    mutable W weight;
+
+    RawPointT()
+        : RawPointT(0.0, 0.0) {}
+
+    RawPointT(D distance, W weight)
+        : d(distance), weight(weight) {}
+
+    Self& operator+=(const Self &rhs) {
         weight += rhs.weight;
         return *this;
     }
 
     std::string str() const {
-        stringstream ss;
+        std::ostringstream ss;
         ss << "Point: " << " distance = " << this->d
            << ", weight = " << this->weight;
         return ss.str();
     }
 
-    bool operator<(const RawPoint& rhs) const {
+    bool operator<(const Self& rhs) const {
         return math::ls(this->d, rhs.d);
     }
 
-    bool operator==(const RawPoint& rhs) const {
+    bool operator==(const Self& rhs) const {
         return math::eq(this->d, rhs.d);
     }
 
-    bool operator!=(const RawPoint& rhs) const {
+    bool operator!=(const Self& rhs) const {
         return !(operator==(rhs));
     }
 
-    RawPoint operator-() const {
-        return RawPoint(-d, weight);
+    Self operator-() const {
+        return Self(-d, weight);
     }
 
-    RawPoint operator+(const RawPoint &rhs) const {
-        return RawPoint(d, rhs.weight + weight);
+    Self operator+(const Self &rhs) const {
+        return Self(d, rhs.weight + this->weight);
     }
 
-    DEWeight variation() const {
-        return 0;
-    }
-
-    RawPoint Conjugate(size_t l1, size_t l2) const
-    {
-        return RawPoint(d + DEDistance(l2) - DEDistance(l1), weight);
-    }
+    DEVariance variance() { return 0; } //TODO: remove
 };
 
-struct Point : public RawPoint {
-    DEDistance var;
-
-    Point()
-            : Point(0, 0, 0) { }
-
-    Point(DEDistance distance, DEWeight weight, DEDistance variance)
-            : RawPoint(distance, weight), var(variance) {}
-
-    Point(const RawPoint &rhs)
-            : RawPoint(rhs), var(0.0) {}
-
-    bool operator<(const Point& rhs) const {
-        return math::ls(this->d, rhs.d);
-    }
-
-    bool operator==(const Point& rhs) const {
-        return math::eq(this->d, rhs.d);
-    }
-
-    bool operator!=(const Point& rhs) const {
-        return !(operator==(rhs));
-    }
-
-    Point operator-() const {
-        return Point(-d, weight, var);
-    }
-
-    Point operator+(const Point &rhs) const {
-        auto weight_rhs = rhs.weight;
-        // counting new bounds in the case, when we are merging pair infos with var != 0
-        auto left_bound = std::min(d - var, rhs.d - rhs.var);
-        auto right_bound = std::max(d + var, rhs.d + rhs.var);
-        auto new_dist = (left_bound + right_bound) * 0.5f;
-        auto new_weight = weight + weight_rhs;
-        auto new_variance = (right_bound - left_bound) * 0.5f;
-
-        return Point(new_dist, new_weight, new_variance);
-    }
-
-    DEDistance variation() const {
-        return var;
-    }
-
-    Point Conjugate(size_t l1, size_t l2) const
-    {
-        return Point(d + DEDistance(l2) - DEDistance(l1), weight, var);
-    }
-};
+typedef RawPointT<DEDistance, DEWeight> RawPoint;
+typedef RawPointT<DEGap, DECropWeight> RawGapPoint;
 
 inline int rounded_d(const RawPoint& p) {
     return math::round_to_zero(p.d);
-}
-
-inline std::ostream& operator<<(std::ostream& os, const Point &point) {
-    return os << point.str();
 }
 
 inline std::ostream& operator<<(std::ostream& os, const RawPoint &point) {
     return os << point.str();
 }
 
-template<class Point>
-class Histogram {
-    typedef Histogram<Point> self_type;
-    typedef typename std::less<Point> key_compare;
-    typedef typename std::allocator<Point> allocator_type;
-    typedef typename adt::flat_set<Point, key_compare, adt::SmallPODVector> Tree;
+/**
+ * @brief Clustered index point. Parameterized by distance and weight types, also has variance.
+ */
+template<typename D, typename W>
+struct PointT : public RawPointT<D, W> {
+    typedef PointT<D, W> Self;
+    DEVariance var;
+    PointT()
+        : PointT(0.0, 0.0, 0.0) {}
 
-  public:
-    typedef typename Tree::key_type key_type;
-    typedef typename Tree::value_type value_type;
-    typedef typename Tree::pointer pointer;
-    typedef typename Tree::const_pointer const_pointer;
-    typedef typename Tree::reference reference;
-    typedef typename Tree::const_reference const_reference;
-    typedef typename Tree::size_type size_type;
-    typedef typename Tree::difference_type difference_type;
-    typedef typename Tree::iterator iterator;
-    typedef typename Tree::const_iterator const_iterator;
-    typedef typename Tree::reverse_iterator reverse_iterator;
-    typedef typename Tree::const_reverse_iterator const_reverse_iterator;
+    PointT(D distance, W weight, DEVariance variance)
+        : RawPointT<D, W>(distance, weight), var(variance) {}
 
-    enum {
-        kValueSize = sizeof(Point)
-    };
-    
- public:
-    // Default constructor.
-    Histogram() = default;
+    PointT(const RawPointT<D, W> &rhs)
+        : RawPointT<D, W>(rhs), var(0.0) {}
 
-    // Copy constructor.
-    Histogram(const self_type &x)
-            : tree_(x.tree_) {}
-
-    template <class InputIterator>
-    Histogram(InputIterator b, InputIterator e) {
-        insert(b, e);
+    bool operator<(const Self& rhs) const {
+        return math::ls(this->d, rhs.d);
     }
 
-    // Iterator routines.
-    iterator begin() { return tree_.begin(); }
-    const_iterator begin() const { return tree_.begin(); }
-    iterator end() { return tree_.end(); }
-    const_iterator end() const { return tree_.end(); }
-    reverse_iterator rbegin() { return tree_.rbegin(); }
-    const_reverse_iterator rbegin() const { return tree_.rbegin(); }
-    reverse_iterator rend() { return tree_.rend(); }
-    const_reverse_iterator rend() const { return tree_.rend(); }
-
-    // Lookup routines.
-    iterator lower_bound(const key_type &key) { return tree_.lower_bound(key); }
-    const_iterator lower_bound(const key_type &key) const { return tree_.lower_bound(key); }
-    iterator upper_bound(const key_type &key) { return tree_.upper_bound(key); }
-    const_iterator upper_bound(const key_type &key) const { return tree_.upper_bound(key); }
-    std::pair<iterator,iterator> equal_range(const key_type &key) { return tree_.equal_range(key); }
-    std::pair<const_iterator,const_iterator> equal_range(const key_type &key) const { return tree_.equal_range(key); }
-
-    // Utility routines.
-    void clear() { tree_.clear(); }
-    void swap(self_type &x) { tree_.swap(x.tree_); }
-
-    // Size routines.
-    size_type size() const { return tree_.size(); }
-    size_type max_size() const { return tree_.max_size(); }
-    bool empty() const { return tree_.empty(); }
-    size_type bytes_used() const { return tree_.bytes_used(); }
-
-    // Lookup routines.
-    iterator find(const key_type &key) { return tree_.find(key); }
-    const_iterator find(const key_type &key) const { return tree_.find(key); }
-    size_type count(const key_type &key) const { return tree_.count(key); }
-
-    // Insertion routines.
-    std::pair<iterator,bool> insert(const value_type &x) { return tree_.insert(x); }
-    iterator insert(iterator position, const value_type &x) { return tree_.insert(position, x); }
-    template <typename InputIterator>
-    void insert(InputIterator b, InputIterator e) { tree_.insert(b, e); }
-
-    // Deletion routines.
-    size_type erase(const key_type &key) { return tree_.erase(key); }
-    // Erase the specified iterator from the btree. The iterator must be valid
-    // (i.e. not equal to end()).  Return an iterator pointing to the node after
-    // the one that was erased (or end() if none exists).
-    iterator erase(const iterator &iter) { return tree_.erase(iter); }
-    void erase(const iterator &first, const iterator &last) { tree_.erase(first, last); }
-
-    bool operator==(const self_type& x) const {
-        if (size() != x.size())
-            return false;
-
-        for (const_iterator i = begin(), xi = x.begin(); i != end(); ++i, ++xi)
-            if (*i != *xi)
-                return false;
-
-        return true;
+    bool operator==(const Self& rhs) const {
+        return math::eq(this->d, rhs.d);
     }
 
-    bool operator!=(const self_type& other) const {
-        return !operator==(other);
+    bool operator!=(const Self& rhs) const {
+        return !(operator==(rhs));
     }
 
-  protected:
-    Tree tree_;
+    Self operator+(const Self &rhs) const {
+        // counting new bounds in the case, when we are merging pair infos with var != 0
+        auto left_bound = std::min(this->d - var, rhs.d - rhs.var);
+        auto right_bound = std::max(this->d + var, rhs.d + rhs.var);
+        auto new_dist = DEDistance((left_bound + right_bound) * 0.5f);
+        auto new_weight = this->weight + rhs.weight; //TODO: crop
+        auto new_variance = (right_bound - left_bound) * 0.5f;
 
-  private:
-    // This is template voodoo which creates function overload depending on
-    // whether Point has const operator+= or not.
-    template<class>
-    struct true_helper : std::true_type {};
-    template<class T = Point>
-    static auto test_can_merge(int) -> true_helper<decltype(std::declval<const T>().operator+=(std::declval<const T>()))>;
-    template<class>
-    static auto test_can_merge(long) -> std::false_type;
-    template<class T = Point>
-    struct can_merge : decltype(test_can_merge<T>(0)) {};
-
-  public:
-    // This function overload is enabled only when Point has const operator+= (e.g. RawPoint)
-    // and therefore we can update it inplace.
-    template<class U = Point>
-    typename std::enable_if<can_merge<U>::value, size_t>::type
-    merge_point(const U &new_point) {
-        // First, try to insert a point
-        const auto& result = insert(new_point);
-        if (result.second)
-            return 1;
-        // We already having something there. Try to merge stuff in.
-        *result.first += new_point;
-        return 0;
+        return Self(new_dist, new_weight, new_variance);
     }
 
-    // Otherwise this overload is used, which removes the point from set,
-    // updates it and re-inserts back.
-    template<class U = Point>
-    typename std::enable_if<!can_merge<U>::value, size_t>::type
-    merge_point(const U &new_point) {
-        auto result = insert(new_point);
-        if (result.second)
-            return 1;
-        Point updated = *result.first + new_point;
-        auto after_removed = erase(result.first);
-        insert(after_removed, updated);
-        return 0;
+    bool lt(const Self &rhs) const {
+        return this->weight < rhs.weight;
     }
 
-    template<class OtherHist>
-    size_t merge(const OtherHist &other) {
-        size_t added = 0;
-        for (const auto& new_point : other) {
-            added += merge_point(new_point);
-        }
-        return added;
+    DEVariance variance() { return this->var; } //TODO: remove
+};
+
+typedef PointT<DEDistance, DEWeight> Point;
+typedef PointT<DEGap, DECropWeight> GapPoint;
+
+inline std::ostream& operator<<(std::ostream& os, const Point &point) {
+    return os << point.str();
+}
+
+/**
+ * @brief Policy-like type which provides associated point types for unclustered index
+ *        and static methods for converting between them.
+ */
+struct RawPointTraits {
+    typedef RawGapPoint Gapped;
+    typedef RawPoint Expanded;
+
+    static Gapped Shrink(Expanded p, DEDistance edge) {
+        DEGap gap = DEGap(p.d - edge);
+        return RawGapPoint(gap, p.weight);
+    }
+
+    static Expanded Expand(Gapped p, DEDistance edge) {
+        RawPoint res(p.d, p.weight);
+        res.d += edge;
+        return res;
     }
 };
 
-template <typename T>
-inline std::ostream& operator<<(std::ostream &os, const Histogram<T> &b) {
-    os << b;
-    return os;
-}
+/**
+ * @brief Policy-like type which provides associated point types for clustered index
+ *        and static methods for converting between them.
+ */
+struct PointTraits {
+    typedef GapPoint Gapped;
+    typedef Point Expanded;
 
-typedef Histogram<RawPoint> RawHistogram;
-typedef Histogram<Point> HistogramWithWeight;
+    static Gapped Shrink(const Expanded &p, DEDistance edge) {
+        DEGap gap = DEGap(p.d - edge);
+        return GapPoint(gap, p.weight, p.var);
+    }
 
-inline bool ClustersIntersect(Point p1, Point p2) {
-    return math::le(p1.d, p2.d + p1.var + p2.var) &&
-           math::le(p2.d, p1.d + p1.var + p2.var);
-}
+    static Expanded Expand(Gapped p, DEDistance edge) {
+        Point res(p.d, p.weight, p.var);
+        res.d += edge;
+        return res;
+    }
+};
 
 // tuple of a pair of edges @first, @second, and a @point
 template<typename EdgeId>
@@ -354,7 +303,6 @@ struct PairInfo {
 
     PairInfo()
             : first(), second(), point() {}
-
 
     PairInfo(const PairInfo& pair_info)
             : first(pair_info.first), second(pair_info.second), point(pair_info.point) {}
@@ -394,32 +342,6 @@ ostream& operator<<(ostream& os, const PairInfo<EdgeId>& info) {
            << "Point : " << info.point;
 }
 
-template<typename EdgeId>
-const PairInfo<EdgeId> MinPairInfo(EdgeId id) {
-    return PairInfo<EdgeId>(id, EdgeId(typename EdgeId::pointer_type(1)),
-                            -10000000000, 0., 0.);
-}
-
-template<typename EdgeId>
-const PairInfo<EdgeId> MaxPairInfo(EdgeId id) {
-    return PairInfo<EdgeId>(id, EdgeId(typename EdgeId::pointer_type(-1)),
-                            10000000000, 0., 0.);
-}
-
-template<typename EdgeId>
-const PairInfo<EdgeId> MinPairInfo(EdgeId e1, EdgeId e2) {
-    PairInfo<EdgeId> info = MinPairInfo(e1);
-    info.second = e2;
-    return info;
-}
-
-template<typename EdgeId>
-const PairInfo<EdgeId> MaxPairInfo(EdgeId e1, EdgeId e2) {
-    PairInfo<EdgeId> info = MaxPairInfo(e1);
-    info.second = e2;
-    return info;
-}
-
 /**
  * Method returns approximate distance between occurrences of edges in genome rounded to the nearest
  * integer. In case of a tie closest to 0 value is chosen thus one can assume that distance
@@ -434,11 +356,6 @@ inline int rounded_d(PairInfo<EdgeId> const& pi) {
 template<typename EdgeId>
 inline PairInfo<EdgeId> BackwardInfo(const PairInfo<EdgeId>& pi) {
     return PairInfo<EdgeId>(pi.second, pi.first, -pi.point);
-}
-
-template<typename EdgeId>
-inline bool IsSymmetric(PairInfo<EdgeId> const& pi) {
-    return pi.first == pi.second && math::eq(pi.d(), 0.);
 }
 
 }
