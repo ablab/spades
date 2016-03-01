@@ -466,6 +466,11 @@ class DataScanner {
             if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
                 continue;
             TRACE(e1 << " " << e2 << " " << point);
+            //Need to prevent doubling of self-conjugate edge pairs
+            //Their weight would be always even, so we don't lose precision
+            auto ep = std::make_pair(e1, e2);
+            if (ep == paired_index.ConjugatePair(ep))
+                point.weight = math::round(point.weight / 2);
             paired_index.Add(e1, e2, point);
         }
         DEBUG("PII SIZE " << paired_index.size());

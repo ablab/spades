@@ -241,7 +241,7 @@ struct PointT : public RawPointT<D, W> {
     }
 
     bool lt(const Self &rhs) const {
-        return this->weight < rhs.weight;
+        return math::ls(this->weight, rhs.weight);
     }
 
     DEVariance variance() { return this->var; } //TODO: remove
