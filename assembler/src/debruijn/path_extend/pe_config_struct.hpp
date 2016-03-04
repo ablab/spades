@@ -148,6 +148,7 @@ struct pe_config {
         double single_threshold;
         double weight_threshold;
         double priority_coeff;
+        size_t max_repeat_length;
     } extension_options;
 
     ExtensionOptionsT mate_pair_options;
@@ -214,6 +215,7 @@ struct pe_config {
       LongReads single_reads;
       LongReads pacbio_reads;
       LongReads contigs;
+      LongReads meta_contigs;
   };
 
 

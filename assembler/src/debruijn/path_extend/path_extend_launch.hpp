@@ -134,6 +134,8 @@ inline void AddPathsToContainer(const conj_graph_pack& gp,
 double GetSingleReadsFilteringThreshold(const io::LibraryType& type) {
     if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
         return cfg::get().pe_params.long_reads.pacbio_reads.filtering;
+    }  else if (type == io::LibraryType::PathExtendContigs){
+        return cfg::get().pe_params.long_reads.meta_contigs.filtering;
     } else if (io::SequencingLibraryBase::IsContigLib(type)) {
         return cfg::get().pe_params.long_reads.contigs.filtering;
     }
@@ -143,6 +145,8 @@ double GetSingleReadsFilteringThreshold(const io::LibraryType& type) {
 double GetSingleReadsWeightPriorityThreshold(const io::LibraryType& type) {
     if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
         return cfg::get().pe_params.long_reads.pacbio_reads.weight_priority;
+    } else if (type == io::LibraryType::PathExtendContigs){
+        return cfg::get().pe_params.long_reads.meta_contigs.weight_priority;
     } else if (io::SequencingLibraryBase::IsContigLib(type)) {
         return cfg::get().pe_params.long_reads.contigs.weight_priority;
     }
@@ -314,7 +318,8 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& g
     shared_ptr<ExtensionChooser> longReadEC =
             make_shared<LongReadsExtensionChooser>(gp.g, paths, GetSingleReadsFilteringThreshold(lib.type()),
                                                    GetSingleReadsWeightPriorityThreshold(lib.type()),
-                                                   GetSingleReadsUniqueEdgePriorityThreshold(lib.type()));
+                                                   GetSingleReadsUniqueEdgePriorityThreshold(lib.type()),
+                                                   pset.extension_options.max_repeat_length);
 
     size_t resolvable_repeat_length_bound = 10000ul;
     if (!lib.is_contig_lib()) {
@@ -746,7 +751,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     size_t min_edge_len = 100;
 
     shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
-                                                                          max_is_right_quantile, storage);
+                                                                          max_is_right_quantile, storage,
+                                                                          cfg::get().pe_params.param_set.extension_options.max_repeat_length);
 
 //extend pe + long reads
     PathExtendResolver resolver(gp.g);
@@ -795,7 +801,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, storage, clone_paths);
     max_is_right_quantile = FindOverlapLenForStage(exspander_stage);
     shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
-                                                                              max_is_right_quantile, storage);
+                                                                              max_is_right_quantile, storage,
+                                                                              cfg::get().pe_params.param_set.extension_options.max_repeat_length);
 
     INFO("Growing paths using mate-pairs");
     auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
@@ -815,7 +822,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset, storage);
     max_is_right_quantile = FindOverlapLenForStage(exspander_stage);
     shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
-                                                                                 max_is_right_quantile, storage);
+                                                                                 max_is_right_quantile, storage,
+                                                                                 cfg::get().pe_params.param_set.extension_options.max_repeat_length);
 
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
     DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_overlap");

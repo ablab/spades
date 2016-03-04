@@ -35,6 +35,7 @@ params {
 ;    E.coli IS220 threshold 1.75676
         weight_threshold           0.5
         priority_coeff             1.5
+        max_repeat_length          8000
     }    
 
     mate_pair_options
@@ -43,6 +44,7 @@ params {
         single_threshold           30
         weight_threshold           0.5
         priority_coeff             1.5
+        max_repeat_length          8000
     }
 
     scaffolder {
@@ -119,6 +121,13 @@ long_reads {
         weight_priority    1.5
         unique_edge_priority 2.0
     }
+
+    meta_untrusted_contigs {
+        filtering   0.0
+        weight_priority    100.0
+        unique_edge_priority 2.0
+    }
+
 }
 }
 
@@ -132,6 +141,7 @@ params {
         use_default_single_threshold false
         single_threshold           0.001
         weight_threshold           0.6
+        max_repeat_length          8000
     }
 
 }
@@ -172,7 +182,8 @@ params {
         ;use_default_single_threshold NA
         ;single_threshold           NA 
         weight_threshold           0.6
-    }
+        max_repeat_length          50000 
+   }
     
     use_coordinated_coverage true
 }

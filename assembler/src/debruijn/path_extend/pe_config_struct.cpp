@@ -53,6 +53,7 @@ void load(pe_config::ParamSetT::ExtensionOptionsT& es,
     load(es.priority_coeff, pt, "priority_coeff", complete);
     load(es.weight_threshold, pt, "weight_threshold", complete);
     load(es.single_threshold, pt, "single_threshold", complete);
+    load(es.max_repeat_length, pt, "max_repeat_length", complete);
 }
 
 void load(pe_config::ParamSetT::LoopRemovalT& lr,
@@ -134,6 +135,7 @@ void load(pe_config::AllLongReads& p, boost::property_tree::ptree const& pt,
     load(p.pacbio_reads, pt, "pacbio_reads", complete);
     load(p.single_reads, pt, "single_reads", complete);
     load(p.contigs, pt, "contigs", complete);
+    load(p.meta_contigs, pt, "meta_untrusted_contigs", complete);
 }
 
 void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,

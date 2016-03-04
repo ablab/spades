@@ -529,11 +529,12 @@ private:
     DECL_LOGGER("LongReadsUniqueEdgeAnalyzer")
 public:
     LongReadsUniqueEdgeAnalyzer(const Graph& g, const GraphCoverageMap& cov_map,
-                       double filter_threshold, double prior_threshold)
+                       double filter_threshold, double prior_threshold, size_t max_repeat_length)
             : g_(g),
               cov_map_(cov_map),
               filter_threshold_(filter_threshold),
-              prior_threshold_(prior_threshold) { 
+              prior_threshold_(prior_threshold),
+              max_repeat_length_(max_repeat_length) {
         FindAllUniqueEdges();
     }
 
@@ -543,7 +544,7 @@ public:
 
 private:
     bool UniqueEdge(EdgeId e) const {
-        if (g_.length(e) > cfg::get().max_repeat_length)
+        if (g_.length(e) > max_repeat_length_)
             return true;
         DEBUG("Analyze unique edge " << g_.int_id(e));
         if (cov_map_.size() == 0) {
@@ -700,7 +701,7 @@ private:
     double filter_threshold_;
     double prior_threshold_;
     std::set<EdgeId> unique_edges_;
-
+    size_t max_repeat_length_;
 };
 
 class SimpleScaffolding {
@@ -754,12 +755,13 @@ public:
     LongReadsExtensionChooser(const Graph& g, PathContainer& pc,
                               double filtering_threshold,
                               double weight_priority_threshold,
-                              double unique_edge_priority_threshold)
+                              double unique_edge_priority_threshold,
+                              size_t max_repeat_length)
             : ExtensionChooser(g),
               filtering_threshold_(filtering_threshold),
               weight_priority_threshold_(weight_priority_threshold),
               cov_map_(g, pc),
-              unique_edge_analyzer_(g, cov_map_, filtering_threshold, unique_edge_priority_threshold),
+              unique_edge_analyzer_(g, cov_map_, filtering_threshold, unique_edge_priority_threshold, max_repeat_length),
               simple_scaffolding_(g) {
 
     }
@@ -874,7 +876,7 @@ public:
               weight_counter_(g, lib, 10),
               cov_map_(g_, paths),
               path_searcher_(g_, cov_map_, lib_->GetISMax(), PathsWeightCounter(g, lib, (size_t) lib->GetSingleThreshold()), max_number_of_paths_to_search),
-              unique_edge_analyzer_(g, cov_map_, 0., 1000.),
+              unique_edge_analyzer_(g, cov_map_, 0., 1000., 8000.),
               simple_scaffolder_(g) {
     }
 

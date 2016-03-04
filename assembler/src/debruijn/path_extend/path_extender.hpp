@@ -802,18 +802,18 @@ protected:
 
 class CompositeExtender : public ContigsMaker {
 public:
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, size_t max_diff_len)
+    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, size_t max_diff_len, size_t max_repeat_length)
             : ContigsMaker(g),
               cover_map_(cov_map),
-              repeat_detector_(g, cover_map_, 2 * cfg::get().max_repeat_length),  //TODO: move to config
+              repeat_detector_(g, cover_map_, 2 * max_repeat_length),
               extenders_(),
               max_diff_len_(max_diff_len) {
     }
 
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<shared_ptr<PathExtender> > pes, size_t max_diff_len, shared_ptr<ScaffoldingUniqueEdgeStorage> unique)
+    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<shared_ptr<PathExtender> > pes, size_t max_diff_len, shared_ptr<ScaffoldingUniqueEdgeStorage> unique, size_t max_repeat_length)
             : ContigsMaker(g),
               cover_map_(cov_map),
-              repeat_detector_(g, cover_map_, 2 * cfg::get().max_repeat_length),  //TODO: move to config
+              repeat_detector_(g, cover_map_, 2 * max_repeat_length),
               extenders_(),
               max_diff_len_(max_diff_len) {
         extenders_ = pes;
