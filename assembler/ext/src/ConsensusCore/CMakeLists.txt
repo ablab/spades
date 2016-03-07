@@ -6,8 +6,6 @@ include_directories(${EXT_DIR}/include/ConsensusCore)
 add_library(ConsensusCore STATIC 
             AffineAlignment.cpp
             Coverage.cpp
-            Feature.cpp
-            Features.cpp
             Mutation.cpp
             PairwiseAlignment.cpp
             Sequence.cpp

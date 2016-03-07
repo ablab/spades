@@ -38,7 +38,6 @@
 #include "Matrix/SparseMatrix.hpp"
 
 #include <algorithm>
-#include <boost/tuple/tuple.hpp>
 
 namespace ConsensusCore {
     // Performance insensitive routines are not inlined
@@ -85,7 +84,7 @@ namespace ConsensusCore {
         for (int col = 0; col < Columns(); ++col)
         {
             int start, end;
-            boost::tie(start, end) = UsedRowRange(col);
+            std::tie(start, end) = UsedRowRange(col);
             filledEntries += (end - start);
         }
         return filledEntries;

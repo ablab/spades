@@ -37,17 +37,12 @@
 
 #include "Poa/PoaConsensus.hpp"
 
-#include <boost/algorithm/string.hpp>
-#include <boost/foreach.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "Poa/PoaConfig.hpp"
 #include "Utils.hpp"
-
-using boost::tie;
 
 namespace ConsensusCore
 {
@@ -80,7 +75,7 @@ namespace ConsensusCore
             }
             pc->poaGraph_->AddSequence(read, config);
         }
-        boost::tie(pc->consensusSequence_, pc->score_, pc->variants_) =
+        std::tie(pc->consensusSequence_, pc->score_, pc->variants_) =
             pc->poaGraph_->FindConsensus(config);
         return pc;
     }

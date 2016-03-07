@@ -45,7 +45,6 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/topological_sort.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <boost/utility.hpp>
 #include <cassert>
 #include <cfloat>
@@ -55,6 +54,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <unordered_set>
+#include <unordered_map>
 
 #include "Poa/PoaConfig.hpp"
 #include "Types.hpp"
@@ -201,7 +202,7 @@ namespace ConsensusCore
         {}
     };
 
-    typedef unordered_map<Vertex, const AlignmentColumn*> AlignmentColumnMap;
+    typedef std::unordered_map<Vertex, const AlignmentColumn*> AlignmentColumnMap;
 
     //
     // Graph::Impl methods
@@ -238,7 +239,7 @@ namespace ConsensusCore
         void AddSequence(const std::string& sequence, const PoaConfig& config);
 
         // TODO(dalexander): make this const
-        tuple<string, float, vector< pair<Mutation*, float> >*>
+        std::tuple<std::string, float, std::vector< std::pair<Mutation*, float> >*>
         FindConsensus(const PoaConfig& config);
 
         int NumSequences() const;
@@ -497,7 +498,7 @@ namespace ConsensusCore
         VertexInfoMap vertexInfoMap = get(vertex_info, g);
         std::list<Vertex> sortedVertices(num_vertices(g));
         topological_sort(g, sortedVertices.rbegin());
-        unordered_map<Vertex, Vertex> bestPrevVertex;
+        std::unordered_map<Vertex, Vertex> bestPrevVertex;
 
         // ignore ^ and $
         // TODO(dalexander): find a cleaner way to do this
@@ -696,11 +697,11 @@ namespace ConsensusCore
     }
 
 
-    static boost::unordered_set<Vertex>
+    static std::unordered_set<Vertex>
     childVertices(Vertex v,
                   BoostGraph& g)
     {
-        boost::unordered_set<Vertex> result;
+        std::unordered_set<Vertex> result;
         foreach (Edge e, out_edges(v, g))
         {
             result.insert(target(e, g));
@@ -708,11 +709,11 @@ namespace ConsensusCore
         return result;
     }
 
-    static boost::unordered_set<Vertex>
+    static std::unordered_set<Vertex>
     parentVertices(Vertex v,
                    BoostGraph& g)
     {
-        boost::unordered_set<Vertex> result;
+        std::unordered_set<Vertex> result;
         foreach (Edge e, in_edges(v, g))
         {
             result.insert(source(e, g));
@@ -721,7 +722,7 @@ namespace ConsensusCore
     }
 
 
-    tuple<string, float, vector< pair<Mutation*, float> >* >
+    std::tuple<string, float, vector< pair<Mutation*, float> >* >
     PoaGraph::Impl::FindConsensus(const PoaConfig& config)
     {
         std::stringstream ss;
@@ -736,14 +737,14 @@ namespace ConsensusCore
         // if requested, identify likely sequence variants
 
         // will be deallocated by PoaConsensus destructor.
-        vector< pair<Mutation*, float> >* variants = new vector< pair<Mutation*, float> >();
+        vector< std::pair<Mutation*, float> >* variants = new vector< pair<Mutation*, float> >();
 
         if (true)  // TODO(dalexander): Add a flag to PoaConfig
         {
             for (int i = 2; i < (int)bestPath.size() - 2; i++) // NOLINT
             {
                 Vertex v = bestPath[i];
-                boost::unordered_set<Vertex> children = childVertices(v, g_);
+                std::unordered_set<Vertex> children = childVertices(v, g_);
 
                 // Look for a direct edge from the current node to the node
                 // two spaces down---suggesting a deletion with respect to
@@ -758,7 +759,7 @@ namespace ConsensusCore
                 // This indicates we should try inserting the base at i + 1.
 
                 // Parents of (i + 1)
-                boost::unordered_set<Vertex> lookBack = parentVertices(bestPath[i + 1], g_);
+                std::unordered_set<Vertex> lookBack = parentVertices(bestPath[i + 1], g_);
 
                 // (We could do this in STL using std::set sorted on score, which would then
                 // provide an intersection mechanism (in <algorithm>) but that actually ends
@@ -768,7 +769,7 @@ namespace ConsensusCore
 
                 foreach (Vertex v, children)
                 {
-                    boost::unordered_set<Vertex>::iterator found = lookBack.find(v);
+                    std::unordered_set<Vertex>::iterator found = lookBack.find(v);
                     if (found != lookBack.end())
                     {
                         float score = vertexInfoMap_[*found]->Score;
@@ -800,7 +801,7 @@ namespace ConsensusCore
                 {
                     if (v == bestPath[i + 1]) continue;
 
-                    boost::unordered_set<Vertex>::iterator found = lookBack.find(v);
+                    std::unordered_set<Vertex>::iterator found = lookBack.find(v);
                     if (found != lookBack.end())
                     {
                         float score = vertexInfoMap_[*found]->Score;
@@ -824,7 +825,7 @@ namespace ConsensusCore
             }
         }
 
-        return boost::make_tuple(ss.str(), 0.0f, variants);  // TODO(dalexander): where do we get scores?
+        return { ss.str(), 0.0f, variants };  // TODO(dalexander): where do we get scores?
     }
 
     inline int
@@ -865,7 +866,7 @@ namespace ConsensusCore
         return impl->NumSequences();
     }
 
-    tuple<string, float, std::vector< std::pair<Mutation*, float> >* >
+    std::tuple<string, float, std::vector< std::pair<Mutation*, float> >* >
     PoaGraph::FindConsensus(const PoaConfig& config) const
     {
         return impl->FindConsensus(config);

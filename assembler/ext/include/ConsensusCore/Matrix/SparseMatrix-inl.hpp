@@ -38,7 +38,6 @@
 #pragma once
 
 #include <algorithm>
-#include <boost/tuple/tuple.hpp>
 #include <cassert>
 #include <utility>
 

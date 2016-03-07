@@ -39,7 +39,6 @@
 #include "Matrix/DenseMatrix.hpp"
 
 #include <algorithm>
-#include <boost/tuple/tuple.hpp>
 #include <cassert>
 
 #include "LFloat.hpp"
@@ -73,7 +72,7 @@ namespace ConsensusCore {
         for (int col = 0; col < Columns(); ++col)
         {
             int start, end;
-            boost::tie(start, end) = UsedRowRange(col);
+            std::tie(start, end) = UsedRowRange(col);
             filledEntries += (end - start);
         }
         return filledEntries;
@@ -101,7 +100,7 @@ namespace ConsensusCore {
     {
         // make sure no used entries are outside of the bands
         int start, end;
-        boost::tie(start, end) = UsedRowRange(column);
+        std::tie(start, end) = UsedRowRange(column);
         assert(0 <= start && start <= end && end <= Rows());
         for (int i = 0; i < Rows(); i++)
         {

@@ -38,8 +38,6 @@
 #include <string>
 #include <vector>
 #include <boost/format.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
 
 #include "ConsensusCore/Version.hpp"
 

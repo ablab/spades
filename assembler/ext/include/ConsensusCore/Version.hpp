@@ -37,7 +37,6 @@
 
 #include <string>
 #include <vector>
-#include <boost/tuple/tuple.hpp>
 
 #pragma once
 
