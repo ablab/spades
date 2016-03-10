@@ -1,0 +1,82 @@
+configfile: "config.yaml"
+
+IN = config["IN"]
+SPADES = config["SPADES"]
+BIN = config["BIN"]
+SCRIPTS = config["SCRIPTS"]
+SOFT = config["SOFT"]
+K = int(config["K"])
+Kp = K + 1
+SAVES = "K{K}/saves/07_before_repeat_resolution/graph_pack"
+MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
+
+SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
+SAMPLE_COUNT = len(SAMPLES)
+
+rule all:
+    input:   expand("binning/{sample}.bin", sample=SAMPLES)
+    message: "Running MTS"
+
+rule assemble:
+    input:   left = IN + "/{sample}/left.fastq", right = IN + "/{sample}/right.fastq"
+    output:  "{sample}.fasta"
+    params:  "{sample}_assembly"
+    message: "Assembling {wildcards.sample} with SPAdes"
+    shell:
+        "{SPADES}/spades.py --meta -t {threads} -1 {input.left} -2 {input.right} -o {params} && "
+        "cp {params}/scaffolds.fasta {output}"
+
+rule descriptions:
+    output:  expand("{sample}.desc", sample=SAMPLES)
+    message: "Generating sample descriptions"
+    shell:   "{SCRIPTS}/dataset_desc_gen.sh {IN}/sample ./"
+
+rule multiplicities:
+    input:   expand("{sample}.desc", sample=SAMPLES)
+    output:  "kmers.mpl"
+    message: "Gathering {Kp}-mer multiplicities from {input}"
+    shell:
+        "export PATH={SOFT}:$PATH && "
+        "{BIN}/kmer_multiplicity_counter -k {Kp} -o kmers --mult 2 --sample 3 {input}"
+
+rule coverage:
+    input:   contigs="{sample}.fasta", mpl="kmers.mpl"
+    output:  "{sample}.id"
+    message: "Counting contig abundancies for {wildcards.sample}"
+    shell:
+        "{BIN}/contig_abundance_counter {K} {wildcards.sample}_assembly/{SAVES} {input.contigs} {SAMPLE_COUNT} kmers $1 {MIN_CONTIG_LENGTH}"
+
+rule canopy_pre:
+    input:   expand("{sample}.id", sample=SAMPLES)
+    output:  "canopy.in"
+    message: "Preparing canopy input"
+    shell:   "{SCRIPTS}/make_canopy_input.py {output} {input}"
+
+rule canopy:
+    input:   rules.canopy_pre.output
+    output:  "canopy.out", prof = "canopy.prof"
+    message: "Running canopy clustering"
+    shell:   "{SCRIPTS}/canopy_launch.sh {input} {output}"
+
+rule canopy_post:
+    input:   rules.canopy.output.prof
+    output:  expand("{sample}.ann", sample=SAMPLES)
+    message: "Preparing raw annotations"
+    shell:   "{SCRIPTS}/parse_canopy_out.py {input} ./"
+
+rule propagate:
+    input:   "{sample}.fasta", "{sample}.ann"
+    output:  "{sample}.ann.prop"
+    message: "Propagating annotations for {wildcards.sample}"
+    shell:   "{BIN}/annotation_propagator {K} {wildcards.sample}_assembly/{SAVES} {input} {output}"
+
+rule binning:
+    input:
+        "{sample}.fasta", "{sample}.ann.prop",
+        IN + "/{sample}/left.fastq", IN + "/{sample}/right.fastq"
+    output:  "binning/{sample}.bin"
+    params:  "binning", "{sample}"
+    message: "Binning reads for {wildcards.sample}"
+    shell:
+        "{BIN}/read_binning {K} {wildcards.sample}_assembly/{SAVES} {input} {params}"
+        "touch {output}"
