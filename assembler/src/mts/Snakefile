@@ -7,7 +7,7 @@ SCRIPTS = config["SCRIPTS"]
 SOFT = config["SOFT"]
 K = int(config["K"])
 Kp = K + 1
-SAVES = "K{K}/saves/07_before_repeat_resolution/graph_pack"
+SAVES = expand("K{k}/saves/07_before_repeat_resolution/graph_pack", k=K)
 MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
 
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
@@ -23,7 +23,7 @@ rule assemble:
     params:  "{sample}_assembly"
     message: "Assembling {wildcards.sample} with SPAdes"
     shell:
-        "{SPADES}/spades.py --meta -t {threads} -1 {input.left} -2 {input.right} -o {params} && "
+        "{SPADES}/spades.py -k {K} --only-assembler --meta -t {threads} -1 {input.left} -2 {input.right} -o {params} && "
         "cp {params}/scaffolds.fasta {output}"
 
 rule descriptions:
@@ -44,25 +44,25 @@ rule coverage:
     output:  "{sample}.id"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:
-        "{BIN}/contig_abundance_counter {K} {wildcards.sample}_assembly/{SAVES} {input.contigs} {SAMPLE_COUNT} kmers $1 {MIN_CONTIG_LENGTH}"
+        "{BIN}/contig_abundance_counter {K} {wildcards.sample}_assembly/{SAVES} {input.contigs} {SAMPLE_COUNT} kmers {wildcards.sample} {MIN_CONTIG_LENGTH}"
 
 rule canopy_pre:
     input:   expand("{sample}.id", sample=SAMPLES)
     output:  "canopy.in"
     message: "Preparing canopy input"
-    shell:   "{SCRIPTS}/make_canopy_input.py {output} {input}"
+    shell:   "python2 {SCRIPTS}/make_canopy_input.py {output} {input}"
 
 rule canopy:
     input:   rules.canopy_pre.output
-    output:  "canopy.out", prof = "canopy.prof"
+    output:  out = "canopy.out", prof = "canopy.prof"
     message: "Running canopy clustering"
     shell:   "{SCRIPTS}/canopy_launch.sh {input} {output}"
 
 rule canopy_post:
-    input:   rules.canopy.output.prof
+    input:   rules.canopy.output.out
     output:  expand("{sample}.ann", sample=SAMPLES)
     message: "Preparing raw annotations"
-    shell:   "{SCRIPTS}/parse_canopy_out.py {input} ./"
+    shell:   "python2 {SCRIPTS}/parse_canopy_out.py {input} ./"
 
 rule propagate:
     input:   "{sample}.fasta", "{sample}.ann"
@@ -77,6 +77,7 @@ rule binning:
     output:  "binning/{sample}.bin"
     params:  "binning", "{sample}"
     message: "Binning reads for {wildcards.sample}"
+    #TODO: non-file output?
     shell:
-        "{BIN}/read_binning {K} {wildcards.sample}_assembly/{SAVES} {input} {params}"
+        "{BIN}/read_binning {K} {wildcards.sample}_assembly/{SAVES} {input} {params} &&"
         "touch {output}"

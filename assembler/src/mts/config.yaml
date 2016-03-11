@@ -1,8 +1,7 @@
 IN: "/Sid/snurk/mts/sim/data"
-SPADES: "~/Projects/algorithmic-biology/assembler/"
+SPADES: "~/Projects/mts/assembler/"
 BIN: "~/Projects/mts/assembler/build/release/bin"
 SCRIPTS: "~/Projects/mts/assembler/src/mts/scripts"
 SOFT: "/home/snurk/soft/"
 K: 55
-SAVES: "K{K}/saves/07_before_repeat_resolution/graph_pack"
 MIN_CONTIG_LENGTH: 2000
