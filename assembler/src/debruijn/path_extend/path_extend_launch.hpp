@@ -404,7 +404,7 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
 
 
 inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                                        size_t lib_index, const pe_config::ParamSetT& pset, const shared_ptr<ScaffoldingUniqueEdgeStorage> storage) {
+                                                        size_t lib_index, const pe_config::ParamSetT& pset, const ScaffoldingUniqueEdgeStorage& storage) {
     shared_ptr<PairedInfoLibrary> lib;
     INFO("for lib " << lib_index);
 
@@ -523,7 +523,7 @@ inline void PrintExtenders(vector<shared_ptr<PathExtender> >& extenders) {
 }
 
 inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage, const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                            const pe_config::ParamSetT& pset, shared_ptr<ScaffoldingUniqueEdgeStorage> storage, const PathContainer& paths_for_mp = PathContainer()) {
+                                            const pe_config::ParamSetT& pset, const ScaffoldingUniqueEdgeStorage& storage, const PathContainer& paths_for_mp = PathContainer()) {
 
     vector<shared_ptr<PathExtender> > result;
     vector<shared_ptr<PathExtender> > pes;
@@ -623,13 +623,13 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
 }
 
 inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const conj_graph_pack& gp,
-                                                                        shared_ptr<ScaffoldingUniqueEdgeStorage> edge_storage,
+                                                                        const ScaffoldingUniqueEdgeStorage& edge_storage,
                                                                         const pe_config::ParamSetT::ScaffoldGraphParamsT& params) {
     using namespace scaffold_graph;
     vector<shared_ptr<ConnectionCondition>> conditions;
 
     INFO("Constructing connections");
-    LengthEdgeCondition edge_condition(gp.g, edge_storage->GetMinLength());
+    LengthEdgeCondition edge_condition(gp.g, edge_storage.GetMinLength());
 
     for (size_t lib_index = 0; lib_index < cfg::get().ds.reads.lib_count(); ++lib_index) {
         auto lib = cfg::get().ds.reads[lib_index];
@@ -644,12 +644,12 @@ inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const co
             conditions.push_back(make_shared<AdvancedPairedConnectionCondition>(gp.g, paired_lib, lib_index,
                                                                                 params.always_add,
                                                                                 params.never_add,
-                                                                                params.relative_threshod));
+                                                                                params.relative_threshold));
         }
     }
     if (params.graph_connectivity) {
         auto as_con = make_shared<AssemblyGraphConnectionCondition>(gp.g, params.max_path_length, edge_storage);
-        for (auto e_iter = gp.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+        for (auto e_iter = gp.g.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
             if (edge_condition.IsSuitable(*e_iter))
                 as_con->AddInterestingEdge(*e_iter);
         }
@@ -657,9 +657,9 @@ inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const co
     }
     INFO("Total conditions " << conditions.size());
 
-    INFO("Constructing scaffold graph from set of size " << edge_storage->GetSet().size());
+    INFO("Constructing scaffold graph from set of size " << edge_storage.GetSet().size());
 
-    DefaultScaffoldGraphConstructor constructor(gp.g, edge_storage->GetSet(), conditions, edge_condition);
+    DefaultScaffoldGraphConstructor constructor(gp.g, edge_storage.GetSet(), conditions, edge_condition);
     auto scaffoldGraph = constructor.Construct();
 
     INFO("Scaffold graph contains " << scaffoldGraph->VertexCount() << " vertices and " << scaffoldGraph->EdgeCount() << " edges");
@@ -740,11 +740,11 @@ inline void CountMisassembliesWithReference(debruijn_graph::GenomeConsistenceChe
     INFO ("In total found " << total_mis << " misassemblies " << " and " << gap_mis << " gaps.");
 }
 
-inline shared_ptr<ScaffoldingUniqueEdgeStorage> FillUniqueEdgeStorage(const conj_graph_pack& gp,
+inline ScaffoldingUniqueEdgeStorage FillUniqueEdgeStorage(const conj_graph_pack& gp,
                                                                       size_t& min_unique_length,
                                                                       double& unique_variation) {
 
-    auto main_unique_storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
+    ScaffoldingUniqueEdgeStorage main_unique_storage;
     //Setting scaffolding2015 parameters
     if (cfg::get().pe_params.param_set.scaffolding2015.autodetect) {
         INFO("Autodetecting unique edge set parameters...");
@@ -776,7 +776,7 @@ inline shared_ptr<ScaffoldingUniqueEdgeStorage> FillUniqueEdgeStorage(const conj
                  << " variation " << unique_variation);
     }
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, min_unique_length, unique_variation);
-    unique_edge_analyzer.FillUniqueEdgeStorage(*main_unique_storage);
+    unique_edge_analyzer.FillUniqueEdgeStorage(main_unique_storage);
 
     return main_unique_storage;
 }
@@ -789,7 +789,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("ExSPAnder repeat resolving tool started");
 
-    auto main_unique_storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
+    ScaffoldingUniqueEdgeStorage main_unique_storage;
     auto sc_mode = cfg::get().pe_params.param_set.sm;
     auto min_unique_length = cfg::get().pe_params.param_set.scaffolding2015.min_unique_length;
     auto unique_variaton = cfg::get().pe_params.param_set.scaffolding2015.unique_coverage_variation;
@@ -807,7 +807,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     if (cfg::get().pe_params.param_set.scaffold_graph_params.construct) {
         scaffoldGraph = ConstructScaffoldGraph(gp, main_unique_storage, cfg::get().pe_params.param_set.scaffold_graph_params);
         if (cfg::get().pe_params.param_set.scaffold_graph_params.output) {
-            PrintScaffoldGraph(scaffoldGraph, main_unique_storage->GetSet(), GetEtcDir(output_dir) + "scaffold_graph");
+            PrintScaffoldGraph(scaffoldGraph, main_unique_storage.GetSet(), GetEtcDir(output_dir) + "scaffold_graph");
         }
     }
 
@@ -882,9 +882,9 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     if (is_2015_scaffolder_enabled(sc_mode)) {
         //TODO: constants
         for (auto cur_length = min_unique_length; cur_length > 500; cur_length -= 500) {
-            auto current_unique_storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
+            ScaffoldingUniqueEdgeStorage current_unique_storage;
             ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, cur_length, unique_variaton);
-            unique_edge_analyzer.FillUniqueEdgeStorage(*current_unique_storage);
+            unique_edge_analyzer.FillUniqueEdgeStorage(current_unique_storage);
             all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, current_unique_storage, clone_paths);
             shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
                                                                                       max_is_right_quantile,
@@ -893,7 +893,6 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
             INFO("Growing paths using mate-pairs unique length " << cur_length);
             mp_paths = resolver.extendSeeds(mp_paths, *mp_main_pe);
             DebugOutputPaths(gp, output_dir, mp_paths, "mp_before_overlap_" + std::to_string(cur_length));
-            cur_length = 500;
         }
     } else {
         all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, main_unique_storage, clone_paths);
@@ -901,7 +900,6 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
                                                                                   max_is_right_quantile,
                                                                                   main_unique_storage,
                                                                                   cfg::get().pe_params.param_set.extension_options.max_repeat_length);
-
         INFO("Growing paths using mate-pairs");
         mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
 
@@ -937,7 +935,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     if (broken_contigs.is_initialized()) {
         OutputBrokenScaffolds(last_paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
     }
-    debruijn_graph::GenomeConsistenceChecker genome_checker (gp, *main_unique_storage, 1000, 0.2);
+    debruijn_graph::GenomeConsistenceChecker genome_checker (gp, main_unique_storage, 1000, 0.2);
     DebugOutputPaths(gp, output_dir, last_paths, "mp2_final_paths");
     writer.OutputPaths(last_paths, output_dir + contigs_name);
     if (gp.genome.size() > 0)

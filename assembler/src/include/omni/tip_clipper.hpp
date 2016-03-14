@@ -174,16 +174,13 @@ public:
                 end = this->g().length(e);
             else return false;
         }
-        vector<size_t> counts(4);
+        std::array<size_t, 4> counts;
         const Sequence &s_edge = this->g().EdgeNucls(e);
 
         for (size_t position = start; position < end; position ++) {
             counts[s_edge[position]] ++;
         }
-        size_t curm = 0;
-        for (auto count: counts) {
-            curm = max(curm, count);
-        }
+        size_t curm = *std::max_element(counts.begin(), counts.end());
         if (curm > (end - start) * max_AT_percentage_) {
             DEBUG("deleting edge" << s_edge.str());;
             DEBUG("start end cutoff" << start << " " << end << " " << this->g().length(e) * max_AT_percentage_);

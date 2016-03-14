@@ -77,8 +77,8 @@ protected:
                 VertexId u = g_.EdgeStart(path[lastEdge]);
                 auto bulgeCandidates = g_.IncomingEdges(v);
 
-                for (auto iter = bulgeCandidates.begin(); iter != bulgeCandidates.end(); ++iter) {
-                    if (g_.EdgeStart(*iter) != u) {
+                for (const auto& candidate: bulgeCandidates) {
+                    if (g_.EdgeStart(candidate) != u) {
                         break;
                     }
                 }

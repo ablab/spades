@@ -543,8 +543,7 @@ AlgoPtr<Graph> ShortPolyATEdgesRemoverInstance (Graph &g, size_t max_length, Han
 
 AlgoPtr<Graph> ATTipClipperInstance (Graph &g, HandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
 //TODO: review params 0.8, 200?
-    auto condition = ATCondition<Graph>(g, 0.8, 200, true);
-    return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g, condition, chunk_cnt, removal_handler, true);
+    return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g, ATCondition<Graph>(g, 0.8, 200, true), chunk_cnt, removal_handler, true);
 }
 
 template<class Graph>

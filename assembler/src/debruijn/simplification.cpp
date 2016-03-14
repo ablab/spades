@@ -87,9 +87,9 @@ class GraphSimplifier {
                                 HandlerF removal_handler = 0, size_t chunk_cnt = 1) {
         INFO("Removing short polyAT");
         EdgeRemover<Graph> er(g_, removal_handler);
-        auto condition = make_shared<ATCondition<Graph>>(g_, 0.8, max_length, false);
+        ATCondition<Graph> condition (g_, 0.8, max_length, false);
         for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
-            if (g_.length(*iter) == 1 && condition->Check(*iter)) {
+            if (g_.length(*iter) == 1 && condition.Check(*iter)) {
                 er.DeleteEdgeWithNoCompression(*iter);
             }
         }

@@ -30,7 +30,7 @@ void load(pe_config::ParamSetT::ScaffoldGraphParamsT& sg, boost::property_tree::
     load(sg.output,             pt, "output"            );
     load(sg.always_add,         pt, "always_add"        );
     load(sg.never_add,          pt, "never_add"         );
-    load(sg.relative_threshod,  pt, "relative_threshod" );
+    load(sg.relative_threshold,  pt, "relative_threshold" );
     load(sg.graph_connectivity, pt, "graph_connectivity");
     load(sg.max_path_length,    pt, "max_path_length"   );
 }

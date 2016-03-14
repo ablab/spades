@@ -204,7 +204,7 @@ struct pe_config {
           bool output;
           size_t always_add;
           size_t never_add;
-          double relative_threshod;
+          double relative_threshold;
           bool graph_connectivity;
           size_t max_path_length;
       } scaffold_graph_params;

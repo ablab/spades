@@ -266,12 +266,12 @@ class ECLoopRemover : public EdgeProcessingAlgorithm<Graph> {
     double relative_threshold_;
     const AbstractFlankingCoverage<Graph> &flanking_coverage_;
     EdgeRemover<Graph> edge_remover_;
-    int coverage_loops_removed = 0;
-    int dead_loops_removed = 0;
-    int not_dead_loops_removed = 0;
-    int coverage_rc_loops_removed = 0;
-    int dead_rc_loops_removed = 0;
-    int not_dead_rc_loops_removed = 0;
+    size_t coverage_loops_removed = 0;
+    size_t dead_loops_removed = 0;
+    size_t not_dead_loops_removed = 0;
+    size_t coverage_rc_loops_removed = 0;
+    size_t dead_rc_loops_removed = 0;
+    size_t not_dead_rc_loops_removed = 0;
 
     bool IsLoop(EdgeId e) {
         return this->g().EdgeStart(e) == this->g().EdgeEnd(e);

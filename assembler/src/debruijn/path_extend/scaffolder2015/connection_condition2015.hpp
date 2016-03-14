@@ -79,7 +79,7 @@ protected:
     mutable map <debruijn_graph::Graph::EdgeId, set<debruijn_graph::Graph::EdgeId>> stored_distances_;
 public:
     AssemblyGraphConnectionCondition(const debruijn_graph::Graph &g, size_t max_connection_length,
-                                     shared_ptr<ScaffoldingUniqueEdgeStorage> unique_edges);
+                                     const ScaffoldingUniqueEdgeStorage& unique_edges);
     void AddInterestingEdge(debruijn_graph::EdgeId e);
     set <debruijn_graph::EdgeId> ConnectedWith(debruijn_graph::EdgeId e) const override;
     double GetWeight(debruijn_graph::EdgeId, debruijn_graph::EdgeId) const override;

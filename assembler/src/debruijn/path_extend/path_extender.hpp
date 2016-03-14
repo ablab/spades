@@ -760,9 +760,9 @@ public:
 
     virtual ~ContigsMaker() { }
 
-    virtual void GrowPath(BidirectionalPath& path, PathContainer* paths_storage = 0) = 0;
+    virtual void GrowPath(BidirectionalPath& path, PathContainer* paths_storage = nullptr) = 0;
 
-    virtual void GrowPathSimple(BidirectionalPath& path, PathContainer* paths_storage = 0) = 0;
+    virtual void GrowPathSimple(BidirectionalPath& path, PathContainer* paths_storage = nullptr) = 0;
 
     virtual void GrowAll(PathContainer & paths, PathContainer& paths_storage) = 0;
 
@@ -774,17 +774,17 @@ protected:
 struct UsedUniqueStorage {
     set<EdgeId> used_;
 
-    shared_ptr<ScaffoldingUniqueEdgeStorage> unique_;
+    const ScaffoldingUniqueEdgeStorage& unique_;
     void insert(EdgeId e) {
-        if (unique_->IsUnique(e)) {
+        if (unique_.IsUnique(e)) {
             used_.insert(e);
             used_.insert(e->conjugate());
         }
     }
     bool IsUsedAndUnique (EdgeId e) {
-        return (unique_->IsUnique(e) && used_.find(e) != used_.end());
+        return (unique_.IsUnique(e) && used_.find(e) != used_.end());
     }
-    UsedUniqueStorage(  shared_ptr<ScaffoldingUniqueEdgeStorage> unique ):used_(), unique_(unique) {}
+    UsedUniqueStorage(const ScaffoldingUniqueEdgeStorage& unique ):used_(), unique_(unique) {}
 };
 class PathExtender {
 public:
@@ -792,7 +792,7 @@ public:
 
     virtual ~PathExtender() { }
 
-    virtual bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage = 0) = 0;
+    virtual bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage = nullptr) = 0;
 
     void AddUniqueEdgeStorage(shared_ptr<UsedUniqueStorage> used_storage) {
         used_storage_ = used_storage;
@@ -813,7 +813,7 @@ public:
               max_diff_len_(max_diff_len) {
     }
 
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<shared_ptr<PathExtender> > pes, size_t max_diff_len, shared_ptr<ScaffoldingUniqueEdgeStorage> unique, size_t max_repeat_length)
+    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<shared_ptr<PathExtender> > pes, size_t max_diff_len, const ScaffoldingUniqueEdgeStorage& unique, size_t max_repeat_length)
             : ContigsMaker(g),
               cover_map_(cov_map),
               repeat_detector_(g, cover_map_, 2 * max_repeat_length),
@@ -1089,7 +1089,7 @@ public:
           return is_detector_.CheckCycledNonIS(path);
     }
 
-    virtual bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* paths_storage = 0) = 0;
+    virtual bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* paths_storage = nullptr) = 0;
 
     virtual bool ResolveShortLoopByCov(BidirectionalPath& path) = 0;
 
@@ -1309,6 +1309,7 @@ protected:
                 && extensionChooser_->WeightCounterBased()) {
                 return false;
             }
+//First candidate is adding to THIS path.
             else if (not (!investigateShortLoops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
                 && extensionChooser_->WeightCounterBased())) {
                 DEBUG("push");
@@ -1319,6 +1320,7 @@ protected:
             if (candidates.size() > 1) {
                 DEBUG("Found " << candidates.size() << " candidates");
             }
+//Creating new paths for other than new candidate.
             for (size_t i = 1; i < candidates.size(); ++i) {
                 if (not (!investigateShortLoops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
                     && extensionChooser_->WeightCounterBased())) {

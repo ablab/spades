@@ -9,7 +9,7 @@ using namespace std;
 
 std::pair<EdgeId, int> ExtensionChooser2015::FindLastUniqueInPath(const BidirectionalPath& path) const {
     for (int i =  (int)path.Size() - 1; i >= 0; --i) {
-        if (unique_edges_->IsUnique(path.At(i))) {
+        if (unique_edges_.IsUnique(path.At(i))) {
             return std::make_pair(path.At(i), i);
         }
     }
@@ -17,12 +17,12 @@ std::pair<EdgeId, int> ExtensionChooser2015::FindLastUniqueInPath(const Bidirect
 }
 
 ExtensionChooser::EdgeContainer ExtensionChooser2015::FindNextUniqueEdge(const EdgeId from) const {
-    VERIFY(unique_edges_->IsUnique(from));
+    VERIFY(unique_edges_.IsUnique(from));
     EdgeContainer result;
     set<EdgeId> candidate_edges = paired_connection_condition_.ConnectedWith(from);
     vector<pair<double, pair<EdgeId, int >>> to_sort;
     for (EdgeId e : candidate_edges) {
-        if (!unique_edges_->IsUnique(e)) {
+        if (!unique_edges_.IsUnique(e)) {
             continue;
         }
         double sum = paired_connection_condition_.GetWeight(from, e);

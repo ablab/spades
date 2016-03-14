@@ -99,16 +99,12 @@ int PairedLibConnectionCondition::GetMedianGap(debruijn_graph::EdgeId e1, debrui
         if (sum2 * 2 > sum)
             break;
     }
-    if (i >= h.size()) {
-        WARN("Count median error");
-        i = h.size() - 1;
-    }
     return (int) round(h[i].first - e_length);
 }
 
 AssemblyGraphConnectionCondition::AssemblyGraphConnectionCondition(const debruijn_graph::Graph &g,
-                    size_t max_connection_length, shared_ptr<ScaffoldingUniqueEdgeStorage> unique_edges) :
-        g_(g), max_connection_length_(max_connection_length), interesting_edge_set_(unique_edges->GetSet()), stored_distances_() {
+                    size_t max_connection_length, const ScaffoldingUniqueEdgeStorage & unique_edges) :
+        g_(g), max_connection_length_(max_connection_length), interesting_edge_set_(unique_edges.GetSet()), stored_distances_() {
 }
 
 set <debruijn_graph::EdgeId> AssemblyGraphConnectionCondition::ConnectedWith(debruijn_graph::EdgeId e) const {
