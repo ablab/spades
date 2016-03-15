@@ -303,7 +303,7 @@ public:
 class ExcludingExtensionChooser: public ExtensionChooser {
     //FIXME what is the logic behind it?
 protected:
-    shared_ptr<PathAnalyzer> analyzer_;
+    PathAnalyzer analyzer_;
     double prior_coeff_;
 
     AlternativeContainer FindWeights(const BidirectionalPath& path, const EdgeContainer& edges, const std::set<size_t>& to_exclude) const {
@@ -344,7 +344,7 @@ protected:
     virtual void ExcludeEdges(const BidirectionalPath& path, const EdgeContainer& edges, std::set<size_t>& to_exclude) const = 0;
 
 public:
-    ExcludingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, shared_ptr<PathAnalyzer> analyzer, double weight_threshold, double priority) :
+    ExcludingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, PathAnalyzer analyzer, double weight_threshold, double priority) :
             ExtensionChooser(g, wc, weight_threshold), analyzer_(analyzer), prior_coeff_(priority) {
 
     }
@@ -356,7 +356,7 @@ public:
             return edges;
         }
         std::set<size_t> to_exclude;
-        analyzer_->RemoveTrivial(path, to_exclude);
+        analyzer_.RemoveTrivial(path, to_exclude);
         path.Print();
         EdgeContainer result = edges;
         ExcludeEdges(path, result, to_exclude);
@@ -416,7 +416,7 @@ protected:
 public:
 
 	SimpleExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
-	    ExcludingExtensionChooser(g, wc, make_shared<PathAnalyzer>(g), weight_threshold, priority) {
+	    ExcludingExtensionChooser(g, wc, PathAnalyzer(g), weight_threshold, priority) {
 	}
 
 private:
@@ -432,7 +432,7 @@ protected:
 public:
 
     RNAExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
-        ExcludingExtensionChooser(g, wc, make_shared<PreserveSimplePathsAnalyzer>(g), weight_threshold, priority) {
+        ExcludingExtensionChooser(g, wc, PreserveSimplePathsAnalyzer(g), weight_threshold, priority) {
     }
 
 private:
@@ -460,7 +460,7 @@ protected:
     }
 public:
     LongEdgeExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
-        ExcludingExtensionChooser(g, wc, make_shared<PathAnalyzer>(g), weight_threshold, priority) {
+        ExcludingExtensionChooser(g, wc, PathAnalyzer(g), weight_threshold, priority) {
     }
 };
 
@@ -904,8 +904,7 @@ private:
         return false;
     }
 
-    vector<pair<EdgeId, double> > MapToSortVector(
-            map<EdgeId, double>& map) const {
+    vector<pair<EdgeId, double> > MapToSortVector(const map<EdgeId, double>& map) const {
         vector<pair<EdgeId, double> > result1(map.begin(), map.end());
         std::sort(result1.begin(), result1.end(), EdgeWithWeightCompareReverse);
         return result1;
