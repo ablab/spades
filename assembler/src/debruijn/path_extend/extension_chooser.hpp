@@ -71,6 +71,7 @@ protected:
         int lastEdge = (int) path.Size() - 1;
         do {
             lastEdge = ExcludeTrivial(path, edges, lastEdge);
+            bool bulge = true;
 
             if (lastEdge >= 0) {
                 VertexId v = g_.EdgeEnd(path[lastEdge]);
@@ -79,10 +80,14 @@ protected:
 
                 for (const auto& candidate: bulgeCandidates) {
                     if (g_.EdgeStart(candidate) != u) {
+                        bulge = false;
                         break;
                     }
                 }
 
+                if (!bulge) {
+                    break;
+                }
                 --lastEdge;
             }
         } while (lastEdge >= 0);

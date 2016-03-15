@@ -288,10 +288,28 @@ inline bool IsForMPExtender(const io::SequencingLibrary<debruijn_config::DataSet
 
 enum class PathExtendStage {
     PEStage,
+    PEPolishing,
     MPStage,
     FinalizingPEStage,
-    Scaffold2015,
+    FinalPolishing,
 };
+
+inline bool IsPEStage(PathExtendStage stage) {
+    return stage == PathExtendStage::PEPolishing || stage == PathExtendStage::PEStage;
+}
+
+inline bool IsMPStage(PathExtendStage stage) {
+    return stage == PathExtendStage::MPStage;
+}
+
+inline bool IsFinalStage(PathExtendStage stage) {
+    return stage == PathExtendStage::FinalizingPEStage || stage == PathExtendStage::FinalPolishing;
+}
+
+inline bool IsPolishingStage(PathExtendStage stage) {
+    return stage == PathExtendStage::PEPolishing || stage == PathExtendStage::FinalPolishing;
+}
+
 
 template<class Index>
 inline shared_ptr<PairedInfoLibrary> MakeNewLib(const conj_graph_pack::graph_t& g,
@@ -550,14 +568,13 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             }
             if (IsForPEExtender(lib)) {
                 ++pe_libs;
-                if (stage == PathExtendStage::PEStage
-                    && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
+                if (IsPEStage(stage) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
                     if (cfg::get().ds.meta)
                         //TODO proper configuration via config
                         pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, false));
                     else if (cfg::get().ds.moleculo)
                         pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, false));
-                    else if (cfg::get().ds.rna)
+                    else if (cfg::get().ds.rna && !IsPolishingStage(stage))
                         pes.push_back(MakeRNAExtender(gp, cov_map, i, pset, false));
                     else
                         pes.push_back(MakePEExtender(gp, cov_map, i, pset, false));
@@ -569,7 +586,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             if (IsForShortLoopExtender(lib) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
                 if (cfg::get().ds.meta)
                     pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, true));
-                else if (cfg::get().ds.rna)
+                else if (cfg::get().ds.rna && !IsPolishingStage(stage))
                     pes.push_back(MakeRNAExtender(gp, cov_map, i, pset, true));
                 else
                     pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));
@@ -583,7 +600,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                     pe_scafs.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
             }
-            if (IsForMPExtender(lib) && stage == PathExtendStage::MPStage) {
+            if (IsForMPExtender(lib) && IsMPStage(stage)) {
                 ++mp_libs;
                 if (pset.sm == sm_old || pset.sm == sm_combined) {
                     mps.push_back(MakeMPExtender(gp, cov_map, paths_for_mp, i, pset));
@@ -701,11 +718,11 @@ inline void PrintScaffoldGraph(shared_ptr<scaffold_graph::ScaffoldGraph> scaffol
 inline size_t FindOverlapLenForStage(PathExtendStage stage) {
     size_t res = 0;
     for (const auto& lib : cfg::get().ds.reads) {
-        if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage) {
+        if (IsForPEExtender(lib) && IsPEStage(stage)) {
             res = max(res, (size_t) lib.data().insert_size_right_quantile);
         } else if (IsForShortLoopExtender(lib)) {
             res = max(res, (size_t) lib.data().insert_size_right_quantile);
-        } else if (IsForMPExtender(lib) && stage == PathExtendStage::MPStage) {
+        } else if (IsForMPExtender(lib) && IsMPStage(stage)) {
             res = max(res, (size_t) lib.data().insert_size_right_quantile);
         }
     }
@@ -849,7 +866,14 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     if (mp_exist) {
         ClonePathContainer(paths, clone_paths, clone_map);
     }
-//We do not run overlap removal in 2015 mode
+
+    exspander_stage = PathExtendStage::PEPolishing;
+    all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset, main_unique_storage);
+    mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
+                                            max_is_right_quantile, main_unique_storage,
+                                            cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+
+    //We do not run overlap removal in 2015 mode
     if (!is_2015_scaffolder_enabled(sc_mode))
         FinalizePaths(paths, cover_map, min_edge_len, max_is_right_quantile);
     if (broken_contigs.is_initialized()) {
@@ -915,7 +939,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     INFO("SUBSTAGE = polishing paths")
     exspander_stage = PathExtendStage::FinalizingPEStage;
     all_libs.clear();
-    all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset, main_unique_storage);
+    all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, main_unique_storage);
     max_is_right_quantile = FindOverlapLenForStage(exspander_stage);
     shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
                                                                                  max_is_right_quantile, main_unique_storage,
@@ -923,6 +947,12 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
     DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_overlap");
+
+    exspander_stage = PathExtendStage::FinalPolishing;
+    all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, main_unique_storage);
+    last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
+                                            max_is_right_quantile, main_unique_storage,
+                                            cfg::get().pe_params.param_set.extension_options.max_repeat_length);
     if (!is_2015_scaffolder_enabled(sc_mode)) {
         FinalizePaths(last_paths, clone_map, min_edge_len, max_is_right_quantile);
         DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_traverse");
