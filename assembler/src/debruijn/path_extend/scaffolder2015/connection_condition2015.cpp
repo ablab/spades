@@ -44,7 +44,7 @@ AdvancedPairedConnectionCondition::AdvancedPairedConnectionCondition(const debru
                                   size_t always_add,
                                   size_t never_add,
                                   double relative_threshold):
-    PairedLibConnectionCondition(graph, lib, lib_index, never_add_),
+    PairedLibConnectionCondition(graph, lib, lib_index, never_add),
     always_add_(always_add),
     never_add_(never_add),
     relative_threshold_(relative_threshold) {}
