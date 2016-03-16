@@ -18,11 +18,11 @@
 
 #include "de/paired_info.hpp"
 
-#include "debruijn_graph.hpp"
+#include "assembly_graph/debruijn_graph.hpp"
 #include "detail_coverage.hpp"
 #include "long_read_storage.hpp"
 
-#include "omni/order_and_law.hpp"
+#include "assembly_graph/order_and_law.hpp"
 
 #include <cmath>
 #include <set>

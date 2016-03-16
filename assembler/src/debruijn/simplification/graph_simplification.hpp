@@ -16,7 +16,7 @@
 
 #include "standard_base.hpp"
 #include "config_struct.hpp"
-#include "debruijn_graph.hpp"
+#include "assembly_graph/debruijn_graph.hpp"
 #include "stats/debruijn_stats.hpp"
 
 #include "omni/visualization/graph_colorer.hpp"

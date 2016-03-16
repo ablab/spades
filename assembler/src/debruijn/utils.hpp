@@ -25,7 +25,7 @@
 
 #include "path_helper.hpp"
 
-#include "debruijn_graph.hpp"
+#include "assembly_graph/debruijn_graph.hpp"
 #include "indices/perfect_hash_map.hpp"
 #include "edge_index.hpp"
 

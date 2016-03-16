@@ -7,7 +7,6 @@
 
 #pragma once
 #include "stacktrace.hpp"
-
 #include "boost/current_function.hpp"
 #include <sstream>
 #include <iostream>

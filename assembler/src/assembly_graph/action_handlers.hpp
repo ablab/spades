@@ -8,6 +8,7 @@
 #ifndef __OMNI_ACTION_HANDLERS_HPP__
 #define __OMNI_ACTION_HANDLERS_HPP__
 
+#include "verify.hpp"
 #include "logger/logger.hpp"
 
 #include <boost/noncopyable.hpp>

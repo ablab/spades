@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "omni/observable_graph.hpp"
-#include "omni/coverage.hpp"
-#include "omni/id_track_handler.hpp"
+#include "observable_graph.hpp"
+#include "coverage.hpp"
 #include "debruijn_data.hpp"
 
 namespace debruijn_graph {
 
+using omnigraph::CoverageIndex;
 class DeBruijnGraph: public omnigraph::ObservableGraph<DeBruijnDataMaster> {
 public:
 	typedef omnigraph::ObservableGraph<DeBruijnDataMaster> base;

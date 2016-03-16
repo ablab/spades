@@ -4,7 +4,7 @@
 #pragma once
 
 #include "logger/logger.hpp"
-#include "debruijn_graph.hpp"
+#include "assembly_graph/debruijn_graph.hpp"
 #include "path_extend/paired_library.hpp"
 #include "connection_condition2015.hpp"
 

@@ -1,5 +1,5 @@
 #include "genome_consistance_checker.hpp"
-#include "debruijn_graph.hpp"
+#include "assembly_graph/debruijn_graph.hpp"
 #include <algorithm>
 #include <limits>
 namespace debruijn_graph {

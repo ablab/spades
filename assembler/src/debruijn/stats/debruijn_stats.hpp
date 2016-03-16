@@ -8,7 +8,7 @@
 #pragma once
 
 #include "statistics.hpp"
-#include "debruijn_graph.hpp"
+#include "assembly_graph/debruijn_graph.hpp"
 
 #include "graph_pack.hpp"
 #include "sequence_mapper.hpp"

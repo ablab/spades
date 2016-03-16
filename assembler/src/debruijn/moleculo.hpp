@@ -5,7 +5,7 @@
 //***************************************************************************
 
 #pragma once
-#include "debruijn_graph.hpp"
+#include "assembly_graph/debruijn_graph.hpp"
 #include "omni/basic_edge_conditions.hpp"
 
 namespace debruijn_graph {

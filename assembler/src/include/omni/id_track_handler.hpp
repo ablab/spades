@@ -11,7 +11,7 @@
 //#include "utils.hpp"
 #include "visualization/graph_labeler.hpp"
 #include "simple_tools.hpp"
-#include "action_handlers.hpp"
+#include "assembly_graph/action_handlers.hpp"
 using namespace omnigraph;
 
 namespace omnigraph {

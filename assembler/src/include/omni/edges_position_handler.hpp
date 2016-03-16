@@ -20,7 +20,7 @@
 #include "simple_tools.hpp"
 #include "omni_utils.hpp"
 #include "mapping_path.hpp"
-#include "action_handlers.hpp"
+#include "assembly_graph/action_handlers.hpp"
 
 namespace omnigraph {
 

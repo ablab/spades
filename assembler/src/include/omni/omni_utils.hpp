@@ -13,11 +13,11 @@
 #include "xmath.h"
 #include "graph_component.hpp"
 
- #include "omni/action_handlers.hpp"
- #include "omni/graph_iterators.hpp"
+ #include "assembly_graph/action_handlers.hpp"
+ #include "assembly_graph/graph_iterators.hpp"
 
-#include "omni/action_handlers.hpp"
-#include "omni/graph_iterators.hpp"
+#include "assembly_graph/action_handlers.hpp"
+#include "assembly_graph/graph_iterators.hpp"
 #include "omni/mapping_path.hpp"
 
 #include <queue>

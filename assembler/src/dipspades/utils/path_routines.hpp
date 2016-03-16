@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #pragma once
-#include "debruijn_graph.hpp"
+#include "assembly_graph/debruijn_graph.hpp"
 #include "standard.hpp"
 #include "graph_pack.hpp"
 

@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "standard.hpp"
-#include "debruijn_graph.hpp"
+#include "assembly_graph/debruijn_graph.hpp"
 #include "config_struct.hpp"
 
 #include <io/sam/sam_reader.hpp>

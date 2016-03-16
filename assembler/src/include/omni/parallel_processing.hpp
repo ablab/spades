@@ -8,7 +8,7 @@
 #pragma once
 
 #include "logger/logger.hpp"
-#include "graph_iterators.hpp"
+#include "assembly_graph/graph_iterators.hpp"
 #include "graph_processing_algorithm.hpp"
 
 namespace omnigraph {

@@ -20,7 +20,7 @@
 
 #include "debruijn_graph_constructor.hpp"
 #include "indices/edge_index_builders.hpp"
-#include "debruijn_graph.hpp"
+#include "assembly_graph/debruijn_graph.hpp"
 #include "graph_pack.hpp"
 #include "utils.hpp"
 #include "perfcounter.hpp"

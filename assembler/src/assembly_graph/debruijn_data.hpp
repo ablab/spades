@@ -12,8 +12,9 @@
 #include "verify.hpp"
 #include "logger/logger.hpp"
 #include "sequence/sequence_tools.hpp"
+#include "standard_base.hpp"
 
-namespace omnigraph {
+namespace debruijn_graph {
 class DeBruijnMaster;
 
 class DeBruijnVertexData {

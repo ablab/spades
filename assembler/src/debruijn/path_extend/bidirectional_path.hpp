@@ -13,8 +13,8 @@
  */
 #pragma once
 
-#include "../debruijn_graph.hpp"
-#include "../connected_component.hpp"
+#include "assembly_graph/debruijn_graph.hpp"
+#include "connected_component.hpp"
 
 using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;

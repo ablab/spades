@@ -8,7 +8,7 @@
 #pragma once
 
 #include "indices/perfect_hash_map.hpp"
-#include "omni/coverage.hpp"
+#include "assembly_graph/coverage.hpp"
 #include "verify.hpp"
 #include <vector>
 #include <map>

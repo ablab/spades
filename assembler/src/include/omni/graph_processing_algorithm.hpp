@@ -7,9 +7,8 @@
 
 #pragma once
 
-#include "graph_iterators.hpp"
+#include "assembly_graph/graph_iterators.hpp"
 #include "graph_component.hpp"
-#include "coverage.hpp"
 #include "pred.hpp"
 #include "logger/logger.hpp"
 

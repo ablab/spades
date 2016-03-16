@@ -12,7 +12,7 @@
 #include "omni/omni_utils.hpp"
 #include "adt/kmer_map.hpp"
 
-#include "debruijn_graph.hpp"
+#include "assembly_graph/debruijn_graph.hpp"
 #include "standard.hpp"
 #include "indices/edge_index_builders.hpp"
 

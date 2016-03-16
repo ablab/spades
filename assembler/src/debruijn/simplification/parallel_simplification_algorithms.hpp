@@ -11,7 +11,7 @@
 #include "omni/graph_processing_algorithm.hpp"
 #include "omni/basic_edge_conditions.hpp"
 #include "omni/bulge_remover.hpp"
-#include "omni/construction_helper.hpp"
+#include "assembly_graph/construction_helper.hpp"
 #include "omni/marks_and_locks.hpp"
 #include "simplification_settings.hpp"
 

@@ -12,7 +12,7 @@ add_executable(dipspades
 	       utils/files_utils.cpp
                main.cpp)
 
-target_include_directories(dipspades PRIVATE ${CMAKE_SOURCE_DIR}/debruijn)
+target_include_directories(dipspades PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(dipspades debruijn)
 
 if (SPADES_STATIC_BUILD)

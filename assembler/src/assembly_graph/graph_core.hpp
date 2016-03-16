@@ -12,7 +12,7 @@
 #include "logger/logger.hpp"
 #include "order_and_law.hpp"
 #include <boost/iterator/iterator_facade.hpp>
-#include "../simple_tools.hpp"
+#include "simple_tools.hpp"
 
 namespace omnigraph {
 

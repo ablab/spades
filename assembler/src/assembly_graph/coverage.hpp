@@ -18,7 +18,8 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include "../xmath.h"
+#include "xmath.h"
+#include "action_handlers.hpp"
 namespace omnigraph {
 
 using std::vector;
