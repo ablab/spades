@@ -669,29 +669,35 @@ inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const co
     return scaffoldGraph;
 }
 
-
 inline void PrintScaffoldGraph(shared_ptr<scaffold_graph::ScaffoldGraph> scaffoldGraph,
                                const set<EdgeId> main_edge_set,
+                               const debruijn_graph::GenomeConsistenceChecker& genome_checker,
                                const string& filename) {
     using namespace scaffold_graph;
+
+    INFO("Constructing reference labels");
+    map<debruijn_graph::EdgeId, string> edge_labels;
+    size_t count = 0;
+    for(const auto& edge_coord_pair: genome_checker.ConstructEdgeOrder()) {
+        if (edge_labels.find(edge_coord_pair.first) == edge_labels.end()) {
+            edge_labels[edge_coord_pair.first] = "";
+        }
+        edge_labels[edge_coord_pair.first] += "order: " + ToString(count) +
+            "\n mapped range: " + ToString(edge_coord_pair.second.mapped_range.start_pos) + " : " + ToString(edge_coord_pair.second.mapped_range.end_pos) +
+            "\n init range: " + ToString(edge_coord_pair.second.initial_range.start_pos) + " : " + ToString(edge_coord_pair.second.initial_range.end_pos) + "\n";
+        ++count;
+    }
 
     auto vcolorer = make_shared<ScaffoldVertexSetColorer>(main_edge_set);
     auto ecolorer = make_shared<ScaffoldEdgeColorer>();
     CompositeGraphColorer <ScaffoldGraph> colorer(vcolorer, ecolorer);
 
-    INFO("Visualizing single grpah");
-    ScaffoldGraphVisualizer singleVisualizer(*scaffoldGraph, false);
+    INFO("Visualizing scaffold grpah");
+    ScaffoldGraphVisualizer singleVisualizer(*scaffoldGraph, edge_labels);
     std::ofstream single_dot;
     single_dot.open((filename + "_single.dot").c_str());
     singleVisualizer.Visualize(single_dot, colorer);
     single_dot.close();
-
-    INFO("Visualizing paired grpah");
-    ScaffoldGraphVisualizer pairedVisualizer(*scaffoldGraph, true);
-    std::ofstream paired_dot;
-    paired_dot.open((filename + "_paired.dot").c_str());
-    pairedVisualizer.Visualize(paired_dot, colorer);
-    paired_dot.close();
 
     INFO("Printing scaffold grpah");
     std::ofstream data_stream;
@@ -805,12 +811,14 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     make_dir(GetEtcDir(output_dir));
     const pe_config::ParamSetT &pset = cfg::get().pe_params.param_set;
 
+    //TODO params
+    debruijn_graph::GenomeConsistenceChecker genome_checker (gp, main_unique_storage, 1000, 0.2);
     //Scaffold graph
     shared_ptr<scaffold_graph::ScaffoldGraph> scaffoldGraph;
     if (cfg::get().pe_params.param_set.scaffold_graph_params.construct) {
         scaffoldGraph = ConstructScaffoldGraph(gp, main_unique_storage, cfg::get().pe_params.param_set.scaffold_graph_params);
         if (cfg::get().pe_params.param_set.scaffold_graph_params.output) {
-            PrintScaffoldGraph(scaffoldGraph, main_unique_storage.GetSet(), GetEtcDir(output_dir) + "scaffold_graph");
+            PrintScaffoldGraph(scaffoldGraph, main_unique_storage.GetSet(), genome_checker, GetEtcDir(output_dir) + "scaffold_graph");
         }
     }
 
@@ -952,7 +960,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     if (broken_contigs.is_initialized()) {
         OutputBrokenScaffolds(last_paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
     }
-    debruijn_graph::GenomeConsistenceChecker genome_checker (gp, main_unique_storage, 1000, 0.2);
+
     DebugOutputPaths(gp, output_dir, last_paths, "mp2_final_paths");
     writer.OutputPaths(last_paths, output_dir + contigs_name);
     if (gp.genome.size() > 0)

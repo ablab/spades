@@ -68,8 +68,11 @@ public:
         RefillPos();
     }
     PathScore CountMisassemblies(const BidirectionalPath &path) const;
+    vector<pair<EdgeId, MappingRange> > ConstructEdgeOrder() const;
+
 //spells genome in language of long unique edges from storage;
     void SpellGenome();
+
 
 };
 

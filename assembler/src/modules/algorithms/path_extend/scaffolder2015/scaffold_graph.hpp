@@ -124,22 +124,16 @@ private:
 
     const debruijn_graph::Graph &assembly_graph_;
 
-    //Map for storing conjugate scaffolding edges
-    std::unordered_map<ScaffoldEdgeIdT, ScaffoldEdgeIdT> conjugate_;
-
     AdjacencyStorage outgoing_edges_;
 
     AdjacencyStorage incoming_edges_;
 
-    //Add edge without any checks and conjugate
-    void AddEdgeSimple(const ScaffoldEdge &e, size_t conjugate_id);
+    void AddEdgeSimple(const ScaffoldEdge &e);
 
     //Delete outgoing edge from adjancecy list without checks
-    //and removing conjugate and respective incoming edge
     void DeleteOutgoing(const ScaffoldEdge &e);
 
     //Delete incoming edge from adjancecy list without checks
-    //and removing conjugate and respective outoging edge
     void DeleteIncoming(const ScaffoldEdge &e);
 
     //Delete all edge info from storage

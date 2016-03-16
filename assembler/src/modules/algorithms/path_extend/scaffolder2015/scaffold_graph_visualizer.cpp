@@ -24,15 +24,17 @@ string ScaffoldGraphLabeler::label(EdgeId e) const {
 }
 
 string ScaffoldGraphLabeler::label(VertexId v) const {
+    auto it = additional_vertex_labels_.find(v);
+    string additional_label = it == additional_vertex_labels_.end() ? "" : it->second + "\n";
     return "ID: " + ToString(graph_.int_id(v)) +
         "\\n Len: " + ToString(graph_.AssemblyGraph().length(v)) +
-        "\\n Cov: " + ToString(graph_.AssemblyGraph().coverage(v));
+        "\\n Cov: " + ToString(graph_.AssemblyGraph().coverage(v)) + "\n" +
+        additional_label;
 }
 
 void ScaffoldGraphVisualizer::Visualize(GraphPrinter<ScaffoldGraph> &printer) {
     printer.open();
     printer.AddVertices(graph_.vbegin(), graph_.vend());
-    //for (auto e = graph_.ebegin(); e != graph_.eend(); ++e) {
     for (const auto& e : graph_.edges()) {
         printer.AddEdge(e);
     }
@@ -40,16 +42,11 @@ void ScaffoldGraphVisualizer::Visualize(GraphPrinter<ScaffoldGraph> &printer) {
 }
 
 void ScaffoldGraphVisualizer::Visualize(ostream &os, CompositeGraphColorer<ScaffoldGraph>& colorer) {
-    ScaffoldGraphLabeler labeler(graph_);
+    ScaffoldGraphLabeler labeler(graph_, additional_vertex_labels_);
     EmptyGraphLinker<ScaffoldGraph> linker;
 
-    if (paired_) {
-        PairedGraphPrinter <ScaffoldGraph> printer(graph_, os, labeler, colorer, linker);
-        Visualize(printer);
-    } else {
-        SingleGraphPrinter <ScaffoldGraph> printer(graph_, os, labeler, colorer, linker);
-        Visualize(printer);
-    }
+    SingleGraphPrinter <ScaffoldGraph> printer(graph_, os, labeler, colorer, linker);
+    Visualize(printer);
 }
 
 string ScaffoldEdgeColorer::GetValue(ScaffoldGraph::EdgeId e) const {

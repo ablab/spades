@@ -63,7 +63,9 @@ set <debruijn_graph::EdgeId> AdvancedPairedConnectionCondition::ConnectedWith(de
         }
     }
     double threshold = std::max((double) never_add_, std::min((double) always_add_, max_weight * relative_threshold_));
-
+    if (graph_.int_id(e) == 27780164) {
+        INFO(never_add_<< " " <<  always_add_<< " "<<  max_weight <<" " << threshold );
+    }
     set <debruijn_graph::EdgeId> result;
     for (auto edge : all_edges) {
         if (edge != e && edge != graph_.conjugate(e) &&

@@ -49,7 +49,7 @@ PathScore GenomeConsistenceChecker::CountMisassemblies(const BidirectionalPath &
     }
 }
 
-void GenomeConsistenceChecker::SpellGenome() {
+vector<pair<EdgeId, MappingRange> > GenomeConsistenceChecker::ConstructEdgeOrder() const {
     vector<pair<EdgeId, MappingRange> > to_sort;
     for(auto e: storage_) {
         if (excluded_unique_.find(e) == excluded_unique_.end() ) {
@@ -68,12 +68,49 @@ void GenomeConsistenceChecker::SpellGenome() {
         return a.second.initial_range.start_pos < b.second.initial_range.start_pos;
     }
     );
+    return to_sort;
+}
+
+
+void GenomeConsistenceChecker::SpellGenome() {
     size_t count = 0;
-    for(auto p: to_sort) {
-        INFO("edge " << gp_.g.int_id(p.first) << " length "<< gp_.g.length(p.first) << " coverage " << gp_.g.coverage(p.first) << " mapped to " << p.second.mapped_range.start_pos << " - " << p.second.mapped_range.end_pos << " init_range " << p.second.initial_range.start_pos << " - " << p.second.initial_range.end_pos );
-        genome_spelled_[p.first] = count;
+    auto to_sort = ConstructEdgeOrder();
+    vector<size_t> starts;
+    vector<size_t> ends;
+    for(size_t i = 0; i <to_sort.size(); i++) {
+        if (i > 0 && to_sort[i].second.initial_range.start_pos - to_sort[i-1].second.initial_range.end_pos > storage_.GetMinLength() ) {
+            INFO ("Large gap " << to_sort[i].second.initial_range.start_pos - to_sort[i-1].second.initial_range.end_pos );
+            starts.push_back(to_sort[i].second.initial_range.start_pos);
+            ends.push_back(to_sort[i-1].second.initial_range.end_pos);
+        }
+        if (i == 0) {
+            starts.push_back(to_sort[i].second.initial_range.start_pos);
+        }
+        if (i == to_sort.size() - 1){
+            ends.push_back(to_sort[i].second.initial_range.end_pos);
+        }
+        INFO("edge " << gp_.g.int_id(to_sort[i].first) << " length "<< gp_.g.length(to_sort[i].first) <<
+                     " coverage " << gp_.g.coverage(to_sort[i].first) << " mapped to " << to_sort[i].second.mapped_range.start_pos
+             << " - " << to_sort[i].second.mapped_range.end_pos << " init_range " << to_sort[i].second.initial_range.start_pos << " - " << to_sort[i].second.initial_range.end_pos );
+        genome_spelled_[to_sort[i].first] = count;
         count++;
     }
+    vector<size_t> lengths;
+    size_t total_len = 0;
+    for (size_t i = 0; i < starts.size(); i++) {
+        lengths.push_back(ends[i] - starts[i]);
+        total_len += lengths[i];
+    }
+    sort(lengths.begin(), lengths.end());
+    reverse(lengths.begin(), lengths.end());
+    size_t cur = 0;
+    size_t i = 0;
+    while (cur < total_len / 2 && i < lengths.size()) {
+        cur += lengths[i];
+        i++;
+    }
+    INFO("Assuming gaps of length > " << storage_.GetMinLength() << " unresolvable..");
+    INFO("ROUGH estimates on N50/L50:" << lengths[i - 1] << " / " << i - 1 << " with len " << total_len);
 }
 
 PathScore GenomeConsistenceChecker::CountMisassembliesWithStrand(const BidirectionalPath &path, const string strand) const {
