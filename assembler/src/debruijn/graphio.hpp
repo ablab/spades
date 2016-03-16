@@ -144,9 +144,9 @@ inline void SerializePoint(FILE* file, size_t e1, size_t e2, const Point &p) {
 
 inline void DeserializePoint(FILE* file, size_t& e1, size_t& e2, RawPoint &p) {
     float unused;
-    size_t read_count = fscanf(file, "%zu %zu %f %f %f.\n", &e1, &e2,
+    size_t read_count = fscanf(file, "%zu %zu %f %f %f .\n", &e1, &e2,
         (float *)&p.d, (float *)&p.weight, (float *)&unused);
-    VERIFY(read_count == 4);
+    VERIFY(read_count == 5);
 
 }
 
