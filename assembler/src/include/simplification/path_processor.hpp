@@ -9,7 +9,7 @@
 
 #include "standard_base.hpp"
 #include "adt/bag.hpp"
-#include "dijkstra_tools/dijkstra_helper.hpp"
+#include "dijkstra/dijkstra_helper.hpp"
 
 namespace omnigraph {
 

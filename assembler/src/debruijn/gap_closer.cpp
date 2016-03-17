@@ -6,21 +6,9 @@
 //***************************************************************************
 
 #include "gap_closer.hpp"
-
-#include "standard.hpp"
-
-#include "omni/omni_tools.hpp"
-#include "io/io_helper.hpp"
-#include "omni/visualization/graph_labeler.hpp"
-#include "dataset_readers.hpp"
+#include "simplification/compressor.hpp"
 #include "read_converter.hpp"
-#include "sequence_mapper.hpp"
-#include "short_read_mapper.hpp"
 #include "adt/kmer_set.hpp"
-
-#include "de/paired_info.hpp"
-
-#include <set>
 #include <stack>
 
 namespace debruijn_graph {
@@ -441,7 +429,7 @@ class GapCloser {
         INFO("Closing short gaps complete: filled " << gaps_filled
              << " gaps after checking " << gaps_checked
              << " candidates");
-        omnigraph::CompressAllVertices(g_);
+        omnigraph::CompressAllVertices<Graph>(g_);
     }
 
     GapCloser(Graph& g, omnigraph::de::PairedInfoIndexT<Graph>& tips_paired_idx,

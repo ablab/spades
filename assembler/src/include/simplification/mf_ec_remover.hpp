@@ -7,6 +7,10 @@
 
 #pragma once
 
+#include <bits/stl_map.h>
+#include <bits/stl_queue.h>
+#include <include/omni/splitters.hpp>
+#include "cleaner.hpp"
 #include "graph_processing_algorithm.hpp"
 
 namespace omnigraph {
@@ -16,6 +20,7 @@ using std::map;
 using std::vector;
 using std::pair;
 using std::queue;
+using std::make_pair;
 
 template<class Graph>
 class FlowGraph {
@@ -498,7 +503,7 @@ public:
 			component_remover_.DeleteComponent(to_remove.begin(), to_remove.end(), false);
 		}
         CompressAllVertices(g_);
-        CleanGraph(g_);
+        Cleaner<Graph>(g_).Run();
 
 		return false;
 	}

@@ -7,7 +7,7 @@
 
 
 #pragma once
-#include "omni/visualization/graph_labeler.hpp"
+#include "visualization/graph_labeler.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/mapping_path.hpp"
 #include "omni/edges_position_handler.hpp"

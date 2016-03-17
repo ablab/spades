@@ -39,6 +39,7 @@
 #endif
 
 #include <cstring>
+#include <unistd.h>
 
 template<typename T>
 class mpmc_bounded_queue {

@@ -7,7 +7,7 @@
 
 #pragma once
 #include "sequence_mapper.hpp"
-#include "omni/visualization/visualization_utils.hpp"
+#include "visualization/visualization_utils.hpp"
 
 namespace cap {
 

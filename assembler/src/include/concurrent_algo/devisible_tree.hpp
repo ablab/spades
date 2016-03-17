@@ -23,7 +23,7 @@
 #include <queue>
 
 #include "standard_base.hpp"
-#include "omni_utils.hpp"
+#include "omni/omni_utils.hpp"
 
 
 namespace omnigraph {

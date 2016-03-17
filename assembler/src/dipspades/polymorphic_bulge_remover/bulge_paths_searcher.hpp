@@ -8,9 +8,9 @@
 #pragma once
 
 #include <vector>
-#include "../../include/omni/dijkstra_tools/dijkstra_helper.hpp"
-#include "../../include/omni/path_processor.hpp"
-#include "../dipspades_config.hpp"
+#include "dijkstra/dijkstra_helper.hpp"
+#include "simplification/path_processor.hpp"
+#include "dipspades_config.hpp"
 
 using namespace std;
 using namespace debruijn_graph;

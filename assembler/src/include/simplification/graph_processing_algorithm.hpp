@@ -7,8 +7,10 @@
 
 #pragma once
 
+#include <include/func.hpp>
+#include <boost/none.hpp>
 #include "assembly_graph/graph_iterators.hpp"
-#include "graph_component.hpp"
+#include "omni/graph_component.hpp"
 #include "pred.hpp"
 #include "logger/logger.hpp"
 
@@ -201,14 +203,14 @@ class ComponentRemover {
  public:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef std::function<void(const set<EdgeId>&)> HandlerF;
+    typedef std::function<void(const std::set<EdgeId>&)> HandlerF;
 
  private:
     Graph& g_;
     HandlerF removal_handler_;
 
     template<class ElemType>
-    void InsertIfNotConjugate(set<ElemType>& elems, ElemType elem) {
+    void InsertIfNotConjugate(std::set<ElemType>& elems, ElemType elem) {
         if (elems.count(g_.conjugate(elem)) == 0) {
             elems.insert(elem);
         }
@@ -222,6 +224,7 @@ class ComponentRemover {
 
     template<class EdgeIt>
     void DeleteComponent(EdgeIt begin, EdgeIt end, bool alter_vertices = true) {
+        using std::set;
         set<EdgeId> edges;
         set<VertexId> vertices;
 

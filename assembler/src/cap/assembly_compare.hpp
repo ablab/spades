@@ -12,6 +12,7 @@
 #include "graph_pack.hpp"
 #include "simple_tools.hpp"
 #include "omni/omni_utils.hpp"
+#include "simplification/cleaner.hpp"
 #include "stats/debruijn_stats.hpp"
 #include "io/splitting_wrapper.hpp"
 #include "io/multifile_reader.hpp"
@@ -62,7 +63,7 @@ void DeleteEdgesByColor(Graph& g, const ColorHandler<Graph>& coloring,
 			g.DeleteEdge(*it);
 		}
 	}
-	CleanGraph(g);
+	omnigraph::Cleaner<Graph>(g).Run();
 }
 
 template<class Graph>

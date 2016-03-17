@@ -10,7 +10,7 @@
 
 #include "graph_printer.hpp"
 #include "omni/omni_utils.hpp"
-#include "omni/dijkstra_tools/dijkstra_helper.hpp"
+#include "dijkstra/dijkstra_helper.hpp"
 #include "omni/splitters.hpp"
 #include "omni/graph_component.hpp"
 #include "visualizers.hpp"

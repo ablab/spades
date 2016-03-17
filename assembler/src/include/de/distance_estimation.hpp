@@ -13,7 +13,7 @@
 
 #include "paired_info.hpp"
 #include "omni/omni_utils.hpp"
-#include "omni/path_processor.hpp"
+#include "simplification/path_processor.hpp"
 
 namespace omnigraph {
 

@@ -17,9 +17,8 @@
 #ifndef CONCURRENT_EDGE_ALGORITHM_HPP_
 #define CONCURRENT_EDGE_ALGORITHM_HPP_
 
-#include "order_and_law.hpp"
+#include "assembly_graph/order_and_law.hpp"
 #include "devisible_tree.hpp"
-#include "omni_tools.hpp"
 #include "sequential_algorihtm_factory.hpp"
 #include "concurrent_graph_component.hpp"
 #include "concurrent_conjugate_graph_component.hpp"

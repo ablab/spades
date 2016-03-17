@@ -8,11 +8,11 @@
 #include "io/osequencestream.hpp"
 #include "stage.hpp"
 #include "graph_pack.hpp"
-#include "omni/path_processor.hpp"
+#include "simplification/path_processor.hpp"
 #include "construction.hpp"
 #include "config_struct.hpp"
-#include "omni/dijkstra_tools/dijkstra_algorithm.hpp"
-#include "omni/dijkstra_tools/dijkstra_helper.hpp"
+#include "dijkstra/dijkstra_algorithm.hpp"
+#include "dijkstra/dijkstra_helper.hpp"
 
 namespace scaffold_correction {
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;

@@ -12,10 +12,10 @@
 
 #include "io/paired_read.hpp"
 #include "omni/omni_utils.hpp"
-#include "omni/visualization/graph_colorer.hpp"
+#include "visualization/graph_colorer.hpp"
 #include "omni/id_track_handler.hpp"
 #include "omni/splitters.hpp"
-#include "omni/path_processor.hpp"
+#include "simplification/path_processor.hpp"
 
 #include "logger/logger.hpp"
 #include "xmath.h"

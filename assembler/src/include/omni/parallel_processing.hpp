@@ -9,7 +9,7 @@
 
 #include "logger/logger.hpp"
 #include "assembly_graph/graph_iterators.hpp"
-#include "graph_processing_algorithm.hpp"
+#include "simplification/graph_processing_algorithm.hpp"
 
 namespace omnigraph {
 

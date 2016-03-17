@@ -5,13 +5,12 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "simplification/graph_processing_algorithm.hpp"
 #include "standard.hpp"
 #include "simplification/simplification_settings.hpp"
 #include "simplification/graph_simplification.hpp"
-#include "omni/visualization/graph_labeler.hpp"
-#include "io/single_read.hpp"
-#include "positions.hpp"
 #include "simplification/parallel_simplification_algorithms.hpp"
+#include "omni/avg_coverage_counter.hpp"
 
 #include "simplification.hpp"
 

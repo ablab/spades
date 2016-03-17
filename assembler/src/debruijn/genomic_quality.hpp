@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "omni/visualization/visualization.hpp"
+#include "visualization/visualization.hpp"
 #include "omni/basic_edge_conditions.hpp"
 #include "sequence_mapper.hpp"
 

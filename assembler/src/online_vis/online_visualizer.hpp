@@ -8,7 +8,7 @@
 #pragma once
 
 #include "graph_pack.hpp"
-#include "omni/visualization/visualization_utils.hpp"
+#include "visualization/visualization_utils.hpp"
 #include "standard_vis.hpp"
 #include "command.hpp"
 #include "loaded_environments.hpp"

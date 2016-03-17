@@ -6,9 +6,7 @@
 
 #include "standard.hpp"
 #include "simplification/graph_simplification.hpp"
-#include "omni/visualization/graph_labeler.hpp"
-#include "io/single_read.hpp"
-#include "positions.hpp"
+#include "omni/ec_threshold_finder.hpp"
 
 #include "chromosome_removal.hpp"
 #include "contig_output.hpp"

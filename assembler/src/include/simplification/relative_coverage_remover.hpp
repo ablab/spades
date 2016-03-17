@@ -8,8 +8,8 @@
 #pragma once
 
 #include "standard_base.hpp"
-#include "graph_component.hpp"
-#include "omni/visualization/graph_colorer.hpp"
+#include "omni/graph_component.hpp"
+#include "visualization/graph_colorer.hpp"
 #include "graph_processing_algorithm.hpp"
 
 namespace omnigraph {

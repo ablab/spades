@@ -15,12 +15,11 @@
 #pragma once
 
 #include "graph_processing_algorithm.hpp"
-#include "basic_edge_conditions.hpp"
-#include "omni_tools.hpp"
-#include "omni_utils.hpp"
+#include "omni/basic_edge_conditions.hpp"
+#include "omni/omni_utils.hpp"
 #include "func.hpp"
 #include "xmath.h"
-#include "dijkstra_tools/dijkstra_helper.hpp"
+#include "dijkstra/dijkstra_helper.hpp"
 
 namespace omnigraph {
 

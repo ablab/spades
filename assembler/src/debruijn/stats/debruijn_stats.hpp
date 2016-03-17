@@ -15,7 +15,7 @@
 #include "graphio.hpp"
 #include "positions.hpp"
 
-#include "omni/visualization/visualization.hpp"
+#include "visualization/visualization.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/graph_component.hpp"
 #include "io/rc_reader_wrapper.hpp"

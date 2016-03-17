@@ -12,7 +12,7 @@
 #include "diff_masking.hpp"
 #include "adt/bag.hpp"
 #include "io/vector_reader.hpp"
-#include "omni/visualization/graph_colorer.hpp"
+#include "visualization/graph_colorer.hpp"
 
 namespace cap {
 

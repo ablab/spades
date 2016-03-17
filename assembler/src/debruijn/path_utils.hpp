@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "omni/path_processor.hpp"
+#include "simplification/path_processor.hpp"
 
 namespace debruijn_graph {
 

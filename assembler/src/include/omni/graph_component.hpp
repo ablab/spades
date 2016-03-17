@@ -7,9 +7,10 @@
 
 #pragma once
 
+#include <string.h>
 
 namespace omnigraph {
-
+using std::string;
 //todo make handler!!!
 template<class Graph>
 class GraphComponent {
@@ -22,7 +23,7 @@ class GraphComponent {
 	std::set<EdgeId> edges_;
     std::set<VertexId> sinks_;
     std::set<VertexId> sources_;
-	string name_;
+	std::string name_;
 
 
 	template<class VertexIt>

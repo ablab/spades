@@ -8,11 +8,11 @@
 #pragma once
 
 #include "standard.hpp"
-#include "omni/omni_tools.hpp"
 
 #include "simple_tools.hpp"
 #include "xmath.h"
 #include "config_struct.hpp"
+#include "omni/mapping_path.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -25,7 +25,7 @@ using namespace math;
 using namespace omnigraph;
 
 class AbstractStatCounter {
-  public:
+public:
     AbstractStatCounter() {
     }
 
@@ -37,23 +37,23 @@ class AbstractStatCounter {
     //  DECL_LOGGER("StatCounter")
 };
 
-class StatList: AbstractStatCounter {
-  private:
-    vector<AbstractStatCounter*> to_count_;
-  public:
-    StatList(vector<AbstractStatCounter*> to_count =
-             vector<AbstractStatCounter*>()) :
+class StatList : AbstractStatCounter {
+private:
+    vector<AbstractStatCounter *> to_count_;
+public:
+    StatList(vector<AbstractStatCounter *> to_count =
+    vector<AbstractStatCounter *>()) :
             to_count_(to_count) {
     }
 
     virtual ~StatList() {
     }
 
-    void AddStat(AbstractStatCounter* new_stat) {
+    void AddStat(AbstractStatCounter *new_stat) {
         to_count_.push_back(new_stat);
     }
 
-    const vector<AbstractStatCounter*> stats() {
+    const vector<AbstractStatCounter *> stats() {
         return to_count_;
     }
 
@@ -71,10 +71,10 @@ class StatList: AbstractStatCounter {
 };
 
 template<class Graph>
-class VertexEdgeStat: public AbstractStatCounter {
-  private:
+class VertexEdgeStat : public AbstractStatCounter {
+private:
     const Graph &graph_;
-  public:
+public:
     VertexEdgeStat(const Graph &graph) :
             graph_(graph) {
     }
@@ -112,20 +112,20 @@ class VertexEdgeStat: public AbstractStatCounter {
 
     virtual void Count() {
         INFO(
-            "Vertex count=" << vertices() << "; Edge count=" << edges());
+                "Vertex count=" << vertices() << "; Edge count=" << edges());
         INFO(
-            "sum length of edges " << edge_length());
+                "sum length of edges " << edge_length());
     }
 };
 
 template<class Graph>
-class BlackEdgesStat: public AbstractStatCounter {
-  private:
+class BlackEdgesStat : public AbstractStatCounter {
+private:
     typedef typename Graph::EdgeId EdgeId;
     const Graph &graph_;
     Path<EdgeId> path1_;
     Path<EdgeId> path2_;
-  public:
+public:
     BlackEdgesStat(const Graph &graph, Path<EdgeId> path1, Path<EdgeId> path2) :
             graph_(graph), path1_(path1), path2_(path2) {
     }
@@ -136,9 +136,9 @@ class BlackEdgesStat: public AbstractStatCounter {
     virtual void Count() {
         size_t black_count = 0;
         size_t edge_count = 0;
-        const vector<EdgeId> path_edges1 = path1_.sequence();
-        const vector<EdgeId> path_edges2 = path2_.sequence();
-        set<EdgeId> colored_edges;
+        const vector <EdgeId> path_edges1 = path1_.sequence();
+        const vector <EdgeId> path_edges2 = path2_.sequence();
+        set <EdgeId> colored_edges;
         colored_edges.insert(path_edges1.begin(), path_edges1.end());
         colored_edges.insert(path_edges2.begin(), path_edges2.end());
         size_t sum_length = 0;
@@ -150,8 +150,10 @@ class BlackEdgesStat: public AbstractStatCounter {
             }
         }
         if (edge_count > 0) {
-            INFO("Error edges count: " << black_count << " which is " << 100.0 * (double) black_count / (double) edge_count << "% of all edges");
-            INFO("Total length of all black edges: " << sum_length << ". While double genome length is " << (2 * cfg::get().ds.reference_genome.size()));
+            INFO("Error edges count: " << black_count << " which is " <<
+                 100.0 * (double) black_count / (double) edge_count << "% of all edges");
+            INFO("Total length of all black edges: " << sum_length << ". While double genome length is " <<
+                 (2 * cfg::get().ds.reference_genome.size()));
         } else {
             INFO("Error edges count: " << black_count << " which is 0% of all edges");
         }
@@ -159,13 +161,13 @@ class BlackEdgesStat: public AbstractStatCounter {
 };
 
 template<class Graph>
-class NStat: public AbstractStatCounter {
-  private:
+class NStat : public AbstractStatCounter {
+private:
     typedef typename Graph::EdgeId EdgeId;
     const Graph &graph_;
     Path<EdgeId> path_;
     size_t perc_;
-  public:
+public:
     NStat(const Graph &graph, Path<EdgeId> path, size_t perc = 50) :
             graph_(graph), path_(path), perc_(perc) {
     }
@@ -174,7 +176,7 @@ class NStat: public AbstractStatCounter {
     }
 
     virtual void Count() {
-        vector<size_t> lengths;
+        vector <size_t> lengths;
         size_t sum_all = 0;
         for (size_t i = 0; i < path_.size(); i++) {
             lengths.push_back(graph_.length(path_[i]));
@@ -187,19 +189,19 @@ class NStat: public AbstractStatCounter {
             current--;
             sum += lengths[current];
         }
-        if(current < lengths.size())
+        if (current < lengths.size())
             INFO("N" << perc_ << ": " << lengths[current]);
     }
 };
 
 template<class Graph>
-class IsolatedEdgesStat: public AbstractStatCounter {
-  private:
+class IsolatedEdgesStat : public AbstractStatCounter {
+private:
     typedef typename Graph::EdgeId EdgeId;
     const Graph &graph_;
-    set<EdgeId> black_edges_;
-    vector<size_t> lengths;
-  public:
+    set <EdgeId> black_edges_;
+    vector <size_t> lengths;
+public:
     IsolatedEdgesStat(const Graph &graph, Path<EdgeId> path1,
                       Path<EdgeId> path2) :
             graph_(graph) {
@@ -226,7 +228,8 @@ class IsolatedEdgesStat: public AbstractStatCounter {
                 && black_edges_.count(edge) == 0) {
                 lengths.push_back(graph_.length(edge));
             }
-        }INFO("Isolated not black edges: " << lengths.size());
+        }
+        INFO("Isolated not black edges: " << lengths.size());
         WriteLengths(cfg::get().output_dir, "isolated_edges.txt");
     }
 
@@ -246,11 +249,11 @@ class IsolatedEdgesStat: public AbstractStatCounter {
 };
 
 template<class Graph>
-class SelfComplementStat: public AbstractStatCounter {
-  private:
+class SelfComplementStat : public AbstractStatCounter {
+private:
     typedef typename Graph::EdgeId EdgeId;
     const Graph &graph_;
-  public:
+public:
     SelfComplementStat(const Graph &graph) :
             graph_(graph) {
     }

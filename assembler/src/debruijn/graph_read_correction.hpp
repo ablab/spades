@@ -8,7 +8,7 @@
 #pragma once
 
 #include "standard.hpp"
-#include "omni/path_processor.hpp"
+#include "simplification/path_processor.hpp"
 #include "io/modifying_reader_wrapper.hpp"
 
 namespace debruijn_graph {

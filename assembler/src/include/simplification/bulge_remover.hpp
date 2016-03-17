@@ -16,9 +16,11 @@
 
 #include <cmath>
 #include <stack>
+#include <include/omni/omni_utils.hpp>
+#include <include/omni/parallel_processing.hpp>
+#include <include/omni/basic_edge_conditions.hpp>
 #include "standard_base.hpp"
-#include "omni_utils.hpp"
-#include "graph_component.hpp"
+#include "omni/graph_component.hpp"
 #include "xmath.h"
 #include "sequence/sequence_tools.hpp"
 #include "path_processor.hpp"

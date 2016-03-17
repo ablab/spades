@@ -12,7 +12,7 @@ set(SPADES_MIN_K 1 CACHE INTEGER "Minimum k-mer length")
 set(SPADES_MAX_K 300 CACHE INTEGER "Maximum k-mer length")
 configure_file("${SPADES_MAIN_INCLUDE_DIR}/k_range.hpp.in"
                "${SPADES_BUILT_INCLUDE_DIR}/k_range.hpp")
-include_directories(z${CMAKE_SOURCE_DIR}/debruijn
+include_directories(${CMAKE_SOURCE_DIR}/debruijn
                     ${CMAKE_SOURCE_DIR}/online_vis)
 
 add_executable(cap-tools

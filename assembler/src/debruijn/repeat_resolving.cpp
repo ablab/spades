@@ -9,7 +9,7 @@
 
 #include "logger/logger.hpp"
 #include "stats/debruijn_stats.hpp"
-#include "omni/visualization/graph_labeler.hpp"
+#include "visualization/graph_labeler.hpp"
 #include "de/distance_estimation.hpp"
 #include "de/smoothing_distance_estimation.hpp"
 #include "omni/omni_utils.hpp"

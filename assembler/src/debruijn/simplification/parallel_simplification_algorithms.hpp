@@ -7,13 +7,15 @@
 
 #pragma once
 
+#include <include/simplification/cleaner.hpp>
 #include "standard_base.hpp"
-#include "omni/graph_processing_algorithm.hpp"
+#include "simplification/graph_processing_algorithm.hpp"
 #include "omni/basic_edge_conditions.hpp"
-#include "omni/bulge_remover.hpp"
+#include "simplification/bulge_remover.hpp"
 #include "assembly_graph/construction_helper.hpp"
 #include "omni/marks_and_locks.hpp"
 #include "simplification_settings.hpp"
+#include "simplification/compressor.hpp"
 
 namespace debruijn {
 
@@ -812,7 +814,7 @@ void ParallelCompress(Graph& g, size_t chunk_cnt, bool loop_post_compression = t
     RunVertexAlgorithm(g, runner, compressor, chunk_cnt);
 
     //have to call cleaner to get rid of new isolated vertices
-    CleanGraph(g, chunk_cnt);
+    omnigraph::Cleaner<Graph>(g, chunk_cnt).Run();
 
     if (loop_post_compression) {
         INFO("Launching post-compression to compress loops");

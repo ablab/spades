@@ -17,7 +17,7 @@
 #ifndef CONJUGATE_VERTEX_GLUED_GRAPH_HPP_
 #define CONJUGATE_VERTEX_GLUED_GRAPH_HPP_
 
-#include "omni_utils.hpp"
+#include "omni/omni_utils.hpp"
 #include "standard_base.hpp"
 
 

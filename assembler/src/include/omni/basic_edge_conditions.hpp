@@ -9,7 +9,7 @@
 
 #include "func.hpp"
 #include "pred.hpp"
-#include "omni_utils.hpp"
+#include "omni/omni_utils.hpp"
 namespace omnigraph {
 
 using namespace func;

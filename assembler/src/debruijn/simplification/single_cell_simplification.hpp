@@ -1,8 +1,8 @@
 #pragma once
 
 #include "config_struct.hpp"
-#include "omni/erroneous_connection_remover.hpp"
-#include "omni/mf_ec_remover.hpp"
+#include "simplification/erroneous_connection_remover.hpp"
+#include "simplification/mf_ec_remover.hpp"
 #include "simplification_settings.hpp"
 #include "detail_coverage.hpp"
 

@@ -10,11 +10,12 @@
 #include "simple_bulge_remover.hpp"
 #include "complex_bulge_remover.hpp"
 #include "iterative_tails_gluing.hpp"
-#include "../../debruijn/stats/debruijn_stats.hpp"
+#include "stats/debruijn_stats.hpp"
 
-#include "omni/visualization/visualization.hpp"
+#include "visualization/visualization.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/graph_component.hpp"
+#include "simplification/compressor.hpp"
 
 using namespace debruijn_graph;
 

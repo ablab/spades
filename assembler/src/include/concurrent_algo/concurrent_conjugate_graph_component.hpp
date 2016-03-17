@@ -18,7 +18,7 @@
 #define CONCURRENT_CONJUGATE_GRAPH_COMPONENT_HPP_
 
 #include "concurrent_graph_component.hpp"
-#include "omni_utils.hpp"
+#include "omni/omni_utils.hpp"
 
 namespace omnigraph {
 

@@ -8,8 +8,8 @@
 
 #include <limits>
 
-#include "omni_utils.hpp"
-#include "omni/visualization/visualization.hpp"
+#include "omni/omni_utils.hpp"
+#include "visualization/visualization.hpp"
 
 
 namespace omnigraph{
