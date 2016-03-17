@@ -10,7 +10,7 @@
 #include <include/func.hpp>
 #include <boost/none.hpp>
 #include "assembly_graph/graph_iterators.hpp"
-#include "omni/graph_component.hpp"
+#include "graph_component.hpp"
 #include "pred.hpp"
 #include "logger/logger.hpp"
 

@@ -8,11 +8,10 @@
 #pragma once
 
 #include "standard.hpp"
-#include "omni/omni_utils.hpp"
 
 #include "omni/id_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
-#include "omni/graph_component.hpp"
+#include "graph_support/graph_component.hpp"
 
 #include "de/paired_info.hpp"
 

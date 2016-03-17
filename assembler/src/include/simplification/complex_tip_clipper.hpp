@@ -8,8 +8,9 @@
 
 #include <limits>
 
-#include "omni/omni_utils.hpp"
 #include "visualization/visualization.hpp"
+#include "compressor.hpp"
+#include "dominated_set_finder.hpp"
 
 
 namespace omnigraph{

@@ -8,7 +8,7 @@
 #pragma once
 
 #include "visualization/visualization.hpp"
-#include "omni/basic_edge_conditions.hpp"
+#include "graph_support/basic_edge_conditions.hpp"
 #include "sequence_mapper.hpp"
 
 namespace debruijn_graph {

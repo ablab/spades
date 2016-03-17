@@ -18,7 +18,6 @@
 #include "verify.hpp"
 #include "data_divider.hpp"
 #include "paired_info.hpp"
-#include "omni/omni_utils.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

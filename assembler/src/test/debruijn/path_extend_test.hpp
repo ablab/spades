@@ -18,7 +18,6 @@
 #include <boost/test/unit_test.hpp>
 
 #include "test_utils.hpp"
-#include "omni/omni_utils.hpp"
 #include "path_extend/path_visualizer.hpp"
 #include "path_extend/pe_utils.hpp"
 namespace path_extend {

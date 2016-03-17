@@ -11,7 +11,6 @@
 #include "standard.hpp"
 
 #include "io/paired_read.hpp"
-#include "omni/omni_utils.hpp"
 #include "visualization/graph_colorer.hpp"
 #include "omni/id_track_handler.hpp"
 #include "omni/splitters.hpp"

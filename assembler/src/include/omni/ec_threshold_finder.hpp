@@ -8,17 +8,19 @@
 #ifndef OMNI_TOOLS_HPP_
 #define OMNI_TOOLS_HPP_
 
-#include "omni/omni_utils.hpp"
+#include "pair_info_bounds.hpp"
 #include "simple_tools.hpp"
 
 #include "path_helper.hpp"
-#include "omni/basic_edge_conditions.hpp"
-#include "parallel_processing.hpp"
-#include "omni/basic_vertex_conditions.hpp"
-#include "avg_coverage_counter.hpp"
+#include "graph_support/basic_edge_conditions.hpp"
+#include "graph_support/parallel_processing.hpp"
+#include "graph_support/basic_vertex_conditions.hpp"
+#include "graph_support/basic_graph_stats.hpp"
 
 #ifdef USE_GLIBCXX_PARALLEL
 #include <parallel/algorithm>
+#include <include/graph_support/basic_graph_stats.hpp>
+
 #endif
 
 namespace omnigraph {

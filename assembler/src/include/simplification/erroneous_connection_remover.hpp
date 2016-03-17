@@ -14,9 +14,8 @@
 
 #pragma once
 
-#include "graph_processing_algorithm.hpp"
-#include "omni/basic_edge_conditions.hpp"
-#include "omni/omni_utils.hpp"
+#include "graph_support/graph_processing_algorithm.hpp"
+#include "graph_support/basic_edge_conditions.hpp"
 #include "func.hpp"
 #include "xmath.h"
 #include "dijkstra/dijkstra_helper.hpp"
@@ -211,6 +210,88 @@ class ThornCondition : public EdgeCondition<Graph> {
     DECL_LOGGER("ThornCondition")
     ;
 
+};
+
+
+template<class Graph>
+class MultiplicityCounter {
+private:
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    const Graph &graph_;
+    size_t uniqueness_length_;
+    size_t max_depth_;
+
+    bool search(VertexId a, VertexId start, EdgeId e, size_t depth,
+                std::set<VertexId> &was, pair<size_t, size_t> &result) const {
+        if (depth > max_depth_)
+            return false;
+        if (was.count(a) == 1)
+            return true;
+        was.insert(a);
+        if (graph_.OutgoingEdgeCount(a) == 0
+            || graph_.IncomingEdgeCount(a) == 0)
+            return false;
+        for (auto I = graph_.out_begin(a), E = graph_.out_end(a); I != E; ++I) {
+            if (*I == e) {
+                if (a != start) {
+                    return false;
+                }
+            } else {
+                if (graph_.length(*I) >= uniqueness_length_) {
+                    result.second++;
+                } else {
+                    if (!search(graph_.EdgeEnd(*I), start, e,
+                                depth + 1 /*graph_.length(*it)*/, was, result))
+                        return false;
+                }
+            }
+        }
+        for (EdgeId in_e : graph_.IncomingEdges(a)) {
+            if (in_e == e) {
+                if (a != start) {
+                    return false;
+                }
+            } else {
+                if (graph_.length(in_e) >= uniqueness_length_) {
+                    result.first++;
+                } else {
+                    if (!search(graph_.EdgeStart(in_e), start, e,
+                                depth + 1 /*graph_.length(*it)*/, was, result))
+                        return false;
+                }
+            }
+        }
+        return true;
+    }
+
+public:
+    MultiplicityCounter(const Graph &graph, size_t uniqueness_length,
+                        size_t max_depth)
+            : graph_(graph),
+              uniqueness_length_(uniqueness_length),
+              max_depth_(max_depth) {
+    }
+
+    size_t count(EdgeId e, VertexId start) const {
+        std::pair<size_t, size_t> result;
+        std::set<VertexId> was;
+        bool valid = search(start, start, e, 0, was, result);
+        if (!valid) {
+            return (size_t) (-1);
+        }
+        if (graph_.EdgeStart(e) == start) {
+            if (result.first < result.second) {
+                return (size_t) (-1);
+            }
+            return result.first - result.second;
+        } else {
+            if (result.first > result.second) {
+                return (size_t) (-1);
+            }
+            return -result.first + result.second;
+        }
+    }
 };
 
 template<class Graph>

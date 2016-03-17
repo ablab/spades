@@ -12,12 +12,12 @@
 #include <queue>
 #include "adt/concurrent_dsu.hpp"
 #include "standard_base.hpp"
-#include "omni/omni_utils.hpp"
-#include "omni/graph_component.hpp"
+#include "graph_support/graph_component.hpp"
 #include "xmath.h"
 #include "sequence/sequence_tools.hpp"
 #include "path_processor.hpp"
 #include "visualization/visualization.hpp"
+#include "dominated_set_finder.hpp"
 
 
 namespace omnigraph {

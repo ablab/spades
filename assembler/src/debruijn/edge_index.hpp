@@ -9,7 +9,6 @@
 
 #include "openmp_wrapper.h"
 
-#include "omni/omni_utils.hpp"
 #include "adt/kmer_map.hpp"
 
 #include "assembly_graph/debruijn_graph.hpp"

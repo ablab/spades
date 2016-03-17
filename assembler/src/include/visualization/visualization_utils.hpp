@@ -9,10 +9,9 @@
 
 
 #include "graph_printer.hpp"
-#include "omni/omni_utils.hpp"
 #include "dijkstra/dijkstra_helper.hpp"
 #include "omni/splitters.hpp"
-#include "omni/graph_component.hpp"
+#include "graph_support/graph_component.hpp"
 #include "visualizers.hpp"
 #include "vertex_linker.hpp"
 

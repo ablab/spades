@@ -14,13 +14,14 @@
 
 #pragma once
 
+#include <include/graph_support/basic_edge_conditions.hpp>
 #include "standard_base.hpp"
 #include "config_struct.hpp"
 #include "assembly_graph/debruijn_graph.hpp"
 #include "stats/debruijn_stats.hpp"
 
 #include "visualization/graph_colorer.hpp"
-#include "omni/omni_utils.hpp"
+#include "omni/pair_info_bounds.hpp"
 #include "simplification/tip_clipper.hpp"
 #include "simplification/complex_tip_clipper.hpp"
 #include "simplification/bulge_remover.hpp"
@@ -28,7 +29,7 @@
 #include "simplification/erroneous_connection_remover.hpp"
 #include "simplification/relative_coverage_remover.hpp"
 #include "simplification/mf_ec_remover.hpp"
-#include "omni/parallel_processing.hpp"
+#include "graph_support/parallel_processing.hpp"
 #include "utils.hpp"
 #include "simplification/simplification_settings.hpp"
 #include "simplification/single_cell_simplification.hpp"

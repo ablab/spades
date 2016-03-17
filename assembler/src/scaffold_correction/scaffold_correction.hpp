@@ -13,6 +13,7 @@
 #include "config_struct.hpp"
 #include "dijkstra/dijkstra_algorithm.hpp"
 #include "dijkstra/dijkstra_helper.hpp"
+#include "graph_support/basic_graph_stats.hpp"
 
 namespace scaffold_correction {
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;

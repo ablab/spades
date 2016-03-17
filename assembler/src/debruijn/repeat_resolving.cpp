@@ -12,7 +12,6 @@
 #include "visualization/graph_labeler.hpp"
 #include "de/distance_estimation.hpp"
 #include "de/smoothing_distance_estimation.hpp"
-#include "omni/omni_utils.hpp"
 #include "path_extend/path_extend_launch.hpp"
 #include "contig_output.hpp"
 #include "positions.hpp"

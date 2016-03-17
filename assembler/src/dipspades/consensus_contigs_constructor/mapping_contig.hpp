@@ -14,7 +14,6 @@
 
 #pragma once
 #include "overlap_graph.hpp"
-#include "../../include/omni/omni_utils.hpp"
 #include "../utils/element_printers.hpp"
 #include <map>
 

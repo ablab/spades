@@ -9,7 +9,6 @@
 #define SMOOTHING_DISTANCE_ESTIMATION_HPP_
 
 #include "paired_info.hpp"
-#include "omni/omni_utils.hpp"
 #include "data_divider.hpp"
 #include "peak_finder.hpp"
 #include "weighted_distance_estimation.hpp"

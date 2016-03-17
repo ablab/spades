@@ -24,7 +24,6 @@
 #include <cstdlib>
 #include <cstdio>
 #include "index_point.hpp"
-#include "omni/omni_utils.hpp"
 
 namespace omnigraph {
 

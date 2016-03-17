@@ -10,7 +10,6 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
-#include "omni/omni_utils.hpp"
 #include "sequence/sequence.hpp"
 #include "sequence/sequence_tools.hpp"
 

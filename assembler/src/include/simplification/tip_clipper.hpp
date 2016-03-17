@@ -16,11 +16,10 @@
 
 #include <set>
 
-#include "omni/omni_utils.hpp"
 #include "xmath.h"
 #include "func.hpp"
-#include "omni/basic_edge_conditions.hpp"
-#include "graph_processing_algorithm.hpp"
+#include "graph_support/basic_edge_conditions.hpp"
+#include "graph_support/graph_processing_algorithm.hpp"
 
 namespace omnigraph {
 

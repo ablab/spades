@@ -13,7 +13,6 @@
 
 #pragma once
 
-#include "omni/omni_utils.hpp"
 #include "sequence/sequence_tools.hpp"
 #include "simplification/path_processor.hpp"
 

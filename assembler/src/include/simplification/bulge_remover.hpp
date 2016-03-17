@@ -14,17 +14,17 @@
 
 #pragma once
 
+#include "graph_support/parallel_processing.hpp"
+#include "graph_support/basic_edge_conditions.hpp"
+#include "graph_support/graph_processing_algorithm.hpp"
+#include "path_processor.hpp"
+#include "graph_support/comparators.hpp"
+#include "graph_support/graph_component.hpp"
+#include "sequence/sequence_tools.hpp"
+#include "standard_base.hpp"
 #include <cmath>
 #include <stack>
-#include <include/omni/omni_utils.hpp>
-#include <include/omni/parallel_processing.hpp>
-#include <include/omni/basic_edge_conditions.hpp>
-#include "standard_base.hpp"
-#include "omni/graph_component.hpp"
 #include "xmath.h"
-#include "sequence/sequence_tools.hpp"
-#include "path_processor.hpp"
-#include "graph_processing_algorithm.hpp"
 
 namespace omnigraph {
 
@@ -711,8 +711,8 @@ public:
 
     typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
 
-    ParallelBulgeRemover(Graph& g, const InterestingElementFinder& interesting_edge_finder, 
-                         size_t buff_size, double buff_cov_diff, 
+    ParallelBulgeRemover(Graph& g, const InterestingElementFinder& interesting_edge_finder,
+                         size_t buff_size, double buff_cov_diff,
                          double buff_cov_rel_diff, const AlternativesAnalyzer<Graph>& alternatives_analyzer,
                          BulgeCallbackF opt_callback = 0,
                          std::function<void(EdgeId)> removal_handler = 0,
@@ -733,7 +733,7 @@ public:
 
     bool Run(bool force_primary_launch = false) override {
         bool primary_launch = force_primary_launch ? true : curr_iteration_ == 0;
-        //todo remove if not needed; 
+        //todo remove if not needed;
         //potentially can vary coverage threshold in coordination with ec threshold
         auto proceed_condition = pred::AlwaysTrue<EdgeId>();
 

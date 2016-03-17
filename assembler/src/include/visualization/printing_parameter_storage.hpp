@@ -9,7 +9,7 @@
 
 
 #include "standard_base.hpp"
-#include "omni/graph_component.hpp"
+#include "graph_support/graph_component.hpp"
 namespace omnigraph {
 namespace visualization {
 

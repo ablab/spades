@@ -1,7 +1,7 @@
 #pragma once
 
-#include "omni/basic_vertex_conditions.hpp"
-#include "graph_processing_algorithm.hpp"
+#include "graph_support/basic_vertex_conditions.hpp"
+#include "graph_support/graph_processing_algorithm.hpp"
 
 namespace omnigraph {
 

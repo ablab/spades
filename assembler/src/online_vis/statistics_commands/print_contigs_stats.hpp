@@ -10,7 +10,7 @@
 #include "../environment.hpp"
 #include "../command.hpp"
 #include "../errors.hpp"
-#include "omni/omni_utils.hpp"
+#include "graph_support/basic_graph_stats.hpp"
 
 namespace online_visualization {
     class PrintContigsStatsCommand : public LocalCommand<DebruijnEnvironment> {

@@ -10,7 +10,6 @@
 #include <boost/test/unit_test.hpp>
 
 #include "test_utils.hpp"
-#include "omni/omni_utils.hpp"
 
 namespace debruijn_graph {
 

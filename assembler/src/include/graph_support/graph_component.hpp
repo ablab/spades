@@ -7,10 +7,9 @@
 
 #pragma once
 
-#include <string.h>
+#include "standard_base.hpp"
 
 namespace omnigraph {
-using std::string;
 //todo make handler!!!
 template<class Graph>
 class GraphComponent {

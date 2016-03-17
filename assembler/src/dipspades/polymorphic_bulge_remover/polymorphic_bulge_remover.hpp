@@ -14,7 +14,7 @@
 
 #include "visualization/visualization.hpp"
 #include "omni/edges_position_handler.hpp"
-#include "omni/graph_component.hpp"
+#include "graph_support/graph_component.hpp"
 #include "simplification/compressor.hpp"
 
 using namespace debruijn_graph;

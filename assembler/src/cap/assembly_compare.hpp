@@ -11,7 +11,6 @@
 #include "utils.hpp"
 #include "graph_pack.hpp"
 #include "simple_tools.hpp"
-#include "omni/omni_utils.hpp"
 #include "simplification/cleaner.hpp"
 #include "stats/debruijn_stats.hpp"
 #include "io/splitting_wrapper.hpp"

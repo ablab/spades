@@ -7,15 +7,17 @@
 
 #pragma once
 
-#include "omni/omni_utils.hpp"
+#include "omni/pair_info_bounds.hpp"
 #include "sequence/sequence_tools.hpp"
 #include "simplification/path_processor.hpp"
+#include "graph_support/basic_graph_stats.hpp"
 
 #include "runtime_k.hpp"
 #include "edge_index.hpp"
 #include "kmer_mapper.hpp"
 
 #include <cstdlib>
+#include <include/graph_support/basic_graph_stats.hpp>
 
 namespace debruijn_graph {
 

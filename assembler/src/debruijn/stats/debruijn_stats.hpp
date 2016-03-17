@@ -17,7 +17,7 @@
 
 #include "visualization/visualization.hpp"
 #include "omni/edges_position_handler.hpp"
-#include "omni/graph_component.hpp"
+#include "graph_support/graph_component.hpp"
 #include "io/rc_reader_wrapper.hpp"
 #include "io/delegating_reader_wrapper.hpp"
 #include "io/io_helper.hpp"

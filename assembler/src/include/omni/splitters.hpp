@@ -8,9 +8,9 @@
 //***************************************************************************
 
 #include "standard_base.hpp"
-#include "graph_component.hpp"
+#include "graph_support/graph_component.hpp"
 #include "dijkstra/dijkstra_helper.hpp"
-#include "component_filters.hpp"
+#include "graph_support/component_filters.hpp"
 
 namespace omnigraph {
 

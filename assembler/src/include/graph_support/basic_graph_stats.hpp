@@ -1,5 +1,6 @@
 #pragma once
 
+#include "standard_base.hpp"
 namespace omnigraph {
 
 template<class Graph>
@@ -26,4 +27,27 @@ public:
         return cov / (double) length;
     }
 };
+
+template<class Graph>
+size_t CumulativeLength(const Graph& g,
+                        const std::vector<typename Graph::EdgeId>& path) {
+    size_t s = 0;
+    for (auto it = path.begin(); it != path.end(); ++it)
+        s += g.length(*it);
+
+    return s;
+}
+
+template<class Graph>
+double AvgCoverage(const Graph& g,
+                   const std::vector<typename Graph::EdgeId>& path) {
+    double unnormalized_coverage = 0;
+    size_t path_length = 0;
+    for (auto edge : path) {
+        size_t length = g.length(edge);
+        path_length += length;
+        unnormalized_coverage += g.coverage(edge) * (double) length;
+    }
+    return unnormalized_coverage / (double) path_length;
+}
 }

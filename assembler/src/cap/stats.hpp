@@ -7,7 +7,15 @@
 
 #pragma once
 
+#include <include/graph_support/component_filters.hpp>
+#include <include/graph_support/graph_component.hpp>
+#include <include/omni/splitters.hpp>
+#include <utils.hpp>
 #include "simple_tools.hpp"
+#include "comparison_utils.hpp"
+#include "graph_support/basic_graph_stats.hpp"
+#include "coloring.hpp"
+#include "visualization/visualization_utils.hpp"
 
 namespace cap {
 
@@ -523,7 +531,7 @@ class TrivialBreakpointFinder: public AbstractFilter<
 		VERIFY(g_.OutgoingEdgeCount(v) > 0);
 		EdgeId e = g_.OutgoingEdges(v).front();
 		GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g_, e);
-		omnigraph::visualization::WriteComponent(
+		visualization::WriteComponent(
 				component,
 				folder + prefix + ToString(g_.int_id(v)) + "_loc.dot",
 				coloring_.ConstructColorer(component), labeler);
@@ -573,7 +581,7 @@ public:
 			}
 		}
 		bp_comp comp(g_, coloring_);
-		sort(breakpoints.begin(), breakpoints.end(), comp);
+        std::sort(breakpoints.begin(), breakpoints.end(), comp);
 		for (size_t i = 0; i < breakpoints.size(); ++i) {
 			ReportBreakpoint(
 					breakpoints[i],
@@ -704,7 +712,7 @@ class SimpleInDelAnalyzer {
 		DEBUG("Processing edge and genome path");
 		const size_t mem_lim = 2 << 26;
 		Sequence edge_nucls = g_.EdgeNucls(e);
-		Sequence path_nucls = MergeSequences(g_, genome_path);
+		Sequence path_nucls = debruijn_graph::MergeSequences(g_, genome_path);
 		size_t edge_length = g_.length(e);
 		size_t path_length = CumulativeLength(g_, genome_path);
 		DEBUG(
