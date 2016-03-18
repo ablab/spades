@@ -91,11 +91,11 @@ void PrintColoredAnnotatedGraphAroundEdge(const conj_graph_pack& gp,
                                           const EdgeId& edge,
                                           const EdgeAnnotation& annotation,
                                           const string& output_filename) {
-    std::cout << output_filename << std::endl;
+    //std::cout << output_filename << std::endl;
     DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     auto colorer_ptr =
         std::make_shared<AnnotatedGraphColorer<Graph>>(annotation);
-    GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(gp.g, edge);
+    GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(gp.g, edge, 100, 2000);
     omnigraph::visualization::WriteComponent<Graph>(component, output_filename,
                                                     colorer_ptr, labeler);
 }
@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
     if (argc < 7) {
         cout << "Usage: annotation_propagator <K> <saves path> <genome path> "
                 "<contigs_path>  <init binning info> <propagated binning info> "
-                "(<bins of interest>)*"
+                "<graph directory> (<bins of interest>)*"
              << endl;
         exit(1);
     }
@@ -116,9 +116,10 @@ int main(int argc, char** argv) {
     string contigs_path = argv[4];
     string annotation_in_fn = argv[5];
     string prop_annotation_in_fn = argv[6];
+    string graph_dir = argv[7];
 
     std::vector<bin_id> bins_of_interest;
-    for (int i = 7; i < argc; ++i) {
+    for (int i = 8; i < argc; ++i) {
         bins_of_interest.push_back(argv[i]);
     }
 
@@ -131,6 +132,10 @@ int main(int argc, char** argv) {
     gp.kmer_mapper.Attach();
     INFO("Load graph from " << saves_path);
     graphio::ScanGraphPack(saves_path, gp);
+    gp.genome.SetSequence(genome.sequence());
+    gp.edge_pos.Attach();
+    FillPos(gp, gp.genome.GetSequence(), "ref0");
+    FillPos(gp, !gp.genome.GetSequence(), "ref1");
 
     EdgeAnnotation edge_annotation = LoadAnnotation(
         gp, bins_of_interest, contigs_stream_ptr.get(), annotation_in_fn);
@@ -149,11 +154,13 @@ int main(int argc, char** argv) {
     std::size_t total_edge_cntr = 0;
     std::size_t total_edgelen_cntr = 0;
 
-    auto genome_graph_path = mapper->MapRead(genome).simple_path();
+    auto genome_graph_path = mapper->MapRead(genome);
     std::set<EdgeId> unbinned_edges;
 
     gp.EnsurePos();
-    for (EdgeId e : genome_graph_path) {
+    for (size_t i = 0; i < genome_graph_path.size(); ++i) {
+        EdgeId e = genome_graph_path[i].first;
+        auto range = genome_graph_path[i].second.mapped_range;
         total_edge_cntr++;
         total_edgelen_cntr += gp.g.length(e);
         if (edge_annotation.Annotation(e).empty() &&
@@ -164,12 +171,17 @@ int main(int argc, char** argv) {
                    prop_edge_annotation.Annotation(e).empty()) {
             // Only check for prop_annotation is necessary
             if (unbinned_edges.count(e) == 0) {
+                /*if (range.size() < 1000) {
+                    std::cout << "Mapping of edge " << e << " ignored as too short (" << range.size() << ")\n";
+                    continue;
+                }*/
                 unbinned_edges.insert(e);
                 unbinned_edge_cntr++;
-                unbinned_edgelen_cntr += gp.g.length(e);
-                std::cout << "Edge id: " + std::to_string(e.int_id())
-                          << std::endl;
-                std::string dot_export_path("/Users/idmit/edge");
+                unbinned_edgelen_cntr += range.size(); //gp.g.length(e);
+                std::cout << e.int_id() << "\t"
+                          << gp.g.length(e) << "\t"
+                          << range.size() << std::endl;
+                std::string dot_export_path(graph_dir);
                 dot_export_path += std::to_string(e.int_id()) + ".dot";
                 PrintColoredAnnotatedGraphAroundEdge(
                     gp, e, prop_edge_annotation, dot_export_path);
@@ -177,18 +189,18 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::cout << "Total number of edges in genome alignment: "
+    std::cerr << "Total number of edges in genome alignment: "
               << total_edge_cntr << std::endl;
-    std::cout << "Total length of edges in genome alignment: "
+    std::cerr << "Total length of edges in genome alignment: "
               << total_edgelen_cntr << std::endl;
 
-    std::cout << "Total number of unbinned edges: " << unbinned_edge_cntr
+    std::cerr << "Total number of unbinned edges: " << unbinned_edge_cntr
               << std::endl;
-    std::cout << "Total length of unbinned edges: " << unbinned_edgelen_cntr
+    std::cerr << "Total length of unbinned edges: " << unbinned_edgelen_cntr
               << std::endl;
 
-    std::cout << "Total number of edges binned due to propagation: "
+    std::cerr << "Total number of edges binned due to propagation: "
               << prop_binned_edge_cntr << std::endl;
-    std::cout << "Total length of edges binned due to propagation: "
+    std::cerr << "Total length of edges binned due to propagation: "
               << prop_binned_edgelen_cntr << std::endl;
 }
