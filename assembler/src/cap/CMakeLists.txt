@@ -13,6 +13,7 @@ set(SPADES_MAX_K 300 CACHE INTEGER "Maximum k-mer length")
 configure_file("${SPADES_MAIN_INCLUDE_DIR}/k_range.hpp.in"
                "${SPADES_BUILT_INCLUDE_DIR}/k_range.hpp")
 include_directories(${CMAKE_SOURCE_DIR}/debruijn
+                    ${CMAKE_SOURCE_DIR}/modules
                     ${CMAKE_SOURCE_DIR}/include
                     ${CMAKE_SOURCE_DIR}/online_vis)
 

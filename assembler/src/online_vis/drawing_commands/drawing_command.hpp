@@ -11,7 +11,7 @@
 #include "../command.hpp"
 #include "../errors.hpp"
 #include "../argument_list.hpp"
-#include "../../include/omni/visualization/visualization.hpp"
+#include "modules"
 #include "sequence_mapper.hpp"
 #include "io/single_read.hpp"
 
