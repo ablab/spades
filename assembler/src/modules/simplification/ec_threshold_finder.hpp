@@ -8,7 +8,7 @@
 #ifndef OMNI_TOOLS_HPP_
 #define OMNI_TOOLS_HPP_
 
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 
 #include "io_impl/path_helper.hpp"
 #include "graph_support/basic_edge_conditions.hpp"

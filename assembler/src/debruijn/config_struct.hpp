@@ -8,8 +8,8 @@
 #ifndef CONFIG_STRUCT_HDIP_
 #define CONFIG_STRUCT_HDIP_
 
-#include "config_singl.hpp"
-#include "cpp_utils.hpp"
+#include "config/config_singl.hpp"
+#include "dev_support/cpp_utils.hpp"
 #include "sequence/sequence.hpp"
 #include "path_extend/pe_config_struct.hpp"
 
@@ -19,7 +19,7 @@
 #include "io/reads_io/read_stream_vector.hpp"
 
 #include <boost/bimap.hpp>
-#include "xmath.h"
+#include "math/xmath.h"
 
 namespace debruijn_graph {
 

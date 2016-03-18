@@ -9,9 +9,9 @@
 
 #include "graph_support/component_filters.hpp"
 #include "graph_support/graph_component.hpp"
-#include "omni/splitters.hpp"
+#include "graph_support/splitters.hpp"
 #include "utils.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 #include "comparison_utils.hpp"
 #include "graph_support/basic_graph_stats.hpp"
 #include "coloring.hpp"

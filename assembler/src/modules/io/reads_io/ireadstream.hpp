@@ -17,7 +17,7 @@
 
 #include "kseq/kseq.h"
 #include <zlib.h>
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include "io/reads/read.hpp"
 #include "sequence/nucl.hpp"
 

@@ -15,7 +15,7 @@
 #ifndef PEAKFINDER_HPP_
 #define PEAKFINDER_HPP_
 
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include "data_divider.hpp"
 #include "paired_info.hpp"
 #include <stdio.h>

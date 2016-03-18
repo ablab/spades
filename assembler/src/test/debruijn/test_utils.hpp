@@ -15,7 +15,7 @@
 #include "io/reads_io/vector_reader.hpp"
 #include "io/reads_io/converting_reader_wrapper.hpp"
 #include "io/reads_io/read_stream_vector.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 #include "de/paired_info_helpers.hpp"
 
 #include "sequence_mapper_notifier.hpp"

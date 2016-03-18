@@ -86,7 +86,7 @@ using boost::lexical_cast;
 using boost::noncopyable;
 
 // err handling
-#include "stacktrace.hpp"
+#include "dev_support/stacktrace.hpp"
 
 // path manipulation instead of boost filesystem
 #include "io_impl/path_helper.hpp"
@@ -133,9 +133,9 @@ inline void assertion_failed_msg(char const * expr, char const * msg,
 
 //our
 //math
-#include "xmath.h"
-#include "func.hpp"
-#include "verify.hpp"
+#include "math/xmath.h"
+#include "dev_support/func.hpp"
+#include "dev_support/verify.hpp"
 // log
 #include "logger/logger.hpp"
 

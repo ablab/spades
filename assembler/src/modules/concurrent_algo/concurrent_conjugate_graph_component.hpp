@@ -17,8 +17,9 @@
 #ifndef CONCURRENT_CONJUGATE_GRAPH_COMPONENT_HPP_
 #define CONCURRENT_CONJUGATE_GRAPH_COMPONENT_HPP_
 
+#include "assembly_graph/order_and_law.hpp"
+#include "assembly_graph/action_handlers.hpp"
 #include "concurrent_graph_component.hpp"
-#include "omni/omni_utils.hpp"
 
 namespace omnigraph {
 

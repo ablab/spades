@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 #include <io/osequencestream.hpp>
 #include "../debruijn/stage.hpp"
 #include "../debruijn/config_struct.hpp"

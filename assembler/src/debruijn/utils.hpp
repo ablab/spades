@@ -7,20 +7,20 @@
 
 #pragma once
 
-#include "openmp_wrapper.h"
+#include "dev_support/openmp_wrapper.h"
 #include "standard.hpp"
 
 #include "io/reads/paired_read.hpp"
 #include "visualization/graph_colorer.hpp"
-#include "omni/id_track_handler.hpp"
+#include "graph_support/handlers/id_track_handler.hpp"
 #include "graph_support/splitters.hpp"
 #include "simplification/path_processor.hpp"
 
 #include "logger/logger.hpp"
-#include "xmath.h"
+#include "math/xmath.h"
 #include "sequence/sequence_tools.hpp"
 
-#include "runtime_k.hpp"
+#include "sequence/runtime_k.hpp"
 
 #include "io_impl/path_helper.hpp"
 

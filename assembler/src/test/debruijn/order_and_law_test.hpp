@@ -8,7 +8,7 @@
 #pragma once
 #include <boost/test/unit_test.hpp>
 #include "test_utils.hpp"
-#include "omni/id_track_handler.hpp"
+#include "graph_support/handlers/id_track_handler.hpp"
 
 namespace debruijn_graph {
 template<class Graph>

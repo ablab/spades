@@ -9,7 +9,7 @@
 // Created by anton on 5/15/15.
 //
 
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 #include <omni/dijkstra_tools/dijkstra_helper.hpp>
 #include "AlignmentAnalyserNew.hpp"
 #include "consistent_mapping.h"

@@ -7,16 +7,16 @@
 
 #pragma once
 
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 
 // log
 #include "logger/logger.hpp"
 
 // utils
-#include "cpp_utils.hpp"
-#include "path_helper.hpp"
+#include "dev_support/cpp_utils.hpp"
+#include "io_impl/path_helper.hpp"
 
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 
 // longseq
 #include "longseq.hpp"
@@ -25,12 +25,12 @@
 #include "cap_config_struct.hpp"
 
 // io
-#include "io/ireader.hpp"
-#include "io/converting_reader_wrapper.hpp"
-#include "io/vector_reader.hpp"
-#include "io/multifile_reader.hpp"
-#include "io/rc_reader_wrapper.hpp"
-#include "io/osequencestream.hpp"
+#include "io/reads_io/ireader.hpp"
+#include "io/reads_io/converting_reader_wrapper.hpp"
+#include "io/reads_io/vector_reader.hpp"
+#include "io/reads_io/multifile_reader.hpp"
+#include "io/reads_io/rc_reader_wrapper.hpp"
+#include "io/reads_io/osequencestream.hpp"
 
 namespace cap {
 typedef io::SingleRead Contig;

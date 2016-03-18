@@ -16,8 +16,8 @@
 
 #include <set>
 
-#include "xmath.h"
-#include "func.hpp"
+#include "math/xmath.h"
+#include "dev_support/func.hpp"
 #include "graph_support/basic_edge_conditions.hpp"
 #include "graph_support/graph_processing_algorithm.hpp"
 

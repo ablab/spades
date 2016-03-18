@@ -9,7 +9,7 @@
 #define __CONFIG_SINGL_HPP__
 
 
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 
 #include <string>
 

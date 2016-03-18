@@ -7,10 +7,10 @@
 
 #include "kmer_coverage_model.hpp"
 
-#include "xmath.h"
+#include "math/xmath.h"
 #include "logger/logger.hpp"
-#include "smooth.hpp"
-#include "verify.hpp"
+#include "math/smooth.hpp"
+#include "dev_support/verify.hpp"
 
 #include <boost/math/special_functions/zeta.hpp>
 #include <boost/math/distributions/normal.hpp>

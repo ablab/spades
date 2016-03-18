@@ -10,7 +10,7 @@
 #include "standard.hpp"
 #include "utils.hpp"
 #include "graph_pack.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 #include "simplification/cleaner.hpp"
 #include "stats/debruijn_stats.hpp"
 #include "io/splitting_wrapper.hpp"

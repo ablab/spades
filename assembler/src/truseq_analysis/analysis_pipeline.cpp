@@ -9,7 +9,7 @@
 // Created by anton on 16.05.15.
 //
 
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 #include "analysis_pipeline.hpp"
 
 spades::VariationDetectionStage::VariationDetectionStage(string output_file, const Config &config) : AssemblyStage("VariationDetection", "variation_detection"),

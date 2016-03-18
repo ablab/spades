@@ -13,7 +13,7 @@
 #include "stats/debruijn_stats.hpp"
 
 #include "visualization/visualization.hpp"
-#include "omni/edges_position_handler.hpp"
+#include "graph_support/handlers/edges_position_handler.hpp"
 #include "graph_support/graph_component.hpp"
 #include "simplification/compressor.hpp"
 

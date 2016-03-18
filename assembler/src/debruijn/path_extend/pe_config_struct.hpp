@@ -15,8 +15,8 @@
 #ifndef LC_CONFIG_STRUCT_HPP_
 #define LC_CONFIG_STRUCT_HPP_
 
-#include "config_singl.hpp"
-#include "cpp_utils.hpp"
+#include "config/config_singl.hpp"
+#include "dev_support/cpp_utils.hpp"
 
 #include <boost/optional.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>

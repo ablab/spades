@@ -11,7 +11,7 @@
 #include "simplification/path_processor.hpp"
 #include "graph_support/basic_graph_stats.hpp"
 
-#include "runtime_k.hpp"
+#include "sequence/runtime_k.hpp"
 #include "edge_index.hpp"
 #include "kmer_mapper.hpp"
 

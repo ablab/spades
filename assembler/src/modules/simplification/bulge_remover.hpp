@@ -21,10 +21,10 @@
 #include "graph_support/comparators.hpp"
 #include "graph_support/graph_component.hpp"
 #include "sequence/sequence_tools.hpp"
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 #include <cmath>
 #include <stack>
-#include "xmath.h"
+#include "math/xmath.h"
 
 namespace omnigraph {
 

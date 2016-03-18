@@ -8,7 +8,7 @@
 #ifndef HAMMER_KMERSTAT_HPP_
 #define HAMMER_KMERSTAT_HPP_
 
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 
 #include "sequence/seq.hpp"
 

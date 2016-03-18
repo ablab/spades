@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "omni/parallel_unordered_map.hpp"
-#include "openmp_wrapper.h"
+#include "adt/parallel_unordered_map.hpp"
+#include "dev_support/openmp_wrapper.h"
 
-#include "runtime_k.hpp"
+#include "sequence/runtime_k.hpp"
 #include "kmer_map.hpp"
 #include "kmer_hash_vector.hpp"
 

@@ -21,9 +21,9 @@
 #include <boost/pending/disjoint_sets.hpp>
 #include <boost/property_map/property_map.hpp>
 #include <queue>
+#include <list>
 
-#include "standard_base.hpp"
-#include "omni/omni_utils.hpp"
+#include "dev_support/standard_base.hpp"
 
 
 namespace omnigraph {
@@ -93,7 +93,7 @@ public:
 	virtual ~TreeNode() { }
 
 private:
-	list<TreeNode *> children_;
+	std::list<TreeNode *> children_;
 	size_t subtree_size_;
 };
 

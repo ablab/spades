@@ -7,16 +7,16 @@
 
 #pragma once
 
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 
 // utils
-#include "cpp_utils.hpp"
+#include "dev_support/cpp_utils.hpp"
 #include "io_impl/path_helper.hpp"
 
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 
 // io
 #include "io/reads_io/ireader.hpp"
 #include "io/reads_io/converting_reader_wrapper.hpp"
 
-#include "runtime_k.hpp"
+#include "sequence/runtime_k.hpp"

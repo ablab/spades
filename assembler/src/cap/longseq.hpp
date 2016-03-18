@@ -10,9 +10,9 @@
 #include <cstdlib>
 #include <cstdint>
 #include "polynomial_hash.hpp"
-#include "log.hpp"
+#include "dev_support/log.hpp"
 #include "sequence/sequence.hpp"
-#include "openmp_wrapper.h"
+#include "dev_support/openmp_wrapper.h"
 
 namespace cap {
 

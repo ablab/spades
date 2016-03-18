@@ -17,8 +17,8 @@
 #ifndef CONJUGATE_VERTEX_GLUED_GRAPH_HPP_
 #define CONJUGATE_VERTEX_GLUED_GRAPH_HPP_
 
-#include "omni/omni_utils.hpp"
-#include "standard_base.hpp"
+#include "assembly_graph/graph_iterators.hpp"
+#include "dev_support/standard_base.hpp"
 
 
 namespace omnigraph {

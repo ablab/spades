@@ -1,6 +1,6 @@
 #pragma once
 
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 
 namespace omnigraph {
 

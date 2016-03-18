@@ -16,10 +16,10 @@
 #include "utils.hpp"
 #include "assembly_graph/debruijn_graph.hpp"
 #include "assembly_graph/construction_helper.hpp"
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 #include "indices/kmer_extension_index.hpp"
-#include "openmp_wrapper.h"
-#include "parallel_wrapper.hpp"
+#include "dev_support/openmp_wrapper.h"
+#include "dev_support/parallel_wrapper.hpp"
 
 namespace debruijn_graph {
 

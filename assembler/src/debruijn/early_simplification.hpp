@@ -8,7 +8,7 @@
 #pragma once
 #include "standard.hpp"
 #include "indices/perfect_hash_map.hpp"
-#include "runtime_k.hpp"
+#include "sequence/runtime_k.hpp"
 #include "mph_index/kmer_index.hpp"
 
 namespace debruijn_graph {

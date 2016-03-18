@@ -10,7 +10,7 @@
 #include "io/reads_io/io_helper.hpp"
 #include "storing_traits.hpp"
 
-#include "file_limit.hpp"
+#include "dev_support/file_limit.hpp"
 
 namespace debruijn_graph {
 

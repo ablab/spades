@@ -5,8 +5,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "standard_base.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/standard_base.hpp"
+#include "dev_support/simple_tools.hpp"
 #include "logger/log_writers.hpp"
 
 #include "graphio.hpp"

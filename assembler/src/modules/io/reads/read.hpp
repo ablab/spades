@@ -18,12 +18,12 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include "sequence/quality.hpp"
 #include "sequence/sequence.hpp"
 #include "sequence/nucl.hpp"
 #include "sequence/sequence_tools.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 
 //fixme deprecated!!! used in hammer!
 class Read {

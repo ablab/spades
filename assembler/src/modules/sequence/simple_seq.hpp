@@ -21,9 +21,9 @@
 #include <cstring>
 #include <iostream>
 
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include "sequence/nucl.hpp"
-#include "log.hpp"
+#include "dev_support/log.hpp"
 #include "seq_common.hpp"
 /**
  * @param T is max number of nucleotides, type for storage

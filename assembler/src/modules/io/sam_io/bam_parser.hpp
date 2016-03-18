@@ -12,7 +12,7 @@
 #include "io/reads_io/parser.hpp"
 #include "sequence/quality.hpp"
 #include "sequence/nucl.hpp"
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 
 #include "bamtools/api/BamReader.h"
 

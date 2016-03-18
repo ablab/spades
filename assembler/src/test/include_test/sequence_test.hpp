@@ -10,7 +10,7 @@
 #include "sequence/sequence.hpp"
 #include "sequence/nucl.hpp"
 #include <string>
-#include "memory.hpp"
+#include "dev_support/memory.hpp"
 #include <ctime>
 
 BOOST_AUTO_TEST_CASE( TestSequenceSelector ) {

@@ -29,7 +29,7 @@
 #include "io/reads_io/fasta_fastq_gz_parser.hpp"
 #include "io/reads_io/parser.hpp"
 #include "io/sam_io/bam_parser.hpp"
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 
 
 namespace io {

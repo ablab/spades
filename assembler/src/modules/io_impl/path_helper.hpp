@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 #include "logger/logger.hpp"
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 
 namespace path {
 //todo review and make names consistent!

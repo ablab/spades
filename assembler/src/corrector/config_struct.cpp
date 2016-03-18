@@ -7,7 +7,7 @@
 
 #include "config_struct.hpp"
 
-#include "openmp_wrapper.h"
+#include "dev_support/openmp_wrapper.h"
 
 #include <yaml-cpp/yaml.h>
 #include <string>

@@ -12,10 +12,10 @@
 #include <ostream>
 #include <unordered_set>
 #include <unordered_map>
-#include <stacktrace.hpp>
+#include "dev_support/stacktrace.hpp"
 #include <algorithm>
 #include <map>
-#include "openmp_wrapper.h"
+#include "dev_support/openmp_wrapper.h"
 #include "folly/PackedSyncPtr.h"
 
 

@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "standard_base.hpp"
-#include "graph_print_utils.hpp"
+#include "dev_support/standard_base.hpp"
+#include "io/graph_io/graph_print_utils.hpp"
 #include "graph_labeler.hpp"
 #include "graph_colorer.hpp"
 #include "vertex_linker.hpp"

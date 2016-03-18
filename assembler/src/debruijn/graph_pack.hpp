@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "omni/id_track_handler.hpp"
-#include "omni/edges_position_handler.hpp"
+#include "graph_support/handlers/id_track_handler.hpp"
+#include "graph_support/handlers/edges_position_handler.hpp"
 #include "assembly_graph/debruijn_graph.hpp"
 #include "de/paired_info.hpp"
 #include "config_struct.hpp"

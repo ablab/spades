@@ -82,7 +82,7 @@ if (NOT OPENMP_FOUND)
 endif()
 
 # sub projects
-add_subdirectory(modules/io_impl)
+add_subdirectory(modules)
 add_subdirectory(debruijn)
 add_subdirectory(hammer)
 add_subdirectory(ionhammer)
@@ -90,6 +90,7 @@ add_subdirectory(spades_pipeline)
 add_subdirectory(dipspades)
 add_subdirectory(corrector)
 add_subdirectory(scaffold_correction)
+
 
 # Main pipeline script
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"

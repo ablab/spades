@@ -24,7 +24,7 @@
 #include "concurrent_conjugate_graph_component.hpp"
 #include "conjugate_vertex_glued_graph.hpp"
 #include "component_algorithm_runner.hpp"
-#include "perfcounter.hpp"
+#include "dev_support/perfcounter.hpp"
 
 #include <memory>
 

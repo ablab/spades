@@ -6,7 +6,7 @@
 //***************************************************************************
 #pragma once
 
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 #include "dijkstra_settings.hpp"
 
 #include <queue>

@@ -34,7 +34,7 @@
 #include "stats/chimera_stats.hpp"
 #include "config_struct.hpp"
 #include "graph_support/basic_edge_conditions.hpp"
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 
 namespace debruijn {
 

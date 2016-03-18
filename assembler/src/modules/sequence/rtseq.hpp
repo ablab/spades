@@ -16,11 +16,11 @@
 #define RTSEQ_HPP_
 
 #include <string>
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include <array>
 #include <algorithm>
 #include "sequence/nucl.hpp"
-#include "log.hpp"
+#include "dev_support/log.hpp"
 #include "seq_common.hpp"
 #include "seq.hpp"
 #include "simple_seq.hpp"

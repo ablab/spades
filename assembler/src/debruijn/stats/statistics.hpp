@@ -9,8 +9,8 @@
 
 #include "standard.hpp"
 
-#include "simple_tools.hpp"
-#include "xmath.h"
+#include "dev_support/simple_tools.hpp"
+#include "math/xmath.h"
 #include "config_struct.hpp"
 #include "graph_alignment/mapping_path.hpp"
 

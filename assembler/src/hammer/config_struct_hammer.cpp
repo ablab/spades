@@ -13,8 +13,8 @@
  */
 
 #include "config_struct_hammer.hpp"
-#include "config_common.hpp"
-#include "openmp_wrapper.h"
+#include "config/config_common.hpp"
+#include "dev_support/openmp_wrapper.h"
 
 #include <boost/property_tree/ptree.hpp>
 #include <string>

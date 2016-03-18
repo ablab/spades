@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "config_common.hpp"
-#include "config_singl.hpp"
+#include "config/config_common.hpp"
+#include "config/config_singl.hpp"
 
 namespace cap {
 

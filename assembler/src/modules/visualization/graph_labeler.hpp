@@ -8,9 +8,9 @@
 #ifndef GRAPH_LABELER_HPP_
 #define GRAPH_LABELER_HPP_
 
-#include "simple_tools.hpp"
-#include "standard_base.hpp"
-#include "omni/edges_position_handler.hpp"
+#include "dev_support/simple_tools.hpp"
+#include "dev_support/standard_base.hpp"
+#include "graph_support/handlers/edges_position_handler.hpp"
 
 namespace omnigraph {
 

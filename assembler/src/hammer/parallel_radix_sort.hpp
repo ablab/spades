@@ -36,7 +36,7 @@
 #ifndef PARALLEL_RADIX_SORT_H_
 #define PARALLEL_RADIX_SORT_H_
 
-#include "openmp_wrapper.h"
+#include "dev_support/openmp_wrapper.h"
 
 #include <stdint.h>
 #include <cstring>

@@ -7,11 +7,11 @@
 
 #pragma once
 
-#include "func.hpp"
+#include "dev_support/func.hpp"
 #include <boost/none.hpp>
 #include "assembly_graph/graph_iterators.hpp"
 #include "graph_component.hpp"
-#include "pred.hpp"
+#include "math/pred.hpp"
 #include "logger/logger.hpp"
 
 namespace omnigraph {

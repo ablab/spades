@@ -9,9 +9,9 @@
 
 #include "adt/queue_iterator.hpp"
 #include "io/reads_io/read_processor.hpp"
-#include "pred.hpp"
+#include "math/pred.hpp"
 #include "action_handlers.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 #include <boost/iterator/iterator_facade.hpp>
 
 namespace omnigraph {

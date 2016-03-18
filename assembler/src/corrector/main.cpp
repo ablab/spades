@@ -9,7 +9,7 @@
 #include "config_struct.hpp"
 
 #include "logger/log_writers.hpp"
-#include "segfault_handler.hpp"
+#include "dev_support/segfault_handler.hpp"
 
 #include "version.hpp"
 

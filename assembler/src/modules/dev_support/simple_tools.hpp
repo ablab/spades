@@ -19,7 +19,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include "io/reads_io/ireader.hpp"
 #include "io_impl/path_helper.hpp"
 #include <memory>

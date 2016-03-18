@@ -7,8 +7,8 @@
 
 #include "config_struct.hpp"
 
-#include "config_common.hpp"
-#include "openmp_wrapper.h"
+#include "config/config_common.hpp"
+#include "dev_support/openmp_wrapper.h"
 
 #include "logger/logger.hpp"
 

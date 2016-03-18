@@ -14,7 +14,7 @@
  */
 #include "perfect_hash_map.hpp"
 #include "kmer_splitters.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 #include "storing_traits.hpp"
 #include <bitset>
 

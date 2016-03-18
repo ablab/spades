@@ -8,7 +8,7 @@
 #ifndef QUEUE_ITERATOR_HPP_
 #define QUEUE_ITERATOR_HPP_
 
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include <set>
 
 template<typename T, typename Comparator>

@@ -6,7 +6,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "openmp_wrapper.h"
+#include "dev_support/openmp_wrapper.h"
 #include "standard.hpp"
 
 #include "io/reads_io/io_helper.hpp"

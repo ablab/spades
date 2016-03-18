@@ -11,7 +11,7 @@
 #include "standard.hpp"
 #include "logger/log_writers.hpp"
 
-#include "segfault_handler.hpp"
+#include "dev_support/segfault_handler.hpp"
 #include "launch.hpp"
 #include "io_impl/copy_file.hpp"
 

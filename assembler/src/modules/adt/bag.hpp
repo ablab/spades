@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 
 template<class T, class hash = std::hash<T>>
 class bag {

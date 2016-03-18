@@ -16,8 +16,8 @@
 
 #include "graph_support/graph_processing_algorithm.hpp"
 #include "graph_support/basic_edge_conditions.hpp"
-#include "func.hpp"
-#include "xmath.h"
+#include "dev_support/func.hpp"
+#include "math/xmath.h"
 #include "dijkstra/dijkstra_helper.hpp"
 
 namespace omnigraph {

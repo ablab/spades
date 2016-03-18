@@ -8,11 +8,11 @@
 
 #include <vector>
 #include <set>
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include "logger/logger.hpp"
 #include "order_and_law.hpp"
 #include <boost/iterator/iterator_facade.hpp>
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 
 namespace omnigraph {
 

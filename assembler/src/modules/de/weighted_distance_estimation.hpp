@@ -8,7 +8,7 @@
 #ifndef WEIGHTED_DISTANCE_ESTIMATION_HPP_
 #define WEIGHTED_DISTANCE_ESTIMATION_HPP_
 
-#include "xmath.h"
+#include "math/xmath.h"
 #include "paired_info.hpp"
 #include "distance_estimation.hpp"
 

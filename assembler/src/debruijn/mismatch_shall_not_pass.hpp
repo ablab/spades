@@ -8,10 +8,10 @@
 #pragma once
 
 #include "simplification/compressor.hpp"
-#include "omni/id_track_handler.hpp"
+#include "graph_support/handlers/id_track_handler.hpp"
 #include "logger/logger.hpp"
 
-#include "runtime_k.hpp"
+#include "sequence/runtime_k.hpp"
 #include "sequence_mapper.hpp"
 
 namespace debruijn_graph {

@@ -12,10 +12,10 @@
 
 #include "sequence/seq.hpp"
 #include "logger/log_writers.hpp"
-#include "memory_limit.hpp"
+#include "dev_support/memory_limit.hpp"
 #include "running_modes.hpp"
 #include "config_struct_cclean.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 #include "adapter_index.hpp"
 #include "utils.hpp"
 

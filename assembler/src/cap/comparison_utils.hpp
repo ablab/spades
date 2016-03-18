@@ -8,10 +8,10 @@
 #pragma once
 
 #include "graphio.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 #include "assembly_graph/debruijn_graph.hpp"
 #include "coordinates_handler.hpp"
-#include "xmath.h"
+#include "math/xmath.h"
 #include <iostream>
 #include <vector>
 #include "logger/logger.hpp"

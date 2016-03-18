@@ -11,9 +11,9 @@
 #include <stack>
 #include <queue>
 #include "adt/concurrent_dsu.hpp"
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 #include "graph_support/graph_component.hpp"
-#include "xmath.h"
+#include "math/xmath.h"
 #include "sequence/sequence_tools.hpp"
 #include "path_processor.hpp"
 #include "visualization/visualization.hpp"

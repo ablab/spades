@@ -11,7 +11,7 @@
 #include "adt/pointer_iterator.hpp"
 #include "adt/array_vector.hpp"
 
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
 

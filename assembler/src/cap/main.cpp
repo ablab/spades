@@ -11,15 +11,15 @@
 #include "cap_logger.hpp"
 
 #include "../online_vis/standard_vis.hpp"
-#include "segfault_handler.hpp"
-#include "stacktrace.hpp"
+#include "dev_support/segfault_handler.hpp"
+#include "dev_support/stacktrace.hpp"
 #include "config_struct.hpp"
 #include "io/io_helper.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "memory_limit.hpp"
+#include "dev_support/memory_limit.hpp"
 #include "read_converter.hpp"
 
 #include "cap_online_visualizer.hpp"

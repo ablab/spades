@@ -17,7 +17,7 @@
 
 //#include "utils.hpp"
 #include "visualization/graph_labeler.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 #include "graph_alignment/mapping_path.hpp"
 #include "assembly_graph/action_handlers.hpp"
 

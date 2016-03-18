@@ -27,7 +27,7 @@
 #ifndef NUCL_HPP_
 #define NUCL_HPP_
 
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include <iostream>
 
 const char dignucl_map['T' + 1] = {

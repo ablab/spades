@@ -9,8 +9,8 @@
 
 #include "standard.hpp"
 
-#include "omni/id_track_handler.hpp"
-#include "omni/edges_position_handler.hpp"
+#include "graph_support/handlers/id_track_handler.hpp"
+#include "graph_support/handlers/edges_position_handler.hpp"
 #include "graph_support/graph_component.hpp"
 
 #include "de/paired_info.hpp"

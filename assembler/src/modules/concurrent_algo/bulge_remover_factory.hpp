@@ -15,10 +15,10 @@
 #ifndef BULGE_REMOVER_FACTORY_HPP_
 #define BULGE_REMOVER_FACTORY_HPP_
 
-#include "omni/sequential_algorihtm_factory.hpp"
-#include "omni/concurrent_graph_component.hpp"
-#include "omni/sequential_algorihtm_factory.hpp"
-#include "omni/bulge_remover.hpp"
+#include "sequential_algorihtm_factory.hpp"
+#include "concurrent_graph_component.hpp"
+#include "sequential_algorihtm_factory.hpp"
+#include "simplification/bulge_remover.hpp"
 #include "kmer_mapper_logger.hpp"
 
 namespace debruijn {

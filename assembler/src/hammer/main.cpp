@@ -21,11 +21,11 @@
 #include "expander.hpp"
 
 #include "adt/concurrent_dsu.hpp"
-#include "segfault_handler.hpp"
+#include "dev_support/segfault_handler.hpp"
 #include "io/reads_io/read_processor.hpp"
 #include "io/reads_io/ireadstream.hpp"
 
-#include "memory_limit.hpp"
+#include "dev_support/memory_limit.hpp"
 
 #include "logger/logger.hpp"
 #include "logger/log_writers.hpp"

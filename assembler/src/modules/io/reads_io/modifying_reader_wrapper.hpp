@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include "io/reads_io/delegating_reader_wrapper.hpp"
 
 #include <memory>

@@ -16,7 +16,7 @@
 #include "sequence/sequence_tools.hpp"
 #include "simplification/path_processor.hpp"
 
-#include "runtime_k.hpp"
+#include "sequence/runtime_k.hpp"
 #include "edge_index.hpp"
 
 #include <cstdlib>

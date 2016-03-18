@@ -13,17 +13,17 @@
  */
 #pragma once
 
-#include "openmp_wrapper.h"
+#include "dev_support/openmp_wrapper.h"
 
 #include "io/reads_io/io_helper.hpp"
-#include "omni/edges_position_handler.hpp"
+#include "graph_support/handlers/edges_position_handler.hpp"
 
 #include "debruijn_graph_constructor.hpp"
 #include "indices/edge_index_builders.hpp"
 #include "assembly_graph/debruijn_graph.hpp"
 #include "graph_pack.hpp"
 #include "utils.hpp"
-#include "perfcounter.hpp"
+#include "dev_support/perfcounter.hpp"
 #include "early_simplification.hpp"
 
 #include "read_converter.hpp"

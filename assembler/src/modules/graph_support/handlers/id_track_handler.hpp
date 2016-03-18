@@ -10,7 +10,7 @@
 #include <unordered_map>
 //#include "utils.hpp"
 #include "visualization/graph_labeler.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 #include "assembly_graph/action_handlers.hpp"
 using namespace omnigraph;
 

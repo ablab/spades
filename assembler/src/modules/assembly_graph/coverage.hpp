@@ -18,7 +18,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include "xmath.h"
+#include "math/xmath.h"
 #include "action_handlers.hpp"
 namespace omnigraph {
 

@@ -9,7 +9,7 @@
 
 #include <io/single_read.hpp>
 #include <graph_pack.hpp>
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 #include "consistent_mapping.h"
 
 namespace alignment_analysis {

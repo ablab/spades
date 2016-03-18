@@ -15,12 +15,12 @@
 #include "hypergraph.hpp"
 #include "hypergraph_sorter_seq.hpp"
 
-#include "openmp_wrapper.h"
+#include "dev_support/openmp_wrapper.h"
 
 #include "logger/logger.hpp"
 #include "io_impl/path_helper.hpp"
 
-#include "memory_limit.hpp"
+#include "dev_support/memory_limit.hpp"
 
 #include <libcxx/sort.hpp>
 

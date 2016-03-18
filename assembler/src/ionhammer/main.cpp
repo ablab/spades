@@ -15,8 +15,8 @@
 
 #include "adt/concurrent_dsu.hpp"
 
-#include "segfault_handler.hpp"
-#include "memory_limit.hpp"
+#include "dev_support/segfault_handler.hpp"
+#include "dev_support/memory_limit.hpp"
 
 #include "HSeq.hpp"
 #include "kmer_data.hpp"
@@ -27,7 +27,7 @@
 #include "expander.hpp"
 #include "config_struct.hpp"
 
-#include "openmp_wrapper.h"
+#include "dev_support/openmp_wrapper.h"
 
 #include "version.hpp"
 

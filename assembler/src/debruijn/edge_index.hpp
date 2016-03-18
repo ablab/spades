@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "openmp_wrapper.h"
+#include "dev_support/openmp_wrapper.h"
 
 #include "adt/kmer_map.hpp"
 

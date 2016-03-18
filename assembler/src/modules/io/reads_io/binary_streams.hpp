@@ -9,7 +9,7 @@
 
 #include <fstream>
 
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include "ireader.hpp"
 #include "io/reads/single_read.hpp"
 #include "io/reads/paired_read.hpp"

@@ -9,7 +9,7 @@
 
 #include "indices/perfect_hash_map.hpp"
 #include "assembly_graph/coverage.hpp"
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include <vector>
 #include <map>
 #include <set>

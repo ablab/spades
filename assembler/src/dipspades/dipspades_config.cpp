@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "dipspades_config.hpp"
-#include "config_common.hpp"
+#include "config/config_common.hpp"
 #include "utils/files_utils.hpp"
 
 using namespace dipspades;

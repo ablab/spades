@@ -8,7 +8,7 @@
 #pragma once
 
 #include "sequence_mapper.hpp"
-#include "omni/edges_position_handler.hpp"
+#include "graph_support/handlers/edges_position_handler.hpp"
 #include "io/reads_io/wrapper_collection.hpp"
 
 namespace debruijn_graph {

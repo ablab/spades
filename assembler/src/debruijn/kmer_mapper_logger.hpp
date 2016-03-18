@@ -15,8 +15,7 @@
 #ifndef KMER_MAPPER_LOGGER_H_
 #define KMER_MAPPER_LOGGER_H_
 
-#include "omni/omni_utils.hpp"
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 
 namespace debruijn {
 

@@ -8,9 +8,8 @@
 
 #pragma once
 #include "visualization/graph_labeler.hpp"
-#include "omni/edges_position_handler.hpp"
+#include "graph_support/handlers/edges_position_handler.hpp"
 #include "graph_alignment/mapping_path.hpp"
-#include "omni/edges_position_handler.hpp"
 #include "sequence/sequence.hpp"
 #include "graph_pack.hpp"
 #include "positions.hpp"

@@ -8,7 +8,7 @@
 #ifndef __HAMMER_IT_CONFIG_HPP__
 #define __HAMMER_IT_CONFIG_HPP__
 
-#include "config_singl.hpp"
+#include "config/config_singl.hpp"
 
 #include "io_impl/library.hpp"
 

@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "pe_config_struct.hpp"
-#include "config_common.hpp"
+#include "config/config_common.hpp"
 
 namespace path_extend {
 

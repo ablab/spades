@@ -9,10 +9,10 @@
 #include <vector>
 #include <set>
 #include <cstring>
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include "logger/logger.hpp"
 #include "sequence/sequence_tools.hpp"
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 
 namespace debruijn_graph {
 class DeBruijnMaster;

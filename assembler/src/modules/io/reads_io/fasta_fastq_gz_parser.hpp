@@ -29,7 +29,7 @@
 #include <zlib.h>
 #include <string>
 #include "kseq/kseq.h"
-#include "verify.hpp"
+#include "dev_support/verify.hpp"
 #include "io/reads/single_read.hpp"
 #include "io/reads_io/parser.hpp"
 #include "sequence/quality.hpp"

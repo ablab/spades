@@ -13,7 +13,7 @@
 #include "io/reads_io/file_reader.hpp"
 #include "io_impl/path_helper.hpp"
 #include "io/reads_io/osequencestream.hpp"
-#include "openmp_wrapper.h"
+#include "dev_support/openmp_wrapper.h"
 
 #include <boost/algorithm/string.hpp>
 

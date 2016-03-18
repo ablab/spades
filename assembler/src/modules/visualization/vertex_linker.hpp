@@ -7,7 +7,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 #include "printing_parameter_storage.hpp"
 
 namespace omnigraph {

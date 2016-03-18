@@ -8,7 +8,7 @@
 #pragma once
 
 #include "simplification/cleaner.hpp"
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 #include "graph_support/graph_processing_algorithm.hpp"
 #include "graph_support/basic_edge_conditions.hpp"
 #include "simplification/bulge_remover.hpp"
