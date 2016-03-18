@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "../../include/io/io_helper.hpp"
+#include "io/reads_io/io_helper.hpp"
 
-#include "../utils/element_printers.hpp"
-#include "../utils/files_utils.hpp"
+#include "utils/element_printers.hpp"
+#include "utils/files_utils.hpp"
 
 #include "contig_correctors/close_gaps_corrector.hpp"
 #include "contig_correctors/iterative_redundant_contigs_remover.hpp"

@@ -25,11 +25,11 @@
  * according to extension.
  */
 
+#include <io/reads/single_read.hpp>
+#include "io/reads_io/fasta_fastq_gz_parser.hpp"
+#include "io/reads_io/parser.hpp"
+#include "io/sam_io/bam_parser.hpp"
 #include "standard_base.hpp"
-#include "logger/logger.hpp"
-#include "io/parser.hpp"
-#include "io/fasta_fastq_gz_parser.hpp"
-#include "io/bam_parser.hpp"
 
 
 namespace io {

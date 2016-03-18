@@ -8,9 +8,10 @@
 #pragma once
 
 #include "verify.hpp"
-#include "io/delegating_reader_wrapper.hpp"
+#include "io/reads_io/delegating_reader_wrapper.hpp"
 
 #include <memory>
+#include <io/reads/single_read.hpp>
 
 namespace io {
 

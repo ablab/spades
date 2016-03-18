@@ -81,7 +81,7 @@ if (NOT OPENMP_FOUND)
 endif()
 
 # sub projects
-add_subdirectory(io)
+add_subdirectory(include/io_impl)
 add_subdirectory(debruijn)
 add_subdirectory(hammer)
 add_subdirectory(ionhammer)

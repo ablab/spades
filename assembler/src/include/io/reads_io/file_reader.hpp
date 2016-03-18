@@ -16,9 +16,9 @@
 #pragma once
 
 #include "ireader.hpp"
-#include "single_read.hpp"
+#include "io/reads/single_read.hpp"
 #include "parser.hpp"
-#include "path_helper.hpp"
+#include "io_impl/path_helper.hpp"
 
 namespace io {
 

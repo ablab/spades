@@ -8,7 +8,7 @@
 #ifndef __HAMMER_READ_PROCESSOR_HPP__
 #define __HAMMER_READ_PROCESSOR_HPP__
 
-#include "io/mpmc_bounded.hpp"
+#include "io/reads_io/mpmc_bounded.hpp"
 
 #include "openmp_wrapper.h"
 

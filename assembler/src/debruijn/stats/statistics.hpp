@@ -12,7 +12,7 @@
 #include "simple_tools.hpp"
 #include "xmath.h"
 #include "config_struct.hpp"
-#include "omni/mapping_path.hpp"
+#include "graph_alignment/mapping_path.hpp"
 
 #include <iostream>
 #include <fstream>

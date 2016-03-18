@@ -11,12 +11,12 @@
 
 // utils
 #include "cpp_utils.hpp"
-#include "path_helper.hpp"
+#include "io_impl/path_helper.hpp"
 
 #include "simple_tools.hpp"
 
 // io
-#include "io/ireader.hpp"
-#include "io/converting_reader_wrapper.hpp"
+#include "io/reads_io/ireader.hpp"
+#include "io/reads_io/converting_reader_wrapper.hpp"
 
 #include "runtime_k.hpp"

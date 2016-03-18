@@ -5,7 +5,7 @@
 //***************************************************************************
 
 #pragma once
-#include "io/osequencestream.hpp"
+#include "io/reads_io/osequencestream.hpp"
 #include "stage.hpp"
 #include "graph_pack.hpp"
 #include "simplification/path_processor.hpp"

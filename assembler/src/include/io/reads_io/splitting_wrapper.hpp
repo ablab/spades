@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #pragma once
-#include "single_read.hpp"
+#include "io/reads/single_read.hpp"
 #include "delegating_reader_wrapper.hpp"
 
 namespace io {

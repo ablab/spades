@@ -12,7 +12,7 @@
 
 #include "logger/logger.hpp"
 
-#include "io/file_reader.hpp"
+#include "io/reads_io/file_reader.hpp"
 
 #include <string>
 #include <vector>

@@ -18,8 +18,7 @@
 //#include "utils.hpp"
 #include "visualization/graph_labeler.hpp"
 #include "simple_tools.hpp"
-#include "pair_info_bounds.hpp"
-#include "mapping_path.hpp"
+#include "graph_alignment/mapping_path.hpp"
 #include "assembly_graph/action_handlers.hpp"
 
 namespace omnigraph {

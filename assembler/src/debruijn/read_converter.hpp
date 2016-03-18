@@ -14,8 +14,8 @@
 
 #pragma once
 
-#include "io/binary_converter.hpp"
-#include "io/io_helper.hpp"
+#include "io/reads_io/binary_converter.hpp"
+#include "io/reads_io/io_helper.hpp"
 #include "dataset_readers.hpp"
 #include "simple_tools.hpp"
 

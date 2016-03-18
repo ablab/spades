@@ -7,11 +7,11 @@
 
 #include "logger/log_writers.hpp"
 
-#include "io/file_reader.hpp"
-#include "io/bam_reader.hpp"
-#include "io/paired_readers.hpp"
-#include "io/osequencestream.hpp"
-#include "io/read_processor.hpp"
+#include "io/reads_io/file_reader.hpp"
+#include "io/sam_io/bam_reader.hpp"
+#include "io/reads_io/paired_readers.hpp"
+#include "io/reads_io/osequencestream.hpp"
+#include "io/reads_io/read_processor.hpp"
 
 #include "adt/concurrent_dsu.hpp"
 

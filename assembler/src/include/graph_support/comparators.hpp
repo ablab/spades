@@ -1,27 +1,27 @@
 #pragma once
 namespace omnigraph {
 
-    template<class Graph>
-    struct CoverageComparator {
-    private:
-        typedef typename Graph::EdgeId EdgeId;
-        typedef typename Graph::VertexId VertexId;
-        const Graph &graph_;
-    public:
-        CoverageComparator(const Graph &graph)
-                : graph_(graph) {
-        }
+template<class Graph>
+struct CoverageComparator {
+private:
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    const Graph &graph_;
+public:
+    CoverageComparator(const Graph &graph)
+            : graph_(graph) {
+    }
 
-        /**
-         * Standard comparator function as used in collections.
-         */
-        bool operator()(EdgeId edge1, EdgeId edge2) const {
-            if (math::eq(graph_.coverage(edge1), graph_.coverage(edge2))) {
-                return edge1 < edge2;
-            }
-            return math::ls(graph_.coverage(edge1), graph_.coverage(edge2));
+    /**
+     * Standard comparator function as used in collections.
+     */
+    bool operator()(EdgeId edge1, EdgeId edge2) const {
+        if (math::eq(graph_.coverage(edge1), graph_.coverage(edge2))) {
+            return edge1 < edge2;
         }
-    };
+        return math::ls(graph_.coverage(edge1), graph_.coverage(edge2));
+    }
+};
 
 /**
  * This class defines which edge is more likely to be tip. In this case we just assume shorter edges

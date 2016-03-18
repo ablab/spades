@@ -9,7 +9,7 @@
 
 #include "sequence_mapper.hpp"
 #include "omni/edges_position_handler.hpp"
-#include "io/wrapper_collection.hpp"
+#include "io/reads_io/wrapper_collection.hpp"
 
 namespace debruijn_graph {
 

@@ -17,9 +17,9 @@
 #include "positional_read.hpp"
 #include "openmp_wrapper.h"
 
-#include <io/sam/sam_reader.hpp>
-#include <io/sam/read.hpp>
-#include <io/library.hpp>
+#include <io/sam_io/sam_reader.hpp>
+#include <io/sam_io/read.hpp>
+#include <io_impl/library.hpp>
 
 #include <string>
 #include <vector>

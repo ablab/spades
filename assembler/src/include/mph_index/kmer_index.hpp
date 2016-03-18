@@ -6,8 +6,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "io/mmapped_reader.hpp"
-#include "io/mmapped_writer.hpp"
+#include "io/kmers_io/mmapped_reader.hpp"
+#include "io/kmers_io/mmapped_writer.hpp"
 #include "adt/pointer_iterator.hpp"
 
 #include "mphf.hpp"
@@ -18,7 +18,7 @@
 #include "openmp_wrapper.h"
 
 #include "logger/logger.hpp"
-#include "path_helper.hpp"
+#include "io_impl/path_helper.hpp"
 
 #include "memory_limit.hpp"
 

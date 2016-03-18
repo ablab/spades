@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "io/ireadstream.hpp"
+#include "io/reads_io/ireadstream.hpp"
 #include "hammer_tools.hpp"
 #include "hamcluster.hpp"
 #include "kmer_cluster.hpp"

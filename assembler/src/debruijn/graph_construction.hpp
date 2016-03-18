@@ -15,7 +15,7 @@
 
 #include "openmp_wrapper.h"
 
-#include "io/io_helper.hpp"
+#include "io/reads_io/io_helper.hpp"
 #include "omni/edges_position_handler.hpp"
 
 #include "debruijn_graph_constructor.hpp"

@@ -9,11 +9,11 @@
 #include "config_struct.hpp"
 #include "variants_table.hpp"
 
-#include "io/ireader.hpp"
-#include "io/osequencestream.hpp"
-#include "io/file_reader.hpp"
-#include "io/single_read.hpp"
-#include "path_helper.hpp"
+#include "io/reads_io/ireader.hpp"
+#include "io/reads_io/osequencestream.hpp"
+#include "io/reads_io/file_reader.hpp"
+#include "io/reads/single_read.hpp"
+#include "io_impl/path_helper.hpp"
 
 #include <boost/algorithm/string.hpp>
 

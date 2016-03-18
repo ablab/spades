@@ -9,10 +9,10 @@
 #include "assembly_graph/debruijn_graph.hpp"
 #include "config_struct.hpp"
 
-#include <io/sam/sam_reader.hpp>
-#include <io/sam/read.hpp>
+#include <io/sam_io/sam_reader.hpp>
+#include <io/sam_io/read.hpp>
 
-#include <io/osequencestream.hpp>
+#include <io/reads_io/osequencestream.hpp>
 #include <de/paired_info.hpp>
 #include <de/insert_size_refiner.hpp>
 

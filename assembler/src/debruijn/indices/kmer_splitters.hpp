@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "io/io_helper.hpp"
+#include "io/reads_io/io_helper.hpp"
 #include "storing_traits.hpp"
 
 #include "file_limit.hpp"

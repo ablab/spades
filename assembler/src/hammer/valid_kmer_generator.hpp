@@ -10,7 +10,7 @@
 
 #include "globals.hpp"
 
-#include "io/read.hpp"
+#include "io/reads/read.hpp"
 #include "sequence/seq.hpp"
 
 #include <string>

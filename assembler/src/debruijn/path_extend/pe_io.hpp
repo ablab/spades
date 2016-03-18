@@ -11,7 +11,7 @@
 
 #include "bidirectional_path.hpp"
 #include "contig_output.hpp"
-#include "io/osequencestream.hpp"
+#include "io/reads_io/osequencestream.hpp"
 #include "genome_consistance_checker.hpp"
 #include <stack>
 #include <algorithm>

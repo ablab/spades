@@ -6,8 +6,8 @@
 //***************************************************************************
 
 #include "standard.hpp"
-#include "io/easy_reader.hpp"
-#include "io/vector_reader.hpp"
+#include "io/reads_io/easy_reader.hpp"
+#include "io/reads_io/vector_reader.hpp"
 #include "dataset_readers.hpp"
 #include "graph_pack.hpp"
 #include "read_converter.hpp"

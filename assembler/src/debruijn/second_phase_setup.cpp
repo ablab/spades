@@ -12,7 +12,7 @@
 
 #include "utils.hpp"
 #include "stats/debruijn_stats.hpp"
-#include "io/library.hpp"
+#include "io_impl/library.hpp"
 #include "is_counter.hpp"
 #include "pair_info_count.hpp"
 #include "sequence_mapper.hpp"

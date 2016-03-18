@@ -9,7 +9,7 @@
 #include "pacbio/pac_index.hpp"
 #include "pacbio/pacbio_gap_closer.hpp"
 #include "long_read_storage.hpp"
-#include "io/wrapper_collection.hpp"
+#include "io/reads_io/wrapper_collection.hpp"
 #include "stats/debruijn_stats.hpp"
 #include "pacbio_aligning.hpp"
 

@@ -9,7 +9,7 @@
 
 #include "standard.hpp"
 #include "simplification/path_processor.hpp"
-#include "io/modifying_reader_wrapper.hpp"
+#include "io/reads_io/modifying_reader_wrapper.hpp"
 
 namespace debruijn_graph {
 

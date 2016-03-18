@@ -8,7 +8,7 @@
 //***************************************************************************
 
 #include "graph_support/graph_component.hpp"
-#include "omni/mapping_path.hpp"
+#include "graph_alignment/mapping_path.hpp"
 #include "visualization/printing_parameter_storage.hpp"
 //#include "edges_position_handler.hpp"
 

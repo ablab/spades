@@ -14,7 +14,7 @@
 #include "adapter_index.hpp"
 #include "output.hpp"
 #include "io/read_processor.hpp"
-#include "io/library.hpp"
+#include "io_impl/library.hpp"
 #include "logger/log_writers.hpp"
 #include "job_wrappers.hpp"
 #include "brute_force_clean.hpp"

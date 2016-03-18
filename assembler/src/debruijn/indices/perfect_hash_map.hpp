@@ -9,7 +9,7 @@
 #include "openmp_wrapper.h"
 #include "standard.hpp"
 
-#include "io/io_helper.hpp"
+#include "io/reads_io/io_helper.hpp"
 
 #include "mph_index/kmer_index.hpp"
 #include "adt/kmer_vector.hpp"
@@ -25,7 +25,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstdint>
-#include <io/kmer_iterator.hpp>
+#include <io/kmers_io/kmer_iterator.hpp>
 
 namespace debruijn_graph {
 

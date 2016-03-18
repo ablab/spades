@@ -9,10 +9,10 @@
 #include "simple_tools.hpp"
 #include "logger/log_writers.hpp"
 
-#include "path_helper.hpp"
-#include "io/file_reader.hpp"
-#include "io/wrapper_collection.hpp"
-#include "io/osequencestream.hpp"
+#include "io_impl/path_helper.hpp"
+#include "io/reads_io/file_reader.hpp"
+#include "io/reads_io/wrapper_collection.hpp"
+#include "io/reads_io/osequencestream.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);

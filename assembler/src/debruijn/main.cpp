@@ -12,19 +12,8 @@
 #include "logger/log_writers.hpp"
 
 #include "segfault_handler.hpp"
-#include "stacktrace.hpp"
 #include "launch.hpp"
-#include "memory_limit.hpp"
-#include "copy_file.hpp"
-#include "perfcounter.hpp"
-#include "runtime_k.hpp"
-
-#include "config_struct.hpp"
-#include "version.hpp"
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include "io_impl/copy_file.hpp"
 
 void link_output(std::string const& link_name) {
   if (!cfg::get().run_mode)

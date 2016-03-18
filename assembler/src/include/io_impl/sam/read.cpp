@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include <io/sam/read.hpp>
+#include <io/sam_io/read.hpp>
 
 using namespace std;
 

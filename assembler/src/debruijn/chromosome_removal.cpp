@@ -6,7 +6,7 @@
 
 #include "standard.hpp"
 #include "simplification/graph_simplification.hpp"
-#include "omni/ec_threshold_finder.hpp"
+#include "simplification/ec_threshold_finder.hpp"
 #include "graph_support/basic_graph_stats.hpp"
 
 #include "chromosome_removal.hpp"

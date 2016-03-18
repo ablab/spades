@@ -6,17 +6,16 @@
 //***************************************************************************
 
 #include "kmer_data.hpp"
-#include "io/read_processor.hpp"
+#include "io/reads_io/read_processor.hpp"
 #include "valid_kmer_generator.hpp"
 
-#include "io/mmapped_writer.hpp"
-#include "io/ireadstream.hpp"
-#include "io/kmer_iterator.hpp"
+#include "io/reads_io/ireadstream.hpp"
 #include "config_struct_hammer.hpp"
 
 #include "file_limit.hpp"
 
 #include <libcxx/sort.hpp>
+#include "io/kmers_io/kmer_iterator.hpp"
 
 using namespace hammer;
 

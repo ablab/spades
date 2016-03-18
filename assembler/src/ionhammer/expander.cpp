@@ -11,7 +11,7 @@
 #include "kmer_data.hpp"
 #include "valid_hkmer_generator.hpp"
 
-#include "io/file_reader.hpp"
+#include "io/reads_io/file_reader.hpp"
 
 #include <vector>
 #include <cstring>

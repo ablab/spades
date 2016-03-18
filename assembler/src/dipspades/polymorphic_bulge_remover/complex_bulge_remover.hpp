@@ -7,19 +7,19 @@
 
 #pragma once
 
-#include "../../debruijn/config_struct.hpp"
-#include "../../debruijn/graphio.hpp"
-#include "../../debruijn/construction.hpp"
+#include "config_struct.hpp"
+#include "graphio.hpp"
+#include "construction.hpp"
 
-#include "../utils/path_routines.hpp"
-#include "../utils/element_printers.hpp"
-#include "../utils/histogram.hpp"
+#include "utils/path_routines.hpp"
+#include "utils/element_printers.hpp"
+#include "utils/histogram.hpp"
 
 #include "bulge_correction_condition.hpp"
 #include "bulge_gluer.hpp"
 #include "diploid_bulge_finder.hpp"
 
-#include "../../include/io/splitting_wrapper.hpp"
+#include "io/reads_io/splitting_wrapper.hpp"
 
 #include <stdlib.h>
 #include <memory.h>

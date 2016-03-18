@@ -9,8 +9,8 @@
 
 #include "logger/logger.hpp"
 #include "simple_tools.hpp"
-#include "io/io_helper.hpp"
-#include "io/library.hpp"
+#include "io/reads_io/io_helper.hpp"
+#include "io_impl/library.hpp"
 
 #include "config_struct.hpp"
 

@@ -8,7 +8,7 @@
 #ifndef CONCURRENTDSU_HPP_
 #define CONCURRENTDSU_HPP_
 
-#include "io/mmapped_writer.hpp"
+#include "io/kmers_io/mmapped_writer.hpp"
 
 #include <cassert>
 #include <cmath>

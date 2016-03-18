@@ -10,9 +10,9 @@
 #include "contig_processor.hpp"
 #include "config_struct.hpp"
 
-#include "io/file_reader.hpp"
-#include "path_helper.hpp"
-#include "io/osequencestream.hpp"
+#include "io/reads_io/file_reader.hpp"
+#include "io_impl/path_helper.hpp"
+#include "io/reads_io/osequencestream.hpp"
 #include "openmp_wrapper.h"
 
 #include <boost/algorithm/string.hpp>

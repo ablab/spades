@@ -6,7 +6,7 @@
 //***************************************************************************
 
 
-#include "io/splitting_wrapper.hpp"
+#include "io/reads_io/splitting_wrapper.hpp"
 #include "graph_construction.hpp"
 #include "stage.hpp"
 

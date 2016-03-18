@@ -10,10 +10,10 @@
 #include "openmp_wrapper.h"
 #include "standard.hpp"
 
-#include "io/paired_read.hpp"
+#include "io/reads/paired_read.hpp"
 #include "visualization/graph_colorer.hpp"
 #include "omni/id_track_handler.hpp"
-#include "omni/splitters.hpp"
+#include "graph_support/splitters.hpp"
 #include "simplification/path_processor.hpp"
 
 #include "logger/logger.hpp"
@@ -22,7 +22,7 @@
 
 #include "runtime_k.hpp"
 
-#include "path_helper.hpp"
+#include "io_impl/path_helper.hpp"
 
 #include "assembly_graph/debruijn_graph.hpp"
 #include "indices/perfect_hash_map.hpp"

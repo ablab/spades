@@ -13,7 +13,7 @@
 #include "segfault_handler.hpp"
 #include "stacktrace.hpp"
 #include "memory_limit.hpp"
-#include "copy_file.hpp"
+#include "io_impl/copy_file.hpp"
 #include "perfcounter.hpp"
 #include "runtime_k.hpp"
 #include "scaffold_correction.hpp"

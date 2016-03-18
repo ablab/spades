@@ -1,5 +1,7 @@
 #pragma once
 
+#include "directions.hpp"
+
 namespace omnigraph {
 template<class Graph>
 class UniquePathFinder {

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <include/func.hpp>
+#include "func.hpp"
 #include <boost/none.hpp>
 #include "assembly_graph/graph_iterators.hpp"
 #include "graph_component.hpp"

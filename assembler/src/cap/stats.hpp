@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include <include/graph_support/component_filters.hpp>
-#include <include/graph_support/graph_component.hpp>
-#include <include/omni/splitters.hpp>
-#include <utils.hpp>
+#include "graph_support/component_filters.hpp"
+#include "graph_support/graph_component.hpp"
+#include "omni/splitters.hpp"
+#include "utils.hpp"
 #include "simple_tools.hpp"
 #include "comparison_utils.hpp"
 #include "graph_support/basic_graph_stats.hpp"

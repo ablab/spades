@@ -8,7 +8,7 @@
 #pragma once
 
 #include "adt/queue_iterator.hpp"
-#include "io/read_processor.hpp"
+#include "io/reads_io/read_processor.hpp"
 #include "pred.hpp"
 #include "action_handlers.hpp"
 #include "simple_tools.hpp"

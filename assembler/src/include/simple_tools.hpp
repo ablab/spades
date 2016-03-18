@@ -20,8 +20,8 @@
 #include <unistd.h>
 
 #include "verify.hpp"
-#include "io/ireader.hpp"
-#include "path_helper.hpp"
+#include "io/reads_io/ireader.hpp"
+#include "io_impl/path_helper.hpp"
 #include <memory>
 #include <string>
 #include <set>

@@ -8,7 +8,7 @@
 #include "hamcluster.hpp"
 
 #include "adt/concurrent_dsu.hpp"
-#include "io/mmapped_reader.hpp"
+#include "io/kmers_io/mmapped_reader.hpp"
 #include "parallel_radix_sort.hpp"
 
 #include "config_struct_hammer.hpp"

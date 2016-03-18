@@ -22,8 +22,8 @@
 
 #include "adt/concurrent_dsu.hpp"
 #include "segfault_handler.hpp"
-#include "io/read_processor.hpp"
-#include "io/ireadstream.hpp"
+#include "io/reads_io/read_processor.hpp"
+#include "io/reads_io/ireadstream.hpp"
 
 #include "memory_limit.hpp"
 

@@ -9,9 +9,9 @@
 #include "config_struct.hpp"
 #include "valid_hkmer_generator.hpp"
 
-#include "io/mmapped_writer.hpp"
-#include "io/file_reader.hpp"
-#include "io/read_processor.hpp"
+#include "io/kmers_io/mmapped_writer.hpp"
+#include "io/reads_io/file_reader.hpp"
+#include "io/reads_io/read_processor.hpp"
 
 #include <libcxx/sort.hpp>
 

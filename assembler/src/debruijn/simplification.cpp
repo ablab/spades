@@ -5,13 +5,13 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include <include/graph_support/basic_graph_stats.hpp>
+#include "graph_support/basic_graph_stats.hpp"
 #include "graph_support/graph_processing_algorithm.hpp"
 #include "standard.hpp"
 #include "simplification/simplification_settings.hpp"
 #include "simplification/graph_simplification.hpp"
 #include "simplification/parallel_simplification_algorithms.hpp"
-#include "graph_support/basic_graph_stats.hpp"
+#include "graph_support/comparators.hpp"
 
 #include "simplification.hpp"
 

@@ -27,7 +27,7 @@
 #define COMMON_IO_PARSER_HPP
 
 #include <string>
-#include "io/single_read.hpp"
+#include "io/reads/single_read.hpp"
 
 namespace io {
 

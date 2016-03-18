@@ -9,7 +9,7 @@
 
 #include <bits/stl_map.h>
 #include <bits/stl_queue.h>
-#include <include/omni/splitters.hpp>
+#include "graph_support/splitters.hpp"
 #include "cleaner.hpp"
 #include "graph_support/graph_processing_algorithm.hpp"
 

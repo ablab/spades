@@ -1,7 +1,7 @@
 #ifndef __IO_KMER_ITERATOR_HPP__
 #define __IO_KMER_ITERATOR_HPP__
 
-#include "io/mmapped_reader.hpp"
+#include "io/kmers_io/mmapped_reader.hpp"
 #include <string>
 
 namespace io {

@@ -8,8 +8,8 @@
 #pragma once
 
 #include "read_stream_vector.hpp"
-#include "single_read.hpp"
-#include "paired_read.hpp"
+#include "io/reads/single_read.hpp"
+#include "io/reads/paired_read.hpp"
 #include "file_reader.hpp"
 #include "paired_readers.hpp"
 #include "binary_streams.hpp"

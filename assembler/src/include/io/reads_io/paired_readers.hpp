@@ -9,7 +9,7 @@
 
 #include <string>
 #include "ireader.hpp"
-#include "paired_read.hpp"
+#include "io/reads/paired_read.hpp"
 #include "orientation.hpp"
 
 namespace io {

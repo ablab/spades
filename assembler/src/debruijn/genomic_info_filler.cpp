@@ -9,13 +9,8 @@
 
 #include "graph_pack.hpp"
 #include "kmer_coverage_model.hpp"
-#include "omni/ec_threshold_finder.hpp"
-#include "../include/config_singl.hpp"
+#include "simplification/ec_threshold_finder.hpp"
 
-#include <yaml-cpp/yaml.h>
-
-#include <map>
-#include <vector>
 
 using namespace debruijn_graph;
 

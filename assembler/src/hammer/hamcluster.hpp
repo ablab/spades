@@ -10,7 +10,7 @@
 
 #include "kmer_stat.hpp"
 #include "kmer_data.hpp"
-#include "io/mmapped_reader.hpp"
+#include "io/kmers_io/mmapped_reader.hpp"
 
 #include "logger/logger.hpp"
 #include "sequence/seq.hpp"

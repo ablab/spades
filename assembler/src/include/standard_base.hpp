@@ -89,7 +89,7 @@ using boost::noncopyable;
 #include "stacktrace.hpp"
 
 // path manipulation instead of boost filesystem
-#include "path_helper.hpp"
+#include "io_impl/path_helper.hpp"
 using path::make_dir;
 using path::remove_dir;
 

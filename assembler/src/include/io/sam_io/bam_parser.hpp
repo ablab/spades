@@ -8,8 +8,8 @@
 #ifndef COMMON_IO_BAMPARSER_HPP
 #define COMMON_IO_BAMPARSER_HPP
 
-#include "io/single_read.hpp"
-#include "io/parser.hpp"
+#include "io/reads/single_read.hpp"
+#include "io/reads_io/parser.hpp"
 #include "sequence/quality.hpp"
 #include "sequence/nucl.hpp"
 #include "verify.hpp"

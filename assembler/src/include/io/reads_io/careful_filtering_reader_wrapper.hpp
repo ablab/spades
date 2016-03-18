@@ -6,8 +6,8 @@
 //***************************************************************************
 #pragma once
 //todo rename file
-#include "io/delegating_reader_wrapper.hpp"
-#include "library.hpp"
+#include "io/reads_io/delegating_reader_wrapper.hpp"
+#include "io_impl/library.hpp"
 
 namespace io {
 
