@@ -12,7 +12,7 @@
 #include "../errors.hpp"
 #include "../argument_list.hpp"
 #include "modules"
-#include "sequence_mapper.hpp"
+#include "graph_alignment/sequence_mapper.hpp"
 #include "io/single_read.hpp"
 
 namespace online_visualization {

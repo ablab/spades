@@ -14,8 +14,8 @@
 #include "de/smoothing_distance_estimation.hpp"
 #include "path_extend/path_extend_launch.hpp"
 #include "contig_output.hpp"
-#include "positions.hpp"
-#include "long_read_storage.hpp"
+#include "graph_support/positions.hpp"
+#include "graph_alignment/long_read_storage.hpp"
 #include "repeat_resolving.hpp"
 
 namespace debruijn_graph {

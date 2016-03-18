@@ -7,7 +7,7 @@
 
 #include "gap_closer.hpp"
 #include "simplification/compressor.hpp"
-#include "read_converter.hpp"
+#include "io/dataset_support/read_converter.hpp"
 #include "adt/kmer_set.hpp"
 #include <stack>
 

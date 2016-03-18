@@ -18,7 +18,7 @@
 #include "sequence/runtime_k.hpp"
 #include "scaffold_correction.hpp"
 
-#include "config_struct.hpp"
+#include "pipeline/config_struct.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>

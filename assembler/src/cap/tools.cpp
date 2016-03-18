@@ -7,7 +7,7 @@
 
 #include "compare_standard.hpp"
 #include "logger/log_writers.hpp"
-#include "graphio.hpp"
+#include "pipeline/graphio.hpp"
 #include <boost/test/unit_test.hpp>
 
 #include "comparison_utils.hpp"

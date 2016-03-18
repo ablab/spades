@@ -8,7 +8,7 @@
 
 #include "io/reads_io/splitting_wrapper.hpp"
 #include "graph_construction.hpp"
-#include "stage.hpp"
+#include "pipeline/stage.hpp"
 
 #include "dipspades_config.hpp"
 

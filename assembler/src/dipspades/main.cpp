@@ -19,9 +19,9 @@
 #include "sequence/runtime_k.hpp"
 
 
-#include "graph_pack.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "construction.hpp"
-#include "stage.hpp"
+#include "pipeline/stage.hpp"
 
 #include "dipspades.hpp"
 #include "dipspades_config.hpp"

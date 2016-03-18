@@ -6,9 +6,10 @@
 //***************************************************************************
 
 #include "dataset_processor.hpp"
-#include "config_struct.hpp"
+#include "pipeline/config_struct.hpp"
 
 #include "logger/log_writers.hpp"
+#include "config_struct.hpp"
 #include "dev_support/segfault_handler.hpp"
 
 #include "version.hpp"

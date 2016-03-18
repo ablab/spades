@@ -10,7 +10,7 @@
 #include "graph_simplification.hpp"
 
 #include "compare_standard.hpp"
-#include "graphio.hpp"
+#include "pipeline/graphio.hpp"
 
 #include "comparison_utils.hpp"
 #include "diff_masking.hpp"
@@ -23,7 +23,7 @@
 
 #include "cap_environment.hpp"
 #include "io/sequence_reader.hpp"
-#include "config_struct.hpp"
+#include "pipeline/config_struct.hpp"
 #include "junk_cropping_reader.hpp"
 
 namespace online_visualization {

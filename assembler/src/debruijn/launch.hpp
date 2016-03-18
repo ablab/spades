@@ -9,11 +9,11 @@
 
 #include "standard.hpp"
 
-#include "config_struct.hpp"
+#include "pipeline/config_struct.hpp"
 
-#include "graph_pack.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "construction.hpp"
-#include "genomic_info_filler.hpp"
+#include "pipeline/genomic_info_filler.hpp"
 #include "gap_closer.hpp"
 #include "simplification.hpp"
 #include "mismatch_correction.hpp"
@@ -23,7 +23,7 @@
 #include "distance_estimation.hpp"
 #include "pacbio_aligning.hpp"
 #include "chromosome_removal.hpp"
-#include "stage.hpp"
+#include "pipeline/stage.hpp"
 
 namespace spades {
 

@@ -13,7 +13,7 @@
 #include "dev_support/segfault_handler.hpp"
 #include "dev_support/memory_limit.hpp"
 #include "io_impl/copy_file.hpp"
-#include "config_struct.hpp"
+#include "pipeline/config_struct.hpp"
 #include "analysis_pipeline.hpp"
 
 void link_output(std::string const& link_name) {

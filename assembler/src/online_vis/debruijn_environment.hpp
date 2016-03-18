@@ -8,7 +8,7 @@
 #pragma once
 
 #include "environment.hpp"
-#include "graphio.hpp"
+#include "pipeline/graphio.hpp"
 namespace online_visualization {
 
 class DebruijnEnvironment : public Environment {

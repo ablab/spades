@@ -9,7 +9,7 @@
 #include "seq.hpp"
 #include "nucl.hpp"
 #include "constructHashTable.hpp"
-#include "graphio.hpp"
+#include "pipeline/graphio.hpp"
 
 void TestEmptyDecompress() {
 	ASSERT_EQUAL(decompress(0, 0), "");

@@ -13,14 +13,14 @@
 #include "../online_vis/standard_vis.hpp"
 #include "dev_support/segfault_handler.hpp"
 #include "dev_support/stacktrace.hpp"
-#include "config_struct.hpp"
+#include "pipeline/config_struct.hpp"
 #include "io/io_helper.hpp"
 #include "dev_support/simple_tools.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include "dev_support/memory_limit.hpp"
-#include "read_converter.hpp"
+#include "io/dataset_support/read_converter.hpp"
 
 #include "cap_online_visualizer.hpp"
 

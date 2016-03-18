@@ -5,12 +5,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "config_struct.hpp"
+#include "pipeline/config_struct.hpp"
 
 #include "dev_support/openmp_wrapper.h"
-
-#include <yaml-cpp/yaml.h>
-#include <string>
+#include "config_struct.hpp"
 
 namespace YAML {
 template<>

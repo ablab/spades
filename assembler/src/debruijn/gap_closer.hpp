@@ -14,7 +14,7 @@
 #ifndef GAP_CLOSER_HPP_
 #define GAP_CLOSER_HPP_
 
-#include "stage.hpp"
+#include "pipeline/stage.hpp"
 
 namespace debruijn_graph {
 

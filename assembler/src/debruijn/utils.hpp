@@ -26,7 +26,7 @@
 
 #include "assembly_graph/debruijn_graph.hpp"
 #include "indices/perfect_hash_map.hpp"
-#include "edge_index.hpp"
+#include "graph_alignment/edge_index.hpp"
 
 #include <iostream>
 

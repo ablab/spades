@@ -8,12 +8,6 @@
 project(online_vis CXX)
 
 add_executable(online_vis
-               ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
-               ${CMAKE_SOURCE_DIR}/debruijn/config_struct.cpp
-               ${CMAKE_SOURCE_DIR}/debruijn/stage.cpp
-               ${CMAKE_SOURCE_DIR}/debruijn/genomic_info_filler.cpp
-               ${CMAKE_SOURCE_DIR}/debruijn/path_extend/pe_config_struct.cpp
-               ${CMAKE_SOURCE_DIR}/debruijn/genome_storage.cpp
                autocompletion.cpp
                main.cpp)
 
@@ -31,11 +25,11 @@ include_directories(./drawing_commands)
 include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 
 if (READLINE_FOUND AND CURSES_FOUND)
-  target_link_libraries(online_vis input nlopt cityhash format ${COMMON_LIBRARIES} ${READLINE_LIBRARY} ${CURSES_NCURSES_LIBRARY})
+  target_link_libraries(online_vis spades_modules nlopt cityhash format ${COMMON_LIBRARIES} ${READLINE_LIBRARY} ${CURSES_NCURSES_LIBRARY})
 elseif (READLINE_FOUND)
-  target_link_libraries(online_vis input nlopt cityhash format ${COMMON_LIBRARIES} ${READLINE_LIBRARY})
+  target_link_libraries(online_vis spades_modules nlopt cityhash format ${COMMON_LIBRARIES} ${READLINE_LIBRARY})
 else()
-  target_link_libraries(online_vis input nlopt cityhash format ${COMMON_LIBRARIES})
+  target_link_libraries(online_vis spades_modules nlopt cityhash format ${COMMON_LIBRARIES})
 endif()
 
 if (DEFINED static_build)

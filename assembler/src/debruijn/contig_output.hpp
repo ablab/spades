@@ -9,7 +9,7 @@
 
 #include "standard.hpp"
 #include "utils.hpp"
-#include "connected_component.hpp"
+#include "graph_support/connected_component.hpp"
 
 namespace debruijn_graph {
 

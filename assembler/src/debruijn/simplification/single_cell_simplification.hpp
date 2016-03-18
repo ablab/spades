@@ -1,10 +1,10 @@
 #pragma once
 
-#include "config_struct.hpp"
+#include "pipeline/config_struct.hpp"
 #include "simplification/erroneous_connection_remover.hpp"
 #include "simplification/mf_ec_remover.hpp"
 #include "simplification_settings.hpp"
-#include "detail_coverage.hpp"
+#include "graph_support/detail_coverage.hpp"
 
 namespace debruijn {
 namespace simplification {

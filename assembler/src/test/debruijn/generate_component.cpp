@@ -9,8 +9,8 @@
 #include "dev_support/simple_tools.hpp"
 #include "logger/log_writers.hpp"
 
-#include "graphio.hpp"
-#include "graph_pack.hpp"
+#include "pipeline/graphio.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "stats/debruijn_stats.hpp"
 
 void create_console_logger() {

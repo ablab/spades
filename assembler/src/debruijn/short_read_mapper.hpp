@@ -15,7 +15,7 @@
 #pragma once
 
 
-#include "sequence_mapper.hpp"
+#include "graph_alignment/sequence_mapper.hpp"
 #include "pacbio/pac_index.hpp"
 
 namespace debruijn_graph {

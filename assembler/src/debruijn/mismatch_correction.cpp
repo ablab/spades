@@ -8,7 +8,7 @@
 #include "mismatch_correction.hpp"
 
 #include "mismatch_shall_not_pass.hpp"
-#include "read_converter.hpp"
+#include "io/dataset_support/read_converter.hpp"
 
 namespace debruijn_graph {
 

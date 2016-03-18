@@ -12,7 +12,7 @@
 #include "logger/logger.hpp"
 
 #include "sequence/runtime_k.hpp"
-#include "sequence_mapper.hpp"
+#include "graph_alignment/sequence_mapper.hpp"
 
 namespace debruijn_graph {
 

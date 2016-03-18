@@ -6,11 +6,11 @@
 
 #pragma once
 #include "io/reads_io/osequencestream.hpp"
-#include "stage.hpp"
-#include "graph_pack.hpp"
+#include "pipeline/stage.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "simplification/path_processor.hpp"
 #include "construction.hpp"
-#include "config_struct.hpp"
+#include "pipeline/config_struct.hpp"
 #include "dijkstra/dijkstra_algorithm.hpp"
 #include "dijkstra/dijkstra_helper.hpp"
 #include "graph_support/basic_graph_stats.hpp"

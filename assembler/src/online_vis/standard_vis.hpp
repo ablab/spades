@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "graph_pack.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "dev_support/standard_base.hpp"
 
 #include <readline/readline.h>

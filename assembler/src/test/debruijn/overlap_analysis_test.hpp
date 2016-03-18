@@ -2,7 +2,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include "overlap_analysis.hpp"
-#include "../../debruijn/path_extend/path_extender.hpp"
+#include "path_extend/path_extender.hpp"
 //#include "repeat_resolving_routine.hpp"
 
 namespace debruijn_graph {

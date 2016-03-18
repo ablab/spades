@@ -6,16 +6,13 @@
 //***************************************************************************
 
 #include "standard.hpp"
-#include "io/reads_io/easy_reader.hpp"
 #include "io/reads_io/vector_reader.hpp"
-#include "dataset_readers.hpp"
-#include "graph_pack.hpp"
-#include "read_converter.hpp"
-#include "visualization/graph_labeler.hpp"
+#include "io/dataset_support/dataset_readers.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "io/dataset_support/read_converter.hpp"
 
 #include "graph_construction.hpp"
 #include "stats/debruijn_stats.hpp"
-#include "positions.hpp"
 #include "construction.hpp"
 
 namespace debruijn_graph {

@@ -5,23 +5,15 @@
 //***************************************************************************
 
 #include "standard.hpp"
-#include "dataset_readers.hpp"
-#include "read_converter.hpp"
+#include "io/dataset_support/dataset_readers.hpp"
+#include "io/dataset_support/read_converter.hpp"
 
 #include "de/paired_info.hpp"
 
 #include "utils.hpp"
 #include "stats/debruijn_stats.hpp"
-#include "io_impl/library.hpp"
-#include "is_counter.hpp"
 #include "pair_info_count.hpp"
-#include "sequence_mapper.hpp"
-#include "short_read_mapper.hpp"
-#include "long_read_mapper.hpp"
-#include "pair_info_filler.hpp"
 #include "second_phase_setup.hpp"
-#include "stats/debruijn_stats.hpp"
-#include "path_extend/split_graph_pair_info.hpp"
 
 
 namespace debruijn_graph {

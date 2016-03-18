@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "graphio.hpp"
+#include "pipeline/graphio.hpp"
 #include "dev_support/simple_tools.hpp"
 #include "assembly_graph/debruijn_graph.hpp"
 #include "coordinates_handler.hpp"
@@ -15,10 +15,10 @@
 #include <iostream>
 #include <vector>
 #include "logger/logger.hpp"
-#include "io/multifile_reader.hpp"
-#include "io/splitting_wrapper.hpp"
-#include "io/modifying_reader_wrapper.hpp"
-#include "io/vector_reader.hpp"
+#include "io/reads_io/multifile_reader.hpp"
+#include "io/reads_io/splitting_wrapper.hpp"
+#include "io/reads_io/modifying_reader_wrapper.hpp"
+#include "io/reads_io/vector_reader.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 

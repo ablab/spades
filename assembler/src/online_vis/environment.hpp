@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "graph_pack.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "visualization/visualization_utils.hpp"
 #include "standard_vis.hpp"
 #include "positions.hpp"

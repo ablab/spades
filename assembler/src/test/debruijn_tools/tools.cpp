@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "logger/log_writers.hpp"
-#include "graphio.hpp"
+#include "pipeline/graphio.hpp"
 #include <boost/test/unit_test.hpp>
 
 ::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )

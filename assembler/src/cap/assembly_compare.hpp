@@ -9,12 +9,12 @@
 
 #include "standard.hpp"
 #include "utils.hpp"
-#include "graph_pack.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "dev_support/simple_tools.hpp"
 #include "simplification/cleaner.hpp"
 #include "stats/debruijn_stats.hpp"
-#include "io/splitting_wrapper.hpp"
-#include "io/multifile_reader.hpp"
+#include "io/reads_io/splitting_wrapper.hpp"
+#include "io/reads_io/multifile_reader.hpp"
 #include <boost/algorithm/string/predicate.hpp>
 
 #include "coloring.hpp"

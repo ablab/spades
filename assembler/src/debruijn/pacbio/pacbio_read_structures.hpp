@@ -14,7 +14,7 @@
 #pragma once
 
 #include "indices/perfect_hash_map.hpp"
-#include "graph_pack.hpp"
+#include "pipeline/graph_pack.hpp"
 #include <algorithm>
 using std::map;
 using std::set;

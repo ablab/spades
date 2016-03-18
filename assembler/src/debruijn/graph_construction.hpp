@@ -21,13 +21,13 @@
 #include "debruijn_graph_constructor.hpp"
 #include "indices/edge_index_builders.hpp"
 #include "assembly_graph/debruijn_graph.hpp"
-#include "graph_pack.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "utils.hpp"
 #include "dev_support/perfcounter.hpp"
 #include "early_simplification.hpp"
 
-#include "read_converter.hpp"
-#include "detail_coverage.hpp"
+#include "io/dataset_support/read_converter.hpp"
+#include "graph_support/detail_coverage.hpp"
 #include "indices/storing_traits.hpp"
 
 namespace debruijn_graph {

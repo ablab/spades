@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "config_struct.hpp"
-#include "graphio.hpp"
+#include "pipeline/config_struct.hpp"
+#include "pipeline/graphio.hpp"
 #include "construction.hpp"
 
 #include "utils/path_routines.hpp"

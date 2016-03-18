@@ -10,7 +10,7 @@
 
 //#include "launch.hpp"
 #include "graph_construction.hpp"
-#include "graph_pack.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "io/reads_io/rc_reader_wrapper.hpp"
 #include "io/reads_io/vector_reader.hpp"
 #include "io/reads_io/converting_reader_wrapper.hpp"
@@ -18,7 +18,7 @@
 #include "dev_support/simple_tools.hpp"
 #include "de/paired_info_helpers.hpp"
 
-#include "sequence_mapper_notifier.hpp"
+#include "graph_alignment/sequence_mapper_notifier.hpp"
 #include "pair_info_filler.hpp"
 
 #include <boost/test/unit_test.hpp>

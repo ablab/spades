@@ -8,7 +8,7 @@
 #pragma once
 
 #include "standard.hpp"
-#include "graph_pack.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "path_utils.hpp"
 #include "split_path_constructor.hpp"
 #include "de/paired_info_helpers.hpp"

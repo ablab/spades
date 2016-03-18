@@ -43,5 +43,5 @@ typedef io::ReadStreamList<Contig> ContigStreams;
 
 // debruijn
 #include "assembly_graph/debruijn_graph.hpp"
-#include "graph_pack.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "graph_construction.hpp"

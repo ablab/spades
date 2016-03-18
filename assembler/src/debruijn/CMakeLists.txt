@@ -8,18 +8,6 @@
 project(spades CXX)
 
 add_library(debruijn STATIC
-            kmer_coverage_model.cpp
-            config_struct.cpp
-            path_extend/pe_config_struct.cpp
-            path_extend/bidirectional_path.cpp
-            path_extend/scaffolder2015/scaff_supplementary.cpp
-            path_extend/scaffolder2015/extension_chooser2015.cpp
-            path_extend/scaffolder2015/scaffold_graph.cpp
-            path_extend/scaffolder2015/scaffold_graph_constructor.cpp
-            path_extend/scaffolder2015/scaffold_graph_visualizer.cpp
-            path_extend/scaffolder2015/connection_condition2015.cpp
-            genome_consistance_checker.cpp
-            stage.cpp
             construction.cpp
             gap_closer.cpp
             simplification.cpp
@@ -28,15 +16,12 @@ add_library(debruijn STATIC
             second_phase_setup.cpp
             distance_estimation.cpp
             repeat_resolving.cpp
-            genomic_info_filler.cpp
             pacbio_aligning.cpp
             bwa_pair_info_filler.cpp
-            chromosome_removal.cpp
-            connected_component.cpp
-            genome_storage.cpp)
+            chromosome_removal.cpp)
   
 target_include_directories(debruijn PRIVATE ${EXT_DIR}/include/ConsensusCore)
-target_link_libraries(debruijn ConsensusCore input cityhash nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(debruijn ConsensusCore spades_modules cityhash nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
 add_executable(spades
                main.cpp)

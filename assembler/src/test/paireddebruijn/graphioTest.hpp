@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "graphio.hpp"
+#include "pipeline/graphio.hpp"
 #include "common.hpp"
 #include "pairedGraph.hpp"
 #include "cute.h"

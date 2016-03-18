@@ -17,7 +17,7 @@
 
 
 #include "de/insert_size_refiner.hpp"
-#include "sequence_mapper_notifier.hpp"
+#include "graph_alignment/sequence_mapper_notifier.hpp"
 
 namespace debruijn_graph {
 

@@ -7,7 +7,7 @@
 
 #include "standard.hpp"
 #include "assembly_graph/debruijn_graph.hpp"
-#include "config_struct.hpp"
+#include "pipeline/config_struct.hpp"
 
 #include <io/sam_io/sam_reader.hpp>
 #include <io/sam_io/read.hpp>

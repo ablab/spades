@@ -8,7 +8,7 @@
 #include "dev_support/standard_base.hpp"
 #include "logger/log_writers.hpp"
 
-#include "graphio.hpp"
+#include "pipeline/graphio.hpp"
 #include "test_utils.hpp"
 
 //headers with tests

@@ -5,9 +5,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "config_struct.hpp"
-
 #include "dev_support/openmp_wrapper.h"
+#include "config_struct.hpp"
 
 #include <yaml-cpp/yaml.h>
 #include <string>
