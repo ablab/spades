@@ -10,7 +10,7 @@
 
 #include "config/config_singl.hpp"
 #include <boost/property_tree/ptree_fwd.hpp>
-#include "io_impl/library.hpp"
+#include "pipeline/library.hpp"
 
 struct cclean_config {
 

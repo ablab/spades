@@ -9,7 +9,7 @@
 #include <vector>
 #include <set>
 #include "dev_support/verify.hpp"
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 #include "order_and_law.hpp"
 #include <boost/iterator/iterator_facade.hpp>
 #include "dev_support/simple_tools.hpp"

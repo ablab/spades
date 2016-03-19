@@ -8,7 +8,7 @@
 #include "pipeline/stage.hpp"
 #include "pipeline/graphio.hpp"
 
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/log_writers.hpp"
 
 #include <algorithm>
 #include <cstring>

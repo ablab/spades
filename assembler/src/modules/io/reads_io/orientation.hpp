@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "io_impl/library.hpp"
+#include "pipeline/library.hpp"
 
 namespace io {
 

@@ -1,8 +1,8 @@
 
 #ifndef CONNECTION_CONDITION2015_HPP
 #define CONNECTION_CONDITION2015_HPP
-#include "graph_support/genome_consistance_checker.hpp"
-#include "logger/logger.hpp"
+#include "algorithms/genome_consistance_checker.hpp"
+#include "dev_support/logger/logger.hpp"
 #include "path_extend/paired_library.hpp"
 #include "graph_support/scaff_supplementary.hpp"
 #include <map>

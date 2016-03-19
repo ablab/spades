@@ -89,7 +89,7 @@ using boost::noncopyable;
 #include "dev_support/stacktrace.hpp"
 
 // path manipulation instead of boost filesystem
-#include "io_impl/path_helper.hpp"
+#include "dev_support/path_helper.hpp"
 using path::make_dir;
 using path::remove_dir;
 
@@ -137,6 +137,6 @@ inline void assertion_failed_msg(char const * expr, char const * msg,
 #include "dev_support/func.hpp"
 #include "dev_support/verify.hpp"
 // log
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 
 

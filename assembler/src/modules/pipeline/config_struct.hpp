@@ -13,7 +13,7 @@
 #include "sequence/sequence.hpp"
 #include "path_extend/pe_config_struct.hpp"
 
-#include "io_impl/library.hpp"
+#include "pipeline/library.hpp"
 #include "io/reads_io/binary_streams.hpp"
 #include "io/reads_io/rc_reader_wrapper.hpp"
 #include "io/reads_io/read_stream_vector.hpp"

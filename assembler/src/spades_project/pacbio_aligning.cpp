@@ -9,7 +9,7 @@
 #include "graph_alignment/pacbio/pacbio_gap_closer.hpp"
 #include "graph_alignment/long_read_storage.hpp"
 #include "io/reads_io/wrapper_collection.hpp"
-#include "graph_support/stats/debruijn_stats.hpp"
+#include "graph_support/stats/picture_dump.hpp"
 #include "pacbio_aligning.hpp"
 
 namespace debruijn_graph {

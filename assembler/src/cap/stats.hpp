@@ -8,8 +8,8 @@
 #pragma once
 
 #include "graph_support/component_filters.hpp"
-#include "graph_support/graph_component.hpp"
-#include "graph_support/splitters.hpp"
+#include "graph_support/components/graph_component.hpp"
+#include "graph_support/components/splitters.hpp"
 #include "utils.hpp"
 #include "dev_support/simple_tools.hpp"
 #include "comparison_utils.hpp"

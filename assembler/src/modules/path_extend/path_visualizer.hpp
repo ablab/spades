@@ -15,8 +15,8 @@
 #ifndef PATH_VISUALIZER_HPP_
 #define PATH_VISUALIZER_HPP_
 
-#include "graph_support/bidirectional_path.hpp"
-#include "graph_support/stats/debruijn_stats.hpp"
+#include "graph_support/paths/bidirectional_path.hpp"
+#include "graph_support/stats/picture_dump.hpp"
 
 namespace path_extend {
 

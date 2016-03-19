@@ -10,7 +10,7 @@
 #include "config/config_common.hpp"
 #include "dev_support/openmp_wrapper.h"
 
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 
 #include "io/reads_io/file_reader.hpp"
 

@@ -12,7 +12,7 @@
 #include "common.hpp"
 #include "hypergraph.hpp"
 
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 
 namespace emphf {
 

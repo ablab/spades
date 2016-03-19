@@ -10,9 +10,9 @@
 #include "dev_support/func.hpp"
 #include <boost/none.hpp>
 #include "assembly_graph/graph_iterators.hpp"
-#include "graph_component.hpp"
+#include "graph_support/components/graph_component.hpp"
 #include "math/pred.hpp"
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 
 namespace omnigraph {
 

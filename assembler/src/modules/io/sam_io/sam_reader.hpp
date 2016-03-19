@@ -8,7 +8,7 @@
 
 #include "read.hpp"
 
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/log_writers.hpp"
 
 #include <samtools/sam.h>
 #include <samtools/bam.h>

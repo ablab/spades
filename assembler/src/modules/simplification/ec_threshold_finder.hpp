@@ -10,16 +10,14 @@
 
 #include "dev_support/simple_tools.hpp"
 
-#include "io_impl/path_helper.hpp"
+#include "dev_support/path_helper.hpp"
 #include "graph_support/basic_edge_conditions.hpp"
 #include "graph_support/parallel_processing.hpp"
 #include "graph_support/basic_vertex_conditions.hpp"
-#include "graph_support/basic_graph_stats.hpp"
+#include "graph_support/stats/basic_graph_stats.hpp"
 
 #ifdef USE_GLIBCXX_PARALLEL
 #include "parallel/algorithm"
-#include "graph_support/basic_graph_stats.hpp"
-
 #endif
 
 namespace omnigraph {

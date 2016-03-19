@@ -5,8 +5,8 @@
 
 #include "path_extend/extension_chooser.hpp"
 #include "connection_condition2015.hpp"
-#include "graph_support/genome_consistance_checker.hpp"
-#include "logger/logger.hpp"
+#include "algorithms/genome_consistance_checker.hpp"
+#include "dev_support/logger/logger.hpp"
 #include <map>
 #include <set>
 namespace path_extend {

@@ -19,7 +19,7 @@
 
 #include "pipeline/graph_pack.hpp"
 #include "assembly_graph/graph.hpp"
-#include "graph_support/bidirectional_path.hpp"
+#include "graph_support/paths/bidirectional_path.hpp"
 #include "pe_utils.hpp"
 
 namespace path_extend {

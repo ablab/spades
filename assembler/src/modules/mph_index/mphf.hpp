@@ -5,7 +5,7 @@
 #include "bitpair_vector.hpp"
 #include "ranked_bitpair_vector.hpp"
 
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 
 namespace emphf {
 

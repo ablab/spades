@@ -44,7 +44,7 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 
     size_t max_mapping_gap_;
     size_t max_gap_diff_;
-	map<EdgeId, map<string, set<MappingRange>>> edges_positions_;
+	map<EdgeId, map<string, std::set<MappingRange>>> edges_positions_;
 	//TODO extract set<MappingRange> as a storage class
 
 	MappingRange EraseAndExtract(set<MappingRange> &ranges, set<MappingRange>::iterator &position, const MappingRange &new_pos) {

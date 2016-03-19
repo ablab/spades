@@ -16,12 +16,12 @@
 #include "paired_info/paired_info.hpp"
 #include "pipeline/config_struct.hpp"
 #include "graph_alignment/edge_index.hpp"
-#include "graph_support/genomic_quality.hpp"
+#include "graph_support/handlers/genomic_quality.hpp"
 #include "graph_alignment/sequence_mapper.hpp"
 #include "genomic_info.hpp"
 #include "graph_alignment/long_read_storage.hpp"
 #include "graph_support/detail_coverage.hpp"
-#include "graph_support/connected_component.hpp"
+#include "graph_support/components/connected_component.hpp"
 #include "graph_alignment/kmer_mapper.hpp"
 
 namespace debruijn_graph {

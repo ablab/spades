@@ -12,7 +12,7 @@
  */
 
 #include "dev_support/standard_base.hpp"
-#include "graph_support/bidirectional_path.hpp"
+#include "graph_support/paths/bidirectional_path.hpp"
 
 namespace path_extend {
 

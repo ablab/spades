@@ -9,7 +9,7 @@
 
 #include "paired_info/paired_info.hpp"
 
-#include "graph_support/stats/debruijn_stats.hpp"
+#include "graph_support/stats/picture_dump.hpp"
 #include "pair_info_count.hpp"
 #include "second_phase_setup.hpp"
 

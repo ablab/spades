@@ -13,18 +13,18 @@
 #include "pipeline/graph_pack.hpp"
 #include "graph_alignment/sequence_mapper.hpp"
 #include "pipeline/graphio.hpp"
-#include "graph_support/positions.hpp"
+#include "visualization/position_filler.hpp"
 
 #include "visualization/visualization.hpp"
 #include "graph_support/handlers/edges_position_handler.hpp"
-#include "graph_support/graph_component.hpp"
+#include "graph_support/components/graph_component.hpp"
 #include "io/reads_io/rc_reader_wrapper.hpp"
 #include "io/reads_io/delegating_reader_wrapper.hpp"
 #include "io/reads_io/io_helper.hpp"
 #include "io/reads_io/wrapper_collection.hpp"
 #include "io/reads_io/osequencestream.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
-#include "io_impl/copy_file.hpp"
+#include "dev_support/copy_file.hpp"
 
 #include <boost/algorithm/string.hpp>
 

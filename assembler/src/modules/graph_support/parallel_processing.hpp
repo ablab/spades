@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 #include "assembly_graph/graph_iterators.hpp"
 #include "graph_support/graph_processing_algorithm.hpp"
 

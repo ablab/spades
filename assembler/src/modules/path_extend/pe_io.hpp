@@ -9,10 +9,10 @@
 #define PE_IO_HPP_
 
 
-#include "graph_support/genome_consistance_checker.hpp"
-#include "graph_support/bidirectional_path.hpp"
+#include "algorithms/genome_consistance_checker.hpp"
+#include "graph_support/paths/bidirectional_path.hpp"
 #include <graph_support/contig_output.hpp>
-#include "graph_support/connected_component.hpp"
+#include "graph_support/components/connected_component.hpp"
 #include "io/reads_io/osequencestream.hpp"
 #include <stack>
 #include <algorithm>

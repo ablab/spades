@@ -12,8 +12,8 @@
 #include "graph_alignment/mapping_path.hpp"
 #include "sequence/sequence.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "graph_support/positions.hpp"
-#include "graph_support/bidirectional_path.hpp"
+#include "visualization/position_filler.hpp"
+#include "graph_support/paths/bidirectional_path.hpp"
 #include "graph_support/scaff_supplementary.hpp"
 
 namespace debruijn_graph {

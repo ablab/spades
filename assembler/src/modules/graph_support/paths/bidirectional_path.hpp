@@ -14,7 +14,7 @@
 #pragma once
 
 #include "assembly_graph/graph.hpp"
-#include "graph_support/connected_component.hpp"
+#include "graph_support/components/connected_component.hpp"
 
 using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;

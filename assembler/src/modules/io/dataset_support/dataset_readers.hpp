@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 #include "dev_support/simple_tools.hpp"
 #include "io/reads_io/io_helper.hpp"
-#include "io_impl/library.hpp"
+#include "pipeline/library.hpp"
 
 #include "pipeline/config_struct.hpp"
 

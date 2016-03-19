@@ -30,7 +30,7 @@
 
 #include "graph_support/stats/chimera_stats.hpp"
 #include "graph_support/basic_edge_conditions.hpp"
-#include "graph_support/stats/debruijn_stats.hpp"
+#include "graph_support/stats/picture_dump.hpp"
 #include "graph_support/parallel_processing.hpp"
 #include "graph_support/detail_coverage.hpp"
 

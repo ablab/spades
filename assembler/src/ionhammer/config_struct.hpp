@@ -10,7 +10,7 @@
 
 #include "config/config_singl.hpp"
 
-#include "io_impl/library.hpp"
+#include "pipeline/library.hpp"
 
 namespace hammer_config {
 enum class HammerStage {

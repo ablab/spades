@@ -10,7 +10,7 @@
 #include <fstream>
 #include <istream>
 
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 
 namespace hammer {
 namespace errHelper {

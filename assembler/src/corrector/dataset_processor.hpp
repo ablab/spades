@@ -7,12 +7,12 @@
 
 #pragma once
 
-#include "io_impl/path_helper.hpp"
+#include "dev_support/path_helper.hpp"
 
 #include "io/reads_io/file_reader.hpp"
-#include "io_impl/path_helper.hpp"
+#include "dev_support/path_helper.hpp"
 
-#include <io_impl/library.hpp>
+#include "pipeline/library.hpp"
 
 #include <string>
 #include <set>

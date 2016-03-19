@@ -9,9 +9,9 @@
 
 #include "dev_support/func.hpp"
 #include "math/pred.hpp"
-#include "basic_graph_stats.hpp"
+#include "stats/basic_graph_stats.hpp"
 #include "graph_support/directions.hpp"
-#include "path_finders.hpp"
+#include "paths/path_finders.hpp"
 namespace omnigraph {
 
 using namespace func;

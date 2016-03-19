@@ -8,7 +8,7 @@
 #include "kmer_coverage_model.hpp"
 
 #include "math/xmath.h"
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 #include "math/smooth.hpp"
 #include "dev_support/verify.hpp"
 

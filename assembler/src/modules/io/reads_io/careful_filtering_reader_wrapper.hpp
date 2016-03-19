@@ -7,7 +7,7 @@
 #pragma once
 //todo rename file
 #include "io/reads_io/delegating_reader_wrapper.hpp"
-#include "io_impl/library.hpp"
+#include "pipeline/library.hpp"
 
 namespace io {
 

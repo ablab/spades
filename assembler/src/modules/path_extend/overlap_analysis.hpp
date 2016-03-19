@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 #include "graph_alignment/range.hpp"
 #include "ssw/ssw_cpp.h"
 

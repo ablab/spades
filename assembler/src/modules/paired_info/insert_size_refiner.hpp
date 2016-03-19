@@ -9,7 +9,7 @@
 
 #include "dev_support/standard_base.hpp"
 #include "dev_support/cpp_utils.hpp"
-#include "graph_support/stats/debruijn_stats.hpp"
+#include "graph_support/stats/picture_dump.hpp"
 //#include "sequence_mapper.hpp"
 
 namespace omnigraph {

@@ -8,7 +8,7 @@
 //#define BOOST_TEST_MODULE include_test
 #include "dev_support/standard_base.hpp"
 
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/log_writers.hpp"
 
 #include "seq_test.hpp"
 #include "rtseq_test.hpp"

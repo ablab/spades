@@ -5,8 +5,10 @@
 # See file LICENSE for details.
 ############################################################################
 
-project(graph_support CXX)
+project(dev_support CXX)
 
-add_library(graph_support STATIC
-            components/connected_component.cpp paths/bidirectional_path.cpp ../algorithms/genome_consistance_checker.cpp scaff_supplementary.cpp)
+add_library(dev_support STATIC
+            copy_file.cpp
+            path_helper.cpp
+            logger/logger_impl.cpp)
 

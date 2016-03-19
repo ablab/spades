@@ -1,4 +1,4 @@
-#include "graph_support/genome_consistance_checker.hpp"
+#include "algorithms/genome_consistance_checker.hpp"
 #include "assembly_graph/graph.hpp"
 #include <algorithm>
 #include <limits>

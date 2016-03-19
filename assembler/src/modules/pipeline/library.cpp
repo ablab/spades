@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "io_impl/library.hpp"
+#include "pipeline/library.hpp"
 
 #include <yaml-cpp/yaml.h>
 

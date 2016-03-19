@@ -11,7 +11,7 @@
 #include "kmer_data.hpp"
 #include "io/kmers_io/mmapped_reader.hpp"
 
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 #include "HSeq.hpp"
 
 #include <iostream>

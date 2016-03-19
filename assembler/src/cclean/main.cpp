@@ -11,7 +11,7 @@
 #include <exception>
 
 #include "sequence/seq.hpp"
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/log_writers.hpp"
 #include "dev_support/memory_limit.hpp"
 #include "running_modes.hpp"
 #include "config_struct_cclean.hpp"

@@ -8,13 +8,9 @@
 project(input CXX)
 
 add_library(input STATIC
-            parser.cpp
-            path_helper.cpp
-            copy_file.cpp
-            library.cpp
-            logger_impl.cpp
-            sam/read.cpp
-            sam/sam_reader.cpp)
+            reads_io/parser.cpp
+            sam_io/read.cpp
+            sam_io/sam_reader.cpp)
 
-target_link_libraries(input BamTools samtools yaml-cpp)
+target_link_libraries(input BamTools samtools)
 

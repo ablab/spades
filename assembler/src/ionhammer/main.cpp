@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/log_writers.hpp"
 
 #include "io/reads_io/file_reader.hpp"
 #include "io/sam_io/bam_reader.hpp"

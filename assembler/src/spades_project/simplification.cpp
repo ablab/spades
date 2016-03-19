@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "graph_support/basic_graph_stats.hpp"
+#include "graph_support/stats/basic_graph_stats.hpp"
 #include "graph_support/graph_processing_algorithm.hpp"
 #include "simplification_pipeline/simplification_settings.hpp"
 #include "simplification_pipeline/graph_simplification.hpp"

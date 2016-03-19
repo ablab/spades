@@ -12,7 +12,7 @@
 #include <queue>
 #include "adt/concurrent_dsu.hpp"
 #include "dev_support/standard_base.hpp"
-#include "graph_support/graph_component.hpp"
+#include "graph_support/components/graph_component.hpp"
 #include "math/xmath.h"
 #include "sequence/sequence_tools.hpp"
 #include "path_processor.hpp"

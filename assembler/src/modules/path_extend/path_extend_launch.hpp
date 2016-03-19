@@ -25,7 +25,7 @@
 #include "graph_alignment/long_read_storage.hpp"
 #include "next_path_searcher.hpp"
 #include "scaffolder2015/extension_chooser2015.hpp"
-#include "graph_support/genome_consistance_checker.hpp"
+#include "algorithms/genome_consistance_checker.hpp"
 #include "scaffolder2015/scaffold_graph.hpp"
 #include "scaffolder2015/scaffold_graph_visualizer.hpp"
 

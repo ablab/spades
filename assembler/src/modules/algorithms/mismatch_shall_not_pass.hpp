@@ -9,7 +9,7 @@
 
 #include "simplification/compressor.hpp"
 #include "graph_support/handlers/id_track_handler.hpp"
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 
 #include "sequence/runtime_k.hpp"
 #include "graph_alignment/sequence_mapper.hpp"

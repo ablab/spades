@@ -20,7 +20,7 @@ add_executable(ionhammer
                seqeval/TreephaserLite.cpp
                main.cpp)
 
-target_link_libraries(ionhammer input cityhash BamTools yaml-cpp input ${COMMON_LIBRARIES})
+target_link_libraries(ionhammer input spades_modules cityhash BamTools yaml-cpp input ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(ionhammer PROPERTIES LINK_SEARCH_END_STATIC 1)

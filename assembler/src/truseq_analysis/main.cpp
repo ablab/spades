@@ -8,10 +8,10 @@
 /*
  * TruSeq Analysis Main
  */
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/log_writers.hpp"
 #include "dev_support/segfault_handler.hpp"
 #include "dev_support/memory_limit.hpp"
-#include "io_impl/copy_file.hpp"
+#include "dev_support/copy_file.hpp"
 #include "pipeline/config_struct.hpp"
 #include "analysis_pipeline.hpp"
 

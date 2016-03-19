@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "compare_standard.hpp"
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/log_writers.hpp"
 #include "pipeline/graphio.hpp"
 #include <boost/test/unit_test.hpp>
 

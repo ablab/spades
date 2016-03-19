@@ -10,7 +10,7 @@
 #include <vector>
 #include <set>
 #include <cstring>
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 #include "graph_core.hpp"
 #include "graph_iterators.hpp"
 

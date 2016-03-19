@@ -1,6 +1,6 @@
 #pragma once
 
-#include "directions.hpp"
+#include "graph_support/directions.hpp"
 
 namespace omnigraph {
 template<class Graph>

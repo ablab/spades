@@ -8,7 +8,7 @@
 project(pipeline CXX)
 
 add_library(pipeline STATIC
-            stage.cpp config_struct.cpp genomic_info_filler.cpp)
+            stage.cpp config_struct.cpp genomic_info_filler.cpp library.cpp)
 
-target_link_libraries(pipeline input)
+target_link_libraries(pipeline input yaml-cpp)
 

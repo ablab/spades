@@ -14,7 +14,7 @@
 #include "math/xmath.h"
 #include <iostream>
 #include <vector>
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 #include "io/reads_io/multifile_reader.hpp"
 #include "io/reads_io/splitting_wrapper.hpp"
 #include "io/reads_io/modifying_reader_wrapper.hpp"

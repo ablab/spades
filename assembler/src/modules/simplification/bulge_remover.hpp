@@ -19,7 +19,7 @@
 #include "graph_support/graph_processing_algorithm.hpp"
 #include "path_processor.hpp"
 #include "graph_support/comparators.hpp"
-#include "graph_support/graph_component.hpp"
+#include "graph_support/components/graph_component.hpp"
 #include "sequence/sequence_tools.hpp"
 #include "dev_support/standard_base.hpp"
 #include <cmath>

@@ -2,7 +2,7 @@
 
 #include "assembly_graph/graph.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "logger/logger.hpp"
+#include "dev_support/logger/logger.hpp"
 
 namespace path_extend {
     typedef debruijn_graph::EdgeId EdgeId;

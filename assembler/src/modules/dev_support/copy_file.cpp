@@ -7,8 +7,8 @@
 
 #include "copy_file.hpp"
 
-#include "path_helper.hpp"
-#include "logger/logger.hpp"
+#include "dev_support/path_helper.hpp"
+#include "dev_support/logger/logger.hpp"
 
 #include <boost/algorithm/string.hpp>
 

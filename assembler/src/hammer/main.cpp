@@ -27,8 +27,8 @@
 
 #include "dev_support/memory_limit.hpp"
 
-#include "logger/logger.hpp"
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/logger.hpp"
+#include "dev_support/logger/log_writers.hpp"
 
 #include "version.hpp"
 

@@ -8,7 +8,7 @@
 #pragma once
 
 #include "dev_support/standard_base.hpp"
-#include "graph_support/graph_component.hpp"
+#include "graph_support/components/graph_component.hpp"
 #include "visualization/graph_colorer.hpp"
 #include "graph_support/graph_processing_algorithm.hpp"
 

@@ -10,7 +10,7 @@
 #include "pipeline/graph_pack.hpp"
 #include "split_path_constructor.hpp"
 #include "paired_info/paired_info_helpers.hpp"
-#include <graph_support/path_utils.hpp>
+#include <graph_support/paths/path_utils.hpp>
 #include <math.h>
 
 namespace debruijn_graph {

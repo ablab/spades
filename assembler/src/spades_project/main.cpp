@@ -8,11 +8,11 @@
 /*
  * Assembler Main
  */
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/log_writers.hpp"
 
 #include "dev_support/segfault_handler.hpp"
 #include "launch.hpp"
-#include "io_impl/copy_file.hpp"
+#include "dev_support/copy_file.hpp"
 
 void link_output(std::string const& link_name) {
   if (!cfg::get().run_mode)

@@ -9,7 +9,7 @@
 
 #include "config/config_singl.hpp"
 
-#include "io_impl/library.hpp"
+#include "pipeline/library.hpp"
 
 namespace corrector {
 enum class Strategy {

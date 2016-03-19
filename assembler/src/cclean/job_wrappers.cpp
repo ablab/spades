@@ -8,7 +8,7 @@
 #include <set>
 
 #include "job_wrappers.hpp"
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/log_writers.hpp"
 #include "adapter_index.hpp"
 #include "valid_kmer_generator.hpp"
 #include "adapter_index.hpp"

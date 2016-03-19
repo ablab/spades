@@ -11,7 +11,7 @@
 #include "config_struct.hpp"
 
 #include "io/reads_io/file_reader.hpp"
-#include "io_impl/path_helper.hpp"
+#include "dev_support/path_helper.hpp"
 #include "io/reads_io/osequencestream.hpp"
 #include "dev_support/openmp_wrapper.h"
 

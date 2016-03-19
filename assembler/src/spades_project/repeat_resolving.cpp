@@ -5,14 +5,14 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "logger/logger.hpp"
-#include "graph_support/stats/debruijn_stats.hpp"
+#include "dev_support/logger/logger.hpp"
+#include "graph_support/stats/picture_dump.hpp"
 #include "visualization/graph_labeler.hpp"
 #include "paired_info/distance_estimation.hpp"
 #include "paired_info/smoothing_distance_estimation.hpp"
 #include "path_extend/path_extend_launch.hpp"
 #include "graph_support/contig_output.hpp"
-#include "graph_support/positions.hpp"
+#include "visualization/position_filler.hpp"
 #include "graph_alignment/long_read_storage.hpp"
 #include "repeat_resolving.hpp"
 

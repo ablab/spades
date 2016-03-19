@@ -11,7 +11,7 @@
 
 #include "graph_support/handlers/id_track_handler.hpp"
 #include "graph_support/handlers/edges_position_handler.hpp"
-#include "graph_support/graph_component.hpp"
+#include "graph_support/components/graph_component.hpp"
 
 #include "paired_info/paired_info.hpp"
 

@@ -9,8 +9,8 @@
 
 #include "compare_standard.hpp"
 #include "coloring.hpp"
-#include "logger/logger.hpp"
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/logger.hpp"
+#include "dev_support/logger/log_writers.hpp"
 
 #include "coordinates_handler.hpp" // These lines are needed for
 #include "pipeline/config_struct.hpp"       // colored_graph_construction.hpp
