@@ -9,6 +9,7 @@
 // Created by anton on 16.05.15.
 //
 
+#include <shared_stages/construction.hpp>
 #include "dev_support/standard_base.hpp"
 #include "analysis_pipeline.hpp"
 
@@ -112,7 +113,7 @@ bool spades::VariationDetectionStage::CheckEndVertex(debruijn_graph::DeBruijnGra
         return false;
     }
     VertexId v = graph.EdgeEnd(e);
-    GraphCore<DeBruijnDataMaster>::IteratorContainer outgoingEdges = graph.OutgoingEdges(v);
+    GraphCore<debruijn_graph::DeBruijnDataMaster>::IteratorContainer outgoingEdges = graph.OutgoingEdges(v);
     for(auto it = outgoingEdges.begin(); it != outgoingEdges.end(); ++it) {
         if(!CheckEndVertex(graph, *it, dist - graph.length(e)))
             return false;

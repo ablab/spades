@@ -1,6 +1,9 @@
 #pragma once
+#include "math/pred.hpp"
+#include "dev_support/func.hpp"
 
 namespace omnigraph {
+using func::Predicate;
 
 template<class Graph>
 class VertexCondition : public Predicate<typename Graph::VertexId> {

@@ -9,6 +9,7 @@
 
 #include "indices/perfect_hash_map.hpp"
 #include "assembly_graph/coverage.hpp"
+#include "assembly_graph/action_handlers.hpp"
 #include "dev_support/verify.hpp"
 #include <vector>
 #include <map>
@@ -20,9 +21,9 @@
 namespace debruijn_graph {
 
 template<class Graph>
-class FlankingCoverage : public GraphActionHandler<Graph>,
+class FlankingCoverage : public omnigraph::GraphActionHandler<Graph>,
         public omnigraph::AbstractFlankingCoverage<Graph> {
-    typedef GraphActionHandler<Graph> base;
+    typedef omnigraph::GraphActionHandler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef pair<EdgeId, unsigned> Pos;
@@ -213,12 +214,12 @@ class SimultaneousCoverageFiller {
     const Graph& g_;
     const CountIndex& count_index_;
     FlankingCoverage<Graph>& flanking_coverage_;
-    CoverageIndex<Graph>& coverage_index_;
+    omnigraph::CoverageIndex<Graph>& coverage_index_;
     typedef typename CountIndex::Value Value;
 public:
     SimultaneousCoverageFiller(const Graph& g, const CountIndex& count_index,
                                FlankingCoverage<Graph>& flanking_coverage,
-                               CoverageIndex<Graph>& coverage_index) :
+                               omnigraph::CoverageIndex<Graph>& coverage_index) :
                                    g_(g),
                                    count_index_(count_index),
                                    flanking_coverage_(flanking_coverage),

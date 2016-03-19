@@ -12,7 +12,6 @@
 #include "../errors.hpp"
 #include "graph_support/basic_graph_stats.hpp"
 #include "graph_alignment/sequence_mapper.hpp"
-#include "utils.hpp"
 
 namespace online_visualization {
 class JunctionSequenceCommand : public LocalCommand<DebruijnEnvironment> {

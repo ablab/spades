@@ -6,7 +6,6 @@
 //***************************************************************************
 
 #pragma once
-#include <debruijn_graph.hpp>
 
 namespace alignment_analysis {
     typedef debruijn_graph::DeBruijnGraph Graph;
@@ -14,9 +13,9 @@ namespace alignment_analysis {
     typedef Graph::EdgeId EdgeId;
 
     struct EdgeRange {
-        EdgeRange(const EdgeId &first, const Range &second) : first(first), second(second) { }
+        EdgeRange(const EdgeId &first, const omnigraph::Range &second) : first(first), second(second) { }
         EdgeId first;
-        Range second;
+        omnigraph::Range second;
     };
 
     ostream & operator<<(ostream& os, const EdgeRange& er);
@@ -24,17 +23,17 @@ namespace alignment_analysis {
     struct ConsistentMapping {
         ConsistentMapping(const Graph &graph);
 
-        ConsistentMapping(const Graph &graph, EdgeId e, MappingRange m);
+        ConsistentMapping(const Graph &graph, EdgeId e, omnigraph::MappingRange m);
 
-        ConsistentMapping(const Graph &graph, const MappingPath<EdgeId> &path);
+        ConsistentMapping(const Graph &graph, const omnigraph::MappingPath<EdgeId> &path);
 
-        ConsistentMapping(Graph const &graph, Range r, const vector<EdgeRange> &path);
+        ConsistentMapping(Graph const &graph, omnigraph::Range r, const vector<EdgeRange> &path);
 
-        bool CheckConnect(EdgeId e, Range r) const;
+        bool CheckConnect(EdgeId e, omnigraph::Range r) const;
 
         bool CheckConnect(const EdgeRange &er) const;
 
-        bool CheckConnect(EdgeId e, MappingRange r) const;
+        bool CheckConnect(EdgeId e, omnigraph::MappingRange r) const;
 
         bool CheckConnect(const ConsistentMapping &other) const;
 
@@ -46,7 +45,7 @@ namespace alignment_analysis {
 
         void ForceJoin(const ConsistentMapping &other, const vector <EdgeId> &path);
 
-        Range const &GetInitialRange() const;
+        omnigraph::Range const &GetInitialRange() const;
 
         const vector <EdgeRange> &GetMappedPath() const;
 
@@ -82,7 +81,7 @@ namespace alignment_analysis {
         vector<EdgeRange> GenerateMappingPath(const vector<EdgeId> &path) const;
 
         const Graph &graph_;
-        Range initial_range;
+        omnigraph::Range initial_range;
         vector <EdgeRange> mapped_path;
         DECL_LOGGER("ConsistentMapping");
     };

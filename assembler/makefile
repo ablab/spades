@@ -1,10 +1,10 @@
 .PHONY: dd rd
 
 rd:
-	$(MAKE) -C build/release/debruijn
+	$(MAKE) -C build/release/spades_project
 
 dd:
-	$(MAKE) -C build/debug/debruijn
+	$(MAKE) -C build/debug/spades_project
 
 rds:
 	$(MAKE) -C build/release/dipspades

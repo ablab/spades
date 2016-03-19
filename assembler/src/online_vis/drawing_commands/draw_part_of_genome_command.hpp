@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "de/distance_estimation.hpp"
+#include "paired_info/distance_estimation.hpp"
 #include "../environment.hpp"
 #include "../command.hpp"
 #include "../errors.hpp"

@@ -12,8 +12,7 @@ add_executable(dipspades
 	       utils/files_utils.cpp
                main.cpp)
 
-target_include_directories(dipspades PRIVATE ${CMAKE_SOURCE_DIR}/debruijn)
-target_link_libraries(dipspades debruijn)
+target_link_libraries(dipspades spades_modules cityhash ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(dipspades PROPERTIES LINK_SEARCH_END_STATIC 1)

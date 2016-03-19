@@ -7,7 +7,7 @@
 #pragma once
 
 #include <boost/test/unit_test.hpp>
-#include "de/paired_info_helpers.hpp"
+#include "paired_info/paired_info_helpers.hpp"
 
 namespace debruijn_graph {
 

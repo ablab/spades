@@ -10,3 +10,5 @@ project(math_module CXX)
 add_library(math_module STATIC
             kmer_coverage_model.cpp)
 
+target_link_libraries(math_module nlopt)
+

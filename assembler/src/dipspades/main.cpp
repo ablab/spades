@@ -8,30 +8,18 @@
 /*
  * Assembler Main
  */
-#include "standard.hpp"
 #include "logger/log_writers.hpp"
 
 #include "dev_support/segfault_handler.hpp"
-#include "dev_support/stacktrace.hpp"
 #include "dev_support/memory_limit.hpp"
 #include "io_impl/copy_file.hpp"
-#include "dev_support/perfcounter.hpp"
 #include "sequence/runtime_k.hpp"
 
 
 #include "pipeline/graph_pack.hpp"
-#include "construction.hpp"
-#include "pipeline/stage.hpp"
+#include "shared_stages/construction.hpp"
 
 #include "dipspades.hpp"
-#include "dipspades_config.hpp"
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#include "dev_support/segfault_handler.hpp"
-#include "version.hpp"
 
 void make_dirs(){
     make_dir(dsp_cfg::get().io.output_base);

@@ -9,6 +9,7 @@
 #pragma once
 
 #include "dev_support/stacktrace.hpp"
+#include "boost/noncopyable.hpp"
 
 #include <signal.h>
 

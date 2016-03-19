@@ -10,6 +10,8 @@
 #include "consistent_mapping.h"
 
 namespace alignment_analysis {
+    using omnigraph::Range;
+    using omnigraph::MappingRange;
 
     bool ConsistentMapping::CheckConnect(EdgeId e, Range r) const {
         return CheckConnect(mapped_path.back(), EdgeRange(e, r));
@@ -104,7 +106,7 @@ namespace alignment_analysis {
         return result;
     }
 
-    ConsistentMapping::ConsistentMapping(const Graph &graph, const MappingPath<EdgeId> &path) : graph_(graph) {
+    ConsistentMapping::ConsistentMapping(const Graph &graph, const omnigraph::MappingPath<EdgeId> &path) : graph_(graph) {
         VERIFY(path.size() > 0);
         this->initial_range = Range(path.start_pos(), path.end_pos());
         for (size_t i = 0; i < path.size(); i++) {

@@ -13,7 +13,7 @@
  */
 #pragma once
 
-#include "assembly_graph/debruijn_graph.hpp"
+#include "assembly_graph/graph.hpp"
 #include "graph_support/connected_component.hpp"
 
 using debruijn_graph::Graph;

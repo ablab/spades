@@ -9,7 +9,7 @@
 
 #include "pipeline/graphio.hpp"
 #include "dev_support/simple_tools.hpp"
-#include "assembly_graph/debruijn_graph.hpp"
+#include "assembly_graph/graph.hpp"
 #include "coordinates_handler.hpp"
 #include "math/xmath.h"
 #include <iostream>

@@ -6,6 +6,7 @@
 //***************************************************************************
 
 #pragma once
+#include "io/reads_io/ireadstream.hpp"
 namespace io {
 
 /**

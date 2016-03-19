@@ -8,7 +8,6 @@
 /*
  * TruSeq Analysis Main
  */
-#include "standard.hpp"
 #include "logger/log_writers.hpp"
 #include "dev_support/segfault_handler.hpp"
 #include "dev_support/memory_limit.hpp"

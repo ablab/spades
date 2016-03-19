@@ -9,7 +9,7 @@
 #include "pipeline/stage.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "simplification/path_processor.hpp"
-#include "construction.hpp"
+#include "shared_stages/construction.hpp"
 #include "pipeline/config_struct.hpp"
 #include "dijkstra/dijkstra_algorithm.hpp"
 #include "dijkstra/dijkstra_helper.hpp"

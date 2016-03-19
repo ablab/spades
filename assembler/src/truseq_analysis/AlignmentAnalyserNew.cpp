@@ -10,11 +10,11 @@
 //
 
 #include "dev_support/standard_base.hpp"
-#include <omni/dijkstra_tools/dijkstra_helper.hpp>
+#include <dijkstra/dijkstra_helper.hpp>
 #include "AlignmentAnalyserNew.hpp"
-#include "consistent_mapping.h"
 
 namespace alignment_analysis {
+    using omnigraph::Range;
 
     size_t AlignmentAnalyserNew::StepBack(const vector<ConsistentMapping> &path) const {
         size_t cur_step = 0;
@@ -26,7 +26,7 @@ namespace alignment_analysis {
         return cur;
     }
 
-    vector <ConsistentMapping> AlignmentAnalyserNew::Analyse(const MappingPath<EdgeId> &path) const {
+    vector <ConsistentMapping> AlignmentAnalyserNew::Analyse(const omnigraph::MappingPath<EdgeId> &path) const {
         TRACE("");
         TRACE("Analysis of path of length " << path.size() << ": " << path);
         vector <ConsistentMapping> result;
@@ -41,14 +41,14 @@ namespace alignment_analysis {
             } else if (mapping.EndEdge() == path[i].first && mapping.Back().second.end_pos <= path[i].second.mapped_range.start_pos) {
                 Range initial(mapping.GetInitialRange().end_pos, path[i].second.initial_range.start_pos);
                 Range mapped(mapping.Back().second.end_pos, path[i].second.mapped_range.start_pos);
-                result.push_back(ConsistentMapping(graph_, path[i].first, MappingRange(initial, mapped)));
+                result.push_back(ConsistentMapping(graph_, path[i].first, omnigraph::MappingRange(initial, mapped)));
                 result.push_back(ConsistentMapping(graph_, path[i].first, path[i].second));
             } else {
                 TRACE("Could not add " << path[i]);
                 size_t pos = StepBack(result);
                 VertexId start = result[pos].EndVertex();
                 TRACE("Start vertex: " << start);
-                DijkstraHelper<Graph>::BoundedDijkstra d = DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_, 3000 + graph_.k(), 1000);
+                omnigraph::DijkstraHelper<Graph>::BoundedDijkstra d = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_, 3000 + graph_.k(), 1000);
                 d.Run(start);
                 size_t best = i;
                 for (size_t j = i, cur_step = 0; j < path.size() && cur_step < step_; j++) {

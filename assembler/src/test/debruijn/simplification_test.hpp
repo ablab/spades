@@ -9,9 +9,9 @@
 
 #include <boost/test/unit_test.hpp>
 #include "test_utils.hpp"
-#include "simplification/graph_simplification.hpp"
-#include "simplification/parallel_simplification_algorithms.hpp"
-#include "stats/debruijn_stats.hpp"
+#include "simplification_pipeline/graph_simplification.hpp"
+#include "simplification_pipeline/parallel_simplification_algorithms.hpp"
+#include "graph_support/stats/debruijn_stats.hpp"
 //#include "repeat_resolving_routine.hpp"
 
 namespace debruijn_graph {

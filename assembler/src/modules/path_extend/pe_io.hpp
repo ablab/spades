@@ -9,13 +9,13 @@
 #define PE_IO_HPP_
 
 
-#include "graph_support/bidirectional_path.hpp"
-#include "contig_output.hpp"
-#include "io/reads_io/osequencestream.hpp"
 #include "graph_support/genome_consistance_checker.hpp"
+#include "graph_support/bidirectional_path.hpp"
+#include <graph_support/contig_output.hpp>
+#include "graph_support/connected_component.hpp"
+#include "io/reads_io/osequencestream.hpp"
 #include <stack>
 #include <algorithm>
-#include "graph_support/connected_component.hpp"
 
 namespace path_extend {
 

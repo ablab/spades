@@ -16,7 +16,7 @@
 #define PAIRED_LIBRARY_HPP_
 
 #include "pipeline/graph_pack.hpp"
-#include "de/paired_info.hpp"
+#include "paired_info/paired_info.hpp"
 #include "ideal_pair_info.hpp"
 
 #include "math/xmath.h"

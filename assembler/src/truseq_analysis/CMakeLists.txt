@@ -11,6 +11,5 @@ add_executable(truseq_analysis
                main.cpp
                alignment_analyser.cpp AlignmentAnalyserNew.cpp consistent_mapping.cpp analysis_pipeline.cpp)
 
-target_include_directories(truseq_analysis PRIVATE ${CMAKE_SOURCE_DIR}/debruijn)
-target_link_libraries(truseq_analysis debruijn)
+target_link_libraries(truseq_analysis spades_modules ${COMMON_LIBRARIES})
 

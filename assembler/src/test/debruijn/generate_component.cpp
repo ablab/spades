@@ -11,7 +11,7 @@
 
 #include "pipeline/graphio.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "stats/debruijn_stats.hpp"
+#include "graph_support/stats/debruijn_stats.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);

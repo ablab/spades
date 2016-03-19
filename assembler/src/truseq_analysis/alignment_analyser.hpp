@@ -7,9 +7,8 @@
 
 #pragma once
 
-#include <io/single_read.hpp>
-#include <graph_pack.hpp>
 #include "dev_support/standard_base.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "consistent_mapping.h"
 
 namespace alignment_analysis {

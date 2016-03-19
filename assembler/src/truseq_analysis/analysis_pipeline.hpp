@@ -8,10 +8,7 @@
 #pragma once
 
 #include "dev_support/standard_base.hpp"
-#include <io/osequencestream.hpp>
-#include "../debruijn/stage.hpp"
-#include "../debruijn/config_struct.hpp"
-#include "../debruijn/construction.hpp"
+#include <pipeline/stage.hpp>
 #include "alignment_analyser.hpp"
 #include "AlignmentAnalyserNew.hpp"
 

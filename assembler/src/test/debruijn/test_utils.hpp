@@ -9,17 +9,18 @@
 
 
 //#include "launch.hpp"
-#include "graph_construction.hpp"
+#include "algorithms/graph_construction.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "io/reads_io/rc_reader_wrapper.hpp"
 #include "io/reads_io/vector_reader.hpp"
 #include "io/reads_io/converting_reader_wrapper.hpp"
 #include "io/reads_io/read_stream_vector.hpp"
 #include "dev_support/simple_tools.hpp"
-#include "de/paired_info_helpers.hpp"
+#include "paired_info/paired_info_helpers.hpp"
+#include "paired_info/weights.hpp"
 
 #include "graph_alignment/sequence_mapper_notifier.hpp"
-#include "pair_info_filler.hpp"
+#include "paired_info/pair_info_filler.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <unordered_set>

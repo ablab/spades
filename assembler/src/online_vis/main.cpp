@@ -6,7 +6,6 @@
 //***************************************************************************
 
 // just to check that headers from include and debruijn folders are correctly included
-#include "standard.hpp"
 #include "vis_logger.hpp"
 
 #include "standard_vis.hpp"

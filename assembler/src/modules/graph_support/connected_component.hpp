@@ -4,7 +4,7 @@
 #pragma once
 #include <map>
 //#include "path_extend/bidirectional_path.hpp"
-#include "assembly_graph/debruijn_graph.hpp"
+#include "assembly_graph/graph.hpp"
 
 namespace debruijn_graph{
 

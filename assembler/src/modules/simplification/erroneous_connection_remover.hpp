@@ -19,6 +19,7 @@
 #include "dev_support/func.hpp"
 #include "math/xmath.h"
 #include "dijkstra/dijkstra_helper.hpp"
+#include "assembly_graph/coverage.hpp"
 
 namespace omnigraph {
 

@@ -11,7 +11,8 @@
 
 #include "adt/kmer_map.hpp"
 
-#include "assembly_graph/debruijn_graph.hpp"
+#include "assembly_graph/graph.hpp"
+#include "assembly_graph/action_handlers.hpp"
 #include "dev_support/standard_base.hpp"
 #include "indices/edge_index_builders.hpp"
 
@@ -27,7 +28,7 @@ namespace debruijn_graph {
 //fixme template params
 template<class Graph, class Seq /*= runtime_k::RtSeq*/,
         class Index /*= KmerFreeEdgeIndex<Graph, Seq>*/>
-class EdgeIndex: public GraphActionHandler<Graph> {
+class EdgeIndex: public omnigraph::GraphActionHandler<Graph> {
 
 public:
     typedef typename Graph::EdgeId EdgeId;
@@ -45,7 +46,7 @@ private:
 public:
 
     EdgeIndex(const Graph& g, const std::string &workdir)
-            : GraphActionHandler<Graph>(g, "EdgeIndex"),
+            : omnigraph::GraphActionHandler<Graph>(g, "EdgeIndex"),
               inner_index_(g, workdir),
               updater_(g, inner_index_),
               delete_index_(true) {

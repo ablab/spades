@@ -9,7 +9,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include "test_utils.hpp"
-#include "stats/debruijn_stats.hpp"
+#include "graph_support/stats/debruijn_stats.hpp"
 #include "pipeline/graphio.hpp"
 
 namespace debruijn_graph {

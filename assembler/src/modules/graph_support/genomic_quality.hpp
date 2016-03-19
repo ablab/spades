@@ -10,11 +10,12 @@
 #include "visualization/visualization.hpp"
 #include "graph_support/basic_edge_conditions.hpp"
 #include "graph_alignment/sequence_mapper.hpp"
+#include "assembly_graph/action_handlers.hpp"
 
 namespace debruijn_graph {
 
 template<class Graph>
-class EdgeQuality: public GraphLabeler<Graph>, public GraphActionHandler<Graph> {
+class EdgeQuality: public omnigraph::GraphLabeler<Graph>, public omnigraph::GraphActionHandler<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     map<EdgeId, size_t> quality_;
@@ -47,7 +48,7 @@ public:
     }
 
     EdgeQuality(const Graph &graph) :
-            GraphActionHandler<Graph>(graph, "EdgeQuality"),
+            omnigraph::GraphActionHandler<Graph>(graph, "EdgeQuality"),
             k_(graph.k() + 1) {
     }
 
@@ -177,8 +178,8 @@ class QualityEdgeLocalityPrintingRH : public QualityLoggingRemovalHandler<Graph>
 public:
     QualityEdgeLocalityPrintingRH(const Graph& g
             , const EdgeQuality<Graph>& quality_handler
-            , const GraphLabeler<Graph>& labeler
-            , std::shared_ptr<visualization::GraphColorer<Graph>> colorer
+            , const omnigraph::GraphLabeler<Graph>& labeler
+            , std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer
             , const string& output_folder, bool handle_all = false) :
             base(g, quality_handler, handle_all),
             printing_rh_(g, labeler, colorer, output_folder)

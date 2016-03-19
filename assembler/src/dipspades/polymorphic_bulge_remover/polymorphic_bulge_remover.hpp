@@ -10,7 +10,7 @@
 #include "simple_bulge_remover.hpp"
 #include "complex_bulge_remover.hpp"
 #include "iterative_tails_gluing.hpp"
-#include "stats/debruijn_stats.hpp"
+#include "graph_support/stats/debruijn_stats.hpp"
 
 #include "visualization/visualization.hpp"
 #include "graph_support/handlers/edges_position_handler.hpp"

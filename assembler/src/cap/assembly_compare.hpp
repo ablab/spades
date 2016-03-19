@@ -12,7 +12,7 @@
 #include "pipeline/graph_pack.hpp"
 #include "dev_support/simple_tools.hpp"
 #include "simplification/cleaner.hpp"
-#include "stats/debruijn_stats.hpp"
+#include "graph_support/stats/debruijn_stats.hpp"
 #include "io/reads_io/splitting_wrapper.hpp"
 #include "io/reads_io/multifile_reader.hpp"
 #include <boost/algorithm/string/predicate.hpp>
@@ -21,7 +21,7 @@
 #include "colored_graph_construction.hpp"
 #include "untangling.hpp"
 #include "assembly_problem_detection.hpp"
-#include "stats.hpp"
+#include "graph_support/stats.hpp"
 #include "visualization.hpp"
 #include "simple_indel_finder.hpp"
 #include "test_utils.hpp"

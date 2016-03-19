@@ -15,9 +15,9 @@
 #ifndef SPLIT_GRAPH_PAIR_INFO_HPP_
 #define SPLIT_GRAPH_PAIR_INFO_HPP_
 
+#include <paired_info/weights.hpp>
 #include "graph_alignment/sequence_mapper_notifier.hpp"
 #include "io/dataset_support/read_converter.hpp"
-#include "utils.hpp"
 #include "ideal_pair_info.hpp"
 
 using namespace debruijn_graph;

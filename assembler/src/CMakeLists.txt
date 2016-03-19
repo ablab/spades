@@ -83,7 +83,7 @@ endif()
 
 # sub projects
 add_subdirectory(modules)
-add_subdirectory(debruijn)
+add_subdirectory(spades_project)
 add_subdirectory(hammer)
 add_subdirectory(ionhammer)
 add_subdirectory(spades_pipeline)

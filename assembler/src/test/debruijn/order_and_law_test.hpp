@@ -127,7 +127,7 @@ public:
 BOOST_FIXTURE_TEST_SUITE(robust_order_tests, TmpFolderFixture)
 
 BOOST_AUTO_TEST_CASE( OrderTest ) {
-	string file_name = "src/debruijn/test_save";
+	string file_name = "src/test/debruijn/graph_fragments/saves/test_save";
 	Graph graph(55);
 	RandomGraphConstructor<Graph>(1000, 100, 100).Generate(graph);
 	graphio::ConjugateDataPrinter<Graph> printer(graph);

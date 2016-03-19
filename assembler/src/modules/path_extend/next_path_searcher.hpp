@@ -18,7 +18,7 @@
 #include <map>
 
 #include "pipeline/graph_pack.hpp"
-#include "assembly_graph/debruijn_graph.hpp"
+#include "assembly_graph/graph.hpp"
 #include "graph_support/bidirectional_path.hpp"
 #include "pe_utils.hpp"
 

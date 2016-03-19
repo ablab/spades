@@ -7,7 +7,6 @@
 /*
  * Assembler Main
  */
-#include "standard.hpp"
 #include "logger/log_writers.hpp"
 
 #include "dev_support/segfault_handler.hpp"

@@ -13,9 +13,9 @@
 #include "graph_support/handlers/edges_position_handler.hpp"
 #include "graph_support/graph_component.hpp"
 
-#include "de/paired_info.hpp"
+#include "paired_info/paired_info.hpp"
 
-#include "assembly_graph/debruijn_graph.hpp"
+#include "assembly_graph/graph.hpp"
 #include "graph_support/detail_coverage.hpp"
 #include "graph_alignment/long_read_storage.hpp"
 

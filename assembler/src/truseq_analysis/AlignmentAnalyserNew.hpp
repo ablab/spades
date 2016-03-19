@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include <io/single_read.hpp>
+#include <assembly_graph/graph.hpp>
+#include <graph_alignment/mapping_path.hpp>
 #include "consistent_mapping.h"
 
 namespace alignment_analysis {
@@ -19,7 +20,7 @@ namespace alignment_analysis {
         typedef Graph::VertexId VertexId;
     public:
         AlignmentAnalyserNew(Graph const &graph, size_t step) : graph_(graph), step_(step) { }
-        vector <ConsistentMapping> Analyse(const MappingPath<EdgeId> &path) const;
+        vector <ConsistentMapping> Analyse(const omnigraph::MappingPath<EdgeId> &path) const;
     private:
         void Cut(vector<ConsistentMapping> &path, VertexId start) const;
 

@@ -19,6 +19,10 @@
 #include "graph_support/basic_graph_stats.hpp"
 
 namespace debruijn_graph {
+using omnigraph::MappingPath;
+using omnigraph::Path;
+using omnigraph::MappingRange;
+using omnigraph::Range;
 
 template<class Graph>
 MappingPath<typename Graph::EdgeId> ConjugateMapping(const Graph& g, 
@@ -147,11 +151,11 @@ private:
         if (v1 == v2)
             return vector<EdgeId>();
         TRACE("Trying to close gap between v1=" << g_.int_id(v1) << " and v2=" << g_.int_id(v2));
-        PathStorageCallback<Graph> path_store(g_);
+        omnigraph::PathStorageCallback<Graph> path_store(g_);
 
         TRACE("Path storage callback created");
         //todo reduce value after investigation
-        ProcessPaths(g_, 0, length_bound, v1, v2, path_store);
+        omnigraph::ProcessPaths(g_, 0, length_bound, v1, v2, path_store);
 
         TRACE("Paths processed");
         if (path_store.size() == 0) {
