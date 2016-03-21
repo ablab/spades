@@ -12,7 +12,7 @@
 
 #include "seq_test.hpp"
 #include "rtseq_test.hpp"
-#include "sequence_test.hpp"
+#include "data_structures/sequence_test.hpp"
 #include "quality_test.hpp"
 #include "nucl_test.hpp"
 

@@ -32,8 +32,8 @@
 #include "dev_support/verify.hpp"
 #include "io/reads/single_read.hpp"
 #include "io/reads_io/parser.hpp"
-#include "sequence/quality.hpp"
-#include "sequence/nucl.hpp"
+#include "data_structures/sequence/quality.hpp"
+#include "data_structures/sequence/nucl.hpp"
 
 namespace io {
 

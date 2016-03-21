@@ -12,16 +12,13 @@ set(SPADES_MIN_K 1 CACHE INTEGER "Minimum k-mer length")
 set(SPADES_MAX_K 300 CACHE INTEGER "Maximum k-mer length")
 configure_file("${SPADES_MAIN_INCLUDE_DIR}/k_range.hpp.in"
                "${SPADES_BUILT_INCLUDE_DIR}/k_range.hpp")
-include_directories(${CMAKE_SOURCE_DIR}/debruijn
-                    ${CMAKE_SOURCE_DIR}/modules
-                    ${CMAKE_SOURCE_DIR}/include
+include_directories(${CMAKE_SOURCE_DIR}/modules
                     ${CMAKE_SOURCE_DIR}/online_vis)
 
 add_executable(cap-tools
   ${EXT_DIR}/include/teamcity_boost/teamcity_boost.cpp
   ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
   ${CMAKE_SOURCE_DIR}/online_vis/autocompletion.cpp
-  ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
   tools.cpp)
 
 add_executable(cap
@@ -46,12 +43,11 @@ else(CURSES_FOUND)
   #MESSAGE(WARNING "Library `ncurses' was not found (not installed?)")
 endif()
 include_directories(./drawing_commands)
-include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 
 set(CAP_LIBS input cityhash nlopt ${COMMON_LIBRARIES})
 if (READLINE_FOUND AND CURSES_FOUND)
   set(CAP_LIBS ${CAP_LIBS} ${READLINE_LIBRARY} ${CURSES_NCURSES_LIBRARY})
 endif()
 
-target_link_libraries(cap ${CAP_LIBS})
-target_link_libraries(cap-tools ${CAP_LIBS})
+target_link_libraries(cap pipeline path_extend${CAP_LIBS})
+target_link_libraries(cap-tools math ${CAP_LIBS})

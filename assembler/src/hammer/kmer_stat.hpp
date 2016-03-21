@@ -10,7 +10,7 @@
 
 #include "dev_support/verify.hpp"
 
-#include "sequence/seq.hpp"
+#include "data_structures/sequence/seq.hpp"
 
 #include <folly/SmallLocks.h>
 

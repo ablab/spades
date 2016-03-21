@@ -12,7 +12,7 @@ add_executable(dipspades
 	       utils/files_utils.cpp
                main.cpp)
 
-target_link_libraries(dipspades spades_modules cityhash ${COMMON_LIBRARIES})
+target_link_libraries(dipspades spades_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(dipspades PROPERTIES LINK_SEARCH_END_STATIC 1)

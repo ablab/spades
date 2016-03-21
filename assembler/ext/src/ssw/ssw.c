@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "ssw/ssw.h"
+#include "algorithms/ssw.h"
 
 #ifdef __GNUC__
 #define LIKELY(x) __builtin_expect((x),1)

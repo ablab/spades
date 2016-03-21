@@ -7,9 +7,9 @@
 
 #pragma once
 #include <boost/test/unit_test.hpp>
-#include "sequence/seq.hpp"
-#include "sequence/sequence.hpp"
-#include "sequence/nucl.hpp"
+#include "data_structures/sequence/seq.hpp"
+#include "data_structures/sequence/sequence.hpp"
+#include "data_structures/sequence/nucl.hpp"
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <string>

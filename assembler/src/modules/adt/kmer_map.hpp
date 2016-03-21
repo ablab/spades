@@ -16,7 +16,7 @@
 #define KMER_MAP_HPP_
 
 
-#include "sequence/runtime_k.hpp"
+#include "data_structures/sequence/runtime_k.hpp"
 
 
 namespace runtime_k {

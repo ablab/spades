@@ -12,7 +12,7 @@
 #include "errors.hpp"
 #include "argument_list.hpp"
 #include "genomic_quality.hpp"
-#include "simplification_pipeline/graph_simplification.hpp"
+#include "algorithms/simplification_pipeline/graph_simplification.hpp"
 
 namespace online_visualization {
 

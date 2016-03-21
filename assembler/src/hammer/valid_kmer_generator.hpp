@@ -11,7 +11,7 @@
 #include "globals.hpp"
 
 #include "io/reads/read.hpp"
-#include "sequence/seq.hpp"
+#include "data_structures/sequence/seq.hpp"
 
 #include <string>
 #include <vector>

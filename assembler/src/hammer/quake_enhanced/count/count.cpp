@@ -34,7 +34,7 @@
 #include "logging.hpp"
 #include "io/ireadstream.hpp"
 #include "io/read.hpp"
-#include "sequence/seq.hpp"
+#include "data_structures/sequence/seq.hpp"
 #include "valid_kmer_generator.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))
 

@@ -1,5 +1,5 @@
-#include "ssw/ssw_cpp.h"
-#include "ssw/ssw.h"
+#include "algorithms/ssw_cpp.h"
+#include "algorithms/ssw.h"
 
 #include <sstream>
 

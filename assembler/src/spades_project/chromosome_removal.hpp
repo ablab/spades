@@ -7,7 +7,7 @@
 #pragma once
 
 #include "pipeline/stage.hpp"
-#include "assembly_graph/graph.hpp"
+#include "data_structures/assembly_graph/graph_core/graph.hpp"
 
 namespace debruijn_graph {
 

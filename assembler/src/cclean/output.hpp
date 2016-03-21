@@ -14,7 +14,7 @@
 #include <io/read.hpp>
 #include <ostream>
 #include "comparator.hpp"
-#include "ssw/ssw_cpp.h"
+#include "algorithms/ssw_cpp.h"
 
 namespace cclean_output {
 

@@ -10,7 +10,7 @@
 #include "adt/parallel_unordered_map.hpp"
 #include "dev_support/openmp_wrapper.h"
 
-#include "sequence/runtime_k.hpp"
+#include "data_structures/sequence/runtime_k.hpp"
 #include "kmer_map.hpp"
 #include "kmer_hash_vector.hpp"
 

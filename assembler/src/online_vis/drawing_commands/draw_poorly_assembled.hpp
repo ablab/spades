@@ -12,7 +12,7 @@
 #include "../errors.hpp"
 #include "io/wrapper_collection.hpp"
 #include <boost/algorithm/string.hpp>
-#include "graph_support/basic_graph_stats.hpp"
+#include "data_structures/assembly_graph/graph_support/basic_graph_stats.hpp"
 
 #include <boost/algorithm/string/predicate.hpp>
 

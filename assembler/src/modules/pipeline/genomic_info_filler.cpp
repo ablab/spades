@@ -8,7 +8,7 @@
 #include "genomic_info_filler.hpp"
 
 #include "math/kmer_coverage_model.hpp"
-#include "simplification/ec_threshold_finder.hpp"
+#include "algorithms/simplification/ec_threshold_finder.hpp"
 
 
 using namespace debruijn_graph;

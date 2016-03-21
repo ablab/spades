@@ -10,10 +10,10 @@
 #include "pipeline/config_struct.hpp"
 
 #include "pipeline/graph_pack.hpp"
-#include "shared_stages/construction.hpp"
+#include "stages/construction.hpp"
 #include "pipeline/genomic_info_filler.hpp"
 #include "gap_closer.hpp"
-#include "simplification.hpp"
+#include "stages/simplification.hpp"
 #include "mismatch_correction.hpp"
 #include "pair_info_count.hpp"
 #include "second_phase_setup.hpp"

@@ -13,7 +13,7 @@
 #include "io/kmers_io/mmapped_reader.hpp"
 
 #include "dev_support/logger/logger.hpp"
-#include "sequence/seq.hpp"
+#include "data_structures/sequence/seq.hpp"
 
 #include <iostream>
 #include <vector>

@@ -16,7 +16,7 @@
 
 #include "dev_support/logger/logger.hpp"
 #include "paired_info/paired_info.hpp"
-#include "simplification/path_processor.hpp"
+#include "algorithms/simplification/path_processor.hpp"
 #include "paired_info/pair_info_bounds.hpp"
 
 namespace debruijn_graph {

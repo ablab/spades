@@ -19,7 +19,7 @@
 #include <zlib.h>
 #include "dev_support/verify.hpp"
 #include "io/reads/read.hpp"
-#include "sequence/nucl.hpp"
+#include "data_structures/sequence/nucl.hpp"
 
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)

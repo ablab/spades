@@ -11,7 +11,7 @@
 
 #include "pipeline/graphio.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "graph_support/stats/picture_dump.hpp"
+#include "data_structures/assembly_graph/graph_support/stats/picture_dump.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);

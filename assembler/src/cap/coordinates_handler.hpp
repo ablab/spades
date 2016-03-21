@@ -10,8 +10,8 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
-#include "sequence/sequence.hpp"
-#include "sequence/sequence_tools.hpp"
+#include "data_structures/sequence/sequence.hpp"
+#include "data_structures/sequence/sequence_tools.hpp"
 
 namespace cap {
 

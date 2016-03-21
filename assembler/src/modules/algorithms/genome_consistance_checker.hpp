@@ -8,13 +8,13 @@
 
 #pragma once
 #include "visualization/graph_labeler.hpp"
-#include "graph_support/handlers/edges_position_handler.hpp"
-#include "graph_alignment/mapping_path.hpp"
-#include "sequence/sequence.hpp"
+#include "data_structures/assembly_graph/graph_support/handlers/edges_position_handler.hpp"
+#include "data_structures/assembly_graph/graph_alignment/mapping_path.hpp"
+#include "data_structures/sequence/sequence.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "visualization/position_filler.hpp"
-#include "graph_support/paths/bidirectional_path.hpp"
-#include "graph_support/scaff_supplementary.hpp"
+#include "data_structures/assembly_graph/graph_support/paths/bidirectional_path.hpp"
+#include "data_structures/assembly_graph/graph_support/scaff_supplementary.hpp"
 
 namespace debruijn_graph {
 

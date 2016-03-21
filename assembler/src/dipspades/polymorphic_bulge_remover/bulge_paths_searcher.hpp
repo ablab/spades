@@ -8,8 +8,8 @@
 #pragma once
 
 #include <vector>
-#include "dijkstra/dijkstra_helper.hpp"
-#include "simplification/path_processor.hpp"
+#include "algorithms/dijkstra/dijkstra_helper.hpp"
+#include "algorithms/simplification/path_processor.hpp"
 #include "dipspades_config.hpp"
 
 using namespace std;

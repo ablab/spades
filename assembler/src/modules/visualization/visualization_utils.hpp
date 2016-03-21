@@ -9,9 +9,9 @@
 
 
 #include "graph_printer.hpp"
-#include "dijkstra/dijkstra_helper.hpp"
-#include "graph_support/components/splitters.hpp"
-#include "graph_support/components/graph_component.hpp"
+#include "algorithms/dijkstra/dijkstra_helper.hpp"
+#include "data_structures/assembly_graph/graph_support/components/splitters.hpp"
+#include "data_structures/assembly_graph/graph_support/components/graph_component.hpp"
 #include "visualizers.hpp"
 #include "vertex_linker.hpp"
 

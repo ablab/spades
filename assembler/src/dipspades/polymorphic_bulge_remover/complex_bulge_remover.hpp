@@ -9,7 +9,7 @@
 
 #include "pipeline/config_struct.hpp"
 #include "pipeline/graphio.hpp"
-#include "shared_stages/construction.hpp"
+#include "stages/construction.hpp"
 
 #include "utils/path_routines.hpp"
 #include "utils/element_printers.hpp"

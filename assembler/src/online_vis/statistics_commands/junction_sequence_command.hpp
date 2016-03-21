@@ -10,8 +10,8 @@
 #include "../environment.hpp"
 #include "../command.hpp"
 #include "../errors.hpp"
-#include "graph_support/basic_graph_stats.hpp"
-#include "graph_alignment/sequence_mapper.hpp"
+#include "data_structures/assembly_graph/graph_support/basic_graph_stats.hpp"
+#include "data_structures/assembly_graph/graph_alignment/sequence_mapper.hpp"
 
 namespace online_visualization {
 class JunctionSequenceCommand : public LocalCommand<DebruijnEnvironment> {

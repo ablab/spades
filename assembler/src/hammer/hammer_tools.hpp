@@ -15,7 +15,7 @@
 #include <fstream>
 #include "io/reads/read.hpp"
 #include "io/reads_io/ireadstream.hpp"
-#include "sequence/seq.hpp"
+#include "data_structures/sequence/seq.hpp"
 #include "globals.hpp"
 #include "kmer_stat.hpp"
 #include "io/kmers_io/mmapped_reader.hpp"

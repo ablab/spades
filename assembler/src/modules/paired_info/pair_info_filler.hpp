@@ -15,7 +15,7 @@
 #ifndef PAIR_INFO_FILLER_HPP_
 #define PAIR_INFO_FILLER_HPP_
 
-#include "graph_alignment/sequence_mapper_notifier.hpp"
+#include "data_structures/assembly_graph/graph_alignment/sequence_mapper_notifier.hpp"
 
 namespace debruijn_graph {
 

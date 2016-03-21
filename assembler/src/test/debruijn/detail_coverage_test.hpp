@@ -12,7 +12,7 @@
 #include "standard.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/graphio.hpp"
-#include "graph_support/detail_coverage.hpp"
+#include "data_structures/assembly_graph/graph_support/detail_coverage.hpp"
 
 namespace debruijn_graph {
 

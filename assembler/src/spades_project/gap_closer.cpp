@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "gap_closer.hpp"
-#include "simplification/compressor.hpp"
+#include "algorithms/simplification/compressor.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "adt/kmer_set.hpp"
 #include <stack>

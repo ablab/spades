@@ -8,12 +8,12 @@
 #include "io/reads_io/osequencestream.hpp"
 #include "pipeline/stage.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "simplification/path_processor.hpp"
-#include "shared_stages/construction.hpp"
+#include "algorithms/simplification/path_processor.hpp"
+#include "stages/construction.hpp"
 #include "pipeline/config_struct.hpp"
-#include "dijkstra/dijkstra_algorithm.hpp"
-#include "dijkstra/dijkstra_helper.hpp"
-#include "graph_support/stats/basic_graph_stats.hpp"
+#include "algorithms/dijkstra/dijkstra_algorithm.hpp"
+#include "algorithms/dijkstra/dijkstra_helper.hpp"
+#include "data_structures/assembly_graph/graph_support/stats/basic_graph_stats.hpp"
 
 namespace scaffold_correction {
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;

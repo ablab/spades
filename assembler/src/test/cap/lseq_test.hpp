@@ -9,8 +9,8 @@
 #include <boost/test/unit_test.hpp>
 #include "test_utils.hpp"
 #include "longseq.hpp"
-#include "sequence/sequence.hpp"
-#include "sequence/nucl.hpp"
+#include "data_structures/sequence/sequence.hpp"
+#include "data_structures/sequence/nucl.hpp"
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <string>

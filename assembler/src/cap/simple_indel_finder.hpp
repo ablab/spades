@@ -9,7 +9,7 @@
 
 #include <iostream>
 #include "coloring.hpp"
-#include "graph_support/graph_processing_algorithm.hpp"
+#include "data_structures/assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "path_projector.hpp"
 #include "graph_traversal_constraints.hpp"
 

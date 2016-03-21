@@ -16,7 +16,7 @@
 #define KMER_HASH_VECTOR_HPP_
 
 
-#include "sequence/runtime_k.hpp"
+#include "data_structures/sequence/runtime_k.hpp"
 #include "kmer_map.hpp"
 
 

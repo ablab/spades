@@ -14,7 +14,7 @@
 #include <unordered_map>
 #include "io/ireadstream.hpp"
 #include "io/read.hpp"
-#include "sequence/seq.hpp"
+#include "data_structures/sequence/seq.hpp"
 #include "valid_kmer_generator.hpp"
 #include "quake_enhanced/quake.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))

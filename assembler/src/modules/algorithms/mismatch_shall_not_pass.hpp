@@ -7,12 +7,12 @@
 
 #pragma once
 
-#include "simplification/compressor.hpp"
-#include "graph_support/handlers/id_track_handler.hpp"
+#include "algorithms/simplification/compressor.hpp"
+#include "data_structures/assembly_graph/graph_support/handlers/id_track_handler.hpp"
 #include "dev_support/logger/logger.hpp"
 
-#include "sequence/runtime_k.hpp"
-#include "graph_alignment/sequence_mapper.hpp"
+#include "data_structures/sequence/runtime_k.hpp"
+#include "data_structures/assembly_graph/graph_alignment/sequence_mapper.hpp"
 
 #include "pipeline/config_struct.hpp"
 

@@ -9,7 +9,6 @@ project(spades CXX)
 
 add_library(deb STATIC
             gap_closer.cpp
-            simplification.cpp
             mismatch_correction.cpp
             pair_info_count.cpp
             second_phase_setup.cpp

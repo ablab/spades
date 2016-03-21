@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 #include "io/read.hpp"
-#include "sequence/seq.hpp"
+#include "data_structures/sequence/seq.hpp"
 /**
  * This class is designed to iterate through valid k-mers in read.
  * @example

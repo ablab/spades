@@ -7,22 +7,22 @@
 
 #pragma once
 
-#include "indices/edge_position_index.hpp"
-#include "indices/storing_traits.hpp"
-#include "sequence/genome_storage.hpp"
-#include "graph_support/handlers/id_track_handler.hpp"
-#include "graph_support/handlers/edges_position_handler.hpp"
-#include "assembly_graph/graph.hpp"
+#include "data_structures/indices/edge_position_index.hpp"
+#include "data_structures/indices/storing_traits.hpp"
+#include "data_structures/sequence/genome_storage.hpp"
+#include "data_structures/assembly_graph/graph_support/handlers/id_track_handler.hpp"
+#include "data_structures/assembly_graph/graph_support/handlers/edges_position_handler.hpp"
+#include "data_structures/assembly_graph/graph_core/graph.hpp"
 #include "paired_info/paired_info.hpp"
 #include "pipeline/config_struct.hpp"
-#include "graph_alignment/edge_index.hpp"
-#include "graph_support/handlers/genomic_quality.hpp"
-#include "graph_alignment/sequence_mapper.hpp"
+#include "data_structures/assembly_graph/graph_alignment/edge_index.hpp"
+#include "data_structures/assembly_graph/graph_support/handlers/genomic_quality.hpp"
+#include "data_structures/assembly_graph/graph_alignment/sequence_mapper.hpp"
 #include "genomic_info.hpp"
-#include "graph_alignment/long_read_storage.hpp"
-#include "graph_support/detail_coverage.hpp"
-#include "graph_support/components/connected_component.hpp"
-#include "graph_alignment/kmer_mapper.hpp"
+#include "data_structures/assembly_graph/graph_alignment/long_read_storage.hpp"
+#include "data_structures/assembly_graph/graph_support/detail_coverage.hpp"
+#include "data_structures/assembly_graph/graph_support/components/connected_component.hpp"
+#include "data_structures/assembly_graph/graph_alignment/kmer_mapper.hpp"
 
 namespace debruijn_graph {
 

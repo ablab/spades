@@ -5,11 +5,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "graph_alignment/pacbio/pac_index.hpp"
-#include "graph_alignment/pacbio/pacbio_gap_closer.hpp"
-#include "graph_alignment/long_read_storage.hpp"
+#include "data_structures/assembly_graph/graph_alignment/pacbio/pac_index.hpp"
+#include "data_structures/assembly_graph/graph_alignment/pacbio/pacbio_gap_closer.hpp"
+#include "data_structures/assembly_graph/graph_alignment/long_read_storage.hpp"
 #include "io/reads_io/wrapper_collection.hpp"
-#include "graph_support/stats/picture_dump.hpp"
+#include "data_structures/assembly_graph/graph_support/stats/picture_dump.hpp"
 #include "pacbio_aligning.hpp"
 
 namespace debruijn_graph {

@@ -4,10 +4,10 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#include <graph_support/contig_output.hpp>
-#include "simplification_pipeline/graph_simplification.hpp"
-#include "simplification/ec_threshold_finder.hpp"
-#include "graph_support/stats/basic_graph_stats.hpp"
+#include "data_structures/assembly_graph/graph_support/contig_output.hpp"
+#include "algorithms/simplification_pipeline/graph_simplification.hpp"
+#include "algorithms/simplification/ec_threshold_finder.hpp"
+#include "data_structures/assembly_graph/graph_support/stats/basic_graph_stats.hpp"
 
 #include "chromosome_removal.hpp"
 

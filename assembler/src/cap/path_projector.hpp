@@ -10,7 +10,7 @@
 
 #include "coordinates_handler.hpp"
 //#include "coloring.hpp"
-#include "graph_support/graph_processing_algorithm.hpp"
+#include "data_structures/assembly_graph/graph_support/graph_processing_algorithm.hpp"
 
 namespace cap {
 

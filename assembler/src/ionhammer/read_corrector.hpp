@@ -35,7 +35,7 @@
 #include <fstream>
 
 #if 1
-#include "sequence/nucl.hpp"
+#include "data_structures/sequence/nucl.hpp"
 #include <iostream>
 #include <iomanip>
 #endif

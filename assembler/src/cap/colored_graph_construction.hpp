@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "sequence/runtime_k.hpp"
+#include "data_structures/sequence/runtime_k.hpp"
 #include "compare_standard.hpp"
 #include "cap_kmer_index.hpp"
 #include "graph_construction.hpp"

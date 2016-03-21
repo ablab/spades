@@ -13,11 +13,11 @@
 #include "dev_support/segfault_handler.hpp"
 #include "dev_support/memory_limit.hpp"
 #include "dev_support/copy_file.hpp"
-#include "sequence/runtime_k.hpp"
+#include "data_structures/sequence/runtime_k.hpp"
 
 
 #include "pipeline/graph_pack.hpp"
-#include "shared_stages/construction.hpp"
+#include "stages/construction.hpp"
 
 #include "dipspades.hpp"
 

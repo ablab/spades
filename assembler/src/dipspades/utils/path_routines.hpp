@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #pragma once
-#include "assembly_graph/graph.hpp"
+#include "data_structures/assembly_graph/graph_core/graph.hpp"
 #include "pipeline/graph_pack.hpp"
 
 using namespace debruijn_graph;

@@ -12,7 +12,7 @@
 #include "coordinates_handler.hpp"
 #include "compare_standard.hpp"
 #include "comparison_utils.hpp"
-#include "dijkstra/dijkstra_helper.hpp"
+#include "algorithms/dijkstra/dijkstra_helper.hpp"
 
 namespace cap {
 

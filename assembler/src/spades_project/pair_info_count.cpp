@@ -9,10 +9,10 @@
 #include "io/dataset_support/read_converter.hpp"
 
 #include "pair_info_count.hpp"
-#include "graph_alignment/short_read_mapper.hpp"
-#include "graph_alignment/long_read_mapper.hpp"
+#include "data_structures/assembly_graph/graph_alignment/short_read_mapper.hpp"
+#include "data_structures/assembly_graph/graph_alignment/long_read_mapper.hpp"
 #include "paired_info/pair_info_filler.hpp"
-#include "path_extend/split_graph_pair_info.hpp"
+#include "algorithms/path_extend/split_graph_pair_info.hpp"
 #include "paired_info/bwa_pair_info_filler.hpp"
 
 namespace debruijn_graph {

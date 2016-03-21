@@ -8,7 +8,7 @@
 #ifndef __HAMMER_KMER_DATA_HPP__
 #define __HAMMER_KMER_DATA_HPP__
 
-#include "mph_index/kmer_index.hpp"
+#include "data_structures/mph_index/kmer_index.hpp"
 #include "hkmer.hpp"
 
 #include <vector>

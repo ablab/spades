@@ -11,7 +11,7 @@
 #include "longseq.hpp"
 #include "polynomial_hash.hpp"
 #include "adt/kmer_map.hpp"
-#include "indices/edge_position_index.hpp"
+#include "data_structures/indices/edge_position_index.hpp"
 
 #include "io/sequence_reader.hpp"
 

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "graph_alignment/sequence_mapper.hpp"
+#include "data_structures/assembly_graph/graph_alignment/sequence_mapper.hpp"
 #include "contig_separation_utils.hpp"
 
 using namespace debruijn_graph;

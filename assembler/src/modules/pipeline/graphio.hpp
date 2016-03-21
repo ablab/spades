@@ -9,17 +9,17 @@
 
 #include "dev_support/standard_base.hpp"
 
-#include "graph_support/handlers/id_track_handler.hpp"
-#include "graph_support/handlers/edges_position_handler.hpp"
-#include "graph_support/components/graph_component.hpp"
+#include "data_structures/assembly_graph/graph_support/handlers/id_track_handler.hpp"
+#include "data_structures/assembly_graph/graph_support/handlers/edges_position_handler.hpp"
+#include "data_structures/assembly_graph/graph_support/components/graph_component.hpp"
 
 #include "paired_info/paired_info.hpp"
 
-#include "assembly_graph/graph.hpp"
-#include "graph_support/detail_coverage.hpp"
-#include "graph_alignment/long_read_storage.hpp"
+#include "data_structures/assembly_graph/graph_core/graph.hpp"
+#include "data_structures/assembly_graph/graph_support/detail_coverage.hpp"
+#include "data_structures/assembly_graph/graph_alignment/long_read_storage.hpp"
 
-#include "assembly_graph/order_and_law.hpp"
+#include "data_structures/assembly_graph/graph_core/order_and_law.hpp"
 
 #include <cmath>
 #include <set>

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "dijkstra/neighbours_iterator.hpp"
+#include "algorithms/dijkstra/neighbours_iterator.hpp"
 
 using namespace debruijn_graph;
 

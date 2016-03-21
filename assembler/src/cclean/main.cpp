@@ -10,7 +10,7 @@
 #include <map>
 #include <exception>
 
-#include "sequence/seq.hpp"
+#include "data_structures/sequence/seq.hpp"
 #include "dev_support/logger/log_writers.hpp"
 #include "dev_support/memory_limit.hpp"
 #include "running_modes.hpp"
@@ -21,7 +21,7 @@
 
 #include "valid_kmer_generator.hpp"
 #include "io/read_processor.hpp"
-#include "ssw/ssw_cpp.h"
+#include "algorithms/ssw_cpp.h"
 #include "additional.cpp"
 
 #include "job_wrappers.hpp"

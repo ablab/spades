@@ -10,8 +10,8 @@
 
 #include "config/config_singl.hpp"
 #include "dev_support/cpp_utils.hpp"
-#include "sequence/sequence.hpp"
-#include "path_extend/pe_config_struct.hpp"
+#include "data_structures/sequence/sequence.hpp"
+#include "algorithms/path_extend/pe_config_struct.hpp"
 
 #include "pipeline/library.hpp"
 #include "io/reads_io/binary_streams.hpp"

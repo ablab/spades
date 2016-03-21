@@ -19,10 +19,10 @@
 #include <iostream>
 #include <fstream>
 #include "dev_support/verify.hpp"
-#include "sequence/quality.hpp"
-#include "sequence/sequence.hpp"
-#include "sequence/nucl.hpp"
-#include "sequence/sequence_tools.hpp"
+#include "data_structures/sequence/quality.hpp"
+#include "data_structures/sequence/sequence.hpp"
+#include "data_structures/sequence/nucl.hpp"
+#include "data_structures/sequence/sequence_tools.hpp"
 #include "dev_support/simple_tools.hpp"
 
 //fixme deprecated!!! used in hammer!
