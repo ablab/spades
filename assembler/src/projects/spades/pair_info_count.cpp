@@ -19,40 +19,44 @@ namespace debruijn_graph {
 
 typedef io::SequencingLibrary<debruijn_config::DataSetData> SequencingLib;
 
-bool RefineInsertSizeForLib(conj_graph_pack& gp, size_t ilib, size_t edge_length_threshold) {
+bool RefineInsertSizeForLib(conj_graph_pack &gp, size_t ilib, size_t edge_length_threshold) {
 
-  INFO("Estimating insert size (takes a while)");
-  InsertSizeCounter hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
-  SequenceMapperNotifier notifier(gp);
-  notifier.Subscribe(ilib, &hist_counter);
+    INFO("Estimating insert size (takes a while)");
+    InsertSizeCounter hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
+    SequenceMapperNotifier notifier(gp);
+    notifier.Subscribe(ilib, &hist_counter);
 
-  SequencingLib& reads = cfg::get_writable().ds.reads[ilib];
-  VERIFY(reads.data().read_length != 0);
-  auto paired_streams = paired_binary_readers(reads, false);
-  notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
+    SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
+    VERIFY(reads.data().read_length != 0);
+    auto paired_streams = paired_binary_readers(reads, false);
+    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
 
-  INFO(hist_counter.mapped() << " paired reads (" <<
-       ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << "% of all) aligned to long edges");
-  if (hist_counter.negative() > 3 * hist_counter.mapped())
-      WARN("Too much reads aligned with negative insert size. Is the library orientation set properly?");
-  if (hist_counter.mapped() == 0)
-    return false;
+    INFO(hist_counter.mapped() << " paired reads (" <<
+         ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) <<
+         "% of all) aligned to long edges");
+    if (hist_counter.negative() > 3 * hist_counter.mapped())
+        WARN("Too much reads aligned with negative insert size. Is the library orientation set properly?");
+    if (hist_counter.mapped() == 0)
+        return false;
 
-  std::map<size_t, size_t> percentiles;
-  hist_counter.FindMean(reads.data().mean_insert_size, reads.data().insert_size_deviation, percentiles);
-  hist_counter.FindMedian(reads.data().median_insert_size, reads.data().insert_size_mad, reads.data().insert_size_distribution);
-  if (reads.data().median_insert_size < gp.k_value + 2) {
-    return false;
-  }
+    std::map<size_t, size_t> percentiles;
+    hist_counter.FindMean(reads.data().mean_insert_size, reads.data().insert_size_deviation, percentiles);
+    hist_counter.FindMedian(reads.data().median_insert_size, reads.data().insert_size_mad,
+                            reads.data().insert_size_distribution);
+    if (reads.data().median_insert_size < gp.k_value + 2) {
+        return false;
+    }
 
-  std::tie(reads.data().insert_size_left_quantile, reads.data().insert_size_right_quantile) = omnigraph::GetISInterval(0.8, reads.data().insert_size_distribution);
+    std::tie(reads.data().insert_size_left_quantile,
+             reads.data().insert_size_right_quantile) = omnigraph::GetISInterval(0.8,
+                                                                                 reads.data().insert_size_distribution);
 
-  return !reads.data().insert_size_distribution.empty();
+    return !reads.data().insert_size_distribution.empty();
 }
 
-void ProcessSingleReads(conj_graph_pack& gp, size_t ilib,
+void ProcessSingleReads(conj_graph_pack &gp, size_t ilib,
                         bool use_binary = true) {
-    const SequencingLib& reads = cfg::get().ds.reads[ilib];
+    const SequencingLib &reads = cfg::get().ds.reads[ilib];
     SequenceMapperNotifier notifier(gp);
     SimpleLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
     notifier.Subscribe(ilib, &read_mapper);
@@ -63,17 +67,18 @@ void ProcessSingleReads(conj_graph_pack& gp, size_t ilib,
         notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
     } else {
         auto single_streams = single_easy_readers(reads, false,
-                                                 true, /*handle Ns*/false);
+                                                  true, /*handle Ns*/false);
         notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
     }
     cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;
 }
 
-void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads) {
-    const SequencingLib& reads = cfg::get().ds.reads[ilib];
+void ProcessPairedReads(conj_graph_pack &gp, size_t ilib, bool map_single_reads) {
+    const SequencingLib &reads = cfg::get().ds.reads[ilib];
     bool calculate_threshold = (reads.type() == io::LibraryType::PairedEnd);
     SequenceMapperNotifier notifier(gp);
-    INFO("Left insert size qauntile " << reads.data().insert_size_left_quantile << ", right insert size quantile " << reads.data().insert_size_right_quantile);
+    INFO("Left insert size qauntile " << reads.data().insert_size_left_quantile <<
+         ", right insert size quantile " << reads.data().insert_size_right_quantile);
 
     SimpleLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
     if (map_single_reads) {
@@ -106,11 +111,11 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads)
 
 bool HasGoodRRLibs() {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        const auto& lib = cfg::get().ds.reads[i];
+        const auto &lib = cfg::get().ds.reads[i];
         if (lib.is_contig_lib())
             continue;
         if (lib.is_paired() &&
-                lib.data().mean_insert_size == 0.0) {
+            lib.data().mean_insert_size == 0.0) {
             continue;
         }
         if (lib.is_repeat_resolvable()) {
@@ -124,7 +129,8 @@ bool HasOnlyMP() {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         if (cfg::get().ds.reads[i].type() == io::LibraryType::PathExtendContigs)
             continue;
-        if (cfg::get().ds.reads[i].type() != io::LibraryType::MatePairs && cfg::get().ds.reads[i].type() != io::LibraryType::HQMatePairs) {
+        if (cfg::get().ds.reads[i].type() != io::LibraryType::MatePairs &&
+            cfg::get().ds.reads[i].type() != io::LibraryType::HQMatePairs) {
             return false;
         }
     }
@@ -142,17 +148,18 @@ bool ShouldMapSingleReads(size_t ilib) {
         }
         case sr_only_single_libs: {
             //Map when no PacBio/paried libs or only mate-pairs or single lib itself
-            return !HasGoodRRLibs() || HasOnlyMP() || (cfg::get().ds.reads[ilib].type() == io::LibraryType::SingleReads);
+            return !HasGoodRRLibs() || HasOnlyMP() ||
+                   (cfg::get().ds.reads[ilib].type() == io::LibraryType::SingleReads);
         }
     }
     return false;
 }
 
-void PairInfoCount::run(conj_graph_pack &gp, const char*) {
+void PairInfoCount::run(conj_graph_pack &gp, const char *) {
     gp.InitRRIndices();
     gp.EnsureBasicMapping();
 
-    //fixme implement better universal logic 
+    //fixme implement better universal logic
     size_t edge_length_threshold = cfg::get().ds.meta ? 1000 : stats::Nx(gp.g, 50);
     INFO("Min edge length for estimation: " << edge_length_threshold);
     bwa_pair_info::BWAPairInfoFiller bwa_counter(gp.g,
@@ -161,7 +168,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
                                                  cfg::get().max_threads, !cfg::get().bwa.debug);
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        const auto& lib = cfg::get().ds.reads[i];
+        const auto &lib = cfg::get().ds.reads[i];
 
         if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
             //Run insert size estimation and pair index filler together to save disc space (removes SAM file right after processing the lib)
@@ -170,7 +177,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
         }
         else if (lib.is_paired()) {
             INFO("Estimating insert size for library #" << i);
-            const auto& lib_data = lib.data();
+            const auto &lib_data = lib.data();
             size_t rl = lib_data.read_length;
             size_t k = cfg::get().K;
             bool insert_size_refined = RefineInsertSizeForLib(gp, i, edge_length_threshold);
@@ -188,21 +195,21 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
                 continue;
             } else {
                 INFO("  Insert size = " << lib_data.mean_insert_size <<
-                        ", deviation = " << lib_data.insert_size_deviation <<
-                        ", left quantile = " << lib_data.insert_size_left_quantile <<
-                        ", right quantile = " << lib_data.insert_size_right_quantile <<
-                        ", read length = " << lib_data.read_length);
+                     ", deviation = " << lib_data.insert_size_deviation <<
+                     ", left quantile = " << lib_data.insert_size_left_quantile <<
+                     ", right quantile = " << lib_data.insert_size_right_quantile <<
+                     ", read length = " << lib_data.read_length);
 
                 if (lib_data.mean_insert_size < 1.1 * (double) rl) {
                     WARN("Estimated mean insert size " << lib_data.mean_insert_size
-                                << " is very small compared to read length " << rl);
+                         << " is very small compared to read length " << rl);
                 }
             }
         }
     }
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        const auto& lib = cfg::get().ds.reads[i];
+        const auto &lib = cfg::get().ds.reads[i];
         if (lib.is_pacbio_alignable()) {
             INFO("Library #" << i << " was mapped by PacBio mapper, skipping");
             continue;
@@ -210,7 +217,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
         else if (lib.is_contig_lib()) {
             INFO("Mapping contigs library #" << i);
             ProcessSingleReads(gp, i, false);
-		}
+        }
         else if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
             INFO("Library #" << i << " was mapped by BWA, skipping");
             continue;
@@ -226,7 +233,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
             } else if (map_single_reads) {
                 INFO("Mapping single reads (takes a while) ");
                 ProcessSingleReads(gp, i);
-            } 
+            }
 
             if (map_single_reads) {
                 INFO("Total paths obtained from single reads: " << gp.single_long_reads[i].size());

@@ -17,66 +17,66 @@ namespace omnigraph {
 typedef std::map<int, size_t> HistType;
 
 inline double get_median(const HistType &hist) {
-  double S = 0;
-  for (auto iter = hist.begin(); iter != hist.end(); ++iter)
-    S += (double) iter->second;
+    double S = 0;
+    for (auto iter = hist.begin(); iter != hist.end(); ++iter)
+        S += (double) iter->second;
 
-  double sum = S;
-  for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-    sum -= (double) iter->second;
-    if (sum <= S / 2) {
-      return iter->first;
+    double sum = S;
+    for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+        sum -= (double) iter->second;
+        if (sum <= S / 2) {
+            return iter->first;
+        }
     }
-  }
-  assert(false);
-  return -1;
+    assert(false);
+    return -1;
 }
 
 inline double get_mad(const HistType &hist, double median) { // median absolute deviation
-  std::map<int, size_t> hist2;
-  for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-      int x = abs(iter->first - math::round_to_zero(median));
-    hist2[x] = iter->second;
-  }
-  return get_median(hist2);
+    std::map<int, size_t> hist2;
+    for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+        int x = abs(iter->first - math::round_to_zero(median));
+        hist2[x] = iter->second;
+    }
+    return get_median(hist2);
 }
 
-inline void hist_crop(const HistType &hist, double low, double high, HistType& res) {
-  for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-    if (iter->first >= low && iter->first <= high) {
-      DEBUG("Cropped histogram " <<  iter->first << " " << iter->second);
-      res.insert(*iter);
+inline void hist_crop(const HistType &hist, double low, double high, HistType &res) {
+    for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
+        if (iter->first >= low && iter->first <= high) {
+            DEBUG("Cropped histogram " << iter->first << " " << iter->second);
+            res.insert(*iter);
+        }
     }
-  }
 }
 
 inline
 std::pair<double, double> GetISInterval(double quantile,
                                         const HistType &is_hist) {
-  // First, obtain the sum of the values
-  double S = 0;
-  for (auto iter : is_hist)
-    S += (double) iter.second;
+    // First, obtain the sum of the values
+    double S = 0;
+    for (auto iter : is_hist)
+        S += (double) iter.second;
 
-  double lval = S * (1 - quantile) / 2, rval = S * (1 + quantile) / 2;
-  double is_min, is_max;
+    double lval = S * (1 - quantile) / 2, rval = S * (1 + quantile) / 2;
+    double is_min, is_max;
 
-  // Now, find the quantiles
-  double cS = 0;
-  is_min = is_hist.begin()->first;
-  is_max = is_hist.rbegin()->first;
-  for (auto iter : is_hist) {
-    if (cS <= lval)
-      is_min = iter.first;
-    else if (cS <= rval)
-      is_max = iter.first;
-    cS += (double) iter.second;
-  }
+    // Now, find the quantiles
+    double cS = 0;
+    is_min = is_hist.begin()->first;
+    is_max = is_hist.rbegin()->first;
+    for (auto iter : is_hist) {
+        if (cS <= lval)
+            is_min = iter.first;
+        else if (cS <= rval)
+            is_max = iter.first;
+        cS += (double) iter.second;
+    }
 
-  return std::make_pair(is_min, is_max);
+    return std::make_pair(is_min, is_max);
 }
 
-inline void find_median(const HistType& hist, double& median, double& mad, HistType&cropped_hist) {
+inline void find_median(const HistType &hist, double &median, double &mad, HistType &cropped_hist) {
     DEBUG("Counting median and MAD");
     median = get_median(hist);
     mad = get_mad(hist, median);
@@ -89,7 +89,7 @@ inline void find_median(const HistType& hist, double& median, double& mad, HistT
 
 //Moved from insert size counter.
 //TODO: Please explain constants like 1.4826.
-inline void find_mean(const HistType& hist, double& mean, double& delta, std::map<size_t, size_t>& percentiles) {
+inline void find_mean(const HistType &hist, double &mean, double &delta, std::map<size_t, size_t> &percentiles) {
     double median = get_median(hist);
     double mad = get_mad(hist, median);
     double low = median - 5. * 1.4826 * mad;
@@ -109,7 +109,7 @@ inline void find_mean(const HistType& hist, double& mean, double& delta, std::ma
         }
         n += iter->second;
         sum += (double) iter->second * 1. * (double) iter->first;
-        sum2 += (double)iter->second * 1. * (double)iter->first * (double)iter->first;
+        sum2 += (double) iter->second * 1. * (double) iter->first * (double) iter->first;
     }
     mean = sum / (double) n;
     delta = sqrt(sum2 / (double) n - mean * mean);
@@ -160,8 +160,6 @@ inline void find_mean(const HistType& hist, double& mean, double& delta, std::ma
         m = mm;
     }
 }
-
-
 
 
 }

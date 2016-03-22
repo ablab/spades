@@ -27,7 +27,7 @@ namespace emphf {
     };
 
     typedef std::pair<uint8_t const*, uint8_t const*> byte_range_t;
-    
+
     struct identity_adaptor
     {
         byte_range_t operator()(byte_range_t s) const

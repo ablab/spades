@@ -12,11 +12,11 @@ namespace debruijn_graph {
 
 //todo rename
 class SecondPhaseSetup : public spades::AssemblyStage {
-  public:
+public:
     SecondPhaseSetup()
-        : AssemblyStage("Second Phase Setup", "second_phase_setup") {}
+            : AssemblyStage("Second Phase Setup", "second_phase_setup") { }
 
-    void run(conj_graph_pack &gp, const char*);
+    void run(conj_graph_pack &gp, const char *);
 };
 
 }

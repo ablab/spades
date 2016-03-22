@@ -12,11 +12,11 @@
 namespace debruijn_graph {
 
 class GenomicInfoFiller : public spades::AssemblyStage {
-  public:
+public:
     GenomicInfoFiller()
-        : AssemblyStage("EC Threshold Finding", "ec_threshold_finder") {}
+            : AssemblyStage("EC Threshold Finding", "ec_threshold_finder") { }
 
-    void run(conj_graph_pack &gp, const char*);
+    void run(conj_graph_pack &gp, const char *);
 };
 
 }

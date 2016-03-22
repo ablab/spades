@@ -6,6 +6,7 @@
 //***************************************************************************
 
 #pragma once
+
 #include "ireader.hpp"
 #include <vector>
 
@@ -13,63 +14,63 @@ namespace io {
 //todo rename file
 
 //todo check destroy_readers logic and usages
-template <class ReadType>
+template<class ReadType>
 class ReadStreamList {
 public:
-  typedef ReadType ReadT;
-  typedef ReadStream<ReadType> ReaderT;
-  typedef std::shared_ptr<ReaderT> ReaderPtrT;
+    typedef ReadType ReadT;
+    typedef ReadStream<ReadType> ReaderT;
+    typedef std::shared_ptr<ReaderT> ReaderPtrT;
 
- private:
-  std::vector<ReaderPtrT> readers_;
+private:
+    std::vector<ReaderPtrT> readers_;
 
- public:
+public:
 
-  explicit ReadStreamList(const std::vector<ReaderPtrT>& readers): readers_(readers) {
-  }
+    explicit ReadStreamList(const std::vector<ReaderPtrT> &readers) : readers_(readers) {
+    }
 
-  ReadStreamList() {
-  }
+    ReadStreamList() {
+    }
 
-  explicit ReadStreamList(ReaderT* reader_ptr): readers_(1, ReaderPtrT(reader_ptr)) {
-  }
+    explicit ReadStreamList(ReaderT *reader_ptr) : readers_(1, ReaderPtrT(reader_ptr)) {
+    }
 
-  explicit ReadStreamList(ReaderPtrT reader_ptr): readers_(1, reader_ptr) {
-  }
+    explicit ReadStreamList(ReaderPtrT reader_ptr) : readers_(1, reader_ptr) {
+    }
 
-  explicit ReadStreamList(size_t size): readers_(size) {
-  }
+    explicit ReadStreamList(size_t size) : readers_(size) {
+    }
 
 //  std::vector<Reader*>& get() {
 //      destroy_readers_ = false;
 //      return streams_;
 //  }
 
-  //todo use boost iterator facade
-  class iterator: public std::iterator<std::input_iterator_tag, ReaderT> {
-    typedef typename std::vector<ReaderPtrT>::iterator vec_it;
-    vec_it it_;
-   public:
+    //todo use boost iterator facade
+    class iterator : public std::iterator<std::input_iterator_tag, ReaderT> {
+        typedef typename std::vector<ReaderPtrT>::iterator vec_it;
+        vec_it it_;
+    public:
 
-    iterator(vec_it it) : it_(it) {
-    }
+        iterator(vec_it it) : it_(it) {
+        }
 
-    void operator++ () {
-        ++it_;
-    }
+        void operator++() {
+            ++it_;
+        }
 
-    bool operator== (const iterator& that) {
-        return it_ == that.it_;
-    }
+        bool operator==(const iterator &that) {
+            return it_ == that.it_;
+        }
 
-    bool operator!= (const iterator& that) {
-        return it_ != that.it_;
-    }
+        bool operator!=(const iterator &that) {
+            return it_ != that.it_;
+        }
 
-    ReaderT& operator*() {
-        return *(*it_);
-    }
-  };
+        ReaderT &operator*() {
+            return *(*it_);
+        }
+    };
 
 //  class const_iterator: public std::iterator<std::input_iterator_tag, Reader> {
 //    typedef typename std::vector<Reader*>::iterator vec_it;
@@ -96,38 +97,38 @@ public:
 //    }
 //  };
 
-  ReaderT& operator[](size_t i) {
-    return *readers_.at(i);
-  }
-
-  ReaderPtrT& ptr_at(size_t i) {
-    return readers_.at(i);
-  }
-
-  ReaderT& back() {
-    return *readers_.back();
-  }
-
-  size_t size() const {
-    return readers_.size();
-  }
-
-  bool eof() const {
-    for (size_t i = 0; i < readers_.size(); ++i) {
-      if (!readers_[i]->eof()) {
-        return false;
-      }
+    ReaderT &operator[](size_t i) {
+        return *readers_.at(i);
     }
-    return true;
-  }
 
-  iterator begin() {
-    return iterator(readers_.begin());
-  }
+    ReaderPtrT &ptr_at(size_t i) {
+        return readers_.at(i);
+    }
 
-  iterator end() {
-    return iterator(readers_.end());
-  }
+    ReaderT &back() {
+        return *readers_.back();
+    }
+
+    size_t size() const {
+        return readers_.size();
+    }
+
+    bool eof() const {
+        for (size_t i = 0; i < readers_.size(); ++i) {
+            if (!readers_[i]->eof()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    iterator begin() {
+        return iterator(readers_.begin());
+    }
+
+    iterator end() {
+        return iterator(readers_.end());
+    }
 
 //  const_iterator begin() const {
 //    return iterator(streams_.begin());
@@ -137,37 +138,37 @@ public:
 //    return iterator(streams_.end());
 //  }
 
-  void push_back(ReaderT* reader_ptr) {
-      readers_.push_back(ReaderPtrT(reader_ptr));
-  }
-
-  void push_back(ReaderPtrT reader_ptr) {
-      readers_.push_back(reader_ptr);
-  }
-
-  void reset() {
-    for (size_t i = 0; i < readers_.size(); ++i) {
-      readers_[i]->reset();
+    void push_back(ReaderT *reader_ptr) {
+        readers_.push_back(ReaderPtrT(reader_ptr));
     }
-  }
 
-  void close() {
-    for (size_t i = 0; i < readers_.size(); ++i) {
-      readers_[i]->close();
+    void push_back(ReaderPtrT reader_ptr) {
+        readers_.push_back(reader_ptr);
     }
-  }
 
-  void clear() {
-    readers_.clear();
-  }
-
-  ReadStreamStat get_stat() const {
-    ReadStreamStat stat;
-    for (size_t i = 0; i < readers_.size(); ++i) {
-        stat.merge(readers_[i]->get_stat());
+    void reset() {
+        for (size_t i = 0; i < readers_.size(); ++i) {
+            readers_[i]->reset();
+        }
     }
-    return stat;
-  }
+
+    void close() {
+        for (size_t i = 0; i < readers_.size(); ++i) {
+            readers_[i]->close();
+        }
+    }
+
+    void clear() {
+        readers_.clear();
+    }
+
+    ReadStreamStat get_stat() const {
+        ReadStreamStat stat;
+        for (size_t i = 0; i < readers_.size(); ++i) {
+            stat.merge(readers_[i]->get_stat());
+        }
+        return stat;
+    }
 
 //  void release() {
 //      destroy_readers_ = false;

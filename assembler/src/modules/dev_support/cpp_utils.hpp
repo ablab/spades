@@ -14,28 +14,27 @@
 
 #pragma once
 
-namespace utils
-{
+namespace utils {
 
 // arrays
-template <class T, size_t N>
+template<class T, size_t N>
 size_t array_size(T (&/*arr*/)[N]) {
-  return N;
+    return N;
 }
 
-template <class T, size_t N>
-T* array_end(T (&arr)[N]) {
-  return &arr[N];
+template<class T, size_t N>
+T *array_end(T (&arr)[N]) {
+    return &arr[N];
 }
 
-template <size_t EXPECTED_SIZE, class T, size_t N>
+template<size_t EXPECTED_SIZE, class T, size_t N>
 void check_array_size(T (&/*arr*/)[N]) {
-  static_assert(EXPECTED_SIZE == N, "Unexpected array size");
+    static_assert(EXPECTED_SIZE == N, "Unexpected array size");
 }
 
-template <class T>
-T identity_function(const T& t) {
-	return t;
+template<class T>
+T identity_function(const T &t) {
+    return t;
 }
 
 } // namespace utils

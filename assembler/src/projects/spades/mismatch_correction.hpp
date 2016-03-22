@@ -12,11 +12,11 @@
 namespace debruijn_graph {
 
 class MismatchCorrection : public spades::AssemblyStage {
-  public:
+public:
     MismatchCorrection()
-        : AssemblyStage("Mismatch Correction", "mismatch_correction") {}
+            : AssemblyStage("Mismatch Correction", "mismatch_correction") { }
 
-    void run(conj_graph_pack &gp, const char*);
+    void run(conj_graph_pack &gp, const char *);
 };
 
 }

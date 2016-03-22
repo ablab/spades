@@ -13,21 +13,21 @@ namespace debruijn_graph {
 
 class Simplification : public spades::AssemblyStage {
     const bool preliminary_;
-  public:
+public:
     Simplification(bool preliminary = false)
-        : AssemblyStage(preliminary ? "Preliminary Simplification" : "Simplification",
-                        preliminary ? "simplification_preliminary" : "simplification"),
-          preliminary_(preliminary) {}
+            : AssemblyStage(preliminary ? "Preliminary Simplification" : "Simplification",
+                            preliminary ? "simplification_preliminary" : "simplification"),
+              preliminary_(preliminary) { }
 
-    void run(conj_graph_pack &gp, const char*);
+    void run(conj_graph_pack &gp, const char *);
 };
 
 class SimplificationCleanup : public spades::AssemblyStage {
-  public:
+public:
     SimplificationCleanup()
-        : AssemblyStage("Simplification Cleanup", "simplification_cleanup") {}
+            : AssemblyStage("Simplification Cleanup", "simplification_cleanup") { }
 
-    void run(conj_graph_pack &gp, const char*);
+    void run(conj_graph_pack &gp, const char *);
 };
 
 }

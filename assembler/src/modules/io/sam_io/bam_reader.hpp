@@ -14,13 +14,13 @@
 
 namespace io {
 class BamRead : public BamTools::BamAlignment {
-  public:
-    BamRead() {}
+public:
+    BamRead() { }
 
     BamRead(const BamTools::BamAlignment &other)
-            : BamTools::BamAlignment(other) {}
-    
-    const std::string& name() const {
+            : BamTools::BamAlignment(other) { }
+
+    const std::string &name() const {
         return Name;
     }
 
@@ -32,10 +32,10 @@ class BamRead : public BamTools::BamAlignment {
         return size();
     }
 
-    const std::string& GetSequenceString() const {
+    const std::string &GetSequenceString() const {
         return QueryBases;
     }
-    
+
     std::string GetPhredQualityString() const {
         return Qualities;
     }
@@ -53,18 +53,20 @@ class BamRead : public BamTools::BamAlignment {
     }
 };
 
-class UnmappedBamStream: public ReadStream<BamRead> {
-  public:
+class UnmappedBamStream : public ReadStream<BamRead> {
+public:
     UnmappedBamStream(const std::string &filename)
             : filename_(filename) {
         open();
     }
-    
-    virtual ~UnmappedBamStream() {}
+
+    virtual ~UnmappedBamStream() { }
 
     bool is_open() { return is_open_; }
+
     bool eof() { return eof_; }
-    UnmappedBamStream& operator>>(BamRead& read) {
+
+    UnmappedBamStream &operator>>(BamRead &read) {
         if (!is_open_ || eof_)
             return *this;
 
@@ -84,10 +86,10 @@ class UnmappedBamStream: public ReadStream<BamRead> {
         close();
         open();
     }
-    
+
     ReadStreamStat get_stat() const { return ReadStreamStat(); }
 
-  private:
+private:
     BamTools::BamReader reader_;
     BamTools::BamAlignment seq_;
     std::string filename_;

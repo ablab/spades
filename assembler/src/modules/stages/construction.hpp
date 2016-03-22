@@ -12,11 +12,11 @@
 namespace debruijn_graph {
 
 class Construction : public spades::AssemblyStage {
-  public:
+public:
     Construction()
-        : AssemblyStage("Construction", "construction") {}
+            : AssemblyStage("Construction", "construction") { }
 
-    void run(conj_graph_pack &gp, const char*);
+    void run(conj_graph_pack &gp, const char *);
 };
 
 }

@@ -6,11 +6,11 @@
 //***************************************************************************
 
 /*
- * split_path_constructor.hpp
- *
- *  Created on: Jun 14, 2012
- *      Author: avsirotkin
- */
+* split_path_constructor.hpp
+*
+*  Created on: Jun 14, 2012
+*      Author: avsirotkin
+*/
 
 #pragma once
 
@@ -23,30 +23,38 @@ namespace debruijn_graph {
 
 template<class Graph>
 class PathInfoClass {
-  public:
+public:
     typedef typename Graph::EdgeId EdgeId;
     typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
 
     EdgeId base_edge;
     vector<PairInfo> path;
-    PathInfoClass(): base_edge(NULL) {};
-    PathInfoClass(const EdgeId Edge): base_edge(Edge) {};
+
+    PathInfoClass() : base_edge(NULL) { };
+
+    PathInfoClass(const EdgeId Edge) : base_edge(Edge) { };
+
     std::pair<EdgeId, double> operator[](const size_t i) const {
         if (i == 0)
             return std::make_pair(base_edge, 0.0);
 
         VERIFY(i < path.size() + 1);
-        return std::make_pair(path[i-1].second, path[i-1].d());
+        return std::make_pair(path[i - 1].second, path[i - 1].d());
     }
+
     size_t size() const { return path.size() + 1; }
-    void push_back(const PairInfo& pi) { path.push_back(pi); }
+
+    void push_back(const PairInfo &pi) { path.push_back(pi); }
+
     typename std::vector<PairInfo>::const_iterator begin() const { return path.begin(); }
+
     typename std::vector<PairInfo>::const_iterator end() const { return path.end(); }
-    std::string PrintPath(const Graph& graph) const {
+
+    std::string PrintPath(const Graph &graph) const {
         std::ostringstream ss;
-        ss<<" "<<graph.int_id(base_edge)<<": ";
-        for (size_t j=0; j < path.size(); j++){
-            ss<<"("<<graph.int_id(path[j].second)<<", "<<path[j].d()<<"), ";
+        ss << " " << graph.int_id(base_edge) << ": ";
+        for (size_t j = 0; j < path.size(); j++) {
+            ss << "(" << graph.int_id(path[j].second) << ", " << path[j].d() << "), ";
         }
         return ss.str();
     }
@@ -58,10 +66,11 @@ class SplitPathConstructor {
     typedef PathInfoClass<Graph> PathInfo;
     typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
 
-  public:
-    SplitPathConstructor(const Graph &graph): graph_(graph) {}
+public:
+    SplitPathConstructor(const Graph &graph) : graph_(graph) { }
 
-    vector<PathInfo> ConvertPIToSplitPaths(EdgeId cur_edge, const omnigraph::de::PairedInfoIndexT<Graph> &pi, double is, double is_var) const {
+    vector<PathInfo> ConvertPIToSplitPaths(EdgeId cur_edge, const omnigraph::de::PairedInfoIndexT<Graph> &pi,
+                                           double is, double is_var) const {
         vector<PairInfo> pair_infos; //TODO: this is an adaptor for the old implementation
         for (auto i : pi.Get(cur_edge))
             for (auto j : i.second)
@@ -83,7 +92,7 @@ class SplitPathConstructor {
         TRACE("Path_processor is done");
 
         for (size_t i = pair_infos.size(); i > 0; --i) {
-            const PairInfo& cur_info = pair_infos[i - 1];
+            const PairInfo &cur_info = pair_infos[i - 1];
             if (math::le(cur_info.d(), 0.))
                 continue;
             if (pair_info_used[i - 1])
@@ -123,10 +132,9 @@ class SplitPathConstructor {
         return result;
     }
 
-  private:
+private:
     const Graph &graph_;
 };
-
 
 
 }

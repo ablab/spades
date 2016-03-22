@@ -18,28 +18,29 @@
 namespace omnigraph {
 
 using std::vector;
+
 /**
- * ActionHandler is base listening class for graph events. All structures and information storages
- * which are meant to synchronize with graph should use this structure. In order to make handler listen
- * to graph events one should add it to graph listeners.
- * Normally structure itself extends ActionHandler and overrides several handling methods. In
- * constructor it adds itself to graph handler list and removes itself form this list in destructor.
- * All events are divided into two levels: low level events and high level events.
- * Low level events are addition/deletion of vertices/edges. These events should be triggered only after
- * high level events when all data was already transferred and graph structure is consistent.
- * High level events should be used to keep external data synchronized with graph and keep internal data
- * consistent. Now high level events are merge, glue and split. This list can be extended in near future.
- */
+* ActionHandler is base listening class for graph events. All structures and information storages
+* which are meant to synchronize with graph should use this structure. In order to make handler listen
+* to graph events one should add it to graph listeners.
+* Normally structure itself extends ActionHandler and overrides several handling methods. In
+* constructor it adds itself to graph handler list and removes itself form this list in destructor.
+* All events are divided into two levels: low level events and high level events.
+* Low level events are addition/deletion of vertices/edges. These events should be triggered only after
+* high level events when all data was already transferred and graph structure is consistent.
+* High level events should be used to keep external data synchronized with graph and keep internal data
+* consistent. Now high level events are merge, glue and split. This list can be extended in near future.
+*/
 template<typename VertexId, typename EdgeId>
 class ActionHandler : private boost::noncopyable {
     const std::string handler_name_;
-  private:
+private:
     bool attached_;
-  public:
+public:
     /**
      * Create action handler with given name. With this name one can find out what tipe of handler is it.
      */
-    ActionHandler(const std::string& name)
+    ActionHandler(const std::string &name)
             : handler_name_(name), attached_(true) {
     }
 
@@ -50,7 +51,7 @@ class ActionHandler : private boost::noncopyable {
     /**
      * Method returns name of this handler
      */
-    const std::string& name() const {
+    const std::string &name() const {
         return handler_name_;
     }
 
@@ -58,25 +59,25 @@ class ActionHandler : private boost::noncopyable {
      * Low level event which is triggered when vertex is added to graph.
      * @param v new vertex
      */
-    virtual void HandleAdd(VertexId /*v*/) {}
+    virtual void HandleAdd(VertexId /*v*/) { }
 
     /**
      * Low level event which is triggered when edge is added to graph.
      * @param e new edge
      */
-    virtual void HandleAdd(EdgeId /*e*/) {}
-    
+    virtual void HandleAdd(EdgeId /*e*/) { }
+
     /**
      * Low level event which is triggered when vertex is deleted from graph.
      * @param v vertex to delete
      */
-    virtual void HandleDelete(VertexId /*v*/) {}
+    virtual void HandleDelete(VertexId /*v*/) { }
 
     /**
      * Low level event which is triggered when edge is deleted from graph.
      * @param e edge to delete
      */
-    virtual void HandleDelete(EdgeId /*e*/) {}
+    virtual void HandleDelete(EdgeId /*e*/) { }
 
     /**
      * High level event which is triggered when merge operation is performed on graph, which is when
@@ -86,7 +87,7 @@ class ActionHandler : private boost::noncopyable {
      * @param old_edges path of edges to be replaced with single edge
      * @param new_edge new edge that was added to be a replacement of path
      */
-    virtual void HandleMerge(const vector<EdgeId>& /*old_edges*/, EdgeId /*new_edge*/) {}
+    virtual void HandleMerge(const vector<EdgeId> & /*old_edges*/, EdgeId /*new_edge*/) { }
 
     /**
      * High level event which is triggered when glue operation is performed on graph, which is when
@@ -97,7 +98,7 @@ class ActionHandler : private boost::noncopyable {
      * @param edge1 edge to be glued to edge2
      * @param edge2 edge edge1 should be glued with
      */
-    virtual void HandleGlue(EdgeId /*new_edge*/, EdgeId /*edge1*/, EdgeId /*edge2*/) {}
+    virtual void HandleGlue(EdgeId /*new_edge*/, EdgeId /*edge1*/, EdgeId /*edge2*/) { }
 
     /**
      * High level event which is triggered when split operation is performed on graph, which is when
@@ -108,7 +109,7 @@ class ActionHandler : private boost::noncopyable {
      * @param new_edges edges which are results of split
      */
     virtual void HandleSplit(EdgeId /*old_edge*/, EdgeId /*new_edge_1*/,
-                             EdgeId /*new_edge_2*/) {}
+                             EdgeId /*new_edge_2*/) { }
 
     /**
      * Every thread safe descendant should override this method for correct concurrent graph processing.
@@ -134,18 +135,18 @@ class ActionHandler : private boost::noncopyable {
 
 template<class Graph>
 class GraphActionHandler : public ActionHandler<typename Graph::VertexId,
-                                                typename Graph::EdgeId> {
+        typename Graph::EdgeId> {
     typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
 
-    const Graph& g_;
+    const Graph &g_;
 
-  protected:
-    const Graph& g() const {
+protected:
+    const Graph &g() const {
         return g_;
     }
 
-  public:
-    GraphActionHandler(const Graph& g, const std::string& name)
+public:
+    GraphActionHandler(const Graph &g, const std::string &name)
             : base(name),
               g_(g) {
         TRACE("Adding new action handler: " << this->name());
@@ -161,44 +162,44 @@ class GraphActionHandler : public ActionHandler<typename Graph::VertexId,
 
     virtual ~GraphActionHandler() {
         TRACE("Removing action handler: " << this->name());
-        if(this->IsAttached())
+        if (this->IsAttached())
             this->Detach();
         g_.RemoveActionHandler(this);
     }
 };
 
 /**
- * In order to support various types of graphs and make handler structure more flexible HandlerApplier
- * structure was introduced. If certain implementation of graph requires special handler triggering scheme
- * one can store certain extension of HandlerApplier in graph and trigger HandlerApplier methods instead
- * of GraphHandler methods.
- * HandlerApplier contains one method for each of graph events which define the exact way this event
- * should be triggered.
- */
+* In order to support various types of graphs and make handler structure more flexible HandlerApplier
+* structure was introduced. If certain implementation of graph requires special handler triggering scheme
+* one can store certain extension of HandlerApplier in graph and trigger HandlerApplier methods instead
+* of GraphHandler methods.
+* HandlerApplier contains one method for each of graph events which define the exact way this event
+* should be triggered.
+*/
 template<typename VertexId, typename EdgeId>
 class HandlerApplier {
     typedef ActionHandler<VertexId, EdgeId> Handler;
-  public:
+public:
 
     virtual void
-    ApplyAdd(Handler& handler, VertexId v) const = 0;
+            ApplyAdd(Handler &handler, VertexId v) const = 0;
 
     virtual void
-    ApplyAdd(Handler& handler, EdgeId e) const = 0;
+            ApplyAdd(Handler &handler, EdgeId e) const = 0;
 
     virtual void
-    ApplyDelete(Handler& handler, VertexId v) const = 0;
+            ApplyDelete(Handler &handler, VertexId v) const = 0;
 
     virtual void
-    ApplyDelete(Handler& handler, EdgeId e) const = 0;
+            ApplyDelete(Handler &handler, EdgeId e) const = 0;
 
-    virtual void ApplyMerge(Handler& handler, vector<EdgeId> old_edges,
+    virtual void ApplyMerge(Handler &handler, vector<EdgeId> old_edges,
                             EdgeId new_edge) const = 0;
 
-    virtual void ApplyGlue(Handler& handler, EdgeId new_edge, EdgeId edge1,
+    virtual void ApplyGlue(Handler &handler, EdgeId new_edge, EdgeId edge1,
                            EdgeId edge2) const = 0;
 
-    virtual void ApplySplit(Handler& handler, EdgeId old_edge,
+    virtual void ApplySplit(Handler &handler, EdgeId old_edge,
                             EdgeId new_edge_1, EdgeId new_edge2) const = 0;
 
     virtual ~HandlerApplier() {
@@ -206,43 +207,43 @@ class HandlerApplier {
 };
 
 /**
- * SimpleHandlerApplier is simple implementation of handler applier with no special filtering.
- */
+* SimpleHandlerApplier is simple implementation of handler applier with no special filtering.
+*/
 template<class Graph>
 class SimpleHandlerApplier : public HandlerApplier<typename Graph::VertexId,
-                                                   typename Graph::EdgeId> {
-  public:
+        typename Graph::EdgeId> {
+public:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef ActionHandler<VertexId, EdgeId> Handler;
 
-    virtual void ApplyAdd(Handler& handler, VertexId v) const {
+    virtual void ApplyAdd(Handler &handler, VertexId v) const {
         handler.HandleAdd(v);
     }
 
-    virtual void ApplyAdd(Handler& handler, EdgeId e) const {
+    virtual void ApplyAdd(Handler &handler, EdgeId e) const {
         handler.HandleAdd(e);
     }
 
-    virtual void ApplyDelete(Handler& handler, VertexId v) const {
+    virtual void ApplyDelete(Handler &handler, VertexId v) const {
         handler.HandleDelete(v);
     }
 
-    virtual void ApplyDelete(Handler& handler, EdgeId e) const {
+    virtual void ApplyDelete(Handler &handler, EdgeId e) const {
         handler.HandleDelete(e);
     }
 
-    virtual void ApplyMerge(Handler& handler, vector<EdgeId> old_edges,
+    virtual void ApplyMerge(Handler &handler, vector<EdgeId> old_edges,
                             EdgeId new_edge) const {
         handler.HandleMerge(old_edges, new_edge);
     }
 
-    virtual void ApplyGlue(Handler& handler, EdgeId new_edge, EdgeId edge1,
+    virtual void ApplyGlue(Handler &handler, EdgeId new_edge, EdgeId edge1,
                            EdgeId edge2) const {
         handler.HandleGlue(new_edge, edge1, edge2);
     }
 
-    virtual void ApplySplit(Handler& handler, EdgeId old_edge, EdgeId new_edge1,
+    virtual void ApplySplit(Handler &handler, EdgeId old_edge, EdgeId new_edge1,
                             EdgeId new_edge2) const {
         handler.HandleSplit(old_edge, new_edge1, new_edge2);
     }
@@ -250,17 +251,17 @@ class SimpleHandlerApplier : public HandlerApplier<typename Graph::VertexId,
 };
 
 /**
- * PairedHandlerApplier is implementation of HandlerApplier for graph with synchronization of actions
- * performed with vertices/edges and its reverse-complement analogues. Thus while corresponding
- * method was called only once event should be triggered twice: for the parameters with which method
- * was called and for reverse-complement parameters. Also certain assertions were added for bad cases.
- */
+* PairedHandlerApplier is implementation of HandlerApplier for graph with synchronization of actions
+* performed with vertices/edges and its reverse-complement analogues. Thus while corresponding
+* method was called only once event should be triggered twice: for the parameters with which method
+* was called and for reverse-complement parameters. Also certain assertions were added for bad cases.
+*/
 template<class Graph>
 class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
-                                                   typename Graph::EdgeId> {
-  private:
+        typename Graph::EdgeId> {
+private:
     Graph &graph_;
-  public:
+public:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef ActionHandler<VertexId, EdgeId> Handler;
@@ -269,7 +270,7 @@ class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
             : graph_(graph) {
     }
 
-    virtual void ApplyAdd(Handler& handler, VertexId v) const {
+    virtual void ApplyAdd(Handler &handler, VertexId v) const {
         VertexId rcv = graph_.conjugate(v);
         handler.HandleAdd(v);
         if (v != rcv) {
@@ -277,7 +278,7 @@ class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
         }
     }
 
-    virtual void ApplyAdd(Handler& handler, EdgeId e) const {
+    virtual void ApplyAdd(Handler &handler, EdgeId e) const {
         EdgeId rce = graph_.conjugate(e);
         handler.HandleAdd(e);
         if (e != rce) {
@@ -285,7 +286,7 @@ class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
         }
     }
 
-    virtual void ApplyDelete(Handler& handler, VertexId v) const {
+    virtual void ApplyDelete(Handler &handler, VertexId v) const {
         VertexId rcv = graph_.conjugate(v);
         handler.HandleDelete(v);
         if (v != rcv) {
@@ -293,7 +294,7 @@ class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
         }
     }
 
-    virtual void ApplyDelete(Handler& handler, EdgeId e) const {
+    virtual void ApplyDelete(Handler &handler, EdgeId e) const {
         EdgeId rce = graph_.conjugate(e);
         handler.HandleDelete(e);
         if (e != rce) {
@@ -301,7 +302,7 @@ class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
         }
     }
 
-    virtual void ApplyMerge(Handler& handler, vector<EdgeId> old_edges,
+    virtual void ApplyMerge(Handler &handler, vector<EdgeId> old_edges,
                             EdgeId new_edge) const {
         EdgeId rce = graph_.conjugate(new_edge);
         handler.HandleMerge(old_edges, new_edge);
@@ -314,7 +315,7 @@ class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
         }
     }
 
-    virtual void ApplyGlue(Handler& handler, EdgeId new_edge, EdgeId edge1,
+    virtual void ApplyGlue(Handler &handler, EdgeId new_edge, EdgeId edge1,
                            EdgeId edge2) const {
         EdgeId rc_edge1 = graph_.conjugate(edge1);
         EdgeId rc_edge2 = graph_.conjugate(edge2);
@@ -326,7 +327,7 @@ class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
         }
     }
 
-    virtual void ApplySplit(Handler& handler, EdgeId old_edge,
+    virtual void ApplySplit(Handler &handler, EdgeId old_edge,
                             EdgeId new_edge_1, EdgeId new_edge2) const {
         EdgeId rce = graph_.conjugate(old_edge);
         //VERIFY(old_edge != rce);
@@ -337,7 +338,7 @@ class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
         }
     }
 
-  private:
+private:
     DECL_LOGGER("PairedHandlerApplier")
 };
 

@@ -13,65 +13,65 @@
 namespace io {
 
 //todo merge with VectorReader
-template <class ReadType>
+template<class ReadType>
 class SequenceReadStream : public ReadStream<ReadType> {
- public:
-  explicit SequenceReadStream(const Sequence &sequence, const std::string &name = "")
-      : sequence_(sequence),
-        name_(name),
-        opened_(true),
-        eof_(false) {
-  }
+public:
+    explicit SequenceReadStream(const Sequence &sequence, const std::string &name = "")
+            : sequence_(sequence),
+              name_(name),
+              opened_(true),
+              eof_(false) {
+    }
 
-  virtual ~SequenceReadStream() {
-  }
+    virtual ~SequenceReadStream() {
+    }
 
-  virtual bool is_open() {
-    return opened_;
-  }
+    virtual bool is_open() {
+        return opened_;
+    }
 
-  virtual bool eof() {
-    return eof_;
-  }
+    virtual bool eof() {
+        return eof_;
+    }
 
-  virtual void close() {
-    opened_ = false;
-  }
+    virtual void close() {
+        opened_ = false;
+    }
 
-  void reset() {
-    eof_ = false;
-    opened_ = true;
-  }
+    void reset() {
+        eof_ = false;
+        opened_ = true;
+    }
 
-  ReadStreamStat get_stat() const {
+    ReadStreamStat get_stat() const {
         return ReadStreamStat();
-  }
+    }
 
-  SequenceReadStream& operator>>(ReadType &read);
+    SequenceReadStream &operator>>(ReadType &read);
 
- private:
-  Sequence sequence_;
-  std::string name_;
-  bool opened_;
-  bool eof_;
+private:
+    Sequence sequence_;
+    std::string name_;
+    bool opened_;
+    bool eof_;
 };
 
-template <>
+template<>
 SequenceReadStream<SingleRead> &SequenceReadStream<SingleRead>::operator>>(SingleRead &read) {
-  if (!eof_) {
-    read = SingleRead(name_, sequence_.str());
-    eof_ = true;
-  }
-  return *this;
+    if (!eof_) {
+        read = SingleRead(name_, sequence_.str());
+        eof_ = true;
+    }
+    return *this;
 }
 
-template <>
+template<>
 SequenceReadStream<SingleReadSeq> &SequenceReadStream<SingleReadSeq>::operator>>(SingleReadSeq &read) {
-  if (!eof_) {
-    read = SingleReadSeq(sequence_);
-    eof_ = true;
-  }
-  return *this;
+    if (!eof_) {
+        read = SingleReadSeq(sequence_);
+        eof_ = true;
+    }
+    return *this;
 }
 
 }

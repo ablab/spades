@@ -11,7 +11,9 @@
 #include <mach/task.h>
 #include <mach/mach.h>
 #else
+
 #include <sys/resource.h>
+
 #endif
 
 #include <sys/time.h>
@@ -20,36 +22,38 @@
 #include "config.hpp"
 
 #ifdef SPADES_USE_JEMALLOC
+
 # include <jemalloc/jemalloc.h>
+
 #endif
 
 inline void limit_memory(size_t limit) {
-  rlimit rl;
-  if (sizeof(rlim_t) < 8) {
-    INFO("Can't limit virtual memory because of 32-bit system");
-    return;
-  }
+    rlimit rl;
+    if (sizeof(rlim_t) < 8) {
+        INFO("Can't limit virtual memory because of 32-bit system");
+        return;
+    }
 
-  int res = getrlimit(RLIMIT_AS, &rl);
-  VERIFY_MSG(res == 0,
-             "getrlimit(2) call failed, errno = " << errno);
+    int res = getrlimit(RLIMIT_AS, &rl);
+    VERIFY_MSG(res == 0,
+               "getrlimit(2) call failed, errno = " << errno);
 
-  // We cannot go beyond hard limit and we might not have enough privileges to
-  // increase the hard limit
-  rl.rlim_cur = std::min<size_t>(limit, rl.rlim_max);
-  res = setrlimit(RLIMIT_AS, &rl);
-  VERIFY_MSG(res == 0,
-             "setrlimit(2) call failed, errno = " << errno);
-  INFO("Memory limit set to " << (1.0 * (double)rl.rlim_cur / 1024 / 1024 / 1024) << " Gb");
+    // We cannot go beyond hard limit and we might not have enough privileges to
+    // increase the hard limit
+    rl.rlim_cur = std::min<size_t>(limit, rl.rlim_max);
+    res = setrlimit(RLIMIT_AS, &rl);
+    VERIFY_MSG(res == 0,
+               "setrlimit(2) call failed, errno = " << errno);
+    INFO("Memory limit set to " << (1.0 * (double) rl.rlim_cur / 1024 / 1024 / 1024) << " Gb");
 }
 
 inline size_t get_memory_limit() {
-  rlimit rl;
-  int res = getrlimit(RLIMIT_AS, &rl);
-  VERIFY_MSG(res == 0,
-             "getrlimit(2) call failed, errno = " << errno);
+    rlimit rl;
+    int res = getrlimit(RLIMIT_AS, &rl);
+    VERIFY_MSG(res == 0,
+               "getrlimit(2) call failed, errno = " << errno);
 
-  return rl.rlim_cur;
+    return rl.rlim_cur;
 }
 
 #if __DARWIN || __DARWIN_UNIX03
@@ -65,12 +69,14 @@ inline size_t get_max_rss() {
   return t_info.resident_size / 1024;
 }
 #else
-inline size_t get_max_rss() {
-  rusage ru;
-  getrusage(RUSAGE_SELF, &ru);
 
-  return ru.ru_maxrss;
+inline size_t get_max_rss() {
+    rusage ru;
+    getrusage(RUSAGE_SELF, &ru);
+
+    return ru.ru_maxrss;
 }
+
 #endif
 
 inline size_t get_used_memory() {

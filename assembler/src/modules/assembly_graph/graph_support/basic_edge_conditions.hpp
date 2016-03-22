@@ -12,6 +12,7 @@
 #include "stats/basic_graph_stats.hpp"
 #include "assembly_graph/graph_core/directions.hpp"
 #include "paths/path_finders.hpp"
+
 namespace omnigraph {
 
 using namespace func;
@@ -20,14 +21,14 @@ template<class Graph>
 class EdgeCondition : public Predicate<typename Graph::EdgeId> {
     typedef typename Graph::EdgeId EdgeId;
 
-    const Graph& g_;
- protected:
+    const Graph &g_;
+protected:
 
-    EdgeCondition(const Graph& g)
+    EdgeCondition(const Graph &g)
             : g_(g) {
     }
 
-    const Graph& g() const {
+    const Graph &g() const {
         return g_;
     }
 
@@ -35,17 +36,17 @@ class EdgeCondition : public Predicate<typename Graph::EdgeId> {
 
 template<class Graph>
 class IsolatedEdgeCondition : public EdgeCondition<Graph> {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
     typedef EdgeCondition<Graph> base;
 
-	bool IsTerminalVertex(VertexId v) const {
-		return this->g().IncomingEdgeCount(v) + this->g().OutgoingEdgeCount(v) == 1;
-	}
+    bool IsTerminalVertex(VertexId v) const {
+        return this->g().IncomingEdgeCount(v) + this->g().OutgoingEdgeCount(v) == 1;
+    }
 
 public:
-	IsolatedEdgeCondition(const Graph& g) : base(g) {
-	}
+    IsolatedEdgeCondition(const Graph &g) : base(g) {
+    }
 
     bool Check(EdgeId e) const {
         return IsTerminalVertex(this->g().EdgeStart(e)) && IsTerminalVertex(this->g().EdgeEnd(e));
@@ -54,9 +55,9 @@ public:
 };
 
 template<class Graph>
-inline bool HasAlternatives(const Graph& g, typename Graph::EdgeId e) {
+inline bool HasAlternatives(const Graph &g, typename Graph::EdgeId e) {
     return g.OutgoingEdgeCount(g.EdgeStart(e)) > 1
-                    && g.IncomingEdgeCount(g.EdgeEnd(e)) > 1;
+           && g.IncomingEdgeCount(g.EdgeEnd(e)) > 1;
 }
 
 
@@ -66,9 +67,9 @@ class AlternativesPresenceCondition : public EdgeCondition<Graph> {
     typedef typename Graph::VertexId VertexId;
     typedef EdgeCondition<Graph> base;
 
- public:
+public:
 
-    AlternativesPresenceCondition(const Graph& g)
+    AlternativesPresenceCondition(const Graph &g)
             : base(g) {
 
     }
@@ -80,8 +81,8 @@ class AlternativesPresenceCondition : public EdgeCondition<Graph> {
 };
 
 template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId> AddAlternativesPresenceCondition(const Graph& g,
-                                                                             pred::TypedPredicate<typename Graph::EdgeId> condition) {
+pred::TypedPredicate<typename Graph::EdgeId> AddAlternativesPresenceCondition(const Graph &g,
+                                                                              pred::TypedPredicate<typename Graph::EdgeId> condition) {
     return pred::And(AlternativesPresenceCondition<Graph>(g), condition);
 }
 
@@ -91,9 +92,9 @@ class CoverageUpperBound : public EdgeCondition<Graph> {
     typedef EdgeCondition<Graph> base;
     const double max_coverage_;
 
- public:
+public:
 
-    CoverageUpperBound(const Graph& g, double max_coverage)
+    CoverageUpperBound(const Graph &g, double max_coverage)
             : base(g),
               max_coverage_(max_coverage) {
     }
@@ -111,9 +112,9 @@ class LengthUpperBound : public EdgeCondition<Graph> {
 
     const size_t max_length_;
 
- public:
+public:
 
-    LengthUpperBound(const Graph& g, size_t max_length)
+    LengthUpperBound(const Graph &g, size_t max_length)
             : base(g),
               max_length_(max_length) {
     }
@@ -136,12 +137,12 @@ class PathLengthLowerBound : public EdgeCondition<Graph> {
     ForwardDirection<Graph> forward_;
     BackwardDirection<Graph> backward_;
 
-    size_t CumulativePathLength(EdgeId e, const AbstractDirection<Graph>& direction) const {
+    size_t CumulativePathLength(EdgeId e, const AbstractDirection<Graph> &direction) const {
         return CumulativeLength(this->g(), path_finder_(e, direction));
     }
 
- public:
-    PathLengthLowerBound(const Graph& g, const PathFinder& path_finder,
+public:
+    PathLengthLowerBound(const Graph &g, const PathFinder &path_finder,
                          size_t min_length)
             : base(g),
               path_finder_(path_finder),
@@ -162,7 +163,7 @@ class PathLengthLowerBound : public EdgeCondition<Graph> {
 
 template<class Graph, class PathFinder>
 PathLengthLowerBound<Graph, PathFinder>
-MakePathLengthLowerBound(const Graph& g, const PathFinder& path_finder, size_t min_length) {
+MakePathLengthLowerBound(const Graph &g, const PathFinder &path_finder, size_t min_length) {
     return PathLengthLowerBound<Graph, PathFinder>(g, path_finder, min_length);
 }
 
@@ -176,11 +177,11 @@ class UniquenessPlausabilityCondition : public EdgeCondition<Graph> {
 
     virtual bool CheckPlausibility(EdgeId e, bool forward) const = 0;
 
-    bool SingleUnique(const vector<EdgeId>& edges, bool forward) const {
+    bool SingleUnique(const vector<EdgeId> &edges, bool forward) const {
         return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
     }
 
-    bool ExistPlausible(EdgeId init_e, const vector<EdgeId>& edges,
+    bool ExistPlausible(EdgeId init_e, const vector<EdgeId> &edges,
                         bool forward) const {
         for (EdgeId e : edges) {
             if (e == init_e)
@@ -192,24 +193,24 @@ class UniquenessPlausabilityCondition : public EdgeCondition<Graph> {
         return false;
     }
 
-    bool Check(EdgeId e, const AbstractDirection<Graph>& direction) const {
+    bool Check(EdgeId e, const AbstractDirection<Graph> &direction) const {
         return SingleUnique(direction.IncomingEdges(direction.EdgeStart(e)),
                             !direction.IsForward())
-                && ExistPlausible(
-                        e, direction.OutgoingEdges(direction.EdgeStart(e)),
-                        direction.IsForward());
+               && ExistPlausible(
+                e, direction.OutgoingEdges(direction.EdgeStart(e)),
+                direction.IsForward());
     }
 
- public:
+public:
 
-    UniquenessPlausabilityCondition(const Graph& g)
+    UniquenessPlausabilityCondition(const Graph &g)
             : base(g) {
 
     }
 
     bool Check(EdgeId e) const {
         return Check(e, ForwardDirection<Graph>(this->g()))
-                || Check(e, BackwardDirection<Graph>(this->g()));
+               || Check(e, BackwardDirection<Graph>(this->g()));
     }
 
 };
@@ -233,10 +234,10 @@ class PredicateUniquenessPlausabilityCondition :
         return plausiblity_condition_(e);
     }
 
- public:
+public:
 
     PredicateUniquenessPlausabilityCondition(
-            const Graph& g, EdgePredicate uniqueness_condition,
+            const Graph &g, EdgePredicate uniqueness_condition,
             EdgePredicate plausiblity_condition)
             : base(g),
               uniqueness_condition_(uniqueness_condition),
@@ -253,16 +254,17 @@ class DefaultUniquenessPlausabilityCondition :
     typedef pred::TypedPredicate<EdgeId> EdgePredicate;
     typedef PredicateUniquenessPlausabilityCondition<Graph> base;
 
- public:
+public:
 
-    DefaultUniquenessPlausabilityCondition(const Graph& g,
+    DefaultUniquenessPlausabilityCondition(const Graph &g,
                                            size_t uniqueness_length,
                                            size_t plausibility_length)
             : base(g,
                    MakePathLengthLowerBound(g,
                                             UniquePathFinder<Graph>(g), uniqueness_length),
                    MakePathLengthLowerBound(g,
-                                            PlausiblePathFinder<Graph>(g, 2 * plausibility_length), plausibility_length)) {
+                                            PlausiblePathFinder<Graph>(g, 2 * plausibility_length),
+                                            plausibility_length)) {
     }
 
 };
