@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <atomic>
 
 
 namespace online_visualization {
