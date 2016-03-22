@@ -7,8 +7,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "data_structures/assembly_graph/graph_support/components/graph_component.hpp"
-#include "data_structures/assembly_graph/graph_alignment/mapping_path.hpp"
+#include "assembly_graph/graph_support/components/graph_component.hpp"
+#include "assembly_graph/graph_alignment/mapping_path.hpp"
 #include "visualization/printing_parameter_storage.hpp"
 //#include "edges_position_handler.hpp"
 

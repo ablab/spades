@@ -17,7 +17,7 @@
 #include "extension_chooser.hpp"
 #include "path_filter.hpp"
 #include "overlap_analysis.hpp"
-#include "data_structures/assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include <cmath>
 
 

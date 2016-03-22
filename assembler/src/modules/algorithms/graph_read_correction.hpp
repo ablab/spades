@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "data_structures/assembly_graph/graph_support/paths/path_utils.hpp"
-#include "data_structures/assembly_graph/graph_alignment/mapping_path.hpp"
-#include "data_structures/assembly_graph/graph_support/paths/path_finders.hpp"
-#include "algorithms/simplification/path_processor.hpp"
+#include "assembly_graph/graph_support/paths/path_utils.hpp"
+#include "assembly_graph/graph_alignment/mapping_path.hpp"
+#include "assembly_graph/graph_support/paths/path_finders.hpp"
+#include "assembly_graph/graph_support/paths/path_processor.hpp"
 #include "io/reads_io/modifying_reader_wrapper.hpp"
-#include "data_structures/assembly_graph/graph_core/order_and_law.hpp"
-#include "data_structures/assembly_graph/graph_alignment/sequence_mapper.hpp"
+#include "assembly_graph/graph_core/order_and_law.hpp"
+#include "assembly_graph/graph_alignment/sequence_mapper.hpp"
 
 namespace debruijn_graph {
 

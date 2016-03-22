@@ -16,7 +16,7 @@
 #include "pipeline/graph_pack.hpp"
 
 #include "io/reads_io/io_helper.hpp"
-#include "data_structures/assembly_graph/graph_core/graph.hpp"
+#include "assembly_graph/graph_core/graph.hpp"
 
 #include "data_structures/debruijn_graph/debruijn_graph_constructor.hpp"
 #include "data_structures/debruijn_graph/early_simplification.hpp"
@@ -24,8 +24,8 @@
 #include "dev_support/perfcounter.hpp"
 #include "io/dataset_support/read_converter.hpp"
 
-#include "data_structures/assembly_graph/graph_support/handlers/edges_position_handler.hpp"
-#include "data_structures/assembly_graph/graph_support/detail_coverage.hpp"
+#include "assembly_graph/graph_support/handlers/edges_position_handler.hpp"
+#include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "data_structures/indices/storing_traits.hpp"
 #include "data_structures/indices/edge_index_builders.hpp"
 #include "dev_support/openmp_wrapper.h"

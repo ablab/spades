@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "data_structures/assembly_graph/graph_alignment/sequence_mapper.hpp"
-#include "data_structures/assembly_graph/graph_support/handlers/edges_position_handler.hpp"
+#include "assembly_graph/graph_alignment/sequence_mapper.hpp"
+#include "assembly_graph/graph_support/handlers/edges_position_handler.hpp"
 #include "io/reads_io/wrapper_collection.hpp"
 
 namespace debruijn_graph {

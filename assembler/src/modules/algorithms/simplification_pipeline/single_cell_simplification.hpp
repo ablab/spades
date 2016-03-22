@@ -4,7 +4,7 @@
 #include "algorithms/simplification/erroneous_connection_remover.hpp"
 #include "algorithms/simplification/mf_ec_remover.hpp"
 #include "algorithms/simplification_pipeline/simplification_settings.hpp"
-#include "data_structures/assembly_graph/graph_support/detail_coverage.hpp"
+#include "assembly_graph/graph_support/detail_coverage.hpp"
 
 namespace debruijn {
 namespace simplification {

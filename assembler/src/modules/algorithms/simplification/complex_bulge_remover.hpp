@@ -10,12 +10,12 @@
 #include <cmath>
 #include <stack>
 #include <queue>
-#include "adt/concurrent_dsu.hpp"
+#include "data_structures/adt/concurrent_dsu.hpp"
 #include "dev_support/standard_base.hpp"
-#include "data_structures/assembly_graph/graph_support/components/graph_component.hpp"
+#include "assembly_graph/graph_support/components/graph_component.hpp"
 #include "math/xmath.h"
 #include "data_structures/sequence/sequence_tools.hpp"
-#include "path_processor.hpp"
+#include "assembly_graph/graph_support/paths/path_processor.hpp"
 #include "visualization/visualization.hpp"
 #include "dominated_set_finder.hpp"
 

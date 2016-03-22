@@ -13,8 +13,8 @@
  *      Author: sergey
  */
 
-#include "data_structures/assembly_graph/graph_core/graph.hpp"
-#include "data_structures/assembly_graph/graph_core/construction_helper.hpp"
+#include "assembly_graph/graph_core/graph.hpp"
+#include "assembly_graph/graph_core/construction_helper.hpp"
 #include "dev_support/standard_base.hpp"
 #include "data_structures/indices/kmer_extension_index.hpp"
 #include "dev_support/openmp_wrapper.h"

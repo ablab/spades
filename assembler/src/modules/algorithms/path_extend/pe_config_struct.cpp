@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "pe_config_struct.hpp"
-#include "config/config_common.hpp"
+#include "pipeline/config_common.hpp"
 
 namespace path_extend {
 

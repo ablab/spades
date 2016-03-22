@@ -7,7 +7,7 @@
 
 project(mph_index CXX)
 
-add_library(mph_index STATIC)
+add_library(mph_index STATIC bitpair_vector.cpp)
 
 target_link_libraries(mph_index cityhash)
 

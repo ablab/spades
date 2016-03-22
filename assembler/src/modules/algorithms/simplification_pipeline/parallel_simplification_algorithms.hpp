@@ -9,11 +9,11 @@
 
 #include "algorithms/simplification/cleaner.hpp"
 #include "dev_support/standard_base.hpp"
-#include "data_structures/assembly_graph/graph_support/graph_processing_algorithm.hpp"
-#include "data_structures/assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
+#include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "algorithms/simplification/bulge_remover.hpp"
-#include "data_structures/assembly_graph/graph_core/construction_helper.hpp"
-#include "data_structures/assembly_graph/graph_support/marks_and_locks.hpp"
+#include "assembly_graph/graph_core/construction_helper.hpp"
+#include "assembly_graph/graph_support/marks_and_locks.hpp"
 #include "algorithms/simplification_pipeline/simplification_settings.hpp"
 #include "algorithms/simplification/compressor.hpp"
 

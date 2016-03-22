@@ -15,8 +15,8 @@
 #ifndef PATH_VISUALIZER_HPP_
 #define PATH_VISUALIZER_HPP_
 
-#include "data_structures/assembly_graph/graph_support/paths/bidirectional_path.hpp"
-#include "data_structures/assembly_graph/graph_support/stats/picture_dump.hpp"
+#include "assembly_graph/graph_support/paths/bidirectional_path.hpp"
+#include "assembly_graph/graph_support/stats/picture_dump.hpp"
 
 namespace path_extend {
 

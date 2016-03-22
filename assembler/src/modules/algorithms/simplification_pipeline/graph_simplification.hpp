@@ -28,13 +28,13 @@
 
 #include "algorithms/graph_read_correction.hpp"
 
-#include "data_structures/assembly_graph/graph_support/stats/chimera_stats.hpp"
-#include "data_structures/assembly_graph/graph_support/basic_edge_conditions.hpp"
-#include "data_structures/assembly_graph/graph_support/stats/picture_dump.hpp"
-#include "data_structures/assembly_graph/graph_support/parallel_processing.hpp"
-#include "data_structures/assembly_graph/graph_support/detail_coverage.hpp"
+#include "assembly_graph/graph_support/stats/chimera_stats.hpp"
+#include "assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "assembly_graph/graph_support/stats/picture_dump.hpp"
+#include "assembly_graph/graph_support/parallel_processing.hpp"
+#include "assembly_graph/graph_support/detail_coverage.hpp"
 
-#include "data_structures/assembly_graph/graph_core/graph.hpp"
+#include "assembly_graph/graph_core/graph.hpp"
 
 #include "visualization/graph_colorer.hpp"
 #include "dev_support/standard_base.hpp"

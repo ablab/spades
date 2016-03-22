@@ -4,12 +4,12 @@
 #pragma once
 
 #include "dev_support/logger/logger.hpp"
-#include "data_structures/assembly_graph/graph_core/graph.hpp"
+#include "assembly_graph/graph_core/graph.hpp"
 #include "algorithms/path_extend/paired_library.hpp"
 #include "connection_condition2015.hpp"
 
 #include "dev_support/standard_base.hpp"
-#include <adt/iterator_range.hpp>
+#include "data_structures/adt/iterator_range.hpp"
 
 namespace path_extend {
 namespace scaffold_graph {

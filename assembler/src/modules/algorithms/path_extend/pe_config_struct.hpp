@@ -15,7 +15,7 @@
 #ifndef LC_CONFIG_STRUCT_HPP_
 #define LC_CONFIG_STRUCT_HPP_
 
-#include "config/config_singl.hpp"
+#include "pipeline/config_singl.hpp"
 #include "dev_support/cpp_utils.hpp"
 
 #include <boost/optional.hpp>

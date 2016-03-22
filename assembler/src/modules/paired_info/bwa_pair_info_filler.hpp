@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "data_structures/assembly_graph/graph_core/graph.hpp"
+#include "assembly_graph/graph_core/graph.hpp"
 #include "pipeline/config_struct.hpp"
 
 #include <io/sam_io/sam_reader.hpp>

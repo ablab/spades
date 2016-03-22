@@ -15,7 +15,7 @@
 #ifndef WEIGHT_COUNTER_HPP_
 #define WEIGHT_COUNTER_HPP_
 
-#include "data_structures/assembly_graph/graph_support/paths/bidirectional_path.hpp"
+#include "assembly_graph/graph_support/paths/bidirectional_path.hpp"
 #include "paired_library.hpp"
 #include <algorithm>
 #include <boost/math/special_functions/fpclassify.hpp>

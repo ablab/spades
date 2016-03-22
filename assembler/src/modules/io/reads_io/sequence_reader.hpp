@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "io/ireader.hpp"
-#include "io/single_read.hpp"
+#include "io/reads_io/ireader.hpp"
+#include "io/reads/single_read.hpp"
 
 namespace io {
 

@@ -22,7 +22,7 @@
 #include "pe_io.hpp"
 #include "path_visualizer.hpp"
 #include "loop_traverser.hpp"
-#include "data_structures/assembly_graph/graph_alignment/long_read_storage.hpp"
+#include "assembly_graph/graph_alignment/long_read_storage.hpp"
 #include "next_path_searcher.hpp"
 #include "scaffolder2015/extension_chooser2015.hpp"
 #include "algorithms/genome_consistance_checker.hpp"

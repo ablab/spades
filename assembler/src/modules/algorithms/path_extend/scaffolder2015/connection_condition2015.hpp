@@ -4,7 +4,7 @@
 #include "algorithms/genome_consistance_checker.hpp"
 #include "dev_support/logger/logger.hpp"
 #include "algorithms/path_extend/paired_library.hpp"
-#include "data_structures/assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include <map>
 #include <set>
 

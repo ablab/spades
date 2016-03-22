@@ -19,7 +19,7 @@
 #include "paired_info/paired_info_helpers.hpp"
 #include "paired_info/weights.hpp"
 
-#include "data_structures/assembly_graph/graph_alignment/sequence_mapper_notifier.hpp"
+#include "assembly_graph/graph_alignment/sequence_mapper_notifier.hpp"
 #include "paired_info/pair_info_filler.hpp"
 
 #include <boost/test/unit_test.hpp>

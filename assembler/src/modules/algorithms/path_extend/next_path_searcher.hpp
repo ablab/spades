@@ -18,8 +18,8 @@
 #include <map>
 
 #include "pipeline/graph_pack.hpp"
-#include "data_structures/assembly_graph/graph_core/graph.hpp"
-#include "data_structures/assembly_graph/graph_support/paths/bidirectional_path.hpp"
+#include "assembly_graph/graph_core/graph.hpp"
+#include "assembly_graph/graph_support/paths/bidirectional_path.hpp"
 #include "pe_utils.hpp"
 
 namespace path_extend {

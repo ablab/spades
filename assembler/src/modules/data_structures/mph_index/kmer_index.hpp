@@ -8,7 +8,7 @@
 
 #include "io/kmers_io/mmapped_reader.hpp"
 #include "io/kmers_io/mmapped_writer.hpp"
-#include "adt/pointer_iterator.hpp"
+#include "data_structures/adt/pointer_iterator.hpp"
 
 #include "mphf.hpp"
 #include "base_hash.hpp"

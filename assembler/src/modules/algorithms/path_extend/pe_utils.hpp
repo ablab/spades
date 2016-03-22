@@ -15,7 +15,7 @@
 #ifndef PE_UTILS_HPP_
 #define PE_UTILS_HPP_
 
-#include "data_structures/assembly_graph/graph_support/paths/bidirectional_path.hpp"
+#include "assembly_graph/graph_support/paths/bidirectional_path.hpp"
 
 using namespace debruijn_graph;
 

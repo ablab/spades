@@ -8,7 +8,7 @@
 project(spades_modules CXX)
 
 add_subdirectory(pipeline)
-add_subdirectory(data_structures/assembly_graph/graph_support)
+add_subdirectory(assembly_graph/graph_support)
 add_subdirectory(data_structures/sequence)
 add_subdirectory(math)
 add_subdirectory(algorithms/path_extend)

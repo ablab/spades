@@ -1,6 +1,6 @@
 #pragma once
-#include "data_structures/assembly_graph/graph_support/parallel_processing.hpp"
-#include "data_structures/assembly_graph/graph_support/basic_vertex_conditions.hpp"
+#include "assembly_graph/graph_support/parallel_processing.hpp"
+#include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 namespace omnigraph {
 
 /**

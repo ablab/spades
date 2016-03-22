@@ -8,7 +8,7 @@
 #ifndef CONFIG_STRUCT_CCLEAN_HPP
 #define CONFIG_STRUCT_CCLEAN_HPP
 
-#include "config/config_singl.hpp"
+#include "pipeline/config_singl.hpp"
 #include <boost/property_tree/ptree_fwd.hpp>
 #include "pipeline/library.hpp"
 

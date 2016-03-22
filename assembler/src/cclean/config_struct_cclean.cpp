@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "config_struct_cclean.hpp"
-#include "config/config_common.hpp"
+#include "pipeline/config_common.hpp"
 #include "dev_support/openmp_wrapper.h"
 
 void load(cclean_config& cfg, const std::string &filename) {

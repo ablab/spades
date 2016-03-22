@@ -8,7 +8,7 @@
 #ifndef CONFIG_STRUCT_HDIP_
 #define CONFIG_STRUCT_HDIP_
 
-#include "config/config_singl.hpp"
+#include "pipeline/config_singl.hpp"
 #include "dev_support/cpp_utils.hpp"
 #include "data_structures/sequence/sequence.hpp"
 #include "algorithms/path_extend/pe_config_struct.hpp"

@@ -15,7 +15,7 @@
 #ifndef PATH_FILTER_HPP_
 #define PATH_FILTER_HPP_
 
-#include "data_structures/assembly_graph/graph_support/paths/bidirectional_path.hpp"
+#include "assembly_graph/graph_support/paths/bidirectional_path.hpp"
 
 namespace path_extend {
 

@@ -16,7 +16,7 @@
 #define SPLIT_GRAPH_PAIR_INFO_HPP_
 
 #include <paired_info/weights.hpp>
-#include "data_structures/assembly_graph/graph_alignment/sequence_mapper_notifier.hpp"
+#include "assembly_graph/graph_alignment/sequence_mapper_notifier.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "ideal_pair_info.hpp"
 

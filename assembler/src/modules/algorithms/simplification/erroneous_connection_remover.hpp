@@ -14,12 +14,12 @@
 
 #pragma once
 
-#include "data_structures/assembly_graph/graph_support/graph_processing_algorithm.hpp"
-#include "data_structures/assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
+#include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "dev_support/func.hpp"
 #include "math/xmath.h"
 #include "algorithms/dijkstra/dijkstra_helper.hpp"
-#include "data_structures/assembly_graph/graph_core/coverage.hpp"
+#include "assembly_graph/graph_core/coverage.hpp"
 
 namespace omnigraph {
 

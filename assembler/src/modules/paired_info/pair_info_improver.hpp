@@ -10,8 +10,9 @@
 #include "pipeline/graph_pack.hpp"
 #include "split_path_constructor.hpp"
 #include "paired_info/paired_info_helpers.hpp"
-#include "data_structures/assembly_graph/graph_support/paths/path_utils.hpp"
+#include "assembly_graph/graph_support/paths/path_utils.hpp"
 #include <math.h>
+#include <io/reads_io/read_processor.hpp>
 
 namespace debruijn_graph {
 
@@ -19,6 +20,44 @@ inline bool ClustersIntersect(omnigraph::de::Point p1, omnigraph::de::Point p2) 
     return math::le(p1.d, p2.d + p1.var + p2.var) &&
            math::le(p2.d, p1.d + p1.var + p2.var);
 }
+
+
+//todo move out
+template<class Graph>
+class ParallelEdgeProcessor {
+    class ConstEdgeIteratorWrapper {
+    public:
+        typedef typename Graph::EdgeId ReadT;
+
+        ConstEdgeIteratorWrapper(const Graph &g)
+                : it_(g) {}
+
+        bool eof() const { return it_.IsEnd(); }
+
+        ConstEdgeIteratorWrapper& operator>>(typename Graph::EdgeId &val) {
+            val = *it_;
+            ++it_;
+            return *this;
+        }
+
+    private:
+        ConstEdgeIterator<Graph> it_;
+    };
+
+public:
+    ParallelEdgeProcessor(const Graph &g, unsigned nthreads)
+            : rp_(nthreads), it_(g) {}
+
+    template <class Processor>
+    bool Run(Processor &op) { return rp_.Run(it_, op); }
+
+    bool IsEnd() const { return it_.eof(); }
+    size_t processed() const { return rp_.processed(); }
+
+private:
+    hammer::ReadProcessor rp_;
+    ConstEdgeIteratorWrapper it_;
+};
 
 template<class Graph>
 static

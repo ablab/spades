@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "adt/function_traits.hpp"
+#include "data_structures/adt/function_traits.hpp"
 
 #include <memory>
 #include <functional>
