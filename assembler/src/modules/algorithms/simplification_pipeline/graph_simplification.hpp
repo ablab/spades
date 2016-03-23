@@ -117,6 +117,15 @@ private:
 
             RelaxMin(min_length_bound, length_bound);
             return LengthUpperBound<Graph>(g_, length_bound);
+
+        } else if (next_token_ == "rlmk") {
+            //Read length minus k
+            VERIFY_MSG(settings_.read_length() > g_.k(), "Read length was shorter than K");
+            DEBUG("Creating (rl - k) bound");
+            size_t length_bound = settings_.read_length() - g_.k();
+            RelaxMin(min_length_bound, length_bound);
+            return LengthUpperBound<Graph>(g_, length_bound);
+
         } else if (next_token_ == "to_ec_lb") {
             double length_coeff = boost::lexical_cast<double>(ReadNext());
 
@@ -129,6 +138,7 @@ private:
 
             RelaxMin(min_length_bound, length_bound);
             return LengthUpperBound<Graph>(g_, length_bound);
+            
         } else if (next_token_ == "ec_lb") {
             size_t length_coeff = boost::lexical_cast<size_t>(ReadNext());
 
