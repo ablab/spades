@@ -242,7 +242,7 @@ if __name__ == "__main__":
         _debug("Stopping instances...")
         for _, sh in shellders.items():
             sh.close()
-            sys.exit(0)
+        sys.exit(0)
     signal.signal(signal.SIGINT, handler)
     signal.signal(signal.SIGTERM, handler)
     config = ConfigParser()
