@@ -540,6 +540,7 @@ void load(debruijn_config::info_printer &printer,
           boost::property_tree::ptree const &pt, bool complete) {
     using config_common::load;
     load(printer.basic_stats, pt, "basic_stats", complete);
+    load(printer.lib_info, pt, "lib_info", complete);
     load(printer.extended_stats, pt, "extended_stats", complete);
     load(printer.write_components, pt, "write_components", complete);
     load(printer.components_for_kmer, pt, "components_for_kmer", complete);

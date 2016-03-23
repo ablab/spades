@@ -13,6 +13,8 @@
 #include "pipeline/graph_pack.hpp"
 #include "assembly_graph/graph_alignment/sequence_mapper.hpp"
 #include "pipeline/graphio.hpp"
+//FIXME awful dependency to get write_lib_data
+#include "pipeline/config_struct.hpp"
 #include "visualization/position_filler.hpp"
 
 #include "visualization/visualization.hpp"
@@ -280,6 +282,13 @@ struct detail_info_printer {
             path::make_dirs(saves_folder);
             graphio::ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp_.g);
             graphio::PrintBasicGraph(saves_folder + "graph", printer);
+        }
+
+        if (config.lib_info) {
+            string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
+                                                  ToString(call_cnt++, 2) + "_" + pos_name + "/");
+            path::make_dirs(saves_folder);
+            write_lib_data(saves_folder + "lib_info");
         }
 
         if (config.extended_stats) {

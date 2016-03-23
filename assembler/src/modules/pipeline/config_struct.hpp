@@ -510,6 +510,7 @@ struct debruijn_config {
 
     struct info_printer {
         bool basic_stats;
+        bool lib_info;
         bool extended_stats;
         bool write_components;
         std::string components_for_kmer;
