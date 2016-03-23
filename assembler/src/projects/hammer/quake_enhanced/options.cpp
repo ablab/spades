@@ -77,14 +77,14 @@ Options::Options(int argc, char **argv) :
                     average_min, average_min);
   // PrepareLimits Options
   options >> Option('\0', "limits-file", 
-		    limits_file, limits_file);
+            limits_file, limits_file);
   options >> Option('\0', "bad-threshold", 
-		    bad_threshold, bad_threshold);
+            bad_threshold, bad_threshold);
   // FilterTrusted Options
   options >> Option('\0', "trusted-kmer-file", 
-		    trusted_kmer_file, trusted_kmer_file);
+            trusted_kmer_file, trusted_kmer_file);
   options >> Option('\0', "bad-kmer-file",
-		    bad_kmer_file, bad_kmer_file);
+            bad_kmer_file, bad_kmer_file);
   if (need_help || help_module != "") {
     valid = false;
   } else {

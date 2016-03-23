@@ -52,7 +52,7 @@ struct graph_pack: private boost::noncopyable {
     GenomicInfo ginfo;
 
     GenomeStorage genome;
-	EdgeQuality<Graph> edge_qual;
+    EdgeQuality<Graph> edge_qual;
     mutable EdgesPositionHandler<graph_t> edge_pos;
     ConnectedComponentCounter components;
     graph_pack(size_t k, const std::string &workdir, size_t lib_count,

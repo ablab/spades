@@ -211,9 +211,9 @@ struct pe_config {
   };
 
   struct LongReads {
-	  double filtering;
-	  double weight_priority;
-	  double unique_edge_priority;
+      double filtering;
+      double weight_priority;
+      double unique_edge_priority;
   };
 
   struct AllLongReads{

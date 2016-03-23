@@ -37,17 +37,17 @@ class DataDivider {
     typedef vector<Point> PointArray;
     typedef std::function<double(int)> WeightFunction;
 
-    //	double LeftDerivative(int index, vector<int> x, vector<int> y) {
-    //		return outf[dist - min_value_ + 1][0] - outf[dist - min][0];
-    //	}
+    //    double LeftDerivative(int index, vector<int> x, vector<int> y) {
+    //        return outf[dist - min_value_ + 1][0] - outf[dist - min][0];
+    //    }
     //
-    //	double RightDerivative(index, std::vector<int> x, std::vector<int> y) {
-    //		return outf[dist - min_value_][0] - outf[dist - min - 1][0];
-    //	}
+    //    double RightDerivative(index, std::vector<int> x, std::vector<int> y) {
+    //        return outf[dist - min_value_][0] - outf[dist - min - 1][0];
+    //    }
     //
-    //	double MiddleDerivative(int index, std::vector<int> x, std::vector<int> y) {
-    //		return 0.5f * (outf[dist - min_value_ + 1][0] - outf[dist - min - 1][0]);
-    //	}
+    //    double MiddleDerivative(int index, std::vector<int> x, std::vector<int> y) {
+    //        return 0.5f * (outf[dist - min_value_ + 1][0] - outf[dist - min - 1][0]);
+    //    }
 
 public:
     DataDivider(size_t threshold, const PointArray &points) :

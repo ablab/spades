@@ -44,120 +44,120 @@ KSEQ_INIT(gzFile, gzread)
 
 class FastaFastqGzParser: public Parser {
 public:
-	/*
-	 * Default constructor.
-	 *
-	 * @param filename The name of the file to be opened.
-	 * @param offset The offset of the read quality.
-	 */
-	FastaFastqGzParser(const std::string& filename, OffsetType offset_type =
-			PhredOffset) :
-			Parser(filename, offset_type), fp_(), seq_(NULL) {
-		open();
-	}
+    /*
+     * Default constructor.
+     *
+     * @param filename The name of the file to be opened.
+     * @param offset The offset of the read quality.
+     */
+    FastaFastqGzParser(const std::string& filename, OffsetType offset_type =
+            PhredOffset) :
+            Parser(filename, offset_type), fp_(), seq_(NULL) {
+        open();
+    }
 
-	/*
-	 * Default destructor.
-	 */
-	/* virtual */
-	~FastaFastqGzParser() {
-		close();
-	}
+    /*
+     * Default destructor.
+     */
+    /* virtual */
+    ~FastaFastqGzParser() {
+        close();
+    }
 
-	/*
-	 * Read SingleRead from stream.
-	 *
-	 * @param read The SingleRead that will store read data.
-	 *
-	 * @return Reference to this stream.
-	 */
-	/* virtual */
-	FastaFastqGzParser& operator>>(SingleRead& read) {
-		if (!is_open_ || eof_) {
-			return *this;
-		}
-		//todo offset_type_ should be used in future
-		if (seq_->qual.s) {
-			read = SingleRead(seq_->name.s, seq_->seq.s, seq_->qual.s, offset_type_);
-		} else {
-			read = SingleRead(seq_->name.s, seq_->seq.s);
-//			size_t len = strlen(seq_->seq.s);
-//			char* qual = (char*) malloc(len + 1);
-//			char q = '\2' + 64;
-//			for (size_t i = 0; i < len; ++i) {
-//				qual[i] = q;
-//			}
-//			qual[len] = '\0';
-//			read.SetAll(seq_->name.s, seq_->seq.s, qual, SolexaOffset);
-//			free(qual);
-		}
-		ReadAhead();
-		return *this;
-	}
+    /*
+     * Read SingleRead from stream.
+     *
+     * @param read The SingleRead that will store read data.
+     *
+     * @return Reference to this stream.
+     */
+    /* virtual */
+    FastaFastqGzParser& operator>>(SingleRead& read) {
+        if (!is_open_ || eof_) {
+            return *this;
+        }
+        //todo offset_type_ should be used in future
+        if (seq_->qual.s) {
+            read = SingleRead(seq_->name.s, seq_->seq.s, seq_->qual.s, offset_type_);
+        } else {
+            read = SingleRead(seq_->name.s, seq_->seq.s);
+//            size_t len = strlen(seq_->seq.s);
+//            char* qual = (char*) malloc(len + 1);
+//            char q = '\2' + 64;
+//            for (size_t i = 0; i < len; ++i) {
+//                qual[i] = q;
+//            }
+//            qual[len] = '\0';
+//            read.SetAll(seq_->name.s, seq_->seq.s, qual, SolexaOffset);
+//            free(qual);
+        }
+        ReadAhead();
+        return *this;
+    }
 
-	/*
-	 * Close the stream.
-	 */
-	/* virtual */
-	void close() {
-		if (is_open_) {
-			// STEP 5: destroy seq
-			fastafastqgz::kseq_destroy(seq_);
-			// STEP 6: close the file handler
-			gzclose(fp_);
-			is_open_ = false;
-			eof_ = true;
-		}
-	}
+    /*
+     * Close the stream.
+     */
+    /* virtual */
+    void close() {
+        if (is_open_) {
+            // STEP 5: destroy seq
+            fastafastqgz::kseq_destroy(seq_);
+            // STEP 6: close the file handler
+            gzclose(fp_);
+            is_open_ = false;
+            eof_ = true;
+        }
+    }
 
 private:
-	/*
-	 * @variable File that is associated with gzipped data file.
-	 */
-	gzFile fp_;
-	/*
-	 * @variable Data element that stores last SingleRead got from
-	 * stream.
-	 */
-	fastafastqgz::kseq_t* seq_;
+    /*
+     * @variable File that is associated with gzipped data file.
+     */
+    gzFile fp_;
+    /*
+     * @variable Data element that stores last SingleRead got from
+     * stream.
+     */
+    fastafastqgz::kseq_t* seq_;
 
-	/*
-	 * Open a stream.
-	 */
-	/* virtual */
-	void open() {
-		// STEP 2: open the file handler
-		fp_ = gzopen(filename_.c_str(), "r");
-		if (!fp_) {
-			is_open_ = false;
-			return;
-		}
-		// STEP 3: initialize seq
-		seq_ = fastafastqgz::kseq_init(fp_);
-		eof_ = false;
-		is_open_ = true;
-		ReadAhead();
-	}
+    /*
+     * Open a stream.
+     */
+    /* virtual */
+    void open() {
+        // STEP 2: open the file handler
+        fp_ = gzopen(filename_.c_str(), "r");
+        if (!fp_) {
+            is_open_ = false;
+            return;
+        }
+        // STEP 3: initialize seq
+        seq_ = fastafastqgz::kseq_init(fp_);
+        eof_ = false;
+        is_open_ = true;
+        ReadAhead();
+    }
 
-	/*
-	 * Read next SingleRead from file.
-	 */
-	void ReadAhead() {
-		VERIFY(is_open_);
-		VERIFY(!eof_);
-		if (fastafastqgz::kseq_read(seq_) < 0) {
-			eof_ = true;
-		}
-	}
+    /*
+     * Read next SingleRead from file.
+     */
+    void ReadAhead() {
+        VERIFY(is_open_);
+        VERIFY(!eof_);
+        if (fastafastqgz::kseq_read(seq_) < 0) {
+            eof_ = true;
+        }
+    }
 
-	/*
-	 * Hidden copy constructor.
-	 */
-	FastaFastqGzParser(const FastaFastqGzParser& parser);
-	/*
-	 * Hidden assign operator.
-	 */
-	void operator=(const FastaFastqGzParser& parser);
+    /*
+     * Hidden copy constructor.
+     */
+    FastaFastqGzParser(const FastaFastqGzParser& parser);
+    /*
+     * Hidden assign operator.
+     */
+    void operator=(const FastaFastqGzParser& parser);
 };
 
 }

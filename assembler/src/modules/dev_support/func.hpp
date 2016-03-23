@@ -14,11 +14,11 @@ namespace func {
 //to use with std::function-s
 template<class T>
 void Compose(T t, std::function<void(T)> f1,
-		std::function<void(T)> f2) {
-	if (f1)
-		f1(t);
-	if (f2)
-		f2(t);
+        std::function<void(T)> f2) {
+    if (f1)
+        f1(t);
+    if (f2)
+        f2(t);
 }
 
 template<class T>
@@ -30,12 +30,12 @@ std::function<void(T)> Composition(std::function<void(T)> f1,
 template<class A, class B>
 class Func {
 public:
-	typedef std::function<B(A)> function_t;
+    typedef std::function<B(A)> function_t;
 
-	virtual B Apply(A a) const = 0;
+    virtual B Apply(A a) const = 0;
 
-	virtual ~Func() {
-	}
+    virtual ~Func() {
+    }
 };
 
 template<class T>
@@ -52,17 +52,17 @@ class Predicate: public Func<T, bool> {
 public:
     typedef T checked_type;
 
-	bool Apply(T t) const {
-		return Check(t);
-	}
+    bool Apply(T t) const {
+        return Check(t);
+    }
 
-	virtual bool Check(T t) const = 0;
+    virtual bool Check(T t) const = 0;
 
     bool operator()(T t) const { return Check(t); }
     
 
-	virtual ~Predicate() {
-	}
+    virtual ~Predicate() {
+    }
 };
 
 

@@ -90,8 +90,8 @@ class SelfConjugateCondition : public EdgeCondition<Graph> {
 //        return neighbour_edge == possible_ec
 //                || math::gr(this->g().coverage(neighbour_edge),
 //                            this->g().coverage(possible_ec) * min_coverage_gap_);
-////	              || this->g().length(neighbour_edge)
-////	                      >= neighbour_length_threshold_;
+////                  || this->g().length(neighbour_edge)
+////                          >= neighbour_length_threshold_;
 //    }
 //
 //    bool CheckAdjacent(const vector<EdgeId>& edges, EdgeId possible_ec) const {
@@ -442,79 +442,79 @@ private:
 
 template<class Graph>
 class HiddenECRemover: public EdgeProcessingAlgorithm<Graph> {
-	typedef EdgeProcessingAlgorithm<Graph> base;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
+    typedef EdgeProcessingAlgorithm<Graph> base;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
 private:
-	size_t uniqueness_length_;
-	double unreliability_threshold_;
-	double ec_threshold_;
-	double relative_threshold_;
-	const AbstractFlankingCoverage<Graph> &flanking_coverage_;
-	EdgeRemover<Graph> edge_remover_;
-	MultiplicityCountingCondition<Graph> condition_;
+    size_t uniqueness_length_;
+    double unreliability_threshold_;
+    double ec_threshold_;
+    double relative_threshold_;
+    const AbstractFlankingCoverage<Graph> &flanking_coverage_;
+    EdgeRemover<Graph> edge_remover_;
+    MultiplicityCountingCondition<Graph> condition_;
 private:
-	void RemoveHiddenEC(EdgeId edge) {
-		if (this->g().length(edge) <= this->g().k() || (edge == this->g().conjugate(edge) && this->g().length(edge) <= 2 * this->g().k()))
-			edge_remover_.DeleteEdge(edge);
-		else {
-			auto split_result = this->g().SplitEdge(edge, this->g().k());
-			edge_remover_.DeleteEdge(split_result.first);
-		}
-	}
+    void RemoveHiddenEC(EdgeId edge) {
+        if (this->g().length(edge) <= this->g().k() || (edge == this->g().conjugate(edge) && this->g().length(edge) <= 2 * this->g().k()))
+            edge_remover_.DeleteEdge(edge);
+        else {
+            auto split_result = this->g().SplitEdge(edge, this->g().k());
+            edge_remover_.DeleteEdge(split_result.first);
+        }
+    }
 
-	void RemoveHiddenECWithNoCompression(EdgeId edge) {
-		if (this->g().length(edge) <= this->g().k() || (edge == this->g().conjugate(edge) && this->g().length(edge) <= 2 * this->g().k())) {
-			edge_remover_.DeleteEdgeWithNoCompression(edge);
-		} else {
-			auto split_result = this->g().SplitEdge(edge, this->g().k());
-			edge_remover_.DeleteEdgeWithNoCompression(split_result.first);
-		}
-	}
+    void RemoveHiddenECWithNoCompression(EdgeId edge) {
+        if (this->g().length(edge) <= this->g().k() || (edge == this->g().conjugate(edge) && this->g().length(edge) <= 2 * this->g().k())) {
+            edge_remover_.DeleteEdgeWithNoCompression(edge);
+        } else {
+            auto split_result = this->g().SplitEdge(edge, this->g().k());
+            edge_remover_.DeleteEdgeWithNoCompression(split_result.first);
+        }
+    }
 
-	void DisconnectEdges(VertexId v) {
-		while(!this->g().IsDeadEnd(v)) {
-			RemoveHiddenECWithNoCompression(*(this->g().out_begin(v)));
-		}
-	}
+    void DisconnectEdges(VertexId v) {
+        while(!this->g().IsDeadEnd(v)) {
+            RemoveHiddenECWithNoCompression(*(this->g().out_begin(v)));
+        }
+    }
 
-	bool FindHiddenEC(VertexId v) {
-		vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
-		if(flanking_coverage_.GetInCov(edges[0]) > flanking_coverage_.GetInCov(edges[1])) {
-			auto tmp = edges[0];
-			edges[0] = edges[1];
-			edges[1] = tmp;
-		}
-//		cout << flanking_coverage_.GetInCov(edges[0]) << " " << flanking_coverage_.GetInCov(edges[1]) << endl;
-		if(flanking_coverage_.GetInCov(edges[1]) < unreliability_threshold_) {
-			DisconnectEdges(v);
-//			cout << "disconnected" << endl;
-			return true;
-		}
-		if(flanking_coverage_.GetInCov(edges[0]) * relative_threshold_ < flanking_coverage_.GetInCov(edges[1]) && flanking_coverage_.GetInCov(edges[0]) < ec_threshold_) {
-			RemoveHiddenEC(edges[0]);
-//			cout << "success" << endl;
-			return true;
-		}
-		return false;
-	}
+    bool FindHiddenEC(VertexId v) {
+        vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
+        if(flanking_coverage_.GetInCov(edges[0]) > flanking_coverage_.GetInCov(edges[1])) {
+            auto tmp = edges[0];
+            edges[0] = edges[1];
+            edges[1] = tmp;
+        }
+//        cout << flanking_coverage_.GetInCov(edges[0]) << " " << flanking_coverage_.GetInCov(edges[1]) << endl;
+        if(flanking_coverage_.GetInCov(edges[1]) < unreliability_threshold_) {
+            DisconnectEdges(v);
+//            cout << "disconnected" << endl;
+            return true;
+        }
+        if(flanking_coverage_.GetInCov(edges[0]) * relative_threshold_ < flanking_coverage_.GetInCov(edges[1]) && flanking_coverage_.GetInCov(edges[0]) < ec_threshold_) {
+            RemoveHiddenEC(edges[0]);
+//            cout << "success" << endl;
+            return true;
+        }
+        return false;
+    }
 
-	bool CheckSuspicious(VertexId v) {
-		if (this->g().IncomingEdgeCount(v) != 1 || this->g().OutgoingEdgeCount(v) != 2) {
-			return false;
-		}
-		vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
-		return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1] && condition_.CheckUniqueness(this->g().GetUniqueIncomingEdge(v), false)) || this->g().length(this->g().GetUniqueIncomingEdge(v)) >= uniqueness_length_;
-	}
+    bool CheckSuspicious(VertexId v) {
+        if (this->g().IncomingEdgeCount(v) != 1 || this->g().OutgoingEdgeCount(v) != 2) {
+            return false;
+        }
+        vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
+        return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1] && condition_.CheckUniqueness(this->g().GetUniqueIncomingEdge(v), false)) || this->g().length(this->g().GetUniqueIncomingEdge(v)) >= uniqueness_length_;
+    }
 
-	bool ProcessEdge(EdgeId e) {
-		VertexId v = this->g().EdgeEnd(e);
-		if(CheckSuspicious(v)) {
-//			cout << "client: " << this->g().int_id(v) << endl;
-			return FindHiddenEC(v);
-		}
-		return false;
-	}
+    bool ProcessEdge(EdgeId e) {
+        VertexId v = this->g().EdgeEnd(e);
+        if(CheckSuspicious(v)) {
+//            cout << "client: " << this->g().int_id(v) << endl;
+            return FindHiddenEC(v);
+        }
+        return false;
+    }
 
 public:
     HiddenECRemover(Graph& g, size_t uniqueness_length,
@@ -530,7 +530,7 @@ public:
     }
 
 private:
-	DECL_LOGGER("HiddenECRemover");
+    DECL_LOGGER("HiddenECRemover");
 };
 
 template<class Graph>

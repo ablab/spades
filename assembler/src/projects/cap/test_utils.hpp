@@ -25,7 +25,7 @@ class TmpFolderFixture {
   std::string tmp_folder_;
 
  public:
-	TmpFolderFixture(std::string tmp_folder) {
+    TmpFolderFixture(std::string tmp_folder) {
     tmp_folder_ = tmp_folder;
     INFO("Creating " << tmp_folder_ << ": " << make_dir(tmp_folder_));
   }

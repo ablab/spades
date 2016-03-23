@@ -18,17 +18,17 @@ namespace omnigraph {
 
 template<typename Graph, typename distance_t = size_t>
 struct element_t{
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
 
-	distance_t distance;
-	VertexId curr_vertex;
-	VertexId prev_vertex;
-	EdgeId edge_between;
+    distance_t distance;
+    VertexId curr_vertex;
+    VertexId prev_vertex;
+    EdgeId edge_between;
 
-	element_t(distance_t new_distance, VertexId new_cur_vertex, VertexId new_prev_vertex,
-			EdgeId new_edge_between) : distance(new_distance), curr_vertex(new_cur_vertex),
-					prev_vertex(new_prev_vertex), edge_between(new_edge_between) { }
+    element_t(distance_t new_distance, VertexId new_cur_vertex, VertexId new_prev_vertex,
+            EdgeId new_edge_between) : distance(new_distance), curr_vertex(new_cur_vertex),
+                    prev_vertex(new_prev_vertex), edge_between(new_edge_between) { }
 };
 
 template<typename T>
@@ -38,13 +38,13 @@ public:
   }
 
   bool operator()(T obj1, T obj2){
-	  if(obj1.distance != obj2.distance)
-		  return obj2.distance < obj1.distance;
-	  if(obj2.curr_vertex != obj1.curr_vertex)
-		  return obj2.curr_vertex < obj1.curr_vertex;
-	  if(obj2.prev_vertex != obj1.prev_vertex)
-		  return obj2.prev_vertex < obj1.prev_vertex;
-	  return obj2.edge_between < obj1.edge_between;
+      if(obj1.distance != obj2.distance)
+          return obj2.distance < obj1.distance;
+      if(obj2.curr_vertex != obj1.curr_vertex)
+          return obj2.curr_vertex < obj1.curr_vertex;
+      if(obj2.prev_vertex != obj1.prev_vertex)
+          return obj2.prev_vertex < obj1.prev_vertex;
+      return obj2.edge_between < obj1.edge_between;
   }
 };
 
@@ -244,19 +244,19 @@ class DistanceCounter {
   typedef typename Graph::VertexId VertexId;
   typedef typename Graph::EdgeId EdgeId;
   typedef ComposedDijkstraSettings<Graph,
-		  LengthCalculator<Graph>,
-  	  	  VertexProcessChecker<Graph>,
-  	  	  VertexPutChecker<Graph>,
-  	  	  ForwardNeighbourIteratorFactory<Graph>>  BaseDijkstraSettings;
+          LengthCalculator<Graph>,
+              VertexProcessChecker<Graph>,
+              VertexPutChecker<Graph>,
+              ForwardNeighbourIteratorFactory<Graph>>  BaseDijkstraSettings;
 
 public:
   DistanceCounter(const Graph& graph) :
     graph_(graph),
     dijkstra_(graph, BaseDijkstraSettings(
-    		LengthCalculator<Graph>(),
-    		VertexProcessChecker<Graph>(),
-    		VertexPutChecker<Graph>(),
-    		ForwardNeighbourIteratorFactory<Graph>())),
+            LengthCalculator<Graph>(),
+            VertexProcessChecker<Graph>(),
+            VertexPutChecker<Graph>(),
+            ForwardNeighbourIteratorFactory<Graph>())),
     ready_(false) {
   }
 

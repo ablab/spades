@@ -24,7 +24,7 @@ using namespace omnigraph::de;
 
 template<class Graph>
 void estimate_with_estimator(const Graph &graph,
-							 const omnigraph::de::AbstractDistanceEstimator<Graph>& estimator,
+                             const omnigraph::de::AbstractDistanceEstimator<Graph>& estimator,
                              omnigraph::de::AbstractPairInfoChecker<Graph>& checker,
                              PairedIndexT& clustered_index) {
     using debruijn_graph::estimation_mode;
@@ -34,16 +34,16 @@ void estimate_with_estimator(const Graph &graph,
 
     INFO("Filtering info");
     if(cfg::get().amb_de.enabled){
-    	AmbiguousPairInfoChecker<Graph> amb_de_checker(graph,
-    	    								clustered_index,
-    	    								checker,
-    	    								cfg::get().amb_de.haplom_threshold,
-    	    								cfg::get().amb_de.relative_length_threshold,
-    	    								cfg::get().amb_de.relative_seq_threshold);
-    	PairInfoFilter<Graph>(amb_de_checker).Filter(clustered_index);
+        AmbiguousPairInfoChecker<Graph> amb_de_checker(graph,
+                                            clustered_index,
+                                            checker,
+                                            cfg::get().amb_de.haplom_threshold,
+                                            cfg::get().amb_de.relative_length_threshold,
+                                            cfg::get().amb_de.relative_seq_threshold);
+        PairInfoFilter<Graph>(amb_de_checker).Filter(clustered_index);
     }
     else
-    	PairInfoFilter<Graph>(checker).Filter(clustered_index);
+        PairInfoFilter<Graph>(checker).Filter(clustered_index);
 //    filter.Filter(clustered_index);
     DEBUG("Info Filtered");
 }

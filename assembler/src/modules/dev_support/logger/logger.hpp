@@ -22,11 +22,11 @@ namespace logging
 /////////////////////////////////////////////////////
 enum level
 {
-	L_TRACE,
-	L_DEBUG,
-	L_INFO,
-	L_WARN,
-	L_ERROR
+    L_TRACE,
+    L_DEBUG,
+    L_INFO,
+    L_WARN,
+    L_ERROR
 };
 
 inline std::string level_name(level l)
@@ -50,7 +50,7 @@ struct writer
 #ifdef SPADES_USE_JEMALLOC
   virtual void write_msg(double time_in_sec, size_t cmem, size_t max_rss, level l, const char* file, size_t line_num, const char* source, const char* msg) = 0;
 #else
-	virtual void write_msg(double time_in_sec, size_t max_rss, level l, const char* file, size_t line_num, const char* source, const char* msg) = 0;
+    virtual void write_msg(double time_in_sec, size_t max_rss, level l, const char* file, size_t line_num, const char* source, const char* msg) = 0;
 #endif
   virtual ~writer(){}
 };
@@ -60,44 +60,44 @@ typedef std::shared_ptr<writer> writer_ptr;
 /////////////////////////////////////////////////////
 struct properties
 {
-	/* Reading logger properties from file
-	 *
-	 * File should contains lines like below.
-	 * Use leading # for comment.
-	 * File could contain line with default behavior description. If no 'default' entry found, default is set to INFO
-	 * Valid levels: TRACE, DEBUG, INFO, WARN, ERROR
-	 *
-	 *	default=INFO
-	 *	AbraCaDabra=TRACE
-	 *	#BubaZuba=WARN
-	 *	HariKrishna=INFO
-	 *
-	 */
+    /* Reading logger properties from file
+     *
+     * File should contains lines like below.
+     * Use leading # for comment.
+     * File could contain line with default behavior description. If no 'default' entry found, default is set to INFO
+     * Valid levels: TRACE, DEBUG, INFO, WARN, ERROR
+     *
+     *    default=INFO
+     *    AbraCaDabra=TRACE
+     *    #BubaZuba=WARN
+     *    HariKrishna=INFO
+     *
+     */
 
-	properties(std::string filename = "", level default_level = L_INFO);
-	properties(level default_level = L_INFO);
+    properties(std::string filename = "", level default_level = L_INFO);
+    properties(level default_level = L_INFO);
 
-	std::unordered_map<std::string, level> levels;
-	level	def_level;
+    std::unordered_map<std::string, level> levels;
+    level    def_level;
   bool  all_default;
 };
 
 ////////////////////////////////////////////////////
 struct logger
 {
-	logger(properties const& props);
+    logger(properties const& props);
 
-	//
-	bool need_log(level desired_level, const char* source) const;
-	void log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg);
+    //
+    bool need_log(level desired_level, const char* source) const;
+    void log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg);
 
-	//
-	void add_writer(writer_ptr ptr);
+    //
+    void add_writer(writer_ptr ptr);
 
 private:
-	properties 				props_  ;
-	std::vector<writer_ptr>	writers_;
-	perf_counter            timer_  ;
+    properties                 props_  ;
+    std::vector<writer_ptr>    writers_;
+    perf_counter            timer_  ;
 };
 
 std::shared_ptr<logger>& __logger();

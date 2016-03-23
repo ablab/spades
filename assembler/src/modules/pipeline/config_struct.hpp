@@ -213,7 +213,7 @@ struct debruijn_config {
         };
 
         struct complex_tip_clipper {
-        	bool enabled;
+            bool enabled;
         };
 
         struct bulge_remover {
@@ -380,12 +380,12 @@ struct debruijn_config {
         double derivative_threshold;
     };
 
-	struct ambiguous_distance_estimator {
-		bool enabled;
-		double haplom_threshold;
-		double relative_length_threshold;
-		double relative_seq_threshold;
-	};
+    struct ambiguous_distance_estimator {
+        bool enabled;
+        double haplom_threshold;
+        double relative_length_threshold;
+        double relative_seq_threshold;
+    };
     struct plasmid {
         bool plasmid_enabled;
         size_t long_edge_length;

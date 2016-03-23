@@ -528,7 +528,7 @@ template<class Graph>
 bool ClipComplexTips(Graph& g, debruijn_config::simplification::complex_tip_clipper ctc_conf, HandlerF<Graph> removal_handler = 0) {
     if(!ctc_conf.enabled) {
         INFO("Complex tip clipping disabled");
-    	return false;
+        return false;
     }
 
     std::function<void(set<EdgeId>)> set_removal_handler_f(0);

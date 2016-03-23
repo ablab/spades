@@ -139,7 +139,7 @@ public:
     }
 
     bool contains(const input_value_type& val) {
-    	return data_->contains(val);
+        return data_->contains(val);
     }
 
 };
@@ -231,7 +231,7 @@ public:
     }
 
     virtual bool contains(const input_value_type& val) {
-    	return (data_.find(type_container::from_sequence(val)) != data_.end());
+        return (data_.find(type_container::from_sequence(val)) != data_.end());
     }
 
     const set_type& get_data() const {

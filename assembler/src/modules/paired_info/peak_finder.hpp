@@ -34,7 +34,7 @@ class PeakFinder {
   typedef std::complex<double> complex_t;
 
  public:
-	PeakFinder(const vector<PairInfo<EdgeId> >& data,
+    PeakFinder(const vector<PairInfo<EdgeId> >& data,
              size_t begin,
              size_t end,
              size_t /*range*/,
@@ -188,13 +188,13 @@ class PeakFinder {
     return peaks;
   }
 
-	vector<complex_t> getIn() const {
-		return hist_;
-	}
+    vector<complex_t> getIn() const {
+        return hist_;
+    }
 
-	vector<complex_t> getOut() const {
-		return hist_;
-	}
+    vector<complex_t> getOut() const {
+        return hist_;
+    }
 
 private:
   double x1, x2, y1, y2;
@@ -269,9 +269,9 @@ private:
       else {
         VERIFY(x_[ind + 1] > x_[ind]);
         hist.push_back(((double) (i + x_left_ - x_[ind]) *
-        				y_[ind + 1] + y_[ind] *
-        				(double) (x_[ind + 1] - i - x_left_)) /
-        				(double) (1 * (x_[ind + 1] - x_[ind])));
+                        y_[ind + 1] + y_[ind] *
+                        (double) (x_[ind + 1] - i - x_left_)) /
+                        (double) (1 * (x_[ind + 1] - x_[ind])));
       }
       weight_ += hist[i].real();     // filling the array on the fly
 
@@ -295,7 +295,7 @@ private:
     mean_beg /= 1. * (double) Np;
     mean_end /= 1. * (double) Np;
 
-    //	two points defining the line
+    //    two points defining the line
     x1 = (double) Np / 2.;
     x2 = (double) data_len_ - (double) Np / 2.;
     y1 = mean_beg;
@@ -303,9 +303,9 @@ private:
   }
 
   void SubtractBaseline() {
-    //	subtracting a baseline
-    //	it's being constructed like this: the first point is (Np/2; mean of the first percentage of data),
-    //	the second point is (data_len_ - Np/2; mean of the last $percentage of data)
+    //    subtracting a baseline
+    //    it's being constructed like this: the first point is (Np/2; mean of the first percentage of data),
+    //    the second point is (data_len_ - Np/2; mean of the last $percentage of data)
     for (size_t i = 0; i < data_len_; ++i) {
       hist_[i] -= (y1 + (y2 - y1) * ((double) i - x1) / (x2 - x1));
     }

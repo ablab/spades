@@ -24,7 +24,7 @@ namespace debruijn_graph {
         typename Graph::EdgeId e2,
         size_t min_dist,
         size_t max_dist,
-		const omnigraph::PathProcessor<Graph>& path_processor)
+        const omnigraph::PathProcessor<Graph>& path_processor)
   {
       typedef typename Graph::EdgeId EdgeId;
       typedef vector<EdgeId> Path;

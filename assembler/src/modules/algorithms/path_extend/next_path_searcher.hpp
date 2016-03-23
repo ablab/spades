@@ -436,20 +436,20 @@ inline void NextPathSearcher::ScaffoldTip(const BidirectionalPath& path, Edge * 
 }
 
 inline void NextPathSearcher::ScaffoldChristmasTree(const BidirectionalPath& path, Edge * current_path, vector<Edge*>& to_add, size_t min_length_from) const {
-	//jump forward when too much paths
-	DEBUG("========= Scaffolding when too many paths =========");
-	ConstructedPathT constructed_paths;
-	set<EdgeId> seeds;
-	//Scaffold(path, current_path, constructed_paths, seeds, false);
-	EdgeSet candidate_set;
-	FindScaffoldingCandidates(path, current_path, candidate_set, min_length_from);
-	for (EdgeWithDistance e : candidate_set) {
-		constructed_paths.insert(make_pair(e.e_,PathWithDistance(BidirectionalPath(g_, e.e_), e.d_)));
-	}
-	RemoveRedundant(constructed_paths);
-	JoinPathsByDejikstra(path, constructed_paths);
+    //jump forward when too much paths
+    DEBUG("========= Scaffolding when too many paths =========");
+    ConstructedPathT constructed_paths;
+    set<EdgeId> seeds;
+    //Scaffold(path, current_path, constructed_paths, seeds, false);
+    EdgeSet candidate_set;
+    FindScaffoldingCandidates(path, current_path, candidate_set, min_length_from);
+    for (EdgeWithDistance e : candidate_set) {
+        constructed_paths.insert(make_pair(e.e_,PathWithDistance(BidirectionalPath(g_, e.e_), e.d_)));
+    }
+    RemoveRedundant(constructed_paths);
+    JoinPathsByDejikstra(path, constructed_paths);
 
-	RemoveRedundant(constructed_paths);
+    RemoveRedundant(constructed_paths);
     DEBUG("Scafolding candidates");
     for (EdgeWithDistance e : candidate_set) {
         DEBUG( "Edge " << g_.int_id(e.e_) << " (" << g_.length(e.e_) << ")" << ", distance " << e.d_);
@@ -551,7 +551,7 @@ inline void NextPathSearcher::FindScaffoldingCandidates(const BidirectionalPath&
         int avg_distance = 0;
         TRACE( "All distances for edge " << g_.int_id(e.first) << " (" << g_.length(e.first) << ")");
         for (int dist : e.second) {
-        	TRACE(dist);
+            TRACE(dist);
             avg_distance += dist;
         }
         avg_distance /= (int) e.second.size();
@@ -589,7 +589,7 @@ inline void NextPathSearcher::OrderScaffoldingCandidates(EdgeSet& candidate_set,
         }
         ProcessScaffoldingCandidate(e, candidate_set, current_path, grown_path_len, constructed_paths, is_gap);
         for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
-        	TRACE("current constructed paths " << g_.int_id(p1->first));
+            TRACE("current constructed paths " << g_.int_id(p1->first));
             //p1->second.p_.Print();
         }
 
@@ -641,21 +641,21 @@ inline void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, E
 
     if (back_paths.empty()) {
         if (IsInTip(g_.EdgeStart(e.e_)) && looking_for_tip) {
-        	TRACE( "Added tip edge " << g_.int_id(e.e_) << " (" << g_.length(e.e_) << ")" << ", distance " << e.d_);
+            TRACE( "Added tip edge " << g_.int_id(e.e_) << " (" << g_.length(e.e_) << ")" << ", distance " << e.d_);
             constructed_paths.insert(make_pair(e.e_, PathWithDistance(BidirectionalPath(g_, e.e_), e.d_)));
         } else if (!IsInTip(g_.EdgeStart(e.e_)) && !looking_for_tip) {
             constructed_paths.insert(make_pair(e.e_, PathWithDistance(BidirectionalPath(g_, e.e_), e.d_)));
         }
     } else {
-    	TRACE("Found several back paths " << back_paths.size());
+        TRACE("Found several back paths " << back_paths.size());
         BidirectionalPathSet reached_paths;
         FilterBackPaths(back_paths, g_.conjugate(current_path->GetId()), reached_paths, search_dist_ - grown_path_len);
         //Found a path back to the init path
         if (reached_paths.size() > 0 && !looking_for_tip) {
-        	TRACE("Found " << reached_paths.size() << " direct path(s) back");
+            TRACE("Found " << reached_paths.size() << " direct path(s) back");
             int i = 0;
             for (BidirectionalPath* p : reached_paths) {
-            	TRACE("Processing reached path " << i++);
+                TRACE("Processing reached path " << i++);
                 BidirectionalPath cp = p->Conjugate();
                 //Adding jumped edge since its not included in the path
                 cp.PushBack(e.e_);
@@ -667,7 +667,7 @@ inline void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, E
         } else if (reached_paths.size() > 0 && looking_for_tip) {
             DEBUG("Impossible: back path reaches tip");
         } else if (looking_for_tip) {
-        	TRACE( "Found " << back_paths.size() << " path(s) going back to tip");
+            TRACE( "Found " << back_paths.size() << " path(s) going back to tip");
             int i = 0;
             for (BidirectionalPath* p : back_paths) {
                 DEBUG("Processing tip path " << i++);
@@ -720,7 +720,7 @@ inline void NextPathSearcher::AddConstructedPath(const BidirectionalPath& cp, si
     for (size_t i = 0; i < cp.Size() - 1; ++i) {
         EdgeId edge = cp[i];
         for (auto it = constructed_paths.lower_bound(edge); it != constructed_paths.upper_bound(edge); ++it) {
-        	TRACE("found " << g_.int_id(edge));
+            TRACE("found " << g_.int_id(edge));
             //it->second.p_.Print();
             TRACE("clear");
             it->second.p_.Clear();
@@ -759,7 +759,7 @@ inline bool NextPathSearcher::IsInTip(VertexId v) const {
 }
 inline void NextPathSearcher::FilterBackPaths(BidirectionalPathSet& back_paths, EdgeId edge_to_reach, BidirectionalPathSet& reached_paths,
                                               size_t max_len) const {
-	TRACE("Searching for proper back paths");
+    TRACE("Searching for proper back paths");
 
     int i = 0;
     for (auto piter = back_paths.begin(); piter != back_paths.end();) {
@@ -782,7 +782,7 @@ inline void NextPathSearcher::FilterBackPaths(BidirectionalPathSet& back_paths, 
 }
 
 inline void NextPathSearcher::JoinPathsByGraph(ConstructedPathT& constructed_paths) const {
-	TRACE("==  try to join paths using graph ==");
+    TRACE("==  try to join paths using graph ==");
     for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
         //p1->second.p_.Print();
     }
@@ -813,7 +813,7 @@ inline void NextPathSearcher::JoinPathsByGraph(ConstructedPathT& constructed_pat
 }
 
 inline void NextPathSearcher::JoinPathsByPI(ConstructedPathT& constructed_paths) const {
-	DEBUG("==  try to join paths ===");
+    DEBUG("==  try to join paths ===");
     for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
         p1->second.p_.Print();
     }
@@ -863,7 +863,7 @@ inline void NextPathSearcher::JoinPathsByPI(ConstructedPathT& constructed_paths)
                 }
             }
             if (has_pi) {
-            	DEBUG("has pi from ");
+                DEBUG("has pi from ");
                 path1.Print();
                 DEBUG("to");
                 path2.Print();
@@ -880,44 +880,44 @@ inline void NextPathSearcher::JoinPathsByPI(ConstructedPathT& constructed_paths)
     }
 }
 inline void Generate(size_t l, size_t r, vector<size_t> a,
-		vector<vector<size_t> >& res, vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
-	if (l == r) {
-	    DEBUG("result " << a.size())
-		res.push_back(a);
-	} else {
-		for (size_t i = l; i < r; ++i) {
-		    if (l > 0 && connections[all_paths[a[l - 1]]].count(all_paths[a[i]]) == 0) {
-		        DEBUG(" not connected " << a[l-1] << " and " << a[i])
-				continue;
-			}
-		    DEBUG("  connected " << l-1 << " and " << i)
-			size_t v = a[l];
-			a[l] = a[i];
-			a[i] = v;
-			Generate(l + 1, r, a, res, all_paths, connections);
-			v = a[l];
-			a[l] = a[i];
-			a[i] = v;
-		}
-	}
+        vector<vector<size_t> >& res, vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
+    if (l == r) {
+        DEBUG("result " << a.size())
+        res.push_back(a);
+    } else {
+        for (size_t i = l; i < r; ++i) {
+            if (l > 0 && connections[all_paths[a[l - 1]]].count(all_paths[a[i]]) == 0) {
+                DEBUG(" not connected " << a[l-1] << " and " << a[i])
+                continue;
+            }
+            DEBUG("  connected " << l-1 << " and " << i)
+            size_t v = a[l];
+            a[l] = a[i];
+            a[i] = v;
+            Generate(l + 1, r, a, res, all_paths, connections);
+            v = a[l];
+            a[l] = a[i];
+            a[i] = v;
+        }
+    }
 }
 
 inline vector<vector<size_t> > Generate(size_t n, vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
-	vector<vector<size_t> > result;
-	if (n > 5) {
-	    return result;
-	}
-	vector<size_t> a;
-	for (size_t i = 0; i < n; ++i) {
-		a.push_back(i);
-	}
-	Generate(0, n, a, result, all_paths, connections);
-	return result;
+    vector<vector<size_t> > result;
+    if (n > 5) {
+        return result;
+    }
+    vector<size_t> a;
+    for (size_t i = 0; i < n; ++i) {
+        a.push_back(i);
+    }
+    Generate(0, n, a, result, all_paths, connections);
+    return result;
 }
 
 inline map<PathWithDistance*, size_t> NextPathSearcher::FindDistances(const BidirectionalPath& p, vector<PathWithDistance*>& paths) const {
     DEBUG("find distances from e " << g_.int_id(p.Back()))
-	map<PathWithDistance*, size_t> result;
+    map<PathWithDistance*, size_t> result;
     DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, search_dist_, 3000));
     dijkstra.Run(g_.EdgeEnd(p.Back()));
     DEBUG("paths size " << paths.size());
@@ -941,9 +941,9 @@ inline void NextPathSearcher::FindConnections(vector<PathWithDistance*>& all_pat
         map<PathWithDistance*, size_t> distances = FindDistances((*p1)->p_, all_paths);
         connections[*p1] = set<PathWithDistance*>();
         for (auto iter = distances.begin(); iter != distances.end(); ++iter) {
-        	if ((*p1)->p_.Length() + iter->second < search_dist_){
-        		connections[*p1].insert(iter->first);
-        	}
+            if ((*p1)->p_.Length() + iter->second < search_dist_){
+                connections[*p1].insert(iter->first);
+            }
         }
     }
 }

@@ -290,7 +290,7 @@ public:
 
     }
 
-    //	/**
+    //    /**
     //   * @todo optimize!!!
     //   */
     //    Seq<size_ + 1, T> pushFront(char c) const {

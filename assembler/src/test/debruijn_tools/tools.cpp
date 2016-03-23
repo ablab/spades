@@ -9,7 +9,7 @@
 #include "pipeline/graphio.hpp"
 #include <boost/test/unit_test.hpp>
 
-::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
+::boost::unit_test::test_suite*    init_unit_test_suite( int, char* [] )
 {
     logging::logger *log = logging::create_logger("", logging::L_DEBUG);
     log->add_writer(make_shared<logging::console_writer>());

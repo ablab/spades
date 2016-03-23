@@ -20,14 +20,14 @@ class VertexLinker : public virtual ParameterStorage<typename Graph::VertexId, s
 template<class Graph>
 class MapVertexLinker : public VertexLinker<Graph>, public MapParameterStorage<typename Graph::VertexId, string> {
 public:
-	MapVertexLinker() : MapParameterStorage<typename Graph::VertexId, string>("") {
-	}
+    MapVertexLinker() : MapParameterStorage<typename Graph::VertexId, string>("") {
+    }
 
-	MapVertexLinker(const map<typename Graph::VertexId, string> &link_map) : MapParameterStorage<typename Graph::VertexId, string>(link_map, "") {
-	}
+    MapVertexLinker(const map<typename Graph::VertexId, string> &link_map) : MapParameterStorage<typename Graph::VertexId, string>(link_map, "") {
+    }
 
-	virtual ~MapVertexLinker() {
-	}
+    virtual ~MapVertexLinker() {
+    }
 };
 
 template<class Graph>

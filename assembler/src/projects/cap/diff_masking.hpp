@@ -304,7 +304,7 @@ inline void PerformIterativeRefinement(ContigStreams& streams,
 inline void PerformIterativeRefinement(const string& base_path,
         const vector<string>& suffixes, const string& out_root,
         vector<size_t>& k_values, bool /* gene_analysis  */= false) {
-//	remove_dir(out_root);
+//    remove_dir(out_root);
     utils::MakeDirPath(out_root);
     ContigStreams streams = OpenStreams(base_path, suffixes, true);
 

@@ -283,8 +283,8 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
   const KmerSubs& kmer_mapper_;
   size_t k_;
   bool optimization_on_;
-  //	mutable size_t mapped_;
-  //	mutable size_t unmapped_;
+  //    mutable size_t mapped_;
+  //    mutable size_t unmapped_;
 
   bool FindKmer(const Kmer &kmer, size_t kmer_pos, std::vector<EdgeId> &passed,
                 RangeMappings& range_mappings) const {
@@ -320,8 +320,8 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
       VertexId v = g_.EdgeEnd(last_edge);
 
       if(!optimization_on_)
-    	  if(g_.OutgoingEdgeCount(v) > 1)
-    		  return false;
+          if(g_.OutgoingEdgeCount(v) > 1)
+              return false;
 
       for (auto I = g_.out_begin(v), E = g_.out_end(v); I != E; ++I) {
         EdgeId edge = *I;
@@ -364,30 +364,30 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
         return false;
       }
     }
-    //		if (!Substitute(kmer)) {
-    //			if (try_thread) {
-    //				return TryThread(kmer, kmer_pos, passed_edges, range_mapping);
-    //			} else {
-    //				return FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
-    //			}
-    //		} else {
-    //			FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
-    //			return false;
-    //		}
+    //        if (!Substitute(kmer)) {
+    //            if (try_thread) {
+    //                return TryThread(kmer, kmer_pos, passed_edges, range_mapping);
+    //            } else {
+    //                return FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
+    //            }
+    //        } else {
+    //            FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
+    //            return false;
+    //        }
   }
 
  public:
   NewExtendedSequenceMapper(const Graph& g,
                             const Index& index,
                             const KmerSubs& kmer_mapper,
-			    bool optimization_on = true) :
+                bool optimization_on = true) :
       SequenceMapper<Graph>(g), index_(index), kmer_mapper_(kmer_mapper), k_(g.k()+1),
-	optimization_on_(optimization_on) { }
+    optimization_on_(optimization_on) { }
 
   ~NewExtendedSequenceMapper() {
-    //		TRACE("In destructor of sequence mapper");
-    //		TRACE(mapped_ << " sequences were mapped");
-    //		TRACE(unmapped_ << " sequences couldn't be mapped");
+    //        TRACE("In destructor of sequence mapper");
+    //        TRACE(mapped_ << " sequences were mapped");
+    //        TRACE(unmapped_ << " sequences couldn't be mapped");
   }
 
   MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
@@ -409,13 +409,13 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
                                range_mapping, try_thread);
     }
 
-    //		if (passed_edges.empty()) {
-    ////			TRACE("Sequence " << sequence << "couldn't be mapped");
-    //			unmapped_++;
-    //			//todo maybe check path consistency?
-    //		} else {
-    //			mapped_++;
-    //		}
+    //        if (passed_edges.empty()) {
+    ////            TRACE("Sequence " << sequence << "couldn't be mapped");
+    //            unmapped_++;
+    //            //todo maybe check path consistency?
+    //        } else {
+    //            mapped_++;
+    //        }
 
     return MappingPath<EdgeId>(passed_edges, range_mapping);
   }

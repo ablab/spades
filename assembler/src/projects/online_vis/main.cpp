@@ -23,7 +23,7 @@
 #include "debruijn_online_visualizer.hpp"
 
 void create_console_logger(string const& cfg_filename) {
-	using namespace logging;
+    using namespace logging;
 
     string log_props_file = cfg::get().log_filename;
 

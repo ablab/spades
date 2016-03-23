@@ -50,7 +50,7 @@ public:
               old_graph_(old_graph) {
         // printing from resolve
         FillLabels(from_resolve);
-        /*		for(auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
+        /*        for(auto iter = from_resolve.begin(); iter != from_resolve.end(); ++iter) {
          if (edge_inclusions.find(iter->second) == edge_inclusions.end()){
          set<EdgeId> tmp;
          edge_inclusions.insert(make_pair(iter->second, tmp));
@@ -110,7 +110,7 @@ public:
             edge_inclusions.find(edge_labels[edge2][i])->second.erase(edge2);
             edge_labels.erase(edge2);
 
-            //	tmp.push_back(edge_labels[edge1][i]);
+            //    tmp.push_back(edge_labels[edge1][i]);
         }
 
         edge_labels.insert(make_pair(new_edge, tmp));

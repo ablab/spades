@@ -31,15 +31,15 @@ int main(int argc, char** argv) {
   size_t m_num = 5;
 
   if ((argc < 2) || (argc > 4)) {
-		std::cout << "Usage: ./filter <filename> [<L> [<map number>]]\n"
+        std::cout << "Usage: ./filter <filename> [<L> [<map number>]]\n"
               << "<map number> is map type:\n"
               << "1 - map, 2 - ext/hash_map, 3 - tr1/unordered_map,\n"
               << "4 - google/sparse_hash_map, 5 - cuckoo (default)\n"
               << "Selects k-mers with amount > L (1 by default)" << std::endl;
     return 0;
   }
-	if (argc >= 2) {
-		filename = argv[1];
+    if (argc >= 2) {
+        filename = argv[1];
   }
   if (argc >= 3) {
     L = atoi(argv[2]);

@@ -23,43 +23,43 @@ template<typename ReadType>
 class RCWrapper: public DelegatingWrapper<ReadType> {
     typedef DelegatingWrapper<ReadType> base;
 public:
-	explicit RCWrapper(typename base::ReadStreamPtrT reader) :
-			base(reader), rc_read_(), was_rc_(true) {
-	}
+    explicit RCWrapper(typename base::ReadStreamPtrT reader) :
+            base(reader), rc_read_(), was_rc_(true) {
+    }
 
-	/* virtual */
-	bool eof() {
-		return was_rc_ && base::eof();
-	}
+    /* virtual */
+    bool eof() {
+        return was_rc_ && base::eof();
+    }
 
-	/* virtual */
-	RCWrapper& operator>>(ReadType& read) {
-		if (was_rc_) {
-			base::operator >>(read);
-			rc_read_ = read;
-		} else {
-			read = !rc_read_;
-		}
-		was_rc_ = !was_rc_;
-		return (*this);
-	}
+    /* virtual */
+    RCWrapper& operator>>(ReadType& read) {
+        if (was_rc_) {
+            base::operator >>(read);
+            rc_read_ = read;
+        } else {
+            read = !rc_read_;
+        }
+        was_rc_ = !was_rc_;
+        return (*this);
+    }
 
-	/* virtual */
-	void reset() {
-		was_rc_ = true;
-		base::reset();
-	}
+    /* virtual */
+    void reset() {
+        was_rc_ = true;
+        base::reset();
+    }
 
-	/* virtual */
-	ReadStreamStat get_stat() const {
-	    ReadStreamStat stat = base::get_stat();
-		stat.merge(stat);
-		return stat;
-	}
+    /* virtual */
+    ReadStreamStat get_stat() const {
+        ReadStreamStat stat = base::get_stat();
+        stat.merge(stat);
+        return stat;
+    }
 
 private:
-	ReadType rc_read_;
-	bool was_rc_;
+    ReadType rc_read_;
+    bool was_rc_;
 };
 
 template<class ReadType>

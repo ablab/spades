@@ -346,7 +346,7 @@ bool Sequence::intersects(const Sequence &t) const {
 //including from, excluding to
 //safe if not #DEFINE NDEBUG
 Sequence Sequence::Subseq(size_t from, size_t to) const {
-    //	cerr << endl<<"subseq:" <<   from <<" " << to << " " <<  this->str() << endl;
+    //    cerr << endl<<"subseq:" <<   from <<" " << to << " " <<  this->str() << endl;
     VERIFY(to >= from);
     VERIFY(to <= size_);
     //VERIFY(to - from <= size_);
@@ -419,15 +419,15 @@ size_t Sequence::rightSimilar(const Sequence &t, size_t k) const {
 Sequence Sequence::operator+(const Sequence &s) const {
     return Sequence(str() + s.str());
     // TODO might be opposite to correct
-    //	int total = size_ + s.size_;
-    //	std::vector<Seq<4> > bytes((total + 3) >> 2);
-    //	for (size_t i = 0; i < size_; ++i) {
-    //		bytes[i / 4] = (bytes[i / 4] << operator [](i)); // TODO :-) use <<=
-    //	}
-    //	for (size_t i = 0, j = size_; i < s.size_; ++i, ++j) {
-    //		bytes[j / 4] = (bytes[j / 4]) << s[i];
-    //	}
-    //	return Sequence(new Data(bytes), 0, total, false);
+    //    int total = size_ + s.size_;
+    //    std::vector<Seq<4> > bytes((total + 3) >> 2);
+    //    for (size_t i = 0; i < size_; ++i) {
+    //        bytes[i / 4] = (bytes[i / 4] << operator [](i)); // TODO :-) use <<=
+    //    }
+    //    for (size_t i = 0, j = size_; i < s.size_; ++i, ++j) {
+    //        bytes[j / 4] = (bytes[j / 4]) << s[i];
+    //    }
+    //    return Sequence(new Data(bytes), 0, total, false);
 }
 
 std::string Sequence::str() const {

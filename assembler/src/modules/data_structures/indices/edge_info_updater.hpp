@@ -30,24 +30,24 @@ class EdgeInfoUpdater {
         }
     }
 
-  	//todo why do we need to check equality???!!!
-  	bool DeleteIfEqual(const KeyWithHash &kwh, EdgeId e) {
-  		if (!index_.contains(kwh))
-  			return false;
-  		if (index_.get_value(kwh).edge_id == e) {
-  		    index_.get_raw_value_reference(kwh).invalidate();
-  			return true;
-  		}
-  		return false;
-  	}
+      //todo why do we need to check equality???!!!
+      bool DeleteIfEqual(const KeyWithHash &kwh, EdgeId e) {
+          if (!index_.contains(kwh))
+              return false;
+          if (index_.get_value(kwh).edge_id == e) {
+              index_.get_raw_value_reference(kwh).invalidate();
+              return true;
+          }
+          return false;
+      }
 
     void UpdateKMers(const Sequence &nucls, EdgeId e) {
         VERIFY(nucls.size() >= index_.k());
         KeyWithHash kwh = index_.ConstructKWH(Kmer(index_.k(), nucls));
         index_.PutInIndex(kwh, e, 0);
         for (size_t i = index_.k(), n = nucls.size(); i < n; ++i) {
-        	kwh <<= nucls[i];
-        	index_.PutInIndex(kwh, e, i - index_.k() + 1);
+            kwh <<= nucls[i];
+            index_.PutInIndex(kwh, e, i - index_.k() + 1);
         }
     }
 

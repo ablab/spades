@@ -29,9 +29,9 @@
 // @parameter name the name of hash map
 
 template<size_t size, class hm>
-class seq_filter_stat {		
+class seq_filter_stat {        
 public:
-	static void filter(const std::string& in, 
+    static void filter(const std::string& in, 
                      const std::string& label = "") {
     unsigned long vm1 = 0;
     long rss1 = 0;
@@ -41,7 +41,7 @@ public:
     double t1 = tim.tv_sec + ((float)tim.tv_usec/1e6);
 
     hm map;
-		add_seqs_from_file_to_map(in, map);
+        add_seqs_from_file_to_map(in, map);
 
     unsigned long vm2 = 0;
     long rss2 = 0;
@@ -73,10 +73,10 @@ public:
     std::cout << "Memory: " << (vm2 - vm1) << " " << label << std::endl;
     std::cout << "Insert: " << (t2 - t1) - (t4 - t3) << " " << label << std::endl;
     std::cout << "Find: " << (t3 - t2) << " " << label << std::endl;
-	}
+    }
 
   // Only for cuckoo!!!
-	static void filter(const std::string& in, 
+    static void filter(const std::string& in, 
                      const size_t d,
                      const size_t lbs,
                      const double step,
@@ -121,11 +121,11 @@ public:
               << " " << label << std::endl;
     std::cout << "Find: " << (t3 - t2) 
               << " " << label << std::endl;
-	}
+    }
 
 private:
-	seq_filter_stat();
-	seq_filter_stat(const seq_filter_stat<size, hm>& sf);
+    seq_filter_stat();
+    seq_filter_stat(const seq_filter_stat<size, hm>& sf);
 
 private:
   static void add_seqs_from_file_to_map(const std::string& in, hm& map) {
@@ -145,19 +145,19 @@ private:
     }
   }
 
-	static void add_seqs_from_read_to_map(const Read& read, hm& map) {
-		Sequence s = read.getSequence();
-		if (s.size() >= size) {
-			Seq<size> seq = s.start<size>();
-			map.insert(std::make_pair(seq, 1));
-			size_t s_size = s.size();
-			for (size_t i = size; i < s_size; ++i) {
-				Seq<size> next = seq << s[i];
-				seq = next;
+    static void add_seqs_from_read_to_map(const Read& read, hm& map) {
+        Sequence s = read.getSequence();
+        if (s.size() >= size) {
+            Seq<size> seq = s.start<size>();
+            map.insert(std::make_pair(seq, 1));
+            size_t s_size = s.size();
+            for (size_t i = size; i < s_size; ++i) {
+                Seq<size> next = seq << s[i];
+                seq = next;
         map.insert(std::make_pair(seq, 1));
-			}
-		}
-	}
+            }
+        }
+    }
 };
 
 #endif

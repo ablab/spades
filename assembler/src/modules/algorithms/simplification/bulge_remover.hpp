@@ -30,80 +30,80 @@ namespace omnigraph {
 
 template<class Graph>
 struct SimplePathCondition {
-	typedef typename Graph::EdgeId EdgeId;
-	const Graph& g_;
+    typedef typename Graph::EdgeId EdgeId;
+    const Graph& g_;
 
-	SimplePathCondition(const Graph& g) :
-			g_(g) {
+    SimplePathCondition(const Graph& g) :
+            g_(g) {
 
-	}
+    }
 
-	bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
-		if (edge == g_.conjugate(edge))
-			return false;
-		for (size_t i = 0; i < path.size(); ++i)
-			if (edge == path[i] || edge == g_.conjugate(path[i]))
-				return false;
-		for (size_t i = 0; i < path.size(); ++i) {
-			if (path[i] == g_.conjugate(path[i])) {
-				return false;
-			}
-			for (size_t j = i + 1; j < path.size(); ++j)
-				if (path[i] == path[j] || path[i] == g_.conjugate(path[j]))
-					return false;
-		}
-		return true;
-	}
+    bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
+        if (edge == g_.conjugate(edge))
+            return false;
+        for (size_t i = 0; i < path.size(); ++i)
+            if (edge == path[i] || edge == g_.conjugate(path[i]))
+                return false;
+        for (size_t i = 0; i < path.size(); ++i) {
+            if (path[i] == g_.conjugate(path[i])) {
+                return false;
+            }
+            for (size_t j = i + 1; j < path.size(); ++j)
+                if (path[i] == path[j] || path[i] == g_.conjugate(path[j]))
+                    return false;
+        }
+        return true;
+    }
 };
 
 template<class Graph>
 bool TrivialCondition(typename Graph::EdgeId,
-		const vector<typename Graph::EdgeId>& path) {
-	for (size_t i = 0; i < path.size(); ++i)
-		for (size_t j = i + 1; j < path.size(); ++j)
-			if (path[i] == path[j])
-				return false;
-	return true;
+        const vector<typename Graph::EdgeId>& path) {
+    for (size_t i = 0; i < path.size(); ++i)
+        for (size_t j = i + 1; j < path.size(); ++j)
+            if (path[i] == path[j])
+                return false;
+    return true;
 }
 
 template<class Graph>
 class MostCoveredSimpleAlternativePathChooser: public PathProcessor<Graph>::Callback {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
 
-	const Graph& g_;
-	EdgeId forbidden_edge_;
+    const Graph& g_;
+    EdgeId forbidden_edge_;
 
-	double max_coverage_;
-	vector<EdgeId> most_covered_path_;
+    double max_coverage_;
+    vector<EdgeId> most_covered_path_;
 
 public:
 
-	MostCoveredSimpleAlternativePathChooser(const Graph& g, EdgeId edge) :
-			g_(g), forbidden_edge_(edge), max_coverage_(-1.0) {
+    MostCoveredSimpleAlternativePathChooser(const Graph& g, EdgeId edge) :
+            g_(g), forbidden_edge_(edge), max_coverage_(-1.0) {
 
-	}
+    }
 
-	void HandleReversedPath(const vector<EdgeId>& reversed_path) override {
-	    vector<EdgeId> path = this->ReversePath(reversed_path);
-		double path_cov = AvgCoverage(g_, path);
-		for (size_t i = 0; i < path.size(); i++) {
-			if (path[i] == forbidden_edge_)
-				return;
-		}
-		if (path_cov > max_coverage_ && SimplePathCondition<Graph>(g_)(forbidden_edge_, path)) {
-			max_coverage_ = path_cov;
-			most_covered_path_ = path;
-		}
-	}
+    void HandleReversedPath(const vector<EdgeId>& reversed_path) override {
+        vector<EdgeId> path = this->ReversePath(reversed_path);
+        double path_cov = AvgCoverage(g_, path);
+        for (size_t i = 0; i < path.size(); i++) {
+            if (path[i] == forbidden_edge_)
+                return;
+        }
+        if (path_cov > max_coverage_ && SimplePathCondition<Graph>(g_)(forbidden_edge_, path)) {
+            max_coverage_ = path_cov;
+            most_covered_path_ = path;
+        }
+    }
 
-	double max_coverage() {
-		return max_coverage_;
-	}
+    double max_coverage() {
+        return max_coverage_;
+    }
 
-	const vector<EdgeId>& most_covered_path() {
-		return most_covered_path_;
-	}
+    const vector<EdgeId>& most_covered_path() {
+        return most_covered_path_;
+    }
 };
 
 inline size_t CountMaxDifference(size_t absolute_diff, size_t length, double relative_diff) {
@@ -320,12 +320,12 @@ NecessaryBulgeCondition(const Graph& g, size_t max_length, double max_coverage) 
 //template<class Graph>
 //class OldBulgeRemover: public EdgeProcessingAlgorithm<Graph> {
 //    typedef EdgeProcessingAlgorithm<Graph> base;
-//	typedef typename Graph::EdgeId EdgeId;
-//	typedef typename Graph::VertexId VertexId;
+//    typedef typename Graph::EdgeId EdgeId;
+//    typedef typename Graph::VertexId VertexId;
 //
 //protected:
 //
-//	/*virtual*/
+//    /*virtual*/
 //    bool ProcessEdge(EdgeId e) {
 //        TRACE("Considering edge " << this->g().str(e)
 //                      << " of length " << this->g().length(e)
@@ -348,16 +348,16 @@ NecessaryBulgeCondition(const Graph& g, size_t max_length, double max_coverage) 
 //
 //public:
 //
-//	typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
+//    typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
 //
-////	BulgeRemover(Graph& g,  double max_coverage, size_t max_length,
-////			double max_relative_coverage, size_t max_delta,
-////			double max_relative_delta,
-////			size_t max_edge_cnt,
-////			BulgeCallbackF opt_callback = 0,
-////			std::function<void(EdgeId)> removal_handler = 0) :
-////			base(g, true),
-////			gluer_(g, opt_callback, removal_handler) {
+////    BulgeRemover(Graph& g,  double max_coverage, size_t max_length,
+////            double max_relative_coverage, size_t max_delta,
+////            double max_relative_delta,
+////            size_t max_edge_cnt,
+////            BulgeCallbackF opt_callback = 0,
+////            std::function<void(EdgeId)> removal_handler = 0) :
+////            base(g, true),
+////            gluer_(g, opt_callback, removal_handler) {
 ////                DEBUG("Launching br max_length=" << max_length
 ////                << " max_coverage=" << max_coverage
 ////                << " max_relative_coverage=" << max_relative_coverage
@@ -370,20 +370,20 @@ NecessaryBulgeCondition(const Graph& g, size_t max_length, double max_coverage) 
 ////                                                    max_delta, max_relative_delta, max_edge_cnt));
 ////    }
 //
-//	OldBulgeRemover(Graph& g,
-//	        const std::vector<AlternativesAnalyzer<Graph>>& alternatives_analyzers,
-//			BulgeCallbackF opt_callback = 0,
-//			std::function<void(EdgeId)> removal_handler = 0) :
-//			base(g, true),
-//			alternatives_analyzers_(alternatives_analyzers),
-//			gluer_(g, opt_callback, removal_handler) {
+//    OldBulgeRemover(Graph& g,
+//            const std::vector<AlternativesAnalyzer<Graph>>& alternatives_analyzers,
+//            BulgeCallbackF opt_callback = 0,
+//            std::function<void(EdgeId)> removal_handler = 0) :
+//            base(g, true),
+//            alternatives_analyzers_(alternatives_analyzers),
+//            gluer_(g, opt_callback, removal_handler) {
 //    }
 //
 //private:
-//	std::vector<AlternativesAnalyzer<Graph>> alternatives_analyzers_;
-//	BulgeGluer<Graph> gluer_;
+//    std::vector<AlternativesAnalyzer<Graph>> alternatives_analyzers_;
+//    BulgeGluer<Graph> gluer_;
 //private:
-//	DECL_LOGGER("BulgeRemover")
+//    DECL_LOGGER("BulgeRemover")
 //};
 
 template<class Graph>

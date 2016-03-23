@@ -32,7 +32,7 @@ struct Options {
       : genom_file(""),
         trust_file(""),
         bad_file(""),
-	full(false),
+    full(false),
         valid(true) {}  
 };
 

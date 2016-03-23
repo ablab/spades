@@ -546,7 +546,7 @@ void TreephaserLite::Solve(BasecallerRead& read, int max_flows, int restart_flow
 
       float dot_signal = (read.normalized_measurements[child->flow]
                           - parent->prediction[child->flow])
-    		              / child->state[child->flow];
+                          / child->state[child->flow];
 
       child->dot_counter = (dot_signal < kDotThreshold) ? (parent->dot_counter + 1) : 0;
       if (child->dot_counter > 1)

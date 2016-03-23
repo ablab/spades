@@ -12,153 +12,153 @@ namespace omnigraph {
 template<class Graph>
 struct vertex_neighbour {
 protected:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
 public:
-	VertexId 	vertex;
-	EdgeId 		edge;
+    VertexId     vertex;
+    EdgeId         edge;
 
-	vertex_neighbour(VertexId new_vertex, EdgeId new_edge) :
-		vertex(new_vertex),
-		edge(new_edge) { }
+    vertex_neighbour(VertexId new_vertex, EdgeId new_edge) :
+        vertex(new_vertex),
+        edge(new_edge) { }
 };
 
 template<class Graph>
 class NeighbourIterator {
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
 protected:
-	const Graph &graph_;
-	VertexId vertex_;
+    const Graph &graph_;
+    VertexId vertex_;
 public:
-	NeighbourIterator(const Graph &graph, VertexId vertex) :
-		graph_(graph),
-		vertex_(vertex) { }
+    NeighbourIterator(const Graph &graph, VertexId vertex) :
+        graph_(graph),
+        vertex_(vertex) { }
 
-	virtual bool HasNext() = 0;
-	virtual vertex_neighbour<Graph> Next() = 0;
-	virtual  ~NeighbourIterator() { }
+    virtual bool HasNext() = 0;
+    virtual vertex_neighbour<Graph> Next() = 0;
+    virtual  ~NeighbourIterator() { }
 };
 
 template<class Graph>
 class ForwardNeighbourIterator : public NeighbourIterator<Graph>{
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
 
-	pair<edge_const_iterator, edge_const_iterator> out_edges_;
+    pair<edge_const_iterator, edge_const_iterator> out_edges_;
 public:
-	ForwardNeighbourIterator(const Graph &graph, VertexId vertex) :
-		NeighbourIterator<Graph>(graph, vertex),
-		out_edges_(make_pair(graph.OutgoingEdges(vertex).begin(),
-				graph.OutgoingEdges(vertex).end())) { }
+    ForwardNeighbourIterator(const Graph &graph, VertexId vertex) :
+        NeighbourIterator<Graph>(graph, vertex),
+        out_edges_(make_pair(graph.OutgoingEdges(vertex).begin(),
+                graph.OutgoingEdges(vertex).end())) { }
 
-	bool HasNext(){
-		return out_edges_.first != out_edges_.second;
-	}
+    bool HasNext(){
+        return out_edges_.first != out_edges_.second;
+    }
 
-	vertex_neighbour<Graph> Next() {
-		vertex_neighbour<Graph> res(this->graph_.EdgeEnd(*out_edges_.first), *out_edges_.first);
-		out_edges_.first++;
-		return res;
-	}
+    vertex_neighbour<Graph> Next() {
+        vertex_neighbour<Graph> res(this->graph_.EdgeEnd(*out_edges_.first), *out_edges_.first);
+        out_edges_.first++;
+        return res;
+    }
 };
 
 template<class Graph>
 class BackwardNeighbourIterator : public NeighbourIterator<Graph>{
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
 
-	pair<edge_const_iterator, edge_const_iterator>  in_edges_;
+    pair<edge_const_iterator, edge_const_iterator>  in_edges_;
 public:
-	BackwardNeighbourIterator(const Graph &graph, VertexId vertex) :
-		NeighbourIterator<Graph>(graph, vertex),
-		in_edges_(make_pair(graph.IncomingEdges(vertex).begin(),
-				graph.IncomingEdges(vertex).end())) { }
+    BackwardNeighbourIterator(const Graph &graph, VertexId vertex) :
+        NeighbourIterator<Graph>(graph, vertex),
+        in_edges_(make_pair(graph.IncomingEdges(vertex).begin(),
+                graph.IncomingEdges(vertex).end())) { }
 
-	bool HasNext(){
-		return in_edges_.first != in_edges_.second;
-	}
+    bool HasNext(){
+        return in_edges_.first != in_edges_.second;
+    }
 
-	vertex_neighbour<Graph> Next() {
-		vertex_neighbour<Graph> res(this->graph_.EdgeStart(*in_edges_.first), *in_edges_.first);
-		in_edges_.first++;
-		return res;
-	}
+    vertex_neighbour<Graph> Next() {
+        vertex_neighbour<Graph> res(this->graph_.EdgeStart(*in_edges_.first), *in_edges_.first);
+        in_edges_.first++;
+        return res;
+    }
 };
 
 template<class Graph>
 class UnorientedNeighbourIterator : public NeighbourIterator<Graph>{
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
 
-	pair<edge_const_iterator, edge_const_iterator>  in_edges_;
-	pair<edge_const_iterator, edge_const_iterator>  out_edges_;
+    pair<edge_const_iterator, edge_const_iterator>  in_edges_;
+    pair<edge_const_iterator, edge_const_iterator>  out_edges_;
 public:
-	UnorientedNeighbourIterator(const Graph &graph, VertexId vertex) :
-		NeighbourIterator<Graph>(graph, vertex),
-		in_edges_(make_pair(graph.IncomingEdges(vertex).begin(),
-				graph.IncomingEdges(vertex).end())),
-		out_edges_(make_pair(graph.OutgoingEdges(vertex).begin(),
-				graph.OutgoingEdges(vertex).end())) { }
+    UnorientedNeighbourIterator(const Graph &graph, VertexId vertex) :
+        NeighbourIterator<Graph>(graph, vertex),
+        in_edges_(make_pair(graph.IncomingEdges(vertex).begin(),
+                graph.IncomingEdges(vertex).end())),
+        out_edges_(make_pair(graph.OutgoingEdges(vertex).begin(),
+                graph.OutgoingEdges(vertex).end())) { }
 
-	bool HasNext(){
-		return in_edges_.first != in_edges_.second;
-	}
+    bool HasNext(){
+        return in_edges_.first != in_edges_.second;
+    }
 
-	// first all outgoing edges are visited
-	// then all incoming
-	vertex_neighbour<Graph> Next() {
-		if(out_edges_.first != out_edges_.second){
-			vertex_neighbour<Graph> res(this->graph_.EdgeEnd(*out_edges_.first), *out_edges_.first);
-			out_edges_.first++;
-			return res;
-		}
-		vertex_neighbour<Graph> res(this->graph_.EdgeStart(*in_edges_.first), *in_edges_.first);
-		in_edges_.first++;
-		return res;
-	}
+    // first all outgoing edges are visited
+    // then all incoming
+    vertex_neighbour<Graph> Next() {
+        if(out_edges_.first != out_edges_.second){
+            vertex_neighbour<Graph> res(this->graph_.EdgeEnd(*out_edges_.first), *out_edges_.first);
+            out_edges_.first++;
+            return res;
+        }
+        vertex_neighbour<Graph> res(this->graph_.EdgeStart(*in_edges_.first), *in_edges_.first);
+        in_edges_.first++;
+        return res;
+    }
 };
 
 template<class Graph>
 class ForwardNeighbourIteratorFactory {
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	const Graph &graph_;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    const Graph &graph_;
 public:
-	typedef ForwardNeighbourIterator<Graph> NeighbourIterator;
-	ForwardNeighbourIteratorFactory(const Graph &graph) : graph_(graph) { }
-	NeighbourIterator CreateIterator(VertexId vertex){
-		return NeighbourIterator(graph_, vertex);
-	}
+    typedef ForwardNeighbourIterator<Graph> NeighbourIterator;
+    ForwardNeighbourIteratorFactory(const Graph &graph) : graph_(graph) { }
+    NeighbourIterator CreateIterator(VertexId vertex){
+        return NeighbourIterator(graph_, vertex);
+    }
 };
 
 template<class Graph>
 class BackwardNeighbourIteratorFactory {
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	const Graph &graph_;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    const Graph &graph_;
 public:
-	typedef BackwardNeighbourIterator<Graph> NeighbourIterator;
-	BackwardNeighbourIteratorFactory(const Graph &graph) : graph_(graph) { }
-	NeighbourIterator CreateIterator(VertexId vertex){
-		return NeighbourIterator(graph_, vertex);
-	}
+    typedef BackwardNeighbourIterator<Graph> NeighbourIterator;
+    BackwardNeighbourIteratorFactory(const Graph &graph) : graph_(graph) { }
+    NeighbourIterator CreateIterator(VertexId vertex){
+        return NeighbourIterator(graph_, vertex);
+    }
 };
 
 template<class Graph>
 class UnorientedNeighbourIteratorFactory {
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	const Graph &graph_;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    const Graph &graph_;
 public:
-	typedef UnorientedNeighbourIterator<Graph> NeighbourIterator;
-	UnorientedNeighbourIteratorFactory(const Graph &graph) : graph_(graph) { }
-	NeighbourIterator CreateIterator(VertexId vertex){
-		return NeighbourIterator(graph_, vertex);
-	}
+    typedef UnorientedNeighbourIterator<Graph> NeighbourIterator;
+    UnorientedNeighbourIteratorFactory(const Graph &graph) : graph_(graph) { }
+    NeighbourIterator CreateIterator(VertexId vertex){
+        return NeighbourIterator(graph_, vertex);
+    }
 };
 
 }

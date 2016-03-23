@@ -32,18 +32,18 @@ class GenomeConsistenceChecker {
 
 private:
     const conj_graph_pack &gp_;
-	const Graph &graph_;
+    const Graph &graph_;
     //EdgesPositionHandler<Graph> &position_handler_;
-	Sequence genome_;
+    Sequence genome_;
     ScaffoldingUniqueEdgeStorage storage_;
-	size_t absolute_max_gap_;
-	double relative_max_gap_;
+    size_t absolute_max_gap_;
+    double relative_max_gap_;
     set<EdgeId> excluded_unique_;
     EdgeId circular_edge_;
 //map from unique edges to their order in genome spelling;
     mutable map<EdgeId, size_t> genome_spelled_;
     bool consequent(const Range &mr1, const Range &mr2) const;
-	bool consequent(const MappingRange &mr1, const MappingRange &mr2) const ;
+    bool consequent(const MappingRange &mr1, const MappingRange &mr2) const ;
 
     PathScore CountMisassembliesWithStrand(const BidirectionalPath &path, const string strand) const;
 //constructs longest sequence of consequetive ranges, stores result in used_mappings
@@ -56,8 +56,8 @@ DECL_LOGGER("GenomeConsistenceChecker");
 
 
 public:
-	GenomeConsistenceChecker(const conj_graph_pack &gp, ScaffoldingUniqueEdgeStorage &storage, size_t max_gap, double relative_max_gap /*= 0.2*/) : gp_(gp),
-			graph_(gp.g), /*position_handler_(gp.edge_pos),*/ genome_(gp.genome.GetSequence()), storage_(storage),
+    GenomeConsistenceChecker(const conj_graph_pack &gp, ScaffoldingUniqueEdgeStorage &storage, size_t max_gap, double relative_max_gap /*= 0.2*/) : gp_(gp),
+            graph_(gp.g), /*position_handler_(gp.edge_pos),*/ genome_(gp.genome.GetSequence()), storage_(storage),
         absolute_max_gap_(max_gap), relative_max_gap_(relative_max_gap), excluded_unique_(), circular_edge_() {
         if (!gp.edge_pos.IsAttached()) {
             gp.edge_pos.Attach();
@@ -66,8 +66,8 @@ public:
         FillPos(gp_, gp_.genome.GetSequence(), "0");
         FillPos(gp_, !gp_.genome.GetSequence(), "1");
         RefillPos();
-	}
-	PathScore CountMisassemblies(const BidirectionalPath &path) const;
+    }
+    PathScore CountMisassemblies(const BidirectionalPath &path) const;
 //spells genome in language of long unique edges from storage;
     void SpellGenome();
 

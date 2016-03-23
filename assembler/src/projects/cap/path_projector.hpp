@@ -71,8 +71,8 @@ private:
 template <class Graph>
 class PathProjector {
  public:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
   typedef std::vector<EdgeId> Path;
   typedef typename CoordinatesHandler<Graph>::PosArray PosArray;
   typedef unsigned uint;

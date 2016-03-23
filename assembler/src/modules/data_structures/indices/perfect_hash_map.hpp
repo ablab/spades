@@ -30,58 +30,58 @@ namespace debruijn_graph {
 
 template<class K, class traits>
 class IndexWrapper {
-	static const size_t InvalidIdx = size_t(-1);
+    static const size_t InvalidIdx = size_t(-1);
 public:
-	typedef size_t IdxType;
-	typedef K KeyType;
-	typedef traits traits_t;
+    typedef size_t IdxType;
+    typedef K KeyType;
+    typedef traits traits_t;
 protected:
-	typedef KMerIndex<traits>        KMerIndexT;
-	//these fields are protected only for reduction of storage in edge indices BinWrite
-	KMerIndexT index_;
+    typedef KMerIndex<traits>        KMerIndexT;
+    //these fields are protected only for reduction of storage in edge indices BinWrite
+    KMerIndexT index_;
 private:
-	std::string workdir_;
-	unsigned k_;
+    std::string workdir_;
+    unsigned k_;
 
 protected:
-	size_t raw_seq_idx(const typename KMerIndexT::KMerRawReference s) const {
-		return index_.raw_seq_idx(s);
-	}
+    size_t raw_seq_idx(const typename KMerIndexT::KMerRawReference s) const {
+        return index_.raw_seq_idx(s);
+    }
 
-	bool valid(const size_t idx) const {
-		return idx != InvalidIdx && idx < index_.size();
-	}
+    bool valid(const size_t idx) const {
+        return idx != InvalidIdx && idx < index_.size();
+    }
 public:
-	IndexWrapper(size_t k, const std::string &workdir) : k_((unsigned) k) {
-		//fixme string literal
-		workdir_ = path::make_temp_dir(workdir, "kmeridx");
-	}
+    IndexWrapper(size_t k, const std::string &workdir) : k_((unsigned) k) {
+        //fixme string literal
+        workdir_ = path::make_temp_dir(workdir, "kmeridx");
+    }
 
-	~IndexWrapper() {
-		path::remove_dir(workdir_);
-	}
+    ~IndexWrapper() {
+        path::remove_dir(workdir_);
+    }
 
-	void clear() {
-		index_.clear();
-	}
+    void clear() {
+        index_.clear();
+    }
 
-	unsigned k() const { return k_; }
+    unsigned k() const { return k_; }
 
 public:
-	template<class Writer>
-	void BinWrite(Writer &writer) const {
-		index_.serialize(writer);
-	}
+    template<class Writer>
+    void BinWrite(Writer &writer) const {
+        index_.serialize(writer);
+    }
 
-	template<class Reader>
-	void BinRead(Reader &reader, const std::string &) {
-		clear();
-		index_.deserialize(reader);
-	}
+    template<class Reader>
+    void BinRead(Reader &reader, const std::string &) {
+        clear();
+        index_.deserialize(reader);
+    }
 
-	const std::string &workdir() const {
-		return workdir_;
-	}
+    const std::string &workdir() const {
+        return workdir_;
+    }
 };
 
 template<class K, class V, class traits, class StoringType>

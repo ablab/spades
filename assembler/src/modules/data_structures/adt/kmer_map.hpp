@@ -476,7 +476,7 @@ public:
     }
 
     base_map_type& get_data() {
-    	return *data_;
+        return *data_;
     }
 
 
@@ -664,13 +664,13 @@ private:
 public:
 
     KmerMapImpl(size_t k, size_t n) {
-    	data_ = new map_type(n);
-    	k_ = k;
+        data_ = new map_type(n);
+        k_ = k;
     }
 
     KmerMapImpl(size_t k) {
-    	data_ = new map_type();
-    	k_ = k;
+        data_ = new map_type();
+        k_ = k;
     }
 
     KmerMapImpl(const KmerMapImpl& map) {
@@ -679,7 +679,7 @@ public:
     }
 
     virtual ~KmerMapImpl() {
-    	delete data_;
+        delete data_;
     }
 
     virtual base_type * copy() const {
@@ -764,8 +764,8 @@ public:
 
 
     virtual void clear() {
-    	delete data_;
-    	data_ = new map_type();
+        delete data_;
+        data_ = new map_type();
     }
 
     virtual size_t bucket_count() const {

@@ -50,7 +50,7 @@ class Compressor : public PersistentProcessingAlgorithm<Graph, typename Graph::V
                                           graph_.EdgeEnd(e))) {
         }
         vector <EdgeId> mergeList;
-        //		e = graph_.conjugate(e);
+        //        e = graph_.conjugate(e);
         start_edge = e;
         do {
             mergeList.push_back(e);
@@ -64,19 +64,19 @@ class Compressor : public PersistentProcessingAlgorithm<Graph, typename Graph::V
 
     }
 
-//	//todo use graph method!
-//	bool CanCompressVertex(VertexId v) const {
-//		if (!graph_.CheckUniqueOutgoingEdge(v)
-//			|| !graph_.CheckUniqueIncomingEdge(v)) {
-//			TRACE(
-//					"Vertex "
-//							<< graph_.str(v)
-//							<< " judged NOT compressible. Proceeding to the next vertex");
-//			TRACE("Processing vertex " << graph_.str(v) << " finished");
-//			return false;
-//		}
-//		return true;
-//	}
+//    //todo use graph method!
+//    bool CanCompressVertex(VertexId v) const {
+//        if (!graph_.CheckUniqueOutgoingEdge(v)
+//            || !graph_.CheckUniqueIncomingEdge(v)) {
+//            TRACE(
+//                    "Vertex "
+//                            << graph_.str(v)
+//                            << " judged NOT compressible. Proceeding to the next vertex");
+//            TRACE("Processing vertex " << graph_.str(v) << " finished");
+//            return false;
+//        }
+//        return true;
+//    }
 public:
     Compressor(Graph &graph, size_t chunk_cnt = 1, bool safe_merging = true) :
             base(graph,
@@ -112,9 +112,9 @@ public:
         return CompressWithoutChecks(v);
     }
 
-//	bool IsOfInterest(VertexId v) const {
-//	    return CanCompressVertex(v);
-//	}
+//    bool IsOfInterest(VertexId v) const {
+//        return CanCompressVertex(v);
+//    }
 
 protected:
     bool Process(VertexId v) override {

@@ -22,7 +22,7 @@
 //fixme why is it disabled
 //#include "pair_info_test.hpp"
 
-::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
+::boost::unit_test::test_suite*    init_unit_test_suite( int, char* [] )
 {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
     log->add_writer(std::make_shared<logging::console_writer>());

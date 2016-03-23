@@ -264,10 +264,10 @@ private:
     static vector<VertexId> ExtractVertices(const Graph &graph, const vector<EdgeId> &path) {
         vector<VertexId> result;
         for(size_t i = 0; i < path.size(); i++) {
-        	if(i == 0 || path[i] != path[i - 1]) {
-        		result.push_back(graph.EdgeStart(path[i]));
-        		result.push_back(graph.EdgeEnd(path[i]));
-        	}
+            if(i == 0 || path[i] != path[i - 1]) {
+                result.push_back(graph.EdgeStart(path[i]));
+                result.push_back(graph.EdgeEnd(path[i]));
+            }
         }
         return result;
     }
@@ -325,7 +325,7 @@ public:
 //  virtual size_t GetLength(EdgeId edge) const {
 //    if (this->graph().length(edge) <= edge_length_bound_)
 //      //todo change back
-////			return 1;
+////            return 1;
 //      return this->graph().length(edge);
 //    else
 //      return inf;
@@ -449,8 +449,8 @@ public:
     }
 
     GraphComponent<Graph> Find(typename Graph::VertexId v) {
-    	auto cd = DijkstraHelper<Graph>::CreateCountingDijkstra(this->graph(), max_size_,
-    			edge_length_bound_);
+        auto cd = DijkstraHelper<Graph>::CreateCountingDijkstra(this->graph(), max_size_,
+                edge_length_bound_);
         cd.Run(v);
         vector<VertexId> result_vector = cd.ReachedVertices();
         set<VertexId> result(result_vector.begin(), result_vector.end());
@@ -591,7 +591,7 @@ public:
     }
 
     GraphComponent<Graph> Find(VertexId v) {
-    	auto cd = DijkstraHelper<Graph>::CreateShortEdgeDijkstra(this->graph(), edge_length_bound_);
+        auto cd = DijkstraHelper<Graph>::CreateShortEdgeDijkstra(this->graph(), edge_length_bound_);
         cd.Run(v);
         set<VertexId> result = cd.ProcessedVertices();
         return GraphComponent<Graph>(this->graph(), result.begin(),
@@ -664,18 +664,18 @@ public:
 
     GraphComponent<Graph> Next() {
         if (!HasNext()) {
-       		VERIFY(false);
-           	return omnigraph::GraphComponent<Graph>(this->graph());
+               VERIFY(false);
+               return omnigraph::GraphComponent<Graph>(this->graph());
         } else {
-        	if(next_) {
-        		GraphComponent<Graph> result = next_.get();
-        		next_ = boost::optional<GraphComponent<Graph>>();
-        		return result;
-        	} else {
-           		GraphComponent<Graph> result(this->graph(), filtered_.begin(), filtered_.end(), false, "filtered");
-           		filtered_.clear();
-           		return result;
-        	}
+            if(next_) {
+                GraphComponent<Graph> result = next_.get();
+                next_ = boost::optional<GraphComponent<Graph>>();
+                return result;
+            } else {
+                   GraphComponent<Graph> result(this->graph(), filtered_.begin(), filtered_.end(), false, "filtered");
+                   filtered_.clear();
+                   return result;
+            }
         }
     }
 
@@ -685,7 +685,7 @@ public:
             if (checker_->Check(ne)) {
                 next_ = ne;
             } else {
-            	filtered_.insert(ne.v_begin(), ne.v_end());
+                filtered_.insert(ne.v_begin(), ne.v_end());
             }
         }
         return next_ || !filtered_.empty();
@@ -705,36 +705,36 @@ private:
     boost::optional<GraphComponent<Graph>> next_;
 
     string CutName(const string &name, size_t max_length) {
-    	VERIFY(max_length >= 7);
-    	size_t length = name.size();
-    	if (length <= max_length)
-    		return name;
-    	else {
-    		return name.substr(0, (max_length - 5) / 2) + "....." + name.substr(length - (max_length - 5) / 2, (max_length - 5) / 2);
-    	}
+        VERIFY(max_length >= 7);
+        size_t length = name.size();
+        if (length <= max_length)
+            return name;
+        else {
+            return name.substr(0, (max_length - 5) / 2) + "....." + name.substr(length - (max_length - 5) / 2, (max_length - 5) / 2);
+        }
     }
 
     GraphComponent<Graph> ConstructComponent() {
-    	GraphComponent<Graph> next = inner_splitter_->Next();
-    	if (checker_->Check(next)) {
-    		return next;
-    	}
-    	set<VertexId> vertices(next.v_begin(), next.v_end());
-    	string name = next.name();
-    	for(size_t i = 0; i < 10 && inner_splitter_->HasNext(); i++) {
-			next = inner_splitter_->Next();
-			if (checker_->Check(next)) {
-				next_ = next;
-				break;
-			} else {
-				vertices.insert(next.v_begin(), next.v_end());
+        GraphComponent<Graph> next = inner_splitter_->Next();
+        if (checker_->Check(next)) {
+            return next;
+        }
+        set<VertexId> vertices(next.v_begin(), next.v_end());
+        string name = next.name();
+        for(size_t i = 0; i < 10 && inner_splitter_->HasNext(); i++) {
+            next = inner_splitter_->Next();
+            if (checker_->Check(next)) {
+                next_ = next;
+                break;
+            } else {
+                vertices.insert(next.v_begin(), next.v_end());
                 if (next.name() != "") {
                     name += ";";
                     name += next.name();
                 }
-			}
-		}
-		return GraphComponent<Graph>(this->graph(), vertices.begin(), vertices.end(), CutName(name, 60));
+            }
+        }
+        return GraphComponent<Graph>(this->graph(), vertices.begin(), vertices.end(), CutName(name, 60));
     }
 
 public:
@@ -751,20 +751,20 @@ public:
             return omnigraph::GraphComponent<Graph>(this->graph());
         }
         if(next_) {
-        	GraphComponent<Graph> result = next_.get();
-        	next_ = boost::optional<GraphComponent<Graph>>();
-        	return result;
+            GraphComponent<Graph> result = next_.get();
+            next_ = boost::optional<GraphComponent<Graph>>();
+            return result;
         } else {
-        	return ConstructComponent();
+            return ConstructComponent();
         }
     }
 
     bool HasNext() {
-    	if(next_)
-    		return true;
-    	if(!inner_splitter_->HasNext())
-    		return false;
-    	return true;
+        if(next_)
+            return true;
+        if(!inner_splitter_->HasNext())
+            return false;
+        return true;
     }
 private:
     DECL_LOGGER("FilteringSplitterWrapper");

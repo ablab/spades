@@ -20,40 +20,40 @@ namespace cap {
 template<class Graph>
 class ComponentSingleColorFilter: public GraphComponentFilter<Graph> {
 private:
-	typedef GraphComponentFilter<Graph> base;
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
+    typedef GraphComponentFilter<Graph> base;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
 
     ColorHandler<Graph> color_handler_;
     TColorSet restricted_color_;
-	size_t max_length_;
-	size_t vertex_number_;
+    size_t max_length_;
+    size_t vertex_number_;
 
 public:
-	ComponentSingleColorFilter(const Graph &graph, const ColorHandler<Graph> &color_handler,
+    ComponentSingleColorFilter(const Graph &graph, const ColorHandler<Graph> &color_handler,
             const TColorSet &restricted_color, size_t max_length, size_t vertex_number)
         : base(graph),
           color_handler_(color_handler),
           restricted_color_(restricted_color),
           max_length_(max_length),
           vertex_number_(vertex_number) {
-	}
+    }
 
-	/*virtual*/
-	bool Check(const GraphComponent<Graph> &gc) const {
-		return true;
+    /*virtual*/
+    bool Check(const GraphComponent<Graph> &gc) const {
+        return true;
         TRACE("Check component");
         auto &component = gc.vertices();
-		if (component.size() <= vertex_number_)
-			return false;
+        if (component.size() <= vertex_number_)
+            return false;
 
         bool length_flag = false,
              color_flag = false;
-//		set < VertexId > component(vertices.begin(), vertices.end());
-		for (auto iterator = component.begin(); iterator != component.end();
-				++iterator) {
-			for (EdgeId e : this->graph().OutgoingEdges(*iterator)) {
-				if (component.count(this->graph().EdgeEnd(e)) == 1) {
+//        set < VertexId > component(vertices.begin(), vertices.end());
+        for (auto iterator = component.begin(); iterator != component.end();
+                ++iterator) {
+            for (EdgeId e : this->graph().OutgoingEdges(*iterator)) {
+                if (component.count(this->graph().EdgeEnd(e)) == 1) {
                     if (this->graph().length(e) <= max_length_) {
                         length_flag = true;
                     }
@@ -64,24 +64,24 @@ public:
                     if (length_flag && color_flag) {
                         return true;
                     }
-				}
-			}
-		}
-		return false;
-	}
+                }
+            }
+        }
+        return false;
+    }
 };
 
 template<class Graph>
 void PrintColoredGraph(const Graph& g, const ColorHandler<Graph>& coloring,
-		const EdgesPositionHandler<Graph>& pos, const string& output_filename) {
-	shared_ptr<GraphSplitter<Graph>> splitter = ReliableSplitter<Graph>(g, 1000000, 30);
-	LengthIdGraphLabeler<Graph> basic_labeler(g);
-	EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
+        const EdgesPositionHandler<Graph>& pos, const string& output_filename) {
+    shared_ptr<GraphSplitter<Graph>> splitter = ReliableSplitter<Graph>(g, 1000000, 30);
+    LengthIdGraphLabeler<Graph> basic_labeler(g);
+    EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
 
-	CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
-	WriteComponents(g, splitter, output_filename,
-//				*ConstructColorer(coloring),
-			*ConstructBorderColorer(g, coloring), labeler);
+    CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+    WriteComponents(g, splitter, output_filename,
+//                *ConstructColorer(coloring),
+            *ConstructBorderColorer(g, coloring), labeler);
 }
 
 template<class Graph>
@@ -89,12 +89,12 @@ void PrintColoredGraphAroundEdge(const Graph& g,
     const ColorHandler<Graph>& coloring, const EdgeId edge,
     const EdgesPositionHandler<Graph>& pos, const string& output_filename) {
   INFO(output_filename);
-	LengthIdGraphLabeler<Graph> basic_labeler(g);
-	EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
+    LengthIdGraphLabeler<Graph> basic_labeler(g);
+    EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
 
-	CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
-	GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g, edge);
-	omnigraph::visualization::WriteComponent(component, output_filename, coloring.ConstructColorer(component), labeler);
+    CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+    GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g, edge);
+    omnigraph::visualization::WriteComponent(component, output_filename, coloring.ConstructColorer(component), labeler);
 }
 
 template<class Graph>
@@ -106,13 +106,13 @@ void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> 
   TColorSet restricted_color = TColorSet::AllColorsSet(colors_number);
 
     shared_ptr<GraphSplitter<Graph>> splitter = ReliableSplitter<Graph>(g, edge_length_bound, 30);
-	shared_ptr<omnigraph::GraphComponentFilter<Graph>> filter = make_shared<ComponentSingleColorFilter<Graph>>(g, coloring, restricted_color, edge_length_bound, 2);
-	shared_ptr<omnigraph::GraphSplitter<Graph>> fs = make_shared<omnigraph::FilteringSplitterWrapper<Graph> >(splitter, filter);
-	LengthIdGraphLabeler<Graph> basic_labeler(g);
-	EdgeCoordinatesGraphLabeler<Graph> pos_labeler(g, pos, genome_names);
+    shared_ptr<omnigraph::GraphComponentFilter<Graph>> filter = make_shared<ComponentSingleColorFilter<Graph>>(g, coloring, restricted_color, edge_length_bound, 2);
+    shared_ptr<omnigraph::GraphSplitter<Graph>> fs = make_shared<omnigraph::FilteringSplitterWrapper<Graph> >(splitter, filter);
+    LengthIdGraphLabeler<Graph> basic_labeler(g);
+    EdgeCoordinatesGraphLabeler<Graph> pos_labeler(g, pos, genome_names);
 
-	CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
-	omnigraph::visualization::WriteComponents(g, output_folder, fs, coloring.ConstructColorer(), labeler);
+    CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+    omnigraph::visualization::WriteComponents(g, output_folder, fs, coloring.ConstructColorer(), labeler);
 }
 
 //fixme code duplication
@@ -125,7 +125,7 @@ void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> 
   TColorSet restricted_color = TColorSet::AllColorsSet(colors_number);
 
     shared_ptr<omnigraph::GraphSplitter<Graph>> splitter = ReliableSplitter<Graph>(g, edge_length_bound, 30);
-	shared_ptr<omnigraph::GraphComponentFilter<Graph>> filter = make_shared<ComponentSingleColorFilter<Graph>>(g, coloring, restricted_color, edge_length_bound, 2);
+    shared_ptr<omnigraph::GraphComponentFilter<Graph>> filter = make_shared<ComponentSingleColorFilter<Graph>>(g, coloring, restricted_color, edge_length_bound, 2);
     shared_ptr<omnigraph::GraphSplitter<Graph>> fs = make_shared<omnigraph::FilteringSplitterWrapper<Graph>>(splitter, filter);
     LengthIdGraphLabeler<Graph> basic_labeler(g);
     EdgePosGraphLabeler<Graph> pos_labeler(g, pos);

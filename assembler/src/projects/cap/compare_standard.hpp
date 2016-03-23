@@ -36,8 +36,8 @@ namespace cap {
 typedef io::SingleRead Contig;
 typedef io::ReadStream<Contig> ContigStream;
 typedef std::shared_ptr<ContigStream> ContigStreamPtr;
-typedef	io::MultifileStream<io::SingleRead> CompositeContigStream;
-typedef	io::RCWrapper<io::SingleRead> RCWrapper;
+typedef    io::MultifileStream<io::SingleRead> CompositeContigStream;
+typedef    io::RCWrapper<io::SingleRead> RCWrapper;
 typedef io::ReadStreamList<Contig> ContigStreams;
 }
 

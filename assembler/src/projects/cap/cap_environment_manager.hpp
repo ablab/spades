@@ -118,20 +118,20 @@ class CapEnvironmentManager {
 
   template <class gp_t>
   void SaveCurrentStreams(const gp_t &/* gp */, const std::string &dir) const {
-		for (size_t i = 0; i < env_->genomes_.size(); ++i) {
+        for (size_t i = 0; i < env_->genomes_.size(); ++i) {
       std::string output_filename = dir + path::filename(env_->init_genomes_paths_[i]);
-			if (!output_filename.empty()) {
-				Contig contig;
-				io::osequencestream out_stream(output_filename);
-				DEBUG("Saving to " << output_filename);
+            if (!output_filename.empty()) {
+                Contig contig;
+                io::osequencestream out_stream(output_filename);
+                DEBUG("Saving to " << output_filename);
 
         io::SequenceReadStream<io::SingleRead> stream(env_->genomes_[i], env_->genomes_names_[i]);
-				while (!stream.eof()) {
-					stream >> contig;
-					out_stream << contig;
-				}
-			}
-		}
+                while (!stream.eof()) {
+                    stream >> contig;
+                    out_stream << contig;
+                }
+            }
+        }
   }
 
   void UpdateStreams() {
@@ -314,9 +314,9 @@ class CapEnvironmentManager {
     // Saving graph
     /*
     debruijn_graph::graphio::PrinterTraits<Graph>::Printer printer(*env_->graph_);
-	printer.SaveGraph(filename);
-	printer.SaveEdgeSequences(filename);
-	printer.SavePositions(filename, *env_->edge_pos_);
+    printer.SaveGraph(filename);
+    printer.SaveEdgeSequences(filename);
+    printer.SavePositions(filename, *env_->edge_pos_);
   */
     if (env_->LSeqIsUsed()) {
       //PrintGraphPack(filename, env_->gp_lseq_);

@@ -11,37 +11,37 @@ namespace omnigraph {
 
 template<class Graph, typename distance_t = size_t>
 class VertexProcessChecker {
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
 public:
-	VertexProcessChecker() {}
-	virtual bool Check(VertexId, distance_t) { return true; }
-	virtual ~VertexProcessChecker() {}
+    VertexProcessChecker() {}
+    virtual bool Check(VertexId, distance_t) { return true; }
+    virtual ~VertexProcessChecker() {}
 };
 
 template<class Graph, typename distance_t = size_t>
 class BoundProcessChecker : public VertexProcessChecker<Graph, distance_t> {
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
     const distance_t distance_bound_;
 public:
     BoundProcessChecker(distance_t distance_bound) :
-		distance_bound_(distance_bound) {}
+        distance_bound_(distance_bound) {}
 
     bool Check(VertexId, distance_t distance) override {
-    	return distance <= distance_bound_;
+        return distance <= distance_bound_;
     }
 };
 
 template<class Graph, typename distance_t = size_t>
 class ZeroLengthProcessChecker : public VertexProcessChecker<Graph, distance_t> {
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
 public:
-	ZeroLengthProcessChecker() {}
+    ZeroLengthProcessChecker() {}
 
     bool Check(VertexId, distance_t distance) override {
-    	return distance == 0;
+        return distance == 0;
     }
 };
 

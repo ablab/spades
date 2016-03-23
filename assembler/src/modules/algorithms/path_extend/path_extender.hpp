@@ -101,12 +101,12 @@ public:
             }
             path.PushBack(edges.second);
             DEBUG("loop with start " << g_.int_id(e_in)
-            		<<" e1 " << g_.int_id(e1)
-            		<< " e2 " << g_.int_id(e2)
-            		<< " out " <<g_.int_id(e_out)
-            		<< " cov in = " << in_cov
-            		<< " cov out " << out_cov
-            		<< " cov " << cov
+                    <<" e1 " << g_.int_id(e1)
+                    << " e2 " << g_.int_id(e2)
+                    << " out " <<g_.int_id(e_out)
+                    << " cov in = " << in_cov
+                    << " cov out " << out_cov
+                    << " cov " << cov
                   << " cov e1 = " << gp_.g.coverage(e1)
                   << " cov e2 = " << gp_.g.coverage(e2)
                   << " time1 = " << time1
@@ -702,7 +702,7 @@ public:
             size_t common_size = MaxCommonSize(p, *cov_p);
             DEBUG("max comon size with path " << cov_p->GetId() << " is " << common_size);
             if (common_size == 0) {
-            	continue;
+                continue;
             }
             VERIFY(common_size <= p.Size());
             if (p.LengthAt(p.Size() - common_size) > repeat_len_) {
@@ -717,7 +717,7 @@ public:
     }
     size_t MaxCommonSize(const BidirectionalPath& p1, const BidirectionalPath& p2) const {
         DEBUG("max coomon size ")
-    	EdgeId last_e = p1.Back();
+        EdgeId last_e = p1.Back();
         vector<size_t> positions2 = p2.FindAll(last_e);
         DEBUG("pos size " << positions2.size())
         size_t max_common_size = 0;
@@ -733,14 +733,14 @@ private:
         int i1 = (int) pos1;
         int i2 = (int) pos2;
         while (i1 >= 0 && i2 >= 0 &&
-        		p1.At((size_t) i1) == p2.At((size_t) i2) &&
-        		p1.GapAt((size_t) i1) == p2.GapAt((size_t) i2)) {
+                p1.At((size_t) i1) == p2.At((size_t) i2) &&
+                p1.GapAt((size_t) i1) == p2.GapAt((size_t) i2)) {
             i1--;
             i2--;
         }
         if (i1 >=0 && i2>=0 && p1.At((size_t) i1) == p2.At((size_t) i2)) {
-        	i1--;
-        	i2--;
+            i1--;
+            i2--;
         }
 
         VERIFY(i1 <= (int)pos1);
@@ -1359,9 +1359,9 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
         }
     }
 
-    bool IsSink(EdgeId e) const	{
-		return g_.OutgoingEdgeCount(g_.EdgeEnd(e)) == 0;
-	}
+    bool IsSink(EdgeId e) const    {
+        return g_.OutgoingEdgeCount(g_.EdgeEnd(e)) == 0;
+    }
 
 
 public:
@@ -1442,16 +1442,16 @@ public:
         return false;
     }
 
-	bool ResolveShortLoopByPI(BidirectionalPath&) override {
-		return false;
-	}
+    bool ResolveShortLoopByPI(BidirectionalPath&) override {
+        return false;
+    }
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
         return extension_chooser_;
     }
 
 private:
-	DECL_LOGGER("ScaffoldingPathExtender");
+    DECL_LOGGER("ScaffoldingPathExtender");
 };
 
 }

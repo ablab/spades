@@ -44,22 +44,22 @@ void DrawComponentsOfShortEdges(const Graph& g, size_t min_length, size_t sinks,
         GraphComponent<Graph> component = splitter->Next();
         if(component.v_size() > 3 && component.sinks().size() == sinks && component.sources().size() == sources)
         {
-        	bool fail = false;
-        	for(auto v : component.sources()) {
-        		if(component.g().IncomingEdgeCount(v) != 1) {
-        			fail = true;
-        		}
-        	}
-        	for(auto v : component.sinks()) {
-        		if(component.g().OutgoingEdgeCount(v) != 1) {
-        			fail = true;
-        		}
-        	}
+            bool fail = false;
+            for(auto v : component.sources()) {
+                if(component.g().IncomingEdgeCount(v) != 1) {
+                    fail = true;
+                }
+            }
+            for(auto v : component.sinks()) {
+                if(component.g().OutgoingEdgeCount(v) != 1) {
+                    fail = true;
+                }
+            }
 
-        	if(fail)
-        	{
-        		continue;
-        	}
+            if(fail)
+            {
+                continue;
+            }
 
             StrGraphLabeler<Graph> labeler(component.g());
             CoverageGraphLabeler<Graph> labeler2(component.g());

@@ -23,50 +23,50 @@ namespace path_extend {
 
 class LoopTraverser {
 
-	const Graph& g_;
-	GraphCoverageMap& covMap_;
-	shared_ptr<ContigsMaker> extender_;
+    const Graph& g_;
+    GraphCoverageMap& covMap_;
+    shared_ptr<ContigsMaker> extender_;
 private:
-	EdgeId FindStart(const set<VertexId>& component_set) const{
-		EdgeId result;
-		for (auto it = component_set.begin(); it != component_set.end(); ++it) {
-			for (auto eit = g_.in_begin(*it); eit != g_.in_end(*it); ++eit) {
-				if (component_set.count(g_.EdgeStart(*eit)) == 0) {
-					if (result != EdgeId()) {
-						return EdgeId();
-					}
-					result = *eit;
-				}
-			}
-		}
-		return result;
-	}
+    EdgeId FindStart(const set<VertexId>& component_set) const{
+        EdgeId result;
+        for (auto it = component_set.begin(); it != component_set.end(); ++it) {
+            for (auto eit = g_.in_begin(*it); eit != g_.in_end(*it); ++eit) {
+                if (component_set.count(g_.EdgeStart(*eit)) == 0) {
+                    if (result != EdgeId()) {
+                        return EdgeId();
+                    }
+                    result = *eit;
+                }
+            }
+        }
+        return result;
+    }
 
-	EdgeId FindFinish(const set<VertexId>& component_set) {
-		EdgeId result;
-		for (auto it = component_set.begin(); it != component_set.end(); ++it) {
-			for (auto I = g_.out_begin(*it), E = g_.out_end(*it);
-					I != E; ++I) {
-				if (component_set.count(g_.EdgeEnd(*I)) == 0) {
-					if (result != EdgeId()) {
-						return EdgeId();
-					}
-					result = *I;
-				}
-			}
-		}
-		return result;
-	}
+    EdgeId FindFinish(const set<VertexId>& component_set) {
+        EdgeId result;
+        for (auto it = component_set.begin(); it != component_set.end(); ++it) {
+            for (auto I = g_.out_begin(*it), E = g_.out_end(*it);
+                    I != E; ++I) {
+                if (component_set.count(g_.EdgeEnd(*I)) == 0) {
+                    if (result != EdgeId()) {
+                        return EdgeId();
+                    }
+                    result = *I;
+                }
+            }
+        }
+        return result;
+    }
 
-	void TryToGrow(BidirectionalPath* path, EdgeId component_entrance) {
-		BidirectionalPath clone = *path;
-		extender_->GrowPathSimple(*path);
-		if (!path->Contains(component_entrance)) {
-			DEBUG("Grown paths do not contain initial edges, rolling back");
-			path->Clear();
-			path->PushBack(clone);
-		}
-	}
+    void TryToGrow(BidirectionalPath* path, EdgeId component_entrance) {
+        BidirectionalPath clone = *path;
+        extender_->GrowPathSimple(*path);
+        if (!path->Contains(component_entrance)) {
+            DEBUG("Grown paths do not contain initial edges, rolling back");
+            path->Clear();
+            path->PushBack(clone);
+        }
+    }
 
     bool IsEndInsideComponent(const BidirectionalPath &path,
                               const set <VertexId> &component_set) {
@@ -100,47 +100,47 @@ private:
             return IsEndInsideComponent(path.SubPath((size_t) i + 1), component_set);
     }
 
-	void TraverseLoop(EdgeId start, EdgeId end, const set<VertexId>& component_set) {
-	    DEBUG("start " << g_.int_id(start) << " end " << g_.int_id(end));
-	    BidirectionalPathSet coveredStartPaths =
-				covMap_.GetCoveringPaths(start);
-	    BidirectionalPathSet coveredEndPaths =
-				covMap_.GetCoveringPaths(end);
+    void TraverseLoop(EdgeId start, EdgeId end, const set<VertexId>& component_set) {
+        DEBUG("start " << g_.int_id(start) << " end " << g_.int_id(end));
+        BidirectionalPathSet coveredStartPaths =
+                covMap_.GetCoveringPaths(start);
+        BidirectionalPathSet coveredEndPaths =
+                covMap_.GetCoveringPaths(end);
 
-		for (auto it_path = coveredStartPaths.begin();
-				it_path != coveredStartPaths.end(); ++it_path) {
-			if ((*it_path)->FindAll(end).size() > 0) {
-				return;
-			}
-		}
-		if (coveredStartPaths.size() < 1 or coveredEndPaths.size() < 1) {
-			DEBUG("TraverseLoop STRANGE SITUATION: start " << coveredStartPaths.size() << " end " << coveredEndPaths.size());
-			return;
-		}
+        for (auto it_path = coveredStartPaths.begin();
+                it_path != coveredStartPaths.end(); ++it_path) {
+            if ((*it_path)->FindAll(end).size() > 0) {
+                return;
+            }
+        }
+        if (coveredStartPaths.size() < 1 or coveredEndPaths.size() < 1) {
+            DEBUG("TraverseLoop STRANGE SITUATION: start " << coveredStartPaths.size() << " end " << coveredEndPaths.size());
+            return;
+        }
 
         if (coveredStartPaths.size() > 1 or coveredEndPaths.size() > 1) {
             DEBUG("Ambiguous situation in path joining, quitting");
             return;
         }
 
-		BidirectionalPath* startPath = *coveredStartPaths.begin();
-		BidirectionalPath* endPath = *coveredEndPaths.begin();
-		if ((*startPath) == endPath->Conjugate()){
-			return;
-		}
+        BidirectionalPath* startPath = *coveredStartPaths.begin();
+        BidirectionalPath* endPath = *coveredEndPaths.begin();
+        if ((*startPath) == endPath->Conjugate()){
+            return;
+        }
 
-		TryToGrow(startPath, start);
-		TryToGrow(endPath->GetConjPath(), g_.conjugate(end));
+        TryToGrow(startPath, start);
+        TryToGrow(endPath->GetConjPath(), g_.conjugate(end));
 
-		//Checking that paths ends are within component
+        //Checking that paths ends are within component
         if (!IsEndInsideComponent(*startPath, start, component_set) ||
                 !IsEndInsideComponent(*endPath->GetConjPath(), g_.conjugate(end), component_set, true)) {
             DEBUG("Some path goes outside of the component")
             return;
         }
 
-		size_t commonSize = startPath->CommonEndSize(*endPath);
-		size_t nLen = 0;
+        size_t commonSize = startPath->CommonEndSize(*endPath);
+        size_t nLen = 0;
         DEBUG("Str " << startPath->Size() << ", end" << endPath->Size());
         if (commonSize == 0 && !startPath->Empty() > 0 && !endPath->Empty()) {
             DEBUG("Estimating gap size");
@@ -168,42 +168,42 @@ private:
                 }
             }
         }
-		if (commonSize < endPath->Size()){
-			startPath->PushBack(endPath->At(commonSize), (int) nLen);
-		}
-		for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
+        if (commonSize < endPath->Size()){
+            startPath->PushBack(endPath->At(commonSize), (int) nLen);
+        }
+        for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
             startPath->PushBack(endPath->At(i), endPath->GapAt(i), endPath->TrashPreviousAt(i), endPath->TrashCurrentAt(i));
-		}
-		DEBUG("travers");
-		startPath->Print();
-		endPath->Print();
-		DEBUG("conj");
-		endPath->GetConjPath()->Print();
-		endPath->Clear();
-	}
+        }
+        DEBUG("travers");
+        startPath->Print();
+        endPath->Print();
+        DEBUG("conj");
+        endPath->GetConjPath()->Print();
+        endPath->Clear();
+    }
 
 public:
-	LoopTraverser(const Graph& g, GraphCoverageMap& coverageMap, shared_ptr<ContigsMaker> extender) :
-			g_(g), covMap_(coverageMap), extender_(extender) {
-	}
+    LoopTraverser(const Graph& g, GraphCoverageMap& coverageMap, shared_ptr<ContigsMaker> extender) :
+            g_(g), covMap_(coverageMap), extender_(extender) {
+    }
 
-	void TraverseAllLoops() {
-		DEBUG("TraverseAllLoops");
-		shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g_, 1000);
-		while (splitter->HasNext()) {
-			GraphComponent<Graph> component = splitter->Next();
-			if (component.v_size() > 10)
-				continue;
-			set<VertexId> component_set(component.v_begin(), component.v_end());
-			EdgeId start = FindStart(component_set);
-			EdgeId finish = FindFinish(component_set);
-			if (start == EdgeId() || finish == EdgeId()) {
-				continue;
-			}
-			TraverseLoop(start, finish, component_set);
-		}
+    void TraverseAllLoops() {
+        DEBUG("TraverseAllLoops");
+        shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g_, 1000);
+        while (splitter->HasNext()) {
+            GraphComponent<Graph> component = splitter->Next();
+            if (component.v_size() > 10)
+                continue;
+            set<VertexId> component_set(component.v_begin(), component.v_end());
+            EdgeId start = FindStart(component_set);
+            EdgeId finish = FindFinish(component_set);
+            if (start == EdgeId() || finish == EdgeId()) {
+                continue;
+            }
+            TraverseLoop(start, finish, component_set);
+        }
 
-	}
+    }
 protected:
     DECL_LOGGER("LoopTraverser");
 };

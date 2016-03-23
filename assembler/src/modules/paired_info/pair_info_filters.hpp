@@ -17,25 +17,25 @@ namespace de {
 template<class Graph>
 class AbstractPairInfoChecker{
 private:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef PairInfo<EdgeId> PairInfoT;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef PairInfo<EdgeId> PairInfoT;
 
 protected:
-	const Graph& graph_;
+    const Graph& graph_;
 
 public:
-	AbstractPairInfoChecker(const Graph &graph) : graph_(graph) { }
+    AbstractPairInfoChecker(const Graph &graph) : graph_(graph) { }
 
-	virtual bool Check(const PairInfoT&) {
-		return true;
-	}
+    virtual bool Check(const PairInfoT&) {
+        return true;
+    }
 
-	virtual bool Check(EdgeId, EdgeId) {
-		return true;
-	}
+    virtual bool Check(EdgeId, EdgeId) {
+        return true;
+    }
 
-	virtual ~AbstractPairInfoChecker() {	}
+    virtual ~AbstractPairInfoChecker() {    }
 };
 
 template<class Graph>
@@ -91,52 +91,52 @@ class AmbiguousPairInfoChecker : public AbstractPairInfoChecker<Graph> {
   double relative_seq_threshold_;
 
   bool IsEdgeOneHaplome(EdgeId edge){
-	  return this->graph_.coverage(edge) < 1.5 * haplom_threshold_;
+      return this->graph_.coverage(edge) < 1.5 * haplom_threshold_;
   }
 
   bool IsPairInfoGood(EdgeId edge1, EdgeId edge2){
-	  return index_.Get(edge1, edge2).size() <= 1;
+      return index_.Get(edge1, edge2).size() <= 1;
   }
 
   bool EdgesAreFromSimpleBulgeWithAmbPI(const PairInfoT& info){
-	  EdgeId edge1 = info.first;
-	  EdgeId edge2 = info.second;
+      EdgeId edge1 = info.first;
+      EdgeId edge2 = info.second;
       // edge is auto reverse complementary
       TRACE("Check for auto reverse complementary");
       if(this->graph_.conjugate(edge1) == info.second)
-      	return false;
+          return false;
       TRACE("Done");
 
       TRACE("Check for coverage 1x haplome for edge from pair info");
-	  if(!IsEdgeOneHaplome(edge1) || !IsEdgeOneHaplome(edge2))
-		  return false;
+      if(!IsEdgeOneHaplome(edge1) || !IsEdgeOneHaplome(edge2))
+          return false;
       TRACE("Done");
 
-	  // first edge is not side of simple bulge
+      // first edge is not side of simple bulge
       TRACE("Check for bulge side for the 1st edge");
       OptEdgeId edge1_alt = GetOtherSideOfSimpleBulge(edge1);
       if(!edge1_alt.is_initialized())
-    	  return false;
+          return false;
       TRACE("Done");
 
       // second edge is not side of simple bulge
       TRACE("Check for bulge side for the 2nd edge");
       OptEdgeId edge2_alt = GetOtherSideOfSimpleBulge(edge2);
       if(!edge2_alt.is_initialized())
-    	  return false;
+          return false;
       TRACE("Done");
 
       TRACE("Check for coverage 1x haplome for edge from alternative bulge sides");
-	  if(!IsEdgeOneHaplome(edge1_alt.get()) || !IsEdgeOneHaplome(edge2_alt.get()))
-		  return false;
-	  TRACE("Done");
+      if(!IsEdgeOneHaplome(edge1_alt.get()) || !IsEdgeOneHaplome(edge2_alt.get()))
+          return false;
+      TRACE("Done");
 
-	  TRACE("Check for multiplicity of pair info");
-	  if(!(IsPairInfoGood(edge1, edge2_alt.get()) &&
-			  IsPairInfoGood(edge1_alt.get(), edge2) &&
-			  IsPairInfoGood(edge1_alt.get(), edge2_alt.get())))
-		  return false;
-	  TRACE("Done");
+      TRACE("Check for multiplicity of pair info");
+      if(!(IsPairInfoGood(edge1, edge2_alt.get()) &&
+              IsPairInfoGood(edge1_alt.get(), edge2) &&
+              IsPairInfoGood(edge1_alt.get(), edge2_alt.get())))
+          return false;
+      TRACE("Done");
 
       return true;
   }
@@ -148,8 +148,8 @@ class AmbiguousPairInfoChecker : public AbstractPairInfoChecker<Graph> {
 
   bool InnerCheck(const PairInfoT& info){
 
-	  EdgeId edge1 = info.first;
-	  EdgeId edge2 = info.second;
+      EdgeId edge1 = info.first;
+      EdgeId edge2 = info.second;
 
       // get second edges of simple bulge
       OptEdgeId opt_edge1_alt = GetOtherSideOfSimpleBulge(edge1);
@@ -161,10 +161,10 @@ class AmbiguousPairInfoChecker : public AbstractPairInfoChecker<Graph> {
       EdgeId edge2_alt = opt_edge2_alt.get();
 
       double direct_weight = GetPairInfoWeight(edge1, edge2) +
-    		  GetPairInfoWeight(edge1_alt, edge2_alt);
+              GetPairInfoWeight(edge1_alt, edge2_alt);
 
       double reverse_weight = GetPairInfoWeight(edge1, edge2_alt) +
-    		  GetPairInfoWeight(edge1_alt, edge2);
+              GetPairInfoWeight(edge1_alt, edge2);
 
       TRACE("Direct_weight " << direct_weight << ", reverse_weight " << reverse_weight);
       return direct_weight > reverse_weight;
@@ -172,54 +172,54 @@ class AmbiguousPairInfoChecker : public AbstractPairInfoChecker<Graph> {
 
 public:
   AmbiguousPairInfoChecker(const Graph& graph, const PairedInfoIndexT<Graph>& index,
-	AbstractPairInfoChecker<Graph> &standard_filter, double haplom_threshold,
-	double relative_length_threshold, double relative_seq_threshold) :
-		AbstractPairInfoChecker<Graph>(graph),
-		standard_filter_(standard_filter),
-		index_(index),
-		haplom_threshold_(haplom_threshold),
-		relative_length_threshold_(relative_length_threshold),
-		relative_seq_threshold_(relative_seq_threshold) { }
+    AbstractPairInfoChecker<Graph> &standard_filter, double haplom_threshold,
+    double relative_length_threshold, double relative_seq_threshold) :
+        AbstractPairInfoChecker<Graph>(graph),
+        standard_filter_(standard_filter),
+        index_(index),
+        haplom_threshold_(haplom_threshold),
+        relative_length_threshold_(relative_length_threshold),
+        relative_seq_threshold_(relative_seq_threshold) { }
 
   bool Check(const PairInfoT& info) {
       TRACE(this->graph_.int_id(info.first) << " " << this->graph_.int_id(info.second));
-	  if(EdgesAreFromSimpleBulgeWithAmbPI(info)){
-		TRACE("Forward directed edges form a simple bulge");
-		return InnerCheck(info);
-	  }
+      if(EdgesAreFromSimpleBulgeWithAmbPI(info)){
+        TRACE("Forward directed edges form a simple bulge");
+        return InnerCheck(info);
+      }
 
-	  if(EdgesAreFromSimpleBulgeWithAmbPI(BackwardInfo(info))){
-		  TRACE("Backward directed edges form a simple bulge");
-		  return InnerCheck(BackwardInfo(info));
-	  }
+      if(EdgesAreFromSimpleBulgeWithAmbPI(BackwardInfo(info))){
+          TRACE("Backward directed edges form a simple bulge");
+          return InnerCheck(BackwardInfo(info));
+      }
 
-	  TRACE("Edges do not form a bulge. Applying default checker");
-	  return standard_filter_.Check(info);
+      TRACE("Edges do not form a bulge. Applying default checker");
+      return standard_filter_.Check(info);
   }
 
 private:
   OptEdgeId GetOtherSideOfSimpleBulge(EdgeId edge){
-	  auto edges = this->graph_.GetEdgesBetween(this->graph_.EdgeStart(edge),
-			  this->graph_.EdgeEnd(edge));
-	  TRACE("Number alternative edges -  " << edges.size());
-	  if(edges.size() == 1)
-		  return OptEdgeId();
+      auto edges = this->graph_.GetEdgesBetween(this->graph_.EdgeStart(edge),
+              this->graph_.EdgeEnd(edge));
+      TRACE("Number alternative edges -  " << edges.size());
+      if(edges.size() == 1)
+          return OptEdgeId();
 
-	  size_t edge_length = this->graph_.length(edge);
-	  Sequence edge_seq = this->graph_.EdgeNucls(edge);
-	  for(auto it_edge = edges.begin(); it_edge != edges.end(); it_edge++)
-		  if(*it_edge != edge){
-			  size_t it_edge_length = this->graph_.length(*it_edge);
-			  Sequence it_edge_seq = this->graph_.EdgeNucls(*it_edge);
-			  double length_ratio = double(min<size_t>(edge_length, it_edge_length)) /
-					  double(max<size_t>(edge_length, it_edge_length));
-			  if(length_ratio >= relative_length_threshold_){
-	//		  	size_t edit_dist = EditDistance(edge_seq, it_edge_seq);
-	//		  	double seq_ratio = edit_dist / min<size_t> (edge_seq.size(), it_edge_seq.size());
-			  	return *it_edge;
-			  }
-		  }
-	  return OptEdgeId();
+      size_t edge_length = this->graph_.length(edge);
+      Sequence edge_seq = this->graph_.EdgeNucls(edge);
+      for(auto it_edge = edges.begin(); it_edge != edges.end(); it_edge++)
+          if(*it_edge != edge){
+              size_t it_edge_length = this->graph_.length(*it_edge);
+              Sequence it_edge_seq = this->graph_.EdgeNucls(*it_edge);
+              double length_ratio = double(min<size_t>(edge_length, it_edge_length)) /
+                      double(max<size_t>(edge_length, it_edge_length));
+              if(length_ratio >= relative_length_threshold_){
+    //              size_t edit_dist = EditDistance(edge_seq, it_edge_seq);
+    //              double seq_ratio = edit_dist / min<size_t> (edge_seq.size(), it_edge_seq.size());
+                  return *it_edge;
+              }
+          }
+      return OptEdgeId();
   }
 };
 

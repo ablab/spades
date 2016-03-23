@@ -138,19 +138,19 @@ public:
         } else {
             new_name = name_ + "_RC";
         }
-        //		TODO make naming nicer
-        //		if (name_ == "" || name_[0] != '!') {
-        //			new_name = '!' + name_;
-        //		} else {
-        //			new_name = name_.substr(1, name_.length());
-        //		}
+        //        TODO make naming nicer
+        //        if (name_ == "" || name_[0] != '!') {
+        //            new_name = '!' + name_;
+        //        } else {
+        //            new_name = name_.substr(1, name_.length());
+        //        }
         return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_), right_offset_, left_offset_);
     }
 
     SingleRead SubstrStrict(size_t from, size_t to) const {
         size_t len = to - from;
-        //		return SingleRead(name_, seq_.substr(from, len), qual_.substr(from, len));
-        //		TODO remove naming?
+        //        return SingleRead(name_, seq_.substr(from, len), qual_.substr(from, len));
+        //        TODO remove naming?
         std::string new_name;
         if (name_.length() >= 3 && name_.substr(name_.length() - 3) == "_RC") {
             new_name = name_.substr(0, name_.length() - 3) + "_SUBSTR(" + ToString(size() - to) + "," +

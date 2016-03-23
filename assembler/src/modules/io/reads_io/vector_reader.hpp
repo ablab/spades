@@ -31,7 +31,7 @@ public:
        }
 
        VectorReadStream<T>& operator>>(T& t) {
-    	   VERIFY(!eof());
+           VERIFY(!eof());
            t = data_[pos_++];
            return *this;
        }

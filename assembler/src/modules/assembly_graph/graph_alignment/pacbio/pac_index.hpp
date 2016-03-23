@@ -109,7 +109,7 @@ public:
             return (abs(int(b.edge_position) + shift - int(a.edge_position)) < 2);
         } else {
             return ((b.edge_position + shift - a.edge_position >= (b.read_position - a.read_position) * compression_cutoff) &&
-	            ((b.edge_position + shift - a.edge_position) * compression_cutoff <= (b.read_position - a.read_position)));
+                ((b.edge_position + shift - a.edge_position) * compression_cutoff <= (b.read_position - a.read_position)));
         }
     }
 
@@ -495,11 +495,11 @@ public:
         vector<GapDescription<Graph> > illumina_gaps;
         vector<int> used(len);
         size_t used_seed_count = 0;
-	    auto iter = mapping_descr.begin();
+        auto iter = mapping_descr.begin();
         for (int i = 0; i < len; i++, iter ++) {
             used[i] = 0; 
-	        DEBUG(colors[i] <<" " << iter->str(g_));
-	    }
+            DEBUG(colors[i] <<" " << iter->str(g_));
+        }
         for (int i = 0; i < len; i++) {
             if (!used[i]) {
                 DEBUG("starting new subread");
@@ -536,7 +536,7 @@ public:
                         if (next_iter != cur_cluster.end()) {
                             DEBUG("clusters splitted:");
                             DEBUG("on "<< iter->second->str(g_));
-			    DEBUG("and " << next_iter->second->str(g_));
+                DEBUG("and " << next_iter->second->str(g_));
                         }
                         vector<pair<size_t, typename ClustersSet::iterator> > splitted_cluster(
                                 cur_cluster_start, next_iter);
@@ -549,7 +549,7 @@ public:
                         }
                         cur_cluster_start = next_iter;
                     } else {
-			  DEBUG("connected consequtive clusters:");
+              DEBUG("connected consequtive clusters:");
                           DEBUG("on "<< iter->second->str(g_));
                           DEBUG("and " << next_iter->second->str(g_));
 
@@ -558,7 +558,7 @@ public:
                 }
             }
         }
-	    DEBUG("adding gaps between subreads");
+        DEBUG("adding gaps between subreads");
         int alignments = int(sortedEdges.size());
         for (int i = 0; i < alignments; i++) {
             for (int j = 0; j < alignments; j++) {
@@ -626,12 +626,12 @@ public:
             result = callback.distances();
             distance_cashed[vertex_pair] = result;
         } else {
-	  DEBUG("taking from cashed");
-	}
+      DEBUG("taking from cashed");
+    }
         DEBUG("addition: " << addition << " found " << result.size() << " lengths:" );
         for (size_t i = 0; i < result.size(); i++) {
             DEBUG(result[i]);
-	}
+    }
         result = distance_cashed[vertex_pair];
         //TODO: Serious optimization possible
         for (size_t i = 0; i < result.size(); i++) {

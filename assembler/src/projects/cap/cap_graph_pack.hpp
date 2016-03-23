@@ -14,20 +14,20 @@ namespace cap {
 
 template<class Graph>
 struct cap_graph_pack {
-	typedef Graph graph_t;
-	typedef string contig_id_t;
-	typedef typename Graph::EdgeId EdgeId;
-	Graph g;
-	omnigraph::GraphElementFinder<Graph> element_finder;
-	ColorHandler<Graph> coloring;
-//	map<contig_id_t, vector<EdgeId>> red_paths;
-//	map<contig_id_t, vector<EdgeId>> blue_paths;
-	EdgesPositionHandler<Graph> edge_pos;
+    typedef Graph graph_t;
+    typedef string contig_id_t;
+    typedef typename Graph::EdgeId EdgeId;
+    Graph g;
+    omnigraph::GraphElementFinder<Graph> element_finder;
+    ColorHandler<Graph> coloring;
+//    map<contig_id_t, vector<EdgeId>> red_paths;
+//    map<contig_id_t, vector<EdgeId>> blue_paths;
+    EdgesPositionHandler<Graph> edge_pos;
 
-	cap_graph_pack(size_t k) :
-			g(k), element_finder(g), coloring(g), edge_pos(g) {
+    cap_graph_pack(size_t k) :
+            g(k), element_finder(g), coloring(g), edge_pos(g) {
 
-	}
+    }
 };
 
 }

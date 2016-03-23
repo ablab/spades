@@ -120,12 +120,12 @@ public:
         edgeCoverage_.clear();
     }
 
-	void Subscribe(BidirectionalPath * path) {
-		path->Subscribe(this);
-		for (size_t i = 0; i < path->Size(); ++i) {
-			BackEdgeAdded(path->At(i), path, path->GapAt(i));
-		}
-	}
+    void Subscribe(BidirectionalPath * path) {
+        path->Subscribe(this);
+        for (size_t i = 0; i < path->Size(); ++i) {
+            BackEdgeAdded(path->At(i), path, path->GapAt(i));
+        }
+    }
 
     virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) {
         EdgeAdded(e, path, gap);

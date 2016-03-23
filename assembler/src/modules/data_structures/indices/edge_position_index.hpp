@@ -152,7 +152,7 @@ public:
    * Shows if kmer has some entry associated with it
    */
   bool contains(const KeyWithHash &kwh) const {
-	  if (!base::valid(kwh))
+      if (!base::valid(kwh))
           return false;
       return this->get_raw_value_reference(kwh).valid();
   }

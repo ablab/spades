@@ -24,21 +24,21 @@ namespace debruijn {
 template<class Graph>
 class KmerMapperLogger : public omnigraph::GraphActionHandler<Graph> {
 public:
-	typedef pair<Sequence, Sequence> MappedSeq;
-	typedef typename Graph::EdgeId EdgeId;
+    typedef pair<Sequence, Sequence> MappedSeq;
+    typedef typename Graph::EdgeId EdgeId;
 
-	KmerMapperLogger(Graph& graph) : GraphActionHandler<Graph>(graph, "KmerMapperLogger") {}
-	virtual ~KmerMapperLogger() {}
+    KmerMapperLogger(Graph& graph) : GraphActionHandler<Graph>(graph, "KmerMapperLogger") {}
+    virtual ~KmerMapperLogger() {}
 
-	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		log_.push_back(MappedSeq(this->g().EdgeNucls(edge1), this->g().EdgeNucls(edge2)));
-	}
+    virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+        log_.push_back(MappedSeq(this->g().EdgeNucls(edge1), this->g().EdgeNucls(edge2)));
+    }
 
-	const vector<MappedSeq>& log() const {
-		return log_;
-	}
+    const vector<MappedSeq>& log() const {
+        return log_;
+    }
 
-	vector<MappedSeq> log_;
+    vector<MappedSeq> log_;
 };
 
 } /* namespace debruijn */

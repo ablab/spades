@@ -20,19 +20,19 @@
 class Quality {
 public:
 
-	Quality(const std::string &s) : qual_(s) {
-	}
+    Quality(const std::string &s) : qual_(s) {
+    }
 
-	int operator[](size_t i) const {
-		return qual_[i];
-	}
+    int operator[](size_t i) const {
+        return qual_[i];
+    }
 
-	std::string str() const { // copying (defensive)!
-		return qual_;
-	}
+    std::string str() const { // copying (defensive)!
+        return qual_;
+    }
 
 private:
-	std::string qual_;
+    std::string qual_;
   //friend class ireadstream;
 };
 

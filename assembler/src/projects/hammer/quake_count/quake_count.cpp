@@ -59,12 +59,12 @@ typedef Seq<kK> KMer;
 typedef unordered_map<KMer, KMerFreqInfo, KMer::hash> UnorderedMap;
 
 void print_time() {
-	time_t rawtime;
-	tm * ptm;
-	time ( &rawtime );
-	ptm = gmtime( &rawtime );
-	std::cout << std::setfill('0') << "[ " << std::setw(2) << ptm->tm_hour << ":" << std::setw(2) << ptm->tm_min
-			<< ":" << std::setw(2) << ptm->tm_sec << " ] ";
+    time_t rawtime;
+    tm * ptm;
+    time ( &rawtime );
+    ptm = gmtime( &rawtime );
+    std::cout << std::setfill('0') << "[ " << std::setw(2) << ptm->tm_hour << ":" << std::setw(2) << ptm->tm_min
+            << ":" << std::setw(2) << ptm->tm_sec << " ] ";
 }
 
 #define LOG(a) print_time(); std::cout << a << std::endl

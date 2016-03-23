@@ -47,13 +47,13 @@ public:
             return;
 
         string contig_name = args[1];
-    	LOG("Trying to draw contig " << contig_name);
+        LOG("Trying to draw contig " << contig_name);
 
-		bool starts_with = false;
+        bool starts_with = false;
         if (contig_name[contig_name.size() - 1] == '*') {
             starts_with = true;
-			contig_name = contig_name.substr(0, contig_name.size() - 1);
-		}
+            contig_name = contig_name.substr(0, contig_name.size() - 1);
+        }
         string contigs_file = args[2];
         if (!CheckFileExists(contigs_file))
             return;
@@ -66,9 +66,9 @@ public:
             //LOG("Contig " << read.name() << " is being processed now");
 
             // if the name contains a given string <contig_name> as a substring.
-			if((starts_with && read.name().find(contig_name) != string::npos) || contig_name == read.name()) {
-	            DrawPicturesAlongContig(curr_env, read);
-			}
+            if((starts_with && read.name().find(contig_name) != string::npos) || contig_name == read.name()) {
+                DrawPicturesAlongContig(curr_env, read);
+            }
         }
     }
 };
@@ -108,7 +108,7 @@ public:
 
         string contigs_file = args[1];
 
-    	LOG("Drawing contigs from " << contigs_file);
+        LOG("Drawing contigs from " << contigs_file);
         if (!CheckFileExists(contigs_file))
             return;
 
@@ -119,7 +119,7 @@ public:
             (*reader) >> read;
             //LOG("Contig " << read.name() << " is being processed now");
 
-	        DrawPicturesAlongContig(curr_env, read);
+            DrawPicturesAlongContig(curr_env, read);
         }
     }
 };

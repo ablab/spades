@@ -21,57 +21,57 @@ class MultifileStream: public ReadStream<ReadType> {
     typedef ReadStream<ReadType> StreamT;
     typedef std::shared_ptr<StreamT> ReadStreamPtrT;
 public:
-	MultifileStream(const ReadStreamList<ReadType>& readers) :
-	    readers_(readers), current_reader_index_(0) {
-	}
+    MultifileStream(const ReadStreamList<ReadType>& readers) :
+        readers_(readers), current_reader_index_(0) {
+    }
 
-	MultifileStream(ReadStreamPtrT reader_1, ReadStreamPtrT reader_2) :
-	        current_reader_index_(0) {
-	    VERIFY(reader_1->is_open() && reader_2->is_open());
-	    readers_.push_back(reader_1);
-	    readers_.push_back(reader_2);
-	}
+    MultifileStream(ReadStreamPtrT reader_1, ReadStreamPtrT reader_2) :
+            current_reader_index_(0) {
+        VERIFY(reader_1->is_open() && reader_2->is_open());
+        readers_.push_back(reader_1);
+        readers_.push_back(reader_2);
+    }
 
-	/* virtual */
-	bool is_open() {
-		return (readers_.size() > 0) && readers_[0].is_open();
-	}
+    /* virtual */
+    bool is_open() {
+        return (readers_.size() > 0) && readers_[0].is_open();
+    }
 
-	/* virtual */
-	bool eof() {
-		while ((current_reader_index_ < readers_.size()) && readers_[current_reader_index_].eof()) {
-			++current_reader_index_;
-		}
-		return current_reader_index_ == readers_.size();
-	}
+    /* virtual */
+    bool eof() {
+        while ((current_reader_index_ < readers_.size()) && readers_[current_reader_index_].eof()) {
+            ++current_reader_index_;
+        }
+        return current_reader_index_ == readers_.size();
+    }
 
-	/* virtual */
-	MultifileStream& operator>>(ReadType& read) {
-		if (!eof()) {
-			readers_[current_reader_index_] >> read;
-		}
-		return (*this);
-	}
+    /* virtual */
+    MultifileStream& operator>>(ReadType& read) {
+        if (!eof()) {
+            readers_[current_reader_index_] >> read;
+        }
+        return (*this);
+    }
 
-	/* virtual */
-	void close() {
-	    readers_.close();
-	}
+    /* virtual */
+    void close() {
+        readers_.close();
+    }
 
-	/* virtual */
-	void reset() {
+    /* virtual */
+    void reset() {
         readers_.reset();
-		current_reader_index_ = 0;
-	}
+        current_reader_index_ = 0;
+    }
 
-	/* virtual */
-	ReadStreamStat get_stat() const {
-	    return readers_.get_stat();
-	}
+    /* virtual */
+    ReadStreamStat get_stat() const {
+        return readers_.get_stat();
+    }
 
 private:
-	ReadStreamList<ReadType> readers_;
-	size_t current_reader_index_;
+    ReadStreamList<ReadType> readers_;
+    size_t current_reader_index_;
 };
 
 template<class ReadType>

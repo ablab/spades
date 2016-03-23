@@ -32,39 +32,39 @@
  */
 template <typename T>
 std::string ToString(const T& t) {
-	std::ostringstream ss;
-	ss << t;
-	return ss.str();
+    std::ostringstream ss;
+    ss << t;
+    return ss.str();
 }
 
 template <typename T>
 std::string ToString(const T& t, size_t length) {
-	std::ostringstream ss;
-	ss << t;
-	std::string result = ss.str();
-	while(result.size() < length)
-		result = "0" + result;
-	return result;
+    std::ostringstream ss;
+    ss << t;
+    std::string result = ss.str();
+    while(result.size() < length)
+        result = "0" + result;
+    return result;
 }
 
 template <typename T>
 std::string ToString(std::vector<T>& t) {
-	std::ostringstream ss;
-	ss << "Size "<<t.size()<<": [";
-	for (auto it = t.begin(); it != t.end(); ++it)
-		ss<<*it<<", ";
-	ss<<"]";
-	return ss.str();
+    std::ostringstream ss;
+    ss << "Size "<<t.size()<<": [";
+    for (auto it = t.begin(); it != t.end(); ++it)
+        ss<<*it<<", ";
+    ss<<"]";
+    return ss.str();
 }
 
 template <typename T>
 std::string ToString(std::set<T>& t) {
-	std::ostringstream ss;
-	ss << "Size "<<t.size()<<": [";
-	for (auto it = t.begin(); it != t.end(); ++it)
-		ss<<*it<<", ";
-	ss<<"]";
-	return ss.str();
+    std::ostringstream ss;
+    ss << "Size "<<t.size()<<": [";
+    for (auto it = t.begin(); it != t.end(); ++it)
+        ss<<*it<<", ";
+    ss<<"]";
+    return ss.str();
 }
 
 template<typename T>
@@ -74,12 +74,12 @@ inline const std::pair<T, T> ReversePair(std::pair<T, T> ep) {
 
 template <class ContainerT1, class ContainerT2>
 void push_back_all(ContainerT1& target, const ContainerT2& to_insert) {
-	target.insert(target.end(), to_insert.begin(), to_insert.end());
+    target.insert(target.end(), to_insert.begin(), to_insert.end());
 }
 
 template <class ContainerT1, class ContainerT2>
 void insert_all(ContainerT1& target, const ContainerT2& to_insert) {
-	target.insert(to_insert.begin(), to_insert.end());
+    target.insert(to_insert.begin(), to_insert.end());
 }
 
 template<class MapT>
@@ -102,16 +102,16 @@ std::set<typename MapT::mapped_type> value_set(const MapT& m) {
 
 template <class MapT>
 const typename MapT::mapped_type& get(const MapT& from, const typename MapT::key_type& key) {
-	auto it = from.find(key);
-	VERIFY(it != from.end());
-	return it->second;
+    auto it = from.find(key);
+    VERIFY(it != from.end());
+    return it->second;
 }
 
 template <class MapT>
 typename MapT::mapped_type& get(MapT& from, const typename MapT::key_type& key) {
-	auto it = from.find(key);
-	VERIFY(it != from.end());
-	return it->second;
+    auto it = from.find(key);
+    VERIFY(it != from.end());
+    return it->second;
 }
 
 template <class MMapT>
@@ -120,7 +120,7 @@ const std::vector<typename MMapT::mapped_type> get_all(const MMapT& from, const 
     for (auto it = from.lower_bound(key); it != from.upper_bound(key); ++it) {
         answer.push_back(it->second);
     }
-	return answer;
+    return answer;
 }
 
 class TmpFolderFixture
@@ -145,7 +145,7 @@ namespace std
 template<class T1, class T2>
 std::ostream& operator<< (std::ostream& os, std::pair<T1, T2> const& pair)
 {
-	return os << "(" << pair.first << ", " << pair.second << ")";
+    return os << "(" << pair.first << ", " << pair.second << ")";
 }
 //}
 
@@ -154,29 +154,29 @@ std::ostream& operator<< (std::ostream& os, std::pair<T1, T2> const& pair)
 template<class T>
 std::ostream& operator<< (std::ostream& os, const std::vector<T>& v)
 {
- 	os << "[";
- 	std::string delim = "";
- 	for (auto it = v.begin(); it != v.end(); ++it) {
- 		os << delim << *it;
- 		delim = ", ";
- 	}
-// 	std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, ", "));
- 	os << "]";
- 	return os;
+     os << "[";
+     std::string delim = "";
+     for (auto it = v.begin(); it != v.end(); ++it) {
+         os << delim << *it;
+         delim = ", ";
+     }
+//     std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, ", "));
+     os << "]";
+     return os;
 }
 
 template<class T>
 std::ostream& operator<< (std::ostream& os, const std::set<T>& set)
 {
-	os << "{";
-	bool delim = false;
-	for (const auto& i : set) {
-		if (delim) os << ", ";
-		os << i;
-		delim = true;
-	}
-	os << "}";
-	return os;
+    os << "{";
+    bool delim = false;
+    for (const auto& i : set) {
+        if (delim) os << ", ";
+        os << i;
+        delim = true;
+    }
+    os << "}";
+    return os;
 }
 
 }

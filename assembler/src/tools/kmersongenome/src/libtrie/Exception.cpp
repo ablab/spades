@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*							-*- C++ -*-
+/*                            -*- C++ -*-
 ** Exception.cpp
 ** Login : Julien Lemoine <speedblue@happycoders.org>
 ** Started on  Thu Jun  1 20:32:08 2006 Julien Lemoine
@@ -58,14 +58,14 @@ namespace ToolBox
   }
 
   Exception::Exception(const Exception& e, 
-		       const std::string &file, int line) throw()
+               const std::string &file, int line) throw()
   {
     _trace = e._trace;
     _trace.push_back(StackTrace("", file, line));
   }
 
   Exception::Exception(const std::string& err, 
-		       const std::string &file, int line) throw()
+               const std::string &file, int line) throw()
   {
     _trace.push_back(StackTrace(err, file, line));
   }
@@ -103,13 +103,13 @@ namespace ToolBox
     bool first = true;
     stream << "Exception : " << std::endl;
     for (std::list<StackTrace>::const_iterator it = _trace.begin();
-	 it != _trace.end(); ++it)
+     it != _trace.end(); ++it)
       {
-	if (it->getError().size())
-	  stream << "Error[" << it->getError() << "] ";
-	stream << (first ? "throwed at [" : "catched at [") 
-	       << it->getFile() << ":" << it->getLine() << "]" << std::endl;
-	first = false;
+    if (it->getError().size())
+      stream << "Error[" << it->getError() << "] ";
+    stream << (first ? "throwed at [" : "catched at [") 
+           << it->getFile() << ":" << it->getLine() << "]" << std::endl;
+    first = false;
       }
   }
 

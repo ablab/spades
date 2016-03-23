@@ -20,7 +20,7 @@ struct cap_config {
 };
 
 inline void load(cap_config &cfg, boost::property_tree::ptree const& pt, bool /*complete*/) {
-	using config_common::load;
+    using config_common::load;
 
   load(cfg.cache_root, pt, "cache_root");
   load(cfg.desc_file_name, pt, "desc_file_name");

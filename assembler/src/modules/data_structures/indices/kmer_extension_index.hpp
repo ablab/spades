@@ -45,7 +45,7 @@ inline uint8_t invert_byte(uint8_t a) {
 
 class InOutMask {
 private:
-	uint8_t mask_;
+    uint8_t mask_;
 
     bool CheckUnique(uint8_t mask) const {
         static bool unique[] =
@@ -74,17 +74,17 @@ private:
     }
 
 public:
-	explicit InOutMask(uint8_t mask = 0) : mask_(mask){
-	}
+    explicit InOutMask(uint8_t mask = 0) : mask_(mask){
+    }
 
-	uint8_t get_mask() const {
-	    return mask_;
-	}
+    uint8_t get_mask() const {
+        return mask_;
+    }
 
-	template<class Key>
-	InOutMask conjugate(const Key & /*k*/) const {
-		return InOutMask(invert_byte(mask_));
-	}
+    template<class Key>
+    InOutMask conjugate(const Key & /*k*/) const {
+        return InOutMask(invert_byte(mask_));
+    }
 
     void AddOutgoing(char nnucl, bool as_is) {
         unsigned nmask = (unsigned) (1 << inv_position(nnucl, as_is));
@@ -98,7 +98,7 @@ public:
         unsigned pmask = (unsigned) (1 << inv_position(char(pnucl + 4), as_is));
         if (!(mask_ & pmask)) {
 #           pragma omp atomic
-        	mask_|= (unsigned char) pmask;
+            mask_|= (unsigned char) pmask;
         }
     }
 
@@ -106,7 +106,7 @@ public:
         unsigned nmask = (1 << inv_position(nnucl, as_is));
         if (mask_ & nmask) {
 #           pragma omp atomic
-        	mask_ &= (unsigned char) ~nmask;
+            mask_ &= (unsigned char) ~nmask;
         }
     }
 
@@ -114,12 +114,12 @@ public:
         unsigned pmask = (1 << inv_position(char(pnucl + 4), as_is));
         if (mask_ & pmask) {
 #           pragma omp atomic
-        	mask_ &= (unsigned char) ~pmask;
+            mask_ &= (unsigned char) ~pmask;
         }
     }
 
     void IsolateVertex() {
-    	mask_ = 0;
+        mask_ = 0;
     }
 
     bool CheckOutgoing(char nucl) const {
@@ -196,9 +196,9 @@ struct AbstractDeEdge {
     }
 
     AbstractDeEdge<KeyWithHash> &operator=(const AbstractDeEdge<KeyWithHash> &that) {
-    	this->start = that.start;
-    	this->end = that.end;
-    	return *this;
+        this->start = that.start;
+        this->end = that.end;
+        return *this;
     }
 
     bool operator==(const AbstractDeEdge &other) {
@@ -234,22 +234,22 @@ public:
 
     void AddOutgoing(const KeyWithHash &kwh, char nucl) {
         TRACE("Add outgoing " << kwh << " " << size_t(nucl) << " " << kwh.is_minimal());
-    	this->get_raw_value_reference(kwh).AddOutgoing(nucl, kwh.is_minimal());
+        this->get_raw_value_reference(kwh).AddOutgoing(nucl, kwh.is_minimal());
     }
 
     void AddIncoming(const KeyWithHash &kwh, char nucl) {
         TRACE("Add incoming " << kwh << " " << size_t(nucl) << " " << kwh.is_minimal());
-    	this->get_raw_value_reference(kwh).AddIncoming(nucl, kwh.is_minimal());
+        this->get_raw_value_reference(kwh).AddIncoming(nucl, kwh.is_minimal());
     }
 
     void DeleteOutgoing(const KeyWithHash &kwh, char nucl) {
         TRACE("Delete outgoing " << kwh << " " << size_t(nucl) << " " << kwh.is_minimal());
-    	this->get_raw_value_reference(kwh).DeleteOutgoing(nucl, kwh.is_minimal());
+        this->get_raw_value_reference(kwh).DeleteOutgoing(nucl, kwh.is_minimal());
     }
 
     void DeleteIncoming(const KeyWithHash &kwh, char nucl) {
         TRACE("Delete incoming " << kwh << " " << size_t(nucl) << " " << kwh.is_minimal());
-    	this->get_raw_value_reference(kwh).DeleteIncoming(nucl, kwh.is_minimal());
+        this->get_raw_value_reference(kwh).DeleteIncoming(nucl, kwh.is_minimal());
     }
 
     void IsolateVertex(const KeyWithHash &kwh) {
@@ -258,7 +258,7 @@ public:
     }
 
     bool CheckOutgoing(const KeyWithHash &kwh, char nucl) const {
-    	return this->get_value(kwh).CheckOutgoing(nucl);
+        return this->get_value(kwh).CheckOutgoing(nucl);
     }
 
     KeyWithHash GetOutgoing(const KeyWithHash &kwh, char nucl) const {
@@ -266,7 +266,7 @@ public:
     }
 
     bool CheckIncoming(const KeyWithHash &kwh, char nucl) const {
-    	return this->get_value(kwh).CheckIncoming(nucl);
+        return this->get_value(kwh).CheckIncoming(nucl);
     }
 
     KeyWithHash GetIncoming(const KeyWithHash &kwh, char nucl) const {
@@ -274,35 +274,35 @@ public:
     }
 
     bool IsDeadEnd(const KeyWithHash &kwh) const {
-    	return this->get_value(kwh).IsDeadEnd();
+        return this->get_value(kwh).IsDeadEnd();
     }
 
     bool IsDeadStart(const KeyWithHash &kwh) const {
-    	return this->get_value(kwh).IsDeadStart();
+        return this->get_value(kwh).IsDeadStart();
     }
 
     bool CheckUniqueOutgoing(const KeyWithHash &kwh) const {
-    	return this->get_value(kwh).CheckUniqueOutgoing();
+        return this->get_value(kwh).CheckUniqueOutgoing();
     }
 
     KeyWithHash GetUniqueOutgoing(const KeyWithHash &kwh) const {
-    	return GetOutgoing(kwh, this->get_value(kwh).GetUniqueOutgoing());
+        return GetOutgoing(kwh, this->get_value(kwh).GetUniqueOutgoing());
     }
 
     bool CheckUniqueIncoming(const KeyWithHash &kwh) const {
-    	return this->get_value(kwh).CheckUniqueIncoming();
+        return this->get_value(kwh).CheckUniqueIncoming();
     }
 
     KeyWithHash GetUniqueIncoming(const KeyWithHash &kwh) const {
-    	return GetIncoming(kwh, this->get_value(kwh).GetUniqueIncoming());
+        return GetIncoming(kwh, this->get_value(kwh).GetUniqueIncoming());
     }
 
     size_t OutgoingEdgeCount(const KeyWithHash &kwh) const {
-    	return this->get_value(kwh).OutgoingEdgeCount();
+        return this->get_value(kwh).OutgoingEdgeCount();
     }
 
     size_t IncomingEdgeCount(const KeyWithHash &kwh) const {
-    	return this->get_value(kwh).IncomingEdgeCount();
+        return this->get_value(kwh).IncomingEdgeCount();
     }
 
     ~DeBruijnExtensionIndex() {

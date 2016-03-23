@@ -76,8 +76,8 @@ public:
     }
 
     size_t size() const {
-		return inner_it_.size();
-	}
+        return inner_it_.size();
+    }
 
     ElementId operator*() {
         return *inner_it_;

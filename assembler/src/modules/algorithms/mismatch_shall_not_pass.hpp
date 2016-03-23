@@ -106,9 +106,9 @@ private:
         }
         for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             if (gp.g.length(*it) < cfg::get().max_repeat_length) {
-                //					INFO("edge id " <<gp.g.int_id(*it) << " added to stat" );
-                //					for(size_t i = 0; i < gp.g.length(*it) + gp.g.k(); i++)
-                //						statistics_[*it].AddPosition(i);
+                //                    INFO("edge id " <<gp.g.int_id(*it) << " added to stat" );
+                //                    for(size_t i = 0; i < gp.g.length(*it) + gp.g.k(); i++)
+                //                        statistics_[*it].AddPosition(i);
             }
         }
     }
@@ -164,8 +164,8 @@ public:
                     TRACE("statistics changing");
                     auto it = statistics_.find(path[0].first);
                     if (it == statistics_.end()) {
-                        //							if (gp.g.length(path[0].first) < 4000)
-                        //								WARN ("id "<< gp.g.length(path[0].first)<<"  " << len);
+                        //                            if (gp.g.length(path[0].first) < 4000)
+                        //                                WARN ("id "<< gp.g.length(path[0].first)<<"  " << len);
                         continue;
                     }
                     for (size_t i = 0; i < len; i++) {

@@ -31,7 +31,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
     //typedef unordered_map<EdgeId, int> map_type;
 
     Graph& g_;
-//	map_type storage_;
+//    map_type storage_;
 
 //    size_t KPlusOneMerCoverage(EdgeId edge) const {
 //        return (size_t) math::round(coverage(edge) * (double) this->g().length(edge));
@@ -291,17 +291,17 @@ class CoverageIndex : public GraphActionHandler<Graph> {
     }
 
     virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) {
-//		size_t length1 = this->g().length(newEdge1);
-//		size_t length = this->g().length(oldEdge);
-//		size_t coverage = KPlusOneMerCoverage(oldEdge);
-//		size_t coverage1 = coverage * length1 / length;
-//		if (coverage1 == 0)
-//			coverage1 = 1;
-//		size_t coverage2 = coverage - coverage1;
-//		if (coverage2 == 0)
-//			coverage2 = 1;
-//		SetCoverage(newEdge1, coverage1);
-//		SetCoverage(newEdge2, coverage2);
+//        size_t length1 = this->g().length(newEdge1);
+//        size_t length = this->g().length(oldEdge);
+//        size_t coverage = KPlusOneMerCoverage(oldEdge);
+//        size_t coverage1 = coverage * length1 / length;
+//        if (coverage1 == 0)
+//            coverage1 = 1;
+//        size_t coverage2 = coverage - coverage1;
+//        if (coverage2 == 0)
+//            coverage2 = 1;
+//        SetCoverage(newEdge1, coverage1);
+//        SetCoverage(newEdge2, coverage2);
         double avg_cov = coverage(old_edge);
         if (old_edge == g_.conjugate(old_edge)) {
             int raw1 = std::max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge1)));
@@ -336,8 +336,8 @@ class CoverageIndex : public GraphActionHandler<Graph> {
 template<class Graph>
 class AbstractFlankingCoverage {
 public:
-	virtual double GetInCov(typename Graph::EdgeId edge) const = 0;
-	virtual double GetOutCov(typename Graph::EdgeId edge) const = 0;
+    virtual double GetInCov(typename Graph::EdgeId edge) const = 0;
+    virtual double GetOutCov(typename Graph::EdgeId edge) const = 0;
 };
 
 }

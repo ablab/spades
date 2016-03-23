@@ -50,11 +50,11 @@ vector<string> split(string s) {
   for(int i = 0; i < s.size(); i++) {
     if(s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r') {
       if(!last_space)
-	split_num++;
+    split_num++;
       last_space = true;
     } else {
       if(split_num == splits.size())
-	splits.push_back("");
+    splits.push_back("");
       splits[split_num] += s[i];
       last_space = false;
     }
@@ -175,12 +175,12 @@ void combine_logs(string fqf, string out_dir) {
       tc_file += ".log";
       
       if(stat(tc_file.c_str(), &st_file_info) == 0) {
-	ifstream tc_out(tc_file.c_str());
-	while(getline(tc_out, line)) {
-	  corlog_out << line << endl;
-	}
-	tc_out.close();
-	remove(tc_file.c_str());
+    ifstream tc_out(tc_file.c_str());
+    while(getline(tc_out, line)) {
+      corlog_out << line << endl;
+    }
+    tc_out.close();
+    remove(tc_file.c_str());
       }
     }
     corlog_out.close();
@@ -207,14 +207,14 @@ void combine_output_stream(ostream & combine_out, ostream & err_out, string out_
     if(stat(tc_file.c_str(), &st_file_info) == 0) {
       ifstream tc_out(tc_file.c_str());
       while(getline(tc_out, header)) {
-	getline(tc_out, seq);
-	getline(tc_out, mid);
-	getline(tc_out, qual);
+    getline(tc_out, seq);
+    getline(tc_out, mid);
+    getline(tc_out, qual);
 
-	if(!err_out.good() || header.find("error") == -1)
-	  combine_out << header << endl << seq << endl << mid << endl << qual << endl;
-	else
-	  err_out << header.substr(0,header.find("error")) << endl << seq << endl << mid << endl << qual << endl;
+    if(!err_out.good() || header.find("error") == -1)
+      combine_out << header << endl << seq << endl << mid << endl << qual << endl;
+    else
+      err_out << header.substr(0,header.find("error")) << endl << seq << endl << mid << endl << qual << endl;
       }
       tc_out.close();
       remove(tc_file.c_str());
@@ -310,45 +310,45 @@ void combine_output_paired_stream(string fqf1, string fqf2, ostream & pair_out1,
       ifstream tc_out2(tc_file2.c_str());
      
       while(getline(tc_out1, header1)) {
-	// get read1
-	getline(tc_out1, seq1);
-	getline(tc_out1, mid1);
-	getline(tc_out1, qual1);
+    // get read1
+    getline(tc_out1, seq1);
+    getline(tc_out1, mid1);
+    getline(tc_out1, qual1);
 
-	// get read2
-	if(!getline(tc_out2, header2)) {
-	  cerr << "Uneven number of reads in paired end read files " << tc_file1.c_str() << " and " << tc_file2.c_str() << endl;
-	  exit(EXIT_FAILURE);
-	}	
-	getline(tc_out2, seq2);
-	getline(tc_out2, mid2);
-	getline(tc_out2, qual2);
+    // get read2
+    if(!getline(tc_out2, header2)) {
+      cerr << "Uneven number of reads in paired end read files " << tc_file1.c_str() << " and " << tc_file2.c_str() << endl;
+      exit(EXIT_FAILURE);
+    }    
+    getline(tc_out2, seq2);
+    getline(tc_out2, mid2);
+    getline(tc_out2, qual2);
 
-	if(header1.find("error") == -1) {
-	  if(header2.find("error") == -1) {
-	    // no errors
-	    pair_out1 << header1 << endl << seq1 << endl << mid1 << endl << qual1 << endl;
-	    pair_out2 << header2 << endl << seq2 << endl << mid2 << endl << qual2 << endl;
-	  } else {
-	    // error in 2	    
-	    single_out1 << header1 << endl << seq1 << endl << mid1 << endl << qual1 << endl;
-	    if(single_err_out2.good())
-	      single_err_out2 << header2.substr(0,header2.find("error")) << endl << seq2 << endl << mid2 << endl << qual2 << endl;
-	  }
-	} else {
-	  if(header2.find("error") == -1) {
-	    // error in 1
-	    if(single_err_out1.good())
-	      single_err_out1 << header1.substr(0,header1.find("error")) << endl << seq1 << endl << mid1 << endl << qual1 << endl;
-	    single_out2 << header2 << endl << seq2 << endl << mid2 << endl << qual2 << endl;
-	  } else {
-	    // error in 1,2
-	    if(err_out1.good()) {
-	      err_out1 << header1.substr(0,header1.find("error")) << endl << seq1 << endl << mid1 << endl << qual1 << endl;
-	      err_out2 << header2.substr(0,header2.find("error")) << endl << seq2 << endl << mid2 << endl << qual2 << endl;
-	    }
-	  }
-	}
+    if(header1.find("error") == -1) {
+      if(header2.find("error") == -1) {
+        // no errors
+        pair_out1 << header1 << endl << seq1 << endl << mid1 << endl << qual1 << endl;
+        pair_out2 << header2 << endl << seq2 << endl << mid2 << endl << qual2 << endl;
+      } else {
+        // error in 2        
+        single_out1 << header1 << endl << seq1 << endl << mid1 << endl << qual1 << endl;
+        if(single_err_out2.good())
+          single_err_out2 << header2.substr(0,header2.find("error")) << endl << seq2 << endl << mid2 << endl << qual2 << endl;
+      }
+    } else {
+      if(header2.find("error") == -1) {
+        // error in 1
+        if(single_err_out1.good())
+          single_err_out1 << header1.substr(0,header1.find("error")) << endl << seq1 << endl << mid1 << endl << qual1 << endl;
+        single_out2 << header2 << endl << seq2 << endl << mid2 << endl << qual2 << endl;
+      } else {
+        // error in 1,2
+        if(err_out1.good()) {
+          err_out1 << header1.substr(0,header1.find("error")) << endl << seq1 << endl << mid1 << endl << qual1 << endl;
+          err_out2 << header2.substr(0,header2.find("error")) << endl << seq2 << endl << mid2 << endl << qual2 << endl;
+        }
+      }
+    }
       }
       tc_out1.close();
       tc_out2.close();
@@ -387,7 +387,7 @@ void combine_output_paired(string fqf1, string fqf2, string mid_ext, bool uncorr
     }
     string outf = prefix + mid_ext + suffix + ".gz";
     ogzstream pair_out1(outf.c_str());
-	      
+          
     // and single file1
     outf = prefix + mid_ext + "_single" + suffix + ".gz";
     ogzstream single_out1(outf.c_str());
@@ -543,9 +543,9 @@ void chunkify_fastq(string fqf, vector<streampos> & starts, vector<unsigned long
       getline(reads_in, toss);
       
       if(++s == counts[t] && t < counts.size()-1) {
-	starts.push_back(reads_in.tellg());
-	s = 0;
-	t++;
+    starts.push_back(reads_in.tellg());
+    s = 0;
+    t++;
       }
       
       // set up parallelism
@@ -576,10 +576,10 @@ void guess_quality_scale(string fqf) {
     
     for(int i = 0; i < strqual.size(); i++) {
       if(strqual[i] < 64) {
-	cerr << "Guessing quality values are on ascii 33 scale" << endl;
-	Read::quality_scale = 33;
-	reads_in.close();
-	return;
+    cerr << "Guessing quality values are on ascii 33 scale" << endl;
+    Read::quality_scale = 33;
+    reads_in.close();
+    return;
       }
     }
 
@@ -609,18 +609,18 @@ vector<string> parse_fastq(vector<string> & fastqfs, vector<int> & pairedend_cod
       next_fastqf = split(line);
 
       if(next_fastqf.size() == 1) {
-	fastqfs.push_back(next_fastqf[0]);
-	pairedend_codes.push_back(0);
+    fastqfs.push_back(next_fastqf[0]);
+    pairedend_codes.push_back(0);
 
       } else if(next_fastqf.size() == 2) {
-	fastqfs.push_back(next_fastqf[0]);
-	fastqfs.push_back(next_fastqf[1]);
-	pairedend_codes.push_back(1);
-	pairedend_codes.push_back(2);
+    fastqfs.push_back(next_fastqf[0]);
+    fastqfs.push_back(next_fastqf[1]);
+    pairedend_codes.push_back(1);
+    pairedend_codes.push_back(2);
 
       } else {
-	cerr << "File of fastq file names must have a single fastq file per line for single reads or two fastqf files per line separated by a space for paired end reads " << endl;
-	exit(EXIT_FAILURE);
+    cerr << "File of fastq file names must have a single fastq file per line for single reads or two fastqf files per line separated by a space for paired end reads " << endl;
+    exit(EXIT_FAILURE);
       }
     }
 

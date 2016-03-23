@@ -17,47 +17,47 @@ class DelegatingWrapper: public ReadStream<ReadType> {
 public:
     typedef std::shared_ptr<ReadStream<ReadType>> ReadStreamPtrT;
 
-	explicit DelegatingWrapper(ReadStreamPtrT reader) : reader_(reader) {}
+    explicit DelegatingWrapper(ReadStreamPtrT reader) : reader_(reader) {}
 
 
-	/* virtual */ bool is_open() {
-		return reader_->is_open();
-	}
+    /* virtual */ bool is_open() {
+        return reader_->is_open();
+    }
 
-	/* virtual */ bool eof() {
-		return reader_->eof();
-	}
+    /* virtual */ bool eof() {
+        return reader_->eof();
+    }
 
-	/* virtual */ DelegatingWrapper& operator>>(ReadType& read) {
-		(*reader_) >> read;
-		return *this;
-	}
+    /* virtual */ DelegatingWrapper& operator>>(ReadType& read) {
+        (*reader_) >> read;
+        return *this;
+    }
 
-	/* virtual */
-	void close() {
-		reader_->close();
-	}
+    /* virtual */
+    void close() {
+        reader_->close();
+    }
 
-	/*
-	 * Close the stream and open it again.
-	 */
-	/* virtual */
-	void reset() {
-		reader_->reset();
-	}
+    /*
+     * Close the stream and open it again.
+     */
+    /* virtual */
+    void reset() {
+        reader_->reset();
+    }
 
-	/* virtual */
+    /* virtual */
     ReadStreamStat get_stat() const {
         return reader_->get_stat();
     }
 
 protected:
-	ReadStream<ReadType>& reader() {
-		return *reader_;
-	}
+    ReadStream<ReadType>& reader() {
+        return *reader_;
+    }
 
 private:
-	ReadStreamPtrT reader_;
+    ReadStreamPtrT reader_;
 
 };
 

@@ -205,9 +205,9 @@ inline std::pair<std::pair<int, int>, std::string> best_edit_distance_cigar(cons
 
 
 //  if (min > 0) {
-//	  for (int i = 0; i <= n; i++) {
-//    	INFO(ToString(matrix[i]));
-//	  }
+//      for (int i = 0; i <= n; i++) {
+//        INFO(ToString(matrix[i]));
+//      }
 //  }
 
     while ((cur_pos_i > 0) && (cur_pos_j > 0)) {

@@ -61,9 +61,9 @@ Read::Read(const string & h, const unsigned int* s, const string & q, vector<int
     // quality values of 0,1 lead to p < .25
     quals[i] = q[i] - quality_scale;
     if(quals[i] >= max_qual) {
-	 cerr << "Quality value " << quals[i] << "larger than maximum allowed quality value " << max_qual << ". Increase the variable 'max_qual' in Read.h." << endl;
-	 exit(EXIT_FAILURE);
-    }	 
+     cerr << "Quality value " << quals[i] << "larger than maximum allowed quality value " << max_qual << ". Increase the variable 'max_qual' in Read.h." << endl;
+     exit(EXIT_FAILURE);
+    }     
     prob[i] = max(.25, 1.0-pow(10.0,-(quals[i]/10.0)));
   }
   trusted_read = 0;
@@ -211,7 +211,7 @@ int Read::correct_cc(vector<short> region, vector<int> untrusted_subset, bithash
   } else if(nt99 >= 13 || non_acgt > 2) {
     // just quit
     if(TESTING)
-	cerr << header << "\t" << print_seq() << "\t." << endl;
+    cerr << header << "\t" << print_seq() << "\t." << endl;
     //cerr << header << "\t" << region.size() << "\t" << untrusted_subset.size() << "\t" << nt90 << "\t" << nt99 << "\t" << exp_errors << "\t0\t0\t0\t0" << endl;
     return 2;
 
@@ -247,10 +247,10 @@ int Read::correct_cc(vector<short> region, vector<int> untrusted_subset, bithash
   bitset<bitsize> bituntrusted;
   for(int i = 0; i < untrusted_subset.size(); i++) {
        if(untrusted_subset[i] >= bitsize) {
-	    cerr << "These reads must be longer than assumed. Increase the variable 'bitsize' in 'Read.h' to the read length." << endl;
-	    exit(1);
+        cerr << "These reads must be longer than assumed. Increase the variable 'bitsize' in 'Read.h' to the read length." << endl;
+        exit(1);
        } else
-	    bituntrusted.set(untrusted_subset[i]);
+        bituntrusted.set(untrusted_subset[i]);
   }
 
   bool cr_added = true;  // once an iteration passes w/ no corrected reads added, we can stop
@@ -260,25 +260,25 @@ int Read::correct_cc(vector<short> region, vector<int> untrusted_subset, bithash
 
     for(short nt = 0; nt < 4; nt++) {
       if(seq[edit_i] != nt) {
-	// P(obs=o|actual=a)*P(actual=a) for Bayes
-	if(seq[edit_i] < 4)
-	  like = (1.0-prob[edit_i]) * ntnt_prob[quals[edit_i]][nt][seq[edit_i]] * prior_prob[nt] / (prob[edit_i] * prior_prob[seq[edit_i]]);
-	else
-	  // non-ACGT
-	  like = prior_prob[nt] / (1.0/3.0);
+    // P(obs=o|actual=a)*P(actual=a) for Bayes
+    if(seq[edit_i] < 4)
+      like = (1.0-prob[edit_i]) * ntnt_prob[quals[edit_i]][nt][seq[edit_i]] * prior_prob[nt] / (prob[edit_i] * prior_prob[seq[edit_i]]);
+    else
+      // non-ACGT
+      like = prior_prob[nt] / (1.0/3.0);
 
-	// P(actual=a|obs=o)
-	//like = (1.0-prob[edit_i]) * ntnt_prob[seq[edit_i]][nt] * / prob[edit_i];
-	
-	next_cr = new corrected_read(bituntrusted, like, region_edit+1);
-	next_cr->corrections.push_back(correction(edit_i, nt));
+    // P(actual=a|obs=o)
+    //like = (1.0-prob[edit_i]) * ntnt_prob[seq[edit_i]][nt] * / prob[edit_i];
+    
+    next_cr = new corrected_read(bituntrusted, like, region_edit+1);
+    next_cr->corrections.push_back(correction(edit_i, nt));
       
-	// add to priority queue
-	//cpq.push(next_cr);
-	cpq.push_back(next_cr);
-	push_heap(cpq.begin(), cpq.end(), cpq_comp);
-	cpq_adds++;
-	cr_added = true;
+    // add to priority queue
+    //cpq.push(next_cr);
+    cpq.push_back(next_cr);
+    push_heap(cpq.begin(), cpq.end(), cpq_comp);
+    cpq_adds++;
+    cr_added = true;
       }
     }
   }
@@ -300,11 +300,11 @@ int Read::correct_cc(vector<short> region, vector<int> untrusted_subset, bithash
     if(cpq.size() > max_queue_size) {
       //cout << "queue is too large for " << header << endl;
       if(TESTING)
-      	cerr << header << "\t" << print_seq() << "\t." << endl;
+          cerr << header << "\t" << print_seq() << "\t." << endl;
 
       if(trusted_read != 0) {
-	delete trusted_read;
-	trusted_read = 0;
+    delete trusted_read;
+    trusted_read = 0;
       }
       break;
     }
@@ -322,14 +322,14 @@ int Read::correct_cc(vector<short> region, vector<int> untrusted_subset, bithash
     if(trusted_read != 0) {
       // if a corrected read exists, compare likelihoods and if likelihood is too low, break loop return true
       if(cr->likelihood < trusted_likelihood*myspread_t) {
-	delete cr;
-	break;
+    delete cr;
+    break;
       }
     } else {
       // if no corrected read exists and likelihood is too low, break loop return false
       if(cr->likelihood < mylike_t || global_like*cr->likelihood < myglobal_t) {
-	delete cr;
-	break;
+    delete cr;
+    break;
       }
     }
     
@@ -340,22 +340,22 @@ int Read::correct_cc(vector<short> region, vector<int> untrusted_subset, bithash
     untrusted_count = (signed int)cr->untrusted.count();    
     if(check_trust(cr, trusted, check_count)) {
       if(trusted_read == 0) {
-	// if yes, and first trusted read, save
-	trusted_read = cr;
-	trusted_likelihood = cr->likelihood;
+    // if yes, and first trusted read, save
+    trusted_read = cr;
+    trusted_likelihood = cr->likelihood;
       } else {
-	// if yes, and if trusted read exists
-	ambiguous_flag = true;
+    // if yes, and if trusted read exists
+    ambiguous_flag = true;
 
-	// output ambiguous corrections for testing
-	if(TESTING)
-	  cerr << header << "\t" << print_seq() << "\t" << print_corrected(trusted_read->corrections) << "\t" << print_corrected(cr->corrections) << endl;
-	
-	// delete trusted_read, break loop
-	delete trusted_read;
-	delete cr;
-	trusted_read = 0;
-	break;
+    // output ambiguous corrections for testing
+    if(TESTING)
+      cerr << header << "\t" << print_seq() << "\t" << print_corrected(trusted_read->corrections) << "\t" << print_corrected(cr->corrections) << endl;
+    
+    // delete trusted_read, break loop
+    delete trusted_read;
+    delete cr;
+    trusted_read = 0;
+    break;
       }
     }
 
@@ -363,14 +363,14 @@ int Read::correct_cc(vector<short> region, vector<int> untrusted_subset, bithash
     if(header == "@read3") {
       cout << cr->likelihood << "\t";
       for(int c = 0; c < cr->corrections.size(); c++) {
-	cout << " (" << cr->corrections[c].index << "," << cr->corrections[c].to << ")";
+    cout << " (" << cr->corrections[c].index << "," << cr->corrections[c].to << ")";
       }
       cout << "\t";
       for(int c = 0; c < trim_length-bithash::k+1; c++) {
-	if(cr->untrusted[c])
-	  cout << 1;
-	else
-	  cout << 0;
+    if(cr->untrusted[c])
+      cout << 1;
+    else
+      cout << 0;
       }
       cout << endl;
     }
@@ -384,45 +384,45 @@ int Read::correct_cc(vector<short> region, vector<int> untrusted_subset, bithash
       /////////////////////////
       bool cr_added = true;  // once an iteration passes w/ no corrected reads added, we can stop
       for(short region_edit = cr->region_edits; region_edit < region.size() && cr_added; region_edit++) {
-	edit_i = region[region_edit];
-	cr_added = false;
-	
-	// add relatives
-	for(short nt = 0; nt < 4; nt++) {
-	  // if actual edit, 
-	  if(seq[edit_i] != nt) {
-	    // calculate new likelihood
+    edit_i = region[region_edit];
+    cr_added = false;
+    
+    // add relatives
+    for(short nt = 0; nt < 4; nt++) {
+      // if actual edit, 
+      if(seq[edit_i] != nt) {
+        // calculate new likelihood
 
-	    // P(obs=o|actual=a)*P(actual=a) for Bayes
-	    if(seq[edit_i] < 4)
-	      like = cr->likelihood * (1.0-prob[edit_i]) * ntnt_prob[quals[edit_i]][nt][seq[edit_i]] * prior_prob[nt] / (prob[edit_i] * prior_prob[seq[edit_i]]);
-	    else
-	      // non-ACGT
-	      like = cr->likelihood * prior_prob[nt] / (1.0/3.0);
+        // P(obs=o|actual=a)*P(actual=a) for Bayes
+        if(seq[edit_i] < 4)
+          like = cr->likelihood * (1.0-prob[edit_i]) * ntnt_prob[quals[edit_i]][nt][seq[edit_i]] * prior_prob[nt] / (prob[edit_i] * prior_prob[seq[edit_i]]);
+        else
+          // non-ACGT
+          like = cr->likelihood * prior_prob[nt] / (1.0/3.0);
 
-	    // P(actual=a|obs=o)	    
-	    //like = cr->likelihood * (1.0-prob[edit_i]) * ntnt_prob[seq[edit_i]][nt] / prob[edit_i];	
-	    
-	    // if thresholds ok, add new correction
-	    if(trusted_read != 0) {
-	      if(like < trusted_likelihood*myspread_t)
-		continue;
-	    } else {
-	      // must consider spread or risk missing a case of ambiguity
-	      if(like < mylike_t*myspread_t || global_like*like < myglobal_t*myspread_t)
-		continue;
-	    }
-	    
-	    next_cr = new corrected_read(cr->corrections, cr->untrusted, like, region_edit+1);
-	    next_cr->corrections.push_back(correction(edit_i, nt));
-	  
-	    // add to priority queue
-	    cpq.push_back(next_cr);
-	    push_heap(cpq.begin(), cpq.end(), cpq_comp);
-	    cpq_adds++;
-	    cr_added = true;
-	  }
-	}
+        // P(actual=a|obs=o)        
+        //like = cr->likelihood * (1.0-prob[edit_i]) * ntnt_prob[seq[edit_i]][nt] / prob[edit_i];    
+        
+        // if thresholds ok, add new correction
+        if(trusted_read != 0) {
+          if(like < trusted_likelihood*myspread_t)
+        continue;
+        } else {
+          // must consider spread or risk missing a case of ambiguity
+          if(like < mylike_t*myspread_t || global_like*like < myglobal_t*myspread_t)
+        continue;
+        }
+        
+        next_cr = new corrected_read(cr->corrections, cr->untrusted, like, region_edit+1);
+        next_cr->corrections.push_back(correction(edit_i, nt));
+      
+        // add to priority queue
+        cpq.push_back(next_cr);
+        push_heap(cpq.begin(), cpq.end(), cpq_comp);
+        cpq_adds++;
+        cr_added = true;
+      }
+    }
       }
     }
 
@@ -480,7 +480,7 @@ string Read::print_corrected(vector<correction> & cor, int print_nt) {
     correct_i = -1;
     for(int c = 0; c < cor.size(); c++) {
       if(cor[c].index == i)
-	correct_i = c;
+    correct_i = c;
     }
     if(correct_i != -1)
       sseq.push_back(nts[cor[correct_i].to]);
@@ -534,27 +534,27 @@ string Read::correct(bithash *trusted, double ntnt_prob[][4][4], double prior_pr
       // try bigger error region
       big_region = error_region(cc_untrusted[cc]);
       if(chop_region.size() == big_region.size()) {
-	// cannot correct, and nothing found so trim to untrusted
-	if(chop_correct_code == 1)
-	  return print_corrected(multi_cors, chop_region.front());
-	else
-	  return print_corrected(multi_cors, cc_untrusted[cc].front());
+    // cannot correct, and nothing found so trim to untrusted
+    if(chop_correct_code == 1)
+      return print_corrected(multi_cors, chop_region.front());
+    else
+      return print_corrected(multi_cors, cc_untrusted[cc].front());
 
       } else {
-	big_correct_code = correct_cc(big_region, cc_untrusted[cc], trusted, ntnt_prob, prior_prob, learning);
+    big_correct_code = correct_cc(big_region, cc_untrusted[cc], trusted, ntnt_prob, prior_prob, learning);
 
-	if(big_correct_code == 1) {
-	  // ambiguous
-	  // cannot correct, but trim to region
-	  if(chop_correct_code == 1)
-	    return print_corrected(multi_cors, chop_region.front());
-	  else
-	    return print_corrected(multi_cors, big_region.front());
+    if(big_correct_code == 1) {
+      // ambiguous
+      // cannot correct, but trim to region
+      if(chop_correct_code == 1)
+        return print_corrected(multi_cors, chop_region.front());
+      else
+        return print_corrected(multi_cors, big_region.front());
 
-	} else if(big_correct_code == 2 || big_correct_code == 3) {
-	  // cannot correct, and chaotic or nothing found so trim to untrusted
-	  return print_corrected(multi_cors, cc_untrusted[cc].front());
-	}
+    } else if(big_correct_code == 2 || big_correct_code == 3) {
+      // cannot correct, and chaotic or nothing found so trim to untrusted
+      return print_corrected(multi_cors, cc_untrusted[cc].front());
+    }
       }
     }
     // else, corrected!
@@ -629,16 +629,16 @@ vector<short> Read::error_region_chop(vector<int> untrusted_subset) {
     region.clear();
     for(int i = 0; i < front_chop.size(); i++) {
       if(front_chop[i] > right_leftkmer+bithash::k-1)
-	region.push_back(front_chop[i]);
+    region.push_back(front_chop[i]);
     }
 
     // add back 1 base if it's low quality, or lower quality than the next base
     for(int er = 0; er < expand_region; er++) {
       int pre_region = region[0] - (er+1);
       if(pre_region >= 0 && (prob[pre_region] < .99 || prob[pre_region] <= prob[pre_region+1])) {
-	vector<short>::iterator it;
-	it = region.begin();
-	region.insert(it, pre_region);
+    vector<short>::iterator it;
+    it = region.begin();
+    region.insert(it, pre_region);
       }
     }
   } else {
@@ -655,7 +655,7 @@ vector<short> Read::error_region_chop(vector<int> untrusted_subset) {
     region.clear();
     for(int i = 0; i < back_chop.size(); i++) {
       if(back_chop[i] < left_rightkmer)
-	region.push_back(back_chop[i]);
+    region.push_back(back_chop[i]);
     }
 
     // add back 1 base if it's low quality, or lower quality than the next base
@@ -667,7 +667,7 @@ vector<short> Read::error_region_chop(vector<int> untrusted_subset) {
     for(int er = 0; er < expand_region; er++) {
       int post_region = region.back() + (er+1);
       if(post_region < trim_length && (prob[post_region] < .99 || prob[post_region] <= prob[post_region-1])) {
-	region.push_back(post_region);
+    region.push_back(post_region);
       }
     }
     */

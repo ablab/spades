@@ -414,8 +414,8 @@ private:
         const Graph& g_;
     };
 
-	const Graph& g_;
-	GraphCoverageMap& coverage_map_;
+    const Graph& g_;
+    GraphCoverageMap& coverage_map_;
 protected:
     DECL_LOGGER("PEResolver")
 };
@@ -431,21 +431,21 @@ public:
     }
 
     PathContainer makeSimpleSeeds() {
-		std::set<EdgeId> included;
-		PathContainer edges;
-		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-			if (g_.int_id(*iter) <= 0 or InTwoEdgeCycle(*iter, g_))
-				continue;
+        std::set<EdgeId> included;
+        PathContainer edges;
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+            if (g_.int_id(*iter) <= 0 or InTwoEdgeCycle(*iter, g_))
+                continue;
             if (included.count(*iter) == 0) {
                 BidirectionalPath * first = new BidirectionalPath(g_, *iter);
                 BidirectionalPath * second = new BidirectionalPath(g_, g_.conjugate(*iter));
-				edges.AddPair(first,second);
-				included.insert(*iter);
-				included.insert(g_.conjugate(*iter));
-			}
-		}
-		return edges;
-	}
+                edges.AddPair(first,second);
+                included.insert(*iter);
+                included.insert(g_.conjugate(*iter));
+            }
+        }
+        return edges;
+    }
 
     PathContainer extendSeeds(PathContainer& seeds, ContigsMaker& pathExtender) {
         PathContainer paths;

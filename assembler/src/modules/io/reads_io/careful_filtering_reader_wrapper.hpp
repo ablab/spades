@@ -14,30 +14,30 @@ namespace io {
 const size_t none = -1ul;
 
 inline std::pair<size_t, size_t> LongestValidCoords(const SingleRead& r) {
-	size_t best_len = 0;
-	size_t best_pos = none;
-	size_t pos = none;
-	std::string seq = r.GetSequenceString();
-	for (size_t i = 0; i <= seq.size(); ++i) {
-		if (i < seq.size() && is_nucl(seq[i])) {
-			if (pos == none) {
-				pos = i;
-			}
-		} else {
-			if (pos != none) {
-				size_t len = i - pos;
-				if (len > best_len) {
-					best_len = len;
-					best_pos = pos;
-				}
-			}
-			pos = none;
-		}
-	}
-	if (best_len == 0) {
-		return std::make_pair(0, 0);
-	}
-	return std::make_pair(best_pos, best_pos + best_len);
+    size_t best_len = 0;
+    size_t best_pos = none;
+    size_t pos = none;
+    std::string seq = r.GetSequenceString();
+    for (size_t i = 0; i <= seq.size(); ++i) {
+        if (i < seq.size() && is_nucl(seq[i])) {
+            if (pos == none) {
+                pos = i;
+            }
+        } else {
+            if (pos != none) {
+                size_t len = i - pos;
+                if (len > best_len) {
+                    best_len = len;
+                    best_pos = pos;
+                }
+            }
+            pos = none;
+        }
+    }
+    if (best_len == 0) {
+        return std::make_pair(0, 0);
+    }
+    return std::make_pair(best_pos, best_pos + best_len);
 }
 
 inline SingleRead LongestValid(const SingleRead& r,
@@ -105,19 +105,19 @@ public:
    *
    * @param reader Reference to any other reader (child of IReader).
    */
-	CarefulFilteringWrapper(typename base::ReadStreamPtrT reader_ptr,
-	                                 bool use_orientation = false,
-	                                 LibraryOrientation orientation = LibraryOrientation::Undefined) :
-	            base(reader_ptr),
-	            eof_(false),
-	            use_orientation_(use_orientation),
-	            orientation_(orientation) {
-	        StepForward();
-	    }
+    CarefulFilteringWrapper(typename base::ReadStreamPtrT reader_ptr,
+                                     bool use_orientation = false,
+                                     LibraryOrientation orientation = LibraryOrientation::Undefined) :
+                base(reader_ptr),
+                eof_(false),
+                use_orientation_(use_orientation),
+                orientation_(orientation) {
+            StepForward();
+        }
 
-	/* virtual */ bool eof() {
-		return eof_;
-	}
+    /* virtual */ bool eof() {
+        return eof_;
+    }
 
   /*
    * Read SingleRead from stream.
@@ -126,38 +126,38 @@ public:
    *
    * @return Reference to this stream.
    */
-	/* virtual */ CarefulFilteringWrapper& operator>>(ReadType& read) {
-		read = next_read_;
-		StepForward();
-		return *this;
-	}
+    /* virtual */ CarefulFilteringWrapper& operator>>(ReadType& read) {
+        read = next_read_;
+        StepForward();
+        return *this;
+    }
 
-	/* virtual */
-	void reset() {
-		base::reset();
-		eof_ = false;
-		StepForward();
-	}
+    /* virtual */
+    void reset() {
+        base::reset();
+        eof_ = false;
+        StepForward();
+    }
 
 private:
-	bool eof_;
+    bool eof_;
     bool use_orientation_;
     LibraryOrientation orientation_;
-	ReadType next_read_;
+    ReadType next_read_;
 
   /*
    * Read next valid read in the stream.
    */
-	void StepForward() {
-		while (!base::eof()) {
-			base::operator >>(next_read_);
-			next_read_ = LongestValid(next_read_, use_orientation_, orientation_);
-			if (next_read_.IsValid()) {
-				return;
-			}
-		}
-		eof_ = true;
-	}
+    void StepForward() {
+        while (!base::eof()) {
+            base::operator >>(next_read_);
+            next_read_ = LongestValid(next_read_, use_orientation_, orientation_);
+            if (next_read_.IsValid()) {
+                return;
+            }
+        }
+        eof_ = true;
+    }
 };
 
 template<class ReadType>

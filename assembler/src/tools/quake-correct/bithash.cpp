@@ -120,9 +120,9 @@ void bithash::hammer_file_load(istream & hammer_in, unsigned long long atgc[]) {
 
       // count gc
       if(atgc != NULL) {
-	unsigned int at = count_at(kmer);
-	atgc[0] += at;
-	atgc[1] += (k-at);
+    unsigned int at = count_at(kmer);
+    atgc[0] += at;
+    atgc[1] += (k-at);
       }  
     }
   }
@@ -149,9 +149,9 @@ void bithash::meryl_file_load(const char* merf, const double boundary) {
       
       // compare to boundary
       if(count >= boundary) {
-	add_kmer = true;
+    add_kmer = true;
       } else {
-	add_kmer = false;
+    add_kmer = false;
       }
 
     } else if(add_kmer) {
@@ -194,9 +194,9 @@ void bithash::tab_file_load(istream & mer_in, const double boundary, unsigned lo
 
       // count gc
       if(atgc != NULL) {
-	unsigned int at = count_at(line.substr(0,k));
-	atgc[0] += at;
-	atgc[1] += (k-at);
+    unsigned int at = count_at(line.substr(0,k));
+    atgc[0] += at;
+    atgc[1] += (k-at);
       }
     }
   }
@@ -235,9 +235,9 @@ void bithash::tab_file_load(istream & mer_in, const vector<double> boundary, uns
 
       // count gc
       if(atgc != NULL) {
-	unsigned int at = count_at(line.substr(0,k));
-	atgc[0] += at;
-	atgc[1] += (k-at);
+    unsigned int at = count_at(line.substr(0,k));
+    atgc[0] += at;
+    atgc[1] += (k-at);
       }
     }
   }
@@ -259,7 +259,7 @@ void bithash::binary_file_output(char* outf) {
       //unsigned int tmp = i*8 + j;
       //cout << tmp << ",";
       if(bits.count(i*8 + j) != 0)
-	temp |= flag;
+    temp |= flag;
     }
     buffer[i] = (char)temp;
   }
@@ -295,7 +295,7 @@ void bithash::binary_file_input(char* inf) {
     temp = (unsigned int)buffer[i];
     for(unsigned int j = 0; j < 8; j++) {
       if((temp & flag) == flag)
-	bits.set(i*8 + j);
+    bits.set(i*8 + j);
       temp <<= 1;
     }
   }
@@ -335,15 +335,15 @@ void bithash::binary_file_input(char* inf, unsigned long long atgc[]) {
     for(unsigned long long i = 0; i < buffersize; i++) {
       temp = (unsigned int)buffer[i];
       for(int j = 0; j < 8; j++) {
-	if((temp & flag) == flag) {
-	  bits.set((buffersize*b + i)*8 + j);
-	  
-	  // count gc
-	  unsigned int at = count_at((buffersize*b + i)*8 + j);
-	  atgc[0] += at;
-	  atgc[1] += (k-at);
-	}
-	temp <<= 1;
+    if((temp & flag) == flag) {
+      bits.set((buffersize*b + i)*8 + j);
+      
+      // count gc
+      unsigned int at = count_at((buffersize*b + i)*8 + j);
+      atgc[0] += at;
+      atgc[1] += (k-at);
+    }
+    temp <<= 1;
       }
     }
   }

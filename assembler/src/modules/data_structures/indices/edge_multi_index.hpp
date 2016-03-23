@@ -22,65 +22,65 @@ namespace debruijn_graph {
 template<class IdType>
 class EdgeInfoStorage {
 public:
-	typedef vector<EdgeInfo<IdType>> Content;
-	typedef typename Content::iterator iterator;
-	typedef typename Content::const_iterator const_iterator;
-	Content content_;
+    typedef vector<EdgeInfo<IdType>> Content;
+    typedef typename Content::iterator iterator;
+    typedef typename Content::const_iterator const_iterator;
+    Content content_;
 
-	EdgeInfoStorage(const Content &content) : content_(content) {
-	}
+    EdgeInfoStorage(const Content &content) : content_(content) {
+    }
 
-	EdgeInfoStorage() {
-	}
+    EdgeInfoStorage() {
+    }
 
-	EdgeInfo<IdType> &operator[](size_t i) {
-		return content_[i];
-	}
+    EdgeInfo<IdType> &operator[](size_t i) {
+        return content_[i];
+    }
 
-	iterator begin() {
-		return content_.begin();
-	}
+    iterator begin() {
+        return content_.begin();
+    }
 
-	iterator end() {
-		return content_.end();
-	}
+    iterator end() {
+        return content_.end();
+    }
 
-	const_iterator begin() const {
-		return content_.cbegin();
-	}
+    const_iterator begin() const {
+        return content_.cbegin();
+    }
 
-	const_iterator end() const {
-		return content_.cend();
-	}
+    const_iterator end() const {
+        return content_.cend();
+    }
 
-	iterator find(const EdgeInfo<IdType> &info) {
-		return content_.find(info);
-	}
+    iterator find(const EdgeInfo<IdType> &info) {
+        return content_.find(info);
+    }
 
-	const_iterator find(const EdgeInfo<IdType> &info) const {
-		return content_.find(info);
-	}
+    const_iterator find(const EdgeInfo<IdType> &info) const {
+        return content_.find(info);
+    }
 
-	void push_back(const EdgeInfo<IdType> &info) {
-		content_.push_back(info);
-	}
+    void push_back(const EdgeInfo<IdType> &info) {
+        content_.push_back(info);
+    }
 
-	size_t size() const{
-	    return content_.size();
-	}
+    size_t size() const{
+        return content_.size();
+    }
 
-	bool valid() const {
-	    //what's invalid edge info storage?
-	    return true;
-	}
+    bool valid() const {
+        //what's invalid edge info storage?
+        return true;
+    }
 
-	EdgeInfoStorage conjugate(size_t k) const {
-		EdgeInfoStorage result;
-		for(auto it = content_.rbegin(); it != content_.rend(); ++it) {
-			result.push_back(it->conjugate(k));
-		}
-		return result;
-	}
+    EdgeInfoStorage conjugate(size_t k) const {
+        EdgeInfoStorage result;
+        for(auto it = content_.rbegin(); it != content_.rend(); ++it) {
+            result.push_back(it->conjugate(k));
+        }
+        return result;
+    }
 };
 
 //todo it is not handling graph events!!!
@@ -102,7 +102,7 @@ class DeBruijnEdgeMultiIndex : public KeyStoringMap<Seq, EdgeInfoStorage<IdType>
 
   DeBruijnEdgeMultiIndex(unsigned k, const std::string &workdir)
       : base(k, workdir) {
-	  INFO("DeBruijnEdgeMultiIndex constructing");
+      INFO("DeBruijnEdgeMultiIndex constructing");
   }
 
   ~DeBruijnEdgeMultiIndex() {}

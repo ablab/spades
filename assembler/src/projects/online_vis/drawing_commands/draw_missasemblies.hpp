@@ -48,26 +48,26 @@ private:
 
 
         for(auto e : edges) {
-        	if(set_edges.find(e) != set_edges.end()) {
-            	non_unique.insert(e);
-        	}
-        	set_edges.insert(e);
+            if(set_edges.find(e) != set_edges.end()) {
+                non_unique.insert(e);
+            }
+            set_edges.insert(e);
         }
 
         for(auto e : genome_edges) {
-        	if(genome_set.find(e) != genome_set.end()) {
-            	non_unique_genome.insert(e);
-        	}
-        	genome_set.insert(e);
+            if(genome_set.find(e) != genome_set.end()) {
+                non_unique_genome.insert(e);
+            }
+            genome_set.insert(e);
         }
 
 
 
         for(auto e : edges) {
-        	if(non_unique.find(e) == non_unique.end() && non_unique_genome.find(e) == non_unique_genome.end()) {
-        		filtered_edges.push_back(e);
-        		INFO("Put " << g.int_id(e) << " into filtered set");
-        	}
+            if(non_unique.find(e) == non_unique.end() && non_unique_genome.find(e) == non_unique_genome.end()) {
+                filtered_edges.push_back(e);
+                INFO("Put " << g.int_id(e) << " into filtered set");
+            }
         }
         return filtered_edges;
     }
@@ -91,11 +91,11 @@ private:
 
         auto it_contig = find(edges.begin(), edges.end(), filtered_edges[i]);
         while(it_contig == edges.end()) {
-        	++i;
-        	if(i > filtered_edges.size()) {
-        		return;
-        	}
-        	it_contig = find(edges.begin(), edges.end(), filtered_edges[i]);
+            ++i;
+            if(i > filtered_edges.size()) {
+                return;
+            }
+            it_contig = find(edges.begin(), edges.end(), filtered_edges[i]);
         }
         size_t index_contig = it_contig - edges.begin();
         INFO("Now at edge " << curr_env.graph().int_id(filtered_edges[i]));
@@ -140,10 +140,10 @@ private:
 
             int difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
             if(abs(difference - real_difference) > allowed_error) {
-            	real_difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
+                real_difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
                 vector<EdgeId> path_to_draw;
                 path_to_draw.push_back(genome_path[index_genome].first);
-            	DrawPicturesAlongPath(curr_env, path_to_draw, name + "_" + ToString(curr_env.graph().int_id(filtered_edges[i])));
+                DrawPicturesAlongPath(curr_env, path_to_draw, name + "_" + ToString(curr_env.graph().int_id(filtered_edges[i])));
                 INFO("Diff is set to " << real_difference);
             }
             ++i;

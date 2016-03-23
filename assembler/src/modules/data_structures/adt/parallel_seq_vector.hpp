@@ -73,12 +73,12 @@ public:
 //        }
 //    }
 
-	void Dump(destination_container_t & bucket, size_t bucket_number) {
-		for (size_t i = 0; i < nodes_.size(); ++i) {
-			nodes_[i].dump(bucket, bucket_number);
-			nodes_[i].clear(bucket_number);
-		}
-	}
+    void Dump(destination_container_t & bucket, size_t bucket_number) {
+        for (size_t i = 0; i < nodes_.size(); ++i) {
+            nodes_[i].dump(bucket, bucket_number);
+            nodes_[i].clear(bucket_number);
+        }
+    }
 
 
     size_t SingleBucketCount() const {

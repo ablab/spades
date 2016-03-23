@@ -24,15 +24,15 @@ int main(int argc, char** argv) {
   size_t mld = 1;
   std::string label = "";
 
-	if (argc == 7) {
-		filename = argv[1];
+    if (argc == 7) {
+        filename = argv[1];
     d = atoi(argv[2]);
     lbs = atoi(argv[3]);
     step = atoi(argv[4]) / 10.;
     mld = atoi(argv[5]);
     label = argv[6];
   } else {
-		std::cout << "Usage: ./cuckoo_test <filename> <d> " <<
+        std::cout << "Usage: ./cuckoo_test <filename> <d> " <<
       "<log_2(bucket_size)> <step*10> <max_loop_denom> <label>" << std::endl;
     return 0;
   }

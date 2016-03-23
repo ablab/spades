@@ -231,14 +231,14 @@ public:
 protected:
     bool HasIdealInfo(EdgeId e1, EdgeId e2, size_t dist) const {
         return math::gr(wc_->lib().IdealPairedInfo(e1, e2, (int) dist), 0.);
-	}
+    }
 
-	bool HasIdealInfo(const BidirectionalPath& p, EdgeId e, size_t gap) const {
+    bool HasIdealInfo(const BidirectionalPath& p, EdgeId e, size_t gap) const {
         for (int i = (int) p.Size() - 1; i >= 0; --i)
-			if (HasIdealInfo(p[i], e, gap + p.LengthAt(i)))
+            if (HasIdealInfo(p[i], e, gap + p.LengthAt(i)))
                 return true;
         return false;
-	}
+    }
 
 private:
     DECL_LOGGER("ExtensionChooser");
@@ -374,7 +374,7 @@ private:
 
 class SimpleExtensionChooser: public ExcludingExtensionChooser {
 protected:
-	void ExcludeEdges(const BidirectionalPath& path, const EdgeContainer& edges, std::set<size_t>& to_exclude) const override {
+    void ExcludeEdges(const BidirectionalPath& path, const EdgeContainer& edges, std::set<size_t>& to_exclude) const override {
         if (edges.size() < 2) {
             return;
         }
@@ -415,9 +415,9 @@ protected:
 
 public:
 
-	SimpleExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
-	    ExcludingExtensionChooser(g, wc, PathAnalyzer(g), weight_threshold, priority) {
-	}
+    SimpleExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold, double priority) :
+        ExcludingExtensionChooser(g, wc, PathAnalyzer(g), weight_threshold, priority) {
+    }
 
 private:
     DECL_LOGGER("SimpleExtensionChooser");
@@ -493,10 +493,10 @@ protected:
         return (int) round(dist);
     }
 
-	void GetDistances(EdgeId e1, EdgeId e2, std::vector<int>& dist,
-			std::vector<double>& w) const {
-		wc_->lib().CountDistances(e1, e2, dist, w);
-	}
+    void GetDistances(EdgeId e1, EdgeId e2, std::vector<int>& dist,
+            std::vector<double>& w) const {
+        wc_->lib().CountDistances(e1, e2, dist, w);
+    }
 
     void CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) const {
         for (size_t j = 0; j < path.Size(); ++j) {
@@ -961,7 +961,7 @@ public:
 
         BidirectionalPathSet next_paths;
         if (edges.size() == 0) {
-        	DEBUG("scaffolding edges size " << edges.size())
+            DEBUG("scaffolding edges size " << edges.size())
             next_paths = path_searcher_.FindNextPaths(path, path.Back());
         } else if (best_paths.size() == edges.size()) {
             for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
@@ -999,15 +999,15 @@ private:
         return result;
     }
 
-	bool IsBulge(const EdgeContainer& edges) const {
-		if (edges.size() == 0)
-			return false;
-		for (EdgeWithDistance e : edges) {
-			if (!InBuble(e.e_, g_))
-				return false;
-		}
-		return true;
-	}
+    bool IsBulge(const EdgeContainer& edges) const {
+        if (edges.size() == 0)
+            return false;
+        for (EdgeWithDistance e : edges) {
+            if (!InBuble(e.e_, g_))
+                return false;
+        }
+        return true;
+    }
 
     map<EdgeId, double> FindBulgeWeights(const BidirectionalPath& p, const EdgeContainer& edges) const {
         map<EdgeId, double> result;

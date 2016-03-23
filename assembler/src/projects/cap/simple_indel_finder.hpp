@@ -18,8 +18,8 @@ namespace cap {
 template <class gp_t>
 class SimpleIndelFinder {
   typedef typename gp_t::graph_t Graph;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
   typedef std::vector<EdgeId> Path;
   typedef uint64_t u64int;
 
@@ -375,8 +375,8 @@ class SimpleIndelFinder {
   }
 
  private:
-	DECL_LOGGER("SimpleIndelFinder")
-	;
+    DECL_LOGGER("SimpleIndelFinder")
+    ;
 };
 
 }

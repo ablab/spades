@@ -92,8 +92,8 @@ void assemble_genome() {
             }
         }
         if (run_pacbio) {
-			//currently not integrated with two step rr process
-			VERIFY(!two_step_rr);
+            //currently not integrated with two step rr process
+            VERIFY(!two_step_rr);
             SPAdes.add(new debruijn_graph::PacBioAligning());
         }
         //end pacbio

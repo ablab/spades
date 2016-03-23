@@ -21,37 +21,37 @@ using std::set;
 namespace pacbio {
 template<class T>
 struct pair_iterator_less {
-	bool operator ()(pair<size_t, T> const& a, pair<size_t, T> const& b) const {
-		return (a.first < b.first);
-	}
+    bool operator ()(pair<size_t, T> const& a, pair<size_t, T> const& b) const {
+        return (a.first < b.first);
+    }
 };
 
 struct MappingInstance {
-	int edge_position;
-	int read_position;
-	//Now quality is the same with multiplicity, so best quality is 1,
-	int quality;
-	MappingInstance(int edge_position, int read_position, int quality) :
-			edge_position(edge_position), read_position(read_position), quality(quality) {
-	}
+    int edge_position;
+    int read_position;
+    //Now quality is the same with multiplicity, so best quality is 1,
+    int quality;
+    MappingInstance(int edge_position, int read_position, int quality) :
+            edge_position(edge_position), read_position(read_position), quality(quality) {
+    }
 
-	inline bool IsUnique() const {
-		return (quality == 1);
-	}
+    inline bool IsUnique() const {
+        return (quality == 1);
+    }
 
-	string str() {
-		stringstream s;
-		s << "E: " << edge_position << " R: " << read_position << " Q: " << quality;
-		return s.str();
-	}
+    string str() {
+        stringstream s;
+        s << "E: " << edge_position << " R: " << read_position << " Q: " << quality;
+        return s.str();
+    }
 
 //Less by EDGE position
-	bool operator <(MappingInstance const& b) const {
-		if (edge_position < b.edge_position || (edge_position == b.edge_position && read_position < b.read_position))
-			return true;
-		else
-			return false;
-	}
+    bool operator <(MappingInstance const& b) const {
+        if (edge_position < b.edge_position || (edge_position == b.edge_position && read_position < b.read_position))
+            return true;
+        else
+            return false;
+    }
 private:
     DECL_LOGGER("MappingInstance")
     ;
@@ -59,67 +59,67 @@ private:
 
 //Less by READ position
 struct ReadPositionComparator {
-	bool operator ()(MappingInstance const& a, MappingInstance const& b) const {
-		return (a.read_position < b.read_position || (a.read_position == b.read_position && a.edge_position < b.edge_position));
-	}
+    bool operator ()(MappingInstance const& a, MappingInstance const& b) const {
+        return (a.read_position < b.read_position || (a.read_position == b.read_position && a.edge_position < b.edge_position));
+    }
 };
 
 template<class Graph>
 struct KmerCluster {
-	typedef typename Graph::EdgeId EdgeId;
-	int last_trustable_index;
-	int first_trustable_index;
-	size_t average_read_position;
-	size_t average_edge_position;
-	EdgeId edgeId;
-	vector<MappingInstance> sorted_positions;
-	int size;
+    typedef typename Graph::EdgeId EdgeId;
+    int last_trustable_index;
+    int first_trustable_index;
+    size_t average_read_position;
+    size_t average_edge_position;
+    EdgeId edgeId;
+    vector<MappingInstance> sorted_positions;
+    int size;
 
-	KmerCluster(EdgeId e, const vector<MappingInstance>& v) {
-		last_trustable_index = 0;
-		first_trustable_index = 0;
-		average_read_position = 0;
-		edgeId = e;
-		size = (int) v.size();
-		sorted_positions = v;
-		FillTrustableIndeces();
-	}
+    KmerCluster(EdgeId e, const vector<MappingInstance>& v) {
+        last_trustable_index = 0;
+        first_trustable_index = 0;
+        average_read_position = 0;
+        edgeId = e;
+        size = (int) v.size();
+        sorted_positions = v;
+        FillTrustableIndeces();
+    }
 
-	bool operator <(const KmerCluster & b) const {
-		return (average_read_position < b.average_read_position ||(average_read_position == b.average_read_position && edgeId < b.edgeId) ||
-		        (average_read_position == b.average_read_position && edgeId == b.edgeId && sorted_positions < b.sorted_positions));
-	}
+    bool operator <(const KmerCluster & b) const {
+        return (average_read_position < b.average_read_position ||(average_read_position == b.average_read_position && edgeId < b.edgeId) ||
+                (average_read_position == b.average_read_position && edgeId == b.edgeId && sorted_positions < b.sorted_positions));
+    }
 
-	bool CanFollow(const KmerCluster &b) const {
-		return (b.sorted_positions[b.last_trustable_index].read_position < sorted_positions[first_trustable_index].read_position);
-	}
+    bool CanFollow(const KmerCluster &b) const {
+        return (b.sorted_positions[b.last_trustable_index].read_position < sorted_positions[first_trustable_index].read_position);
+    }
 
-	void FillTrustableIndeces() {
-		//ignore non-unique kmers for distance determination
-		int first_unique_ind = 0;
-		while (first_unique_ind != size - 1 && !(sorted_positions[first_unique_ind].IsUnique())) {
-			first_unique_ind += 1;
-		}
-		int last_unique_ind = size - 1;
-		while (last_unique_ind != 0 && !(sorted_positions[last_unique_ind].IsUnique())) {
-			last_unique_ind -= 1;
-		}
-		last_trustable_index = last_unique_ind;
-		first_trustable_index = first_unique_ind;
-		double tmp_read_position = 0, tmp_edge_position = 0;;
-		vector<int> diffs;
-		for (auto mp : sorted_positions) {
-		   tmp_read_position += mp.read_position;
-		   tmp_edge_position += mp.edge_position;
-		   diffs.push_back(mp.read_position - mp.edge_position);
-		}
-		sort(diffs.begin(), diffs.end());
-		int median_diff = diffs[size/2];
+    void FillTrustableIndeces() {
+        //ignore non-unique kmers for distance determination
+        int first_unique_ind = 0;
+        while (first_unique_ind != size - 1 && !(sorted_positions[first_unique_ind].IsUnique())) {
+            first_unique_ind += 1;
+        }
+        int last_unique_ind = size - 1;
+        while (last_unique_ind != 0 && !(sorted_positions[last_unique_ind].IsUnique())) {
+            last_unique_ind -= 1;
+        }
+        last_trustable_index = last_unique_ind;
+        first_trustable_index = first_unique_ind;
+        double tmp_read_position = 0, tmp_edge_position = 0;;
+        vector<int> diffs;
+        for (auto mp : sorted_positions) {
+           tmp_read_position += mp.read_position;
+           tmp_edge_position += mp.edge_position;
+           diffs.push_back(mp.read_position - mp.edge_position);
+        }
+        sort(diffs.begin(), diffs.end());
+        int median_diff = diffs[size/2];
 
-		tmp_read_position /= size;
-		tmp_edge_position /= size;
-		average_read_position = (size_t)trunc(tmp_read_position);
-		average_edge_position = (size_t)trunc(tmp_edge_position);
+        tmp_read_position /= size;
+        tmp_edge_position /= size;
+        average_read_position = (size_t)trunc(tmp_read_position);
+        average_edge_position = (size_t)trunc(tmp_edge_position);
 
         if (size > 10) {
             int max_debug_size = 10;
@@ -139,7 +139,7 @@ struct KmerCluster {
 
             }
         }
-	}
+    }
 
     string str(const Graph &g) const{
         stringstream s;
@@ -153,63 +153,63 @@ private:
 
 template<class Graph>
 struct GapDescription {
-	typedef typename Graph::EdgeId EdgeId;
-	typename Graph::EdgeId start, end;
-	Sequence gap_seq;
-	int edge_gap_start_position, edge_gap_end_position;
+    typedef typename Graph::EdgeId EdgeId;
+    typename Graph::EdgeId start, end;
+    Sequence gap_seq;
+    int edge_gap_start_position, edge_gap_end_position;
 
 
-	GapDescription(EdgeId start_e, EdgeId end_e, const Sequence &gap, int gap_start, int gap_end) :
-			start(start_e), end(end_e), gap_seq(gap.str()), edge_gap_start_position(gap_start), edge_gap_end_position(gap_end) {
-	}
+    GapDescription(EdgeId start_e, EdgeId end_e, const Sequence &gap, int gap_start, int gap_end) :
+            start(start_e), end(end_e), gap_seq(gap.str()), edge_gap_start_position(gap_start), edge_gap_end_position(gap_end) {
+    }
 
-	GapDescription(const KmerCluster<Graph> &a, const KmerCluster<Graph> & b, Sequence read, int pacbio_k) {
-		edge_gap_start_position = a.sorted_positions[a.last_trustable_index].edge_position;
-		edge_gap_end_position = b.sorted_positions[b.first_trustable_index].edge_position + pacbio_k - 1;
-		start = a.edgeId;
-		end = b.edgeId;
-		DEBUG(read.str());
-		gap_seq = read.Subseq(a.sorted_positions[a.last_trustable_index].read_position, b.sorted_positions[b.first_trustable_index].read_position + pacbio_k - 1);
-		DEBUG(gap_seq.str());
-		DEBUG("gap added");
-	}
+    GapDescription(const KmerCluster<Graph> &a, const KmerCluster<Graph> & b, Sequence read, int pacbio_k) {
+        edge_gap_start_position = a.sorted_positions[a.last_trustable_index].edge_position;
+        edge_gap_end_position = b.sorted_positions[b.first_trustable_index].edge_position + pacbio_k - 1;
+        start = a.edgeId;
+        end = b.edgeId;
+        DEBUG(read.str());
+        gap_seq = read.Subseq(a.sorted_positions[a.last_trustable_index].read_position, b.sorted_positions[b.first_trustable_index].read_position + pacbio_k - 1);
+        DEBUG(gap_seq.str());
+        DEBUG("gap added");
+    }
 
-	GapDescription<Graph> conjugate(Graph &g_, int shift) const {
+    GapDescription<Graph> conjugate(Graph &g_, int shift) const {
         GapDescription<Graph> res(
                 g_.conjugate(end), g_.conjugate(start), (!gap_seq),
                 (int) g_.length(end) + shift - edge_gap_end_position,
                 (int) g_.length(start) + shift - edge_gap_start_position);
-		 DEBUG("conjugate created" << res.str(g_));
-		 return res;
-	}
+         DEBUG("conjugate created" << res.str(g_));
+         return res;
+    }
 
-	string str(Graph &g_) const {
-		stringstream s;
-		s << g_.int_id(start) << " " << edge_gap_start_position <<endl << g_.int_id(end) << " " << edge_gap_end_position << endl << gap_seq.str()<< endl;
-		return s.str();
-	}
+    string str(Graph &g_) const {
+        stringstream s;
+        s << g_.int_id(start) << " " << edge_gap_start_position <<endl << g_.int_id(end) << " " << edge_gap_end_position << endl << gap_seq.str()<< endl;
+        return s.str();
+    }
 
-	bool operator <(const GapDescription & b) const {
-		return (start < b.start || (start == b.start &&  end < b.end) ||
-				(start == b.start &&  end == b.end && edge_gap_start_position < b.edge_gap_start_position));
-	}
+    bool operator <(const GapDescription & b) const {
+        return (start < b.start || (start == b.start &&  end < b.end) ||
+                (start == b.start &&  end == b.end && edge_gap_start_position < b.edge_gap_start_position));
+    }
 
 private:
-	DECL_LOGGER("PacIndex")
-	;
+    DECL_LOGGER("PacIndex")
+    ;
 };
 
 template<class Graph>
 struct OneReadMapping {
-	typedef typename Graph::EdgeId EdgeId;
-	vector<vector<EdgeId> > main_storage;
-	vector<GapDescription<Graph> > gaps;
-	vector<size_t> real_length;
+    typedef typename Graph::EdgeId EdgeId;
+    vector<vector<EdgeId> > main_storage;
+    vector<GapDescription<Graph> > gaps;
+    vector<size_t> real_length;
 //Total used seeds. sum over all subreads;
-	size_t seed_num;
-	OneReadMapping(vector<vector<EdgeId> > &paths_description, vector<GapDescription<Graph> > &gaps_description, vector<size_t> real_length, size_t seed_num) :
-			main_storage(paths_description), gaps(gaps_description), real_length(real_length), seed_num(seed_num) {
-	}
+    size_t seed_num;
+    OneReadMapping(vector<vector<EdgeId> > &paths_description, vector<GapDescription<Graph> > &gaps_description, vector<size_t> real_length, size_t seed_num) :
+            main_storage(paths_description), gaps(gaps_description), real_length(real_length), seed_num(seed_num) {
+    }
 
 };
 
@@ -221,7 +221,7 @@ struct StatsCounter{
     size_t total_len ;
     size_t reads_with_conjugate;
     size_t subreads_count;
-	map<size_t, size_t> seeds_percentage;
+    map<size_t, size_t> seeds_percentage;
     StatsCounter() {
         total_len = 0;
         reads_with_conjugate = 0;
@@ -233,7 +233,7 @@ struct StatsCounter{
         for (auto iter = other.subreads_length.begin(); iter != other.subreads_length.end(); ++iter) {
             subreads_length.push_back(*iter);
         }
-		
+        
         for (auto iter = other.path_len_in_edges.begin(); iter != other.path_len_in_edges.end(); ++iter){
             auto j_iter = iter;
             if (( j_iter = path_len_in_edges.find(iter->first)) == other.path_len_in_edges.end()){
@@ -242,32 +242,32 @@ struct StatsCounter{
                 path_len_in_edges[j_iter->first] += iter->second;
             }
         }
-		for (auto iter = other.seeds_percentage.begin(); iter != other.seeds_percentage.end(); ++iter){
-			auto j_iter = iter;
-			if (( j_iter = seeds_percentage.find(iter->first)) == other.seeds_percentage.end()){
-				seeds_percentage.insert(make_pair(iter->first, iter->second));
-			} else {
-				seeds_percentage[j_iter->first] += iter->second;
-			}
-		}
+        for (auto iter = other.seeds_percentage.begin(); iter != other.seeds_percentage.end(); ++iter){
+            auto j_iter = iter;
+            if (( j_iter = seeds_percentage.find(iter->first)) == other.seeds_percentage.end()){
+                seeds_percentage.insert(make_pair(iter->first, iter->second));
+            } else {
+                seeds_percentage[j_iter->first] += iter->second;
+            }
+        }
     }
 
-	void report(){
-		size_t total = 0;
-		for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter){
-			total += iter->second;
-		}
-		size_t cur = 0;
-		size_t percentage = 0;
-		for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter){
-			cur += iter->second;
-			percentage = iter->first;
-			if (cur * 2 > total) break;
-		}
-		INFO("Median fraction of present seeds in maximal alignmnent among reads aligned to the graph: " << double(percentage) * 0.001);
-	}
+    void report(){
+        size_t total = 0;
+        for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter){
+            total += iter->second;
+        }
+        size_t cur = 0;
+        size_t percentage = 0;
+        for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter){
+            cur += iter->second;
+            percentage = iter->first;
+            if (cur * 2 > total) break;
+        }
+        INFO("Median fraction of present seeds in maximal alignmnent among reads aligned to the graph: " << double(percentage) * 0.001);
+    }
 private:
-	DECL_LOGGER("StatsCounter");
+    DECL_LOGGER("StatsCounter");
 
 };
 

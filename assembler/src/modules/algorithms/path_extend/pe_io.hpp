@@ -26,52 +26,52 @@ protected:
     DECL_LOGGER("PathExtendIO")
 
 protected:
-	const Graph& g_;
+    const Graph& g_;
     ContigConstructor<Graph> &constructor_;
     size_t k_;
     map<EdgeId, ExtendedContigIdT> ids_;
 
     //TODO: add constructor
-	string ToString(const BidirectionalPath& path) const {
-		stringstream ss;
-		if (path.IsInterstrandBulge() && path.Size() == 1) {
-		    ss << constructor_.construct(path.Back()).first.substr(k_, g_.length(path.Back()) - k_);
-		    return ss.str();
-		}
+    string ToString(const BidirectionalPath& path) const {
+        stringstream ss;
+        if (path.IsInterstrandBulge() && path.Size() == 1) {
+            ss << constructor_.construct(path.Back()).first.substr(k_, g_.length(path.Back()) - k_);
+            return ss.str();
+        }
 
-		if (!path.Empty()) {
+        if (!path.Empty()) {
             ss << constructor_.construct(path[0]).first.substr(0, k_);
-		}
+        }
 
-		for (size_t i = 0; i < path.Size(); ++i) {
-			int gap = i == 0 ? 0 : path.GapAt(i);
-			if (gap > (int) k_) {
-				for (size_t j = 0; j < gap - k_; ++j) {
-					ss << "N";
-				}
+        for (size_t i = 0; i < path.Size(); ++i) {
+            int gap = i == 0 ? 0 : path.GapAt(i);
+            if (gap > (int) k_) {
+                for (size_t j = 0; j < gap - k_; ++j) {
+                    ss << "N";
+                }
                 ss << constructor_.construct(path[i]).first;
-			} else {
-				int overlapLen = (int) k_ - gap;
-				if (overlapLen >= (int) g_.length(path[i]) + (int) k_) {
-				    if(overlapLen > (int) g_.length(path[i]) + (int) k_) {
-	                    WARN("Such scaffolding logic leads to local misassemblies");
-				    }
-					continue;
-				}
-				auto temp_str = g_.EdgeNucls(path[i]).Subseq(overlapLen).str();
-				if(i != path.Size() - 1) {
-	                for(size_t j = 0 ; j < path.TrashPreviousAt(i + 1); ++j) {
-	                    temp_str.pop_back();
-	                    if(temp_str.size() == 0) {
-	                        break;
-	                    }
-	                }
-				}
-				ss << temp_str;
-			}
-		}
-		return ss.str();
-	}
+            } else {
+                int overlapLen = (int) k_ - gap;
+                if (overlapLen >= (int) g_.length(path[i]) + (int) k_) {
+                    if(overlapLen > (int) g_.length(path[i]) + (int) k_) {
+                        WARN("Such scaffolding logic leads to local misassemblies");
+                    }
+                    continue;
+                }
+                auto temp_str = g_.EdgeNucls(path[i]).Subseq(overlapLen).str();
+                if(i != path.Size() - 1) {
+                    for(size_t j = 0 ; j < path.TrashPreviousAt(i + 1); ++j) {
+                        temp_str.pop_back();
+                        if(temp_str.size() == 0) {
+                            break;
+                        }
+                    }
+                }
+                ss << temp_str;
+            }
+        }
+        return ss.str();
+    }
 
     string ToFASTGString(const BidirectionalPath& path) const {
         if (path.Empty())
@@ -119,27 +119,27 @@ public:
 
 
     void WritePaths(const PathContainer &paths, const string &filename) const {
-		INFO("Outputting path data to " << filename);
-		std::ofstream oss;
+        INFO("Outputting path data to " << filename);
+        std::ofstream oss;
         oss.open(filename.c_str());
         int i = 1;
         oss << paths.size() << endl;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-			//oss << i << endl;
-			i++;
+            //oss << i << endl;
+            i++;
             BidirectionalPath* path = iter.get();
             if (path->GetId() % 2 != 0) {
                 path = path->GetConjPath();
             }
             oss << "PATH " << path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
             for (size_t j = 0; j < path->Size(); ++j) {
-			    oss << g_.int_id(path->At(j)) << " " << g_.length(path->At(j)) <<  " " << path->GapAt(j) <<  " " << path->TrashPreviousAt(j) <<  " " << path->TrashCurrentAt(j) << endl;
+                oss << g_.int_id(path->At(j)) << " " << g_.length(path->At(j)) <<  " " << path->GapAt(j) <<  " " << path->TrashPreviousAt(j) <<  " " << path->TrashCurrentAt(j) << endl;
             }
             //oss << endl;
-		}
-		oss.close();
-		DEBUG("Edges written");
-	}
+        }
+        oss.close();
+        DEBUG("Edges written");
+    }
 
     void LoadPaths(PathContainer &paths, GraphCoverageMap &cover_map, const string &filename) const {
         paths.clear();
@@ -197,12 +197,12 @@ public:
 
         int i = 0;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-        	if (iter.get()->Length() <= 0)
-        		continue;
-        	DEBUG("NODE " << ++i);
+            if (iter.get()->Length() <= 0)
+                continue;
+            DEBUG("NODE " << ++i);
             BidirectionalPath* path = iter.get();
             path->Print();
-        	oss.setID((int) path->GetId());
+            oss.setID((int) path->GetId());
             oss.setCoverage(path->Coverage());
             string path_string = ToString(*path);
 

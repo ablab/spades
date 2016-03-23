@@ -19,25 +19,25 @@ using namespace debruijn_graph;
 namespace dipspades {
 
 struct CorrectionResult{
-	OverlapGraph g;
-	RedundancyMap<size_t> redundancy_map;
+    OverlapGraph g;
+    RedundancyMap<size_t> redundancy_map;
 };
 
 //--------------------------------------------------------------------------
 class AbstractContigCorrector{
 protected:
-	Graph& g_;
+    Graph& g_;
 public:
-	AbstractContigCorrector(Graph& g) : g_(g) {
+    AbstractContigCorrector(Graph& g) : g_(g) {
 
-	}
-	virtual ContigStoragePtr Correct(ContigStoragePtr storage) { return storage; }
-	virtual MappingContigPtr Correct(MappingContigPtr contig) { return contig; }
-	virtual ~AbstractContigCorrector(){}
-	virtual CorrectionResult Results(){
-		CorrectionResult res;
-		return res;
-	}
+    }
+    virtual ContigStoragePtr Correct(ContigStoragePtr storage) { return storage; }
+    virtual MappingContigPtr Correct(MappingContigPtr contig) { return contig; }
+    virtual ~AbstractContigCorrector(){}
+    virtual CorrectionResult Results(){
+        CorrectionResult res;
+        return res;
+    }
 };
 
 }

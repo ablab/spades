@@ -85,7 +85,7 @@ public:
     }
 
     SimplifInfoContainer& set_detected_mean_coverage(double detected_mean_coverage) {
-    	detected_mean_coverage_ = detected_mean_coverage;
+        detected_mean_coverage_ = detected_mean_coverage;
         return *this;
     }
 

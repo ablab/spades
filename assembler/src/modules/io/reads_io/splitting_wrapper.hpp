@@ -14,51 +14,51 @@ namespace io {
 class SplittingWrapper: public DelegatingWrapper<SingleRead> {
     typedef DelegatingWrapper<SingleRead> base;
 private:
-	std::vector<SingleRead> buffer_;
-	size_t buffer_position_;
+    std::vector<SingleRead> buffer_;
+    size_t buffer_position_;
 
-	void FillBuffer(SingleRead& tmp_read) {
-		buffer_.clear();
-		for(size_t i = 0; i < tmp_read.size(); i++) {
-			size_t j = i;
-			while(j < tmp_read.size() && is_nucl(tmp_read.GetSequenceString()[j])) {
-				j++;
-			}
-			if(j > i) {
-				buffer_.push_back(tmp_read.Substr(i, j));
-				i = j - 1;
-			}
-		}
-		buffer_position_ = 0;
-	}
+    void FillBuffer(SingleRead& tmp_read) {
+        buffer_.clear();
+        for(size_t i = 0; i < tmp_read.size(); i++) {
+            size_t j = i;
+            while(j < tmp_read.size() && is_nucl(tmp_read.GetSequenceString()[j])) {
+                j++;
+            }
+            if(j > i) {
+                buffer_.push_back(tmp_read.Substr(i, j));
+                i = j - 1;
+            }
+        }
+        buffer_position_ = 0;
+    }
 
-	bool Skip() {
-		while(!this->reader().eof() && buffer_position_ == buffer_.size()) {
-		    SingleRead tmp_read;
-			this->reader() >> tmp_read;
-			FillBuffer(tmp_read);
-		}
-		return buffer_position_ != buffer_.size();
-	}
+    bool Skip() {
+        while(!this->reader().eof() && buffer_position_ == buffer_.size()) {
+            SingleRead tmp_read;
+            this->reader() >> tmp_read;
+            FillBuffer(tmp_read);
+        }
+        return buffer_position_ != buffer_.size();
+    }
 
 public:
 
-	explicit SplittingWrapper(base::ReadStreamPtrT reader) :
-			base(reader), buffer_position_(0) {
-	}
+    explicit SplittingWrapper(base::ReadStreamPtrT reader) :
+            base(reader), buffer_position_(0) {
+    }
 
-	/* virtual */
-	SplittingWrapper& operator>>(SingleRead& read) {
-		Skip();
-		read = buffer_[buffer_position_];
-		buffer_position_++;
-		return *this;
-	}
+    /* virtual */
+    SplittingWrapper& operator>>(SingleRead& read) {
+        Skip();
+        read = buffer_[buffer_position_];
+        buffer_position_++;
+        return *this;
+    }
 
-	//todo fix needed!!! seems that eof can't be called multiple times in a row!!!
-	/* virtual */ bool eof() {
-		return !Skip();
-	}
+    //todo fix needed!!! seems that eof can't be called multiple times in a row!!!
+    /* virtual */ bool eof() {
+        return !Skip();
+    }
 };
 
 inline std::shared_ptr<ReadStream<SingleRead>> SplittingWrap(std::shared_ptr<ReadStream<SingleRead>> reader_ptr) {

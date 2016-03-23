@@ -11,20 +11,20 @@
 //
 //class ISCorruptingWrapper: public DelegatingReaderWrapper<PairedRead> {
 //private:
-//	const size_t is_;
+//    const size_t is_;
 //public:
-//	typedef PairedRead ReadType;
+//    typedef PairedRead ReadType;
 //
-//	explicit ISCorruptingWrapper(IReader<ReadType>& reader, size_t is) :
-//			DelegatingReaderWrapper<PairedRead>(reader), is_(is) {
-//	}
+//    explicit ISCorruptingWrapper(IReader<ReadType>& reader, size_t is) :
+//            DelegatingReaderWrapper<PairedRead>(reader), is_(is) {
+//    }
 //
-//	/* virtual */
-//	ISCorruptingWrapper& operator>>(ReadType& read) {
-//		(this->reader()) >> read;
-//		read = PairedRead(read.first(), read.second(), is_);
-//		return *this;
-//	}
+//    /* virtual */
+//    ISCorruptingWrapper& operator>>(ReadType& read) {
+//        (this->reader()) >> read;
+//        read = PairedRead(read.first(), read.second(), is_);
+//        return *this;
+//    }
 //
 //};
 //

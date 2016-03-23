@@ -38,26 +38,26 @@ public:
    *
    * @param reader Reference to any other reader (child of IReader).
    */
-	explicit FilteringReaderWrapper(IReader<ReadType>& reader) :
-			reader_(reader), eof_(false) {
-		StepForward();
-	}
+    explicit FilteringReaderWrapper(IReader<ReadType>& reader) :
+            reader_(reader), eof_(false) {
+        StepForward();
+    }
 
   /* 
    * Default destructor.
    */
-	/* virtual */ ~FilteringReaderWrapper() {
-		close();
-	}
+    /* virtual */ ~FilteringReaderWrapper() {
+        close();
+    }
 
   /* 
    * Check whether the stream is opened.
    *
    * @return true of the stream is opened and false otherwise.
    */
-	/* virtual */ bool is_open() {
-		return reader_.is_open();
-	}
+    /* virtual */ bool is_open() {
+        return reader_.is_open();
+    }
 
   /* 
    * Check whether we've reached the end of stream.
@@ -65,9 +65,9 @@ public:
    * @return true if the end of stream is reached and false
    * otherwise.
    */
-	/* virtual */ bool eof() {
-		return eof_;
-	}
+    /* virtual */ bool eof() {
+        return eof_;
+    }
 
   /*
    * Read SingleRead or PairedRead from stream (according to ReadType).
@@ -77,31 +77,31 @@ public:
    *
    * @return Reference to this stream.
    */
-	/* virtual */ FilteringReaderWrapper& operator>>(ReadType& read) {
-		read = next_read_;
-		StepForward();
-		return *this;
-	}
+    /* virtual */ FilteringReaderWrapper& operator>>(ReadType& read) {
+        read = next_read_;
+        StepForward();
+        return *this;
+    }
 
-	/*
-	 * Close the stream.
-	 */
-	/* virtual */
-	void close() {
-		reader_.close();
-	}
+    /*
+     * Close the stream.
+     */
+    /* virtual */
+    void close() {
+        reader_.close();
+    }
 
-	/*
-	 * Close the stream and open it again.
-	 */
-	/* virtual */
-	void reset() {
-		reader_.reset();
-		eof_ = false;
-		StepForward();
-	}
+    /*
+     * Close the stream and open it again.
+     */
+    /* virtual */
+    void reset() {
+        reader_.reset();
+        eof_ = false;
+        StepForward();
+    }
 
-	ReadStat get_stat() const {
+    ReadStat get_stat() const {
         return reader_.get_stat();
     }
 
@@ -109,38 +109,38 @@ private:
   /*
    * @variable Internal stream readers.
    */
-	IReader<ReadType>& reader_;
+    IReader<ReadType>& reader_;
   /*
    * @variable Flag that shows whether the end of stream reached.
    */
-	bool eof_;
+    bool eof_;
   /*
    * @variable Next read to be outputted by stream.
    */
-	ReadType next_read_;
+    ReadType next_read_;
 
   /*
    * Read next valid read in the stream.
    */
-	void StepForward() {
-		while (!reader_.eof()) {
-			reader_ >> next_read_;
-			if (next_read_.IsValid()) {
-				return;
-			}
-		}
-		eof_ = true;
-	}
+    void StepForward() {
+        while (!reader_.eof()) {
+            reader_ >> next_read_;
+            if (next_read_.IsValid()) {
+                return;
+            }
+        }
+        eof_ = true;
+    }
 
-	/*
-	 * Hidden copy constructor.
-	 */
-	explicit FilteringReaderWrapper(
-			const FilteringReaderWrapper<ReadType>& reader);
-	/*
-	 * Hidden assign operator.
-	 */
-	void operator=(const FilteringReaderWrapper<ReadType>& reader);
+    /*
+     * Hidden copy constructor.
+     */
+    explicit FilteringReaderWrapper(
+            const FilteringReaderWrapper<ReadType>& reader);
+    /*
+     * Hidden assign operator.
+     */
+    void operator=(const FilteringReaderWrapper<ReadType>& reader);
 };
 
 }

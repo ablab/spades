@@ -27,52 +27,52 @@ using namespace debruijn_graph;
 
 template <class Graph>
 MappingRange TrivialRange(const Graph& g, typename Graph::EdgeId e, size_t& offset) {
-	size_t l = g.length(e);
-	offset += l;
-	return MappingRange(Range(offset - l, offset), Range(0, l));
+    size_t l = g.length(e);
+    offset += l;
+    return MappingRange(Range(offset - l, offset), Range(0, l));
 }
 
 template <class Graph>
 MappingPath<EdgeId> TrivialMappingPath(const Graph& g
-		, const vector<typename Graph::EdgeId>& edges) {
+        , const vector<typename Graph::EdgeId>& edges) {
   INFO("start tripath");
-	vector<MappingRange> ranges;
-	size_t offset = 0;
-	for (auto it = edges.begin(); it != edges.end(); ++it) {
-		ranges.push_back(TrivialRange(g, *it, offset));
-	}
+    vector<MappingRange> ranges;
+    size_t offset = 0;
+    for (auto it = edges.begin(); it != edges.end(); ++it) {
+        ranges.push_back(TrivialRange(g, *it, offset));
+    }
   INFO("end tripath");
-	return MappingPath<EdgeId>(edges, ranges);
+    return MappingPath<EdgeId>(edges, ranges);
 }
 
 inline Sequence ReadSequence(ContigStream& reader) {
-	VERIFY(!reader.eof());
-	io::SingleRead read;
-	reader >> read;
-	return read.sequence();
+    VERIFY(!reader.eof());
+    io::SingleRead read;
+    reader >> read;
+    return read.sequence();
 }
 
 template<class Graph, class Index>
 void ConstructGraph(Graph& g, Index& index,
-		ContigStream& stream) {
-	vector<ContigStream*> streams = { &stream };
-	ConstructGraph<Graph>(streams, g, index);
+        ContigStream& stream) {
+    vector<ContigStream*> streams = { &stream };
+    ConstructGraph<Graph>(streams, g, index);
 }
 
 /*
 template<class Graph, class Index>
 void ConstructGraph(Graph& g, Index& index,
-		ContigStream& stream1,
-		ContigStream& stream2) {
-	io::MultifileStream<io::SingleRead> composite_reader(stream1, stream2);
-	ConstructGraph<Graph, Index>(g, index, composite_reader);
+        ContigStream& stream1,
+        ContigStream& stream2) {
+    io::MultifileStream<io::SingleRead> composite_reader(stream1, stream2);
+    ConstructGraph<Graph, Index>(g, index, composite_reader);
 }
 */
 
 inline Sequence ReadGenome(const string& filename) {
-	path::CheckFileExistenceFATAL(filename);
-	io::FileReadStream genome_stream(filename);
-	return ReadSequence(genome_stream);
+    path::CheckFileExistenceFATAL(filename);
+    io::FileReadStream genome_stream(filename);
+    return ReadSequence(genome_stream);
 }
 
 void WriteGenome(const Sequence& genome, const string& filename) {
@@ -82,77 +82,77 @@ void WriteGenome(const Sequence& genome, const string& filename) {
 }
 
 inline vector<io::SingleRead> MakeReads(const vector<Sequence>& ss) {
-	vector<io::SingleRead> ans;
-	for (size_t i = 0; i < ss.size(); ++i) {
-		ans.push_back(io::SingleRead("read_" + ToString(i), ss[i].str()));
-	}
-	return ans;
+    vector<io::SingleRead> ans;
+    for (size_t i = 0; i < ss.size(); ++i) {
+        ans.push_back(io::SingleRead("read_" + ToString(i), ss[i].str()));
+    }
+    return ans;
 }
 
 inline Sequence FirstSequence(ContigStream& stream) {
-	stream.reset();
-	io::SingleRead r;
-	VERIFY(!stream.eof());
-	stream >> r;
-	return r.sequence();
+    stream.reset();
+    io::SingleRead r;
+    VERIFY(!stream.eof());
+    stream >> r;
+    return r.sequence();
 }
 
 inline vector<Sequence> AllSequences(ContigStream& stream) {
-	vector<Sequence> answer;
-	stream.reset();
-	io::SingleRead r;
-	while (!stream.eof()) {
-		stream >> r;
-		answer.push_back(r.sequence());
-	}
-	return answer;
+    vector<Sequence> answer;
+    stream.reset();
+    io::SingleRead r;
+    while (!stream.eof()) {
+        stream >> r;
+        answer.push_back(r.sequence());
+    }
+    return answer;
 }
 
 inline vector<Sequence> ReadContigs(const string& filename) {
-	path::CheckFileExistenceFATAL(filename);
-	io::FileReadStream genome_stream(filename);
-	return AllSequences(genome_stream);
+    path::CheckFileExistenceFATAL(filename);
+    io::FileReadStream genome_stream(filename);
+    return AllSequences(genome_stream);
 }
 
 //Prints only basic graph structure!!!
 //todo rewrite with normal splitter usage instead of filtering
 inline void PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
-		size_t split_edge_length, const omnigraph::GraphElementFinder<Graph>& element_finder,
-		int int_edge_id) {
+        size_t split_edge_length, const omnigraph::GraphElementFinder<Graph>& element_finder,
+        int int_edge_id) {
     shared_ptr<GraphSplitter<Graph>> inner_splitter = ReliableSplitter<Graph>(g, split_edge_length);
 
-//	VERIFY_MSG(element_finder.ReturnEdgeId(int_edge_id) != NULL,
-//			"Couldn't find edge with id = " << int_edge_id);
+//    VERIFY_MSG(element_finder.ReturnEdgeId(int_edge_id) != NULL,
+//            "Couldn't find edge with id = " << int_edge_id);
 
     shared_ptr<GraphComponentFilter<Graph>> filter = make_shared<AnyEdgeContainFilter<Graph>>(g, element_finder.ReturnEdgeId(int_edge_id));
-	FilteringSplitterWrapper<Graph> splitter(inner_splitter, filter);
-	vector<vector<VertexId>> components;
-	while (splitter.HasNext()) {
-	    auto component = splitter.Next();
-		components.push_back(vector<VertexId>(component.vertices().begin(), component.vertices().end()));
-	}
-	VERIFY(components.size() == 1);
-	debruijn_graph::graphio::ConjugateDataPrinter<Graph> printer(g, components.front().begin(), components.front().end());
-	debruijn_graph::graphio::PrintBasicGraph<Graph>(file_name, printer);
+    FilteringSplitterWrapper<Graph> splitter(inner_splitter, filter);
+    vector<vector<VertexId>> components;
+    while (splitter.HasNext()) {
+        auto component = splitter.Next();
+        components.push_back(vector<VertexId>(component.vertices().begin(), component.vertices().end()));
+    }
+    VERIFY(components.size() == 1);
+    debruijn_graph::graphio::ConjugateDataPrinter<Graph> printer(g, components.front().begin(), components.front().end());
+    debruijn_graph::graphio::PrintBasicGraph<Graph>(file_name, printer);
 }
 
 template<class Graph>
 class EdgeCoordinatesGraphLabeler: public AbstractGraphLabeler<Graph> {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
 public:
-	const CoordinatesHandler<Graph>& edge_pos_;
-	const std::vector<std::string> genome_names_;
+    const CoordinatesHandler<Graph>& edge_pos_;
+    const std::vector<std::string> genome_names_;
 
-	EdgeCoordinatesGraphLabeler(const Graph& g,
+    EdgeCoordinatesGraphLabeler(const Graph& g,
                               const CoordinatesHandler<Graph>& edge_pos,
                               const std::vector<std::string> &genome_names)
       : AbstractGraphLabeler<Graph>(g),
         edge_pos_(edge_pos),
         genome_names_(genome_names) {
-	}
+    }
 
-	virtual std::string label(EdgeId edge) const {
+    virtual std::string label(EdgeId edge) const {
     auto ranges = edge_pos_.GetRanges(edge);
     std::sort(ranges.begin(), ranges.end());
 
@@ -170,8 +170,8 @@ public:
         "G" << genome_range << ", Seq" << seq_range << "\\n";
     }
 
-		return ss.str();
-	}
+        return ss.str();
+    }
 };
 
 template <class Graph>

@@ -74,8 +74,8 @@ class SimpleInversionFinder {
 
  private:
   typedef typename gp_t::graph_t Graph;
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
 
   typedef std::vector<EdgeId> EdgeList;
   typedef std::vector<EdgeId> Path;
@@ -307,12 +307,12 @@ class SimpleInversionFinder {
       mpath, *ConstructBorderColorer(g_, coloring_));
   }
 
-	size_t PathLength(const EdgeList &path) const {
-		size_t res = 0;
-		for (auto I = path.begin(); I != path.end(); ++I)
-			res += g_.length(*I);
-		return res;
-	}
+    size_t PathLength(const EdgeList &path) const {
+        size_t res = 0;
+        for (auto I = path.begin(); I != path.end(); ++I)
+            res += g_.length(*I);
+        return res;
+    }
 
   DECL_LOGGER("SimpleInversionFinder")
   ;

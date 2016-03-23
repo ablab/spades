@@ -88,7 +88,7 @@ public:
         if (!inner_index_.contains(kwh)) {
             return make_pair(EdgeId(0), -1u);
         } else {
-        	EdgeInfo<EdgeId> entry = inner_index_.get_value(kwh);
+            EdgeInfo<EdgeId> entry = inner_index_.get_value(kwh);
             return std::make_pair(entry.edge_id, (size_t)entry.offset);
         }
     }

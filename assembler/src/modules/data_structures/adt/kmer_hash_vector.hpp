@@ -166,7 +166,7 @@ public:
     }
 
     void dump (KmerMap<int>& destination, size_t bucketNum) {
-    	data_->dump(destination, bucketNum);
+        data_->dump(destination, bucketNum);
     }
 };
 
@@ -259,11 +259,11 @@ public:
     }
 
     virtual void dump (KmerMap<int>& destination, size_t bucketNum) {
-    	KmerMapImpl<size_, int>& destImpl = dynamic_cast<KmerMapImpl<size_, int>&>(destination.get_data());
+        KmerMapImpl<size_, int>& destImpl = dynamic_cast<KmerMapImpl<size_, int>&>(destination.get_data());
 
-    	for (auto it = data_[bucketNum].begin(), end = data_[bucketNum].end(); it != end; ++it) {
-    		++destImpl[*it];
-    	}
+        for (auto it = data_[bucketNum].begin(), end = data_[bucketNum].end(); it != end; ++it) {
+            ++destImpl[*it];
+        }
     }
 };
 

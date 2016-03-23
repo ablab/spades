@@ -17,19 +17,19 @@ void BaseHypothesisEvaluator(BamTools::BamAlignment    &alignment,
 
     // --- Step 1: Initialize Objects and retrieve relevant tags
 
-	delta_score = 1e5;
-	fit_score   = 1e5;
-	vector<string>   Hypotheses(2);
+    delta_score = 1e5;
+    fit_score   = 1e5;
+    vector<string>   Hypotheses(2);
     vector<float>    measurements, phase_params;
     int              start_flow, num_flows, prefix_flow=0;
 
     if (not GetBamTags(alignment, flow_order_str.length(), measurements, phase_params, start_flow))
       return;
-	num_flows = measurements.size();
-	ion::FlowOrder flow_order(flow_order_str, num_flows);
-	BasecallerRead master_read;
-	master_read.SetData(measurements, flow_order.num_flows());
-	TreephaserLite   treephaser(flow_order);
+    num_flows = measurements.size();
+    ion::FlowOrder flow_order(flow_order_str, num_flows);
+    BasecallerRead master_read;
+    master_read.SetData(measurements, flow_order.num_flows());
+    TreephaserLite   treephaser(flow_order);
     treephaser.SetModelParameters(phase_params[0], phase_params[1]);
 
     // --- Step 2: Solve beginning of the read
@@ -98,10 +98,10 @@ void BaseHypothesisEvaluator(BamTools::BamAlignment    &alignment,
 // ----------------------------------------------------------------------
 
 bool GetBamTags(BamTools::BamAlignment &alignment,
-			            const int              &num_flows,
-	                    vector<float>          &measurements,
-			            vector<float>          &phase_params,
-	                    int                    &start_flow) {
+                        const int              &num_flows,
+                        vector<float>          &measurements,
+                        vector<float>          &phase_params,
+                        int                    &start_flow) {
 
   vector<int16_t>  quantized_measurements;
   // Retrieve normalized measurements from BAM file
@@ -154,7 +154,7 @@ bool GetBamTags(BamTools::BamAlignment &alignment,
 // ----------------------------------------------------------------------
 
 int GetMasterReadPrefix(TreephaserLite       &treephaser,
-		                const ion::FlowOrder &flow_order,
+                        const ion::FlowOrder &flow_order,
                         const int            &start_flow,
                         const string         &called_bases,
                         BasecallerRead       &master_read) {
@@ -254,7 +254,7 @@ void PredictionGenerationVerbose(const vector<string>         &Hypotheses,
   }
   cout << endl;
   for (unsigned int i_Hyp=0; i_Hyp<hypothesesReads.size(); ++i_Hyp) {
-	cout << "Prediction "<< i_Hyp << ": ";
+    cout << "Prediction "<< i_Hyp << ": ";
     for (unsigned int i_flow=0; i_flow<hypothesesReads[i_Hyp].prediction.size(); ++i_flow) {
       printf("%.2f", hypothesesReads[i_Hyp].prediction[i_flow]);
       if (hypothesesReads[i_Hyp].prediction[i_flow] < 10)

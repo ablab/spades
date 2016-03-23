@@ -85,7 +85,7 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
 
             KeyWithHash kwh = index.ConstructKWH(seq.start<Kmer>(k) >> 'A');
             for (size_t j = k - 1; j < seq.size(); ++j) {
-            	kwh <<= seq[j];
+                kwh <<= seq[j];
                 //contains is not used since index might be still empty here
                 if (kwh.is_minimal() && index.valid(kwh) && ContainsWrap(check_contains, index, kwh, has_contains<IndexT>())) {
 #     pragma omp atomic
