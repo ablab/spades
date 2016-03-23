@@ -644,7 +644,8 @@ inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const co
                 paired_lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
             else
                 INFO("Unusable paired lib #" << lib_index);
-            conditions.push_back(make_shared<AdvancedPairedConnectionCondition>(gp.g, paired_lib, lib_index,
+            conditions.push_back(make_shared<AdvancedPairedConnectionCondition>(gp.g, edge_storage.GetSet(),
+                                                                                paired_lib, lib_index,
                                                                                 params.always_add,
                                                                                 params.never_add,
                                                                                 params.relative_threshold));

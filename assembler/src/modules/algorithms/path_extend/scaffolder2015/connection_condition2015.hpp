@@ -54,9 +54,11 @@ protected:
     size_t always_add_;
     size_t never_add_;
     double relative_threshold_;
+    const set<debruijn_graph::EdgeId>& graph_edges_;
 
 public:
     AdvancedPairedConnectionCondition(const debruijn_graph::Graph &graph,
+                                      const set<debruijn_graph::EdgeId>& graph_edges,
                                       shared_ptr <PairedInfoLibrary> lib,
                                       size_t lib_index,
                                       size_t always_add,

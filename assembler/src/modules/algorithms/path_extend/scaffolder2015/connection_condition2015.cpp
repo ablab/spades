@@ -39,12 +39,14 @@ double PairedLibConnectionCondition::GetWeight(debruijn_graph::EdgeId e1, debrui
 }
 
 AdvancedPairedConnectionCondition::AdvancedPairedConnectionCondition(const debruijn_graph::Graph &graph,
-                                  shared_ptr <PairedInfoLibrary> lib,
-                                  size_t lib_index,
-                                  size_t always_add,
-                                  size_t never_add,
-                                  double relative_threshold):
+                                                                     const set<debruijn_graph::EdgeId>& graph_edges,
+                                                                     shared_ptr <PairedInfoLibrary> lib,
+                                                                     size_t lib_index,
+                                                                     size_t always_add,
+                                                                     size_t never_add,
+                                                                     double relative_threshold):
     PairedLibConnectionCondition(graph, lib, lib_index, never_add),
+    graph_edges_(graph_edges),
     always_add_(always_add),
     never_add_(never_add),
     relative_threshold_(relative_threshold) {}
@@ -58,7 +60,7 @@ set <debruijn_graph::EdgeId> AdvancedPairedConnectionCondition::ConnectedWith(de
     for (auto edge : all_edges) {
         if (edge != e && edge != graph_.conjugate(e)) {
             double w = GetWeight(e, edge);
-            if (math::gr(w, max_weight))
+            if (graph_edges_.count(edge) > 0 && math::gr(w, max_weight))
                 max_weight = w;
         }
     }
