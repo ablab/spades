@@ -952,7 +952,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
                                                                                  cfg::get().pe_params.param_set.extension_options.max_repeat_length);
 
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
-    DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_overlap");
+    DebugOutputPaths(gp, output_dir, last_paths, "pe2_before_overlap");
 
     exspander_stage = PathExtendStage::FinalPolishing;
     all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, main_unique_storage);
@@ -961,7 +961,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
                                             cfg::get().pe_params.param_set.extension_options.max_repeat_length);
     if (!is_2015_scaffolder_enabled(sc_mode)) {
         FinalizePaths(last_paths, clone_map, min_edge_len, max_is_right_quantile);
-        DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_traverse");
+        DebugOutputPaths(gp, output_dir, last_paths, "pe2_before_traverse");
     }
 
     //old parameters compatibility
@@ -974,7 +974,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         OutputBrokenScaffolds(last_paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
     }
 
-    DebugOutputPaths(gp, output_dir, last_paths, "mp2_final_paths");
+    DebugOutputPaths(gp, output_dir, last_paths, "pe2_final_paths");
     writer.OutputPaths(last_paths, output_dir + contigs_name);
     if (gp.genome.size() > 0)
         CountMisassembliesWithReference(genome_checker, last_paths);
