@@ -2,7 +2,7 @@ pe {
 
 ; output options
 
-debug_output    false
+debug_output    true
 
 output {
     write_overlaped_paths   true
