@@ -213,11 +213,12 @@ inline void FinalizePaths(PathContainer& paths, GraphCoverageMap& cover_map, siz
 
 }
 
-inline void TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map, shared_ptr<ContigsMaker> extender) {
+inline size_t TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map, shared_ptr<ContigsMaker> extender,  size_t long_edge_limit, size_t component_size_limit, size_t shortest_path_limit) {
     INFO("Traversing tandem repeats");
-    LoopTraverser loopTraverser(cover_map.graph(), cover_map, extender);
-    loopTraverser.TraverseAllLoops();
+    LoopTraverser loopTraverser(cover_map.graph(), cover_map, extender, long_edge_limit, component_size_limit, shortest_path_limit);
+    size_t res = loopTraverser.TraverseAllLoops();
     paths.SortByLength();
+    return res;
 }
 
 inline bool IsForSingleReadExtender(const io::SequencingLibrary<config::DataSetData> &lib) {
@@ -877,7 +878,9 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     }
     DebugOutputPaths(gp, output_dir, paths, "pe_before_traverse");
     if (traversLoops) {
-        TraverseLoops(paths, cover_map, mainPE);
+//old parameters compatibility
+        size_t traversed = TraverseLoops(paths, cover_map, mainPE, 1000, 10, 1000);
+        INFO("Pe stage, traversed " <<  traversed << " loops");
         FinalizePaths(paths, cover_map, min_edge_len, max_is_right_quantile);
     }
     DebugOutputPaths(gp, output_dir, paths, (mp_exist ? "pe_final_paths" : "final_paths"));
@@ -912,7 +915,14 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
                                                                                       cfg::get().pe_params.param_set.extension_options.max_repeat_length);
             INFO("Growing paths using mate-pairs unique length " << cur_length);
             mp_paths = resolver.extendSeeds(mp_paths, *mp_main_pe);
-            DebugOutputPaths(gp, output_dir, mp_paths, "mp_before_overlap_" + std::to_string(cur_length));
+            DebugOutputPaths(gp, output_dir, mp_paths, "mp_after_unique_iter_" + std::to_string(cur_length));
+//TODO: are parameters reasonable?
+            size_t traversed = TraverseLoops(mp_paths, cover_map, mainPE, cur_length, 500, (cur_length + 1000)*10);
+
+            INFO("mp stage with limit " <<cur_length<< " traversed " <<  traversed << " loops");
+
+            DebugOutputPaths(gp, output_dir, mp_paths, "mp_after_loop_traversing_" + std::to_string(cur_length));
+
         }
     } else {
         all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, main_unique_storage, clone_paths);
@@ -954,7 +964,9 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         DebugOutputPaths(gp, output_dir, last_paths, "mp2_before_traverse");
     }
 
-    TraverseLoops(last_paths, clone_map, last_extender);
+    //old parameters compatibility
+    size_t traversed = TraverseLoops(last_paths, cover_map, mainPE, 1000, 10, 1000);
+    INFO("final polishing stage, traversed " <<  traversed << " loops");
     FinalizePaths(last_paths, clone_map, min_edge_len, max_is_right_quantile);
 
 //result
