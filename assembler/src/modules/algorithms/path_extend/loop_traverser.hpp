@@ -129,8 +129,8 @@ private:
             return;
         }
 
-        TryToGrow(startPath, start);
-        TryToGrow(endPath->GetConjPath(), g_.conjugate(end));
+        //TryToGrow(startPath, start);
+        //TryToGrow(endPath->GetConjPath(), g_.conjugate(end));
 
         //Checking that paths ends are within component
         if (!IsEndInsideComponent(*startPath, start, component_set) ||
