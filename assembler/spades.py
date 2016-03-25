@@ -635,9 +635,9 @@ def main(args):
             shutil.rmtree(tmp_configs_dir)
         if not os.path.isdir(tmp_configs_dir):
             if options_storage.configs_dir:
-                dir_util.copy_tree(options_storage.configs_dir, tmp_configs_dir, preserve_times=False)
+                dir_util.copy_tree(options_storage.configs_dir, tmp_configs_dir, preserve_times=False, preserve_mode=False)
             else:
-                dir_util.copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False)
+                dir_util.copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False, preserve_mode=False)
 
         corrected_dataset_yaml_filename = ''
         if "error_correction" in cfg:
