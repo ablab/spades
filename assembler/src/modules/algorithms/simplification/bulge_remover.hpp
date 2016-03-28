@@ -17,9 +17,9 @@
 #include "assembly_graph/graph_support/parallel_processing.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
-#include "assembly_graph/graph_support/paths/path_processor.hpp"
+#include "assembly_graph/paths/path_processor.hpp"
 #include "assembly_graph/graph_support/comparators.hpp"
-#include "assembly_graph/graph_support/components/graph_component.hpp"
+#include "assembly_graph/components/graph_component.hpp"
 #include "data_structures/sequence/sequence_tools.hpp"
 #include "dev_support/standard_base.hpp"
 #include <cmath>

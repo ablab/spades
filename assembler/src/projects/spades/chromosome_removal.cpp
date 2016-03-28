@@ -7,7 +7,7 @@
 #include "assembly_graph/graph_support/contig_output.hpp"
 #include "algorithms/simplification_pipeline/graph_simplification.hpp"
 #include "algorithms/simplification/ec_threshold_finder.hpp"
-#include "assembly_graph/graph_support/stats/basic_graph_stats.hpp"
+#include "assembly_graph/graph_core/basic_graph_stats.hpp"
 
 #include "chromosome_removal.hpp"
 

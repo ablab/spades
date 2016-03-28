@@ -8,7 +8,7 @@
 #pragma once
 
 #include "assembly_graph/graph_core/graph.hpp"
-#include "assembly_graph/graph_alignment/mapping_path.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
 #include "consistent_mapping.h"
 
 namespace alignment_analysis {

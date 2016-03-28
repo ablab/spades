@@ -10,9 +10,9 @@
 #include "../environment.hpp"
 #include "../command.hpp"
 #include "../errors.hpp"
-#include "assembly_graph/graph_support/stats/basic_graph_stats.hpp"
+#include "assembly_graph/graph_core/basic_graph_stats.hpp"
 #include "assembly_graph/graph_alignment/sequence_mapper.hpp"
-#include "assembly_graph/graph_support/paths/path_utils.hpp"
+#include "assembly_graph/paths/path_utils.hpp"
 
 namespace online_visualization {
 class JunctionSequenceCommand : public LocalCommand<DebruijnEnvironment> {

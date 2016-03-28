@@ -24,7 +24,7 @@
 #include "dev_support/perfcounter.hpp"
 #include "io/dataset_support/read_converter.hpp"
 
-#include "assembly_graph/graph_support/handlers/edges_position_handler.hpp"
+#include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "data_structures/indices/storing_traits.hpp"
 #include "data_structures/indices/edge_index_builders.hpp"

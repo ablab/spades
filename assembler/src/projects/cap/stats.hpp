@@ -8,8 +8,8 @@
 #pragma once
 
 #include "assembly_graph/graph_support/component_filters.hpp"
-#include "assembly_graph/graph_support/components/graph_component.hpp"
-#include "assembly_graph/graph_support/components/splitters.hpp"
+#include "assembly_graph/components/graph_component.hpp"
+#include "assembly_graph/components/splitters.hpp"
 #include "utils.hpp"
 #include "dev_support/simple_tools.hpp"
 #include "comparison_utils.hpp"

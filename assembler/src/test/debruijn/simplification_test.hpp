@@ -11,7 +11,7 @@
 #include "test_utils.hpp"
 #include "algorithms/simplification_pipeline/graph_simplification.hpp"
 #include "algorithms/simplification_pipeline/parallel_simplification_algorithms.hpp"
-#include "assembly_graph/graph_support/stats/picture_dump.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
 //#include "repeat_resolving_routine.hpp"
 
 namespace debruijn_graph {

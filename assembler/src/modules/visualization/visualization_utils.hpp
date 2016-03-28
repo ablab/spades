@@ -10,8 +10,8 @@
 
 #include "graph_printer.hpp"
 #include "algorithms/dijkstra/dijkstra_helper.hpp"
-#include "assembly_graph/graph_support/components/splitters.hpp"
-#include "assembly_graph/graph_support/components/graph_component.hpp"
+#include "assembly_graph/components/splitters.hpp"
+#include "assembly_graph/components/graph_component.hpp"
 #include "visualizers.hpp"
 #include "vertex_linker.hpp"
 

@@ -10,7 +10,7 @@
 
 #include "dev_support/simple_tools.hpp"
 #include "dev_support/standard_base.hpp"
-#include "assembly_graph/graph_support/handlers/edges_position_handler.hpp"
+#include "assembly_graph/handlers/edges_position_handler.hpp"
 
 namespace omnigraph {
 

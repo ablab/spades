@@ -8,5 +8,5 @@
 project(graph_support CXX)
 
 add_library(graph_support STATIC
-            components/connected_component.cpp paths/bidirectional_path.cpp scaff_supplementary.cpp)
+            components/connected_component.cpp paths/bidirectional_path.cpp graph_support/scaff_supplementary.cpp)
 

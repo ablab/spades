@@ -11,7 +11,7 @@
 #include "command.hpp"
 #include "errors.hpp"
 #include "argument_list.hpp"
-#include "assembly_graph/graph_support/handlers/genomic_quality.hpp"
+#include "assembly_graph/graph_support/genomic_quality.hpp"
 #include "algorithms/simplification_pipeline/graph_simplification.hpp"
 
 namespace online_visualization {

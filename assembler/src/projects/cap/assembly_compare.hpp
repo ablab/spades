@@ -19,7 +19,7 @@
 #include "colored_graph_construction.hpp"
 #include "untangling.hpp"
 #include "assembly_problem_detection.hpp"
-#include "assembly_graph/graph_support/stats/picture_dump.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
 #include "simple_indel_finder.hpp"
 #include "test_utils.hpp"
 

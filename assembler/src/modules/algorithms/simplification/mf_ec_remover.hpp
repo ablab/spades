@@ -9,7 +9,7 @@
 
 #include <bits/stl_map.h>
 #include <bits/stl_queue.h>
-#include "assembly_graph/graph_support/components/splitters.hpp"
+#include "assembly_graph/components/splitters.hpp"
 #include "cleaner.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 

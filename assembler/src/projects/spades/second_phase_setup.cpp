@@ -9,7 +9,7 @@
 
 #include "paired_info/paired_info.hpp"
 
-#include "assembly_graph/graph_support/stats/picture_dump.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
 #include "pair_info_count.hpp"
 #include "second_phase_setup.hpp"
 

@@ -10,11 +10,11 @@
 #include "simple_bulge_remover.hpp"
 #include "complex_bulge_remover.hpp"
 #include "iterative_tails_gluing.hpp"
-#include "assembly_graph/graph_support/stats/picture_dump.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
 
 #include "visualization/visualization.hpp"
-#include "assembly_graph/graph_support/handlers/edges_position_handler.hpp"
-#include "assembly_graph/graph_support/components/graph_component.hpp"
+#include "assembly_graph/handlers/edges_position_handler.hpp"
+#include "assembly_graph/components/graph_component.hpp"
 #include "algorithms/simplification/compressor.hpp"
 
 using namespace debruijn_graph;

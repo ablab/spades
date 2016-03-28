@@ -12,7 +12,7 @@
 #include "dev_support/openmp_wrapper.h"
 
 #include "paired_info.hpp"
-#include "assembly_graph/graph_support/paths/path_processor.hpp"
+#include "assembly_graph/paths/path_processor.hpp"
 #include "paired_info/pair_info_bounds.hpp"
 
 namespace omnigraph {

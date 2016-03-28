@@ -9,9 +9,9 @@
 
 #include "dev_support/standard_base.hpp"
 
-#include "assembly_graph/graph_support/handlers/id_track_handler.hpp"
-#include "assembly_graph/graph_support/handlers/edges_position_handler.hpp"
-#include "assembly_graph/graph_support/components/graph_component.hpp"
+#include "assembly_graph/handlers/id_track_handler.hpp"
+#include "assembly_graph/handlers/edges_position_handler.hpp"
+#include "assembly_graph/components/graph_component.hpp"
 
 #include "paired_info/paired_info.hpp"
 

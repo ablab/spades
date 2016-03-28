@@ -14,7 +14,7 @@
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/parallel_processing.hpp"
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
-#include "assembly_graph/graph_support/stats/basic_graph_stats.hpp"
+#include "assembly_graph/graph_core/basic_graph_stats.hpp"
 
 #ifdef USE_GLIBCXX_PARALLEL
 #include "parallel/algorithm"

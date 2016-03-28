@@ -1,7 +1,7 @@
 #pragma once
 
 #include "dev_support/logger/logger.hpp"
-#include "assembly_graph/graph_alignment/range.hpp"
+#include "dev_support/range.hpp"
 #include "algorithms/ssw_cpp.h"
 
 namespace debruijn_graph {

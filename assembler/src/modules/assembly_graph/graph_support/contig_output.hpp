@@ -7,12 +7,12 @@
 
 #pragma once
 
-#include "assembly_graph/graph_support/stats/picture_dump.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
 #include <io/reads_io/osequencestream.hpp>
-#include "assembly_graph/graph_support/components/connected_component.hpp"
-#include "assembly_graph/graph_support/stats/statistics.hpp"
-#include "assembly_graph/graph_support/paths/path_finders.hpp"
-#include "paths/path_utils.hpp"
+#include "assembly_graph/components/connected_component.hpp"
+#include "assembly_graph/stats/statistics.hpp"
+#include "assembly_graph/paths/path_finders.hpp"
+#include "assembly_graph/paths/path_utils.hpp"
 
 namespace debruijn_graph {
 

@@ -10,7 +10,7 @@
 #include "dev_support/simple_tools.hpp"
 #include "math/xmath.h"
 #include "pipeline/config_struct.hpp"
-#include "assembly_graph/graph_alignment/mapping_path.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
 
 #include <iostream>
 #include <fstream>

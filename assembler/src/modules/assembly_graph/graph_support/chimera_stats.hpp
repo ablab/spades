@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "statistics.hpp"
-#include "assembly_graph/graph_support/handlers/genomic_quality.hpp"
+#include "assembly_graph/stats/statistics.hpp"
+#include "assembly_graph/graph_support/genomic_quality.hpp"
 
 namespace debruijn_graph {
 

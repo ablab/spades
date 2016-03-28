@@ -14,7 +14,7 @@
 #pragma once
 
 #include "data_structures/sequence/sequence_tools.hpp"
-#include "assembly_graph/graph_support/paths/path_processor.hpp"
+#include "assembly_graph/paths/path_processor.hpp"
 
 #include "data_structures/sequence/runtime_k.hpp"
 #include "edge_index.hpp"

@@ -11,7 +11,7 @@
 #include "io/dataset_support/read_converter.hpp"
 
 #include "algorithms/graph_construction.hpp"
-#include "assembly_graph/graph_support/stats/picture_dump.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
 #include "construction.hpp"
 
 namespace debruijn_graph {

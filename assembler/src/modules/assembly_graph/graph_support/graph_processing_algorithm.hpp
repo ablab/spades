@@ -11,7 +11,7 @@
 #include <boost/none.hpp>
 #include <atomic>
 #include "assembly_graph/graph_core/graph_iterators.hpp"
-#include "assembly_graph/graph_support/components/graph_component.hpp"
+#include "assembly_graph/components/graph_component.hpp"
 #include "math/pred.hpp"
 #include "dev_support/logger/logger.hpp"
 

@@ -28,9 +28,9 @@
 
 #include "algorithms/graph_read_correction.hpp"
 
-#include "assembly_graph/graph_support/stats/chimera_stats.hpp"
+#include "assembly_graph/graph_support/chimera_stats.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
-#include "assembly_graph/graph_support/stats/picture_dump.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
 #include "assembly_graph/graph_support/parallel_processing.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 

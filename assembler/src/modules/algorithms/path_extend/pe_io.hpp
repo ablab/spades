@@ -10,9 +10,9 @@
 
 
 #include "algorithms/genome_consistance_checker.hpp"
-#include "assembly_graph/graph_support/paths/bidirectional_path.hpp"
+#include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/graph_support/contig_output.hpp"
-#include "assembly_graph/graph_support/components/connected_component.hpp"
+#include "assembly_graph/components/connected_component.hpp"
 #include "io/reads_io/osequencestream.hpp"
 #include <stack>
 #include <algorithm>

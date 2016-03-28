@@ -18,7 +18,7 @@
 //#include "utils.hpp"
 #include "visualization/graph_labeler.hpp"
 #include "dev_support/simple_tools.hpp"
-#include "assembly_graph/graph_alignment/mapping_path.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/graph_core/action_handlers.hpp"
 
 namespace omnigraph {

@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "assembly_graph/graph_support/paths/path_utils.hpp"
-#include "assembly_graph/graph_alignment/mapping_path.hpp"
-#include "assembly_graph/graph_support/paths/path_finders.hpp"
-#include "assembly_graph/graph_support/paths/path_processor.hpp"
+#include "assembly_graph/paths/path_utils.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
+#include "assembly_graph/paths/path_finders.hpp"
+#include "assembly_graph/paths/path_processor.hpp"
 #include "io/reads_io/modifying_reader_wrapper.hpp"
 #include "assembly_graph/graph_core/order_and_law.hpp"
 #include "assembly_graph/graph_alignment/sequence_mapper.hpp"

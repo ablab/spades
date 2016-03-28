@@ -10,7 +10,7 @@
 #include "pipeline/graph_pack.hpp"
 #include "split_path_constructor.hpp"
 #include "paired_info/paired_info_helpers.hpp"
-#include "assembly_graph/graph_support/paths/path_utils.hpp"
+#include "assembly_graph/paths/path_utils.hpp"
 #include <math.h>
 #include <io/reads_io/read_processor.hpp>
 

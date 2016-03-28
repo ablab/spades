@@ -15,7 +15,7 @@
 
 #include <atomic>
 #include "assembly_graph/graph_core/graph.hpp"
-#include "assembly_graph/graph_support/components/connected_component.hpp"
+#include "assembly_graph/components/connected_component.hpp"
 
 using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;

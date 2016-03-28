@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "dev_support/logger/logger.hpp"
-#include "assembly_graph/graph_support/stats/picture_dump.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
 #include "visualization/graph_labeler.hpp"
 #include "paired_info/distance_estimation.hpp"
 #include "paired_info/smoothing_distance_estimation.hpp"
