@@ -225,6 +225,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.meta = True
         elif opt == "--large-genome":
             options_storage.large_genome = True
+        elif opt == "--plasmid":
+            options_storage.plasmid = True
         elif opt == "--rna":
             options_storage.rna = True
         elif opt == "--iontorrent":
@@ -437,6 +439,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if options_storage.large_genome:
             cfg["assembly"].__dict__["bwa_paired"] = True
             cfg["assembly"].__dict__["scaffolding_mode"] = "old_pe_2015"
+        if options_storage.plasmid:
+            cfg["assembly"].__dict__["plasmid"] = True
     #corrector can work only if contigs exist (not only error correction)
     if (not options_storage.only_error_correction) and options_storage.mismatch_corrector:
         cfg["mismatch_corrector"] = empty_config()

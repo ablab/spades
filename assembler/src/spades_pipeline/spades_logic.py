@@ -64,7 +64,8 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     #TODO: make something about spades.py and config param substitution 
     if "bwa_paired" in cfg.__dict__:
         subst_dict["bwa_enable"] = bool_to_str(True)
-
+    if "plasmid" in cfg.__dict__:
+        subst_dict["plasmid_enabled"] = bool_to_str(True)
     subst_dict["path_to_bwa"] =  os.path.join(execution_home, "bwa-spades")
     process_cfg.substitute_params(filename, subst_dict, log)
 

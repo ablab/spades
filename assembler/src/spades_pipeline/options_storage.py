@@ -60,6 +60,7 @@ meta = False
 rna = False
 large_genome = False
 test_mode = False
+plasmid = False
 
 # pipeline options
 only_error_correction = False
@@ -121,7 +122,7 @@ dict_of_prefixes = dict()
 dict_of_rel2abs = dict()
 
 # list of spades.py options
-long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc iontorrent meta large-genome rna "\
+long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc iontorrent meta large-genome rna plasmid "\
                "only-error-correction only-assembler "\
                "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
                "help version test debug debug:false reference= config-file= dataset= "\
@@ -291,6 +292,7 @@ def usage(spades_version, show_hidden=False, dipspades=False):
                              " for SPAdes" + "\n")
         sys.stderr.write("--large-genome\tEnables optimizations for large genomes \n");
         sys.stderr.write("--rna\tRuns rnaSPAdes pipeline for RNA-Seq data \n");
+        sys.stderr.write("--plasmid\tRuns plasmidSPAdes pipeline for plasmid detection \n");
         sys.stderr.write("--help-hidden\tprints this usage message with all hidden options" + "\n")
 
     if show_hidden and dipspades:
