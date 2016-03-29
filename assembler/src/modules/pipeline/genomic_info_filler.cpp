@@ -10,7 +10,16 @@
 #include "math/kmer_coverage_model.hpp"
 #include "algorithms/simplification/ec_threshold_finder.hpp"
 
+#include "llvm/Support/YAMLTraits.h"
+#include "llvm/Support/Errc.h"
+#include "llvm/Support/FileSystem.h"
 
+#include <string>
+
+#include <map>
+#include <vector>
+
+using namespace llvm;
 using namespace debruijn_graph;
 
 static std::vector<size_t> extract(const std::map<size_t, size_t> &hist) {
@@ -32,33 +41,56 @@ static std::vector<size_t> extract(const std::map<size_t, size_t> &hist) {
     return res;
 }
 
+template <>
+struct yaml::MappingTraits<GenomicInfo> {
+    static void mapping(yaml::IO &io, GenomicInfo &info) {
+      info.yamlize(io);
+    }
+};
+
+
+template <>
+struct yaml::SequenceTraits<std::vector<std::size_t>>  {
+    static size_t size(IO &, std::vector<std::size_t> &seq) {
+        return seq.size();
+    }
+    static size_t&
+    element(IO &, std::vector<std::size_t> &seq, size_t index) {
+        if (index >= seq.size())
+            seq.resize(index+1);
+        return seq[index];
+    }
+    static const bool flow = true;
+};
+
+void GenomicInfo::yamlize(yaml::IO &io) {
+    io.mapOptional("ec bound", ec_bound_, 0.0);
+    io.mapOptional("estimated mean", estimated_mean_, 0.0);
+    io.mapOptional("trusted bound", trusted_bound_, 0.0);
+    io.mapOptional("genome size", genome_size_, size_t(0));
+    io.mapOptional("coverage histogram", cov_histogram_);
+}
+
+
 bool GenomicInfo::Load(const std::string &filename) {
-    std::ifstream ifs(filename.c_str());
-    if (!ifs)
+    ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(filename);
+    if (!Buf)
         return false;
 
-    YAML::Node node = YAML::Load(ifs);
+    yaml::Input yin(*Buf.get());
+    yin >> *this;
 
-    ec_bound_ = node["ec bound"].as<double>(0);
-    estimated_mean_ = node["estimated mean"].as<double>(0);
-    trusted_bound_ = node["trusted bound"].as<double>(0);
-    genome_size_ = node["genome size"].as<size_t>(0);
-    cov_histogram_ = node["coverage histogram"].as<std::vector<size_t> >(std::vector<size_t>());
-
+    if (yin.error())
+        return false;
+    
     return true;
 }
 
 void GenomicInfo::Save(const std::string &filename) const {
-    std::ofstream ofs(filename.c_str());
-
-    YAML::Node node;
-    node["ec bound"] = ec_bound_;
-    node["estimated mean"] = estimated_mean_;
-    node["trusted bound"] = trusted_bound_;
-    node["genome size"] = genome_size_;
-    node["coverage histogram"] = cov_histogram_;
-
-    ofs << node;
+    std::error_code EC;
+    llvm::raw_fd_ostream ofs(filename, EC, llvm::sys::fs::OpenFlags::F_Text);
+    llvm::yaml::Output yout(ofs);
+    yout << const_cast<GenomicInfo&>(*this);
 }
 
 void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {

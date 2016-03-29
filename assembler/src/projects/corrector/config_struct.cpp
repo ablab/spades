@@ -5,45 +5,70 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "pipeline/config_struct.hpp"
-
-#include "dev_support/openmp_wrapper.h"
 #include "config_struct.hpp"
 
-namespace YAML {
-template<>
-struct convert<corrector::Strategy> {
-    static bool decode(const YAML::Node &node, corrector::Strategy &rhs) {
-        std::string strategy_str = node.as<std::string>();
-        if (strategy_str == "all_reads") {
-            rhs = corrector::Strategy::AllReads;
-            return true;
-        } else if (strategy_str == "majority_only") {
-            rhs = corrector::Strategy::MajorityOnly;
-            return true;
-        } else if (strategy_str == "not_started") {
-            rhs = corrector::Strategy::AllExceptJustStarted;
-            return true;
-        } else if (strategy_str == "mapped_squared") {
-            rhs = corrector::Strategy::MappedSquared;
-            return true;
-        }
-        return false;
+#include "dev_support/openmp_wrapper.h"
+
+#include "llvm/Support/YAMLParser.h"
+#include "llvm/Support/YAMLTraits.h"
+
+#include <string>
+
+using namespace llvm;
+
+template <>
+struct yaml::ScalarEnumerationTraits<corrector::Strategy> {
+    static void enumeration(yaml::IO &io, corrector::Strategy &value) {
+        io.enumCase(value, "all_reads",      corrector::Strategy::AllReads);
+        io.enumCase(value, "majority_only",  corrector::Strategy::MajorityOnly);
+        io.enumCase(value, "not_started",    corrector::Strategy::AllExceptJustStarted);
+        io.enumCase(value, "mapped_squared", corrector::Strategy::MappedSquared);
     }
 };
-}
+
+// FIXME: This is temporary
+class DataSetReader {
+  public:
+    DataSetReader(yaml::IO&) {}
+    DataSetReader(yaml::IO&, io::DataSet<>&) {}
+
+    io::DataSet<> denormalize(yaml::IO &) {
+        return io::DataSet<>(path);
+    }
+
+    std::string path;
+};
+
+template <>
+struct yaml::MappingTraits<corrector::corrector_config> {
+    static void mapping(yaml::IO &io, corrector::corrector_config &cfg) {
+        yaml::MappingNormalization<DataSetReader, io::DataSet<>> dataset(io, cfg.dataset);
+
+        io.mapRequired("dataset", dataset->path);
+        io.mapOptional("work_dir", cfg.work_dir, std::string("."));
+        io.mapOptional("output_dir", cfg.output_dir, std::string("."));
+        io.mapOptional("max_nthreads", cfg.max_nthreads, 1u);
+        io.mapRequired("strategy", cfg.strat);
+        io.mapOptional("bwa", cfg.bwa, std::string("."));
+    }
+};
+
 
 namespace corrector {
 void load(corrector_config& cfg, const std::string &filename) {
-    YAML::Node config = YAML::LoadFile(filename);
-    cfg.dataset.load(config["dataset"].as<std::string>());
-    cfg.work_dir = config["work_dir"].as<std::string>(".");
-    cfg.output_dir = config["output_dir"].as<std::string>(".");
-    cfg.max_nthreads = config["max_nthreads"].as<unsigned>();
+    ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(filename);
+    if (!Buf)
+        throw(std::string("Failed to load config file ") + filename);
 
-    cfg.max_nthreads = std::min(cfg.max_nthreads, (unsigned) omp_get_max_threads());
-    cfg.strat = config["strategy"].as<Strategy>();
-    cfg.bwa = config["bwa"].as<std::string>(".");
+    yaml::Input yin(*Buf.get());
+    yin >> cfg;
+
+    if (yin.error())
+        throw(std::string("Failed to load config file ") + filename);
+
+    // Fix number of threads according to OMP capabilities.
+    cfg.max_nthreads = std::min(cfg.max_nthreads, (unsigned)omp_get_max_threads());
+    // Inform OpenMP runtime about this :)
     omp_set_num_threads(cfg.max_nthreads);
 }
 }
