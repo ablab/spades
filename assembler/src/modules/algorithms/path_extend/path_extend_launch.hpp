@@ -136,7 +136,7 @@ double GetSingleReadsFilteringThreshold(const io::LibraryType& type) {
         return cfg::get().pe_params.long_reads.pacbio_reads.filtering;
     }  else if (type == io::LibraryType::PathExtendContigs){
         return cfg::get().pe_params.long_reads.meta_contigs.filtering;
-    } else if (io::SequencingLibraryBase::IsContigLib(type)) {
+    } else if (io::SequencingLibraryBase::is_contig_lib(type)) {
         return cfg::get().pe_params.long_reads.contigs.filtering;
     }
     return cfg::get().pe_params.long_reads.single_reads.filtering;
@@ -147,7 +147,7 @@ double GetSingleReadsWeightPriorityThreshold(const io::LibraryType& type) {
         return cfg::get().pe_params.long_reads.pacbio_reads.weight_priority;
     } else if (type == io::LibraryType::PathExtendContigs){
         return cfg::get().pe_params.long_reads.meta_contigs.weight_priority;
-    } else if (io::SequencingLibraryBase::IsContigLib(type)) {
+    } else if (io::SequencingLibraryBase::is_contig_lib(type)) {
         return cfg::get().pe_params.long_reads.contigs.weight_priority;
     }
     return cfg::get().pe_params.long_reads.single_reads.weight_priority;
@@ -160,7 +160,7 @@ double GetSingleReadsUniqueEdgePriorityThreshold(const io::LibraryType& type) {
     }
     if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
         return cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority;
-    } else if (io::SequencingLibraryBase::IsContigLib(type)) {
+    } else if (io::SequencingLibraryBase::is_contig_lib(type)) {
         return cfg::get().pe_params.long_reads.contigs.unique_edge_priority;
     }
     return cfg::get().pe_params.long_reads.single_reads.unique_edge_priority;

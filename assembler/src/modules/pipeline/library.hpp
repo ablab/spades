@@ -12,20 +12,15 @@
 #include "utils/adt/iterator_range.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
-#include <yaml-cpp/yaml.h>
 
 #include <string>
 #include <vector>
-#include <utility>
-#include <iostream>
-#include <fstream>
-#include <functional>
-#include <algorithm>
-#include "dev_support/path_helper.hpp"
+
+// Forward decls for YAML API
+namespace llvm { namespace yaml { class IO; template<typename T> struct MappingTraits; } }
+namespace llvm { class StringRef;  }
 
 namespace io {
-
-class DataSetReader;
 
 enum class LibraryType {
     SingleReads,
@@ -40,54 +35,48 @@ enum class LibraryType {
     PathExtendContigs
 };
 
-static std::vector<LibraryType> LibraryPriotity = {LibraryType::SingleReads, LibraryType::SangerReads,
-                                                   LibraryType::PacBioReads, LibraryType::NanoporeReads,
-                                                   LibraryType::PairedEnd, LibraryType::HQMatePairs,
-                                                   LibraryType::MatePairs, LibraryType::TrustedContigs,
-                                                   LibraryType::PathExtendContigs, LibraryType::UntrustedContigs};
-
-enum class LibraryOrientation {
-    FR,
-    FF,
-    RF,
-    RR,
-    Undefined
+static std::vector<LibraryType> LibraryPriotity = {
+    LibraryType::SingleReads,
+    LibraryType::SangerReads,
+    LibraryType::PacBioReads,
+    LibraryType::NanoporeReads,
+    LibraryType::PairedEnd,
+    LibraryType::HQMatePairs,
+    LibraryType::MatePairs,
+    LibraryType::TrustedContigs,
+    LibraryType::PathExtendContigs,
+    LibraryType::UntrustedContigs
 };
 
-struct update_relative_filename : public std::binary_function<std::string, std::string, std::string> {
-    std::string operator()(const std::string &filename, const std::string &input_dir) const {
-        if (filename[0] == '/')
-            return filename;
-        return input_dir + filename;
-    }
+enum class LibraryOrientation {
+  FR,
+  FF,
+  RF,
+  RR,
+  Undefined
 };
 
 class SequencingLibraryBase {
 public:
     class paired_reads_iterator :
             public boost::iterator_facade<paired_reads_iterator,
-                    std::pair<std::string, std::string>,
-                    boost::forward_traversal_tag,
-                    std::pair<std::string, std::string> > {
+                                          std::pair<std::string, std::string>,
+                                          boost::forward_traversal_tag,
+                                          std::pair<std::string, std::string> > {
 
         typedef std::vector<std::string>::const_iterator inner_iterator;
 
     public:
         paired_reads_iterator(inner_iterator left, inner_iterator right)
-                : left_(left), right_(right) { }
+                : left_(left), right_(right){}
 
     private:
         friend class boost::iterator_core_access;
 
-        void increment() {
-            ++left_;
-            ++right_;
-        }
-
+        void increment() { ++left_; ++right_; }
         bool equal(const paired_reads_iterator &other) const {
             return this->left_ == other.left_ && this->right_ == other.right_;
         }
-
         std::pair<std::string, std::string> dereference() const {
             return std::make_pair(*left_, *right_);
         }
@@ -99,16 +88,15 @@ public:
     typedef chained_iterator<std::vector<std::string>::const_iterator> single_reads_iterator;
 
     SequencingLibraryBase()
-            : type_(LibraryType::PairedEnd), orientation_(LibraryOrientation::FR) { }
+            : type_(LibraryType::PairedEnd), orientation_(LibraryOrientation::FR) {}
 
-    void load(const YAML::Node &node);
+    // YAML API. Public because we cannot have template friend class.
+    void yamlize(llvm::yaml::IO &io);
+    void validate(llvm::yaml::IO &io, llvm::StringRef &res);
 
     LibraryType type() const { return type_; }
-
     void set_type(LibraryType type) { type_ = type; }
-
     LibraryOrientation orientation() const { return orientation_; }
-
     void set_orientation(LibraryOrientation orientation) { orientation_ = orientation; }
 
     void clear() {
@@ -117,14 +105,7 @@ public:
         single_reads_.clear();
     }
 
-    void update_relative_reads_filenames(const std::string &input_dir) {
-        std::transform(left_paired_reads_.begin(), left_paired_reads_.end(), left_paired_reads_.begin(),
-                       std::bind2nd(update_relative_filename(), input_dir));
-        std::transform(right_paired_reads_.begin(), right_paired_reads_.end(), right_paired_reads_.begin(),
-                       std::bind2nd(update_relative_filename(), input_dir));
-        std::transform(single_reads_.begin(), single_reads_.end(), single_reads_.begin(),
-                       std::bind2nd(update_relative_filename(), input_dir));
-    }
+    void update_relative_reads_filenames(const std::string &input_dir);
 
     void push_back_single(const std::string &reads) {
         single_reads_.push_back(reads);
@@ -138,7 +119,6 @@ public:
     paired_reads_iterator paired_begin() const {
         return paired_reads_iterator(left_paired_reads_.begin(), right_paired_reads_.begin());
     }
-
     paired_reads_iterator paired_end() const {
         return paired_reads_iterator(left_paired_reads_.end(), right_paired_reads_.end());
     }
@@ -152,10 +132,9 @@ public:
         single_reads_iterator res(left_paired_reads_.begin(), left_paired_reads_.end());
         res.join(right_paired_reads_.begin(), right_paired_reads_.end());
         res.join(single_reads_.begin(), single_reads_.end());
-
+        
         return res;
     }
-
     single_reads_iterator reads_end() const {
         // NOTE: Do not forget about the contract with single_begin here!
         return single_reads_iterator(single_reads_.end(), single_reads_.end());
@@ -168,7 +147,6 @@ public:
     single_reads_iterator single_begin() const {
         return single_reads_iterator(single_reads_.begin(), single_reads_.end());
     }
-
     single_reads_iterator single_end() const {
         // NOTE: Do not forget about the contract with single_begin here!
         return single_reads_iterator(single_reads_.end(), single_reads_.end());
@@ -198,7 +176,7 @@ public:
 
     bool is_paired() const {
         return (type_ == io::LibraryType::PairedEnd ||
-                type_ == io::LibraryType::MatePairs ||
+                type_ == io::LibraryType::MatePairs||
                 type_ == io::LibraryType::HQMatePairs);
     }
 
@@ -214,15 +192,14 @@ public:
                 type_ == io::LibraryType::PathExtendContigs);
     }
 
-    static bool IsContigLib(const io::LibraryType &type) {
-        static std::set<io::LibraryType> contig_lib_types{io::LibraryType::TrustedContigs,
-                                                          io::LibraryType::UntrustedContigs,
-                                                          io::LibraryType::PathExtendContigs};
-        return contig_lib_types.count(type);
-    }
+    static bool is_contig_lib(LibraryType type) {
+        return (type == io::LibraryType::TrustedContigs ||
+                type == io::LibraryType::UntrustedContigs ||
+                type == io::LibraryType::PathExtendContigs);
+  }
 
     bool is_contig_lib() const {
-        return IsContigLib(type_);
+        return is_contig_lib(type_);
     }
 
     bool is_pacbio_alignable() const {
@@ -243,19 +220,20 @@ private:
     std::vector<std::string> single_reads_;
 };
 
-struct NoData {
-};
+struct NoData {};
 
 template<class Data = NoData>
-class SequencingLibrary : public SequencingLibraryBase {
+class SequencingLibrary: public SequencingLibraryBase {
 public:
-    const Data &data() const {
+    const Data& data() const {
+        return data_;
+    }
+    Data& data() {
         return data_;
     }
 
-    Data &data() {
-        return data_;
-    }
+    void yamlize(llvm::yaml::IO &io);
+    void validate(llvm::yaml::IO &io, llvm::StringRef &res);
 
 private:
     Data data_;
@@ -273,68 +251,33 @@ public:
     typedef chained_iterator<typename Library::single_reads_iterator> single_reads_iterator;
     typedef chained_iterator<typename Library::paired_reads_iterator> paired_reads_iterator;
 
-    DataSet() { }
-
+    DataSet() {}
     explicit DataSet(const std::string &path) { load(path); }
 
-    DataSet(const YAML::Node &node) { load(node); }
-
-    void load(const std::string &filename) {
-        YAML::Node config = YAML::LoadFile(filename);
-        std::string input_dir = path::parent_path(filename);
-        if (input_dir[input_dir.length() - 1] != '/')
-            input_dir += '/';
-
-        load(config);
-        for (auto it = libraries_.begin(); it != libraries_.end(); ++it) {
-            it->update_relative_reads_filenames(input_dir);
-        }
-    }
-
-    void save(const std::string &filename) const {
-        std::ofstream ofs(filename.c_str());
-        ofs << YAML::Node(*this);
-    }
-
-    void load(const YAML::Node &node) {
-        clear();
-        for (YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
-            libraries_.push_back(it->as<Library>());
-        }
-    }
+    void load(const std::string &filename);
+    void save(const std::string &filename);
 
     void clear() { libraries_.clear(); }
-
     void push_back(const Library &lib) {
         libraries_.push_back(lib);
     }
-
-    Library &operator[](size_t n) { return libraries_[n]; }
-
-    const Library &operator[](size_t n) const { return libraries_[n]; }
-
+    Library& operator[](size_t n) { return libraries_[n]; }
+    const Library& operator[](size_t n) const { return libraries_[n]; }
     size_t lib_count() const { return libraries_.size(); }
 
     iterator library_begin() { return libraries_.begin(); }
-
     const_iterator library_begin() const { return libraries_.begin(); }
-
     iterator begin() { return libraries_.begin(); }
-
     const_iterator begin() const { return libraries_.begin(); }
 
     iterator library_end() { return libraries_.end(); }
-
     const_iterator library_end() const { return libraries_.end(); }
-
     iterator end() { return libraries_.end(); }
-
     const_iterator end() const { return libraries_.end(); }
 
     adt::iterator_range<iterator> libraries() {
         return adt::make_range(library_begin(), library_end());
     }
-
     adt::iterator_range<const_iterator> libraries() const {
         return adt::make_range(library_begin(), library_end());
     }
@@ -348,11 +291,9 @@ public:
 
         return res;
     }
-
     single_reads_iterator reads_end() const {
         return single_reads_iterator(libraries_.back().reads_end(), libraries_.back().reads_end());
     }
-
     adt::iterator_range<single_reads_iterator> reads() {
         return adt::make_range(reads_begin(), reads_end());
     }
@@ -366,11 +307,9 @@ public:
 
         return res;
     }
-
     single_reads_iterator single_end() const {
         return single_reads_iterator(libraries_.back().single_end(), libraries_.back().single_end());
     }
-
     adt::iterator_range<single_reads_iterator> single_reads() {
         return adt::make_range(single_begin(), single_end());
     }
@@ -384,7 +323,6 @@ public:
 
         return res;
     }
-
     paired_reads_iterator paired_end() const {
         return paired_reads_iterator(libraries_.back().paired_end(), libraries_.back().paired_end());
     }
@@ -399,33 +337,19 @@ private:
 
 }
 
-namespace YAML {
-template<>
-struct convert<io::SequencingLibraryBase> {
-    static Node encode(const io::SequencingLibraryBase &rhs);
-
-    static bool decode(const Node &node, io::SequencingLibraryBase &rhs);
+namespace llvm { namespace yaml {
+template <>
+struct MappingTraits<io::SequencingLibraryBase> {
+    static void mapping(llvm::yaml::IO &io, io::SequencingLibraryBase &lib);
+    static StringRef validate(llvm::yaml::IO &io, io::SequencingLibraryBase &lib);
 };
 
-template<>
-struct convert<io::SequencingLibrary<> > {
-    static Node encode(const io::SequencingLibrary<> &rhs);
-
-    static bool decode(const Node &node, io::SequencingLibrary<> &rhs);
+template <class Data>
+struct MappingTraits<io::SequencingLibrary<Data> > {
+    static void mapping(llvm::yaml::IO &io, io::SequencingLibrary<Data> &lib);
+    static StringRef validate(llvm::yaml::IO &io, io::SequencingLibrary<Data> &lib);
 };
 
-template<class Data>
-struct convert<io::DataSet<Data> > {
-    static Node encode(const io::DataSet<Data> &rhs) {
-        Node node;
-
-        for (auto it = rhs.library_begin(), et = rhs.library_end(); it != et; ++it)
-            node.push_back(*it);
-
-        return node;
-    }
-};
-}
-
+}}
 
 #endif // __IO_LIBRARY_HPP__

@@ -18,7 +18,7 @@ add_executable(corrector
         config_struct.cpp
         main.cpp)
 
-target_link_libraries(corrector input spades_modules yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(corrector input spades_modules ${COMMON_LIBRARIES})
 
 
 
