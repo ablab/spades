@@ -1,0 +1,31 @@
+#ifndef __LLVM_CONFIG_H__
+#define __LLVM_CONFIG_H__
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#cmakedefine HAVE_DLFCN_H ${HAVE_DLFCN_H}
+
+/* Define to 1 if you have the <execinfo.h> header file. */
+#cmakedefine HAVE_EXECINFO_H ${HAVE_EXECINFO_H}
+
+/* Define to 1 if you have the <link.h> header file. */
+#cmakedefine HAVE_LINK_H ${HAVE_LINK_H}
+
+/* Define to 1 if you have the <mach/mach.h> header file. */
+#cmakedefine HAVE_MACH_MACH_H ${HAVE_MACH_MACH_H}
+
+/* Define to 1 if you have the <signal.h> header file. */
+#cmakedefine HAVE_SIGNAL_H ${HAVE_SIGNAL_H}
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#cmakedefine HAVE_SYS_STAT_H ${HAVE_SYS_STAT_H}
+
+/* Define to 1 if you have the `backtrace' function. */
+#cmakedefine HAVE_BACKTRACE ${HAVE_BACKTRACE}
+
+/* Define to 1 if you have the <cxxabi.h> header file. */
+#cmakedefine HAVE_CXXABI_H ${HAVE_CXXABI_H}
+
+/* Define as the return type of signal handlers (`int' or `void'). */
+#cmakedefine RETSIGTYPE ${RETSIGTYPE}
+
+#endif
