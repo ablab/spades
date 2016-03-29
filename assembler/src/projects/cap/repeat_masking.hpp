@@ -9,7 +9,7 @@
 
 #include "data_structures/sequence/nucl.hpp"
 #include "io/reads_io/modifying_reader_wrapper.hpp"
-#include "data_structures/adt/bag.hpp"
+#include "utils/adt/bag.hpp"
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_01.hpp>
 #include <boost/random/uniform_int.hpp>

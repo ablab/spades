@@ -9,7 +9,7 @@
 #include "io/reads_io/rc_reader_wrapper.hpp"
 #include "io/reads_io/sequence_reader.hpp"
 #include "diff_masking.hpp"
-#include "data_structures/adt/bag.hpp"
+#include "utils/adt/bag.hpp"
 #include "io/reads_io/vector_reader.hpp"
 #include "visualization/graph_colorer.hpp"
 

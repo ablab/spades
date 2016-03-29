@@ -13,7 +13,7 @@
 #include "io/reads_io/osequencestream.hpp"
 #include "io/reads_io/read_processor.hpp"
 
-#include "data_structures/adt/concurrent_dsu.hpp"
+#include "utils/adt/concurrent_dsu.hpp"
 
 #include "dev_support/segfault_handler.hpp"
 #include "dev_support/memory_limit.hpp"

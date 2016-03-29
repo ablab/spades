@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "data_structures/adt/parallel_unordered_map.hpp"
+#include "utils/adt/parallel_unordered_map.hpp"
 #include "dev_support/openmp_wrapper.h"
 
 #include "data_structures/sequence/runtime_k.hpp"

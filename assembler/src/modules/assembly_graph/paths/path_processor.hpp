@@ -8,7 +8,7 @@
 #pragma once
 
 #include "dev_support/standard_base.hpp"
-#include "data_structures/adt/bag.hpp"
+#include "utils/adt/bag.hpp"
 #include "algorithms/dijkstra/dijkstra_helper.hpp"
 
 namespace omnigraph {

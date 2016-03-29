@@ -7,15 +7,14 @@
 
 #pragma once
 
-#include "algorithms/simplification/cleaner.hpp"
+#include "cleaner.hpp"
+#include "bulge_remover.hpp"
 #include "dev_support/standard_base.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
-#include "algorithms/simplification/bulge_remover.hpp"
 #include "assembly_graph/graph_core/construction_helper.hpp"
 #include "assembly_graph/graph_support/marks_and_locks.hpp"
-#include "algorithms/simplification_pipeline/simplification_settings.hpp"
-#include "algorithms/simplification/compressor.hpp"
+#include "compressor.hpp"
 
 namespace debruijn {
 
@@ -254,7 +253,7 @@ class CriticalEdgeMarker {
     void ProcessVertex(VertexId v) {
         if (g_.OutgoingEdgeCount(v) > 0) {
             auto max_cov_it =
-                    std::max_element(g_.out_begin(v), g_.out_end(v), CoverageComparator<Graph>(g_));
+                    std::max_element(g_.out_begin(v), g_.out_end(v), omnigraph::CoverageComparator<Graph>(g_));
             DEBUG("Marking edge " << g_.str(*max_cov_it));
             edge_marker_.mark(*max_cov_it);
         }
@@ -273,7 +272,7 @@ public:
     }
 
     void PutMarks() {
-        auto chunk_iterators = IterationHelper<Graph, VertexId>(g_).Chunks(chunk_cnt_);
+        auto chunk_iterators = omnigraph::IterationHelper<Graph, VertexId>(g_).Chunks(chunk_cnt_);
 
         #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
@@ -282,7 +281,7 @@ public:
     }
 
     void ClearMarks() {
-        auto chunk_iterators = IterationHelper<Graph, EdgeId>(g_).Chunks(chunk_cnt_);
+        auto chunk_iterators = omnigraph::IterationHelper<Graph, EdgeId>(g_).Chunks(chunk_cnt_);
 
         #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
@@ -763,7 +762,7 @@ public:
     bool RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators,
             const Comparator& comp = Comparator()) {
         VERIFY(chunk_iterators.size() > 1);
-        SmartSetIterator<Graph, ElementType, Comparator> it(g_, false, comp);
+        omnigraph::SmartSetIterator<Graph, ElementType, Comparator> it(g_, false, comp);
 
         FillInterestingFromChunkIterators(chunk_iterators, it,
                                           std::bind(&Algo::IsOfInterest, std::ref(algo), std::placeholders::_1));
@@ -787,7 +786,7 @@ class SemiParallelEdgeRemovingAlgorithm {
     typedef typename Graph::VertexId VertexId;
     Graph& g_;
     pred::TypedPredicate<EdgeId> condition_;
-    EdgeRemover<Graph> edge_remover_;
+    omnigraph::EdgeRemover<Graph> edge_remover_;
 
 public:
     SemiParallelEdgeRemovingAlgorithm(Graph& g,
@@ -806,119 +805,14 @@ public:
     }
 };
 
-template<class Graph>
-void ParallelCompress(Graph& g, size_t chunk_cnt, bool loop_post_compression = true) {
-    INFO("Parallel compression");
-    debruijn::simplification::ParallelCompressor<Graph> compressor(g);
-    TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> runner(g, false);
-    RunVertexAlgorithm(g, runner, compressor, chunk_cnt);
-
-    //have to call cleaner to get rid of new isolated vertices
-    omnigraph::Cleaner<Graph>(g, chunk_cnt).Run();
-
-    if (loop_post_compression) {
-        INFO("Launching post-compression to compress loops");
-        CompressAllVertices(g, chunk_cnt);
-    }
-}
-
-template<class Graph>
-bool ParallelClipTips(Graph& g,
-              const string& tip_condition,
-              const SimplifInfoContainer& info,
-              std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-    INFO("Parallel tip clipping");
-
-    string condition_str = tip_condition;
-
-    ConditionParser<Graph> parser(g, condition_str, info);
-
-    parser();
-
-    debruijn::simplification::ParallelTipClippingFunctor<Graph> tip_clipper(g,
-        parser.max_length_bound(), parser.max_coverage_bound(), removal_handler);
-
-    AlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
-
-    RunVertexAlgorithm(g, runner, tip_clipper, info.chunk_cnt());
-
-    ParallelCompress(g, info.chunk_cnt());
-    //Cleaner is launched inside ParallelCompression
-    //CleanGraph(g, info.chunk_cnt());
-
-    return true;
-}
-
-//template<class Graph>
-//bool ParallelRemoveBulges(Graph& g,
-//              const debruijn_config::simplification::bulge_remover& br_config,
-//              size_t /*read_length*/,
-//              std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-//    INFO("Parallel bulge remover");
-//
-//    size_t max_length = LengthThresholdFinder::MaxBulgeLength(
-//        g.k(), br_config.max_bulge_length_coefficient,
-//        br_config.max_additive_length_coefficient);
-//
-//    DEBUG("Max bulge length " << max_length);
-//
-//    debruijn::simplification::ParallelSimpleBRFunctor<Graph> bulge_remover(g,
-//                            max_length,
-//                            br_config.max_coverage,
-//                            br_config.max_relative_coverage,
-//                            br_config.max_delta,
-//                            br_config.max_relative_delta,
-//                            removal_handler);
-//    for (VertexId v : g) {
-//        bulge_remover(v);
-//    }
-//
-//    Compress(g);
-//    return true;
-//}
-
-template<class Graph>
-bool ParallelEC(Graph& g,
-              const string& ec_condition,
-              const SimplifInfoContainer& info,
-              std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-    INFO("Parallel ec remover");
-
-    ConditionParser<Graph> parser(g, ec_condition, info);
-
-    auto condition = parser();
-
-    size_t max_length = parser.max_length_bound();
-    double max_coverage = parser.max_coverage_bound();
-
-    debruijn::simplification::CriticalEdgeMarker<Graph> critical_marker(g, info.chunk_cnt());
-    critical_marker.PutMarks();
-
-    debruijn::simplification::ParallelLowCoverageFunctor<Graph> ec_remover(g,
-                            max_length,
-                            max_coverage,
-                            removal_handler);
-
-    TwoStepAlgorithmRunner<Graph, typename Graph::EdgeId> runner(g, true);
-
-    RunEdgeAlgorithm(g, runner, ec_remover, info.chunk_cnt());
-
-    critical_marker.ClearMarks();
-
-    ParallelCompress(g, info.chunk_cnt());
-    //called in parallel compress
-    //CleanGraph(g, info.chunk_cnt());
-    return true;
-}
-
 template<class Graph, class AlgoRunner, class Algo>
 bool RunVertexAlgorithm(Graph& g, AlgoRunner& runner, Algo& algo, size_t chunk_cnt) {
-    return runner.RunFromChunkIterators(algo, IterationHelper<Graph, VertexId>(g).Chunks(chunk_cnt));
+    return runner.RunFromChunkIterators(algo, omnigraph::IterationHelper<Graph, typename Graph::VertexId>(g).Chunks(chunk_cnt));
 }
 
 template<class Graph, class AlgoRunner, class Algo>
 bool RunEdgeAlgorithm(Graph& g, AlgoRunner& runner, Algo& algo, size_t chunk_cnt) {
-    return runner.RunFromChunkIterators(algo, IterationHelper<Graph, EdgeId>(g).Chunks(chunk_cnt));
+    return runner.RunFromChunkIterators(algo, omnigraph::IterationHelper<Graph, typename Graph::EdgeId>(g).Chunks(chunk_cnt));
 }
 
 }

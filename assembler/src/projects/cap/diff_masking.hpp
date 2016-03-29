@@ -9,7 +9,7 @@
 
 #include "io/reads_io/read_stream_vector.hpp"
 #include "algorithms/graph_construction.hpp"
-#include "algorithms/simplification_pipeline/graph_simplification.hpp"
+#include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "algorithms/graph_read_correction.hpp"
 #include "test_utils.hpp"
 

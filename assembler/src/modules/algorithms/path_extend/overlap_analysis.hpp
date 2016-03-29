@@ -2,7 +2,7 @@
 
 #include "dev_support/logger/logger.hpp"
 #include "dev_support/range.hpp"
-#include "algorithms/ssw_cpp.h"
+#include "ssw/ssw_cpp.h"
 
 namespace debruijn_graph {
 using omnigraph::Range;

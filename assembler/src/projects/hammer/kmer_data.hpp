@@ -9,7 +9,7 @@
 #define __HAMMER_KMER_DATA_HPP__
 
 #include "kmer_stat.hpp"
-#include "data_structures/adt/array_vector.hpp"
+#include "utils/adt/array_vector.hpp"
 #include "data_structures/mph_index/kmer_index.hpp"
 #include <vector>
 

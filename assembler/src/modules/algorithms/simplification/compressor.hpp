@@ -9,7 +9,7 @@ namespace omnigraph {
 */
 template<class Graph>
 class Compressor : public PersistentProcessingAlgorithm<Graph, typename Graph::VertexId,
-        ParallelInterestingElementFinder < Graph, typename Graph::VertexId>> {
+        ParallelInterestingElementFinder<Graph, typename Graph::VertexId>> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef PersistentProcessingAlgorithm <Graph,

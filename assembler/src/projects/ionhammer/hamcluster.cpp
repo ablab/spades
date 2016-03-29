@@ -8,7 +8,7 @@
 #include "hamcluster.hpp"
 
 #include "hkmer_distance.hpp"
-#include "data_structures/adt/concurrent_dsu.hpp"
+#include "utils/adt/concurrent_dsu.hpp"
 #include "io/kmers_io/mmapped_reader.hpp"
 
 #include <iostream>

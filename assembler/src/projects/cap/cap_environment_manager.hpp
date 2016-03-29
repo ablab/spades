@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "algorithms/simplification_pipeline/graph_simplification.hpp"
+#include "stages/simplification_pipeline/graph_simplification.hpp"
 
 #include "compare_standard.hpp"
 #include "pipeline/graphio.hpp"

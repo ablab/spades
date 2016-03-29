@@ -11,7 +11,7 @@
 
 #include <vector>
 #include <map>
-#include "data_structures/adt/bag.hpp"
+#include "utils/adt/bag.hpp"
 
 namespace cap {
 

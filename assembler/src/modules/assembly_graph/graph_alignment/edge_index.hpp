@@ -9,7 +9,7 @@
 
 #include "dev_support/openmp_wrapper.h"
 
-#include "data_structures/adt/kmer_map.hpp"
+#include "utils/adt/kmer_map.hpp"
 
 #include "assembly_graph/graph_core/graph.hpp"
 #include "assembly_graph/graph_core/action_handlers.hpp"

@@ -14,7 +14,7 @@
 
 #include "data_structures/sequence/nucl.hpp"
 #include "data_structures/sequence/sequence.hpp"
-#include "algorithms/levenshtein.hpp"
+#include "utils/levenshtein.hpp"
 
 inline const std::string Reverse(const std::string &s) {
     return std::string(s.rbegin(), s.rend());

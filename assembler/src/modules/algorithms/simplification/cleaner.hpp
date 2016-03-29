@@ -2,6 +2,7 @@
 
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
+#include "assembly_graph/graph_support/parallel_processing.hpp"
 
 namespace omnigraph {
 

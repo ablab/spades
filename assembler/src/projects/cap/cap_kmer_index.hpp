@@ -10,7 +10,7 @@
 #include "compare_standard.hpp"
 #include "longseq.hpp"
 #include "polynomial_hash.hpp"
-#include "data_structures/adt/kmer_map.hpp"
+#include "utils/adt/kmer_map.hpp"
 #include "data_structures/indices/edge_position_index.hpp"
 
 #include "io/reads_io/sequence_reader.hpp"

@@ -8,8 +8,8 @@
 #pragma once
 
 #include <btree/btree_set.h>
-#include "data_structures/adt/flat_set.hpp"
-#include "data_structures/adt/small_pod_vector.hpp"
+#include "utils/adt/flat_set.hpp"
+#include "utils/adt/small_pod_vector.hpp"
 #include "index_point.hpp"
 
 namespace omnigraph {

@@ -8,7 +8,7 @@
 #include "gap_closer.hpp"
 #include "algorithms/simplification/compressor.hpp"
 #include "io/dataset_support/read_converter.hpp"
-#include "data_structures/adt/kmer_set.hpp"
+#include "utils/adt/kmer_set.hpp"
 #include <stack>
 
 namespace debruijn_graph {

@@ -11,7 +11,7 @@
 #include "io/reads_io/io_helper.hpp"
 
 #include "data_structures/mph_index/kmer_index.hpp"
-#include "data_structures/adt/kmer_vector.hpp"
+#include "utils/adt/kmer_vector.hpp"
 
 #include "libcxx/sort.hpp"
 
