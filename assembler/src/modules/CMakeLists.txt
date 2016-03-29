@@ -19,6 +19,6 @@ add_subdirectory(dev_support)
 add_subdirectory(io)
 add_subdirectory(data_structures/mph_index)
 
-add_library(spades_modules STATIC)
+add_library(spades_modules STATIC empty.cpp)
 
 target_link_libraries(spades_modules graph_support input sequence pipeline math_module path_extend paired_info stages dev_support mph_index algorithms)
