@@ -4,6 +4,8 @@
 
 #include "bitpair_vector.hpp"
 
+#include <iostream>
+
 void emphf::bitpair_vector::resize(uint64_t n) {
     // can only grow, for now
     assert(n >= size());
