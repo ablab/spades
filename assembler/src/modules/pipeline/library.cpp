@@ -6,91 +6,162 @@
 //***************************************************************************
 
 #include "pipeline/library.hpp"
-#include "dev_support/path_helper.hpp"
 
-#include "llvm/Support/YAMLTraits.h"
-#include "llvm/Support/Errc.h"
-#include "llvm/Support/FileSystem.h"
+#include <yaml-cpp/yaml.h>
 
 #include <string>
-#include <fstream>
 #include <iostream>
 
-using namespace llvm;
 using namespace io;
 
-template <>
-struct yaml::ScalarEnumerationTraits<LibraryOrientation> {
-    static void enumeration(yaml::IO &io, LibraryOrientation &value) {
-        io.enumCase(value, "fr", LibraryOrientation::FR);
-        io.enumCase(value, "rf", LibraryOrientation::RF);
-        io.enumCase(value, "ff", LibraryOrientation::FF);
-        io.enumCase(value, "rr", LibraryOrientation::RR);
+namespace YAML {
+template<>
+struct convert<LibraryOrientation> {
+    static Node encode(const LibraryOrientation &rhs) {
+        switch (rhs) {
+            case LibraryOrientation::FR:
+                return Node("fr");
+            case LibraryOrientation::RF:
+                return Node("rf");
+            case LibraryOrientation::FF:
+                return Node("ff");
+            case LibraryOrientation::RR:
+                return Node("rr");
+            case LibraryOrientation::Undefined:
+            default:
+                return Node("undefined");
+        }
     }
-};
 
-template <>
-struct yaml::ScalarEnumerationTraits<LibraryType> {
-    static void enumeration(yaml::IO &io, LibraryType &value) {
-        io.enumCase(value, "paired-end",          LibraryType::PairedEnd);
-        io.enumCase(value, "mate-pairs",          LibraryType::MatePairs);
-        io.enumCase(value, "hq-mate-pairs",       LibraryType::HQMatePairs);
-        io.enumCase(value, "pacbio",              LibraryType::PacBioReads);
-        io.enumCase(value, "single",              LibraryType::SingleReads);
-        io.enumCase(value, "sanger",              LibraryType::SangerReads);
-        io.enumCase(value, "nanopore",            LibraryType::NanoporeReads);
-        io.enumCase(value, "trusted-contigs",     LibraryType::TrustedContigs);
-        io.enumCase(value, "untrusted-contigs",   LibraryType::UntrustedContigs);
-        io.enumCase(value, "path-extend-contigs", LibraryType::PathExtendContigs);
-    }
-};
+    static bool decode(const Node &node, LibraryOrientation &rhs) {
+        std::string orientation = node.as<std::string>("");
 
-template <>
-struct yaml::SequenceTraits<std::vector<std::string>>  {
-    static size_t size(IO &, std::vector<std::string> &seq) {
-        return seq.size();
-    }
-    static std::string&
-    element(IO &, std::vector<std::string> &seq, size_t index) {
-        if (index >= seq.size())
-            seq.resize(index+1);
-        return seq[index];
+        if (orientation == "fr")
+            rhs = LibraryOrientation::FR;
+        else if (orientation == "rf")
+            rhs = LibraryOrientation::RF;
+        else if (orientation == "ff")
+            rhs = LibraryOrientation::FF;
+        else if (orientation == "rr")
+            rhs = LibraryOrientation::RR;
+        else
+            rhs = LibraryOrientation::Undefined;
+
+        return true;
     }
 };
 
 template<>
-void io::SequencingLibrary<io::NoData>::yamlize(llvm::yaml::IO &io) {
-  SequencingLibraryBase::yamlize(io);
-}
-template<>
-void io::SequencingLibrary<io::NoData>::validate(llvm::yaml::IO &io, llvm::StringRef &res) {
-  SequencingLibraryBase::validate(io, res);
+struct convert<LibraryType> {
+    static Node encode(const LibraryType &rhs) {
+        switch (rhs) {
+            case LibraryType::PairedEnd:
+                return Node("paired-end");
+            case LibraryType::SingleReads:
+                return Node("single");
+            case LibraryType::MatePairs:
+                return Node("mate-pairs");
+            case LibraryType::HQMatePairs:
+                return Node("hq-mate-pairs");
+            case LibraryType::PacBioReads:
+                return Node("pacbio");
+            case LibraryType::SangerReads:
+                return Node("sanger");
+            case LibraryType::NanoporeReads:
+                return Node("nanopore");
+            case LibraryType::TrustedContigs:
+                return Node("trusted-contigs");
+            case LibraryType::UntrustedContigs:
+                return Node("untrusted-contigs");
+            case LibraryType::PathExtendContigs:
+                return Node("path-extend-contigs");
+            default:
+                return Node();
+        }
+    }
+
+    static bool decode(const Node &node, LibraryType &rhs) {
+        std::string type = node.as<std::string>();
+
+        if (type == "paired-end")
+            rhs = LibraryType::PairedEnd;
+        else if (type == "mate-pairs")
+            rhs = LibraryType::MatePairs;
+        else if (type == "hq-mate-pairs")
+            rhs = LibraryType::HQMatePairs;
+        else if (type == "pacbio")
+            rhs = LibraryType::PacBioReads;
+        else if (type == "single")
+            rhs = LibraryType::SingleReads;
+        else if (type == "sanger")
+            rhs = LibraryType::SangerReads;
+        else if (type == "nanopore")
+            rhs = LibraryType::NanoporeReads;
+        else if (type == "trusted-contigs")
+            rhs = LibraryType::TrustedContigs;
+        else if (type == "untrusted-contigs")
+            rhs = LibraryType::UntrustedContigs;
+        else if (type == "path-extend-contigs")
+            rhs = LibraryType::PathExtendContigs;
+        else
+            return false;
+        return true;
+    }
+
+};
+
+Node convert<SequencingLibraryBase>::encode(const io::SequencingLibraryBase &rhs) {
+    Node node;
+
+    node["orientation"] = rhs.orientation();
+    node["type"] = rhs.type();
+
+    for (const auto &read_pair : rhs.paired_reads()) {
+        node["left reads"].push_back(read_pair.first);
+        node["right reads"].push_back(read_pair.second);
+    }
+    for (const auto &reads : rhs.single_reads())
+        node["single reads"].push_back(reads);
+
+    return node;
 }
 
-
-void SequencingLibraryBase::yamlize(llvm::yaml::IO &io) {
-    io.mapRequired("type", type_);
-    io.mapOptional("orientation", orientation_, LibraryOrientation::Undefined);
-    io.mapOptional("left reads", left_paired_reads_);
-    io.mapOptional("right reads", right_paired_reads_);
-    io.mapOptional("single reads", single_reads_);
+bool convert<SequencingLibraryBase>::decode(const Node &node, SequencingLibraryBase &rhs) {
+    rhs.load(node);
+    return true;
 }
 
-void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
-    switch (type_) {
+Node convert<io::SequencingLibrary<> >::encode(const io::SequencingLibrary<> &rhs) {
+    return convert<io::SequencingLibraryBase>::encode(rhs);
+}
+
+bool convert<io::SequencingLibrary<> >::decode(const Node &node, io::SequencingLibrary<> &rhs) {
+    rhs.load(node);
+    return true;
+}
+
+} // namespace YAML
+
+void SequencingLibraryBase::load(const YAML::Node &node) {
+orientation_ = node["orientation"].as<io::LibraryOrientation>(LibraryOrientation::Undefined);
+type_ = node["type"].as<LibraryType>();
+
+switch (type_) {
     case LibraryType::PairedEnd:
     case LibraryType::MatePairs:
     case LibraryType::HQMatePairs:
-        if (left_paired_reads_.size() != right_paired_reads_.size()) {
-            res = "Left and right reads lists should have equal length";
-            return;
-        }
+        left_paired_reads_ = node["left reads"].as < std::vector < std::string > > ();
+        right_paired_reads_ = node["right reads"].as < std::vector < std::string > > ();
 
-        if (orientation_ == LibraryOrientation::Undefined) {
-            res = "Orientation for paired reads should be specified";
-            return;
-        }
-        break;
+        if (left_paired_reads_.size() != right_paired_reads_.size())
+            throw("Left and right reads lists should have equal length");
+
+        if (orientation_ == LibraryOrientation::Undefined)
+            throw("Orientation for paired reads should be specified");
+
+        // FALLTHROUGH in case of single reads present!
+        if (!node["single reads"])
+            break;
     case LibraryType::SingleReads:
     case LibraryType::PacBioReads:
     case LibraryType::SangerReads:
@@ -98,37 +169,11 @@ void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
     case LibraryType::TrustedContigs:
     case LibraryType::UntrustedContigs:
     case LibraryType::PathExtendContigs:
-        if (left_paired_reads_.size() || right_paired_reads_.size()) {
-            res = "Paired reads should not be set for this library type";
-            return;
-        }
-      break;
+        single_reads_ = node["single reads"].as < std::vector < std::string > > ();
+        break;
     default:
         // Impossible
-        res = "Unsupported library type";
-        return;
-  }
+        std::cerr << node << std::endl;
+        throw("Unsupported library type");
 }
-
-// FIXME: Lambda
-struct update_relative_filename : public std::binary_function<std::string, std::string, std::string> {
-    std::string operator() (const std::string &filename, const std::string &input_dir) const {
-        if (filename[0] == '/')
-            return filename;
-        return input_dir + filename;
-    }
-};
-
-void SequencingLibraryBase::update_relative_reads_filenames(const std::string &input_dir) {
-    std::transform(left_paired_reads_.begin(), left_paired_reads_.end(), left_paired_reads_.begin(),
-                   std::bind2nd(update_relative_filename(), input_dir));
-    std::transform(right_paired_reads_.begin(), right_paired_reads_.end(), right_paired_reads_.begin(),
-                   std::bind2nd(update_relative_filename(), input_dir));
-    std::transform(single_reads_.begin(), single_reads_.end(), single_reads_.begin(),
-                   std::bind2nd(update_relative_filename(), input_dir));
 }
-
-#include "pipeline/library.inl"
-
-// Provide default implementation here (e.g. in case of Data == io::NoData)
-template class io::DataSet<>;

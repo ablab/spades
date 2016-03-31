@@ -351,13 +351,13 @@ struct debruijn_config {
         bool keep_perfect_loops;
         size_t read_buffer_size;
     };
-
+    
     std::string uncorrected_reads;
     bool need_consensus;
     double mismatch_ratio;
     simplification simp;
     simplification preliminary_simp;
-
+    
     struct sensitive_mapper {
         size_t k;
     };
@@ -368,7 +368,7 @@ struct debruijn_config {
         double max_distance_coeff_scaff;
         double filter_threshold;
     };
-
+    
     struct smoothing_distance_estimator {
         size_t threshold;
         double range_coeff;
