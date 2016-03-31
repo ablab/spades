@@ -248,10 +248,8 @@ public:
 
 template<class Graph>
 pred::TypedPredicate<typename Graph::EdgeId>AddDeadEndCondition(const Graph& g,
-                                                                  pred::TypedPredicate<typename Graph::EdgeId> condition) {
-    return pred::And<typename Graph::EdgeId>(
-            make_shared<DeadEndCondition<Graph>>(g),
-            condition);
+                                                                pred::TypedPredicate<typename Graph::EdgeId> condition) {
+    return pred::And<typename Graph::EdgeId>(DeadEndCondition<Graph>(g), condition);
 }
 
 
