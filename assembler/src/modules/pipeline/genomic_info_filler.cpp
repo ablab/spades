@@ -41,8 +41,9 @@ static std::vector<size_t> extract(const std::map<size_t, size_t> &hist) {
     return res;
 }
 
+namespace llvm { namespace yaml {
 template <>
-struct yaml::MappingTraits<GenomicInfo> {
+struct MappingTraits<GenomicInfo> {
     static void mapping(yaml::IO &io, GenomicInfo &info) {
       info.yamlize(io);
     }
@@ -50,7 +51,7 @@ struct yaml::MappingTraits<GenomicInfo> {
 
 
 template <>
-struct yaml::SequenceTraits<std::vector<std::size_t>>  {
+struct SequenceTraits<std::vector<std::size_t>> {
     static size_t size(IO &, std::vector<std::size_t> &seq) {
         return seq.size();
     }
@@ -62,6 +63,7 @@ struct yaml::SequenceTraits<std::vector<std::size_t>>  {
     }
     static const bool flow = true;
 };
+}}
 
 void GenomicInfo::yamlize(yaml::IO &io) {
     io.mapOptional("ec bound", ec_bound_, 0.0);

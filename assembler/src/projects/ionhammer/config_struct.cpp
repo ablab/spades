@@ -16,8 +16,9 @@
 
 using namespace llvm;
 
+namespace llvm { namespace yaml {
 template <>
-struct yaml::ScalarEnumerationTraits<hammer_config::HammerStage> {
+struct ScalarEnumerationTraits<hammer_config::HammerStage> {
     static void enumeration(yaml::IO &io, hammer_config::HammerStage &value) {
         io.enumCase(value, "count",       hammer_config::HammerStage::KMerCounting);
         io.enumCase(value, "hamcluster",  hammer_config::HammerStage::HammingClustering);
@@ -25,6 +26,7 @@ struct yaml::ScalarEnumerationTraits<hammer_config::HammerStage> {
         io.enumCase(value, "correct",     hammer_config::HammerStage::ReadCorrection);
     }
 };
+}}
 
 // FIXME: This is temporary
 class DataSetReader {
@@ -39,8 +41,9 @@ class DataSetReader {
     std::string path;
 };
 
+namespace llvm { namespace yaml {
 template <>
-struct yaml::MappingTraits<hammer_config::hammer_config> {
+struct MappingTraits<hammer_config::hammer_config> {
     static void mapping(yaml::IO &io, hammer_config::hammer_config &cfg) {
         yaml::MappingNormalization<DataSetReader, io::DataSet<>> dataset(io, cfg.dataset);
 
@@ -59,6 +62,7 @@ struct yaml::MappingTraits<hammer_config::hammer_config> {
         io.mapOptional("start_stage", cfg.start_stage, hammer_config::HammerStage::KMerCounting);
     }
 };
+}}
 
 namespace hammer_config {
 void load(hammer_config& cfg, const std::string &filename) {

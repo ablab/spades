@@ -19,8 +19,9 @@
 using namespace llvm;
 using namespace io;
 
+namespace llvm { namespace yaml {
 template <>
-struct yaml::ScalarEnumerationTraits<LibraryOrientation> {
+struct ScalarEnumerationTraits<LibraryOrientation> {
     static void enumeration(yaml::IO &io, LibraryOrientation &value) {
         io.enumCase(value, "fr", LibraryOrientation::FR);
         io.enumCase(value, "rf", LibraryOrientation::RF);
@@ -30,7 +31,7 @@ struct yaml::ScalarEnumerationTraits<LibraryOrientation> {
 };
 
 template <>
-struct yaml::ScalarEnumerationTraits<LibraryType> {
+struct ScalarEnumerationTraits<LibraryType> {
     static void enumeration(yaml::IO &io, LibraryType &value) {
         io.enumCase(value, "paired-end",          LibraryType::PairedEnd);
         io.enumCase(value, "mate-pairs",          LibraryType::MatePairs);
@@ -46,7 +47,7 @@ struct yaml::ScalarEnumerationTraits<LibraryType> {
 };
 
 template <>
-struct yaml::SequenceTraits<std::vector<std::string>>  {
+struct SequenceTraits<std::vector<std::string>> {
     static size_t size(IO &, std::vector<std::string> &seq) {
         return seq.size();
     }
@@ -57,16 +58,18 @@ struct yaml::SequenceTraits<std::vector<std::string>>  {
         return seq[index];
     }
 };
+}}
 
+namespace io {
 template<>
-void io::SequencingLibrary<io::NoData>::yamlize(llvm::yaml::IO &io) {
+void SequencingLibrary<io::NoData>::yamlize(llvm::yaml::IO &io) {
   SequencingLibraryBase::yamlize(io);
 }
 template<>
-void io::SequencingLibrary<io::NoData>::validate(llvm::yaml::IO &io, llvm::StringRef &res) {
+void SequencingLibrary<io::NoData>::validate(llvm::yaml::IO &io, llvm::StringRef &res) {
   SequencingLibraryBase::validate(io, res);
 }
-
+}
 
 void SequencingLibraryBase::yamlize(llvm::yaml::IO &io) {
     io.mapRequired("type", type_);

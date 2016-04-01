@@ -23,8 +23,9 @@
 
 using namespace llvm;
 
+namespace io {
 template<>
-void io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData>::yamlize(llvm::yaml::IO &io) {
+void SequencingLibrary<debruijn_graph::debruijn_config::DataSetData>::yamlize(llvm::yaml::IO &io) {
   // First, load the "common stuff"
   SequencingLibraryBase::yamlize(io);
 
@@ -45,9 +46,10 @@ void io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData>::yamliz
 }
 
 template<>
-void io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData>::validate(llvm::yaml::IO &io, llvm::StringRef &res) {
+void SequencingLibrary<debruijn_graph::debruijn_config::DataSetData>::validate(llvm::yaml::IO &io, llvm::StringRef &res) {
   // Simply ask base class to validate for us
   SequencingLibraryBase::validate(io, res);
+}
 }
 
 #include "pipeline/library.inl"

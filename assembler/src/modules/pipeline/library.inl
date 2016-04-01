@@ -1,8 +1,9 @@
 template<class Data>
 using Library = io::SequencingLibrary<Data>;
 
+namespace llvm { namespace yaml {
 template <class Data>
-struct yaml::SequenceTraits<std::vector<Library<Data> >>  {
+struct SequenceTraits<std::vector<Library<Data> >>  {
     static size_t size(IO &, std::vector<Library<Data> > &seq) {
         return seq.size();
     }
@@ -15,12 +16,12 @@ struct yaml::SequenceTraits<std::vector<Library<Data> >>  {
 };
 
 template<class Data>
-void yaml::MappingTraits<Library<Data>>::mapping(yaml::IO &io, Library<Data> &lib) {
+void MappingTraits<Library<Data>>::mapping(yaml::IO &io, Library<Data> &lib) {
     lib.yamlize(io);
 }
 
 template<class Data>
-StringRef yaml::MappingTraits<Library<Data>>::validate(yaml::IO &io, Library<Data> &lib) {
+StringRef MappingTraits<Library<Data>>::validate(yaml::IO &io, Library<Data> &lib) {
     // We use such crazy API for validate() since we don't want to pull
     // llvm::StringRef into library.hpp.
     llvm::StringRef res;
@@ -28,6 +29,7 @@ StringRef yaml::MappingTraits<Library<Data>>::validate(yaml::IO &io, Library<Dat
 
     return res;
 }
+}}
 
 template<class Data>
 void io::DataSet<Data>::save(const std::string &filename) {

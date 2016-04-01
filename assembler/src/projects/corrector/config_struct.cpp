@@ -16,8 +16,9 @@
 
 using namespace llvm;
 
+namespace llvm { namespace yaml {
 template <>
-struct yaml::ScalarEnumerationTraits<corrector::Strategy> {
+struct ScalarEnumerationTraits<corrector::Strategy> {
     static void enumeration(yaml::IO &io, corrector::Strategy &value) {
         io.enumCase(value, "all_reads",      corrector::Strategy::AllReads);
         io.enumCase(value, "majority_only",  corrector::Strategy::MajorityOnly);
@@ -25,6 +26,7 @@ struct yaml::ScalarEnumerationTraits<corrector::Strategy> {
         io.enumCase(value, "mapped_squared", corrector::Strategy::MappedSquared);
     }
 };
+}}
 
 // FIXME: This is temporary
 class DataSetReader {
@@ -39,8 +41,9 @@ class DataSetReader {
     std::string path;
 };
 
+namespace llvm { namespace yaml {
 template <>
-struct yaml::MappingTraits<corrector::corrector_config> {
+struct MappingTraits<corrector::corrector_config> {
     static void mapping(yaml::IO &io, corrector::corrector_config &cfg) {
         yaml::MappingNormalization<DataSetReader, io::DataSet<>> dataset(io, cfg.dataset);
 
@@ -52,6 +55,7 @@ struct yaml::MappingTraits<corrector::corrector_config> {
         io.mapOptional("bwa", cfg.bwa, std::string("."));
     }
 };
+}}
 
 
 namespace corrector {
