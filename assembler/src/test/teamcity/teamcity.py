@@ -630,6 +630,7 @@ try:
     write_log(history_log, new_log, output_dir, dataset_info)
 
     #saving contigs
+    #FIXME use GetContigsList
     if contig_dir != '':
         quast_contig_dir = os.path.join(contig_dir, "quast_results")
         if not os.path.exists(quast_contig_dir):
@@ -679,7 +680,7 @@ try:
         preliminary_ctgs = os.path.join(output_dir, "first_pe_contigs.fasta")
         if os.path.exists(preliminary_ctgs):
             saved_prelim_name = name_prefix + "_prelim" + ctg_suffix + ".fasta"
-            shutil.copy(before_rr, os.path.join(contig_dir, saved_prelim_name))
+            shutil.copy(preliminary_ctgs, os.path.join(contig_dir, saved_prelim_name))
             print("Preliminary contigs after first RR saved to " + os.path.join(contig_dir, saved_prelim_name))
 
     #    before_corr = os.path.join(output_dir, "assembled_contigs.fasta")
