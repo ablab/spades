@@ -317,7 +317,7 @@ def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exi
         limit_map = construct_map(dataset_info, prefix)
         report_path = output_dir
         if 'meta' in dataset_info.__dict__ and dataset_info.meta:
-            report_path = os.path.join(report_path, "combined_quast_output")
+            report_path = os.path.join(report_path, "combined_reference")
         report_path = os.path.join(report_path, "transposed_report.tsv")
 
         result = assess_quast(report_path, limit_map, name)
