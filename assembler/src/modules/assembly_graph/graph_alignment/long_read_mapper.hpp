@@ -20,14 +20,11 @@
 
 namespace debruijn_graph {
 
-class SimpleLongReadMapper: public SequenceMapperListener {
+class AbstractLongReadMapper: public SequenceMapperListener {
 public:
-    SimpleLongReadMapper(conj_graph_pack& gp, PathStorage<conj_graph_pack::graph_t>& storage)
+    AbstractLongReadMapper(conj_graph_pack& gp, PathStorage<conj_graph_pack::graph_t>& storage)
             : gp_(gp), storage_(storage), path_finder_(gp_.g) {
-        mapper_ = MapperInstance(gp_);
     }
-
-    virtual ~SimpleLongReadMapper() {}
 
     void StartProcessLibrary(size_t threads_count) override {
         for (size_t i = 0; i < threads_count; ++i)
@@ -80,20 +77,90 @@ public:
 
 private:
 
-    void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& read) {
-        vector<vector<EdgeId>> paths = path_finder_.FindReadPathWithGaps(read);
+    virtual void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& read) = 0;
+
+protected:
+    conj_graph_pack& gp_;
+    PathStorage<conj_graph_pack::graph_t>& storage_;
+    ReadPathFinder<conj_graph_pack::graph_t> path_finder_;
+    std::vector<PathStorage<conj_graph_pack::graph_t> > buffer_storages_;
+
+};
+
+class SimpleLongReadMapper: public AbstractLongReadMapper {
+public:
+    SimpleLongReadMapper(conj_graph_pack& gp, PathStorage<conj_graph_pack::graph_t>& storage)
+            : AbstractLongReadMapper(gp, storage) {
+    }
+
+private:
+
+    void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& read) override {
+        vector<EdgeId> path = path_finder_.FindReadPath(read);
+        buffer_storages_[thread_index].AddPath(path, 1, false);
+    }
+};
+
+class FirstPELongReadMapper : public AbstractLongReadMapper {
+private:
+    typedef MappingPathFixer<Graph> GraphMappingPathFixer;
+    const GraphMappingPathFixer path_fixer_;
+
+public:
+    FirstPELongReadMapper(conj_graph_pack& gp, PathStorage<conj_graph_pack::graph_t>& storage)
+            : AbstractLongReadMapper(gp, storage), path_fixer_(gp.g) {
+    }
+
+private:
+
+    size_t CountMappedEdgeSize(EdgeId edge, const MappingPath<EdgeId>& mapping_path, size_t& mapping_index) const {
+        while(mapping_path[mapping_index].first != edge) {
+            mapping_index++;
+        }
+        size_t start_idx = mapping_index;
+
+        while(mapping_path[mapping_index].first == edge) {
+            mapping_index++;
+            if(mapping_index >= mapping_path.size()) {
+                mapping_index = mapping_path.size() - 1;
+                break;
+            }
+        }
+        size_t end_idx = mapping_index;
+        size_t total_len = 0;
+        for(size_t i = start_idx; i <= end_idx; ++i) {
+            total_len += mapping_path[i].second.mapped_range.size();
+        }
+
+        return total_len;
+    }
+
+    void FilterBadMappings(vector<EdgeId>& corrected_path, const MappingPath<EdgeId>& mapping_path) const {
+        vector<EdgeId> new_corrected_path;
+        size_t mapping_index = 0;
+        for(auto edge : corrected_path) {
+            size_t mapping_size = CountMappedEdgeSize(edge, mapping_path, mapping_index);
+            size_t edge_len =  gp_.g.length(edge);
+            //VERIFY(edge_len >= mapping_size);
+            if((double) mapping_size / (double) edge_len > 0.7) {
+                new_corrected_path.push_back(edge);
+            }
+        }
+        std::swap(new_corrected_path, corrected_path);
+    }
+
+
+    void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& read) override {
+        vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
+                read.simple_path());
+        FilterBadMappings(corrected_path, read);
+        vector<vector<EdgeId>> paths = path_finder_.FindReadPathWithGaps(read, corrected_path);
         for(auto path : paths) {
             buffer_storages_[thread_index].AddPath(path, 1, false);
         }
     }
-
-    conj_graph_pack& gp_;
-    PathStorage<conj_graph_pack::graph_t>& storage_;
-    std::shared_ptr<const NewExtendedSequenceMapper<conj_graph_pack::graph_t,
-                    conj_graph_pack::index_t> > mapper_;
-    ReadPathFinder<conj_graph_pack::graph_t> path_finder_;
-    std::vector<PathStorage<conj_graph_pack::graph_t> > buffer_storages_;
 };
+
 
 }/*longreads*/
 

@@ -221,59 +221,18 @@ public:
           return fixed_path;
       }
 
-    vector<vector<EdgeId>> FindReadPathWithGaps(const MappingPath<EdgeId>& mapping_path) const {
+    vector<vector<EdgeId>> FindReadPathWithGaps(const MappingPath<EdgeId>& mapping_path, vector<EdgeId>& corrected_path) const {
           if (!IsMappingPathValid(mapping_path)) {
               TRACE("read unmapped");
               return vector<vector<EdgeId>>();
           }
-          vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
-                  mapping_path.simple_path());
-          FilterBadMappings(corrected_path, mapping_path);
           PrintPathInfo(corrected_path);
-          if(corrected_path.size() != mapping_path.simple_path().size()) {
-              DEBUG("Some edges were deleted");
-          }
           vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
           return SplitUnfixedPoints(fixed_path);
       }
 
 private:
 
-      size_t CountMappedEdgeSize(EdgeId edge, const MappingPath<EdgeId>& mapping_path, size_t& mapping_index) const {
-          while(mapping_path[mapping_index].first != edge) {
-              mapping_index++;
-          }
-          size_t start_idx = mapping_index;
-
-          while(mapping_path[mapping_index].first == edge) {
-              mapping_index++;
-              if(mapping_index >= mapping_path.size()) {
-                  mapping_index = mapping_path.size() - 1;
-                  break;
-              }
-          }
-          size_t end_idx = mapping_index;
-          size_t total_len = 0;
-          for(size_t i = start_idx; i <= end_idx; ++i) {
-              total_len += mapping_path[i].second.mapped_range.size();
-          }
-
-          return total_len;
-      }
-
-      void FilterBadMappings(vector<EdgeId>& corrected_path, const MappingPath<EdgeId>& mapping_path) const {
-          vector<EdgeId> new_corrected_path;
-          size_t mapping_index = 0;
-          for(auto edge : corrected_path) {
-              size_t mapping_size = CountMappedEdgeSize(edge, mapping_path, mapping_index);
-              size_t edge_len = g_.length(edge);
-              VERIFY(edge_len >= mapping_size);
-              if((double) mapping_size / (double) edge_len > 0.7) {
-                  new_corrected_path.push_back(edge);
-              }
-          }
-          std::swap(new_corrected_path, corrected_path);
-      }
 
       vector<vector<EdgeId>> SplitUnfixedPoints(vector<EdgeId>& path) const {
           vector<vector<EdgeId>> result;

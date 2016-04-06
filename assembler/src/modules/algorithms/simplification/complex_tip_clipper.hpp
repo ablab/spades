@@ -26,6 +26,7 @@ class ComplexTipClipper {
     string pics_folder_;
     std::function<void(const set<EdgeId>&)> removal_handler_;
     const size_t edge_length_treshold = 100;
+    const double relative_coverage_treshold = 2.0;
 
     bool CheckEdgeLenghts(const GraphComponent<Graph>& component) const {
         for(auto e : component.edges()) {
@@ -54,6 +55,38 @@ class ComplexTipClipper {
             }
         }
         return true;
+    }
+
+    double GetTipCoverage(const GraphComponent<Graph> & component) const {
+        double cov = 100000.0;
+        for(auto edge : component.edges()) {
+            cov = std::min(cov, g_.coverage(edge));
+        }
+        return cov;
+    }
+
+    double GetOutwardCoverage(const GraphComponent<Graph> & component) const {
+        double cov = 0.0;
+        for(auto v : component.vertices()) {
+            for(auto edge : g_.OutgoingEdges(v)) {
+                if(component.contains(edge)) {
+                    cov = max(cov, g_.coverage(edge));
+                }
+            }
+
+            for(auto edge : g_.IncomingEdges(v)) {
+                if(component.contains(edge)) {
+                    cov = max(cov, g_.coverage(edge));
+                }
+            }
+        }
+        return cov;
+    }
+
+    double GetRelativeTipCoverage(const GraphComponent<Graph> & component) const {
+        double tip_coverage = GetTipCoverage(component);
+        double out_coverage = GetOutwardCoverage(component);
+        return out_coverage / tip_coverage;
     }
 
 public:
@@ -91,6 +124,11 @@ public:
             auto dominated = dom_finder.dominated();
             if(!CheckPathLengths(dominated)) {
                 DEBUG("Tip contains too long paths");
+                continue;
+            }
+
+            if(GetRelativeTipCoverage(component) < relative_coverage_treshold) {
+                DEBUG("Tip is too high covered with respect to external edges");
                 continue;
             }
 
