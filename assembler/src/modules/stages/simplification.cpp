@@ -70,7 +70,10 @@ class GraphSimplifier {
             INFO("Most init cleaning disabled on main iteration");
             return false;
         }
-
+        if  (cfg::get().ds.rna) {
+            INFO("Most init cleaning disabled for RNA");
+            return false;
+        }
         if (math::ge(simplif_cfg_.init_clean.activation_cov, 0.)
                 && math::ls(info_container_.detected_mean_coverage(), simplif_cfg_.init_clean.activation_cov)) {
             INFO("Most init cleaning disabled since detected mean " << info_container_.detected_mean_coverage()
