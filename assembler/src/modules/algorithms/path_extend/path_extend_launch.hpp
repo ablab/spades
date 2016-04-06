@@ -476,7 +476,7 @@ inline shared_ptr<SimpleExtender> MakeMPExtender(const conj_graph_pack& gp, cons
 inline shared_ptr<SimpleExtender> MakeCoordCoverageExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                        const pe_config::ParamSetT& pset) {
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, 0);
-    CoverageAwareIdealInfoProvider provider(gp.g, lib, 1000, 2000);
+    CoverageAwareIdealInfoProvider provider(gp.g, lib, 0, 2000); //value 0 is not used anywhere later
     shared_ptr<CoordinatedCoverageExtensionChooser> coord_chooser = make_shared<CoordinatedCoverageExtensionChooser>(gp.g, provider,
             pset.coordinated_coverage.max_edge_length_in_repeat, pset.coordinated_coverage.delta);
     shared_ptr<JointExtensionChooser> chooser = make_shared<JointExtensionChooser>(gp.g, MakePEExtensionChooser(gp, lib, 0, pset), coord_chooser);
