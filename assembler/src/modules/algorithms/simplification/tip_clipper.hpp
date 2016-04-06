@@ -160,6 +160,7 @@ public:
 
     ATCondition(const Graph& g, double max_AT_percentage, size_t max_tip_length, bool check_tip) :
             base(g), max_AT_percentage_(max_AT_percentage), max_tip_length_(max_tip_length), check_tip_(check_tip) {
+		DEBUG("check_tip: " << check_tip_);
     }
 
     bool Check(EdgeId e) const {
@@ -176,7 +177,7 @@ public:
                 end = this->g().length(e);
             else return false;
         }
-        std::array<size_t, 4> counts;
+        std::array<size_t, 4> counts = std::array<size_t, 4>();
         const Sequence &s_edge = this->g().EdgeNucls(e);
 
         for (size_t position = start; position < end; position ++) {
@@ -185,6 +186,8 @@ public:
         size_t curm = *std::max_element(counts.begin(), counts.end());
         if (curm > (end - start) * max_AT_percentage_) {
             DEBUG("deleting edge" << s_edge.str());;
+			DEBUG("curm: " << curm);
+			
             DEBUG("start end cutoff" << start << " " << end << " " << this->g().length(e) * max_AT_percentage_);
 
             return true;
