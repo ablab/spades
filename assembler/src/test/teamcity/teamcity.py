@@ -203,7 +203,7 @@ def run_quast(dataset_info, contigs, quast_output_dir):
         print('Running ' + cmd + ' on ' + ','.join(contigs))
         quast_cmd = os.path.join(dataset_info.quast_dir, cmd) + " " + " ".join(quast_params)
         ecode = os.system(quast_cmd + " -o " + quast_output_dir + " " + " ".join(contigs) + " > /dev/null")
-        os.system("chmod -R 777 " + quast_output_dir)
+        #os.system("chmod -R 777 " + quast_output_dir)
         if ecode != 0:
             print("QUAST finished abnormally with exit code " + str(ecode))
             return 9
@@ -307,7 +307,6 @@ def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exi
     if os.path.exists(fn):
         print("Processing " + fn)
         qcode = run_quast(dataset_info, [fn], output_dir)
-        os.system("chmod -R 777 " + output_dir)
         if qcode != 0:
             print("Failed to estimate!")
             if (prefix + 'assess') in dataset_info.__dict__ and dataset_info.__dict__[prefix + 'assess']:
@@ -517,7 +516,7 @@ try:
 
     #run spades
     ecode = os.system(spades_cmd)
-    os.system("chmod -R 777 " + output_dir)
+    #os.system("chmod -R 777 " + output_dir)
 
     if ecode != 0:
         print("SPAdes finished abnormally with exit code " + str(ecode))
@@ -548,7 +547,7 @@ try:
             if ecode != 0:
                 print("Reads quality tool finished abnormally with exit code " + str(ecode))
                 write_log(history_log, "", output_dir, dataset_info)
-                os.system("chmod -R 777 " + output_dir)
+                #os.system("chmod -R 777 " + output_dir)
                 exit_code = 6
             else:
                 limit_map = {}
