@@ -115,11 +115,11 @@ class MismatchTipCondition : public EdgeCondition<Graph> {
     size_t max_diff_;
 
     size_t Hamming(EdgeId edge1, EdgeId edge2) const {
-        size_t len = std::min(this->g().length(edge1), this->g().length(edge2));
         size_t cnt = 0;
         Sequence seq1 = this->g().EdgeNucls(edge1);
         Sequence seq2 = this->g().EdgeNucls(edge2);
-        for(size_t i = 0; i < len; i++) {
+        size_t len = std::min(seq1.size(), seq2.size());
+        for(size_t i = this->g().k(); i < len; i++) {
             if(seq1[i] != seq2[i])
                 cnt++;
         }
