@@ -9,7 +9,7 @@
 #define HAMMER_VALIDKMERGENERATOR_HPP_
 
 #include "io/read.hpp"
-#include "sequence/seq.hpp"
+#include "data_structures/sequence/seq.hpp"
 
 #include <string>
 #include <vector>

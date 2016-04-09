@@ -21,8 +21,8 @@ void print_n_times(std::ostream& output, char c, int n) {
 }
 
 void print_alignment(std::ostream& output, const StripedSmithWaterman::Alignment &data,
-		const std::string& ref, const std::string& query,
-		const std::string& name, const std::string& database_name) {
+        const std::string& ref, const std::string& query,
+        const std::string& name, const std::string& database_name) {
 
   output << "Alignment: input sequence (first line) " << name << " alignes "
          << std::endl

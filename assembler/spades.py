@@ -42,6 +42,7 @@ elif sys.version.startswith('3.'):
 import moleculo_postprocessing
 import alignment
 
+
 def print_used_values(cfg, log):
     def print_value(cfg, section, param, pretty_param="", margin="  "):
         if not pretty_param:
@@ -91,8 +92,12 @@ def print_used_values(cfg, log):
             log.info("  Single-cell mode")
         elif cfg["dataset"].meta:
             log.info("  Metagenomic mode")
+        elif cfg["dataset"].large_genome:
+            log.info("  Large genome mode")
         elif cfg["dataset"].truseq:
             log.info(" Illumina TruSeq mode")
+        elif cfg["dataset"].rna:
+            log.info(" RNA-seq mode")
         else:
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
                      " was obtained with MDA (single-cell) technology"\
@@ -218,6 +223,12 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.single_cell = True
         elif opt == "--meta":
             options_storage.meta = True
+        elif opt == "--large-genome":
+            options_storage.large_genome = True
+        elif opt == "--plasmid":
+            options_storage.plasmid = True
+        elif opt == "--rna":
+            options_storage.rna = True
         elif opt == "--iontorrent":
             options_storage.iontorrent = True
         elif opt == "--disable-gzip-output":
@@ -228,7 +239,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.disable_rr = True
         elif opt == "--disable-rr:false":
             options_storage.disable_rr = False
-
+        
         elif opt == "--only-error-correction":
             if options_storage.only_assembler:
                 support.error('you cannot specify --only-error-correction and --only-assembler simultaneously')
@@ -301,6 +312,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.mismatch_corrector = False
             options_storage.careful = False
 
+        elif opt == '-v' or opt == "--version":
+            show_version()
         elif opt == '-h' or opt == "--help":
             show_usage(0)
         elif opt == "--help-hidden":
@@ -384,8 +397,10 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
 
     # dataset section
     cfg["dataset"].__dict__["single_cell"] = options_storage.single_cell
+    cfg["dataset"].__dict__["rna"] = options_storage.rna
     cfg["dataset"].__dict__["iontorrent"] = options_storage.iontorrent
     cfg["dataset"].__dict__["meta"] = options_storage.meta
+    cfg["dataset"].__dict__["large_genome"] = options_storage.large_genome
     cfg["dataset"].__dict__["yaml_filename"] = options_storage.dataset_yaml_filename
     cfg["dataset"].__dict__["truseq"] = options_storage.truseq_mode
     if options_storage.developer_mode and options_storage.reference:
@@ -401,11 +416,13 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if options_storage.bh_heap_check:
             cfg["error_correction"].__dict__["heap_check"] = options_storage.bh_heap_check
         cfg["error_correction"].__dict__["iontorrent"] = options_storage.iontorrent
-        if options_storage.meta:
+        if options_storage.meta or options_storage.large_genome:
             cfg["error_correction"].__dict__["count_filter_singletons"] = 1
 
     # assembly
     if not options_storage.only_error_correction:
+        if options_storage.k_mers == 'auto' and options_storage.restart_from is None:
+            options_storage.k_mers = None
         if options_storage.k_mers:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
         else:
@@ -419,7 +436,11 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if options_storage.read_buffer_size:
             cfg["assembly"].__dict__["read_buffer_size"] = options_storage.read_buffer_size
         cfg["assembly"].__dict__["correct_scaffolds"] = options_storage.correct_scaffolds
-
+        if options_storage.large_genome:
+            cfg["assembly"].__dict__["bwa_paired"] = True
+            cfg["assembly"].__dict__["scaffolding_mode"] = "old_pe_2015"
+        if options_storage.plasmid:
+            cfg["assembly"].__dict__["plasmid"] = True
     #corrector can work only if contigs exist (not only error correction)
     if (not options_storage.only_error_correction) and options_storage.mismatch_corrector:
         cfg["mismatch_corrector"] = empty_config()
@@ -494,6 +515,11 @@ def get_options_from_params(params_filename, spades_py_name=None):
     if spades_py_pos == -1:
         return None, None
     return cmd_line, cmd_line[spades_py_pos + len(spades_py_name):].split()
+
+
+def show_version():
+    options_storage.version(spades_version)
+    sys.exit(0)
 
 
 def show_usage(code, show_hidden=False):
@@ -613,9 +639,9 @@ def main(args):
             shutil.rmtree(tmp_configs_dir)
         if not os.path.isdir(tmp_configs_dir):
             if options_storage.configs_dir:
-                dir_util.copy_tree(options_storage.configs_dir, tmp_configs_dir, preserve_times=False)
+                dir_util.copy_tree(options_storage.configs_dir, tmp_configs_dir, preserve_times=False, preserve_mode=False)
             else:
-                dir_util.copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False)
+                dir_util.copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False, preserve_mode=False)
 
         corrected_dataset_yaml_filename = ''
         if "error_correction" in cfg:
@@ -655,9 +681,11 @@ def main(args):
             if options_storage.stop_after == 'ec':
                 support.finish_here(log)
 
-        result_contigs_filename = os.path.join(cfg["common"].output_dir, "contigs.fasta")
-        result_scaffolds_filename = os.path.join(cfg["common"].output_dir, "scaffolds.fasta")
-        result_assembly_graph_filename = os.path.join(cfg["common"].output_dir, "assembly_graph.fastg")
+        result_contigs_filename = os.path.join(cfg["common"].output_dir, options_storage.contigs_name)
+        result_scaffolds_filename = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_name)
+        result_assembly_graph_filename = os.path.join(cfg["common"].output_dir, options_storage.assembly_graph_name)
+        result_contigs_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.contigs_paths)
+        result_scaffolds_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_paths)
         truseq_long_reads_file_base = os.path.join(cfg["common"].output_dir, "truseq_long_reads")
         truseq_long_reads_file = truseq_long_reads_file_base + ".fasta"
         misc_dir = os.path.join(cfg["common"].output_dir, "misc")
@@ -670,6 +698,8 @@ def main(args):
             spades_cfg.__dict__["result_contigs"] = result_contigs_filename
             spades_cfg.__dict__["result_scaffolds"] = result_scaffolds_filename
             spades_cfg.__dict__["result_graph"] = result_assembly_graph_filename
+            spades_cfg.__dict__["result_contigs_paths"] = result_contigs_paths_filename
+            spades_cfg.__dict__["result_scaffolds_paths"] = result_scaffolds_paths_filename
 
             if options_storage.continue_mode and (os.path.isfile(spades_cfg.result_contigs)
                                                   or ("mismatch_corrector" in cfg and
@@ -714,7 +744,9 @@ def main(args):
                     dataset_file = open(dataset_filename, 'w')
                     import process_cfg
                     dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
+                    dataset_file.write("rna" + '\t' + process_cfg.bool_to_str(cfg["dataset"].rna) + '\n')
                     dataset_file.write("meta" + '\t' + process_cfg.bool_to_str(cfg["dataset"].meta) + '\n')
+                    dataset_file.write("large_genome" + '\t' + process_cfg.bool_to_str(cfg["dataset"].large_genome) + '\n')
                     dataset_file.write("moleculo" + '\t' + process_cfg.bool_to_str(cfg["dataset"].truseq) + '\n')
                     if os.path.isfile(corrected_dataset_yaml_filename):
                         dataset_file.write("reads" + '\t' + process_cfg.process_spaces(corrected_dataset_yaml_filename) + '\n')
@@ -836,6 +868,14 @@ def main(args):
                 log.info(message)
             if "assembly" in cfg and os.path.isfile(result_assembly_graph_filename):
                 message = " * Assembly graph is in " + support.process_spaces(result_assembly_graph_filename)
+                log.info(message)
+            if "assembly" in cfg and os.path.isfile(result_contigs_paths_filename):
+                message = " * Paths in the assembly graph corresponding to the contigs are in " + \
+                          support.process_spaces(result_contigs_paths_filename)
+                log.info(message)
+            if "assembly" in cfg and os.path.isfile(result_scaffolds_paths_filename):
+                message = " * Paths in the assembly graph corresponding to the scaffolds are in " + \
+                          support.process_spaces(result_scaffolds_paths_filename)
                 log.info(message)
             #log.info("")
 

@@ -1,19 +1,19 @@
 #include <cstdio>
-#include <string.h>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <memory>
-#include <io/mmapped_reader.hpp>
+#include <io/kmers_io/mmapped_reader.hpp>
 #include <libcxx/sort.hpp>
 #include "kmc_api/kmc_file.h"
-#include "omp.h"
-#include <runtime_k.hpp>
+//#include "omp.h"
+#include <data_structures/sequence/runtime_k.hpp>
 #include <boost/optional/optional.hpp>
 #include <boost/lexical_cast.hpp>
-#include "path_helper.hpp"
+#include "dev_support/path_helper.hpp"
 
 using std::string;
 using std::vector;
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
         }
         i += 2;
     }
-    if (i > argc 
+    if (i > argc
         || min_mult == -1ul
         || min_sample_count == -1ul
         || k == -1ul

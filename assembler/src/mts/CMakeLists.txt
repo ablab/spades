@@ -13,25 +13,25 @@ add_executable(kmer_multiplicity_counter
         kmc_api/mmer.cpp
         kmer_multiplicity_counter.cpp)
 
-target_link_libraries(kmer_multiplicity_counter input ${COMMON_LIBRARIES})
+target_link_libraries(kmer_multiplicity_counter input dev_support ${COMMON_LIBRARIES})
 
 add_executable(annotation_propagator
                propagate.cpp)
 
-target_link_libraries(annotation_propagator input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(annotation_propagator spades_modules nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
 add_executable(read_binning
                read_binning.cpp)
 
-target_link_libraries(read_binning input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(read_binning spades_modules nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
 add_executable(stats
                stats.cpp
-               ../debruijn/genome_storage.cpp)
-               
-target_link_libraries(stats input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})            
+               ../modules/data_structures/sequence/genome_storage.cpp)
+
+target_link_libraries(stats spades_modules nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
 add_executable(contig_abundance_counter
                contig_abundance_counter.cpp)
 
-target_link_libraries(contig_abundance_counter input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(contig_abundance_counter spades_modules nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})

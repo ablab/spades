@@ -5,10 +5,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "standard_base.hpp"
-#include "logger/log_writers.hpp"
+#include "dev_support/standard_base.hpp"
+#include "dev_support/logger/log_writers.hpp"
 
-#include "graphio.hpp"
+#include "pipeline/graphio.hpp"
 #include "test_utils.hpp"
 
 //headers with tests
@@ -18,10 +18,11 @@
 #include "path_extend_test.hpp"
 #include "overlap_analysis_test.hpp"
 //#include "detail_coverage_test.hpp"
+#include "paired_info_test.hpp"
 //fixme why is it disabled
 //#include "pair_info_test.hpp"
 
-::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
+::boost::unit_test::test_suite*    init_unit_test_suite( int, char* [] )
 {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
     log->add_writer(std::make_shared<logging::console_writer>());

@@ -10,7 +10,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 
 # allow more human readable "if then else" constructs
-set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE) 
+set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
 # modules to find additional libraries (like zlib, boost and etc)
 # Add path for custom modules
@@ -20,6 +20,7 @@ set(CMAKE_MODULE_PATH
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 # Define various dirs
 set(SPADES_MAIN_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(SPADES_MODULES_DIR ${SPADES_MAIN_SRC_DIR}/modules)
 set(SPADES_MAIN_INCLUDE_DIR ${SPADES_MAIN_SRC_DIR}/include)
 set(SPADES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(SPADES_TOOLS_BINARY_DIR ${SPADES_BINARY_DIR}/bin)
@@ -32,7 +33,7 @@ set(SPADES_CFG_DIR "${CMAKE_SOURCE_DIR}/../configs")
 include(options)
 
 # Sanity check our source directory to make sure that we are not trying to
-# generate an in-tree build 
+# generate an in-tree build
 if ((CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR) OR
     (CMAKE_SOURCE_DIR STREQUAL "${CMAKE_BINARY_DIR}/src"))
   message(FATAL_ERROR "In-source builds are not allowed.
@@ -56,8 +57,10 @@ include(libs)
 
 include(GetGitRevisionDescription)
 get_git_head_revision(SPADES_GIT_REFSPEC SPADES_GIT_SHA1)
-if (SPADES_GIT_REFSPEC STREQUAL "GITDIR-NOTFOUND")
+if ((NOT SPADES_GIT_REFSPEC) OR (SPADES_GIT_REFSPEC STREQUAL "GITDIR-NOTFOUND"))
   set(SPADES_GIT_REFSPEC "N/A")
+endif()
+if (NOT SPADES_GIT_SHA1)
   set(SPADES_GIT_SHA1 "N/A")
 endif()
 
@@ -65,6 +68,8 @@ message("Building SPAdes from ${SPADES_GIT_REFSPEC}, sha: ${SPADES_GIT_SHA1}")
 
 configure_file("${SPADES_MAIN_INCLUDE_DIR}/config.hpp.in"
                "${SPADES_BUILT_INCLUDE_DIR}/config.hpp")
+configure_file("${SPADES_MAIN_INCLUDE_DIR}/version.hpp.in"
+               "${SPADES_BUILT_INCLUDE_DIR}/version.hpp")
 
 # Build external dependencies (if any)
 add_subdirectory("${EXT_DIR}/src" "${Project_BINARY_DIR}/ext")
@@ -77,15 +82,9 @@ if (NOT OPENMP_FOUND)
 endif()
 
 # sub projects
-add_subdirectory(io)
-add_subdirectory(mph_index)
-add_subdirectory(debruijn)
-add_subdirectory(hammer)
-add_subdirectory(ionhammer)
+add_subdirectory(modules)
+add_subdirectory(projects)
 add_subdirectory(spades_pipeline)
-add_subdirectory(dipspades)
-add_subdirectory(corrector)
-add_subdirectory(scaffold_correction)
 add_subdirectory(mts)
 
 # Main pipeline script

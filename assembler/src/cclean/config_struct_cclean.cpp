@@ -6,8 +6,8 @@
 //***************************************************************************
 
 #include "config_struct_cclean.hpp"
-#include "config_common.hpp"
-#include "openmp_wrapper.h"
+#include "pipeline/config_common.hpp"
+#include "dev_support/openmp_wrapper.h"
 
 void load(cclean_config& cfg, const std::string &filename) {
   boost::property_tree::ptree pt;

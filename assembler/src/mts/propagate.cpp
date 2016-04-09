@@ -6,12 +6,12 @@
 //***************************************************************************
 
 #include "annotation.hpp"
-#include "simple_tools.hpp"
-#include "logger/log_writers.hpp"
+#include "dev_support/simple_tools.hpp"
+#include "dev_support/logger/log_writers.hpp"
 
-#include "graphio.hpp"
-#include "graph_pack.hpp"
-#include "io/file_reader.hpp"
+#include "pipeline/graphio.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "io/reads_io/file_reader.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
@@ -73,7 +73,7 @@ class ConnectingPathPropagator : public EdgeAnnotationPropagator {
                 auto callback = AdaptorCallback<Graph>([&](vector<EdgeId> path) {
                     insert_all(answer, path);
                 });
-                DEBUG("Launching path search between edge " << g().str(e) << " and vertex " 
+                DEBUG("Launching path search between edge " << g().str(e) << " and vertex "
                         << g().str(v) << " with length bound " << path_length_threshold_);
                 path_searcher.Process(v, 0, path_length_threshold_, callback);
             }
@@ -95,7 +95,7 @@ class AnnotationPropagator {
     const conj_graph_pack& gp_;
 
     void DumpContigAnnotation(io::SingleStream& contigs,
-                              const EdgeAnnotation& annotation, 
+                              const EdgeAnnotation& annotation,
                               const string& annotation_out_fn) const {
         AnnotationOutStream annotation_out(annotation_out_fn);
         io::SingleRead contig;
@@ -103,7 +103,7 @@ class AnnotationPropagator {
             contigs >> contig;
             auto relevant_bins = annotation.RelevantBins(contig);
             if (!relevant_bins.empty()) {
-                annotation_out << ContigAnnotation(GetId(contig), 
+                annotation_out << ContigAnnotation(GetId(contig),
                                     vector<bin_id>(relevant_bins.begin(), relevant_bins.end()));
             }
         }
@@ -115,7 +115,7 @@ public:
     }
 
     void Run(io::SingleStream& contigs, const string& annotation_in_fn,
-                         const vector<bin_id>& bins_of_interest, 
+                         const vector<bin_id>& bins_of_interest,
                          const string& annotation_out_fn) {
         AnnotationStream annotation_in(annotation_in_fn);
         EdgeAnnotation edge_annotation(gp_, bins_of_interest);

@@ -19,5 +19,5 @@ add_executable(cap_test
  ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
  test.cpp)
 
-target_link_libraries(cap_test input mph_index nlopt ${COMMON_LIBRARIES})
+target_link_libraries(cap_test input cityhash nlopt ${COMMON_LIBRARIES})
 

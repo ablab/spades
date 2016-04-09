@@ -5,22 +5,23 @@
  *      Author: idmit
  */
 
-#include "graphio.hpp"
-#include "graph_pack.hpp"
-#include "simple_tools.hpp"
-#include "debruijn_graph.hpp"
-#include "xmath.h"
+#include "pipeline/graphio.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "dev_support/simple_tools.hpp"
+//#include "debruijn_graph.hpp"
+#include "math/xmath.h"
 #include <iostream>
 #include <vector>
-#include "io/multifile_reader.hpp"
-#include "io/splitting_wrapper.hpp"
-#include "io/modifying_reader_wrapper.hpp"
-#include "io/vector_reader.hpp"
+#include "io/reads_io/multifile_reader.hpp"
+#include "io/reads_io/splitting_wrapper.hpp"
+#include "io/reads_io/modifying_reader_wrapper.hpp"
+#include "io/reads_io/vector_reader.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
-#include "io/file_reader.hpp"
+#include "io/reads_io/file_reader.hpp"
 #include "annotation.hpp"
-#include "omni/visualization/graph_colorer.hpp"
+#include "visualization/graph_colorer.hpp"
+#include "visualization/position_filler.hpp"
 
 using namespace debruijn_graph;
 

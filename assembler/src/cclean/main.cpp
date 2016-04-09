@@ -10,18 +10,18 @@
 #include <map>
 #include <exception>
 
-#include "sequence/seq.hpp"
-#include "logger/log_writers.hpp"
-#include "memory_limit.hpp"
+#include "data_structures/sequence/seq.hpp"
+#include "dev_support/logger/log_writers.hpp"
+#include "dev_support/memory_limit.hpp"
 #include "running_modes.hpp"
 #include "config_struct_cclean.hpp"
-#include "simple_tools.hpp"
+#include "dev_support/simple_tools.hpp"
 #include "adapter_index.hpp"
 #include "utils.hpp"
 
 #include "valid_kmer_generator.hpp"
 #include "io/read_processor.hpp"
-#include "ssw/ssw_cpp.h"
+#include "algorithms/ssw_cpp.h"
 #include "additional.cpp"
 
 #include "job_wrappers.hpp"

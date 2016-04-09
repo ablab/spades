@@ -38,7 +38,7 @@ def error(err_str, log=None, dipspades=False, prefix=SPADES_PY_ERROR_MESSAGE):
         binary_name = "dipSPAdes"
     if log:
         log.info("\n\n" + prefix + " " + err_str)
-        log_warnings(log)
+        log_warnings(log, with_error=True)
         log.info("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@bioinf.spbau.ru")
         log.info("Please provide us with params.txt and " + binary_name.lower() + ".log files from the output directory.")
     else:
@@ -145,7 +145,7 @@ def which(program):
     if fpath:
         if is_exe(program):
             return program
-    else:
+    elif "PATH" in os.environ:
         for path in os.environ["PATH"].split(os.pathsep):
             path = path.strip('"')
             exe_file = os.path.join(path, program)
@@ -173,8 +173,8 @@ def get_available_memory():
 
 def process_readline(line, is_python3=sys.version.startswith('3.')):
     if is_python3:
-        return str(line, 'utf-8')
-    return line
+        return str(line, 'utf-8').rstrip()
+    return line.rstrip()
 
 
 def process_spaces(str):
@@ -196,7 +196,7 @@ def sys_call(cmd, log=None, cwd=None):
 
     output = ''
     while not proc.poll():
-        line = process_readline(proc.stdout.readline()).rstrip()
+        line = process_readline(proc.stdout.readline())
         if line:
             if log:
                 log.info(line)
@@ -206,7 +206,7 @@ def sys_call(cmd, log=None, cwd=None):
             break
 
     for line in proc.stdout.readlines():
-        line = process_readline(line).rstrip()
+        line = process_readline(line)
         if line:
             if log:
                 log.info(line)
@@ -244,11 +244,11 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     if log and (not out_filename or not err_filename):
         while not proc.poll():
             if not out_filename:
-                line = process_readline(proc.stdout.readline()).rstrip()
+                line = process_readline(proc.stdout.readline())
                 if line:
                     log.info(line)
             if not err_filename:
-                line = process_readline(proc.stderr.readline()).rstrip()
+                line = process_readline(proc.stderr.readline())
                 if line:
                     log.info(line)
             if proc.returncode is not None:
@@ -257,11 +257,11 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
         if not out_filename:
             for line in proc.stdout.readlines():
                 if line != '':
-                    log.info(process_readline(line).rstrip())
+                    log.info(process_readline(line))
         if not err_filename:
             for line in proc.stderr.readlines():
                 if line != '':
-                    log.info(process_readline(line).rstrip())
+                    log.info(process_readline(line))
     else:
         proc.wait()
 
@@ -280,12 +280,19 @@ def save_data_to_file(data, file):
     os.chmod(file, stat.S_IWRITE | stat.S_IREAD | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-def get_warnings(log_filename):
+def get_important_messages_from_log(log_filename, warnings=True):
     def already_saved(list_to_check, suffix): # for excluding duplicates (--continue-from may cause them)
         for item in list_to_check:
             if item.endswith(suffix):
                 return True
         return False
+
+    if warnings:
+        spades_py_message = SPADES_PY_WARN_MESSAGE
+        spades_message = SPADES_WARN_MESSAGE
+    else:  # errors
+        spades_py_message = SPADES_PY_ERROR_MESSAGE
+        spades_message = SPADES_ERROR_MESSAGE
 
     ### for capturing correct warnings in case of continue_mode
     if continue_logfile_offset:
@@ -303,23 +310,23 @@ def get_warnings(log_filename):
     else:
         lines_to_check = open(log_filename, 'r').readlines()
 
-    spades_py_warns = []
-    spades_warns = []
-    WARN_SUMMARY_PREFIX = ' * '
+    spades_py_msgs = []
+    spades_msgs = []
+    IMPORTANT_MESSAGE_SUMMARY_PREFIX = ' * '
     for line in lines_to_check:
-        if line.startswith(WARN_SUMMARY_PREFIX):
+        if line.startswith(IMPORTANT_MESSAGE_SUMMARY_PREFIX):
             continue
-        if line.find(SPADES_PY_WARN_MESSAGE) != -1:
-            suffix = line[line.find(SPADES_PY_WARN_MESSAGE) + len(SPADES_PY_WARN_MESSAGE):].strip()
-            line = line.replace(SPADES_PY_WARN_MESSAGE, '').strip()
-            if not already_saved(spades_py_warns, suffix):
-                spades_py_warns.append(WARN_SUMMARY_PREFIX + line)
-        elif line.find(SPADES_WARN_MESSAGE) != -1:
-            suffix = line[line.find(SPADES_WARN_MESSAGE) + len(SPADES_WARN_MESSAGE):].strip()
+        if line.find(spades_py_message) != -1:
+            suffix = line[line.find(spades_py_message) + len(spades_py_message):].strip()
+            line = line.replace(spades_py_message, '').strip()
+            if not already_saved(spades_py_msgs, suffix):
+                spades_py_msgs.append(IMPORTANT_MESSAGE_SUMMARY_PREFIX + line)
+        elif line.find(spades_message) != -1:
+            suffix = line[line.find(spades_message) + len(spades_message):].strip()
             line = line.strip()
-            if not already_saved(spades_warns, suffix):
-                spades_warns.append(WARN_SUMMARY_PREFIX + line)
-    return spades_py_warns, spades_warns
+            if not already_saved(spades_msgs, suffix):
+                spades_msgs.append(IMPORTANT_MESSAGE_SUMMARY_PREFIX + line)
+    return spades_py_msgs, spades_msgs
 
 
 def get_logger_filename(log):
@@ -330,15 +337,18 @@ def get_logger_filename(log):
     return log_file
 
 
-def log_warnings(log):
+def log_warnings(log, with_error=False):
     log_file = get_logger_filename(log)
     if not log_file:
         return False
     for h in log.__dict__['handlers']:
         h.flush()
-    spades_py_warns, spades_warns = get_warnings(log_file)
+    spades_py_warns, spades_warns = get_important_messages_from_log(log_file, warnings=True)
     if spades_py_warns or spades_warns:
-        log.info("\n======= SPAdes pipeline finished WITH WARNINGS!")
+        if with_error:
+            log.info("\n======= SPAdes pipeline finished abnormally and WITH WARNINGS!")
+        else:
+            log.info("\n======= SPAdes pipeline finished WITH WARNINGS!")
         warnings_filename = os.path.join(os.path.dirname(log_file), "warnings.log")
         warnings_handler = logging.FileHandler(warnings_filename, mode='w')
         log.addHandler(warnings_handler)
@@ -354,6 +364,12 @@ def log_warnings(log):
                 log.info(line)
         log.info("======= Warnings saved to " + warnings_filename)
         log.removeHandler(warnings_handler)
+        if with_error:
+            spades_py_errors, spades_errors = get_important_messages_from_log(log_file, warnings=False)
+            log.info("")
+            log.info("=== ERRORs:")
+            for line in (spades_errors + spades_py_errors):
+                log.info(line)
         return True
     return False
 
@@ -672,30 +688,41 @@ def process_Ns_in_additional_contigs(dataset_data, dst, log):
 
 
 def split_interlaced_reads(dataset_data, dst, log):
-    def write_single_read(in_file, out_file, fasta_read_name=None, is_fastq=False, is_python3=False):
-        next_read_str = "" # if there is no next read: empty string
-        if not is_fastq and fasta_read_name is not None:
-            read_name = fasta_read_name
-        else:
+    def write_single_read(in_file, out_file, read_name=None, is_fastq=False, is_python3=False):
+        if read_name is None:
             read_name = process_readline(in_file.readline(), is_python3)
         if not read_name:
-            return next_read_str
+            return ''  # no next read
         read_value = process_readline(in_file.readline(), is_python3)
         line = process_readline(in_file.readline(), is_python3)
-        while line and ((is_fastq and not line.startswith('+')) or (not is_fastq and not line.startswith('>'))):
+        fpos = in_file.tell()
+        while (is_fastq and not line.startswith('+')) or (not is_fastq and not line.startswith('>')):
             read_value += line
             line = process_readline(in_file.readline(), is_python3)
-        next_read_str = line # if there is a next read: "+" (for fastq) or next read name (for fasta)
-        out_file.write(read_name)
-        out_file.write(read_value)
+            if not line:
+                if fpos == in_file.tell():
+                    break
+                fpos = in_file.tell()
+        out_file.write(read_name + '\n')
+        out_file.write(read_value + '\n')
 
         if is_fastq:
             read_quality = process_readline(in_file.readline(), is_python3)
-            while len(read_value) != len(read_quality):
-                read_quality += process_readline(in_file.readline(), is_python3)
-            out_file.write("+\n")
-            out_file.write(read_quality)
-        return next_read_str
+            line = process_readline(in_file.readline(), is_python3)
+            while not line.startswith('@'):
+                read_quality += line
+                line = process_readline(in_file.readline(), is_python3)
+                if not line:
+                    if fpos == in_file.tell():
+                        break
+                    fpos = in_file.tell()
+            if len(read_value) != len(read_quality):
+                error('The length of sequence and quality lines should be the same! '
+                      'Check read %s (SEQ length is %d, QUAL length is %d)' %
+                      (read_name, len(read_value), len(read_quality)), log)
+            out_file.write('+\n')
+            out_file.write(read_quality + '\n')
+        return line  # next read name or empty string
 
     new_dataset_data = list()
     for reads_library in dataset_data:
@@ -737,16 +764,14 @@ def split_interlaced_reads(dataset_data, dst, log):
                         log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
                         out_files = [open(out_left_filename, 'w'), open(out_right_filename, 'w')]
                         i = 0
-                        next_read_str = write_single_read(input_file, out_files[i], None, is_fastq,
-                            sys.version.startswith('3.') and was_compressed)
-                        while next_read_str:
+                        next_read_name = write_single_read(input_file, out_files[i], None, is_fastq,
+                                                           sys.version.startswith('3.') and was_compressed)
+                        while next_read_name:
                             i = (i + 1) % 2
-                            next_read_str = write_single_read(input_file, out_files[i], next_read_str, is_fastq,
-                                sys.version.startswith('3.') and was_compressed)
-                        if (is_fastq and i % 2 == 1) or (not is_fastq and i % 2 == 0):
-                        # when fastq, the number of writes is equal to number of READS (should be EVEN)
-                        # when fasta, the number of writes is equal to number of NEXT READS (should be ODD)
-                            error("The number of reads in file with interlaced reads (" + interlaced_reads + ") is ODD!", log)
+                            next_read_name = write_single_read(input_file, out_files[i], next_read_name, is_fastq,
+                                                               sys.version.startswith('3.') and was_compressed)
+                        if i == 0:
+                            error("The number of reads in file with interlaced reads (" + interlaced_reads + ") should be EVEN!", log)
                         out_files[0].close()
                         out_files[1].close()
                     input_file.close()

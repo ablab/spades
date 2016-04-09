@@ -28,6 +28,7 @@ class Shellder:
         self.pout = open(pipe_out, "r+")
         self.cin = open(pipe_in, "r+")
         self.pin = open(pipe_in, "w+")
+        self.launch_if_needed()
 
     def launch_if_needed(self):
         #Launch online_vis process if it hasn't started yet or was aborted
@@ -35,10 +36,8 @@ class Shellder:
             #Launch the process
             #pin = open(self.pipe_in, "r+")
             #pout = open(self.pipe_out, "w+")
-            pushd = os.getcwd()
-            os.chdir(self.dir)
-            self.proc = subprocess.Popen(["./run", "rv"], stdin=self.cin, stdout=self.cout, stderr=self.cout)
-            os.chdir(pushd)
+            self.proc = subprocess.Popen(["./run", "rv"], cwd=self.dir,
+                 stdin=self.cin, stdout=self.cout, stderr=self.cout)
 
         #Launch the reader thread
         if self.reader is None or not self.reader.is_alive():
@@ -71,6 +70,8 @@ class Shellder:
                 if str == self.end_out:
                     complete = True
                     break
+                if str.startswith("Exception"):
+                    raise OSError(str)
                 res.append(str)
         except IOError as e:
             res.append("Cannot communicate with online_vis: {}\n".format(str(e)))
@@ -89,3 +90,6 @@ class Shellder:
         self.proc.kill()
         self.pout.close()
         self.pin.close()
+
+    def pid(self):
+        return self.proc.pid

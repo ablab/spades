@@ -8,8 +8,8 @@
 #ifndef CCLEAN_ADAPTERINDEX_HPP
 #define CCLEAN_ADAPTERINDEX_HPP
 
-#include "sequence/seq.hpp"
-#include "mph_index/kmer_index.hpp"
+#include "data_structures/sequence/seq.hpp"
+#include "data_structures/mph_index/kmer_index.hpp"
 
 #include <string>
 #include <set>

@@ -41,7 +41,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
-#include "Version.hpp"
+#include "ConsensusCore/Version.hpp"
 
 namespace ConsensusCore
 {

@@ -6,11 +6,11 @@
 //***************************************************************************
 
 #include "annotation.hpp"
-#include "simple_tools.hpp"
-#include "logger/log_writers.hpp"
+#include "dev_support/simple_tools.hpp"
+#include "dev_support/logger/log_writers.hpp"
 
-#include "graphio.hpp"
-#include "io/file_reader.hpp"
+#include "pipeline/graphio.hpp"
+#include "io/reads_io/file_reader.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);

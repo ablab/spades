@@ -3,6 +3,7 @@ info_printers
     default
     {
        basic_stats                      false
+       lib_info                         false
        save_graph                       false
        save_graph_pack                  false
        extended_stats                   false
@@ -25,7 +26,7 @@ info_printers
     {
     }
 
-    before_post_simplification    
+    before_post_simplification
     {
     }
 
@@ -42,4 +43,4 @@ info_printers
        save_graph_pack                  true
     }
 
-}  
+}

@@ -1,13 +1,13 @@
 #include <array>
 #include <string>
 #include <iostream>
-#include "verify.hpp"
-#include "logger/log_writers.hpp"
-#include "logger/logger.hpp"
+#include "dev_support/verify.hpp"
+#include "dev_support/logger/log_writers.hpp"
+#include "dev_support/logger/logger.hpp"
 #include "formats.hpp"
-#include "graph_pack.hpp"
-#include "io/file_reader.hpp"
-#include "graphio.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "io/reads_io/file_reader.hpp"
+#include "pipeline/graphio.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
@@ -138,8 +138,7 @@ public:
                                min_length_bound_(min_length_bound),
                                mapper_(MapperInstance(gp)),
                                kmer_mpl_(gp_.index.k(),
-                               gp_.index.inner_index().workdir(),
-                               gp_.index.inner_index().index_ptr()) {
+                               gp_.index.inner_index().workdir()) {
         INFO("Filling kmer multiplicities. Sample cnt " << sample_cnt);
         FillMplMap(kmers_mpl_file);
     }

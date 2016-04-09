@@ -31,14 +31,14 @@ int main(int argc, char** argv) {
   std::string label = "";
 
   if (argc != 4) {
-		std::cout << "Usage: ./filter <filename> <map number> <label>\n"
+        std::cout << "Usage: ./filter <filename> <map number> <label>\n"
               << "<map number> is map type:\n"
               << "1 - map, 2 - ext/hash_map, 3 - tr1/unordered_map,\n"
               << "4 - google/sparse_hash_map, 5 - cuckoo\n"
               << "label - some name to be written at X axis" << std::endl;
     return 0;
   } else {
-		filename = argv[1];
+        filename = argv[1];
     m_num = atoi(argv[2]);
     label = argv[3];
   }

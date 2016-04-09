@@ -11,9 +11,11 @@ from urllib import quote, unquote
 import os
 from os import listdir
 from os.path import isfile, join
+import signal
+import sys
 #App imports
 from shellder import *
-from dotjson import dot_to_json
+#from dotjson import dot_to_json
 from ConfigParser import ConfigParser
 
 # General app settings
@@ -22,7 +24,7 @@ SESSION_TYPE = "filesystem"
 app.config.from_object(__name__)
 Session(app)
 
-FILENAME_REGEXP = r"(?:\.{0,2}\/)?(?:[\w\-]+\/)+(?:[\w\-\.]+)?"
+FILENAME_REGEXP = r"(?:[^\s]*\/)[^\s]+\/?"
 SVG = ".svg"
 JSON = ".json"
 DOT = ".dot"
@@ -42,13 +44,14 @@ def make_url(string):
             method = "ls"
         if method is not None:
             url = "<a href=\"/%s?path=%s\">%s</a>" % (method, quote(f), f)
-            res = res.replace(f, url)
+            res = res.replace(f, url, 1)
     return res
 
 def format_output(lines):
     return "".join(make_url(str(flask.escape(line))) + "<br/>" for line in lines)
 
 env_path = ""
+caching = False
 cache_path = "static/cache/"
 shellders = dict()
 
@@ -69,6 +72,7 @@ def log():
 
 @app.route("/login", methods=['GET'])
 def login():
+    session.permanent = True
     global shellders
     if "username" not in session:
         name = request.args.get("username")
@@ -82,11 +86,12 @@ def login():
         if name not in shellders:
             try:
                 launch = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)
+                _debug("Started an instance", launch.pid())
                 shellders[name] = launch
-            except IOError as e:
+                session["log"] = launch.get_output()
+            except Exception as e:
                 message = "Cannot start online_vis session: " + str(e);
                 return flask.render_template("logout.html", message=message)
-            session["log"] = shellders[name].get_output()
         else:
             session["log"] = ["(the previous session log has been lost)"]
         session["username"] = name
@@ -99,23 +104,26 @@ def logout():
         name = session.pop("username")
         shellder = shellders.pop(name, None)
         if shellder is not None:
+            _debug("Stopping instance", shellder.pid())
             shellder.close()
+        else:
+            _debug("No launched instance")
         message = "You have been logged out."
     return flask.render_template("logout.html", message=message)
 
 @app.route("/command", methods=['GET'])
 def command():
     if session["username"] not in shellders:
-        return "online_vis is disconnected"
-    sh = shellders[session["username"]]
-    com = request.args.get("command", "")
-    if len(com):
-        _debug("Sending `%s`..." % com)
-        session["log"].append(">" + com)
-        sh.send(com)
-    (result, complete) = sh.get_output(5)
-    session["log"].extend(result)
-    #return result
+        (result, complete) = (["online_vis is disconnected, please restart the session"], True)
+    else:
+        sh = shellders[session["username"]]
+        com = request.args.get("command", "")
+        if len(com):
+            _debug("Sending `%s`..." % com)
+            session["log"].append(">" + com)
+            sh.send(com)
+        (result, complete) = sh.get_output(5)
+        session["log"].extend(result)
     return flask.jsonify(log=format_output(result), complete=complete)
 
 @app.route("/get")
@@ -176,7 +184,9 @@ def vertex(name):
         return flask.abort(500)
     shellder = shellders[session["username"]]
     vertex_id, ext = path.splitext(name)
-    res_path = next((augment(f) for f in listdir(cache_path) if f.endswith(name)), None)
+    res_path = None
+    if caching:
+        res_path = next((augment(f) for f in listdir(cache_path) if f.endswith(name)), None)
     if res_path is None:
         #Render a new file
         shellder.send("draw_vertex " + vertex_id)
@@ -227,6 +237,14 @@ def ls():
         return err.strerror
 
 if __name__ == "__main__":
+    #We need to stop all online_vis instances manually on exit
+    def handler(signum, frame):
+        _debug("Stopping instances...")
+        for _, sh in shellders.items():
+            sh.close()
+        sys.exit(0)
+    signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGTERM, handler)
     config = ConfigParser()
     config.readfp(open("webvis.cfg"))
     env_path = config.get("server", "env")

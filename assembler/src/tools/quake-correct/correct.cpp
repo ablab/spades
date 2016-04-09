@@ -111,51 +111,51 @@ static void  Usage
   fprintf (stderr,
            "USAGE:  correct [options]\n"
            "\n"
-	   "Correct sequencing errors in fastq file provided with -r\n"
-	   "and output trusted and corrected reads to\n"
-	   "<fastq-prefix>.cor.fastq.\n"
+       "Correct sequencing errors in fastq file provided with -r\n"
+       "and output trusted and corrected reads to\n"
+       "<fastq-prefix>.cor.fastq.\n"
            "\n"
            "Options:\n"
            " -r <file>\n"
-	   "    Fastq file of reads\n"
-	   " -f <file>\n"
-	   "    File containing fastq file names, one per line or\n"
-	   "    two per line for paired end reads.\n"
-	   " -z\n"
-	   "    Write output files as gzipped.\n"
-	   " -k <num>\n"
-	   "    K-mer size to correct.\n"
-	   " -m <file>\n"
-	   "    File containing kmer counts in format `seq\tcount`.\n"
-	   "    Can be gzipped.\n"
-	   " -b <file>\n"
-	   "    File containing saved bithash.\n"
-	   " -c <num>\n"
-	   "    Separate trusted/untrusted kmers at cutoff <num>\n"
-	   " -a <file>\n"
-	   "    Separate trusted/untrusted kmers as a function of AT\n"
-	   "    content, with cutoffs found in <file>, one per line\n"
-	   " -p <num>\n"
-	   "    Use <num> openMP threads\n"
-	   " -l <num>=30\n"
-	   "    Return only reads corrected and/or trimmed to >= <num>\n"
-	   "    bp\n"
-	   " -q <num>\n"
-	   "    Quality value ascii scale, generally 64 or 33. If not\n"
-	   "    specified, it will guess.\n"
-	   " -v <file>\n"
-	   "    File with good k-mers from Hammer.\n"
-	   " -t <num>=3\n"
-	   "    Use BWA trim parameter <num>\n"
-	   " -u\n"
-	   "    Output errors reads even if they can't be corrected,\n"
-	   "    maintaining paired end reads.\n"
-	   " --headers\n"
-	   "    Output only the original read headers without\n"
-	   "    correction messages\n"
-	   " --log\n"
-	   "    Output a log of all corrections into *.log as\n"
-	   "    'quality position new_nt old_nt'\n"
+       "    Fastq file of reads\n"
+       " -f <file>\n"
+       "    File containing fastq file names, one per line or\n"
+       "    two per line for paired end reads.\n"
+       " -z\n"
+       "    Write output files as gzipped.\n"
+       " -k <num>\n"
+       "    K-mer size to correct.\n"
+       " -m <file>\n"
+       "    File containing kmer counts in format `seq\tcount`.\n"
+       "    Can be gzipped.\n"
+       " -b <file>\n"
+       "    File containing saved bithash.\n"
+       " -c <num>\n"
+       "    Separate trusted/untrusted kmers at cutoff <num>\n"
+       " -a <file>\n"
+       "    Separate trusted/untrusted kmers as a function of AT\n"
+       "    content, with cutoffs found in <file>, one per line\n"
+       " -p <num>\n"
+       "    Use <num> openMP threads\n"
+       " -l <num>=30\n"
+       "    Return only reads corrected and/or trimmed to >= <num>\n"
+       "    bp\n"
+       " -q <num>\n"
+       "    Quality value ascii scale, generally 64 or 33. If not\n"
+       "    specified, it will guess.\n"
+       " -v <file>\n"
+       "    File with good k-mers from Hammer.\n"
+       " -t <num>=3\n"
+       "    Use BWA trim parameter <num>\n"
+       " -u\n"
+       "    Output errors reads even if they can't be corrected,\n"
+       "    maintaining paired end reads.\n"
+       " --headers\n"
+       "    Output only the original read headers without\n"
+       "    correction messages\n"
+       " --log\n"
+       "    Output a log of all corrections into *.log as\n"
+       "    'quality position new_nt old_nt'\n"
            "\n");
 
    return;
@@ -190,8 +190,8 @@ static void parse_command_line(int argc, char **argv) {
     case 'k':
       k = int(strtod(optarg, &p));
       if(p == optarg || k <= 2) {
-	fprintf(stderr, "Bad kmer size \"%s\"\n",optarg);
-	errflg = true;
+    fprintf(stderr, "Bad kmer size \"%s\"\n",optarg);
+    errflg = true;
       }
       break;  
 
@@ -206,8 +206,8 @@ static void parse_command_line(int argc, char **argv) {
     case 'c':
       cutoff = double(strtod(optarg, &p));
       if(p == optarg || cutoff < 0) {
-	fprintf(stderr, "Bad mer cutoff value \"%s\"\n",optarg);
-	errflg = true;
+    fprintf(stderr, "Bad mer cutoff value \"%s\"\n",optarg);
+    errflg = true;
       }
       break;
 
@@ -218,24 +218,24 @@ static void parse_command_line(int argc, char **argv) {
     case 't':
       trimq = int(strtol(optarg, &p, 10));
       if(p == optarg || trimq < 0) {
-	fprintf(stderr, "Bad trim quality value \"%s\"\n",optarg);
-	errflg = true;
+    fprintf(stderr, "Bad trim quality value \"%s\"\n",optarg);
+    errflg = true;
       }
       break;
 
     case 'l':
       trim_t = int(strtol(optarg, &p, 10));
       if(p == optarg || trim_t < 1) {
-	fprintf(stderr, "Bad trim threshold \"%s\"\n",optarg);
-	errflg = true;
+    fprintf(stderr, "Bad trim threshold \"%s\"\n",optarg);
+    errflg = true;
       }
       break;
 
     case 'q': 
       Read::quality_scale = int(strtol(optarg, &p, 10));
       if(p == optarg || Read::quality_scale < -1) {
-	fprintf(stderr, "Bad quality value scale \"%s\"\n",optarg);
-	errflg = true;
+    fprintf(stderr, "Bad quality value scale \"%s\"\n",optarg);
+    errflg = true;
       }
       break;
 
@@ -250,8 +250,8 @@ static void parse_command_line(int argc, char **argv) {
     case 'p':
       threads = int(strtol(optarg, &p, 10));
       if(p == optarg || threads <= 0) {
-	fprintf(stderr, "Bad number of threads \"%s\"\n",optarg);
-	errflg = true;
+    fprintf(stderr, "Bad number of threads \"%s\"\n",optarg);
+    errflg = true;
       }
       break;
 
@@ -331,7 +331,7 @@ void regress_probs(double ntnt_prob[Read::max_qual][4][4], unsigned int ntnt_cou
   for(int q = 1; q < Read::max_qual; q++)
     for(int i = 0; i < 4; i++)
       for(int j = 0; j < 4; j++)
-	actual_counts[q][i] += ntnt_counts[q][i][j];
+    actual_counts[q][i] += ntnt_counts[q][i][j];
 
   // regress
   double ntdsum;
@@ -339,14 +339,14 @@ void regress_probs(double ntnt_prob[Read::max_qual][4][4], unsigned int ntnt_cou
     for(int i = 0; i < 4; i++) {
       //ntdsum = 0;
       for(int j = 0; j < 4; j++) {
-	double pnum = 0;
-	double pden = 0;
-	for(int qr = 1; qr < Read::max_qual; qr++) {
-	  pnum += ntnt_counts[qr][i][j] * exp(-pow((double)(qr - q), 2)/(2*sigma2));
-	  pden += actual_counts[qr][i] * exp(-pow((double)(qr - q), 2)/(2*sigma2));
-	}
-	ntnt_prob[q][i][j] = pnum / pden;
-	//ntdsum += ntnt_prob[q][i][j];
+    double pnum = 0;
+    double pden = 0;
+    for(int qr = 1; qr < Read::max_qual; qr++) {
+      pnum += ntnt_counts[qr][i][j] * exp(-pow((double)(qr - q), 2)/(2*sigma2));
+      pden += actual_counts[qr][i] * exp(-pow((double)(qr - q), 2)/(2*sigma2));
+    }
+    ntnt_prob[q][i][j] = pnum / pden;
+    //ntdsum += ntnt_prob[q][i][j];
       }
 
       // re-normalize to sum to 1
@@ -388,15 +388,15 @@ void output_model(double ntnt_prob[Read::max_qual][4][4], unsigned int ntnt_coun
 
       ntsum = 0;
       for(int j = 0; j < 4; j++)
-	ntsum += ntnt_counts[q][i][j];
+    ntsum += ntnt_counts[q][i][j];
 
       for(int j = 0; j < 4; j++) {
-	if(i == j)
-	  mod_out << "\t-";
-	else if(ntsum > 0)
-	  mod_out << "\t" << ((double)ntnt_counts[q][i][j] / (double)ntsum) << "(" << ntnt_counts[q][i][j] << ")";
-	else
-	  mod_out << "\t0";
+    if(i == j)
+      mod_out << "\t-";
+    else if(ntsum > 0)
+      mod_out << "\t" << ((double)ntnt_counts[q][i][j] / (double)ntsum) << "(" << ntnt_counts[q][i][j] << ")";
+    else
+      mod_out << "\t0";
       }
       mod_out << endl;
     }
@@ -406,10 +406,10 @@ void output_model(double ntnt_prob[Read::max_qual][4][4], unsigned int ntnt_coun
     for(int i = 0; i < 4; i++) {
       mod_out << nts[i];
       for(int j = 0; j < 4; j++) {
-	if(i == j)
-	  mod_out << "\t-";
-	else
-	  mod_out << "\t" << ntnt_prob[q][i][j];
+    if(i == j)
+      mod_out << "\t-";
+    else
+      mod_out << "\t" << ntnt_prob[q][i][j];
       }
       mod_out << endl;
     }
@@ -430,13 +430,13 @@ static void output_read(ofstream & reads_out, ofstream & corlog_out, int pe_code
     bool corrected = false;
     for(int i = 0; i < corseq.size(); i++) {
       if(corseq[i] != ntseq[i]) {
-	// log it
-	if(corlog_out.good())
-	  corlog_out << (strqual[i]-Read::quality_scale) << "\t" << (i+1) << "\t" << corseq[i] << "\t" << ntseq[i] << endl;
-	// note it
-	corrected = true;
-	// set qual to crap
-	strqual[i] = (char)(Read::quality_scale+2);
+    // log it
+    if(corlog_out.good())
+      corlog_out << (strqual[i]-Read::quality_scale) << "\t" << (i+1) << "\t" << corseq[i] << "\t" << ntseq[i] << endl;
+    // note it
+    corrected = true;
+    // set qual to crap
+    strqual[i] = (char)(Read::quality_scale+2);
       }
     }
     if(corrected)
@@ -445,18 +445,18 @@ static void output_read(ofstream & reads_out, ofstream & corlog_out, int pe_code
     // update header
     if(!orig_headers) {
       if(corrected)
-	header += " correct";
+    header += " correct";
       unsigned int trimlen = ntseq.size()-corseq.size();
       if(trimlen > 0) {
-	stringstream trim_inter;
-	trim_inter << trimlen;
-	header += " trim=" + trim_inter.str();
-	tstats.trimmed++;
-	if(!corrected)
-	  tstats.trimmed_only++;
+    stringstream trim_inter;
+    trim_inter << trimlen;
+    header += " trim=" + trim_inter.str();
+    tstats.trimmed++;
+    if(!corrected)
+      tstats.trimmed_only++;
       } else {
-	if(!corrected)
-	  tstats.validated++;
+    if(!corrected)
+      tstats.validated++;
       }
     }
     // print
@@ -474,9 +474,9 @@ static void output_read(ofstream & reads_out, ofstream & corlog_out, int pe_code
 
       //print
       if(contrail_out)
-	reads_out << header << "\t" << ntseq << endl;
+    reads_out << header << "\t" << ntseq << endl;
       else
-	reads_out << header << endl << ntseq << endl << mid << endl << strqual << endl;	  
+    reads_out << header << endl << ntseq << endl << mid << endl << strqual << endl;      
     }
     if(TESTING)
       cerr << header << "\t" << ntseq << "\t-" << endl; // or . if it's only trimmed?
@@ -539,76 +539,76 @@ static void correct_reads(string fqf, int pe_code, bithash * trusted, vector<str
       toutf += tconvert.str();
 
       if(overwrite_temp || stat(toutf.c_str(), &st_file_info) == -1) {
-	ofstream reads_out(toutf.c_str());
-	//cout << toutf << endl;
+    ofstream reads_out(toutf.c_str());
+    //cout << toutf << endl;
 
-	// output log
-	string tlogf = toutf + ".log";
-	ofstream corlog_out;
-	if(out_log) {
-	  corlog_out.open(tlogf.c_str());
-	}
+    // output log
+    string tlogf = toutf + ".log";
+    ofstream corlog_out;
+    if(out_log) {
+      corlog_out.open(tlogf.c_str());
+    }
 
-	unsigned long long tcount = 0;
-	while(getline(reads_in, header)) {
-	  //cout << tid << " " << header << endl;
-	
-	  // get sequence
-	  getline(reads_in, ntseq);
-	  //cout << ntseq << endl;
-	
-	  // convert ntseq to iseq
-	  vector<unsigned int> iseq;
-	  for(int i = 0; i < ntseq.size(); i++) {
-	    nti = strchr(nts, ntseq[i]);	
-	    iseq.push_back(nti - nts);
-	  }
+    unsigned long long tcount = 0;
+    while(getline(reads_in, header)) {
+      //cout << tid << " " << header << endl;
+    
+      // get sequence
+      getline(reads_in, ntseq);
+      //cout << ntseq << endl;
+    
+      // convert ntseq to iseq
+      vector<unsigned int> iseq;
+      for(int i = 0; i < ntseq.size(); i++) {
+        nti = strchr(nts, ntseq[i]);    
+        iseq.push_back(nti - nts);
+      }
 
-	  // get quality values
-	  getline(reads_in,mid);
-	  //cout << mid << endl;
-	  getline(reads_in,strqual);
-	  //cout << strqual << endl;
+      // get quality values
+      getline(reads_in,mid);
+      //cout << mid << endl;
+      getline(reads_in,strqual);
+      //cout << strqual << endl;
 
-	  vector<int> untrusted;
+      vector<int> untrusted;
 
-	  if(iseq.size() < trim_t)
-	    trim_length = 0;
-	  else {
-	    for(int i = 0; i < iseq.size()-k+1; i++) {
-	      if(!trusted->check(&iseq[i])) {
-		untrusted.push_back(i);
-	      }
-	    }
+      if(iseq.size() < trim_t)
+        trim_length = 0;
+      else {
+        for(int i = 0; i < iseq.size()-k+1; i++) {
+          if(!trusted->check(&iseq[i])) {
+        untrusted.push_back(i);
+          }
+        }
 
-	    trim_length = quick_trim(strqual, untrusted);
-	    //trim_length = iseq.size();
-	  }
+        trim_length = quick_trim(strqual, untrusted);
+        //trim_length = iseq.size();
+      }
 
-	  // fix error reads
-	  if(untrusted.size() > 0) {
-	    r = new Read(header, &iseq[0], strqual, untrusted, trim_length);
-	    corseq = r->correct(trusted, ntnt_prob, prior_prob);
+      // fix error reads
+      if(untrusted.size() > 0) {
+        r = new Read(header, &iseq[0], strqual, untrusted, trim_length);
+        corseq = r->correct(trusted, ntnt_prob, prior_prob);
 
-	    // output read w/ trim and corrections
-	    output_read(reads_out, corlog_out, pe_code, header, ntseq, mid, strqual, corseq, thread_stats[tid]);
-	  
-	    delete r;
-	  } else {
-	    output_read(reads_out, corlog_out, pe_code, header, ntseq, mid, strqual, ntseq.substr(0,trim_length), thread_stats[tid]);
-	    // output read as trimmed
-	    /*
-	      if(contrail_out)
-	      reads_out << header << "\t" << ntseq.substr(0,trim_length) << endl;
-	      else
-	      reads_out << header << endl << ntseq.substr(0,trim_length) << endl << mid << endl << strqual.substr(0,trim_length) << endl;
-	    */
-	  }
-	
-	  if(++tcount == counts[tchunk])
-	    break;
-	}
-	reads_out.close();
+        // output read w/ trim and corrections
+        output_read(reads_out, corlog_out, pe_code, header, ntseq, mid, strqual, corseq, thread_stats[tid]);
+      
+        delete r;
+      } else {
+        output_read(reads_out, corlog_out, pe_code, header, ntseq, mid, strqual, ntseq.substr(0,trim_length), thread_stats[tid]);
+        // output read as trimmed
+        /*
+          if(contrail_out)
+          reads_out << header << "\t" << ntseq.substr(0,trim_length) << endl;
+          else
+          reads_out << header << endl << ntseq.substr(0,trim_length) << endl << mid << endl << strqual.substr(0,trim_length) << endl;
+        */
+      }
+    
+      if(++tcount == counts[tchunk])
+        break;
+    }
+    reads_out.close();
       }
 
 #pragma omp critical
@@ -674,66 +674,66 @@ static void learn_errors(string fqf, bithash * trusted, vector<streampos> & star
       
       unsigned long long tcount = 0;
       while(getline(reads_in, header)) {
-	//cout << header << endl;
-	
-	// get sequence
-	getline(reads_in, ntseq);
-	//cout << ntseq << endl;
-	
-	// convert ntseq to iseq
-	vector<unsigned int> iseq;
-	for(int i = 0; i < ntseq.size(); i++) {
-	  nti = strchr(nts, ntseq[i]);
-	  iseq.push_back(nti - nts);
-	}
-		
-	// get quality values
-	getline(reads_in,strqual);
-	//cout << strqual << endl;
-	getline(reads_in,strqual);
-	//cout << strqual << endl;
+    //cout << header << endl;
+    
+    // get sequence
+    getline(reads_in, ntseq);
+    //cout << ntseq << endl;
+    
+    // convert ntseq to iseq
+    vector<unsigned int> iseq;
+    for(int i = 0; i < ntseq.size(); i++) {
+      nti = strchr(nts, ntseq[i]);
+      iseq.push_back(nti - nts);
+    }
+        
+    // get quality values
+    getline(reads_in,strqual);
+    //cout << strqual << endl;
+    getline(reads_in,strqual);
+    //cout << strqual << endl;
 
-	vector<int> untrusted;
+    vector<int> untrusted;
 
-	if(iseq.size() < trim_t)
-	  trim_length = 0;
-	else {
-	  for(int i = 0; i < iseq.size()-k+1; i++) {
-	    if(!trusted->check(&iseq[i])) {
-	      untrusted.push_back(i);
-	    }
-	  }
-	  
-	  trim_length = quick_trim(strqual, untrusted);
-	}
+    if(iseq.size() < trim_t)
+      trim_length = 0;
+    else {
+      for(int i = 0; i < iseq.size()-k+1; i++) {
+        if(!trusted->check(&iseq[i])) {
+          untrusted.push_back(i);
+        }
+      }
+      
+      trim_length = quick_trim(strqual, untrusted);
+    }
 
-	// fix error reads
-	if(untrusted.size() > 0) {
-	  // correct
-	  r = new Read(header, &iseq[0], strqual, untrusted, trim_length);
-	  corseq = r->correct(trusted, ntnt_prob, prior_prob, true);
-	    
-	  // if trimmed to long enough
-	  if(corseq.size() >= trim_t) {
-	    if(r->trusted_read != 0) { // else no guarantee there was a correction
-	      for(int c = 0; c < r->trusted_read->corrections.size(); c++) {
-		correction cor = r->trusted_read->corrections[c];
-		if(iseq[cor.index] < 4) {
-		  // P(obs=o|actual=a,a!=o) for Bayes
-		  ntnt_counts[strqual[cor.index]-Read::quality_scale][cor.to][iseq[cor.index]]++;
-		  
-		  // P(actual=a|obs=o,a!=o)
-		  //ntnt_counts[iseq[cor.index]][cor.to]++;
-		  samples++;
-		}
-	      }
-	    }
-	  }
-	  delete r;
-	}
-	
-	if(++tcount == counts[tchunk] || samples > 200000)
-	  break;
+    // fix error reads
+    if(untrusted.size() > 0) {
+      // correct
+      r = new Read(header, &iseq[0], strqual, untrusted, trim_length);
+      corseq = r->correct(trusted, ntnt_prob, prior_prob, true);
+        
+      // if trimmed to long enough
+      if(corseq.size() >= trim_t) {
+        if(r->trusted_read != 0) { // else no guarantee there was a correction
+          for(int c = 0; c < r->trusted_read->corrections.size(); c++) {
+        correction cor = r->trusted_read->corrections[c];
+        if(iseq[cor.index] < 4) {
+          // P(obs=o|actual=a,a!=o) for Bayes
+          ntnt_counts[strqual[cor.index]-Read::quality_scale][cor.to][iseq[cor.index]]++;
+          
+          // P(actual=a|obs=o,a!=o)
+          //ntnt_counts[iseq[cor.index]][cor.to]++;
+          samples++;
+        }
+          }
+        }
+      }
+      delete r;
+    }
+    
+    if(++tcount == counts[tchunk] || samples > 200000)
+      break;
       }
     }
     reads_in.close();
@@ -788,11 +788,11 @@ int main(int argc, char **argv) {
   if (hammerf != NULL) {
     string hammerf_str(hammerf);
     if (hammerf_str.substr(hammerf_str.size()-3) == ".gz") {
-	igzstream hammerf_in(hammerf);
-	trusted->hammer_file_load(hammerf_in, atgc);
+    igzstream hammerf_in(hammerf);
+    trusted->hammer_file_load(hammerf_in, atgc);
     } else {
-	ifstream hammerf_in(hammerf);
-	trusted->hammer_file_load(hammerf_in, atgc);
+    ifstream hammerf_in(hammerf);
+    trusted->hammer_file_load(hammerf_in, atgc);
     }   
   }
   
@@ -801,19 +801,19 @@ int main(int argc, char **argv) {
     string merf_str(merf);
     if(ATcutf != NULL) {
       if(merf_str.substr(merf_str.size()-3) == ".gz") {
-	igzstream mer_in(merf);
-	trusted->tab_file_load(mer_in, load_AT_cutoffs(), atgc);
+    igzstream mer_in(merf);
+    trusted->tab_file_load(mer_in, load_AT_cutoffs(), atgc);
       } else {
-	ifstream mer_in(merf);
-	trusted->tab_file_load(mer_in, load_AT_cutoffs(), atgc);
+    ifstream mer_in(merf);
+    trusted->tab_file_load(mer_in, load_AT_cutoffs(), atgc);
       }
     } else {
       if(merf_str.substr(merf_str.size()-3) == ".gz") {
-	igzstream mer_in(merf);
-	trusted->tab_file_load(mer_in, cutoff, atgc);
+    igzstream mer_in(merf);
+    trusted->tab_file_load(mer_in, cutoff, atgc);
       } else {
-	ifstream mer_in(merf);
-	trusted->tab_file_load(mer_in, cutoff, atgc);
+    ifstream mer_in(merf);
+    trusted->tab_file_load(mer_in, cutoff, atgc);
       }
     }
 
@@ -868,9 +868,9 @@ int main(int argc, char **argv) {
     double ntnt_prob[Read::max_qual][4][4] = {0};
     for(int q = 0; q < Read::max_qual; q++)
       for(int i = 0; i < 4; i++)
-	for(int j = 0; j < 4; j++)
-	  if(i != j)
-	    ntnt_prob[q][i][j] = 1.0/3.0;
+    for(int j = 0; j < 4; j++)
+      if(i != j)
+        ntnt_prob[q][i][j] = 1.0/3.0;
 
     if(!TESTING)
       learn_errors(fqf, trusted, starts, counts, ntnt_prob, prior_prob);
@@ -886,9 +886,9 @@ int main(int argc, char **argv) {
     // combine paired end
     if(pairedend_codes[f] == 2) {
       if(!zip) {
-	combine_output_paired(fastqfs[f-1], fqf, string("cor"), uncorrected_out);
+    combine_output_paired(fastqfs[f-1], fqf, string("cor"), uncorrected_out);
       } else {
-	combine_output_paired(fastqfs[f-1].substr(0,fastqfs[f-1].size()-3), fqf, string("cor"), uncorrected_out);
+    combine_output_paired(fastqfs[f-1].substr(0,fastqfs[f-1].size()-3), fqf, string("cor"), uncorrected_out);
       }
     }
 

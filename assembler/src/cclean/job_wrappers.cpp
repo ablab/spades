@@ -8,12 +8,12 @@
 #include <set>
 
 #include "job_wrappers.hpp"
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/log_writers.hpp"
 #include "adapter_index.hpp"
 #include "valid_kmer_generator.hpp"
 #include "adapter_index.hpp"
 #include "output.hpp"
-#include "ssw/ssw_cpp.h"
+#include "algorithms/ssw_cpp.h"
 #include "utils.hpp"
 
 using cclean_output::print_alignment;

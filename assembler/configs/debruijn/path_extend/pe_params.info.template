@@ -18,20 +18,24 @@ visualize {
 output_broken_scaffolds     break_gaps
 
 params {
+    multi_path_extend   false
+    ; old | 2015 | combined | old_pe_2015
+    scaffolding_mode old
+
+    remove_overlaps     true
+    cut_all_overlaps  false
+
     split_edge_length    99
     normalize_weight     false
-    cut_all_overlaps  false
     
     ; extension selection
     extension_options
     {
         use_default_single_threshold false
         single_threshold           1.75676
-;    A.mirum threshold 0.076
-;    E.coli RL36 threshold 0.717949
-;    E.coli IS220 threshold 1.75676
         weight_threshold           0.5
         priority_coeff             1.5
+        max_repeat_length          8000
     }    
 
     mate_pair_options
@@ -40,6 +44,7 @@ params {
         single_threshold           30
         weight_threshold           0.5
         priority_coeff             1.5
+        max_repeat_length          8000
     }
 
     scaffolder {
@@ -52,7 +57,8 @@ params {
         cl_threshold  0
 
         fix_gaps       true
-	;next param should be 0.51 - 1.0 if use_old_score = true and 3.0 otherwise
+        use_la_gap_joiner true
+        ;next param should be 0.51 - 1.0 if use_old_score = true and 3.0 otherwise
         min_gap_score   0.7
 
         max_must_overlap  -2
@@ -72,17 +78,33 @@ params {
         mp_max_loops    10
     }
 
-    remove_overlaps     true
     use_coordinated_coverage false
     coordinated_coverage
     {
        max_edge_length_repeat 300
        delta                  0.4
     }
+
+    scaffolding2015 {
+        autodetect      true
+        min_unique_length 10000
+        unique_coverage_variation 0.5
+        ; (median * (1+variation) > unique > median * (1 - variation))
+    }
+
+    scaffold_graph {
+        construct    false
+        output       false
+        always_add   40         ; connection with read count >= always_add are always added to the graph
+        never_add     5         ; connection with read count < never_add are never added to the graph
+        relative_threshold 0.25 ; connection with read count >= max_read_count * relative_threshod are added to the graph if satisfy condition above, max_read_count is calculated amond all alternatives
+        graph_connectivity false
+        max_path_length 10000
+    }
 }
 
-long_reads {
 
+long_reads {
     pacbio_reads {
         filtering   2.5
         weight_priority    1.2
@@ -95,11 +117,18 @@ long_reads {
         unique_edge_priority 1000.0
     }
 
-    coverage_base_rr {
+    contigs {
         filtering   0.0
         weight_priority    1.5
         unique_edge_priority 2.0
     }
+
+    meta_untrusted_contigs {
+        filtering   0.0
+        weight_priority    100.0
+        unique_edge_priority 2.0
+    }
+
 }
 }
 
@@ -113,6 +142,7 @@ params {
         use_default_single_threshold false
         single_threshold           0.001
         weight_threshold           0.6
+        max_repeat_length          8000
     }
 
 }
@@ -133,6 +163,7 @@ params {
 
     scaffolder {
         short_overlap     10
+        use_la_gap_joiner false
     }
 }
 }
@@ -140,6 +171,9 @@ params {
 ;NB decsends from sc_pe
 meta_pe {
 params {
+    remove_overlaps     true
+    cut_all_overlaps  true
+
     ;TODO proper configuration of different extenders is not supported 
     ;TODO most settings ard hardcoded for now 
 
@@ -149,7 +183,8 @@ params {
         ;use_default_single_threshold NA
         ;single_threshold           NA 
         weight_threshold           0.6
-    }
+        max_repeat_length          50000 
+   }
     
     use_coordinated_coverage true
 }
@@ -162,4 +197,10 @@ params {
 }
 }
 
+rna_pe {
 
+params {
+    multi_path_extend   true
+    remove_overlaps     false
+}
+}

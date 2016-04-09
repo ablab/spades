@@ -33,7 +33,7 @@
 
 
 	#include <stdio.h>
-	#include <ext/algorithm>
+	#include <algorithm>
 	#include <iostream>
 	using namespace std;
 

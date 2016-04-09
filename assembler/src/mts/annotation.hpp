@@ -1,7 +1,7 @@
-#include "standard_base.hpp"
-#include "graph_pack.hpp"
-#include "sequence_mapper.hpp"
-#include "io/io_helper.hpp"
+#include "dev_support/standard_base.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "assembly_graph/graph_alignment/sequence_mapper.hpp"
+#include "io/reads_io/io_helper.hpp"
 #include "formats.hpp"
 
 namespace debruijn_graph {

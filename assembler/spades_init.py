@@ -35,4 +35,4 @@ def init():
     for dir in source_dirs:
         sys.path.append(os.path.join(python_modules_home, 'spades_pipeline', dir))
 
-    spades_version = open(os.path.join(spades_home, 'VERSION'), 'r').readline()
+    spades_version = open(os.path.join(spades_home, 'VERSION'), 'r').readline().strip()

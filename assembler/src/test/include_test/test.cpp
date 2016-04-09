@@ -6,9 +6,9 @@
 //***************************************************************************
 
 //#define BOOST_TEST_MODULE include_test
-#include "standard_base.hpp"
+#include "dev_support/standard_base.hpp"
 
-#include "logger/log_writers.hpp"
+#include "dev_support/logger/log_writers.hpp"
 
 #include "seq_test.hpp"
 #include "rtseq_test.hpp"
@@ -16,7 +16,7 @@
 #include "quality_test.hpp"
 #include "nucl_test.hpp"
 
-::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
+::boost::unit_test::test_suite*    init_unit_test_suite( int, char* [] )
 {
     logging::logger *log = logging::create_logger("", logging::L_DEBUG);
     log->add_writer(std::make_shared<logging::console_writer>());

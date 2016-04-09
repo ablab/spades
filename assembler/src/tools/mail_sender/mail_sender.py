@@ -55,7 +55,7 @@ user_list_file = open(sys.argv[1])
 user_list = []
 for address in user_list_file:
     if address.find('@') != -1 and address.find('.') != -1:
-        user_list.append(address.strip())
+        user_list.append(address.strip().lower())
 
 user_set = set(user_list)
 if len(user_set) < len(user_list):

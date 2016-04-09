@@ -105,7 +105,7 @@ else
     'dit' ) run_n_measure build/debug/bin/include_test ;;
     'rit' ) run_n_measure build/release/bin/include_test ;;
     'dt') run_n_measure build/debug/bin/debruijn_test && run_n_measure build/debug/bin/include_test ;;
-    'rv' ) build/release/bin/online_vis $cfg_debruijn/config.info ;;
+    'rv' ) exec build/release/bin/online_vis $cfg_debruijn/config.info ;;
     'dv' ) build/debug/bin/online_vis $cfg_debruijn/config.info ;;
     'rc' ) run_n_measure build/release/bin/cap $cfg_debruijn/config.info $cfg_cap/gaf.info ;;
     'dc' ) run_n_measure build/debug/bin/cap $cfg_debruijn/config.info $cfg_cap/gaf.info ;;

@@ -1,4 +1,3 @@
-
 SPADES: SAINT-PETERSBURG GENOME ASSEMBLER
 Copyright (c) 2015 Saint Petersburg State University
 Copyright (c) 2011-2014 Saint Petersburg Academic University
@@ -21,21 +20,20 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 Current SPAdes contributors:
 
     Dmitry Antipov,
-    Anton Bankevich.
+    Anton Bankevich,
+    Yuriy Gorshkov,
     Alexey Gurevich,
     Anton Korobeynikov,
+    Dmitriy Meleshko,
     Sergey Nurk,
     Andrey Prjibelski,
     Yana Safonova,
-    Artem Tarasov,
-    Irina Vasilinetc,
-    Alla Lapidus,
-    Glenn Tesler,
-    Max Alekseyev and
+    Alla Lapidus and
     Pavel Pevzner
 
 Also contributed:
 
+    Max Alekseyev,
     Mikhail Dvorkin,
     Alexander Kulikov,
     Valery Lesin,
@@ -45,6 +43,9 @@ Also contributed:
     Vladislav Saveliev,
     Alexander Sirotkin,
     Yakov Sirotkin,
+    Artem Tarasov,
+    Glenn Tesler,
+    Irina Vasilinetc,
     Nikolay Vyahhi
 
 Contacts:
@@ -66,3 +67,4 @@ Yakov Sirotkin, Ramunas Stepanauskas, Jeffrey McLean, Roger Lasken,
 Scott Clingenpeel, Tanja Woyke, Glenn Tesler, Max Alekseyev, and Pavel Pevzner.
 Assembling Genomes and Mini-metagenomes from Highly Chimeric Reads. Lecture Notes 
 in Computer Science 7821 (2013), pp. 158-170. doi:10.1007/978-3-642-37195-0_13
+

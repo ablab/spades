@@ -53,3 +53,4 @@ correct_use_threshold			1
 correct_threshold			0.98
 correct_nthreads			4
 correct_readbuffer			100000
+correct_stats                           1

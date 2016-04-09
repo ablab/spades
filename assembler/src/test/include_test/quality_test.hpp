@@ -7,11 +7,11 @@
 
 #pragma once
 #include <boost/test/unit_test.hpp>
-#include "sequence/quality.hpp"
+#include "data_structures/sequence/quality.hpp"
 
 BOOST_AUTO_TEST_CASE ( QualityTest ) {
-	Quality q("0123456789");
-	BOOST_CHECK_EQUAL('0', q[0]);
-	BOOST_CHECK_EQUAL('6', q[6]);
-	BOOST_CHECK_EQUAL('9', q[9]);
+    Quality q("0123456789");
+    BOOST_CHECK_EQUAL('0', q[0]);
+    BOOST_CHECK_EQUAL('6', q[6]);
+    BOOST_CHECK_EQUAL('9', q[9]);
 }

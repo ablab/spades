@@ -10,9 +10,9 @@
 #include <boost/test/unit_test.hpp>
 
 #include "standard.hpp"
-#include "graph_pack.hpp"
-#include "graphio.hpp"
-#include "detail_coverage.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "pipeline/graphio.hpp"
+#include "assembly_graph/graph_support/detail_coverage.hpp"
 
 namespace debruijn_graph {
 

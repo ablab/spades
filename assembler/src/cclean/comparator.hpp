@@ -11,7 +11,7 @@
 class Compare {
    public:
       bool operator() (std::string * lhs, std::string * rhs) const {
-    	  return *lhs < *rhs;
+          return *lhs < *rhs;
       }
 };
 

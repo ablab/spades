@@ -20,7 +20,7 @@ import options_storage
 BASE_STAGE = "construction"
 READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]
 
-def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one):
+def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home):
     subst_dict = dict()
 
     subst_dict["K"] = str(K)
@@ -61,6 +61,12 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
         else:
             subst_dict["coverage_threshold"] = cfg.cov_cutoff
 
+    #TODO: make something about spades.py and config param substitution 
+    if "bwa_paired" in cfg.__dict__:
+        subst_dict["bwa_enable"] = bool_to_str(True)
+    if "plasmid" in cfg.__dict__:
+        subst_dict["plasmid_enabled"] = bool_to_str(True)
+    subst_dict["path_to_bwa"] =  os.path.join(execution_home, "bwa-spades")
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
@@ -156,7 +162,11 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     if "read_buffer_size" in cfg.__dict__:
         construction_cfg_file_name = os.path.join(dst_configs, "construction.info")
         process_cfg.substitute_params(construction_cfg_file_name, {"read_buffer_size": cfg.read_buffer_size}, log)
-    prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one)
+    if "scaffolding_mode" in cfg.__dict__:
+        construction_cfg_file_name = os.path.join(dst_configs, "path_extend/pe_params.info")
+        process_cfg.substitute_params(construction_cfg_file_name, {"scaffolding_mode": cfg.scaffolding_mode}, log)
+
+    prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home)
 
     command = [os.path.join(execution_home, "spades"), cfg_file_name]
     support.sys_call(command, log)
@@ -334,6 +344,13 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
         if os.path.isfile(os.path.join(latest, "assembly_graph.fastg")):
             if not os.path.isfile(cfg.result_graph) or not options_storage.continue_mode:
                 shutil.copyfile(os.path.join(latest, "assembly_graph.fastg"), cfg.result_graph)
+        if os.path.isfile(os.path.join(latest, "final_contigs.paths")):
+            if not os.path.isfile(cfg.result_contigs_paths) or not options_storage.continue_mode:
+                shutil.copyfile(os.path.join(latest, "final_contigs.paths"), cfg.result_contigs_paths)
+        if os.path.isfile(os.path.join(latest, "scaffolds.paths")):
+            if not os.path.isfile(cfg.result_scaffolds_paths) or not options_storage.continue_mode:
+                shutil.copyfile(os.path.join(latest, "scaffolds.paths"), cfg.result_scaffolds_paths)
+
 
 
     if cfg.developer_mode:

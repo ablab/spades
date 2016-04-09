@@ -461,7 +461,7 @@ bool BamMultiReaderPrivate::Open(const vector<string>& filenames) {
     // put all current readers back at beginning (refreshes alignment cache)
     if ( !Rewind() ) {
         const string currentError = m_errorString;
-        const string message = string("unable to rewind existing readers: \n\t") + currentError;
+        const string message = string("unable to rewind existing reads_io: \n\t") + currentError;
         SetErrorString("BamMultiReader::Open", message);
         return false;
     }
@@ -614,7 +614,7 @@ bool BamMultiReaderPrivate::Rewind(void) {
     // attempt to rewind files
     if ( !RewindReaders() ) {
         const string currentError = m_errorString;
-        const string message = string("could not rewind readers: \n\t") + currentError;
+        const string message = string("could not rewind reads_io: \n\t") + currentError;
         SetErrorString("BamMultiReader::Rewind", message);
         return false;
     }

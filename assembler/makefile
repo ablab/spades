@@ -1,13 +1,13 @@
 .PHONY: dd rd
 
 rd:
-	$(MAKE) -C build/release/debruijn
+	$(MAKE) -C build/release/projects/spades
 
 dd:
-	$(MAKE) -C build/debug/debruijn
+	$(MAKE) -C build/debug/projects/spades
 
 rds:
-	$(MAKE) -C build/release/dipspades
+	$(MAKE) -C build/release/projects/dipspades
 
 dds:
 	$(MAKE) -C build/debug/dipspades
@@ -31,38 +31,42 @@ rit:
 	$(MAKE) -C build/release/test/include_test
 
 rh:
-	$(MAKE) -C build/release/hammer hammer
+	$(MAKE) -C build/release/projects/hammer hammer
 
 dh:
-	$(MAKE) -C build/debug/hammer hammer
+	$(MAKE) -C build/debug/projects/hammer hammer
 
 rv:
-	$(MAKE) -C build/release/online_vis
+	$(MAKE) -C build/release/projects/online_vis
 
 dv:
-	$(MAKE) -C build/debug/online_vis
+	$(MAKE) -C build/debug/projects/online_vis
 
-rp:	
-	$(MAKE) -C build/release/corrector
+rp:
+	$(MAKE) -C build/release/projects/corrector
 
-dp:      
-	$(MAKE) -C build/debug/corrector
+dp:
+	$(MAKE) -C build/debug/projects/corrector
 
 rs:
-	$(MAKE) -C build/release/scaffold_correction
+	$(MAKE) -C build/release/projects/scaffold_correction
 
 ds:
-	$(MAKE) -C build/debug/scaffold_correction
+	$(MAKE) -C build/debug/projects/scaffold_correction
 
 rts:
-	$(MAKE) -C build/release/truseq_analysis
+	$(MAKE) -C build/release/projects/truseq_analysis
 
 dts:
-	$(MAKE) -C build/debug/truseq_analysis
+	$(MAKE) -C build/debug/projects/truseq_analysis
 
 dt:
 	$(MAKE) ddt
 	$(MAKE) dit
+
+clean:
+	$(MAKE) -C build/debug/projects/cclean
+	$(MAKE) -C build/release/projects/cclean
 
 all:
 	$(MAKE) -C build/release all

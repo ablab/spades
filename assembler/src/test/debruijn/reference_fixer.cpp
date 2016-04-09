@@ -5,14 +5,14 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "standard_base.hpp"
-#include "simple_tools.hpp"
-#include "logger/log_writers.hpp"
+#include "dev_support/standard_base.hpp"
+#include "dev_support/simple_tools.hpp"
+#include "dev_support/logger/log_writers.hpp"
 
-#include "path_helper.hpp"
-#include "io/file_reader.hpp"
-#include "io/wrapper_collection.hpp"
-#include "io/osequencestream.hpp"
+#include "dev_support/path_helper.hpp"
+#include "io/reads_io/file_reader.hpp"
+#include "io/reads_io/wrapper_collection.hpp"
+#include "io/reads_io/osequencestream.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
