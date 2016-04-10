@@ -85,7 +85,6 @@ endif()
 add_subdirectory(modules)
 add_subdirectory(projects)
 add_subdirectory(spades_pipeline)
-add_subdirectory(mts)
 
 # Main pipeline script
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
