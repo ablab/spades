@@ -1436,35 +1436,34 @@ private:
     }
 
     bool GoodExtension(EdgeId e, double path_coverage) const {
-        return math::ge(g_.coverage(e), path_coverage - path_coverage * delta_);
+        return math::ge(g_.coverage(e), path_coverage * delta_);
     }
 
     EdgeContainer FindExtensionTroughRepeat(const EdgeContainer& edges, double path_coverage) const {
         set<EdgeId> good_extensions;
         for(auto edge : edges) {
             if (g_.length(edge.e_) > max_edge_length_in_repeat_) {
-                if(GoodExtension(edge.e_, path_coverage)) {
+                if (GoodExtension(edge.e_, path_coverage)) {
                     good_extensions.insert(edge.e_);
                 }
-                continue;
-            }
-
-            GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(edge.e_));
-            if (gc.v_size() == 0) {
-                return EdgeContainer();
-            }
-
-            for (auto e : gc.edges()) {
-                if (g_.length(e) > max_edge_length_in_repeat_) {
-                    DEBUG("Repeat component contains long edges");
+            } else {
+                GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(edge.e_));
+                if (gc.v_size() == 0) {
                     return EdgeContainer();
                 }
-            }
 
-            for (auto v : gc.sinks()) {
-                for (auto e : g_.OutgoingEdges(v)) {
-                    if (GoodExtension(e, path_coverage)) {
-                        good_extensions.insert(edge.e_);
+                for (auto e : gc.edges()) {
+                    if (g_.length(e) > max_edge_length_in_repeat_) {
+                        DEBUG("Repeat component contains long edges");
+                        return EdgeContainer();
+                    }
+                }
+
+                for (auto v : gc.sinks()) {
+                    for (auto e : g_.OutgoingEdges(v)) {
+                        if (GoodExtension(e, path_coverage)) {
+                            good_extensions.insert(edge.e_);
+                        }
                     }
                 }
             }

@@ -82,7 +82,7 @@ params {
     coordinated_coverage
     {
        max_edge_length_repeat 300
-       delta                  0.4
+       delta                  0.5
     }
 
     scaffolding2015 {
