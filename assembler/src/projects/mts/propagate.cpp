@@ -12,6 +12,7 @@
 #include "pipeline/graphio.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "io/reads_io/file_reader.hpp"
+#include "algorithms/simplification/tip_clipper.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
@@ -89,6 +90,42 @@ private:
     DECL_LOGGER("ConnectingPathPropagator");
 };
 
+class TipPropagator : public EdgeAnnotationPropagator {
+
+public:
+    TipPropagator(const conj_graph_pack& gp) :
+        EdgeAnnotationPropagator(gp) {}
+
+protected:
+    set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const override {
+        set<EdgeId> answer(edges);
+        TipCondition<Graph> tipper(g());
+        for (EdgeId e1 : edges) {
+            auto v = g().EdgeEnd(e1);
+            for (auto e2_it = g().out_begin(v); e2_it != g().out_end(v); ++e2_it) {
+                auto e2 = *e2_it;
+                if (edges.count(e2)) {
+                    DEBUG("Finding tips between " << e1.int_id() << " and " << e2.int_id());
+                    for (EdgeId posTip : g().IncidentEdges(g().EdgeEnd(e1))) {
+                        if (edges.count(posTip))
+                            continue;
+                        DEBUG("Checking " << posTip.int_id() << "...");
+                        if (tipper.Check(posTip)) {
+                            DEBUG("A tip is found!");
+                            answer.insert(posTip);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        return answer;
+    }
+
+private:
+    DECL_LOGGER("TipPropagator");
+};
+
 //todo add unbranching reach and pair-info aware propagation
 
 class AnnotationPropagator {
@@ -120,14 +157,17 @@ public:
         AnnotationStream annotation_in(annotation_in_fn);
         EdgeAnnotation edge_annotation(gp_, bins_of_interest);
         edge_annotation.Fill(contigs, annotation_in);
-        //FIXME magic constants
-        size_t iteration_cnt = 2;
         ConnectingPathPropagator edge_propagator(gp_, 6000);
+        TipPropagator tip_propagator(gp_);
+        //TODO: make this configurable
+        std::vector<EdgeAnnotationPropagator*> propagator_pipeline =
+            {&edge_propagator, &tip_propagator, &edge_propagator, &tip_propagator};
 
+        //FIXME: why shared_ptr?
         auto annotation_ptr = make_shared<EdgeAnnotation>(edge_annotation);
-        for (size_t i = 0; i < iteration_cnt; ++i) {
-             annotation_ptr = make_shared<EdgeAnnotation>(
-                                             edge_propagator.Propagate(*annotation_ptr));
+        for (auto prop_ptr : propagator_pipeline) {
+            annotation_ptr = make_shared<EdgeAnnotation>(
+                prop_ptr->Propagate(*annotation_ptr));
         }
 
         contigs.reset();

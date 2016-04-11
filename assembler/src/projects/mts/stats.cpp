@@ -21,6 +21,7 @@
 #include "annotation.hpp"
 #include "visualization/graph_colorer.hpp"
 #include "visualization/position_filler.hpp"
+#include "algorithms/simplification/tip_clipper.hpp"
 
 using namespace debruijn_graph;
 
@@ -95,7 +96,7 @@ void PrintColoredAnnotatedGraphAroundEdge(const conj_graph_pack& gp,
     DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     auto colorer_ptr =
         std::make_shared<AnnotatedGraphColorer<Graph>>(annotation);
-    GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(gp.g, edge, 100, 2000);
+    GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(gp.g, edge, 100, 10000);
     omnigraph::visualization::WriteComponent<Graph>(component, output_filename,
                                                     colorer_ptr, labeler);
 }
@@ -165,19 +166,16 @@ int main(int argc, char** argv) {
         total_edgelen_cntr += gp.g.length(e);
         if (edge_annotation.Annotation(e).empty() &&
             !prop_edge_annotation.Annotation(e).empty()) {
+            DEBUG(e.int_id() << " was propagated\n");
             prop_binned_edge_cntr++;
             prop_binned_edgelen_cntr += gp.g.length(e);
         } else if (edge_annotation.Annotation(e).empty() &&
                    prop_edge_annotation.Annotation(e).empty()) {
             // Only check for prop_annotation is necessary
             if (unbinned_edges.count(e) == 0) {
-                /*if (range.size() < 1000) {
-                    std::cout << "Mapping of edge " << e << " ignored as too short (" << range.size() << ")\n";
-                    continue;
-                }*/
                 unbinned_edges.insert(e);
                 unbinned_edge_cntr++;
-                unbinned_edgelen_cntr += range.size(); //gp.g.length(e);
+                unbinned_edgelen_cntr += range.size();
                 std::cout << e.int_id() << "\t"
                           << gp.g.length(e) << "\t"
                           << range.size() << std::endl;
