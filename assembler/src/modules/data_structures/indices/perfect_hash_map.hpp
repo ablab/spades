@@ -58,7 +58,8 @@ public:
     }
 
     IndexWrapper(size_t k, const std::string &workdir, std::shared_ptr<KMerIndexT> index_ptr)
-            : IndexWrapper(k, workdir), index_ptr_(index_ptr) {
+            : IndexWrapper(k, workdir) {
+        index_ptr_ = index_ptr;
     }
 
     ~IndexWrapper() {
