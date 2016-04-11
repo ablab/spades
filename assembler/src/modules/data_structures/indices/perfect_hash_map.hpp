@@ -55,6 +55,7 @@ public:
     IndexWrapper(size_t k, const std::string &workdir) : k_((unsigned) k) {
         //fixme string literal
         workdir_ = path::make_temp_dir(workdir, "kmeridx");
+        index_ptr_ = std::make_shared<KMerIndexT>();
     }
 
     IndexWrapper(size_t k, const std::string &workdir, std::shared_ptr<KMerIndexT> index_ptr)
@@ -168,6 +169,7 @@ protected:
         KMerIndexBuilder<KMerIndexT> builder(this->workdir(),
                              (unsigned) bucket_num,
                              (unsigned) thread_num);
+        index_ptr_ = std::make_shared<KMerIndexT>();
         size_t sz = builder.BuildIndex(*index_ptr_, counter, save_final);
         ValueBase::resize(sz);
     }
