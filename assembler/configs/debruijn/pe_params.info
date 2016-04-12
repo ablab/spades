@@ -48,8 +48,9 @@ params {
     }
 
     scaffolder {
-        on            true
+        enabled       true
         cutoff        2
+        hard_cutoff   0
         rel_cutoff    0.1
         sum_threshold 3  
 
@@ -71,8 +72,13 @@ params {
         flank_addition_coefficient -5.9
         flank_multiplication_coefficient 0.97
 
-	var_coeff 3.0
-	basic_overlap_coeff 2.0
+	    var_coeff 3.0
+	    basic_overlap_coeff 2.0
+    }
+
+    path_cleaning
+    {
+        enabled false
     }
     
     loop_removal

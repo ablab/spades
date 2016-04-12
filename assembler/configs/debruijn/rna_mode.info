@@ -1,5 +1,7 @@
 mode rna
 
+preserve_raw_paired_index true
+
 simp
 {
     ; enable advanced ec removal algo
@@ -56,9 +58,9 @@ simp
     ;all topology based erroneous connection removers are off
     ier
     {
-        enabled                     true
-        max_length                  200
-        max_coverage                4
+        enabled                     false
+        max_length                  100
+        max_coverage                2
         max_length_any_cov          0 ; will be taken max with read_length
     }
     ; hidden ec remover
@@ -86,7 +88,26 @@ simp
 
 pe {
 params {
-    multi_path_extend   true
-    remove_overlaps     false
+    ;multi_path_extend   true
+    ;remove_overlaps     false
+
+    scaffolder {
+        cutoff        1
+        hard_cutoff   10
+
+	cluster_info false
+
+	min_overlap_for_rna_scaffolding 10
+    }
+
+    path_cleaning
+    {
+        enabled true
+        min_length  30
+        isolated_min_length 50
+        min_length_for_low_covered 150
+        min_coverage 2
+    }
+
 }
 }

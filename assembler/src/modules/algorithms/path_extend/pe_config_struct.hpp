@@ -40,8 +40,12 @@ enum scaffolding_mode {
     sm_old_pe_2015
 };
 
-inline bool is_2015_scaffolder_enabled(const scaffolding_mode mode) {
+inline bool IsScaffolder2015Enabled(const scaffolding_mode mode) {
     return (mode == sm_old_pe_2015 || mode == sm_2015 || mode == sm_combined);
+}
+
+inline bool IsOldPEEnabled(const scaffolding_mode mode) {
+    return (mode == sm_old_pe_2015 || mode == sm_old || mode == sm_combined);
 }
 
 // struct for path extend subproject's configuration file
@@ -157,8 +161,9 @@ struct pe_config {
 
 
         struct ScaffolderOptionsT {
-            bool on;
+            bool enabled;
             int cutoff;
+            int hard_cutoff;
             double rel_cutoff;
             double sum_threshold;
 
@@ -180,6 +185,8 @@ struct pe_config {
             size_t min_overlap_length;
             double flank_addition_coefficient;
             double flank_multiplication_coefficient;
+
+            boost::optional<int> min_overlap_for_rna_scaffolding;
         } scaffolder_options;
 
 
@@ -187,6 +194,14 @@ struct pe_config {
             size_t max_loops;
             size_t mp_max_loops;
         } loop_removal;
+
+        struct PathFiltrationT {
+            bool enabled;
+            size_t min_length;
+            size_t isolated_min_length;
+            size_t min_length_for_low_covered;
+            double min_coverage;
+        } path_filtration;
 
 
         bool use_coordinated_coverage;

@@ -77,8 +77,9 @@ void load(pe_config::ParamSetT::ScaffolderOptionsT& so,
             boost::property_tree::ptree const& pt, bool complete)
 {
     using config_common::load;
-    load(so.on      , pt, "on"      , complete);
+    load(so.enabled, pt, "enabled"      , complete);
     load(so.cutoff      , pt, "cutoff", complete);
+    load(so.hard_cutoff      , pt, "hard_cutoff", complete);
     load(so.rel_cutoff      , pt, "rel_cutoff", complete);
     load(so.sum_threshold      , pt, "sum_threshold", complete);
 
@@ -98,6 +99,26 @@ void load(pe_config::ParamSetT::ScaffolderOptionsT& so,
 
     load(so.var_coeff          , pt, "var_coeff", complete);
     load(so.basic_overlap_coeff, pt, "basic_overlap_coeff", complete);
+
+    if (pt.count("min_overlap_for_rna_scaffolding")) {
+        VERIFY_MSG(!so.min_overlap_for_rna_scaffolding, "Option can be loaded only once");
+        so.min_overlap_for_rna_scaffolding.reset(0);
+        load(*so.min_overlap_for_rna_scaffolding, pt, "min_overlap_for_rna_scaffolding");
+    }
+}
+
+
+void load(pe_config::ParamSetT::PathFiltrationT& pf,
+          boost::property_tree::ptree const& pt, bool complete)
+{
+    using config_common::load;
+    load(pf.enabled      , pt, "enabled"      , complete);
+    if (pf.enabled) {
+        load(pf.min_length      , pt, "min_length"      , complete);
+        load(pf.isolated_min_length      , pt, "isolated_min_length"      , complete);
+        load(pf.min_length_for_low_covered      , pt, "min_length_for_low_covered"      , complete);
+        load(pf.min_coverage      , pt, "min_coverage"      , complete);
+    }
 }
 
 void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool complete) {
@@ -116,6 +137,8 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
     load(p.use_coordinated_coverage, pt, "use_coordinated_coverage", complete);
     load(p.scaffolding2015, pt, "scaffolding2015", complete);
     load(p.scaffold_graph_params, pt, "scaffold_graph", complete);
+    load(p.path_filtration, pt, "path_cleaning", complete);
+
 }
 
 

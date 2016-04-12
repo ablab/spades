@@ -19,14 +19,18 @@
 namespace debruijn_graph {
 
 void PEResolving(conj_graph_pack& gp) {
+    string scaffolds_name = cfg::get().mode == config::pipeline_type::rna ? "transcripts" : "scaffolds";
+    bool output_broke_scaffolds = cfg::get().mode != config::pipeline_type::rna;
+
     path_extend::PathExtendParamsContainer params(cfg::get().pe_params,
                                                   cfg::get().output_dir,
                                                   "final_contigs",
-                                                  "scaffolds",
+                                                  scaffolds_name,
                                                   cfg::get().mode,
                                                   cfg::get().uneven_depth,
                                                   cfg::get().avoid_rc_connections,
-                                                  cfg::get().use_scaffolder);
+                                                  cfg::get().use_scaffolder,
+                                                  output_broke_scaffolds);
 
     path_extend::ResolveRepeatsPe(cfg::get().ds, params, gp);
 }

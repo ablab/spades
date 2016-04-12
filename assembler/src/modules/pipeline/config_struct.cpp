@@ -696,6 +696,8 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.use_intermediate_contigs, pt, "use_intermediate_contigs", complete);
     load(cfg.single_reads_rr, pt, "single_reads_rr", complete);
 
+    load(cfg.preserve_raw_paired_index, pt, "preserve_raw_paired_index", complete);
+
     load(cfg.correct_mismatches, pt, "correct_mismatches", complete);
     load(cfg.paired_info_statistics, pt, "paired_info_statistics", complete);
     load(cfg.paired_info_scaffolder, pt, "paired_info_scaffolder", complete);
@@ -782,7 +784,7 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
     }
 
     if (!cfg.use_scaffolder) {
-        cfg.pe_params.param_set.scaffolder_options.on = false;
+        cfg.pe_params.param_set.scaffolder_options.enabled = false;
     }
     cfg.need_mapping = cfg.developer_mode || cfg.correct_mismatches
                        || cfg.gap_closer_enable || cfg.rr_enable;

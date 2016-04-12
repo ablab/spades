@@ -30,15 +30,11 @@ public:
 
     virtual bool predicate(BidirectionalPath& path) = 0;
 
-    virtual bool conjugateOperator(bool p, bool cp) {
-        return p || cp;
-    }
-
     PathContainer filter(PathContainer& paths) {
         PathContainer result;
 
         for (size_t i = 0; i < paths.size(); ++i) {
-            if (conjugateOperator(predicate(*paths.Get(i)), predicate(*paths.GetConjugate(i)))) {
+            if (predicate(*paths.Get(i)) || predicate(*paths.GetConjugate(i))) {
                 result.AddPair(paths.Get(i), paths.GetConjugate(i));
             }
         }
@@ -76,13 +72,9 @@ public:
 
     virtual bool predicate(BidirectionalPath& path) = 0;
 
-    virtual bool conjugateOperator(bool p, bool cp) {
-        return p && cp;
-    }
-
     void filter(PathContainer& paths) {
         for (PathContainer::Iterator iter = paths.begin(); iter != paths.end(); ) {
-            if (!conjugateOperator(predicate(*iter.get()), predicate(*iter.getConjugate()))) {
+            if (predicate(*iter.get()) || predicate(*iter.getConjugate())) {
                 iter = paths.erase(iter);
             }
             else {
@@ -107,10 +99,10 @@ public:
     virtual bool predicate(BidirectionalPath& path) {
         for (size_t i = 0; i < path.Size(); ++i) {
             if (math::ls(g.coverage(path[i]), minCoverage)) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     }
 };
 
@@ -125,7 +117,39 @@ public:
     }
 
     virtual bool predicate(BidirectionalPath& path) {
-        return path.Length() > minLength;
+        return path.Length() <= minLength;
+    }
+};
+
+
+class IsolatedPathFilter: public ErasingPathFilter {
+
+protected:
+    size_t min_length_;
+
+    double min_cov_;
+
+public:
+    IsolatedPathFilter(const Graph& g_, size_t min_length, double min_cov = 10000000.0):
+        ErasingPathFilter(g_),
+        min_length_(min_length),
+        min_cov_(min_cov) {
+    }
+
+    virtual bool predicate(BidirectionalPath& path) {
+        if (path.Empty())
+            return true;
+
+        if (path.Size() <= 2) {
+            auto v1 = g.EdgeStart(path.Front());
+            auto v2 = g.EdgeEnd(path.Back());
+
+            return g.IncomingEdgeCount(v1) == 0 &&
+                g.OutgoingEdgeCount(v2) == 0 &&
+                path.Length() < min_length_ &&
+                math::ls(path.Coverage(), min_cov_);
+        }
+        return false;
     }
 };
 

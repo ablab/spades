@@ -42,7 +42,8 @@ struct PathExtendParamsContainer {
                               config::pipeline_type mode_,
                               bool uneven_depth_,
                               bool avoid_rc_connections_,
-                              bool use_scaffolder_):
+                              bool use_scaffolder_,
+                              bool output_broken_scaffolds_ = true):
         pe_cfg(pe_cfg_),
         pset(pe_cfg_.param_set),
         output_dir(output_dir_),
@@ -54,9 +55,9 @@ struct PathExtendParamsContainer {
         avoid_rc_connections(avoid_rc_connections_),
         use_scaffolder(use_scaffolder_),
         traverse_loops(true),
-        output_broken_scaffolds(true)
+        output_broken_scaffolds(output_broken_scaffolds_)
     {
-        if (!(use_scaffolder && pset.scaffolder_options.on)) {
+        if (!(use_scaffolder && pset.scaffolder_options.enabled)) {
             contigs_name = contigs_name_;
             traverse_loops = false;
             output_broken_scaffolds = false;
@@ -131,7 +132,7 @@ inline void OutputBrokenScaffolds(PathContainer& paths,
                                   int k,
                                   const ContigWriter& writer,
                                   const std::string& filename) {
-    if (!params.pset.scaffolder_options.on
+    if (!params.pset.scaffolder_options.enabled
         || !params.use_scaffolder
         || params.pe_cfg.obs == obs_none) {
         return;
@@ -221,6 +222,7 @@ inline void ClonePathContainer(PathContainer& spaths, PathContainer& tpaths, Gra
 
 inline void FinalizePaths(const PathExtendParamsContainer& params,
                           PathContainer& paths,
+                          const Graph& g,
                           GraphCoverageMap& cover_map,
                           size_t min_edge_len,
                           size_t max_path_diff,
@@ -244,6 +246,14 @@ inline void FinalizePaths(const PathExtendParamsContainer& params,
     paths.FilterEmptyPaths();
     if (!mate_pairs) {
         resolver.addUncoveredEdges(paths, cover_map);
+    }
+    if (params.pset.path_filtration.enabled) {
+        LengthPathFilter length_filter(g, params.pset.path_filtration.min_length);
+        length_filter.filter(paths);
+        IsolatedPathFilter low_coverage_filter(g, params.pset.path_filtration.min_length_for_low_covered, params.pset.path_filtration.min_coverage);
+        IsolatedPathFilter short_isolated_filter(g, params.pset.path_filtration.isolated_min_length);
+        low_coverage_filter.filter(paths);
+        short_isolated_filter.filter(paths);
     }
     paths.SortByLength();
     for(auto& path : paths) {
@@ -343,6 +353,7 @@ pe_config::LongReads GetLongReadsConfig(const PathExtendParamsContainer& params,
     return params.pe_cfg.long_reads.single_reads;
 }
 
+
 inline shared_ptr<ExtensionChooser> MakeLongReadsExtensionChooser(const config::dataset::Library& lib,
                                                                   size_t lib_index,
                                                                   const PathExtendParamsContainer& params,
@@ -359,6 +370,7 @@ inline shared_ptr<ExtensionChooser> MakeLongReadsExtensionChooser(const config::
                                                   params.uneven_depth);
 }
 
+
 inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const config::dataset& dataset_info,
                                                         size_t lib_index,
                                                         const PathExtendParamsContainer& params,
@@ -370,6 +382,7 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const config::dataset& d
         resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().read_length);
     }
     INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
+
 
     auto long_read_ec = MakeLongReadsExtensionChooser(lib, lib_index, params, gp);
     return make_shared<SimpleExtender>(gp, cov_map,
@@ -467,12 +480,12 @@ inline shared_ptr<SimpleExtender> MakePEExtender(const config::dataset& dataset_
                                        false /*use short loop coverage resolver*/);
 }
 
+
 inline shared_ptr<PathExtender> MakeScaffoldingExtender(const config::dataset& dataset_info,
                                                         size_t lib_index,
                                                         const PathExtendParamsContainer& params,
                                                         const conj_graph_pack& gp,
                                                         const GraphCoverageMap& cov_map) {
-
     const auto& lib = dataset_info.reads[lib_index];
     const auto& pset = params.pset;
     shared_ptr<PairedInfoLibrary>  paired_lib = MakeNewLib(lib, gp.g, gp.scaffolding_indices[lib_index]);
@@ -507,6 +520,51 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const config::dataset& d
                                                 pset.loop_removal.max_loops,
                                                 false, /* investigate short loops */
                                                 params.avoid_rc_connections);
+}
+
+
+inline shared_ptr<PathExtender> MakeRNAScaffoldingExtender(const config::dataset& dataset_info,
+                                                            size_t lib_index,
+                                                            const PathExtendParamsContainer& params,
+                                                            const conj_graph_pack& gp,
+                                                            const GraphCoverageMap& cov_map) {
+
+    const auto& lib = dataset_info.reads[lib_index];
+    const auto& pset = params.pset;
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(lib, gp.g, gp.paired_indices[lib_index]);
+
+    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, paired_lib);
+
+    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, pset.scaffolder_options.cutoff, pset.scaffolder_options.var_coeff);
+    auto scaff_chooser2 = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, pset.scaffolder_options.hard_cutoff, pset.scaffolder_options.var_coeff);
+
+    vector<shared_ptr<GapJoiner>> joiners;
+    if (params.pset.scaffolder_options.use_la_gap_joiner)
+        joiners.push_back(std::make_shared<LAGapJoiner>(gp.g, pset.scaffolder_options.min_overlap_length,
+                                                        pset.scaffolder_options.flank_multiplication_coefficient,
+                                                        pset.scaffolder_options.flank_addition_coefficient));
+
+
+    joiners.push_back(std::make_shared<HammingGapJoiner>(gp.g,
+                                                         pset.scaffolder_options.min_gap_score,
+                                                         pset.scaffolder_options.short_overlap,
+                                                         (int) pset.scaffolder_options.basic_overlap_coeff * dataset_info.RL()));
+
+    auto composite_gap_joiner = std::make_shared<CompositeGapJoiner>(gp.g,
+                                                                     joiners,
+                                                                     size_t(pset.scaffolder_options.max_can_overlap * (double) gp.g.k()), /* may overlap threshold */
+                                                                     int(math::round((double) gp.g.k() - pset.scaffolder_options.var_coeff * (double) paired_lib->GetIsVar())),  /* must overlap threshold */
+                                                                     pset.scaffolder_options.artificial_gap);
+
+    VERIFY(pset.scaffolder_options.min_overlap_for_rna_scaffolding.is_initialized());
+    return make_shared<RNAScaffoldingPathExtender>(gp, cov_map,
+                                                   scaff_chooser,
+                                                   scaff_chooser2,
+                                                   composite_gap_joiner,
+                                                   paired_lib->GetISMax(),
+                                                   pset.loop_removal.max_loops,
+                                                   false  /* investigate short loops */,
+                                                   *pset.scaffolder_options.min_overlap_for_rna_scaffolding);
 }
 
 
@@ -729,13 +787,13 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             }
             if (IsForPEExtender(lib)) {
                 ++pe_libs;
-                if (IsPEStage(stage) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
+                if (IsPEStage(stage) && IsOldPEEnabled(pset.sm)) {
                     if (params.mode == config::pipeline_type::meta)
                         //TODO proper configuration via config
                         pes.push_back(MakeMetaExtender(dataset_info, lib_index, params, gp, cov_map, false));
                     else if (params.mode == config::pipeline_type::moleculo)
                         pes.push_back(MakeLongEdgePEExtender(dataset_info, lib_index, params, gp, cov_map, false));
-                    else if (params.mode == config::pipeline_type::rna && !IsPolishingStage(stage))
+                    else if (pset.multi_path_extend  && !IsPolishingStage(stage))
                         pes.push_back(MakeRNAExtender(dataset_info, lib_index, params, gp, cov_map, false));
                     else
                         pes.push_back(MakePEExtender(dataset_info, lib_index, params, gp, cov_map, false));
@@ -745,30 +803,61 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                 }
             }
             //FIXME logic is very cryptic!
-            if (IsForShortLoopExtender(lib) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
+            if (IsForShortLoopExtender(lib) && IsOldPEEnabled(pset.sm)) {
                 if (params.mode == config::pipeline_type::meta)
                     pes.push_back(MakeMetaExtender(dataset_info, lib_index, params, gp, cov_map, true));
-                else if (params.mode == config::pipeline_type::rna && !IsPolishingStage(stage))
+                else if (pset.multi_path_extend && !IsPolishingStage(stage))
                     pes.push_back(MakeRNAExtender(dataset_info, lib_index, params, gp, cov_map, true));
                 else
                     pe_loops.push_back(MakePEExtender(dataset_info, lib_index, params, gp, cov_map, true));
             }
-            if (IsForScaffoldingExtender(lib) && params.use_scaffolder && pset.scaffolder_options.on) {
+            if (IsForScaffoldingExtender(lib) && params.use_scaffolder && pset.scaffolder_options.enabled) {
                 ++scf_pe_libs;
-                if (pset.sm == sm_old || pset.sm == sm_combined) {
-                    pe_scafs.push_back(MakeScaffoldingExtender(dataset_info, lib_index, params, gp, cov_map));
+                if (params.mode == config::pipeline_type::rna) {
+                    pe_scafs.push_back(MakeRNAScaffoldingExtender(dataset_info, lib_index, params, gp, cov_map));
                 }
-                if (pset.sm == sm_old_pe_2015 || pset.sm == sm_combined) {
-                    pe_scafs.push_back(MakeScaffolding2015Extender(dataset_info, lib_index, params, gp, cov_map, storage));
+                else {
+                    switch (pset.sm) {
+                        case sm_old: {
+                            pe_scafs.push_back(MakeScaffoldingExtender(dataset_info, lib_index, params, gp, cov_map));
+                            break;
+                        }
+                        case sm_old_pe_2015: {
+                            pe_scafs.push_back(MakeScaffolding2015Extender(dataset_info, lib_index, params, gp, cov_map, storage));
+                            break;
+                        }
+                        case sm_combined: {
+                            pe_scafs.push_back(MakeScaffoldingExtender(dataset_info, lib_index, params, gp, cov_map));
+                            pe_scafs.push_back(MakeScaffolding2015Extender(dataset_info, lib_index, params, gp, cov_map, storage));
+                            break;
+                        }
+                        default:
+                            break;
+                    }
                 }
             }
             if (IsForMPExtender(lib) && IsMPStage(stage)) {
                 ++mp_libs;
-                if (pset.sm == sm_old || pset.sm == sm_combined) {
-                    mps.push_back(MakeMPExtender(dataset_info, lib_index, params, gp, cov_map, paths_for_mp));
-                }
-                if (is_2015_scaffolder_enabled(pset.sm)) {
-                    mps.push_back(MakeScaffolding2015Extender(dataset_info, lib_index, params, gp, cov_map, storage));
+                switch (pset.sm) {
+                    case sm_old: {
+                        mps.push_back(MakeMPExtender(dataset_info, lib_index, params, gp, cov_map, paths_for_mp));
+                        break;
+                    }
+                    case sm_old_pe_2015: {
+                        mps.push_back(MakeScaffolding2015Extender(dataset_info, lib_index, params, gp, cov_map, storage));
+                        break;
+                    }
+                    case sm_2015: {
+                        mps.push_back(MakeScaffolding2015Extender(dataset_info, lib_index, params, gp, cov_map, storage));
+                        break;
+                    }
+                    case sm_combined: {
+                        mps.push_back(MakeMPExtender(dataset_info, lib_index, params, gp, cov_map, paths_for_mp));
+                        mps.push_back(MakeScaffolding2015Extender(dataset_info, lib_index, params, gp, cov_map, storage));
+                        break;
+                    }
+                    default:
+                        break;
                 }
             }
         }
@@ -789,7 +878,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     INFO("Using " << scf_pe_libs << " paired-end scaffolding " << LibStr(scf_pe_libs));
     INFO("Using " << mp_libs << " mate-pair " << LibStr(mp_libs));
     INFO("Using " << single_read_libs << " single read " << LibStr(single_read_libs));
-    INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
+    INFO("Scaffolder is " << (pset.scaffolder_options.enabled ? "on" : "off"));
 
     if (pset.use_coordinated_coverage) {
         INFO("Using additional coordinated coverage extender");
@@ -974,10 +1063,10 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     auto sc_mode = pset.sm;
     auto min_unique_length = pset.scaffolding2015.min_unique_length;
     auto unique_variaton = pset.scaffolding2015.unique_coverage_variation;
-    bool detect_repeats_online = !(is_2015_scaffolder_enabled(sc_mode) || params.mode == config::pipeline_type::meta);
+    bool detect_repeats_online = !(IsScaffolder2015Enabled(sc_mode) || params.mode == config::pipeline_type::meta);
 
     //Fill the storage to enable unique edge check
-    if (is_2015_scaffolder_enabled(sc_mode)) {
+    if (IsScaffolder2015Enabled(sc_mode)) {
         main_unique_storage = FillUniqueEdgeStorage(gp, dataset_info,
                                                     min_unique_length,
                                                     unique_variaton,
@@ -1013,6 +1102,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     //Parameters are subject to change
     size_t max_is_right_quantile = max(FindOverlapLenForStage(exspander_stage, dataset_info), gp.g.k() + 100);
     size_t min_edge_len = 100;
+    size_t max_edge_diff_pe = /*cfg::get().mode == config::pipeline_type::rna ? 0 :*/ max_is_right_quantile;
 
     shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
                                                                           main_unique_storage,
@@ -1026,6 +1116,8 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     DebugOutputPaths(gp, params, seeds, "init_paths");
     seeds.SortByLength();
     INFO("Growing paths using paired-end and long single reads");
+    INFO("Multi path extend is " << (cfg::get().pe_params.param_set.multi_path_extend ? "on" : "off"))
+    INFO("Overlap removal is " << (cfg::get().pe_params.param_set.remove_overlaps ? "on" : "off"))
     auto paths = resolver.extendSeeds(seeds, *mainPE);
     paths.SortByLength();
     DebugOutputPaths(gp, params, paths, "pe_before_overlap");
@@ -1047,8 +1139,8 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
                                             detect_repeats_online);
 
     //We do not run overlap removal in 2015 mode
-    if (!is_2015_scaffolder_enabled(sc_mode))
-        FinalizePaths(params, paths, cover_map, min_edge_len, max_is_right_quantile);
+    if (!IsScaffolder2015Enabled(sc_mode))
+        FinalizePaths(params, paths, gp.g, cover_map, min_edge_len, max_edge_diff_pe);
     if (params.output_broken_scaffolds) {
         OutputBrokenScaffolds(paths, params, (int) gp.g.k(), writer,
                               params.output_dir + (mp_exist ? "pe_contigs" : params.broken_contigs));
@@ -1056,7 +1148,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     DebugOutputPaths(gp, params, paths, "pe_before_traverse");
     if (params.traverse_loops) {
         TraverseLoops(paths, cover_map, mainPE);
-        FinalizePaths(params, paths, cover_map, min_edge_len, max_is_right_quantile);
+        FinalizePaths(params, paths, gp.g, cover_map, min_edge_len, max_edge_diff_pe);
     }
     DebugOutputPaths(gp, params, paths, (mp_exist ? "pe_final_paths" : "final_paths"));
     writer.OutputPaths(paths, params.output_dir + (mp_exist ? "pe_scaffolds" : params.contigs_name));
@@ -1077,7 +1169,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     max_is_right_quantile = FindOverlapLenForStage(exspander_stage, dataset_info);
     PathContainer mp_paths(clone_paths);
 
-    if (is_2015_scaffolder_enabled(sc_mode)) {
+    if (IsScaffolder2015Enabled(sc_mode)) {
         //TODO: constants
         for (auto cur_length = min_unique_length; cur_length > 500; cur_length -= 500) {
             ScaffoldingUniqueEdgeStorage current_unique_storage;
@@ -1104,7 +1196,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
         mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
 
         DebugOutputPaths(gp, params, mp_paths, "mp_before_overlap");
-        FinalizePaths(params, mp_paths, clone_map, max_is_right_quantile, max_is_right_quantile, true);
+        FinalizePaths(params, mp_paths, gp.g, clone_map, max_is_right_quantile, max_is_right_quantile, true);
     }
     DebugOutputPaths(gp, params, mp_paths, "mp_final_paths");
     DEBUG("Paths are grown with mate-pairs");
@@ -1133,13 +1225,13 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
                                                    max_is_right_quantile,
                                                    pset.extension_options.max_repeat_length,
                                                    detect_repeats_online);
-    if (!is_2015_scaffolder_enabled(sc_mode)) {
-        FinalizePaths(params, last_paths, clone_map, min_edge_len, max_is_right_quantile);
+    if (!IsScaffolder2015Enabled(sc_mode)) {
+        FinalizePaths(params, last_paths, gp.g, clone_map, min_edge_len, max_is_right_quantile);
         DebugOutputPaths(gp, params, last_paths, "mp2_before_traverse");
     }
 
     TraverseLoops(last_paths, clone_map, last_extender);
-    FinalizePaths(params, last_paths, clone_map, min_edge_len, max_is_right_quantile);
+    FinalizePaths(params, last_paths, gp.g, clone_map, min_edge_len, max_is_right_quantile);
 
 //result
     if (params.output_broken_scaffolds) {

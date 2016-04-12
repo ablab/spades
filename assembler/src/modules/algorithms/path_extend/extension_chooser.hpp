@@ -223,6 +223,10 @@ public:
         return wc_ != nullptr;
     }
 
+    virtual double GetThreshold() const {
+        return 0.0;
+    }
+
     const WeightCounter& wc() const {
         VERIFY(wc_);
         return *wc_;
@@ -517,9 +521,11 @@ protected:
             for (size_t j = 0; j < histogram.size(); ++j) {
                 sum += histogram[j].second;
             }
-            if (sum <= cl_weight_threshold_) {
+            DEBUG("Weight for scaffolding = " << sum << ", threshold = " << cl_weight_threshold_)
+            if (sum < cl_weight_threshold_) {
                 continue;
             }
+
             int gap = CountMean(histogram);
             if (HasIdealInfo(path, e, gap)) {
                 DEBUG("scaffolding " << g_.int_id(e) << " gap " << gap);
@@ -555,6 +561,7 @@ protected:
 
 public:
 
+
     ScaffoldingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc,
                                 double cl_weight_threshold,
                                 double is_scatter_coeff) :
@@ -571,6 +578,10 @@ public:
         EdgeContainer result;
         FindBestFittedEdgesForClustered(path, candidates, result);
         return result;
+    }
+
+    double GetThreshold() const override {
+        return cl_weight_threshold_;
     }
 private:
     DECL_LOGGER("ScaffoldingExtensionChooser");

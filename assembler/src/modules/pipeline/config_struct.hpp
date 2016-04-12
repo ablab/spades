@@ -190,6 +190,8 @@ struct debruijn_config {
 
     bool developer_mode;
 
+    bool preserve_raw_paired_index;
+
     struct simplification {
         struct tip_clipper {
             std::string condition;

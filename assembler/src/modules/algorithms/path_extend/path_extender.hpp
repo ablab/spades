@@ -1322,7 +1322,30 @@ public:
 protected:
     virtual bool AddCandidates(BidirectionalPath& path, PathContainer* paths_storage, ExtensionChooser::EdgeContainer& candidates) override {
         bool res = false;
-        if (candidates.size() >= 1 && (max_candidates_ == 0 || candidates.size() <= max_candidates_)) {
+
+        if (candidates.size() == 1) {
+            LoopDetector loop_detector(&path, cov_map_);
+            DEBUG("loop detecor");
+            if (!investigate_short_loops_ &&
+                (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
+                && extensionChooser_->WeightCounterBased()) {
+                return false;
+            }
+            DEBUG("push");
+            EdgeId eid = candidates.back().e_;
+            path.PushBack(eid, candidates.back().d_);
+            DEBUG("push done");
+            return true;
+        }
+        else if (candidates.size() == 2 && (max_candidates_ == 0 || candidates.size() <= max_candidates_)) {
+            //Check for bulge
+            auto v = g_.EdgeStart(candidates.front().e_);
+            auto u = g_.EdgeEnd(candidates.front().e_);
+            for (auto edge : candidates) {
+                if (v != g_.EdgeStart(edge.e_) || u != g_.EdgeEnd(edge.e_))
+                    return false;
+            }
+
             LoopDetector loop_detector(&path, cov_map_);
             DEBUG("loop detector");
             if (!investigate_short_loops_ && loop_detector.EdgeInShortLoop(path.Back())
@@ -1362,6 +1385,7 @@ protected:
 
 
 class ScaffoldingPathExtender: public LoopDetectingPathExtender {
+protected:
     std::shared_ptr<ExtensionChooser> extension_chooser_;
     ExtensionChooser::EdgeContainer sources_;
     std::shared_ptr<GapJoiner> gap_joiner_;
@@ -1382,6 +1406,10 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
 
     bool IsSink(EdgeId e) const    {
         return g_.OutgoingEdgeCount(g_.EdgeEnd(e)) == 0;
+    }
+
+    virtual bool GapSatisfies(int /*gap*/) const {
+        return true;
     }
 
 
@@ -1405,33 +1433,38 @@ public:
         InitSources();
     }
 
-    bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
-        if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back())) ) {
+
+    bool MakeSimpleGrowStepForChooser(BidirectionalPath& path, std::shared_ptr<ExtensionChooser> ec, bool must_overlap = false) {
+        if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back()))) {
             return false;
         }
         DEBUG("scaffolding:");
         DEBUG("Simple grow step, growing path");
         path.Print();
-        ExtensionChooser::EdgeContainer candidates = extension_chooser_->Filter(path, sources_);
+        ExtensionChooser::EdgeContainer candidates = ec->Filter(path, sources_);
         DEBUG("scaffolding candidates " << candidates.size() << " from sources " << sources_.size());
 
+        DEBUG("Extension chooser threshold = " << ec->GetThreshold())
+        DEBUG("Candidate size = " << candidates.size())
         if (candidates.size() == 1) {
-            if (candidates[0].e_ == path.Back() || (avoid_rc_connections_ && candidates[0].e_ == g_.conjugate(path.Back()))) {
+            if (candidates[0].e_ == path.Back()
+                || (avoid_rc_connections_ && candidates[0].e_ == g_.conjugate(path.Back()))) {
                 return false;
             }
             BidirectionalPath temp_path(path);
             temp_path.PushBack(candidates[0].e_);
-            if(this->DetectCycleScaffolding(temp_path)) {
+            if (this->DetectCycleScaffolding(temp_path)) {
                 return false;
             }
 
             EdgeId eid = candidates.back().e_;
-            if(check_sink_) {
+            if (check_sink_) {
                 Gap gap = gap_joiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_);
+                DEBUG("Gap after fixing " << gap.gap_ << " (was " << candidates.back().d_ << ")");
                 if (gap.gap_ != GapJoiner::INVALID_GAP) {
                     DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() <<
-                                                                                         ", fixed gap length: " << gap.gap_ << ", trash length: " << gap.trash_previous_ << "-" <<
-                                                                                         gap.trash_current_);
+                        ", fixed gap length: " << gap.gap_ << ", trash length: " << gap.trash_previous_ << "-" <<
+                        gap.trash_current_);
 
                     if (used_storage_->UniqueCheckEnabled()) {
                         if (used_storage_->IsUsedAndUnique(eid)) {
@@ -1440,18 +1473,26 @@ public:
                             used_storage_->insert(eid);
                         }
                     }
+
+                    if (must_overlap && GapSatisfies(gap.gap_)) {
+                        DEBUG("Overlap is not large enogh")
+                        return false;
+                    }
+                    DEBUG("Overlap is good, success")
                     path.PushBack(eid, gap);
                     return true;
                 }
                 else {
                     DEBUG("Looks like wrong scaffolding. PathId: " << path.GetId() << " path length: " <<
-                                                                                      path.Length() << ", fixed gap length: " << candidates.back().d_);
+                        path.Length() << ", fixed gap length: " << candidates.back().d_ << ", fixed = " << gap.gap_);
                     return false;
                 }
             }
             else {
                 DEBUG("Gap joiners off");
-                DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << candidates.back().d_ );
+                DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length()
+                          << ", fixed gap length: " << candidates.back().d_);
+
                 if (used_storage_->UniqueCheckEnabled()) {
                     if (used_storage_->IsUsedAndUnique(eid)) {
                         return false;
@@ -1467,6 +1508,10 @@ public:
         return false;
     }
 
+    bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
+        return MakeSimpleGrowStepForChooser(path, extension_chooser_);
+    }
+
     bool ResolveShortLoopByCov(BidirectionalPath&) override {
         return false;
     }
@@ -1479,8 +1524,39 @@ public:
         return extension_chooser_;
     }
 
-private:
+protected:
     DECL_LOGGER("ScaffoldingPathExtender");
+};
+
+
+class RNAScaffoldingPathExtender: public ScaffoldingPathExtender {
+    std::shared_ptr<ExtensionChooser> strict_extension_chooser_;
+
+    int min_overlap_;
+
+protected:
+    bool GapSatisfies(int gap) const override {
+        return gap > (int) g_.k() - min_overlap_;
+    }
+
+public:
+
+    RNAScaffoldingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, std::shared_ptr<ExtensionChooser> extension_chooser,
+                               std::shared_ptr<ExtensionChooser> strict_extension_chooser,
+                               std::shared_ptr<GapJoiner> gap_joiner,
+                               size_t is,
+                               size_t max_loops,
+                               bool investigate_short_loops,
+                               int min_overlap = 0):
+        ScaffoldingPathExtender(gp, cov_map, extension_chooser, gap_joiner, is, max_loops, investigate_short_loops, true),
+        strict_extension_chooser_(strict_extension_chooser), min_overlap_(min_overlap) {}
+
+
+    bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
+        return MakeSimpleGrowStepForChooser(path, extension_chooser_, true) ||
+            MakeSimpleGrowStepForChooser(path, strict_extension_chooser_);
+    }
+
 };
 
 }

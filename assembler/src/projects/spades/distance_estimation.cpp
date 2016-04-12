@@ -226,7 +226,10 @@ void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
                 INFO("Processing library #" << i);
                 estimate_distance(gp, cfg::get().ds.reads[i], gp.paired_indices[i], gp.clustered_indices[i], gp.scaffolding_indices[i]);
             }
-            gp.paired_indices[i].Clear();
+            if (!cfg::get().preserve_raw_paired_index) {
+                INFO("Clearing raw paired index");
+                gp.paired_indices[i].Clear();
+            }
         }
 }
 

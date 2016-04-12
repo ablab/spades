@@ -498,7 +498,11 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
         .set_main_iteration(cfg::get().main_iteration)
         .set_chunk_cnt(5 * cfg::get().max_threads);
 
-    IsolatedEdgeRemoverInstance(gp.g, cfg::get().simp.ier, info_container, (HandlerF<Graph>)nullptr)->Run();
+
+    auto isolated_edge_remover =
+        IsolatedEdgeRemoverInstance(gp.g, cfg::get().simp.ier, info_container, (HandlerF<Graph>)nullptr);
+    if (isolated_edge_remover != nullptr)
+        isolated_edge_remover->Run();
 
     double low_threshold = gp.ginfo.trusted_bound();
     if (math::gr(low_threshold, 0.0)) {
