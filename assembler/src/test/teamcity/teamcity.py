@@ -53,6 +53,7 @@ def load_info(dataset_path):
     info.__dict__["dataset_path"] = os.path.split(dataset_path)[0]
     return info
 
+
 def read_log(output_dir, dataset_info):
     history_log = ""
     if 'history_log' in dataset_info.__dict__:
@@ -271,7 +272,6 @@ def parse_misassembly(m1, m2):
         return (pos2, pos1)
   
 
-
 def find_mis_positions(contig_report):
     infile = open(contig_report)
     #skipping prologue
@@ -303,6 +303,7 @@ def find_mis_positions(contig_report):
     infile.close()
     return coords
 
+
 def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exit_code):
     if os.path.exists(fn):
         print("Processing " + fn)
@@ -329,6 +330,7 @@ def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exi
         print("File not found " + fn)
         return 8, ""
 
+
 def quast_analysis(contigs, dataset_info, folder):
     exit_code = 0
     new_log = ''
@@ -344,6 +346,7 @@ def quast_analysis(contigs, dataset_info, folder):
             exit_code = qcode
 
     return exit_code, new_log
+
 
 def cmp_misassemblies(quast_output_dir, old_ctgs, new_ctgs):
     log.log("Comparing misassemblies in " + old_ctgs + " and " + new_ctgs)
@@ -389,6 +392,7 @@ def cmp_misassemblies(quast_output_dir, old_ctgs, new_ctgs):
                 for ctg in v:
                     log.log("      " + ctg)
         return False
+
         
 def GetContigsList(dataset_info, folder):
     contigs = [("contigs", "contigs", ""), ("scaffolds", "scaffolds", "sc")]
@@ -463,35 +467,44 @@ try:
     run_info.close()
     
 
-    #clean
-    if not args.cfg_compilation:
-        print("Forced to use current SPAdes build, leaving build directories");
-    elif ('prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg) and ('spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile):
-        shutil.rmtree('bin', True)
-        shutil.rmtree('build', True)
-        shutil.rmtree('build_spades', True)
 
-    #prepare cfg
+
+    #cp cfg
     if not args.cfg_compilation:
         print("Forced to use current SPAdes configs, cpcfg will not run");
     elif 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
-        ecode = os.system('./prepare_cfg')
+        ecode = os.system('./cpcfg')
         if ecode != 0:
             print("Preparing configuration files finished abnormally with exit code " + str(ecode))
             sys.exit(2)
 
     #compile
     if not args.cfg_compilation:
-        print("Forced to use current SPAdes build, spades_compile will not run");
+        print("Forced to use current SPAdes build, will not compile SPAdes");
     elif 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
         comp_params = ' '
         if 'compilation_params' in dataset_info.__dict__:
             comp_params = " ".join(dataset_info.compilation_params)
 
-        ecode = os.system('./spades_compile.sh ' + comp_params)
-        if ecode != 0:
-            print("Compilation finished abnormally with exit code " + str(ecode))
-            sys.exit(3)
+        bin_dir = 'build_spades'
+        if not os.path.exists(bin_dir):
+            os.makedirs(bin_dir)
+        os.chdir(bin_dir)
+
+        err_code = os.system('cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=' + working_dir + ' ' + os.path.join(working_dir, 'src') + comp_params)
+        err_code = err_code | os.system('make -j 16')
+        err_code = err_code | os.system('make install')
+
+        os.chdir(working_dir)
+
+        if err_code != 0:
+            shutil.rmtree('bin', True)
+            shutil.rmtree('build_spades', True)
+            ecode = os.system('./spades_compile.sh ' + comp_params)
+            if ecode != 0:
+                print("Compilation finished abnormally with exit code " + str(ecode))
+                sys.exit(3)
+
 
     #make correct files to files
     spades_params = []
