@@ -39,14 +39,14 @@ protected:
 public:
     EdgeAnnotationPropagator(const conj_graph_pack& gp) : gp_(gp) {}
 
-    EdgeAnnotation Propagate(const EdgeAnnotation& edge_annotation) const {
-        EdgeAnnotation extended_annotation(edge_annotation);
+    void Propagate(EdgeAnnotation& edge_annotation) const {
         DEBUG("Propagating");
         for (bin_id bin : edge_annotation.interesting_bins()) {
+            auto edges = edge_annotation.EdgesOfBin(bin);
+            insert_all(edges, PropagateEdges(edges));
             DEBUG("Processing bin " << bin);
-            extended_annotation.StickAnnotation(PropagateEdges(edge_annotation.EdgesOfBin(bin)), bin);
+            edge_annotation.StickAnnotation(edges, bin);
         }
-        return extended_annotation;
     }
 
     virtual ~EdgeAnnotationPropagator() {}
@@ -66,7 +66,7 @@ class ConnectingPathPropagator : public EdgeAnnotationPropagator {
     }
 
     set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const override {
-        set<EdgeId> answer(edges);
+        set<EdgeId> answer;
         set<VertexId> starts = CollectEdgeStarts(edges);
         for (EdgeId e : edges) {
             PathProcessor<Graph> path_searcher(g(), g().EdgeEnd(e), path_length_threshold_);
@@ -94,28 +94,27 @@ class TipPropagator : public EdgeAnnotationPropagator {
 
 public:
     TipPropagator(const conj_graph_pack& gp) :
-        EdgeAnnotationPropagator(gp) {}
+        EdgeAnnotationPropagator(gp), tipper_(gp.g) {}
 
 protected:
     set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const override {
-        set<EdgeId> answer(edges);
-        TipCondition<Graph> tipper(g());
+        set<EdgeId> answer;
         for (EdgeId e1 : edges) {
             auto v = g().EdgeEnd(e1);
-            for (auto e2_it = g().out_begin(v); e2_it != g().out_end(v); ++e2_it) {
-                auto e2 = *e2_it;
-                if (edges.count(e2)) {
-                    DEBUG("Finding tips between " << e1.int_id() << " and " << e2.int_id());
-                    for (EdgeId posTip : g().IncidentEdges(g().EdgeEnd(e1))) {
-                        if (edges.count(posTip))
-                            continue;
-                        DEBUG("Checking " << posTip.int_id() << "...");
-                        if (tipper.Check(posTip)) {
-                            DEBUG("A tip is found!");
-                            answer.insert(posTip);
-                        }
-                    }
-                    break;
+            auto neighbours = g().OutgoingEdges(v);
+            auto e2_it = std::find_if(neighbours.begin(), neighbours.end(), [&](EdgeId e2){return edges.count(e2);});
+            if (e2_it == neighbours.end()) {
+                DEBUG(e1.int_id() << " has no neighbours from the same bin");
+                continue;
+            }
+            DEBUG("Finding tips between " << e1.int_id() << " and " << e2_it->int_id());
+            for (EdgeId posTip : g().IncidentEdges(v)) {
+                if (edges.count(posTip))
+                    continue;
+                DEBUG("Checking " << posTip.int_id() << "...");
+                if (tipper_.Check(posTip)) {
+                    DEBUG("A tip is found!");
+                    answer.insert(posTip);
                 }
             }
         }
@@ -123,6 +122,7 @@ protected:
     }
 
 private:
+    TipCondition<Graph> tipper_;
     DECL_LOGGER("TipPropagator");
 };
 
@@ -163,15 +163,12 @@ public:
         std::vector<EdgeAnnotationPropagator*> propagator_pipeline =
             {&edge_propagator, &tip_propagator, &edge_propagator, &tip_propagator};
 
-        //FIXME: why shared_ptr?
-        auto annotation_ptr = make_shared<EdgeAnnotation>(edge_annotation);
         for (auto prop_ptr : propagator_pipeline) {
-            annotation_ptr = make_shared<EdgeAnnotation>(
-                prop_ptr->Propagate(*annotation_ptr));
+            prop_ptr->Propagate(edge_annotation);
         }
 
         contigs.reset();
-        DumpContigAnnotation(contigs, *annotation_ptr, annotation_out_fn);
+        DumpContigAnnotation(contigs, edge_annotation, annotation_out_fn);
     }
 };
 
