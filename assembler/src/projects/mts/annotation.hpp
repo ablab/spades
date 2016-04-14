@@ -134,8 +134,7 @@ public:
                 insert_all(all_bins, bins);
             }
             if (!bins.empty()) {
-                annotation_map[GetBaseId(contig_annotation.first)]
-                                .insert(bins.begin(), bins.end());
+                insert_all(annotation_map[GetBaseId(contig_annotation.first)], bins);
             }
         }
 
@@ -166,10 +165,15 @@ public:
 
     set<bin_id> RelevantBins(const io::SingleRead& r) const {
         set<bin_id> answer;
-        for (EdgeId e : mapper_->MapRead(r).simple_path()) {
+        for (EdgeId e : EdgesOfContig(r)) {
             insert_all(answer, Annotation(e));
         }
         return answer;
+    }
+
+    vector<EdgeId> EdgesOfContig(const io::SingleRead& contig) const {
+        //TODO: memoize mapping
+        return mapper_->MapRead(contig).simple_path();
     }
 
     set<EdgeId> EdgesOfBin(bin_id bin) const {

@@ -110,6 +110,40 @@ private:
     DECL_LOGGER("PairedInfoPropagator");
 };
 
+class ContigPropagator : public EdgeAnnotationPropagator {
+
+public:
+    ContigPropagator(const conj_graph_pack& gp,
+                     io::SingleStream& contigs,
+                     EdgeAnnotation& annotation) :
+        EdgeAnnotationPropagator(gp),
+        contigs_(contigs),
+        annotation_(annotation)
+    {}
+protected:
+    set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const override {
+        set<EdgeId> answer;
+        io::SingleRead contig;
+        while (!contigs_.eof()) {
+            contigs_ >> contig;
+            auto edges_of_contig = annotation_.EdgesOfContig(contig);
+            for (EdgeId e : edges_of_contig) {
+                if (edges.count(e)) {
+                    insert_all(answer, edges_of_contig);
+                    break;
+                }
+            }
+        }
+        contigs_.reset();
+        return answer;
+    }
+
+private:
+    io::SingleStream& contigs_;
+    const EdgeAnnotation& annotation_;
+    DECL_LOGGER("PairedInfoPropagator");
+};
+
 class TipPropagator : public EdgeAnnotationPropagator {
 
 public:
