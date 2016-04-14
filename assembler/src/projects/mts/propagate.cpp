@@ -90,6 +90,26 @@ private:
     DECL_LOGGER("ConnectingPathPropagator");
 };
 
+class PairedInfoPropagator : public EdgeAnnotationPropagator {
+    omnigraph::de::DEWeight weight_threshold_;
+    set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const override {
+        set<EdgeId> answer;
+        for (EdgeId e1 : edges)
+            for (const auto& index : gp().clustered_indices)
+                for (auto i : index.Get(e1))
+                    for (auto point : i.second) {
+                        if (math::ge(point.weight, weight_threshold_))
+                            answer.insert(i.first);
+                    }
+        return answer;
+    }
+public:
+    PairedInfoPropagator(const conj_graph_pack& gp, omnigraph::de::DEWeight threshold):
+        EdgeAnnotationPropagator(gp), weight_threshold_(threshold) {}
+private:
+    DECL_LOGGER("PairedInfoPropagator");
+};
+
 class TipPropagator : public EdgeAnnotationPropagator {
 
 public:
