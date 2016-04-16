@@ -129,7 +129,7 @@ private:
         size_t end_idx = mapping_index;
         size_t total_len = 0;
         for(size_t i = start_idx; i <= end_idx; ++i) {
-            total_len += mapping_path[i].second.mapped_range.size();
+            total_len += mapping_path[i].second.initial_range.size();
         }
 
         return total_len;

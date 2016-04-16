@@ -1390,11 +1390,11 @@ public:
 private:
 
     void UpdateCanBeProcessed(VertexId v,
-            std::queue<VertexId>& can_be_processed) const {
+            std::queue<VertexId>& can_be_processed, double path_coverage) const {
         DEBUG("Updating can be processed");
         for (EdgeId e : g_.OutgoingEdges(v)) {
             VertexId neighbour_v = this->g_.EdgeEnd(e);
-            if (g_.length(e) < max_edge_length_in_repeat_) {
+            if (g_.length(e) < max_edge_length_in_repeat_ && GoodExtension(e, path_coverage)) {
                 DEBUG("Adding vertex " << neighbour_v.int_id()
                                 << "through edge " << g_.str(e));
                 can_be_processed.push(neighbour_v);
@@ -1402,11 +1402,11 @@ private:
         }
     }
 
-    GraphComponent<Graph> GetRepeatComponent(const VertexId start) const {
+    GraphComponent<Graph> GetRepeatComponent(const VertexId start, double path_coverage) const {
         set<VertexId> vertices_of_component;
         vertices_of_component.insert(start);
         std::queue<VertexId> can_be_processed;
-        UpdateCanBeProcessed(start, can_be_processed);
+        UpdateCanBeProcessed(start, can_be_processed, path_coverage);
         while (!can_be_processed.empty()) {
             VertexId v = can_be_processed.front();
             can_be_processed.pop();
@@ -1416,7 +1416,7 @@ private:
             }
             DEBUG("Adding vertex " << g_.str(v) << " to component set");
             vertices_of_component.insert(v);
-            UpdateCanBeProcessed(v, can_be_processed);
+            UpdateCanBeProcessed(v, can_be_processed, path_coverage);
         }
 
         GraphComponent<Graph> gc(g_, vertices_of_component.begin(),
@@ -1442,28 +1442,34 @@ private:
     EdgeContainer FindExtensionTroughRepeat(const EdgeContainer& edges, double path_coverage) const {
         set<EdgeId> good_extensions;
         for(auto edge : edges) {
+
+            if(!GoodExtension(edge.e_, path_coverage)) {
+                continue;
+            }
+
             if (g_.length(edge.e_) > max_edge_length_in_repeat_) {
                 if (GoodExtension(edge.e_, path_coverage)) {
                     good_extensions.insert(edge.e_);
                 }
-            } else {
-                GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(edge.e_));
-                if (gc.v_size() == 0) {
+                continue;
+            }
+
+            GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(edge.e_), path_coverage);
+            if (gc.v_size() == 0) {
+                return EdgeContainer();
+            }
+
+            for (auto e : gc.edges()) {
+                if (g_.length(e) > max_edge_length_in_repeat_) {
+                    DEBUG("Repeat component contains long edges");
                     return EdgeContainer();
                 }
+            }
 
-                for (auto e : gc.edges()) {
-                    if (g_.length(e) > max_edge_length_in_repeat_) {
-                        DEBUG("Repeat component contains long edges");
-                        return EdgeContainer();
-                    }
-                }
-
-                for (auto v : gc.sinks()) {
-                    for (auto e : g_.OutgoingEdges(v)) {
-                        if (GoodExtension(e, path_coverage)) {
-                            good_extensions.insert(edge.e_);
-                        }
+            for (auto v : gc.sinks()) {
+                for (auto e : g_.OutgoingEdges(v)) {
+                    if (GoodExtension(e, path_coverage)) {
+                        good_extensions.insert(edge.e_);
                     }
                 }
             }
