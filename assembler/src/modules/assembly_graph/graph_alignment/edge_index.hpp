@@ -9,8 +9,6 @@
 
 #include "dev_support/openmp_wrapper.h"
 
-#include "utils/adt/kmer_map.hpp"
-
 #include "assembly_graph/graph_core/graph.hpp"
 #include "assembly_graph/graph_core/action_handlers.hpp"
 #include "dev_support/standard_base.hpp"

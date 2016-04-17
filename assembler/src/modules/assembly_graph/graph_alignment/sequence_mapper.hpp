@@ -26,8 +26,8 @@ using omnigraph::Range;
 
 template<class Graph>
 MappingPath<typename Graph::EdgeId> ConjugateMapping(const Graph& g, 
-                                              const MappingPath<typename Graph::EdgeId>& mp, 
-                                              size_t sequence_length) {
+                                                     const MappingPath<typename Graph::EdgeId>& mp, 
+                                                     size_t sequence_length) {
     MappingPath<typename Graph::EdgeId> answer;
     for (size_t i = mp.size(); i > 0; --i) {
         auto p = mp[i-1];
@@ -268,7 +268,6 @@ private:
 
 template<class Graph, class Index>
 class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
-
  using SequenceMapper<Graph>::g_;
 
  public:
@@ -279,7 +278,7 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
   typedef typename Index::KMer Kmer;
-  typedef KmerMapper<Graph, Kmer> KmerSubs;
+  typedef KmerMapper<Graph> KmerSubs;
   const KmerSubs& kmer_mapper_;
   size_t k_;
   bool optimization_on_;
