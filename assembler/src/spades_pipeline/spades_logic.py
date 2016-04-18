@@ -20,6 +20,7 @@ import options_storage
 BASE_STAGE = "construction"
 READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]
 
+
 def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home):
     subst_dict = dict()
 
@@ -101,6 +102,12 @@ def update_k_mers_in_special_cases(cur_k_mers, RL, log, silent=False):
                 support.warning("Default k-mer sizes were set to %s because estimated "
                                 "read length (%d) is equal to or greater than 150" % (str(options_storage.K_MERS_150), RL), log)
             return options_storage.K_MERS_150
+    if RL <= max(cur_k_mers):
+        new_k_mers = [k for k in cur_k_mers if k < RL]
+        if not silent:
+            support.warning("K-mer sizes were set to %s because estimated "
+                            "read length (%d) is less than %d" % (str(new_k_mers), RL, max(cur_k_mers)), log)
+        return new_k_mers
     return cur_k_mers
 
 
@@ -140,6 +147,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
             shutil.rmtree(data_dir)
         os.makedirs(data_dir)
 
+        dir_util._path_created = {}  # see http://stackoverflow.com/questions/9160227/dir-util-copy-tree-fails-after-shutil-rmtree
         dir_util.copy_tree(os.path.join(configs_dir, "debruijn"), dst_configs, preserve_times=False)
         # removing template configs
         for root, dirs, files in os.walk(dst_configs):
@@ -281,11 +289,15 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
             prev_K = K
             RL = get_read_length(cfg.output_dir, K, ext_python_modules_home, log)
             cfg.iterative_K = update_k_mers_in_special_cases(cfg.iterative_K, RL, log)
-            if cfg.iterative_K[1] + 1 > RL:
+            if len(cfg.iterative_K) < 2 or cfg.iterative_K[1] + 1 > RL:
                 if cfg.rr_enable:
-                    support.warning("Second value of iterative K (%d) exceeded estimated read length (%d). "
-                                    "Rerunning for the first value of K (%d) with Repeat Resolving" %
-                                    (cfg.iterative_K[1], RL, cfg.iterative_K[0]), log)
+                    if len(cfg.iterative_K) < 2:
+                        log.info("== Rerunning for the first value of K (%d) with Repeat Resolving" %
+                                 cfg.iterative_K[0])
+                    else:
+                        support.warning("Second value of iterative K (%d) exceeded estimated read length (%d). "
+                                        "Rerunning for the first value of K (%d) with Repeat Resolving" %
+                                        (cfg.iterative_K[1], RL, cfg.iterative_K[0]), log)
                     run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], None, True)
                     K = cfg.iterative_K[0]
             else:
