@@ -103,8 +103,7 @@ class Options:
 
 
 def print_usage_and_exit(code, version, show_hidden=False):
-    sys.stderr.write("TruSPAdes v" + str(version) +
-                     ": genome assembler designed for short reads produced by Illumina TruSeq Long Read technology\n\n")
+    sys.stderr.write("SPAdes genome assembler v" + str(version) + " [truSPAdes mode]\n\n")
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Basic options:" + "\n")
@@ -132,5 +131,5 @@ def print_usage_and_exit(code, version, show_hidden=False):
 
 
 def print_version_and_exit(version):
-    options_storage.version(version, mode="TruSPAdes")
+    options_storage.version(version, mode="tru")
     sys.exit(0)

@@ -91,12 +91,22 @@ add_subdirectory(spades_pipeline)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
         DESTINATION bin
         COMPONENT runtime)
-install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../truspades.py"
-        DESTINATION bin
-        COMPONENT runtime)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../dipspades.py"
         DESTINATION bin
         COMPONENT runtime)
+install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaspades.py"
+        DESTINATION bin
+        COMPONENT runtime)
+install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../plasmidspades.py"
+        DESTINATION bin
+        COMPONENT runtime)
+install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../rnaspades.py"
+        DESTINATION bin
+        COMPONENT runtime)
+install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../truspades.py"
+        DESTINATION bin
+        COMPONENT runtime)
+
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../spades_init.py"
         DESTINATION bin
         COMPONENT runtime)
