@@ -114,6 +114,7 @@ public:
 
     PerfectHashMap(size_t k, const std::string &workdir, std::shared_ptr<KMerIndexT> index_ptr)
         : KeyBase(k, workdir, index_ptr) {
+        ValueBase::resize(index_ptr->size());
     }
 
     ~PerfectHashMap() {
@@ -123,6 +124,8 @@ public:
         KeyBase::clear();
         ValueBase::clear();
     }
+
+    std::shared_ptr<KMerIndexT> index_ptr() const { return index_ptr_; }
 
     const V get_value(const KeyWithHash &kwh) const {
         return StoringType::get_value(*this, kwh);

@@ -138,7 +138,8 @@ public:
                                min_length_bound_(min_length_bound),
                                mapper_(MapperInstance(gp)),
                                kmer_mpl_(gp_.index.k(),
-                               gp_.index.inner_index().workdir()) {
+                               gp_.index.inner_index().workdir(),
+                               gp_.index.inner_index().index_ptr()) {
         INFO("Filling kmer multiplicities. Sample cnt " << sample_cnt);
         FillMplMap(kmers_mpl_file);
     }
