@@ -33,11 +33,11 @@ def main():
     except getopt.GetoptError:
         _, exc, _ = sys.exc_info()
         sys.stderr.write(str(exc) + "\n")
-        options_storage.usage(spades_version, dipspades=True)
+        options_storage.usage(spades_version, mode="dip")
         sys.stderr.flush()
         sys.exit(1)
     if not options:
-        options_storage.usage(spades_version, dipspades=True)
+        options_storage.usage(spades_version, mode="dip")
         sys.stderr.flush()
         sys.exit(1)
 
@@ -57,13 +57,13 @@ def main():
         elif opt == '--careful' or opt == '--mismatch-correction':
             continue
         if opt == '-v' or opt == '--version':
-            options_storage.version(spades_version, mode="dipSPAdes")
+            options_storage.version(spades_version, mode="dip")
             sys.exit(0)
         if opt == '-h' or opt == '--help':
-            options_storage.usage(spades_version, dipspades=True)
+            options_storage.usage(spades_version, mode="dip")
             sys.exit(0)
         elif opt == "--help-hidden":
-            options_storage.usage(spades_version, show_hidden=True, dipspades=True)
+            options_storage.usage(spades_version, show_hidden=True, mode="dip")
             sys.exit(0)
         # for all other options
         cur_opt_arg = [opt]

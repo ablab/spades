@@ -95,13 +95,12 @@ def print_used_values(cfg, log):
         elif cfg["dataset"].large_genome:
             log.info("  Large genome mode")
         elif cfg["dataset"].truseq:
-            log.info(" Illumina TruSeq mode")
+            log.info("  Illumina TruSeq mode")
         elif cfg["dataset"].rna:
-            log.info(" RNA-seq mode")
+            log.info("  RNA-seq mode")
         else:
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
-                     " was obtained with MDA (single-cell) technology"\
-                     " or --meta flag if processing metagenomic dataset)")
+                     " was obtained with MDA (single-cell) technology)")
         if cfg["dataset"].iontorrent:
             log.info("  IonTorrent data")
 
@@ -128,6 +127,8 @@ def print_used_values(cfg, log):
             log.info("  k: automatic selection based on read length")
         else:
             print_value(cfg, "assembly", "iterative_K", "k")
+        if options_storage.plasmid:
+            log.info("  Plasmid mode is turned ON")
         if cfg["assembly"].careful:
             log.info("  Mismatch careful mode is turned ON")
         else:
@@ -542,6 +543,11 @@ def main(args):
     log.addHandler(console)
 
     support.check_binaries(bin_home, log)
+
+    # auto detecting SPAdes mode (rna, meta, etc)
+    mode = options_storage.get_mode()
+    if mode is not None:
+        args.append('--' + mode)
 
     # parse options and safe all parameters to cfg
     options = args
