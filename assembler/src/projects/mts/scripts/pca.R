@@ -1,9 +1,17 @@
+combine_pieces <- function(table) {
+  res <- table
+  res$contig <- sub("_.*", "", res$contig)
+  unique(res)
+}
+
 load_clusters <- function(canopy_in, canopy_out, int_contigs) {
   data <- read.table(canopy_in)
   names(data) <- c('contig', sapply(seq(1, dim(data)[2]-1, 1),
                              function(x) {paste('mlt', x, sep='')}))
+  data <- combine_pieces(data)
   binned <- read.table(canopy_out)
   names(binned) <- c('clust', 'contig')
+  binned <- combine_pieces(binned)
   interesting <- read.table(int_contigs)
   names(interesting) <- c('contig')
   contigs <- merge(x=binned, y=interesting, by='contig')

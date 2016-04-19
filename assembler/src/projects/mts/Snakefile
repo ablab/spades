@@ -56,7 +56,7 @@ rule canopy:
     input:   rules.canopy_pre.output
     output:  out = "canopy.out", prof = "canopy.prof"
     message: "Running canopy clustering"
-    shell:   "{SCRIPTS}/canopy_launch.sh {input} {output}"
+    shell:   "{SCRIPTS}/canopy_launch.sh {input} {output.out} {output.prof}"
 
 rule canopy_post:
     input:   rules.canopy.output.out
