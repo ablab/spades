@@ -13,9 +13,11 @@ import sys
 import glob
 import shutil
 import support
+import options_storage
 import process_cfg
 from site import addsitedir
 from distutils import dir_util
+from os.path import isfile
 
 
 def compress_dataset_files(dataset_data, ext_python_modules_home, max_threads, log):
@@ -26,10 +28,12 @@ def compress_dataset_files(dataset_data, ext_python_modules_home, max_threads, l
             if key.endswith('reads'):
                 compressed_reads_filenames = []
                 for reads_file in value:
-                    if not os.path.isfile(reads_file):
+                    compressed_reads_filenames.append(reads_file + ".gz")
+                    if not isfile(reads_file):
+                        if isfile(compressed_reads_filenames[-1]):
+                            continue  # already compressed (--continue/--restart-from case)
                         support.error('something went wrong and file with corrected reads (' + reads_file + ') is missing!', log)
                     to_compress.append(reads_file)
-                    compressed_reads_filenames.append(reads_file + ".gz")
                 reads_library[key] = compressed_reads_filenames
     if len(to_compress):
         pigz_path = support.which('pigz')
@@ -91,46 +95,62 @@ def prepare_config_ih(filename, cfg, ext_python_modules_home):
 
 
 def run_hammer(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg,
-               not_used_dataset_data, ext_python_modules_home, log):
+               dataset_data, ext_python_modules_home, only_compressing_is_needed, log):
     addsitedir(ext_python_modules_home)
     if sys.version.startswith('2.'):
         import pyyaml2 as pyyaml
     elif sys.version.startswith('3.'):
         import pyyaml3 as pyyaml
-    dst_configs = os.path.join(cfg.output_dir, "configs")
-    if os.path.exists(dst_configs):
-        shutil.rmtree(dst_configs)
-    if cfg.iontorrent:
-        dir_util.copy_tree(os.path.join(configs_dir, "ionhammer"), dst_configs, preserve_times=False)
-        cfg_file_name = os.path.join(dst_configs, "ionhammer.cfg")
+
+    # not all reads need processing
+    if support.get_lib_ids_by_type(dataset_data, options_storage.LONG_READS_TYPES):
+        not_used_dataset_data = support.get_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
+        to_correct_dataset_data = support.rm_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
+        to_correct_dataset_yaml_filename = os.path.join(cfg.output_dir, "to_correct.yaml")
+        pyyaml.dump(to_correct_dataset_data, open(to_correct_dataset_yaml_filename, 'w'))
+        cfg.dataset_yaml_filename = to_correct_dataset_yaml_filename
     else:
-        dir_util.copy_tree(os.path.join(configs_dir, "hammer"), dst_configs, preserve_times=False)
-        cfg_file_name = os.path.join(dst_configs, "config.info")
-    # removing template configs
-    for root, dirs, files in os.walk(dst_configs):
-        for cfg_file in files:
-            cfg_file = os.path.join(root, cfg_file)
-            if cfg_file.endswith('.template'):
-                if os.path.isfile(cfg_file.split('.template')[0]):
-                    os.remove(cfg_file)
-                else:
-                    os.rename(cfg_file, cfg_file.split('.template')[0])
+        not_used_dataset_data = None
 
-    cfg.tmp_dir = support.get_tmp_dir(prefix="hammer_")
-    if cfg.iontorrent:
-        prepare_config_ih(cfg_file_name, cfg, ext_python_modules_home)
-        binary_name = "ionhammer"
+    if not only_compressing_is_needed:
+        dst_configs = os.path.join(cfg.output_dir, "configs")
+        if os.path.exists(dst_configs):
+            shutil.rmtree(dst_configs)
+        if cfg.iontorrent:
+            dir_util.copy_tree(os.path.join(configs_dir, "ionhammer"), dst_configs, preserve_times=False)
+            cfg_file_name = os.path.join(dst_configs, "ionhammer.cfg")
+        else:
+            dir_util.copy_tree(os.path.join(configs_dir, "hammer"), dst_configs, preserve_times=False)
+            cfg_file_name = os.path.join(dst_configs, "config.info")
+        # removing template configs
+        for root, dirs, files in os.walk(dst_configs):
+            for cfg_file in files:
+                cfg_file = os.path.join(root, cfg_file)
+                if cfg_file.endswith('.template'):
+                    if os.path.isfile(cfg_file.split('.template')[0]):
+                        os.remove(cfg_file)
+                    else:
+                        os.rename(cfg_file, cfg_file.split('.template')[0])
+
+        cfg.tmp_dir = support.get_tmp_dir(prefix="hammer_")
+        if cfg.iontorrent:
+            prepare_config_ih(cfg_file_name, cfg, ext_python_modules_home)
+            binary_name = "ionhammer"
+        else:
+            prepare_config_bh(cfg_file_name, cfg, log)
+            binary_name = "hammer"
+
+        command = [os.path.join(execution_home, binary_name),
+                   os.path.abspath(cfg_file_name)]
+
+        log.info("\n== Running read error correction tool: " + ' '.join(command) + "\n")
+        support.sys_call(command, log)
+        if not os.path.isfile(corrected_dataset_yaml_filename):
+            support.error("read error correction finished abnormally: " + corrected_dataset_yaml_filename + " not found!")
     else:
-        prepare_config_bh(cfg_file_name, cfg, log)
-        binary_name = "hammer"
+        log.info("\n===== Skipping %s (already processed). \n" % "read error correction tool")
+        support.continue_from_here(log)
 
-    command = [os.path.join(execution_home, binary_name),
-               os.path.abspath(cfg_file_name)]
-
-    log.info("\n== Running read error correction tool: " + ' '.join(command) + "\n")
-    support.sys_call(command, log)
-    if not os.path.isfile(corrected_dataset_yaml_filename):
-        support.error("read error correction finished abnormally: " + corrected_dataset_yaml_filename + " not found!")
     corrected_dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
     remove_not_corrected_reads(cfg.output_dir)
     is_changed = False

@@ -629,6 +629,16 @@ def dataset_is_empty(dataset_data):
     return True
 
 
+def dataset_has_gzipped_reads(dataset_data):
+    for reads_library in dataset_data:
+        for key in reads_library:
+            if key.endswith('reads'):
+                for reads_file in reads_library[key]:
+                    if reads_file.endswith('.gz'):
+                        return True
+    return False
+
+
 def dataset_has_interlaced_reads(dataset_data):
     for reads_library in dataset_data:
         if 'interlaced reads' in reads_library:

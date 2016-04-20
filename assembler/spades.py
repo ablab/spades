@@ -654,35 +654,34 @@ def main(args):
             STAGE_NAME = "Read error correction"
             bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
             corrected_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "corrected.yaml")
+            ec_is_needed = True
+            only_compressing_is_needed = False
             if os.path.isfile(corrected_dataset_yaml_filename) and options_storage.continue_mode \
-                and not options_storage.restart_from == "ec":
-                log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
-            else:
-                support.continue_from_here(log)
-
-                if "HEAPCHECK" in os.environ:
-                    del os.environ["HEAPCHECK"]
-                if "heap_check" in bh_cfg.__dict__:
-                    os.environ["HEAPCHECK"] = bh_cfg.heap_check
-
-                if os.path.exists(bh_cfg.output_dir):
-                    shutil.rmtree(bh_cfg.output_dir)
-                os.makedirs(bh_cfg.output_dir)
-
-                if support.get_lib_ids_by_type(dataset_data, options_storage.LONG_READS_TYPES):
-                    not_used_dataset_data = support.get_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
-                    to_correct_dataset_data = support.rm_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
-                    to_correct_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "to_correct.yaml")
-                    pyyaml.dump(to_correct_dataset_data, open(to_correct_dataset_yaml_filename, 'w'))
-                    bh_cfg.__dict__["dataset_yaml_filename"] = to_correct_dataset_yaml_filename
+                    and not options_storage.restart_from == "ec":
+                if not bh_cfg.gzip_output or \
+                        support.dataset_has_gzipped_reads(pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))):
+                    log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
+                    ec_is_needed = False
                 else:
-                    not_used_dataset_data = None
-                    bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
+                    only_compressing_is_needed = True
+            if ec_is_needed:
+                if not only_compressing_is_needed:
+                    support.continue_from_here(log)
 
+                    if "HEAPCHECK" in os.environ:
+                        del os.environ["HEAPCHECK"]
+                    if "heap_check" in bh_cfg.__dict__:
+                        os.environ["HEAPCHECK"] = bh_cfg.heap_check
+
+                    if os.path.exists(bh_cfg.output_dir):
+                        shutil.rmtree(bh_cfg.output_dir)
+                    os.makedirs(bh_cfg.output_dir)
+
+                bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
                 log.info("\n===== %s started. \n" % STAGE_NAME)
 
-                hammer_logic.run_hammer(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, not_used_dataset_data,
-                    ext_python_modules_home, log)
+                hammer_logic.run_hammer(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, dataset_data,
+                    ext_python_modules_home, only_compressing_is_needed, log)
                 log.info("\n===== %s finished. \n" % STAGE_NAME)
             if options_storage.stop_after == 'ec':
                 support.finish_here(log)
