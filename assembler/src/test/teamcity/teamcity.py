@@ -437,14 +437,17 @@ def load_info(dataset_path):
 
 # Get contig list to be assessed for this run
 def get_contigs_list(dataset_info, folder, before_rr = False):
+    truspades_mode = 'truseq' in dataset_info.__dict__ and dataset_info.truseq:
+    dipspades_mode = 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades
+
     contigs = [("contigs", "contigs", ""), ("scaffolds", "scaffolds", "sc")]
-    if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
+    if dipspades_mode:
         contigs = [("contigs", "consensus_contigs", "")]
-    if 'truseq' in dataset_info.__dict__ and dataset_info.truseq:
+    if truspades_mode:
         contigs = [("contigs", "truseq_long_reads", "")]
     if os.path.exists(os.path.join(folder, "first_pe_contigs.fasta")):
         contigs.append(("preliminary", "first_pe_contigs", "prelim"))
-    if before_rr:
+    if before_rr and not truspades_mode and not dipspades_mode:
         contigs.append(("before_rr", "before_rr", ""))
     return contigs
 
