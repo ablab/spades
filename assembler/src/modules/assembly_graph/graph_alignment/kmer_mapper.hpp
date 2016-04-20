@@ -11,9 +11,6 @@
 #include "data_structures/sequence/runtime_k.hpp"
 #include "edge_index.hpp"
 
-#include "utils/adt/kmer_map.hpp"
-#include "utils/adt/kmer_vector.hpp"
-
 #include "htrie/hat-trie.h"
 
 #include <set>
@@ -28,10 +25,8 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     typedef runtime_k::RtSeq Seq;
     typedef typename Seq::DataType RawSeqData;
 
-    typedef typename runtime_k::KmerMap<Kmer, Seq> MapType;
-
     unsigned k_;
-    unsigned rawcnt_;
+    size_t rawcnt_;
     bool verification_on_;
 
     hattrie_t *mapping_;

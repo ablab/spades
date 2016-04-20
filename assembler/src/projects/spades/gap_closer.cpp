@@ -9,7 +9,6 @@
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "algorithms/simplification/compressor.hpp"
 #include "io/dataset_support/read_converter.hpp"
-#include "utils/adt/kmer_set.hpp"
 #include <stack>
 
 namespace debruijn_graph {
@@ -185,14 +184,14 @@ private:
     const omnigraph::de::DEWeight weight_threshold_;
 
     SequenceMapper mapper_;
-    runtime_k::KmerSet new_kmers_;
+    std::unordered_set<runtime_k::RtSeq> new_kmers_;
 
     bool CheckNoKmerClash(const Sequence &s) {
         runtime_k::RtSeq kmer(k_ + 1, s);
         kmer >>= 'A';
         for (size_t i = k_; i < s.size(); ++i) {
             kmer <<= s[i];
-            if (new_kmers_.contains(kmer)) {
+            if (new_kmers_.count(kmer)) {
                 return false;
             }
         }
@@ -450,7 +449,7 @@ public:
               init_gap_val_(-10),
               weight_threshold_(weight_threshold),
               mapper_(mapper),
-              new_kmers_(k_ + 1) {
+              new_kmers_() {
         VERIFY(min_intersection_ < g_.k());
         DEBUG("weight_threshold=" << weight_threshold_);
         DEBUG("min_intersect=" << min_intersection_);

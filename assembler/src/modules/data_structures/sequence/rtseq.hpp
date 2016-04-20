@@ -722,5 +722,15 @@ std::ostream &operator<<(std::ostream &os, RuntimeSeq<max_size_, T> seq) {
     return os;
 }
 
+namespace std {
+template<size_t max_size, typename T>
+struct hash<RuntimeSeq<max_size, T>> {
+    size_t operator()(const RuntimeSeq<max_size, T> &seq) const {
+        return seq.GetHash();
+    }
+};
+
+};
+
 
 #endif /* RTSEQ_HPP_ */
