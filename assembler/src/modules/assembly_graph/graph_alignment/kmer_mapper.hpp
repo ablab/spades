@@ -11,7 +11,7 @@
 #include "data_structures/sequence/runtime_k.hpp"
 #include "edge_index.hpp"
 
-#include "htrie/hat-trie.h"
+#include "kmer_map.hpp"
 
 #include <set>
 #include <cstdlib>
@@ -26,10 +26,8 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     typedef typename Seq::DataType RawSeqData;
 
     unsigned k_;
-    size_t rawcnt_;
+    KMerMap mapping_;
     bool verification_on_;
-
-    hattrie_t *mapping_;
 
     bool CheckAllDifferent(const Sequence &old_s, const Sequence &new_s) const {
         std::set<Kmer> kmers;
@@ -46,119 +44,29 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
         return kmers.size() == old_s.size() - k_ + 1 + new_s.size() - k_ + 1;
     }
 
-    value_t* internal_tryget(const Kmer &key) const {
-        return hattrie_tryget(mapping_, (const char *)key.data(), rawcnt_ * sizeof(RawSeqData));
-    }
-
-    value_t* internal_get(const Kmer &key) const {
-        return hattrie_get(mapping_, (const char *)key.data(), rawcnt_ * sizeof(RawSeqData));
-    }
-
-    int internal_erase(const Kmer &key) {
-        return hattrie_del(mapping_, (const char *)key.data(), rawcnt_ * sizeof(RawSeqData));
-    }
-
-    void erase(const Kmer &key) {
-        value_t *vp = internal_tryget(key);
-        if (vp == nullptr)
-            return;
-
-        RawSeqData *value = reinterpret_cast<RawSeqData*>(*vp);
-        delete[] value;
-        int res = internal_erase(key);
-        VERIFY_MSG(res == 0, "Failed to delete from kmer mapper");
-    }
-
-    void set(const Kmer &key, const Seq &value) {
-        value_t *vp = internal_tryget(key);
-        if (vp == nullptr) {
-            vp = internal_get(key);
-        } else {
-            RawSeqData *value = reinterpret_cast<RawSeqData*>(*vp);
-            delete[] value;
-        }
-
-        RawSeqData *rawvalue = new RawSeqData[rawcnt_];
-        memcpy(rawvalue, value.data(), rawcnt_ * sizeof(RawSeqData));
-        *vp = reinterpret_cast<uintptr_t>(rawvalue);
-    }
-
-    bool count(const Kmer &key) const {
-        return internal_tryget(key) != nullptr;
-    }
-
-    const RawSeqData *find(const Kmer &key) const {
-        value_t *vp = internal_tryget(key);
-        if (vp == nullptr)
-            return nullptr;
-
-        return reinterpret_cast<const RawSeqData*>(*vp);
-    }
-
-    class KmerMapperIterator : public boost::iterator_facade<KmerMapperIterator,
-                                                             const std::pair<Kmer, Seq>,
-                                                             std::forward_iterator_tag,
-                                                             const std::pair<Kmer, Seq>> {
-      public:
-        KmerMapperIterator(unsigned k, hattrie_iter_t *start = nullptr)
-                : k_(k), iter_(start, [](hattrie_iter_t *p) { hattrie_iter_free(p); }) {}
-
-      private:
-        friend class boost::iterator_core_access;
-
-        void increment() {
-            hattrie_iter_next(iter_.get());
-        }
-
-        bool equal(const KmerMapperIterator &other) const {
-            // Special case: NULL and finished are equal
-            if (iter_.get() == nullptr || hattrie_iter_finished(iter_.get()))
-                return other.iter_.get() == nullptr || hattrie_iter_finished(other.iter_.get());
-
-            if (other.iter_.get() == nullptr)
-                return false;
-
-            return hattrie_iter_equal(iter_.get(), other.iter_.get());
-        }
-
-        const std::pair<Kmer, Seq> dereference() const {
-            size_t len;
-            Kmer k(k_, (const RawSeqData*)hattrie_iter_key(iter_.get(), &len));
-            Seq s(k_, (const RawSeqData*)(*hattrie_iter_val(iter_.get())));
-            return std::make_pair(k, s);
-        }
-
-        unsigned k_;
-        std::shared_ptr<hattrie_iter_t> iter_;
-    };
-
 public:
 
     KmerMapper(const Graph &g, bool verification_on = true) :
-            base(g, "KmerMapper"), k_(unsigned(g.k() + 1)), verification_on_(verification_on) {
-        mapping_ = hattrie_create();
-        rawcnt_ = Seq::GetDataSize(k_);
+            base(g, "KmerMapper"), k_(unsigned(g.k() + 1)), mapping_(k_), verification_on_(verification_on) {
     }
 
-    virtual ~KmerMapper() {
-        hattrie_free(mapping_);
-    }
+    virtual ~KmerMapper() {}
 
     unsigned get_k() const { return k_; }
 
-    KmerMapperIterator begin() const {
-        return KmerMapperIterator(k_, hattrie_iter_begin(mapping_, false));
+    auto begin() const -> decltype(mapping_.begin()) {
+        return mapping_.begin();
     }
 
-    KmerMapperIterator end() const {
-        return KmerMapperIterator(k_);
+    auto end() const -> decltype(mapping_.end()) {
+        return mapping_.end();
     }
 
     void Normalize() {
         std::vector<Kmer> all;
-        for (auto it = begin(); it != end(); ++it) {
+        for (auto it = begin(); it != end(); ++it)
             all.push_back(it->first);
-        }
+
         for (auto it = all.begin(); it != all.end(); ++it) {
             Normalize(*it);
         }
@@ -167,13 +75,13 @@ public:
     void Revert(const Kmer &kmer) {
         Kmer old_value = Substitute(kmer);
         if (old_value != kmer) {
-            erase(kmer);
-            set(old_value, kmer);
+            mapping_.erase(kmer);
+            mapping_.set(old_value, kmer);
         }
     }
 
     void Normalize(const Kmer &kmer) {
-        set(kmer, Substitute(kmer));
+        mapping_.set(kmer, Substitute(kmer));
     }
 
     bool CheckCanRemap(const Sequence &old_s, const Sequence &new_s) const {
@@ -197,7 +105,7 @@ public:
                 }
             }
             Kmer new_kmer(k_, new_s, new_kmer_offest);
-            if (count(new_kmer)) {
+            if (mapping_.count(new_kmer)) {
                 if (Substitute(new_kmer) != old_kmer) {
                     return false;
                 }
@@ -229,13 +137,13 @@ public:
                 }
             }
             Kmer new_kmer(k_, new_s, new_kmer_offest);
-            if (count(new_kmer)) {
+            if (mapping_.count(new_kmer)) {
                 if (verification_on_)
                     VERIFY(Substitute(new_kmer) == old_kmer);
-                erase(new_kmer);
+                mapping_.erase(new_kmer);
             }
             if (old_kmer != new_kmer)
-                set(old_kmer, new_kmer);
+                mapping_.set(old_kmer, new_kmer);
         }
     }
 
@@ -247,14 +155,14 @@ public:
     Kmer Substitute(const Kmer &kmer) const {
         VERIFY(this->IsAttached());
         Kmer answer = kmer;
-        const auto *rawval = find(answer);
+        const auto *rawval = mapping_.find(answer);
         while (rawval != nullptr) {
             Seq val(k_, rawval);
             if (verification_on_)
                 VERIFY(answer != val);
 
             answer = val;
-            rawval = find(answer);
+            rawval = mapping_.find(answer);
         }
         return answer;
     }
@@ -279,7 +187,7 @@ public:
             Seq value(k_);
             Kmer::BinRead(file, &key);
             Seq::BinRead(file, &value);
-            set(key, value);
+            mapping_.set(key, value);
         }
     }
 
@@ -299,20 +207,11 @@ public:
     }
 
     void clear() {
-        // Delete all the values
-        auto *iter = hattrie_iter_begin(mapping_, false);
-        while (!hattrie_iter_finished(iter)) {
-            RawSeqData *value = (RawSeqData*)(*hattrie_iter_val(iter));
-            delete[] value;
-            hattrie_iter_next(iter);
-        }
-        hattrie_iter_free(iter);
-        // Delete the mapping and all the keys
-        hattrie_clear(mapping_);
+        return mapping_.clear();
     }
 
     size_t size() const {
-        return hattrie_size(mapping_);
+        return mapping_.size();
     }
 
     // "turn on = true" means turning of all verifies
