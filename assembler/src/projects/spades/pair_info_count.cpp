@@ -174,8 +174,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
             //Run insert size estimation and pair index filler together to save disc space (removes SAM file right after processing the lib)
             bwa_counter.ProcessLib(i, cfg::get_writable().ds.reads[i], gp.paired_indices[i],
                                    edge_length_threshold, cfg::get().bwa.min_contig_len);
-        }
-        else if (lib.is_paired()) {
+        } else if (lib.is_paired()) {
             INFO("Estimating insert size for library #" << i);
             const auto &lib_data = lib.data();
             size_t rl = lib_data.read_length;
@@ -213,16 +212,13 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
         if (lib.is_pacbio_alignable()) {
             INFO("Library #" << i << " was mapped by PacBio mapper, skipping");
             continue;
-        }
-        else if (lib.is_contig_lib()) {
+        } else if (lib.is_contig_lib()) {
             INFO("Mapping contigs library #" << i);
             ProcessSingleReads(gp, i, false);
-        }
-        else if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
+        } else if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
             INFO("Library #" << i << " was mapped by BWA, skipping");
             continue;
-        }
-        else {
+        } else {
             INFO("Mapping library #" << i);
             bool map_single_reads = ShouldMapSingleReads(i);
             cfg::get_writable().use_single_reads |= map_single_reads;

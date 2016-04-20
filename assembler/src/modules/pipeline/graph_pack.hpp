@@ -99,6 +99,8 @@ struct graph_pack: private boost::noncopyable {
     void EnsureBasicMapping() {
         VERIFY(kmer_mapper.IsAttached());
         EnsureIndex();
+        INFO("Normalizing k-mer map");
+        kmer_mapper.Normalize();
     }
 
     void EnsureQuality() {
