@@ -600,6 +600,9 @@ def save_contigs(working_dir, contig_storage_dir, contigs, rewrite_latest):
     if contig_storage_dir == '':
         return
 
+    if not os.path.exists(contig_storage_dir):
+        os.makedirs(contig_storage_dir)
+
     name_prefix = datetime.datetime.now().strftime('%Y%m%d-%H%M') + "_"
     log.log("Contigs have prefix " + name_prefix)
     ctg_suffix = ""
