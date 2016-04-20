@@ -437,7 +437,7 @@ def load_info(dataset_path):
 
 # Get contig list to be assessed for this run
 def get_contigs_list(dataset_info, folder, before_rr = False):
-    truspades_mode = 'truseq' in dataset_info.__dict__ and dataset_info.truseq:
+    truspades_mode = 'truseq' in dataset_info.__dict__ and dataset_info.truseq
     dipspades_mode = 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades
 
     contigs = [("contigs", "contigs", ""), ("scaffolds", "scaffolds", "sc")]
