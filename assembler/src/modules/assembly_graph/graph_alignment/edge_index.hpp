@@ -97,6 +97,7 @@ public:
         //also makes an update!
         //todo pass appropriate 3-rd arg
         IndexBuilder().BuildIndexFromGraph(inner_index_, this->g());
+        INFO("Index refilled");
     }
 
     void Update() {

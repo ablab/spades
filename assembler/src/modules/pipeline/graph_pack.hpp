@@ -101,6 +101,7 @@ struct graph_pack: private boost::noncopyable {
         EnsureIndex();
         INFO("Normalizing k-mer map");
         kmer_mapper.Normalize();
+        INFO("Normalizing done");
     }
 
     void EnsureQuality() {
