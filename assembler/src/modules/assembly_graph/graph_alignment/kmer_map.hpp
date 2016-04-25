@@ -91,16 +91,16 @@ class KMerMap {
 
     void set(const Kmer &key, const Seq &value) {
         value_t *vp = internal_tryget(key);
+        RawSeqData *rawvalue = nullptr;
         if (vp == nullptr) {
             vp = internal_get(key);
+            rawvalue = new RawSeqData[rawcnt_];
+            *vp = reinterpret_cast<uintptr_t>(rawvalue);
         } else {
-            RawSeqData *value = reinterpret_cast<RawSeqData*>(*vp);
-            delete[] value;
+            rawvalue = reinterpret_cast<RawSeqData*>(*vp);
         }
 
-        RawSeqData *rawvalue = new RawSeqData[rawcnt_];
         memcpy(rawvalue, value.data(), rawcnt_ * sizeof(RawSeqData));
-        *vp = reinterpret_cast<uintptr_t>(rawvalue);
     }
 
     bool count(const Kmer &key) const {
