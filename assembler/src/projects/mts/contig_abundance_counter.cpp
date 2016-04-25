@@ -23,8 +23,8 @@ static const uint INVALID_MPL = uint(-1);
 
 class ContigAbundanceCounter {
 private:
-
-    typedef typename std::array<uint, MAX_SAMPLE_CNT> MplVector;
+    typedef float Mpl;
+    typedef typename std::array<Mpl, MAX_SAMPLE_CNT> MplVector;
     typedef typename std::array<double, MAX_SAMPLE_CNT> AbundanceVector;
     typedef typename InvertableStoring::immutant_inverter<MplVector> InverterT;
 
@@ -120,9 +120,9 @@ private:
 
         for (size_t i = 0; i < sample_cnt_; ++i) {
             VERIFY(abundance_storage[i].size() == contributing_kmer_cnt);
-            std::sort(abundance_storage[i].begin(), abundance_storage[i].end());
-            //set contig abundance as median across kmer multiplicities
-            contig_abundance[i] = abundance_storage[i][abundance_storage[i].size() / 2];
+            //set contig abundance as mean across kmer multiplicities
+            contig_abundance[i] = std::accumulate(abundance_storage[i].begin(), abundance_storage[i].end(), 0, std::plus<Mpl>());
+            contig_abundance[i] /= abundance_storage[i].size();
         }
 
         return boost::optional<AbundanceVector>(contig_abundance);
