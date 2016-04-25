@@ -900,31 +900,35 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     exspander_stage = PathExtendStage::MPStage;
     all_libs.clear();
     max_is_right_quantile = FindOverlapLenForStage(exspander_stage);
-    PathContainer mp_paths(clone_paths);
+    PathContainer mp_paths;
 
     if (is_2015_scaffolder_enabled(sc_mode)) {
         //TODO: constants
-        for (auto cur_length = min_unique_length; cur_length > 500; cur_length -= 500) {
+	int cur_length = (int) min_unique_length;
+        do {
             ScaffoldingUniqueEdgeStorage current_unique_storage;
             ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, cur_length, unique_variaton);
             unique_edge_analyzer.FillUniqueEdgeStorage(current_unique_storage);
-            all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, current_unique_storage, clone_paths);
+            all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, current_unique_storage);
             shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
                                                                                       max_is_right_quantile,
                                                                                       main_unique_storage,
                                                                                       cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+
             INFO("Growing paths using mate-pairs unique length " << cur_length);
-            mp_paths = resolver.extendSeeds(mp_paths, *mp_main_pe);
-            DebugOutputPaths(gp, output_dir, mp_paths, "mp_after_unique_iter_" + std::to_string(cur_length));
-//TODO: are parameters reasonable?
-            size_t traversed = TraverseLoops(mp_paths, cover_map, mainPE, cur_length, 500, (cur_length + 1000)*10);
+            mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
+            clone_paths.DeleteAllPaths();
+            clone_paths = mp_paths;
+            DebugOutputPaths(gp, output_dir, mp_paths, "mp_" + std::to_string(cur_length));
 
-            INFO("mp stage with limit " <<cur_length<< " traversed " <<  traversed << " loops");
-
-            DebugOutputPaths(gp, output_dir, mp_paths, "mp_after_loop_traversing_" + std::to_string(cur_length));
-
-        }
-    } else {
+            //TODO: are parameters reasonable?
+            //size_t traversed = TraverseLoops(mp_paths, cover_map, mainPE, cur_length, 500, (cur_length + 1000)*10);
+            //INFO("MP stage with edge length limit " << cur_length << " traversed " <<  traversed << " loops");
+            // DebugOutputPaths(gp, output_dir, mp_paths, "mp_after_loop_traversing_" + std::to_string(cur_length));
+            cur_length -= 500;
+        } while (cur_length > 500);
+    }
+    else {
         all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, main_unique_storage, clone_paths);
         shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
                                                                                   max_is_right_quantile,
@@ -935,6 +939,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
         DebugOutputPaths(gp, output_dir, mp_paths, "mp_before_overlap");
         FinalizePaths(mp_paths, clone_map, max_is_right_quantile, max_is_right_quantile, true);
+        clone_paths.DeleteAllPaths();
     }
     DebugOutputPaths(gp, output_dir, mp_paths, "mp_final_paths");
     DEBUG("Paths are grown with mate-pairs");
@@ -984,7 +989,6 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     last_paths.DeleteAllPaths();
     seeds.DeleteAllPaths();
     mp_paths.DeleteAllPaths();
-    clone_paths.DeleteAllPaths();
 
     INFO("ExSPAnder repeat resolving tool finished");
 }
