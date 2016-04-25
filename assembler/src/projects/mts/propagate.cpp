@@ -122,6 +122,7 @@ public:
     {}
 protected:
     set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const override {
+        contigs_.reset();
         set<EdgeId> answer;
         io::SingleRead contig;
         while (!contigs_.eof()) {
@@ -129,19 +130,19 @@ protected:
             auto edges_of_contig = annotation_.EdgesOfContig(contig);
             for (EdgeId e : edges_of_contig) {
                 if (edges.count(e)) {
+                    DEBUG(e << " belongs to the contig #" << contig.name());
                     insert_all(answer, edges_of_contig);
                     break;
                 }
             }
         }
-        contigs_.reset();
         return answer;
     }
 
 private:
     io::SingleStream& contigs_;
     const EdgeAnnotation& annotation_;
-    DECL_LOGGER("PairedInfoPropagator");
+    DECL_LOGGER("ContigPropagator");
 };
 
 class TipPropagator : public EdgeAnnotationPropagator {
@@ -213,9 +214,11 @@ public:
         edge_annotation.Fill(contigs, annotation_in);
         ConnectingPathPropagator edge_propagator(gp_, 6000);
         TipPropagator tip_propagator(gp_);
+        ContigPropagator contig_propagator(gp_, contigs, edge_annotation);
+
         //TODO: make this configurable
         std::vector<EdgeAnnotationPropagator*> propagator_pipeline =
-            {&edge_propagator, &tip_propagator, &edge_propagator, &tip_propagator};
+            {&edge_propagator, &tip_propagator, &edge_propagator, &contig_propagator, &tip_propagator};
 
         for (auto prop_ptr : propagator_pipeline) {
             prop_ptr->Propagate(edge_annotation);
