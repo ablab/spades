@@ -26,8 +26,6 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
 
     subst_dict["K"] = str(K)
     subst_dict["run_mode"] = "false"
-    if "diploid_mode" in cfg.__dict__:
-        subst_dict["diploid_mode"] = bool_to_str(cfg.diploid_mode)
     subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset)
     subst_dict["output_base"] = process_cfg.process_spaces(cfg.output_dir)
     subst_dict["tmp_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
@@ -45,11 +43,10 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
 #    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
-    subst_dict["correct_mismatches"] = bool_to_str(last_one)
+    if (not last_one):
+        subst_dict["correct_mismatches"] = bool_to_str(False)
     if "resolving_mode" in cfg.__dict__:
         subst_dict["resolving_mode"] = cfg.resolving_mode
-    if "careful" in cfg.__dict__:
-        subst_dict["mismatch_careful"] = bool_to_str(cfg.careful)
     if "pacbio_mode" in cfg.__dict__:
         subst_dict["pacbio_test_on"] = bool_to_str(cfg.pacbio_mode)
         subst_dict["pacbio_reads"] = process_cfg.process_spaces(cfg.pacbio_reads)
@@ -177,6 +174,21 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home)
 
     command = [os.path.join(execution_home, "spades"), cfg_file_name]
+
+    #Order matters here!
+    mode_config_mapping = [("single_cell", "mda_mode"), 
+                           ("meta", "meta_mode"), 
+                           ("truseq_mode", "moleculo_mode"),
+                           ("rna", "rna_mode"),
+                           ("plasmid", "plasmid_mode"),
+                           ("careful", "careful_mode"),
+                           ("diploid_mode", "diploid_mode")]
+
+    for (mode, config) in mode_config_mapping:
+        if options_storage.__dict__[mode]:
+            command.append(os.path.join(dst_configs, config + ".info"))
+
+    #print("Calling: " + " ".join(command))
     support.sys_call(command, log)
 
 

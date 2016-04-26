@@ -27,14 +27,14 @@ namespace spades {
 
 void assemble_genome() {
     INFO("SPAdes started");
-    if (cfg::get().ds.meta && cfg::get().ds.reads.lib_count() != 1) {
+    if (cfg::get().mode == debruijn_graph::config::pt_meta && cfg::get().ds.reads.lib_count() != 1) {
         ERROR("Sorry, current version of metaSPAdes can work with single library only (paired-end only).");
         exit(239);
     }
 
     INFO("Starting from stage: " << cfg::get().entry_point);
 
-    bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable && cfg::get().ds.meta;
+    bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
     INFO("Two-step RR enabled: " << two_step_rr);
 
     StageManager SPAdes({cfg::get().developer_mode,
@@ -70,7 +70,7 @@ void assemble_genome() {
 
     SPAdes.add(new debruijn_graph::SimplificationCleanup());
     //currently cannot be used with two step rr
-    if (cfg::get().correct_mismatches && !cfg::get().ds.meta)
+    if (cfg::get().correct_mismatches && !cfg::get().two_step_rr)
         SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().rr_enable) {
         if (two_step_rr) {
@@ -97,7 +97,7 @@ void assemble_genome() {
             SPAdes.add(new debruijn_graph::PacBioAligning());
         }
         //end pacbio
-        if (cfg::get().pd.plasmid_enabled) {
+        if (cfg::get().pd && cfg::get().pd->plasmid_enabled) {
             SPAdes.add(new debruijn_graph::ChromosomeRemoval());
         }
         SPAdes.add(new debruijn_graph::PairInfoCount())
@@ -111,7 +111,7 @@ void assemble_genome() {
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 
     // For informing spades.py about estimated params
-    debruijn_graph::write_lib_data(path::append_path(cfg::get().output_dir, "final"));
+    debruijn_graph::config::write_lib_data(path::append_path(cfg::get().output_dir, "final"));
 
     INFO("SPAdes finished");
 }

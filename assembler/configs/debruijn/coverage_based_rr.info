@@ -1,0 +1,13 @@
+;coverage_based_rr
+
+coverage_based_rr
+{
+coverage_threshold_one_list     	0.98
+coverage_threshold_match        	0.60
+coverage_threshold_global       	5       
+tandem_ratio_lower_threshold            0.3
+tandem_ratio_upper_threshold            0.7
+repeat_length_upper_threshold           100
+
+
+}

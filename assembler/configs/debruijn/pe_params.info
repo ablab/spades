@@ -1,4 +1,4 @@
-default_pe {
+pe {
 
 ; output options
 
@@ -129,78 +129,5 @@ long_reads {
         unique_edge_priority 2.0
     }
 
-}
-}
-
-sc_pe {
-params {
-    normalize_weight        true
-
-    ; extension selection
-    extension_options
-    {
-        use_default_single_threshold false
-        single_threshold           0.001
-        weight_threshold           0.6
-        max_repeat_length          8000
-    }
-
-}
-}
-
-moleculo_pe {
-params {
-    normalize_weight        true
-    cut_all_overlaps  true
-
-    ; extension selection
-    extension_options
-    {
-        use_default_single_threshold false
-        single_threshold           0.001
-        weight_threshold           0.6
-    }
-
-    scaffolder {
-        short_overlap     10
-        use_la_gap_joiner false
-    }
-}
-}
-
-;NB decsends from sc_pe
-meta_pe {
-params {
-    remove_overlaps     true
-    cut_all_overlaps  true
-
-    ;TODO proper configuration of different extenders is not supported 
-    ;TODO most settings ard hardcoded for now 
-
-    ;normalize_weight        NA
-    extension_options
-    {
-        ;use_default_single_threshold NA
-        ;single_threshold           NA 
-        weight_threshold           0.6
-        max_repeat_length          50000 
-   }
-    
-    use_coordinated_coverage true
-}
-}
-
-prelim_pe {
-params {
-    use_coordinated_coverage false
-    remove_overlaps     false
-}
-}
-
-rna_pe {
-
-params {
-    multi_path_extend   true
-    remove_overlaps     false
 }
 }

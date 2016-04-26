@@ -96,7 +96,7 @@ void GenomicInfo::Save(const std::string &filename) const {
 }
 
 void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
-    if (cfg::get().ds.single_cell) {
+    if (cfg::get().uneven_depth) {
         ErroneousConnectionThresholdFinder<decltype(gp.g)> finder(gp.g);
         std::map<size_t, size_t> hist = finder.ConstructHistogram();
         double avg = finder.AvgCoverage();
@@ -142,8 +142,8 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
                                        double(CovModel.GetLowThreshold()) :
                                        cfg::get().kcm.coverage_threshold * coef);
         }
-
     }
+
     INFO("EC coverage threshold value was calculated as " << gp.ginfo.ec_bound());
     INFO("Trusted kmer low bound: " << gp.ginfo.trusted_bound());
 }

@@ -15,6 +15,7 @@
 //#include "repeat_resolving_routine.hpp"
 
 namespace debruijn_graph {
+using namespace config;
 
 BOOST_FIXTURE_TEST_SUITE(graph_simplification_tests, TmpFolderFixture)
 

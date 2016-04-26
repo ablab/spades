@@ -5,10 +5,13 @@
 #include "distance_estimation.info"
 #include "detail_info_printer.info"
 #include "tsa.info"
-#include "path_extend/pe_params.info"
+#include "pe_params.info"
 
 K		55
+;FIXME introduce isolate mode
+mode base
 
+;FIXME remove!
 run_mode false
 project_name    TOY_DATASET
 dataset         ./configs/debruijn/datasets_archive/toy.info
@@ -40,16 +43,13 @@ scaffold_correction_mode false
 ; enabled (1) or disabled (0) repeat resolution (former "paired_mode")
 rr_enable true
 
-; two-step pipeline (currently in meta mode only)
-two_step_rr true
+; two-step pipeline
+two_step_rr false
 ; enables/disables usage of intermediate contigs in two-step pipeline
 use_intermediate_contigs true
 
 ;use single reads for rr (all | only_single_libs | none )
 single_reads_rr only_single_libs
-
-; diploid mode
-diploid_mode false
 
 ; The following parameters are used ONLY if developer_mode is true
 
@@ -70,9 +70,6 @@ use_additional_contigs false
 ; use unipaths as additional contigs instead of just graph edges
 use_unipaths false 
 
-;enables mismatch careful mode (primary changes some simplification settings)
-mismatch_careful    false
-
 ;if true simple mismatches are corrected
 correct_mismatches          true
 
@@ -82,33 +79,23 @@ paired_info_statistics false
 ; set it true to get statistics for pair information (over gaps), such as false positive/negative, perfect match, etc.
 paired_info_scaffolder false
 
+;FIXME is it always simple?
 estimation_mode simple
 ; simple, weighted, extensive, smoothing
 
-plasmid 
-{
-    plasmid_enabled false
-    long_edge_length 1000
-    edge_length_for_median 10000
-    relative_coverage 0.3
-    small_component_size 10000
-    small_component_relative_coverage 2
-    min_component_length 10000
-    min_isolated_length 1000
-}
-
+;TODO is it working? Maybe use in meta mode?
 ;set it true to detach connections that are not supported by paired info before repeat resolution
 cut_bad_connections false
 
-;the only option left from repeat resolving -- WHY DO THEY DIFFER?
+;the only option left from repeat resolving
 max_repeat_length 8000
-max_repeat_length_sc 8000
 
 ; repeat resolving mode (none path_extend)
 resolving_mode path_extend
 
 use_scaffolder  true
 
+;FIXME what is that?
 avoid_rc_connections true
 
 ;position handling
@@ -152,33 +139,29 @@ pacbio_processor
 	path_limit_stretching 1.3
 	path_limit_pressing 0.7
 	ignore_middle_alignment true
-;gap_closer
+    ;gap_closer
 	long_seq_limit 400
 	pacbio_min_gap_quantity 2
 	contigs_min_gap_quantity 1
     max_contigs_gap_length 10000
 }
-; consensus
+
+
+; FIXME WAT?
 need_consensus  false ; output is VERY large(gigabytes).
+; FIXME WAT?
 uncorrected_reads	none
 
+;FIXME WAT?
 mismatch_ratio 2.0;
 
+;TODO move out!
 graph_read_corr
 {
 	enable false
 	output_dir corrected_contigs/
 	binary true
 }
-
-sc_cor
-{
-    scaffolds_file scaffolds.fasta
-    output_unfilled true
-    max_insert 100
-    max_cut_length 50
-}
-
 
 bwa_aligner
 {

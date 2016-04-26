@@ -226,7 +226,7 @@ namespace scaffold_correction {
 namespace spades {
     class ScaffoldCorrectionStage : public AssemblyStage {
     public:
-        typedef debruijn_graph::debruijn_config::scaffold_correction Config;
+        typedef debruijn_graph::config::debruijn_config::scaffold_correction Config;
     private:
         size_t k_;
         std::string output_file_;
@@ -323,7 +323,7 @@ namespace spades {
                               cfg::get().load_from,
                               cfg::get().output_saves});
         manager.add(new debruijn_graph::Construction())
-               .add(new ScaffoldCorrectionStage(cfg::get().K, cfg::get().output_dir + "corrected_scaffolds.fasta", cfg::get().sc_cor));
+               .add(new ScaffoldCorrectionStage(cfg::get().K, cfg::get().output_dir + "corrected_scaffolds.fasta", *cfg::get().sc_cor));
         INFO("Output directory: " << cfg::get().output_dir);
         conj_gp.kmer_mapper.Attach();
         manager.run(conj_gp, cfg::get().entry_point.c_str());

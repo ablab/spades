@@ -154,7 +154,7 @@ double GetSingleReadsWeightPriorityThreshold(const io::LibraryType& type) {
 }
 
 double GetSingleReadsUniqueEdgePriorityThreshold(const io::LibraryType& type) {
-    if (cfg::get().ds.single_cell &&
+    if (cfg::get().uneven_depth &&
             (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads)) {
         return 10000.0;
     }
@@ -256,7 +256,7 @@ inline void TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map, sha
     paths.SortByLength();
 }
 
-inline bool IsForSingleReadExtender(const io::SequencingLibrary<debruijn_config::DataSetData> &lib) {
+inline bool IsForSingleReadExtender(const io::SequencingLibrary<config::DataSetData> &lib) {
     io::LibraryType lt = lib.type();
     return (lib.data().single_reads_mapped ||
             lt == io::LibraryType::PacBioReads ||
@@ -265,22 +265,22 @@ inline bool IsForSingleReadExtender(const io::SequencingLibrary<debruijn_config:
             lib.is_contig_lib());
 }
 
-inline bool IsForPEExtender(const io::SequencingLibrary<debruijn_config::DataSetData> &lib) {
+inline bool IsForPEExtender(const io::SequencingLibrary<config::DataSetData> &lib) {
     return (lib.type() == io::LibraryType::PairedEnd &&
             lib.data().mean_insert_size > 0.0);
 }
 
-inline bool IsForShortLoopExtender(const io::SequencingLibrary<debruijn_config::DataSetData> &lib) {
+inline bool IsForShortLoopExtender(const io::SequencingLibrary<config::DataSetData> &lib) {
     return (lib.type() == io::LibraryType::PairedEnd &&
             lib.data().mean_insert_size > 0.0);
 }
 
-inline bool IsForScaffoldingExtender(const io::SequencingLibrary<debruijn_config::DataSetData> &lib) {
+inline bool IsForScaffoldingExtender(const io::SequencingLibrary<config::DataSetData> &lib) {
     return (lib.type() == io::LibraryType::PairedEnd &&
             lib.data().mean_insert_size > 0.0);
 }
 
-inline bool IsForMPExtender(const io::SequencingLibrary<debruijn_config::DataSetData> &lib) {
+inline bool IsForMPExtender(const io::SequencingLibrary<config::DataSetData> &lib) {
     return lib.data().mean_insert_size > 0.0 &&
             (lib.type() == io::LibraryType::HQMatePairs ||
              lib.type() == io::LibraryType::MatePairs);
@@ -569,12 +569,12 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             if (IsForPEExtender(lib)) {
                 ++pe_libs;
                 if (IsPEStage(stage) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
-                    if (cfg::get().ds.meta)
+                    if (cfg::get().mode == config::pt_meta)
                         //TODO proper configuration via config
                         pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, false));
-                    else if (cfg::get().ds.moleculo)
+                    else if (cfg::get().mode == config::pt_moleculo)
                         pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, false));
-                    else if (cfg::get().ds.rna && !IsPolishingStage(stage))
+                    else if (cfg::get().mode == config::pt_rna && !IsPolishingStage(stage))
                         pes.push_back(MakeRNAExtender(gp, cov_map, i, pset, false));
                     else
                         pes.push_back(MakePEExtender(gp, cov_map, i, pset, false));
@@ -583,10 +583,11 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                     pes2015.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
             }
+            //FIXME logic is very cryptic!
             if (IsForShortLoopExtender(lib) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
-                if (cfg::get().ds.meta)
+                if (cfg::get().mode == config::pt_meta)
                     pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, true));
-                else if (cfg::get().ds.rna && !IsPolishingStage(stage))
+                else if (cfg::get().mode == config::pt_rna && !IsPolishingStage(stage))
                     pes.push_back(MakeRNAExtender(gp, cov_map, i, pset, true));
                 else
                     pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));

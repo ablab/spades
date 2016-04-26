@@ -710,7 +710,7 @@ private:
     }
 
     void FindAllUniqueCoverageEdges() {
-       if (cfg::get().ds.single_cell) {
+       if (cfg::get().uneven_depth) {
            return;
        }
        double sum_cov = 0;

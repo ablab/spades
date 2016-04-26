@@ -88,21 +88,23 @@ def print_used_values(cfg, log):
     if "dataset" in cfg:
         log.info("Dataset parameters:")
 
-        if cfg["dataset"].single_cell:
-            log.info("  Single-cell mode")
-        elif cfg["dataset"].meta:
+        if options_storage.iontorrent:
+            log.info("  IonTorrent data")
+
+        if options_storage.meta:
             log.info("  Metagenomic mode")
-        elif cfg["dataset"].large_genome:
+        elif options_storage.large_genome:
             log.info("  Large genome mode")
-        elif cfg["dataset"].truseq:
+        elif options_storage.truseq_mode:
             log.info("  Illumina TruSeq mode")
-        elif cfg["dataset"].rna:
+        elif options_storage.rna:
             log.info("  RNA-seq mode")
+        elif options_storage.single_cell:
+            log.info("  Single-cell mode")
         else:
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
-                     " was obtained with MDA (single-cell) technology)")
-        if cfg["dataset"].iontorrent:
-            log.info("  IonTorrent data")
+                     " was obtained with MDA (single-cell) technology"\
+                     " or --meta flag if processing metagenomic dataset)")
 
         log.info("  Reads:")
         dataset_data = pyyaml.load(open(cfg["dataset"].yaml_filename, 'r'))
@@ -129,10 +131,6 @@ def print_used_values(cfg, log):
             print_value(cfg, "assembly", "iterative_K", "k")
         if options_storage.plasmid:
             log.info("  Plasmid mode is turned ON")
-        if cfg["assembly"].careful:
-            log.info("  Mismatch careful mode is turned ON")
-        else:
-            log.info("  Mismatch careful mode is turned OFF")
         if cfg["assembly"].disable_rr:
             log.info("  Repeat resolution is DISABLED")
         else:
@@ -223,12 +221,16 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         elif opt == "--sc":
             options_storage.single_cell = True
         elif opt == "--meta":
+            #FIXME temporary solution
+            options_storage.single_cell = True
             options_storage.meta = True
         elif opt == "--large-genome":
             options_storage.large_genome = True
         elif opt == "--plasmid":
             options_storage.plasmid = True
         elif opt == "--rna":
+            #FIXME temporary solution
+            options_storage.single_cell = True
             options_storage.rna = True
         elif opt == "--iontorrent":
             options_storage.iontorrent = True
@@ -332,6 +334,11 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         else:
             raise ValueError
 
+    if options_storage.careful:
+        log.info("  Mismatch careful mode is turned ON")
+    else:
+        log.info("  Mismatch careful mode is turned OFF")
+
     if not options_storage.output_dir:
         support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
     if not os.path.isdir(options_storage.output_dir):
@@ -397,13 +404,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     cfg["common"].__dict__["developer_mode"] = options_storage.developer_mode
 
     # dataset section
-    cfg["dataset"].__dict__["single_cell"] = options_storage.single_cell
-    cfg["dataset"].__dict__["rna"] = options_storage.rna
-    cfg["dataset"].__dict__["iontorrent"] = options_storage.iontorrent
-    cfg["dataset"].__dict__["meta"] = options_storage.meta
-    cfg["dataset"].__dict__["large_genome"] = options_storage.large_genome
     cfg["dataset"].__dict__["yaml_filename"] = options_storage.dataset_yaml_filename
-    cfg["dataset"].__dict__["truseq"] = options_storage.truseq_mode
     if options_storage.developer_mode and options_storage.reference:
         cfg["dataset"].__dict__["reference"] = options_storage.reference
 
@@ -428,7 +429,6 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
         else:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_SHORT
-        cfg["assembly"].__dict__["careful"] = options_storage.careful
         cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
         cfg["assembly"].__dict__["diploid_mode"] = options_storage.diploid_mode
         cfg["assembly"].__dict__["cov_cutoff"] = options_storage.cov_cutoff
@@ -440,8 +440,6 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if options_storage.large_genome:
             cfg["assembly"].__dict__["bwa_paired"] = True
             cfg["assembly"].__dict__["scaffolding_mode"] = "old_pe_2015"
-        if options_storage.plasmid:
-            cfg["assembly"].__dict__["plasmid"] = True
     #corrector can work only if contigs exist (not only error correction)
     if (not options_storage.only_error_correction) and options_storage.mismatch_corrector:
         cfg["mismatch_corrector"] = empty_config()
@@ -748,11 +746,6 @@ def main(args):
                 if not os.path.isfile(dataset_filename) or not options_storage.continue_mode:
                     dataset_file = open(dataset_filename, 'w')
                     import process_cfg
-                    dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
-                    dataset_file.write("rna" + '\t' + process_cfg.bool_to_str(cfg["dataset"].rna) + '\n')
-                    dataset_file.write("meta" + '\t' + process_cfg.bool_to_str(cfg["dataset"].meta) + '\n')
-                    dataset_file.write("large_genome" + '\t' + process_cfg.bool_to_str(cfg["dataset"].large_genome) + '\n')
-                    dataset_file.write("moleculo" + '\t' + process_cfg.bool_to_str(cfg["dataset"].truseq) + '\n')
                     if os.path.isfile(corrected_dataset_yaml_filename):
                         dataset_file.write("reads" + '\t' + process_cfg.process_spaces(corrected_dataset_yaml_filename) + '\n')
                     else:

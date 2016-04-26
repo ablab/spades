@@ -17,7 +17,7 @@
 
 namespace debruijn_graph {
 
-typedef io::SequencingLibrary<debruijn_config::DataSetData> SequencingLib;
+typedef io::SequencingLibrary<config::DataSetData> SequencingLib;
 
 bool RefineInsertSizeForLib(conj_graph_pack &gp, size_t ilib, size_t edge_length_threshold) {
 
@@ -140,17 +140,19 @@ bool HasOnlyMP() {
 //todo improve logic
 bool ShouldMapSingleReads(size_t ilib) {
     switch (cfg::get().single_reads_rr) {
-        case sr_none: {
+        case config::sr_none: {
             return false;
         }
-        case sr_all: {
+        case config::sr_all: {
             return true;
         }
-        case sr_only_single_libs: {
+        case config::sr_only_single_libs: {
             //Map when no PacBio/paried libs or only mate-pairs or single lib itself
             return !HasGoodRRLibs() || HasOnlyMP() ||
                    (cfg::get().ds.reads[ilib].type() == io::LibraryType::SingleReads);
         }
+        default:
+            VERIFY_MSG(false, "Invalid mode value");
     }
     return false;
 }
@@ -160,7 +162,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
     gp.EnsureBasicMapping();
 
     //fixme implement better universal logic
-    size_t edge_length_threshold = cfg::get().ds.meta ? 1000 : stats::Nx(gp.g, 50);
+    size_t edge_length_threshold = cfg::get().mode == config::pt_meta ? 1000 : stats::Nx(gp.g, 50);
     INFO("Min edge length for estimation: " << edge_length_threshold);
     bwa_pair_info::BWAPairInfoFiller bwa_counter(gp.g,
                                                  cfg::get().bwa.path_to_bwa,

@@ -22,23 +22,13 @@ fi
 
 case $1 in
   'c')  cfg="configs/debruijn/config.info" ;;
-  'ct') cfg="configs/debruijn/config.info.template" ;;
   's')  cfg="configs/debruijn/simplification.info" ;;
-  'st') cfg="configs/debruijn/simplification.info.template" ;;
   'de') cfg="configs/debruijn/distance_estimation.info";;
-  'det') cfg="configs/debruijn/distance_estimation.info.template";;
-  'd')  cfg="configs/debruijn/deprecated_datasets.info" ;;
-  'da')  cfg="configs/debruijn/deprecated_datasets_archive.info" ;;
   'dip') cfg="configs/debruijn/detail_info_printer.info";;
-  'dipt') cfg="configs/debruijn/detail_info_printer.info.template";;
   'log') cfg="configs/debruijn/log.properties";;
-  'logt') cfg="configs/debruijn/log.properties.template";;
-  'pep')   cfg="configs/debruijn/path_extend/pe_params.info";;
-  'pept')   cfg="configs/debruijn/path_extend/pe_params.info.template";;
+  'pep')   cfg="configs/debruijn/pe_params.info";;
   'con')   cfg="configs/debruijn/construction.info";;
-  'cont')   cfg="configs/debruijn/construction.info.template";;
   'ds')  cfg="configs/dipspades/config.info";;
-  'dst')  cfg="configs/dipspades/config.info.template";;
   'logds') cfg="configs/dipspades/log.properties";;
   
 esac

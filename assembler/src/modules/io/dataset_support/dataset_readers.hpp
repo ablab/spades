@@ -17,7 +17,7 @@
 namespace debruijn_graph {
 
 inline
-io::PairedStreamPtr paired_easy_reader(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+io::PairedStreamPtr paired_easy_reader(const io::SequencingLibrary<config::DataSetData> &lib,
                                        bool followed_by_rc,
                                        size_t insert_size,
                                        bool change_read_order = false,
@@ -32,7 +32,7 @@ io::PairedStreamPtr paired_easy_reader(const io::SequencingLibrary<debruijn_conf
 }
 
 inline
-io::ReadStreamList<io::SingleRead> single_easy_readers(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+io::ReadStreamList<io::SingleRead> single_easy_readers(const io::SequencingLibrary<config::DataSetData> &lib,
                                        bool followed_by_rc,
                                        bool including_paired_reads,
                                        bool handle_Ns = true,
@@ -52,7 +52,7 @@ io::ReadStreamList<io::SingleRead> single_easy_readers(const io::SequencingLibra
 }
 
 inline
-io::SingleStreamPtr single_easy_reader(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+io::SingleStreamPtr single_easy_reader(const io::SequencingLibrary<config::DataSetData> &lib,
                                        bool followed_by_rc,
                                        bool including_paired_reads,
                                        bool handle_Ns = true,

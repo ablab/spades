@@ -27,6 +27,35 @@
 #include <set>
 #include <vector>
 
+//FIXME add namespace!
+
+inline std::string Join(const vector<string>& strings, const string& delim) {
+    std::stringstream ss;
+    string d = "";
+    for (const string& s : strings) {
+        ss << d << s;
+        d = delim;
+    }
+    return ss.str();
+}
+
+//TODO generalize to string delimeter
+inline vector<string> Split(const std::string& s, char c) {
+    vector<string> answer;
+    size_t i = 0;
+    size_t j = s.find(c);
+
+    while (j != string::npos) {
+        answer.push_back(s.substr(i, j-i));
+        i = ++j;
+        j = s.find(c, j);
+    }
+
+    if (j == string::npos)
+        answer.push_back(s.substr(i, s.length()));
+    return answer;
+}
+
 /**
  * Converts anything to string (using ostringstream).
  */

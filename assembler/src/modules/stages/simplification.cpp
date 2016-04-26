@@ -16,6 +16,7 @@
 namespace debruijn_graph {
 
 using namespace debruijn::simplification;
+using namespace config;
 
 class GraphSimplifier {
     typedef std::function<void(EdgeId)> HandlerF;
@@ -70,10 +71,6 @@ class GraphSimplifier {
             INFO("Most init cleaning disabled on main iteration");
             return false;
         }
-        if  (cfg::get().ds.rna) {
-            INFO("Most init cleaning disabled for RNA");
-            return false;
-        }
         if (math::ge(simplif_cfg_.init_clean.activation_cov, 0.)
                 && math::ls(info_container_.detected_mean_coverage(), simplif_cfg_.init_clean.activation_cov)) {
             INFO("Most init cleaning disabled since detected mean " << info_container_.detected_mean_coverage()
@@ -96,6 +93,7 @@ class GraphSimplifier {
         }
         ParallelCompress(g_, chunk_cnt);
     }
+
     void InitialCleaning() {
         INFO("PROCEDURE == InitialCleaning");
 
@@ -107,11 +105,13 @@ class GraphSimplifier {
                                                  info_container_, removal_handler_),
                 "Self conjugate edge remover",
                 algos);
-        if (cfg::get().ds.rna){
+
+        if (cfg::get().mode == config::pt_rna){
             RemoveShortPolyATEdges(1, removal_handler_, info_container_.chunk_cnt());
             PushValid(ShortPolyATEdgesRemoverInstance(g_, 1, removal_handler_, info_container_.chunk_cnt()), "Short PolyA/T Edges",algos) ;
             PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
         }
+
         if (PerformInitCleaning()) {
             PushValid(
                     IsolatedEdgeRemoverInstance(g_,
@@ -143,8 +143,11 @@ class GraphSimplifier {
                     "Disconnecting edges with low flanking coverage",
                     algos);
         }
+
         RunAlgos(algos);
-        if (cfg::get().ds.rna) {
+
+        //FIXME why called directly?
+        if (cfg::get().mode == config::pt_rna){
             RemoveHiddenLoopEC(g_, gp_.flanking_cov, info_container_.detected_coverage_bound(), simplif_cfg_.her, removal_handler_);
             cnt_callback_.Report();
         }
@@ -245,14 +248,16 @@ class GraphSimplifier {
         }
 
         //FIXME need better configuration
-        if (cfg::get().ds.meta) {
+
+        if (cfg::get().mode == config::pt_meta) {
             PushValid(
                     BRInstance(g_, simplif_cfg_.second_final_br,
                                        info_container_, removal_handler_),
                     "Yet another final bulge remover",
                     algos);
         }
-        if (cfg::get().ds.rna){
+
+        if (cfg::get().mode == config::pt_rna) {
             PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
         }
 
@@ -407,17 +412,16 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
         .set_main_iteration(cfg::get().main_iteration)
         .set_chunk_cnt(5 * cfg::get().max_threads);
 
-    if (!cfg::get().ds.meta) {
-        //0 if model didn't converge
-        //todo take max with trusted_bound
-        info_container.set_detected_mean_coverage(gp.ginfo.estimated_mean())
-                .set_detected_coverage_bound(gp.ginfo.ec_bound());
-    }
+    //0 if model didn't converge
+    //todo take max with trusted_bound
+    //FIXME add warning when used for uneven coverage applications
+    info_container.set_detected_mean_coverage(gp.ginfo.estimated_mean())
+            .set_detected_coverage_bound(gp.ginfo.ec_bound());
 
-    debruijn::simplification::GraphSimplifier simplifier(gp, info_container,
-                                                                 preliminary_ ? cfg::get().preliminary_simp : cfg::get().simp,
-                                                                 nullptr/*removal_handler_f*/,
-                                                                 printer);
+    GraphSimplifier simplifier(gp, info_container,
+                                   preliminary_ ? *cfg::get().preliminary_simp : cfg::get().simp,
+                                   nullptr/*removal_handler_f*/,
+                                   printer);
     simplifier.SimplifyGraph();
 }
 
@@ -456,7 +460,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
 
     INFO("Average coverage = " << cfg::get().ds.avg_coverage());
-    if (!cfg::get().ds.single_cell) {
+    if (!cfg::get().uneven_depth) {
         if (cfg::get().ds.avg_coverage() < gp.ginfo.ec_bound())
             WARN("The determined erroneous connection coverage threshold may be determined improperly\n");
     }

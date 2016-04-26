@@ -252,9 +252,9 @@ struct detail_info_printer {
                folder_(folder) {
     }
 
-    void operator() (info_printer_pos pos,
+    void operator() (config::info_printer_pos pos,
                     const string& folder_suffix = "") {
-        string pos_name = details::info_printer_pos_name(pos);
+        string pos_name = ModeName(pos, config::InfoPrinterPosNames());
 
         ProduceDetailedInfo(pos_name + folder_suffix, pos);
     }
@@ -262,13 +262,13 @@ struct detail_info_printer {
   private:
 
     void ProduceDetailedInfo(const string &pos_name,
-                             info_printer_pos pos) {
+                             config::info_printer_pos pos) {
         static size_t call_cnt = 0;
 
         auto it = cfg::get().info_printers.find(pos);
         VERIFY(it != cfg::get().info_printers.end());
     
-        const debruijn_config::info_printer & config = it->second;
+        const config::debruijn_config::info_printer & config = it->second;
     
         if (config.basic_stats) {
             VertexEdgeStat<conj_graph_pack::graph_t> stats(gp_.g);
@@ -288,7 +288,7 @@ struct detail_info_printer {
             string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
                                                   ToString(call_cnt++, 2) + "_" + pos_name + "/");
             path::make_dirs(saves_folder);
-            write_lib_data(saves_folder + "lib_info");
+            config::write_lib_data(saves_folder + "lib_info");
         }
 
         if (config.extended_stats) {

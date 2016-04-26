@@ -462,7 +462,7 @@ public:
 
     void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map, size_t min_edge_len, size_t max_path_diff,  bool add_overlaps_begin) {
         SimpleOverlapRemover remover(g_, coverage_map);
-        if (cfg::get().ds.moleculo)
+        if (cfg::get().mode == config::pt_moleculo)
             remover.CutPseudoSelfConjugatePaths(paths);
         //writer.WritePathsToFASTA(paths, output_dir + "/before.fasta");
         //DEBUG("Removing subpaths");

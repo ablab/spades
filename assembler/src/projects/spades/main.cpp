@@ -58,7 +58,7 @@ private:
     std::string link_name_;
 };
 
-void copy_configs(string cfg_filename, string to) {
+void copy_configs(const string& dir, const string& to) {
     if (!cfg::get().run_mode)
         return;
 
@@ -67,13 +67,15 @@ void copy_configs(string cfg_filename, string to) {
     if (!make_dir(to)) {
         WARN("Could not create files use in /tmp directory");
     }
-    path::copy_files_by_ext(path::parent_path(cfg_filename), to, ".info", true);
+    path::copy_files_by_ext(dir, to, ".info", true);
 }
 
-void load_config(string cfg_filename) {
-    path::CheckFileExistenceFATAL(cfg_filename);
+void load_config(const vector<string>& cfg_fns) {
+    for (const auto& s : cfg_fns) {
+        path::CheckFileExistenceFATAL(s);
+    }
 
-    cfg::create_instance(cfg_filename);
+    cfg::create_instance(Join(cfg_fns, "$"));
 
     if (!cfg::get().project_name.empty()) {
         make_dir(cfg::get().output_base + cfg::get().project_name);
@@ -87,25 +89,22 @@ void load_config(string cfg_filename) {
         make_dir(cfg::get().output_saves);
 
     make_dir(cfg::get().temp_bin_reads_path);
-
-    string path_to_copy = path::append_path(cfg::get().output_dir, "configs");
-    copy_configs(cfg_filename, path_to_copy);
 }
 
-void create_console_logger(string cfg_filename) {
+void create_console_logger(const string& dir) {
     using namespace logging;
 
     string log_props_file = cfg::get().log_filename;
 
     if (!path::FileExists(log_props_file))
-        log_props_file = path::append_path(path::parent_path(cfg_filename), cfg::get().log_filename);
+        log_props_file = path::append_path(dir, cfg::get().log_filename);
 
     logger *lg = create_logger(path::FileExists(log_props_file) ? log_props_file : "");
     lg->add_writer(std::make_shared<console_writer>());
     attach_logger(lg);
 }
 
-int main(int /*argc*/, char **argv) {
+int main(int argc, char **argv) {
     perf_counter pc;
 
     const size_t GB = 1 << 30;
@@ -118,10 +117,18 @@ int main(int /*argc*/, char **argv) {
     try {
         using namespace debruijn_graph;
 
-        string cfg_filename = argv[1];
+        string cfg_dir = path::parent_path(argv[1]);
 
-        load_config(cfg_filename);
-        create_console_logger(cfg_filename);
+        vector<string> cfg_fns;
+        for (int i = 1; i < argc; ++i) {
+           cfg_fns.push_back(argv[i]);
+        }
+
+        load_config(cfg_fns);
+
+        copy_configs(cfg_dir, path::append_path(cfg::get().output_dir, "configs"));
+
+        create_console_logger(cfg_dir);
 
         on_exit_output_linker try_linker("latest");
 

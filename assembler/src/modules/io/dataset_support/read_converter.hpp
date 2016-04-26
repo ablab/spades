@@ -137,7 +137,7 @@ void convert_if_needed() {
 }
 
 inline
-io::BinaryPairedStreams raw_paired_binary_readers(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+io::BinaryPairedStreams raw_paired_binary_readers(const io::SequencingLibrary<config::DataSetData> &lib,
                                                                    bool followed_by_rc,
                                                                    size_t insert_size = 0) {
     convert_if_needed();
@@ -151,7 +151,7 @@ io::BinaryPairedStreams raw_paired_binary_readers(const io::SequencingLibrary<de
 }
 
 inline
-io::BinarySingleStreams raw_single_binary_readers(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+io::BinarySingleStreams raw_single_binary_readers(const io::SequencingLibrary<config::DataSetData> &lib,
                                                                    bool followed_by_rc,
                                                                    bool including_paired_reads) {
     convert_if_needed();
@@ -176,7 +176,7 @@ io::BinarySingleStreams raw_single_binary_readers(const io::SequencingLibrary<de
 
 
 inline
-io::BinaryPairedStreams paired_binary_readers(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+io::BinaryPairedStreams paired_binary_readers(const io::SequencingLibrary<config::DataSetData> &lib,
                                                                        bool followed_by_rc,
                                                                        size_t insert_size = 0) {
     convert_if_needed();
@@ -185,7 +185,7 @@ io::BinaryPairedStreams paired_binary_readers(const io::SequencingLibrary<debrui
 
 
 inline
-io::BinarySingleStreams single_binary_readers(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+io::BinarySingleStreams single_binary_readers(const io::SequencingLibrary<config::DataSetData> &lib,
                                                                        bool followed_by_rc,
                                                                        bool including_paired_reads) {
     convert_if_needed();
