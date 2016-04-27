@@ -28,6 +28,7 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     unsigned k_;
     KMerMap mapping_;
     bool verification_on_;
+    bool normalized_;
 
     bool CheckAllDifferent(const Sequence &old_s, const Sequence &new_s) const {
         std::set<Kmer> kmers;
@@ -47,7 +48,7 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
 public:
 
     KmerMapper(const Graph &g, bool verification_on = true) :
-            base(g, "KmerMapper"), k_(unsigned(g.k() + 1)), mapping_(k_), verification_on_(verification_on) {
+            base(g, "KmerMapper"), k_(unsigned(g.k() + 1)), mapping_(k_), verification_on_(verification_on), normalized_(false) {
     }
 
     virtual ~KmerMapper() {}
@@ -63,6 +64,9 @@ public:
     }
 
     void Normalize() {
+        if (normalized_)
+            return;
+
         std::vector<Kmer> all;
         for (auto it = begin(); it != end(); ++it)
             all.push_back(it->first);
@@ -70,6 +74,7 @@ public:
         for (auto it = all.begin(); it != all.end(); ++it) {
             Normalize(*it);
         }
+        normalized_ = true;
     }
 
     void Revert(const Kmer &kmer) {
@@ -77,6 +82,7 @@ public:
         if (old_value != kmer) {
             mapping_.erase(kmer);
             mapping_.set(old_value, kmer);
+            normalized_ = false;
         }
     }
 
@@ -142,8 +148,10 @@ public:
                     VERIFY(Substitute(new_kmer) == old_kmer);
                 mapping_.erase(new_kmer);
             }
-            if (old_kmer != new_kmer)
+            if (old_kmer != new_kmer) {
                 mapping_.set(old_kmer, new_kmer);
+                normalized_ = false;
+            }
         }
     }
 
@@ -189,6 +197,7 @@ public:
             Seq::BinRead(file, &value);
             mapping_.set(key, value);
         }
+        normalized_ = false;
     }
 
     bool CompareTo(KmerMapper<Graph> const &m) {
@@ -207,6 +216,7 @@ public:
     }
 
     void clear() {
+        normalized_ = false;
         return mapping_.clear();
     }
 
