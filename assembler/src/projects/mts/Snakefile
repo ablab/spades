@@ -50,7 +50,7 @@ rule canopy_pre:
     input:   expand("{sample}.id", sample=SAMPLES)
     output:  "canopy.in"
     message: "Preparing canopy input"
-    shell:   "python2 {SCRIPTS}/make_canopy_input.py {output} {input}"
+    shell:   "{SCRIPTS}/make_canopy_input.py {output} {input}"
 
 rule canopy:
     input:   rules.canopy_pre.output
