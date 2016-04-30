@@ -7,17 +7,10 @@
 #pragma once
 
 #include "pipeline/config_singl.hpp"
-#include "dev_support/cpp_utils.hpp"
-#include "data_structures/sequence/sequence.hpp"
 #include "algorithms/path_extend/pe_config_struct.hpp"
-
 #include "pipeline/library.hpp"
-#include "io/reads_io/binary_streams.hpp"
-#include "io/reads_io/rc_reader_wrapper.hpp"
-#include "io/reads_io/read_stream_vector.hpp"
 
 #include <boost/optional.hpp>
-#include <boost/bimap.hpp>
 #include "math/xmath.h"
 
 namespace debruijn_graph {

@@ -10,6 +10,8 @@
 
 #include "dev_support/standard_base.hpp"
 #include "graph_printer.hpp"
+#include <fstream>
+
 namespace omnigraph {
 namespace visualization {
 

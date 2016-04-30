@@ -7,13 +7,14 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-
 #include "graph_printer.hpp"
 #include "algorithms/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/components/splitters.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "visualizers.hpp"
 #include "vertex_linker.hpp"
+
+#include <fstream>
 
 namespace omnigraph {
 namespace visualization {
@@ -97,7 +98,7 @@ void WriteComponent(const GraphComponent<Graph>& gc,
         const GraphLabeler<Graph> &labeler) {
     EmptyGraphLinker<Graph> linker;
     BorderDecorator<Graph> component_colorer(gc, *colorer, "yellow");
-    ofstream os;
+    std::ofstream os;
     os.open(file_name);
     omnigraph::visualization::ComponentVisualizer<Graph>(gc.g(), true).Visualize(gc, os, labeler, component_colorer, linker);
     os.close();
@@ -109,7 +110,7 @@ void WriteComponentSinksSources(const GraphComponent<Graph>& gc,
         const GraphLabeler<Graph> &labeler) {
     EmptyGraphLinker<Graph> linker;
     SinkSourceDecorator<Graph> component_colorer(gc, *colorer);
-    ofstream os;
+    std::ofstream os;
     os.open(file_name);
     omnigraph::visualization::ComponentVisualizer<Graph>(gc.g(), true).Visualize(gc, os, labeler, component_colorer, linker);
     os.close();
@@ -132,7 +133,7 @@ void WriteSimpleComponent(const GraphComponent<Graph>& gc,
         const string& file_name, shared_ptr<GraphColorer<Graph>> colorer,
         const GraphLabeler<Graph> &labeler) {
     EmptyGraphLinker<Graph> linker;
-    ofstream os;
+    std::ofstream os;
     os.open(file_name);
     omnigraph::visualization::ComponentVisualizer<Graph>(gc.g(), false).Visualize(gc, os, labeler, *colorer, linker);
     os.close();

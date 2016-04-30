@@ -20,6 +20,7 @@
 #include <vector>
 #include <unordered_map>
 #include <atomic>
+#include <fstream>
 
 // Silence bogus gcc warnings
 #pragma GCC diagnostic push

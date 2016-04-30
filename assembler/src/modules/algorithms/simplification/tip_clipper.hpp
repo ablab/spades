@@ -5,21 +5,15 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * tip_clipper.hpp
- *
- *  Created on: Mar 25, 2011
- *      Author: sergey
- */
-
 #pragma once
-
-#include <set>
 
 #include "math/xmath.h"
 #include "dev_support/func.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
+#include "data_structures/sequence/sequence.hpp"
+
+#include <set>
 
 namespace omnigraph {
 
