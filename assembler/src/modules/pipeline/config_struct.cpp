@@ -664,6 +664,7 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
 
     load(cfg.main_iteration, pt, "main_iteration");
 
+    load(cfg.entry_point, pt, "entry_point");
 
     load(cfg.use_additional_contigs, pt, "use_additional_contigs");
     load(cfg.additional_contigs, pt, "additional_contigs");
@@ -786,8 +787,12 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     }
 }
 
-void load(debruijn_config &cfg, const std::string &filename) {
-    vector<string> cfg_fns = Split(filename, '$');
+void load(debruijn_config &cfg, const std::string &cfg_fns) {
+    load(cfg, std::vector<std::string>({ cfg_fns }));
+}
+
+void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
+    VERIFY_MSG(cfg_fns.size() > 0, "Should provide at least one config file");
     boost::property_tree::ptree base_pt;
     boost::property_tree::read_info(cfg_fns[0], base_pt);
 

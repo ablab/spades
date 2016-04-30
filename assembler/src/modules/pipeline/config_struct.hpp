@@ -557,6 +557,7 @@ struct debruijn_config {
     }
 };
 
+void load(debruijn_config& cfg, const std::vector<std::string> &filenames);
 void load(debruijn_config& cfg, const std::string &filename);
 void load_lib_data(const std::string& prefix);
 void write_lib_data(const std::string& prefix);

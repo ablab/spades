@@ -75,7 +75,7 @@ void load_config(const vector<string>& cfg_fns) {
         path::CheckFileExistenceFATAL(s);
     }
 
-    cfg::create_instance(Join(cfg_fns, "$"));
+    cfg::create_instance(cfg_fns);
 
     if (!cfg::get().project_name.empty()) {
         make_dir(cfg::get().output_base + cfg::get().project_name);
