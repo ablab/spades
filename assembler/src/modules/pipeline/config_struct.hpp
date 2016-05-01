@@ -174,10 +174,7 @@ struct dataset {
 struct debruijn_config {
 
     pipeline_type mode;
-    //  bad fix, it is to be removed! To determine is it started from run.sh or from spades.py
     bool uneven_depth;
-    bool run_mode;
-    bool scaffold_correction_mode;
 
     bool developer_mode;
 
@@ -326,17 +323,19 @@ struct debruijn_config {
         struct early_tip_clipper {
             bool enable;
             boost::optional<size_t> length_bound;
+            early_tip_clipper() : enable(false) {}
         };
 
         construction_mode con_mode;
         early_tip_clipper early_tc;
         bool keep_perfect_loops;
         size_t read_buffer_size;
+        construction() :
+                con_mode(construction_mode::con_extention),
+                keep_perfect_loops(true),
+                read_buffer_size(0) {}
     };
 
-    std::string uncorrected_reads;
-    bool need_consensus;
-    double mismatch_ratio;
     simplification simp;
     boost::optional<simplification> preliminary_simp;
 
@@ -455,7 +454,6 @@ struct debruijn_config {
     std::string project_name;
     std::string input_dir;
     std::string output_base;
-    std::string output_root;
     std::string output_dir;
     std::string tmp_dir;
     std::string output_suffix;
@@ -499,7 +497,6 @@ struct debruijn_config {
     bool correct_mismatches;
     bool paired_info_statistics;
     bool paired_info_scaffolder;
-    bool cut_bad_connections;
     bool gap_closer_enable;
 
     size_t max_repeat_length;

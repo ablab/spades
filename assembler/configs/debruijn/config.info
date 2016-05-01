@@ -83,10 +83,6 @@ paired_info_scaffolder false
 estimation_mode simple
 ; simple, weighted, extensive, smoothing
 
-;TODO is it working? Maybe use in meta mode?
-;set it true to detach connections that are not supported by paired info before repeat resolution
-cut_bad_connections false
-
 ;the only option left from repeat resolving
 max_repeat_length 8000
 
@@ -95,7 +91,6 @@ resolving_mode path_extend
 
 use_scaffolder  true
 
-;FIXME what is that?
 avoid_rc_connections true
 
 ;position handling
@@ -145,15 +140,6 @@ pacbio_processor
 	contigs_min_gap_quantity 1
     max_contigs_gap_length 10000
 }
-
-
-; FIXME WAT?
-need_consensus  false ; output is VERY large(gigabytes).
-; FIXME WAT?
-uncorrected_reads	none
-
-;FIXME WAT?
-mismatch_ratio 2.0;
 
 ;TODO move out!
 graph_read_corr

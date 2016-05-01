@@ -100,19 +100,8 @@ size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
     return rl;
 }
 
-inline config::debruijn_config::construction CreateDefaultConstructionConfig() {
-    config::debruijn_config::construction config;
-    config.con_mode = config::construction_mode::con_extention;
-    config::debruijn_config::construction::early_tip_clipper early_tc;
-    early_tc.enable = false;
-    config.early_tc = early_tc;
-    config.keep_perfect_loops = true;
-    config.read_buffer_size = 0;
-    return config;
-}
-
 template<class ExtensionIndex>
-void EarlyClipTips(size_t k, const config::debruijn_config::construction params, size_t rl, ExtensionIndex& ext) {
+void EarlyClipTips(size_t k, const config::debruijn_config::construction& params, size_t rl, ExtensionIndex& ext) {
     if (params.early_tc.enable) {
         size_t length_bound = rl - k;
         if (params.early_tc.length_bound)

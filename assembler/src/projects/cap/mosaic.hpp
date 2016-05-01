@@ -955,7 +955,7 @@ void DrawGraph(const vector<StrandRange>& all_ranges,
     auto stream = io::RCWrap(StreamInstance(ExtractSequences(all_ranges, block_composition)));
     auto streams = io::ReadStreamList<io::SingleRead>(stream);
 //    ConstructGraphUsingOldIndex(streams, gp.g, gp.index);
-    ConstructGraph(CreateDefaultConstructionConfig(), streams, gp.g, gp.index);
+    ConstructGraph(config::debruijn_config::construction(), streams, gp.g, gp.index);
 
     auto full_mosaic_pos_stream = io::RCWrap(StreamInstance(ExtractSequences(full_mosaic_ranges, block_composition), mosaic_names(full_mosaic_ranges.size())));
     INFO("Threading " << full_mosaic_ranges.size() << " full mosaics");

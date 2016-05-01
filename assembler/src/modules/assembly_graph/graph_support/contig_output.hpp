@@ -308,14 +308,9 @@ inline void OutputContigs(ConjugateDeBruijnGraph& g,
     io::osequencestream_cov oss(contigs_output_filename + ".fasta");
 
     if(!output_unipath) {
-        if(!cut_bad_connections) {
-            DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
+        DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
 
-            ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
-        } else {
-            CuttingContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
-            ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
-        }
+        ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
     } else {
         UnipathConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
         ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);

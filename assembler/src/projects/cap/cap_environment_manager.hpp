@@ -76,7 +76,7 @@ class CapEnvironmentManager {
     ContigStreams rc_contigs = io::RCWrap(streams);
     rc_contigs.reset();
 
-    debruijn_graph::ConstructGraphUsingExtentionIndex(CreateDefaultConstructionConfig(),
+    debruijn_graph::ConstructGraphUsingExtentionIndex(config::debruijn_config::construction(),
                                                       rc_contigs, result->g, result->index);
 
     env_->coloring_ = std::make_shared<ColorHandler<Graph> >(result->g, streams.size());

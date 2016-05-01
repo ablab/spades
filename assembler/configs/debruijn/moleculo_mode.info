@@ -118,7 +118,6 @@ params {
 }
 }
 
-scaffold_correction_mode true
 sc_cor
 {
     scaffolds_file scaffolds.fasta
@@ -126,4 +125,3 @@ sc_cor
     max_insert 100
     max_cut_length 50
 }
-

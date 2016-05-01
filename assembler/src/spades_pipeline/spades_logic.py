@@ -25,7 +25,6 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     subst_dict = dict()
 
     subst_dict["K"] = str(K)
-    subst_dict["run_mode"] = "false"
     subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset)
     subst_dict["output_base"] = process_cfg.process_spaces(cfg.output_dir)
     subst_dict["tmp_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
@@ -62,8 +61,6 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     #TODO: make something about spades.py and config param substitution 
     if "bwa_paired" in cfg.__dict__:
         subst_dict["bwa_enable"] = bool_to_str(True)
-    if "plasmid" in cfg.__dict__:
-        subst_dict["plasmid_enabled"] = bool_to_str(True)
     subst_dict["path_to_bwa"] =  os.path.join(execution_home, "bwa-spades")
     process_cfg.substitute_params(filename, subst_dict, log)
 
@@ -119,13 +116,26 @@ def reveal_original_k_mers(RL):
     original_k_mers = [k for k in original_k_mers if k < RL]
     return original_k_mers
 
+def add_configs(command, configs_dir):
+    #Order matters here!
+    mode_config_mapping = [("single_cell", "mda_mode"), 
+                           ("meta", "meta_mode"), 
+                           ("truseq_mode", "moleculo_mode"),
+                           ("rna", "rna_mode"),
+                           ("plasmid", "plasmid_mode"),
+                           ("careful", "careful_mode"),
+                           ("diploid_mode", "diploid_mode")]
+
+    for (mode, config) in mode_config_mapping:
+        if options_storage.__dict__[mode]:
+            command.append(os.path.join(configs_dir, config + ".info"))
+    
 
 def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     data_dir = os.path.join(cfg.output_dir, "K%d" % K)
     stage = BASE_STAGE
     saves_dir = os.path.join(data_dir, 'saves')
     dst_configs = os.path.join(data_dir, "configs")
-    cfg_file_name = os.path.join(dst_configs, "config.info")
 
     if options_storage.continue_mode:
         if os.path.isfile(os.path.join(data_dir, "final_contigs.fasta")) and not (options_storage.restart_from and
@@ -146,15 +156,6 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
 
         dir_util._path_created = {}  # see http://stackoverflow.com/questions/9160227/dir-util-copy-tree-fails-after-shutil-rmtree
         dir_util.copy_tree(os.path.join(configs_dir, "debruijn"), dst_configs, preserve_times=False)
-        # removing template configs
-        for root, dirs, files in os.walk(dst_configs):
-            for cfg_file in files:
-                cfg_file = os.path.join(root, cfg_file)
-                if cfg_file.endswith('.info.template'):
-                    if os.path.isfile(cfg_file.split('.template')[0]):
-                        os.remove(cfg_file)
-                    else:
-                        os.rename(cfg_file, cfg_file.split('.template')[0])
 
     log.info("\n== Running assembler: " + ("K%d" % K) + "\n")
     if prev_K:
@@ -165,28 +166,18 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     else:
         additional_contigs_fname = None
     if "read_buffer_size" in cfg.__dict__:
-        construction_cfg_file_name = os.path.join(dst_configs, "construction.info")
-        process_cfg.substitute_params(construction_cfg_file_name, {"read_buffer_size": cfg.read_buffer_size}, log)
+        #FIXME why here???
+        process_cfg.substitute_params(os.path.join(dst_configs, "construction.info"), {"read_buffer_size": cfg.read_buffer_size}, log)
     if "scaffolding_mode" in cfg.__dict__:
-        construction_cfg_file_name = os.path.join(dst_configs, "path_extend/pe_params.info")
-        process_cfg.substitute_params(construction_cfg_file_name, {"scaffolding_mode": cfg.scaffolding_mode}, log)
+        #FIXME why here???
+        process_cfg.substitute_params(os.path.join(dst_configs, "pe_params.info"), {"scaffolding_mode": cfg.scaffolding_mode}, log)
 
-    prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home)
+    cfg_fn = os.path.join(dst_configs, "config.info")
+    prepare_config_spades(cfg_fn, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home)
 
-    command = [os.path.join(execution_home, "spades"), cfg_file_name]
+    command = [os.path.join(execution_home, "spades"), cfg_fn]
 
-    #Order matters here!
-    mode_config_mapping = [("single_cell", "mda_mode"), 
-                           ("meta", "meta_mode"), 
-                           ("truseq_mode", "moleculo_mode"),
-                           ("rna", "rna_mode"),
-                           ("plasmid", "plasmid_mode"),
-                           ("careful", "careful_mode"),
-                           ("diploid_mode", "diploid_mode")]
-
-    for (mode, config) in mode_config_mapping:
-        if options_storage.__dict__[mode]:
-            command.append(os.path.join(dst_configs, config + ".info"))
+    add_configs(command, dst_configs)
 
     #print("Calling: " + " ".join(command))
     support.sys_call(command, log)
@@ -196,9 +187,8 @@ def prepare_config_scaffold_correction(filename, cfg, log, saves_dir, scaffolds_
     subst_dict = dict()
 
     subst_dict["K"] = str(21)
-    subst_dict["run_mode"] = bool_to_str(False)
     subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset)
-    subst_dict["output_base"] = process_cfg.process_spaces(cfg.output_dir)
+    subst_dict["output_base"] = process_cfg.process_spaces(os.path.join(cfg.output_dir, "SCC"))
     subst_dict["tmp_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
     subst_dict["use_additional_contigs"] = bool_to_str(False)
     subst_dict["main_iteration"] = bool_to_str(False)
@@ -207,12 +197,10 @@ def prepare_config_scaffold_correction(filename, cfg, log, saves_dir, scaffolds_
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
-    subst_dict["scaffold_correction_mode"] = bool_to_str(True)
     subst_dict["scaffolds_file"] = scaffolds_file
 
     #todo
     process_cfg.substitute_params(filename, subst_dict, log)
-
 
 def run_scaffold_correction(configs_dir, execution_home, cfg, log, K):
     data_dir = os.path.join(cfg.output_dir, "SCC")
@@ -225,15 +213,6 @@ def run_scaffold_correction(configs_dir, execution_home, cfg, log, K):
     os.makedirs(data_dir)
 
     dir_util.copy_tree(os.path.join(configs_dir, "debruijn"), dst_configs, preserve_times=False)
-    # removing template configs
-    for root, dirs, files in os.walk(dst_configs):
-        for cfg_file in files:
-            cfg_file = os.path.join(root, cfg_file)
-            if cfg_file.endswith('.info.template'):
-                if os.path.isfile(cfg_file.split('.template')[0]):
-                    os.remove(cfg_file)
-                else:
-                    os.rename(cfg_file, cfg_file.split('.template')[0])
 
     log.info("\n== Running scaffold correction \n")
     latest = os.path.join(cfg.output_dir, "K%d" % K)
@@ -245,6 +224,7 @@ def run_scaffold_correction(configs_dir, execution_home, cfg, log, K):
         process_cfg.substitute_params(construction_cfg_file_name, {"read_buffer_size": cfg.read_buffer_size}, log)
     prepare_config_scaffold_correction(cfg_file_name, cfg, log, saves_dir, scaffolds_file)
     command = [os.path.join(execution_home, "scaffold_correction"), cfg_file_name]
+    add_configs(command, dst_configs)
     log.info(str(command))
     support.sys_call(command, log)
 
@@ -341,7 +321,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
             if options_storage.continue_mode:
                 support.continue_from_here(log)
             run_scaffold_correction(configs_dir, execution_home, cfg, log, K)
-        latest = os.path.join(cfg.output_dir, "SCC")
+        latest = os.path.join(os.path.join(cfg.output_dir, "SCC"), "K21")
         if options_storage.stop_after == 'scc':
             support.finish_here(log)
 

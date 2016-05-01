@@ -120,18 +120,6 @@ vector<string> SingleReadResolveModeNames() {
                     {"all", sr_all}}, sr_total);
 }
 
-static std::string MakeLaunchTimeDirName() {
-  time_t rawtime;
-  struct tm * timeinfo;
-  char buffer[80];
-
-  time(&rawtime);
-  timeinfo = localtime(&rawtime);
-
-  strftime(buffer, 80, "%m.%d_%H.%M.%S", timeinfo);
-  return std::string(buffer);
-}
-
 void load_lib_data(const std::string& prefix) {
   // First, load the data into separate libs
   cfg::get_writable().ds.reads.load(prefix + ".lib_data");
@@ -610,29 +598,6 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
     if (cfg.output_base[cfg.output_base.length() - 1] != '/')
         cfg.output_base += '/';
 
-    // TODO: remove this option
-    load(cfg.run_mode, pt, "run_mode");
-
-    if (cfg.run_mode) {
-        load(cfg.project_name, pt, "project_name");
-        cfg.output_root =
-                cfg.project_name.empty() ?
-                (cfg.output_base + "/K" + ToString(cfg.K) + "/") :
-                (cfg.output_base + cfg.project_name + "/K"
-                 + ToString(cfg.K) + "/");
-        cfg.output_suffix = MakeLaunchTimeDirName() + "/";
-        cfg.output_dir = cfg.output_root + cfg.output_suffix;
-    } else {
-        //FIXME remove scaffold_correction_mode from config after config is refactored and move this logic to main or spades.py
-        //if (!cfg.scaffold_correction_mode)
-        cfg.output_root = cfg.output_base + "/K" + ToString(cfg.K) + "/";
-        //else
-        //  cfg.output_root = cfg.output_base + "/SCC/";
-        cfg.output_dir = cfg.output_root;
-    }
-
-    cfg.output_saves = cfg.output_dir + "saves/";
-
     load(cfg.log_filename, pt, "log_filename");
 
     load(cfg.developer_mode, pt, "developer_mode");
@@ -648,20 +613,10 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
 
     load(cfg.load_from, pt, "load_from");
     if (cfg.load_from[0] != '/') { // relative path
-        if (cfg.run_mode)
-            cfg.load_from = cfg.output_root + cfg.load_from;
-        else
-            cfg.load_from = cfg.output_dir + cfg.load_from;
+        cfg.load_from = cfg.output_dir + cfg.load_from;
     }
 
     load(cfg.tmp_dir, pt, "tmp_dir");
-    if (cfg.tmp_dir[0] != '/') { // relative path
-        if (cfg.run_mode)
-            cfg.tmp_dir = cfg.output_root + cfg.tmp_dir;
-        else
-            cfg.tmp_dir = cfg.output_dir + cfg.tmp_dir;
-    }
-
     load(cfg.main_iteration, pt, "main_iteration");
 
     load(cfg.entry_point, pt, "entry_point");
@@ -676,15 +631,6 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
     load(cfg.temp_bin_reads_dir, pt, "temp_bin_reads_dir");
     if (cfg.temp_bin_reads_dir[cfg.temp_bin_reads_dir.length() - 1] != '/')
         cfg.temp_bin_reads_dir += '/';
-    cfg.temp_bin_reads_path =
-            cfg.project_name.empty() ?
-            (cfg.output_base + "/" + cfg.temp_bin_reads_dir) :
-            (cfg.output_base + cfg.project_name + "/"
-             + cfg.temp_bin_reads_dir);
-    cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
-
-    cfg.paired_read_prefix = cfg.temp_bin_reads_path + "_paired";
-    cfg.single_read_prefix = cfg.temp_bin_reads_path + "_single";
 
     load(cfg.max_threads, pt, "max_threads");
     // Fix number of threads according to OMP capabilities.
@@ -699,9 +645,7 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
     boost::property_tree::read_info(cfg.dataset_file, ds_pt);
     load(cfg.ds, ds_pt, true);
     load_reads(cfg.ds, cfg.input_dir);
-
     load_reference_genome(cfg.ds, cfg.input_dir);
-
 }
 
 // main debruijn config load function
@@ -728,7 +672,6 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.correct_mismatches, pt, "correct_mismatches", complete);
     load(cfg.paired_info_statistics, pt, "paired_info_statistics", complete);
     load(cfg.paired_info_scaffolder, pt, "paired_info_scaffolder", complete);
-    load(cfg.cut_bad_connections, pt, "cut_bad_connections", complete);
     load(cfg.gap_closer_enable, pt, "gap_closer_enable", complete);
 
     load(cfg.max_repeat_length, pt, "max_repeat_length", complete);
@@ -744,9 +687,6 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.flanking_range, pt, "flanking_range", complete);
     load(cfg.graph_read_corr, pt, "graph_read_corr", complete);
     load(cfg.kcm, pt, "kmer_coverage_model", complete);
-    load(cfg.need_consensus, pt, "need_consensus", complete);
-    load(cfg.uncorrected_reads, pt, "uncorrected_reads", complete);
-    load(cfg.mismatch_ratio, pt, "mismatch_ratio", complete);
     load(cfg.pos, pt, "pos", complete); // position handler:
 
     load(cfg.rm, pt, "resolving_mode", complete);
@@ -767,8 +707,6 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
         load(*cfg.pd, pt, "plasmid");
     }
 
-    //FIXME use optional? strange usage of complete mode
-    load(cfg.scaffold_correction_mode, pt, "scaffold_correction_mode", complete);
     if (pt.count("sc_cor")) {
         VERIFY_MSG(!cfg.sc_cor, "Option sc_cor can be loaded only once");
         cfg.sc_cor.reset(debruijn_config::scaffold_correction());
@@ -819,7 +757,25 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
         cfg.pe_params.param_set.scaffolder_options.on = false;
     }
     cfg.need_mapping = cfg.developer_mode || cfg.correct_mismatches
-                       || cfg.gap_closer_enable || cfg.rr_enable || cfg.scaffold_correction_mode;
+                       || cfg.gap_closer_enable || cfg.rr_enable;
+
+    cfg.output_dir = cfg.output_base + "/K" + ToString(cfg.K) + "/";
+
+    cfg.output_saves = cfg.output_dir + "saves/";
+
+    if (cfg.tmp_dir[0] != '/') { // relative path
+        cfg.tmp_dir = cfg.output_dir + cfg.tmp_dir;
+    }
+
+    cfg.temp_bin_reads_path =
+            cfg.project_name.empty() ?
+            (cfg.output_base + "/" + cfg.temp_bin_reads_dir) :
+            (cfg.output_base + cfg.project_name + "/"
+             + cfg.temp_bin_reads_dir);
+    cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
+
+    cfg.paired_read_prefix = cfg.temp_bin_reads_path + "_paired";
+    cfg.single_read_prefix = cfg.temp_bin_reads_path + "_single";
 }
 
 }

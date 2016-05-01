@@ -14,62 +14,6 @@
 #include "launch.hpp"
 #include "dev_support/copy_file.hpp"
 
-void link_output(std::string const &link_name) {
-    if (!cfg::get().run_mode)
-        return;
-
-    std::string link = cfg::get().output_root + link_name;
-    unlink(link.c_str());
-    if (symlink(cfg::get().output_suffix.c_str(), link.c_str()) != 0)
-        WARN("Symlink to \"" << link << "\" launch failed");
-}
-
-void link_previous_run(std::string const &previous_link_name, std::string const &link_name) {
-    if (!cfg::get().run_mode)
-        return;
-
-    char buf[255];
-
-    std::string link = cfg::get().output_dir + previous_link_name;
-    unlink(link.c_str());
-    ssize_t count = readlink((cfg::get().output_root + link_name).c_str(), buf, sizeof(buf) - 1);
-    if (count >= 0) {
-        buf[count] = '\0';
-        std::string previous_run("../");
-        previous_run = previous_run + buf;
-        if (symlink(previous_run.c_str(), link.c_str()) != 0) {
-            DEBUG("Symlink to \"" << link << "\" launch failed : " << previous_run);
-        }
-    } else {
-        DEBUG("Symlink to \"" << link << "\" launch failed");
-    }
-}
-
-struct on_exit_output_linker {
-    on_exit_output_linker(std::string const &link_name) :
-            link_name_(link_name) { }
-
-    ~on_exit_output_linker() {
-        link_previous_run("previous", link_name_);
-        link_output(link_name_);
-    }
-
-private:
-    std::string link_name_;
-};
-
-void copy_configs(const string& dir, const string& to) {
-    if (!cfg::get().run_mode)
-        return;
-
-    using namespace debruijn_graph;
-
-    if (!make_dir(to)) {
-        WARN("Could not create files use in /tmp directory");
-    }
-    path::copy_files_by_ext(dir, to, ".info", true);
-}
-
 void load_config(const vector<string>& cfg_fns) {
     for (const auto& s : cfg_fns) {
         path::CheckFileExistenceFATAL(s);
@@ -81,10 +25,9 @@ void load_config(const vector<string>& cfg_fns) {
         make_dir(cfg::get().output_base + cfg::get().project_name);
     }
 
-    make_dir(cfg::get().output_root);
+    make_dir(cfg::get().output_dir);
     make_dir(cfg::get().tmp_dir);
 
-    make_dir(cfg::get().output_dir);
     if (cfg::get().developer_mode)
         make_dir(cfg::get().output_saves);
 
@@ -109,8 +52,6 @@ int main(int argc, char **argv) {
 
     const size_t GB = 1 << 30;
 
-    segfault_handler sh(bind(link_output, "latest"));
-
     srand(42);
     srandom(42);
 
@@ -126,11 +67,7 @@ int main(int argc, char **argv) {
 
         load_config(cfg_fns);
 
-        copy_configs(cfg_dir, path::append_path(cfg::get().output_dir, "configs"));
-
         create_console_logger(cfg_dir);
-
-        on_exit_output_linker try_linker("latest");
 
         VERIFY(cfg::get().K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K);
         VERIFY(cfg::get().K % 2 != 0);
@@ -148,7 +85,6 @@ int main(int argc, char **argv) {
 
         spades::assemble_genome();
 
-        link_output("latest_success");
     } catch (std::bad_alloc const &e) {
         std::cerr << "Not enough memory to run SPAdes. " << e.what() << std::endl;
         return EINTR;

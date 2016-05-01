@@ -143,6 +143,28 @@ void remove_if_exists(std::string const& path) {
     }
 }
 
+//todo reduce code duplication!!!
+bool FileExists(std::string const &filename) {
+    struct stat st_buf;
+    return stat(filename.c_str(), &st_buf) == 0 && S_ISREG(st_buf.st_mode);
+}
+
+void CheckFileExistenceFATAL(std::string const &filename) {
+    if (!FileExists(filename)) FATAL_ERROR("File " << filename << " doesn't exist or can't be read!");
+}
+
+void make_dirs(std::string const &path) {
+    VERIFY(!path.empty());
+
+    size_t slash_pos = 0;
+    while ((slash_pos = path.find_first_of('/', slash_pos + 1)) != std::string::npos) {
+        make_dir(path.substr(0, slash_pos));
+    }
+    if (path[path.size() - 1] != '/') {
+        make_dir(path);
+    }
+}
+
 // doesn't support symlinks
 std::string resolve(std::string const& path) {
     typedef boost::char_delimiters_separator<char> separator_t;
@@ -196,6 +218,16 @@ std::string make_relative_path(std::string p, std::string base) {
     return append_path(result, filename(p));
 }
 
-typedef std::vector<std::string> files_t;
+std::string MakeLaunchTimeDirName() {
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer[80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, 80, "%m.%d_%H.%M.%S", timeinfo);
+    return std::string(buffer);
+}
 
 }

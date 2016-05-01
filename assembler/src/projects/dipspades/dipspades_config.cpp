@@ -8,20 +8,9 @@
 #include "dipspades_config.hpp"
 #include "pipeline/config_common.hpp"
 #include "utils/files_utils.hpp"
+#include "dev_support/path_helper.hpp"
 
 using namespace dipspades;
-
-static std::string MakeLaunchTimeDirName() {
-  time_t rawtime;
-  struct tm * timeinfo;
-  char buffer[80];
-
-  time(&rawtime);
-  timeinfo = localtime(&rawtime);
-
-  strftime(buffer, 80, "%m.%d_%H.%M.%S", timeinfo);
-  return std::string(buffer);
-}
 
 void load(dipspades_config::base_params &bp,
         boost::property_tree::ptree const &pt, bool) {
@@ -69,7 +58,7 @@ void edit_io_params(bool developer_mode, dipspades_config::io_params &io){
         io.dataset_name = io.output_dir.substr(0, io.output_dir.length() - 1);
         io.output_dir = io.output_base + io.output_dir + "/";
         io.output_root = io.output_dir;
-        io.output_suffix = MakeLaunchTimeDirName() + "/";
+        io.output_suffix = path::MakeLaunchTimeDirName() + "/";
         io.output_dir = io.output_root + io.output_suffix;
         io.output_saves = io.output_dir + "saves/";
 //        io.load_from = io.output_root + io.load_from;
