@@ -94,13 +94,16 @@ class PairedInfoPropagator : public EdgeAnnotationPropagator {
     omnigraph::de::DEWeight weight_threshold_;
     set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const override {
         set<EdgeId> answer;
-        for (EdgeId e1 : edges)
-            for (const auto& index : gp().clustered_indices)
+        for (EdgeId e1 : edges) {
+            DEBUG("Searching for paired neighbours of " << g().str(e1));
+            for (const auto& index : gp().clustered_indices) 
                 for (auto i : index.Get(e1))
-                    for (auto point : i.second) {
-                        if (math::ge(point.weight, weight_threshold_))
+                    for (auto point : i.second)
+                        if (math::ge(point.weight, weight_threshold_)) {
+                            DEBUG("Adding (" << g().str(e1) << "," << g().str(i.first) << "); " << point);
                             answer.insert(i.first);
-                    }
+                        }
+	}
         return answer;
     }
 public:
@@ -215,10 +218,12 @@ public:
         ConnectingPathPropagator edge_propagator(gp_, 6000);
         TipPropagator tip_propagator(gp_);
         ContigPropagator contig_propagator(gp_, contigs, edge_annotation);
+        PairedInfoPropagator paired_propagator(gp_, 2.0);
 
         //TODO: make this configurable
         std::vector<EdgeAnnotationPropagator*> propagator_pipeline =
-            {&edge_propagator, &tip_propagator, &edge_propagator, &contig_propagator, &tip_propagator};
+            {&edge_propagator, &tip_propagator, &paired_propagator,
+             &edge_propagator, &contig_propagator, &tip_propagator};
 
         for (auto prop_ptr : propagator_pipeline) {
             prop_ptr->Propagate(edge_annotation);
@@ -242,21 +247,23 @@ int main(int argc, char** argv) {
     //TmpFolderFixture fixture("tmp");
     create_console_logger();
     size_t k = lexical_cast<size_t>(argv[1]);
-    string saves_path = argv[2];
-    string contigs_path = argv[3];
-    string annotation_in_fn = argv[4];
-    string annotation_out_fn = argv[5];
+    string config_path = argv[2];
+    string saves_path = argv[3];
+    string contigs_path = argv[4];
+    string annotation_in_fn = argv[5];
+    string annotation_out_fn = argv[6];
 //    debruijn_graph::Launch(k, saves_path, contigs_path);
 
     std::vector<bin_id> bins_of_interest;
-    for (int i = 6; i < argc; ++i) {
+    for (int i = 7; i < argc; ++i) {
         bins_of_interest.push_back(argv[i]);
     }
 
-    conj_graph_pack gp(k, "tmp", 0);
+    cfg::create_instance(config_path);
+    conj_graph_pack gp(k, "tmp", cfg::get().ds.reads.lib_count());
     gp.kmer_mapper.Attach();
     INFO("Load graph from " << saves_path);
-    graphio::ScanGraphPack(saves_path, gp);
+    graphio::ScanWithClusteredIndices(saves_path, gp, gp.clustered_indices);
     auto contigs_stream_ptr = make_shared<io::FileReadStream>(contigs_path);
 
     AnnotationPropagator propagator(gp);

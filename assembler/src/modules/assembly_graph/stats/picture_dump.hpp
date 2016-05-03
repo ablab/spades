@@ -289,6 +289,8 @@ struct detail_info_printer {
             path::make_dirs(saves_folder);
             graphio::ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp_.g);
             graphio::PrintGraphPack(saves_folder + "graph_pack", printer, gp_);
+            //TODO: separate
+            graphio::PrintClusteredIndices(saves_folder + "graph_pack", printer, gp_.clustered_indices);
         }
 
         if (config.lib_info) {

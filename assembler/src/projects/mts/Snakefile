@@ -7,6 +7,7 @@ SCRIPTS = config["SCRIPTS"]
 SOFT = config["SOFT"]
 K = int(config["K"])
 Kp = K + 1
+CONFIG = expand("K{k}/configs/config.info")
 SAVES = expand("K{k}/saves/07_before_repeat_resolution/graph_pack", k=K)
 MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
 
@@ -68,7 +69,7 @@ rule propagate:
     input:   "{sample}.fasta", "{sample}.ann"
     output:  "{sample}.ann.prop"
     message: "Propagating annotations for {wildcards.sample}"
-    shell:   "{BIN}/annotation_propagator {K} {wildcards.sample}_assembly/{SAVES} {input} {output}"
+    shell:   "{BIN}/annotation_propagator {K} {wildcards.sample}_assembly/{CONFIG} {wildcards.sample}_assembly/{SAVES} {input} {output}"
 
 rule binning:
     input:
