@@ -106,7 +106,7 @@ class GraphSimplifier {
                 "Self conjugate edge remover",
                 algos);
 
-        if (cfg::get().mode == config::pt_rna){
+        if (cfg::get().mode == config::pipeline_type::rna){
             RemoveShortPolyATEdges(1, removal_handler_, info_container_.chunk_cnt());
             PushValid(ShortPolyATEdgesRemoverInstance(g_, 1, removal_handler_, info_container_.chunk_cnt()), "Short PolyA/T Edges",algos) ;
             PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
@@ -147,7 +147,7 @@ class GraphSimplifier {
         RunAlgos(algos);
 
         //FIXME why called directly?
-        if (cfg::get().mode == config::pt_rna){
+        if (cfg::get().mode == config::pipeline_type::rna){
             RemoveHiddenLoopEC(g_, gp_.flanking_cov, info_container_.detected_coverage_bound(), simplif_cfg_.her, removal_handler_);
             cnt_callback_.Report();
         }
@@ -249,7 +249,7 @@ class GraphSimplifier {
 
         //FIXME need better configuration
 
-        if (cfg::get().mode == config::pt_meta) {
+        if (cfg::get().mode == config::pipeline_type::meta) {
             PushValid(
                     BRInstance(g_, simplif_cfg_.second_final_br,
                                        info_container_, removal_handler_),
@@ -257,7 +257,7 @@ class GraphSimplifier {
                     algos);
         }
 
-        if (cfg::get().mode == config::pt_rna) {
+        if (cfg::get().mode == config::pipeline_type::rna) {
             PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
         }
 
@@ -345,7 +345,7 @@ public:
     }
 
     void SimplifyGraph() {
-        printer_(ipp_before_simplification);
+        printer_(info_printer_pos::before_simplification);
         INFO("Graph simplification started");
 
         InitialCleaning();
@@ -374,7 +374,7 @@ public:
             ++iteration;
         }
 
-        printer_(ipp_before_post_simplification);
+        printer_(info_printer_pos::before_post_simplification);
 
         if (simplif_cfg_.post_simplif_enabled) {
             PostSimplification();
@@ -450,7 +450,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
 
     omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
-    printer(ipp_final_simplified);
+    printer(info_printer_pos::final_simplified);
 
     DEBUG("Graph simplification finished");
 

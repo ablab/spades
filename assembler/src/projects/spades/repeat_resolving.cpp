@@ -64,11 +64,11 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     if (cfg::get().rr_enable && no_valid_libs && !use_single_reads)
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
 
-    if ((no_valid_libs || cfg::get().rm == config::resolving_mode::rm_none) && !use_single_reads) {
+    if ((no_valid_libs || cfg::get().rm == config::resolving_mode::none) && !use_single_reads) {
         OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", false, 0, false);
         return;
     }
-    if (cfg::get().rm == config::resolving_mode::rm_path_extend) {
+    if (cfg::get().rm == config::resolving_mode::path_extend) {
         INFO("Using Path-Extend repeat resolving");
         PEResolving(gp);
     } else {

@@ -113,8 +113,8 @@ void estimate_distance(conj_graph_pack& gp,
 
     std::function<double(int)> weight_function;
 
-    if (config.est_mode == config::em_weighted   ||                    // in these cases we need a weight function
-        config.est_mode == config::em_smoothing) {                     // to estimate graph distances in the histogram
+    if (config.est_mode == estimation_mode::weighted   ||                    // in these cases we need a weight function
+        config.est_mode == estimation_mode::smoothing) {                     // to estimate graph distances in the histogram
         if (lib.data().insert_size_distribution.size() == 0) {
             WARN("No insert size distribution found, stopping distance estimation");
             return;
@@ -132,7 +132,7 @@ void estimate_distance(conj_graph_pack& gp,
     INFO("Weight Filter Done");
 
     switch (config.est_mode) {
-        case config::em_simple: {
+        case estimation_mode::simple: {
             const AbstractDistanceEstimator<Graph>&
                     estimator =
                     DistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
@@ -141,7 +141,7 @@ void estimate_distance(conj_graph_pack& gp,
             estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
             break;
         }
-        case config::em_weighted: {
+        case estimation_mode::weighted: {
             const AbstractDistanceEstimator<Graph>&
                     estimator =
                     WeightedDistanceEstimator<Graph>(gp.g, paired_index,
@@ -150,7 +150,7 @@ void estimate_distance(conj_graph_pack& gp,
             estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
             break;
         }
-        case config::em_smoothing: {
+        case estimation_mode::smoothing: {
             const AbstractDistanceEstimator<Graph>&
                     estimator =
                     SmoothingDistanceEstimator<Graph>(gp.g, paired_index,

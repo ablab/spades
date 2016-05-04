@@ -569,12 +569,12 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             if (IsForPEExtender(lib)) {
                 ++pe_libs;
                 if (IsPEStage(stage) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
-                    if (cfg::get().mode == config::pt_meta)
+                    if (cfg::get().mode == config::pipeline_type::meta)
                         //TODO proper configuration via config
                         pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, false));
-                    else if (cfg::get().mode == config::pt_moleculo)
+                    else if (cfg::get().mode == config::pipeline_type::moleculo)
                         pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, false));
-                    else if (cfg::get().mode == config::pt_rna && !IsPolishingStage(stage))
+                    else if (cfg::get().mode == config::pipeline_type::rna && !IsPolishingStage(stage))
                         pes.push_back(MakeRNAExtender(gp, cov_map, i, pset, false));
                     else
                         pes.push_back(MakePEExtender(gp, cov_map, i, pset, false));
@@ -585,9 +585,9 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             }
             //FIXME logic is very cryptic!
             if (IsForShortLoopExtender(lib) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
-                if (cfg::get().mode == config::pt_meta)
+                if (cfg::get().mode == config::pipeline_type::meta)
                     pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, true));
-                else if (cfg::get().mode == config::pt_rna && !IsPolishingStage(stage))
+                else if (cfg::get().mode == config::pipeline_type::rna && !IsPolishingStage(stage))
                     pes.push_back(MakeRNAExtender(gp, cov_map, i, pset, true));
                 else
                     pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));

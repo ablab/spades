@@ -849,7 +849,7 @@ public:
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage, bool detect_repeats_online = true) {
         DEBUG("make grow step composite extender");
         auto sc_mode = cfg::get().pe_params.param_set.sm;
-        if (is_2015_scaffolder_enabled(sc_mode) || cfg::get().mode == config::pt_meta) {
+        if (is_2015_scaffolder_enabled(sc_mode) || cfg::get().mode == config::pipeline_type::meta) {
             DEBUG("force switch off online repeats detect, 2015 on");
             //FIXME disable for all!
             detect_repeats_online = false;

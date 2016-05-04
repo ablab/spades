@@ -139,14 +139,15 @@ bool HasOnlyMP() {
 
 //todo improve logic
 bool ShouldMapSingleReads(size_t ilib) {
+    using config::single_read_resolving_mode;
     switch (cfg::get().single_reads_rr) {
-        case config::sr_none: {
+        case single_read_resolving_mode::none: {
             return false;
         }
-        case config::sr_all: {
+        case single_read_resolving_mode::all: {
             return true;
         }
-        case config::sr_only_single_libs: {
+        case single_read_resolving_mode::only_single_libs: {
             //Map when no PacBio/paried libs or only mate-pairs or single lib itself
             return !HasGoodRRLibs() || HasOnlyMP() ||
                    (cfg::get().ds.reads[ilib].type() == io::LibraryType::SingleReads);
@@ -162,7 +163,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
     gp.EnsureBasicMapping();
 
     //fixme implement better universal logic
-    size_t edge_length_threshold = cfg::get().mode == config::pt_meta ? 1000 : stats::Nx(gp.g, 50);
+    size_t edge_length_threshold = cfg::get().mode == config::pipeline_type::meta ? 1000 : stats::Nx(gp.g, 50);
     INFO("Min edge length for estimation: " << edge_length_threshold);
     bwa_pair_info::BWAPairInfoFiller bwa_counter(gp.g,
                                                  cfg::get().bwa.path_to_bwa,

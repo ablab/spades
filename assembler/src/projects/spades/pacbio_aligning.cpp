@@ -178,7 +178,7 @@ void PacBioAligning::run(conj_graph_pack &gp, const char*) {
         INFO("no PacBio lib found");
 
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
-    printer(config::ipp_final_gap_closed);
+    printer(config::info_printer_pos::final_gap_closed);
 }
 
 }

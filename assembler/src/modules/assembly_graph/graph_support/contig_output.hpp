@@ -302,7 +302,7 @@ inline void OutputContigs(ConjugateDeBruijnGraph& g,
         const string& contigs_output_filename,
         bool output_unipath,
         size_t ,
-        bool cut_bad_connections) {
+        bool /*cut_bad_connections*/) {
     INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
     DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
     io::osequencestream_cov oss(contigs_output_filename + ".fasta");

@@ -72,52 +72,52 @@ vector<string> CheckedNames(const vector<pair<string, mode_t>>& mapping, mode_t 
 
 vector<string> InfoPrinterPosNames() {
     return CheckedNames<info_printer_pos>({
-                    {"default", ipp_default},
-                    {"before_first_gap_closer", ipp_before_first_gap_closer},
-                    {"before_simplification", ipp_before_simplification},
-                    {"before_post_simplification", ipp_before_post_simplification},
-                    {"final_simplified", ipp_final_simplified},
-                    {"final_gap_closed", ipp_final_gap_closed},
-                    {"before_repeat_resolution", ipp_before_repeat_resolution}}, ipp_total);
+                    {"default", info_printer_pos::default_pos},
+                    {"before_first_gap_closer", info_printer_pos::before_first_gap_closer},
+                    {"before_simplification", info_printer_pos::before_simplification},
+                    {"before_post_simplification", info_printer_pos::before_post_simplification},
+                    {"final_simplified", info_printer_pos::final_simplified},
+                    {"final_gap_closed", info_printer_pos::final_gap_closed},
+                    {"before_repeat_resolution", info_printer_pos::before_repeat_resolution}}, info_printer_pos::total);
 }
 
 vector<string> PipelineTypeNames() {
     return CheckedNames<pipeline_type>({
-                    {"base", pt_base},
-                    {"isolate", pt_isolate},
-                    {"mda", pt_mda},
-                    {"meta", pt_meta},
-                    {"moleculo", pt_moleculo},
-                    {"diploid", pt_diploid},
-                    {"rna", pt_rna},
-                    {"plasmid", pt_plasmid}}, pt_total);
+                    {"base", pipeline_type::base},
+                    {"isolate", pipeline_type::isolate},
+                    {"mda", pipeline_type::mda},
+                    {"meta", pipeline_type::meta},
+                    {"moleculo", pipeline_type::moleculo},
+                    {"diploid", pipeline_type::diploid},
+                    {"rna", pipeline_type::rna},
+                    {"plasmid", pipeline_type::plasmid}}, pipeline_type::total);
 }
 
 vector<string> ConstructionModeNames() {
     return CheckedNames<construction_mode>({
-                    {"old", con_old},
-                    {"extension", con_extention}}, con_total);
+                    {"old", construction_mode::old},
+                    {"extension", construction_mode::extention}}, construction_mode::total);
 }
 
 vector<string> EstimationModeNames() {
     return CheckedNames<estimation_mode>({
-                    {"simple", em_simple},
-                    {"weighted", em_weighted},
-                    {"smoothing", em_smoothing}}, em_total);
+                    {"simple", estimation_mode::simple},
+                    {"weighted", estimation_mode::weighted},
+                    {"smoothing", estimation_mode::smoothing}}, estimation_mode::total);
 }
 
 
 vector<string> ResolveModeNames() {
     return CheckedNames<resolving_mode>({
-                    {"none", rm_none},
-                    {"path_extend", rm_path_extend}}, rm_total);
+                    {"none", resolving_mode::none},
+                    {"path_extend", resolving_mode::path_extend}}, resolving_mode::total);
 }
 
 vector<string> SingleReadResolveModeNames() {
     return CheckedNames<single_read_resolving_mode>({
-                    {"none", sr_none},
-                    {"only_single_libs", sr_only_single_libs},
-                    {"all", sr_all}}, sr_total);
+                    {"none", single_read_resolving_mode::none},
+                    {"only_single_libs", single_read_resolving_mode::only_single_libs},
+                    {"all", single_read_resolving_mode::all}}, single_read_resolving_mode::total);
 }
 
 void load_lib_data(const std::string& prefix) {
@@ -574,9 +574,9 @@ void load(debruijn_config::info_printers_t &printers,
     using config_common::load;
 
     debruijn_config::info_printer def;
-    load(def, pt, ModeName(ipp_default, InfoPrinterPosNames()), true);
+    load(def, pt, ModeName(info_printer_pos::default_pos, InfoPrinterPosNames()), true);
 
-    for (size_t pos = ipp_default + 1; pos != ipp_total; ++pos) {
+    for (size_t pos = size_t(info_printer_pos::default_pos) + 1; pos != size_t(info_printer_pos::total); ++pos) {
         debruijn_config::info_printer printer(def);
         load(printer, pt, ModeName(pos, InfoPrinterPosNames()), false);
 
@@ -746,7 +746,8 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
     }
 
     //some post-loading processing
-    cfg.uneven_depth = set<pipeline_type>{config::pt_mda, config::pt_rna, config::pt_meta}.count(cfg.mode);
+    using config::pipeline_type;
+    cfg.uneven_depth = set<pipeline_type>{pipeline_type::mda, pipeline_type::rna, pipeline_type::meta}.count(cfg.mode);
     if (!cfg.developer_mode) {
         cfg.pe_params.debug_output = false;
         cfg.pe_params.viz.DisableAll();

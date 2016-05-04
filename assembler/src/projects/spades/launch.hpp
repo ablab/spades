@@ -27,7 +27,7 @@ namespace spades {
 
 void assemble_genome() {
     INFO("SPAdes started");
-    if (cfg::get().mode == debruijn_graph::config::pt_meta && cfg::get().ds.reads.lib_count() != 1) {
+    if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta && cfg::get().ds.reads.lib_count() != 1) {
         ERROR("Sorry, current version of metaSPAdes can work with single library only (paired-end only).");
         exit(239);
     }

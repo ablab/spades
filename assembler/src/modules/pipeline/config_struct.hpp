@@ -16,69 +16,69 @@
 namespace debruijn_graph {
 namespace config {
 
-enum info_printer_pos {
-    ipp_default = 0,
-    ipp_before_first_gap_closer,
-    ipp_before_simplification,
-    ipp_before_post_simplification,
-    ipp_final_simplified,
-    ipp_final_gap_closed,
-    ipp_before_repeat_resolution,
+enum class info_printer_pos : char {
+    default_pos = 0,
+    before_first_gap_closer,
+    before_simplification,
+    before_post_simplification,
+    final_simplified,
+    final_gap_closed,
+    before_repeat_resolution,
 
-    ipp_total
+    total
 };
 
 std::vector<std::string> InfoPrinterPosNames();
 
-enum pipeline_type {
-    pt_base = 0,
-    pt_isolate,
-    pt_mda,
-    pt_meta,
-    pt_moleculo,
-    pt_diploid,
-    pt_rna,
-    pt_plasmid,
+enum class pipeline_type : char {
+    base = 0,
+    isolate,
+    mda,
+    meta,
+    moleculo,
+    diploid,
+    rna,
+    plasmid,
 
-    pt_total
+    total
 };
 
 std::vector<std::string> PipelineTypeNames();
 
-enum construction_mode {
-    con_old = 0,
-    con_extention,
+enum class construction_mode : char {
+    old = 0,
+    extention,
 
-    con_total
+    total
 };
 
 std::vector<std::string> ConstructionModeNames();
 
-enum estimation_mode {
-    em_simple = 0,
-    em_weighted,
-    em_smoothing,
+enum class estimation_mode : char {
+    simple = 0,
+    weighted,
+    smoothing,
 
-    em_total
+    total
 };
 
 std::vector<std::string> EstimationModeNames();
 
-enum resolving_mode {
-    rm_none = 0,
-    rm_path_extend,
+enum class resolving_mode : char {
+    none = 0,
+    path_extend,
 
-    rm_total
+    total
 };
 
 std::vector<std::string> ResolveModeNames();
 
-enum single_read_resolving_mode {
-    sr_none = 0,
-    sr_only_single_libs,
-    sr_all,
+enum class single_read_resolving_mode : char {
+    none = 0,
+    only_single_libs,
+    all,
 
-    sr_total
+    total
 };
 
 std::vector<std::string> SingleReadResolveModeNames();
@@ -331,7 +331,7 @@ struct debruijn_config {
         bool keep_perfect_loops;
         size_t read_buffer_size;
         construction() :
-                con_mode(construction_mode::con_extention),
+                con_mode(construction_mode::extention),
                 keep_perfect_loops(true),
                 read_buffer_size(0) {}
     };

@@ -149,7 +149,7 @@ template<class Graph, class Index, class Streams>
 ReadStatistics ConstructGraph(const config::debruijn_config::construction &params,
                               Streams& streams, Graph& g,
                               Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-    if (params.con_mode == config::construction_mode::con_extention) {
+    if (params.con_mode == config::construction_mode::extention) {
         return ConstructGraphUsingExtentionIndex(params, streams, g, index, contigs_stream);
 //    } else if(params.con_mode == construction_mode::con_old){
 //        return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
