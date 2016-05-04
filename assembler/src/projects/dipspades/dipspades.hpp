@@ -33,7 +33,7 @@ void construct_graph_from_contigs(debruijn_graph::conj_graph_pack &graph_pack){
 
     INFO("Construction of the de Bruijn graph with K=" << dsp_cfg::get().bp.K);
     config::debruijn_config::construction params;
-    params.con_mode = config::con_extention;
+    params.con_mode = config::construction_mode::extention;
     params.early_tc.enable = false;
     params.early_tc.length_bound = 10;
     params.keep_perfect_loops = true;
