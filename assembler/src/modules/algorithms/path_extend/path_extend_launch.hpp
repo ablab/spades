@@ -920,7 +920,6 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
             clone_paths.DeleteAllPaths();
             clone_paths = mp_paths;
             DebugOutputPaths(gp, output_dir, mp_paths, "mp_" + std::to_string(cur_length));
-
             //TODO: are parameters reasonable?
             //size_t traversed = TraverseLoops(mp_paths, cover_map, mainPE, cur_length, 500, (cur_length + 1000)*10);
             //INFO("MP stage with edge length limit " << cur_length << " traversed " <<  traversed << " loops");

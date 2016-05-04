@@ -75,6 +75,16 @@ ExtensionChooser::EdgeContainer ExtensionChooser2015::Filter(const Bidirectional
         if ((backwards_check.size() != 1) || (g_.conjugate(backwards_check[0].e_) != last_unique.first)) {
             result.clear();
         }
+
+    }
+    if (result.size() > 0) {
+        if (result[0].d_ < 10 + int(g_.k())) {
+//            if (g_.EdgeEnd(path.Back()) != g_.EdgeStart(result[0].e_)) {
+                result[0].d_ = 10 + int(g_.k());
+//            } else {
+//                result[0].d_ = 0;
+//            }
+        }
     }
     return result;
 }
