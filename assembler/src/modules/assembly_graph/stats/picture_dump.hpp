@@ -363,7 +363,7 @@ struct detail_info_printer {
                          boost::is_any_of(" ,"), boost::token_compress_on);
             for (auto it = positions.begin(); it != positions.end(); ++it) {
                 boost::optional<runtime_k::RtSeq> close_kp1mer = FindCloseKP1mer(gp_,
-                                                                             boost::lexical_cast<int>(*it), gp_.k_value);
+                                                                                 std::stoi(*it), gp_.k_value);
                 if (close_kp1mer) {
                     string locality_folder = path::append_path(pos_loc_folder, *it + "/");
                     make_dir(locality_folder);
@@ -371,7 +371,7 @@ struct detail_info_printer {
                 } else {
                     WARN(
                         "Failed to find genome kp1mer close to the one at position "
-                        << *it << " in the graph. Which is " << runtime_k::RtSeq (gp_.k_value + 1, gp_.genome.GetSequence(), boost::lexical_cast<int>(*it)));
+                        << *it << " in the graph. Which is " << runtime_k::RtSeq (gp_.k_value + 1, gp_.genome.GetSequence(), std::stoi(*it)));
                 }
             }
         }

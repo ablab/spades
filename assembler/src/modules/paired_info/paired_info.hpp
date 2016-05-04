@@ -8,6 +8,7 @@
 #pragma once
 
 #include "utils/adt/iterator_range.hpp"
+#include <boost/iterator/iterator_facade.hpp>
 #include <btree/safe_btree_map.h>
 #include <sparsehash/sparse_hash_map>
 

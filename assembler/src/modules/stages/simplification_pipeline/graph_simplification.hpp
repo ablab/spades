@@ -101,14 +101,14 @@ private:
         if (next_token_ == "auto") {
             return settings_.detected_coverage_bound();
         } else {
-            return boost::lexical_cast<double>(next_token_);
+            return std::stod(next_token_);
         }
     }
 
     pred::TypedPredicate<EdgeId> ParseCondition(size_t& min_length_bound,
                                                double& min_coverage_bound) {
         if (next_token_ == "tc_lb") {
-            double length_coeff = boost::lexical_cast<double>(ReadNext());
+            double length_coeff = std::stod(ReadNext());
 
             DEBUG("Creating tip length bound. Coeff " << length_coeff);
             size_t length_bound = LengthThresholdFinder::MaxTipLength(
@@ -128,7 +128,7 @@ private:
             return LengthUpperBound<Graph>(g_, length_bound);
 
         } else if (next_token_ == "to_ec_lb") {
-            double length_coeff = boost::lexical_cast<double>(ReadNext());
+            double length_coeff = std::stod(ReadNext());
 
             DEBUG( "Creating length bound for erroneous connections originated from tip merging. Coeff " << length_coeff);
             size_t length_bound =
@@ -141,7 +141,7 @@ private:
             return LengthUpperBound<Graph>(g_, length_bound);
             
         } else if (next_token_ == "ec_lb") {
-            size_t length_coeff = boost::lexical_cast<size_t>(ReadNext());
+            size_t length_coeff = std::stoll(ReadNext());
 
             DEBUG("Creating ec length bound. Coeff " << length_coeff);
             size_t length_bound =
@@ -153,7 +153,7 @@ private:
             RelaxMin(min_length_bound, length_bound);
             return LengthUpperBound<Graph>(g_, length_bound);
         } else if (next_token_ == "lb") {
-            size_t length_bound = boost::lexical_cast<size_t>(ReadNext());
+            size_t length_bound = std::stoll(ReadNext());
 
             DEBUG("Creating length bound. Value " << length_bound);
 
@@ -176,14 +176,14 @@ private:
         } else if (next_token_ == "rctc") {
             ReadNext();
             DEBUG("Creating relative cov tip cond " << next_token_);
-            return RelativeCoverageTipCondition<Graph>(g_, boost::lexical_cast<double>(next_token_));
+            return RelativeCoverageTipCondition<Graph>(g_, std::stod(next_token_));
         } else if (next_token_ == "disabled") {
             DEBUG("Creating disabling condition");
             return pred::AlwaysFalse<EdgeId>();
         } else if (next_token_ == "mmm") {
             ReadNext();
             DEBUG("Creating max mismatches cond " << next_token_);
-            return MismatchTipCondition<Graph>(g_, lexical_cast<size_t>(next_token_));
+            return MismatchTipCondition<Graph>(g_, std::stoll(next_token_));
         } else {
             VERIFY(false);
             return pred::AlwaysTrue<EdgeId>();
@@ -191,7 +191,7 @@ private:
     }
 
     pred::TypedPredicate<EdgeId> ParseConjunction(size_t& min_length_bound,
-                                                   double& min_coverage_bound) {
+                                                  double& min_coverage_bound) {
         pred::TypedPredicate<EdgeId> answer = pred::AlwaysTrue<EdgeId>();
         VERIFY(next_token_ == "{");
         ReadNext();
