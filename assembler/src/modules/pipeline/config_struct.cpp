@@ -235,6 +235,15 @@ void load(debruijn_config::simplification::topology_tip_clipper& ttc,
   load(ttc.uniqueness_length, pt, "uniqueness_length");
 }
 
+void load(debruijn_config::simplification::complex_tip_clipper &ctc,
+          boost::property_tree::ptree const &pt, bool /*complete*/) {
+    using config_common::load;
+    load(ctc.enabled, pt, "enabled");
+    load(ctc.max_relative_coverage, pt, "max_relative_coverage");
+    load(ctc.max_edge_len, pt, "max_edge_len");
+    load(ctc.max_path_len, pt, "max_path_len");
+}
+
 void load(debruijn_config::simplification::complex_tip_clipper& ctc,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;

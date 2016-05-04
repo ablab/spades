@@ -544,8 +544,7 @@ bool ClipComplexTips(Graph& g, config::debruijn_config::simplification::complex_
     }
 
     INFO("Complex tip clipping");
-    size_t max_edge_length = g.k() * 2;
-    ComplexTipClipper<Graph> tip_clipper(g, max_edge_length, "", set_removal_handler_f);
+    ComplexTipClipper<Graph> tip_clipper(g, ctc_conf.max_relative_coverage, ctc_conf.max_edge_len, ctc_conf.max_path_len, "", set_removal_handler_f);
     tip_clipper.Run();
     return true;
 }

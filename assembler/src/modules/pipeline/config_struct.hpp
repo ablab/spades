@@ -193,6 +193,9 @@ struct debruijn_config {
 
         struct complex_tip_clipper {
             bool enabled;
+            double max_relative_coverage;
+            size_t max_edge_len;
+            size_t max_path_len;
         };
 
         struct bulge_remover {

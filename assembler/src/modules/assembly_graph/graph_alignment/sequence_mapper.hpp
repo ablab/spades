@@ -221,31 +221,8 @@ public:
           return fixed_path;
       }
 
-    vector<vector<EdgeId>> FindReadPathWithGaps(const MappingPath<EdgeId>& mapping_path, vector<EdgeId>& corrected_path) const {
-          if (!IsMappingPathValid(mapping_path)) {
-              TRACE("read unmapped");
-              return vector<vector<EdgeId>>();
-          }
-          PrintPathInfo(corrected_path);
-          vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
-          return SplitUnfixedPoints(fixed_path);
-      }
 
 private:
-
-
-      vector<vector<EdgeId>> SplitUnfixedPoints(vector<EdgeId>& path) const {
-          vector<vector<EdgeId>> result;
-          size_t prev_start = 0;
-          for (size_t i = 1; i < path.size(); ++i) {
-              if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i])) {
-                      result.push_back(vector<EdgeId>(path.begin() + prev_start, path.begin() + i));
-                      prev_start = i;
-              }
-          }
-          result.push_back(vector<EdgeId>(path.begin() + prev_start, path.end()));
-          return result;
-      }
 
       bool IsTip(VertexId v) const {
           return g_.IncomingEdgeCount(v) + g_.OutgoingEdgeCount(v) == 1;
