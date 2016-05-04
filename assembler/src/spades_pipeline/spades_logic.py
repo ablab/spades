@@ -183,10 +183,10 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     support.sys_call(command, log)
 
 
-def prepare_config_scaffold_correction(filename, cfg, log, saves_dir, scaffolds_file):
+def prepare_config_scaffold_correction(filename, cfg, log, saves_dir, K):
     subst_dict = dict()
 
-    subst_dict["K"] = str(21)
+    subst_dict["K"] = str(K)
     subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset)
     subst_dict["output_base"] = process_cfg.process_spaces(os.path.join(cfg.output_dir, "SCC"))
     subst_dict["tmp_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
@@ -197,13 +197,12 @@ def prepare_config_scaffold_correction(filename, cfg, log, saves_dir, scaffolds_
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
-    subst_dict["scaffolds_file"] = scaffolds_file
 
     #todo
     process_cfg.substitute_params(filename, subst_dict, log)
 
-def run_scaffold_correction(configs_dir, execution_home, cfg, log, K):
-    data_dir = os.path.join(cfg.output_dir, "SCC")
+def run_scaffold_correction(configs_dir, execution_home, cfg, log, latest, K):
+    data_dir = os.path.join(cfg.output_dir, "SCC", "K%d" % K)
     saves_dir = os.path.join(data_dir, 'saves')
     dst_configs = os.path.join(data_dir, "configs")
     cfg_file_name = os.path.join(dst_configs, "config.info")
@@ -215,14 +214,14 @@ def run_scaffold_correction(configs_dir, execution_home, cfg, log, K):
     dir_util.copy_tree(os.path.join(configs_dir, "debruijn"), dst_configs, preserve_times=False)
 
     log.info("\n== Running scaffold correction \n")
-    latest = os.path.join(cfg.output_dir, "K%d" % K)
     scaffolds_file = os.path.join(latest, "scaffolds.fasta")
     if not os.path.isfile(scaffolds_file):
         support.error("Scaffodls were not found in " + scaffolds_file, log)
     if "read_buffer_size" in cfg.__dict__:
         construction_cfg_file_name = os.path.join(dst_configs, "construction.info")
         process_cfg.substitute_params(construction_cfg_file_name, {"read_buffer_size": cfg.read_buffer_size}, log)
-    prepare_config_scaffold_correction(cfg_file_name, cfg, log, saves_dir, scaffolds_file)
+    process_cfg.substitute_params(os.path.join(dst_configs, "moleculo_mode.info"), {"scaffolds_file": scaffolds_file}, log)
+    prepare_config_scaffold_correction(cfg_file_name, cfg, log, saves_dir, K)
     command = [os.path.join(execution_home, "scaffold_correction"), cfg_file_name]
     add_configs(command, dst_configs)
     log.info(str(command))
@@ -320,7 +319,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
         else:
             if options_storage.continue_mode:
                 support.continue_from_here(log)
-            run_scaffold_correction(configs_dir, execution_home, cfg, log, K)
+            run_scaffold_correction(configs_dir, execution_home, cfg, log, latest, 21)
         latest = os.path.join(os.path.join(cfg.output_dir, "SCC"), "K21")
         if options_storage.stop_after == 'scc':
             support.finish_here(log)
