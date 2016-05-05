@@ -5,7 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "annotation.hpp"
 #include "dev_support/simple_tools.hpp"
 #include "dev_support/logger/log_writers.hpp"
 
@@ -13,6 +12,7 @@
 #include "pipeline/graph_pack.hpp"
 #include "io/reads_io/file_reader.hpp"
 #include "algorithms/simplification/tip_clipper.hpp"
+#include "propagate.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
@@ -96,7 +96,7 @@ class PairedInfoPropagator : public EdgeAnnotationPropagator {
         set<EdgeId> answer;
         for (EdgeId e1 : edges) {
             DEBUG("Searching for paired neighbours of " << g().str(e1));
-            for (const auto& index : gp().clustered_indices) 
+            for (const auto& index : gp().clustered_indices)
                 for (auto i : index.Get(e1))
                     for (auto point : i.second)
                         if (math::ge(point.weight, weight_threshold_)) {
@@ -184,55 +184,44 @@ private:
     DECL_LOGGER("TipPropagator");
 };
 
-//todo add unbranching reach and pair-info aware propagation
-
-class AnnotationPropagator {
-    const conj_graph_pack& gp_;
-
-    void DumpContigAnnotation(io::SingleStream& contigs,
-                              const EdgeAnnotation& annotation,
-                              const string& annotation_out_fn) const {
-        AnnotationOutStream annotation_out(annotation_out_fn);
-        io::SingleRead contig;
-        while (!contigs.eof()) {
-            contigs >> contig;
-            auto relevant_bins = annotation.RelevantBins(contig);
-            if (!relevant_bins.empty()) {
-                annotation_out << ContigAnnotation(GetId(contig),
-                                    vector<bin_id>(relevant_bins.begin(), relevant_bins.end()));
-            }
+void AnnotationPropagator::DumpContigAnnotation(io::SingleStream& contigs,
+                          const EdgeAnnotation& annotation,
+                          const string& annotation_out_fn) const {
+    AnnotationOutStream annotation_out(annotation_out_fn);
+    io::SingleRead contig;
+    while (!contigs.eof()) {
+        contigs >> contig;
+        auto relevant_bins = annotation.RelevantBins(contig);
+        if (!relevant_bins.empty()) {
+            annotation_out << ContigAnnotation(GetId(contig),
+                                vector<bin_id>(relevant_bins.begin(), relevant_bins.end()));
         }
     }
+}
 
-public:
-    AnnotationPropagator(const conj_graph_pack& gp) :
-                     gp_(gp) {
+void AnnotationPropagator::Run(io::SingleStream& contigs, const string& annotation_in_fn,
+                     const vector<bin_id>& bins_of_interest,
+                     const string& annotation_out_fn) {
+    AnnotationStream annotation_in(annotation_in_fn);
+    EdgeAnnotation edge_annotation(gp_, bins_of_interest);
+    edge_annotation.Fill(contigs, annotation_in);
+    ConnectingPathPropagator edge_propagator(gp_, 6000);
+    TipPropagator tip_propagator(gp_);
+    ContigPropagator contig_propagator(gp_, contigs, edge_annotation);
+    PairedInfoPropagator paired_propagator(gp_, 2.0);
+
+    //TODO: make this configurable
+    std::vector<EdgeAnnotationPropagator*> propagator_pipeline =
+        {&edge_propagator, &tip_propagator, &paired_propagator,
+         &edge_propagator, &contig_propagator, &tip_propagator};
+
+    for (auto prop_ptr : propagator_pipeline) {
+        prop_ptr->Propagate(edge_annotation);
     }
 
-    void Run(io::SingleStream& contigs, const string& annotation_in_fn,
-                         const vector<bin_id>& bins_of_interest,
-                         const string& annotation_out_fn) {
-        AnnotationStream annotation_in(annotation_in_fn);
-        EdgeAnnotation edge_annotation(gp_, bins_of_interest);
-        edge_annotation.Fill(contigs, annotation_in);
-        ConnectingPathPropagator edge_propagator(gp_, 6000);
-        TipPropagator tip_propagator(gp_);
-        ContigPropagator contig_propagator(gp_, contigs, edge_annotation);
-        PairedInfoPropagator paired_propagator(gp_, 2.0);
-
-        //TODO: make this configurable
-        std::vector<EdgeAnnotationPropagator*> propagator_pipeline =
-            {&edge_propagator, &tip_propagator, &paired_propagator,
-             &edge_propagator, &contig_propagator, &tip_propagator};
-
-        for (auto prop_ptr : propagator_pipeline) {
-            prop_ptr->Propagate(edge_annotation);
-        }
-
-        contigs.reset();
-        DumpContigAnnotation(contigs, edge_annotation, annotation_out_fn);
-    }
-};
+    contigs.reset();
+    DumpContigAnnotation(contigs, edge_annotation, annotation_out_fn);
+}
 
 }
 
