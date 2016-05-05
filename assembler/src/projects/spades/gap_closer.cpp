@@ -476,7 +476,7 @@ void CloseGaps(conj_graph_pack &gp, Streams &streams) {
 void GapClosing::run(conj_graph_pack &gp, const char *) {
     omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
-    printer(ipp_before_first_gap_closer);
+    printer(config::info_printer_pos::before_first_gap_closer);
 
     bool pe_exist = false;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
