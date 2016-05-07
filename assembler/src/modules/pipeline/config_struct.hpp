@@ -197,6 +197,11 @@ struct debruijn_config {
             tip_clipper(std::string condition_) : condition(condition_) {}
         };
 
+        struct dead_end_clipper {
+            std::string condition;
+            bool enabled;
+        };
+
         struct topology_tip_clipper {
             double length_coeff;
             size_t uniqueness_length;
@@ -233,9 +238,9 @@ struct debruijn_config {
         };
 
         struct relative_coverage_ec_remover {
-            size_t max_ec_length_coefficient;
-            double max_coverage_coeff;
-            double coverage_gap;
+            bool enabled;
+            size_t max_ec_length;
+            double rcec_ratio;
         };
 
         struct topology_based_ec_remover {
@@ -313,10 +318,12 @@ struct debruijn_config {
         bool post_simplif_enabled;
         bool topology_simplif_enabled;
         tip_clipper tc;
+        dead_end_clipper dead_end;
         complex_tip_clipper complex_tc;
         topology_tip_clipper ttc;
         bulge_remover br;
         erroneous_connections_remover ec;
+        relative_coverage_ec_remover rcec;
         relative_coverage_comp_remover rcc;
         relative_coverage_edge_disconnector relative_ed;
         topology_based_ec_remover tec;

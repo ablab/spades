@@ -263,8 +263,8 @@ template<class graph_pack>
 shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
         const graph_pack& gp) {
     auto mapper = MapperInstance(gp);
-    auto path1 = mapper->MapSequence(gp.genome).path();
-    auto path2 = mapper->MapSequence(!gp.genome).path();
+    auto path1 = mapper->MapSequence(gp.genome.GetSequence()).path();
+    auto path2 = mapper->MapSequence(!gp.genome.GetSequence()).path();
     return omnigraph::visualization::DefaultColorer(gp.g, path1, path2);
 }
 
@@ -637,6 +637,50 @@ AlgoPtr<Graph> ECRemoverInstance(Graph& g,
 }
 
 template<class Graph>
+pred::TypedPredicate<typename Graph::EdgeId> NecessaryRelativeECCondition(const Graph& g,
+                                                                          const config::debruijn_config::simplification::relative_coverage_ec_remover& rcec_config) {
+    return omnigraph::NecessaryRelativeECCondition(g, rcec_config.rcec_ratio, rcec_config.max_ec_length);
+}
+
+template<class Graph>
+AlgoPtr<Graph> RelativeECRemoverInstance(Graph& g,
+                                 const config::debruijn_config::simplification::relative_coverage_ec_remover& rcec_config,
+                                 const SimplifInfoContainer& info,
+                                 HandlerF<Graph> removal_handler) {
+    if (!rcec_config.enabled)
+        return nullptr;
+
+    return make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g,
+            NecessaryRelativeECCondition(g, rcec_config),
+            info.chunk_cnt(), removal_handler, /*canonical_only*/true);
+}
+
+template<class Graph>
+pred::TypedPredicate<typename Graph::EdgeId> NecessaryNotBulgeECCondition(const Graph& g,
+                                                                          const config::debruijn_config::simplification::erroneous_connections_remover& ec_config,
+                                                                          const SimplifInfoContainer& info, size_t current_iteration = 0, size_t iteration_cnt = 1) {
+    std::string curr_condition = ec_config.condition;
+    ConditionParser<Graph> parser(g, curr_condition, info, current_iteration, iteration_cnt);
+    auto condition = parser();
+    return omnigraph::NecessaryNotBulgeECCondition(g, parser.max_length_bound(), parser.max_coverage_bound());
+}
+
+template<class Graph>
+AlgoPtr<Graph> NotBulgeECRemoverInstance(Graph& g,
+                                         const config::debruijn_config::simplification::erroneous_connections_remover& ec_config,
+                                         const SimplifInfoContainer& info, HandlerF<Graph> removal_handler, size_t iteration_cnt = 1) {
+    if (ec_config.condition.empty())
+        return nullptr;
+
+    typedef omnigraph::ParallelInterestingElementFinder<Graph> InterestingFinderT;
+    InterestingFinderT interesting_finder(g, NecessaryNotBulgeECCondition(g, ec_config, info, iteration_cnt - 1, iteration_cnt),
+                                          info.chunk_cnt());
+    return make_shared<LowCoverageEdgeRemovingAlgorithm<Graph, InterestingFinderT>>(
+            g, interesting_finder, info, ec_config.condition, removal_handler,
+            /*canonical only*/ true, /*track changes*/ true, iteration_cnt);
+}
+
+template<class Graph>
 AlgoPtr<Graph> TipClipperInstance(Graph& g,
                                   const EdgeConditionT<Graph>& condition,
                                   const SimplifInfoContainer& info,
@@ -664,6 +708,22 @@ AlgoPtr<Graph> TipClipperInstance(Graph& g,
     ConditionParser<Graph> parser(g, tc_config.condition, info);
     auto condition = parser();
     return TipClipperInstance(g, condition, info, removal_handler, /*track changes*/true, iteration_cnt);
+}
+
+template<class Graph>
+AlgoPtr<Graph> DeadEndInstance(Graph& g,
+                                           const config::debruijn_config::simplification::dead_end_clipper& dead_end_config,
+                                           const SimplifInfoContainer& info,
+                                           HandlerF<Graph> removal_handler,
+                                           size_t /*iteration_cnt*/ = 1) {
+    if (!dead_end_config.enabled || dead_end_config.condition.empty())
+        return nullptr;
+
+    ConditionParser<Graph> parser(g, dead_end_config.condition, info);
+    auto condition = parser();
+    return make_shared<ParallelEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>>>(g,
+            AddDeadEndCondition(g, condition), info.chunk_cnt(), removal_handler, /*canonical_only*/true,
+            LengthComparator<Graph>(g), /*track changes*/true);
 }
 
 template<class Graph>

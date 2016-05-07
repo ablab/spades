@@ -10,6 +10,13 @@ simp
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
         condition  "{ mmm 3 tc_lb 3.5, cb 100000, rctc 0.1 } { tc_lb 3.5, cb 4, rctc 10000 } { tc_lb 0.1, cb 20, rctc 10000 }"
     }
+
+    dead_end
+    {
+        condition  "{ tc_lb 3.5, cb 2 }"
+        enabled true
+    }
+
     ; bulge remover:
     br
     {
@@ -17,6 +24,7 @@ simp
         max_coverage            1000000.0
         max_relative_coverage       100000.0 ; bulge_cov < this * not_bulge_cov
     }
+
     ; erroneous connections remover:
     ec
     { 
@@ -24,8 +32,17 @@ simp
        ; icb: iterative coverage bound
        ; to_ec_lb: max_ec_length = 2*tip_length(to_ec_lb) - 1
        ; condition               "{ ec_lb 9, icb 40.0 }"
-       condition               "{ ec_lb 30, icb auto }"
+       condition               "{ ec_lb 30, icb 50 }"
     }
+
+    ; relative coverage erroneous connections remover:
+    rcec
+        {
+            enabled true
+            rcec_lb 30
+            rcec_cb 0.5
+        }
+
     rcc
     {
         enabled true

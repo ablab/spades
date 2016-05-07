@@ -153,11 +153,19 @@ void load(debruijn_config::simplification::tip_clipper &tc,
      load(tc.condition, pt, "condition");
 }
 
+void load(debruijn_config::simplification::dead_end_clipper& dead_end,
+          boost::property_tree::ptree const &pt,
+          bool /* complete */) {
+    using config_common::load;
+    load(dead_end.condition, pt, "condition");
+    load(dead_end.enabled, pt, "enabled");
+}
+
 void load(resolving_mode &rm, boost::property_tree::ptree const &pt,
           std::string const &key, bool complete) {
-    if (complete || pt.find(key) != pt.not_found()) {
-        rm = ModeByName<resolving_mode>(pt.get<std::string>(key), ResolveModeNames());
-    }
+  if (complete || pt.find(key) != pt.not_found()) {
+    rm = ModeByName<resolving_mode>(pt.get<std::string>(key), ResolveModeNames());
+  }
 }
 
 void load(single_read_resolving_mode &rm, boost::property_tree::ptree const &pt,
@@ -298,6 +306,15 @@ void load(debruijn_config::simplification::erroneous_connections_remover& ec,
   using config_common::load;
 
   load(ec.condition, pt, "condition");
+}
+
+void load(debruijn_config::simplification::relative_coverage_ec_remover& rcec,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+
+    load(rcec.enabled, pt, "enabled");
+    load(rcec.max_ec_length, pt, "rcec_lb");
+    load(rcec.rcec_ratio, pt, "rcec_cb");
 }
 
 void load(debruijn_config::simplification::topology_based_ec_remover& tec,
@@ -520,10 +537,13 @@ void load(debruijn_config::simplification& simp,
   load(simp.post_simplif_enabled, pt, "post_simplif_enabled", complete);
   load(simp.topology_simplif_enabled, pt, "topology_simplif_enabled", complete);
   load(simp.tc, pt, "tc", complete); // tip clipper:
+
+  load(simp.dead_end, pt, "dead_end", complete); // dead end:
   load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
   load(simp.complex_tc, pt, "complex_tc", complete); // complex tip clipper:
   load(simp.br, pt, "br", complete); // bulge remover:
   load(simp.ec, pt, "ec", complete); // erroneous connections remover:
+  load(simp.rcec, pt, "rcec", complete); // relative coverage erroneous connections remover
   load(simp.rcc, pt, "rcc", complete); // relative coverage component remover:
   load(simp.relative_ed, pt, "relative_ed", complete); // relative edge disconnector:
   load(simp.tec, pt, "tec", complete); // topology aware erroneous connections remover:
@@ -628,6 +648,8 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
 
     load(cfg.use_additional_contigs, pt, "use_additional_contigs");
     load(cfg.additional_contigs, pt, "additional_contigs");
+    INFO("Additional contigs is " << cfg.additional_contigs);
+
     load(cfg.rr_enable, pt, "rr_enable");
 
     load(cfg.buffer_size, pt, "buffer_size");

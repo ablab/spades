@@ -126,28 +126,42 @@ class QualityLoggingRemovalHandler {
     const EdgeQuality<Graph>& quality_handler_;
     size_t black_removed_;
     size_t total_;
+    ofstream path_handle_good_;
+    ofstream path_handle_all_;
     bool handle_all_;
 
     virtual void HandlePositiveQuality(EdgeId /*e*/) {
 
     }
 
+//    virtual void HandleNegativeQuality(EdgeId /*e*/) {
+//
+//    }
 public:
-    QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler, 
-                                    bool handle_all = false) :
-            g_(g), quality_handler_(quality_handler), black_removed_(0), total_(0), handle_all_(handle_all) {
+    QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler,
+                                 const string& output_folder, bool handle_all = false) :
+            g_(g), quality_handler_(quality_handler), black_removed_(0), total_(0),
+            path_handle_good_(output_folder + "/removal_handler.good.log"),
+            path_handle_all_(output_folder + "/removal_handler.all.log"), handle_all_(handle_all) {
+//        path::make_dirs(output_folder);
     }
 
     void HandleDelete(EdgeId e) {
         total_++;
-        if (handle_all_ || math::gr(quality_handler_.quality(e), 0.)) {
-            TRACE("Deleting good edge id = " << g_.int_id(e)
+        path_handle_all_ << g_.int_id(e) << "\t" << g_.length(e) << "\t" << g_.coverage(e) << "\t" << quality_handler_.quality(e) << endl;
+        if (handle_all_ || math::gr(quality_handler_.quality(e), 0.5)) {
+            DEBUG("Deleting good edge id = " << g_.int_id(e)
                   << "; length = " << g_.length(e)
                   << "; quality = " << quality_handler_.quality(e)
                   << "; cov = " << g_.coverage(e));
+
+            path_handle_good_ << g_.int_id(e) << "\t" << g_.length(e) << "\t" << g_.coverage(e) << "\t" << quality_handler_.quality(e) << endl;
+
             HandlePositiveQuality(e);
         } else {
             black_removed_++;
+
+//            HandleNegativeQuality(e);
         }
     }
 
@@ -160,9 +174,16 @@ public:
     }
 
     virtual ~QualityLoggingRemovalHandler() {
-        TRACE("Overall stats: total removed = " << total_
+        DEBUG("Overall stats: total removed = " << total_
               << "; bad removed = " << black_removed_
               << "; good removed = " << total_ - black_removed_);
+
+        path_handle_all_ << "Overall stats: total removed = " << total_ <<
+                "; bad removed = " << black_removed_ << "; good removed = " << total_ - black_removed_ << endl;
+        path_handle_all_.close();
+        path_handle_good_ << "Overall stats: total removed = " << total_ <<
+        "; bad removed = " << black_removed_ << "; good removed = " << total_ - black_removed_ << endl;
+        path_handle_good_.close();
     }
 
 private:
@@ -174,20 +195,26 @@ class QualityEdgeLocalityPrintingRH : public QualityLoggingRemovalHandler<Graph>
     typedef QualityLoggingRemovalHandler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    omnigraph::visualization::LocalityPrintingRH<Graph> printing_rh_;
+    omnigraph::visualization::LocalityPrintingRH<Graph> positive_printing_rh_;
+//    omnigraph::visualization::LocalityPrintingRH<Graph> negative_printing_rh_;
 public:
     QualityEdgeLocalityPrintingRH(const Graph& g
             , const EdgeQuality<Graph>& quality_handler
             , const omnigraph::GraphLabeler<Graph>& labeler
             , std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer
             , const string& output_folder, bool handle_all = false) :
-            base(g, quality_handler, handle_all),
-            printing_rh_(g, labeler, colorer, output_folder)
+            base(g, quality_handler, output_folder, handle_all),
+            positive_printing_rh_(g, labeler, colorer, output_folder + "/pictures/good_edges_deleted/")/*,
+            negative_printing_rh_(g, labeler, colorer, output_folder + "/pictures/bad_edges_deleted/")*/
             {}
 
     virtual void HandlePositiveQuality(EdgeId e) {
-        printing_rh_.HandleDelete(e, "_" + ToString(this->quality_handler().quality(e)));
+        positive_printing_rh_.HandleDelete(e, "_" + ToString(this->quality_handler().quality(e)));
     }
+
+//       virtual void HandleNegativeQuality(EdgeId e) {
+//        negative_printing_rh_.HandleDelete(e, "_" + ToString(this->quality_handler().quality(e)));
+//    }
 
 private:
     DECL_LOGGER("QualityEdgeLocalityPrintingRH");

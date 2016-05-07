@@ -38,7 +38,7 @@ void Construction::run(conj_graph_pack &gp, const char*) {
     // Has to be separate stream for not counting it in coverage
     io::ReadStreamList<io::SingleRead> trusted_contigs;
     if (cfg::get().use_additional_contigs) {
-        INFO("Contigs from previous K will be used");
+        DEBUG("Contigs from previous K will be used: " << cfg::get().additional_contigs);
         trusted_contigs.push_back(io::EasyStream(cfg::get().additional_contigs, true));
     }
 
