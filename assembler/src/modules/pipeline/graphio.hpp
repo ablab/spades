@@ -1005,7 +1005,7 @@ void ScanWithClusteredIndices(const string& file_name, graph_pack& gp,
                               PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices) {
     ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
     ScanGraphPack(file_name, scanner, gp);
-    ScanClusteredIndices(file_name, scanner, paired_indices);
+    ScanClusteredIndices(file_name, scanner, paired_indices, false);
 }
 
 template<class Graph>

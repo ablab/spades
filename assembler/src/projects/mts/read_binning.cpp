@@ -12,11 +12,13 @@
 #include "io/reads_io/file_reader.hpp"
 #include "read_binning.hpp"
 
+/*
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
     log->add_writer(std::make_shared<logging::console_writer>());
     logging::attach_logger(log);
 }
+*/
 
 namespace debruijn_graph {
 
@@ -47,6 +49,7 @@ void ContigBinner::Run(io::PairedStream& paired_reads) {
 };
 
 //todo make it take dataset info
+/*
 int main(int argc, char** argv) {
     using namespace debruijn_graph;
 
@@ -89,3 +92,4 @@ int main(int argc, char** argv) {
     binner.close();
     return 0;
 }
+*/

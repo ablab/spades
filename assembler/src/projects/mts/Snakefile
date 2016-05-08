@@ -7,8 +7,10 @@ SCRIPTS = config["SCRIPTS"]
 SOFT = config["SOFT"]
 K = int(config["K"])
 Kp = K + 1
-CONFIG = expand("K{k}/configs/config.info")
-SAVES = expand("K{k}/saves/07_before_repeat_resolution/graph_pack", k=K)
+CONFIG = "K{0}/configs/config.info".format(K)
+#expand("K{k}/configs/config.info", k=K)
+SAVES = "K{0}/saves/07_before_repeat_resolution/graph_pack".format(K)
+#expand("K{k}/saves/07_before_repeat_resolution/graph_pack", k=K)
 MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
 
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
@@ -73,12 +75,12 @@ rule propagate:
 
 rule binning:
     input:
-        "{sample}.fasta", "{sample}.ann.prop",
+        "{sample}.fasta", "{sample}.ann",
         IN + "/{sample}/left.fastq", IN + "/{sample}/right.fastq"
     output:  "binning/{sample}.bin"
     params:  "binning", "{sample}"
-    message: "Binning reads for {wildcards.sample}"
+    message: "Propagating annotation & binning reads for {wildcards.sample}"
     #TODO: non-file output?
     shell:
-        "{BIN}/read_binning {K} {wildcards.sample}_assembly/{SAVES} {input} {params} &&"
+        "{BIN}/prop_binning {K} {wildcards.sample}_assembly/{CONFIG} {wildcards.sample}_assembly/{SAVES} {input} {params} &&"
         "touch {output}"

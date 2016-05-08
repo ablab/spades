@@ -23,14 +23,17 @@ add_executable(kmer_multiplicity_counter
 target_link_libraries(kmer_multiplicity_counter input dev_support ${COMMON_LIBRARIES})
 
 add_executable(annotation_propagator
+               annotation_propagator.cpp
                propagate.cpp)
 
 target_link_libraries(annotation_propagator spades_modules nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
-add_executable(read_binning
-               read_binning.cpp)
+add_executable(prop_binning
+               propagate.cpp
+               read_binning.cpp
+               prop_binning.cpp)
 
-target_link_libraries(read_binning spades_modules nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(prop_binning spades_modules nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
 add_executable(stats
                stats.cpp
