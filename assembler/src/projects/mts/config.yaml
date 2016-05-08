@@ -1,7 +1,9 @@
 IN: "/Sid/snurk/mts/sim/data"
 SPADES: "~/Projects/mts/assembler/"
+QUAST: "python2 ~/opt/quast-3.2/quast.py"
 BIN: "~/Projects/mts/assembler/build/release/bin"
 SCRIPTS: "~/Projects/mts/assembler/src/mts/scripts"
 SOFT: "/home/snurk/soft/"
+REF: "/Sid/snurk/mts/nielsen/ref.fasta"
 K: 55
 MIN_CONTIG_LENGTH: 2000

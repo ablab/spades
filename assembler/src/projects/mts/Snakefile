@@ -5,6 +5,8 @@ SPADES = config["SPADES"]
 BIN = config["BIN"]
 SCRIPTS = config["SCRIPTS"]
 SOFT = config["SOFT"]
+QUAST = config["QUAST"]
+REF = config["REF"]
 K = int(config["K"])
 Kp = K + 1
 CONFIG = "K{0}/configs/config.info".format(K)
@@ -84,3 +86,23 @@ rule binning:
     shell:
         "{BIN}/prop_binning {K} {wildcards.sample}_assembly/{CONFIG} {wildcards.sample}_assembly/{SAVES} {input} {params} &&"
         "touch {output}"
+
+rule quast:
+    input:   "{sample}.fasta"
+    output:  "{sample}.cont"
+    params:  "{sample}_q/contigs_reports/nucmer_output/{sample}.coords.filtered", "{sample}", 70
+    message: "Aligning reference for {wildcards.sample} & looking for interesting contigs"
+    shell:
+        "{QUAST} -R {REF} {input} -o {wildcards.sample}_q &&"
+        "{SCRIPTS}/filter_nucmer.py {params} > {output}"
+
+rule pca:
+    input:   "canopy.in", "canopy.out", "{sample}.cont"
+    output:  "{sample}.png"
+    message: "Doing some visualization"
+    shell:
+        "Rscript {SCRIPTS}/pca.R {input} {output}"
+
+rule stats_all:
+    input:   expand("{sample}.png", sample=SAMPLES)
+    message: "Running stats"
