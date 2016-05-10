@@ -14,6 +14,7 @@ CONFIG = "K{0}/configs/config.info".format(K)
 SAVES = "K{0}/saves/07_before_repeat_resolution/graph_pack".format(K)
 #expand("K{k}/saves/07_before_repeat_resolution/graph_pack", k=K)
 MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
+CAG = config.get("CAG")
 
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
@@ -86,6 +87,21 @@ rule binning:
     shell:
         "{BIN}/prop_binning {K} {wildcards.sample}_assembly/{CONFIG} {wildcards.sample}_assembly/{SAVES} {input} {params} &&"
         "touch {output}"
+
+rule reassemble:
+    input:   "binning/{sample}.bin"
+    output:  "{sample}_{cag}.fasta"
+    log:     "{sample}_reassembly"
+    params:  left="binning/{cag}/{sample}_1.fastq", right="binning/{cag}/{sample}_2.fastq"
+    message: "Reassembling reads for {wildcards.cag} from {wildcards.sample}"
+    shell:
+        "{SPADES}/spades.py -k {K} --only-assembler --meta -t {threads} -1 {params.left} -2 {params.right} -o {log} && "
+        "cp {log}/scaffolds.fasta {output}"
+
+#Todo: report error when CAG is unset
+rule reassemble_all:
+    input:   expand("{sample}_{cag}.fasta", sample=SAMPLES, cag=CAG)
+    message: "Reassembling reads for {CAG}"
 
 rule quast:
     input:   "{sample}.fasta"
