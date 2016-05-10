@@ -9,6 +9,7 @@
 
 #include "data_structures/sequence/sequence_tools.hpp"
 #include "data_structures/sequence/runtime_k.hpp"
+#include "utils/adt/kmer_vector.hpp"
 #include "edge_index.hpp"
 
 #include "kmer_map.hpp"
@@ -46,7 +47,6 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     }
 
 public:
-
     KmerMapper(const Graph &g, bool verification_on = true) :
             base(g, "KmerMapper"), k_(unsigned(g.k() + 1)), mapping_(k_), verification_on_(verification_on), normalized_(false) {
     }
@@ -67,12 +67,13 @@ public:
         if (normalized_)
             return;
 
-        std::vector<Kmer> all;
+        KMerVector<Kmer> all(k_, size());
         for (auto it = begin(); it != end(); ++it)
             all.push_back(it->first);
 
         for (auto it = all.begin(); it != all.end(); ++it) {
-            Normalize(*it);
+            Seq val(k_, it.data());
+            Normalize(val);
         }
         normalized_ = true;
     }
