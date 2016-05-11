@@ -165,6 +165,13 @@ double GetSingleReadsUniqueEdgePriorityThreshold(const io::LibraryType& type) {
     return cfg::get().pe_params.long_reads.single_reads.unique_edge_priority;
 }
 
+size_t GetSingleReadsSignificantOverlapThreshold(const io::LibraryType& type) {
+    if (type == io::LibraryType::PathExtendContigs){
+        return cfg::get().pe_params.long_reads.meta_contigs.min_significant_overlap;
+    }
+    return cfg::get().pe_params.long_reads.single_reads.min_significant_overlap;
+}
+
 bool HasOnlyMPLibs() {
     for (const auto& lib : cfg::get().ds.reads) {
         if (!((lib.type() == io::LibraryType::MatePairs || lib.type() == io::LibraryType::HQMatePairs) &&
@@ -338,6 +345,7 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& g
             make_shared<LongReadsExtensionChooser>(gp.g, paths, GetSingleReadsFilteringThreshold(lib.type()),
                                                    GetSingleReadsWeightPriorityThreshold(lib.type()),
                                                    GetSingleReadsUniqueEdgePriorityThreshold(lib.type()),
+                                                   GetSingleReadsSignificantOverlapThreshold(lib.type()),
                                                    pset.extension_options.max_repeat_length);
 
     size_t resolvable_repeat_length_bound = 10000ul;
@@ -505,6 +513,7 @@ inline shared_ptr<SimpleExtender> MakeRNALongReadsExtender(const conj_graph_pack
         make_shared<LongReadsExtensionChooser>(gp.g, paths, GetSingleReadsFilteringThreshold(lib.type()),
                                                GetSingleReadsWeightPriorityThreshold(lib.type()),
                                                GetSingleReadsUniqueEdgePriorityThreshold(lib.type()),
+                                               GetSingleReadsSignificantOverlapThreshold(lib.type()),
                                                pset.extension_options.max_repeat_length);
 
     size_t resolvable_repeat_length_bound = 10000ul;

@@ -122,6 +122,8 @@ void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,
     load(p.filtering, pt, "filtering", complete);
     load(p.weight_priority, pt, "weight_priority", complete);
     load(p.unique_edge_priority, pt, "unique_edge_priority", complete);
+    load(p.min_significant_overlap, pt, "min_significant_overlap", complete);
+
 }
 
 void load(pe_config::ParamSetT::Scaffolding2015& p, boost::property_tree::ptree const& pt,

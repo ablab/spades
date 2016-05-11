@@ -811,10 +811,12 @@ public:
                               double filtering_threshold,
                               double weight_priority_threshold,
                               double unique_edge_priority_threshold,
+                              size_t min_significant_overlap,
                               size_t max_repeat_length)
             : ExtensionChooser(g),
               filtering_threshold_(filtering_threshold),
               weight_priority_threshold_(weight_priority_threshold),
+              min_significant_overlap_(min_significant_overlap),
               cov_map_(g, pc),
               unique_edge_analyzer_(g, cov_map_, filtering_threshold, unique_edge_priority_threshold, max_repeat_length),
               simple_scaffolding_(g) {
@@ -848,7 +850,7 @@ public:
                                        positions[i], false)) {
                     DEBUG("Checking unique path_back for " << (*it)->GetId());
 
-                    if (UniqueBackPath(**it, positions[i])) {
+                    if (UniqueBackPath(**it, positions[i]) && (*it)->LengthAt(positions[i]) >= min_significant_overlap_) {
                         DEBUG("Success");
 
                         EdgeId next = (*it)->At(positions[i] + 1);
@@ -912,6 +914,7 @@ private:
 
     double filtering_threshold_;
     double weight_priority_threshold_;
+    size_t min_significant_overlap_;
     const GraphCoverageMap cov_map_;
     LongReadsUniqueEdgeAnalyzer unique_edge_analyzer_;
     SimpleScaffolding simple_scaffolding_;

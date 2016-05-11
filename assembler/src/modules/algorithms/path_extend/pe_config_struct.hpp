@@ -214,6 +214,7 @@ struct pe_config {
       double filtering;
       double weight_priority;
       double unique_edge_priority;
+      size_t min_significant_overlap;
   };
 
   struct AllLongReads{
