@@ -77,6 +77,8 @@ int main(int /*argc*/, char** argv) {
         copy_configs(cfg_filename, path::append_path(dsp_cfg::get().io.output_dir, "configs"));
     create_console_logger(cfg_filename);
 
+    INFO("Loaded config from " << cfg_filename);
+    
     VERIFY(dsp_cfg::get().bp.K >= runtime_k::MIN_K && dsp_cfg::get().bp.K < runtime_k::MAX_K);
     VERIFY(dsp_cfg::get().bp.K % 2 != 0);
 

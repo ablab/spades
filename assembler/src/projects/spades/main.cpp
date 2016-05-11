@@ -69,6 +69,9 @@ int main(int argc, char **argv) {
 
         create_console_logger(cfg_dir);
 
+        for (const auto& cfg_fn : cfg_fns)
+            INFO("Loading config from " << cfg_fn);
+        
         VERIFY(cfg::get().K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K);
         VERIFY(cfg::get().K % 2 != 0);
 
