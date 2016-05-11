@@ -41,7 +41,7 @@ class Log:
     def err(self, s):
         msg = "ERROR: " + s + "\n"
         self.text += msg
-        sys.stderr.write(msg)
+        print(msg)
 
     def print_log(self):
         print(self.text)
@@ -107,14 +107,14 @@ def assess_map(result_map, limit_map):
                 #that metric shouold be higher than threshold (e.g. N50)
                 if entry.should_be_higher_than_theshold:
                     if result_map[metric] < entry.value:
-                        log.log(metric + " = " + str(result_map[metric]) + " is less than expected: " + str(entry.value) + " (bad)")
+                        log.err(metric + " = " + str(result_map[metric]) + " is less than expected: " + str(entry.value))
                         res = -1
                     else:
                         log.log(metric + " = " + str(result_map[metric]) + " >= " + str(entry.value) + " (OK)")
                 #that metric shouold be less than threshold (e.g. misassemblies)
                 else:
                     if result_map[metric] > entry.value:
-                        log.log(metric + " = " + str(result_map[metric]) + " is higher than expected: " + str(entry.value) + " (bad)")
+                        log.err(metric + " = " + str(result_map[metric]) + " is higher than expected: " + str(entry.value))
                         res = -1
                     else:
                         log.log(metric + " = " + str(result_map[metric]) + " <= " + str(entry.value) + " (OK)")
