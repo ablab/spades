@@ -520,15 +520,6 @@ def create_output_dir(args, dataset_info):
 
 ### Pipeline functions ###
 
-# Copy configs from .info.template
-def cpcfg(args, dataset_info):
-    if not args.cfg_compilation:
-        log.log("Forced to use current SPAdes configs, cpcfg will not run");
-    elif 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
-        return os.system('./cpcfg')
-    return 0
-
-
 # Compile SPAdes
 def compile_spades(args, dataset_info, working_dir):
     if not args.cfg_compilation:
@@ -635,11 +626,6 @@ try:
     working_dir = os.getcwd()
     output_dir = create_output_dir(args, dataset_info)
     save_run_info(args, output_dir)
-
-    #cpcfg
-    if cpcfg(args, dataset_info) != 0:
-        log.err("Preparing configuration files finished abnormally with exit code " + str(ecode))
-        sys.exit(2)
 
     #compile
     if compile_spades(args, dataset_info, working_dir) != 0:
