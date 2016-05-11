@@ -44,14 +44,14 @@ public:
         if (!CheckCorrectness(args))
             return;
 
-        size_t insert_size = boost::lexical_cast<size_t>(args[1]);
+        size_t insert_size = std::stoll(args[1]);
         LOG("Insert size " << insert_size);
 
         stringstream ss;
         ss << "Provided path: ";
         vector<EdgeId> edges;
         for (size_t i = 2; i < args.size(); ++i) {
-            EdgeId e = curr_env.finder().ReturnEdgeId(boost::lexical_cast<size_t>(args[i]));
+            EdgeId e = curr_env.finder().ReturnEdgeId(std::stoll(args[i]));
             edges.push_back(e);
             ss << curr_env.graph().str(e) << " ; ";
         }

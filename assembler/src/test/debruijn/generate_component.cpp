@@ -104,18 +104,18 @@ int main(int argc, char** argv) {
     }
 //    TmpFolderFixture("tmp");
     create_console_logger();
-    size_t K = lexical_cast<size_t>(argv[1]);
+    size_t K = std::stoll(argv[1]);
     string saves_path = argv[2];
     INFO("Load graph from " << saves_path);
-    size_t start_vertex_int_id = lexical_cast<size_t>(argv[3]);
+    size_t start_vertex_int_id = std::stoll(argv[3]);
     INFO("Start vertex " << start_vertex_int_id);
-    size_t edge_length_bound = lexical_cast<size_t>(argv[4]);
+    size_t edge_length_bound = std::stoll(argv[4]);
     INFO("Edge length bound " << edge_length_bound);
     string component_out_path = argv[5];
     INFO("Save component to " << component_out_path);
     vector<size_t> blocking_int_ids;
     for (int i = 6; i < argc; ++i) {
-        blocking_int_ids.push_back(lexical_cast<size_t>(argv[i]));
+        blocking_int_ids.push_back(std::stoll(argv[i]));
     }
     INFO("Blocking ids " << blocking_int_ids);
     debruijn_graph::Launch(K, saves_path, start_vertex_int_id, blocking_int_ids, edge_length_bound, component_out_path);
