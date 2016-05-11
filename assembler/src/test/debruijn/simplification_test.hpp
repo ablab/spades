@@ -303,7 +303,7 @@ void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
 //Relative coverage removal tests
 
 void TestRelativeCoverageRemover(std::string path, size_t graph_size) {
-    typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq,
+    typedef graph_pack<ConjugateDeBruijnGraph,
             KmerStoringEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, SimpleStoring>> gp_t;
     gp_t gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);

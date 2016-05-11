@@ -140,7 +140,7 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
     DEBUG("Asserting graph");
     typedef io::VectorReadStream<io::SingleRead> RawStream;
     Graph g(k);
-    graph_pack<Graph, runtime_k::RtSeq>::index_t index(g, "tmp");
+    graph_pack<Graph>::index_t index(g, "tmp");
     index.Detach();
 
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads))));
