@@ -20,4 +20,4 @@ install(TARGETS scaffold_correction
         COMPONENT runtime)
 install(DIRECTORY "${SPADES_CFG_DIR}/scaffold_correction"
         DESTINATION share/spades/configs
-        FILES_MATCHING PATTERN "*.info.template")
+        FILES_MATCHING PATTERN "*.info")

@@ -30,4 +30,4 @@ install(TARGETS ionhammer
         RUNTIME DESTINATION bin)
 install(DIRECTORY "${SPADES_CFG_DIR}/ionhammer"
         DESTINATION share/spades/configs
-                FILES_MATCHING PATTERN "*.cfg.template")
+                FILES_MATCHING PATTERN "*.cfg")

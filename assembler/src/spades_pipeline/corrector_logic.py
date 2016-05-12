@@ -49,15 +49,6 @@ def run_corrector(configs_dir, execution_home, cfg,
         shutil.rmtree(dst_configs)
     dir_util.copy_tree(os.path.join(configs_dir, "corrector"), dst_configs, preserve_times=False)
     cfg_file_name = os.path.join(dst_configs, "corrector.info")
-    # removing template configs
-    for root, dirs, files in os.walk(dst_configs):
-        for cfg_file in files:
-            cfg_file = os.path.join(root, cfg_file)
-            if cfg_file.endswith('.template'):
-                if os.path.isfile(cfg_file.split('.template')[0]):
-                    os.remove(cfg_file)
-                else:
-                    os.rename(cfg_file, cfg_file.split('.template')[0])
 
     cfg.tmp_dir = support.get_tmp_dir(prefix="corrector_")
 

@@ -68,9 +68,6 @@ def prepare_configs(src_config_dir, ds_args, log):
     copy_configs(src_config_dir, config_dir)
     #log.info("dipSPAdes configs were copied to " + config_dir)
     config_fname = os.path.join(config_dir, "config.info")
-    if not os.path.exists(config_fname):
-        support.check_file_existence(config_fname + ".template")
-        os.rename(config_fname + ".template", config_fname)
     return os.path.abspath(config_fname)
 
 
