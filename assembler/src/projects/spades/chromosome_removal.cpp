@@ -96,7 +96,6 @@ double ChromosomeRemoval::RemoveLongGenomicEdges(conj_graph_pack &gp, size_t lon
         if (gp.g.length(*iter) > cfg::get().pd->edge_length_for_median) {
             coverages.push_back(make_pair(gp.g.coverage(*iter), gp.g.length(*iter)));
             total_len += gp.g.length(*iter);
-            long_component_[*iter] = 0;
         } else {
             short_len += gp.g.length(*iter);
         }
@@ -125,27 +124,29 @@ double ChromosomeRemoval::RemoveLongGenomicEdges(conj_graph_pack &gp, size_t lon
     } else {
         median_long_edge_coverage = external_chromosome_coverage;
     }
-
+    size_t deleted = 0;
     for (auto iter = gp.g.SmartEdgeBegin(); ! iter.IsEnd(); ++iter){
         if (gp.g.length(*iter) > long_edge_bound) {
             if (gp.g.coverage(*iter) < median_long_edge_coverage * (1 + coverage_limits) && gp.g.coverage(*iter)  > median_long_edge_coverage * (1 - coverage_limits)) {
-                INFO("Considering long edge: id " << gp.g.int_id(*iter) << " length: " << gp.g.length(*iter) <<" coverage: " << gp.g.coverage(*iter));
+                DEBUG("Considering long edge: id " << gp.g.int_id(*iter) << " length: " << gp.g.length(*iter) <<" coverage: " << gp.g.coverage(*iter));
                 if ( long_component_.find(*iter) != long_component_.end() && 300000 > long_component_[*iter] && deadends_count_[*iter] == 0) {
-                    INFO("Edge " << gp.g.int_id(*iter) << " skipped - small nondeadend connected component (" << long_component_[*iter] <<  " )" );
+                    INFO("Edge " << gp.g.int_id(*iter) << " skipped - because of small nondeadend connected component of size(" << long_component_[*iter] <<  " )" );
                 } else {
-                    INFO(" Edge " << gp.g.int_id(*iter) << "  deleted");
+                    DEBUG(" Edge " << gp.g.int_id(*iter) << "  deleted");
+                    deleted++;
                     gp.g.DeleteEdge(*iter);
                 }
             }
         }
     }
+    INFO("Deleted " << deleted <<" long edges");
     CompressAll(gp.g);
     return median_long_edge_coverage;
 }
 
 void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bound,
                                         std::function<void (EdgeId)> removal_handler ) {
-    INFO("Simplifying graph for plasmid project");
+    DEBUG("Simplifying graph for plasmid project");
     size_t iteration_count = 10;
     for (size_t i = 0; i < iteration_count; i++) {
         //pred::TypedPredicate<typename Graph::EdgeId> condition = make_shared<LengthUpperBound<Graph>>(gp.g, long_edge_bound) ;
@@ -159,7 +160,7 @@ void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bo
 void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     //FIXME Seriously?! cfg::get().ds like hundred times...
     OutputContigs(gp.g, cfg::get().output_dir + "before_chromosome_removal", false, 0, false);
-    INFO("Before iteration " << 0 << " " << gp.g.size() << " vertices in graph");
+    INFO("Before iteration " << 0 << ", " << gp.g.size() << " vertices in graph");
     double chromosome_coverage = RemoveLongGenomicEdges(gp, cfg::get().pd->long_edge_length, cfg::get().pd->relative_coverage );
     PlasmidSimplify(gp, cfg::get().pd->long_edge_length);
 //TODO:: reconsider and move somewhere(not to config)
@@ -195,7 +196,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
                 && old_vertex_weights.find(gp.g.EdgeStart(*iter)) !=  old_vertex_weights.end()
 //* 2 - because all coverages are taken with rc
                 && old_vertex_weights[gp.g.EdgeStart(*iter)] > long_component_[*iter] + cfg::get().pd->long_edge_length * 2)  {
-                INFO("deleting isolated edge of length" << gp.g.length(*iter));
+                INFO("Deleting isolated edge of length" << gp.g.length(*iter));
 
                 gp.g.DeleteEdge(*iter);
             }
@@ -207,7 +208,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
                     long_component_[*iter] + cfg::get().pd->long_edge_length * 2 &&
                         gp.g.coverage(*iter) < chromosome_coverage * (1 + cfg::get().pd->small_component_relative_coverage)
                        && gp.g.coverage(*iter) > chromosome_coverage * (1 - cfg::get().pd->small_component_relative_coverage)) {
-                    INFO("deleting edge from fake small component, length " << gp.g.length(*iter) << " component_size " << old_vertex_weights[gp.g.EdgeStart(*iter)]) ;
+                    INFO("Deleting edge from fake small component, length " << gp.g.length(*iter) << " component_size " << old_vertex_weights[gp.g.EdgeStart(*iter)]) ;
                     gp.g.DeleteEdge(*iter);
                 }
             }
@@ -225,7 +226,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
         size_t new_graph_size = gp.g.size();
         if (new_graph_size == graph_size) {
             INFO("Iteration " << i << " of small components additional filtering graph was not changed");
-            INFO(new_graph_size << "vertices left");
+            INFO("After plasmidSPAdes subroutine " << new_graph_size << " vertices left");
             break;
         }
     }
