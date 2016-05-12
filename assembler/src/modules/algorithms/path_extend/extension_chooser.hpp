@@ -253,7 +253,7 @@ protected:
     shared_ptr<ExtensionChooser> second_;
 
 public:
-    JointExtensionChooser(Graph& g, shared_ptr<ExtensionChooser> first, shared_ptr<ExtensionChooser> second): ExtensionChooser(g),
+    JointExtensionChooser(const Graph& g, shared_ptr<ExtensionChooser> first, shared_ptr<ExtensionChooser> second): ExtensionChooser(g),
         first_(first), second_(second)
     {
     }

@@ -375,14 +375,19 @@ inline shared_ptr<SimpleExtender> MakeMetaExtender(const conj_graph_pack& gp, co
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
 
-inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                       size_t lib_index, const pe_config::ParamSetT& pset, bool investigate_loops) {
-    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+inline shared_ptr<SimpleExtensionChooser> MakePEExtensionChooser(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+        shared_ptr<PairedInfoLibrary> lib, size_t lib_index, const pe_config::ParamSetT& pset, bool investigate_loops) {
     SetSingleThresholdForLib(lib, pset, cfg::get().ds.reads[lib_index].data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << lib->GetSingleThreshold());
 
     shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, pset.normalize_weight);
-    shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc, GetWeightThreshold(lib, pset), GetPriorityCoeff(lib, pset));
+    return make_shared<SimpleExtensionChooser>(gp.g, wc, GetWeightThreshold(lib, pset), GetPriorityCoeff(lib, pset));
+}
+
+inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+                                       size_t lib_index, const pe_config::ParamSetT& pset, bool investigate_loops) {
+    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+    shared_ptr<SimpleExtensionChooser> extension = MakePEExtensionChooser(gp, cov_map, lib, lib_index, pset, investigate_loops);
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
 
@@ -471,8 +476,9 @@ inline shared_ptr<SimpleExtender> MakeCoordCoverageExtender(const conj_graph_pac
                                        const pe_config::ParamSetT& pset) {
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.paired_indices, 0);
     CoverageAwareIdealInfoProvider provider(gp.g, lib, 1000, 2000);
-    shared_ptr<CoordinatedCoverageExtensionChooser> chooser = make_shared<CoordinatedCoverageExtensionChooser>(gp.g, provider,
+    shared_ptr<CoordinatedCoverageExtensionChooser> coord_chooser = make_shared<CoordinatedCoverageExtensionChooser>(gp.g, provider,
             pset.coordinated_coverage.max_edge_length_in_repeat, pset.coordinated_coverage.delta);
+    shared_ptr<JointExtensionChooser> chooser = make_shared<JointExtensionChooser>(gp.g, MakePEExtensionChooser(gp, cov_map, lib, 0, pset, true), coord_chooser);
     return make_shared<SimpleExtender>(gp, cov_map, chooser, -1ul, pset.loop_removal.mp_max_loops, true, false);
 }
 
