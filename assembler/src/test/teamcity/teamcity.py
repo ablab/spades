@@ -34,14 +34,16 @@ class Log:
         print(s)
 
     def warn(self, s):
+        sys.stdout.flush()
         msg = "WARNING: " + s 
         self.text += msg + "\n" 
-        print(msg)
+        sys.stderr.write(msg)
 
     def err(self, s):
+        sys.stdout.flush()
         msg = "ERROR: " + s + "\n"
         self.text += msg
-        print(msg)
+        sys.stderr.write(msg)
 
     def print_log(self):
         print(self.text)
