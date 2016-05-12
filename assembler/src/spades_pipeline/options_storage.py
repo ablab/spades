@@ -184,6 +184,8 @@ def usage(spades_version, show_hidden=False, mode=None):
     if mode != "dip":
         sys.stderr.write("--sc\t\t\tthis flag is required for MDA (single-cell) data" + "\n")
         sys.stderr.write("--meta\t\t\tthis flag is required for metagenomic sample data" + "\n")
+        sys.stderr.write("--plasmid\tRuns plasmidSPAdes pipeline for plasmid detection \n");
+
     sys.stderr.write("--iontorrent\t\tthis flag is required for IonTorrent data" + "\n")
     sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
     sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
@@ -307,7 +309,6 @@ def usage(spades_version, show_hidden=False, mode=None):
                              " for SPAdes" + "\n")
         sys.stderr.write("--large-genome\tEnables optimizations for large genomes \n");
         sys.stderr.write("--rna\tRuns rnaSPAdes pipeline for RNA-Seq data \n");
-        sys.stderr.write("--plasmid\tRuns plasmidSPAdes pipeline for plasmid detection \n");
         sys.stderr.write("--help-hidden\tprints this usage message with all hidden options" + "\n")
 
     if show_hidden and mode == "dip":
