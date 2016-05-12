@@ -622,6 +622,7 @@ try:
         subprocess.call(command, shell=True)
         sys.exit(1)
 
+    sys.stderr = sys.stdout
     exit_code = 0
     args = parse_args()
     dataset_info = load_info(args.info)
