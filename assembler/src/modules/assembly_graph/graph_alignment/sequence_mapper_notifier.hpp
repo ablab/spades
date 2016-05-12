@@ -34,6 +34,7 @@ public:
 };
 
 class SequenceMapperNotifier {
+    static const size_t BUFFER_SIZE = 200000;
 public:
     typedef SequenceMapper<conj_graph_pack::graph_t> SequenceMapperT;
 
@@ -57,39 +58,31 @@ public:
         streams.reset();
         NotifyStartProcessLibrary(lib_index, threads_count);
 
-        size_t counter = 0, n = 15;
+        size_t counter = 0;
         size_t fmem = get_free_memory();
-#       pragma omp parallel for num_threads(threads_count) shared(counter)
+
+        #pragma omp parallel for num_threads(threads_count) shared(counter)
         for (size_t ithread = 0; ithread < threads_count; ++ithread) {
             size_t size = 0;
-            size_t limit = 200000;
             ReadType r;
             auto& stream = streams[ithread];
             stream.reset();
-            bool end_of_stream = false;
-            while (!end_of_stream) {
-                end_of_stream = stream.eof();
-                while (!end_of_stream && size < limit) {
-                    stream >> r;
-                    ++size;
-                    NotifyProcessRead(r, mapper, lib_index, ithread);
-                    end_of_stream = stream.eof();
+            while (!stream.eof()) {
+                if (size == BUFFER_SIZE || 
                     // Stop filling buffer if the amount of available is smaller
                     // than half of free memory.
-                    if (10 * get_free_memory() / 4 < fmem &&
-                        size > 10000)
-                        break;
-                }
-#               pragma omp critical
-                {
-                    counter += size;
-                    if (counter >> n) {
-                        INFO("Processed " << counter << " reads");
-                        n += 1;
+                    (10 * get_free_memory() / 4 < fmem && size > 10000)) {
+                    #pragma omp critical
+                    {
+                        counter += size;
+                        VERBOSE_POWER_T(counter, 1 << 14, "Reads processed");
+                        size = 0;
+                        NotifyMergeBuffer(lib_index, ithread);
                     }
-                    size = 0;
-                    NotifyMergeBuffer(lib_index, ithread);
                 }
+                stream >> r;
+                ++size;
+                NotifyProcessRead(r, mapper, lib_index, ithread);
             }
         }
         INFO("Processed " << counter << " reads");
