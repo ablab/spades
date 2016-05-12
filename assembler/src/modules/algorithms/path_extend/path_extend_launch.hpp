@@ -54,7 +54,7 @@ inline void DebugOutputPaths(const conj_graph_pack& gp,
 
     DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(gp.g);
     DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(gp.g, corrector);
-    ContigWriter writer(gp.g, constructor);
+    ContigWriter writer(gp.g, constructor, gp.components);
 
     string etcDir = GetEtcDir(output_dir);
     if (!cfg::get().pe_params.debug_output) {

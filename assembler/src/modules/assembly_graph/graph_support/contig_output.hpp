@@ -201,7 +201,7 @@ struct ExtendedContigIdT {
 };
 
 template <class Graph>
-void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids, const ConnectedComponentCounter &cc_counter_) {
+void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids, const ConnectedComponentCounter &cc_counter_, string prefix) {
     int counter = 0;
     for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         EdgeId e = *it;
@@ -210,10 +210,10 @@ void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids, co
             //FIXME remove plasmid_enabled?
             if (cfg::get().pd && cfg::get().pd->plasmid_enabled) {
                 size_t c_id = cc_counter_.GetComponent(e);
-                id = io::MakeContigComponentId(++counter, graph.length(e) + graph.k(), graph.coverage(e), c_id, "EDGE");
+                id = io::MakeContigComponentId(++counter, graph.length(e) + graph.k(), graph.coverage(e), c_id, prefix);
             }
             else
-                id = io::MakeContigId(++counter, graph.length(e) + graph.k(), graph.coverage(e), "EDGE");
+                id = io::MakeContigId(++counter, graph.length(e) + graph.k(), graph.coverage(e), prefix);
             ids[e] = ExtendedContigIdT(id, ToString(counter) + "+");
             if (e != graph.conjugate(e))
                 ids[graph.conjugate(e)] =  ExtendedContigIdT(id + "'", ToString(counter) + "-");
@@ -256,7 +256,7 @@ public:
     template<class sequence_stream>
     void PrintContigsFASTG(sequence_stream &os, const ConnectedComponentCounter & cc_counter) {
         map<EdgeId, ExtendedContigIdT> ids;
-        MakeContigIdMap(graph_, ids, cc_counter);
+        MakeContigIdMap(graph_, ids, cc_counter, "EDGE");
         for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
             set<string> next;
             VertexId v = graph_.EdgeEnd(*it);
