@@ -14,7 +14,7 @@ namespace debruijn_graph {
 class ChromosomeRemoval : public spades::AssemblyStage {
 public:
     ChromosomeRemoval()
-            : AssemblyStage("Chromosome Removal", "chromosome_removal") { }
+            : AssemblyStage("Chromosome Removal", "chromosome_removal"), long_component_(), long_vertex_component_(),deadends_count_() { }
 
     void run(conj_graph_pack &gp, const char *);
 

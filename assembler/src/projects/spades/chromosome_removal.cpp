@@ -89,7 +89,7 @@ size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
 }
 
 double ChromosomeRemoval::RemoveLongGenomicEdges(conj_graph_pack &gp, size_t long_edge_bound, double coverage_limits, double external_chromosome_coverage){
-    INFO("Removing long genomic edge started");
+    INFO("Removing of long chromosomal edges started");
     vector <pair<double, size_t> > coverages;
     size_t total_len = 0, short_len = 0, cur_len = 0;
     for (auto iter = gp.g.ConstEdgeBegin(); ! iter.IsEnd(); ++iter){
@@ -115,7 +115,7 @@ double ChromosomeRemoval::RemoveLongGenomicEdges(conj_graph_pack &gp, size_t lon
     double median_long_edge_coverage;
     if (external_chromosome_coverage < 1.0) {
         median_long_edge_coverage = coverages[i-1].first;
-        INFO ("genomic coverage is "<< median_long_edge_coverage << " calculated of length " << total_len);
+        INFO ("genomic coverage is "<< median_long_edge_coverage << " calculated of length " << size_t (double(total_len) * 0.5));
         for (auto iter = gp.g.ConstEdgeBegin(); ! iter.IsEnd(); ++iter) {
             if (long_component_.find(*iter) == long_component_.end()) {
                 CalculateComponentSize(*iter, gp.g);
