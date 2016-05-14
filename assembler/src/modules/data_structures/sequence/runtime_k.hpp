@@ -17,20 +17,27 @@
 
 namespace runtime_k {
 
-#define T_SIZE sizeof(seq_element_type)
+constexpr size_t t_size(void) {
+    return sizeof(seq_element_type);
+}
 
-#define GET_T_ELEMENTS_NUMBER(value) ((value - 1) / (T_SIZE << 2) + 1)
+constexpr size_t get_t_elements_number(size_t value) {
+    return ((value - 1) / (t_size() << 2) + 1);
+}
 
-#define GET_K_BY_TS(value) (value * (T_SIZE << 2))
+constexpr size_t get_k_by_ts(size_t value) {
+    return (value * (t_size() << 2));
+}
 
-#define GET_UPPER_BOUND(value) GET_K_BY_TS(GET_T_ELEMENTS_NUMBER(value))
+constexpr size_t get_upper_bound(size_t value) {
+    return get_k_by_ts(get_t_elements_number(value));
+}
 
+const size_t UPPER_BOUND = get_upper_bound(MAX_K); //((MAX_K - 1) / (sizeof(seq_element_type) << 2) + 1) * (sizeof(seq_element_type) << 2);
 
-const size_t UPPER_BOUND = GET_UPPER_BOUND(MAX_K); //((MAX_K - 1) / (sizeof(seq_element_type) << 2) + 1) * (sizeof(seq_element_type) << 2);
+const size_t MAX_TS = get_t_elements_number(MAX_K);
 
-const size_t MAX_TS = GET_T_ELEMENTS_NUMBER(MAX_K);
-
-const size_t MIN_TS = GET_T_ELEMENTS_NUMBER(MIN_K);
+const size_t MIN_TS = get_t_elements_number(MIN_K);
 
 
 typedef RuntimeSeq<UPPER_BOUND> RtSeq;
