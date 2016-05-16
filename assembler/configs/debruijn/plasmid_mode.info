@@ -2,7 +2,6 @@ mode    plasmid
 
 plasmid 
 {
-    plasmid_enabled true
     long_edge_length 1000
     edge_length_for_median 10000
     relative_coverage 0.3

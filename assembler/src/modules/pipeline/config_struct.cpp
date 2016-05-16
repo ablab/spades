@@ -433,7 +433,6 @@ void load(debruijn_config::position_handler& pos,
 void load(debruijn_config::plasmid& pd,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
-    load (pd.plasmid_enabled, pt, "plasmid_enabled");
     load(pd.long_edge_length, pt, "long_edge_length");
     load(pd.edge_length_for_median, pt, "edge_length_for_median");
 

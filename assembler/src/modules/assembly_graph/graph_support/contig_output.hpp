@@ -207,8 +207,7 @@ void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids, co
         EdgeId e = *it;
         if (ids.count(e) == 0) {
             string id;
-            //FIXME remove plasmid_enabled?
-            if (cfg::get().pd && cfg::get().pd->plasmid_enabled) {
+            if (cfg::get().pd.is_initialized()) {
                 size_t c_id = cc_counter_.GetComponent(e);
                 id = io::MakeContigComponentId(++counter, graph.length(e) + graph.k(), graph.coverage(e), c_id, prefix);
             }

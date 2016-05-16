@@ -369,7 +369,6 @@ struct debruijn_config {
     };
 
     struct plasmid {
-        bool plasmid_enabled;
         size_t long_edge_length;
         size_t edge_length_for_median;
         double relative_coverage;
