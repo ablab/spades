@@ -526,6 +526,36 @@ inline void PrintExtenders(vector<shared_ptr<PathExtender> >& extenders) {
     }
 }
 
+
+
+inline vector<shared_ptr<PathExtender> > MakeMPExtenders(PathExtendStage stage, const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+                                                          const pe_config::ParamSetT& pset, const ScaffoldingUniqueEdgeStorage& storage, const PathContainer& paths_for_mp = PathContainer()) {
+
+    vector<shared_ptr<PathExtender> > result;
+    size_t mp_libs = 0;
+
+    for (io::LibraryType lt : io::LibraryPriotity) {
+        for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+            const auto& lib = cfg::get().ds.reads[i];
+            if (lib.type() != lt)
+                continue;
+
+            if (IsForMPExtender(lib) && IsMPStage(stage)) {
+                ++mp_libs;
+                if (pset.sm == sm_old || pset.sm == sm_combined) {
+                    result.push_back(MakeMPExtender(gp, cov_map, paths_for_mp, i, pset));
+                }
+                if (is_2015_scaffolder_enabled(pset.sm)) {
+                    result.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
+                }
+            }
+        }
+    }
+
+    PrintExtenders(result);
+    return result;
+}
+
 inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage, const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                             const pe_config::ParamSetT& pset, const ScaffoldingUniqueEdgeStorage& storage, const PathContainer& paths_for_mp = PathContainer()) {
 
@@ -904,28 +934,40 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     if (is_2015_scaffolder_enabled(sc_mode)) {
         //TODO: constants
-	int cur_length = (int) min_unique_length;
-        do {
-            ScaffoldingUniqueEdgeStorage current_unique_storage;
-            ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, cur_length, unique_variaton);
-            unique_edge_analyzer.FillUniqueEdgeStorage(current_unique_storage);
-            all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, current_unique_storage);
-            shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
-                                                                                      max_is_right_quantile,
-                                                                                      main_unique_storage,
-                                                                                      cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+        int length_step = 500;
 
-            INFO("Growing paths using mate-pairs unique length " << cur_length);
-            mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
-            clone_paths.DeleteAllPaths();
-            clone_paths = mp_paths;
-            DebugOutputPaths(gp, output_dir, mp_paths, "mp_" + std::to_string(cur_length));
-            //TODO: are parameters reasonable?
-            //size_t traversed = TraverseLoops(mp_paths, cover_map, mainPE, cur_length, 500, (cur_length + 1000)*10);
-            //INFO("MP stage with edge length limit " << cur_length << " traversed " <<  traversed << " loops");
-            // DebugOutputPaths(gp, output_dir, mp_paths, "mp_after_loop_traversing_" + std::to_string(cur_length));
-            cur_length -= 500;
-        } while (cur_length > 500);
+        vector<ScaffoldingUniqueEdgeStorage> unique_storages(min_unique_length / length_step + 2);
+        ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, min_unique_length, unique_variaton);
+        unique_edge_analyzer.FillUniqueEdgeStorage(unique_storages.front());
+        INFO("Creating main exteders, unique edge length = " << min_unique_length);
+        all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, unique_storages.front());
+
+        int cur_length = (int) min_unique_length - length_step;
+        size_t i = 1;
+        while (cur_length >= length_step) {
+            INFO("Adding exteder with length " << cur_length);
+            ScaffoldingUniqueEdgeAnalyzer additional_edge_analyzer(gp, (size_t) cur_length, unique_variaton);
+            additional_edge_analyzer.FillUniqueEdgeStorage(unique_storages[i]);
+            auto additional_extenders = MakeMPExtenders(exspander_stage, gp, clone_map, pset, unique_storages[i]);
+            all_libs.insert(all_libs.end(), additional_extenders.begin(), additional_extenders.end());
+            cur_length -= length_step;
+            ++i;
+        }
+        INFO("Adding exteder with length " << length_step);
+        ScaffoldingUniqueEdgeAnalyzer additional_edge_analyzer(gp, (size_t) length_step, unique_variaton);
+        additional_edge_analyzer.FillUniqueEdgeStorage(unique_storages.back());
+        auto additional_extenders = MakeMPExtenders(exspander_stage, gp, clone_map, pset, unique_storages.back());
+        all_libs.insert(all_libs.end(), additional_extenders.begin(), additional_extenders.end());
+        INFO("Total number of exterders is " << all_libs.size());
+
+        shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
+                                                                                  max_is_right_quantile,
+                                                                                  main_unique_storage,
+                                                                                  cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+
+        mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
+        clone_paths.DeleteAllPaths();
+        DebugOutputPaths(gp, output_dir, mp_paths, "mp_raw");
     }
     else {
         all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, main_unique_storage, clone_paths);
