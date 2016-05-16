@@ -110,12 +110,11 @@ rule reassemble_all:
 rule quast:
     input:   "{sample}.fasta"
     output:  "{sample}.cont"
-    params:  "{sample}_q/contigs_reports/nucmer_output/{sample}.coords.filtered", "{sample}", 70
     log:     "{sample}_q"
     message: "Aligning reference for {wildcards.sample} & looking for interesting contigs"
     shell:
         "{QUAST} -R {REF} {input} -o {log} &&"
-        "{SCRIPTS}/filter_nucmer.py {params} > {output}"
+        "{SCRIPTS}/filter_nucmer.py {log} 70 > {output}"
 
 rule pca:
     input:   "canopy.in", "canopy.out", "{sample}.cont"
