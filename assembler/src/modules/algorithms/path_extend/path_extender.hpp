@@ -13,13 +13,11 @@
 
 #pragma once
 
-
 #include "extension_chooser.hpp"
 #include "path_filter.hpp"
 #include "overlap_analysis.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include <cmath>
-
 
 namespace path_extend {
 
@@ -938,7 +936,9 @@ private:
                 for (size_t ind =0; ind < paths.Get(i)->Size(); ind++) {
                     EdgeId eid = paths.Get(i)->At(ind);
                     if (used_storage_->IsUsedAndUnique(eid)) {
-                        was_used = true; break;
+                        DEBUG("Used edge " << g_.int_id(eid));
+                        was_used = true;
+                        break;
                     } else {
                         used_storage_->insert(eid);
                     }

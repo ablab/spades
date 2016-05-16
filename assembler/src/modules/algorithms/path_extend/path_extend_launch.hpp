@@ -15,6 +15,7 @@
 #ifndef PATH_EXTEND_LAUNCH_HPP_
 #define PATH_EXTEND_LAUNCH_HPP_
 
+
 #include "scaffolder2015/scaffold_graph_constructor.hpp"
 #include "pe_config_struct.hpp"
 #include "pe_resolver.hpp"
@@ -28,6 +29,7 @@
 #include "algorithms/genome_consistance_checker.hpp"
 #include "scaffolder2015/scaffold_graph.hpp"
 #include "scaffolder2015/scaffold_graph_visualizer.hpp"
+#include "scaffolder2015/path_polisher.hpp"
 
 namespace path_extend {
 
@@ -614,6 +616,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                     pe_scafs.push_back(MakeScaffoldingExtender(gp, cov_map, i, pset));
                 }
                 if (pset.sm == sm_old_pe_2015 || pset.sm == sm_combined) {
+                    //FIXME do we really intend to run 2015 on paired-end data?
                     pe_scafs.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
             }
@@ -673,8 +676,10 @@ inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const co
                 paired_lib = MakeNewLib(gp.g, gp.paired_indices, lib_index);
             else if (IsForPEExtender(lib))
                 paired_lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
-            else
+            else {
                 INFO("Unusable paired lib #" << lib_index);
+                continue;
+            }
             conditions.push_back(make_shared<AdvancedPairedConnectionCondition>(gp.g, edge_storage.GetSet(),
                                                                                 paired_lib, lib_index,
                                                                                 params.always_add,
@@ -930,6 +935,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     exspander_stage = PathExtendStage::MPStage;
     all_libs.clear();
     max_is_right_quantile = FindOverlapLenForStage(exspander_stage);
+    size_t max_resolvable_len = max_is_right_quantile;
     PathContainer mp_paths;
 
     if (is_2015_scaffolder_enabled(sc_mode)) {
@@ -953,11 +959,13 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
             cur_length -= length_step;
             ++i;
         }
-        INFO("Adding exteder with length " << length_step);
-        ScaffoldingUniqueEdgeAnalyzer additional_edge_analyzer(gp, (size_t) length_step, unique_variaton);
-        additional_edge_analyzer.FillUniqueEdgeStorage(unique_storages.back());
-        auto additional_extenders = MakeMPExtenders(exspander_stage, gp, clone_map, pset, unique_storages.back());
-        all_libs.insert(all_libs.end(), additional_extenders.begin(), additional_extenders.end());
+        if ((int) min_unique_length > length_step) {
+            INFO("Adding exteder with length " << length_step);
+            ScaffoldingUniqueEdgeAnalyzer additional_edge_analyzer(gp, (size_t) length_step, unique_variaton);
+            additional_edge_analyzer.FillUniqueEdgeStorage(unique_storages.back());
+            auto additional_extenders = MakeMPExtenders(exspander_stage, gp, clone_map, pset, unique_storages.back());
+            all_libs.insert(all_libs.end(), additional_extenders.begin(), additional_extenders.end());
+        }
         INFO("Total number of exterders is " << all_libs.size());
 
         shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
@@ -967,6 +975,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
         mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
         clone_paths.DeleteAllPaths();
+        mp_paths.FilterEmptyPaths();
+        mp_paths.SortByLength();
         DebugOutputPaths(gp, output_dir, mp_paths, "mp_raw");
     }
     else {
@@ -982,54 +992,76 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         FinalizePaths(mp_paths, clone_map, max_is_right_quantile, max_is_right_quantile, true);
         clone_paths.DeleteAllPaths();
     }
+
     DebugOutputPaths(gp, output_dir, mp_paths, "mp_final_paths");
     DEBUG("Paths are grown with mate-pairs");
 
 //MP end
 
 //pe again
-    INFO("SUBSTAGE = polishing paths")
-    exspander_stage = PathExtendStage::FinalizingPEStage;
-    all_libs.clear();
-    all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, main_unique_storage);
-    max_is_right_quantile = FindOverlapLenForStage(exspander_stage);
-    shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
-                                                                                 max_is_right_quantile, main_unique_storage,
-                                                                                 cfg::get().pe_params.param_set.extension_options.max_repeat_length);
-
-    auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
-    DebugOutputPaths(gp, output_dir, last_paths, "pe2_before_overlap");
-
-    exspander_stage = PathExtendStage::FinalPolishing;
-    all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, main_unique_storage);
-    last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
-                                            max_is_right_quantile, main_unique_storage,
-                                            cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+    PathContainer last_paths;
     if (!is_2015_scaffolder_enabled(sc_mode)) {
+        INFO("SUBSTAGE = polishing paths")
+        exspander_stage = PathExtendStage::FinalizingPEStage;
+        all_libs.clear();
+        all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, main_unique_storage);
+        max_is_right_quantile = FindOverlapLenForStage(exspander_stage);
+        shared_ptr<CompositeExtender> pe2_extender = make_shared<CompositeExtender>(gp.g,
+                                                                                     clone_map,
+                                                                                     all_libs,
+                                                                                     max_is_right_quantile,
+                                                                                     main_unique_storage,
+                                                                                     cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+        last_paths = resolver.extendSeeds(mp_paths, *pe2_extender);
+        DebugOutputPaths(gp, output_dir, last_paths, "pe2_before_overlap");
+
         FinalizePaths(last_paths, clone_map, min_edge_len, max_is_right_quantile);
         DebugOutputPaths(gp, output_dir, last_paths, "pe2_before_traverse");
     }
-
-    //old parameters compatibility
-    size_t traversed = TraverseLoops(last_paths, cover_map, mainPE, 1000, 10, 1000);
-    INFO("final polishing stage, traversed " <<  traversed << " loops");
-    FinalizePaths(last_paths, clone_map, min_edge_len, max_is_right_quantile);
-
-//result
-    if (broken_contigs.is_initialized()) {
-        OutputBrokenScaffolds(last_paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
+    else {
+        INFO("Second PE extender does not run in 2015");
+        ClonePathContainer(mp_paths, last_paths, clone_map);
     }
 
-    DebugOutputPaths(gp, output_dir, last_paths, "pe2_final_paths");
-    writer.OutputPaths(last_paths, output_dir + contigs_name);
+    exspander_stage = PathExtendStage::FinalPolishing;
+    all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, main_unique_storage);
+    shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
+                                                   max_is_right_quantile, main_unique_storage,
+                                                   cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+    //old parameters compatibility
+    size_t traversed = TraverseLoops(last_paths, clone_map, last_extender, 1000, 10, 1000);
+    INFO("final polishing stage, traversed " <<  traversed << " loops");
+    DebugOutputPaths(gp, output_dir, last_paths, "pe2_traveresed");
+
+
+    DebugOutputPaths(gp, output_dir, last_paths, "pe2_before_polishing");
+    INFO("Closing gaps in paths");
+    PathContainer polished_paths;
+    //Fixes distances for paths gaps and tries to fill them in based on graph topology
+    CommonPrefixDijkstraGapCloser polisher(gp.g, max_resolvable_len);
+    polisher.PolishPaths(last_paths, polished_paths);
+    polished_paths.SortByLength();
+    GraphCoverageMap polished_map(gp.g, polished_paths, true);
+    DebugOutputPaths(gp, output_dir, polished_paths, "pe2_polished");
+
+    FinalizePaths(polished_paths, polished_map, min_edge_len, max_is_right_quantile);
+//result
+    if (broken_contigs.is_initialized()) {
+        OutputBrokenScaffolds(polished_paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
+    }
+
+    DebugOutputPaths(gp, output_dir, polished_paths, "pe2_final_paths");
+    writer.OutputPaths(polished_paths, output_dir + contigs_name);
     if (gp.genome.size() > 0)
-        CountMisassembliesWithReference(genome_checker, last_paths);
+        CountMisassembliesWithReference(genome_checker, polished_paths);
     //FinalizeUniquenessPaths();
 
 //TODO:: destructor?
     last_paths.DeleteAllPaths();
     seeds.DeleteAllPaths();
     mp_paths.DeleteAllPaths();
+    polished_paths.DeleteAllPaths();
+
 
     INFO("ExSPAnder repeat resolving tool finished");
 }

@@ -208,7 +208,7 @@ public:
                 continue;
             }
             if (TraverseLoop(start, finish, component_set))
-                traversed++;
+                ++traversed;
         }
         return traversed;
     }
