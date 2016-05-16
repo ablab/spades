@@ -46,7 +46,7 @@ SPAdes version 3.7.0 was released under GPLv2 on February 24, 2016 and can be do
 <p>
     SPAdes 3.7.0 includes metaSPAdes &ndash; a pipeline designed specially for metagenomic data sets. To learn more see <a href="#meta">options</a>.
 <p>
-    Also, SPAdes 3.7.0 includes plasmidSPAdes &ndash; a pipeline designed specially for extracting and assembling plasmids from WGS data sets. To learn more see <a href="#plasmid">options</a>.
+    Also, SPAdes 3.7.0 includes plasmidSPAdes &ndash; a pipeline designed for extracting and assembling plasmids from WGS data sets. To learn more see <a href="#plasmid">options</a>.
 <p>
     Additionally, SPAdes has a separate modules for assembling highly polymorphic diploid genomes and for TruSeq barcode assembly. For more information see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a> and <a href="truspades_manual.html" target="_blank">truSPAdes manual</a> .
 
@@ -464,7 +464,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 <a name="plasmid"></a>
 <p>
     <code>--plasmid </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see <a href="http://biorxiv.org/content/early/2016/04/20/048942">paper</a> for algorithm details). Note, that plasmidSPAdes is not compatible with <a href="#meta">metaSPAdes</a>  and <a href="#sc"> single-cell mode</a>. Also we do not recommend to use more than one library for plasmidSPAdes.
+    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see <a href="http://biorxiv.org/content/early/2016/04/20/048942">paper</a> for the algorithm details). Note, that plasmidSPAdes is not compatible with <a href="#meta">metaSPAdes</a>  and <a href="#sc"> single-cell mode</a>. Additionally, we do not recommend to run plasmidSPAdes on more than one library.
     See <a href="#sec3.6">section 3.6</a> for plasmidSPAdes output details.
 </p>
 
@@ -1152,11 +1152,8 @@ The full list of <code>&lt;output_dir></code> content is presented below:
 <a name="sec3.6">
 <h3>3.6 plasmidSPAdes output</h3>
 <p>
-plasmidSPAdes outputs only DNA from putative plasmids. Files and formats are same to SPAdes (see <a href="#sec3.5">previous</a> section), with the following difference: for all contig names in 
-    <code>contigs.fasta</code> , 
-    <code>scaffolds.fasta</code>  and 
-    <code>assembly_graph.fastg</code> 
-we append suffix <code>_component_X</code> where <code>X</code> is the id of the putative plasmid corresponding contig belongs to. Note that plasmidSPAdes does not guarantee to separate similar plasmids &ndash; they may share same id.
+plasmidSPAdes outputs only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see <a href="#sec3.5">previous</a> section), with the following difference. For all contig names in <code>contigs.fasta</code>, <code>scaffolds.fasta</code>  and  <code>assembly_graph.fastg</code> 
+we append suffix <code>_component_X</code>, where <code>X</code> is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id.
 
 <a name="sec3.7">
 <h3>3.7 Assembly evaluation</h3>
