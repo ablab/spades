@@ -207,7 +207,7 @@ void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids, co
         EdgeId e = *it;
         if (ids.count(e) == 0) {
             string id;
-            if (cfg::get().pd.is_initialized()) {
+            if (cfg::get().pd) {
                 size_t c_id = cc_counter_.GetComponent(e);
                 id = io::MakeContigComponentId(++counter, graph.length(e) + graph.k(), graph.coverage(e), c_id, prefix);
             }

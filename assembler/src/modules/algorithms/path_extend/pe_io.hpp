@@ -201,7 +201,7 @@ public:
             path->Print();
             string contig_id;
             string path_string = ToString(*path);
-            if (cfg::get().pd.is_initialized()) {
+            if (cfg::get().pd) {
                 EdgeId e = path->At(0);
                 size_t component = c_counter_.GetComponent(e);
                 contig_id = io::MakeContigComponentId(i, path_string.length(), path->Coverage(), component);

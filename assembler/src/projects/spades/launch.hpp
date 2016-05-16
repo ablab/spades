@@ -97,7 +97,7 @@ void assemble_genome() {
             SPAdes.add(new debruijn_graph::PacBioAligning());
         }
         //end pacbio
-        if (cfg::get().pd.is_initialized()) {
+        if (cfg::get().pd) {
             SPAdes.add(new debruijn_graph::ChromosomeRemoval());
         }
         SPAdes.add(new debruijn_graph::PairInfoCount())
