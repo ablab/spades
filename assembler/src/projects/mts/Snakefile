@@ -7,7 +7,7 @@ SCRIPTS = config["SCRIPTS"]
 SOFT = config["SOFT"]
 QUAST = config["QUAST"]
 REF = config["REF"]
-K = int(config["K"])
+K = int(config.get("K", 55))
 Kp = K + 1
 CONFIG = "K{0}/configs/config.info".format(K)
 #expand("K{k}/configs/config.info", k=K)
@@ -15,6 +15,7 @@ SAVES = "K{0}/saves/07_before_repeat_resolution/graph_pack".format(K)
 #expand("K{k}/saves/07_before_repeat_resolution/graph_pack", k=K)
 MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
 CAG = config.get("CAG")
+THREADS = config.get("THREADS", 24)
 
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
@@ -26,11 +27,12 @@ rule all:
 rule assemble:
     input:   left = IN + "/{sample}/left.fastq", right = IN + "/{sample}/right.fastq"
     output:  "{sample}.fasta"
-    params:  "{sample}_assembly"
+    log:  "{sample}_assembly"
+    threads: THREADS
     message: "Assembling {wildcards.sample} with SPAdes"
     shell:
-        "{SPADES}/spades.py -k {K} --only-assembler --meta -t {threads} -1 {input.left} -2 {input.right} -o {params} && "
-        "cp {params}/scaffolds.fasta {output}"
+        "{SPADES}/spades.py --meta -t {threads} -1 {input.left} -2 {input.right} -o {log} && "
+        "cp {log}/scaffolds.fasta {output}"
 
 rule descriptions:
     output:  expand("{sample}.desc", sample=SAMPLES)
@@ -42,6 +44,7 @@ rule multiplicities:
     output:  "kmers.mpl"
     message: "Gathering {Kp}-mer multiplicities from {input}"
     shell:
+        "mkdir {workdir}/tmp && "
         "export PATH={SOFT}:$PATH && "
         "{BIN}/kmer_multiplicity_counter -k {Kp} -o kmers --mult 2 --sample 3 {input}"
 
@@ -91,11 +94,12 @@ rule binning:
 rule reassemble:
     input:   "binning/{sample}.bin"
     output:  "{sample}_{cag}.fasta"
+    params:  "-1 binning/{cag}/{sample}_1.fastq", "-2 binning/{cag}/{sample}_2.fastq"
     log:     "{sample}_reassembly"
-    params:  left="binning/{cag}/{sample}_1.fastq", right="binning/{cag}/{sample}_2.fastq"
     message: "Reassembling reads for {wildcards.cag} from {wildcards.sample}"
+    threads: THREADS
     shell:
-        "{SPADES}/spades.py -k {K} --only-assembler --meta -t {threads} -1 {params.left} -2 {params.right} -o {log} && "
+        "{SPADES}/spades.py -k {K} --only-assembler --meta -t {threads} {params} -o {log} && "
         "cp {log}/scaffolds.fasta {output}"
 
 #Todo: report error when CAG is unset
@@ -107,9 +111,10 @@ rule quast:
     input:   "{sample}.fasta"
     output:  "{sample}.cont"
     params:  "{sample}_q/contigs_reports/nucmer_output/{sample}.coords.filtered", "{sample}", 70
+    log:     "{sample}_q"
     message: "Aligning reference for {wildcards.sample} & looking for interesting contigs"
     shell:
-        "{QUAST} -R {REF} {input} -o {wildcards.sample}_q &&"
+        "{QUAST} -R {REF} {input} -o {log} &&"
         "{SCRIPTS}/filter_nucmer.py {params} > {output}"
 
 rule pca:
