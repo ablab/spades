@@ -244,12 +244,6 @@ void load(debruijn_config::simplification::complex_tip_clipper &ctc,
     load(ctc.max_path_len, pt, "max_path_len");
 }
 
-void load(debruijn_config::simplification::complex_tip_clipper& ctc,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
-  using config_common::load;
-  load(ctc.enabled, pt, "enabled");
-}
-
 void load(debruijn_config::simplification::relative_coverage_edge_disconnector& relative_ed,
         boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;

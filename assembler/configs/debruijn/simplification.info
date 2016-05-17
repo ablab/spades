@@ -150,8 +150,11 @@ simp
     ; complex tip clipper
     complex_tc
     {
-    enabled 0
-    }       
+        enabled               true
+        max_relative_coverage 0.5
+        max_edge_len          100
+        max_path_len          200
+    }  
 
     ; complex bulge remover
     cbr
