@@ -46,9 +46,9 @@ private:
             it->fill(INVALID_MPL);
         }
         std::ifstream kmers_in(kmers_mpl_file + ".kmer", std::ios::binary);
-        std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl", std::ios::binary);
+        //std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl", std::ios::binary);
         //std::ifstream kmers_in(kmers_mpl_file + ".kmer");
-        //std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl");
+        std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl");
         while (true) {
 //            std::string kmer_str;
 //            kmers_in >> kmer_str;
