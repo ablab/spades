@@ -9,10 +9,7 @@ QUAST = config["QUAST"]
 REF = config["REF"]
 K = int(config.get("K", 55))
 Kp = K + 1
-CONFIG = "K{0}/configs/config.info".format(K)
-#expand("K{k}/configs/config.info", k=K)
 SAVES = "K{0}/saves/07_before_repeat_resolution/graph_pack".format(K)
-#expand("K{k}/saves/07_before_repeat_resolution/graph_pack", k=K)
 MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
 CAG = config.get("CAG")
 THREADS = config.get("THREADS", 24)
@@ -89,7 +86,7 @@ rule binning:
     message: "Propagating annotation & binning reads for {wildcards.sample}"
     #TODO: non-file output?
     shell:
-        "{BIN}/prop_binning {K} {wildcards.sample}/assembly/{CONFIG} {wildcards.sample}/assembly/{SAVES} {input} {params} &&"
+        "{BIN}/prop_binning {K} {wildcards.sample}/assembly/{SAVES} {input} {params} &&"
         "touch {output}"
 
 rule reassemble:
@@ -100,7 +97,7 @@ rule reassemble:
     message: "Reassembling reads for {wildcards.cag} from {wildcards.sample}"
     threads: THREADS
     shell:
-        "{SPADES}/spades.py -k {K} --only-assembler --meta -t {threads} {params} -o {log} && "
+        "{SPADES}/spades.py --meta -t {threads} {params} -o {log} && "
         "cp {log}/scaffolds.fasta {output}"
 
 #Todo: report error when CAG is unset

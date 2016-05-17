@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     using namespace debruijn_graph;
 
     if (argc < 9) {
-        cout << "Usage: prop_binning <K> <config path> <saves path> <contigs path> <binning info> "
+        cout << "Usage: prop_binning <K> <saves path> <contigs path> <binning info> "
                 "<left reads> <right reads> <output root> <sample name> (<bins of interest>)*"  << endl;
         exit(1);
     }
@@ -28,24 +28,23 @@ int main(int argc, char** argv) {
     //TmpFolderFixture fixture("tmp");
     create_console_logger();
     size_t k = lexical_cast<size_t>(argv[1]);
-    string config_path = argv[2];
-    string saves_path = argv[3];
-    string contigs_path = argv[4];
-    string annotation_path = argv[5];
+    string saves_path = argv[2];
+    string contigs_path = argv[3];
+    string annotation_path = argv[4];
     //TODO: don't save the propagated info
     string contigs_binning_path = annotation_path + ".prop";
-    string left_reads = argv[6];
-    string right_reads = argv[7];
-    string out_root = argv[8];
-    string sample_name = argv[9];
+    string left_reads = argv[5];
+    string right_reads = argv[6];
+    string out_root = argv[7];
+    string sample_name = argv[8];
 
     std::vector<bin_id> bins_of_interest;
-    for (int i = 10; i < argc; ++i) {
+    for (int i = 9; i < argc; ++i) {
         bins_of_interest.push_back(argv[i]);
     }
 
     cfg::create_instance(config_path);
-    conj_graph_pack gp(k, "tmp", cfg::get().ds.reads.lib_count());
+    conj_graph_pack gp(k, "tmp", 1);
     gp.kmer_mapper.Attach();
 
     INFO("Load graph from " << saves_path);
