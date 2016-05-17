@@ -21,6 +21,8 @@ else
 
     'ddt' ) ./build/debug/bin/debruijn_test --log_level=test_suite ;;
     'rdt' ) ./build/release/bin/debruijn_test --log_level=test_suite ;;
+    'rit' ) ./build/release/bin/include_test ;;
+    'dt' ) ./build/debug/bin/debruijn_test && ./build/debug/bin/include_test ;;
     'rv' ) exec build/release/bin/online_vis configs/debruijn/config.info ;;
     'rct' ) ./build/release/bin/cap_test --log_level=test_suite ;;
     'dct' ) ./build/debug/bin/cap_test --log_level=test_suite ;;
