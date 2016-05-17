@@ -29,14 +29,12 @@ private:
     typedef typename std::array<double, MAX_SAMPLE_CNT> AbundanceVector;
     typedef typename InvertableStoring::immutant_inverter<MplVector> InverterT;
 
-    const conj_graph_pack& gp_;
-    size_t k_;
+    unsigned k_;
     size_t sample_cnt_;
     size_t min_length_bound_;
-    std::shared_ptr<SequenceMapper<Graph>> mapper_;
     InverterT inverter_;
 
-    PerfectHashMap<conj_graph_pack::seq_t,
+    KeyStoringMap<conj_graph_pack::seq_t,
         MplVector,
         kmer_index_traits<conj_graph_pack::seq_t>,
         InvertableStoring> kmer_mpl_;
@@ -47,34 +45,34 @@ private:
         for (auto it = kmer_mpl_.value_begin(); it != kmer_mpl_.value_end(); ++it) {
             it->fill(INVALID_MPL);
         }
-//        std::ifstream kmers_in(kmers_mpl_file + ".kmer", std::ios::binary);
-//        std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl", std::ios::binary);
-        std::ifstream kmers_in(kmers_mpl_file + ".kmer");
-        std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl");
+        std::ifstream kmers_in(kmers_mpl_file + ".kmer", std::ios::binary);
+        std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl", std::ios::binary);
+        //std::ifstream kmers_in(kmers_mpl_file + ".kmer");
+        //std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl");
         while (true) {
-            std::string kmer_str;
-            kmers_in >> kmer_str;
+//            std::string kmer_str;
+//            kmers_in >> kmer_str;
+            runtime_k::RtSeq kmer(k_);
+            kmer.BinRead(kmers_in);
             if (kmers_in.fail()) {
                 break;
             }
 
-            VERIFY(kmer_str.length() == k_+1);
-            conj_graph_pack::seq_t kp1mer(k_+1, kmer_str.c_str());
-            kp1mer = gp_.kmer_mapper.Substitute(kp1mer);
+//            VERIFY(kmer_str.length() == k_);
+//            conj_graph_pack::seq_t kmer(k_, kmer_str.c_str());
+//            kmer = gp_.kmer_mapper.Substitute(kmer);
 
             MplVector mpls;
             mpls.fill(INVALID_MPL);
-//            kp1mer.BinRead(kmers_in);
             for (size_t i = 0; i < sample_cnt_; ++i) {
 //                kmers_mpl_in.read((char*) &kmer_mpl[i], sizeof(uint));
                 kmers_mpl_in >> mpls[i];
                 VERIFY(!kmers_mpl_in.fail());
             }
 
-            auto kwh = kmer_mpl_.ConstructKWH(kp1mer);
-            if (gp_.index.inner_index().contains(kwh)) {
-                kmer_mpl_.put_value(kwh, mpls, inverter_);
-            }
+            auto kwh = kmer_mpl_.ConstructKWH(kmer);
+            VERIFY(kmer_mpl_.valid(kwh));
+            kmer_mpl_.put_value(kwh, mpls, inverter_);
         }
     }
 
@@ -91,20 +89,18 @@ private:
         return !invalid;
     };
 
-    boost::optional<AbundanceVector> PathAbundance(const std::vector<EdgeId>& path) const {
+    boost::optional<AbundanceVector> EstimateAbundance(const Sequence& seq) const {
         std::vector<std::vector<uint>> abundance_storage(sample_cnt_);
 
         size_t contributing_kmer_cnt = 0;
-        for (EdgeId e : path) {
-            Sequence seq = gp_.g.EdgeNucls(e);
-            VERIFY(seq.size() > k_);
-            auto kwh = kmer_mpl_.ConstructKWH(conj_graph_pack::seq_t(k_+1, seq));
-            kwh >>= 'A';
 
-            for (size_t j = k_; j < seq.size(); ++j) {
-                kwh <<= seq[j];
-                VERIFY(gp_.index.inner_index().contains(kwh));
-                //kmer_mpl_ contains values for all k+1-mers in the graph (potentially INVALID)
+        VERIFY(seq.size() >= k_);
+        auto kwh = kmer_mpl_.ConstructKWH(runtime_k::RtSeq(k_, seq));
+        kwh >>= 'A';
+
+        for (size_t j = k_ - 1; j < seq.size(); ++j) {
+            kwh <<= seq[j];
+            if (kmer_mpl_.valid(kwh)) {
                 if (AddToAbundances(abundance_storage, kmer_mpl_.get_value(kwh, inverter_))) {
                     contributing_kmer_cnt++;
                 }
@@ -112,7 +108,7 @@ private:
         }
 
         //FIXME magic constant
-        if (contributing_kmer_cnt * 5 < CumulativeLength(gp_.g, path)) {
+        if (contributing_kmer_cnt * 5 < seq.size() - k_ + 1) {
             return boost::none;
         }
 
@@ -122,7 +118,7 @@ private:
         for (size_t i = 0; i < sample_cnt_; ++i) {
             VERIFY(abundance_storage[i].size() == contributing_kmer_cnt);
             //set contig abundance as mean across kmer multiplicities
-            contig_abundance[i] = std::accumulate(abundance_storage[i].begin(), abundance_storage[i].end(), 0, std::plus<Mpl>());
+            contig_abundance[i] = std::accumulate(abundance_storage[i].begin(), abundance_storage[i].end(), 0, std::plus<double>());
             contig_abundance[i] /= abundance_storage[i].size();
         }
 
@@ -130,19 +126,29 @@ private:
     }
 
 public:
-    ContigAbundanceCounter(const conj_graph_pack& gp,
+    ContigAbundanceCounter(unsigned k,
                            size_t sample_cnt,
-                           const std::string& kmers_mpl_file,
-                           size_t min_length_bound) :
-                               gp_(gp), k_(gp_.k_value),
+                           size_t min_length_bound,
+                           const std::string& work_dir) :
+                               k_(k),
                                sample_cnt_(sample_cnt),
                                min_length_bound_(min_length_bound),
-                               mapper_(MapperInstance(gp)),
-                               kmer_mpl_(gp_.index.k(),
-                               gp_.index.inner_index().workdir(),
-                               gp_.index.inner_index().index_ptr()) {
-        INFO("Filling kmer multiplicities. Sample cnt " << sample_cnt);
-        FillMplMap(kmers_mpl_file);
+                               kmer_mpl_(k_, work_dir) {
+
+    }
+
+    void Init(const std::string& kmer_mpl_file, size_t read_buffer_size) {
+        INFO("Filling kmer multiplicities. Sample cnt " << sample_cnt_);
+        DeBruijnKMerKMerSplitter<StoringTypeFilter<InvertableStoring>>
+                splitter(kmer_mpl_.workdir(), k_, k_, true, read_buffer_size);
+
+        splitter.AddKMers(kmer_mpl_file + ".kmer");
+
+        KMerDiskCounter<runtime_k::RtSeq> counter(kmer_mpl_.workdir(), splitter);
+
+        kmer_mpl_.BuildIndex(counter, 16, /*nthreads*/ 1);
+
+        FillMplMap(kmer_mpl_file);
     }
 
     void operator()(io::SingleStream& contigs,
@@ -163,7 +169,7 @@ public:
                 contig_id id = GetId(contig);
                 DEBUG("Processing contig " << id);
 
-                auto abundance_vec = PathAbundance(mapper_->MapRead(contig).simple_path());
+                auto abundance_vec = EstimateAbundance(contig.sequence());
 
                 if (abundance_vec) {
                     id_out << id << std::endl;
@@ -194,14 +200,14 @@ int main(int argc, char** argv) {
     using namespace GetOpt;
 
     size_t k, sample_cnt, min_length_bound;
-    std::string saves_path, contigs_path;
+    std::string work_dir, contigs_path;
     std::string kmer_mult_fn, contigs_abundance_fn;
 
     try {
         GetOpt_pp ops(argc, argv);
         ops.exceptions_all();
         ops >> Option('k', k)
-            >> Option('s', saves_path)
+            >> Option('w', work_dir)
             >> Option('c', contigs_path)
             >> Option('n', sample_cnt)
             >> Option('m', kmer_mult_fn)
@@ -209,7 +215,7 @@ int main(int argc, char** argv) {
             >> Option('l', min_length_bound, size_t(0))
         ;
     } catch(GetOptEx &ex) {
-        std::cout << "Usage: contig_abundance_counter -k <K> -s <saves path> -c <contigs path> "
+        std::cout << "Usage: contig_abundance_counter -k <K> -w <work_dir> -c <contigs path> "
                 "-n <sample cnt> -m <kmer multiplicities path> "
                 "-o <contigs abundance path> [-l <contig length bound> (default: 0)]"  << std::endl;
         exit(1);
@@ -218,13 +224,10 @@ int main(int argc, char** argv) {
     //TmpFolderFixture fixture("tmp");
     create_console_logger();
 
-    conj_graph_pack gp(k, "tmp", 0);
-    gp.kmer_mapper.Attach();
-    INFO("Load graph from " << saves_path);
-    graphio::ScanGraphPack(saves_path, gp);
     auto contigs_stream_ptr = make_shared<io::FileReadStream>(contigs_path);
 
-    ContigAbundanceCounter abundance_counter(gp, sample_cnt, kmer_mult_fn, min_length_bound);
+    ContigAbundanceCounter abundance_counter(k, sample_cnt, min_length_bound, work_dir);
+    abundance_counter.Init(kmer_mult_fn, /*fixme some buffer size*/0);
     abundance_counter(*contigs_stream_ptr, contigs_abundance_fn);
 
     return 0;

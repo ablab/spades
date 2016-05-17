@@ -6,4 +6,5 @@ SCRIPTS: "~/Projects/mts/assembler/src/projects/mts/scripts"
 SOFT: "/home/snurk/soft/"
 REF: "/Sid/snurk/mts/nielsen/ref.fasta"
 K: 55
+small_k: 21
 MIN_CONTIG_LENGTH: 2000

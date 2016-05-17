@@ -22,7 +22,8 @@ SCRIPTS = config["SCRIPTS"]
 SOFT = config["SOFT"]
 QUAST = config["QUAST"]
 K = int(config.get("K", 55))
-Kp = K + 1
+small_k = int(config.get("K", 21))
+CONFIG = "K{0}/configs/config.info".format(K)
 SAVES = "K{0}/saves/07_before_repeat_resolution/graph_pack".format(K)
 MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
 CAG = config.get("CAG")
@@ -60,11 +61,11 @@ rule multiplicities:
     input:   expand("{sample}.desc", sample=SAMPLES)
     output:  "kmers.mpl"
     log:     "multiplicities.log"
-    message: "Gathering {Kp}-mer multiplicities from {input}"
+    message: "Gathering {small_k}-mer multiplicities from {input}"
     shell:
         "mkdir -p tmp && "
         "export PATH={SOFT}:$PATH && "
-        "{BIN}/kmer_multiplicity_counter -k {Kp} -o kmers --mult 2 --sample 3 -d {input} >{log} 2>&1"
+        "{BIN}/kmer_multiplicity_counter -k {small_k} -o kmers --mult 2 --sample 3 -d {input} >{log} 2>&1"
 
 rule profile:
     input:   contigs="{sample}/{sample}.fasta", mpl="kmers.mpl"
@@ -72,7 +73,7 @@ rule profile:
     log:     "{sample}/profile.log"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:
-        "{BIN}/contig_abundance_counter -k {K} -s {wildcards.sample}/assembly/{SAVES} -c {input.contigs} -n {SAMPLE_COUNT} -m kmers -o {wildcards.sample}/{wildcards.sample} -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
+        "{BIN}/contig_abundance_counter -k {small_k} -w tmp -c {input.contigs} -n {SAMPLE_COUNT} -m kmers -o {wildcards.sample}/{wildcards.sample} -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
 rule canopy_pre:
     input:   expand("{sample}/{sample}.id", sample=SAMPLES)
