@@ -21,16 +21,17 @@ SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
 
 rule all:
-    input:   expand("binning/{sample}.bin", sample=SAMPLES)
+    input:   expand("{sample}/binning.log", sample=SAMPLES)
     message: "Running MTS"
 
 rule assemble:
     input:   left = IN + "/{sample}/left.fastq", right = IN + "/{sample}/right.fastq"
-    output:  "{sample}.fasta"
-    log:  "{sample}_assembly"
+    output:  "{sample}/scaffolds.fasta"
+    log:  "{sample}/assembly"
     threads: THREADS
     message: "Assembling {wildcards.sample} with SPAdes"
     shell:
+        "mkdir -p {wildcards.sample} && "
         "{SPADES}/spades.py --meta -t {threads} -1 {input.left} -2 {input.right} -o {log} && "
         "cp {log}/scaffolds.fasta {output}"
 
@@ -44,19 +45,19 @@ rule multiplicities:
     output:  "kmers.mpl"
     message: "Gathering {Kp}-mer multiplicities from {input}"
     shell:
-        "mkdir {workdir}/tmp && "
+        "mkdir -p tmp && "
         "export PATH={SOFT}:$PATH && "
         "{BIN}/kmer_multiplicity_counter -k {Kp} -o kmers --mult 2 --sample 3 {input}"
 
-rule coverage:
-    input:   contigs="{sample}.fasta", mpl="kmers.mpl"
-    output:  "{sample}.id"
+rule profile:
+    input:   contigs="{sample}/scaffolds.fasta", mpl="kmers.mpl"
+    output:  "{sample}/{sample}.id"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:
-        "{BIN}/contig_abundance_counter {K} {wildcards.sample}_assembly/{SAVES} {input.contigs} {SAMPLE_COUNT} kmers {wildcards.sample} {MIN_CONTIG_LENGTH}"
+        "{BIN}/contig_abundance_counter {K} {wildcards.sample}/assembly/{SAVES} {input.contigs} {SAMPLE_COUNT} kmers {wildcards.sample}/{wildcards.sample} {MIN_CONTIG_LENGTH}"
 
 rule canopy_pre:
-    input:   expand("{sample}.id", sample=SAMPLES)
+    input:   expand("{sample}/{sample}.id", sample=SAMPLES)
     output:  "canopy.in"
     message: "Preparing canopy input"
     shell:   "{SCRIPTS}/make_canopy_input.py {output} {input}"
@@ -71,31 +72,31 @@ rule canopy_post:
     input:   rules.canopy.output.out
     output:  expand("{sample}.ann", sample=SAMPLES)
     message: "Preparing raw annotations"
-    shell:   "python2 {SCRIPTS}/parse_canopy_out.py {input} ./"
+    shell:   "{SCRIPTS}/parse_canopy_out.py {input} ./"
 
 rule propagate:
-    input:   "{sample}.fasta", "{sample}.ann"
+    input:   "{sample}/scaffolds.fasta", "{sample}.ann"
     output:  "{sample}.ann.prop"
     message: "Propagating annotations for {wildcards.sample}"
     shell:   "{BIN}/annotation_propagator {K} {wildcards.sample}_assembly/{CONFIG} {wildcards.sample}_assembly/{SAVES} {input} {output}"
 
 rule binning:
     input:
-        "{sample}.fasta", "{sample}.ann",
+        "{sample}/scaffolds.fasta", "{sample}.ann",
         IN + "/{sample}/left.fastq", IN + "/{sample}/right.fastq"
-    output:  "binning/{sample}.bin"
+    output:  "{sample}/binning.log"
     params:  "binning", "{sample}"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
     #TODO: non-file output?
     shell:
-        "{BIN}/prop_binning {K} {wildcards.sample}_assembly/{CONFIG} {wildcards.sample}_assembly/{SAVES} {input} {params} &&"
+        "{BIN}/prop_binning {K} {wildcards.sample}/assembly/{CONFIG} {wildcards.sample}/assembly/{SAVES} {input} {params} &&"
         "touch {output}"
 
 rule reassemble:
-    input:   "binning/{sample}.bin"
-    output:  "{sample}_{cag}.fasta"
+    input:   "{sample}/binning.log"
+    output:  "{sample}/reassembly_{cag}.fasta"
     params:  "-1 binning/{cag}/{sample}_1.fastq", "-2 binning/{cag}/{sample}_2.fastq"
-    log:     "{sample}_reassembly"
+    log:     "{sample}/reassembly_{cag}"
     message: "Reassembling reads for {wildcards.cag} from {wildcards.sample}"
     threads: THREADS
     shell:
@@ -104,7 +105,7 @@ rule reassemble:
 
 #Todo: report error when CAG is unset
 rule reassemble_all:
-    input:   expand("{sample}_{cag}.fasta", sample=SAMPLES, cag=CAG)
+    input:   expand("{sample}/{cag}.fasta", sample=SAMPLES, cag=CAG)
     message: "Reassembling reads for {CAG}"
 
 rule quast:
