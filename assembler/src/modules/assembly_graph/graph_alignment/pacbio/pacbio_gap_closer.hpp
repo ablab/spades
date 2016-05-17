@@ -141,7 +141,7 @@ public:
         int res;
         char ss[5000];
         map<int, EdgeId> tmp_map;
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             tmp_map[g_.int_id(*iter)] = *iter;
         }
         while (!feof(file)) {
