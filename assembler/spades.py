@@ -513,7 +513,7 @@ def get_options_from_params(params_filename, spades_py_name=None):
     spades_py_pos = cmd_line.find(spades_py_name)
     if spades_py_pos == -1:
         return None, None
-    return cmd_line, cmd_line[spades_py_pos + len(spades_py_name):].split()
+    return cmd_line, cmd_line[spades_py_pos + len(spades_py_name):].split('\t')
 
 
 def show_version():
@@ -582,10 +582,10 @@ def main(args):
                 if skip_next or v.startswith('--restart-from='):  # you can specify '--restart-from=k33' but not '-o=out_dir'
                     skip_next = False
                     continue
-                updated_params += " " + v
+                updated_params += "\t" + v
             updated_params = updated_params.strip()
             log.info("with updated parameters: " + updated_params)
-            cmd_line += " " + updated_params
+            cmd_line += "\t" + updated_params
         log.info("")
 
     params_filename = os.path.join(cfg["common"].output_dir, "params.txt")
@@ -603,7 +603,7 @@ def main(args):
                 v = options_storage.dict_of_rel2abs[v]
             if prefix:
                 command += prefix + ":"
-            command += v + " "
+            command += v + "\t"
         log.info(command)
 
     # special case
