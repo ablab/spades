@@ -8,11 +8,11 @@
 #include <memory>
 #include <io/kmers_io/mmapped_reader.hpp>
 #include <libcxx/sort.hpp>
+#include "getopt_pp/getopt_pp.h"
 #include "kmc_api/kmc_file.h"
 //#include "omp.h"
 #include <data_structures/sequence/runtime_k.hpp>
 #include <boost/optional/optional.hpp>
-#include <boost/lexical_cast.hpp>
 #include "dev_support/path_helper.hpp"
 
 using std::string;
@@ -20,14 +20,13 @@ using std::vector;
 using std::shared_ptr;
 using std::make_shared;
 using runtime_k::RtSeq;
-using boost::lexical_cast;
 
 const string KMER_PARSED_EXTENSION = ".bin";
 const string KMC_EXTENSION = ".kmc";
 const string KMER_SORTED_EXTENSION = ".sorted";
 
 void PrintUsageInfo() {
-    std::cout << "Usage: kmer_multiplicity_counter [options] <sample_desc_1> [<sample_desc_2> ...]" << std::endl;
+    std::cout << "Usage: kmer_multiplicity_counter [options] -d (<sample_desc_X>)+" << std::endl;
     std::cout << "Options:" << std::endl;
     std::cout << "-k - kmer length" << std::endl;
     std::cout << "-o - output file" << std::endl;
@@ -146,45 +145,26 @@ void FilterKmers(const std::vector<string>& files, size_t all_min, size_t k, con
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        PrintUsageInfo();
-        return 1;
-    }
+    using namespace GetOpt;
+
     size_t min_mult = -1ul;
     size_t min_sample_count = -1ul;
     size_t k = -1ul;
-    string output = "";
-    int i = 1;
-    while (i < argc && argv[i][0] == '-') {
-        VERIFY(i + 1 < argc);
-
-        string arg = argv[i];
-        if (arg == "--mult") {
-            min_mult = lexical_cast<size_t>(argv[i + 1]);
-        }
-        if (arg == "--sample") {
-            min_sample_count = lexical_cast<size_t>(argv[i + 1]);
-        }
-        if (arg == "-k") {
-            k = lexical_cast<size_t>(argv[i + 1]);
-        }
-        if (arg == "-o") {
-            output = argv[i + 1];
-        }
-        i += 2;
-    }
-    if (i > argc
-        || min_mult == -1ul
-        || min_sample_count == -1ul
-        || k == -1ul
-        || output == "") {
-        PrintUsageInfo();
-        return 0;
-    }
-
+    string output;
     std::vector<string> input_files;
-    for (; i < argc; ++i) {
-        input_files.push_back(argv[i]);
+
+    try {
+        GetOpt_pp ops(argc, argv);
+        ops.exceptions_all();
+        ops >> Option('k', k)
+            >> Option('m', "mult", min_mult)
+            >> Option('s', "sample", min_sample_count)
+            >> Option('o', output)
+            >> Option('d', input_files)
+        ;
+    } catch(GetOptEx &ex) {
+        PrintUsageInfo();
+        exit(1);
     }
 
     vector<string> kmer_cnt_files(input_files.size());

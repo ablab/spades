@@ -19,7 +19,7 @@ SAMPLE_COUNT = len(SAMPLES)
 
 rule all:
     input:   expand("{sample}/binning.log", sample=SAMPLES)
-    message: "Running MTS"
+    message: "Dataset has been binned."
 
 rule assemble:
     input:   left = IN + "/{sample}/left.fastq", right = IN + "/{sample}/right.fastq"
@@ -44,14 +44,14 @@ rule multiplicities:
     shell:
         "mkdir -p tmp && "
         "export PATH={SOFT}:$PATH && "
-        "{BIN}/kmer_multiplicity_counter -k {Kp} -o kmers --mult 2 --sample 3 {input}"
+        "{BIN}/kmer_multiplicity_counter -k {Kp} -o kmers --mult 2 --sample 3 -d {input}"
 
 rule profile:
     input:   contigs="{sample}/scaffolds.fasta", mpl="kmers.mpl"
     output:  "{sample}/{sample}.id"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:
-        "{BIN}/contig_abundance_counter {K} {wildcards.sample}/assembly/{SAVES} {input.contigs} {SAMPLE_COUNT} kmers {wildcards.sample}/{wildcards.sample} {MIN_CONTIG_LENGTH}"
+        "{BIN}/contig_abundance_counter -k {K} -s {wildcards.sample}/assembly/{SAVES} -c {input.contigs} -n {SAMPLE_COUNT} -m kmers -o {wildcards.sample}/{wildcards.sample} -l {MIN_CONTIG_LENGTH}"
 
 rule canopy_pre:
     input:   expand("{sample}/{sample}.id", sample=SAMPLES)
@@ -79,14 +79,14 @@ rule propagate:
 
 rule binning:
     input:
-        "{sample}/scaffolds.fasta", "{sample}.ann",
-        IN + "/{sample}/left.fastq", IN + "/{sample}/right.fastq"
+        contigs="{sample}/scaffolds.fasta", ann="{sample}.ann",
+        left=IN + "/{sample}/left.fastq", right=IN + "/{sample}/right.fastq"
     output:  "{sample}/binning.log"
-    params:  "binning", "{sample}"
+    params:  "{sample}"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
     #TODO: non-file output?
     shell:
-        "{BIN}/prop_binning {K} {wildcards.sample}/assembly/{SAVES} {input} {params} &&"
+        "{BIN}/prop_binning -k {K} -s {wildcards.sample}/assembly/{SAVES} -c {input.contigs} -a {input.ann} -l {input.left} -r {input.right} -o  binning -n {params} &&"
         "touch {output}"
 
 rule reassemble:

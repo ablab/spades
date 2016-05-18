@@ -20,7 +20,7 @@ add_executable(kmer_multiplicity_counter
         kmc_api/mmer.cpp
         kmer_multiplicity_counter.cpp)
 
-target_link_libraries(kmer_multiplicity_counter input dev_support ${COMMON_LIBRARIES})
+target_link_libraries(kmer_multiplicity_counter input dev_support getopt_pp ${COMMON_LIBRARIES})
 
 add_executable(annotation_propagator
                annotation_propagator.cpp
@@ -33,15 +33,15 @@ add_executable(prop_binning
                read_binning.cpp
                prop_binning.cpp)
 
-target_link_libraries(prop_binning spades_modules nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(prop_binning spades_modules nlopt BamTools ssw yaml-cpp getopt_pp ${COMMON_LIBRARIES})
 
 add_executable(stats
                stats.cpp
                ../../modules/data_structures/sequence/genome_storage.cpp)
 
-target_link_libraries(stats spades_modules nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(stats spades_modules nlopt BamTools ssw yaml-cpp getopt_pp ${COMMON_LIBRARIES})
 
 add_executable(contig_abundance_counter
                contig_abundance_counter.cpp)
 
-target_link_libraries(contig_abundance_counter spades_modules nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(contig_abundance_counter spades_modules nlopt BamTools ssw yaml-cpp getopt_pp ${COMMON_LIBRARIES})

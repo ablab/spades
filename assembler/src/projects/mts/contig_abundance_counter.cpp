@@ -1,6 +1,7 @@
 #include <array>
 #include <string>
 #include <iostream>
+#include "getopt_pp/getopt_pp.h"
 #include "dev_support/verify.hpp"
 #include "dev_support/logger/log_writers.hpp"
 #include "dev_support/logger/logger.hpp"
@@ -23,7 +24,7 @@ static const uint INVALID_MPL = uint(-1);
 
 class ContigAbundanceCounter {
 private:
-    typedef float Mpl;
+    typedef uint Mpl;
     typedef typename std::array<Mpl, MAX_SAMPLE_CNT> MplVector;
     typedef typename std::array<double, MAX_SAMPLE_CNT> AbundanceVector;
     typedef typename InvertableStoring::immutant_inverter<MplVector> InverterT;
@@ -190,28 +191,32 @@ private:
 
 int main(int argc, char** argv) {
     using namespace debruijn_graph;
+    using namespace GetOpt;
 
-    if (argc < 7) {
-        std::cout << "Usage: contig_abundance_counter <K> <saves path> <contigs path> "
-                "<sample cnt> <kmer multiplicities path> "
-                "<contigs abundance path> [contig length bound (default: 0)]"  << std::endl;
+    size_t k, sample_cnt, min_length_bound;
+    std::string saves_path, contigs_path;
+    std::string kmer_mult_fn, contigs_abundance_fn;
+
+    try {
+        GetOpt_pp ops(argc, argv);
+        ops.exceptions_all();
+        ops >> Option('k', k)
+            >> Option('s', saves_path)
+            >> Option('c', contigs_path)
+            >> Option('n', sample_cnt)
+            >> Option('m', kmer_mult_fn)
+            >> Option('o', contigs_abundance_fn)
+            >> Option('l', min_length_bound, size_t(0))
+        ;
+    } catch(GetOptEx &ex) {
+        std::cout << "Usage: contig_abundance_counter -k <K> -s <saves path> -c <contigs path> "
+                "-n <sample cnt> -m <kmer multiplicities path> "
+                "-o <contigs abundance path> [-l <contig length bound> (default: 0)]"  << std::endl;
         exit(1);
     }
 
     //TmpFolderFixture fixture("tmp");
     create_console_logger();
-    size_t k = boost::lexical_cast<size_t>(argv[1]);
-    std::string saves_path = argv[2];
-    std::string contigs_path = argv[3];
-    size_t sample_cnt = boost::lexical_cast<size_t>(argv[4]);
-    std::string kmer_mult_fn = argv[5];
-    std::string contigs_abundance_fn = argv[6];
-
-    size_t min_length_bound = 0;
-    if (argc > 7) {
-
-        min_length_bound = boost::lexical_cast<size_t>(argv[7]);
-    }
 
     conj_graph_pack gp(k, "tmp", 0);
     gp.kmer_mapper.Attach();

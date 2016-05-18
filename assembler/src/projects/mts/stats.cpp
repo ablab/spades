@@ -15,13 +15,14 @@
 #include "io/reads_io/splitting_wrapper.hpp"
 #include "io/reads_io/modifying_reader_wrapper.hpp"
 #include "io/reads_io/vector_reader.hpp"
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
+//#include <boost/property_tree/ptree.hpp>
+//#include <boost/property_tree/xml_parser.hpp>
 #include "io/reads_io/file_reader.hpp"
 #include "annotation.hpp"
 #include "visualization/graph_colorer.hpp"
 #include "visualization/position_filler.hpp"
 #include "algorithms/simplification/tip_clipper.hpp"
+#include "getopt_pp/getopt_pp.h"
 
 using namespace debruijn_graph;
 
@@ -40,13 +41,13 @@ io::SingleRead ReadGenome(const string& genome_path) {
 
 EdgeAnnotation LoadAnnotation(const conj_graph_pack& gp,
                               const vector<bin_id>& bins_of_interest,
-                              io::SingleStream* contigs_stream_ptr,
+                              io::SingleStream& contigs_stream,
                               const string& annotation_path) {
     EdgeAnnotation edge_annotation(gp, bins_of_interest);
     EdgeAnnotation prop_edge_annotation(gp, bins_of_interest);
 
     AnnotationStream annotation_stream(annotation_path);
-    edge_annotation.Fill(*contigs_stream_ptr, annotation_stream);
+    edge_annotation.Fill(contigs_stream, annotation_stream);
     return edge_annotation;
 }
 
@@ -102,30 +103,36 @@ void PrintColoredAnnotatedGraphAroundEdge(const conj_graph_pack& gp,
 }
 
 int main(int argc, char** argv) {
-    if (argc < 7) {
-        cout << "Usage: annotation_propagator <K> <saves path> <genome path> "
-                "<contigs_path>  <init binning info> <propagated binning info> "
-                "<graph directory> (<bins of interest>)*"
+    using namespace GetOpt;
+
+    size_t k;
+    string saves_path, genome_path, contigs_path;
+    string annotation_in_fn, prop_annotation_in_fn;
+    string graph_dir;
+    std::vector<bin_id> bins_of_interest;
+
+    try {
+        GetOpt_pp ops(argc, argv);
+        ops.exceptions_all();
+        ops >> Option('k', k)
+            >> Option('s', saves_path)
+            >> Option('r', genome_path)
+            >> Option('c', contigs_path)
+            >> Option('a', annotation_in_fn)
+            >> Option('p', prop_annotation_in_fn)
+            >> Option('o', graph_dir)
+            >> Option('b', bins_of_interest, {})
+        ;
+    } catch(GetOptEx &ex) {
+        cout << "Usage: stats -k <K> -s <saves path> -r <genome path> "
+                "-c <contigs_path> -a <init binning info> -p <propagated binning info> "
+                "-o <graph directory> [-b (<bins of interest>)+]"
              << endl;
         exit(1);
     }
     TmpFolderFixture fixture("tmp");
-    //    create_console_logger();
-    size_t k = lexical_cast<size_t>(argv[1]);
-    string saves_path = argv[2];
-    string genome_path = argv[3];
-    string contigs_path = argv[4];
-    string annotation_in_fn = argv[5];
-    string prop_annotation_in_fn = argv[6];
-    string graph_dir = argv[7];
 
-    std::vector<bin_id> bins_of_interest;
-    for (int i = 8; i < argc; ++i) {
-        bins_of_interest.push_back(argv[i]);
-    }
-
-    shared_ptr<io::SingleStream> contigs_stream_ptr =
-        make_shared<io::FileReadStream>(contigs_path);
+    io::FileReadStream contigs_stream(contigs_path);
 
     io::SingleRead genome = ReadGenome(genome_path);
 
@@ -139,10 +146,10 @@ int main(int argc, char** argv) {
     FillPos(gp, !gp.genome.GetSequence(), "ref1");
 
     EdgeAnnotation edge_annotation = LoadAnnotation(
-        gp, bins_of_interest, contigs_stream_ptr.get(), annotation_in_fn);
-    contigs_stream_ptr->reset();
+        gp, bins_of_interest, contigs_stream, annotation_in_fn);
+    contigs_stream.reset();
     EdgeAnnotation prop_edge_annotation = LoadAnnotation(
-        gp, bins_of_interest, contigs_stream_ptr.get(), prop_annotation_in_fn);
+        gp, bins_of_interest, contigs_stream, prop_annotation_in_fn);
 
     shared_ptr<SequenceMapper<Graph>> mapper(MapperInstance(gp));
 

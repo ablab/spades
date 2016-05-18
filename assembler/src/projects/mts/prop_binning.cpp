@@ -5,6 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "getopt_pp/getopt_pp.h"
 #include "dev_support/logger/log_writers.hpp"
 #include "pipeline/graphio.hpp"
 #include "read_binning.hpp"
@@ -18,32 +19,37 @@ void create_console_logger() {
 
 int main(int argc, char** argv) {
     using namespace debruijn_graph;
-
-    if (argc < 9) {
-        cout << "Usage: prop_binning <K> <saves path> <contigs path> <binning info> "
-                "<left reads> <right reads> <output root> <sample name> (<bins of interest>)*"  << endl;
-        exit(1);
-    }
+    using namespace GetOpt;
 
     //TmpFolderFixture fixture("tmp");
     create_console_logger();
-    size_t k = lexical_cast<size_t>(argv[1]);
-    string saves_path = argv[2];
-    string contigs_path = argv[3];
-    string annotation_path = argv[4];
+
+    size_t k;
+    string saves_path, contigs_path, annotation_path;
+    string left_reads, right_reads;
+    string out_root, sample_name;
+    std::vector<bin_id> bins_of_interest;
+    try {
+        GetOpt_pp ops(argc, argv);
+        ops.exceptions_all();
+        ops >> Option('k', k)
+            >> Option('s', saves_path)
+            >> Option('c', contigs_path)
+            >> Option('a', annotation_path)
+            >> Option('l', left_reads)
+            >> Option('r', right_reads)
+            >> Option('o', out_root)
+            >> Option('n', sample_name)
+            >> Option('b', bins_of_interest, {})
+        ;
+    } catch(GetOptEx &ex) {
+        cout << "Usage: prop_binning -k <K> -s <saves path> -c <contigs path> -a <binning annotation> "
+                "-l <left reads> -r <right reads> -o <output root> -n <sample name> [-b <bins of interest>*]"  << endl;
+        exit(1);
+    }
     //TODO: don't save the propagated info
     string contigs_binning_path = annotation_path + ".prop";
-    string left_reads = argv[5];
-    string right_reads = argv[6];
-    string out_root = argv[7];
-    string sample_name = argv[8];
 
-    std::vector<bin_id> bins_of_interest;
-    for (int i = 9; i < argc; ++i) {
-        bins_of_interest.push_back(argv[i]);
-    }
-
-    cfg::create_instance(config_path);
     conj_graph_pack gp(k, "tmp", 1);
     gp.kmer_mapper.Attach();
 
@@ -51,6 +57,7 @@ int main(int argc, char** argv) {
     graphio::ScanWithClusteredIndices(saves_path, gp, gp.clustered_indices);
 
     //Propagation stage
+    //TODO: make this optional
     io::FileReadStream contigs_stream(contigs_path);
     AnnotationPropagator propagator(gp);
     propagator.Run(contigs_stream, annotation_path, bins_of_interest, contigs_binning_path);
