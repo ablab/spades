@@ -270,7 +270,7 @@ class GraphSimplifier {
             enable_flag |= FinalRemoveErroneousEdges();
             cnt_callback_.Report();
 
-            enable_flag |=  ClipComplexTips(gp_.g, simplif_cfg_.complex_tc, removal_handler_);
+            enable_flag |=  ClipComplexTips(gp_.g, simplif_cfg_.complex_tc, info_container_, removal_handler_);
             cnt_callback_.Report();
 
             enable_flag |= RemoveComplexBulges(gp_.g, simplif_cfg_.cbr, iteration);

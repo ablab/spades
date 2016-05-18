@@ -89,7 +89,7 @@ class ComplexTipClipper {
 
 public:
     ComplexTipClipper(Graph& g, double relative_coverage, size_t max_edge_len, size_t max_path_len, const string& pics_folder = "", std::function<void(const set<EdgeId>&)> removal_handler = 0) :
-            g_(g), relative_coverage_treshold_(relative_coverage), edge_length_treshold_(max_edge_len) ,max_path_length_(max_path_len), pics_folder_(pics_folder), removal_handler_(removal_handler)
+            g_(g), relative_coverage_treshold_(math::ge(relative_coverage, 0.0) ? relative_coverage : std::numeric_limits<double>::max()), edge_length_treshold_(max_edge_len) ,max_path_length_(max_path_len), pics_folder_(pics_folder), removal_handler_(removal_handler)
     { }
 
     bool Run() {

@@ -151,9 +151,9 @@ simp
     complex_tc
     {
         enabled               true
-        max_relative_coverage 0.5
+        max_relative_coverage -1
         max_edge_len          100
-        max_path_len          200
+        max_path_len          "{ tc_lb 3.5}"
     }  
 
     ; complex bulge remover

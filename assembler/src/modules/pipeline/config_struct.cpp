@@ -241,7 +241,7 @@ void load(debruijn_config::simplification::complex_tip_clipper &ctc,
     load(ctc.enabled, pt, "enabled");
     load(ctc.max_relative_coverage, pt, "max_relative_coverage");
     load(ctc.max_edge_len, pt, "max_edge_len");
-    load(ctc.max_path_len, pt, "max_path_len");
+    load(ctc.condition, pt, "condition");
 }
 
 void load(debruijn_config::simplification::relative_coverage_edge_disconnector& relative_ed,

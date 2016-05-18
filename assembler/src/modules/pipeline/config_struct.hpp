@@ -195,7 +195,7 @@ struct debruijn_config {
             bool enabled;
             double max_relative_coverage;
             size_t max_edge_len;
-            size_t max_path_len;
+            std::string condition;
         };
 
         struct bulge_remover {

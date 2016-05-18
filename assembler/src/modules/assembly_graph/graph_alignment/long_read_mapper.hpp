@@ -101,13 +101,13 @@ private:
     }
 };
 
-class FirstPELongReadMapper : public AbstractLongReadMapper {
+class GappedLongReadMapper : public AbstractLongReadMapper {
 private:
     typedef MappingPathFixer<Graph> GraphMappingPathFixer;
     const GraphMappingPathFixer path_fixer_;
-
+    const double MIN_MAPPED_RATIO = 0.3;
 public:
-    FirstPELongReadMapper(conj_graph_pack& gp, PathStorage<conj_graph_pack::graph_t>& storage)
+    GappedLongReadMapper(conj_graph_pack& gp, PathStorage<conj_graph_pack::graph_t>& storage)
             : AbstractLongReadMapper(gp, storage), path_fixer_(gp.g) {
     }
 
@@ -141,7 +141,7 @@ private:
             size_t mapping_size = CountMappedEdgeSize(edge, mapping_path, mapping_index);
             size_t edge_len =  gp_.g.length(edge);
             //VERIFY(edge_len >= mapping_size);
-            if((double) mapping_size / (double) edge_len > 0.3) {
+            if((double) mapping_size / (double) edge_len > MIN_MAPPED_RATIO) {
                 new_corrected_path.push_back(edge);
             }
         }

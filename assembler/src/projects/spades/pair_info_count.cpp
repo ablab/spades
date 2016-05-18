@@ -58,7 +58,7 @@ void ProcessSingleReads(conj_graph_pack &gp, size_t ilib,
                         bool use_binary = true) {
     const SequencingLib &reads = cfg::get().ds.reads[ilib];
     SequenceMapperNotifier notifier(gp);
-    FirstPELongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
+    GappedLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
     SimpleLongReadMapper simple_read_mapper(gp, gp.single_long_reads[ilib]);
 
     if(reads.type() == io::LibraryType::PathExtendContigs) {

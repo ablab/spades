@@ -531,7 +531,7 @@ bool RemoveComplexBulges(
 //}
 
 template<class Graph>
-bool ClipComplexTips(Graph& g, config::debruijn_config::simplification::complex_tip_clipper ctc_conf, HandlerF<Graph> removal_handler = 0) {
+bool ClipComplexTips(Graph& g, config::debruijn_config::simplification::complex_tip_clipper ctc_conf, const SimplifInfoContainer& info, HandlerF<Graph> removal_handler = 0) {
     if(!ctc_conf.enabled) {
         INFO("Complex tip clipping disabled");
         return false;
@@ -544,7 +544,11 @@ bool ClipComplexTips(Graph& g, config::debruijn_config::simplification::complex_
     }
 
     INFO("Complex tip clipping");
-    ComplexTipClipper<Graph> tip_clipper(g, ctc_conf.max_relative_coverage, ctc_conf.max_edge_len, ctc_conf.max_path_len, "", set_removal_handler_f);
+
+    ConditionParser<Graph> parser(g, ctc_conf.condition, info);
+    parser();
+
+    ComplexTipClipper<Graph> tip_clipper(g, ctc_conf.max_relative_coverage, ctc_conf.max_edge_len, parser.max_length_bound(), "", set_removal_handler_f);
     tip_clipper.Run();
     return true;
 }

@@ -850,7 +850,7 @@ public:
                                        positions[i], false)) {
                     DEBUG("Checking unique path_back for " << (*it)->GetId());
 
-                    if (UniqueBackPath(**it, positions[i]) && (*it)->LengthAt(positions[i]) >= min_significant_overlap_) {
+                    if (UniqueBackPath(**it, positions[i])) {
                         DEBUG("Success");
 
                         EdgeId next = (*it)->At(positions[i] + 1);
@@ -899,7 +899,7 @@ private:
     bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const {
         int int_pos = (int) pos;
         while (int_pos >= 0) {
-            if (unique_edge_analyzer_.IsUnique(path.At(int_pos)) > 0)
+            if (unique_edge_analyzer_.IsUnique(path.At(int_pos)) > 0 && g_.length(path.At(int_pos)) >= min_significant_overlap_)
                 return true;
             int_pos--;
         }
