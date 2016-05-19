@@ -59,7 +59,7 @@ add_executable(bwa-spades
                malloc_wrap.c
                )
 
-target_link_libraries(bwa-spades ${COMMON_LIBRARIES} m)
+target_link_libraries(bwa-spades z m)
 if (HAVE_SHM_OPEN_IN_RT)
   target_link_libraries(bwa-spades rt)
 endif()
