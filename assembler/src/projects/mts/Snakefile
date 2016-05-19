@@ -1,21 +1,39 @@
 configfile: "config.yaml"
 
+import os
+import os.path
+
+def gather_refs(data):
+    if type(data) is list:
+        for path in data:
+            yield from gather_refs(path)
+    else:
+        if os.path.isdir(data):
+            for path in os.listdir(data):
+                if path.endswith(".fasta") or path.endswith(".fna"):
+                     yield os.path.join(data, path)
+        else:
+            yield data
+
 IN = config["IN"]
 SPADES = config["SPADES"]
 BIN = config["BIN"]
 SCRIPTS = config["SCRIPTS"]
 SOFT = config["SOFT"]
 QUAST = config["QUAST"]
-REF = config["REF"]
 K = int(config.get("K", 55))
 Kp = K + 1
 SAVES = "K{0}/saves/07_before_repeat_resolution/graph_pack".format(K)
 MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
 CAG = config.get("CAG")
 THREADS = config.get("THREADS", 24)
-
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
+REFS = {os.path.basename(fullpath): fullpath for fullpath in gather_refs(config.get("REFS", []))}
+def ref_path(wildcards):
+    return REFS[wildcards.ref]
+
+# ---- Targets section ---------------------------------------------------------
 
 rule all:
     input:   expand("{sample}/binning.log", sample=SAMPLES)
@@ -106,21 +124,38 @@ rule reassemble_all:
     message: "Reassembling reads for {CAG}"
 
 rule quast:
-    input:   "{sample}.fasta"
-    output:  "{sample}.cont"
-    log:     "{sample}_q"
-    message: "Aligning reference for {wildcards.sample} & looking for interesting contigs"
+    input:   ref=ref_path, contigs="{sample}/scaffolds.fasta"
+    output:  "{sample}/{ref}.cont"
+    log:     "{sample}/q_{ref}"
+    message: "Aligning reference for {wildcards.sample} on {wildcards.ref} & looking for interesting contigs"
     shell:
-        "{QUAST} -R {REF} {input} -o {log} &&"
-        "{SCRIPTS}/filter_nucmer.py {log} 70 > {output}"
+        "{QUAST} -R {input.ref} {input.contigs} -o {log} &&"
+        "{SCRIPTS}/filter_nucmer.py {log} {wildcards.sample} 70 > {output}"
+
+rule quast_all:
+    input:   expand("{sample}/{ref}.cont", sample=SAMPLES, ref=REFS.keys())
+    message: "Calculated QUAST metrics"
 
 rule pca:
-    input:   "canopy.in", "canopy.out", "{sample}.cont"
+    input:   rules.canopy_pre.output, rules.canopy.output.out, "{sample}.cont"
     output:  "{sample}.png"
     message: "Doing some visualization"
     shell:
         "Rscript {SCRIPTS}/pca.R {input} {output}"
 
+rule filter_bins:
+    input:   "{sample}/{ref}.cont"
+    output:  "{sample}/{ref}.bin"
+    message: "Filtering interesting bins for {wildcards.sample} aligned to {wildcards.ref}"
+    shell: "Rscript {SCRIPTS}/bins.R canopy.out {input} > {output}"
+
+rule prop_stats:
+    input:   prelim="{sample}.ann", prop="{sample}.ann.prop", bins="{sample}/{ref}.bin", contigs="{sample}/scaffolds.fasta", ref=ref_path
+    output:  "{sample}/{ref}.stats"
+    #params: REFS[ref]
+    message: "Calculating propagation statistics for {wildcards.sample} aligned to {wildcards.ref}"
+    shell:   "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref} -c {input.contigs} -a {input.prelim} -p {input.prop} -b `cat {input.bins}` >/dev/null 2>{output}"
+
 rule stats_all:
-    input:   expand("{sample}.png", sample=SAMPLES)
-    message: "Running stats"
+    input:   expand("{sample}/{ref}.stats", sample=SAMPLES, ref=REFS.keys())
+    message: "Calculated basic stats"

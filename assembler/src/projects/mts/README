@@ -9,8 +9,13 @@ With Miniconda installed, you can issue
 
 2. Running MTS
 Make a directory for output, place config.yaml there, and configure it. Then run
-> snakemake --directory <output directory>
+> snakemake --directory <output directory>  --cores XX
 
 3. Gathering stats
-To render some interesting info, you need to run the stats target manually:
+To render some interesting info, you need to specify some references in config:
+REFS: path
+or
+REFS: [path1, path2, ...]
+where path can be either a single reference or a folder with references.
+Then run the stats target manually:
 > snakemake --directory <output directory> stats_all

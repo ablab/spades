@@ -120,13 +120,13 @@ int main(int argc, char** argv) {
             >> Option('c', contigs_path)
             >> Option('a', annotation_in_fn)
             >> Option('p', prop_annotation_in_fn)
-            >> Option('o', graph_dir)
+            //>> Option('o', graph_dir, "")
             >> Option('b', bins_of_interest, {})
         ;
     } catch(GetOptEx &ex) {
         cout << "Usage: stats -k <K> -s <saves path> -r <genome path> "
                 "-c <contigs_path> -a <init binning info> -p <propagated binning info> "
-                "-o <graph directory> [-b (<bins of interest>)+]"
+                "[-o <graph directory> (currently disabled)] [-b (<bins of interest>)+]"
              << endl;
         exit(1);
     }
@@ -186,10 +186,12 @@ int main(int argc, char** argv) {
                 std::cout << e.int_id() << "\t"
                           << gp.g.length(e) << "\t"
                           << range.size() << std::endl;
-                std::string dot_export_path(graph_dir);
-                dot_export_path += std::to_string(e.int_id()) + ".dot";
-                PrintColoredAnnotatedGraphAroundEdge(
-                    gp, e, prop_edge_annotation, dot_export_path);
+                if (!graph_dir.empty()) {
+                    std::string dot_export_path =
+                        graph_dir + std::to_string(e.int_id()) + ".dot";
+                    PrintColoredAnnotatedGraphAroundEdge(
+                        gp, e, prop_edge_annotation, dot_export_path);
+                }
             }
         }
     }
