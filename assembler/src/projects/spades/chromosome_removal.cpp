@@ -101,7 +101,12 @@ double ChromosomeRemoval::RemoveLongGenomicEdges(conj_graph_pack &gp, size_t lon
         }
     }
     if (total_len == 0) {
-        WARN("plasmid detection failed, not enough long edges");
+        if (external_chromosome_coverage < 1.0) {
+            WARN("plasmid detection failed, not enough long edges");
+        }
+        else {
+            INFO("All long edges deleted, stopping detection");
+        }
         return 0;
     }
     std::sort(coverages.begin(), coverages.end());
@@ -196,8 +201,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
                 && old_vertex_weights.find(gp.g.EdgeStart(*iter)) !=  old_vertex_weights.end()
 //* 2 - because all coverages are taken with rc
                 && old_vertex_weights[gp.g.EdgeStart(*iter)] > long_component_[*iter] + cfg::get().pd->long_edge_length * 2)  {
-                INFO("Deleting isolated edge of length" << gp.g.length(*iter));
-
+                DEBUG("deleting isolated edge of length" << gp.g.length(*iter));
                 gp.g.DeleteEdge(*iter);
             }
         }
@@ -208,7 +212,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
                     long_component_[*iter] + cfg::get().pd->long_edge_length * 2 &&
                         gp.g.coverage(*iter) < chromosome_coverage * (1 + cfg::get().pd->small_component_relative_coverage)
                        && gp.g.coverage(*iter) > chromosome_coverage * (1 - cfg::get().pd->small_component_relative_coverage)) {
-                    INFO("Deleting edge from fake small component, length " << gp.g.length(*iter) << " component_size " << old_vertex_weights[gp.g.EdgeStart(*iter)]) ;
+                    DEBUG("Deleting edge from fake small component, length " << gp.g.length(*iter) << " component_size " << old_vertex_weights[gp.g.EdgeStart(*iter)]) ;
                     gp.g.DeleteEdge(*iter);
                 }
             }
