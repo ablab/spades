@@ -458,6 +458,7 @@ def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('info', metavar='CONFIG_FILE', type=str,  help='teamcity.py info config')
     parser.add_argument("--run_name", "-n", help="output dir custom suffix", type=str)
+    parser.add_argument("--spades_path", "-p", help="custom directory to spades.py", type=str)
     parser.add_argument("--no_cfg_and_compilation", dest="cfg_compilation", help="don't copy configs or compile SPAdes even if .info file states otherwise", action='store_false')
     parser.set_defaults(no_cfg_and_compilation=True)
     parser.add_argument("--no_contig_archive", dest="contig_archive", help="don't save contigs to common contig archive", action='store_false')
@@ -475,6 +476,8 @@ def save_run_info(args, output_dir):
     run_info.write(".info file: " + args.info + "\n");
     if args.run_name:
         run_info.write("run name: " + args.run_name + "\n");
+    if args.spades_path:
+        run_info.write("path to spades.py: " + str(args.spades_path) + "\n");
     if args.contig_archive:
         run_info.write("save contigs archive: " + str(args.contig_archive) + "\n");
     if args.contig_name:
@@ -552,7 +555,7 @@ def compile_spades(args, dataset_info, working_dir):
 
 
 #Create SPAdes command line
-def make_spades_cmd(args, dataset_info, working_dir, output_dir):
+def make_spades_cmd(args, dataset_info, spades_dir, output_dir):
     #Correct paths in params
     input_file_option_list = ['-1', '-2', '--12', '-s', '--hap' , '--trusted-contigs', '--untrusted-contigs' , '--nanopore' , '--pacbio', '--sanger', '--pe1-1', '--pe1-2', '--pe1-s', '--pe2-1', '--pe2-2', '--pe2-s', '--mp1-1', '--mp1-2', '--mp1-s', '--mp2-1', '--mp2-2', '--mp2-s', '--hqmp1-1', '--hqmp1-2', '--hqmp1-s', '--hqmp2-1', '--hqmp2-2', '--hqmp2-s', '--dataset'];
     spades_params = []
@@ -571,9 +574,10 @@ def make_spades_cmd(args, dataset_info, working_dir, output_dir):
 
     spades_cmd = ""
     if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
-        spades_cmd = os.path.join(working_dir, "src/spades_pipeline/dipspades_logic.py") + " " + " ".join(spades_params) + " -o " + output_dir
+        #FIXME why not running dipspades.py?
+        spades_cmd = os.path.join(spades_dir, "src/spades_pipeline/dipspades_logic.py") + " " + " ".join(spades_params) + " -o " + output_dir
     else:
-        spades_cmd = os.path.join(working_dir, "spades.py") + " --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
+        spades_cmd = os.path.join(spades_dir, "spades.py") + " --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
     return spades_cmd
 
 
@@ -636,7 +640,13 @@ try:
         sys.exit(3)
  
     #run spades
-    spades_cmd = make_spades_cmd(args, dataset_info, working_dir, output_dir)
+
+    spades_dir = working_dir
+    if args.spades_path:
+        spades_dir = args.spades_path
+        log.log("Different spades.py path specified: " + spades_dir)
+    spades_cmd = make_spades_cmd(args, dataset_info, spades_dir, output_dir)
+
     if os.system(spades_cmd) != 0:
         log.err("SPAdes finished abnormally with exit code " + str(ecode))
         sys.exit(4)
