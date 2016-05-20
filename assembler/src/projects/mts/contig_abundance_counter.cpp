@@ -8,6 +8,7 @@
 #include "formats.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "io/reads_io/file_reader.hpp"
+#include "io/reads_io/splitting_wrapper.hpp"
 #include "pipeline/graphio.hpp"
 
 void create_console_logger() {
@@ -326,7 +327,7 @@ int main(int argc, char** argv) {
     //TmpFolderFixture fixture("tmp");
     create_console_logger();
 
-    auto contigs_stream_ptr = make_shared<io::FileReadStream>(contigs_path);
+    auto contigs_stream_ptr = io::SplittingWrap(make_shared<io::FileReadStream>(contigs_path));
 
     ContigAbundanceCounter abundance_counter(k, sample_cnt, work_dir, min_length_bound);
     abundance_counter.Init(kmer_mult_fn, /*fixme some buffer size*/0);

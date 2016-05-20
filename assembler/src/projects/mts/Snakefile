@@ -22,12 +22,13 @@ SCRIPTS = config["SCRIPTS"]
 SOFT = config["SOFT"]
 QUAST = config["QUAST"]
 K = int(config.get("K", 55))
-small_k = int(config.get("K", 21))
+small_k = int(config.get("small_k", 21))
 CONFIG = "K{0}/configs/config.info".format(K)
 SAVES = "K{0}/saves/07_before_repeat_resolution/graph_pack".format(K)
 MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
 CAG = config.get("CAG")
-THREADS = config.get("THREADS", 24)
+THREADS = config.get("THREADS", 16)
+
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
 REFS = {os.path.splitext(os.path.basename(fullpath))[0]: fullpath for fullpath in gather_refs(config.get("REFS", []))}
