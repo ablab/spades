@@ -706,7 +706,8 @@ def main(args):
 
             if options_storage.continue_mode and (os.path.isfile(spades_cfg.result_contigs)
                                                   or ("mismatch_corrector" in cfg and
-                                                      os.path.isfile(assembled_contigs_filename)))\
+                                                      os.path.isfile(assembled_contigs_filename))
+                                                  or (options_storage.truseq_mode and os.path.isfile(assembled_scaffolds_filename)))\
                 and not options_storage.restart_from == 'as' \
                 and not options_storage.restart_from == 'scc' \
                 and not (options_storage.restart_from and options_storage.restart_from.startswith('k')):

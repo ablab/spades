@@ -122,7 +122,8 @@ def SaveContigs(barcodes_dir, dataset, format):
     contig_dir = os.path.join(barcodes_dir, format)
     support.ensure_dir_existence(contig_dir)
     for barcode in dataset:
-        shutil.copyfileobj(open(os.path.join(barcodes_dir, barcode.id, "truseq_long_reads." + format), "rb"), gzip.open(os.path.join(contig_dir, barcode.id + "." + format + ".gz"), "wb"))
+        if os.path.isfile(os.path.join(barcodes_dir, barcode.id, "truseq_long_reads." + format)):
+            shutil.copyfileobj(open(os.path.join(barcodes_dir, barcode.id, "truseq_long_reads." + format), "rb"), gzip.open(os.path.join(contig_dir, barcode.id + "." + format + ".gz"), "wb"))
 
 
 def create_log(options):
@@ -156,7 +157,7 @@ def CheckTestSuccess(options, log):
 def main(argv):
     options = launch_options.Options(argv, spades_home, truspades_home, spades_version)
     support.ensure_dir_existence(options.output_dir)
-    if options.test:
+    if options.test and not options.continue_launch:
         support.recreate_dir(options.output_dir)
     log = create_log(options)
     dataset_file = os.path.join(options.output_dir, "dataset.info")
