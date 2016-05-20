@@ -18,27 +18,149 @@ void create_console_logger() {
 
 namespace debruijn_graph {
 
-static const size_t CONTIG_SPLIT_LENGTH = 10000;
-static const size_t MAX_SAMPLE_CNT = 20;
 static const uint INVALID_MPL = uint(-1);
+//TODO get rid of MAX_SAMPLE_CNT
+static const uint MAX_SAMPLE_CNT = 20;
+typedef uint Mpl;
+typedef typename std::array<Mpl, MAX_SAMPLE_CNT> MplVector;
+typedef typename std::array<double, MAX_SAMPLE_CNT> AbundanceVector;
+
+class SingleClusterAnalyzer {
+    static const uint MAX_IT = 10;
+
+    size_t sample_cnt_;
+    double coord_vise_proximity_;
+    double central_clust_share_;
+
+    std::string PrintVector(const MplVector& mpl_vector) const {
+        stringstream ss;
+        copy(mpl_vector.begin(), mpl_vector.begin() + sample_cnt_,
+             ostream_iterator<Mpl>(ss, " "));
+        return ss.str();
+    }
+
+    std::vector<Mpl> SampleMpls(const std::vector<MplVector>& kmer_mpls, size_t sample) const {
+        std::vector<Mpl> answer;
+        answer.reserve(kmer_mpls.size());
+        for (const auto& kmer_mpl : kmer_mpls) {
+            answer.push_back(kmer_mpl[sample]);
+        }
+        return answer;
+    }
+
+    Mpl SampleMedian(const std::vector<MplVector>& kmer_mpls, size_t sample) const {
+        std::vector<Mpl> sample_mpls = SampleMpls(kmer_mpls, sample);
+
+        std::nth_element(sample_mpls.begin(), sample_mpls.begin() + sample_mpls.size()/2, sample_mpls.end());
+        return sample_mpls[sample_mpls.size()/2];
+    }
+
+    MplVector MedianVector(const std::vector<MplVector>& kmer_mpls) const {
+        MplVector answer;
+        for (size_t i = 0; i < sample_cnt_; ++i) {
+            answer[i] = SampleMedian(kmer_mpls, i);
+        }
+        return answer;
+    }
+
+    template<class CovVecs>
+    AbundanceVector MeanVector(const CovVecs& cov_vecs) const {
+        AbundanceVector answer;
+
+        for (const auto& cov_vec : cov_vecs) {
+            for (size_t i = 0; i < sample_cnt_; ++i) {
+                answer[i] += double(cov_vec[i]);
+            }
+        }
+
+        for (size_t i = 0; i < sample_cnt_; ++i) {
+            answer[i] /= double(cov_vecs.size());
+        }
+        return answer;
+    }
+
+    bool AreClose(const MplVector& v1, const MplVector& v2) const {
+        for (size_t i = 0; i < sample_cnt_; ++i) {
+            if (math::ls(double(std::min(v1[i], v2[i])) * coord_vise_proximity_, double(std::max(v1[i], v2[i])))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    std::vector<MplVector> CloseKmerMpls(const std::vector<MplVector>& kmer_mpls, const MplVector& center) const {
+        std::vector<MplVector> answer;
+        for (const auto& kmer_mpl : kmer_mpls) {
+            if (AreClose(center, kmer_mpl)) {
+                answer.push_back(kmer_mpl);
+            }
+        }
+        return answer;
+    }
+
+public:
+    SingleClusterAnalyzer(size_t sample_cnt,
+                          double coord_vise_proximity = 1.5,
+                          double central_clust_share = 0.7) :
+            sample_cnt_(sample_cnt),
+            coord_vise_proximity_(coord_vise_proximity),
+            central_clust_share_(central_clust_share) {
+
+    }
+
+    boost::optional<AbundanceVector> operator()(const std::vector<MplVector>& kmer_mpls) const {
+        MplVector center = MedianVector(kmer_mpls);
+        DEBUG("Initial center is " << PrintVector(center));
+
+        for (size_t it_cnt = 0; it_cnt < MAX_IT; ++it_cnt) {
+            auto locality = CloseKmerMpls(kmer_mpls, center);
+            DEBUG("Locality size is " << locality.size()
+                      << " making " << (double(locality.size()) / double(kmer_mpls.size()))
+                      << " of total # points");
+
+            MplVector update = MedianVector(locality);
+            DEBUG("Center update is " << PrintVector(update));
+
+            if (center == update) {
+                DEBUG("Old and new centers matched on iteration " << it_cnt);
+                break;
+            }
+
+            center = update;
+        }
+
+        std::vector<MplVector> central_loc = CloseKmerMpls(kmer_mpls, center);
+        double center_share = double(central_loc.size()) / double(kmer_mpls.size());
+        if (math::ls(center_share, central_clust_share_)) {
+            DEBUG("Detected central area contains too few k-mers: share " << center_share
+                      << " ; center size " << central_loc.size()
+                      << " ; total size " << kmer_mpls.size());
+            return boost::none;
+        }
+
+        return boost::optional<AbundanceVector>(MeanVector(central_loc));
+    }
+
+private:
+    DECL_LOGGER("SingleClusterAnalyzer");
+};
 
 class ContigAbundanceCounter {
-private:
-    typedef uint Mpl;
-    typedef typename std::array<Mpl, MAX_SAMPLE_CNT> MplVector;
-    typedef typename std::array<double, MAX_SAMPLE_CNT> AbundanceVector;
     typedef typename InvertableStoring::immutant_inverter<MplVector> InverterT;
 
     unsigned k_;
     size_t sample_cnt_;
     size_t min_length_bound_;
-    InverterT inverter_;
+    size_t split_length_;
+    double min_earmark_share_;
 
     KeyStoringMap<conj_graph_pack::seq_t,
         MplVector,
         kmer_index_traits<conj_graph_pack::seq_t>,
         InvertableStoring> kmer_mpl_;
 
+    SingleClusterAnalyzer cluster_analyzer_;
+    InverterT inverter_;
 
     void FillMplMap(const std::string& kmers_mpl_file) {
         //INFO("Fill start");
@@ -47,7 +169,6 @@ private:
         }
         std::ifstream kmers_in(kmers_mpl_file + ".kmer", std::ios::binary);
         //std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl", std::ios::binary);
-        //std::ifstream kmers_in(kmers_mpl_file + ".kmer");
         std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl");
         while (true) {
 //            std::string kmer_str;
@@ -74,71 +195,55 @@ private:
             VERIFY(kmer_mpl_.valid(kwh));
             kmer_mpl_.put_value(kwh, mpls, inverter_);
         }
-    }
 
-    bool AddToAbundances(std::vector<std::vector<uint32_t>>& storage, const MplVector& kmer_mpls) const {
-        bool invalid = (kmer_mpls[0] == INVALID_MPL);
-        for (size_t i = 0; i < sample_cnt_; ++i) {
-            if (invalid) {
-                VERIFY(kmer_mpls[i] == INVALID_MPL);
-            } else {
-                VERIFY(kmer_mpls[i] != INVALID_MPL);
-                storage[i].push_back(kmer_mpls[i]);
+        //check that everything was filled
+        for (auto it = kmer_mpl_.value_begin(); it != kmer_mpl_.value_end(); ++it) {
+            for (size_t i = 0; i < sample_cnt_; ++i) {
+                VERIFY((*it)[i] != INVALID_MPL);
             }
         }
-        return !invalid;
-    };
+    }
 
     boost::optional<AbundanceVector> EstimateAbundance(const Sequence& seq) const {
-        std::vector<std::vector<uint>> abundance_storage(sample_cnt_);
-
-        size_t contributing_kmer_cnt = 0;
+        std::vector<MplVector> kmer_mpls;
 
         VERIFY(seq.size() >= k_);
         auto kwh = kmer_mpl_.ConstructKWH(runtime_k::RtSeq(k_, seq));
         kwh >>= 'A';
 
         for (size_t j = k_ - 1; j < seq.size(); ++j) {
-            kwh <<= seq[j];
             if (kmer_mpl_.valid(kwh)) {
-                if (AddToAbundances(abundance_storage, kmer_mpl_.get_value(kwh, inverter_))) {
-                    contributing_kmer_cnt++;
-                }
+                kmer_mpls.push_back(kmer_mpl_.get_value(kwh, inverter_));
             }
         }
 
-        //FIXME magic constant
-        if (contributing_kmer_cnt * 5 < seq.size() - k_ + 1) {
+        if (math::ls(kmer_mpls.size(), min_earmark_share_ * (seq.size() - k_ + 1))) {
+            DEBUG("Too few earmark k-mers: # earmarks " << kmer_mpls.size() << " ; total # " << (seq.size() - k_ + 1));
             return boost::none;
         }
 
-        AbundanceVector contig_abundance;
-        contig_abundance.fill(-1.);
-
-        for (size_t i = 0; i < sample_cnt_; ++i) {
-            VERIFY(abundance_storage[i].size() == contributing_kmer_cnt);
-            //set contig abundance as mean across kmer multiplicities
-            contig_abundance[i] = std::accumulate(abundance_storage[i].begin(), abundance_storage[i].end(), 0, std::plus<double>());
-            contig_abundance[i] /= abundance_storage[i].size();
-        }
-
-        return boost::optional<AbundanceVector>(contig_abundance);
+        return cluster_analyzer_(kmer_mpls);
     }
 
 public:
     ContigAbundanceCounter(unsigned k,
                            size_t sample_cnt,
+                           const std::string& work_dir,
                            size_t min_length_bound,
-                           const std::string& work_dir) :
+                           size_t split_length = 10000,
+                           double min_earmark_share = 0.7) :
                                k_(k),
                                sample_cnt_(sample_cnt),
                                min_length_bound_(min_length_bound),
-                               kmer_mpl_(k_, work_dir) {
+                               split_length_(split_length),
+                               min_earmark_share_(min_earmark_share),
+                               kmer_mpl_(k_, work_dir),
+                               cluster_analyzer_(sample_cnt_) {
 
     }
 
     void Init(const std::string& kmer_mpl_file, size_t read_buffer_size) {
-        INFO("Filling kmer multiplicities. Sample cnt " << sample_cnt_);
+        INFO("Filling kmer multiplicities.");
         DeBruijnKMerKMerSplitter<StoringTypeFilter<InvertableStoring>>
                 splitter(kmer_mpl_.workdir(), k_, k_, true, read_buffer_size);
 
@@ -152,43 +257,40 @@ public:
     }
 
     void operator()(io::SingleStream& contigs,
-                          const std::string& contigs_mpl_file) const {
-        INFO("Calculating contig abundancies");
-        std::ofstream id_out(contigs_mpl_file + ".id");
-        std::ofstream mpl_out(contigs_mpl_file + ".mpl");
+                          const std::string& out_prefix) const {
+        std::ofstream id_out(out_prefix + ".id");
+        std::ofstream mpl_out(out_prefix + ".mpl");
 
         io::SingleRead full_contig;
-        size_t len = CONTIG_SPLIT_LENGTH; //TODO: adaptive?
         while (!contigs.eof()) {
             contigs >> full_contig;
+            DEBUG("Analyzing contig " << GetId(full_contig));
 
-            for (size_t i = 0; i < full_contig.size(); i += len) {
+            for (size_t i = 0; i < full_contig.size(); i += split_length_) {
                 if (full_contig.size() - i < min_length_bound_)
                     break;
-                io::SingleRead contig = full_contig.Substr(i, std::min(i + len, full_contig.size()));
+
+                io::SingleRead contig = full_contig.Substr(i, std::min(i + split_length_, full_contig.size()));
                 contig_id id = GetId(contig);
-                DEBUG("Processing contig " << id);
+                DEBUG("Processing fragment # " << (i / split_length_) << " with id " << id);
 
                 auto abundance_vec = EstimateAbundance(contig.sequence());
 
                 if (abundance_vec) {
-                    id_out << id << std::endl;
+                    stringstream ss;
+                    copy(abundance_vec->begin(), abundance_vec->begin() + sample_cnt_,
+                         ostream_iterator<Mpl>(ss, " "));
+                    DEBUG("Successfully estimated abundance of " << id << " : " << ss.str());
 
-                    std::string delim = "";
-                    for (size_t i = 0; i < sample_cnt_; ++i) {
-                        mpl_out << delim << (*abundance_vec)[i];
-                        delim = " ";
-                    }
-                    mpl_out << std::endl;
+                    id_out << id << std::endl;
+                    mpl_out << ss.str() << std::endl;
                 } else {
-                    DEBUG("Failed to estimate abundance of contig " << id);
+                    DEBUG("Failed to estimate abundance of " << id);
                 }
             }
         }
-
-        id_out.close();
-        mpl_out.close();
     }
+
 private:
     DECL_LOGGER("ContigAbundanceCounter");
 };
@@ -226,7 +328,7 @@ int main(int argc, char** argv) {
 
     auto contigs_stream_ptr = make_shared<io::FileReadStream>(contigs_path);
 
-    ContigAbundanceCounter abundance_counter(k, sample_cnt, min_length_bound, work_dir);
+    ContigAbundanceCounter abundance_counter(k, sample_cnt, work_dir, min_length_bound);
     abundance_counter.Init(kmer_mult_fn, /*fixme some buffer size*/0);
     abundance_counter(*contigs_stream_ptr, contigs_abundance_fn);
 
