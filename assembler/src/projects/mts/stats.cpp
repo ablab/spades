@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
              << endl;
         exit(1);
     }
-    TmpFolderFixture fixture("tmp");
+    //TmpFolderFixture fixture("tmp");
 
     io::FileReadStream contigs_stream(contigs_path);
 

@@ -29,7 +29,7 @@ CAG = config.get("CAG")
 THREADS = config.get("THREADS", 24)
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
-REFS = {os.path.basename(fullpath): fullpath for fullpath in gather_refs(config.get("REFS", []))}
+REFS = {os.path.splitext(os.path.basename(fullpath))[0]: fullpath for fullpath in gather_refs(config.get("REFS", []))}
 def ref_path(wildcards):
     return REFS[wildcards.ref]
 
@@ -41,7 +41,7 @@ rule all:
 
 rule assemble:
     input:   left = IN + "/{sample}/left.fastq", right = IN + "/{sample}/right.fastq"
-    output:  "{sample}/scaffolds.fasta"
+    output:  "{sample}/{sample}.fasta"
     log:  "{sample}/assembly"
     threads: THREADS
     message: "Assembling {wildcards.sample} with SPAdes"
@@ -65,7 +65,7 @@ rule multiplicities:
         "{BIN}/kmer_multiplicity_counter -k {Kp} -o kmers --mult 2 --sample 3 -d {input}"
 
 rule profile:
-    input:   contigs="{sample}/scaffolds.fasta", mpl="kmers.mpl"
+    input:   contigs="{sample}/{sample}.fasta", mpl="kmers.mpl"
     output:  "{sample}/{sample}.id"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:
@@ -90,14 +90,14 @@ rule canopy_post:
     shell:   "{SCRIPTS}/parse_canopy_out.py {input} ./"
 
 rule propagate:
-    input:   "{sample}/scaffolds.fasta", "{sample}.ann"
+    input:   "{sample}/{sample}.fasta", "{sample}.ann"
     output:  "{sample}.ann.prop"
     message: "Propagating annotations for {wildcards.sample}"
     shell:   "{BIN}/annotation_propagator {K} {wildcards.sample}_assembly/{CONFIG} {wildcards.sample}_assembly/{SAVES} {input} {output}"
 
 rule binning:
     input:
-        contigs="{sample}/scaffolds.fasta", ann="{sample}.ann",
+        contigs="{sample}/{sample}.fasta", ann="{sample}.ann",
         left=IN + "/{sample}/left.fastq", right=IN + "/{sample}/right.fastq"
     output:  "{sample}/binning.log"
     params:  "{sample}"
@@ -123,14 +123,28 @@ rule reassemble_all:
     input:   expand("{sample}/{cag}.fasta", sample=SAMPLES, cag=CAG)
     message: "Reassembling reads for {CAG}"
 
-rule quast:
-    input:   ref=ref_path, contigs="{sample}/scaffolds.fasta"
-    output:  "{sample}/{ref}.cont"
-    log:     "{sample}/q_{ref}"
-    message: "Aligning reference for {wildcards.sample} on {wildcards.ref} & looking for interesting contigs"
-    shell:
-        "{QUAST} -R {input.ref} {input.contigs} -o {log} &&"
-        "{SCRIPTS}/filter_nucmer.py {log} {wildcards.sample} 70 > {output}"
+# rule quast:
+#     input:   ref=ref_path, contigs="{sample}/{sample}.fasta"
+#     output:  "{sample}/{ref}.cont"
+#     log:     "{sample}/q_{ref}"
+#     message: "Aligning {wildcards.sample} on {wildcards.ref} & looking for interesting contigs"
+#     shell:
+#         "{QUAST} -R {input.ref} {input.contigs} -o {log} &&"
+#         "{SCRIPTS}/filter_nucmer.py {log} {wildcards.sample} 70 > {output}"
+
+rule quast_all_samples:
+    input:   ref=ref_path, contigs=expand("{sample}/{sample}.fasta", sample=SAMPLES)
+    output:  "summary/q_{ref}/report.tsv"
+    log:     "summary/q_{ref}"
+    message: "Aligning all samples on {wildcards.ref}"
+    shell:   "{QUAST} -R {input.ref} {input.contigs} -o {log}"
+
+rule filter_all_samples:
+    input:   "summary/q_{ref}/report.tsv"
+    output:  expand("{sample}/{{ref}}.cont", sample=SAMPLES)
+    message: "Filtering interesting contigs from all samples for {wildcards.ref}"
+    params:  "summary/q_{ref}/"
+    shell:   "{SCRIPTS}/filter_nucmer.py {params} {wildcards.ref}.cont 70"
 
 rule quast_all:
     input:   expand("{sample}/{ref}.cont", sample=SAMPLES, ref=REFS.keys())
@@ -143,19 +157,36 @@ rule pca:
     shell:
         "Rscript {SCRIPTS}/pca.R {input} {output}"
 
-rule filter_bins:
+rule bins:
     input:   "{sample}/{ref}.cont"
     output:  "{sample}/{ref}.bin"
     message: "Filtering interesting bins for {wildcards.sample} aligned to {wildcards.ref}"
     shell: "Rscript {SCRIPTS}/bins.R canopy.out {input} > {output}"
 
+rule bins_all_samples:
+    input:   expand("{sample}/{{ref}}.bin", sample=SAMPLES)
+    output:  "summary/{ref}.bin"
+    message: "Gather interesting bins for {wildcards.ref} from all samples"
+    run:
+        bins = set()
+        for in_fn in input:
+            with open(in_fn) as infile:
+                for line in infile:
+                    bins.add(line)
+        with open(output[0], "w") as outfile:
+            for bin in bins:
+                print(bin, file=outfile)
+
+rule bins_all:
+    input:   expand("summary/{ref}.bin", ref=REFS)
+    message: "Gather all interesting bins"
+
 rule prop_stats:
-    input:   prelim="{sample}.ann", prop="{sample}.ann.prop", bins="{sample}/{ref}.bin", contigs="{sample}/scaffolds.fasta", ref=ref_path
+    input:   prelim="{sample}.ann", prop="{sample}.ann.prop", bins="{sample}/{ref}.bin", contigs="{sample}/{sample}.fasta", ref=ref_path
     output:  "{sample}/{ref}.stats"
-    #params: REFS[ref]
     message: "Calculating propagation statistics for {wildcards.sample} aligned to {wildcards.ref}"
     shell:   "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref} -c {input.contigs} -a {input.prelim} -p {input.prop} -b `cat {input.bins}` >/dev/null 2>{output}"
 
-rule stats_all:
+rule prop_stats_all:
     input:   expand("{sample}/{ref}.stats", sample=SAMPLES, ref=REFS.keys())
     message: "Calculated basic stats"
