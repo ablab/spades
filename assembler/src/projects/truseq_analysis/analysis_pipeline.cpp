@@ -12,6 +12,7 @@
 #include "stages/construction.hpp"
 #include "dev_support/standard_base.hpp"
 #include "analysis_pipeline.hpp"
+#include "modules/io/reads_io/file_reader.hpp"
 
 spades::VariationDetectionStage::VariationDetectionStage(string output_file, const Config &config) : AssemblyStage("VariationDetection", "variation_detection"),
                                                                                                      output_file_(output_file), config_(config) {

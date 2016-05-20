@@ -10,19 +10,19 @@
 #undef INFO
 #define INFO(message)                       \
 {                                                                         \
-    cout << __FILE__ << " " <<  __LINE__ << "  :::  " << message << endl; \
+    std::cout << __FILE__ << " " <<  __LINE__ << "  :::  " << message << std::endl; \
 }                                                                         \
 
 
 #define LOG(message)                                                      \
 {                                                                         \
-    cout << message << endl;                                              \
+    std::cout << message << endl;                                       \
 }                                                                         \
 
 //#define trace(message)                      LOG_MSG(logging::L_TRACE, message)
 #define debug(print, message)               \
 {                                           \
     if (print) {                            \
-        cout << message << endl;            \
+        std::cout << message << std::endl;  \
     }                                       \
 }                                           
