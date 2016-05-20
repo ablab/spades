@@ -17,7 +17,7 @@ check_include_files(link.h      HAVE_LINK_H)
 
 check_symbol_exists(backtrace "execinfo.h" HAVE_BACKTRACE)
 
-check_library_exists(dl dlopen "" HAVE_LIBDL)
+find_library(DL_LIB NAMES "dl")
 
 # FIXME: Signal handler return type, currently hardcoded to 'void'
 set(RETSIGTYPE void)
@@ -29,6 +29,6 @@ file(GLOB sources "[a-zA-Z]*.cpp" "[a-zA-Z]*.c")
 
 add_library(llvm-support STATIC
   ${sources})
-if (HAVE_LIBDL)
-  target_link_libraries(llvm-support dl)
+if (DL_LIB)
+  target_link_libraries(llvm-support ${DL_LIB})
 endif()
