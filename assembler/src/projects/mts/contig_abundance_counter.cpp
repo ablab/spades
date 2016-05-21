@@ -80,9 +80,10 @@ class SingleClusterAnalyzer {
         return answer;
     }
 
-    bool AreClose(const MplVector& v1, const MplVector& v2) const {
+    bool AreClose(const MplVector& c, const MplVector& v) const {
         for (size_t i = 0; i < sample_cnt_; ++i) {
-            if (math::ls(double(std::min(v1[i], v2[i])) * coord_vise_proximity_, double(std::max(v1[i], v2[i])))) {
+            double delta = coord_vise_proximity_ * std::sqrt(double(c[i]));
+            if (math::ls(double(v[i]), double(c[i]) - delta) || math::gr(double(v[i]), double(c[i]) + delta)) {
                 return false;
             }
         }
@@ -94,6 +95,8 @@ class SingleClusterAnalyzer {
         for (const auto& kmer_mpl : kmer_mpls) {
             if (AreClose(center, kmer_mpl)) {
                 answer.push_back(kmer_mpl);
+            } else {
+                TRACE("Far kmer mpl " << PrintVector(kmer_mpl));
             }
         }
         return answer;
@@ -101,7 +104,7 @@ class SingleClusterAnalyzer {
 
 public:
     SingleClusterAnalyzer(size_t sample_cnt,
-                          double coord_vise_proximity = 1.5,
+                          double coord_vise_proximity = 2.,
                           double central_clust_share = 0.7) :
             sample_cnt_(sample_cnt),
             coord_vise_proximity_(coord_vise_proximity),
@@ -213,13 +216,18 @@ class ContigAbundanceCounter {
         kwh >>= 'A';
 
         for (size_t j = k_ - 1; j < seq.size(); ++j) {
+            kwh <<= seq[j];
             if (kmer_mpl_.valid(kwh)) {
                 kmer_mpls.push_back(kmer_mpl_.get_value(kwh, inverter_));
             }
         }
 
-        if (math::ls(kmer_mpls.size(), min_earmark_share_ * (seq.size() - k_ + 1))) {
-            DEBUG("Too few earmark k-mers: # earmarks " << kmer_mpls.size() << " ; total # " << (seq.size() - k_ + 1));
+        double earmark_share = double(kmer_mpls.size()) / double(seq.size() - k_ + 1);
+        DEBUG("Earmark k-mers: share " << earmark_share 
+                << " # earmarks " << kmer_mpls.size() 
+                << " ; total # " << (seq.size() - k_ + 1));
+        if (math::ls(earmark_share, min_earmark_share_)) {
+            DEBUG("Too few earmarks");
             return boost::none;
         }
 
@@ -268,8 +276,10 @@ public:
             DEBUG("Analyzing contig " << GetId(full_contig));
 
             for (size_t i = 0; i < full_contig.size(); i += split_length_) {
-                if (full_contig.size() - i < min_length_bound_)
+                if (full_contig.size() - i < min_length_bound_) {
+                    DEBUG("Fragment shorter than min_length_bound " << min_length_bound_);
                     break;
+                }
 
                 io::SingleRead contig = full_contig.Substr(i, std::min(i + split_length_, full_contig.size()));
                 contig_id id = GetId(contig);
