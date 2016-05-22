@@ -83,6 +83,7 @@ params {
     {
        max_edge_length_repeat 300
        delta                  0.5
+       min_path_len           1000
     }
 
     scaffolding2015 {

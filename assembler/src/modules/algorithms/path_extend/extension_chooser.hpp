@@ -1366,13 +1366,18 @@ class CoordinatedCoverageExtensionChooser: public ExtensionChooser {
 public:
     CoordinatedCoverageExtensionChooser(const Graph& g, 
             CoverageAwareIdealInfoProvider& coverage_provider, 
-            size_t max_edge_length_in_repeat, double delta) :
+            size_t max_edge_length_in_repeat, double delta, size_t min_path_len) :
             ExtensionChooser(g), provider_(coverage_provider), 
-            max_edge_length_in_repeat_(max_edge_length_in_repeat), delta_(delta) {
+            max_edge_length_in_repeat_(max_edge_length_in_repeat), delta_(delta), min_path_len_(min_path_len) {
     }
 
     EdgeContainer Filter(const BidirectionalPath& path,
             const EdgeContainer& edges) const override {
+
+        if(path.Length() < min_path_len_) {
+            DEBUG("Path is too short");
+            return EdgeContainer();
+        }
 
         double path_coverage = provider_.EstimatePathCoverage(path);
         if (math::eq(path_coverage, -1.0)) {
@@ -1497,7 +1502,7 @@ private:
     CoverageAwareIdealInfoProvider provider_;
     const size_t max_edge_length_in_repeat_;
     const double delta_;
-
+    const size_t min_path_len_;
     DECL_LOGGER("CoordCoverageExtensionChooser");
 };
 

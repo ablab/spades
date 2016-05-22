@@ -70,6 +70,7 @@ void load(pe_config::ParamSetT::CoordinatedCoverageT& coord_cov,
     using config_common::load;
     load(coord_cov.max_edge_length_in_repeat, pt, "max_edge_length_repeat", complete);
     load(coord_cov.delta, pt, "delta", complete);
+    load(coord_cov.min_path_len, pt, "min_path_len", complete);
 }
 
 void load(pe_config::ParamSetT::ScaffolderOptionsT& so, 
