@@ -549,8 +549,7 @@ bool ClipComplexTips(Graph& g, config::debruijn_config::simplification::complex_
     parser();
 
     ComplexTipClipper<Graph> tip_clipper(g, ctc_conf.max_relative_coverage, ctc_conf.max_edge_len, parser.max_length_bound(), "", set_removal_handler_f);
-    tip_clipper.Run();
-    return true;
+    return tip_clipper.Run();
 }
 
 template<class Graph>

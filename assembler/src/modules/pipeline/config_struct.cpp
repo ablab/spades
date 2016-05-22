@@ -521,6 +521,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.topology_simplif_enabled, pt, "topology_simplif_enabled", complete);
   load(simp.tc, pt, "tc", complete); // tip clipper:
   load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
+  load(simp.complex_tc, pt, "complex_tc", complete); // topology tip clipper:
   load(simp.br, pt, "br", complete); // bulge remover:
   load(simp.ec, pt, "ec", complete); // erroneous connections remover:
   load(simp.rcc, pt, "rcc", complete); // relative coverage component remover:
