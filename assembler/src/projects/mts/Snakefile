@@ -42,34 +42,37 @@ rule all:
 rule assemble:
     input:   left = IN + "/{sample}/left.fastq", right = IN + "/{sample}/right.fastq"
     output:  "{sample}/{sample}.fasta"
-    log:  "{sample}/assembly"
+    params:  "{sample}/assembly"
+    log:     "{sample}/assembly.log"
     threads: THREADS
     message: "Assembling {wildcards.sample} with SPAdes"
     shell:
         "mkdir -p {wildcards.sample} && "
-        "{SPADES}/spades.py --meta -t {threads} -1 {input.left} -2 {input.right} -o {log} && "
-        "cp {log}/scaffolds.fasta {output}"
+        "{SPADES}/spades.py --meta -t {threads} -1 {input.left} -2 {input.right} -o {params} >{log} 2>&1 && "
+        "cp {params}/scaffolds.fasta {output}"
 
 rule descriptions:
     output:  expand("{sample}.desc", sample=SAMPLES)
     message: "Generating sample descriptions"
-    shell:   "{SCRIPTS}/dataset_desc_gen.sh {IN}/sample ./"
+    shell:   "{SCRIPTS}/dataset_desc_gen.sh {IN}/sample ./ >/dev/null"
 
 rule multiplicities:
     input:   expand("{sample}.desc", sample=SAMPLES)
     output:  "kmers.mpl"
+    log:     "multiplicities.log"
     message: "Gathering {Kp}-mer multiplicities from {input}"
     shell:
         "mkdir -p tmp && "
         "export PATH={SOFT}:$PATH && "
-        "{BIN}/kmer_multiplicity_counter -k {Kp} -o kmers --mult 2 --sample 3 -d {input}"
+        "{BIN}/kmer_multiplicity_counter -k {Kp} -o kmers --mult 2 --sample 3 -d {input} >{log} 2>&1"
 
 rule profile:
     input:   contigs="{sample}/{sample}.fasta", mpl="kmers.mpl"
     output:  "{sample}/{sample}.id"
+    log:     "{sample}/profile.log"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:
-        "{BIN}/contig_abundance_counter -k {K} -s {wildcards.sample}/assembly/{SAVES} -c {input.contigs} -n {SAMPLE_COUNT} -m kmers -o {wildcards.sample}/{wildcards.sample} -l {MIN_CONTIG_LENGTH}"
+        "{BIN}/contig_abundance_counter -k {K} -s {wildcards.sample}/assembly/{SAVES} -c {input.contigs} -n {SAMPLE_COUNT} -m kmers -o {wildcards.sample}/{wildcards.sample} -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
 rule canopy_pre:
     input:   expand("{sample}/{sample}.id", sample=SAMPLES)
@@ -101,22 +104,23 @@ rule binning:
         left=IN + "/{sample}/left.fastq", right=IN + "/{sample}/right.fastq"
     output:  "{sample}/binning.log"
     params:  "{sample}"
+    log:     "{sample}/binning.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
     #TODO: non-file output?
     shell:
-        "{BIN}/prop_binning -k {K} -s {wildcards.sample}/assembly/{SAVES} -c {input.contigs} -a {input.ann} -l {input.left} -r {input.right} -o  binning -n {params} &&"
+        "{BIN}/prop_binning -k {K} -s {wildcards.sample}/assembly/{SAVES} -c {input.contigs} -a {input.ann} -l {input.left} -r {input.right} -o binning -n {params} >{log} 2>&1 &&"
         "touch {output}"
 
 rule reassemble:
     input:   "{sample}/binning.log"
     output:  "{sample}/reassembly_{cag}.fasta"
-    params:  "-1 binning/{cag}/{sample}_1.fastq", "-2 binning/{cag}/{sample}_2.fastq"
-    log:     "{sample}/reassembly_{cag}"
-    message: "Reassembling reads for {wildcards.cag} from {wildcards.sample}"
+    params:  left="binning/{cag}/{sample}_1.fastq", right="binning/{cag}/{sample}_2.fastq", out="{sample}/reassembly_{cag}"
+    log:     "{sample}/reassembly_{cag}.log"
     threads: THREADS
+    message: "Reassembling reads for {wildcards.cag} from {wildcards.sample}"
     shell:
-        "{SPADES}/spades.py --meta -t {threads} {params} -o {log} && "
-        "cp {log}/scaffolds.fasta {output}"
+        "{SPADES}/spades.py --meta -t {threads} -1 {params.left} -2 {params.right} -o {params.out} >{log} 2>&1 && "
+        "cp {params.out}/scaffolds.fasta {output}"
 
 #Todo: report error when CAG is unset
 rule reassemble_all:
@@ -135,9 +139,10 @@ rule reassemble_all:
 rule quast_all_samples:
     input:   ref=ref_path, contigs=expand("{sample}/{sample}.fasta", sample=SAMPLES)
     output:  "summary/q_{ref}/report.tsv"
-    log:     "summary/q_{ref}"
+    params:  "summary/q_{ref}"
+    log:     "summary/q_{ref}.log"
     message: "Aligning all samples on {wildcards.ref}"
-    shell:   "{QUAST} -R {input.ref} {input.contigs} -o {log}"
+    shell:   "{QUAST} -R {input.ref} {input.contigs} -o {log} >{log} 2>&1"
 
 rule filter_all_samples:
     input:   "summary/q_{ref}/report.tsv"
