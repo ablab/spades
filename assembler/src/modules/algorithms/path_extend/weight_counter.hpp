@@ -300,6 +300,7 @@ public:
     }
 
     std::vector<EdgeWithPairedInfo> FindCoveredEdges(const BidirectionalPath& path, EdgeId candidate) const override {
+        VERIFY(read_length_ != -1ul);
         double estimated_coverage = EstimatePathCoverage(path);
         VERIFY(math::gr(estimated_coverage, 0.));
 

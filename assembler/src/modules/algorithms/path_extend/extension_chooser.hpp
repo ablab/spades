@@ -1489,14 +1489,15 @@ private:
             DEBUG("Returning");
             return EdgeContainer();
         }
+        auto extension = *good_extensions.begin();
 
-        if(math::ge(g_.coverage(*good_extensions.begin()), path_coverage * (1+delta_))) {
-            DEBUG("Returning");
+        if(math::ls(path_coverage, g_.coverage(extension) * delta_)) {
+            DEBUG("Extension coverage too high");
             return EdgeContainer();
         }
 
-        DEBUG("Filtering... Extend with edge " << good_extensions.begin()->int_id());
-        return FinalFilter(edges, *good_extensions.begin());
+        DEBUG("Filtering... Extend with edge " << extension.int_id());
+        return FinalFilter(edges, extension);
     }
     
     CoverageAwareIdealInfoProvider provider_;
