@@ -107,8 +107,7 @@ inline void OutputBrokenScaffolds(PathContainer& paths, int k,
 
     int min_gap = cfg::get().pe_params.obs == obs_break_all ? k / 2 : k;
 
-    ScaffoldBreaker breaker(min_gap);
-    breaker.Split(paths);
+    ScaffoldBreaker breaker(min_gap, paths);
     breaker.container().SortByLength();
     writer.OutputPaths(breaker.container(), filename);
 }
@@ -898,6 +897,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     writer.OutputPaths(paths, output_dir + (mp_exist ? "pe_scaffolds" : contigs_name));
 
     cover_map.Clear();
+    seeds.DeleteAllPaths();
     paths.DeleteAllPaths();
     if (!mp_exist) {
         return;

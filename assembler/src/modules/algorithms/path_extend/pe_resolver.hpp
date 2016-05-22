@@ -342,8 +342,7 @@ private:
         } else if (overlap_size < path2->Size()
                 && overlap_size < path1->Size()) {
             BidirectionalPath* overlap = new BidirectionalPath(g_, path1->Back());
-            BidirectionalPath* conj_overlap = new BidirectionalPath(
-                    g_, g_.conjugate(path1->Back()));
+            BidirectionalPath* conj_overlap = new BidirectionalPath(g_, g_.conjugate(path1->Back()));
             SubscribeCoverageMap(overlap);
             SubscribeCoverageMap(conj_overlap);
             paths.AddPair(overlap, conj_overlap);
