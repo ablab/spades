@@ -58,7 +58,7 @@ public:
         streams.reset();
         NotifyStartProcessLibrary(lib_index, threads_count);
 
-        size_t counter = 0;
+        size_t counter = 0, n = 15;
         size_t fmem = get_free_memory();
 
         #pragma omp parallel for num_threads(threads_count) shared(counter)
@@ -75,7 +75,10 @@ public:
                     #pragma omp critical
                     {
                         counter += size;
-                        VERBOSE_POWER_T(counter, 1 << 14, "Reads processed");
+                        if (counter >> n) {
+                            INFO("Processed " << counter << " reads");
+                            n += 1;
+                        }
                         size = 0;
                         NotifyMergeBuffer(lib_index, ithread);
                     }
@@ -85,7 +88,7 @@ public:
                 NotifyProcessRead(r, mapper, lib_index, ithread);
             }
         }
-        INFO("Processed " << counter << " reads");
+        INFO("Total " << counter << " reads processed");
         NotifyStopProcessLibrary(lib_index);
     }
 
