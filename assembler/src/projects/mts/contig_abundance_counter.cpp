@@ -81,13 +81,14 @@ class SingleClusterAnalyzer {
     }
 
     bool AreClose(const MplVector& c, const MplVector& v) const {
+        double sum = 0;
+        size_t non_zero_cnt = 0;
         for (size_t i = 0; i < sample_cnt_; ++i) {
-            double delta = coord_vise_proximity_ * std::sqrt(double(c[i]));
-            if (math::ls(double(v[i]), double(c[i]) - delta) || math::gr(double(v[i]), double(c[i]) + delta)) {
-                return false;
-            }
+            sum += std::abs(double(c[i]) - double(v[i])) / std::sqrt(double(c[i]));
+            if (c[i] != 0) 
+                ++non_zero_cnt;
         }
-        return true;
+        return math::ls(sum, coord_vise_proximity_ * double(non_zero_cnt));
     }
 
     std::vector<MplVector> CloseKmerMpls(const std::vector<MplVector>& kmer_mpls, const MplVector& center) const {
@@ -114,13 +115,23 @@ public:
 
     boost::optional<AbundanceVector> operator()(const std::vector<MplVector>& kmer_mpls) const {
         MplVector center = MedianVector(kmer_mpls);
-        DEBUG("Initial center is " << PrintVector(center));
+        auto locality = CloseKmerMpls(kmer_mpls, center);
 
         for (size_t it_cnt = 0; it_cnt < MAX_IT; ++it_cnt) {
-            auto locality = CloseKmerMpls(kmer_mpls, center);
+            DEBUG("Iteration " << it_cnt);
+            DEBUG("Center is " << PrintVector(center));
+
             DEBUG("Locality size is " << locality.size()
                       << " making " << (double(locality.size()) / double(kmer_mpls.size()))
                       << " of total # points");
+
+            double center_share = double(locality.size()) / double(kmer_mpls.size());
+            if (math::ls(center_share, central_clust_share_)) {
+                DEBUG("Detected central area contains too few k-mers: share " << center_share
+                          << " ; center size " << locality.size()
+                          << " ; total size " << kmer_mpls.size());
+                return boost::none;
+            }
 
             MplVector update = MedianVector(locality);
             DEBUG("Center update is " << PrintVector(update));
@@ -131,18 +142,10 @@ public:
             }
 
             center = update;
+            locality = CloseKmerMpls(kmer_mpls, center);
         }
 
-        std::vector<MplVector> central_loc = CloseKmerMpls(kmer_mpls, center);
-        double center_share = double(central_loc.size()) / double(kmer_mpls.size());
-        if (math::ls(center_share, central_clust_share_)) {
-            DEBUG("Detected central area contains too few k-mers: share " << center_share
-                      << " ; center size " << central_loc.size()
-                      << " ; total size " << kmer_mpls.size());
-            return boost::none;
-        }
-
-        return boost::optional<AbundanceVector>(MeanVector(central_loc));
+        return boost::optional<AbundanceVector>(MeanVector(locality));
     }
 
 private:
