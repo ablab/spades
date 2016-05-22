@@ -1485,6 +1485,11 @@ private:
             return EdgeContainer();
         }
 
+        if(math::ge(g_.coverage(*good_extensions.begin()), path_coverage * (1+delta_))) {
+            DEBUG("Returning");
+            return EdgeContainer();
+        }
+
         DEBUG("Filtering... Extend with edge " << good_extensions.begin()->int_id());
         return FinalFilter(edges, *good_extensions.begin());
     }
