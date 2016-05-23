@@ -42,15 +42,19 @@ void io::DataSet<Data>::save(const std::string &filename) {
 template<class Data>
 void io::DataSet<Data>::load(const std::string &filename) {
     ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(filename);
-    if (!Buf)
-        throw(std::string("Failed to load config file ") + filename);
+    if (!Buf) {
+        std::cerr << std::string("Failed to load file ") + filename;
+        throw;
+    }
 
     yaml::Input yin(*Buf.get());
     yin >> libraries_;
 
-    if (yin.error())
-        throw(std::string("Failed to load config file ") + filename);
-
+    if (yin.error()) {
+        std::cerr << std::string("Failed to load file ") + filename;
+        throw;
+    }
+    
     std::string input_dir = path::parent_path(filename);
     if (input_dir[input_dir.length() - 1] != '/')
         input_dir += '/';
