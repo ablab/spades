@@ -133,13 +133,10 @@ void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, cons
 string DatasetProcessor::RunPairedBwa(const string &left, const string &right, const size_t lib)  {
     string cur_dir = GetLibDir(lib);
     int run_res = 0;
-    string tmp1_sai_filename = path::append_path(cur_dir, "tmp1.sai");
-    string tmp2_sai_filename = path::append_path(cur_dir, "tmp2.sai");
     string tmp_sam_filename = path::append_path(cur_dir, "tmp.sam");
-    string isize_txt_filename = path::append_path(cur_dir, "isize.txt");
-    string tmp_file = path::append_path(cur_dir, "bwa.flood");
-
-    string index_line = corr_cfg::get().bwa + string(" index ") + "-a " + "is " + genome_file_ ;
+    string bwa_string = path::screen_whitespaces(path::screen_whitespaces(corr_cfg::get().bwa));
+    string genome_screened = path::screen_whitespaces(genome_file_);
+    string index_line = bwa_string + string(" index ") + "-a " + "is " + genome_screened ;
     INFO("Running bwa index ...: " << index_line);
     run_res = system(index_line.c_str());
     if (run_res != 0) {
@@ -147,8 +144,8 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
         return "";
     }
     string nthreads_str = to_string(nthreads_);
-    string last_line = corr_cfg::get().bwa + string(" mem ") + " -v 1 -t " + nthreads_str + " "+ genome_file_ + " " + left + " " + right  + "  > "
-            + tmp_sam_filename ;
+    string last_line = bwa_string + string(" mem ") + " -v 1 -t " + nthreads_str + " "+ genome_screened + " " + path::screen_whitespaces(left) + " " + path::screen_whitespaces(right)  + "  > "
+            + path::screen_whitespaces(tmp_sam_filename) ;
     INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
     if (run_res != 0) {
@@ -161,12 +158,10 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
 string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
     int run_res = 0;
     string cur_dir = GetLibDir(lib);
-    string tmp_sai_filename = path::append_path(cur_dir, "tmp1.sai");
     string tmp_sam_filename = path::append_path(cur_dir, "tmp.sam");
-    string isize_txt_filename = path::append_path(cur_dir, "isize.txt");
-    string tmp_file = path::append_path(cur_dir, "bwa.flood");
-
-    string index_line = corr_cfg::get().bwa + string(" index ") + "-a " + "is " + genome_file_ ;
+    string bwa_string = path::screen_whitespaces(path::screen_whitespaces(corr_cfg::get().bwa));
+    string genome_screened = path::screen_whitespaces(genome_file_);
+    string index_line = bwa_string + string(" index ") + "-a " + "is " + genome_screened ;
     INFO("Running bwa index ...: " << index_line);
     run_res = system(index_line.c_str());
     if (run_res != 0) {
@@ -174,7 +169,7 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
         return "";
     }
     string nthreads_str = to_string(nthreads_);
-    string last_line = corr_cfg::get().bwa + " mem "+ " -v 1 -t " + nthreads_str + " " + genome_file_ + " "  + single  + "  > " + tmp_sam_filename;
+    string last_line = bwa_string + " mem "+ " -v 1 -t " + nthreads_str + " " + genome_screened + " "  + single  + "  > " + path::screen_whitespaces(tmp_sam_filename);
     INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
     if (run_res != 0) {

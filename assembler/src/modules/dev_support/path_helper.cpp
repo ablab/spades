@@ -143,6 +143,22 @@ void remove_if_exists(std::string const& path) {
     }
 }
 
+//TODO do we need to screen anything but whitespaces?
+std::string screen_whitespaces(std::string const &path) {
+    std::string to_search = " ";
+    std::string res = "";
+    for (size_t i = 0; i < path.size(); i++) {
+        if ((i == 0) || (path[i] != ' ') || (path[i - 1] == '\\')) {
+            res += path[i];
+        } else {
+            res +='\\';
+            res +=' ';
+        }
+    }
+//    res += "'";
+    return res;
+}
+
 //todo reduce code duplication!!!
 bool FileExists(std::string const &filename) {
     struct stat st_buf;

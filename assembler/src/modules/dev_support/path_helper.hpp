@@ -49,6 +49,8 @@ bool check_existence(std::string const &path);
 
 void remove_if_exists(std::string const &path);
 
+std::string screen_whitespaces(std::string const &path);
+
 /**
 * Checks if file exists.
 * Analogs: http://www.techbytes.ca/techbyte103.html , http://www.gamedev.net/topic/211918-determining-if-a-file-exists-c/

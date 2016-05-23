@@ -32,26 +32,30 @@ int main(int argc, char** argv) {
 
     srand(42);
     srandom(42);
+    try {
+        create_console_logger();
 
-    create_console_logger();
+        if (argc != 3) {
+            WARN("Wrong argument number");
+            return 1;
+        }
+        string contig_name(argv[2]);
+        string cfg_file(argv[1]);
+        corr_cfg::create_instance(cfg_file);
+        string work_dir = corr_cfg::get().work_dir;
+        if (!path::check_existence(corr_cfg::get().output_dir))
+            path::make_dir(corr_cfg::get().output_dir);
+        if (!path::check_existence(corr_cfg::get().work_dir))
+            path::make_dir(corr_cfg::get().work_dir);
 
-    if (argc != 3) {
-        WARN("Wrong argument number");
-        return 1;
+        INFO("Starting MismatchCorrector, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
+
+        corrector::DatasetProcessor dp(contig_name, corr_cfg::get().work_dir, corr_cfg::get().output_dir, corr_cfg::get().max_nthreads);
+        dp.ProcessDataset();
+    } catch (std::string const &s) {
+        std::cerr << s;
+        return EINTR;
     }
-    string contig_name(argv[2]);
-    string cfg_file(argv[1]);
-    corr_cfg::create_instance(cfg_file);
-    string work_dir = corr_cfg::get().work_dir;
-    if (!path::check_existence(corr_cfg::get().output_dir))
-        path::make_dir(corr_cfg::get().output_dir);
-    if (!path::check_existence(corr_cfg::get().work_dir))
-        path::make_dir(corr_cfg::get().work_dir);
-
-    INFO("Starting MismatchCorrector, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
-
-    corrector::DatasetProcessor dp(contig_name, corr_cfg::get().work_dir, corr_cfg::get().output_dir, corr_cfg::get().max_nthreads);
-    dp.ProcessDataset();
     unsigned ms = (unsigned) pc.time_ms();
     unsigned secs = (ms / 1000) % 60;
     unsigned mins = (ms / 1000 / 60) % 60;
