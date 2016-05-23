@@ -91,7 +91,7 @@ def prepare_config_ih(filename, cfg, ext_python_modules_home):
     data["output_dir"] = cfg.output_dir
     data["hard_memory_limit"] = cfg.max_memory
     data["max_nthreads"] = cfg.max_threads
-    pyyaml.dump(data, open(filename, 'w'))
+    pyyaml.dump(data, open(filename, 'w'), default_flow_style = False, default_style='"', width=100500)
 
 
 def run_hammer(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg,
@@ -107,7 +107,7 @@ def run_hammer(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg
         not_used_dataset_data = support.get_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
         to_correct_dataset_data = support.rm_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
         to_correct_dataset_yaml_filename = os.path.join(cfg.output_dir, "to_correct.yaml")
-        pyyaml.dump(to_correct_dataset_data, open(to_correct_dataset_yaml_filename, 'w'))
+        pyyaml.dump(to_correct_dataset_data, open(to_correct_dataset_yaml_filename, 'w'), default_flow_style = False, default_style='"', width=100500)
         cfg.dataset_yaml_filename = to_correct_dataset_yaml_filename
     else:
         not_used_dataset_data = None
@@ -152,7 +152,7 @@ def run_hammer(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg
         is_changed = True
         corrected_dataset_data += not_used_dataset_data
     if is_changed:
-        pyyaml.dump(corrected_dataset_data, open(corrected_dataset_yaml_filename, 'w'))
+        pyyaml.dump(corrected_dataset_data, open(corrected_dataset_yaml_filename, 'w'), default_flow_style = False, default_style='"', width=100500)
     log.info("\n== Dataset description file was created: " + corrected_dataset_yaml_filename + "\n")
 
     if os.path.isdir(cfg.tmp_dir):
