@@ -125,7 +125,7 @@ public:
                 continue;
             }
 
-            if(math::ls(GetRelativeTipCoverage(component), relative_coverage_treshold_)) {
+            if(math::ge(GetRelativeTipCoverage(component), relative_coverage_treshold_)) {
                 DEBUG("Tip is too high covered with respect to external edges");
                 continue;
             }
