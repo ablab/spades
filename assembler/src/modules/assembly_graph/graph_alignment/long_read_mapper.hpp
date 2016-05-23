@@ -141,7 +141,7 @@ private:
             size_t mapping_size = CountMappedEdgeSize(edge, mapping_path, mapping_index);
             size_t edge_len =  gp_.g.length(edge);
             //VERIFY(edge_len >= mapping_size);
-            if((double) mapping_size / (double) edge_len > MIN_MAPPED_RATIO) {
+            if(math::gr((double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO)) {
                 new_corrected_path.push_back(edge);
             }
         }
