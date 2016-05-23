@@ -35,7 +35,7 @@ REFS = {os.path.splitext(os.path.basename(fullpath))[0]: fullpath for fullpath i
 def ref_path(wildcards):
     return REFS[wildcards.ref]
 
-# ---- Targets section ---------------------------------------------------------
+# ---- Main pipeline -----------------------------------------------------------
 
 rule all:
     input:   expand("{sample}/binning.log", sample=SAMPLES)
@@ -129,14 +129,7 @@ rule reassemble_all:
     input:   expand("{sample}/{cag}.fasta", sample=SAMPLES, cag=CAG)
     message: "Reassembling reads for {CAG}"
 
-# rule quast:
-#     input:   ref=ref_path, contigs="{sample}/{sample}.fasta"
-#     output:  "{sample}/{ref}.cont"
-#     log:     "{sample}/q_{ref}"
-#     message: "Aligning {wildcards.sample} on {wildcards.ref} & looking for interesting contigs"
-#     shell:
-#         "{QUAST} -R {input.ref} {input.contigs} -o {log} &&"
-#         "{SCRIPTS}/filter_nucmer.py {log} {wildcards.sample} 70 > {output}"
+#---- Statistics section -------------------------------------------------------
 
 rule quast_all_samples:
     input:   ref=ref_path, contigs=expand("{sample}/{sample}.fasta", sample=SAMPLES)
@@ -144,7 +137,11 @@ rule quast_all_samples:
     params:  "summary/q_{ref}"
     log:     "summary/q_{ref}.log"
     message: "Aligning all samples on {wildcards.ref}"
-    shell:   "{QUAST} -R {input.ref} {input.contigs} -o {log} >{log} 2>&1"
+    shell:   "{QUAST} -R {input.ref} {input.contigs} -o {params} >{log} 2>&1"
+
+rule quast_all:
+    input:   expand("{sample}/{ref}.cont", sample=SAMPLES, ref=REFS.keys())
+    message: "Calculated QUAST metrics"
 
 rule filter_all_samples:
     input:   "summary/q_{ref}/report.tsv"
@@ -153,16 +150,23 @@ rule filter_all_samples:
     params:  "summary/q_{ref}/"
     shell:   "{SCRIPTS}/filter_nucmer.py {params} {wildcards.ref}.cont 70"
 
-rule quast_all:
-    input:   expand("{sample}/{ref}.cont", sample=SAMPLES, ref=REFS.keys())
-    message: "Calculated QUAST metrics"
+rule combine_filtered:
+    input:   contigs=expand("{sample}/{sample}.fasta", sample=SAMPLES), filters=expand("{sample}/{{ref}}.cont", sample=SAMPLES)
+    output:  "summary/{ref}.fasta"
+    message: "Gathering all interesting contigs for {wildcards.ref} into a single assembly"
+    shell:   "{SCRIPTS}/filter_contigs.py {SAMPLE_COUNT} {output} {input.contigs} {input.filters}"
 
-rule pca:
-    input:   rules.canopy_pre.output, rules.canopy.output.out, "{sample}.cont"
-    output:  "{sample}.png"
-    message: "Doing some visualization"
-    shell:
-        "Rscript {SCRIPTS}/pca.R {input} {output}"
+rule quast_combined:
+    input:   ref=ref_path, contigs="summary/{ref}.fasta"
+    output:  "summary/q_{ref}_all/report.tsv"
+    params:  "summary/q_{ref}_all"
+    log:     "summary/q_{ref}_all.log"
+    message: "Aligning combined sample on {wildcards.ref}"
+    shell:   "{QUAST} -R {input.ref} {input.contigs} -o {params} >{log} 2>&1"
+
+rule quast_combined_all:
+    input:   expand("summary/q_{ref}_all/report.tsv", ref=REFS.keys())
+    message: "Calculated QUAST metrics on all combined samples"
 
 rule bins:
     input:   "{sample}/{ref}.cont"
@@ -197,3 +201,10 @@ rule prop_stats:
 rule prop_stats_all:
     input:   expand("{sample}/{ref}.stats", sample=SAMPLES, ref=REFS.keys())
     message: "Calculated basic stats"
+
+rule pca:
+    input:   rules.canopy_pre.output, rules.canopy.output.out, "{sample}.cont"
+    output:  "{sample}.png"
+    message: "Doing some visualization"
+    shell:
+        "Rscript {SCRIPTS}/pca.R {input} {output}"
