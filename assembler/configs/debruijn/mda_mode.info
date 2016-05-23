@@ -110,7 +110,11 @@ params {
         weight_threshold           0.6
         max_repeat_length          8000
     }
-
-}
 }
 
+long_reads {
+    pacbio_reads {
+        unique_edge_priority 10000.0
+    }
+}
+}

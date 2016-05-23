@@ -193,13 +193,23 @@ public:
     }
 
     static bool is_contig_lib(LibraryType type) {
-        return (type == io::LibraryType::TrustedContigs ||
-                type == io::LibraryType::UntrustedContigs ||
-                type == io::LibraryType::PathExtendContigs);
-  }
+        return type == io::LibraryType::TrustedContigs ||
+               type == io::LibraryType::UntrustedContigs ||
+               type == io::LibraryType::PathExtendContigs;
+    }
+
+    static bool is_long_read_lib(LibraryType type) {
+        return type == io::LibraryType::PacBioReads || 
+               type == io::LibraryType::SangerReads || 
+               type == io::LibraryType::NanoporeReads;
+    }
 
     bool is_contig_lib() const {
         return is_contig_lib(type_);
+    }
+
+    bool is_long_read_lib() const {
+        return is_long_read_lib(type_);
     }
 
     bool is_pacbio_alignable() const {

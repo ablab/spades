@@ -130,48 +130,6 @@ inline void AddPathsToContainer(const conj_graph_pack& gp,
     DEBUG("Long reads paths " << result.size() << " == ");
 }
 
-double GetSingleReadsFilteringThreshold(const io::LibraryType& type) {
-    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
-        return cfg::get().pe_params.long_reads.pacbio_reads.filtering;
-    }  else if (type == io::LibraryType::PathExtendContigs){
-        return cfg::get().pe_params.long_reads.meta_contigs.filtering;
-    } else if (io::SequencingLibraryBase::is_contig_lib(type)) {
-        return cfg::get().pe_params.long_reads.contigs.filtering;
-    }
-    return cfg::get().pe_params.long_reads.single_reads.filtering;
-}
-
-double GetSingleReadsWeightPriorityThreshold(const io::LibraryType& type) {
-    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
-        return cfg::get().pe_params.long_reads.pacbio_reads.weight_priority;
-    } else if (type == io::LibraryType::PathExtendContigs){
-        return cfg::get().pe_params.long_reads.meta_contigs.weight_priority;
-    } else if (io::SequencingLibraryBase::is_contig_lib(type)) {
-        return cfg::get().pe_params.long_reads.contigs.weight_priority;
-    }
-    return cfg::get().pe_params.long_reads.single_reads.weight_priority;
-}
-
-double GetSingleReadsUniqueEdgePriorityThreshold(const io::LibraryType& type) {
-    if (cfg::get().uneven_depth &&
-            (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads)) {
-        return 10000.0;
-    }
-    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
-        return cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority;
-    } else if (io::SequencingLibraryBase::is_contig_lib(type)) {
-        return cfg::get().pe_params.long_reads.contigs.unique_edge_priority;
-    }
-    return cfg::get().pe_params.long_reads.single_reads.unique_edge_priority;
-}
-
-size_t GetSingleReadsSignificantOverlapThreshold(const io::LibraryType& type) {
-    if (type == io::LibraryType::PathExtendContigs){
-        return cfg::get().pe_params.long_reads.meta_contigs.min_significant_overlap;
-    }
-    return cfg::get().pe_params.long_reads.single_reads.min_significant_overlap;
-}
-
 bool HasOnlyMPLibs() {
     for (const auto& lib : cfg::get().ds.reads) {
         if (!((lib.type() == io::LibraryType::MatePairs || lib.type() == io::LibraryType::HQMatePairs) &&
@@ -335,25 +293,44 @@ inline shared_ptr<PairedInfoLibrary> MakeNewLib(const conj_graph_pack::graph_t& 
                                                                                     lib.data().insert_size_distribution);
 }
 
-inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t lib_index,
-                                                        const pe_config::ParamSetT& pset) {
+pe_config::LongReads GetLongReadsConfig(const io::LibraryType& type) {
+    auto long_reads = cfg::get().pe_params.long_reads;
+    if (io::SequencingLibraryBase::is_long_read_lib(type)) {
+        return long_reads.pacbio_reads;
+    } else if (type == io::LibraryType::PathExtendContigs){
+        return long_reads.meta_contigs;
+    } else if (io::SequencingLibraryBase::is_contig_lib(type)) {
+        return long_reads.contigs;
+    }
+    return long_reads.single_reads;
+}
+
+inline shared_ptr<ExtensionChooser> MakeLongReadsExtensionChooser(const conj_graph_pack& gp, 
+                                                                  size_t lib_index, 
+                                                                  size_t max_repeat_length) {
     PathContainer paths;
     AddPathsToContainer(gp, gp.single_long_reads[lib_index].GetAllPaths(), 1, paths);
 
-    const auto& lib = cfg::get().ds.reads[lib_index];
-    shared_ptr<ExtensionChooser> longReadEC =
-            make_shared<LongReadsExtensionChooser>(gp.g, paths, GetSingleReadsFilteringThreshold(lib.type()),
-                                                   GetSingleReadsWeightPriorityThreshold(lib.type()),
-                                                   GetSingleReadsUniqueEdgePriorityThreshold(lib.type()),
-                                                   GetSingleReadsSignificantOverlapThreshold(lib.type()),
-                                                   pset.extension_options.max_repeat_length);
+    auto long_reads_config = GetLongReadsConfig(cfg::get().ds.reads[lib_index].type());
+    return make_shared<LongReadsExtensionChooser>(gp.g, paths, long_reads_config.filtering,
+                                                  long_reads_config.weight_priority,
+                                                  long_reads_config.unique_edge_priority,
+                                                  long_reads_config.min_significant_overlap,
+                                                  max_repeat_length);
+}
 
+inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, 
+                                                        size_t lib_index,
+                                                        const pe_config::ParamSetT& pset) {
+    const auto& lib = cfg::get().ds.reads[lib_index];
     size_t resolvable_repeat_length_bound = 10000ul;
     if (!lib.is_contig_lib()) {
         resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().read_length);
     }
     INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
-    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, resolvable_repeat_length_bound,  
+
+    auto long_read_ec = MakeLongReadsExtensionChooser(gp, lib_index, pset.extension_options.max_repeat_length);
+    return make_shared<SimpleExtender>(gp, cov_map, long_read_ec, resolvable_repeat_length_bound,  
             pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(lib.type()));
 }
 
@@ -505,28 +482,19 @@ inline shared_ptr<SimpleExtender> MakeRNAExtender(const conj_graph_pack& gp, con
 
 inline shared_ptr<SimpleExtender> MakeRNALongReadsExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t lib_index,
                                                         const pe_config::ParamSetT& pset) {
-    VERIFY_MSG(false, "Long reads rna extender us not implemented yet")
-    PathContainer paths;
-    AddPathsToContainer(gp, gp.single_long_reads[lib_index].GetAllPaths(), 1, paths);
+    VERIFY_MSG(false, "Long reads rna extender is not implemented yet")
 
     const auto& lib = cfg::get().ds.reads[lib_index];
-    shared_ptr<ExtensionChooser> longReadEC =
-        make_shared<LongReadsExtensionChooser>(gp.g, paths, GetSingleReadsFilteringThreshold(lib.type()),
-                                               GetSingleReadsWeightPriorityThreshold(lib.type()),
-                                               GetSingleReadsUniqueEdgePriorityThreshold(lib.type()),
-                                               GetSingleReadsSignificantOverlapThreshold(lib.type()),
-                                               pset.extension_options.max_repeat_length);
-
     size_t resolvable_repeat_length_bound = 10000ul;
     if (!lib.is_contig_lib()) {
         resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().read_length);
     }
     INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
-    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, resolvable_repeat_length_bound,
+
+    auto long_reads_ec = MakeLongReadsExtensionChooser(gp, lib_index, pset.extension_options.max_repeat_length);
+    return make_shared<SimpleExtender>(gp, cov_map, long_reads_ec, resolvable_repeat_length_bound,
                                        pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(lib.type()));
 }
-
-
 
 inline bool InsertSizeCompare(const shared_ptr<PairedInfoLibrary> lib1,
                               const shared_ptr<PairedInfoLibrary> lib2) {

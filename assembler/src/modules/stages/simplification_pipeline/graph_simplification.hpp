@@ -117,7 +117,7 @@ private:
             DEBUG("Length bound " << length_bound);
 
             RelaxMin(min_length_bound, length_bound);
-            INFO("Min length bound - " << min_length_bound);
+            DEBUG("Min length bound - " << min_length_bound);
             return LengthUpperBound<Graph>(g_, length_bound);
 
         } else if (next_token_ == "rlmk") {
@@ -126,7 +126,7 @@ private:
             DEBUG("Creating (rl - k) bound");
             size_t length_bound = settings_.read_length() - g_.k();
             RelaxMin(min_length_bound, length_bound);
-            INFO("Min length bound - " << min_length_bound);
+            DEBUG("Min length bound - " << min_length_bound);
             return LengthUpperBound<Graph>(g_, length_bound);
 
         } else if (next_token_ == "to_ec_lb") {
@@ -140,7 +140,7 @@ private:
             DEBUG("Length bound " << length_bound);
 
             RelaxMin(min_length_bound, length_bound);
-            INFO("Min length bound - " << min_length_bound);
+            DEBUG("Min length bound - " << min_length_bound);
             return LengthUpperBound<Graph>(g_, length_bound);
             
         } else if (next_token_ == "ec_lb") {
@@ -154,7 +154,7 @@ private:
             DEBUG("Length bound " << length_bound);
 
             RelaxMin(min_length_bound, length_bound);
-            INFO("Min length bound - " << min_length_bound);
+            DEBUG("Min length bound - " << min_length_bound);
             return LengthUpperBound<Graph>(g_, length_bound);
         } else if (next_token_ == "lb") {
             size_t length_bound = std::stoll(ReadNext());
@@ -162,7 +162,7 @@ private:
             DEBUG("Creating length bound. Value " << length_bound);
 
             RelaxMin(min_length_bound, length_bound);
-            INFO("Min length bound - " << min_length_bound);
+            DEBUG("Min length bound - " << min_length_bound);
             return LengthUpperBound<Graph>(g_, length_bound);
         } else if (next_token_ == "cb") {
             ReadNext();
