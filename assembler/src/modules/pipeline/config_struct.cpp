@@ -236,12 +236,12 @@ void load(debruijn_config::simplification::topology_tip_clipper& ttc,
 }
 
 void load(debruijn_config::simplification::complex_tip_clipper &ctc,
-          boost::property_tree::ptree const &pt, bool /*complete*/) {
+          boost::property_tree::ptree const &pt, bool complete) {
     using config_common::load;
-    load(ctc.enabled, pt, "enabled");
-    load(ctc.max_relative_coverage, pt, "max_relative_coverage");
-    load(ctc.max_edge_len, pt, "max_edge_len");
-    load(ctc.condition, pt, "condition");
+    load(ctc.enabled, pt, "enabled", complete);
+    load(ctc.max_relative_coverage, pt, "max_relative_coverage", complete);
+    load(ctc.max_edge_len, pt, "max_edge_len", complete);
+    load(ctc.condition, pt, "condition", complete);
 }
 
 void load(debruijn_config::simplification::relative_coverage_edge_disconnector& relative_ed,

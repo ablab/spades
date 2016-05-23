@@ -45,14 +45,22 @@ simp
         max_vertex_cnt      100
         max_ec_length_coefficient   300
         max_coverage_coeff  -1.0
-	}
+    }
 
-	; relative edge disconnector:
-	relative_ed
-	{
+    ; complex tip clipper
+    complex_tc
+    {
+        enabled               true
+    }
+    
+
+
+    ; relative edge disconnector:
+    relative_ed
+    {
         enabled true
         diff_mult  10.
-	}
+    }
 
 	; bulge remover:
 	br
