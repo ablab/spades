@@ -116,7 +116,7 @@ long_reads {
     single_reads {
         filtering  1.25 
         weight_priority    5.0
-        unique_edge_priority 1000.0
+        unique_edge_priority 10000.0
         min_significant_overlap 0
     }
 
@@ -129,8 +129,8 @@ long_reads {
 
     meta_untrusted_contigs {
         filtering   0.0
-        weight_priority    100.0
-        unique_edge_priority 2.0
+        weight_priority    10000.0
+        unique_edge_priority 10000.0
         min_significant_overlap 200
     }
 

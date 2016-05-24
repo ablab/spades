@@ -156,7 +156,7 @@ params {
         ;use_default_single_threshold NA
         ;single_threshold           NA 
         weight_threshold           0.6
-        max_repeat_length          50000 
+        max_repeat_length          1000000 
    }
     
     use_coordinated_coverage true
