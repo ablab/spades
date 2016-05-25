@@ -23,7 +23,7 @@ public:
         os_ << "@" << read.name() << std::endl;
         os_ << read.GetSequenceString() << std::endl;
         os_ << "+" << std::endl;
-        os_ << read.GetQualityString() << std::endl;
+        os_ << read.GetPhredQualityString() << std::endl;
         return *this;
     }
 
