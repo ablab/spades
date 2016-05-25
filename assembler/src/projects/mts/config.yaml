@@ -1,6 +1,6 @@
 IN: "/Sid/snurk/mts/sim/data"
 SPADES: "~/Projects/mts/assembler/"
-QUAST: "python2 ~/opt/quast-3.2/quast.py"
+QUAST: "python2 ~/opt/quast-3.2/metaquast.py"
 BIN: "~/Projects/mts/assembler/build/release/bin"
 SCRIPTS: "~/Projects/mts/assembler/src/projects/mts/scripts"
 SOFT: "/home/snurk/soft/"

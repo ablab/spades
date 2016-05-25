@@ -31,9 +31,11 @@ THREADS = config.get("THREADS", 16)
 
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
+CAGS = glob_wildcards("binning/{cag,CAG\d+}")
 REFS = {os.path.splitext(os.path.basename(fullpath))[0]: fullpath for fullpath in gather_refs(config.get("REFS", []))}
 def ref_path(wildcards):
     return REFS[wildcards.ref]
+ALL_REFS = ",".join(path for path in REFS.values())
 
 # ---- Main pipeline -----------------------------------------------------------
 
@@ -140,7 +142,7 @@ rule quast_all_samples:
     shell:   "{QUAST} -R {input.ref} {input.contigs} -o {params} >{log} 2>&1"
 
 rule quast_all:
-    input:   expand("{sample}/{ref}.cont", sample=SAMPLES, ref=REFS.keys())
+    input:   expand("{sample}/{ref}.cont", sample=SAMPLES, ref=REFS)
     message: "Calculated QUAST metrics"
 
 rule filter_all_samples:
@@ -168,11 +170,41 @@ rule quast_combined_all:
     input:   expand("summary/q_{ref}_all/report.tsv", ref=REFS.keys())
     message: "Calculated QUAST metrics on all combined samples"
 
-rule bins:
+rule filter_bins:
     input:   "{sample}/{ref}.cont"
     output:  "{sample}/{ref}.bin"
     message: "Filtering interesting bins for {wildcards.sample} aligned to {wildcards.ref}"
-    shell: "Rscript {SCRIPTS}/bins.R canopy.out {input} > {output}"
+    shell:   "Rscript {SCRIPTS}/bins.R canopy.out {input} > {output}"
+
+#TODO: split into different directories per sample
+rule split_bins:
+    input:   "{sample}/{sample}.fasta", "{sample}.ann"
+    output:  "{sample}/split.log"
+    params:  "binning"
+    message: "Splitting assembly of {wildcards.sample} between bins"
+    shell:
+        "mkdir -p {params} &&"
+        "{SCRIPTS}/split_bins.py {input} {params} &&"
+        "touch {output}"
+
+rule split_bins_all:
+    input:   expand("{sample}/split.log", sample=SAMPLES)
+    message: "Splitted all assemblies"
+
+SPLIT_SAMPLES, = glob_wildcards("binning/{piece,sample\d+-CAG\d+\.fasta}")
+rule quast_split_all:
+    input:   expand("binning/{piece}", piece=SPLIT_SAMPLES)
+    params:  "summary/q_bin_all"
+    log:     "summary/q_bin_all.log"
+    message: "Aligning binned assemblies from {SPLIT_SAMPLES} on all references"
+    shell:   "{QUAST} -R {ALL_REFS} {input} -o {params} >{log} 2>&1"
+
+rule neat_table:
+    input:   "{summary}/q_bin_all.log"
+    output:  "{summary}/table.tsv"
+    params:  dir="{summary}/q_bin_all", refs=" ".join(REFS)
+    message: "Formatting a human-readable table from results"
+    shell:   "{SCRIPTS}/format_table.py {output} {params.dir} {params.refs}"
 
 rule bins_all_samples:
     input:   expand("{sample}/{{ref}}.bin", sample=SAMPLES)
@@ -199,7 +231,7 @@ rule prop_stats:
     shell:   "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref} -c {input.contigs} -a {input.prelim} -p {input.prop} -b `cat {input.bins}` >/dev/null 2>{output}"
 
 rule prop_stats_all:
-    input:   expand("{sample}/{ref}.stats", sample=SAMPLES, ref=REFS.keys())
+    input:   expand("{sample}/{ref}.stats", sample=SAMPLES, ref=REFS)
     message: "Calculated basic stats"
 
 rule pca:

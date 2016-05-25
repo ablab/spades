@@ -36,4 +36,4 @@ for sample in samples_annotation:
         annotation = samples_annotation[sample]
 
         for contig in annotation:
-            print(contig + ' : ' + ' '.join(annotation[contig]), file=sample_out)
+            print(contig, ':', ' '.join(annotation[contig]), file=sample_out)
