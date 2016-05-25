@@ -204,6 +204,7 @@ void AnnotationPropagator::Run(io::SingleStream& contigs, const string& annotati
     PairedInfoPropagator paired_propagator(gp_, 2.0);
 
     //TODO: make this configurable
+    //FIXME use shared ptr!
     std::vector<EdgeAnnotationPropagator*> propagator_pipeline =
         {&edge_propagator, &tip_propagator, &paired_propagator,
          &edge_propagator, &contig_propagator, &tip_propagator};

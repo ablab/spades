@@ -129,8 +129,10 @@ public:
     }
 
     void Fill(io::SingleStream& contigs, AnnotationStream& annotation_stream) {
+        INFO("Filling edge annotation");
         set<bin_id> all_bins;
 
+        INFO("Reading (split) contigs annotation");
         map<contig_id, std::set<bin_id>> annotation_map;
         ContigAnnotation contig_annotation;
         while (!annotation_stream.eof()) {
@@ -145,11 +147,13 @@ public:
                 insert_all(annotation_map[GetBaseId(contig_annotation.first)], bins);
             }
         }
+        INFO("Annotation available for " << annotation_map.size() << " contigs");
+        INFO("Sticking annotation to edges");
 
         io::SingleRead contig;
         while (!contigs.eof()) {
             contigs >> contig;
-            contig_id id = GetId(contig);
+            contig_id id = GetBaseId(GetId(contig));
             auto bins = annotation_map.find(id);
             if (bins != annotation_map.end() && !(bins->second.empty())) {
                 for (EdgeId e : mapper_->MapRead(contig).simple_path()) {
@@ -159,8 +163,10 @@ public:
         }
 
         if (bins_of_interest_.empty()) {
+            INFO("Bins of interest not specified. Marking all bins as bins of interest");
             bins_of_interest_ = all_bins;
         }
+        INFO("Edge annotation filled. Annotated " << edge_annotation_.size() << " edges.");
     }
 
     vector<bin_id> Annotation(EdgeId e) const {

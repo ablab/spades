@@ -48,27 +48,33 @@ int main(int argc, char** argv) {
         exit(1);
     }
     //TODO: don't save the propagated info
-    string contigs_binning_path = annotation_path + ".prop";
+    string propagated_path = annotation_path + ".prop";
 
     conj_graph_pack gp(k, "tmp", 1);
     gp.kmer_mapper.Attach();
 
-    INFO("Load graph from " << saves_path);
+    INFO("Load graph and clustered paired info from " << saves_path);
     graphio::ScanWithClusteredIndices(saves_path, gp, gp.clustered_indices);
 
     //Propagation stage
     //TODO: make this optional
+    INFO("Using contigs from " << contigs_path);
     io::FileReadStream contigs_stream(contigs_path);
+    INFO("Propagation launched");
     AnnotationPropagator propagator(gp);
-    propagator.Run(contigs_stream, annotation_path, bins_of_interest, contigs_binning_path);
+    propagator.Run(contigs_stream, annotation_path, bins_of_interest, propagated_path);
+    INFO("Propagation finished");
 
     //Binning stage
-    ContigBinner binner(gp, bins_of_interest);
-    AnnotationStream binning_stream(contigs_binning_path);
     contigs_stream.reset();
+    ContigBinner binner(gp, bins_of_interest);
+    INFO("Initializing binner");
+    INFO("Using propagated annotation from " << propagated_path);
+    AnnotationStream binning_stream(propagated_path);
     binner.Init(out_root, sample_name, contigs_stream, binning_stream);
 
     auto paired_stream = io::PairedEasyStream(left_reads, right_reads, false, 0);
+    INFO("Running binner on " << left_reads << " and " << right_reads);
     binner.Run(*paired_stream);
     binner.close();
 
