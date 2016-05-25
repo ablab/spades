@@ -255,27 +255,26 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
   const KmerSubs& kmer_mapper_;
   size_t k_;
   bool optimization_on_;
-  //    mutable size_t mapped_;
-  //    mutable size_t unmapped_;
 
   bool FindKmer(const Kmer &kmer, size_t kmer_pos, std::vector<EdgeId> &passed,
                 RangeMappings& range_mappings) const {
     std::pair<EdgeId, size_t> position = index_.get(kmer);
-    if (position.second != -1u/*index contains this k-mer*/) {
-      if (passed.empty() || passed.back() != position.first ||
-          kmer_pos != range_mappings.back().initial_range.end_pos ||
-          position.second + 1 < range_mappings.back().mapped_range.end_pos) {
+    if (position.second == -1u)
+        return false;
+    
+    if (passed.empty() || passed.back() != position.first ||
+        kmer_pos != range_mappings.back().initial_range.end_pos ||
+        position.second + 1 < range_mappings.back().mapped_range.end_pos) {
         passed.push_back(position.first);
-        range_mappings.push_back(
-            MappingRange(Range(kmer_pos, kmer_pos + 1),
-                         Range(position.second, position.second + 1)));
-      } else {
+
+        range_mappings.push_back(MappingRange(Range(kmer_pos, kmer_pos + 1),
+                                              Range(position.second, position.second + 1)));
+    } else {
         range_mappings.back().initial_range.end_pos = kmer_pos + 1;
         range_mappings.back().mapped_range.end_pos = position.second + 1;
-      }
-      return true;
     }
-    return false;
+
+    return true;
   }
 
   bool TryThread(const Kmer& kmer, size_t kmer_pos, std::vector<EdgeId> &passed,
@@ -309,43 +308,23 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
     return false;
   }
 
-  bool Substitute(Kmer& kmer) const {
-    Kmer subs = kmer_mapper_.Substitute(kmer);
-    if (subs != kmer) {
-      kmer = subs;
-      return true;
-    }
-    return false;
-  }
-
-  bool ProcessKmer(Kmer kmer, size_t kmer_pos, std::vector<EdgeId> &passed_edges,
+  bool ProcessKmer(const Kmer &kmer, size_t kmer_pos, std::vector<EdgeId> &passed_edges,
                    RangeMappings& range_mapping, bool try_thread) const {
     if (try_thread) {
-      if (!TryThread(kmer, kmer_pos, passed_edges, range_mapping)) {
-        Substitute(kmer);
-        FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
-        return false;
-      } else {
+        if (!TryThread(kmer, kmer_pos, passed_edges, range_mapping)) {
+            FindKmer(kmer_mapper_.Substitute(kmer), kmer_pos, passed_edges, range_mapping);
+            return false;
+        }
+
         return true;
-      }
-    } else {
-      if (!Substitute(kmer)) {
-        return FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
-      } else {
-        FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
-        return false;
-      }
     }
-    //        if (!Substitute(kmer)) {
-    //            if (try_thread) {
-    //                return TryThread(kmer, kmer_pos, passed_edges, range_mapping);
-    //            } else {
-    //                return FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
-    //            }
-    //        } else {
-    //            FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
-    //            return false;
-    //        }
+
+    if (kmer_mapper_.CanSubstitute(kmer)) {
+        FindKmer(kmer_mapper_.Substitute(kmer), kmer_pos, passed_edges, range_mapping);
+        return false;
+    }
+
+    return FindKmer(kmer, kmer_pos, passed_edges, range_mapping);
   }
 
  public:

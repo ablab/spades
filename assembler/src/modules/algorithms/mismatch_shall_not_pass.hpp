@@ -79,8 +79,8 @@ private:
     void CollectPotensialMismatches(const graph_pack &gp) {
         auto &kmer_mapper = gp.kmer_mapper;
         for (auto it = kmer_mapper.begin(); it != kmer_mapper.end(); ++it) {
-            runtime_k::RtSeq from = it->first;
-            runtime_k::RtSeq to = it->second;
+            const runtime_k::RtSeq &from = it->first;
+            const runtime_k::RtSeq &to = it->second;
             size_t cnt = 0;
             size_t cnt_arr[4];
             for (size_t i = 0; i < 4; i++)
@@ -204,7 +204,6 @@ private:
     typedef typename graph_pack::graph_t Graph;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef runtime_k::RtSeq Kmer;
 
     graph_pack &gp_;
     double relative_threshold_;
