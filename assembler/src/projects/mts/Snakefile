@@ -218,16 +218,18 @@ rule int_bins_all:
     input:   expand("summary/{ref}.bin", ref=REFS)
     message: "Gathered all interesting bins"
 
-#---- GF per bin per sample per reference --------------------------------------
+#---- GF per bin per reference --------------------------------------
 
+PROP = ["", ".prop"]
 #TODO: split into different directories per sample
 rule split_bins:
-    input:   "{sample}/{sample}.fasta", "{sample}.ann.prop"
-    output:  "{sample}/split.log"
-    params:  "binning"
-    message: "Splitting assembly of {wildcards.sample} between bins"
+    input:   "{sample}/{sample}.fasta", "{sample}.ann{prop}"
+    output:  "{sample}/split{prop}.log"
+    params:  "binning{prop}"
+    message: "Splitting assembly of {wildcards.sample} between bins{wildcards.prop}"
     shell:
         "mkdir -p {params} && "
+        "rm -f {params}/sample*-*.fasta && " # TODO: move into the script
         "{SCRIPTS}/split_bins.py {input} {params} && "
         "touch {output}"
 
@@ -236,22 +238,26 @@ rule split_bins_all:
     message: "Splitted all assemblies"
 
 rule cat_binned_contigs:
-    input:   expand("{sample}/split.log", sample=SAMPLES)
-    output:  "binning/{cag,CAG\d+}.fasta"
-    params:  "`ls binning/*-{cag}.fasta`"
+    input:   expand("{sample}/split{{prop}}.log", sample=SAMPLES)
+    output:  "binning{prop}/{cag,CAG\d+}.fasta"
+    params:  "`ls binning{prop}/*-{cag}.fasta`"
     message: "Combine binned contigs for {wildcards.cag}"
     shell:   "cat {params} > {output}"
 
 # Run this
 #SPLIT_SAMPLES, = glob_wildcards("binning/{piece,sample\d+-CAG\d+\.fasta}")
-rule quast_split_all:
+rule quast_split_prop:
     #input:   expand("binning/{piece}", piece=SPLIT_SAMPLES)
-    input:   expand("binning/{cag}.fasta", cag=CAGS)
-    params:  "summary/q_bin_all_prop"
-    log:     "summary/q_bin_all_prop.log"
+    input:   expand("binning{{prop}}/{cag}.fasta", cag=CAGS)
+    output:  "summary/q_bin_all{prop}.log"
+    params:  "summary/q_bin_all{prop}"
     threads: THREADS
     message: "Aligning binned assemblies on all references"
-    shell:   "{METAQUAST} -t {threads} -R {ALL_REFS} {input} -o {params} >{log} 2>&1"
+    shell:   "{METAQUAST} -t {threads} -R {ALL_REFS} {input} -o {params} >{output} 2>&1"
+
+rule all_stats:
+    input:   expand("summary/q_bin_all{prop}.log", prop=PROP)
+    message: "Gathered some numbers, deal with them."
 
 rule neat_table:
     input:   "{summary}/q_bin_all.log"
