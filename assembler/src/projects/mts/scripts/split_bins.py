@@ -14,10 +14,10 @@ sample = sys.argv[1]
 sample_name, _ = path.splitext(path.basename(sample))
 out_dir = sys.argv[3]
 
-binning = common.load_annotation(sample)
+binning = common.load_annotation(sys.argv[2])
 
 cags = set()
 for seq in SeqIO.parse(sample, "fasta"):
-    for cag in binning.get(common.get_id(seq.id), []):
+    for cag in binning.get(common.get_id(seq.id, sample_name), []):
         with open(path.join(out_dir, "{}-{}.fasta".format(sample_name, cag)), "a") as output:
             SeqIO.write(seq, output, "fasta")

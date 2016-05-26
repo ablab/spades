@@ -21,6 +21,8 @@ BIN = config["BIN"]
 SCRIPTS = config["SCRIPTS"]
 SOFT = config["SOFT"]
 QUAST = config["QUAST"]
+# TODO: there should be only one
+METAQUAST = QUAST.replace("quast.py", "metaquast.py")
 K = int(config.get("K", 55))
 small_k = int(config.get("small_k", 21))
 CONFIG = "K{0}/configs/config.info".format(K)
@@ -234,7 +236,7 @@ rule split_bins_all:
     message: "Splitted all assemblies"
 
 rule cat_binned_contigs:
-    input:   FINISHED_BINNING
+    input:   expand("{sample}/split.log", sample=SAMPLES)
     output:  "binning/{cag,CAG\d+}.fasta"
     params:  "`ls binning/*-{cag}.fasta`"
     message: "Combine binned contigs for {wildcards.cag}"
@@ -244,12 +246,12 @@ rule cat_binned_contigs:
 #SPLIT_SAMPLES, = glob_wildcards("binning/{piece,sample\d+-CAG\d+\.fasta}")
 rule quast_split_all:
     #input:   expand("binning/{piece}", piece=SPLIT_SAMPLES)
-    input:   expand("binning/{cag}.fasta, cag=CAGS")
-    params:  "summary/q_bin_all"
-    log:     "summary/q_bin_all.log"
+    input:   expand("binning/{cag}.fasta", cag=CAGS)
+    params:  "summary/q_bin_all_prop"
+    log:     "summary/q_bin_all_prop.log"
     threads: THREADS
-    message: "Aligning binned assemblies from {SPLIT_SAMPLES} on all references"
-    shell:   "{QUAST} -t {threads} -R {ALL_REFS} {input} -o {params} >{log} 2>&1"
+    message: "Aligning binned assemblies on all references"
+    shell:   "{METAQUAST} -t {threads} -R {ALL_REFS} {input} -o {params} >{log} 2>&1"
 
 rule neat_table:
     input:   "{summary}/q_bin_all.log"
@@ -278,3 +280,14 @@ rule pca:
     message: "Doing some visualization"
     shell:
         "Rscript {SCRIPTS}/pca.R {input} {output}"
+
+rule pca_total:
+    input:
+        canopy_in=rules.canopy_pre.output,
+        canopy_out=rules.canopy.output.out,
+        filters=expand("{sample}/{ref}.cont", sample=SAMPLES, ref=REFS)
+    output:  "pca.png"
+    params:  "summary/total.cont"
+    shell:
+        "cat {input.filters} > {params} && "
+        "Rscript {SCRIPTS}/pca.R {input.canopy_in} {input.canopy_out} {params}"

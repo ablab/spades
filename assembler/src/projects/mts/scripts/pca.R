@@ -1,20 +1,25 @@
-combine_pieces <- function(table) {
-  res <- table
-  res$contig <- sub("_.*", "", res$contig)
-  unique(res)
+library(stringr)
+
+format_ids <- function(table) {
+  table$contig <- paste0(str_extract(table$contig, "sample\\d+-"), str_replace(str_extract(table$contig, "ID_\\d+"), "ID_", ""))
+  unique(table)
 }
 
 load_clusters <- function(canopy_in, canopy_out, int_contigs) {
   data <- read.table(canopy_in)
   names(data) <- c('contig', sapply(seq(1, dim(data)[2]-1, 1),
                              function(x) {paste('mlt', x, sep='')}))
-  data <- combine_pieces(data)
+  data <- format_ids(data)
+  print(data[1:10,])
   binned <- read.table(canopy_out)
   names(binned) <- c('clust', 'contig')
-  binned <- combine_pieces(binned)
+  binned <- format_ids(binned)
+  print(binned[1:10,])
   interesting <- read.table(int_contigs)
   names(interesting) <- c('contig', 'alignment')
+  print(interesting[1:10,])
   contigs <- merge(x=binned, y=interesting, by='contig')
+  print(contigs[1:10,])
   droplevels(merge(x=data, y=contigs, by='contig'))
 }
 
@@ -55,5 +60,6 @@ cont_fn <- args[3]
 image_out <- args[4]
 
 clusters <- load_clusters(in_fn, out_fn, cont_fn)
+print(clusters[1:10,])
 prc_data <- do_prc(clusters)
 print_clusters(prc_data, clusters$clust, image_out)
