@@ -29,6 +29,7 @@ int main(int argc, char** argv) {
     string left_reads, right_reads;
     string out_root, sample_name;
     std::vector<bin_id> bins_of_interest;
+    bool no_binning;
     try {
         GetOpt_pp ops(argc, argv);
         ops.exceptions_all();
@@ -41,10 +42,11 @@ int main(int argc, char** argv) {
             >> Option('o', out_root)
             >> Option('n', sample_name)
             >> Option('b', bins_of_interest, {})
-        ;
+            >> OptionPresent('p', no_binning);
     } catch(GetOptEx &ex) {
         cout << "Usage: prop_binning -k <K> -s <saves path> -c <contigs path> -a <binning annotation> "
-                "-l <left reads> -r <right reads> -o <output root> -n <sample name> [-b <bins of interest>*]"  << endl;
+                "-l <left reads> -r <right reads> -o <output root> -n <sample name> "
+                "[-p to disable binning] [-b <bins of interest>*]"  << endl;
         exit(1);
     }
     //TODO: don't save the propagated info
@@ -65,6 +67,10 @@ int main(int argc, char** argv) {
     propagator.Run(contigs_stream, annotation_path, bins_of_interest, propagated_path);
     INFO("Propagation finished");
 
+    if (no_binning) {
+        INFO("Binning was disabled with -p flag");
+        return 0;
+    }
     //Binning stage
     contigs_stream.reset();
     ContigBinner binner(gp, bins_of_interest);
