@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import re
 import sys
+from os import path
 
 def print_usage():
     print("For a sample assembly aligned to a reference, outputs only contigs which were aligned more than <threshold> percent of their length total, and that percent.")
@@ -28,10 +29,13 @@ for (i, sample) in enumerate(report_data["Assembly"]):
     reference_length = int(report_data["Reference length"][i])
     nucmer_output = "{}/contigs_reports/nucmer_output/{}.coords.filtered".format(sys.argv[1], sample)
     output = open("{}/{}".format(sample, sys.argv[2]), "w")
+    if not path.exists(nucmer_output):
+        output.close()
+        continue
     with open(nucmer_output) as input:
         #threshold = float(sys.argv[2])
         threshold = float(sys.argv[3])
-        align_data = re.compile("\d+ \d+ \| \d+ \d+ \| \d+ (\d+) \| [\d.]+ \| [^ ]+ [^\s]+length_(\d+)[^\s]+ID_(\d+)")
+        align_data = re.compile("\d+ \d+ \| \d+ \d+ \| \d+ (\d+) \| [\d.]+ \| [^ ]+ NODE_(\d+)_length_(\d+)")
         contig = None
         total_len = 0
         contig_len = 0
@@ -46,12 +50,12 @@ for (i, sample) in enumerate(report_data["Assembly"]):
             res = align_data.search(line)
             if res is None:
                 continue
-            new_contig = res.group(3)
+            new_contig = res.group(2)
             if contig != new_contig:
                 if contig is not None:
                     total_len += process_contig()
                 contig = new_contig
-                contig_len = int(res.group(2))
+                contig_len = int(res.group(3))
                 align_len = 0
             #Assuming that all alignments of the same contig are consequent
             align_len += int(res.group(1))
