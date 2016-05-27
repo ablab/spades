@@ -232,7 +232,8 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
             bool map_single_reads = ShouldMapSingleReads(i);
             cfg::get_writable().use_single_reads |= map_single_reads;
 
-            if(cfg::get().mode == debruijn_graph::config::pipeline_type::meta && map_single_reads) {
+            if(cfg::get().mode == debruijn_graph::config::pipeline_type::meta 
+                        && cfg::get().use_single_reads) {
                 map_single_reads = false;
                 cfg::get_writable().use_single_reads = false;
                 WARN("Single reads mappings are not used in metagenomic mode");
