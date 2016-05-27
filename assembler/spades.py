@@ -546,6 +546,7 @@ def main(args):
     mode = options_storage.get_mode()
     if mode is not None:
         args.append('--' + mode)
+    args.append('--large-genome')
 
     # parse options and safe all parameters to cfg
     options = args

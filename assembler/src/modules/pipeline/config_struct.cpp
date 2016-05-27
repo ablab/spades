@@ -90,7 +90,9 @@ vector<string> PipelineTypeNames() {
                     {"moleculo", pipeline_type::moleculo},
                     {"diploid", pipeline_type::diploid},
                     {"rna", pipeline_type::rna},
-                    {"plasmid", pipeline_type::plasmid}}, pipeline_type::total);
+                    {"plasmid", pipeline_type::plasmid},
+                    {"large_genome", pipeline_type::large_genome}
+					}, pipeline_type::total);
 }
 
 vector<string> ConstructionModeNames() {

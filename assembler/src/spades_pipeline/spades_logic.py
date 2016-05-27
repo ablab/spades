@@ -122,6 +122,7 @@ def add_configs(command, configs_dir):
                            ("meta", "meta_mode"), 
                            ("truseq_mode", "moleculo_mode"),
                            ("rna", "rna_mode"),
+                           ("large_genome", "large_genome_mode"),
                            ("plasmid", "plasmid_mode"),
                            ("careful", "careful_mode"),
                            ("diploid_mode", "diploid_mode")]
