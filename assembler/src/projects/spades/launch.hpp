@@ -27,9 +27,10 @@ namespace spades {
 
 void assemble_genome() {
     INFO("SPAdes started");
-    if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta && cfg::get().ds.reads.lib_count() != 1) {
-        ERROR("Sorry, current version of metaSPAdes can work with single library only (paired-end only).");
-        exit(239);
+    if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta &&
+            (cfg::get().ds.reads.lib_count() != 1 || cfg::get().ds.reads[0].type() != io::LibraryType::PairedEnd)) {
+            ERROR("Sorry, current version of metaSPAdes can work with single library only (paired-end only).");
+            exit(239);
     }
 
     INFO("Starting from stage: " << cfg::get().entry_point);
