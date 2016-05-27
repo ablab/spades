@@ -100,9 +100,9 @@ install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaspades.py"
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../plasmidspades.py"
         DESTINATION bin
         COMPONENT runtime)
-install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../rnaspades.py"
-        DESTINATION bin
-        COMPONENT runtime)
+#install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../rnaspades.py"
+#        DESTINATION bin
+#        COMPONENT runtime)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../truspades.py"
         DESTINATION bin
         COMPONENT runtime)
