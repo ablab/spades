@@ -135,6 +135,10 @@ def print_used_values(cfg, log):
             log.info("  Repeat resolution is DISABLED")
         else:
             log.info("  Repeat resolution is enabled")
+        if options_storage.careful:
+            log.info("  Mismatch careful mode is turned ON")
+        else:
+            log.info("  Mismatch careful mode is turned OFF")
         if "mismatch_corrector" in cfg:
             log.info("  MismatchCorrector will be used")
         else:
@@ -333,11 +337,6 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.enable_truseq_mode()
         else:
             raise ValueError
-
-    if options_storage.careful:
-        log.info("  Mismatch careful mode is turned ON")
-    else:
-        log.info("  Mismatch careful mode is turned OFF")
 
     if not options_storage.output_dir:
         support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
