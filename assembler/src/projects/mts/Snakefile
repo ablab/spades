@@ -220,16 +220,16 @@ rule int_bins_all:
 
 #---- GF per bin per reference --------------------------------------
 
-PROP = ["", ".prop"]
+PROP = {"prelim": ".ann", "prop": ".ann.prop"}
+
 #TODO: split into different directories per sample
 rule split_bins:
-    input:   "{sample}/{sample}.fasta", "{sample}.ann{prop}"
-    output:  "{sample}/split{prop}.log"
-    params:  "binning{prop}"
-    message: "Splitting assembly of {wildcards.sample} between bins{wildcards.prop}"
+    input:   "{sample}/{sample}.fasta", lambda w: w.sample + PROP[w.prop]
+    output:  "{sample}/split_{prop}.log"
+    params:  "binning/contigs_{prop}"
+    message: "Splitting assembly of {wildcards.sample} between {wildcards.prop} bins"
     shell:
-        "mkdir -p {params} && "
-        "rm -f {params}/sample*-*.fasta && " # TODO: move into the script
+        "mkdir -p {params} && rm -f {params}/{wildcards.sample}-*.fasta && "
         "{SCRIPTS}/split_bins.py {input} {params} && "
         "touch {output}"
 
@@ -238,9 +238,9 @@ rule split_bins_all:
     message: "Splitted all assemblies"
 
 rule cat_binned_contigs:
-    input:   expand("{sample}/split{{prop}}.log", sample=SAMPLES)
-    output:  "binning{prop}/{cag,CAG\d+}.fasta"
-    params:  "`ls binning{prop}/*-{cag}.fasta`"
+    input:   expand("{sample}/split_{{prop}}.log", sample=SAMPLES)
+    output:  "binning/contigs_{prop}/{cag,CAG\d+}.fasta"
+    params:  "`ls binning/contigs_{prop}/*-{cag}.fasta`"
     message: "Combine binned contigs for {wildcards.cag}"
     shell:   "cat {params} > {output}"
 
@@ -248,15 +248,15 @@ rule cat_binned_contigs:
 #SPLIT_SAMPLES, = glob_wildcards("binning/{piece,sample\d+-CAG\d+\.fasta}")
 rule quast_split_prop:
     #input:   expand("binning/{piece}", piece=SPLIT_SAMPLES)
-    input:   expand("binning{{prop}}/{cag}.fasta", cag=CAGS)
-    output:  "summary/q_bin_all{prop}.log"
-    params:  "summary/q_bin_all{prop}"
+    input:   expand("binning/contigs_{{prop}}/{cag}.fasta", cag=CAGS)
+    output:  "summary/q_bin_{prop}.log"
+    params:  "summary/q_bin_{prop}"
     threads: THREADS
     message: "Aligning binned assemblies on all references"
     shell:   "{METAQUAST} -t {threads} -R {ALL_REFS} {input} -o {params} >{output} 2>&1"
 
 rule all_stats:
-    input:   expand("summary/q_bin_all{prop}.log", prop=PROP)
+    input:   expand("summary/q_bin_{prop}.log", prop=PROP)
     message: "Gathered some numbers, deal with them."
 
 rule neat_table:
@@ -287,13 +287,19 @@ rule pca:
     shell:
         "Rscript {SCRIPTS}/pca.R {input} {output}"
 
+rule combine_contigs:
+    input:   expand("{sample}/{ref}.cont", sample=SAMPLES, ref=REFS)
+    output:  "summary/total.cont"
+    message: "Combining interesting contigs for all samples/references"
+    run:
+        shell("rm -f {output}")
+        for sample in SAMPLES:
+            for ref in REFS:
+                shell("awk '{{print $0 \"\t{ref}\"}}' {sample}/{ref}.cont >> {output}")
+
 rule pca_total:
-    input:
-        canopy_in=rules.canopy_pre.output,
-        canopy_out=rules.canopy.output.out,
-        filters=expand("{sample}/{ref}.cont", sample=SAMPLES, ref=REFS)
+    input:   rules.canopy_pre.output, rules.canopy.output.out, "summary/total.cont"
     output:  "pca.png"
-    params:  "summary/total.cont"
+    #params:  "summary/total.cont"
     shell:
-        "cat {input.filters} > {params} && "
-        "Rscript {SCRIPTS}/pca.R {input.canopy_in} {input.canopy_out} {params}"
+        "Rscript {SCRIPTS}/pca.R {input} {output}" # {input.canopy_in} {input.canopy_out} {params}"
