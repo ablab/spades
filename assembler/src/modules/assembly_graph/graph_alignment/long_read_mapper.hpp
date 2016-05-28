@@ -106,6 +106,7 @@ private:
     typedef MappingPathFixer<Graph> GraphMappingPathFixer;
     const GraphMappingPathFixer path_fixer_;
     const double MIN_MAPPED_RATIO = 0.3;
+    const size_t MIN_MAPPED_LENGTH = 100;
 public:
     GappedLongReadMapper(conj_graph_pack& gp, PathStorage<conj_graph_pack::graph_t>& storage)
             : AbstractLongReadMapper(gp, storage), path_fixer_(gp.g) {
@@ -137,11 +138,12 @@ private:
     vector<EdgeId> FilterBadMappings(const vector<EdgeId>& corrected_path, const MappingPath<EdgeId>& mapping_path) const {
         vector<EdgeId> new_corrected_path;
         size_t mapping_index = 0;
-        for(auto edge : corrected_path) {
+        for (auto edge : corrected_path) {
             size_t mapping_size = CountMappedEdgeSize(edge, mapping_path, mapping_index);
             size_t edge_len =  gp_.g.length(edge);
             //VERIFY(edge_len >= mapping_size);
-            if(math::gr((double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO)) {
+            if (mapping_size > MIN_MAPPED_LENGTH || 
+                    math::gr((double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO)) {
                 new_corrected_path.push_back(edge);
             }
         }
