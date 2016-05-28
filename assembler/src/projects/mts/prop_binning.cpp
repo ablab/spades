@@ -10,6 +10,7 @@
 #include "pipeline/graphio.hpp"
 #include "read_binning.hpp"
 #include "propagate.hpp"
+#include <modules/visualization/position_filler.hpp>
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
@@ -57,6 +58,10 @@ int main(int argc, char** argv) {
 
     INFO("Load graph and clustered paired info from " << saves_path);
     graphio::ScanWithClusteredIndices(saves_path, gp, gp.clustered_indices);
+
+//    gp.edge_pos.Attach();
+//    FillPos(gp, "/Sid/snurk/mts/data/infant_gut/refs/Enterococcus_faecalis_37_1.fasta",
+//            "CAG1_ref_", true);
 
     //Propagation stage
     //TODO: make this optional

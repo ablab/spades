@@ -87,6 +87,10 @@ class EdgeAnnotation {
     shared_ptr<SequenceMapper<Graph>> mapper_;
     map<EdgeId, set<bin_id>> edge_annotation_;
 
+    vector<EdgeId> EdgesOfContig(const io::SingleRead& contig) const {
+        return mapper_->MapRead(contig).simple_path();
+    }
+
     Bins FilterInteresting(const Bins& bins) const {
         Bins answer;
         for (const bin_id& bin : bins) {
@@ -185,15 +189,11 @@ public:
         return answer;
     }
 
-    vector<EdgeId> EdgesOfContig(const io::SingleRead& contig) const {
-        //TODO: memoize mapping
-        return mapper_->MapRead(contig).simple_path();
-    }
-
-    set<EdgeId> EdgesOfBin(bin_id bin) const {
+    set<EdgeId> EdgesOfBin(bin_id bin, size_t min_length = 0) const {
         set<EdgeId> answer;
         for (auto ann_pair : edge_annotation_) {
-            if (ann_pair.second.count(bin)) {
+            if (ann_pair.second.count(bin) &&
+                    gp_.g.length(ann_pair.first) > min_length) {
                 answer.insert(ann_pair.first);
             }
         }

@@ -256,17 +256,18 @@ private:
 };
 
 template<class Graph>
-class AdaptorCallback: public PathProcessor<Graph>::Callback {
+class AdapterCallback: public PathProcessor<Graph>::Callback {
     typedef typename Graph::EdgeId EdgeId;
 	typedef vector<EdgeId> Path;
     std::function<void(const Path&)> func_;
+    bool reverse_;
 public:
 
-    AdaptorCallback(const std::function<void(const Path&)>& func) :
-        func_(func) {}
+    AdapterCallback(const std::function<void(const Path&)>& func, bool reverse = false) :
+        func_(func), reverse_(reverse) {}
 
     void HandleReversedPath(const Path& path) override {
-        func_(path);
+        func_(reverse_ ? this->ReversePath(path) : path);
 	}
 
 };
