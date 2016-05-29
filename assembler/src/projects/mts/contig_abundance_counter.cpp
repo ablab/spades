@@ -8,7 +8,6 @@
 #include "formats.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "io/reads_io/file_reader.hpp"
-#include "io/reads_io/splitting_wrapper.hpp"
 #include "pipeline/graphio.hpp"
 
 void create_console_logger() {
@@ -211,24 +210,43 @@ class ContigAbundanceCounter {
         }
     }
 
-    boost::optional<AbundanceVector> EstimateAbundance(const Sequence& seq) const {
+    vector<std::string> SplitOnNs(const std::string& seq) const {
+        vector<std::string> answer;
+        for (size_t i = 0; i < seq.size(); i++) {
+            size_t j = i;
+            while (j < seq.size() && is_nucl(seq[j])) {
+                j++;
+            }
+            if (j > i) {
+                answer.push_back(seq.substr(i, j - i));
+                i = j;
+            }
+        }
+        return answer;
+    }
+
+    boost::optional<AbundanceVector> EstimateAbundance(const std::string& contig) const {
         std::vector<MplVector> kmer_mpls;
 
-        VERIFY(seq.size() >= k_);
-        auto kwh = kmer_mpl_.ConstructKWH(runtime_k::RtSeq(k_, seq));
-        kwh >>= 'A';
+        for (const auto& seq : SplitOnNs(contig)) {
+            if (seq.size() < k_)
+                continue;
 
-        for (size_t j = k_ - 1; j < seq.size(); ++j) {
-            kwh <<= seq[j];
-            if (kmer_mpl_.valid(kwh)) {
-                kmer_mpls.push_back(kmer_mpl_.get_value(kwh, inverter_));
+            auto kwh = kmer_mpl_.ConstructKWH(runtime_k::RtSeq(k_, seq));
+            kwh >>= 'A';
+
+            for (size_t j = k_ - 1; j < seq.size(); ++j) {
+                kwh <<= seq[j];
+                if (kmer_mpl_.valid(kwh)) {
+                    kmer_mpls.push_back(kmer_mpl_.get_value(kwh, inverter_));
+                }
             }
         }
 
-        double earmark_share = double(kmer_mpls.size()) / double(seq.size() - k_ + 1);
+        double earmark_share = double(kmer_mpls.size()) / double(contig.size() - k_ + 1);
         DEBUG("Earmark k-mers: share " << earmark_share 
                 << " # earmarks " << kmer_mpls.size() 
-                << " ; total # " << (seq.size() - k_ + 1));
+                << " ; total # " << (contig.size() - k_ + 1));
         if (math::ls(earmark_share, min_earmark_share_)) {
             DEBUG("Too few earmarks");
             return boost::none;
@@ -288,7 +306,7 @@ public:
                 contig_id id = GetId(contig);
                 DEBUG("Processing fragment # " << (i / split_length_) << " with id " << id);
 
-                auto abundance_vec = EstimateAbundance(contig.sequence());
+                auto abundance_vec = EstimateAbundance(contig.GetSequenceString());
 
                 if (abundance_vec) {
                     stringstream ss;
@@ -340,7 +358,7 @@ int main(int argc, char** argv) {
     //TmpFolderFixture fixture("tmp");
     create_console_logger();
 
-    auto contigs_stream_ptr = io::SplittingWrap(make_shared<io::FileReadStream>(contigs_path));
+    auto contigs_stream_ptr = make_shared<io::FileReadStream>(contigs_path);
 
     ContigAbundanceCounter abundance_counter(k, sample_cnt, work_dir, min_length_bound);
     abundance_counter.Init(kmer_mult_fn, /*fixme some buffer size*/0);
