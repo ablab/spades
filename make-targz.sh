@@ -5,8 +5,6 @@ SRC_DIR=$TARGET_DIR/src
 mkdir -p $SRC_DIR
 
 cp -r assembler/src/cmake $SRC_DIR/
-cp -r assembler/src/debruijn $SRC_DIR/
-cp -r assembler/src/hammer $SRC_DIR/
 cp -r assembler/src/include $SRC_DIR/
 cp -r assembler/src/modules $SRC_DIR/
 cp -r assembler/src/projects $SRC_DIR/
