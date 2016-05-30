@@ -19,6 +19,7 @@
 #include <cassert>
 #include <cstring>
 #include <type_traits>
+#include <cstdint>
 
 namespace llvm {
 /// \brief The behavior an operation has on an input of 0.
