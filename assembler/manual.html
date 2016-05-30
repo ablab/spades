@@ -457,13 +457,13 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 
 <a name="meta"></a>
 <p>
-    <code>--meta </code><br>
+    <code>--meta </code> &nbsp; (same as <code>metaspades.py</code>)<br>
     &nbsp;&nbsp;&nbsp;&nbsp;This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see <a href="https://arxiv.org/abs/1604.03071">paper</a> for more details). Currently metaSPAdes supports only a <b>single</b> library which has to be <b>paired-end</b> (we hope to remove this restriction soon). It does not support <a href="#correctoropt">careful mode</a> (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
 </p>
 
 <a name="plasmid"></a>
 <p>
-    <code>--plasmid </code><br>
+    <code>--plasmid </code> &nbsp; (same as <code>plasmidspades.py</code>)<br>
     &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see <a href="http://biorxiv.org/content/early/2016/04/20/048942">paper</a> for the algorithm details). Note, that plasmidSPAdes is not compatible with <a href="#meta">metaSPAdes</a>  and <a href="#sc"> single-cell mode</a>. Additionally, we do not recommend to run plasmidSPAdes on more than one library.
     See <a href="#sec3.6">section 3.6</a> for plasmidSPAdes output details.
 </p>
