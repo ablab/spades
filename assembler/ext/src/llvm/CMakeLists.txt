@@ -19,6 +19,9 @@ check_symbol_exists(backtrace "execinfo.h" HAVE_BACKTRACE)
 
 find_library(DL_LIB NAMES "dl")
 
+add_definitions(-D__STDC_CONSTANT_MACROS)
+add_definitions(-D__STDC_LIMIT_MACROS)
+
 # FIXME: Signal handler return type, currently hardcoded to 'void'
 set(RETSIGTYPE void)
 
