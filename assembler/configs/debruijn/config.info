@@ -46,7 +46,7 @@ rr_enable true
 ; two-step pipeline
 two_step_rr false
 ; enables/disables usage of intermediate contigs in two-step pipeline
-use_intermediate_contigs true
+use_intermediate_contigs false
 
 ;use single reads for rr (all | only_single_libs | none )
 single_reads_rr only_single_libs
