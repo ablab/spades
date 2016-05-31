@@ -157,8 +157,6 @@ class ContigAbundanceCounter {
 
     unsigned k_;
     size_t sample_cnt_;
-    size_t min_length_bound_;
-    size_t split_length_;
     double min_earmark_share_;
 
     KeyStoringMap<conj_graph_pack::seq_t,
@@ -226,47 +224,13 @@ class ContigAbundanceCounter {
         return answer;
     }
 
-    boost::optional<AbundanceVector> EstimateAbundance(const std::string& contig) const {
-        std::vector<MplVector> kmer_mpls;
-
-        for (const auto& seq : SplitOnNs(contig)) {
-            if (seq.size() < k_)
-                continue;
-
-            auto kwh = kmer_mpl_.ConstructKWH(runtime_k::RtSeq(k_, seq));
-            kwh >>= 'A';
-
-            for (size_t j = k_ - 1; j < seq.size(); ++j) {
-                kwh <<= seq[j];
-                if (kmer_mpl_.valid(kwh)) {
-                    kmer_mpls.push_back(kmer_mpl_.get_value(kwh, inverter_));
-                }
-            }
-        }
-
-        double earmark_share = double(kmer_mpls.size()) / double(contig.size() - k_ + 1);
-        DEBUG("Earmark k-mers: share " << earmark_share
-                << " # earmarks " << kmer_mpls.size()
-                << " ; total # " << (contig.size() - k_ + 1));
-        if (math::ls(earmark_share, min_earmark_share_)) {
-            DEBUG("Too few earmarks");
-            return boost::none;
-        }
-
-        return cluster_analyzer_(kmer_mpls);
-    }
-
 public:
     ContigAbundanceCounter(unsigned k,
                            size_t sample_cnt,
                            const std::string& work_dir,
-                           size_t min_length_bound,
-                           size_t split_length = 10000,
                            double min_earmark_share = 0.7) :
                                k_(k),
                                sample_cnt_(sample_cnt),
-                               min_length_bound_(min_length_bound),
-                               split_length_(split_length),
                                min_earmark_share_(min_earmark_share),
                                kmer_mpl_(k_, work_dir),
                                cluster_analyzer_(sample_cnt_) {
@@ -287,41 +251,34 @@ public:
         FillMplMap(kmer_mpl_file);
     }
 
-    void operator()(io::SingleStream& contigs,
-                          const std::string& out_prefix) const {
-        std::ofstream id_out(out_prefix + ".id");
-        std::ofstream mpl_out(out_prefix + ".mpl");
+    boost::optional<AbundanceVector> operator()(const std::string& s) const {
+        std::vector<MplVector> kmer_mpls;
 
-        io::SingleRead full_contig;
-        while (!contigs.eof()) {
-            contigs >> full_contig;
-            DEBUG("Analyzing contig " << GetId(full_contig));
+        for (const auto& seq : SplitOnNs(s)) {
+            if (seq.size() < k_)
+                continue;
 
-            for (size_t i = 0; i < full_contig.size(); i += split_length_) {
-                if (full_contig.size() - i < min_length_bound_) {
-                    DEBUG("Fragment shorter than min_length_bound " << min_length_bound_);
-                    break;
-                }
+            auto kwh = kmer_mpl_.ConstructKWH(runtime_k::RtSeq(k_, seq));
+            kwh >>= 'A';
 
-                io::SingleRead contig = full_contig.Substr(i, std::min(i + split_length_, full_contig.size()));
-                contig_id id = GetId(contig);
-                DEBUG("Processing fragment # " << (i / split_length_) << " with id " << id);
-
-                auto abundance_vec = EstimateAbundance(contig.GetSequenceString());
-
-                if (abundance_vec) {
-                    stringstream ss;
-                    copy(abundance_vec->begin(), abundance_vec->begin() + sample_cnt_,
-                         ostream_iterator<Mpl>(ss, " "));
-                    DEBUG("Successfully estimated abundance of " << id << " : " << ss.str());
-
-                    id_out << id << std::endl;
-                    mpl_out << ss.str() << std::endl;
-                } else {
-                    DEBUG("Failed to estimate abundance of " << id);
+            for (size_t j = k_ - 1; j < seq.size(); ++j) {
+                kwh <<= seq[j];
+                if (kmer_mpl_.valid(kwh)) {
+                    kmer_mpls.push_back(kmer_mpl_.get_value(kwh, inverter_));
                 }
             }
         }
+
+        double earmark_share = double(kmer_mpls.size()) / double(s.size() - k_ + 1);
+        DEBUG("Earmark k-mers: share " << earmark_share
+                  << " # earmarks " << kmer_mpls.size()
+                  << " ; total # " << (s.size() - k_ + 1));
+        if (math::ls(earmark_share, min_earmark_share_)) {
+            DEBUG("Too few earmarks");
+            return boost::none;
+        }
+
+        return cluster_analyzer_(kmer_mpls);
     }
 
 private:
@@ -347,8 +304,7 @@ int main(int argc, char** argv) {
             >> Option('n', sample_cnt)
             >> Option('m', kmer_mult_fn)
             >> Option('o', contigs_abundance_fn)
-            >> Option('l', min_length_bound, size_t(0))
-        ;
+            >> Option('l', min_length_bound, size_t(0));
     } catch(GetOptEx &ex) {
         std::cout << "Usage: contig_abundance_counter -k <K> -w <work_dir> -c <contigs path> "
                 "-n <sample cnt> -m <kmer multiplicities path> "
@@ -359,11 +315,45 @@ int main(int argc, char** argv) {
     //TmpFolderFixture fixture("tmp");
     create_console_logger();
 
-    auto contigs_stream_ptr = make_shared<io::FileReadStream>(contigs_path);
+    size_t split_length = 10000;
 
-    ContigAbundanceCounter abundance_counter(k, sample_cnt, work_dir, min_length_bound);
+    ContigAbundanceCounter abundance_counter(k, sample_cnt, work_dir);
     abundance_counter.Init(kmer_mult_fn, /*fixme some buffer size*/0);
-    abundance_counter(*contigs_stream_ptr, contigs_abundance_fn);
 
+    std::ofstream id_out(contigs_abundance_fn + ".id");
+    std::ofstream mpl_out(contigs_abundance_fn + ".mpl");
+
+    io::FileReadStream contigs_stream(contigs_path);
+
+    io::SingleRead full_contig;
+    while (!contigs_stream.eof()) {
+        contigs_stream >> full_contig;
+        DEBUG("Analyzing contig " << GetId(full_contig));
+
+        for (size_t i = 0; i < full_contig.size(); i += split_length) {
+            if (full_contig.size() - i < min_length_bound) {
+                DEBUG("Fragment shorter than min_length_bound " << min_length_bound);
+                break;
+            }
+
+            io::SingleRead contig = full_contig.Substr(i, std::min(i + split_length, full_contig.size()));
+            contig_id id = GetId(contig);
+            DEBUG("Processing fragment # " << (i / split_length) << " with id " << id);
+
+            auto abundance_vec = abundance_counter(contig.GetSequenceString());
+
+            if (abundance_vec) {
+                stringstream ss;
+                copy(abundance_vec->begin(), abundance_vec->begin() + sample_cnt,
+                     ostream_iterator<Mpl>(ss, " "));
+                DEBUG("Successfully estimated abundance of " << id << " : " << ss.str());
+
+                id_out << id << std::endl;
+                mpl_out << ss.str() << std::endl;
+            } else {
+                DEBUG("Failed to estimate abundance of " << id);
+            }
+        }
+    }
     return 0;
 }
