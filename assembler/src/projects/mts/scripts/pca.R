@@ -1,26 +1,26 @@
 library(stringr)
 
 format_ids <- function(table) {
-  table$contig <- paste0(str_extract(table$contig, "sample\\d+-"), str_replace(str_extract(table$contig, "ID_\\d+"), "ID_", ""))
+  table$contig <- paste0(str_extract(table$contig, "sample\\d+-"), str_replace(str_extract(table$contig, "NODE_\\d+"), "NODE_", ""))
   unique(table)
 }
 
-load_clusters <- function(canopy_in, canopy_out, int_contigs) {
+load_binning <- function(canopy_in, canopy_out) {
   data <- read.table(canopy_in)
   names(data) <- c('contig', sapply(seq(1, dim(data)[2]-1, 1),
-                             function(x) {paste('mlt', x, sep='')}))
+                                    function(x) {paste('mlt', x, sep='')}))
   data <- format_ids(data)
-  print(data[1:10,])
   binned <- read.table(canopy_out)
   names(binned) <- c('clust', 'contig')
   binned <- format_ids(binned)
-  print(binned[1:10,])
+  merge(x=data, y=binned, by='contig')
+}
+
+load_clusters <- function(canopy_in, canopy_out, int_contigs) {
+  data <- load_binning(canopy_in, canopy_out)
   interesting <- read.table(int_contigs)
   names(interesting) <- c('contig', 'alignment', 'ref')
-  print(interesting[1:10,])
-  contigs <- merge(x=binned, y=interesting, by='contig')
-  print(contigs[1:10,])
-  droplevels(merge(x=data, y=contigs, by='contig'))
+  droplevels(merge(x=data, y=interesting, by='contig'))
 }
 
 do_prc <- function(clusters) {
