@@ -174,7 +174,7 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
     EdgeRemover<Graph> edge_remover_;
 
  protected:
-    bool ProcessEdge(EdgeId e) {
+    virtual bool ProcessEdge(EdgeId e) {
         TRACE("Checking edge " << this->g().str(e) << " for the removal condition");
         if (remove_condition_(e)) {
             TRACE("Check passed, removing");

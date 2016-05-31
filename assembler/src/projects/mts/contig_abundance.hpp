@@ -9,6 +9,22 @@ typedef uint Mpl;
 typedef typename std::array<Mpl, MAX_SAMPLE_CNT> MplVector;
 typedef typename std::array<double, MAX_SAMPLE_CNT> AbundanceVector;
 
+template<class CovVecs>
+AbundanceVector MeanVector(const CovVecs& cov_vecs, size_t sample_cnt) {
+    AbundanceVector answer;
+
+    for (const auto& cov_vec : cov_vecs) {
+        for (size_t i = 0; i < sample_cnt; ++i) {
+            answer[i] += double(cov_vec[i]);
+        }
+    }
+
+    for (size_t i = 0; i < sample_cnt; ++i) {
+        answer[i] /= double(cov_vecs.size());
+    }
+    return answer;
+}
+
 class SingleClusterAnalyzer {
     static const uint MAX_IT = 10;
 
@@ -43,22 +59,6 @@ class SingleClusterAnalyzer {
         MplVector answer;
         for (size_t i = 0; i < sample_cnt_; ++i) {
             answer[i] = SampleMedian(kmer_mpls, i);
-        }
-        return answer;
-    }
-
-    template<class CovVecs>
-    AbundanceVector MeanVector(const CovVecs& cov_vecs) const {
-        AbundanceVector answer;
-
-        for (const auto& cov_vec : cov_vecs) {
-            for (size_t i = 0; i < sample_cnt_; ++i) {
-                answer[i] += double(cov_vec[i]);
-            }
-        }
-
-        for (size_t i = 0; i < sample_cnt_; ++i) {
-            answer[i] /= double(cov_vecs.size());
         }
         return answer;
     }
@@ -128,7 +128,7 @@ public:
             locality = CloseKmerMpls(kmer_mpls, center);
         }
 
-        return boost::optional<AbundanceVector>(MeanVector(locality));
+        return boost::optional<AbundanceVector>(MeanVector(locality, sample_cnt_));
     }
 
 private:
@@ -220,7 +220,8 @@ public:
 
     }
 
-    void Init(const std::string& kmer_mpl_file, size_t read_buffer_size) {
+    void Init(const std::string& kmer_mpl_file,
+              size_t /*fixme some buffer size*/read_buffer_size = 0) {
         INFO("Filling kmer multiplicities.");
         DeBruijnKMerKMerSplitter<StoringTypeFilter<InvertableStoring>>
             splitter(kmer_mpl_.workdir(), k_, k_, true, read_buffer_size);

@@ -21,6 +21,7 @@
 #include "distance_estimation.hpp"
 #include "pacbio_aligning.hpp"
 #include "chromosome_removal.hpp"
+#include "series_analysis.hpp"
 #include "pipeline/stage.hpp"
 
 namespace spades {
@@ -82,6 +83,8 @@ void assemble_genome() {
 
             SPAdes.add(new debruijn_graph::Simplification());
         }
+
+        SPAdes.add(new debruijn_graph::SeriesAnalysis());
 
         //begin pacbio
         bool run_pacbio = false;

@@ -253,16 +253,6 @@ private:
     DECL_LOGGER("ConditionParser");
 };
 
-//todo move to visualization
-template<class graph_pack>
-shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
-        const graph_pack& gp) {
-    auto mapper = MapperInstance(gp);
-    auto path1 = mapper->MapSequence(gp.genome).path();
-    auto path2 = mapper->MapSequence(!gp.genome).path();
-    return omnigraph::visualization::DefaultColorer(gp.g, path1, path2);
-}
-
 template<class Graph>
 class EditDistanceTrackingCallback {
     typedef typename Graph::EdgeId EdgeId;
