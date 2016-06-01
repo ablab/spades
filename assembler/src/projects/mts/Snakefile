@@ -112,23 +112,16 @@ rule canopy_post:
     message: "Preparing raw annotations"
     shell:   "{SCRIPTS}/parse_canopy_out.py {input} ./"
 
-rule propagate:
-    input:   "{sample}/{sample}.fasta", "{sample}.ann"
-    output:  "{sample}.ann.prop"
-    message: "Propagating annotations for {wildcards.sample}"
-    shell:   "{BIN}/annotation_propagator {K} {wildcards.sample}_assembly/{CONFIG} {wildcards.sample}_assembly/{SAVES} {input} {output}"
-
 rule binning:
     input:
         contigs="{sample}/{sample}.fasta", ann="{sample}.ann",
         left=IN + "/{sample}/left.fastq", right=IN + "/{sample}/right.fastq"
-    output:  "{sample}/binning.log"
+    output:  "{sample}/binning.log", "{sample}.ann.prop"
     params:  "{sample}"
     log:     "{sample}/binning.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
     shell:
-        "{BIN}/prop_binning -k {K} -s {wildcards.sample}/assembly/{SAVES} -c {input.contigs} -a {input.ann} -l {input.left} -r {input.right} -o binning -n {params} >{log} 2>&1 &&"
-        "touch {output}"
+        "{BIN}/prop_binning -k {K} -s {wildcards.sample}/assembly/{SAVES} -c {input.contigs} -a {input.ann} -l {input.left} -r {input.right} -o binning -n {params} >{log} 2>&1"
 
 rule cat_binned_reads:
     input:   FINISHED_BINNING
