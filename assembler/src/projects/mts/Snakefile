@@ -64,15 +64,27 @@ rule descriptions:
     message: "Generating sample descriptions"
     shell:   "{SCRIPTS}/dataset_desc_gen.sh {IN}/sample ./ >/dev/null"
 
-rule multiplicities:
-    input:   expand("{sample}.desc", sample=SAMPLES)
-    output:  "kmers.mpl"
-    log:     "multiplicities.log"
-    message: "Gathering {small_k}-mer multiplicities from {input}"
+rule kmc:
+    input:   "{sample}.desc"
+    output:  "tmp/{sample}.kmc_pre"
+    params:  min_mult=2, tmp="tmp/{sample}_kmc", out="tmp/{sample}"
+    log:     "sample/kmc.log"
+    threads: THREADS
+    message: "Running kmc for {wildcards.sample}"
     shell:
-        "mkdir -p tmp && "
-        "export PATH={SOFT}:$PATH && "
-        "{BIN}/kmer_multiplicity_counter -k {small_k} -o kmers --mult 2 --sample 3 -d {input} >{log} 2>&1"
+        "mkdir -p {params.tmp} && "
+        "{SOFT}/kmc -k{small_k} -t{threads} -ci{params.min_mult} -cs65535 @{input} {params.out} {params.tmp} >{log} 2>&1 && "
+        "rm -rf {params.tmp}"
+
+rule multiplicities:
+    input:   expand("tmp/{sample}.kmc_pre", sample=SAMPLES)
+    output:  "kmers.mpl"
+    params:  " ".join(expand("tmp/{sample}", sample=SAMPLES))
+    log:     "multiplicities.log"
+    message: "Gathering {small_k}-mer multiplicities from all samples"
+    shell:
+        "{BIN}/kmer_multiplicity_counter -k {small_k} -o kmers --sample 3 -f {params} >{log} 2>&1 && "
+        "rm tmp/*.sorted"
 
 rule profile:
     input:   contigs="{sample}/{sample}.fasta", mpl="kmers.mpl"
