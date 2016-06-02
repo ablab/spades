@@ -15,8 +15,9 @@
 #include "visualization.hpp"
 
 namespace debruijn_graph {
+static const size_t EDGE_LENGTH_THRESHOLD = 2000;
 
-//FIXME 2kb edge length threshold might affect tip clipper in undesired way
+//FIXME 2kb edge length threshold might affect tip propagator in undesired way
 class EdgeAnnotationPropagator {
     const conj_graph_pack& gp_;
     const string name_;
@@ -33,43 +34,34 @@ protected:
 
     virtual set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const = 0;
 
-//    size_t CountWrongCAG(EdgeAnnotation& edge_annotation, const set<EdgeId>& edges, bin_id bin) const {
-//        bin_id to_check = (bin == "CAG1") ? "CAG2" : "CAG1";
-//        size_t answer = 0;
-//        for (EdgeId e : edges) {
-//            auto ann = edge_annotation.Annotation(e);
-//            if (std::find(ann.begin(), ann.end(), to_check) != ann.end()) {
-//                if (g().length(e) > edge_length_threshold_)
-//                    ++answer;
-//            }
-//        }
-//        return answer;
-//    }
-
 public:
     EdgeAnnotationPropagator(const conj_graph_pack& gp,
                              const string& name,
-                             size_t edge_length_threshold = 2000) :
+                             size_t edge_length_threshold = EDGE_LENGTH_THRESHOLD) :
                     gp_(gp),
                     name_(name),
                     edge_length_threshold_(edge_length_threshold) {}
 
-    void Propagate(EdgeAnnotation& edge_annotation) const {
+    const std::string& name() const {
+        return name_;
+    }
+
+    std::map<bin_id, set<EdgeId>> Propagate(EdgeAnnotation& edge_annotation) const {
+        std::map<bin_id, set<EdgeId>> answer;
         DEBUG("Propagating with propagator: " << name_);
         for (bin_id bin : edge_annotation.interesting_bins()) {
             DEBUG("Processing bin " << bin << " with propagator: " << name_);
-            auto edges = edge_annotation.EdgesOfBin(bin, edge_length_threshold_);
-            size_t init_cnt = edges.size();
-            DEBUG("Initial propagation edge cnt " << init_cnt << " (edge length threshold " << edge_length_threshold_ << ")");
-//            DEBUG("WRONG CNT " << CountWrongCAG(edge_annotation, edges, bin));
-            insert_all(edges, PropagateEdges(edges));
-            DEBUG("Propagated on " << (edges.size() - init_cnt) << " edges");
-//            DEBUG("WRONG CNT " << CountWrongCAG(edge_annotation, edges, bin));
-            DEBUG("Sticking annotation to edges and conjugates");
-            edge_annotation.StickAnnotation(edges, bin);
-            DEBUG("Post-propagation bin edge cnt " << edge_annotation.EdgesOfBin(bin).size());
-//            DEBUG("WRONG CNT " << CountWrongCAG(edge_annotation, edge_annotation.EdgesOfBin(bin), bin));
+            auto init_edges = edge_annotation.EdgesOfBin(bin, edge_length_threshold_);
+            DEBUG("Initial edge cnt " << init_edges.size() << " (edge length threshold " << edge_length_threshold_ << ")");
+            auto raw_propagated = PropagateEdges(init_edges);
+            set<EdgeId> propagated;
+            std::set_difference(raw_propagated.begin(), raw_propagated.end(),
+                                init_edges.begin(), init_edges.end(),
+                                std::inserter(propagated, propagated.end()));
+            DEBUG("Requested sticking annotation to " << propagated.size() << " edges and their conjugates");
+            answer[bin] = std::move(propagated);
         }
+        return answer;
     }
 
     virtual ~EdgeAnnotationPropagator() {}
@@ -124,7 +116,7 @@ class ConnectingPathPropagator : public EdgeAnnotationPropagator {
     }
 
     set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const override {
-        static size_t pic_cnt = 0;
+        //static size_t pic_cnt = 0;
         bin_id bin = DetermineBin(edges);
         if (!bin.empty()) {
             DEBUG("Bin determined as " << bin);
@@ -277,6 +269,41 @@ void AnnotationPropagator::DumpContigAnnotation(io::SingleStream& contigs,
     }
 }
 
+class AnnotationChecker {
+    const Graph& g_;
+    const EdgeAnnotation& edge_annotation_;
+    size_t edge_length_threshold_;
+public:
+    AnnotationChecker(const Graph& g,
+                      const EdgeAnnotation& edge_annotation,
+                      size_t edge_length_threshold = EDGE_LENGTH_THRESHOLD) :
+        g_(g),
+        edge_annotation_(edge_annotation),
+        edge_length_threshold_(edge_length_threshold) {
+    }
+
+    size_t Check(bin_id bin, const set<EdgeId>& propagated_edges) {
+        DEBUG("Checking edges to be annotated with " << bin);
+        size_t answer = 0;
+        for (EdgeId e : propagated_edges) {
+            if (g_.length(e) < edge_length_threshold_)
+                continue;
+            auto ann = edge_annotation_.Annotation(e);
+            for (auto b : ann) {
+                if (b != bin) {
+                    DEBUG("Edge " << g_.str(e) << " already was annotated as " << b);
+                    ++answer;
+                    break;
+                }
+            }
+        }
+        return answer;
+    }
+
+private:
+    DECL_LOGGER("AnnotationChecker");
+};
+
 void AnnotationPropagator::Run(io::SingleStream& contigs, const string& annotation_in_fn,
                      const vector<bin_id>& bins_of_interest,
                      const string& annotation_out_fn) {
@@ -284,7 +311,6 @@ void AnnotationPropagator::Run(io::SingleStream& contigs, const string& annotati
     EdgeAnnotation edge_annotation(gp_, bins_of_interest);
     edge_annotation.Fill(contigs, annotation_in);
 
-    //TODO: make this configurable
     std::vector<std::shared_ptr<EdgeAnnotationPropagator>> propagator_pipeline {
         std::make_shared<ConnectingPathPropagator>(gp_, 8000, 10, edge_annotation),
         std::make_shared<TipPropagator>(gp_), 
@@ -294,8 +320,21 @@ void AnnotationPropagator::Run(io::SingleStream& contigs, const string& annotati
 //        std::make_shared<ContigPropagator>(gp_, contigs),
 //        std::make_shared<TipPropagator>(gp_)};
 
+    AnnotationChecker checker(gp_.g, edge_annotation);
+
     for (auto prop_ptr : propagator_pipeline) {
-        prop_ptr->Propagate(edge_annotation);
+        auto propagation_map = prop_ptr->Propagate(edge_annotation);
+
+        for (const auto& bin_prop : propagation_map) {
+            const auto& bin_id = bin_prop.first;
+            const auto& edges = bin_prop.second;
+            DEBUG("Extending bin " << bin_id << " with "
+                      << edges.size() << " edges and their conjugates");
+            size_t problem_cnt = checker.Check(bin_id, edges);
+            DEBUG("Propagation of bin " << bin_id << " with " << prop_ptr->name()
+                      << " lead to " << problem_cnt << " binning problems");
+            edge_annotation.StickAnnotation(edges, bin_id);
+        }
     }
 
     contigs.reset();
