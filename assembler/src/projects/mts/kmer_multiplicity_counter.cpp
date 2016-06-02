@@ -113,8 +113,7 @@ void FilterKmers(const std::vector<string>& files, size_t all_min, size_t k, con
         }
         if (cnt_min >= all_min) {
             std::vector<uint32> cnt_vector(n, 0);
-//            min_kmer.get().BinWrite(output_kmer);
-            output_kmer << min_kmer.get().str() << std::endl;
+            min_kmer.get().BinWrite(output_kmer);
             for (size_t i = 0; i < n; ++i) {
                 if (alive[i] && top_kmer[i].first == *min_kmer) {
                     cnt_vector[i] += top_kmer[i].second;

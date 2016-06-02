@@ -83,9 +83,10 @@ class SingleClusterAnalyzer {
         double sum = 0;
         size_t non_zero_cnt = 0;
         for (size_t i = 0; i < sample_cnt_; ++i) {
+            if (c[i] == 0)
+                continue;
             sum += std::abs(double(c[i]) - double(v[i])) / std::sqrt(double(c[i]));
-            if (c[i] != 0) 
-                ++non_zero_cnt;
+            ++non_zero_cnt;
         }
         return math::ls(sum, coord_vise_proximity_ * double(non_zero_cnt));
     }
@@ -244,8 +245,8 @@ class ContigAbundanceCounter {
         }
 
         double earmark_share = double(kmer_mpls.size()) / double(contig.size() - k_ + 1);
-        DEBUG("Earmark k-mers: share " << earmark_share 
-                << " # earmarks " << kmer_mpls.size() 
+        DEBUG("Earmark k-mers: share " << earmark_share
+                << " # earmarks " << kmer_mpls.size()
                 << " ; total # " << (contig.size() - k_ + 1));
         if (math::ls(earmark_share, min_earmark_share_)) {
             DEBUG("Too few earmarks");

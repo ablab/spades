@@ -49,13 +49,13 @@ rule all:
 
 rule assemble:
     input:   left = IN + "/{sample}/left.fastq", right = IN + "/{sample}/right.fastq"
-    output:  "{sample}/{sample}.fasta"
+    output:  "assembly/{sample}.fasta"
     params:  "{sample}/assembly"
     log:     "{sample}/assembly.log"
     threads: THREADS
     message: "Assembling {wildcards.sample} with SPAdes"
     shell:
-        "mkdir -p {wildcards.sample} && "
+        "mkdir -p {wildcards.sample} && mkdir -p assembly && "
         "{SPADES}/spades.py --meta -t {threads} -1 {input.left} -2 {input.right} -o {params} >{log} 2>&1 && "
         "cp {params}/scaffolds.fasta {output}"
 
@@ -87,7 +87,7 @@ rule multiplicities:
         "rm tmp/*.sorted"
 
 rule profile:
-    input:   contigs="{sample}/{sample}.fasta", mpl="kmers.mpl"
+    input:   contigs="assembly/{sample}.fasta", mpl="kmers.mpl"
     output:  "{sample}/{sample}.id"
     log:     "{sample}/profile.log"
     message: "Counting contig abundancies for {wildcards.sample}"
@@ -114,7 +114,7 @@ rule canopy_post:
 
 rule binning:
     input:
-        contigs="{sample}/{sample}.fasta", ann="{sample}.ann",
+        contigs="assembly/{sample}.fasta", ann="{sample}.ann",
         left=IN + "/{sample}/left.fastq", right=IN + "/{sample}/right.fastq"
     output:  "{sample}/binning.log", "{sample}.ann.prop"
     params:  "{sample}"
@@ -156,7 +156,7 @@ rule reassemble_all:
 
 #---- Single alignments per sample per reference -------------------------------
 rule quast_all_samples:
-    input:   ref=ref_path, contigs=expand("{sample}/{sample}.fasta", sample=SAMPLES)
+    input:   ref=ref_path, contigs=expand("assembly/{sample}.fasta", sample=SAMPLES)
     output:  "summary/q_{ref}/report.tsv"
     params:  "summary/q_{ref}"
     log:     "summary/q_{ref}.log"
@@ -177,7 +177,7 @@ rule filter_all_samples:
 
 #---- GF of combined sample ----------------------------------------------------
 rule combine_filtered:
-    input:   contigs=expand("{sample}/{sample}.fasta", sample=SAMPLES), filters=expand("{sample}/{{ref}}.cont", sample=SAMPLES)
+    input:   contigs=expand("assembly/{sample}.fasta", sample=SAMPLES), filters=expand("{sample}/{{ref}}.cont", sample=SAMPLES)
     output:  "summary/{ref}.fasta"
     message: "Gathering all interesting contigs for {wildcards.ref} into a single assembly"
     shell:   "{SCRIPTS}/filter_contigs.py {SAMPLE_COUNT} {output} {input.contigs} {input.filters}"
@@ -228,7 +228,7 @@ PROP = {"prelim": ".ann", "prop": ".ann.prop"}
 
 #TODO: split into different directories per sample
 rule split_bins:
-    input:   "{sample}/{sample}.fasta", lambda w: w.sample + PROP[w.prop]
+    input:   "assembly/{sample}.fasta", lambda w: w.sample + PROP[w.prop]
     output:  "{sample}/split_{prop}.log"
     params:  "binning/contigs_{prop}"
     message: "Splitting assembly of {wildcards.sample} between {wildcards.prop} bins"
@@ -245,27 +245,37 @@ rule cat_binned_contigs:
     shell:   "cat {params} > {output}"
 
 def stats_input(wildcards):
-    if wildcards.bin == "split":
-        return expand("{sample}/split_{prop}.log", sample=SAMPLES, prop=wildcards.prop)
-    elif wildcards.bin == "bin":
-        return expand("binning/contigs_{prop}/{cag}.fasta", prop=wildcards.prop, cag=CAGS)
+    if wildcards.stage == "reassembly":
+        return expand("reassembly/{cag}.fasta", cag=CAGS)
+    w_bin, w_prop = wildcards.stage.split("_", 2)
+    if w_bin == "split":
+        return expand("{sample}/split_{prop}.log", sample=SAMPLES, prop=w_prop)
+    elif w_bin == "bin":
+        return expand("binning/contigs_{prop}/{cag}.fasta", prop=w_prop, cag=CAGS)
 
-def stats_params(wildcards):
+def stats_data(wildcards):
+    if wildcards.stage == "reassembly":
+        return "`ls reassembly/CAG*.fasta`"
+    w_bin, w_prop = wildcards.stage.split("_", 2)
     masks = {"bin": "CAG*", "split": "*-CAG*"}
-    return "`ls binning/contigs_{}/{}.fasta`".format(wildcards.prop, masks[wildcards.bin])
+    return "`ls binning/contigs_{}/{}.fasta`".format(w_prop, masks[w_bin])
 
 rule quast_stats:
     input:   stats_input
-    output:  "summary/q_{bin}_{prop}.log"
-    params:  data=stats_params, out="summary/q_{bin}_{prop}"
+    output:  "summary/q_{stage}.log"
+    params:  data=stats_data, out="summary/q_{stage}"
     threads: THREADS
-    message: "Aligning {wildcards.bin}-{wildcards.prop} assemblies on all references"
+    message: "Aligning {wildcards.stage} assemblies on all references"
     shell:   "{METAQUAST} -t {threads} -R {ALL_REFS} {params.data} -o {params.out} >{output} 2>&1"
 
 # Run this
 rule stats_all:
-    input:   expand("summary/q_{split}_{prop}.log", split=["split", "bin"], prop=PROP)
+    input:   expand("summary/q_{bin}_{prop}.log", bin=["split", "bin"], prop=PROP)
     message: "Gathered some numbers, deal with them."
+
+rule stats_reassembly:
+    input:   "summary/q_reassembly.log"
+    message: "Gathered even more numbers, deal with them."
 
 rule neat_table:
     input:   "summary/q_split_prelim.log"
@@ -276,7 +286,7 @@ rule neat_table:
 
 #---- Propagator statistics ----------------------------------------------------
 rule prop_stats:
-    input:   prelim="{sample}.ann", prop="{sample}.ann.prop", bins="{sample}/{ref}.bin", contigs="{sample}/{sample}.fasta", ref=ref_path
+    input:   prelim="{sample}.ann", prop="{sample}.ann.prop", bins="{sample}/{ref}.bin", contigs="assembly/{sample}.fasta", ref=ref_path
     output:  "{sample}/{ref}.stats"
     message: "Calculating propagation statistics for {wildcards.sample} aligned to {wildcards.ref}"
     shell:   "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref} -c {input.contigs} -a {input.prelim} -p {input.prop} -b `cat {input.bins}` >/dev/null 2>{output}"

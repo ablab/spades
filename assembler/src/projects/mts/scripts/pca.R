@@ -29,16 +29,17 @@ do_prc <- function(clusters) {
 
 print_clusters <- function(pr, clust, image) {
   if (!missing(image))
-    png(filename=image)
+    png(filename=image, width=1024, height=768)
   lev <- levels(factor(clust))
-  cols <- 1:length(clust)
+  cols <- 1:length(lev)
+  #layout(rbind(1,2), heights=c(7,1))
   plot(pr$x, col = as.numeric(clust))
   a <- split(as.data.frame(pr$x), clust)
   for (l in lev) {
     x <- a[[l]]
     text(median(x$PC1), median(x$PC2), l)
   }
-  legend(0,0, lev, col=cols, pch=1)
+  legend("center", "bottom", legend=lev, col=cols, pch=1)
   #dev.off()
 }
 
@@ -62,4 +63,4 @@ image_out <- args[4]
 clusters <- load_clusters(in_fn, out_fn, cont_fn)
 print(clusters[1:10,])
 prc_data <- do_prc(clusters)
-print_clusters(prc_data, clusters$ref, image_out)
+print_clusters(prc_data, clusters$clust, image_out)
