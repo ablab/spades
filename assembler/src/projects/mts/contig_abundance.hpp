@@ -67,9 +67,12 @@ class SingleClusterAnalyzer {
         double sum = 0;
         size_t non_zero_cnt = 0;
         for (size_t i = 0; i < sample_cnt_; ++i) {
-            sum += std::abs(double(c[i]) - double(v[i])) / std::sqrt(double(c[i]));
-            if (c[i] != 0)
+            double norm = 1.;
+            if (c[i] != 0) {
+                norm = std::sqrt(double(c[i]));
                 ++non_zero_cnt;
+            }
+            sum += std::abs(double(c[i]) - double(v[i])) / norm;
         }
         return math::ls(sum, coord_vise_proximity_ * double(non_zero_cnt));
     }
