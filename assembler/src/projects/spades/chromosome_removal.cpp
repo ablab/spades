@@ -120,6 +120,19 @@ double ChromosomeRemoval::RemoveLongGenomicEdges(conj_graph_pack &gp, size_t lon
     if (external_chromosome_coverage < 1.0) {
         median_long_edge_coverage = coverages[i-1].first;
         INFO ("genomic coverage is "<< median_long_edge_coverage << " calculated of length " << size_t (double(total_len) * 0.5));
+        size_t outsiders_length = 0;
+        for (size_t j = 0; j < coverages.size(); j++) {
+            if ( coverages[j].first >= median_long_edge_coverage * (1 + coverage_limits) || coverages[j].first > median_long_edge_coverage * (1 - coverage_limits)) {
+                outsiders_length += coverages[j].second;
+            }
+        }
+        if (outsiders_length * 5 > total_len) {
+            WARN ("More than 20% of long edges have coverage significantly different from median (total " << size_t (double(outsiders_length) * 0.5) <<" of "<< size_t (double(total_len) * 0.5) << " bases).");
+            WARN ("In most cases it means that either read coverage is uneven or significant contamination is present - both of these two cases make plasmidSPAdes' results unreliable");
+            WARN ("However, that situation may still be OK if you expect to see large plasmids in your dataset, so plasmidSPAdes will continue to work");
+        } else {
+            INFO(size_t(double(outsiders_length)/ double(total_len) * 100) << "% of bases from long edges have coverage significantly different from median");
+        }
         for (auto iter = gp.g.ConstEdgeBegin(); ! iter.IsEnd(); ++iter) {
             if (long_component_.find(*iter) == long_component_.end()) {
                 CalculateComponentSize(*iter, gp.g);
