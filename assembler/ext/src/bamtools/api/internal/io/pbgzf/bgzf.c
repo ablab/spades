@@ -49,7 +49,7 @@ typedef struct {
 KHASH_MAP_INIT_INT64(cache, cache_t)
 #endif
 
-inline void
+static void
 packInt16(uint8_t* buffer, uint16_t value)
 {
 	buffer[0] = value;
@@ -62,7 +62,7 @@ unpackInt16(const uint8_t *buffer)
 	return buffer[0] | buffer[1] << 8;
 }
 
-inline void 
+static void
 packInt32(uint8_t *buffer, uint32_t value)
 {
 	buffer[0] = value;
