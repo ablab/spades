@@ -255,21 +255,6 @@ private:
     DECL_LOGGER("TipPropagator");
 };
 
-void AnnotationPropagator::DumpContigAnnotation(io::SingleStream& contigs,
-                          const EdgeAnnotation& annotation,
-                          const string& annotation_out_fn) const {
-    AnnotationOutStream annotation_out(annotation_out_fn);
-    io::SingleRead contig;
-    while (!contigs.eof()) {
-        contigs >> contig;
-        auto relevant_bins = annotation.RelevantBins(contig);
-        if (!relevant_bins.empty()) {
-            annotation_out << ContigAnnotation(GetId(contig),
-                                vector<bin_id>(relevant_bins.begin(), relevant_bins.end()));
-        }
-    }
-}
-
 class AnnotationChecker {
     const Graph& g_;
     const EdgeAnnotation& edge_annotation_;

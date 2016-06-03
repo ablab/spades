@@ -50,8 +50,6 @@ int main(int argc, char** argv) {
                 "[-p to disable binning] [-b <bins of interest>*]"  << endl;
         exit(1);
     }
-    //TODO: don't save the propagated info
-    //string propagated_path = annotation_path + ".prop";
 
     conj_graph_pack gp(k, "tmp", 1);
     gp.kmer_mapper.Attach();
@@ -77,8 +75,8 @@ int main(int argc, char** argv) {
     propagator.Run(contigs_stream, edge_annotation);
     INFO("Propagation finished");
 
-//    contigs.reset();
-//    DumpContigAnnotation(contigs, edge_annotation, annotation_out_fn);
+    DumpEdgesAndAnnotation(gp.g, edge_annotation,
+                           path::parent_path(annotation_path) + "/edges");
 
     if (no_binning) {
         INFO("Binning was disabled with -p flag");
