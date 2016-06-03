@@ -117,7 +117,7 @@ rule binning:
     input:
         contigs="assembly/{sample}.fasta", ann="{sample}.ann",
         left=IN + "/{sample}/left.fastq", right=IN + "/{sample}/right.fastq"
-    output:  "{sample}/binning.log", "{sample}.ann.prop"
+    output:  "{sample}/binning.log", "{sample}_edges.ann"
     params:  "{sample}"
     log:     "{sample}/binning.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
@@ -204,7 +204,7 @@ rule quast_combined_all:
 
 #---- Bins of interest ---------------------------------------------------------
 rule int_bins:
-    input:   "{sample}.ann.prop", "{sample}/{ref}.cont"
+    input:   "{sample}.ann", "{sample}/{ref}.cont"
     output:  "{sample}/{ref}.bin"
     message: "Filtering interesting bins for {wildcards.sample} aligned to {wildcards.ref}"
     shell:   "{SCRIPTS}/filter_bins.py {input} > {output}"
@@ -229,7 +229,9 @@ rule int_bins_all:
     message: "Gathered all interesting bins"
 
 #---- GF per bin per reference --------------------------------------
-PROP = {"prelim": ".ann", "prop": ".ann.prop"}
+#PROP = {"prelim": ".ann", "prop": ".ann.prop"}
+
+PROP = {"prelim": ".ann"}
 
 #TODO: split into different directories per sample
 rule split_bins:
@@ -289,17 +291,17 @@ rule neat_table:
     message: "Formatting a human-readable table from results"
     shell:   "{SCRIPTS}/format_table.py {output} {params.dir} {params.refs}"
 
-#---- Propagator statistics ----------------------------------------------------
-rule prop_stats:
-    input:   prelim="{sample}.ann", prop="{sample}.ann.prop", bins="{sample}/{ref}.bin", contigs="assembly/{sample}.fasta", ref=ref_path
-    output:  "{sample}/{ref}.stats"
-    message: "Calculating propagation statistics for {wildcards.sample} aligned to {wildcards.ref}"
-    shell:   "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref} -c {input.contigs} -a {input.prelim} -p {input.prop} -b `cat {input.bins}` >/dev/null 2>{output}"
-
-# Run this
-rule prop_stats_all:
-    input:   expand("{sample}/{ref}.stats", sample=SAMPLES, ref=REFS)
-    message: "Calculated propagation statistics"
+##---- Propagator statistics ----------------------------------------------------
+#rule prop_stats:
+#    input:   prelim="{sample}.ann", prop="{sample}.ann.prop", bins="{sample}/{ref}.bin", contigs="assembly/{sample}.fasta", ref=ref_path
+#    output:  "{sample}/{ref}.stats"
+#    message: "Calculating propagation statistics for {wildcards.sample} aligned to {wildcards.ref}"
+#    shell:   "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref} -c {input.contigs} -a {input.prelim} -p {input.prop} -b `cat {input.bins}` >/dev/null 2>{output}"
+#
+## Run this
+#rule prop_stats_all:
+#    input:   expand("{sample}/{ref}.stats", sample=SAMPLES, ref=REFS)
+#    message: "Calculated propagation statistics"
 
 #---- PCA ----------------------------------------------------------------------
 rule pca:

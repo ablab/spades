@@ -76,7 +76,9 @@ int main(int argc, char** argv) {
     INFO("Propagation finished");
 
     DumpEdgesAndAnnotation(gp.g, edge_annotation,
-                           path::parent_path(annotation_path) + "/edges");
+                           path::parent_path(annotation_path) + "/"
+                               + path::basename(annotation_path)
+                               + "_edges");
 
     if (no_binning) {
         INFO("Binning was disabled with -p flag");
