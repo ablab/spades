@@ -122,7 +122,7 @@ double ChromosomeRemoval::RemoveLongGenomicEdges(conj_graph_pack &gp, size_t lon
         INFO ("genomic coverage is "<< median_long_edge_coverage << " calculated of length " << size_t (double(total_len) * 0.5));
         size_t outsiders_length = 0;
         for (size_t j = 0; j < coverages.size(); j++) {
-            if ( coverages[j].first >= median_long_edge_coverage * (1 + coverage_limits) || coverages[j].first > median_long_edge_coverage * (1 - coverage_limits)) {
+            if ( coverages[j].first >= median_long_edge_coverage * (1 + coverage_limits) || coverages[j].first <= median_long_edge_coverage * (1 - coverage_limits)) {
                 outsiders_length += coverages[j].second;
             }
         }
