@@ -84,6 +84,10 @@ void assemble_genome() {
             SPAdes.add(new debruijn_graph::Simplification());
         }
 
+        if (cfg::get().pd) {
+            SPAdes.add(new debruijn_graph::ChromosomeRemoval());
+        }
+
         //begin pacbio
         bool run_pacbio = false;
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
@@ -97,14 +101,14 @@ void assemble_genome() {
             VERIFY(!two_step_rr);
             SPAdes.add(new debruijn_graph::PacBioAligning());
         }
+        //not a handler, no graph modification allowed after PacBioAligning stage!
         //end pacbio
-        if (cfg::get().pd) {
-            SPAdes.add(new debruijn_graph::ChromosomeRemoval());
-        }
+        
         SPAdes.add(new debruijn_graph::PairInfoCount())
               .add(new debruijn_graph::DistanceEstimation())
               .add(new debruijn_graph::RepeatResolution());
 
+        
     } else {
         SPAdes.add(new debruijn_graph::ContigOutput());
     }
