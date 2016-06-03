@@ -123,16 +123,11 @@ rule binning:
     shell:
         "{BIN}/prop_binning -k {K} -s {wildcards.sample}/assembly/{SAVES} -c {input.contigs} -a {input.ann} -l {input.left} -r {input.right} -o binning -n {params} >{log} 2>&1"
 
-rule cat_binned_reads:
+rule choose_samples:
     input:   FINISHED_BINNING
-    output:
-        left="binning/{cag}_1.fastq", right="binning/{cag}_2.fastq"
-    params:
-        left="`ls binning/{cag}/*_1.fastq`", right="`ls binning/{cag}/*_2.fastq`"
-    message: "Combining binned reads for {wildcards.cag}"
-    shell:
-        "cat {params.left}  > {output.left} && "
-        "cat {params.right} > {output.right}"
+    output:  left="binning/{cag}_1.fastq", right="binning/{cag}_2.fastq"
+    message: "Choosing samples for {wildcards.cag}"
+    shell:   "{SCRIPTS}/choose_samples.py {wildcards.cag} canopy.prof binning"
 
 rule reassemble:
     input:   left="binning/{cag}_1.fastq", right="binning/{cag}_2.fastq"
