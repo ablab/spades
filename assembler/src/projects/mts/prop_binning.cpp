@@ -13,7 +13,7 @@
 #include <modules/visualization/position_filler.hpp>
 
 void create_console_logger() {
-    logging::logger *log = logging::create_logger("", logging::L_DEBUG);
+    logging::logger *log = logging::create_logger("", logging::L_INFO);
     log->add_writer(std::make_shared<logging::console_writer>());
     logging::attach_logger(log);
 }

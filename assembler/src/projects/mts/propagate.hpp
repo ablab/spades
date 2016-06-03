@@ -15,6 +15,7 @@ namespace debruijn_graph {
 inline void DumpEdgesAndAnnotation(const Graph& g,
                                    const EdgeAnnotation& edge_annotation,
                                    const string& out_prefix) {
+    INFO("Dumping edges and their annotation to " << out_prefix);
     io::osequencestream oss(out_prefix + ".fasta");
     AnnotationOutStream annotation_out(out_prefix + ".ann");
     for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
