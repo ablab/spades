@@ -22,9 +22,7 @@ public:
                      gp_(gp) {
     }
 
-    void Run(io::SingleStream& contigs, const string& annotation_in_fn,
-                         const vector<bin_id>& bins_of_interest,
-                         const string& annotation_out_fn);
+    void Run(io::SingleStream& contigs, EdgeAnnotation& edge_annotation);
 };
 
 }

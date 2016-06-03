@@ -58,9 +58,9 @@ public:
             std::set_difference(raw_propagated.begin(), raw_propagated.end(),
                                 init_edges.begin(), init_edges.end(),
                                 std::inserter(propagated, propagated.end()));
-            DEBUG("Requested sticking annotation to " << propagated.size() << " edges and their conjugates");
             answer[bin] = std::move(propagated);
         }
+        DEBUG("Finished propagating with propagator: " << name_);
         return answer;
     }
 
@@ -166,12 +166,12 @@ class PairedInfoPropagator : public EdgeAnnotationPropagator {
     set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const override {
         set<EdgeId> answer;
         for (EdgeId e1 : edges) {
-            TRACE("Searching for paired neighbours of " << g().str(e1));
+            DEBUG("Searching for paired neighbours of " << g().str(e1));
             for (const auto& index : gp().clustered_indices)
                 for (auto i : index.Get(e1))
                     for (auto point : i.second)
                         if (math::ge(point.weight, weight_threshold_)) {
-                            TRACE("Adding (" << g().str(e1) << "," << g().str(i.first) << "); " << point);
+                            DEBUG("Adding (" << g().str(e1) << "," << g().str(i.first) << "); " << point);
                             answer.insert(i.first);
                         }	    
         }
@@ -202,7 +202,8 @@ protected:
             auto edges_of_contig = mapper_->MapRead(contig).simple_path();
             for (EdgeId e : edges_of_contig) {
                 if (edges.count(e)) {
-                    TRACE(e << " belongs to the contig #" << contig.name());
+                    DEBUG("Edge " << gp().g.str(e) << " belongs to the contig #" << 
+                            contig.name() << " of " << edges_of_contig.size() << " edges");
                     insert_all(answer, edges_of_contig);
                     break;
                 }
@@ -304,18 +305,14 @@ private:
     DECL_LOGGER("AnnotationChecker");
 };
 
-void AnnotationPropagator::Run(io::SingleStream& contigs, const string& annotation_in_fn,
-                     const vector<bin_id>& bins_of_interest,
-                     const string& annotation_out_fn) {
-    AnnotationStream annotation_in(annotation_in_fn);
-    EdgeAnnotation edge_annotation(gp_, bins_of_interest);
-    edge_annotation.Fill(contigs, annotation_in);
-
+void AnnotationPropagator::Run(io::SingleStream& /*contigs*/, 
+                     EdgeAnnotation& edge_annotation
+                     /*const string& annotation_out_fn*/) {
     std::vector<std::shared_ptr<EdgeAnnotationPropagator>> propagator_pipeline {
         std::make_shared<ConnectingPathPropagator>(gp_, 8000, 10, edge_annotation),
         std::make_shared<TipPropagator>(gp_), 
-        std::make_shared<PairedInfoPropagator>(gp_, 10.),
-        std::make_shared<ContigPropagator>(gp_, contigs)};//,
+        std::make_shared<PairedInfoPropagator>(gp_, 10.)};//,
+//        std::make_shared<ContigPropagator>(gp_, contigs)};//,
 //        std::make_shared<ConnectingPathPropagator>(gp_, 8000, 10, edge_annotation),
 //        std::make_shared<ContigPropagator>(gp_, contigs),
 //        std::make_shared<TipPropagator>(gp_)};
@@ -325,6 +322,7 @@ void AnnotationPropagator::Run(io::SingleStream& contigs, const string& annotati
     for (auto prop_ptr : propagator_pipeline) {
         auto propagation_map = prop_ptr->Propagate(edge_annotation);
 
+        DEBUG("Applying bin extensions from propagator " << prop_ptr->name());
         for (const auto& bin_prop : propagation_map) {
             const auto& bin_id = bin_prop.first;
             const auto& edges = bin_prop.second;
@@ -335,10 +333,8 @@ void AnnotationPropagator::Run(io::SingleStream& contigs, const string& annotati
                       << " lead to " << problem_cnt << " binning problems");
             edge_annotation.StickAnnotation(edges, bin_id);
         }
+        DEBUG("Applied bin extensions from propagator " << prop_ptr->name());
     }
-
-    contigs.reset();
-    DumpContigAnnotation(contigs, edge_annotation, annotation_out_fn);
 }
 
 }

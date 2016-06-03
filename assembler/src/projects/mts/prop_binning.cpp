@@ -13,7 +13,7 @@
 #include <modules/visualization/position_filler.hpp>
 
 void create_console_logger() {
-    logging::logger *log = logging::create_logger("", logging::L_INFO);
+    logging::logger *log = logging::create_logger("", logging::L_DEBUG);
     log->add_writer(std::make_shared<logging::console_writer>());
     logging::attach_logger(log);
 }
@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
     //TODO: don't save the propagated info
-    string propagated_path = annotation_path + ".prop";
+    //string propagated_path = annotation_path + ".prop";
 
     conj_graph_pack gp(k, "tmp", 1);
     gp.kmer_mapper.Attach();
@@ -64,25 +64,33 @@ int main(int argc, char** argv) {
 //            "CAG1_ref_", true);
 
     //Propagation stage
-    //TODO: make this optional
     INFO("Using contigs from " << contigs_path);
     io::FileReadStream contigs_stream(contigs_path);
+
+    AnnotationStream annotation_in(annotation_path);
+    EdgeAnnotation edge_annotation(gp, bins_of_interest);
+    //TODO make fill trivial and remove logic with contig names parsing
+    edge_annotation.Fill(contigs_stream, annotation_in);
+
     INFO("Propagation launched");
     AnnotationPropagator propagator(gp);
-    propagator.Run(contigs_stream, annotation_path, bins_of_interest, propagated_path);
+    propagator.Run(contigs_stream, edge_annotation);
     INFO("Propagation finished");
+
+//    contigs.reset();
+//    DumpContigAnnotation(contigs, edge_annotation, annotation_out_fn);
 
     if (no_binning) {
         INFO("Binning was disabled with -p flag");
         return 0;
     }
     //Binning stage
-    contigs_stream.reset();
-    ContigBinner binner(gp, bins_of_interest);
+//    contigs_stream.reset();
+    ContigBinner binner(gp, edge_annotation);
     INFO("Initializing binner");
-    INFO("Using propagated annotation from " << propagated_path);
-    AnnotationStream binning_stream(propagated_path);
-    binner.Init(out_root, sample_name, contigs_stream, binning_stream);
+//    INFO("Using propagated annotation from " << propagated_path);
+//    AnnotationStream binning_stream(propagated_path);
+    binner.Init(out_root, sample_name);
 
     auto paired_stream = io::PairedEasyStream(left_reads, right_reads, false, 0);
     INFO("Running binner on " << left_reads << " and " << right_reads);

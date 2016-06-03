@@ -22,8 +22,7 @@ void create_console_logger() {
 
 namespace debruijn_graph {
 
-void ContigBinner::Init(const string& output_root, const string& sample_name, io::SingleStream& contigs, AnnotationStream& annotation_stream) {
-    edge_annotation_.Fill(contigs, annotation_stream);
+void ContigBinner::Init(const string& output_root, const string& sample_name) {
     for (bin_id bin : edge_annotation_.interesting_bins()) {
         string out_dir = output_root + "/" + ToString(bin) + "/";
         path::make_dirs(out_dir);

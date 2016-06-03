@@ -59,17 +59,17 @@ namespace debruijn_graph {
 
 class ContigBinner {
     const conj_graph_pack& gp_;
-    EdgeAnnotation edge_annotation_;
+    const EdgeAnnotation& edge_annotation_;
 
     map<bin_id, std::shared_ptr<io::OPairedReadStream>> out_streams_;
 
 public:
-    ContigBinner(const conj_graph_pack& gp, const vector<bin_id>& bins_of_interest) :
+    ContigBinner(const conj_graph_pack& gp, const EdgeAnnotation& edge_annotation) :
                      gp_(gp),
-                     edge_annotation_(gp, bins_of_interest) {
+                     edge_annotation_(edge_annotation) {
     }
 
-    void Init(const string& output_root, const string& sample_name, io::SingleStream& contigs, AnnotationStream& annotation_stream);
+    void Init(const string& output_root, const string& sample_name);
 
     void Run(io::PairedStream& paired_reads);
 
