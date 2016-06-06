@@ -16,12 +16,11 @@ PROF = sys.argv[2]
 DIR = sys.argv[3]
 DESIRED_ABUNDANCE = 50
 MIN_ABUNDANCE = 4
+MIN_TOTAL_ABUNDANCE = 20
 
 #TODO: non-consecutive sample indexes
 profile = [CAG] + map(float, subprocess.check_output(["grep", CAG, PROF]).split()[1:])
 print("Profile of", CAG, ":", profile)
-
-#avail_samples = glob.glob("{}/{}/sample{}_{}.fastq")
 
 weighted_profile = list((i, -ab)
     for i, ab in enumerate(profile[1:], start=1) if ab >= MIN_ABUNDANCE and path.exists("{}/{}/sample{}_1.fastq".format(DIR, CAG, i)))
@@ -44,6 +43,10 @@ except StopIteration:
             break
 
 print("Chosen samples are", samples, "with total mean abundance", sum)
+if sum < MIN_TOTAL_ABUNDANCE:
+    print("The CAG is too scarce; skipping")
+    exit(0)
+
 for suf in ["1", "2"]:
     reads = ["{}/{}/sample{}_{}.fastq".format(DIR, CAG, sample, suf) for sample in samples]
     with open("{}/{}_{}.fastq".format(DIR, CAG, suf), "w") as output:

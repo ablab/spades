@@ -34,6 +34,7 @@ THREADS = config.get("THREADS", 16)
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
 CAGS, = glob_wildcards("binning/{cag,CAG\d+}")
+GOOD_CAGS, = glob_wildcards("binning/{cag,CAG\d+}_1.fastq")
 REFS = {os.path.splitext(os.path.basename(fullpath))[0]: fullpath for fullpath in gather_refs(config.get("REFS", []))}
 def ref_path(wildcards):
     return REFS[wildcards.ref]
@@ -125,9 +126,17 @@ rule binning:
 
 rule choose_samples:
     input:   FINISHED_BINNING
-    output:  left="binning/{cag}_1.fastq", right="binning/{cag}_2.fastq"
-    message: "Choosing samples for {wildcards.cag}"
-    shell:   "{SCRIPTS}/choose_samples.py {wildcards.cag} canopy.prof binning"
+    output:  "binning/{cag}.log"
+    #output:  left="binning/{cag}_1.fastq", right="binning/{cag}_2.fastq"
+    params:  "{cag}"
+    log:     "binning/{cag}.log"
+    message: "Choosing samples for {params}"
+    shell:   "{SCRIPTS}/choose_samples.py {params} canopy.prof binning >{log} 2>&1"
+
+#Launch this AFTER 'all'
+rule choose_all:
+    input:   expand("binning/{cag}.log", cag=CAGS)
+    message: "Filtered all CAGs"
 
 rule reassemble:
     input:   left="binning/{cag}_1.fastq", right="binning/{cag}_2.fastq"
@@ -141,8 +150,9 @@ rule reassemble:
         "{SPADES}/spades.py --meta -t {threads} -1 {input.left} -2 {input.right} -o {params} >{log} 2>&1 && "
         "cp {params}/scaffolds.fasta {output}"
 
+#Launch this AFTER 'choose_all'
 rule reassemble_all:
-    input:   expand("reassembly/{cag}.fasta", cag=CAGS)
+    input:   expand("reassembly/{cag}.fasta", cag=GOOD_CAGS)
     message: "Reassembled reads for all bins"
 
 #===============================================================================
@@ -263,7 +273,7 @@ rule quast_stats:
     message: "Aligning {wildcards.stage} assemblies on all references"
     shell:   "{METAQUAST} -t {threads} -R {ALL_REFS} {params.data} -o {params.out} >{output} 2>&1"
 
-# Run this
+# Run this AFTER 'all'
 rule stats_all:
     input:   expand("summary/q_{bin}_{prop}.log", bin=["split", "bin"], prop=PROP)
     message: "Gathered some numbers, deal with them."
