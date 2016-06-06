@@ -5,10 +5,12 @@
 # See file LICENSE for details.
 ############################################################################
 
-add_subdirectory(spades)
-add_subdirectory(hammer)
-add_subdirectory(ionhammer)
-add_subdirectory(dipspades)
-add_subdirectory(corrector)
-add_subdirectory(scaffold_correction)
-add_subdirectory(mph_test)
+project(mph_test CXX)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+
+add_executable(mph_test
+               main.cpp)
+
+target_link_libraries(mph_test spades_modules ${COMMON_LIBRARIES})
