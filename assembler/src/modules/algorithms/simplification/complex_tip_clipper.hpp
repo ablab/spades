@@ -107,7 +107,12 @@ public:
             DEBUG("Processing vertex " << g_.str(*it));
 
             DominatedSetFinder<Graph> dom_finder(g_, *it, max_path_length_ * 2);
-            dom_finder.FillDominated();
+
+            if(!dom_finder.FillDominated()) {
+                DEBUG("Tip contains too long paths");
+                continue;
+            }
+
             auto component = dom_finder.AsGraphComponent();
 
             if(!CheckEdgeLenghts(component)) {
@@ -142,8 +147,8 @@ public:
             RemoveComplexTip(component);
         }
         CompressAllVertices(g_);
-        INFO("Complex tip clipper finished");
-        INFO("Tips processed " << cnt);
+        DEBUG("Complex tip clipper finished");
+        DEBUG("Tips processed " << cnt);
         return something_done_flag;
     }
 private:
