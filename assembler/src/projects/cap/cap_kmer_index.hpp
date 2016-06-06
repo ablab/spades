@@ -165,17 +165,6 @@ namespace cap {
                 bucket = NULL;
             }
 
-            virtual RawKMerStorage* TransferBucket(size_t /* idx */) {
-                VERIFY(bucket != NULL);
-                TRACE("TRANSFERRING BUCKET" <<
-                        "BUCKET size=" << bucket->size());
-
-                RawKMerStorage *ret = bucket;
-                bucket = NULL;
-
-                return ret;
-            }
-
             virtual RawKMerStorage* GetFinalKMers() {
                 OpenBucket(0);
                 VERIFY(bucket != NULL);

@@ -277,7 +277,6 @@ class KMerCounter {
 
   virtual void OpenBucket(size_t idx, bool unlink = true) = 0;
   virtual void ReleaseBucket(size_t idx) = 0;
-  virtual RawKMerStorage* TransferBucket(size_t idx) = 0;
   virtual FinalKMerStorage* GetFinalKMers() = 0;
 
   virtual iterator bucket_begin(size_t idx) = 0;
@@ -323,13 +322,6 @@ public:
   void ReleaseBucket(size_t idx) {
     delete buckets_[idx];
     buckets_[idx] = NULL;
-  }
-
-  MMappedRecordArrayReader<typename Seq::DataType>* TransferBucket(size_t idx) {
-    MMappedRecordArrayReader<typename Seq::DataType> *res = buckets_[idx];
-    buckets_[idx] = NULL;
-
-    return res;
   }
 
   typename __super::iterator bucket_begin(size_t idx) {
