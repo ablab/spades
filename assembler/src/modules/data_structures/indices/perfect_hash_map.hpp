@@ -84,7 +84,7 @@ public:
     }
 };
 
-template<class K, class V, class traits, class StoringType>
+template<class K, class V, class traits = kmer_index_traits<K>, class StoringType = SimpleStoring>
 class PerfectHashMap : public ValueArray<V>, public IndexWrapper<K, traits> {
 public:
     typedef size_t IdxType;
@@ -155,7 +155,7 @@ protected:
 };
 
 
-template<class K, class V, class traits, class StoringType>
+template<class K, class V, class traits = kmer_index_traits<K>, class StoringType = SimpleStoring>
 class KeyStoringMap : public PerfectHashMap<K, V, traits, StoringType> {
 private:
     typedef PerfectHashMap<K, V, traits, StoringType> base;
@@ -309,7 +309,7 @@ public:
     }
 };
 
-template<class K, class V, class traits, class StoringType>
+template<class K, class V, class traits = kmer_index_traits<K>, class StoringType = SimpleStoring>
 class KeyIteratingMap : public PerfectHashMap<K, V, traits, StoringType> {
     typedef PerfectHashMap<K, V, traits, StoringType> base;
 
