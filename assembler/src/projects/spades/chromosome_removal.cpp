@@ -243,7 +243,11 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
         size_t new_graph_size = gp.g.size();
         if (new_graph_size == graph_size) {
             INFO("Iteration " << i << " of small components additional filtering graph was not changed");
-            INFO("After plasmidSPAdes subroutine " << new_graph_size << " vertices left");
+            if (new_graph_size == 0) {
+                WARN("No putative plasmid contigs found!");
+            } else {
+                INFO("After plasmidSPAdes subroutine " << new_graph_size << " vertices left");
+            }
             break;
         }
     }
