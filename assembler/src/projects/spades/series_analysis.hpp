@@ -35,27 +35,85 @@ inline double cosine_sim(const AbundanceVector& v1, const AbundanceVector& v2, s
 }
 
 template<class Graph>
+class EdgeAbundance: public omnigraph::GraphActionHandler<Graph> {
+    typedef map<EdgeId, AbundanceVector> Storage;
+    typedef Storage::const_iterator const_iterator;
+    Storage edge_abundance_;
+    const ContigAbundanceCounter& abundance_counter_;
+
+public:
+    EdgeAbundance(const Graph& g, const ContigAbundanceCounter& abundance_counter) :
+        omnigraph::GraphActionHandler<Graph>(g, "EdgeAbundance"),
+        abundance_counter_(abundance_counter){}
+
+    void Fill() {
+        for (auto it = this->g().ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+            HandleAdd(*it);
+        }
+    }
+
+    virtual void HandleAdd(EdgeId e) override {
+        auto ab = abundance_counter_(this->g().EdgeNucls(e).str());
+        if (!ab) {
+            INFO("Couldn't estimate abundance of edge " << this->g().str(e));
+        } else {
+            edge_abundance_[e] = *ab;
+        }
+    }
+
+    const_iterator begin() const {
+        return edge_abundance_.begin();
+    }
+
+    const_iterator end() const {
+        return edge_abundance_.end();
+    }
+
+    const_iterator find(EdgeId e) const {
+        return edge_abundance_.find(e);
+    }
+
+    size_t count(EdgeId e) const {
+        return edge_abundance_.count(e);
+    }
+
+private:
+    DECL_LOGGER("EdgeAbundance");
+};
+
+template<class Graph>
 class AggressiveClearing: public omnigraph::EdgeProcessingAlgorithm<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     const size_t sample_cnt_;
-    const map<EdgeId, AbundanceVector>& edge_abundance_;
+    const EdgeAbundance<Graph>& edge_abundance_;
     const AbundanceVector base_profile_;
     const double similarity_threshold_;
+    const double norm_ratio_threshold_;
     EdgeRemover<Graph> edge_remover_;
     pred::TypedPredicate<EdgeId> topological_condition_;
 
 protected:
     virtual bool ProcessEdge(EdgeId e) override {
+        DEBUG("Processing edge " << this->g().str(e));
+        if (!topological_condition_(e)) {
+            DEBUG("Topological condition failed");
+            return false;
+        }
         auto it = edge_abundance_.find(e);
         if (it == edge_abundance_.end()) {
             DEBUG("Edge " << this->g().str(e) << " did not have valid abundance profile");
             return false;
         }
         const auto& profile = it->second;
+        DEBUG("Edge profile " << PrintVector(profile, sample_cnt_));
         double sim = cosine_sim(profile, base_profile_, sample_cnt_);
-        if (math::ls(sim, similarity_threshold_)) {
+        double norm_ratio = l2_norm(profile, sample_cnt_) / l2_norm(base_profile_, sample_cnt_);
+
+        DEBUG("Similarity between edge and base profiles " << sim);
+        DEBUG("Norm ratio " << norm_ratio);
+        if (math::ls(norm_ratio, norm_ratio_threshold_) 
+                || math::ls(sim, similarity_threshold_)) {
             DEBUG("Removing edge " << this->g().str(e));
-            DEBUG("Similarity was " << sim << " while threshold " << similarity_threshold_);
 
             edge_remover_.DeleteEdge(e);
             return true;
@@ -66,9 +124,10 @@ protected:
 public:
     AggressiveClearing(Graph &g,
                        size_t sample_cnt,
-                       const map<EdgeId, AbundanceVector>& edge_abundance,
+                       const EdgeAbundance<Graph>& edge_abundance,
                        const AbundanceVector& base_profile,
                        double similarity_threshold,
+                       double norm_ratio_threshold,
                        const std::function<void(EdgeId)> &removal_handler = 0) :
         EdgeProcessingAlgorithm<Graph>(g,
                               true),
@@ -76,8 +135,13 @@ public:
         edge_abundance_(edge_abundance),
         base_profile_(base_profile),
         similarity_threshold_(similarity_threshold),
+        norm_ratio_threshold_(norm_ratio_threshold),
         edge_remover_(g, removal_handler),
-        topological_condition_(pred::Or(AlternativesPresenceCondition<Graph>(g), TipCondition<Graph>(g))) { }
+        topological_condition_(pred::Or(AlternativesPresenceCondition<Graph>(g), TipCondition<Graph>(g))) { 
+            DEBUG("Base profile " << PrintVector(base_profile_, sample_cnt_));
+        }
+private:
+    DECL_LOGGER("AggressiveClearing");
 };
 
 class SeriesAnalysis : public spades::AssemblyStage {
@@ -126,7 +190,9 @@ public:
         std::string b_id = config["bin"].as<std::string>();
         std::string bin_mult_fn = config["bin_prof"].as<std::string>();
 
-        ContigAbundanceCounter abundance_counter(k, sample_cnt, cfg::get().tmp_dir);
+        ContigAbundanceCounter abundance_counter(k, sample_cnt, 
+                                                 cfg::get().tmp_dir, 
+                                                 /*relaxed center share*/0.4);
 
         abundance_counter.Init(kmer_mult_fn);
         boost::optional<AbundanceVector> bin_profile = InferAbundance(bin_mult_fn, b_id, sample_cnt);
@@ -135,29 +201,36 @@ public:
             return;
         }
 
-        map<EdgeId, AbundanceVector> edge_abundance;
+        EdgeAbundance<Graph> edge_abundance(gp.g, abundance_counter);
+        edge_abundance.Fill();
 
-        for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-            EdgeId e = *it;
-            auto ab = abundance_counter(gp.g.EdgeNucls(e).str());
-            if (!ab) {
-                WARN("Couldn't estimate abundance of edge " << gp.g.str(e));
-            } else {
-                edge_abundance[e] = *ab;
-            }
-        }
-
+        gp.EnsureBasicMapping();
         gp.FillQuality();
         omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
         auto colorer = DefaultGPColorer(gp);
+        path::make_dir(cfg::get().output_dir + "pictures/");
         QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
-                                       cfg::get().output_dir + "pictures/colored_edges_deleted/");
+                                       cfg::get().output_dir + "pictures/");
 
+        INFO("Launching aggressive graph clearing");
         //positive quality edges removed (folder colored_edges_deleted)
         AggressiveClearing<Graph> clearing(gp.g, sample_cnt, edge_abundance,
-                                            *bin_profile, 0.5, [&](EdgeId e) {
+                                            *bin_profile, 0.8, 0.3, [&](EdgeId e) {
                         qual_removal_handler.HandleDelete(e);});
         clearing.Run();
+        INFO("Graph clearing finished");
+
+        INFO("Drawing edges with failed abundance estimate")
+        path::make_dir(cfg::get().output_dir + "pictures_no_ab/");
+        QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler2(gp.g, gp.edge_qual, labeler, colorer,
+                                       cfg::get().output_dir + "pictures_no_ab/");
+
+        for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+            EdgeId e = *it;
+            if (edge_abundance.count(e) == 0) {
+                qual_removal_handler2.HandleDelete(e);
+            } 
+        }
     }
 };
 

@@ -25,19 +25,20 @@ AbundanceVector MeanVector(const CovVecs& cov_vecs, size_t sample_cnt) {
     return answer;
 }
 
+template<class AbVector>
+std::string PrintVector(const AbVector& mpl_vector, size_t sample_cnt) {
+    stringstream ss;
+    copy(mpl_vector.begin(), mpl_vector.begin() + sample_cnt,
+         ostream_iterator<typename AbVector::value_type>(ss, " "));
+    return ss.str();
+}
+
 class SingleClusterAnalyzer {
     static const uint MAX_IT = 10;
 
     size_t sample_cnt_;
     double coord_vise_proximity_;
     double central_clust_share_;
-
-    std::string PrintVector(const MplVector& mpl_vector) const {
-        stringstream ss;
-        copy(mpl_vector.begin(), mpl_vector.begin() + sample_cnt_,
-             ostream_iterator<Mpl>(ss, " "));
-        return ss.str();
-    }
 
     std::vector<Mpl> SampleMpls(const std::vector<MplVector>& kmer_mpls, size_t sample) const {
         std::vector<Mpl> answer;
@@ -83,7 +84,7 @@ class SingleClusterAnalyzer {
             if (AreClose(center, kmer_mpl)) {
                 answer.push_back(kmer_mpl);
             } else {
-                TRACE("Far kmer mpl " << PrintVector(kmer_mpl));
+                TRACE("Far kmer mpl " << PrintVector(kmer_mpl, sample_cnt_));
             }
         }
         return answer;
@@ -105,7 +106,7 @@ public:
 
         for (size_t it_cnt = 0; it_cnt < MAX_IT; ++it_cnt) {
             DEBUG("Iteration " << it_cnt);
-            DEBUG("Center is " << PrintVector(center));
+            DEBUG("Center is " << PrintVector(center, sample_cnt_));
 
             DEBUG("Locality size is " << locality.size()
                       << " making " << (double(locality.size()) / double(kmer_mpls.size()))
@@ -120,7 +121,7 @@ public:
             }
 
             MplVector update = MedianVector(locality);
-            DEBUG("Center update is " << PrintVector(update));
+            DEBUG("Center update is " << PrintVector(update, sample_cnt_));
 
             if (center == update) {
                 DEBUG("Old and new centers matched on iteration " << it_cnt);

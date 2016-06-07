@@ -43,16 +43,15 @@ public:
     void Fill(const Index &index
             , const KmerMapper<Graph>& kmer_mapper
             , const Sequence &genome) {
+        DEBUG("Filling quality values");
         FillQuality(index, kmer_mapper, genome);
         FillQuality(index, kmer_mapper, !genome);
+        DEBUG(quality_.size() << " edges have non-zero quality");
     }
 
     EdgeQuality(const Graph &graph) :
             omnigraph::GraphActionHandler<Graph>(graph, "EdgeQuality"),
             k_(graph.k() + 1) {
-    }
-
-    virtual ~EdgeQuality() {
     }
 
     virtual void HandleAdd(EdgeId /*e*/) {
@@ -117,6 +116,8 @@ public:
         quality_.clear();
     }
 
+private:
+    DECL_LOGGER("EdgeQuality");
 };
 
 template<class Graph>

@@ -84,7 +84,7 @@ void assemble_genome() {
             SPAdes.add(new debruijn_graph::Simplification());
         }
 
-        if (false)
+        if (true)
             SPAdes.add(new debruijn_graph::SeriesAnalysis());
 
         //begin pacbio
