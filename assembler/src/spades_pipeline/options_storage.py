@@ -84,6 +84,7 @@ cov_cutoff = 'off'  # default is 'off'
 # hidden options
 mismatch_corrector = None
 reference = None
+series_analysis = None
 configs_dir = None
 iterations = None
 bh_heap_check = None
@@ -125,7 +126,7 @@ dict_of_rel2abs = dict()
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc iontorrent meta large-genome rna plasmid "\
                "only-error-correction only-assembler "\
                "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
-               "help version test debug debug:false reference= config-file= dataset= "\
+               "help version test debug debug:false reference= series-analysis= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false "\
                "continue restart-from= diploid truseq cov-cutoff= configs-dir= stop-after=".split()
@@ -282,6 +283,7 @@ def usage(spades_version, show_hidden=False, dipspades=False):
                              " of mismatches and short indels" + "\n")
         sys.stderr.write("--reference\t<filename>\tfile with reference for deep analysis"\
                              " (only in debug mode)" + "\n")
+        sys.stderr.write("--series-analysis\t<filename>\tconfig for metagenomics-series-augmented reassembly" + "\n")
         sys.stderr.write("--configs-dir\t<configs_dir>\tdirectory with configs" + "\n")
         sys.stderr.write("-i/--iterations\t<int>\t\tnumber of iterations for read error"\
                              " correction [default: %s]\n" % ITERATIONS)

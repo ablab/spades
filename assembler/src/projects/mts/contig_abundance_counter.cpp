@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 
     size_t split_length = 10000;
 
-    ContigAbundanceCounter abundance_counter(k, sample_cnt, work_dir);
+    ContigAbundanceCounter abundance_counter(k, sample_cnt, SingleClusterAnalyzer(sample_cnt), work_dir);
     abundance_counter.Init(kmer_mult_fn);
 
     std::ofstream id_out(contigs_abundance_fn + ".id");

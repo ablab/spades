@@ -201,6 +201,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.configs_dir = support.check_dir_existence(arg)
         elif opt == "--reference":
             options_storage.reference = support.check_file_existence(arg, 'reference', log)
+        elif opt == "--series-analysis":
+            options_storage.series_analysis = support.check_file_existence(arg, 'series-analysis', log)
         elif opt == "--dataset":
             options_storage.dataset_yaml_filename = support.check_file_existence(arg, 'dataset', log)
 
@@ -394,6 +396,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     cfg["common"].__dict__["max_threads"] = options_storage.threads
     cfg["common"].__dict__["max_memory"] = options_storage.memory
     cfg["common"].__dict__["developer_mode"] = options_storage.developer_mode
+    if options_storage.series_analysis:
+        cfg["common"].__dict__["series_analysis"] = options_storage.series_analysis
 
     # dataset section
     cfg["dataset"].__dict__["single_cell"] = options_storage.single_cell

@@ -182,7 +182,13 @@ public:
     void save(const conj_graph_pack &, const std::string &, const char *) const { }
 
     void run(conj_graph_pack &gp, const char *) {
-        std::string cfg = "/Sid/snurk/mts/out/infant_gut_2/reassembly.yaml";
+        std::string cfg = cfg::get().series_analysis;//"/Sid/snurk/mts/out/infant_gut_2/reassembly.yaml";
+        if (cfg.empty()) {
+            INFO("No series analysis config was provided via --series-analysis");
+            return;
+        } else {
+            INFO("Series analysis enabled with config " << cfg);
+        }
         YAML::Node config = YAML::LoadFile(cfg);
         uint k = config["k"].as<uint>();
         size_t sample_cnt = config["sample_cnt"].as<size_t>();
@@ -191,8 +197,8 @@ public:
         std::string bin_mult_fn = config["bin_prof"].as<std::string>();
 
         ContigAbundanceCounter abundance_counter(k, sample_cnt, 
-                                                 cfg::get().tmp_dir, 
-                                                 /*relaxed center share*/0.4);
+                                                 SingleClusterAnalyzer(sample_cnt, 2., 0.4),
+                                                 cfg::get().tmp_dir);
 
         abundance_counter.Init(kmer_mult_fn);
         boost::optional<AbundanceVector> bin_profile = InferAbundance(bin_mult_fn, b_id, sample_cnt);

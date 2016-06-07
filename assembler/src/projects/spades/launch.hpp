@@ -53,7 +53,6 @@ void assemble_genome() {
                                             cfg::get().flanking_range,
                                             cfg::get().pos.max_mapping_gap,
                                             cfg::get().pos.max_gap_diff);
-
     if (cfg::get().need_mapping) {
         INFO("Will need read mapping, kmer mapper will be attached");
         conj_gp.kmer_mapper.Attach();
@@ -84,8 +83,7 @@ void assemble_genome() {
             SPAdes.add(new debruijn_graph::Simplification());
         }
 
-        if (true)
-            SPAdes.add(new debruijn_graph::SeriesAnalysis());
+        SPAdes.add(new debruijn_graph::SeriesAnalysis());
 
         //begin pacbio
         bool run_pacbio = false;

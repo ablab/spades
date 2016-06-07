@@ -144,6 +144,7 @@ class ContigAbundanceCounter {
 
     unsigned k_;
     size_t sample_cnt_;
+    SingleClusterAnalyzer cluster_analyzer_;
     double min_earmark_share_;
 
     KeyStoringMap<conj_graph_pack::seq_t,
@@ -151,7 +152,6 @@ class ContigAbundanceCounter {
     kmer_index_traits<conj_graph_pack::seq_t>,
     InvertableStoring> kmer_mpl_;
 
-    SingleClusterAnalyzer cluster_analyzer_;
     InverterT inverter_;
 
     void FillMplMap(const std::string& kmers_mpl_file) {
@@ -214,14 +214,14 @@ class ContigAbundanceCounter {
 public:
     ContigAbundanceCounter(unsigned k,
                            size_t sample_cnt,
+                           const SingleClusterAnalyzer& cluster_analyzer,
                            const std::string& work_dir,
                            double min_earmark_share = 0.7) :
         k_(k),
         sample_cnt_(sample_cnt),
+        cluster_analyzer_(cluster_analyzer),
         min_earmark_share_(min_earmark_share),
-        kmer_mpl_(k_, work_dir),
-        cluster_analyzer_(sample_cnt_) {
-
+        kmer_mpl_(k_, work_dir) {
     }
 
     void Init(const std::string& kmer_mpl_file,

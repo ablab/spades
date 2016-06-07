@@ -814,6 +814,7 @@ void load(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     cfg.preliminary_simp = cfg.simp;
     load(cfg.preliminary_simp, pt, "preliminary", false);
     load(cfg.bwa, pt, "bwa_aligner", false);
+    load(cfg.series_analysis, pt, "series_analysis", false);
 }
 
 void load(debruijn_config &cfg, const std::string &filename) {

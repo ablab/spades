@@ -67,6 +67,8 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     if "plasmid" in cfg.__dict__:
         subst_dict["plasmid_enabled"] = bool_to_str(True)
     subst_dict["path_to_bwa"] =  os.path.join(execution_home, "bwa-spades")
+    if "series_analysis" in cfg.__dict__:
+        subst_dict["series_analysis"] = cfg.series_analysis
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
