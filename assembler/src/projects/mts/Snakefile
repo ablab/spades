@@ -138,8 +138,19 @@ rule choose_all:
     input:   expand("binning/{cag}.log", cag=CAGS)
     message: "Filtered all CAGs"
 
+rule generate_yaml:
+    output:  "reassembly/{cag}.yaml"
+    message: "Generated config file for reassembly"
+    run:
+        with open(output[0], "w") as outfile:
+            yaml = {"k": small_k, "sample_cnt": SAMPLE_COUNT, "kmer_mult": "kmers", "bin": wildcards.cag, "bin_prof": input}
+            #TODO: some sort of PyYAML
+            for key, value in yaml.items():
+                print(key, ": ", value, sep="", file=outfile)
+
 rule reassemble:
-    input:   left="binning/{cag}_1.fastq", right="binning/{cag}_2.fastq"
+    input:   left="binning/{cag}_1.fastq", right="binning/{cag}_2.fastq",
+             config="reassembly/{cag}.yaml"
     output:  "reassembly/{cag}.fasta"
     params:  "reassembly/reassembly_{cag}"
     log:     "reassembly/reassembly_{cag}.log"
