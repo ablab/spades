@@ -4,7 +4,5 @@
 #cmakedefine SPADES_USE_JEMALLOC
 #cmakedefine SPADES_USE_TCMALLOC
 #cmakedefine SPADES_DEBUG_LOGGING
-#cmakedefine SPADES_GIT_REFSPEC "${SPADES_GIT_REFSPEC}"
-#cmakedefine SPADES_GIT_SHA1 "${SPADES_GIT_SHA1}"
 
 #endif // __SPADES_CONFIG_HPP__

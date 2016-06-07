@@ -13,6 +13,7 @@
 #include "dev_support/segfault_handler.hpp"
 #include "launch.hpp"
 #include "dev_support/copy_file.hpp"
+#include "version.hpp"
 
 void load_config(const vector<string>& cfg_fns) {
     for (const auto& s : cfg_fns) {
