@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>SPAdes 3.8.0 Manual</title>
+    <title>SPAdes 3.8.1 Manual</title>
     <style type="text/css">
         .code {
             background-color: lightgray;
@@ -8,7 +8,7 @@
     </style>
 </head>
 <body>
-<h1>SPAdes 3.8.0 Manual</h1>
+<h1>SPAdes 3.8.1 Manual</h1>
 
 1. <a href="#sec1">About SPAdes</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.1. <a href="#sec1.1">Supported data types</a><br>
@@ -35,18 +35,18 @@
 <h2>1. About SPAdes</h2>
 <p>
     SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. 
-SPAdes version 3.8.0 was released under GPLv2 on March 8, 2016 and can be downloaded from  <a href="http://bioinf.spbau.ru/en/spades" target="_blank">http://bioinf.spbau.ru/en/spades</a>.
+SPAdes version 3.8.1 was released under GPLv2 on March 8, 2016 and can be downloaded from  <a href="http://bioinf.spbau.ru/en/spades" target="_blank">http://bioinf.spbau.ru/en/spades</a>.
 
 <a name="sec1.1"></a>
 <h3>1.1 Supported data types</h3>
 <p>
     The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.
 <p>
-    Version 3.8.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on single-cell and standard bacterial and fungal data sets. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
+    Version 3.8.1 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on single-cell and standard bacterial and fungal data sets. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
 <p>
-    SPAdes 3.8.0 includes metaSPAdes &ndash; a pipeline designed specially for metagenomic data sets. To learn more see <a href="#meta">options</a>.
+    SPAdes 3.8.1 includes metaSPAdes &ndash; a pipeline designed specially for metagenomic data sets. To learn more see <a href="#meta">options</a>.
 <p>
-    Also, SPAdes 3.8.0 includes plasmidSPAdes &ndash; a pipeline designed for extracting and assembling plasmids from WGS data sets. To learn more see <a href="#plasmid">options</a>.
+    Also, SPAdes 3.8.1 includes plasmidSPAdes &ndash; a pipeline designed for extracting and assembling plasmids from WGS data sets. To learn more see <a href="#plasmid">options</a>.
 <p>
     Additionally, SPAdes has a separate modules for assembling highly polymorphic diploid genomes and for TruSeq barcode assembly. For more information see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a> and <a href="truspades_manual.html" target="_blank">truSPAdes manual</a> .
 
@@ -143,7 +143,7 @@ SPAdes comes in several separate modules:
         <li> Running SPAdes without preliminary read error correction (e.g. without BayesHammer or IonHammer) will likely require more time and memory. </li>
         <li> Each module removes its temporary files as soon as it finishes. </li>
         <li> SPAdes uses 512 Mb per thread for buffers, which results in higher memory consumption. If you set memory limit manually, SPAdes will use smaller buffers and thus less RAM. </li>
-        <li> Performance statistics is given for SPAdes version 3.8.0. </li>
+        <li> Performance statistics is given for SPAdes version 3.8.1. </li>
     </ul>
 
 
@@ -157,13 +157,13 @@ SPAdes comes in several separate modules:
 <h3>2.1 Downloading SPAdes Linux binaries</h3>
 
 <p>
-    To download <a href="http://spades.bioinf.spbau.ru/release3.8.0/SPAdes-3.8.0-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
+    To download <a href="http://spades.bioinf.spbau.ru/release3.8.1/SPAdes-3.8.1-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release3.8.0/SPAdes-3.8.0-Linux.tar.gz
-    tar -xzf SPAdes-3.8.0-Linux.tar.gz
-    cd SPAdes-3.8.0-Linux/bin/
+    wget http://spades.bioinf.spbau.ru/release3.8.1/SPAdes-3.8.1-Linux.tar.gz
+    tar -xzf SPAdes-3.8.1-Linux.tar.gz
+    cd SPAdes-3.8.1-Linux/bin/
 </code>
 </pre>
 
@@ -189,13 +189,13 @@ SPAdes comes in several separate modules:
 <h3>2.2 Downloading SPAdes binaries for Mac</h3>
 
 <p>
-    To obtain <a href="http://spades.bioinf.spbau.ru/release3.8.0/SPAdes-3.8.0-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
+    To obtain <a href="http://spades.bioinf.spbau.ru/release3.8.1/SPAdes-3.8.1-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    curl http://spades.bioinf.spbau.ru/release3.8.0/SPAdes-3.8.0-Darwin.tar.gz -o SPAdes-3.8.0-Darwin.tar.gz
-    tar -zxf SPAdes-3.8.0-Darwin.tar.gz
-    cd SPAdes-3.8.0-Darwin/bin/
+    curl http://spades.bioinf.spbau.ru/release3.8.1/SPAdes-3.8.1-Darwin.tar.gz -o SPAdes-3.8.1-Darwin.tar.gz
+    tar -zxf SPAdes-3.8.1-Darwin.tar.gz
+    cd SPAdes-3.8.1-Darwin/bin/
 </code>
 </pre>
 
@@ -230,13 +230,13 @@ SPAdes comes in several separate modules:
     </ul>
 
 <p>
-    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release3.8.0/SPAdes-3.8.0.tar.gz">SPAdes source code</a>: 
+    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release3.8.1/SPAdes-3.8.1.tar.gz">SPAdes source code</a>: 
 
 <pre class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release3.8.0/SPAdes-3.8.0.tar.gz
-    tar -xzf SPAdes-3.8.0.tar.gz
-    cd SPAdes-3.8.0
+    wget http://spades.bioinf.spbau.ru/release3.8.1/SPAdes-3.8.1.tar.gz
+    tar -xzf SPAdes-3.8.1.tar.gz
+    cd SPAdes-3.8.1
 </code>
 </pre>
 
@@ -340,7 +340,7 @@ Thank you for using SPAdes!
     SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.
 
 <p>
-    To run SPAdes 3.8.0 you need at least one library of the following types:
+    To run SPAdes 3.8.1 you need at least one library of the following types:
     <ul>
         <li>Illumina paired-end/high-quality mate-pairs/unpaired reads</li>
         <li>IonTorrent paired-end/high-quality mate-pairs/unpaired reads</li>
