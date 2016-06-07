@@ -89,7 +89,7 @@ void BWAISCounter::ProcessAlignments(const MappedPositionT& l, const MappedPosit
     ++mapped_count_;
 
     int is = r.pos - l.pos;
-    if (is > 0 || !ignore_negative_) {
+    if (is >= 0 || ignore_negative_) {
         hist_[is] += 1;
     } else {
         ++negative_count_;

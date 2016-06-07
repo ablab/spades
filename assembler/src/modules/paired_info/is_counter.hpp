@@ -120,7 +120,7 @@ private:
             int is = read2_start - read1_start + read2_size + is_delta;
             TRACE("IS: " << read2_start << " - " <<  read1_start << " + " << (int) is_delta << " = " << is);
 
-            if (is > 0 || !ignore_negative_) {
+            if (is > 0 || ignore_negative_) {
                 tmp_hists_[thread_index][is] += 1;
                 ++counted_.arr_[thread_index];
             } else {
