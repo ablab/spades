@@ -612,11 +612,10 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             }
             if (IsForScaffoldingExtender(lib) && cfg::get().use_scaffolder && pset.scaffolder_options.on) {
                 ++scf_pe_libs;
-                if (pset.sm == sm_old || pset.sm == sm_combined) {
+                if (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined) {
                     pe_scafs.push_back(MakeScaffoldingExtender(gp, cov_map, i, pset));
                 }
-                if (pset.sm == sm_old_pe_2015 || pset.sm == sm_combined) {
-                    //FIXME do we really intend to run 2015 on paired-end data?
+                if (pset.sm == sm_combined) {
                     pe_scafs.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
             }
@@ -840,7 +839,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     auto min_unique_length = cfg::get().pe_params.param_set.scaffolding2015.min_unique_length;
     auto unique_variaton = cfg::get().pe_params.param_set.scaffolding2015.unique_coverage_variation;
 
-    if (is_2015_scaffolder_enabled(sc_mode)) {
+    bool mp_exist = MPLibsExist();
+    if (is_2015_scaffolder_enabled(sc_mode) && mp_exist) {
         main_unique_storage = FillUniqueEdgeStorage(gp, min_unique_length, unique_variaton);
     }
 
@@ -849,13 +849,19 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     const pe_config::ParamSetT &pset = cfg::get().pe_params.param_set;
 
     //TODO params
-    debruijn_graph::GenomeConsistenceChecker genome_checker (gp, main_unique_storage, 1000, 0.2);
-    //Scaffold graph
-    shared_ptr<scaffold_graph::ScaffoldGraph> scaffoldGraph;
-    if (cfg::get().pe_params.param_set.scaffold_graph_params.construct) {
-        scaffoldGraph = ConstructScaffoldGraph(gp, main_unique_storage, cfg::get().pe_params.param_set.scaffold_graph_params);
-        if (cfg::get().pe_params.param_set.scaffold_graph_params.output) {
-            PrintScaffoldGraph(scaffoldGraph, main_unique_storage.GetSet(), genome_checker, GetEtcDir(output_dir) + "scaffold_graph");
+    debruijn_graph::GenomeConsistenceChecker genome_checker(gp, main_unique_storage, 1000, 0.2);
+    if (is_2015_scaffolder_enabled(sc_mode)) {
+        //Scaffold graph
+        shared_ptr<scaffold_graph::ScaffoldGraph> scaffoldGraph;
+        if (cfg::get().pe_params.param_set.scaffold_graph_params.construct) {
+            scaffoldGraph =
+                ConstructScaffoldGraph(gp, main_unique_storage, cfg::get().pe_params.param_set.scaffold_graph_params);
+            if (cfg::get().pe_params.param_set.scaffold_graph_params.output) {
+                PrintScaffoldGraph(scaffoldGraph,
+                                   main_unique_storage.GetSet(),
+                                   genome_checker,
+                                   GetEtcDir(output_dir) + "scaffold_graph");
+            }
         }
     }
 
@@ -892,7 +898,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     PathContainer clone_paths;
     GraphCoverageMap clone_map(gp.g);
-    bool mp_exist = MPLibsExist();
+
 
     if (mp_exist) {
         ClonePathContainer(paths, clone_paths, clone_map);
@@ -905,8 +911,11 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
                                             cfg::get().pe_params.param_set.extension_options.max_repeat_length);
 
     //We do not run overlap removal in 2015 mode
-    if (!is_2015_scaffolder_enabled(sc_mode))
-        FinalizePaths(paths, cover_map, min_edge_len, max_is_right_quantile);
+    //if (!is_2015_scaffolder_enabled(sc_mode)
+    DebugOutputPaths(gp, output_dir, paths, "pe_paths");
+
+    FinalizePaths(paths, cover_map, min_edge_len, max_is_right_quantile);
+    DebugOutputPaths(gp, output_dir, paths, "pe_finzlized1");
     if (broken_contigs.is_initialized()) {
         OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
                               output_dir + (mp_exist ? "pe_contigs" : broken_contigs.get()));
@@ -917,6 +926,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         size_t traversed = TraverseLoops(paths, cover_map, mainPE, 1000, 10, 1000);
         INFO("Pe stage, traversed " <<  traversed << " loops");
         FinalizePaths(paths, cover_map, min_edge_len, max_is_right_quantile);
+        DebugOutputPaths(gp, output_dir, paths, "pe_finzlized2");
+
     }
     DebugOutputPaths(gp, output_dir, paths, (mp_exist ? "pe_final_paths" : "final_paths"));
     writer.OutputPaths(paths, output_dir + (mp_exist ? "pe_scaffolds" : contigs_name));
