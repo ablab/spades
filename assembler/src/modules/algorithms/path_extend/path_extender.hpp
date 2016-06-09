@@ -803,20 +803,25 @@ protected:
 
 class CompositeExtender : public ContigsMaker {
 public:
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, size_t max_diff_len, size_t max_repeat_length)
+    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, size_t max_diff_len,
+                      size_t max_repeat_length, bool detect_repeats_online)
             : ContigsMaker(g),
               cover_map_(cov_map),
               repeat_detector_(g, cover_map_, 2 * max_repeat_length),
               extenders_(),
-              max_diff_len_(max_diff_len) {
+              max_diff_len_(max_diff_len),
+              detect_repeats_online_(detect_repeats_online)  {
     }
 
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<shared_ptr<PathExtender> > pes, size_t max_diff_len, const ScaffoldingUniqueEdgeStorage& unique, size_t max_repeat_length)
+    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<shared_ptr<PathExtender> > pes,
+                      size_t max_diff_len, const ScaffoldingUniqueEdgeStorage& unique,
+                      size_t max_repeat_length, bool detect_repeats_online)
             : ContigsMaker(g),
               cover_map_(cov_map),
               repeat_detector_(g, cover_map_, 2 * max_repeat_length),
               extenders_(),
-              max_diff_len_(max_diff_len) {
+              max_diff_len_(max_diff_len),
+              detect_repeats_online_(detect_repeats_online) {
         extenders_ = pes;
         used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage( unique));
         for (auto ex: extenders_) {
@@ -844,15 +849,10 @@ public:
         while (MakeGrowStep(path, paths_storage, false)) { }
     }
 
-    bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage, bool detect_repeats_online = true) {
+    bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage,
+                      bool detect_repeats_online_local = true) {
         DEBUG("make grow step composite extender");
-        auto sc_mode = cfg::get().pe_params.param_set.sm;
-        if (is_2015_scaffolder_enabled(sc_mode) || cfg::get().mode == config::pipeline_type::meta) {
-            DEBUG("force switch off online repeats detect, 2015 on");
-            //FIXME disable for all!
-            detect_repeats_online = false;
-        }
-        if (detect_repeats_online) {
+        if (detect_repeats_online_ && detect_repeats_online_local) {
             BidirectionalPath *repeat_path = repeat_detector_.RepeatPath(path);
             size_t repeat_size = repeat_detector_.MaxCommonSize(path, *repeat_path);
 
@@ -914,6 +914,7 @@ private:
     vector<shared_ptr<PathExtender> > extenders_;
     size_t max_diff_len_;
     shared_ptr<UsedUniqueStorage> used_storage_;
+    bool detect_repeats_online_;
 
     void SubscribeCoverageMap(BidirectionalPath * path) {
         path->Subscribe(&cover_map_);

@@ -882,9 +882,13 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     size_t max_is_right_quantile = max(FindOverlapLenForStage(exspander_stage), gp.g.k() + 100);
     size_t min_edge_len = 100;
 
+    bool detect_repeats_online = !((is_2015_scaffolder_enabled(sc_mode) && mp_exist) ||
+                                    cfg::get().mode == config::pipeline_type::meta);
+
     shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
                                                                           max_is_right_quantile, main_unique_storage,
-                                                                          cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+                                                                          cfg::get().pe_params.param_set.extension_options.max_repeat_length,
+                                                                          detect_repeats_online);
 
 //extend pe + long reads
     PathExtendResolver resolver(gp.g);
@@ -908,7 +912,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset, main_unique_storage);
     mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
                                             max_is_right_quantile, main_unique_storage,
-                                            cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+                                            cfg::get().pe_params.param_set.extension_options.max_repeat_length,
+                                            detect_repeats_online);
 
     //We do not run overlap removal in 2015 mode
     //if (!is_2015_scaffolder_enabled(sc_mode)
@@ -982,7 +987,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
                                                                                   max_is_right_quantile,
                                                                                   main_unique_storage,
-                                                                                  cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+                                                                                  cfg::get().pe_params.param_set.extension_options.max_repeat_length,
+                                                                                  detect_repeats_online);
 
         mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
         clone_paths.DeleteAllPaths();
@@ -995,7 +1001,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
                                                                                   max_is_right_quantile,
                                                                                   main_unique_storage,
-                                                                                  cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+                                                                                  cfg::get().pe_params.param_set.extension_options.max_repeat_length,
+                                                                                  detect_repeats_online);
         INFO("Growing paths using mate-pairs");
         mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
 
@@ -1022,7 +1029,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
                                                                                      all_libs,
                                                                                      max_is_right_quantile,
                                                                                      main_unique_storage,
-                                                                                     cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+                                                                                     cfg::get().pe_params.param_set.extension_options.max_repeat_length,
+                                                                                     detect_repeats_online);
         last_paths = resolver.extendSeeds(mp_paths, *pe2_extender);
         DebugOutputPaths(gp, output_dir, last_paths, "pe2_before_overlap");
 
@@ -1038,7 +1046,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, main_unique_storage);
     shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
                                                    max_is_right_quantile, main_unique_storage,
-                                                   cfg::get().pe_params.param_set.extension_options.max_repeat_length);
+                                                   cfg::get().pe_params.param_set.extension_options.max_repeat_length,
+                                                   detect_repeats_online);
     //old parameters compatibility
     size_t traversed = TraverseLoops(last_paths, clone_map, last_extender, 1000, 10, 1000);
     INFO("final polishing stage, traversed " <<  traversed << " loops");
