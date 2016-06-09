@@ -143,7 +143,7 @@ rule generate_yaml:
     message: "Generated config file for reassembly"
     run:
         with open(output[0], "w") as outfile:
-            yaml = {"k": small_k, "sample_cnt": SAMPLE_COUNT, "kmer_mult": "kmers", "bin": wildcards.cag, "bin_prof": input}
+            yaml = {"k": small_k, "sample_cnt": SAMPLE_COUNT, "kmer_mult": "kmers", "bin": wildcards.cag, "bin_prof": "canopy.prof"}
             #TODO: some sort of PyYAML
             for key, value in yaml.items():
                 print(key, ": ", value, sep="", file=outfile)
@@ -158,7 +158,7 @@ rule reassemble:
     message: "Reassembling reads for {wildcards.cag}"
     shell:
         "mkdir -p reassembly && "
-        "{SPADES}/spades.py --meta -t {threads} -1 {input.left} -2 {input.right} -o {params} >{log} 2>&1 && "
+        "{SPADES}/spades.py --meta -t {threads} -1 {input.left} -2 {input.right} -o {params} --series-analysis {input.config} >{log} 2>&1 && "
         "cp {params}/scaffolds.fasta {output}"
 
 #Launch this AFTER 'choose_all'

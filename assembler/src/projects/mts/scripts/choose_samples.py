@@ -22,10 +22,10 @@ MIN_TOTAL_ABUNDANCE = 20
 profile = [CAG] + map(float, subprocess.check_output(["grep", CAG, PROF]).split()[1:])
 print("Profile of", CAG, ":", profile)
 
-weighted_profile = list((i, -ab)
+weighted_profile = list((i, ab)
     for i, ab in enumerate(profile[1:], start=1) if ab >= MIN_ABUNDANCE and path.exists("{}/{}/sample{}_1.fastq".format(DIR, CAG, i)))
 
-weighted_profile.sort(key = itemgetter(1))
+weighted_profile.sort(key = itemgetter(1), reverse=True)
 #print(weighted_profile)
 sum = 0
 samples = []
@@ -36,7 +36,7 @@ try:
     samples = [i]
 except StopIteration:
     #If there isn't any, collect from samples, starting from the largest
-    for i, _ in reversed(weighted_profile):
+    for i, _ in weighted_profile:
         sum += profile[i]
         samples.append(i)
         if sum >= DESIRED_ABUNDANCE:
