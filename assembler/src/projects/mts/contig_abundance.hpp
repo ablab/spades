@@ -251,8 +251,13 @@ public:
 
             for (size_t j = k_ - 1; j < seq.size(); ++j) {
                 kwh <<= seq[j];
+                DEBUG("Processing kmer " << kwh.key().str());
                 if (kmer_mpl_.valid(kwh)) {
+                    DEBUG("Valid");
                     kmer_mpls.push_back(kmer_mpl_.get_value(kwh, inverter_));
+                    DEBUG(PrintVector(kmer_mpl_.get_value(kwh, inverter_), sample_cnt_));
+                } else {
+                    DEBUG("Invalid");
                 }
             }
         }

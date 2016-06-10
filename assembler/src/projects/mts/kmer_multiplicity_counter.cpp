@@ -2,6 +2,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <set>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -14,6 +15,7 @@
 #include <data_structures/sequence/runtime_k.hpp>
 #include <boost/optional/optional.hpp>
 #include "dev_support/path_helper.hpp"
+#include "dev_support/simple_tools.hpp"
 
 using std::string;
 using std::vector;
@@ -92,6 +94,7 @@ void FilterKmers(const std::vector<string>& files, size_t all_min, size_t k, con
 
     std::ofstream output_kmer(output_file + ".kmer", std::ios::binary);
     std::ofstream output_cnt(output_file + ".mpl");
+    //std::ofstream output_full(output_file + ".kmpl");
     RtSeq::less3 kmer_less;
     while (true) {
         boost::optional<RtSeq> min_kmer;
@@ -114,6 +117,7 @@ void FilterKmers(const std::vector<string>& files, size_t all_min, size_t k, con
         if (cnt_min >= all_min) {
             std::vector<uint32> cnt_vector(n, 0);
             min_kmer.get().BinWrite(output_kmer);
+            //output_full << min_kmer->str() << " ";
             for (size_t i = 0; i < n; ++i) {
                 if (alive[i] && top_kmer[i].first == *min_kmer) {
                     cnt_vector[i] += top_kmer[i].second;
@@ -122,9 +126,11 @@ void FilterKmers(const std::vector<string>& files, size_t all_min, size_t k, con
             string delim = "";
             for (auto cnt : cnt_vector) {
                 output_cnt << delim << cnt;
+                //output_full << delim << cnt;
                 delim = " ";
             }
             output_cnt << std::endl;
+            //output_full << std::endl;
         }
         for (size_t i = 0; i < n; ++i) {
             if (alive[i] && top_kmer[i].first == *min_kmer) {
@@ -155,7 +161,19 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    FilterKmers(input_files, min_sample_count, k, output);
+    //FIXME temporary workaround!
+    VERIFY(!input_files.empty());
+    std::string dir = path::parent_path(input_files.front());
+    std::vector<string> new_input_files;
+    for (size_t i = 1 ; i <= input_files.size() ; ++i) {
+        new_input_files.push_back(dir + "/sample" + ToString(i));
+    }
+
+    for (const auto& ifl : new_input_files) {
+        cout << "Input file " << ifl << endl;
+    }
+
+    FilterKmers(new_input_files, min_sample_count, k, output);
 
     return 0;
 }
