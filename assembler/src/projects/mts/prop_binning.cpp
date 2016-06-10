@@ -75,8 +75,9 @@ int main(int argc, char** argv) {
     propagator.Run(contigs_stream, edge_annotation);
     INFO("Propagation finished");
 
+    //TODO: no hardcode
     DumpEdgesAndAnnotation(gp.g, edge_annotation,
-                           path::parent_path(annotation_path) + "/"
+                           path::parent_path(annotation_path) + "/assembly/"
                                + path::basename(annotation_path)
                                + "_edges");
 

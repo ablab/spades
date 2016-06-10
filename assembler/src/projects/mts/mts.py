@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser(description="MTS - Metagenomic Time Series")
 
 parser.add_argument("--threads", "-t", type=int, default=8, help="Number of threads")
 parser.add_argument("dir", type=str, help="Output directory where config.yaml is located")
-parser.add_argument("--stats", "-s", type=bool, default=False, help="Calculate stats (when the REFS parameter in config.yaml is provided)")
+parser.add_argument("--stats", "-s", action="store_true", help="Calculate stats (when the REFS parameter in config.yaml is provided)")
 
 args = parser.parse_args()
 
