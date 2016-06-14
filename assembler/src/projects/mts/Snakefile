@@ -266,7 +266,7 @@ rule cat_binned_contigs:
 
 def stats_input(wildcards):
     if wildcards.stage == "reassembly":
-        return expand("reassembly/{cag}.fasta", cag=CAGS)
+        return expand("reassembly/{cag}.fasta", cag=GOOD_CAGS)
     w_bin, w_prop = wildcards.stage.split("_", 2)
     if w_bin == "split":
         return expand("{sample}/split_{prop}.log", sample=SAMPLES, prop=w_prop)
@@ -283,13 +283,13 @@ def stats_data(wildcards):
 rule quast_stats:
     input:   stats_input
     output:  "summary/q_{stage}.log"
-    params:  data=stats_data, out="summary/q_{stage}", report=STATS_DIR + "/gf_{wildcards.stage}.tsv"
+    params:  data=stats_data, out="summary/q_{stage}", report=STATS_DIR + "/gf_{stage}.tsv"
     log:     "summary/q_{stage}.log"
     threads: THREADS
     message: "Aligning {wildcards.stage} assemblies on all references"
     shell:   "{METAQUAST} -t {threads} -R {ALL_REFS} {params.data} -o {params.out} >{log} 2>&1 && "
              "mkdir -p {STATS_DIR} && "
-             "cp '{params.out}/summary/TSV/Genome_fraction(%).tsv' {params.report}"
+             "cp '{params.out}/summary/TSV/Genome_fraction_(%).tsv' {params.report}"
 
 # Run this AFTER 'all'
 rule stats_all:
@@ -312,14 +312,15 @@ rule prop_stats:
     input:   prelim="{sample}.ann", prop="{sample}_edges.ann",
              contigs="assembly/{sample}.fasta", edges="assembly/{sample}_edges.fasta",
              ref=REFS.values() #, bins="{sample}/{ref}.bin"
-    output:  "summary/prop_stats/{sample}.stats"
+    output:  "summary/prop_{cag}/{sample}.tsv"
+    log:     "summary/prop_{cag}/{sample}.log"
     message: "Calculating propagation statistics for {wildcards.sample}"
-    shell:   "mkdir -p summary/prop_stats && "
-             "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref} -c {input.contigs} -a {input.prelim} -e {input.edges} -p {input.prop} >{output}" #-b `cat {input.bins}`
+    shell:   "mkdir -p summary/prop_{wildcards.cag} && "
+             "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref} -c {input.contigs} -a {input.prelim} -e {input.edges} -p {input.prop} -b {wildcards.cag} -o {output} >{log}"
 
 # Run this
 rule prop_stats_all:
-    input:   expand("summary/prop_stats/{sample}.stats", sample=SAMPLES)
+    input:   expand("summary/prop_{cag}/{sample}.tsv", sample=SAMPLES, cag=GOOD_CAGS)
     message: "Calculated propagation statistics"
 
 #---- PCA ----------------------------------------------------------------------

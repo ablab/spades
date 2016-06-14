@@ -9,6 +9,7 @@
 #include "pipeline/graph_pack.hpp"
 #include "dev_support/simple_tools.hpp"
 #include "dev_support/path_helper.hpp"
+#include "dev_support/logger/log_writers.hpp"
 #include "math/xmath.h"
 #include <iostream>
 #include <vector>
@@ -49,14 +50,37 @@ EdgeAnnotation LoadAnnotation(const conj_graph_pack& gp,
     return edge_annotation;
 }
 
+class BinnedInfo : public pair<size_t, size_t> {
+public:
+    BinnedInfo(): pair(0, 0) {}
+};
+
+void add_edge_info(BinnedInfo& info, size_t edge_length) {
+    ++info.first;
+    info.second += edge_length;
+}
+
+ostream& operator<<(ostream& str, const BinnedInfo& info) {
+    str << info.first << "\t" << info.second;
+    return str;
+}
+
+void create_console_logger() {
+    logging::logger *log = logging::create_logger("", logging::L_INFO);
+    log->add_writer(std::make_shared<logging::console_writer>());
+    logging::attach_logger(log);
+}
+
 int main(int argc, char** argv) {
+    create_console_logger();
+
     using namespace GetOpt;
 
     size_t k;
     string saves_path, contigs_path, edges_path;
     vector<string> genomes_path;
     string annotation_in_fn, prop_annotation_in_fn;
-    string graph_dir;
+    string table_fn, graph_dir;
     vector<bin_id> bins_of_interest;
 
     try {
@@ -69,13 +93,14 @@ int main(int argc, char** argv) {
             >> Option('a', annotation_in_fn)
             >> Option('e', edges_path)
             >> Option('p', prop_annotation_in_fn)
-            //>> Option('o', graph_dir, "")
+            >> Option('o', table_fn)
+            //>> Option('d', graph_dir, "")
             >> Option('b', bins_of_interest, {})
         ;
     } catch(GetOptEx &ex) {
         cout << "Usage: stats -k <K> -s <saves path> -r <genomes path>+ "
                 "-c <contigs_path> -a <init binning info> -e <edges_path> -p <propagated binning info> "
-                "[-o <graph directory> (currently disabled)] [-b (<bins of interest>)+]"
+                "-o <stats table> [-d <graph directory> (currently disabled)] [-b (<bins of interest>)+]"
              << endl;
         exit(1);
     }
@@ -87,13 +112,14 @@ int main(int argc, char** argv) {
     graphio::ScanGraphPack(saves_path, gp);
     gp.edge_pos.Attach();
 
-    std::cout << "Reference\tEdges in genome alignment\t"
-              << "Length in genome alignment\t"
-              << "Unbinned edges\t"
-              << "Length of unbinned edges\t"
-              << "Propagated edges\t"
-              << "Length of propagated edges\t"
-              << endl;
+    ofstream output(table_fn);
+
+    output << "Reference\t"
+           << "Aligned edges\tAlignment length\t"
+           << "Binned edges\tBinned length\t"
+           << "Unbinned edges\tUnbinned length\t"
+           << "Pre-binned edges\tPre-binned length\t"
+           << "Propagated edges\tPropagated length" << endl;
 
     for (const auto genome_path : genomes_path) {
         auto ref_name = path::basename(genome_path);
@@ -111,14 +137,8 @@ int main(int argc, char** argv) {
 
         shared_ptr<SequenceMapper<Graph>> mapper(MapperInstance(gp));
 
-        std::size_t prop_binned_edge_cntr = 0;
-        std::size_t prop_binned_edgelen_cntr = 0;
-
-        std::size_t unbinned_edge_cntr = 0;
-        std::size_t unbinned_edgelen_cntr = 0;
-
-        std::size_t total_edge_cntr = 0;
-        std::size_t total_edgelen_cntr = 0;
+        BinnedInfo pre_binned_info, prop_binned_info, binned_info,
+                   unbinned_info, total_info;
 
         auto genome_graph_path = mapper->MapRead(genome);
         std::set<EdgeId> unbinned_edges;
@@ -127,40 +147,43 @@ int main(int argc, char** argv) {
         for (size_t i = 0; i < genome_graph_path.size(); ++i) {
             EdgeId e = genome_graph_path[i].first;
             auto range = genome_graph_path[i].second.mapped_range;
-            total_edge_cntr++;
-            total_edgelen_cntr += gp.g.length(e);
-            if (edge_annotation.Annotation(e).empty() &&
-                !prop_edge_annotation.Annotation(e).empty()) {
-                DEBUG(e.int_id() << " was propagated\n");
-                prop_binned_edge_cntr++;
-                prop_binned_edgelen_cntr += gp.g.length(e);
-            } else if (edge_annotation.Annotation(e).empty() &&
-                       prop_edge_annotation.Annotation(e).empty()) {
-                // Only check for prop_annotation is necessary
-                if (unbinned_edges.count(e) == 0) {
-                    unbinned_edges.insert(e);
-                    unbinned_edge_cntr++;
-                    unbinned_edgelen_cntr += range.size();
-                    /*std::cout << e.int_id() << "\t"
-                              << gp.g.length(e) << "\t"
-                              << range.size() << std::endl;*/
-                    if (!graph_dir.empty()) {
-                        std::string dot_export_path =
-                            graph_dir + "/" + ref_name + "/" + std::to_string(e.int_id()) + ".dot";
-                        PrintColoredAnnotatedGraphAroundEdge(
-                            gp, e, prop_edge_annotation, dot_export_path);
+            add_edge_info(total_info, gp.g.length(e));
+            if (edge_annotation.Annotation(e).empty()) {
+                if (prop_edge_annotation.Annotation(e).empty()) {
+                    // Only check for prop_annotation is necessary
+                    if (unbinned_edges.count(e) == 0) {
+                        unbinned_edges.insert(e);
+                        add_edge_info(unbinned_info, range.size());
+                        /*std::cout << e.int_id() << "\t"
+                                  << gp.g.length(e) << "\t"
+                                  << range.size() << std::endl;*/
+                        if (!graph_dir.empty()) {
+                            std::string dot_export_path =
+                                graph_dir + "/" + ref_name + "/" + std::to_string(e.int_id()) + ".dot";
+                            PrintColoredAnnotatedGraphAroundEdge(
+                                gp, e, prop_edge_annotation, dot_export_path);
+                        }
                     }
+                } else {
+                    DEBUG(e.int_id() << " was propagated\n");
+                    add_edge_info(prop_binned_info, gp.g.length(e));
+                    add_edge_info(binned_info, gp.g.length(e));
+                }
+            } else {
+                add_edge_info(pre_binned_info, gp.g.length(e));
+                if (prop_edge_annotation.Annotation(e).empty()) {
+                    WARN(e.int_id() << " was lost during propagation\n");
+                } else {
+                    add_edge_info(binned_info, gp.g.length(e));
                 }
             }
         }
 
-        cout << ref_name << "\t"
-             << total_edge_cntr << "\t"
-             << total_edgelen_cntr << "\t"
-             << unbinned_edge_cntr << "\t"
-             << unbinned_edgelen_cntr << "\t"
-             << prop_binned_edge_cntr << "\t"
-             << prop_binned_edgelen_cntr << "\t"
-             << endl;
+        output << ref_name         << "\t"
+               << total_info       << "\t"
+               << binned_info      << "\t"
+               << unbinned_info    << "\t"
+               << pre_binned_info  << "\t"
+               << prop_binned_info << endl;
     }
 }
