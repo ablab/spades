@@ -41,6 +41,7 @@ def ref_path(wildcards):
 ALL_REFS = ",".join(path for path in REFS.values())
 
 FINISHED_BINNING = expand("{sample}/binning.log", sample=SAMPLES)
+STATS_DIR = "summary/stats"
 
 # ---- Main pipeline -----------------------------------------------------------
 
@@ -173,11 +174,13 @@ rule reassemble_all:
 #---- Single alignments per sample per reference -------------------------------
 rule quast_all_samples:
     input:   ref=ref_path, contigs=expand("assembly/{sample}.fasta", sample=SAMPLES)
-    output:  "summary/q_{ref}/report.tsv"
+    output:  "{STATS_DIR}/q_{ref}.tsv"
     params:  "summary/q_{ref}"
     log:     "summary/q_{ref}.log"
     message: "Aligning all samples on {wildcards.ref}"
-    shell:   "{QUAST} -R {input.ref} {input.contigs} -o {params} >{log} 2>&1"
+    shell:   "{QUAST} -R {input.ref} {input.contigs} -o {params} >{log} 2>&1 && "
+             "mkdir -p {STATS_DIR} && "
+             "cp {params}/report.tsv {output}"
 
 rule quast_all:
     input:   expand("{sample}/{ref}.cont", sample=SAMPLES, ref=REFS)
@@ -222,7 +225,7 @@ rule int_bins:
 
 rule int_bins_all_samples:
     input:   expand("{sample}/{{ref}}.bin", sample=SAMPLES)
-    output:  "summary/{ref}.bin"
+    output:  STATS_DIR + "/{ref}.bin"
     message: "Gathering interesting bins for {wildcards.ref} from all samples"
     run:
         bins = set()
@@ -280,10 +283,13 @@ def stats_data(wildcards):
 rule quast_stats:
     input:   stats_input
     output:  "summary/q_{stage}.log"
-    params:  data=stats_data, out="summary/q_{stage}"
+    params:  data=stats_data, out="summary/q_{stage}", report=STATS_DIR + "/gf_{wildcards.stage}.tsv"
+    log:     "summary/q_{stage}.log"
     threads: THREADS
     message: "Aligning {wildcards.stage} assemblies on all references"
-    shell:   "{METAQUAST} -t {threads} -R {ALL_REFS} {params.data} -o {params.out} >{output} 2>&1"
+    shell:   "{METAQUAST} -t {threads} -R {ALL_REFS} {params.data} -o {params.out} >{log} 2>&1 && "
+             "mkdir -p {STATS_DIR} && "
+             "cp '{params.out}/summary/TSV/Genome_fraction(%).tsv' {params.report}"
 
 # Run this AFTER 'all'
 rule stats_all:
@@ -301,17 +307,20 @@ rule neat_table:
     message: "Formatting a human-readable table from results"
     shell:   "{SCRIPTS}/format_table.py {output} {params.dir} {params.refs}"
 
-##---- Propagator statistics ----------------------------------------------------
-#rule prop_stats:
-#    input:   prelim="{sample}.ann", prop="{sample}.ann.prop", bins="{sample}/{ref}.bin", contigs="assembly/{sample}.fasta", ref=ref_path
-#    output:  "{sample}/{ref}.stats"
-#    message: "Calculating propagation statistics for {wildcards.sample} aligned to {wildcards.ref}"
-#    shell:   "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref} -c {input.contigs} -a {input.prelim} -p {input.prop} -b `cat {input.bins}` >/dev/null 2>{output}"
-#
-## Run this
-#rule prop_stats_all:
-#    input:   expand("{sample}/{ref}.stats", sample=SAMPLES, ref=REFS)
-#    message: "Calculated propagation statistics"
+#---- Propagator statistics ----------------------------------------------------
+rule prop_stats:
+    input:   prelim="{sample}.ann", prop="{sample}_edges.ann",
+             contigs="assembly/{sample}.fasta", edges="assembly/{sample}_edges.fasta",
+             ref=REFS.values() #, bins="{sample}/{ref}.bin"
+    output:  "summary/prop_stats/{sample}.stats"
+    message: "Calculating propagation statistics for {wildcards.sample}"
+    shell:   "mkdir -p summary/prop_stats && "
+             "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref} -c {input.contigs} -a {input.prelim} -e {input.edges} -p {input.prop} >{output}" #-b `cat {input.bins}`
+
+# Run this
+rule prop_stats_all:
+    input:   expand("summary/prop_stats/{sample}.stats", sample=SAMPLES)
+    message: "Calculated propagation statistics"
 
 #---- PCA ----------------------------------------------------------------------
 rule pca:
@@ -334,6 +343,5 @@ rule combine_contigs:
 # Run this
 rule pca_total:
     input:   rules.canopy_pre.output, rules.canopy.output.out, "summary/total.cont"
-    output:  "pca.png"
-    shell:
-        "Rscript {SCRIPTS}/pca.R {input} {output}"
+    output:  STATS_DIR + "/pca.png"
+    shell:   "Rscript {SCRIPTS}/pca.R {input} {output}"
