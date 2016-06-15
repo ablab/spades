@@ -170,7 +170,7 @@ public:
     using base::ConstructKWH;
 
 private:
-    typename traits::FinalKMerStorage *kmers_;
+    std::unique_ptr<typename traits::FinalKMerStorage> kmers_;
 
     void SortUniqueKMers() const {
         size_t swaps = 0;
@@ -215,13 +215,9 @@ protected:
 public:
 
     KeyStoringMap(size_t k, const std::string &workdir)
-            : base(k, workdir),
-              kmers_(NULL) {
-    }
+            : base(k, workdir), kmers_(nullptr) {}
 
-    ~KeyStoringMap() {
-        delete kmers_;
-    }
+    ~KeyStoringMap() {}
 
     KMer true_kmer(KeyWithHash kwh) const {
         VERIFY(this->valid(kwh));
@@ -232,8 +228,7 @@ public:
 
     void clear() {
         base::clear();
-        delete kmers_;
-        kmers_ = NULL;
+        kmers_ = nullptr;
     }
 
     kmer_iterator kmer_begin() {
@@ -255,7 +250,7 @@ public:
             return false;
 
         auto it = this->kmers_->begin() + kwh.idx();
-        if(!kwh.is_minimal())
+        if (!kwh.is_minimal())
             return (typename traits_t::raw_equal_to()(!kwh.key(), *it));
         else
             return (typename traits_t::raw_equal_to()(kwh.key(), *it));
@@ -302,9 +297,9 @@ public:
     void BuildIndex(KmerCounter& counter, size_t bucket_num,
                     size_t thread_num) {
         base::BuildIndex(counter, bucket_num, thread_num);
-        VERIFY(!kmers_);
+        VERIFY(!kmers_.get());
         kmers_ = counter.GetFinalKMers();
-        VERIFY(kmers_);
+        VERIFY(kmers_.get());
         SortUniqueKMers();
     }
 };
@@ -325,12 +320,9 @@ public:
 public:
 
     KeyIteratingMap(size_t k, const std::string &workdir)
-            : base(k, workdir),
-              KMersFilename_("") {
-    }
+            : base(k, workdir), KMersFilename_("") {}
 
-    ~KeyIteratingMap() {
-    }
+    ~KeyIteratingMap() {}
 
     typedef MMappedFileRecordArrayIterator<typename KMer::DataType> kmer_iterator;
 

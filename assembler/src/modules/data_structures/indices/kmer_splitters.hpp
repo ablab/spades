@@ -46,7 +46,6 @@ typedef std::vector<RtSeqKMerVector> KMerBuffer;
 template<class KmerFilter>
 class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
  private:
-  bool skip_not_minimal_;
   KmerFilter kmer_filter_;
  protected:
   size_t read_buffer_size_;
@@ -61,10 +60,11 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
       runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(this->K_) >> 'A';
       for (size_t j = this->K_ - 1; j < seq.size(); ++j) {
         kmer <<= seq[j];
-        if(kmer_filter_.filter(kmer)) {
-            buffer[this->GetFileNumForSeq(kmer, num_files)].push_back(kmer);
-            kmers++;
-        }
+        if (!kmer_filter_.filter(kmer))
+          continue;
+
+        buffer[this->GetFileNumForSeq(kmer, num_files)].push_back(kmer);
+        kmers++;
       }
       return kmers;
   }
@@ -131,7 +131,7 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
                        unsigned num_files, size_t cell_size) const;
 
   ReadStatistics rs_;
-  
+
  public:
   DeBruijnReadKMerSplitter(const std::string &work_dir,
                            unsigned K, uint32_t seed,

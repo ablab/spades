@@ -106,7 +106,7 @@ struct kmer_index_traits {
   }
 
   template<class Reader>
-  static RawKMerStorage *raw_deserialize(Reader &reader, const std::string &FileName) {
+  static std::unique_ptr<RawKMerStorage> raw_deserialize(Reader &reader, const std::string &FileName) {
     size_t sz, off, elcnt;
     reader.read((char*)&sz, sizeof(sz));
     reader.read((char*)&elcnt, sizeof(elcnt));
@@ -114,7 +114,7 @@ struct kmer_index_traits {
     off -= sizeof(off);
     off += reader.tellg();
 
-    return new RawKMerStorage(FileName, elcnt, false, off, sz);
+    return std::unique_ptr<RawKMerStorage>(new RawKMerStorage(FileName, elcnt, false, off, sz));
   }
 
 };
@@ -269,18 +269,14 @@ class KMerCounter {
   typedef typename traits::RawKMerStorage          RawKMerStorage;
   typedef typename traits::FinalKMerStorage        FinalKMerStorage;
 
-  virtual size_t KMerSize() const = 0;
+  virtual size_t kmer_size() const = 0;
 
   virtual size_t Count(unsigned num_buckets, unsigned num_threads) = 0;
   virtual size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) = 0;
   virtual void MergeBuckets(unsigned num_buckets) = 0;
 
-  virtual void OpenBucket(size_t idx, bool unlink = true) = 0;
-  virtual void ReleaseBucket(size_t idx) = 0;
-  virtual FinalKMerStorage* GetFinalKMers() = 0;
-
-  virtual iterator bucket_begin(size_t idx) = 0;
-  virtual iterator bucket_end(size_t idx) = 0;
+  virtual std::unique_ptr<RawKMerStorage> GetBucket(size_t idx, bool unlink = true) = 0;
+  virtual std::unique_ptr<FinalKMerStorage> GetFinalKMers() = 0;
 
   virtual ~KMerCounter() {}
 
@@ -290,7 +286,8 @@ protected:
 
 template<class Seq, class traits = kmer_index_traits<Seq> >
 class KMerDiskCounter : public KMerCounter<Seq> {
-    typedef KMerCounter<Seq, traits> __super;
+  typedef KMerCounter<Seq, traits> __super;
+  typedef typename traits::RawKMerStorage BucketStorage;
 public:
   KMerDiskCounter(const std::string &work_dir, KMerSplitter<Seq> &splitter)
       : work_dir_(work_dir), splitter_(splitter) {
@@ -302,36 +299,20 @@ public:
   }
 
   ~KMerDiskCounter() {
-    for (size_t i = 0; i < buckets_.size(); ++i)
-      ReleaseBucket(i);
-
     ::close(fd_);
     ::unlink(kmer_prefix_.c_str());
   }
 
-  size_t KMerSize() const {
+  size_t kmer_size() const override {
     return Seq::GetDataSize(splitter_.K()) * sizeof(typename Seq::DataType);
   }
 
-  void OpenBucket(size_t idx, bool unlink = true) {
+  std::unique_ptr<BucketStorage> GetBucket(size_t idx, bool unlink = true) override {
     unsigned K = splitter_.K();
-
-    buckets_[idx] = new MMappedRecordArrayReader<typename Seq::DataType>(GetMergedKMersFname((unsigned)idx), Seq::GetDataSize(K), unlink);
+    return std::unique_ptr<BucketStorage>(new BucketStorage(GetMergedKMersFname((unsigned)idx), Seq::GetDataSize(K), unlink));
   }
 
-  void ReleaseBucket(size_t idx) {
-    delete buckets_[idx];
-    buckets_[idx] = NULL;
-  }
-
-  typename __super::iterator bucket_begin(size_t idx) {
-    return buckets_[idx]->begin();
-  }
-  typename __super::iterator bucket_end(size_t idx) {
-    return buckets_[idx]->end();
-  }
-
-  size_t Count(unsigned num_buckets, unsigned num_threads) {
+  size_t Count(unsigned num_buckets, unsigned num_threads) override {
     unsigned K = splitter_.K();
 
     // Split k-mers into buckets.
@@ -350,36 +331,30 @@ public:
       std::string ofname = GetMergedKMersFname(i);
       std::ofstream ofs(ofname.c_str(), std::ios::out | std::ios::binary);
       for (unsigned j = 0; j < num_threads; ++j) {
-        MMappedRecordArrayReader<typename Seq::DataType> ins(GetUniqueKMersFname(i + j * num_buckets), Seq::GetDataSize(K), /* unlink */ true);
+        BucketStorage ins(GetUniqueKMersFname(i + j * num_buckets), Seq::GetDataSize(K), /* unlink */ true);
         ofs.write((const char*)ins.data(), ins.data_size());
       }
     }
 
-    buckets_.resize(num_buckets);
-
     return kmers;
   }
 
-  void MergeBuckets(unsigned num_buckets) {
+  void MergeBuckets(unsigned num_buckets) override {
     unsigned K = splitter_.K();
 
     INFO("Merging final buckets.");
-    for (unsigned i = 0; i < num_buckets; ++i)
-      VERIFY(buckets_[i] == NULL);
-
-    buckets_.clear();
 
     MMappedRecordArrayWriter<typename Seq::DataType> os(GetFinalKMersFname(), Seq::GetDataSize(K));
     std::string ofname = GetFinalKMersFname();
     std::ofstream ofs(ofname.c_str(), std::ios::out | std::ios::binary);
     for (unsigned j = 0; j < num_buckets; ++j) {
-      MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(j), Seq::GetDataSize(K), /* unlink */ true);
-      ofs.write((const char*)ins.data(), ins.data_size());
+      auto bucket = GetBucket(j, /* unlink */ true);
+      ofs.write((const char*)bucket->data(), bucket->data_size());
     }
     ofs.close();
   }
 
-  size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) {
+  size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) override {
     size_t kmers = Count(num_buckets, num_threads);
     if (merge)
       MergeBuckets(num_buckets);
@@ -387,9 +362,9 @@ public:
     return kmers;
   }
 
-  typename __super::FinalKMerStorage *GetFinalKMers() {
+  std::unique_ptr<typename __super::FinalKMerStorage> GetFinalKMers() override {
     unsigned K = splitter_.K();
-    return new MMappedRecordArrayReader<typename Seq::DataType>(GetFinalKMersFname(), Seq::GetDataSize(K), /* unlink */ true);
+    return std::unique_ptr<typename __super::FinalKMerStorage>(new typename __super::FinalKMerStorage(GetFinalKMersFname(), Seq::GetDataSize(K), /* unlink */ true));
   }
 
   std::string GetMergedKMersFname(unsigned suffix) const {
@@ -405,8 +380,6 @@ private:
   KMerSplitter<Seq> &splitter_;
   int fd_;
   std::string kmer_prefix_;
-
-  std::vector<MMappedRecordArrayReader<typename Seq::DataType>*> buckets_;
 
   std::string GetUniqueKMersFname(unsigned suffix) const {
     return kmer_prefix_ + ".unique." + std::to_string(suffix);
@@ -477,7 +450,7 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
   size_t clen = sizeof(cmem);
 
   je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  size_t bucket_size = (36 * kmers + kmers * counter.KMerSize()) / num_buckets_;
+  size_t bucket_size = (36 * kmers + kmers * counter.kmer_size()) / num_buckets_;
   num_threads = std::min<unsigned>((unsigned) ((get_memory_limit() - *cmem) / bucket_size), num_threads);
   if (num_threads < 1)
     num_threads = 1;
@@ -488,24 +461,22 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
 # pragma omp parallel for shared(index) num_threads(num_threads)
   for (unsigned iFile = 0; iFile < num_buckets_; ++iFile) {
     typename KMerIndex<kmer_index_traits>::KMerDataIndex &data_index = index.index_[iFile];
-    counter.OpenBucket(iFile, !save_final);
-    size_t sz = counter.bucket_end(iFile) - counter.bucket_begin(iFile);
+    auto bucket = counter.GetBucket(iFile, !save_final);
+    size_t sz = bucket->end() - bucket->begin();
     index.bucket_starts_[iFile + 1] = sz;
     typename kmer_index_traits::KMerRawReferenceAdaptor adaptor;
     size_t max_nodes = (size_t(std::ceil(double(sz) * 1.23)) + 2) / 3 * 3;
     if (max_nodes >= uint64_t(1) << 32) {
         emphf::hypergraph_sorter_seq<emphf::hypergraph<uint64_t> > sorter;
         typename KMerIndex<kmer_index_traits>::KMerDataIndex(sorter,
-                                                             sz, emphf::range(counter.bucket_begin(iFile), counter.bucket_end(iFile)),
+                                                             sz, emphf::range(bucket->begin(), bucket->end()),
                                                              adaptor).swap(data_index);
     } else {
         emphf::hypergraph_sorter_seq<emphf::hypergraph<uint32_t> > sorter;
         typename KMerIndex<kmer_index_traits>::KMerDataIndex(sorter,
-                                                             sz, emphf::range(counter.bucket_begin(iFile), counter.bucket_end(iFile)),
+                                                             sz, emphf::range(bucket->begin(), bucket->end()),
                                                              adaptor).swap(data_index);
     }
-    
-    counter.ReleaseBucket(iFile);
   }
 
   // Finally, record the sizes of buckets.
