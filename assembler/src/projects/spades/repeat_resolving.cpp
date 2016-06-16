@@ -19,14 +19,16 @@
 namespace debruijn_graph {
 
 void PEResolving(conj_graph_pack& gp) {
-    vector<size_t> indexes;
-    std::string name = "scaffolds";
-    bool traverse_loops = true;
-    if (!(cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on)) {
-        name = "final_contigs";
-        traverse_loops = false;
-    }
-    path_extend::ResolveRepeatsPe(gp, cfg::get().output_dir, name, traverse_loops, boost::optional<std::string>("final_contigs"));
+    path_extend::PathExtendParamsContainer params(cfg::get().pe_params,
+                                                  cfg::get().output_dir,
+                                                  "final_contigs",
+                                                  "scaffolds",
+                                                  cfg::get().mode,
+                                                  cfg::get().uneven_depth,
+                                                  cfg::get().avoid_rc_connections,
+                                                  cfg::get().use_scaffolder);
+
+    path_extend::ResolveRepeatsPe(cfg::get().ds, params, gp);
 }
 
 inline bool HasValidLibs() {

@@ -29,12 +29,22 @@ protected:
     EdgeContainer FindNextUniqueEdge(const EdgeId from) const;
         DECL_LOGGER("ExtensionChooser2015")
 public:
-    ExtensionChooser2015(const Graph& g, shared_ptr<WeightCounter> wc, double is_scatter_coeff,
-                         const ScaffoldingUniqueEdgeStorage& unique_edges ,double relative_threshold, size_t lib_index):
-            ScaffoldingExtensionChooser(g, wc, is_scatter_coeff), unique_edges_(unique_edges), relative_weight_threshold_(relative_threshold), paired_connection_condition_(g,
-            wc->get_libptr(), lib_index,
-//TODO: constants are subject to reconsider
-            0), graph_connection_condition_(g, 2*unique_edges_.GetMinLength(), unique_edges), absolute_weight_threshold_(2), graph_connection_bonus_(2) {
+    ExtensionChooser2015(const Graph& g,
+                         shared_ptr<WeightCounter> wc,
+                         size_t lib_index,
+                         const ScaffoldingUniqueEdgeStorage& unique_edges,
+                         double cl_weight_threshold,
+                         double is_scatter_coeff,
+                         double relative_threshold):
+            //TODO: constants are subject to reconsider
+            ScaffoldingExtensionChooser(g, wc, cl_weight_threshold, is_scatter_coeff),
+            unique_edges_(unique_edges),
+            relative_weight_threshold_(relative_threshold),
+            paired_connection_condition_(g, wc->get_libptr(), lib_index, 0),
+            graph_connection_condition_(g, 2 * unique_edges_.GetMinLength(), unique_edges),
+            //TODO to congif!
+            absolute_weight_threshold_(2),
+            graph_connection_bonus_(2) {
         INFO("ExtensionChooser2015 created");
     }
 /* @param edges are really not used and left for compatibility

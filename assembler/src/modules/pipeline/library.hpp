@@ -252,6 +252,7 @@ private:
 // Just convenient wrapper to "unwrap" the iterators over libraries.
 template<class Data = NoData>
 class DataSet {
+public:
     typedef SequencingLibrary<Data> Library;
     typedef std::vector<Library> LibraryStorage;
 

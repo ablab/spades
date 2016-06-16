@@ -555,9 +555,11 @@ protected:
 
 public:
 
-    ScaffoldingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double is_scatter_coeff) :
+    ScaffoldingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc,
+                                double cl_weight_threshold,
+                                double is_scatter_coeff) :
         ExtensionChooser(g, wc), raw_weight_threshold_(0.0),
-        cl_weight_threshold_(cfg::get().pe_params.param_set.scaffolder_options.cl_threshold),
+        cl_weight_threshold_(cl_weight_threshold),
         is_scatter_coeff_(is_scatter_coeff) {
     }
 
@@ -584,12 +586,15 @@ private:
     DECL_LOGGER("LongReadsUniqueEdgeAnalyzer")
 public:
     LongReadsUniqueEdgeAnalyzer(const Graph& g, const GraphCoverageMap& cov_map,
-                       double filter_threshold, double prior_threshold, size_t max_repeat_length)
+                                double filter_threshold, double prior_threshold,
+                                size_t max_repeat_length, bool uneven_depth)
             : g_(g),
               cov_map_(cov_map),
               filter_threshold_(filter_threshold),
               prior_threshold_(prior_threshold),
-              max_repeat_length_(max_repeat_length) {
+              max_repeat_length_(max_repeat_length),
+              uneven_depth_(uneven_depth) {
+
         FindAllUniqueEdges();
     }
 
@@ -710,15 +715,12 @@ private:
     }
 
     void FindAllUniqueCoverageEdges() {
-       if (cfg::get().uneven_depth) {
-           return;
-       }
        double sum_cov = 0;
        size_t sum_len = 0;
        size_t total_len = 0;
        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
            total_len += g_.length(*iter);
-           if (g_.length(*iter) >= cfg::get().max_repeat_length) {
+           if (g_.length(*iter) >= max_repeat_length_) {
                sum_cov += g_.coverage(*iter) * (double)g_.length(*iter);
                sum_len += g_.length(*iter);
            }
@@ -739,16 +741,17 @@ private:
 
 
     void FindAllUniqueEdges() {
-       DEBUG("Looking for unique edges");
-       for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-           if (UniqueEdge(*iter)) {
-               unique_edges_.insert(*iter);
-               unique_edges_.insert(g_.conjugate(*iter));
-           }
-       }
-       DEBUG("coverage based uniqueness started");
-       FindAllUniqueCoverageEdges();
-       DEBUG("Unique edges are found");
+        DEBUG("Looking for unique edges");
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+            if (UniqueEdge(*iter)) {
+                unique_edges_.insert(*iter);
+                unique_edges_.insert(g_.conjugate(*iter));
+            }
+        }
+        DEBUG("coverage based uniqueness started");
+        if (!uneven_depth_)
+            FindAllUniqueCoverageEdges();
+        DEBUG("Unique edges are found");
     }
 
     const Graph& g_;
@@ -757,6 +760,7 @@ private:
     double prior_threshold_;
     std::set<EdgeId> unique_edges_;
     size_t max_repeat_length_;
+    bool uneven_depth_;
 };
 
 class SimpleScaffolding {
@@ -812,13 +816,16 @@ public:
                               double weight_priority_threshold,
                               double unique_edge_priority_threshold,
                               size_t min_significant_overlap,
-                              size_t max_repeat_length)
+                              size_t max_repeat_length,
+                              bool uneven_depth)
             : ExtensionChooser(g),
               filtering_threshold_(filtering_threshold),
               weight_priority_threshold_(weight_priority_threshold),
               min_significant_overlap_(min_significant_overlap),
               cov_map_(g, pc),
-              unique_edge_analyzer_(g, cov_map_, filtering_threshold, unique_edge_priority_threshold, max_repeat_length),
+              unique_edge_analyzer_(g, cov_map_, filtering_threshold,
+                                    unique_edge_priority_threshold,
+                                    max_repeat_length, uneven_depth),
               simple_scaffolding_(g) {
 
     }
@@ -925,7 +932,8 @@ private:
 class MatePairExtensionChooser : public ExtensionChooser {
 public:
     MatePairExtensionChooser(const Graph& g, shared_ptr<PairedInfoLibrary> lib,
-                              const PathContainer& paths, size_t max_number_of_paths_to_search)
+                             const PathContainer& paths, size_t max_number_of_paths_to_search,
+                             bool uneven_depth)
             : ExtensionChooser(g),
               g_(g),
               lib_(lib),
@@ -933,7 +941,8 @@ public:
               weight_counter_(g, lib, 10),
               cov_map_(g_, paths),
               path_searcher_(g_, cov_map_, lib_->GetISMax(), PathsWeightCounter(g, lib, (size_t) lib->GetSingleThreshold()), max_number_of_paths_to_search),
-              unique_edge_analyzer_(g, cov_map_, 0., 1000., 8000.),
+              //TODO params
+              unique_edge_analyzer_(g, cov_map_, 0., 1000., 8000., uneven_depth),
               simple_scaffolder_(g) {
     }
 

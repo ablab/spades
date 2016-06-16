@@ -31,6 +31,8 @@ protected:
     size_t k_;
     map<EdgeId, ExtendedContigIdT> ids_;
     const ConnectedComponentCounter &c_counter_;
+    bool plasmid_contig_naming_;
+
     //TODO: add constructor
     string ToString(const BidirectionalPath& path) const {
         stringstream ss;
@@ -108,7 +110,14 @@ protected:
 
 
 public:
-    ContigWriter(const Graph& g, ContigConstructor<Graph> &constructor, const ConnectedComponentCounter &c_counter): g_(g), constructor_(constructor), k_(g.k()), ids_(), c_counter_(c_counter) {
+    ContigWriter(const Graph& g,
+                 ContigConstructor<Graph> &constructor,
+                 const ConnectedComponentCounter &c_counter,
+                 bool plasmid_contig_naming = false):
+        g_(g), constructor_(constructor), k_(g.k()),
+        ids_(), c_counter_(c_counter),
+        plasmid_contig_naming_(plasmid_contig_naming)
+    {
         MakeContigIdMap(g_, ids_, c_counter, "NODE");
     }
 
@@ -219,7 +228,7 @@ public:
             path->Print();
             string contig_id;
             string path_string = ToString(*path);
-            if (cfg::get().pd) {
+            if (plasmid_contig_naming_) {
                 EdgeId e = path->At(0);
                 size_t component = c_counter_.GetComponent(e);
                 contig_id = io::MakeContigComponentId(i, path_string.length(), path->Coverage(), component);

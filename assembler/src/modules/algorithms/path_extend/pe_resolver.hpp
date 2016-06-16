@@ -459,9 +459,12 @@ public:
         remover.RemoveSimilarPaths(paths, max_overlap, max_overlap, true, false, false, false, false);
     }
 
-    void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map, size_t min_edge_len, size_t max_path_diff,  bool add_overlaps_begin) {
+    void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
+                        size_t min_edge_len, size_t max_path_diff,
+                        bool add_overlaps_begin,
+                        bool cut_preudo_self_conjugate) {
         SimpleOverlapRemover remover(g_, coverage_map);
-        if (cfg::get().mode == config::pipeline_type::moleculo)
+        if (cut_preudo_self_conjugate)
             remover.CutPseudoSelfConjugatePaths(paths);
         //writer.WritePathsToFASTA(paths, output_dir + "/before.fasta");
         //DEBUG("Removing subpaths");
