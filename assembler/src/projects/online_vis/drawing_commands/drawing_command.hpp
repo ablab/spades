@@ -48,14 +48,9 @@ protected:
         curr_env.picture_counter_++;
     }
 
-    void DrawPicturesAlongSequence(DebruijnEnvironment& curr_env, const Sequence& s, string label = "") const {
-        DrawPicturesAlongPath(curr_env, curr_env.mapper().MapSequence(s).simple_path(), label);
-    }
-
     void DrawPicturesAlongContig(DebruijnEnvironment& curr_env, io::SingleRead contig) const {
-        Sequence seq = contig.sequence();
         string label = contig.name();
-        DrawPicturesAlongSequence(curr_env, seq, label);
+        DrawPicturesAlongPath(curr_env, curr_env.mapper().MapRead(contig).simple_path(), label);
         LOG("Contig " << contig.name() << " has been drawn");
     }
 

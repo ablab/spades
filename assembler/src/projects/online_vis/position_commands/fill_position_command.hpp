@@ -50,16 +50,7 @@ namespace online_visualization {
                 string name = args[1];
                 string file = args[2];
 
-                auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
-                
-                FillerClass& filler = curr_env.filler();
-                while (!reader->eof()) {
-                    io::SingleRead read;
-                    (*reader) >> read;
-                    Sequence contig = read.sequence();
-                    filler.Process(contig,  name + "_" + read.name());
-                    filler.Process(!contig, name + "_" + read.name() + "_RC");
-                }
+                FillPos(curr_env.graph_pack(), file, name, true);
             }
     };
 }
