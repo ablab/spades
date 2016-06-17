@@ -1,5 +1,3 @@
-#include <cstdio>
-#include <cstring>
 #include <string>
 #include <vector>
 #include <set>
@@ -19,20 +17,18 @@
 
 using std::string;
 using std::vector;
-using std::shared_ptr;
-using std::make_shared;
 using runtime_k::RtSeq;
 
 const string KMER_PARSED_EXTENSION = ".bin";
 const string KMER_SORTED_EXTENSION = ".sorted";
 
 void PrintUsageInfo() {
-    std::cout << "Usage: kmer_multiplicity_counter [options] -f (<sampleX.kmc>)+" << std::endl;
+    std::cout << "Usage: kmer_multiplicity_counter [options] -f (<sampleX>)+" << std::endl;
     std::cout << "Options:" << std::endl;
     std::cout << "-k - kmer length" << std::endl;
     std::cout << "-o - output file" << std::endl;
     std::cout << "--sample - minimal number of samples to contain kmer" << std::endl;
-    std::cout << "sampleX.kmc is a file with kmer multiplicities of sample X" << std::endl;
+    std::cout << "sampleX is prefix of two files (.kmc_pre and .kmc_suf) with kmer multiplicities of sample X" << std::endl;
 }
 
 //TODO: get rid of intermediate .bin file
@@ -50,8 +46,6 @@ string ParseKmc(const string& filename, size_t k) {
         output.write((char*) &(tmp), sizeof(seq_element_type));
     }
     output.close();
-    remove((filename + ".kmc_pre").c_str());
-    remove((filename + ".kmc_suf").c_str());
     return parsed_filename;
 }
 
@@ -79,11 +73,12 @@ bool ReadKmerWithCount(std::ifstream& infile, std::pair<RtSeq, uint32>& res) {
 
 void FilterKmers(const std::vector<string>& files, size_t all_min, size_t k, const string& output_file) {
     size_t n = files.size();
-    vector<shared_ptr<std::ifstream>> infiles;
+    vector<std::unique_ptr<ifstream>> infiles;
+    infiles.reserve(n);
     for (auto fn : files) {
         auto parsed = ParseKmc(fn, k);
         auto sorted = SortKmersCountFile(parsed, k);
-        infiles.push_back(std::make_shared<std::ifstream>(sorted));
+        infiles.emplace_back(new std::ifstream(sorted));
     }
     vector<std::pair<RtSeq, uint32>> top_kmer(n, {RtSeq(k), 0});
     vector<bool> alive(n, false);
@@ -103,7 +98,7 @@ void FilterKmers(const std::vector<string>& files, size_t all_min, size_t k, con
             if (alive[i]) {
                 RtSeq& cur_kmer = top_kmer[i].first;
                 if (!min_kmer || kmer_less(cur_kmer, *min_kmer)) {
-                    min_kmer = boost::optional<RtSeq>(cur_kmer);
+                    min_kmer = cur_kmer;
                     cnt_min = 0;
                 }
                 if (cur_kmer == *min_kmer) {

@@ -6,11 +6,15 @@
 //***************************************************************************
 
 #include "getopt_pp/getopt_pp.h"
+#include "io/reads_io/io_helper.hpp"
+#include "io/reads_io/osequencestream.hpp"
 #include "dev_support/logger/log_writers.hpp"
 #include "pipeline/graphio.hpp"
 #include "read_binning.hpp"
 #include "propagate.hpp"
 #include <modules/visualization/position_filler.hpp>
+
+using namespace debruijn_graph;
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
@@ -18,8 +22,32 @@ void create_console_logger() {
     logging::attach_logger(log);
 }
 
+std::string add_suffix(const std::string& path, const std::string& suffix) {
+    auto ext = path::extension(path);
+    return path.substr(0, path.length() - ext.length()) + suffix + ext;
+}
+
+void DumpEdgesAndAnnotation(const Graph& g,
+                            const EdgeAnnotation& edge_annotation,
+                            const string& out_edges,
+                            const string& out_annotation) {
+    INFO("Dumping edges to " << out_edges << "; their annotation to " << out_annotation);
+    io::osequencestream oss(out_edges);
+    AnnotationOutStream annotation_out(out_annotation);
+    for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+        EdgeId e = *it;
+        io::SingleRead edge_read("NODE_" + ToString(g.int_id(e)),
+                                 g.EdgeNucls(e).str());
+        oss << edge_read;
+        auto relevant_bins = edge_annotation.RelevantBins(edge_read);
+        if (!relevant_bins.empty()) {
+            annotation_out << ContigAnnotation(GetId(edge_read),
+                                               vector<bin_id>(relevant_bins.begin(), relevant_bins.end()));
+        }
+    }
+}
+
 int main(int argc, char** argv) {
-    using namespace debruijn_graph;
     using namespace GetOpt;
 
     //TmpFolderFixture fixture("tmp");
@@ -57,10 +85,6 @@ int main(int argc, char** argv) {
     INFO("Load graph and clustered paired info from " << saves_path);
     graphio::ScanWithClusteredIndices(saves_path, gp, gp.clustered_indices);
 
-//    gp.edge_pos.Attach();
-//    FillPos(gp, "/Sid/snurk/mts/data/infant_gut/refs/Enterococcus_faecalis_37_1.fasta",
-//            "CAG1_ref_", true);
-
     //Propagation stage
     INFO("Using contigs from " << contigs_path);
     io::FileReadStream contigs_stream(contigs_path);
@@ -75,11 +99,9 @@ int main(int argc, char** argv) {
     propagator.Run(contigs_stream, edge_annotation);
     INFO("Propagation finished");
 
-    //TODO: no hardcode
     DumpEdgesAndAnnotation(gp.g, edge_annotation,
-                           path::parent_path(annotation_path) + "/assembly/"
-                               + path::basename(annotation_path)
-                               + "_edges");
+                           add_suffix(contigs_path, "_edges"),
+                           add_suffix(annotation_path, "_edges"));
 
     if (no_binning) {
         INFO("Binning was disabled with -p flag");

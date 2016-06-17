@@ -10,7 +10,7 @@ def print_usage():
     print("Usage: filter_nucmer.py <quast_output> <output> <threshold>")
     print("Parameters:")
     print("<quast_output> is the QUAST output directory")
-    print("<output> is the common filename for contigs (typically <ref>.cont)")
+    print("<output> is the directory for files with contigs (typically <ref>)")
     print("<threshold> is the minimal total alignment of a contig (0-100%)")
 
 #if len(sys.argv) != 3:
@@ -28,7 +28,7 @@ with open(report) as input:
 for (i, sample) in enumerate(report_data["Assembly"]):
     reference_length = int(report_data["Reference length"][i])
     nucmer_output = "{}/contigs_reports/nucmer_output/{}.coords.filtered".format(sys.argv[1], sample)
-    output = open("{}/{}".format(sample, sys.argv[2]), "w")
+    output = open("{}/{}.cont".format(sys.argv[2]), sample, "w")
     if not path.exists(nucmer_output):
         output.close()
         continue

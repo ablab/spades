@@ -17,7 +17,7 @@ base_params = ["snakemake", "--directory", args.dir, "--cores", str(args.threads
 print(base_params)
 
 def call_snake(extra_params=[]):
-    subprocess.call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)
+    subprocess.check_call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)
 
 print("Step #1 - Assembly")
 call_snake()
@@ -25,9 +25,13 @@ call_snake()
 print("Step #2 - Bin filtering")
 call_snake(["choose_all"])
 
+if (args.stats):
+    print("Step #2b - Assembly statistics")
+    call_snake(["stats_all"])
+
 print("Step #3 - Bin reassembly")
 call_snake(["reassemble_all"])
 
 if (args.stats):
-    print("Step #4 - Statistics")
-    call_snake(["stats_all"])
+    print("Step #3b - Reassembly statistics")
+    call_snake(["stats_reassembly"])

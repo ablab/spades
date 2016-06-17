@@ -23,14 +23,12 @@ profile = [CAG] + map(float, subprocess.check_output(["grep", CAG, PROF]).split(
 print("Profile of", CAG, ":", profile)
 
 weighted_profile = list((i, ab)
-    for i, ab in enumerate(profile[1:], start=1) if ab >= MIN_ABUNDANCE and path.exists("{}/{}/sample{}_1.fastq".format(DIR, CAG, i)))
-print(weighted_profile)
-
+    for i, ab in enumerate(profile[1:], start=1) if ab >= MIN_ABUNDANCE and path.exists("{}/sample{}_1.fastq".format(DIR, i)))
 weighted_profile.sort(key = itemgetter(1))
 #print(weighted_profile)
 sum = 0
 samples = []
-#If we have overabundant samples, use the littlest.
+#If we have overabundant samples, use the least.
 try:
     i= next(x for x, _ in weighted_profile if profile[x] >= DESIRED_ABUNDANCE)
     sum = profile[i]
@@ -48,8 +46,7 @@ if sum < MIN_TOTAL_ABUNDANCE:
     print("The CAG is too scarce; skipping")
     exit(0)
 
-for suf in ["1", "2"]:
-    reads = ["{}/{}/sample{}_{}.fastq".format(DIR, CAG, sample, suf) for sample in samples]
-    with open("{}/{}_{}.fastq".format(DIR, CAG, suf), "w") as output:
-        args = ["cat"] + reads
-        subprocess.check_call(args, stdout=output)
+for suf, name in [("1", "left"), ("2", "right")]:
+    reads = ["{}/sample{}_{}.fastq".format(DIR, sample, suf) for sample in samples]
+    with open("{}/{}.fastq".format(DIR, name), "w") as output:
+        subprocess.check_call(["cat"] + reads, stdout=output)

@@ -12,25 +12,6 @@
 
 namespace debruijn_graph {
 
-inline void DumpEdgesAndAnnotation(const Graph& g,
-                                   const EdgeAnnotation& edge_annotation,
-                                   const string& out_prefix) {
-    INFO("Dumping edges and their annotation to " << out_prefix);
-    io::osequencestream oss(out_prefix + ".fasta");
-    AnnotationOutStream annotation_out(out_prefix + ".ann");
-    for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
-        io::SingleRead edge_read("NODE_" + ToString(g.int_id(e)),
-                                 g.EdgeNucls(e).str());
-        oss << edge_read;
-        auto relevant_bins = edge_annotation.RelevantBins(edge_read);
-        if (!relevant_bins.empty()) {
-            annotation_out << ContigAnnotation(GetId(edge_read),
-                                               vector<bin_id>(relevant_bins.begin(), relevant_bins.end()));
-        }
-    }
-}
-
 class AnnotationPropagator {
     const conj_graph_pack& gp_;
 
