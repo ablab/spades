@@ -26,6 +26,7 @@ class LoopTraverser {
     const Graph& g_;
     GraphCoverageMap& covMap_;
     shared_ptr<ContigsMaker> extender_;
+    const size_t MAX_EDGE_LENGTH = 1000;
 private:
     EdgeId FindStart(const set<VertexId>& component_set) const{
         EdgeId result;
@@ -182,6 +183,15 @@ private:
         endPath->Clear();
     }
 
+    bool ContainsLongEdges(const GraphComponent<Graph>& component) const {
+        for(auto e : component.edges()) {
+            if(g_.length(e) > MAX_EDGE_LENGTH) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 public:
     LoopTraverser(const Graph& g, GraphCoverageMap& coverageMap, shared_ptr<ContigsMaker> extender) :
             g_(g), covMap_(coverageMap), extender_(extender) {
@@ -189,10 +199,12 @@ public:
 
     void TraverseAllLoops() {
         DEBUG("TraverseAllLoops");
-        shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g_, 1000);
+        shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g_, MAX_EDGE_LENGTH);
         while (splitter->HasNext()) {
             GraphComponent<Graph> component = splitter->Next();
             if (component.v_size() > 10)
+                continue;
+            if(ContainsLongEdges(component))
                 continue;
             set<VertexId> component_set(component.v_begin(), component.v_end());
             EdgeId start = FindStart(component_set);
