@@ -92,11 +92,11 @@ rule kmc:
 rule multiplicities:
     input:   expand("tmp/{sample}.kmc_pre", sample=SAMPLES), expand("tmp/{sample}.kmc_suf", sample=SAMPLES)
     output:  "profile/kmers.mpl"
-    params:  " ".join(expand("tmp/{sample}", sample=SAMPLES))
+    params:  kmc_files=" ".join(expand("tmp/{sample}", sample=SAMPLES)), out="profile/kmers"
     log:     "profile/kmers.log"
     message: "Gathering {small_k}-mer multiplicities from all samples"
-    shell:   "{BIN}/kmer_multiplicity_counter -k {small_k} -o profile/kmers --sample 3"
-             " -f {params} >{log} 2>&1 && "
+    shell:   "{BIN}/kmer_multiplicity_counter -k {small_k} -o {params.out} --sample 3"
+             " -f {params.kmc_files} >{log} 2>&1 && "
              "rm tmp/*.sorted"
 
 rule profile:
@@ -163,8 +163,9 @@ rule generate_yaml:
     message: "Generated config file for reassembly"
     run:
         with open(output[0], "w") as outfile:
-            yaml = {"k": small_k, "sample_cnt": SAMPLE_COUNT, "kmer_mult": "kmers",
-                    "bin": wildcards.cag, "bin_prof": "canopy.prof"}
+            yaml = {"k": small_k, "sample_cnt": SAMPLE_COUNT,
+                    "kmer_mult": rules.multiplicities.params.out,
+                    "bin": wildcards.cag, "bin_prof": rules.canopy.output.prof}
             #TODO: some sort of PyYAML
             for key, value in yaml.items():
                 print(key, ": ", value, sep="", file=outfile)
@@ -192,6 +193,7 @@ rule reassemble_all:
 #===============================================================================
 
 #---- Single alignments per sample per reference -------------------------------
+#TODO: use alignments from meta version instead
 rule quast_all_samples:
     input:   ref=ref_path, contigs=expand("assembly/{sample}.fasta", sample=SAMPLES)
     output:  "stats/summary/q_{ref}.tsv"
@@ -201,13 +203,9 @@ rule quast_all_samples:
     shell:   "{QUAST} -R {input.ref} {input.contigs} -o {params} >{log} 2>&1 && "
              "cp {params}/report.tsv {output}"
 
-rule quast_all:
-    input:   expand("{sample}/{ref}.cont", sample=SAMPLES, ref=REFS)
-    message: "Calculated QUAST metrics"
-
 #---- Contigs of interest ------------------------------------------------------
 rule filter_all_samples:
-    input:   "stats/q_{ref}/report.tsv"
+    input:   "stats/summary/q_{ref}.tsv"
     output:  expand("stats/{{ref}}/{sample}.cont", sample=SAMPLES)
     message: "Filtering interesting contigs from all samples for {wildcards.ref}"
     params:  "stats/q_{ref}/"
@@ -239,7 +237,7 @@ rule quast_combined_all:
 
 #---- Bins of interest ---------------------------------------------------------
 rule int_bins:
-    input:   "annotation/{sample}.ann", "stats/{sample}_{ref}.cont"
+    input:   "annotation/{sample}.ann", "stats/{ref}/{sample}.cont"
     output:  "stats/{ref}/{sample}.bin"
     message: "Filtering interesting bins for {wildcards.sample} aligned to {wildcards.ref}"
     shell:   "{SCRIPTS}/filter_bins.py {input} > {output}"
@@ -355,14 +353,14 @@ rule pca:
         "Rscript {SCRIPTS}/pca.R {input} {output}"
 
 rule combine_contigs:
-    input:   expand("stats/{sample}_{ref}.cont", sample=SAMPLES, ref=REFS)
+    input:   expand("stats/{ref}/{sample}.cont", sample=SAMPLES, ref=REFS)
     output:  "stats/total.cont"
     message: "Combining interesting contigs for all samples/references"
     run:
         shell("rm -f {output}")
         for sample in SAMPLES:
             for ref in REFS:
-                shell("awk '{{print $0 \"\t{ref}\"}}' {sample}/{ref}.cont >> {output}")
+                shell("awk '{{print $0 \"\t{ref}\"}}' stats/{ref}/{sample}.cont >> {output}")
 
 # Run this
 rule pca_total:

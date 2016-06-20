@@ -14,7 +14,6 @@ parser.add_argument("--stats", "-s", action="store_true", help="Calculate stats 
 args = parser.parse_args()
 
 base_params = ["snakemake", "--directory", args.dir, "--cores", str(args.threads)]
-print(base_params)
 
 def call_snake(extra_params=[]):
     subprocess.check_call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)

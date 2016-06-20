@@ -10,7 +10,7 @@ def print_usage():
     print("Usage: filter_nucmer.py <quast_output> <output> <threshold>")
     print("Parameters:")
     print("<quast_output> is the QUAST output directory")
-    print("<output> is the directory for files with contigs (typically <ref>)")
+    print("<output> is the directory for files with contigs (typically <stats/ref>)")
     print("<threshold> is the minimal total alignment of a contig (0-100%)")
 
 #if len(sys.argv) != 3:
