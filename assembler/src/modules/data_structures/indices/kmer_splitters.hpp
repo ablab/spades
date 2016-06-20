@@ -38,7 +38,7 @@ struct StoringTypeFilter<InvertableStoring> {
 // used for temporary reads storage during parallel reading
 static const size_t READS_BUFFER_SIZE = 536870912; // 512 MB in bytes
 
-typedef ::KMerSplitter<runtime_k::RtSeq> RtSeqKMerSplitter;
+typedef ::KMerSortingSplitter<runtime_k::RtSeq> RtSeqKMerSplitter;
 
 typedef KMerVector<runtime_k::RtSeq> RtSeqKMerVector;
 typedef std::vector<RtSeqKMerVector> KMerBuffer;
@@ -67,41 +67,6 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
         kmers++;
       }
       return kmers;
-  }
-
-
-  void DumpBuffers(size_t num_files, size_t nthreads,
-                   std::vector<KMerBuffer> &buffers,
-                   const path::files_t &ostreams) const{
-    # pragma omp parallel for
-      for (unsigned k = 0; k < num_files; ++k) {
-        size_t sz = 0;
-        for (size_t i = 0; i < nthreads; ++i)
-          sz += buffers[i][k].size();
-
-        KMerVector<runtime_k::RtSeq> SortBuffer(this->K_, sz);
-        for (size_t i = 0; i < nthreads; ++i) {
-          KMerBuffer &entry = buffers[i];
-          for (size_t j = 0; j < entry[k].size(); ++j)
-            SortBuffer.push_back(entry[k][j]);
-        }
-        libcxx::sort(SortBuffer.begin(), SortBuffer.end(), KMerVector<runtime_k::RtSeq>::less2_fast());
-        auto it = std::unique(SortBuffer.begin(), SortBuffer.end(), KMerVector<runtime_k::RtSeq>::equal_to());
-
-    #   pragma omp critical
-        {
-          FILE *f = fopen(ostreams[k].c_str(), "ab");
-          VERIFY_MSG(f, "Cannot open temporary file to write");
-          fwrite(SortBuffer.data(), SortBuffer.el_data_size(), it - SortBuffer.begin(), f);
-          fclose(f);
-        }
-      }
-
-      for (unsigned i = 0; i < nthreads; ++i) {
-        for (unsigned j = 0; j < num_files; ++j) {
-          buffers[i][j].clear();
-        }
-      }
   }
 
  public:
@@ -151,8 +116,8 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
 template<class Read, class KmerFilter> template<class ReadStream>
 ReadStatistics
 DeBruijnReadKMerSplitter<Read, KmerFilter>::FillBufferFromStream(ReadStream &stream,
-                                                     KMerBuffer &buffer,
-                                                     unsigned num_files, size_t cell_size) const {
+                                                                 KMerBuffer &buffer,
+                                                                 unsigned num_files, size_t cell_size) const {
   typename ReadStream::ReadT r;
   size_t reads = 0, kmers = 0, rl = 0, bases = 0;
 
@@ -273,8 +238,8 @@ class DeBruijnGraphKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
 template<class Graph, class KmerFilter>
 size_t
 DeBruijnGraphKMerSplitter<Graph, KmerFilter>::FillBufferFromEdges(EdgeIt &edge,
-                                                      KMerBuffer &buffer,
-                                                      unsigned num_files, size_t cell_size) const {
+                                                                  KMerBuffer &buffer,
+                                                                  unsigned num_files, size_t cell_size) const {
   size_t seqs = 0;
   for (size_t kmers = 0; !edge.IsEnd() && kmers < num_files * cell_size; ++edge) {
     const Sequence &nucls = g_.EdgeNucls(*edge);
@@ -361,8 +326,8 @@ class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
 
 template<class KmerFilter>
 inline size_t DeBruijnKMerKMerSplitter<KmerFilter>::FillBufferFromKMers(kmer_iterator &kmer,
-                                                     KMerBuffer &buffer,
-                                                     unsigned num_files, size_t cell_size) const {
+                                                                        KMerBuffer &buffer,
+                                                                        unsigned num_files, size_t cell_size) const {
   size_t seqs = 0;
   for (size_t kmers = 0; kmer.good() && kmers < num_files * cell_size; ++kmer) {
     Sequence nucls(runtime_k::RtSeq(K_source_, *kmer));
@@ -376,7 +341,7 @@ inline size_t DeBruijnKMerKMerSplitter<KmerFilter>::FillBufferFromKMers(kmer_ite
 }
 
 template<class KmerFilter>
-inline path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_files) {
+path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_files) {
   unsigned nthreads = (unsigned) kmers_.size();
   INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 

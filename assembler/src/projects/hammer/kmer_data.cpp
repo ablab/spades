@@ -14,7 +14,6 @@
 
 #include "dev_support/file_limit.hpp"
 
-#include <libcxx/sort.hpp>
 #include "io/kmers_io/kmer_iterator.hpp"
 
 using namespace hammer;
@@ -34,59 +33,15 @@ struct KMerComparator {
 };
 
 
-class HammerKMerSplitter : public KMerSplitter<hammer::KMer> {
-  typedef std::vector<std::vector<KMer> > KMerBuffer;
-
-  void DumpBuffers(size_t num_files, size_t nthreads,
-                   std::vector<KMerBuffer> &buffers,
-                   const path::files_t &ostreams) const;
-
+class HammerKMerSplitter : public KMerSortingSplitter<hammer::KMer> {
  public:
   HammerKMerSplitter(std::string &work_dir)
-      : KMerSplitter<hammer::KMer>(work_dir, hammer::K) {}
+      : KMerSortingSplitter<hammer::KMer>(work_dir, hammer::K) {}
 
   virtual path::files_t Split(size_t num_files);
 
   friend class BufferFiller;
 };
-
-void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
-                                     std::vector<KMerBuffer> &buffers,
-                                     const path::files_t &ostreams) const {
-# pragma omp parallel for num_threads(nthreads)
-  for (unsigned k = 0; k < num_files; ++k) {
-    size_t sz = 0;
-    for (size_t i = 0; i < nthreads; ++i)
-      sz += buffers[i][k].size();
-
-    if (!sz)
-      continue;
-
-    std::vector<KMer> SortBuffer;
-    SortBuffer.reserve(sz);
-    for (size_t i = 0; i < nthreads; ++i) {
-      KMerBuffer &entry = buffers[i];
-      SortBuffer.insert(SortBuffer.end(), entry[k].begin(), entry[k].end());
-    }
-    libcxx::sort(SortBuffer.begin(), SortBuffer.end(), KMerComparator());
-    auto it = std::unique(SortBuffer.begin(), SortBuffer.end());
-
-#   pragma omp critical
-    {
-        FILE *f = fopen(ostreams[k].c_str(), "ab");
-        VERIFY_MSG(f, "Cannot open temporary file to write");
-        fwrite(SortBuffer.data(), sizeof(KMer), it - SortBuffer.begin(), f);
-        fclose(f);
-    }
-  }
-
-  for (unsigned i = 0; i < nthreads; ++i) {
-    for (unsigned j = 0; j < num_files; ++j) {
-      buffers[i][j].clear();
-    }
-  }
-}
-
 
 class BufferFiller {
   std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries_;
@@ -168,10 +123,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   std::vector<KMerBuffer> tmp_entries(nthreads);
   for (unsigned i = 0; i < nthreads; ++i) {
     KMerBuffer &entry = tmp_entries[i];
-    entry.resize(num_files);
-    for (unsigned j = 0; j < num_files; ++j) {
-      entry[j].reserve((size_t)(1.1 * (double)cell_size));
-    }
+    entry.resize(num_files, KMerVector<hammer::KMer>(this->K_, (size_t) (1.1 * (double) cell_size)));
   }
 
   size_t n = 15;

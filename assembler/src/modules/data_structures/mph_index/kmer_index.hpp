@@ -9,6 +9,7 @@
 #include "io/kmers_io/mmapped_reader.hpp"
 #include "io/kmers_io/mmapped_writer.hpp"
 #include "utils/adt/pointer_iterator.hpp"
+#include "utils/adt/kmer_vector.hpp"
 
 #include "mphf.hpp"
 #include "base_hash.hpp"
@@ -259,6 +260,51 @@ class KMerSplitter {
   }
 
   DECL_LOGGER("K-mer Splitting");
+};
+
+template<class Seq>
+class KMerSortingSplitter : public KMerSplitter<Seq> {
+ public:
+  KMerSortingSplitter(const std::string &work_dir, unsigned K, uint32_t seed = 0)
+      : KMerSplitter<Seq>(work_dir, K, seed) {}
+
+ protected:
+  using SeqKMerVector = KMerVector<Seq>;
+  using KMerBuffer = std::vector<SeqKMerVector>;
+
+  void DumpBuffers(size_t num_files, size_t nthreads,
+                   std::vector<KMerBuffer> &buffers,
+                   const path::files_t &ostreams) const {
+#   pragma omp parallel for
+    for (unsigned k = 0; k < num_files; ++k) {
+      size_t sz = 0;
+      for (size_t i = 0; i < nthreads; ++i)
+        sz += buffers[i][k].size();
+
+      KMerVector<Seq> SortBuffer(this->K_, sz);
+      for (size_t i = 0; i < nthreads; ++i) {
+        KMerBuffer &entry = buffers[i];
+        for (size_t j = 0; j < entry[k].size(); ++j)
+          SortBuffer.push_back(entry[k][j]);
+      }
+      libcxx::sort(SortBuffer.begin(), SortBuffer.end(), typename KMerVector<Seq>::less2_fast());
+      auto it = std::unique(SortBuffer.begin(), SortBuffer.end(), typename KMerVector<Seq>::equal_to());
+
+#     pragma omp critical
+      {
+        FILE *f = fopen(ostreams[k].c_str(), "ab");
+        VERIFY_MSG(f, "Cannot open temporary file to write");
+        fwrite(SortBuffer.data(), SortBuffer.el_data_size(), it - SortBuffer.begin(), f);
+        fclose(f);
+      }
+    }
+
+    for (unsigned i = 0; i < nthreads; ++i) {
+      for (unsigned j = 0; j < num_files; ++j) {
+        buffers[i][j].clear();
+      }
+    }
+  }
 };
 
 template<class Seq, class traits = kmer_index_traits<Seq> >
