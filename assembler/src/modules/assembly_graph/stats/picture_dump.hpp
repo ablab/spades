@@ -276,6 +276,16 @@ struct detail_info_printer {
                   << stats.edges() << ", sum length of edges : " << stats.edge_length());
         }
 
+        if (config.save_graph_pack) {
+            string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
+                                              ToString(call_cnt++, 2) + "_" + pos_name + "/");
+            path::make_dirs(saves_folder);
+            graphio::ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp_.g);
+            graphio::PrintGraphPack(saves_folder + "graph_pack", printer, gp_);
+            //TODO: separate
+            graphio::PrintClusteredIndices(saves_folder + "graph_pack", printer, gp_.clustered_indices);
+        }
+
         if (config.save_full_graph) {
             string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
                                               ToString(call_cnt++, 2) + "_" + pos_name + "/");

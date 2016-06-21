@@ -555,6 +555,7 @@ void load(debruijn_config::info_printer& printer,
   load(printer.write_components_along_contigs, pt,
        "write_components_along_contigs", complete);
   load(printer.save_full_graph, pt, "save_full_graph", complete);
+  load(printer.save_graph_pack, pt, "save_graph_pack", complete);
   load(printer.write_full_graph, pt, "write_full_graph", complete);
   load(printer.write_full_nc_graph, pt, "write_full_nc_graph", complete);
   load(printer.write_error_loc, pt, "write_error_loc", complete);

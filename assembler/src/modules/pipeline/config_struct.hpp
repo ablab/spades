@@ -425,6 +425,7 @@ struct debruijn_config {
         bool write_components_along_genome;
         bool write_components_along_contigs;
         bool save_full_graph;
+        bool save_graph_pack;
         bool write_error_loc;
         bool write_full_graph;
         bool write_full_nc_graph;
