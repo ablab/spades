@@ -342,8 +342,7 @@ private:
         } else if (overlap_size < path2->Size()
                 && overlap_size < path1->Size()) {
             BidirectionalPath* overlap = new BidirectionalPath(g_, path1->Back());
-            BidirectionalPath* conj_overlap = new BidirectionalPath(
-                    g_, g_.conjugate(path1->Back()));
+            BidirectionalPath* conj_overlap = new BidirectionalPath(g_, g_.conjugate(path1->Back()));
             SubscribeCoverageMap(overlap);
             SubscribeCoverageMap(conj_overlap);
             paths.AddPair(overlap, conj_overlap);
@@ -462,7 +461,7 @@ public:
 
     void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map, size_t min_edge_len, size_t max_path_diff,  bool add_overlaps_begin) {
         SimpleOverlapRemover remover(g_, coverage_map);
-        if (cfg::get().ds.moleculo)
+        if (cfg::get().mode == config::pipeline_type::moleculo)
             remover.CutPseudoSelfConjugatePaths(paths);
         //writer.WritePathsToFASTA(paths, output_dir + "/before.fasta");
         //DEBUG("Removing subpaths");

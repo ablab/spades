@@ -1,0 +1,138 @@
+pe {
+
+; output options
+
+debug_output    false
+
+output {
+    write_overlaped_paths   true
+    write_paths             true
+}
+
+visualize {
+    print_overlaped_paths   true
+    print_paths             true
+}
+
+; none | break_gaps | break_all
+output_broken_scaffolds     break_gaps
+
+params {
+    multi_path_extend   false
+    ; old | 2015 | combined | old_pe_2015
+    scaffolding_mode old
+
+    remove_overlaps     true
+    cut_all_overlaps  false
+
+    split_edge_length    99
+    normalize_weight     false
+    
+    ; extension selection
+    extension_options
+    {
+        use_default_single_threshold false
+        single_threshold           1.75676
+        weight_threshold           0.5
+        priority_coeff             1.5
+        max_repeat_length          8000
+    }    
+
+    mate_pair_options
+    {
+        use_default_single_threshold true
+        single_threshold           30
+        weight_threshold           0.5
+        priority_coeff             1.5
+        max_repeat_length          8000
+    }
+
+    scaffolder {
+        on            true
+        cutoff        2
+        rel_cutoff    0.1
+        sum_threshold 3  
+
+        cluster_info  true
+        cl_threshold  0
+
+        fix_gaps       true
+        use_la_gap_joiner true
+        ;next param should be 0.51 - 1.0 if use_old_score = true and 3.0 otherwise
+        min_gap_score   0.7
+
+        max_must_overlap  -2
+        max_can_overlap   0.5
+        short_overlap     6
+        artificial_gap    10
+        use_old_score   true
+
+        min_overlap_length 10
+        flank_addition_coefficient -5.9
+        flank_multiplication_coefficient 0.97
+    }
+    
+    loop_removal
+    {
+        max_loops       10
+        mp_max_loops    10
+    }
+
+    use_coordinated_coverage false
+    coordinated_coverage
+    {
+       max_edge_length_repeat 300
+       delta                  0.5
+       min_path_len           1000
+    }
+
+    scaffolding2015 {
+        autodetect      true
+        min_unique_length 10000
+        unique_coverage_variation 0.5
+        ; (median * (1+variation) > unique > median * (1 - variation))
+    }
+
+    scaffold_graph {
+        construct    false
+        output       false
+        always_add   40         ; connection with read count >= always_add are always added to the graph
+        never_add     5         ; connection with read count < never_add are never added to the graph
+        relative_threshold 0.25 ; connection with read count >= max_read_count * relative_threshod are added to the graph if satisfy condition above, max_read_count is calculated amond all alternatives
+        graph_connectivity false
+        max_path_length 10000
+    }
+}
+
+
+long_reads {
+    pacbio_reads {
+        filtering   2.5
+        weight_priority    1.2
+        unique_edge_priority 5.0
+        min_significant_overlap 0
+    }
+
+    single_reads {
+        filtering  1.25 
+        weight_priority    5.0
+        unique_edge_priority 10000.0
+        min_significant_overlap 0
+    }
+
+    contigs {
+        filtering   0.0
+        weight_priority    1.5
+        unique_edge_priority 2.0
+        min_significant_overlap 0
+    }
+
+    meta_untrusted_contigs {
+        filtering   0.0
+        weight_priority    10000.0
+        unique_edge_priority 10000.0
+        min_significant_overlap 200
+    }
+
+}
+}

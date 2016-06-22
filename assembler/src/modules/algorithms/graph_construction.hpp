@@ -100,19 +100,8 @@ size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
     return rl;
 }
 
-inline debruijn_config::construction CreateDefaultConstructionConfig() {
-    debruijn_config::construction config;
-    config.con_mode = construction_mode::con_extention;
-    debruijn_config::construction::early_tip_clipper early_tc;
-    early_tc.enable = false;
-    config.early_tc = early_tc;
-    config.keep_perfect_loops = true;
-    config.read_buffer_size = 0;
-    return config;
-}
-
 template<class ExtensionIndex>
-void EarlyClipTips(size_t k, const debruijn_config::construction params, size_t rl, ExtensionIndex& ext) {
+void EarlyClipTips(size_t k, const config::debruijn_config::construction& params, size_t rl, ExtensionIndex& ext) {
     if (params.early_tc.enable) {
         size_t length_bound = rl - k;
         if (params.early_tc.length_bound)
@@ -122,7 +111,7 @@ void EarlyClipTips(size_t k, const debruijn_config::construction params, size_t 
 }
 
 template<class Graph, class Read, class Index>
-ReadStatistics ConstructGraphUsingExtentionIndex(const debruijn_config::construction params,
+ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_config::construction params,
         io::ReadStreamList<Read>& streams, Graph& g,
         Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 
@@ -157,10 +146,10 @@ ReadStatistics ConstructGraphUsingExtentionIndex(const debruijn_config::construc
 }
 
 template<class Graph, class Index, class Streams>
-ReadStatistics ConstructGraph(const debruijn_config::construction &params,
+ReadStatistics ConstructGraph(const config::debruijn_config::construction &params,
                               Streams& streams, Graph& g,
                               Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-    if (params.con_mode == construction_mode::con_extention) {
+    if (params.con_mode == config::construction_mode::extention) {
         return ConstructGraphUsingExtentionIndex(params, streams, g, index, contigs_stream);
 //    } else if(params.con_mode == construction_mode::con_old){
 //        return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
@@ -172,7 +161,7 @@ ReadStatistics ConstructGraph(const debruijn_config::construction &params,
 }
 
 template<class Graph, class Index, class Streams>
-ReadStatistics ConstructGraphWithCoverage(const debruijn_config::construction &params,
+ReadStatistics ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
                                   Streams& streams, Graph& g,
                                   Index& index, FlankingCoverage<Graph>& flanking_cov,
                                   io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {

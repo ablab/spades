@@ -82,25 +82,23 @@ public:
      */
     bool contains(const KeyWithHash &kwh) const {
         // Sanity check
-        if (!valid(kwh)) {
+        if (!valid(kwh))
             return false;
-        }
 
         Value entry = base::get_value(kwh);
-
-        if (entry.offset == -1u) {
+        if (entry.offset == -1u)
             return false;
-        }
 
-        return kwh.key() == KMer(this->k(), graph_.EdgeNucls(entry.edge_id), entry.offset);
+        return graph_.EdgeNucls(entry.edge_id).contains(kwh.key(), entry.offset);
     }
 
     void PutInIndex(KeyWithHash &kwh, IdType id, size_t offset) {
-        if (valid(kwh)) {
-            auto &entry = this->get_raw_value_reference(kwh);
-            if (!entry.valid() || contains(kwh)) {
-                this->put_value(kwh, Value(id, (unsigned)offset, entry.count));
-            }
+        if (!valid(kwh))
+            return;
+        
+        auto &entry = this->get_raw_value_reference(kwh);
+        if (!entry.valid() || contains(kwh)) {
+            this->put_value(kwh, Value(id, (unsigned)offset, entry.count));
         }
     }
 

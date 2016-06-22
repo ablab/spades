@@ -88,22 +88,23 @@ def print_used_values(cfg, log):
     if "dataset" in cfg:
         log.info("Dataset parameters:")
 
-        if cfg["dataset"].single_cell:
-            log.info("  Single-cell mode")
-        elif cfg["dataset"].meta:
+        if options_storage.iontorrent:
+            log.info("  IonTorrent data")
+
+        if options_storage.meta:
             log.info("  Metagenomic mode")
-        elif cfg["dataset"].large_genome:
+        elif options_storage.large_genome:
             log.info("  Large genome mode")
-        elif cfg["dataset"].truseq:
-            log.info(" Illumina TruSeq mode")
-        elif cfg["dataset"].rna:
-            log.info(" RNA-seq mode")
+        elif options_storage.truseq_mode:
+            log.info("  Illumina TruSeq mode")
+        elif options_storage.rna:
+            log.info("  RNA-seq mode")
+        elif options_storage.single_cell:
+            log.info("  Single-cell mode")
         else:
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
                      " was obtained with MDA (single-cell) technology"\
                      " or --meta flag if processing metagenomic dataset)")
-        if cfg["dataset"].iontorrent:
-            log.info("  IonTorrent data")
 
         log.info("  Reads:")
         dataset_data = pyyaml.load(open(cfg["dataset"].yaml_filename, 'r'))
@@ -128,14 +129,16 @@ def print_used_values(cfg, log):
             log.info("  k: automatic selection based on read length")
         else:
             print_value(cfg, "assembly", "iterative_K", "k")
-        if cfg["assembly"].careful:
-            log.info("  Mismatch careful mode is turned ON")
-        else:
-            log.info("  Mismatch careful mode is turned OFF")
+        if options_storage.plasmid:
+            log.info("  Plasmid mode is turned ON")
         if cfg["assembly"].disable_rr:
             log.info("  Repeat resolution is DISABLED")
         else:
             log.info("  Repeat resolution is enabled")
+        if options_storage.careful:
+            log.info("  Mismatch careful mode is turned ON")
+        else:
+            log.info("  Mismatch careful mode is turned OFF")
         if "mismatch_corrector" in cfg:
             log.info("  MismatchCorrector will be used")
         else:
@@ -224,12 +227,16 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         elif opt == "--sc":
             options_storage.single_cell = True
         elif opt == "--meta":
+            #FIXME temporary solution
+            options_storage.single_cell = True
             options_storage.meta = True
         elif opt == "--large-genome":
             options_storage.large_genome = True
         elif opt == "--plasmid":
             options_storage.plasmid = True
         elif opt == "--rna":
+            #FIXME temporary solution
+            options_storage.single_cell = True
             options_storage.rna = True
         elif opt == "--iontorrent":
             options_storage.iontorrent = True
@@ -400,13 +407,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         cfg["common"].__dict__["series_analysis"] = options_storage.series_analysis
 
     # dataset section
-    cfg["dataset"].__dict__["single_cell"] = options_storage.single_cell
-    cfg["dataset"].__dict__["rna"] = options_storage.rna
-    cfg["dataset"].__dict__["iontorrent"] = options_storage.iontorrent
-    cfg["dataset"].__dict__["meta"] = options_storage.meta
-    cfg["dataset"].__dict__["large_genome"] = options_storage.large_genome
     cfg["dataset"].__dict__["yaml_filename"] = options_storage.dataset_yaml_filename
-    cfg["dataset"].__dict__["truseq"] = options_storage.truseq_mode
     if options_storage.developer_mode and options_storage.reference:
         cfg["dataset"].__dict__["reference"] = options_storage.reference
 
@@ -431,7 +432,6 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
         else:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_SHORT
-        cfg["assembly"].__dict__["careful"] = options_storage.careful
         cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
         cfg["assembly"].__dict__["diploid_mode"] = options_storage.diploid_mode
         cfg["assembly"].__dict__["cov_cutoff"] = options_storage.cov_cutoff
@@ -443,8 +443,6 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if options_storage.large_genome:
             cfg["assembly"].__dict__["bwa_paired"] = True
             cfg["assembly"].__dict__["scaffolding_mode"] = "old_pe_2015"
-        if options_storage.plasmid:
-            cfg["assembly"].__dict__["plasmid"] = True
     #corrector can work only if contigs exist (not only error correction)
     if (not options_storage.only_error_correction) and options_storage.mismatch_corrector:
         cfg["mismatch_corrector"] = empty_config()
@@ -518,7 +516,7 @@ def get_options_from_params(params_filename, spades_py_name=None):
     spades_py_pos = cmd_line.find(spades_py_name)
     if spades_py_pos == -1:
         return None, None
-    return cmd_line, cmd_line[spades_py_pos + len(spades_py_name):].split()
+    return cmd_line, cmd_line[spades_py_pos + len(spades_py_name):].split('\t')
 
 
 def show_version():
@@ -546,6 +544,11 @@ def main(args):
     log.addHandler(console)
 
     support.check_binaries(bin_home, log)
+
+    # auto detecting SPAdes mode (rna, meta, etc)
+    mode = options_storage.get_mode()
+    if mode is not None:
+        args.append('--' + mode)
 
     # parse options and safe all parameters to cfg
     options = args
@@ -582,10 +585,10 @@ def main(args):
                 if skip_next or v.startswith('--restart-from='):  # you can specify '--restart-from=k33' but not '-o=out_dir'
                     skip_next = False
                     continue
-                updated_params += " " + v
+                updated_params += "\t" + v
             updated_params = updated_params.strip()
             log.info("with updated parameters: " + updated_params)
-            cmd_line += " " + updated_params
+            cmd_line += "\t" + updated_params
         log.info("")
 
     params_filename = os.path.join(cfg["common"].output_dir, "params.txt")
@@ -603,7 +606,7 @@ def main(args):
                 v = options_storage.dict_of_rel2abs[v]
             if prefix:
                 command += prefix + ":"
-            command += v + " "
+            command += v + "\t"
         log.info(command)
 
     # special case
@@ -652,35 +655,34 @@ def main(args):
             STAGE_NAME = "Read error correction"
             bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
             corrected_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "corrected.yaml")
+            ec_is_needed = True
+            only_compressing_is_needed = False
             if os.path.isfile(corrected_dataset_yaml_filename) and options_storage.continue_mode \
-                and not options_storage.restart_from == "ec":
-                log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
-            else:
-                support.continue_from_here(log)
-
-                if "HEAPCHECK" in os.environ:
-                    del os.environ["HEAPCHECK"]
-                if "heap_check" in bh_cfg.__dict__:
-                    os.environ["HEAPCHECK"] = bh_cfg.heap_check
-
-                if os.path.exists(bh_cfg.output_dir):
-                    shutil.rmtree(bh_cfg.output_dir)
-                os.makedirs(bh_cfg.output_dir)
-
-                if support.get_lib_ids_by_type(dataset_data, options_storage.LONG_READS_TYPES):
-                    not_used_dataset_data = support.get_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
-                    to_correct_dataset_data = support.rm_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
-                    to_correct_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "to_correct.yaml")
-                    pyyaml.dump(to_correct_dataset_data, open(to_correct_dataset_yaml_filename, 'w'))
-                    bh_cfg.__dict__["dataset_yaml_filename"] = to_correct_dataset_yaml_filename
+                    and not options_storage.restart_from == "ec":
+                if not bh_cfg.gzip_output or \
+                        support.dataset_has_gzipped_reads(pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))):
+                    log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
+                    ec_is_needed = False
                 else:
-                    not_used_dataset_data = None
-                    bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
+                    only_compressing_is_needed = True
+            if ec_is_needed:
+                if not only_compressing_is_needed:
+                    support.continue_from_here(log)
 
+                    if "HEAPCHECK" in os.environ:
+                        del os.environ["HEAPCHECK"]
+                    if "heap_check" in bh_cfg.__dict__:
+                        os.environ["HEAPCHECK"] = bh_cfg.heap_check
+
+                    if os.path.exists(bh_cfg.output_dir):
+                        shutil.rmtree(bh_cfg.output_dir)
+                    os.makedirs(bh_cfg.output_dir)
+
+                bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
                 log.info("\n===== %s started. \n" % STAGE_NAME)
 
-                hammer_logic.run_hammer(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, not_used_dataset_data,
-                    ext_python_modules_home, log)
+                hammer_logic.run_hammer(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, dataset_data,
+                    ext_python_modules_home, only_compressing_is_needed, log)
                 log.info("\n===== %s finished. \n" % STAGE_NAME)
             if options_storage.stop_after == 'ec':
                 support.finish_here(log)
@@ -707,7 +709,8 @@ def main(args):
 
             if options_storage.continue_mode and (os.path.isfile(spades_cfg.result_contigs)
                                                   or ("mismatch_corrector" in cfg and
-                                                      os.path.isfile(assembled_contigs_filename)))\
+                                                      os.path.isfile(assembled_contigs_filename))
+                                                  or (options_storage.truseq_mode and os.path.isfile(assembled_scaffolds_filename)))\
                 and not options_storage.restart_from == 'as' \
                 and not options_storage.restart_from == 'scc' \
                 and not (options_storage.restart_from and options_storage.restart_from.startswith('k')):
@@ -747,11 +750,6 @@ def main(args):
                 if not os.path.isfile(dataset_filename) or not options_storage.continue_mode:
                     dataset_file = open(dataset_filename, 'w')
                     import process_cfg
-                    dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
-                    dataset_file.write("rna" + '\t' + process_cfg.bool_to_str(cfg["dataset"].rna) + '\n')
-                    dataset_file.write("meta" + '\t' + process_cfg.bool_to_str(cfg["dataset"].meta) + '\n')
-                    dataset_file.write("large_genome" + '\t' + process_cfg.bool_to_str(cfg["dataset"].large_genome) + '\n')
-                    dataset_file.write("moleculo" + '\t' + process_cfg.bool_to_str(cfg["dataset"].truseq) + '\n')
                     if os.path.isfile(corrected_dataset_yaml_filename):
                         dataset_file.write("reads" + '\t' + process_cfg.process_spaces(corrected_dataset_yaml_filename) + '\n')
                     else:

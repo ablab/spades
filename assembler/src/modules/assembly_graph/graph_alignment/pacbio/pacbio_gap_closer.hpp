@@ -141,7 +141,7 @@ public:
         int res;
         char ss[5000];
         map<int, EdgeId> tmp_map;
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             tmp_map[g_.int_id(*iter)] = *iter;
         }
         while (!feof(file)) {
@@ -327,7 +327,7 @@ private:
                             if (gap_variants.size() > 1) {
 
                                 stringstream ss;
-                                for (int i = 0; i < gap_variants.size(); i++)
+                                for (size_t i = 0; i < gap_variants.size(); i++)
                                     ss << gap_variants[i].length() << " ";
                                 INFO(gap_variants.size() << " gap closing variant for contigs, lengths: " << ss.str());
                             }

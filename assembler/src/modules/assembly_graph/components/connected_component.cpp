@@ -14,9 +14,8 @@ void ConnectedComponentCounter::CalculateComponents() const {
     vector <pair<size_t, size_t>> to_sort;
     map<size_t, size_t> comp_size;
     size_t cur_id = 0;
-    for (auto e = g_.SmartEdgeBegin(); !e.IsEnd(); ++e) {
+    for (auto e = g_.ConstEdgeBegin(); !e.IsEnd(); ++e) {
         if (component_ids.find(*e) == component_ids.end()) {
-            cur_id++;
             std::stack <EdgeId> next;
             next.push(*e);
             set <EdgeId> used;
@@ -49,6 +48,7 @@ void ConnectedComponentCounter::CalculateComponents() const {
             }
             to_sort.push_back(std::make_pair(ans, cur_id));
             comp_size[cur_id] = ans;
+            cur_id ++;
         }
     }
     std::sort(to_sort.begin(), to_sort.end());

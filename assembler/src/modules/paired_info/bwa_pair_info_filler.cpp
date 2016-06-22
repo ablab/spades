@@ -158,6 +158,7 @@ bool BWAPairInfoFiller::CreateIndex(const string& contigs) {
     int run_res = 0;
     string err_log = path::append_path(work_dir_, "index.err");
     string index_line = bwa_path_ + string(" index ") + "-a is " + contigs + " 2>" + err_log;
+    index_line = path::screen_whitespaces(index_line);
     INFO("Running bwa index ... ");
     INFO("Command line: " << index_line);
     run_res = system(index_line.c_str());
@@ -172,6 +173,7 @@ bool BWAPairInfoFiller::CreateIndex(const string& contigs) {
 bool BWAPairInfoFiller::RunBWA(const string& reads_file, const string& out_sam_file) const {
     string run_command = bwa_path_ + " mem -t " + ToString(nthreads_) + " " + index_base_ + " "  + reads_file + "  > " + out_sam_file + " 2>"
         + out_sam_file + ".txt";
+    run_command = path::screen_whitespaces(run_command);
     INFO("Running bwa mem ...");
     INFO("Command line: " << run_command);
 

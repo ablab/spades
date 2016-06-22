@@ -8,6 +8,9 @@
 #pragma once
 
 #include "dev_support/standard_base.hpp"
+#include "dev_support/openmp_wrapper.h"
+#include "modules/assembly_graph/graph_core/graph_iterators.hpp"
+
 namespace debruijn_graph {
 
 template<typename Index, typename Graph>
@@ -83,8 +86,17 @@ class EdgeInfoUpdater {
     }
 
     void UpdateAll() {
-        for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-          UpdateKmers(*it);
+        unsigned nthreads = omp_get_max_threads();
+
+        omnigraph::IterationHelper<Graph, EdgeId> edges(g_);
+        auto iters = edges.Chunks(16 * nthreads);
+
+        #pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < iters.size() - 1; ++i) {
+            TRACE("Processing chunk #" << i);
+            for (auto it = iters[i]; it != iters[i + 1]; ++it) {
+                UpdateKmers(*it);
+            }
         }
     }
 

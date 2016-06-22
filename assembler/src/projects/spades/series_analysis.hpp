@@ -6,6 +6,32 @@
 #include "algorithms/simplification/tip_clipper.hpp"
 #include "projects/mts/contig_abundance.hpp"
 
+#include "llvm/Support/YAMLParser.h"
+#include "llvm/Support/YAMLTraits.h"
+
+namespace debruijn_graph {
+
+struct SeriesAnalysisConfig {
+    uint k, sample_cnt;
+    std::string kmer_mult, bin, bin_prof;
+};
+
+}
+
+namespace llvm { namespace yaml {
+
+template<> struct MappingTraits<debruijn_graph::SeriesAnalysisConfig> {
+    static void mapping(IO& io, debruijn_graph::SeriesAnalysisConfig& cfg) {
+        io.mapRequired("k", cfg.k);
+        io.mapRequired("sample_cnt", cfg.sample_cnt);
+        io.mapRequired("kmer_mult", cfg.kmer_mult);
+        io.mapRequired("bin", cfg.bin);
+        io.mapRequired("bin_prof", cfg.bin_prof);
+    }
+};
+
+} }
+
 namespace debruijn_graph {
 
 template<class graph_pack>
@@ -129,8 +155,7 @@ public:
                        double similarity_threshold,
                        double norm_ratio_threshold,
                        const std::function<void(EdgeId)> &removal_handler = 0) :
-        EdgeProcessingAlgorithm<Graph>(g,
-                              true),
+        EdgeProcessingAlgorithm<Graph>(g, true),
         sample_cnt_(sample_cnt),
         edge_abundance_(edge_abundance),
         base_profile_(base_profile),
@@ -189,19 +214,20 @@ public:
         } else {
             INFO("Series analysis enabled with config " << cfg);
         }
-        YAML::Node config = YAML::LoadFile(cfg);
-        uint k = config["k"].as<uint>();
-        size_t sample_cnt = config["sample_cnt"].as<size_t>();
-        std::string kmer_mult_fn = config["kmer_mult"].as<std::string>();
-        std::string b_id = config["bin"].as<std::string>();
-        std::string bin_mult_fn = config["bin_prof"].as<std::string>();
+        auto Buf = llvm::MemoryBuffer::getFile(cfg);
+        if (!Buf)
+            throw std::string("Failed to load config file " + cfg);
 
-        ContigAbundanceCounter abundance_counter(k, sample_cnt, 
-                                                 SingleClusterAnalyzer(sample_cnt, 2., 0.4),
+        llvm::yaml::Input yin(*Buf.get());
+        SeriesAnalysisConfig config;
+        yin >> config;
+        
+        ContigAbundanceCounter abundance_counter(config.k, config.sample_cnt, 
+                                                 SingleClusterAnalyzer(config.sample_cnt, 2., 0.4),
                                                  cfg::get().tmp_dir);
 
-        abundance_counter.Init(kmer_mult_fn);
-        boost::optional<AbundanceVector> bin_profile = InferAbundance(bin_mult_fn, b_id, sample_cnt);
+        abundance_counter.Init(config.kmer_mult);
+        boost::optional<AbundanceVector> bin_profile = InferAbundance(config.bin_prof, config.bin, config.sample_cnt);
         if (!bin_profile) {
             ERROR("Couldn't estimate profile of bin");
             return;
@@ -220,7 +246,7 @@ public:
 
         INFO("Launching aggressive graph clearing");
         //positive quality edges removed (folder colored_edges_deleted)
-        AggressiveClearing<Graph> clearing(gp.g, sample_cnt, edge_abundance,
+        AggressiveClearing<Graph> clearing(gp.g, config.sample_cnt, edge_abundance,
                                             *bin_profile, 0.8, 0.3, [&](EdgeId e) {
                         qual_removal_handler.HandleDelete(e);});
         clearing.Run();

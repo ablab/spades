@@ -127,7 +127,10 @@ public:
 
     struct equal_to {
         bool operator()(const SimpleSeq<size_, T>& l, const SimpleSeq<size_, T>& r) const {
-            return memcmp(l.data_.data(), r.data_.data(), sizeof(T) * DataSize) == 0;
+            for (size_t i = 0; i < DataSize; ++i)
+                if (l.data_[i] != r.data_[i])
+                    return false;
+            return true;
         }
     };
 

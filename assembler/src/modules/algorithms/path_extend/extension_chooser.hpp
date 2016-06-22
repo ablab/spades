@@ -253,7 +253,7 @@ protected:
     shared_ptr<ExtensionChooser> second_;
 
 public:
-    JointExtensionChooser(Graph& g, shared_ptr<ExtensionChooser> first, shared_ptr<ExtensionChooser> second): ExtensionChooser(g),
+    JointExtensionChooser(const Graph& g, shared_ptr<ExtensionChooser> first, shared_ptr<ExtensionChooser> second): ExtensionChooser(g),
         first_(first), second_(second)
     {
     }
@@ -710,7 +710,7 @@ private:
     }
 
     void FindAllUniqueCoverageEdges() {
-       if (cfg::get().ds.single_cell) {
+       if (cfg::get().uneven_depth) {
            return;
        }
        double sum_cov = 0;
@@ -811,10 +811,12 @@ public:
                               double filtering_threshold,
                               double weight_priority_threshold,
                               double unique_edge_priority_threshold,
+                              size_t min_significant_overlap,
                               size_t max_repeat_length)
             : ExtensionChooser(g),
               filtering_threshold_(filtering_threshold),
               weight_priority_threshold_(weight_priority_threshold),
+              min_significant_overlap_(min_significant_overlap),
               cov_map_(g, pc),
               unique_edge_analyzer_(g, cov_map_, filtering_threshold, unique_edge_priority_threshold, max_repeat_length),
               simple_scaffolding_(g) {
@@ -897,7 +899,7 @@ private:
     bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const {
         int int_pos = (int) pos;
         while (int_pos >= 0) {
-            if (unique_edge_analyzer_.IsUnique(path.At(int_pos)) > 0)
+            if (unique_edge_analyzer_.IsUnique(path.At(int_pos)) > 0 && g_.length(path.At(int_pos)) >= min_significant_overlap_)
                 return true;
             int_pos--;
         }
@@ -912,6 +914,7 @@ private:
 
     double filtering_threshold_;
     double weight_priority_threshold_;
+    size_t min_significant_overlap_;
     const GraphCoverageMap cov_map_;
     LongReadsUniqueEdgeAnalyzer unique_edge_analyzer_;
     SimpleScaffolding simple_scaffolding_;
@@ -1363,13 +1366,18 @@ class CoordinatedCoverageExtensionChooser: public ExtensionChooser {
 public:
     CoordinatedCoverageExtensionChooser(const Graph& g, 
             CoverageAwareIdealInfoProvider& coverage_provider, 
-            size_t max_edge_length_in_repeat, double delta) :
+            size_t max_edge_length_in_repeat, double delta, size_t min_path_len) :
             ExtensionChooser(g), provider_(coverage_provider), 
-            max_edge_length_in_repeat_(max_edge_length_in_repeat), delta_(delta) {
+            max_edge_length_in_repeat_(max_edge_length_in_repeat), delta_(delta), min_path_len_(min_path_len) {
     }
 
     EdgeContainer Filter(const BidirectionalPath& path,
             const EdgeContainer& edges) const override {
+
+        if(path.Length() < min_path_len_) {
+            DEBUG("Path is too short");
+            return EdgeContainer();
+        }
 
         double path_coverage = provider_.EstimatePathCoverage(path);
         if (math::eq(path_coverage, -1.0)) {
@@ -1390,11 +1398,11 @@ public:
 private:
 
     void UpdateCanBeProcessed(VertexId v,
-            std::queue<VertexId>& can_be_processed) const {
+            std::queue<VertexId>& can_be_processed, double path_coverage) const {
         DEBUG("Updating can be processed");
         for (EdgeId e : g_.OutgoingEdges(v)) {
             VertexId neighbour_v = this->g_.EdgeEnd(e);
-            if (g_.length(e) < max_edge_length_in_repeat_) {
+            if (g_.length(e) < max_edge_length_in_repeat_ && GoodExtension(e, path_coverage)) {
                 DEBUG("Adding vertex " << neighbour_v.int_id()
                                 << "through edge " << g_.str(e));
                 can_be_processed.push(neighbour_v);
@@ -1402,11 +1410,11 @@ private:
         }
     }
 
-    GraphComponent<Graph> GetRepeatComponent(const VertexId start) const {
+    GraphComponent<Graph> GetRepeatComponent(const VertexId start, double path_coverage) const {
         set<VertexId> vertices_of_component;
         vertices_of_component.insert(start);
         std::queue<VertexId> can_be_processed;
-        UpdateCanBeProcessed(start, can_be_processed);
+        UpdateCanBeProcessed(start, can_be_processed, path_coverage);
         while (!can_be_processed.empty()) {
             VertexId v = can_be_processed.front();
             can_be_processed.pop();
@@ -1416,7 +1424,7 @@ private:
             }
             DEBUG("Adding vertex " << g_.str(v) << " to component set");
             vertices_of_component.insert(v);
-            UpdateCanBeProcessed(v, can_be_processed);
+            UpdateCanBeProcessed(v, can_be_processed, path_coverage);
         }
 
         GraphComponent<Graph> gc(g_, vertices_of_component.begin(),
@@ -1436,20 +1444,25 @@ private:
     }
 
     bool GoodExtension(EdgeId e, double path_coverage) const {
-        return math::ge(g_.coverage(e), path_coverage - path_coverage * delta_);
+        return math::ge(g_.coverage(e), path_coverage * delta_);
     }
 
     EdgeContainer FindExtensionTroughRepeat(const EdgeContainer& edges, double path_coverage) const {
         set<EdgeId> good_extensions;
         for(auto edge : edges) {
+
+            if(!GoodExtension(edge.e_, path_coverage)) {
+                continue;
+            }
+
             if (g_.length(edge.e_) > max_edge_length_in_repeat_) {
-                if(GoodExtension(edge.e_, path_coverage)) {
+                if (GoodExtension(edge.e_, path_coverage)) {
                     good_extensions.insert(edge.e_);
                 }
                 continue;
             }
 
-            GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(edge.e_));
+            GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(edge.e_), path_coverage);
             if (gc.v_size() == 0) {
                 return EdgeContainer();
             }
@@ -1476,15 +1489,21 @@ private:
             DEBUG("Returning");
             return EdgeContainer();
         }
+        auto extension = *good_extensions.begin();
 
-        DEBUG("Filtering... Extend with edge " << good_extensions.begin()->int_id());
-        return FinalFilter(edges, *good_extensions.begin());
+        if(math::ls(path_coverage, g_.coverage(extension) * delta_)) {
+            DEBUG("Extension coverage too high");
+            return EdgeContainer();
+        }
+
+        DEBUG("Filtering... Extend with edge " << extension.int_id());
+        return FinalFilter(edges, extension);
     }
     
     CoverageAwareIdealInfoProvider provider_;
     const size_t max_edge_length_in_repeat_;
     const double delta_;
-
+    const size_t min_path_len_;
     DECL_LOGGER("CoordCoverageExtensionChooser");
 };
 

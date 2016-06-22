@@ -4,200 +4,179 @@
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
-
-#ifndef CONFIG_STRUCT_HDIP_
-#define CONFIG_STRUCT_HDIP_
+#pragma once
 
 #include "pipeline/config_singl.hpp"
-#include "dev_support/cpp_utils.hpp"
-#include "data_structures/sequence/sequence.hpp"
 #include "algorithms/path_extend/pe_config_struct.hpp"
-
 #include "pipeline/library.hpp"
-#include "io/reads_io/binary_streams.hpp"
-#include "io/reads_io/rc_reader_wrapper.hpp"
-#include "io/reads_io/read_stream_vector.hpp"
 
-#include <boost/bimap.hpp>
+#include <boost/optional.hpp>
 #include "math/xmath.h"
 
 namespace debruijn_graph {
+namespace config {
 
-enum construction_mode {
-    con_old, con_extention
+enum class info_printer_pos : char {
+    default_pos = 0,
+    before_first_gap_closer,
+    before_simplification,
+    before_post_simplification,
+    final_simplified,
+    final_gap_closed,
+    before_repeat_resolution,
+
+    total
 };
 
-enum estimation_mode {
-    em_simple, em_weighted, em_smoothing
+std::vector<std::string> InfoPrinterPosNames();
+
+enum class pipeline_type : char {
+    base = 0,
+    isolate,
+    mda,
+    meta,
+    moleculo,
+    diploid,
+    rna,
+    plasmid,
+
+    total
 };
 
-enum resolving_mode {
-    rm_none,
-    rm_path_extend,
+std::vector<std::string> PipelineTypeNames();
+
+enum class construction_mode : char {
+    old = 0,
+    extention,
+
+    total
 };
 
-enum single_read_resolving_mode {
-    sr_none,
-    sr_only_single_libs,
-    sr_all
+std::vector<std::string> ConstructionModeNames();
+
+enum class estimation_mode : char {
+    simple = 0,
+    weighted,
+    smoothing,
+
+    total
 };
 
-enum info_printer_pos {
-    ipp_default = 0,
-    ipp_before_first_gap_closer,
-    ipp_before_simplification,
-    ipp_before_post_simplification,
-    ipp_final_simplified,
-    ipp_final_gap_closed,
-    ipp_before_repeat_resolution,
+std::vector<std::string> EstimationModeNames();
 
-    ipp_total
+enum class resolving_mode : char {
+    none = 0,
+    path_extend,
+
+    total
 };
 
-namespace details {
+std::vector<std::string> ResolveModeNames();
 
-inline const char* info_printer_pos_name(size_t pos) {
-    const char* names[] = { "default", "before_first_gap_closer",
-                            "before_simplification", "before_post_simplification",
-                            "final_simplified", "final_gap_closed", "before_repeat_resolution" };
+enum class single_read_resolving_mode : char {
+    none = 0,
+    only_single_libs,
+    all,
 
-    utils::check_array_size < ipp_total > (names);
-    return names[pos];
+    total
+};
+
+std::vector<std::string> SingleReadResolveModeNames();
+
+template<typename mode_t>
+mode_t ModeByName(const std::string& name, const std::vector<std::string>& names) {
+    auto it = std::find(names.begin(), names.end(), name);
+    VERIFY_MSG(it != names.end(), "Unrecognized mode name");
+    return mode_t(it - names.begin());
 }
 
-} // namespace details
+template<typename mode_t>
+std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) {
+    VERIFY_MSG(size_t(mode) < names.size(), "Unrecognized mode id");
+    return names[size_t(mode)];
+}
+
+struct DataSetData {
+    size_t read_length;
+    double avg_read_length;
+    double mean_insert_size;
+    double insert_size_deviation;
+    double insert_size_left_quantile;
+    double insert_size_right_quantile;
+    double median_insert_size;
+    double insert_size_mad;
+    std::map<int, size_t> insert_size_distribution;
+
+    bool binary_coverted;
+    bool single_reads_mapped;
+
+    uint64_t total_nucls;
+    double average_coverage;
+    double pi_threshold;
+
+    std::string paired_read_prefix;
+    std::string single_read_prefix;
+    size_t thread_num;
+
+    DataSetData(): read_length(0), avg_read_length(0.0),
+                   mean_insert_size(0.0),
+                   insert_size_deviation(0.0),
+                   insert_size_left_quantile(0.0),
+                   insert_size_right_quantile(0.0),
+                   median_insert_size(0.0),
+                   insert_size_mad(0.0),
+                   binary_coverted(false),
+                   single_reads_mapped(false),
+                   total_nucls(0),
+                   average_coverage(0.0),
+                   pi_threshold(0.0) {
+    }
+};
+
+struct dataset {
+    io::DataSet<DataSetData> reads;
+
+    size_t max_read_length;
+    double average_coverage;
+    double average_read_length;
+
+    size_t RL() const { return max_read_length; }
+    void set_RL(size_t RL) {
+        max_read_length = RL;
+    }
+
+    double aRL() const { return average_read_length; }
+    void set_aRL(double aRL) {
+        average_read_length = aRL;
+        for (size_t i = 0; i < reads.lib_count(); ++i) {
+            reads[i].data().avg_read_length = aRL;
+        }
+    }
+
+    double avg_coverage() const { return average_coverage; }
+    void set_avg_coverage(double avg_coverage) {
+        average_coverage = avg_coverage;
+        for (size_t i = 0; i < reads.lib_count(); ++i) {
+            reads[i].data().average_coverage = avg_coverage;
+        }
+    }
+
+    std::string reference_genome_filename;
+    std::string reads_filename;
+
+    std::string reference_genome;
+
+    dataset(): max_read_length(0), average_coverage(0.0) {
+    }
+};
 
 // struct for debruijn project's configuration file
 struct debruijn_config {
-    typedef boost::bimap<std::string, construction_mode> construction_mode_id_mapping;
-    typedef boost::bimap<std::string, estimation_mode> estimation_mode_id_mapping;
-    typedef boost::bimap<std::string, resolving_mode> resolve_mode_id_mapping;
-    typedef boost::bimap<std::string, single_read_resolving_mode> single_read_resolving_mode_id_mapping;
 
-
-    //  bad fix, it is to be removed! To determine is it started from run.sh or from spades.py
-    bool run_mode;
-    bool scaffold_correction_mode;
+    pipeline_type mode;
+    bool uneven_depth;
 
     bool developer_mode;
-
-    static const construction_mode_id_mapping FillConstructionModeInfo() {
-        construction_mode_id_mapping::value_type info[] = {
-            construction_mode_id_mapping::value_type("old", con_old),
-            construction_mode_id_mapping::value_type("extension", con_extention), };
-        return construction_mode_id_mapping(info, utils::array_end(info));
-    }
-
-    static const estimation_mode_id_mapping FillEstimationModeInfo() {
-        estimation_mode_id_mapping::value_type info[] = {
-            estimation_mode_id_mapping::value_type("simple", em_simple),
-            estimation_mode_id_mapping::value_type("weighted", em_weighted),
-            estimation_mode_id_mapping::value_type("smoothing", em_smoothing)
-        };
-        return estimation_mode_id_mapping(info, utils::array_end(info));
-    }
-
-    static const resolve_mode_id_mapping FillResolveModeInfo() {
-        resolve_mode_id_mapping::value_type info[] = {
-            resolve_mode_id_mapping::value_type("none", rm_none),
-            resolve_mode_id_mapping::value_type("path_extend", rm_path_extend),
-        };
-
-        return resolve_mode_id_mapping(info, utils::array_end(info));
-    }
-
-    static const single_read_resolving_mode_id_mapping FillSingleReadResolveModeInfo() {
-        single_read_resolving_mode_id_mapping::value_type info[] = {
-            single_read_resolving_mode_id_mapping::value_type("none", sr_none),
-            single_read_resolving_mode_id_mapping::value_type("all", sr_all),
-            single_read_resolving_mode_id_mapping::value_type("only_single_libs", sr_only_single_libs),
-        };
-
-        return single_read_resolving_mode_id_mapping(info, utils::array_end(info));
-    }
-
-    static const construction_mode_id_mapping& construction_mode_info() {
-        static construction_mode_id_mapping con_mode_info =
-                FillConstructionModeInfo();
-        return con_mode_info;
-    }
-
-    static const estimation_mode_id_mapping& estimation_mode_info() {
-        static estimation_mode_id_mapping est_mode_info = FillEstimationModeInfo();
-        return est_mode_info;
-    }
-
-    static const resolve_mode_id_mapping& resolve_mode_info() {
-        static resolve_mode_id_mapping info = FillResolveModeInfo();
-        return info;
-    }
-
-    static const single_read_resolving_mode_id_mapping& single_read_resolve_mode_info() {
-        static single_read_resolving_mode_id_mapping info = FillSingleReadResolveModeInfo();
-        return info;
-    }
-
-    static const std::string& construction_mode_name(construction_mode con_id) {
-        auto it = construction_mode_info().right.find(con_id);
-        VERIFY_MSG(it != construction_mode_info().right.end(),
-                   "No name for construction mode id = " << con_id);
-        return it->second;
-    }
-
-    static construction_mode construction_mode_id(std::string name) {
-        auto it = construction_mode_info().left.find(name);
-        VERIFY_MSG(it != construction_mode_info().left.end(),
-                   "There is no construction mode with name = " << name);
-
-        return it->second;
-    }
-
-    static const std::string& estimation_mode_name(estimation_mode est_id) {
-        auto it = estimation_mode_info().right.find(est_id);
-        VERIFY_MSG(it != estimation_mode_info().right.end(),
-                   "No name for estimation mode id = " << est_id);
-        return it->second;
-    }
-
-    static estimation_mode estimation_mode_id(std::string name) {
-        auto it = estimation_mode_info().left.find(name);
-        VERIFY_MSG(it != estimation_mode_info().left.end(),
-                   "There is no estimation mode with name = " << name);
-
-        return it->second;
-    }
-
-    static const std::string& resolving_mode_name(resolving_mode mode_id) {
-        auto it = resolve_mode_info().right.find(mode_id);
-        VERIFY_MSG(it != resolve_mode_info().right.end(),
-                   "No name for resolving mode id = " << mode_id);
-
-        return it->second;
-    }
-
-    static resolving_mode resolving_mode_id(std::string name) {
-        auto it = resolve_mode_info().left.find(name);
-        VERIFY_MSG(it != resolve_mode_info().left.end(),
-                   "There is no resolving mode with name = " << name);
-
-        return it->second;
-    }
-
-    static const std::string& single_read_resolving_mode_name(single_read_resolving_mode mode_id) {
-        auto it = single_read_resolve_mode_info().right.find(mode_id);
-        VERIFY_MSG(it != single_read_resolve_mode_info().right.end(),
-                   "No name for single read resolving mode id = " << mode_id);
-
-        return it->second;
-    }
-
-    static single_read_resolving_mode single_read_resolving_mode_id(std::string name) {
-        auto it = single_read_resolve_mode_info().left.find(name);
-        VERIFY_MSG(it != single_read_resolve_mode_info().left.end(),
-                   "There is no resolving mode with name = " << name);
-
-        return it->second;
-    }
 
     struct simplification {
         struct tip_clipper {
@@ -214,6 +193,9 @@ struct debruijn_config {
 
         struct complex_tip_clipper {
             bool enabled;
+            double max_relative_coverage;
+            size_t max_edge_len;
+            std::string condition;
         };
 
         struct bulge_remover {
@@ -344,20 +326,22 @@ struct debruijn_config {
         struct early_tip_clipper {
             bool enable;
             boost::optional<size_t> length_bound;
+            early_tip_clipper() : enable(false) {}
         };
 
         construction_mode con_mode;
         early_tip_clipper early_tc;
         bool keep_perfect_loops;
         size_t read_buffer_size;
+        construction() :
+                con_mode(construction_mode::extention),
+                keep_perfect_loops(true),
+                read_buffer_size(0) {}
     };
-    
-    std::string uncorrected_reads;
-    bool need_consensus;
-    double mismatch_ratio;
+
     simplification simp;
-    simplification preliminary_simp;
-    
+    boost::optional<simplification> preliminary_simp;
+
     struct sensitive_mapper {
         size_t k;
     };
@@ -368,7 +352,7 @@ struct debruijn_config {
         double max_distance_coeff_scaff;
         double filter_threshold;
     };
-    
+
     struct smoothing_distance_estimator {
         size_t threshold;
         double range_coeff;
@@ -386,8 +370,8 @@ struct debruijn_config {
         double relative_length_threshold;
         double relative_seq_threshold;
     };
+
     struct plasmid {
-        bool plasmid_enabled;
         size_t long_edge_length;
         size_t edge_length_for_median;
         double relative_coverage;
@@ -397,6 +381,7 @@ struct debruijn_config {
         size_t min_isolated_length;
 
     };
+
     struct pacbio_processor {
   //align and traverse.
       size_t  pacbio_k; //13
@@ -411,84 +396,6 @@ struct debruijn_config {
       size_t pacbio_min_gap_quantity; //2
       size_t contigs_min_gap_quantity; //1
       size_t max_contigs_gap_length; // 10000
-    };
-
-    struct DataSetData {
-        size_t read_length;
-        double avg_read_length;
-        double mean_insert_size;
-        double insert_size_deviation;
-        double insert_size_left_quantile;
-        double insert_size_right_quantile;
-        double median_insert_size;
-        double insert_size_mad;
-        std::map<int, size_t> insert_size_distribution;
-
-        bool binary_coverted;
-        bool single_reads_mapped;
-
-        uint64_t total_nucls;
-        double average_coverage;
-        double pi_threshold;
-
-        std::string paired_read_prefix;
-        std::string single_read_prefix;
-        size_t thread_num;
-
-        DataSetData(): read_length(0), avg_read_length(0.0),
-                mean_insert_size(0.0),
-                insert_size_deviation(0.0),
-                insert_size_left_quantile(0.0),
-                insert_size_right_quantile(0.0),
-                median_insert_size(0.0),
-                insert_size_mad(0.0),
-                binary_coverted(false),
-                single_reads_mapped(false),
-                total_nucls(0),
-                average_coverage(0.0),
-                pi_threshold(0.0) {
-        }
-    };
-
-    struct dataset {
-        io::DataSet<DataSetData> reads;
-
-        size_t max_read_length;
-        double average_coverage;
-        double average_read_length;
-
-        size_t RL() const { return max_read_length; }
-        void set_RL(size_t RL) {
-            max_read_length = RL;
-        }
-
-        double aRL() const { return average_read_length; }
-        void set_aRL(double aRL) {
-            average_read_length = aRL;
-            for (size_t i = 0; i < reads.lib_count(); ++i) {
-                reads[i].data().avg_read_length = aRL;
-            }
-        }
-
-        double avg_coverage() const { return average_coverage; }
-        void set_avg_coverage(double avg_coverage) {
-            average_coverage = avg_coverage;
-            for (size_t i = 0; i < reads.lib_count(); ++i) {
-                reads[i].data().average_coverage = avg_coverage;
-            }
-        }
-
-        bool single_cell;
-        bool rna;
-        bool meta;
-        bool moleculo;
-        std::string reference_genome_filename;
-        std::string reads_filename;
-
-        std::string reference_genome;
-
-        dataset(): max_read_length(0), average_coverage(0.0) {
-        }
     };
 
     struct position_handler {
@@ -550,7 +457,6 @@ struct debruijn_config {
     std::string project_name;
     std::string input_dir;
     std::string output_base;
-    std::string output_root;
     std::string output_dir;
     std::string tmp_dir;
     std::string output_suffix;
@@ -579,7 +485,7 @@ struct debruijn_config {
         std::string genome_file;
     };
 
-    scaffold_correction sc_cor;
+    boost::optional<scaffold_correction> sc_cor;
     truseq_analysis tsa;
     std::string load_from;
 
@@ -592,11 +498,9 @@ struct debruijn_config {
     single_read_resolving_mode single_reads_rr;
     bool use_single_reads;
 
-    bool mismatch_careful;
     bool correct_mismatches;
     bool paired_info_statistics;
     bool paired_info_scaffolder;
-    bool cut_bad_connections;
     bool gap_closer_enable;
 
     size_t max_repeat_length;
@@ -619,7 +523,7 @@ struct debruijn_config {
     estimation_mode est_mode;
     resolving_mode rm;
     path_extend::pe_config::MainPEParamsT pe_params;
-    path_extend::pe_config::MainPEParamsT prelim_pe_params;
+    boost::optional<path_extend::pe_config::MainPEParamsT> prelim_pe_params;
     bool avoid_rc_connections;
 
     construction con;
@@ -636,18 +540,24 @@ struct debruijn_config {
     info_printers_t info_printers;
     kmer_coverage_model kcm;
     bwa_aligner bwa;
-    plasmid pd;
+    boost::optional<plasmid> pd;
     size_t flanking_range;
 
-    bool diploid_mode;
     bool need_mapping;
+
+    debruijn_config() :
+            use_single_reads(false) {
+
+    }
 };
 
+void load(debruijn_config& cfg, const std::vector<std::string> &filenames);
 void load(debruijn_config& cfg, const std::string &filename);
 void load_lib_data(const std::string& prefix);
 void write_lib_data(const std::string& prefix);
+
+} // config
 } // debruijn_graph
 
-typedef config_common::config<debruijn_graph::debruijn_config> cfg;
 
-#endif
+typedef config_common::config<debruijn_graph::config::debruijn_config> cfg;

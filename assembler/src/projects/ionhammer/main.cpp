@@ -31,7 +31,6 @@
 
 #include "version.hpp"
 
-#include <yaml-cpp/yaml.h>
 #include <fstream>
 #include <iomanip>
 
@@ -308,7 +307,7 @@ int main(int argc, char** argv) {
 
     std::string fname = path::append_path(cfg::get().output_dir, "corrected.yaml");
     INFO("Saving corrected dataset description to " << fname);
-    cfg::get().dataset.save(fname);
+    cfg::get_writable().dataset.save(fname);
 
 #if 0
     std::sort(classes.begin(), classes.end(),  UfCmp());
@@ -319,10 +318,7 @@ int main(int argc, char** argv) {
     }
 #endif
   } catch (std::bad_alloc const& e) {
-    std::cerr << "Not enough memory to run BayesHammer. " << e.what() << std::endl;
-    return EINTR;
-  } catch (const YAML::Exception &e) {
-    std::cerr << "Error reading config file: " << e.what() << std::endl;
+    std::cerr << "Not enough memory to run IonHammer. " << e.what() << std::endl;
     return EINTR;
   } catch (std::exception const& e) {
     std::cerr << "Exception caught " << e.what() << std::endl;

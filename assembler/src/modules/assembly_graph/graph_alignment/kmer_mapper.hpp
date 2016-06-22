@@ -1,9 +1,3 @@
-/*
- * kmer_mapper.hpp
- *
- *  Created on: Dec 4, 2013
- *      Author: andrey
- */
 //***************************************************************************
 //* Copyright (c) 2015 Saint Petersburg State University
 //* Copyright (c) 2011-2014 Saint Petersburg Academic University
@@ -14,27 +8,31 @@
 #pragma once
 
 #include "data_structures/sequence/sequence_tools.hpp"
-#include "assembly_graph/paths/path_processor.hpp"
-
 #include "data_structures/sequence/runtime_k.hpp"
+#include "utils/adt/kmer_vector.hpp"
 #include "edge_index.hpp"
 
+#include "kmer_map.hpp"
+
+#include <set>
 #include <cstdlib>
 
 namespace debruijn_graph {
-template<class Graph, class Seq = runtime_k::RtSeq>
+template<class Graph>
 class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     typedef omnigraph::GraphActionHandler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
-    typedef Seq Kmer;
-    typedef typename runtime_k::KmerMap<Kmer, Seq> MapType;
+    typedef runtime_k::RtSeq Kmer;
+    typedef runtime_k::RtSeq Seq;
+    typedef typename Seq::DataType RawSeqData;
 
-    MapType mapping_;
-    size_t k_;
+    unsigned k_;
+    KMerMap mapping_;
     bool verification_on_;
+    bool normalized_;
 
     bool CheckAllDifferent(const Sequence &old_s, const Sequence &new_s) const {
-        set<Kmer> kmers;
+        std::set<Kmer> kmers;
         Kmer kmer = old_s.start<Kmer>(k_) >> 0;
         for (size_t i = k_ - 1; i < old_s.size(); ++i) {
             kmer <<= old_s[i];
@@ -49,47 +47,54 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     }
 
 public:
-
     KmerMapper(const Graph &g, bool verification_on = true) :
-            base(g, "KmerMapper"), mapping_(g.k() + 1), k_(g.k() + 1), verification_on_(verification_on) { }
+            base(g, "KmerMapper"), k_(unsigned(g.k() + 1)), mapping_(k_), verification_on_(verification_on), normalized_(false) {
+    }
 
-    virtual ~KmerMapper() { }
+    virtual ~KmerMapper() {}
 
-    size_t get_k() const { return k_; }
+    unsigned get_k() const { return k_; }
 
-    typename MapType::const_iterator begin() const {
+    auto begin() const -> decltype(mapping_.begin()) {
         return mapping_.begin();
     }
 
-    typename MapType::const_iterator end() const {
+    auto end() const -> decltype(mapping_.end()) {
         return mapping_.end();
     }
 
     void Normalize() {
-        std::vector<Kmer> all;
-        for (auto it = begin(); it != end(); ++it) {
+        if (normalized_)
+            return;
+
+        KMerVector<Kmer> all(k_, size());
+        for (auto it = begin(); it != end(); ++it)
             all.push_back(it->first);
-        }
+
         for (auto it = all.begin(); it != all.end(); ++it) {
-            Normalize(*it);
+            Seq val(k_, it.data());
+            Normalize(val);
         }
+        normalized_ = true;
     }
 
     void Revert(const Kmer &kmer) {
         Kmer old_value = Substitute(kmer);
         if (old_value != kmer) {
             mapping_.erase(kmer);
-            mapping_[old_value] = kmer;
+            mapping_.set(old_value, kmer);
+            normalized_ = false;
         }
     }
 
     void Normalize(const Kmer &kmer) {
-        mapping_[kmer] = Substitute(kmer);
+        mapping_.set(kmer, Substitute(kmer));
     }
 
     bool CheckCanRemap(const Sequence &old_s, const Sequence &new_s) const {
         if (!CheckAllDifferent(old_s, new_s))
             return false;
+
         size_t old_length = old_s.size() - k_ + 1;
         size_t new_length = new_s.size() - k_ + 1;
         UniformPositionAligner aligner(old_s.size() - k_ + 1,
@@ -107,8 +112,7 @@ public:
                 }
             }
             Kmer new_kmer(k_, new_s, new_kmer_offest);
-            auto it = mapping_.find(new_kmer);
-            if (it != mapping_.end()) {
+            if (mapping_.count(new_kmer)) {
                 if (Substitute(new_kmer) != old_kmer) {
                     return false;
                 }
@@ -134,25 +138,25 @@ public:
             size_t old_kmer_offset = i - k_ + 1;
             size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
             if (old_kmer_offset * 2 + 1 == old_length && new_length % 2 == 0) {
-                Kmer middle(unsigned(k_
-                -1), new_s, new_length / 2);
+                Kmer middle(k_-1, new_s, new_length / 2);
                 if (typename Kmer::less2()(middle, !middle)) {
                     new_kmer_offest = new_length - 1 - new_kmer_offest;
                 }
             }
-            Kmer new_kmer(unsigned(k_), new_s, new_kmer_offest);
-            auto it = mapping_.find(new_kmer);
-            if (it != mapping_.end()) {
+            Kmer new_kmer(k_, new_s, new_kmer_offest);
+            if (mapping_.count(new_kmer)) {
                 if (verification_on_)
                     VERIFY(Substitute(new_kmer) == old_kmer);
-                mapping_.erase(it);
+                mapping_.erase(new_kmer);
             }
-            if (old_kmer != new_kmer)
-                mapping_[old_kmer] = new_kmer;
+            if (old_kmer != new_kmer) {
+                mapping_.set(old_kmer, new_kmer);
+                normalized_ = false;
+            }
         }
     }
 
-    virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+    void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) override {
         VERIFY(this->g().EdgeNucls(new_edge) == this->g().EdgeNucls(edge2));
         RemapKmers(this->g().EdgeNucls(edge1), this->g().EdgeNucls(edge2));
     }
@@ -160,45 +164,55 @@ public:
     Kmer Substitute(const Kmer &kmer) const {
         VERIFY(this->IsAttached());
         Kmer answer = kmer;
-        auto it = mapping_.find(answer);
-        while (it != mapping_.end()) {
+        const auto *rawval = mapping_.find(answer);
+        while (rawval != nullptr) {
+            Seq val(k_, rawval);
             if (verification_on_)
-                VERIFY(it.first() != it.second());
-            answer = it.second();
-            it = mapping_.find(answer);
+                VERIFY(answer != val);
+
+            answer = val;
+            rawval = mapping_.find(answer);
         }
         return answer;
     }
 
-    void BinWrite(std::ostream &file) const {
-        u_int32_t size = (u_int32_t) mapping_.size();
-        file.write((const char *) &size, sizeof(u_int32_t));
+    bool CanSubstitute(const Kmer &kmer) const {
+        const auto *rawval = mapping_.find(kmer);
+        return rawval != nullptr;
+    }
 
-        for (auto iter = mapping_.begin(); iter != mapping_.end(); ++iter) {
-            Kmer::BinWrite(file, iter.first());
-            Kmer::BinWrite(file, iter.second());
+    void BinWrite(std::ostream &file) const {
+        uint32_t sz = (uint32_t)size();
+        file.write((const char *) &sz, sizeof(uint32_t));
+
+        for (auto iter = begin(); iter != end(); ++iter) {
+            Kmer::BinWrite(file, iter->first);
+            Kmer::BinWrite(file, iter->second);
         }
     }
 
     void BinRead(std::istream &file) {
-        mapping_.clear();
-        u_int32_t size;
-        file.read((char *) &size, sizeof(u_int32_t));
+        clear();
 
-        for (u_int32_t i = 0; i < size; ++i) {
+        uint32_t size;
+        file.read((char *) &size, sizeof(uint32_t));
+        for (uint32_t i = 0; i < size; ++i) {
             Kmer key(k_);
-            Kmer value(k_);
+            Seq value(k_);
             Kmer::BinRead(file, &key);
-            Kmer::BinRead(file, &value);
-            mapping_[key] = value;
+            Seq::BinRead(file, &value);
+            mapping_.set(key, value);
         }
+        normalized_ = false;
     }
 
-    bool CompareTo(KmerMapper<Graph, Kmer> const &m) {
-        if (mapping_.size() != m.mapping_.size()) {
+    bool CompareTo(KmerMapper<Graph> const &m) {
+        if (size() != m.size()) {
             INFO("Unequal sizes");
+            return false;
         }
-        for (auto iter = mapping_.begin(); iter != mapping_.end(); ++iter) {
+
+        for (auto iter = begin(); iter != end(); ++iter) {
             auto cmp = m.mapping_.find(iter.first());
             if (cmp == m.mapping_.end() || cmp.second() != iter.second()) {
                 return false;
@@ -208,7 +222,8 @@ public:
     }
 
     void clear() {
-        mapping_.clear();
+        normalized_ = false;
+        return mapping_.clear();
     }
 
     size_t size() const {

@@ -1,0 +1,44 @@
+; distance estimator:
+
+de
+{
+    linkage_distance_coeff    0.0
+    max_distance_coeff        2.0
+    max_distance_coeff_scaff  2000.0
+    filter_threshold          2.0
+}
+
+
+ade
+{
+    ;data dividing
+        threshold          80 ;maximal distance between two points in cluster
+
+    ;local maximum seeking
+        range_coeff          0.2 ;data_length*range_coeff := width of the averaging window
+        delta_coeff          0.4 ;data_length*delta_coeff := maximal difference between possible distance and real peak on the graph
+
+    ;fft smoothing
+        percentage          0.01 ;percent of data for baseline subraction
+        cutoff              3 ;the number of the lowest freqs in fourier decomp being taken
+
+    ;other
+        min_peak_points       3 ;the minimal number of points in cluster to be considered
+        inv_density         5.0 ;maximal inverse density of points in cluster to be considered
+
+    ;hard_mode arguments
+        derivative_threshold  0.2 ;threshold for derivative in hard mode
+
+}
+
+; ambiguous pair info checker parameters 
+amb_de {
+    enabled                         false
+    haplom_threshold                500
+    relative_length_threshold       0.8
+    relative_seq_threshold          0.5
+}
+
+sensitive_mapper {
+    k   19
+}

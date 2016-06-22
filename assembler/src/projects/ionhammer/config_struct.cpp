@@ -5,65 +5,80 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "dev_support/openmp_wrapper.h"
 #include "config_struct.hpp"
 
-#include <yaml-cpp/yaml.h>
+#include "dev_support/openmp_wrapper.h"
+
+#include "llvm/Support/YAMLParser.h"
+#include "llvm/Support/YAMLTraits.h"
+
 #include <string>
 
-namespace YAML {
-template<>
-struct convert<hammer_config::HammerStage> {
-  static bool decode(const YAML::Node &node, hammer_config::HammerStage &rhs) {
-    std::string val = node.as<std::string>();
+using namespace llvm;
 
-    if (val == "count") {
-      rhs = hammer_config::HammerStage::KMerCounting;
-      return true;
-    } else if (val == "hamcluster") {
-      rhs = hammer_config::HammerStage::HammingClustering;
-      return true;
-    } else if (val == "subcluster") {
-      rhs = hammer_config::HammerStage::SubClustering;
-      return true;
-    } else if (val == "correct") {
-      rhs = hammer_config::HammerStage::ReadCorrection;
-      return true;
+namespace llvm { namespace yaml {
+template <>
+struct ScalarEnumerationTraits<hammer_config::HammerStage> {
+    static void enumeration(yaml::IO &io, hammer_config::HammerStage &value) {
+        io.enumCase(value, "count",       hammer_config::HammerStage::KMerCounting);
+        io.enumCase(value, "hamcluster",  hammer_config::HammerStage::HammingClustering);
+        io.enumCase(value, "subcluster",  hammer_config::HammerStage::SubClustering);
+        io.enumCase(value, "correct",     hammer_config::HammerStage::ReadCorrection);
+    }
+};
+}}
+
+// FIXME: This is temporary
+class DataSetReader {
+  public:
+    DataSetReader(yaml::IO&) {}
+    DataSetReader(yaml::IO&, io::DataSet<>&) {}
+
+    io::DataSet<> denormalize(yaml::IO &) {
+        return io::DataSet<>(path);
     }
 
-    return false;
-  }
+    std::string path;
 };
-}
 
+namespace llvm { namespace yaml {
+template <>
+struct MappingTraits<hammer_config::hammer_config> {
+    static void mapping(yaml::IO &io, hammer_config::hammer_config &cfg) {
+        yaml::MappingNormalization<DataSetReader, io::DataSet<>> dataset(io, cfg.dataset);
+
+        io.mapRequired("dataset", dataset->path);
+        io.mapOptional("working_dir", cfg.working_dir, std::string("."));
+        io.mapOptional("output_dir", cfg.output_dir, std::string("."));
+        io.mapRequired("hard_memory_limit", cfg.hard_memory_limit);
+        io.mapOptional("count_split_buffer", cfg.count_split_buffer, 0ul);
+        io.mapOptional("max_nthreads", cfg.max_nthreads, 1u);
+        io.mapRequired("kmer_qual_threshold", cfg.kmer_qual_threshold);
+        io.mapRequired("center_qual_threshold", cfg.center_qual_threshold);
+        io.mapRequired("delta_score_threshold", cfg.delta_score_threshold);
+        io.mapRequired("keep_uncorrected_ends", cfg.keep_uncorrected_ends);
+        io.mapRequired("tau", cfg.tau);
+        io.mapOptional("debug_mode", cfg.debug_mode, false);
+        io.mapOptional("start_stage", cfg.start_stage, hammer_config::HammerStage::KMerCounting);
+    }
+};
+}}
 
 namespace hammer_config {
 void load(hammer_config& cfg, const std::string &filename) {
-  YAML::Node config = YAML::LoadFile(filename);
+    ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(filename);
+    if (!Buf)
+        throw(std::string("Failed to load config file ") + filename);
 
-  cfg.dataset.load(config["dataset"].as<std::string>());
+    yaml::Input yin(*Buf.get());
+    yin >> cfg;
 
-  cfg.working_dir = config["working_dir"].as<std::string>(".");
-  cfg.output_dir = config["output_dir"].as<std::string>(".");
+    if (yin.error())
+        throw(std::string("Failed to load config file ") + filename);
 
-  // FIXME: Make trivial deserialization trivial
-  cfg.hard_memory_limit = config["hard_memory_limit"].as<unsigned>();
-
-  cfg.count_split_buffer = config["count_split_buffer"].as<size_t>(0);
-
-  cfg.max_nthreads = config["max_nthreads"].as<unsigned>();
-  // Fix number of threads according to OMP capabilities.
-  cfg.max_nthreads = std::min(cfg.max_nthreads, (unsigned)omp_get_max_threads());
-  // Inform OpenMP runtime about this :)
-  omp_set_num_threads(cfg.max_nthreads);
-
-  cfg.kmer_qual_threshold = config["kmer_qual_threshold"].as<double>();
-  cfg.center_qual_threshold = config["center_qual_threshold"].as<double>();
-  cfg.delta_score_threshold = config["delta_score_threshold"].as<double>();
-  cfg.keep_uncorrected_ends = config["keep_uncorrected_ends"].as<bool>();
-  cfg.tau = config["tau"].as<unsigned>();
-
-  cfg.debug_mode = config["debug_mode"].as<bool>();
-  cfg.start_stage = config["start_stage"].as<HammerStage>();
+    // Fix number of threads according to OMP capabilities.
+    cfg.max_nthreads = std::min(cfg.max_nthreads, (unsigned)omp_get_max_threads());
+    // Inform OpenMP runtime about this :)
+    omp_set_num_threads(cfg.max_nthreads);
 }
 }

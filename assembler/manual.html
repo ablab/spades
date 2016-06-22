@@ -25,8 +25,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;3.3. <a href="#sec3.3">Assembling IonTorrent reads</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;3.4. <a href="#sec3.4">Assembling long Illumina paired reads (2x150 and 2x250)</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;3.5. <a href="#sec3.5">SPAdes output</a><br>
-
-&nbsp;&nbsp;&nbsp;&nbsp;3.6. <a href="#sec3.6">Assembly evaluation</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.6. <a href="#sec3.6">plasmidSPAdes output</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.7. <a href="#sec3.7">Assembly evaluation</a><br>
 4. <a href="#sec4">Citation</a><br>
 5. <a href="#sec5">Feedback and bug reports</a><br>
 <br>
@@ -44,7 +44,9 @@ SPAdes version 3.7.0 was released under GPLv2 on February 24, 2016 and can be do
 <p>
     Version 3.7.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on single-cell and standard bacterial and fungal data sets. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
 <p>
-    SPAdes 3.7.0 also includes metaSPAdes &ndash; a pipeline designed specially for metagenomic data sets. To learn more see <a href="#meta">options</a>.
+    SPAdes 3.7.0 includes metaSPAdes &ndash; a pipeline designed specially for metagenomic data sets. To learn more see <a href="#meta">options</a>.
+<p>
+    Also, SPAdes 3.7.0 includes plasmidSPAdes &ndash; a pipeline designed for extracting and assembling plasmids from WGS data sets. To learn more see <a href="#plasmid">options</a>.
 <p>
     Additionally, SPAdes has a separate modules for assembling highly polymorphic diploid genomes and for TruSeq barcode assembly. For more information see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a> and <a href="truspades_manual.html" target="_blank">truSPAdes manual</a> .
 
@@ -447,6 +449,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
     &nbsp;&nbsp;&nbsp;&nbsp;Specify the output directory. Required option.
 </p>
 
+<a name="sc"></a>
 <p>
     <code>--sc </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;This flag is required for MDA (single-cell) data.
@@ -455,7 +458,14 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 <a name="meta"></a>
 <p>
     <code>--meta </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling metagenomic data sets (runs metaSPAdes). Note, that metaSPAdes supports only a <b>single</b> paired-end library and does not support <a href="#correctoropt">careful mode</a> (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes.
+    &nbsp;&nbsp;&nbsp;&nbsp;This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see <a href="https://arxiv.org/abs/1604.03071">paper</a> for more details). Currently metaSPAdes supports only a <b>single</b> library which has to be <b>paired-end</b> (we hope to remove this restriction soon). It does not support <a href="#correctoropt">careful mode</a> (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
+</p>
+
+<a name="plasmid"></a>
+<p>
+    <code>--plasmid </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see <a href="http://biorxiv.org/content/early/2016/04/20/048942">paper</a> for the algorithm details). Note, that plasmidSPAdes is not compatible with <a href="#meta">metaSPAdes</a>  and <a href="#sc"> single-cell mode</a>. Additionally, we do not recommend to run plasmidSPAdes on more than one library.
+    See <a href="#sec3.6">section 3.6</a> for plasmidSPAdes output details.
 </p>
 
 <p>
@@ -1139,9 +1149,14 @@ The full list of <code>&lt;output_dir></code> content is presented below:
 <p>
     SPAdes will overwrite these files and directories if they exist in the specified <code>&lt;output_dir></code>. 
 
-
 <a name="sec3.6">
-<h3>3.6 Assembly evaluation</h3>
+<h3>3.6 plasmidSPAdes output</h3>
+<p>
+plasmidSPAdes outputs only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see <a href="#sec3.5">previous</a> section), with the following difference. For all contig names in <code>contigs.fasta</code>, <code>scaffolds.fasta</code>  and  <code>assembly_graph.fastg</code> 
+we append suffix <code>_component_X</code>, where <code>X</code> is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id.
+
+<a name="sec3.7">
+<h3>3.7 Assembly evaluation</h3>
 
 <p>
 
@@ -1156,7 +1171,7 @@ The full list of <code>&lt;output_dir></code> content is presented below:
     If you use SPAdes in your research, please include <a href="http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13" target="_blank">Nurk, Bankevich et al., 2013</a> in your reference list. You may also add <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021" target="_blank">Bankevich, Nurk et al., 2012</a> instead.
 
 <p>
-    If you use PacBio or Nanopore reads, you may also cite  <a href="http://bioinformatics.oxfordjournals.org/content/early/2015/11/20/bioinformatics.btv688.short" target="_blank">Antipov et al., 2014</a>. If you use multiple paired-end and/or mate-pair libraries you may also cite papers describing SPAdes repeat resolution algorithms <a href="http://bioinformatics.oxfordjournals.org/content/30/12/i293.short" target="_blank">Prjibelski et al., 2014</a> and <a href="http://bioinformatics.oxfordjournals.org/content/31/20/3262.abstract" target="_blank">Vasilinetc et al., 2015</a>.
+    If you use PacBio or Nanopore reads, you may also cite  <a href="http://bioinformatics.oxfordjournals.org/content/early/2015/11/20/bioinformatics.btv688.short" target="_blank">Antipov et al., 2015</a>. If you use multiple paired-end and/or mate-pair libraries you may also cite papers describing SPAdes repeat resolution algorithms <a href="http://bioinformatics.oxfordjournals.org/content/30/12/i293.short" target="_blank">Prjibelski et al., 2014</a> and <a href="http://bioinformatics.oxfordjournals.org/content/31/20/3262.abstract" target="_blank">Vasilinetc et al., 2015</a>. If you use plasmidSPAdes please cite <a href="http://biorxiv.org/content/early/2016/04/20/048942">Antipov et al., 2016</a>.
 
 <p>  
     For the information about dipSPAdes and truSPAdes papers see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a> and <a href="truspades_manual.html" target="_blank">truSPAdes manual</a> respectively.

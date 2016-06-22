@@ -1,0 +1,12 @@
+mode    plasmid
+
+plasmid 
+{
+    long_edge_length 1000
+    edge_length_for_median 10000
+    relative_coverage 0.3
+    small_component_size 10000
+    small_component_relative_coverage 2
+    min_component_length 10000
+    min_isolated_length 1000
+}

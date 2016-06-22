@@ -43,7 +43,7 @@ inline int median(const vector<int>& dist, const vector<double>& w, int min, int
             }
         }
     }
-    assert(false);
+    VERIFY(false);
     return -1;
 }
 
@@ -300,6 +300,7 @@ public:
     }
 
     std::vector<EdgeWithPairedInfo> FindCoveredEdges(const BidirectionalPath& path, EdgeId candidate) const override {
+        VERIFY(read_length_ != -1ul);
         double estimated_coverage = EstimatePathCoverage(path);
         VERIFY(math::gr(estimated_coverage, 0.));
 
@@ -322,46 +323,40 @@ class MetagenomicWeightCounter: public WeightCounter {
 
 public:
 
+    //negative raw_threshold leads to the halt if no sufficiently long edges are in the path
     MetagenomicWeightCounter(const Graph& g, const shared_ptr<PairedInfoLibrary>& lib,
-                             size_t read_length, double normalized_threshold, double raw_threshold, 
+                             size_t read_length, double normalized_threshold, double raw_threshold,
                              size_t estimation_edge_length = LENGTH_BOUND) :
             WeightCounter(g, lib) {
         cov_info_provider_ = make_shared<CoverageAwareIdealInfoProvider>(g, lib, read_length, estimation_edge_length);
         normalizing_wc_ = make_shared<PathCoverWeightCounter>(g, lib, true, normalized_threshold, cov_info_provider_);
-        raw_wc_ = make_shared<PathCoverWeightCounter>(g, lib, false, raw_threshold);
+        if (math::ge(raw_threshold, 0.)) {
+            raw_wc_ = make_shared<PathCoverWeightCounter>(g, lib, false, raw_threshold);
+        }
     }
 
     double CountWeight(const BidirectionalPath& path, EdgeId e,
             const std::set<size_t>& excluded_edges, int gap = 0) const override {
         if (math::gr(cov_info_provider_->EstimatePathCoverage(path), 0.)) {
             return normalizing_wc_->CountWeight(path, e, excluded_edges, gap);
-        } else {
+        } else if (raw_wc_) {
             return raw_wc_->CountWeight(path, e, excluded_edges, gap);
+        } else {
+            return 0.;
         }
     }
 
     std::set<size_t> PairInfoExist(const BidirectionalPath& path, EdgeId e, 
                                     int gap = 0) const override {
+        static std::set<size_t> empty;
         if (math::gr(cov_info_provider_->EstimatePathCoverage(path), 0.)) {
             return normalizing_wc_->PairInfoExist(path, e, gap);
-        } else {
+        } else if (raw_wc_) {
             return raw_wc_->PairInfoExist(path, e, gap);
+        } else {
+            return empty;
         }
     }
-};
-
-struct PathsPairIndexInfo {
-    PathsPairIndexInfo(size_t edge1_, size_t edge2_, double w_, double dist_)
-            : edge1(edge1_),
-              edge2(edge2_),
-              w(w_),
-              dist(dist_) {
-
-    }
-    size_t edge1;
-    size_t edge2;
-    double w;
-    double dist;
 };
 
 class PathsWeightCounter {
@@ -402,6 +397,7 @@ private:
     size_t min_read_count_;
     DECL_LOGGER("WeightCounter");
 };
+
 inline PathsWeightCounter::PathsWeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary>lib, size_t min_read_count):g_(g), lib_(lib), min_read_count_(min_read_count){
 
 }
@@ -485,6 +481,7 @@ inline void PathsWeightCounter::FindPairInfo(EdgeId e1, EdgeId e2, size_t dist,
         result_w = ideal_w;
     }
 }
+
 inline map<size_t, double> PathsWeightCounter::FindPairInfoFromPath(
         const BidirectionalPath& path1, size_t from1, size_t to1,
         const BidirectionalPath& path2, size_t from2, size_t to2) const {
@@ -493,10 +490,12 @@ inline map<size_t, double> PathsWeightCounter::FindPairInfoFromPath(
     FindPairInfo(path1, from1, to1, path2, from2, to2, pi, ideal_pi);
     return pi;
 }
+
 inline void PathsWeightCounter::FindJumpCandidates(EdgeId e, int min_dist, int max_dist, size_t min_len, set<EdgeId>& result) const {
     result.clear();
     lib_->FindJumpEdges(e, result, min_dist, max_dist, min_len);
 }
+
 inline void PathsWeightCounter::FindJumpEdges(EdgeId e, set<EdgeId>& edges, int min_dist, int max_dist, vector<EdgeWithDistance>& result) const {
     result.clear();
 
@@ -511,9 +510,11 @@ inline void PathsWeightCounter::FindJumpEdges(EdgeId e, set<EdgeId>& edges, int 
         }
     }
 }
+
 inline void PathsWeightCounter::SetCommonWeightFrom(size_t iedge, double weight) {
     common_w_[iedge] = weight;
 }
+
 inline void PathsWeightCounter::ClearCommonWeight() {
     common_w_.clear();
 }

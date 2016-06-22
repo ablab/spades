@@ -87,7 +87,7 @@ namespace emphf {
         }
 
         template <typename T, typename Adaptor>
-        uint64_t lookup(T val, Adaptor adaptor)
+        uint64_t lookup(const T &val, Adaptor adaptor)
         {
             using std::get;
             auto hashes = m_hasher(adaptor(val));

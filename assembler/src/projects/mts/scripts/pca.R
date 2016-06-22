@@ -19,7 +19,7 @@ load_binning <- function(canopy_in, canopy_out) {
 load_clusters <- function(canopy_in, canopy_out, int_contigs) {
   data <- load_binning(canopy_in, canopy_out)
   interesting <- read.table(int_contigs)
-  names(interesting) <- c('contig', 'alignment', 'ref')
+  names(interesting) <- c('contig', 'length', 'alignment', 'ref')
   droplevels(merge(x=data, y=interesting, by='contig'))
 }
 

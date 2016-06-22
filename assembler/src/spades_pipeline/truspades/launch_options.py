@@ -26,11 +26,12 @@ class Options:
         self.mode = "run_truspades"
         self.possible_modes = ["run_truspades", "generate_dataset", "construct_subreferences"]
         self.test = False
+        self.clean = False
 
     def __init__(self, argv, bin, home, version):
         if len(argv) == 1:
             print_usage_and_exit(1, version)
-        long_params = "test help-hidden construct-dataset reference= reference-index= do= continue " \
+        long_params = "test clean help-hidden construct-dataset reference= reference-index= do= continue " \
                       "threads= help version dataset= input-dir= additional-options=".split(" ")
         short_params = "o:t:hv"
         self.set_default_options()
@@ -79,6 +80,8 @@ class Options:
                 self.output_dir = value
             elif key == "--threads" or key == "-t":
                 self.threads = int(value)
+            elif key == "--clean":
+                self.clean = True
             elif key == "--help-hidden":
                 print_usage_and_exit(0, self.version, show_hidden=True)
         if not self.mode in self.possible_modes:
@@ -103,8 +106,7 @@ class Options:
 
 
 def print_usage_and_exit(code, version, show_hidden=False):
-    sys.stderr.write("TruSPAdes v" + str(version) +
-                     ": genome assembler designed for short reads produced by Illumina TruSeq Long Read technology\n\n")
+    sys.stderr.write("SPAdes genome assembler v" + str(version) + " [truSPAdes mode]\n\n")
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Basic options:" + "\n")
@@ -132,5 +134,5 @@ def print_usage_and_exit(code, version, show_hidden=False):
 
 
 def print_version_and_exit(version):
-    options_storage.version(version, mode="TruSPAdes")
+    options_storage.version(version, mode="tru")
     sys.exit(0)

@@ -15,7 +15,7 @@
 namespace spades {
     class VariationDetectionStage : public AssemblyStage {
     public:
-        typedef debruijn_graph::debruijn_config::truseq_analysis Config;
+        typedef debruijn_graph::config::debruijn_config::truseq_analysis Config;
     private:
         std::string output_file_;
         const Config &config_;

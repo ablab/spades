@@ -24,7 +24,7 @@ using namespace sam_reader;
 using debruijn_graph::EdgeId;
 
 typedef omnigraph::de::UnclusteredPairedInfoIndexT<debruijn_graph::Graph> PairedInfoIndexT;
-typedef io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> SequencingLibraryT;
+typedef io::SequencingLibrary<debruijn_graph::config::DataSetData> SequencingLibraryT;
 typedef std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
 typedef unordered_map<size_t, debruijn_graph::EdgeId> EdgeIdMap;
 

@@ -17,6 +17,8 @@
 #include "kmer_splitters.hpp"
 #include "edge_position_index.hpp"
 
+#include <folly/SmallLocks.h>
+
 namespace debruijn_graph {
 
 template<class IdType>
@@ -26,11 +28,14 @@ public:
     typedef typename Content::iterator iterator;
     typedef typename Content::const_iterator const_iterator;
     Content content_;
+    folly::MicroSpinLock lock_;
 
     EdgeInfoStorage(const Content &content) : content_(content) {
+        lock_.init();
     }
 
     EdgeInfoStorage() {
+        lock_.init();
     }
 
     EdgeInfo<IdType> &operator[](size_t i) {
@@ -62,7 +67,14 @@ public:
     }
 
     void push_back(const EdgeInfo<IdType> &info) {
+        folly::MSLGuard g(lock_);
         content_.push_back(info);
+    }
+
+    template<class... Args>
+    void emplace_back(Args&&... args) {
+        folly::MSLGuard g(lock_);
+        content_.emplace_back(std::forward<Args>(args)...);
     }
 
     size_t size() const{
@@ -102,7 +114,7 @@ class DeBruijnEdgeMultiIndex : public KeyStoringMap<Seq, EdgeInfoStorage<IdType>
 
   DeBruijnEdgeMultiIndex(unsigned k, const std::string &workdir)
       : base(k, workdir) {
-      INFO("DeBruijnEdgeMultiIndex constructing");
+      INFO("Constructing multi-kmer index");
   }
 
   ~DeBruijnEdgeMultiIndex() {}
@@ -125,22 +137,19 @@ class DeBruijnEdgeMultiIndex : public KeyStoringMap<Seq, EdgeInfoStorage<IdType>
   }
 
   void PutInIndex(const KeyWithHash &kwh, IdType id, size_t offset) {
-    //KeyWithHash kwh = base::ConstructKWH(kmer);
-    if (contains(kwh)) {
+      if (!contains(kwh))
+          return;
+
       EdgeInfoStorage<IdType> &entry = this->get_raw_value_reference(kwh);
-      EdgeInfo<IdType> new_entry;
-      new_entry.edge_id = id;
-      new_entry.offset = (unsigned int) offset;
-      entry.push_back(new_entry);
-    }
+      entry.emplace_back(id, (unsigned int)offset);
   }
 
   const EdgeInfoStorage<IdType> get(const KMer& kmer) const {
-//      VERIFY(this->IsAttached());
       auto kwh = base::ConstructKWH(kmer);
       auto entry = this->get_value(kwh);
       return entry;
   }
+
   //todo delete if equal seems to work improperly!!!
   bool DeleteIfEqual(const KeyWithHash &, IdType) {
       VERIFY(false);

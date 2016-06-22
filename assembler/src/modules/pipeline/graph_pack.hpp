@@ -27,12 +27,13 @@
 namespace debruijn_graph {
 
 /*KmerFree*//*KmerStoring*/
-template<class Graph, class SeqType, class KmerEdgeIndex = KmerStoringEdgeIndex<Graph, SeqType, kmer_index_traits<SeqType>, DefaultStoring>>
+template<class Graph,
+         class KmerEdgeIndex = KmerStoringEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, DefaultStoring>>
 struct graph_pack: private boost::noncopyable {
     typedef Graph graph_t;
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef SeqType seq_t;
+    typedef runtime_k::RtSeq seq_t;
     typedef EdgeIndex<graph_t, seq_t, KmerEdgeIndex> index_t;
     using PairedInfoIndicesT = omnigraph::de::PairedInfoIndicesT<Graph>;
     //typedef omnigraph::de::PairedInfoIndicesT<Graph> PairedInfoIndicesT;
@@ -43,7 +44,7 @@ struct graph_pack: private boost::noncopyable {
 
     graph_t g;
     index_t index;
-    KmerMapper<graph_t, seq_t> kmer_mapper;
+    KmerMapper<graph_t> kmer_mapper;
     FlankingCoverage<graph_t> flanking_cov;
     UnclusteredPairedInfoIndicesT paired_indices;
     PairedInfoIndicesT clustered_indices;
@@ -98,6 +99,9 @@ struct graph_pack: private boost::noncopyable {
     void EnsureBasicMapping() {
         VERIFY(kmer_mapper.IsAttached());
         EnsureIndex();
+        INFO("Normalizing k-mer map. Total " << kmer_mapper.size() << " kmers to process");
+        kmer_mapper.Normalize();
+        INFO("Normalizing done");
     }
 
     void EnsureQuality() {
@@ -147,7 +151,7 @@ struct graph_pack: private boost::noncopyable {
 
 };
 
-typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq, KmerFreeEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, DefaultStoring>> conj_graph_pack;
+typedef graph_pack<ConjugateDeBruijnGraph, KmerFreeEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, DefaultStoring>> conj_graph_pack;
 typedef conj_graph_pack::index_t Index;
 
 typedef conj_graph_pack::PairedInfoIndicesT PairedIndicesT;

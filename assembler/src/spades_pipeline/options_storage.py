@@ -10,6 +10,7 @@
 import os
 import sys
 import support
+from os.path import basename
 
 SUPPORTED_PYTHON_VERSIONS = ['2.4', '2.5', '2.6', '2.7', '3.2', '3.3', '3.4', '3.5']
 # allowed reads extensions for BayesHammer and for thw whole SPAdes pipeline
@@ -149,34 +150,50 @@ reads_options = list(map(lambda x: "--" + x.split('=')[0], reads_options))
 reads_options += OLD_STYLE_READS_OPTIONS
 
 
+def get_mode():
+    mode = None
+    if basename(sys.argv[0]) == "rnaspades.py":
+        mode = 'rna'
+    elif basename(sys.argv[0]) == "plasmidspades.py":
+        mode = 'plasmid'
+    elif basename(sys.argv[0]) == "metaspades.py":
+        mode = 'meta'
+    return mode
+
+
 def version(spades_version, mode=None):
     sys.stderr.write("SPAdes v" + str(spades_version))
+    if mode is None:
+        mode = get_mode()
     if mode is not None:
-        sys.stderr.write(" (" + mode + " mode)")
+        sys.stderr.write(" [" + mode + "SPAdes mode]")
     sys.stderr.write("\n")
     sys.stderr.flush()
 
 
-def usage(spades_version, show_hidden=False, dipspades=False):
-    if not dipspades:
-        sys.stderr.write("SPAdes genome assembler v" + str(spades_version) + "\n\n")
-    else:
-        sys.stderr.write("dipSPAdes v" + str(spades_version) +
-                         ": genome assembler designed for diploid genomes with high heterozygosity rate\n\n")
+def usage(spades_version, show_hidden=False, mode=None):
+    sys.stderr.write("SPAdes genome assembler v" + str(spades_version))
+    if mode is None:
+        mode = get_mode()
+    if mode is not None:
+        sys.stderr.write(" [" + mode + "SPAdes mode]")
+    sys.stderr.write("\n\n")
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Basic options:" + "\n")
     sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
-    if not dipspades:
+    if mode != "dip":
         sys.stderr.write("--sc\t\t\tthis flag is required for MDA (single-cell) data" + "\n")
         sys.stderr.write("--meta\t\t\tthis flag is required for metagenomic sample data" + "\n")
+        sys.stderr.write("--plasmid\tRuns plasmidSPAdes pipeline for plasmid detection \n");
+
     sys.stderr.write("--iontorrent\t\tthis flag is required for IonTorrent data" + "\n")
     sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
     sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
     sys.stderr.write("-v/--version\t\tprints version" + "\n")
 
     sys.stderr.write("" + "\n")
-    if not dipspades:
+    if mode != "dip":
         sys.stderr.write("Input data:" + "\n")
     else:
         sys.stderr.write("Input reads:" + "\n")
@@ -226,18 +243,18 @@ def usage(spades_version, show_hidden=False, dipspades=False):
     sys.stderr.write("--nanopore\t<filename>\tfile with Nanopore reads\n")
     sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")
     sys.stderr.write("--untrusted-contigs\t<filename>\tfile with untrusted contigs\n")
-    if dipspades:
+    if mode == "dip":
         sys.stderr.write("Input haplocontigs:" + "\n")
         sys.stderr.write("--hap\t<filename>\tfile with haplocontigs" + "\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Pipeline options:" + "\n")
-    if not dipspades:
+    if mode != "dip":
         sys.stderr.write("--only-error-correction\truns only read error correction"\
                              " (without assembling)" + "\n")
     sys.stderr.write("--only-assembler\truns only assembling (without read error"\
                          " correction)" + "\n")
-    if not dipspades:
+    if mode != "dip":
         sys.stderr.write("--careful\t\ttries to reduce number"\
                              " of mismatches and short indels" + "\n")
         sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
@@ -247,7 +264,7 @@ def usage(spades_version, show_hidden=False, dipspades=False):
     sys.stderr.write("--disable-rr\t\tdisables repeat resolution stage"\
                      " of assembling" + "\n")
 
-    if dipspades:
+    if mode == "dip":
         sys.stderr.write("" + "\n")
         sys.stderr.write("DipSPAdes options:" + "\n")
         sys.stderr.write("--expect-gaps\t\tindicates that significant number of gaps in coverage is expected" + "\n")
@@ -294,10 +311,9 @@ def usage(spades_version, show_hidden=False, dipspades=False):
                              " for SPAdes" + "\n")
         sys.stderr.write("--large-genome\tEnables optimizations for large genomes \n");
         sys.stderr.write("--rna\tRuns rnaSPAdes pipeline for RNA-Seq data \n");
-        sys.stderr.write("--plasmid\tRuns plasmidSPAdes pipeline for plasmid detection \n");
         sys.stderr.write("--help-hidden\tprints this usage message with all hidden options" + "\n")
 
-    if show_hidden and dipspades:
+    if show_hidden and mode == "dip":
         sys.stderr.write("" + "\n")
         sys.stderr.write("HIDDEN dipSPAdes options:" + "\n")
         sys.stderr.write("--dsK\t\t<int>\t\tk value used in dipSPAdes [default: '55']" + '\n')

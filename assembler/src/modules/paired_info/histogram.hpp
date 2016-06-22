@@ -172,7 +172,10 @@ public:
 
 template<typename T>
 inline std::ostream &operator<<(std::ostream &os, const Histogram<T> &b) {
-    os << b;
+    os << "{";
+    for (const auto& e : b)
+        os << e << "; ";
+    os << "}";
     return os;
 }
 

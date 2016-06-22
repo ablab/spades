@@ -252,9 +252,9 @@ struct detail_info_printer {
                folder_(folder) {
     }
 
-    void operator() (info_printer_pos pos,
+    void operator() (config::info_printer_pos pos,
                     const string& folder_suffix = "") {
-        string pos_name = details::info_printer_pos_name(pos);
+        string pos_name = ModeName(pos, config::InfoPrinterPosNames());
 
         ProduceDetailedInfo(pos_name + folder_suffix, pos);
     }
@@ -262,15 +262,15 @@ struct detail_info_printer {
   private:
 
     void ProduceDetailedInfo(const string &pos_name,
-                             info_printer_pos pos) {
+                             config::info_printer_pos pos) {
         static size_t call_cnt = 0;
         ++call_cnt;
 
         auto it = cfg::get().info_printers.find(pos);
         VERIFY(it != cfg::get().info_printers.end());
-
-        const debruijn_config::info_printer & config = it->second;
-
+    
+        const config::debruijn_config::info_printer & config = it->second;
+    
         if (config.basic_stats) {
             VertexEdgeStat<conj_graph_pack::graph_t> stats(gp_.g);
             INFO("Number of vertices : " << stats.vertices() << ", number of edges : "
@@ -297,7 +297,7 @@ struct detail_info_printer {
             string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
                                                   ToString(call_cnt++, 2) + "_" + pos_name + "/");
             path::make_dirs(saves_folder);
-            write_lib_data(saves_folder + "lib_info");
+            config::write_lib_data(saves_folder + "lib_info");
         }
 
         if (config.extended_stats) {
@@ -372,7 +372,7 @@ struct detail_info_printer {
                          boost::is_any_of(" ,"), boost::token_compress_on);
             for (auto it = positions.begin(); it != positions.end(); ++it) {
                 boost::optional<runtime_k::RtSeq> close_kp1mer = FindCloseKP1mer(gp_,
-                                                                             boost::lexical_cast<int>(*it), gp_.k_value);
+                                                                                 std::stoi(*it), gp_.k_value);
                 if (close_kp1mer) {
                     string locality_folder = path::append_path(pos_loc_folder, *it + "/");
                     make_dir(locality_folder);
@@ -380,7 +380,7 @@ struct detail_info_printer {
                 } else {
                     WARN(
                         "Failed to find genome kp1mer close to the one at position "
-                        << *it << " in the graph. Which is " << runtime_k::RtSeq (gp_.k_value + 1, gp_.genome.GetSequence(), boost::lexical_cast<int>(*it)));
+                        << *it << " in the graph. Which is " << runtime_k::RtSeq (gp_.k_value + 1, gp_.genome.GetSequence(), std::stoi(*it)));
                 }
             }
         }

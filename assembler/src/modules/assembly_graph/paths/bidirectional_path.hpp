@@ -990,6 +990,9 @@ public:
         DEBUG ("try to delete empty paths");
         for (Iterator iter = begin(); iter != end();) {
             if (iter.get()->Size() == 0) {
+                // FIXME: This is trash. PathContainer should own paths
+                delete iter.get();
+                delete iter.getConjugate();
                 iter = erase(iter);
             } else {
                 ++iter;

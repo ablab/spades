@@ -54,7 +54,7 @@ inline void DebugOutputPaths(const conj_graph_pack& gp,
 
     DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(gp.g);
     DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(gp.g, corrector);
-    ContigWriter writer(gp.g, constructor);
+    ContigWriter writer(gp.g, constructor, gp.components);
 
     string etcDir = GetEtcDir(output_dir);
     if (!cfg::get().pe_params.debug_output) {
@@ -107,8 +107,7 @@ inline void OutputBrokenScaffolds(PathContainer& paths, int k,
 
     int min_gap = cfg::get().pe_params.obs == obs_break_all ? k / 2 : k;
 
-    ScaffoldBreaker breaker(min_gap);
-    breaker.Split(paths);
+    ScaffoldBreaker breaker(min_gap, paths);
     breaker.container().SortByLength();
     writer.OutputPaths(breaker.container(), filename);
 }
@@ -129,41 +128,6 @@ inline void AddPathsToContainer(const conj_graph_pack& gp,
         result.AddPair(new_path, conj_path);
     }
     DEBUG("Long reads paths " << result.size() << " == ");
-}
-
-double GetSingleReadsFilteringThreshold(const io::LibraryType& type) {
-    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
-        return cfg::get().pe_params.long_reads.pacbio_reads.filtering;
-    }  else if (type == io::LibraryType::PathExtendContigs){
-        return cfg::get().pe_params.long_reads.meta_contigs.filtering;
-    } else if (io::SequencingLibraryBase::IsContigLib(type)) {
-        return cfg::get().pe_params.long_reads.contigs.filtering;
-    }
-    return cfg::get().pe_params.long_reads.single_reads.filtering;
-}
-
-double GetSingleReadsWeightPriorityThreshold(const io::LibraryType& type) {
-    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
-        return cfg::get().pe_params.long_reads.pacbio_reads.weight_priority;
-    } else if (type == io::LibraryType::PathExtendContigs){
-        return cfg::get().pe_params.long_reads.meta_contigs.weight_priority;
-    } else if (io::SequencingLibraryBase::IsContigLib(type)) {
-        return cfg::get().pe_params.long_reads.contigs.weight_priority;
-    }
-    return cfg::get().pe_params.long_reads.single_reads.weight_priority;
-}
-
-double GetSingleReadsUniqueEdgePriorityThreshold(const io::LibraryType& type) {
-    if (cfg::get().ds.single_cell &&
-            (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads)) {
-        return 10000.0;
-    }
-    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
-        return cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority;
-    } else if (io::SequencingLibraryBase::IsContigLib(type)) {
-        return cfg::get().pe_params.long_reads.contigs.unique_edge_priority;
-    }
-    return cfg::get().pe_params.long_reads.single_reads.unique_edge_priority;
 }
 
 bool HasOnlyMPLibs() {
@@ -256,7 +220,7 @@ inline void TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map, sha
     paths.SortByLength();
 }
 
-inline bool IsForSingleReadExtender(const io::SequencingLibrary<debruijn_config::DataSetData> &lib) {
+inline bool IsForSingleReadExtender(const io::SequencingLibrary<config::DataSetData> &lib) {
     io::LibraryType lt = lib.type();
     return (lib.data().single_reads_mapped ||
             lt == io::LibraryType::PacBioReads ||
@@ -265,22 +229,22 @@ inline bool IsForSingleReadExtender(const io::SequencingLibrary<debruijn_config:
             lib.is_contig_lib());
 }
 
-inline bool IsForPEExtender(const io::SequencingLibrary<debruijn_config::DataSetData> &lib) {
+inline bool IsForPEExtender(const io::SequencingLibrary<config::DataSetData> &lib) {
     return (lib.type() == io::LibraryType::PairedEnd &&
             lib.data().mean_insert_size > 0.0);
 }
 
-inline bool IsForShortLoopExtender(const io::SequencingLibrary<debruijn_config::DataSetData> &lib) {
+inline bool IsForShortLoopExtender(const io::SequencingLibrary<config::DataSetData> &lib) {
     return (lib.type() == io::LibraryType::PairedEnd &&
             lib.data().mean_insert_size > 0.0);
 }
 
-inline bool IsForScaffoldingExtender(const io::SequencingLibrary<debruijn_config::DataSetData> &lib) {
+inline bool IsForScaffoldingExtender(const io::SequencingLibrary<config::DataSetData> &lib) {
     return (lib.type() == io::LibraryType::PairedEnd &&
             lib.data().mean_insert_size > 0.0);
 }
 
-inline bool IsForMPExtender(const io::SequencingLibrary<debruijn_config::DataSetData> &lib) {
+inline bool IsForMPExtender(const io::SequencingLibrary<config::DataSetData> &lib) {
     return lib.data().mean_insert_size > 0.0 &&
             (lib.type() == io::LibraryType::HQMatePairs ||
              lib.type() == io::LibraryType::MatePairs);
@@ -329,24 +293,44 @@ inline shared_ptr<PairedInfoLibrary> MakeNewLib(const conj_graph_pack::graph_t& 
                                                                                     lib.data().insert_size_distribution);
 }
 
-inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t lib_index,
-                                                        const pe_config::ParamSetT& pset) {
+pe_config::LongReads GetLongReadsConfig(const io::LibraryType& type) {
+    auto long_reads = cfg::get().pe_params.long_reads;
+    if (io::SequencingLibraryBase::is_long_read_lib(type)) {
+        return long_reads.pacbio_reads;
+    } else if (type == io::LibraryType::PathExtendContigs){
+        return long_reads.meta_contigs;
+    } else if (io::SequencingLibraryBase::is_contig_lib(type)) {
+        return long_reads.contigs;
+    }
+    return long_reads.single_reads;
+}
+
+inline shared_ptr<ExtensionChooser> MakeLongReadsExtensionChooser(const conj_graph_pack& gp, 
+                                                                  size_t lib_index, 
+                                                                  size_t max_repeat_length) {
     PathContainer paths;
     AddPathsToContainer(gp, gp.single_long_reads[lib_index].GetAllPaths(), 1, paths);
 
-    const auto& lib = cfg::get().ds.reads[lib_index];
-    shared_ptr<ExtensionChooser> longReadEC =
-            make_shared<LongReadsExtensionChooser>(gp.g, paths, GetSingleReadsFilteringThreshold(lib.type()),
-                                                   GetSingleReadsWeightPriorityThreshold(lib.type()),
-                                                   GetSingleReadsUniqueEdgePriorityThreshold(lib.type()),
-                                                   pset.extension_options.max_repeat_length);
+    auto long_reads_config = GetLongReadsConfig(cfg::get().ds.reads[lib_index].type());
+    return make_shared<LongReadsExtensionChooser>(gp.g, paths, long_reads_config.filtering,
+                                                  long_reads_config.weight_priority,
+                                                  long_reads_config.unique_edge_priority,
+                                                  long_reads_config.min_significant_overlap,
+                                                  max_repeat_length);
+}
 
+inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, 
+                                                        size_t lib_index,
+                                                        const pe_config::ParamSetT& pset) {
+    const auto& lib = cfg::get().ds.reads[lib_index];
     size_t resolvable_repeat_length_bound = 10000ul;
     if (!lib.is_contig_lib()) {
         resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().read_length);
     }
     INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
-    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, resolvable_repeat_length_bound,
+
+    auto long_read_ec = MakeLongReadsExtensionChooser(gp, lib_index, pset.extension_options.max_repeat_length);
+    return make_shared<SimpleExtender>(gp, cov_map, long_read_ec, resolvable_repeat_length_bound,  
             pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(lib.type()));
 }
 
@@ -361,18 +345,24 @@ inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& 
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
 
+inline shared_ptr<SimpleExtensionChooser> MakeMetaExtensionChooser(const conj_graph_pack& gp,
+                                                                   shared_ptr<PairedInfoLibrary> lib,
+                                                                   const pe_config::ParamSetT& pset) {
+    VERIFY(cfg::get().mode == config::pipeline_type::meta);
+    VERIFY(!lib->IsMp());
+    shared_ptr<WeightCounter> wc = make_shared<MetagenomicWeightCounter>(gp.g, lib, /*read_length*/cfg::get().ds.RL(),
+        /*normalized_threshold*/ 0.3, /*raw_threshold*/ 3, /*estimation_edge_length*/ 300);
+    return make_shared<SimpleExtensionChooser>(gp.g, wc,
+                                               pset.extension_options.weight_threshold,
+                                               pset.extension_options.priority_coeff);
+}
 
 inline shared_ptr<SimpleExtender> MakeMetaExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                        size_t lib_index, const pe_config::ParamSetT& pset, bool investigate_loops) {
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
-    VERIFY(!lib->IsMp());
-
-    shared_ptr<WeightCounter> wc = make_shared<MetagenomicWeightCounter>(gp.g, lib, /*read_length*/cfg::get().ds.RL(),
-                            /*normalized_threshold*/ 0.3, /*raw_threshold*/ 3, /*estimation_edge_length*/ 300);
-    shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc,
-                                                        pset.extension_options.weight_threshold,
-                                                        pset.extension_options.priority_coeff);
-    return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
+    return make_shared<SimpleExtender>(gp, cov_map, MakeMetaExtensionChooser(gp, lib, pset),
+                                       lib->GetISMax(), pset.loop_removal.max_loops,
+                                       investigate_loops, false);
 }
 
 inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
@@ -382,7 +372,7 @@ inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, cons
     INFO("Threshold for lib #" << lib_index << ": " << lib->GetSingleThreshold());
 
     shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, pset.normalize_weight);
-    shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc, GetWeightThreshold(lib, pset), GetPriorityCoeff(lib, pset));
+    auto extension = make_shared<SimpleExtensionChooser>(gp.g, wc, GetWeightThreshold(lib, pset), GetPriorityCoeff(lib, pset));
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
 
@@ -469,10 +459,13 @@ inline shared_ptr<SimpleExtender> MakeMPExtender(const conj_graph_pack& gp, cons
 
 inline shared_ptr<SimpleExtender> MakeCoordCoverageExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                        const pe_config::ParamSetT& pset) {
-    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.paired_indices, 0);
-    CoverageAwareIdealInfoProvider provider(gp.g, lib, 1000, 2000);
-    shared_ptr<CoordinatedCoverageExtensionChooser> chooser = make_shared<CoordinatedCoverageExtensionChooser>(gp.g, provider,
-            pset.coordinated_coverage.max_edge_length_in_repeat, pset.coordinated_coverage.delta);
+    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, 0);
+    CoverageAwareIdealInfoProvider provider(gp.g, lib, -1ul, 0);
+    auto coord_chooser = make_shared<CoordinatedCoverageExtensionChooser>(gp.g, provider,
+                                                                          pset.coordinated_coverage.max_edge_length_in_repeat,
+                                                                          pset.coordinated_coverage.delta,
+                                                                          pset.coordinated_coverage.min_path_len);
+    auto chooser = make_shared<JointExtensionChooser>(gp.g, MakeMetaExtensionChooser(gp, lib, pset), coord_chooser);
     return make_shared<SimpleExtender>(gp, cov_map, chooser, -1ul, pset.loop_removal.mp_max_loops, true, false);
 }
 
@@ -489,27 +482,19 @@ inline shared_ptr<SimpleExtender> MakeRNAExtender(const conj_graph_pack& gp, con
 
 inline shared_ptr<SimpleExtender> MakeRNALongReadsExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t lib_index,
                                                         const pe_config::ParamSetT& pset) {
-    VERIFY_MSG(false, "Long reads rna extender us not implemented yet")
-    PathContainer paths;
-    AddPathsToContainer(gp, gp.single_long_reads[lib_index].GetAllPaths(), 1, paths);
+    VERIFY_MSG(false, "Long reads rna extender is not implemented yet")
 
     const auto& lib = cfg::get().ds.reads[lib_index];
-    shared_ptr<ExtensionChooser> longReadEC =
-        make_shared<LongReadsExtensionChooser>(gp.g, paths, GetSingleReadsFilteringThreshold(lib.type()),
-                                               GetSingleReadsWeightPriorityThreshold(lib.type()),
-                                               GetSingleReadsUniqueEdgePriorityThreshold(lib.type()),
-                                               pset.extension_options.max_repeat_length);
-
     size_t resolvable_repeat_length_bound = 10000ul;
     if (!lib.is_contig_lib()) {
         resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().read_length);
     }
     INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
-    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, resolvable_repeat_length_bound,
+
+    auto long_reads_ec = MakeLongReadsExtensionChooser(gp, lib_index, pset.extension_options.max_repeat_length);
+    return make_shared<SimpleExtender>(gp, cov_map, long_reads_ec, resolvable_repeat_length_bound,
                                        pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(lib.type()));
 }
-
-
 
 inline bool InsertSizeCompare(const shared_ptr<PairedInfoLibrary> lib1,
                               const shared_ptr<PairedInfoLibrary> lib2) {
@@ -569,12 +554,12 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             if (IsForPEExtender(lib)) {
                 ++pe_libs;
                 if (IsPEStage(stage) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
-                    if (cfg::get().ds.meta)
+                    if (cfg::get().mode == config::pipeline_type::meta)
                         //TODO proper configuration via config
                         pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, false));
-                    else if (cfg::get().ds.moleculo)
+                    else if (cfg::get().mode == config::pipeline_type::moleculo)
                         pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, false));
-                    else if (cfg::get().ds.rna && !IsPolishingStage(stage))
+                    else if (cfg::get().mode == config::pipeline_type::rna && !IsPolishingStage(stage))
                         pes.push_back(MakeRNAExtender(gp, cov_map, i, pset, false));
                     else
                         pes.push_back(MakePEExtender(gp, cov_map, i, pset, false));
@@ -583,10 +568,11 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                     pes2015.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
             }
+            //FIXME logic is very cryptic!
             if (IsForShortLoopExtender(lib) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
-                if (cfg::get().ds.meta)
+                if (cfg::get().mode == config::pipeline_type::meta)
                     pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, true));
-                else if (cfg::get().ds.rna && !IsPolishingStage(stage))
+                else if (cfg::get().mode == config::pipeline_type::rna && !IsPolishingStage(stage))
                     pes.push_back(MakeRNAExtender(gp, cov_map, i, pset, true));
                 else
                     pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));
@@ -630,7 +616,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     INFO("Using " << single_read_libs << " single read " << LibStr(single_read_libs));
     INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
 
-    if(pset.use_coordinated_coverage) {
+    if (pset.use_coordinated_coverage) {
         INFO("Using additional coordinated coverage extender");
         result.push_back(MakeCoordCoverageExtender(gp, cov_map, pset));
     }
@@ -895,6 +881,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     writer.OutputPaths(paths, output_dir + (mp_exist ? "pe_scaffolds" : contigs_name));
 
     cover_map.Clear();
+    seeds.DeleteAllPaths();
     paths.DeleteAllPaths();
     if (!mp_exist) {
         return;

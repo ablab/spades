@@ -26,7 +26,7 @@ METAQUAST = QUAST.replace("quast.py", "metaquast.py")
 K = int(config.get("K", 55))
 small_k = int(config.get("small_k", 21))
 CONFIG = "K{0}/configs/config.info".format(K)
-SAVES = "K{0}/saves/07_before_repeat_resolution/graph_pack".format(K)
+SAVES = "K{0}/saves/09_before_repeat_resolution/graph_pack".format(K)
 MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
 CAG = config.get("CAG")
 THREADS = config.get("THREADS", 16)
@@ -34,7 +34,7 @@ THREADS = config.get("THREADS", 16)
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
 CAGS, = glob_wildcards("binning/{cag,CAG\d+}")
-GOOD_CAGS, = glob_wildcards("binning/{cag,CAG\d+}_1.fastq")
+GOOD_CAGS, = glob_wildcards("binning/{cag,CAG\d+}/left.fastq")
 REFS = {os.path.splitext(os.path.basename(fullpath))[0]: fullpath for fullpath in gather_refs(config.get("REFS", []))}
 def ref_path(wildcards):
     return REFS[wildcards.ref]
@@ -44,7 +44,7 @@ FINISHED_BINNING = "binning/all.log"
 FINISHED_CHOOSING = "binning/choose_all.log"
 
 onstart:
-    for dir in ["annotation", "assembly", "canopy", "profile",
+    for dir in ["annotation", "assembly", "profile",
                 "reassembly", "stats", "stats/summary", "tmp"]:
         try:
             os.mkdir(dir)
@@ -110,13 +110,13 @@ rule profile:
 
 rule canopy_pre:
     input:   expand("profile/{sample}.id", sample=SAMPLES)
-    output:  "canopy/canopy.in"
+    output:  "profile/canopy.in"
     message: "Preparing canopy input"
     shell:   "{SCRIPTS}/make_canopy_input.py {output} {input}"
 
 rule canopy:
     input:   rules.canopy_pre.output
-    output:  out = "canopy/canopy.out", prof = "canopy/canopy.prof"
+    output:  out = "profile/canopy.out", prof = "profile/canopy.prof"
     message: "Running canopy clustering"
     shell:   "{SCRIPTS}/canopy_launch.sh {input} {output.out} {output.prof}"
 
@@ -197,20 +197,19 @@ rule reassemble_all:
 rule quast_all_samples:
     input:   ref=ref_path, contigs=expand("assembly/{sample}.fasta", sample=SAMPLES)
     output:  "stats/summary/q_{ref}.tsv"
-    params:  "stats/q_{ref}"
-    log:     "stats/q_{ref}.log"
+    params:  "stats/{ref}"
+    log:     "stats/{ref}/quast.log"
     message: "Aligning all samples on {wildcards.ref}"
-    shell:   "{QUAST} -R {input.ref} {input.contigs} -o {params} >{log} 2>&1 && "
+    shell:   "{QUAST} -R {input.ref} {input.contigs} -o {params} >/dev/null 2>&1 && "
              "cp {params}/report.tsv {output}"
 
 #---- Contigs of interest ------------------------------------------------------
 rule filter_all_samples:
     input:   "stats/summary/q_{ref}.tsv"
     output:  expand("stats/{{ref}}/{sample}.cont", sample=SAMPLES)
-    message: "Filtering interesting contigs from all samples for {wildcards.ref}"
-    params:  "stats/q_{ref}/"
-    shell:   "mkdir -p stats/{wildcards.ref} && "
-             "{SCRIPTS}/filter_nucmer.py {params} {wildcards.ref}.cont 70"
+    message: "Filtering interesting long contigs from all samples for {wildcards.ref}"
+    params:  "stats/{ref}/"
+    shell:   "{SCRIPTS}/filter_nucmer.py {params} {MIN_CONTIG_LENGTH} 70"
 
 #---- GF of combined sample ----------------------------------------------------
 rule combine_filtered:

@@ -9,4 +9,4 @@ project(graph_support CXX)
 
 add_library(graph_support STATIC
             components/connected_component.cpp paths/bidirectional_path.cpp graph_support/scaff_supplementary.cpp)
-
+target_link_libraries(graph_support hattrie)

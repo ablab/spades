@@ -22,14 +22,15 @@ class ComplexTipClipper {
     typedef typename Graph::EdgeId EdgeId;
 
     Graph& g_;
-    size_t max_length_;
+    double relative_coverage_treshold_;
+    size_t edge_length_treshold_;
+    size_t max_path_length_;
     string pics_folder_;
     std::function<void(const set<EdgeId>&)> removal_handler_;
-    const size_t edge_length_treshold = 100;
 
     bool CheckEdgeLenghts(const GraphComponent<Graph>& component) const {
         for(auto e : component.edges()) {
-            if(g_.length(e) > edge_length_treshold) {
+            if(g_.length(e) > edge_length_treshold_) {
                 return false;
             }
         }
@@ -49,16 +50,46 @@ class ComplexTipClipper {
 
     bool CheckPathLengths(const map<VertexId, Range>& ranges) const {
         for(auto r : ranges) {
-            if(r.second.start_pos > max_length_) {
+            if(r.second.start_pos > max_path_length_) {
                 return false;
             }
         }
         return true;
     }
 
+    double GetTipCoverage(const GraphComponent<Graph> & component) const {
+        double cov = numeric_limits<double>::max();
+        for(auto edge : component.edges()) {
+            cov = std::min(cov, g_.coverage(edge));
+        }
+        return cov;
+    }
+
+    double GetOutwardCoverage(const GraphComponent<Graph> & component) const {
+        double cov = 0.0;
+        for(auto v : component.vertices()) {
+            for(auto edge : g_.OutgoingEdges(v)) {
+                if(component.contains(edge)) {
+                    cov = max(cov, g_.coverage(edge));
+                }
+            }
+
+            for(auto edge : g_.IncomingEdges(v)) {
+                if(component.contains(edge)) {
+                    cov = max(cov, g_.coverage(edge));
+                }
+            }
+        }
+        return cov;
+    }
+
+    double GetRelativeTipCoverage(const GraphComponent<Graph> & component) const {
+        return GetTipCoverage(component) / GetOutwardCoverage(component);
+    }
+
 public:
-    ComplexTipClipper(Graph& g, size_t max_length, const string& pics_folder = "", std::function<void(const set<EdgeId>&)> removal_handler = 0) :
-            g_(g), max_length_(max_length), pics_folder_(pics_folder), removal_handler_(removal_handler)
+    ComplexTipClipper(Graph& g, double relative_coverage, size_t max_edge_len, size_t max_path_len, const string& pics_folder = "", std::function<void(const set<EdgeId>&)> removal_handler = 0) :
+            g_(g), relative_coverage_treshold_(math::ge(relative_coverage, 0.0) ? relative_coverage : std::numeric_limits<double>::max()), edge_length_treshold_(max_edge_len) ,max_path_length_(max_path_len), pics_folder_(pics_folder), removal_handler_(removal_handler)
     { }
 
     bool Run() {
@@ -75,8 +106,13 @@ public:
             }
             DEBUG("Processing vertex " << g_.str(*it));
 
-            DominatedSetFinder<Graph> dom_finder(g_, *it, max_length_ * 2);
-            dom_finder.FillDominated();
+            DominatedSetFinder<Graph> dom_finder(g_, *it, max_path_length_ * 2);
+
+            if(!dom_finder.FillDominated()) {
+                DEBUG("Tip contains too long paths");
+                continue;
+            }
+
             auto component = dom_finder.AsGraphComponent();
 
             if(!CheckEdgeLenghts(component)) {
@@ -94,6 +130,11 @@ public:
                 continue;
             }
 
+            if(math::ge(GetRelativeTipCoverage(component), relative_coverage_treshold_)) {
+                DEBUG("Tip is too high covered with respect to external edges");
+                continue;
+            }
+
             if (!pics_folder_.empty()) {
                 visualization::WriteComponentSinksSources(component,
                         pics_folder_
@@ -106,8 +147,8 @@ public:
             RemoveComplexTip(component);
         }
         CompressAllVertices(g_);
-        INFO("Complex tip clipper finished");
-        INFO("Tips processed " << cnt);
+        DEBUG("Complex tip clipper finished");
+        DEBUG("Tips processed " << cnt);
         return something_done_flag;
     }
 private:

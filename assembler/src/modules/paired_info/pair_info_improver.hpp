@@ -84,7 +84,7 @@ class PairInfoImprover {
   public:
     PairInfoImprover(const Graph& g,
                      Index& clustered_index,
-                     const io::SequencingLibrary<debruijn_config::DataSetData> &lib)
+                     const io::SequencingLibrary<config::DataSetData> &lib)
             : graph_(g), index_(clustered_index), lib_(lib) { }
 
     void ImprovePairedInfo(unsigned num_threads = 1) {
@@ -271,7 +271,7 @@ class PairInfoImprover {
 
     const Graph& graph_;
     Index& index_;
-    const io::SequencingLibrary<debruijn_config::DataSetData>& lib_;
+    const io::SequencingLibrary<config::DataSetData>& lib_;
 
     DECL_LOGGER("PairInfoImprover")
 };

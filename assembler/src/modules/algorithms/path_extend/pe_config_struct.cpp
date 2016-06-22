@@ -70,6 +70,7 @@ void load(pe_config::ParamSetT::CoordinatedCoverageT& coord_cov,
     using config_common::load;
     load(coord_cov.max_edge_length_in_repeat, pt, "max_edge_length_repeat", complete);
     load(coord_cov.delta, pt, "delta", complete);
+    load(coord_cov.min_path_len, pt, "min_path_len", complete);
 }
 
 void load(pe_config::ParamSetT::ScaffolderOptionsT& so, 
@@ -122,6 +123,8 @@ void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,
     load(p.filtering, pt, "filtering", complete);
     load(p.weight_priority, pt, "weight_priority", complete);
     load(p.unique_edge_priority, pt, "unique_edge_priority", complete);
+    load(p.min_significant_overlap, pt, "min_significant_overlap", complete);
+
 }
 
 void load(pe_config::ParamSetT::Scaffolding2015& p, boost::property_tree::ptree const& pt,

@@ -95,7 +95,7 @@ PathScore GenomeConsistenceChecker::CountMisassembliesWithStrand(const Bidirecti
                     int dist_in_path = (int) path.LengthAt(prev_in_path) - (int) path.LengthAt(i) +  (int) cur_range.mapped_range.start_pos - (int) prev_range.mapped_range.end_pos;
                     DEBUG("Edge " << prev.int_id() << "  position in genome ordering: " << prev_in_genome);
                     DEBUG("Gap in genome / gap in path: " << dist_in_genome << " / " << dist_in_path);
-                    if (abs(dist_in_genome - dist_in_path) >absolute_max_gap_ && (dist_in_genome * (1 + relative_max_gap_) < dist_in_path || dist_in_path * (1 + relative_max_gap_) < dist_in_genome)) {
+                    if (abs(dist_in_genome - dist_in_path) > absolute_max_gap_ && (dist_in_genome * (1 + relative_max_gap_) < dist_in_path || dist_in_path * (1 + relative_max_gap_) < dist_in_genome)) {
 
                         res.wrong_gap_size ++;
                     }

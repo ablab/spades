@@ -25,7 +25,7 @@ struct SimpleStoring {
     }
 
     template<class K, class V>
-    static void  set_value(ValueArray<V> &values, const K& key, const V& value) {
+    static void set_value(ValueArray<V> &values, const K& key, const V& value) {
         values[key.idx()] = value;
     }
 

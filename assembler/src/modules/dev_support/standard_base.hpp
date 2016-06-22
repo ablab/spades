@@ -75,14 +75,12 @@ using std::make_shared;
 
 #include <boost/optional.hpp>
 
-#include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
 
 using boost::optional;
 using boost::make_optional;
 using boost::none;
 
-using boost::lexical_cast;
 using boost::noncopyable;
 
 // err handling

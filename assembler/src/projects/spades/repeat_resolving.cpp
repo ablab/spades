@@ -47,23 +47,17 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
 
     omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
-    printer(ipp_before_repeat_resolution);
+    printer(config::info_printer_pos::before_repeat_resolution);
 
     //todo awful hack to get around PE using cfg::get everywhere...
     auto tmp_params_storage = cfg::get().pe_params;
     if (preliminary_) {
         INFO("Setting up preliminary path extend settings")
-        cfg::get_writable().pe_params = cfg::get().prelim_pe_params;
+        cfg::get_writable().pe_params = *cfg::get().prelim_pe_params;
     }
 
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr", false, 0, false);
     OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph", gp.components);
-
-    //FIXME introduce separate pe config for preliminary mode
-    if (!preliminary_ && cfg::get().ds.meta) {
-        INFO("Coordinated coverage enabled")
-        cfg::get_writable().pe_params.param_set.use_coordinated_coverage = true;
-    }
 
     bool no_valid_libs = !HasValidLibs();
 
@@ -71,11 +65,11 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     if (cfg::get().rr_enable && no_valid_libs && !use_single_reads)
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
 
-    if ((no_valid_libs || cfg::get().rm == debruijn_graph::resolving_mode::rm_none) && !use_single_reads) {
+    if ((no_valid_libs || cfg::get().rm == config::resolving_mode::none) && !use_single_reads) {
         OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", false, 0, false);
         return;
     }
-    if (cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
+    if (cfg::get().rm == config::resolving_mode::path_extend) {
         INFO("Using Path-Extend repeat resolving");
         PEResolving(gp);
     } else {

@@ -1,0 +1,171 @@
+mode    meta
+
+; two-step pipeline
+two_step_rr true
+; enables/disables usage of intermediate contigs in two-step pipeline
+use_intermediate_contigs true
+
+;if true simple mismatches are corrected
+correct_mismatches          false
+
+;flanking coverage range
+flanking_range 30
+
+simp
+{
+    cycle_iter_count 3
+
+    ; enable advanced ec removal algo
+    topology_simplif_enabled false
+
+    ; erroneous connections remover:
+    ec
+    {
+       ; ec_lb: max_ec_length = k + ec_lb
+       ; icb: iterative coverage bound
+       ; condition               "{ ec_lb 30, icb 20.0 }"
+       condition               "{ ec_lb 30, icb 2.5 }"
+    }
+    
+    ; tip clipper:
+    tc
+    {
+        ; rctc: tip_cov < rctc * not_tip_cov
+        ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
+        condition               "{ tc_lb 3.5, , cb 1000000, rctc 2.0 } { tc_lb 6., cb 2.5, rctc 1.0 }"
+    }
+
+    ; relative coverage erroneous component remover:
+    rcc
+    {
+        enabled true
+        coverage_gap    5.
+        max_length_coeff    3.0
+        max_length_with_tips_coeff   5.0
+        max_vertex_cnt      100
+        max_ec_length_coefficient   300
+        max_coverage_coeff  -1.0
+    }
+
+    ; complex tip clipper
+    complex_tc
+    {
+        enabled               true
+    }
+    
+
+
+    ; relative edge disconnector:
+    relative_ed
+    {
+        enabled true
+        diff_mult  10.
+    }
+
+	; bulge remover:
+	br
+	{
+		max_coverage			1000000.0
+		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
+		max_delta			10
+		max_relative_delta		0.1
+        parallel true
+	}
+
+    ; final tip clipper:
+    final_tc
+    {
+        ; rctc: tip_cov < rctc * not_tip_cov
+        ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
+        condition               "{ lb 500, cb 3., rctc 0.7 } { lb 1500, cb 20., rctc 0.2 }"
+    }
+
+    ; final bulge remover:
+    final_br
+    {
+        enabled true
+        main_iteration_only true
+        max_bulge_length_coefficient    50.     ; max_bulge_length = max_bulge_length_coefficient * k
+        max_coverage			1000000.0
+        max_relative_coverage       0.5     ; bulge_cov < this * not_bulge_cov
+        max_delta           50
+        max_relative_delta		0.1
+    }
+
+    ; second final bulge remover:
+    ; only in meta mode, inherits settings of final_br
+    second_final_br
+    {
+        max_delta           1500
+        max_number_edges        3
+    }
+
+    init_clean
+    {
+       early_it_only   true
+       ier {
+           enabled true
+       }
+       tip_condition   "{ tc_lb 3.5, cb 2.0 }"
+       ec_condition    "{ ec_lb 10, cb 0.5 }"
+    }
+
+}
+
+;FIXME rename
+preliminary_simp
+{
+    init_clean
+    {
+        self_conj_condition "{ ec_lb 100, cb 20.0 }"
+        early_it_only   false
+        ier
+        {
+            enabled true
+        }
+        tip_condition   "{ rlmk, cb 1.2, mmm 2 }"
+        ec_condition    "{ ec_lb 0, cb 0.9 }"
+        disconnect_flank_cov    0.8
+    }
+
+    post_simplif_enabled false
+
+	; bulge remover:
+	br
+	{
+		max_coverage			1000000.0
+		max_relative_coverage		0.5		; bulge_cov < this * not_bulge_cov
+		max_delta			10
+		max_relative_delta		0.1
+	}
+	
+}
+
+;NB decsends from sc_pe
+pe {
+params {
+    remove_overlaps     true
+    cut_all_overlaps  true
+
+    ;TODO proper configuration of different extenders is not supported 
+    ;TODO most settings ard hardcoded for now 
+
+    ;normalize_weight        NA
+    extension_options
+    {
+        ;use_default_single_threshold NA
+        ;single_threshold           NA 
+        weight_threshold           0.6
+        max_repeat_length          1000000 
+   }
+    
+    use_coordinated_coverage true
+}
+}
+
+prelim_pe {
+params {
+    use_coordinated_coverage false
+    remove_overlaps     false
+}
+}

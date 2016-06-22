@@ -23,4 +23,4 @@ install(TARGETS dipspades
         COMPONENT runtime)
 install(DIRECTORY "${SPADES_CFG_DIR}/dipspades"
         DESTINATION share/spades/configs
-        FILES_MATCHING PATTERN "*.info.template")
+        FILES_MATCHING PATTERN "*.info")

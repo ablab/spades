@@ -72,6 +72,7 @@ public:
         typedef typename debruijn_graph::EdgeIndexHelper<debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId>>::GraphPositionFillingIndexBuilderT Builder;
 
         Builder().BuildIndexFromGraph(tmp_index, g_);
+        INFO("Index constructed");
         FillBannedKmers();
         compression_cutoff = cfg::get().pb.compression_cutoff;  // 0.6
         domination_cutoff = cfg::get().pb.domination_cutoff;  //1.5

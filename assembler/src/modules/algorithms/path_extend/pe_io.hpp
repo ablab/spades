@@ -30,7 +30,7 @@ protected:
     ContigConstructor<Graph> &constructor_;
     size_t k_;
     map<EdgeId, ExtendedContigIdT> ids_;
-
+    const ConnectedComponentCounter &c_counter_;
     //TODO: add constructor
     string ToString(const BidirectionalPath& path) const {
         stringstream ss;
@@ -90,14 +90,10 @@ protected:
 
 
 public:
-    ContigWriter(const Graph& g, ContigConstructor<Graph> &constructor, const ConnectedComponentCounter &c_counter): g_(g), constructor_(constructor), k_(g.k()), ids_() {
-        MakeContigIdMap(g_, ids_, c_counter);
+    ContigWriter(const Graph& g, ContigConstructor<Graph> &constructor, const ConnectedComponentCounter &c_counter): g_(g), constructor_(constructor), k_(g.k()), ids_(), c_counter_(c_counter) {
+        MakeContigIdMap(g_, ids_, c_counter, "NODE");
     }
 
-    ContigWriter(const Graph& g, ContigConstructor<Graph> &constructor): g_(g), constructor_(constructor), k_(g.k()), ids_() {
-        ConnectedComponentCounter c_counter(g_);
-        MakeContigIdMap(g_, ids_, c_counter);
-    }
 
     void WriteEdges(const string &filename) const {
         INFO("Outputting edges to " << filename);
@@ -189,7 +185,7 @@ public:
                            bool write_fastg = true) const {
 
         INFO("Writing contigs to " << filename_base);
-        io::osequencestream_with_id oss(filename_base + ".fasta");
+        io::osequencestream_simple oss(filename_base + ".fasta");
 
         std::ofstream os_fastg;
         if (write_fastg)
@@ -199,20 +195,26 @@ public:
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             if (iter.get()->Length() <= 0)
                 continue;
-            DEBUG("NODE " << ++i);
+            i++;
+            DEBUG("NODE " << i);
             BidirectionalPath* path = iter.get();
             path->Print();
-            oss.setID((int) path->GetId());
-            oss.setCoverage(path->Coverage());
+            string contig_id;
             string path_string = ToString(*path);
-
+            if (cfg::get().pd) {
+                EdgeId e = path->At(0);
+                size_t component = c_counter_.GetComponent(e);
+                contig_id = io::MakeContigComponentId(i, path_string.length(), path->Coverage(), component);
+            } else {
+                contig_id = io::MakeContigId(i, path_string.length(), path->Coverage());
+            }
+            oss.set_header(contig_id);
             if (write_fastg) {
-                os_fastg << oss.GetId(path_string) << endl;
+                os_fastg << contig_id<< endl;
                 os_fastg << ToFASTGString(*iter.get()) << endl;
-                os_fastg << oss.GetId(path_string) << "'" << endl;
+                os_fastg << contig_id << "'" << endl;
                 os_fastg << ToFASTGString(*iter.getConjugate()) << endl;
             }
-
             oss << path_string;
         }
         if (write_fastg)

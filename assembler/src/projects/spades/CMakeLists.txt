@@ -18,7 +18,7 @@ add_executable(spades main.cpp
             chromosome_removal.cpp)
 
 target_include_directories(spades PRIVATE ${EXT_DIR}/include/ConsensusCore)
-target_link_libraries(spades ConsensusCore spades_modules nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(spades ConsensusCore spades_modules nlopt BamTools ssw ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)
@@ -29,4 +29,4 @@ install(TARGETS spades
         COMPONENT runtime)
 install(DIRECTORY "${SPADES_CFG_DIR}/debruijn"
         DESTINATION share/spades/configs
-        FILES_MATCHING PATTERN "*.info.template")
+        FILES_MATCHING PATTERN "*.info")

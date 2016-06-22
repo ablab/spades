@@ -18,7 +18,7 @@ add_executable(corrector
         config_struct.cpp
         main.cpp)
 
-target_link_libraries(corrector input spades_modules yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(corrector input spades_modules ${COMMON_LIBRARIES})
 
 
 
@@ -31,4 +31,4 @@ install(TARGETS corrector
         COMPONENT runtime)
 install(DIRECTORY "${SPADES_CFG_DIR}/corrector"
         DESTINATION share/spades/configs
-        FILES_MATCHING PATTERN "*.info.template")
+        FILES_MATCHING PATTERN "*.info")

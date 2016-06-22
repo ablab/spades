@@ -17,7 +17,7 @@
 
 namespace debruijn_graph {
 
-typedef io::SequencingLibrary<debruijn_config::DataSetData> SequencingLib;
+typedef io::SequencingLibrary<config::DataSetData> SequencingLib;
 
 bool RefineInsertSizeForLib(conj_graph_pack &gp, size_t ilib, size_t edge_length_threshold) {
 
@@ -58,8 +58,14 @@ void ProcessSingleReads(conj_graph_pack &gp, size_t ilib,
                         bool use_binary = true) {
     const SequencingLib &reads = cfg::get().ds.reads[ilib];
     SequenceMapperNotifier notifier(gp);
-    SimpleLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
-    notifier.Subscribe(ilib, &read_mapper);
+    GappedLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
+    SimpleLongReadMapper simple_read_mapper(gp, gp.single_long_reads[ilib]);
+
+    if(reads.type() == io::LibraryType::PathExtendContigs) {
+        notifier.Subscribe(ilib, &read_mapper);
+    } else {
+        notifier.Subscribe(ilib, &simple_read_mapper);
+    }
 
     auto mapper_ptr = ChooseProperMapper(gp, reads);
     if (use_binary) {
@@ -139,18 +145,21 @@ bool HasOnlyMP() {
 
 //todo improve logic
 bool ShouldMapSingleReads(size_t ilib) {
+    using config::single_read_resolving_mode;
     switch (cfg::get().single_reads_rr) {
-        case sr_none: {
+        case single_read_resolving_mode::none: {
             return false;
         }
-        case sr_all: {
+        case single_read_resolving_mode::all: {
             return true;
         }
-        case sr_only_single_libs: {
+        case single_read_resolving_mode::only_single_libs: {
             //Map when no PacBio/paried libs or only mate-pairs or single lib itself
             return !HasGoodRRLibs() || HasOnlyMP() ||
                    (cfg::get().ds.reads[ilib].type() == io::LibraryType::SingleReads);
         }
+        default:
+            VERIFY_MSG(false, "Invalid mode value");
     }
     return false;
 }
@@ -160,7 +169,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
     gp.EnsureBasicMapping();
 
     //fixme implement better universal logic
-    size_t edge_length_threshold = cfg::get().ds.meta ? 1000 : stats::Nx(gp.g, 50);
+    size_t edge_length_threshold = cfg::get().mode == config::pipeline_type::meta ? 1000 : stats::Nx(gp.g, 50);
     INFO("Min edge length for estimation: " << edge_length_threshold);
     bwa_pair_info::BWAPairInfoFiller bwa_counter(gp.g,
                                                  cfg::get().bwa.path_to_bwa,
@@ -174,8 +183,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
             //Run insert size estimation and pair index filler together to save disc space (removes SAM file right after processing the lib)
             bwa_counter.ProcessLib(i, cfg::get_writable().ds.reads[i], gp.paired_indices[i],
                                    edge_length_threshold, cfg::get().bwa.min_contig_len);
-        }
-        else if (lib.is_paired()) {
+        } else if (lib.is_paired()) {
             INFO("Estimating insert size for library #" << i);
             const auto &lib_data = lib.data();
             size_t rl = lib_data.read_length;
@@ -213,19 +221,23 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
         if (lib.is_pacbio_alignable()) {
             INFO("Library #" << i << " was mapped by PacBio mapper, skipping");
             continue;
-        }
-        else if (lib.is_contig_lib()) {
+        } else if (lib.is_contig_lib()) {
             INFO("Mapping contigs library #" << i);
             ProcessSingleReads(gp, i, false);
-        }
-        else if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
+        } else if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
             INFO("Library #" << i << " was mapped by BWA, skipping");
             continue;
-        }
-        else {
+        } else {
             INFO("Mapping library #" << i);
             bool map_single_reads = ShouldMapSingleReads(i);
             cfg::get_writable().use_single_reads |= map_single_reads;
+
+            if(cfg::get().mode == debruijn_graph::config::pipeline_type::meta 
+                        && cfg::get().use_single_reads) {
+                map_single_reads = false;
+                cfg::get_writable().use_single_reads = false;
+                WARN("Single reads mappings are not used in metagenomic mode");
+            }
 
             if (lib.is_paired() && lib.data().mean_insert_size != 0.0) {
                 INFO("Mapping paired reads (takes a while) ");

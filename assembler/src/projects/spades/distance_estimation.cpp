@@ -27,7 +27,7 @@ void estimate_with_estimator(const Graph &graph,
                              const omnigraph::de::AbstractDistanceEstimator<Graph>& estimator,
                              omnigraph::de::AbstractPairInfoChecker<Graph>& checker,
                              PairedIndexT& clustered_index) {
-    using debruijn_graph::estimation_mode;
+    using config::estimation_mode;
     DEBUG("Estimating distances");
 
     estimator.Estimate(clustered_index, cfg::get().max_threads);
@@ -99,13 +99,13 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
 }
 
 void estimate_distance(conj_graph_pack& gp,
-                       const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+                       const io::SequencingLibrary<config::DataSetData> &lib,
                        const UnclusteredPairedIndexT& paired_index,
                        PairedIndexT& clustered_index,
                        PairedIndexT& scaffolding_index) {
-    using debruijn_graph::estimation_mode;
+    using config::estimation_mode;
 
-    const debruijn_config& config = cfg::get();
+    const config::debruijn_config& config = cfg::get();
     size_t delta = size_t(lib.data().insert_size_deviation);
     size_t linkage_distance = size_t(config.de.linkage_distance_coeff * lib.data().insert_size_deviation);
     GraphDistanceFinder<Graph> dist_finder(gp.g,  (size_t)math::round(lib.data().mean_insert_size), lib.data().read_length, delta);
@@ -113,8 +113,8 @@ void estimate_distance(conj_graph_pack& gp,
 
     std::function<double(int)> weight_function;
 
-    if (config.est_mode == em_weighted   ||                    // in these cases we need a weight function
-        config.est_mode == em_smoothing) {                     // to estimate graph distances in the histogram
+    if (config.est_mode == estimation_mode::weighted   ||                    // in these cases we need a weight function
+        config.est_mode == estimation_mode::smoothing) {                     // to estimate graph distances in the histogram
         if (lib.data().insert_size_distribution.size() == 0) {
             WARN("No insert size distribution found, stopping distance estimation");
             return;
@@ -132,7 +132,7 @@ void estimate_distance(conj_graph_pack& gp,
     INFO("Weight Filter Done");
 
     switch (config.est_mode) {
-        case em_simple: {
+        case estimation_mode::simple: {
             const AbstractDistanceEstimator<Graph>&
                     estimator =
                     DistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
@@ -141,7 +141,7 @@ void estimate_distance(conj_graph_pack& gp,
             estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
             break;
         }
-        case em_weighted: {
+        case estimation_mode::weighted: {
             const AbstractDistanceEstimator<Graph>&
                     estimator =
                     WeightedDistanceEstimator<Graph>(gp.g, paired_index,
@@ -150,7 +150,7 @@ void estimate_distance(conj_graph_pack& gp,
             estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
             break;
         }
-        case em_smoothing: {
+        case estimation_mode::smoothing: {
             const AbstractDistanceEstimator<Graph>&
                     estimator =
                     SmoothingDistanceEstimator<Graph>(gp.g, paired_index,
@@ -165,6 +165,9 @@ void estimate_distance(conj_graph_pack& gp,
 
             estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
             break;
+        }
+        default: {
+            VERIFY_MSG(false, "Unexpected estimation mode value")
         }
     }
 

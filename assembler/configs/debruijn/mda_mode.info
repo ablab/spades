@@ -1,0 +1,120 @@
+mode    mda
+
+simp
+{
+    ; enable advanced ec removal algo
+    topology_simplif_enabled true 
+
+    ; tip clipper:
+    tc
+    {
+        ; rctc: tip_cov < rctc * not_tip_cov
+        ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
+        condition               "{ tc_lb 3.5, cb 1000000, rctc 2.0 }"
+	}
+
+	; erroneous connections remover:
+	ec
+	{
+       ; ec_lb: max_ec_length = k + ec_lb
+       ; icb: iterative coverage bound
+       ; condition               "{ ec_lb 30, icb 20.0 }"
+       condition               "{ ec_lb 30, icb auto }"
+    }
+    
+    final_tc
+    {
+        condition               "{ tc_lb 3.5, cb 100000, rctc 10000 }"
+    }
+
+	; bulge remover:
+	final_br
+	{
+        enabled true
+		max_coverage			1000000.0
+		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
+	}
+	
+    ; relative coverage erroneous component remover:
+    rcc
+    {
+        enabled true
+        coverage_gap    20.
+        max_length_coeff    2.0
+        max_length_with_tips_coeff   3.0
+        max_vertex_cnt      30
+        max_ec_length_coefficient   30
+        max_coverage_coeff  5.0
+    }
+    
+    tec
+    {
+        max_ec_length_coefficient   55  ; max_ec_length = k + max_ec_length_coefficient
+        uniqueness_length       1500
+        plausibility_length     200
+    }
+    
+    ; topology and reliability based erroneous connection remover
+    trec
+    {
+        max_ec_length_coefficient   100 ; max_ec_length = k + max_ec_length_coefficient
+        uniqueness_length       1500
+        unreliable_coverage     2.5
+    }
+    
+    ; topology tip clipper:
+    ttc
+    {
+        length_coeff    3.5
+        plausibility_length 250
+        uniqueness_length   1500
+    }
+
+    ; complex bulge remover
+    cbr
+    {
+        enabled true
+    }
+
+    ; hidden ec remover
+    her
+    {
+        enabled                     true
+        uniqueness_length           1500
+        unreliability_threshold     0.2
+        relative_threshold          5     
+    }
+
+    init_clean
+    {
+        activation_cov  -1.
+        ier
+        {
+            enabled false
+        }
+
+        tip_condition   ""
+        ec_condition    ""
+    }
+}
+
+pe {
+params {
+    normalize_weight        true
+
+    ; extension selection
+    extension_options
+    {
+        use_default_single_threshold false
+        single_threshold           0.001
+        weight_threshold           0.6
+        max_repeat_length          8000
+    }
+}
+
+long_reads {
+    pacbio_reads {
+        unique_edge_priority 10000.0
+    }
+}
+}

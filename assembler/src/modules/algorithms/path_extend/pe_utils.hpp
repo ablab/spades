@@ -405,7 +405,6 @@ inline bool LoopDetector::PrevEdgeInShortLoop() const {
 }
 
 class ScaffoldBreaker {
-
 private:
 
     int min_gap_;
@@ -419,10 +418,11 @@ private:
             BidirectionalPath * p = new BidirectionalPath(path.graph(), path[i]);
             ++i;
 
-            while(i < path.Size() and path.GapAt(i) <= min_gap_) {
+            while (i < path.Size() and path.GapAt(i) <= min_gap_) {
                 p->PushBack(path[i], path.GapAt(i), path.TrashPreviousAt(i), path.TrashCurrentAt(i));
                 ++i;
             }
+            
             if (i < path.Size()) {
                 DEBUG("split path " << i << " gap " << path.GapAt(i));
                 p->Print();
@@ -435,17 +435,18 @@ private:
 
 public:
 
-    ScaffoldBreaker(int min_gap): min_gap_(min_gap) {
-
-    }
-
-    void Split(PathContainer& paths) {
+    ScaffoldBreaker(int min_gap, const PathContainer &paths)
+            : min_gap_(min_gap) {
         for (auto it = paths.begin(); it != paths.end(); ++it) {
             SplitPath(*it.get());
         }
     }
 
-
+    ~ScaffoldBreaker() {
+        // FIXME: WTF, Why doesn't PathContainer own the paths?
+        container_.DeleteAllPaths();
+    }
+    
     void clear() {
         container_.clear();
     }

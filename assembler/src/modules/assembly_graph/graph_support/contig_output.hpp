@@ -201,18 +201,18 @@ struct ExtendedContigIdT {
 };
 
 template <class Graph>
-void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids, const ConnectedComponentCounter &cc_counter_) {
+void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids, const ConnectedComponentCounter &cc_counter_, string prefix) {
     int counter = 0;
     for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         EdgeId e = *it;
         if (ids.count(e) == 0) {
             string id;
-            if (cfg::get().pd.plasmid_enabled) {
+            if (cfg::get().pd) {
                 size_t c_id = cc_counter_.GetComponent(e);
-                id = io::MakeContigComponentId(++counter, graph.length(e) + graph.k(), graph.coverage(e), c_id, "EDGE");
+                id = io::MakeContigComponentId(++counter, graph.length(e) + graph.k(), graph.coverage(e), c_id, prefix);
             }
             else
-                id = io::MakeContigId(++counter, graph.length(e) + graph.k(), graph.coverage(e), "EDGE");
+                id = io::MakeContigId(++counter, graph.length(e) + graph.k(), graph.coverage(e), prefix);
             ids[e] = ExtendedContigIdT(id, ToString(counter) + "+");
             if (e != graph.conjugate(e))
                 ids[graph.conjugate(e)] =  ExtendedContigIdT(id + "'", ToString(counter) + "-");
@@ -255,7 +255,7 @@ public:
     template<class sequence_stream>
     void PrintContigsFASTG(sequence_stream &os, const ConnectedComponentCounter & cc_counter) {
         map<EdgeId, ExtendedContigIdT> ids;
-        MakeContigIdMap(graph_, ids, cc_counter);
+        MakeContigIdMap(graph_, ids, cc_counter, "EDGE");
         for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
             set<string> next;
             VertexId v = graph_.EdgeEnd(*it);
@@ -301,20 +301,15 @@ inline void OutputContigs(ConjugateDeBruijnGraph& g,
         const string& contigs_output_filename,
         bool output_unipath,
         size_t ,
-        bool cut_bad_connections) {
+        bool /*cut_bad_connections*/) {
     INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
     DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
     io::osequencestream_cov oss(contigs_output_filename + ".fasta");
 
     if(!output_unipath) {
-        if(!cut_bad_connections) {
-            DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
+        DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
 
-            ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
-        } else {
-            CuttingContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
-            ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
-        }
+        ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
     } else {
         UnipathConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
         ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);

@@ -5,10 +5,12 @@
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
+import gzip
 import logging
 
 import os
 import sys
+import shutil
 import spades_init
 spades_init.init()
 truspades_home = spades_init.spades_home
@@ -61,10 +63,10 @@ def print_commands(commands, options, log):
     log.info("Printing commands to " + output_file)
     open(output_file, "w").write("\n".join([str(line).strip() for line in commands]) + "\n")
 
-def collect_contigs(dataset, output_dir, output_base, format):
+def collect_contigs(dataset, barcodes_dir, output_base, format):
     output = open(output_base + "." + format, "w")
     for barcode in dataset:
-        file = os.path.join(output_dir, barcode.id, "truseq_long_reads." + format)
+        file = os.path.join(barcodes_dir, barcode.id, "truseq_long_reads." + format)
         if os.path.exists(file):
             contigs = SeqIO.parse(open(file), format)
             for contig in contigs:
@@ -109,6 +111,19 @@ def RunTruSPAdes(dataset, log_dir, options, log):
     collect_contigs(dataset, barcodes_dir, output_base, "fastq")
     log.info("Assembled virtual long TruSeq reads can be found in " + os.path.join(options.output_dir,
                                                                                            "TSLR.fasta"))
+    if options.clean:
+        SaveContigs(barcodes_dir, dataset, "fasta")
+        SaveContigs(barcodes_dir, dataset, "fastq")
+        for barcode in dataset:
+            shutil.rmtree(os.path.join(barcodes_dir, barcode.id))
+
+
+def SaveContigs(barcodes_dir, dataset, format):
+    contig_dir = os.path.join(barcodes_dir, format)
+    support.ensure_dir_existence(contig_dir)
+    for barcode in dataset:
+        if os.path.isfile(os.path.join(barcodes_dir, barcode.id, "truseq_long_reads." + format)):
+            shutil.copyfileobj(open(os.path.join(barcodes_dir, barcode.id, "truseq_long_reads." + format), "rb"), gzip.open(os.path.join(contig_dir, barcode.id + "." + format + ".gz"), "wb"))
 
 
 def create_log(options):
@@ -142,7 +157,7 @@ def CheckTestSuccess(options, log):
 def main(argv):
     options = launch_options.Options(argv, spades_home, truspades_home, spades_version)
     support.ensure_dir_existence(options.output_dir)
-    if options.test:
+    if options.test and not options.continue_launch:
         support.recreate_dir(options.output_dir)
     log = create_log(options)
     dataset_file = os.path.join(options.output_dir, "dataset.info")

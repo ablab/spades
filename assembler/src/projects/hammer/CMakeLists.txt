@@ -33,4 +33,4 @@ install(TARGETS hammer
         COMPONENT runtime)
 install(DIRECTORY "${SPADES_CFG_DIR}/hammer"
         DESTINATION share/spades/configs
-        FILES_MATCHING PATTERN "*.info.template")
+        FILES_MATCHING PATTERN "*.info")

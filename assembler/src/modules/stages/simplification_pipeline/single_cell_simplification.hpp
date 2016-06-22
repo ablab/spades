@@ -12,7 +12,7 @@ namespace simplification {
 template<class Graph>
 bool TopologyRemoveErroneousEdges(
     Graph &g,
-    const debruijn_graph::debruijn_config::simplification::topology_based_ec_remover& tec_config,
+    const debruijn_graph::config::debruijn_config::simplification::topology_based_ec_remover& tec_config,
     std::function<void(typename Graph::EdgeId)> removal_handler) {
     INFO("Removing connections based on topology");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
@@ -27,7 +27,7 @@ bool TopologyRemoveErroneousEdges(
 template<class Graph>
 bool MultiplicityCountingRemoveErroneousEdges(
     Graph &g,
-    const debruijn_graph::debruijn_config::simplification::topology_based_ec_remover& tec_config,
+    const debruijn_graph::config::debruijn_config::simplification::topology_based_ec_remover& tec_config,
     std::function<void(typename Graph::EdgeId)> removal_handler) {
     INFO("Removing connections based on topological multiplicity counting");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
@@ -44,7 +44,7 @@ bool MultiplicityCountingRemoveErroneousEdges(
 template<class Graph>
 bool RemoveThorns(
     Graph &g,
-    const debruijn_graph::debruijn_config::simplification::interstrand_ec_remover& isec_config,
+    const debruijn_graph::config::debruijn_config::simplification::interstrand_ec_remover& isec_config,
     std::function<void(typename Graph::EdgeId)> removal_handler) {
     INFO("Removing interstrand connections");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
@@ -60,7 +60,7 @@ bool RemoveThorns(
 template<class Graph>
 bool TopologyReliabilityRemoveErroneousEdges(
     Graph &g,
-    const debruijn_graph::debruijn_config::simplification::tr_based_ec_remover& trec_config,
+    const debruijn_graph::config::debruijn_config::simplification::tr_based_ec_remover& trec_config,
     std::function<void(typename Graph::EdgeId)> removal_handler) {
     INFO("Removing connections based on topology and reliable coverage");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
@@ -78,7 +78,7 @@ bool TopologyReliabilityRemoveErroneousEdges(
 template<class Graph>
 bool MaxFlowRemoveErroneousEdges(
     Graph &g,
-    const debruijn_graph::debruijn_config::simplification::max_flow_ec_remover& mfec_config,
+    const debruijn_graph::config::debruijn_config::simplification::max_flow_ec_remover& mfec_config,
     omnigraph::HandlerF<Graph> removal_handler = 0) {
     if (!mfec_config.enabled)
         return false;
@@ -94,7 +94,7 @@ bool MaxFlowRemoveErroneousEdges(
 template<class Graph>
 bool RemoveHiddenEC(Graph& g,
                     const debruijn_graph::FlankingCoverage<Graph>& flanking_cov,
-                    const debruijn_graph::debruijn_config::simplification::hidden_ec_remover& her_config,
+                    const debruijn_graph::config::debruijn_config::simplification::hidden_ec_remover& her_config,
                     const SimplifInfoContainer& info,
                     omnigraph::HandlerF<Graph> removal_handler) {
     if (her_config.enabled) {

@@ -193,6 +193,7 @@ struct pe_config {
     struct CoordinatedCoverageT {
       size_t max_edge_length_in_repeat;
       double delta;
+      size_t min_path_len;
     } coordinated_coverage;
       struct Scaffolding2015 {
           bool autodetect;
@@ -214,6 +215,7 @@ struct pe_config {
       double filtering;
       double weight_priority;
       double unique_edge_priority;
+      size_t min_significant_overlap;
   };
 
   struct AllLongReads{

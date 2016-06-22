@@ -262,6 +262,17 @@ public:
         return size_;
     }
 
+    template<class Seq>
+    bool contains(const Seq& s, size_t offset = 0) const {
+        VERIFY(offset + s.size() <= size());
+
+        for (size_t i = 0, e = s.size(); i != e; ++i)
+            if (operator[](offset + i) != s[i])
+                return false;
+
+        return true;
+    }
+
 private:
     inline bool ReadHeader(std::istream &file);
 

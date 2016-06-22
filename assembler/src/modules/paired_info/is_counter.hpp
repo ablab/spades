@@ -30,8 +30,7 @@ public:
     InsertSizeCounter(const conj_graph_pack& gp,
             size_t edge_length_threshold,
             bool ignore_negative = false)
-        : gp_(gp), hist_(), tmp_hists_(),
-          total_(), counted_(), negative_(),
+        : gp_(gp), 
           edge_length_threshold_(edge_length_threshold),
           ignore_negative_(ignore_negative) {
     }
@@ -44,10 +43,7 @@ public:
 
     virtual void StartProcessLibrary(size_t threads_count) {
         hist_.clear();
-        tmp_hists_ = vector<HistType*>(threads_count);
-        tmp_hists_[0] = &hist_;
-        for (size_t i = 1; i < threads_count; ++i)
-            tmp_hists_[i] = new HistType();
+        tmp_hists_ = vector<HistType>(threads_count);
 
         total_ = count_data(threads_count);
         counted_ = count_data(threads_count);
@@ -55,10 +51,10 @@ public:
     }
 
     virtual void StopProcessLibrary() {
-        for (size_t i = 1; i < tmp_hists_.size(); ++i) {
+        for (size_t i = 0; i < tmp_hists_.size(); ++i) {
             MergeBuffer(i);
-            delete tmp_hists_[i];
         }
+        tmp_hists_.clear();
         total_.merge();
         counted_.merge();
         negative_.merge();
@@ -87,12 +83,10 @@ public:
     }
 
     virtual void MergeBuffer(size_t thread_index) {
-        if (thread_index != 0) {
-            for (auto it = tmp_hists_[thread_index]->begin(); it != tmp_hists_[thread_index]->end(); ++it) {
-                (*tmp_hists_[0])[it->first] += it->second;
-            }
-            tmp_hists_[thread_index]->clear();
+        for (const auto& kv: tmp_hists_[thread_index]) {
+            hist_[kv.first] += kv.second;
         }
+        tmp_hists_[thread_index].clear();
     }
 
     void FindMean(double& mean, double& delta, std::map<size_t, size_t>& percentiles) const {
@@ -127,7 +121,7 @@ private:
             TRACE("IS: " << read2_start << " - " <<  read1_start << " + " << (int) is_delta << " = " << is);
 
             if (is > 0 || !ignore_negative_) {
-                (*tmp_hists_[thread_index])[is] += 1;
+                tmp_hists_[thread_index][is] += 1;
                 ++counted_.arr_[thread_index];
             } else {
                 ++negative_.arr_[thread_index];
@@ -157,7 +151,7 @@ private:
     const conj_graph_pack& gp_;
 
     HistType hist_;
-    vector<HistType*> tmp_hists_;
+    vector<HistType> tmp_hists_;
 
     count_data total_;
     count_data counted_;

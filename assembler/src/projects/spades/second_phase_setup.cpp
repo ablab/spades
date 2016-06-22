@@ -28,7 +28,7 @@ void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
     int code = rename(old_pe_contigs_filename.c_str(), new_pe_contigs_filename.c_str());
     VERIFY(code == 0);
 
-    io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> untrusted_contigs;
+    io::SequencingLibrary<config::DataSetData> untrusted_contigs;
     untrusted_contigs.push_back_single(new_pe_contigs_filename);
     untrusted_contigs.set_orientation(io::LibraryOrientation::Undefined);
     untrusted_contigs.set_type(io::LibraryType::PathExtendContigs);

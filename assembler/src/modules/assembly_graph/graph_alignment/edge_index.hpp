@@ -9,8 +9,6 @@
 
 #include "dev_support/openmp_wrapper.h"
 
-#include "utils/adt/kmer_map.hpp"
-
 #include "assembly_graph/graph_core/graph.hpp"
 #include "assembly_graph/graph_core/action_handlers.hpp"
 #include "dev_support/standard_base.hpp"
@@ -99,6 +97,7 @@ public:
         //also makes an update!
         //todo pass appropriate 3-rd arg
         IndexBuilder().BuildIndexFromGraph(inner_index_, this->g());
+        INFO("Index refilled");
     }
 
     void Update() {

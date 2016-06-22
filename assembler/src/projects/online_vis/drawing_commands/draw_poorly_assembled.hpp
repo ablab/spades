@@ -435,7 +435,7 @@ public:
 
         std::string contigs_file = args[1];
         string base_assembly_prefix = args[2];
-        size_t edge_length = lexical_cast<size_t>(args[3]);
+        size_t edge_length = std::stoll(args[3]);
 
         if (!CheckFileExists(contigs_file)) {
             LOG("File with contigs " << contigs_file << " not found");
@@ -445,7 +445,7 @@ public:
         size_t contig_cnt = -1u;
         if (args.size() > 4) {
             LOG("Will analyze first " << args[4] << " contigs");
-            contig_cnt = lexical_cast<size_t>(args[4]);
+            contig_cnt = std::stoll(args[4]);
         }
         
         auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(contigs_file));
@@ -501,9 +501,9 @@ public:
         if (!CheckCorrectness(args))
             return;
 
-        size_t max_interesting_gap = lexical_cast<size_t>(args[1]);
+        size_t max_interesting_gap = std::stoll(args[1]);
         std::string base_assembly_prefix = args[2];
-        size_t edge_length = lexical_cast<size_t>(args[3]);
+        size_t edge_length = std::stoll(args[3]);
 
         if (curr_env.graph_pack().genome.size() == 0) {
             LOG("Reference genome hasn't been loaded");
@@ -513,7 +513,7 @@ public:
         size_t gap_cnt = -1u;
         if (args.size() > 4) {
             LOG("Will analyze first " << args[4] << " gaps");
-            gap_cnt = lexical_cast<size_t>(args[4]);
+            gap_cnt = std::stoll(args[4]);
         }
         
         io::SingleRead ref_as_read("ref", curr_env.graph_pack().genome.str());
@@ -590,7 +590,7 @@ public:
         size_t contig_cnt = -1u;
         if (args.size() > 3) {
             LOG("Will analyze first " << args[3] << " contigs");
-            contig_cnt = lexical_cast<size_t>(args[3]);
+            contig_cnt = std::stoll(args[3]);
         }
         
         auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(contigs_file));

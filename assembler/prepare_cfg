@@ -6,6 +6,7 @@
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
+
 set -e
 
 export assembler="`pwd`"
@@ -14,17 +15,12 @@ export ext="$assembler/ext"
 export build="$assembler/build"
 
 echo "/**************************************/"
-echo "/********** copying configs  ***********/"
-echo "/**************************************/"
-./cpcfg
-
-echo "/**************************************/"
 echo "/********  preparing debug ************/"
 echo "/**************************************/"
 
 mkdir -p $build/debug
 cd $build/debug
-cmake $src -DCMAKE_BUILD_TYPE="Debug"
+cmake $src -DCMAKE_BUILD_TYPE="Debug" -DSPADES_BUILD_INTERNAL=1
 
 echo "/**************************************/"
 echo "/********  preparing release **********/"
@@ -32,5 +28,5 @@ echo "/**************************************/"
 
 mkdir -p $build/release
 cd $build/release
-cmake $src -DCMAKE_BUILD_TYPE="RelWithAsserts"
+cmake $src -DCMAKE_BUILD_TYPE="RelWithAsserts" -DSPADES_BUILD_INTERNAL=1
 cd $assembler
