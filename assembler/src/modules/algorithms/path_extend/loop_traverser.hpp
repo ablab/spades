@@ -26,7 +26,7 @@ class LoopTraverser {
     const Graph& g_;
     GraphCoverageMap& covMap_;
     shared_ptr<ContigsMaker> extender_;
-    const size_t MAX_EDGE_LENGTH = 1000;
+    static const size_t MAX_EDGE_LENGTH = 1000;
 private:
     EdgeId FindStart(const set<VertexId>& component_set) const{
         EdgeId result;
