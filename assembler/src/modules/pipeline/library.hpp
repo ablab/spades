@@ -305,7 +305,7 @@ public:
     single_reads_iterator reads_end() const {
         return single_reads_iterator(libraries_.back().reads_end(), libraries_.back().reads_end());
     }
-    adt::iterator_range<single_reads_iterator> reads() {
+    adt::iterator_range<single_reads_iterator> reads() const {
         return adt::make_range(reads_begin(), reads_end());
     }
 
@@ -321,7 +321,7 @@ public:
     single_reads_iterator single_end() const {
         return single_reads_iterator(libraries_.back().single_end(), libraries_.back().single_end());
     }
-    adt::iterator_range<single_reads_iterator> single_reads() {
+    adt::iterator_range<single_reads_iterator> single_reads() const {
         return adt::make_range(single_begin(), single_end());
     }
 

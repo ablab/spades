@@ -22,6 +22,7 @@
 #include "dev_support/path_helper.hpp"
 
 #include "dev_support/memory_limit.hpp"
+#include "dev_support/file_limit.hpp"
 
 #include <libcxx/sort.hpp>
 
@@ -243,6 +244,10 @@ class KMerSplitter {
 
   virtual path::files_t Split(size_t num_files) = 0;
 
+  size_t kmer_size() const {
+    return Seq::GetDataSize(K_) * sizeof(typename Seq::DataType);
+  }
+
   unsigned K() const { return K_; }
 
  protected:
@@ -251,14 +256,6 @@ class KMerSplitter {
   unsigned K_;
   uint32_t seed_;
 
-  std::string GetRawKMersFname(unsigned suffix) const {
-    return path::append_path(work_dir_, "kmers.raw." + std::to_string(suffix));
-  }
-
-  unsigned GetFileNumForSeq(const Seq &s, unsigned total) const {
-    return (unsigned)(hash_(s, seed_) % total);
-  }
-
   DECL_LOGGER("K-mer Splitting");
 };
 
@@ -266,26 +263,76 @@ template<class Seq>
 class KMerSortingSplitter : public KMerSplitter<Seq> {
  public:
   KMerSortingSplitter(const std::string &work_dir, unsigned K, uint32_t seed = 0)
-      : KMerSplitter<Seq>(work_dir, K, seed) {}
+      : KMerSplitter<Seq>(work_dir, K, seed), cell_size_(0), num_files_(0) {}
 
  protected:
   using SeqKMerVector = KMerVector<Seq>;
   using KMerBuffer = std::vector<SeqKMerVector>;
 
-  void DumpBuffers(size_t num_files, size_t nthreads,
-                   std::vector<KMerBuffer> &buffers,
-                   const path::files_t &ostreams) const {
+  std::vector<KMerBuffer> kmer_buffers_;
+  size_t cell_size_;
+  size_t num_files_;
+
+  path::files_t PrepareBuffers(size_t num_files, unsigned nthreads, size_t reads_buffer_size) {
+    num_files_ = num_files;
+    
+    // Determine the set of output files
+    path::files_t out;
+    for (unsigned i = 0; i < num_files_; ++i)
+      out.push_back(this->GetRawKMersFname(i));
+
+    size_t file_limit = num_files_ + 2*nthreads;
+    size_t res = limit_file(file_limit);
+    if (res < file_limit) {
+      WARN("Failed to setup necessary limit for number of open files. The process might crash later on.");
+      WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
+    }
+
+    if (reads_buffer_size == 0) {
+      reads_buffer_size = 536870912ull;
+      size_t mem_limit =  (size_t)((double)(get_free_memory()) / (nthreads * 3));
+      INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
+      reads_buffer_size = std::min(reads_buffer_size, mem_limit);
+    }
+    cell_size_ = reads_buffer_size / (num_files_ * this->kmer_size());
+    // Set sane minimum cell size
+    if (cell_size_ < 16384)
+      cell_size_ = 16384;
+
+    INFO("Using cell size of " << cell_size_);
+    kmer_buffers_.resize(nthreads);
+    for (unsigned i = 0; i < nthreads; ++i) {
+      KMerBuffer &entry = kmer_buffers_[i];
+      entry.resize(num_files_, KMerVector<Seq>(this->K_, (size_t) (1.1 * (double) cell_size_)));
+    }
+
+    return out;
+  }
+  
+  bool push_back_internal(const Seq &seq, unsigned thread_id) {
+    KMerBuffer &entry = kmer_buffers_[thread_id];
+
+    size_t idx = this->GetFileNumForSeq(seq, (unsigned)num_files_);
+    entry[idx].push_back(seq);
+    return entry[idx].size() > cell_size_;
+  }
+  
+  void DumpBuffers(const path::files_t &ostreams) {
+    VERIFY(ostreams.size() == num_files_ && kmer_buffers_[0].size() == num_files_);
+
 #   pragma omp parallel for
-    for (unsigned k = 0; k < num_files; ++k) {
+    for (unsigned k = 0; k < num_files_; ++k) {
+      // Below k is thread id!
+      
       size_t sz = 0;
-      for (size_t i = 0; i < nthreads; ++i)
-        sz += buffers[i][k].size();
+      for (size_t i = 0; i < kmer_buffers_.size(); ++i)
+        sz += kmer_buffers_[i][k].size();
 
       KMerVector<Seq> SortBuffer(this->K_, sz);
-      for (size_t i = 0; i < nthreads; ++i) {
-        KMerBuffer &entry = buffers[i];
-        for (size_t j = 0; j < entry[k].size(); ++j)
-          SortBuffer.push_back(entry[k][j]);
+      for (auto & entry : kmer_buffers_) {
+        const auto &buffer = entry[k];
+        for (size_t j = 0; j < buffer.size(); ++j)
+          SortBuffer.push_back(buffer[j]);
       }
       libcxx::sort(SortBuffer.begin(), SortBuffer.end(), typename KMerVector<Seq>::less2_fast());
       auto it = std::unique(SortBuffer.begin(), SortBuffer.end(), typename KMerVector<Seq>::equal_to());
@@ -299,12 +346,19 @@ class KMerSortingSplitter : public KMerSplitter<Seq> {
       }
     }
 
-    for (unsigned i = 0; i < nthreads; ++i) {
-      for (unsigned j = 0; j < num_files; ++j) {
-        buffers[i][j].clear();
-      }
-    }
+    for (auto & entry : kmer_buffers_)
+      for (auto & eentry : entry)
+        eentry.clear();
   }
+
+  std::string GetRawKMersFname(unsigned suffix) const {
+    return path::append_path(this->work_dir_, "kmers.raw." + std::to_string(suffix));
+  }
+
+  unsigned GetFileNumForSeq(const Seq &s, unsigned total) const {
+    return (unsigned)(this->hash_(s, this->seed_) % total);
+  }
+
 };
 
 template<class Seq, class traits = kmer_index_traits<Seq> >

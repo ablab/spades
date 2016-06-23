@@ -38,21 +38,18 @@ class HammerKMerSplitter : public KMerSortingSplitter<hammer::KMer> {
   HammerKMerSplitter(std::string &work_dir)
       : KMerSortingSplitter<hammer::KMer>(work_dir, hammer::K) {}
 
-  virtual path::files_t Split(size_t num_files);
+  path::files_t Split(size_t num_files) override;
 
   friend class BufferFiller;
 };
 
 class BufferFiller {
-  std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries_;
-  unsigned num_files_;
-  size_t cell_size_;
   size_t processed_;
-  const HammerKMerSplitter &splitter_;
+  HammerKMerSplitter &splitter_;
 
  public:
-  BufferFiller(std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries, size_t cell_size, const HammerKMerSplitter &splitter):
-      tmp_entries_(tmp_entries), num_files_((unsigned)tmp_entries[0].size()), cell_size_(cell_size), processed_(0), splitter_(splitter) {}
+  BufferFiller(HammerKMerSplitter &splitter)
+      : processed_(0), splitter_(splitter) {}
 
   size_t processed() const { return processed_; }
 
@@ -69,19 +66,14 @@ class BufferFiller {
     if (sz < hammer::K)
       return false;
 
-    HammerKMerSplitter::KMerBuffer &entry = tmp_entries_[omp_get_thread_num()];
+    unsigned thread_id = omp_get_thread_num();
     ValidKMerGenerator<hammer::K> gen(cr);
     bool stop = false;
     while (gen.HasMore()) {
       KMer seq = gen.kmer();
-      size_t idx = splitter_.GetFileNumForSeq(seq, num_files_);
-      entry[idx].push_back(seq);
-      stop |= entry[idx].size() > cell_size_;
 
-      seq = !seq;
-      idx = splitter_.GetFileNumForSeq(seq, num_files_);
-      entry[idx].push_back(seq);
-      stop |= entry[idx].size() > cell_size_;
+      stop |= splitter_.push_back_internal( seq, thread_id);
+      stop |= splitter_.push_back_internal(!seq, thread_id);
 
       gen.Next();
     }
@@ -92,42 +84,14 @@ class BufferFiller {
 
 path::files_t HammerKMerSplitter::Split(size_t num_files) {
   unsigned nthreads = std::min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
+  size_t reads_buffer_size = cfg::get().count_split_buffer;
 
   INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
-  // Determine the set of output files
-  path::files_t out;
-  for (unsigned i = 0; i < num_files; ++i)
-    out.push_back(GetRawKMersFname(i));
-
-  size_t file_limit = num_files + 2*nthreads;
-  size_t res = limit_file(file_limit);
-  if (res < file_limit) {
-    WARN("Failed to setup necessary limit for number of open files. The process might crash later on.");
-    WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
-  }
-
-  size_t reads_buffer_size = cfg::get().count_split_buffer;
-  if (reads_buffer_size == 0) {
-    reads_buffer_size = 536870912ull;
-    size_t mem_limit =  (size_t)((double)(get_free_memory()) / (nthreads * 3));
-    INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
-    reads_buffer_size = std::min(reads_buffer_size, mem_limit);
-  }
-  size_t cell_size = reads_buffer_size / (num_files * sizeof(KMer));
-  // Set sane minimum cell size
-  if (cell_size < 16384)
-    cell_size = 16384;
-
-  INFO("Using cell size of " << cell_size);
-  std::vector<KMerBuffer> tmp_entries(nthreads);
-  for (unsigned i = 0; i < nthreads; ++i) {
-    KMerBuffer &entry = tmp_entries[i];
-    entry.resize(num_files, KMerVector<hammer::KMer>(this->K_, (size_t) (1.1 * (double) cell_size)));
-  }
-
+  path::files_t out = PrepareBuffers(num_files, nthreads, reads_buffer_size);
+  
   size_t n = 15;
-  BufferFiller filler(tmp_entries, cell_size, *this);
+  BufferFiller filler(*this);
   const auto& dataset = cfg::get().dataset;
   for (auto I = dataset.reads_begin(), E = dataset.reads_end(); I != E; ++I) {
     INFO("Processing " << *I);
@@ -135,7 +99,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     while (!irs.eof()) {
       hammer::ReadProcessor rp(nthreads);
       rp.Run(irs, filler);
-      DumpBuffers(num_files, nthreads, tmp_entries, out);
+      DumpBuffers(out);
       VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 
       if (filler.processed() >> n) {
@@ -271,13 +235,10 @@ class KMerMultiplicityCounter {
     }
 };
 
-class NonSingletonKMerSplitter : public KMerSplitter<hammer::KMer> {
-    typedef std::vector<std::vector<KMer> > KMerBuffer;
-
+class NonSingletonKMerSplitter : public KMerSortingSplitter<hammer::KMer> {
     std::pair<size_t, size_t>
     FillBufferFromStream(io::raw_kmer_iterator<hammer::KMer> &it,
-                         KMerBuffer &entry,
-                         size_t cell_size, size_t num_files) {
+                         unsigned thread_id) {
         size_t processed = 0, non_singleton = 0 ;
         for ( ; it.good(); ++it) {
             hammer::KMer seq(hammer::K, *it);
@@ -292,51 +253,10 @@ class NonSingletonKMerSplitter : public KMerSplitter<hammer::KMer> {
 
             non_singleton += 1;
 
-            size_t idx = this->GetFileNumForSeq(seq, (unsigned)num_files);
-            entry[idx].push_back(seq);
-
-
-            if (entry[idx].size() > cell_size)
-                break;
+            if (this->push_back_internal(seq, thread_id))
+              break;
         }
         return std::make_pair(processed, non_singleton);
-    }
-
-    void DumpBuffers(size_t num_files, size_t nthreads,
-                     std::vector<KMerBuffer> &buffers,
-                     const path::files_t &ostreams) const {
-#       pragma omp parallel for num_threads(nthreads)
-        for (unsigned k = 0; k < num_files; ++k) {
-            size_t sz = 0;
-            for (size_t i = 0; i < nthreads; ++i)
-                sz += buffers[i][k].size();
-
-            if (!sz)
-                continue;
-
-            std::vector<KMer> SortBuffer;
-            SortBuffer.reserve(sz);
-            for (size_t i = 0; i < nthreads; ++i) {
-                KMerBuffer &entry = buffers[i];
-                SortBuffer.insert(SortBuffer.end(), entry[k].begin(), entry[k].end());
-            }
-            libcxx::sort(SortBuffer.begin(), SortBuffer.end(), KMerComparator());
-            auto it = std::unique(SortBuffer.begin(), SortBuffer.end());
-
-#           pragma omp critical
-            {
-                FILE *f = fopen(ostreams[k].c_str(), "ab");
-                VERIFY_MSG(f, "Cannot open temporary file to write");
-                fwrite(SortBuffer.data(), sizeof(KMer), it - SortBuffer.begin(), f);
-                fclose(f);
-            }
-        }
-
-        for (unsigned i = 0; i < nthreads; ++i) {
-            for (unsigned j = 0; j < num_files; ++j) {
-                buffers[i][j].clear();
-            }
-        }
     }
 
   public:
@@ -344,46 +264,16 @@ class NonSingletonKMerSplitter : public KMerSplitter<hammer::KMer> {
                              const std::string &final_kmers,
                              const KMerData &data,
                              const KMerMultiplicityCounter &counter)
-            : KMerSplitter<hammer::KMer>(work_dir, hammer::K), final_kmers_(final_kmers), data_(data), counter_(counter){}
+            : KMerSortingSplitter<hammer::KMer>(work_dir, hammer::K),
+              final_kmers_(final_kmers), data_(data), counter_(counter){}
 
-    virtual path::files_t Split(size_t num_files) {
+  path::files_t Split(size_t num_files) override {
         unsigned nthreads = std::min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
+        size_t reads_buffer_size = cfg::get().count_split_buffer;
 
         INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
-        // Determine the set of output files
-        path::files_t out;
-        for (unsigned i = 0; i < num_files; ++i)
-            out.push_back(GetRawKMersFname(i));
-
-        size_t file_limit = num_files + 2*nthreads;
-        size_t res = limit_file(file_limit);
-        if (res < file_limit) {
-            WARN("Failed to setup necessary limit for number of open files. The process might crash later on.");
-            WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
-        }
-
-        size_t reads_buffer_size = cfg::get().count_split_buffer;
-        if (reads_buffer_size == 0) {
-            reads_buffer_size = 536870912ull;
-            size_t mem_limit =  (size_t)((double)(get_free_memory()) / (nthreads * 3));
-            INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
-            reads_buffer_size = std::min(reads_buffer_size, mem_limit);
-        }
-        size_t cell_size = reads_buffer_size / (num_files * sizeof(KMer));
-        // Set sane minimum cell size
-        if (cell_size < 16384)
-            cell_size = 16384;
-
-        INFO("Using cell size of " << cell_size);
-        std::vector<KMerBuffer> tmp_entries(nthreads);
-        for (unsigned i = 0; i < nthreads; ++i) {
-            KMerBuffer &entry = tmp_entries[i];
-            entry.resize(num_files);
-            for (unsigned j = 0; j < num_files; ++j) {
-                entry[j].reserve((size_t)(1.1 * (double)cell_size));
-            }
-        }
+        path::files_t out = PrepareBuffers(num_files, nthreads, reads_buffer_size);
 
         size_t n = 15;
         size_t total_kmers = 0, non_singletons = 0;
@@ -393,12 +283,12 @@ class NonSingletonKMerSplitter : public KMerSplitter<hammer::KMer> {
 #           pragma omp parallel for num_threads(nthreads) reduction(+ : total_kmers) reduction(+ : non_singletons)
             for (size_t i = 0; i < kmers.size(); ++i) {
                 size_t kc, nsc;
-                std::tie(kc, nsc) = FillBufferFromStream(kmers[i], tmp_entries[i], cell_size, num_files);
+                std::tie(kc, nsc) = FillBufferFromStream(kmers[i], (unsigned)i);
                 total_kmers += kc;
                 non_singletons += nsc;
             }
 
-            DumpBuffers(num_files, nthreads, tmp_entries, out);
+            DumpBuffers(out);
             if (total_kmers >> n) {
                 INFO("Processed " << total_kmers << " kmers");
                 n += 1;
@@ -433,10 +323,9 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
       data.kmers_.set_size(kmers);
       KMerMultiplicityCounter mcounter(data);
 
-      const auto& dataset = cfg::get().dataset;
-      for (auto I = dataset.reads_begin(), E = dataset.reads_end(); I != E; ++I) {
-          INFO("Processing " << *I);
-          ireadstream irs(*I, cfg::get().input_qvoffset);
+      for (const auto &reads : cfg::get().dataset.reads()) {
+          INFO("Processing " << reads);
+          ireadstream irs(reads, cfg::get().input_qvoffset);
           hammer::ReadProcessor rp(omp_get_max_threads());
           rp.Run(irs, mcounter);
           VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
