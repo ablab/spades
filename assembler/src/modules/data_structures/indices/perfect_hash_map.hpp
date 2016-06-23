@@ -11,9 +11,13 @@
 #include "io/reads_io/io_helper.hpp"
 
 #include "data_structures/mph_index/kmer_index.hpp"
+// FIXME: Get rid of this
+#include "data_structures/mph_index/kmer_index_builder.hpp"
+
 #include "utils/adt/kmer_vector.hpp"
 
 #include "libcxx/sort.hpp"
+
 
 #include "kmer_splitters.hpp"
 #include "key_with_hash.hpp"

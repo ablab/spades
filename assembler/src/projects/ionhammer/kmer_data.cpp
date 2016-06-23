@@ -9,6 +9,8 @@
 #include "config_struct.hpp"
 #include "valid_hkmer_generator.hpp"
 
+#include "data_structures/mph_index/kmer_index_builder.hpp"
+
 #include "io/kmers_io/mmapped_writer.hpp"
 #include "io/reads_io/file_reader.hpp"
 #include "io/reads_io/read_processor.hpp"
@@ -67,7 +69,6 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   path::files_t out = PrepareBuffers(num_files, nthreads, reads_buffer_size);
 
   size_t n = 15;
-  const auto& dataset = cfg::get().dataset;
   BufferFiller filler(*this);
   for (const auto &reads : cfg::get().dataset.reads()) {
     INFO("Processing " << reads);

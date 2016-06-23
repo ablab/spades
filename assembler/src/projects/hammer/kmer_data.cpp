@@ -12,7 +12,7 @@
 #include "io/reads_io/ireadstream.hpp"
 #include "config_struct_hammer.hpp"
 
-#include "dev_support/file_limit.hpp"
+#include "data_structures/mph_index/kmer_index_builder.hpp"
 
 #include "io/kmers_io/kmer_iterator.hpp"
 
