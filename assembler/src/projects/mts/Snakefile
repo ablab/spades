@@ -1,20 +1,10 @@
 configfile: "config.yaml"
 
+import functools
 import os
 import os.path
 
-def gather_refs(data):
-    if type(data) is list:
-        for path in data:
-            yield from gather_refs(path)
-    else:
-        if os.path.isdir(data):
-            for path in os.listdir(data):
-                if path.endswith(".fasta") or path.endswith(".fna"):
-                     yield os.path.join(data, path)
-        else:
-            yield data
-
+#Config parameters
 IN = config["IN"]
 SPADES = config["SPADES"]
 SPADES_REASSEMBLY = config["SPADES_REASSEMBLY"]
@@ -25,24 +15,59 @@ QUAST = config["QUAST"]
 # TODO: there should be only one
 METAQUAST = QUAST.replace("quast.py", "metaquast.py")
 K = int(config.get("K", 55))
-small_k = int(config.get("small_k", 21))
+SMALL_K = int(config.get("SMALL_K", 21))
 CONFIG = "K{0}/configs/config.info".format(K)
 SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(K)
 MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
 CAG = config.get("CAG")
 THREADS = config.get("THREADS", 16)
 
-SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
-SAMPLE_COUNT = len(SAMPLES)
-CAGS, = glob_wildcards("binning/{cag,CAG\d+}")
-GOOD_CAGS, = glob_wildcards("binning/{cag,CAG\d+}/left.fastq")
-REFS = {os.path.splitext(os.path.basename(fullpath))[0]: fullpath for fullpath in gather_refs(config.get("REFS", []))}
-def ref_path(wildcards):
-    return REFS[wildcards.ref]
-ALL_REFS = ",".join(path for path in REFS.values())
-
+#Flag files for stages completion
 FINISHED_BINNING = "binning/all.log"
 FINISHED_CHOOSING = "binning/choose_all.log"
+
+#Autodetect samples and their reads
+SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
+SAMPLE_COUNT = len(SAMPLES)
+
+def detect_reads(sample):
+    path = "{}/{}/".format(IN, sample)
+    names, = glob_wildcards(path + "{name}")
+    return (sample, [os.path.join(path, name) for name in sorted(names[:2])])
+
+SAMPLE_READS = dict(map(detect_reads, SAMPLES))
+
+def sample_reads(dir, wildcards):
+    return SAMPLE_READS[wildcards.sample][dir]
+
+left_reads  = functools.partial(sample_reads, 0)
+right_reads = functools.partial(sample_reads, 1)
+
+#Autodetect bins
+CAGS, = glob_wildcards("binning/{cag,CAG\d+}")
+GOOD_CAGS, = glob_wildcards("binning/{cag,CAG\d+}/left.fastq")
+
+#Autodetect references
+FASTA_EXTS = {".fasta", ".fa", ".fna", ".fsa"}
+
+def gather_refs(data):
+    if type(data) is list:
+        for path in data:
+            yield from gather_refs(path)
+    else:
+        if os.path.isdir(data):
+            for name in os.listdir(data):
+                ref, ext = os.path.splitext(name)
+                if ext in FASTA_EXTS:
+                     yield (ref, os.path.join(data, name))
+        else:
+            yield (os.path.splitext(os.path.basename(data))[0], data)
+
+REFS = dict(gather_refs(config.get("REFS", [])))
+ALL_REFS = ",".join(path for path in REFS.values())
+
+def ref_path(wildcards):
+    return REFS[wildcards.ref]
 
 onstart:
     for dir in ["annotation", "assembly", "profile",
@@ -59,8 +84,8 @@ rule all:
     message: "Dataset of {SAMPLE_COUNT} samples from {IN} has been processed."
 
 rule assemble:
-    input:   left = IN + "/{sample}/left.fastq", right = IN + "/{sample}/right.fastq"
-    output:  "assembly/{sample}.fasta"
+    input:   left = left_reads, right = right_reads
+    output:  "assembly/{sample,sample\d+}.fasta"
     params:  "assembly/{sample}"
     log:     "assembly/{sample}.log"
     threads: THREADS
@@ -75,8 +100,9 @@ rule descriptions:
     run:
         for sample in SAMPLES:
             with open("profile/{}.desc".format(sample), "w") as out:
-                print("{}/{}/left.fastq".format(IN, sample), file=out)
-                print("{}/{}/right.fastq".format(IN, sample), file=out)
+                wildcards.sample = sample
+                print(left_reads(wildcards),  file=out)
+                print(right_reads(wildcards), file=out)
 
 rule kmc:
     input:   "profile/{sample}.desc"
@@ -86,7 +112,7 @@ rule kmc:
     threads: THREADS
     message: "Running kmc for {wildcards.sample}"
     shell:   "mkdir {params.tmp} && "
-             "{SOFT}/kmc -k{small_k} -t{threads} -ci{params.min_mult} -cs65535"
+             "{SOFT}/kmc -k{SMALL_K} -t{threads} -ci{params.min_mult} -cs65535"
              " @{input} {params.out} {params.tmp} >{log} 2>&1 && "
              "rm -rf {params.tmp}"
 
@@ -95,8 +121,8 @@ rule multiplicities:
     output:  "profile/kmers.mpl"
     params:  kmc_files=" ".join(expand("tmp/{sample}", sample=SAMPLES)), out="profile/kmers"
     log:     "profile/kmers.log"
-    message: "Gathering {small_k}-mer multiplicities from all samples"
-    shell:   "{BIN}/kmer_multiplicity_counter -k {small_k} -o {params.out} --sample 3"
+    message: "Gathering {SMALL_K}-mer multiplicities from all samples"
+    shell:   "{BIN}/kmer_multiplicity_counter -k {SMALL_K} -o {params.out} --sample 3"
              " -f {params.kmc_files} >{log} 2>&1 && "
              "rm tmp/*.sorted"
 
@@ -105,7 +131,7 @@ rule profile:
     output:  "profile/{sample}.id", "profile/{sample}.mpl"
     log:     "profile/{sample}.log"
     message: "Counting contig abundancies for {wildcards.sample}"
-    shell:   "{BIN}/contig_abundance_counter -k {small_k} -w tmp -c {input.contigs}"
+    shell:   "{BIN}/contig_abundance_counter -k {SMALL_K} -w tmp -c {input.contigs}"
              " -n {SAMPLE_COUNT} -m profile/kmers -o profile/{wildcards.sample}"
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
@@ -119,7 +145,7 @@ rule canopy:
     input:   rules.canopy_pre.output
     output:  out = "profile/canopy.out", prof = "profile/canopy.prof"
     message: "Running canopy clustering"
-    shell:   "{SCRIPTS}/canopy_launch.sh {input} {output.out} {output.prof}"
+    shell:   "{SCRIPTS}/canopy_launch.sh {input} {output.out} {output.prof} >profile/canopy.log 2>&1"
 
 rule canopy_post:
     input:   rules.canopy.output.out
@@ -129,7 +155,7 @@ rule canopy_post:
 
 rule binning:
     input:   contigs="assembly/{sample}.fasta", ann="annotation/{sample}.ann",
-             left=IN + "/{sample}/left.fastq", right=IN + "/{sample}/right.fastq"
+             left=left_reads, right=right_reads
     output:  "binning/{sample,sample\d+}.log", "annotation/{sample}_edges.ann"
     params:  "assembly/{sample}/" + SAVES
     log:     "binning/{sample}.log"
@@ -164,7 +190,7 @@ rule generate_yaml:
     message: "Generated config file for reassembly"
     run:
         with open(output[0], "w") as outfile:
-            yaml = {"k": small_k, "sample_cnt": SAMPLE_COUNT,
+            yaml = {"k": SMALL_K, "sample_cnt": SAMPLE_COUNT,
                     "kmer_mult": rules.multiplicities.params.out,
                     "bin": wildcards.cag, "bin_prof": rules.canopy.output.prof}
             #TODO: some sort of PyYAML
