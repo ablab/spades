@@ -264,7 +264,6 @@ struct detail_info_printer {
     void ProduceDetailedInfo(const string &pos_name,
                              config::info_printer_pos pos) {
         static size_t call_cnt = 0;
-        ++call_cnt;
 
         auto it = cfg::get().info_printers.find(pos);
         VERIFY(it != cfg::get().info_printers.end());
