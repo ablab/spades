@@ -1449,6 +1449,7 @@ private:
 
     EdgeContainer FindExtensionTroughRepeat(const EdgeContainer& edges, double path_coverage) const {
         set<EdgeId> good_extensions;
+        map<EdgeId, EdgeId> from_extensions_to_long_edges;
         for(auto edge : edges) {
 
             if(!GoodExtension(edge.e_, path_coverage)) {
@@ -1458,6 +1459,7 @@ private:
             if (g_.length(edge.e_) > max_edge_length_in_repeat_) {
                 if (GoodExtension(edge.e_, path_coverage)) {
                     good_extensions.insert(edge.e_);
+                    from_extensions_to_long_edges[edge.e_] = edge.e_;
                 }
                 continue;
             }
@@ -1476,8 +1478,14 @@ private:
 
             for (auto v : gc.sinks()) {
                 for (auto e : g_.OutgoingEdges(v)) {
+                    if(g_.length(e) < max_edge_length_in_repeat_) {
+                        continue;
+                    }
                     if (GoodExtension(e, path_coverage)) {
                         good_extensions.insert(edge.e_);
+                        if(from_extensions_to_long_edges.find(edge.e_) == from_extensions_to_long_edges.end() || g_.coverage(e) < g_.coverage(from_extensions_to_long_edges[edge.e_])) {
+                            from_extensions_to_long_edges[edge.e_] = e;
+                        }
                     }
                 }
             }
@@ -1491,10 +1499,11 @@ private:
         }
         auto extension = *good_extensions.begin();
 
-        if(math::ls(path_coverage, g_.coverage(extension) * delta_)) {
-            DEBUG("Extension coverage too high");
+        if(math::le(path_coverage, g_.coverage(from_extensions_to_long_edges[extension]) * delta_)) {
+            DEBUG("Long edge has too high coverage");
             return EdgeContainer();
         }
+
 
         DEBUG("Filtering... Extend with edge " << extension.int_id());
         return FinalFilter(edges, extension);
