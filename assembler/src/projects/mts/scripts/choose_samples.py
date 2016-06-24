@@ -19,7 +19,7 @@ MIN_ABUNDANCE = 4
 MIN_TOTAL_ABUNDANCE = 20
 
 #TODO: non-consecutive sample indexes
-profile = [CAG] + map(float, subprocess.check_output(["grep", CAG, PROF]).split()[1:])
+profile = [CAG] + map(float, subprocess.check_output(["grep", "-e", CAG + "\\s", PROF]).split()[1:])
 print("Profile of", CAG, ":", profile)
 
 weighted_profile = list((i, ab)
