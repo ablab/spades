@@ -10,6 +10,7 @@
 #include <string>
 #include "ireader.hpp"
 #include "io/reads/paired_read.hpp"
+#include "file_reader.hpp"
 #include "orientation.hpp"
 
 namespace io {

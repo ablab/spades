@@ -9,6 +9,7 @@
 
 #include "dev_support/standard_base.hpp"
 #include "dev_support/openmp_wrapper.h"
+#include "modules/data_structures/sequence/sequence.hpp"
 #include "modules/assembly_graph/graph_core/graph_iterators.hpp"
 
 namespace debruijn_graph {

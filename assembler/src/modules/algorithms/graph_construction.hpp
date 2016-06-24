@@ -110,11 +110,12 @@ void EarlyClipTips(size_t k, const config::debruijn_config::construction& params
     }
 }
 
+#include "data_structures/indices/kmer_extension_index_builder.hpp"
+
 template<class Graph, class Read, class Index>
 ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_config::construction params,
-        io::ReadStreamList<Read>& streams, Graph& g,
-        Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-
+                                                 io::ReadStreamList<Read>& streams, Graph& g,
+                                                 Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     size_t k = g.k();
     INFO("Constructing DeBruijn graph for k=" << k);
 

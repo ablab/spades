@@ -12,6 +12,7 @@
 
 #include "dev_support/file_limit.hpp"
 #include "data_structures/sequence/runtime_k.hpp"
+#include "data_structures/mph_index/kmer_index_builder.hpp"
 
 namespace debruijn_graph {
 

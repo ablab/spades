@@ -8,6 +8,7 @@
 #pragma once
 
 #include "edge_position_index.hpp"
+#include "perfect_hash_map_builder.hpp"
 
 namespace debruijn_graph {
 

@@ -6,13 +6,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * debruijn_graph_constructor.hpp
- *
- *  Created on: Apr 5, 2011
- *      Author: sergey
- */
-
 #include "assembly_graph/graph_core/graph.hpp"
 #include "assembly_graph/graph_core/construction_helper.hpp"
 #include "dev_support/standard_base.hpp"

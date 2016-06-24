@@ -9,6 +9,7 @@
 
 #include "dev_support/verify.hpp"
 #include "io/reads_io/delegating_reader_wrapper.hpp"
+#include "paired_readers.hpp"
 
 #include <memory>
 #include <io/reads/single_read.hpp>

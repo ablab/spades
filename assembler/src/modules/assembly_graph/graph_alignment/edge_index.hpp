@@ -67,11 +67,11 @@ public:
         return inner_index_;
     }
 
-    virtual void HandleAdd(EdgeId e) {
+    void HandleAdd(EdgeId e) override {
         updater_.UpdateKmers(e);
     }
 
-    virtual void HandleDelete(EdgeId e) {
+    void HandleDelete(EdgeId e) override {
         updater_.DeleteKmers(e);
     }
 
@@ -96,6 +96,7 @@ public:
         typedef typename EdgeIndexHelper<InnerIndexT>::GraphPositionFillingIndexBuilderT IndexBuilder;
         //also makes an update!
         //todo pass appropriate 3-rd arg
+        // FIXME: Get rid of this!
         IndexBuilder().BuildIndexFromGraph(inner_index_, this->g());
         INFO("Index refilled");
     }
