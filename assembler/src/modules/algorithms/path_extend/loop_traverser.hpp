@@ -165,7 +165,6 @@ private:
                     for (size_t i = 0; i < shortest_path.size(); ++i) {
                         nLen += g_.length(shortest_path[i]);
                     }
-                    nLen += g_.k();
                 }
             }
         }
