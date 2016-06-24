@@ -169,7 +169,7 @@ struct EdgeIndexHelper {
     typedef typename IndexT::KMerIdx KMerIdx;
     typedef typename IndexT::traits_t traits_t;
 //    typedef typename IndexT::IdType IdType;
-    typedef DeBruijnStreamKMerIndexBuilder<Kmer, IndexT> DeBruijnStreamKMerIndexBuilderT;
+    typedef DeBruijnStreamKMerIndexBuilder<IndexT> DeBruijnStreamKMerIndexBuilderT;
     typedef CoverageFillingEdgeIndexBuilder<DeBruijnStreamKMerIndexBuilderT> CoverageFillingEdgeIndexBuilderT;
     typedef DeBruijnGraphKMerIndexBuilder<IndexT> DeBruijnGraphKMerIndexBuilderT;
     typedef GraphPositionFillingIndexBuilder<DeBruijnGraphKMerIndexBuilderT> GraphPositionFillingIndexBuilderT;

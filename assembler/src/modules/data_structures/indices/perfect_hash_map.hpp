@@ -16,9 +16,6 @@
 
 #include "utils/adt/kmer_vector.hpp"
 
-#include "libcxx/sort.hpp"
-
-
 #include "kmer_splitters.hpp"
 #include "key_with_hash.hpp"
 #include "values.hpp"
@@ -31,6 +28,9 @@
 #include <io/kmers_io/kmer_iterator.hpp>
 
 namespace debruijn_graph {
+
+template<class Index>
+class DeBruijnKMerIndexBuilder;
 
 template<class K, class traits>
 class IndexWrapper {
@@ -146,16 +146,9 @@ public:
         KeyBase::BinRead(reader, tmp);
         ValueBase::BinRead(reader, tmp);
     }
-//todo think more about hierarchy
-protected:
-    template <class KmerCounter>
-    void BuildIndex(KmerCounter& counter, size_t bucket_num, size_t thread_num, bool save_final = true) {
-        KMerIndexBuilder<KMerIndexT> builder(this->workdir(),
-                             (unsigned) bucket_num,
-                             (unsigned) thread_num);
-        size_t sz = builder.BuildIndex(index_, counter, save_final);
-        ValueBase::resize(sz);
-    }
+
+    template<class Index>
+    friend class DeBruijnKMerIndexBuilder;
 };
 
 
@@ -297,15 +290,8 @@ public:
         return res;
     }
 
-    template<class KmerCounter>
-    void BuildIndex(KmerCounter& counter, size_t bucket_num,
-                    size_t thread_num) {
-        base::BuildIndex(counter, bucket_num, thread_num);
-        VERIFY(!kmers_.get());
-        kmers_ = counter.GetFinalKMers();
-        VERIFY(kmers_.get());
-        SortUniqueKMers();
-    }
+    template<class Index>
+    friend class DeBruijnKMerIndexBuilder;
 };
 
 template<class K, class V, class traits = kmer_index_traits<K>, class StoringType = SimpleStoring>
@@ -338,23 +324,56 @@ public:
         return io::make_kmer_iterator<KMer>(this->KMersFilename_, base::k(), parts);
     }
 
-
-    template<class KmerCounter>
-    void BuildIndex(KmerCounter& counter, size_t bucket_num,
-                    size_t thread_num) {
-        base::BuildIndex(counter, bucket_num, thread_num);
-        KMersFilename_ = counter.GetFinalKMersFname();
-    }
-};
-
-//Seq is here for partial specialization
-template <class Seq, class Index>
-class DeBruijnStreamKMerIndexBuilder {
-
+    template<class Index>
+    friend class DeBruijnKMerIndexBuilder;
 };
 
 template<class Index>
-class DeBruijnStreamKMerIndexBuilder<runtime_k::RtSeq, Index> {
+class DeBruijnKMerIndexBuilder {
+    using KMerIndexT = typename Index::KMerIndexT;
+  public:
+    template<class K, class V, class traits, class StoringType, class Counter>
+    void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
+                    Counter& counter, size_t bucket_num,
+                    size_t thread_num,  bool save_final = true) const {
+        KMerIndexBuilder<KMerIndexT> builder(index.workdir(),
+                                             (unsigned) bucket_num,
+                                             (unsigned) thread_num);
+        size_t sz = builder.BuildIndex(index.index_, counter, save_final);
+        index.resize(sz);
+    }
+
+    template<class K, class V, class traits, class StoringType, class Counter>
+    void BuildIndex(KeyStoringMap<K, V, traits, StoringType> &index,
+                    Counter& counter, size_t bucket_num,
+                    size_t thread_num,  bool save_final = true) const {
+        KMerIndexBuilder<KMerIndexT> builder(index.workdir(),
+                                             (unsigned) bucket_num,
+                                             (unsigned) thread_num);
+        size_t sz = builder.BuildIndex(index.index_, counter, save_final);
+        index.resize(sz);
+        VERIFY(!index.kmers_.get());
+        index.kmers_ = counter.GetFinalKMers();
+        VERIFY(index.kmers_.get());
+        index.SortUniqueKMers();
+
+    }
+
+    template<class K, class V, class traits, class StoringType, class Counter>
+    void BuildIndex(KeyIteratingMap<K, V, traits, StoringType> &index,
+                    Counter& counter, size_t bucket_num,
+                    size_t thread_num,  bool save_final = true) const {
+        KMerIndexBuilder<KMerIndexT> builder(index.workdir(),
+                                             (unsigned) bucket_num,
+                                             (unsigned) thread_num);
+        size_t sz = builder.BuildIndex(index.index_, counter, save_final);
+        index.resize(sz);
+        index.KMersFilename_ = counter.GetFinalKMersFname();
+    }
+};
+
+template<class Index>
+class DeBruijnStreamKMerIndexBuilder : public DeBruijnKMerIndexBuilder<Index> {
  public:
     typedef Index IndexT;
 
@@ -362,30 +381,27 @@ class DeBruijnStreamKMerIndexBuilder<runtime_k::RtSeq, Index> {
     size_t BuildIndexFromStream(IndexT &index,
                                 Streams &streams,
                                 io::SingleStream* contigs_stream = 0) const {
-        DeBruijnReadKMerSplitter<typename Streams::ReadT, StoringTypeFilter<typename IndexT::storing_type>>
+        DeBruijnReadKMerSplitter<typename Streams::ReadT,
+                                 StoringTypeFilter<typename IndexT::storing_type>>
                 splitter(index.workdir(), index.k(), 0, streams, contigs_stream);
         KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-
-        index.BuildIndex(counter, 16, streams.size());
+        this->BuildIndex(index, counter, 16, streams.size());
         return 0;
     }
 };
 
-//fixme makes hierarchy a bit strange
-template <class Index, class Seq = typename Index::KMer>
-class DeBruijnGraphKMerIndexBuilder;
-
 template <class Index>
-class DeBruijnGraphKMerIndexBuilder<Index, runtime_k::RtSeq> {
+class DeBruijnGraphKMerIndexBuilder : public DeBruijnKMerIndexBuilder<Index> {
  public:
   typedef Index IndexT;
 
   template<class Graph>
   void BuildIndexFromGraph(IndexT &index, const Graph &g, size_t read_buffer_size = 0) const {
-      DeBruijnGraphKMerSplitter<Graph, StoringTypeFilter<typename Index::storing_type>> splitter(index.workdir(), index.k(),
-                                                g, read_buffer_size);
+      DeBruijnGraphKMerSplitter<Graph,
+                                StoringTypeFilter<typename Index::storing_type>>
+              splitter(index.workdir(), index.k(), g, read_buffer_size);
       KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-      index.BuildIndex(counter, 16, 1);
+      this->BuildIndex(index, counter, 16, 1);
   }
 };
 

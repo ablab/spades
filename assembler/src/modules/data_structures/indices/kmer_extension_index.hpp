@@ -6,12 +6,7 @@
 //***************************************************************************
 
 #pragma once
-/*
- * kmer_extension_index.hpp
- *
- *  Created on: May 24, 2013
- *      Author: anton
- */
+
 #include "perfect_hash_map.hpp"
 #include "kmer_splitters.hpp"
 #include "dev_support/simple_tools.hpp"
@@ -365,9 +360,8 @@ public:
 
 public:
     template<class Streams>
-    ReadStatistics BuildExtensionIndexFromStream(
-            IndexT &index, Streams &streams, io::SingleStream* contigs_stream = 0,
-            size_t read_buffer_size = 0) const {
+    ReadStatistics BuildExtensionIndexFromStream(IndexT &index, Streams &streams, io::SingleStream* contigs_stream = 0,
+                                                 size_t read_buffer_size = 0) const {
         unsigned nthreads = (unsigned) streams.size();
 
         // First, build a k+1-mer index
@@ -384,7 +378,7 @@ public:
             splitter2.AddKMers(counter.GetMergedKMersFname(i));
         KMerDiskCounter<runtime_k::RtSeq> counter2(index.workdir(), splitter2);
 
-        index.BuildIndex(counter2, 16, nthreads);
+        DeBruijnKMerIndexBuilder<IndexT>().BuildIndex(index, counter2, 16, nthreads);
 
         // Build the kmer extensions
         INFO("Building k-mer extensions from k+1-mers");
@@ -406,7 +400,7 @@ struct ExtensionIndexHelper {
     typedef typename IndexT::traits_t traits_t;
     typedef typename IndexT::KMer Kmer;
     typedef typename IndexT::KMerIdx KMerIdx;
-    typedef DeBruijnStreamKMerIndexBuilder<Kmer, IndexT> DeBruijnStreamKMerIndexBuilderT;
+    typedef DeBruijnStreamKMerIndexBuilder<IndexT> DeBruijnStreamKMerIndexBuilderT;
     typedef DeBruijnExtensionIndexBuilder<DeBruijnStreamKMerIndexBuilderT> DeBruijnExtensionIndexBuilderT;
 };
 
