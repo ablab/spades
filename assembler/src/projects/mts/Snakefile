@@ -7,7 +7,7 @@ import os.path
 #Config parameters
 IN = config["IN"]
 SPADES = config["SPADES"]
-SPADES_REASSEMBLY = config["SPADES_REASSEMBLY"]
+SPADES_REASSEMBLY = config.get("SPADES_REASSEMBLY", SPADES)
 BIN = config["BIN"]
 SCRIPTS = config["SCRIPTS"]
 SOFT = config["SOFT"]
@@ -16,11 +16,11 @@ QUAST = config["QUAST"]
 METAQUAST = QUAST.replace("quast.py", "metaquast.py")
 K = int(config.get("K", 55))
 SMALL_K = int(config.get("SMALL_K", 21))
-CONFIG = "K{0}/configs/config.info".format(K)
-SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(K)
 MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
-CAG = config.get("CAG")
 THREADS = config.get("THREADS", 16)
+
+#Path to saves of necessary assembly stage
+SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(K)
 
 #Flag files for stages completion
 FINISHED_BINNING = "binning/all.log"
@@ -30,10 +30,20 @@ FINISHED_CHOOSING = "binning/choose_all.log"
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
 
+FASTA_EXTS = {".fasta", ".fa", ".fna", ".fsa", ".fastq", ".fastq.gz", ".fq", ".fq.gz"}
+def gather_paths(path, basename=False):
+    for filename in os.listdir(path):
+        name, ext = os.path.splitext(filename)
+        if ext in FASTA_EXTS:
+            filepath = os.path.join(path, filename)
+            if basename:
+                yield (name, filepath)
+            else:
+                yield filepath
+
 def detect_reads(sample):
     path = "{}/{}/".format(IN, sample)
-    names, = glob_wildcards(path + "{name}")
-    return (sample, [os.path.join(path, name) for name in sorted(names[:2])])
+    return (sample, sorted(list(gather_paths(path)))[:2])
 
 SAMPLE_READS = dict(map(detect_reads, SAMPLES))
 
@@ -48,7 +58,6 @@ CAGS, = glob_wildcards("binning/{cag,CAG\d+}")
 GOOD_CAGS, = glob_wildcards("binning/{cag,CAG\d+}/left.fastq")
 
 #Autodetect references
-FASTA_EXTS = {".fasta", ".fa", ".fna", ".fsa"}
 
 def gather_refs(data):
     if type(data) is list:
@@ -56,10 +65,7 @@ def gather_refs(data):
             yield from gather_refs(path)
     else:
         if os.path.isdir(data):
-            for name in os.listdir(data):
-                ref, ext = os.path.splitext(name)
-                if ext in FASTA_EXTS:
-                     yield (ref, os.path.join(data, name))
+            yield from gather_paths(data, True)
         else:
             yield (os.path.splitext(os.path.basename(data))[0], data)
 
@@ -219,7 +225,7 @@ rule reassemble_all:
 #---- Statistics section -------------------------------------------------------
 #===============================================================================
 
-#---- Single alignments per sample per reference -------------------------------
+#---- Single alignments for samples per reference -------------------------------
 #TODO: use alignments from meta version instead
 rule quast_all_samples:
     input:   ref=ref_path, contigs=expand("assembly/{sample}.fasta", sample=SAMPLES)
