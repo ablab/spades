@@ -168,7 +168,7 @@ ReadStatistics ConstructGraphWithCoverage(const config::debruijn_config::constru
                                   io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     ReadStatistics rs = ConstructGraph(params, streams, g, index, contigs_stream);
 
-    typedef typename Index::InnerIndexT InnerIndex;
+    typedef typename Index::InnerIndex InnerIndex;
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
     INFO("Filling coverage index")
     IndexBuilder().ParallelFillCoverage(index.inner_index(), streams);

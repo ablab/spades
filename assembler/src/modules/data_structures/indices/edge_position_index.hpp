@@ -6,16 +6,11 @@
 //***************************************************************************
 
 #pragma once
-/*
- * edge_index.hpp
- *
- *  Created on: May 24, 2013
- *      Author: anton
- */
 
 #include "perfect_hash_map.hpp"
 #include "edge_info_updater.hpp"
-#include "kmer_splitters.hpp"
+#include "data_structures/sequence/runtime_k.hpp"
+#include "modules/io/reads/single_read.hpp"
 
 namespace debruijn_graph {
 

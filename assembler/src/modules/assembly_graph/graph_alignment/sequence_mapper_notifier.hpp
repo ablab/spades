@@ -8,6 +8,7 @@
 #ifndef SEQUENCE_MAPPER_NOTIFIER_HPP_
 #define SEQUENCE_MAPPER_NOTIFIER_HPP_
 
+#include "dev_support/memory_limit.hpp"
 #include "assembly_graph/graph_alignment/sequence_mapper.hpp"
 #include "short_read_mapper.hpp"
 #include "io/reads/paired_read.hpp"

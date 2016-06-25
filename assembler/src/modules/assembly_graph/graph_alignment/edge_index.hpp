@@ -7,42 +7,36 @@
 
 #pragma once
 
-#include "dev_support/openmp_wrapper.h"
-
 #include "assembly_graph/graph_core/graph.hpp"
 #include "assembly_graph/graph_core/action_handlers.hpp"
-#include "dev_support/standard_base.hpp"
-#include "data_structures/indices/edge_index_builders.hpp"
-
+#include "data_structures/indices/edge_position_index.hpp"
+#include "edge_index_refiller.hpp"
+    
 namespace debruijn_graph {
 
 /**
  * EdgeIndex is a structure to store info about location of certain k-mers in graph. It delegates all
  * container procedures to inner_index_ and all handling procedures to
  * renewer_ which is DataHashRenewer.
- * @see DeBruijnKMerIndex
- * @see DataHashRenewer
  */
-//fixme template params
-template<class Graph, class Seq /*= runtime_k::RtSeq*/,
-        class Index /*= KmerFreeEdgeIndex<Graph, Seq>*/>
+template<class Graph>
 class EdgeIndex: public omnigraph::GraphActionHandler<Graph> {
 
 public:
     typedef typename Graph::EdgeId EdgeId;
-    typedef Index InnerIndexT;
+    using InnerIndex = KmerFreeEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, DefaultStoring>;
     typedef Graph GraphT;
-    typedef typename Index::KMer KMer;
-    typedef typename Index::KMerIdx KMerIdx;
-    typedef typename Index::Value Value;
+    typedef typename InnerIndex::KMer KMer;
+    typedef typename InnerIndex::KMerIdx KMerIdx;
+    typedef typename InnerIndex::Value Value;
 
 private:
-    Index inner_index_;
-    EdgeInfoUpdater<Index, Graph> updater_;
+    InnerIndex inner_index_;
+    EdgeInfoUpdater<InnerIndex, Graph> updater_;
+    EdgeIndexRefiller refiller_;
     bool delete_index_;
 
 public:
-
     EdgeIndex(const Graph& g, const std::string &workdir)
             : omnigraph::GraphActionHandler<Graph>(g, "EdgeIndex"),
               inner_index_(g, workdir),
@@ -54,7 +48,7 @@ public:
         TRACE("~EdgeIndex OK")
     }
 
-    Index &inner_index() {
+    InnerIndex &inner_index() {
         return inner_index_;
     }
 
@@ -62,7 +56,7 @@ public:
         return inner_index_.k();
     }
 
-    const Index &inner_index() const {
+    const InnerIndex &inner_index() const {
         VERIFY(this->IsAttached());
         return inner_index_;
     }
@@ -93,11 +87,7 @@ public:
 
     void Refill() {
         clear();
-        typedef typename EdgeIndexHelper<InnerIndexT>::GraphPositionFillingIndexBuilderT IndexBuilder;
-        //also makes an update!
-        //todo pass appropriate 3-rd arg
-        // FIXME: Get rid of this!
-        IndexBuilder().BuildIndexFromGraph(inner_index_, this->g());
+        refiller_.Refill(inner_index_, this->g());
         INFO("Index refilled");
     }
 

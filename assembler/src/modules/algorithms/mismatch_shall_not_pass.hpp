@@ -11,6 +11,7 @@
 #include "assembly_graph/handlers/id_track_handler.hpp"
 #include "dev_support/logger/logger.hpp"
 
+#include "io/reads_io/read_stream_vector.hpp"
 #include "data_structures/sequence/runtime_k.hpp"
 #include "assembly_graph/graph_alignment/sequence_mapper.hpp"
 

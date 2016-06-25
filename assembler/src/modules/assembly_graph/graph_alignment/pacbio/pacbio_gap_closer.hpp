@@ -13,6 +13,7 @@
 #include "ConsensusCore/Poa/PoaConsensus.hpp"
 
 #include <algorithm>
+#include <fstream>
 
 namespace pacbio {
 template<class Graph>

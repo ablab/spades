@@ -10,6 +10,7 @@
  */
 #include "dev_support/logger/log_writers.hpp"
 
+#include "dev_support/memory_limit.hpp"
 #include "dev_support/segfault_handler.hpp"
 #include "launch.hpp"
 #include "dev_support/copy_file.hpp"

@@ -26,15 +26,13 @@
 
 namespace debruijn_graph {
 
-/*KmerFree*//*KmerStoring*/
-template<class Graph,
-         class KmerEdgeIndex = KmerStoringEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, DefaultStoring>>
+template<class Graph>
 struct graph_pack: private boost::noncopyable {
     typedef Graph graph_t;
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef runtime_k::RtSeq seq_t;
-    typedef EdgeIndex<graph_t, seq_t, KmerEdgeIndex> index_t;
+    typedef EdgeIndex<graph_t> index_t;
     using PairedInfoIndicesT = omnigraph::de::PairedInfoIndicesT<Graph>;
     //typedef omnigraph::de::PairedInfoIndicesT<Graph> PairedInfoIndicesT;
     typedef omnigraph::de::UnclusteredPairedInfoIndicesT<Graph> UnclusteredPairedInfoIndicesT;
@@ -151,7 +149,7 @@ struct graph_pack: private boost::noncopyable {
 
 };
 
-typedef graph_pack<ConjugateDeBruijnGraph, KmerFreeEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, DefaultStoring>> conj_graph_pack;
+typedef graph_pack<ConjugateDeBruijnGraph> conj_graph_pack;
 typedef conj_graph_pack::index_t Index;
 
 typedef conj_graph_pack::PairedInfoIndicesT PairedIndicesT;

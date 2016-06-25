@@ -5,19 +5,13 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * pac_index.hpp
- *
- *  Created on: Jan 21, 2013
- *      Author: lab42
- */
 #pragma once
 
 #include "data_structures/indices/perfect_hash_map.hpp"
-#include "pipeline/graph_pack.hpp"
 #include <algorithm>
-using std::map;
-using std::set;
+#include <map>
+#include <set>
+
 namespace pacbio {
 template<class T>
 struct pair_iterator_less {

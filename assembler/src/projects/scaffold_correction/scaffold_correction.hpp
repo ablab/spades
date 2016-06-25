@@ -6,6 +6,7 @@
 
 #pragma once
 #include "io/reads_io/osequencestream.hpp"
+#include "io/reads_io/file_reader.hpp"
 #include "pipeline/stage.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "assembly_graph/paths/path_processor.hpp"

@@ -5,27 +5,23 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * pac_index.hpp
- *
- *  Created on: Jan 21, 2013
- *      Author: lab42
- */
 #pragma once
 
 #include "data_structures/indices/edge_multi_index.hpp"
-#include "data_structures/indices/edge_index_builders.hpp"
-#include <algorithm>
+#include "assembly_graph/graph_alignment/edge_index_refiller.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
+#include "assembly_graph/paths/path_processor.hpp"
+// FIXME: Layering violation, get rid of this
+#include "pipeline/config_struct.hpp"
 #include "pacbio_read_structures.hpp"
 #include "pipeline/config_struct.hpp"
 
+#include <algorithm>
+
 namespace pacbio {
-#define UNDEF_COLOR -1
-#define DELETED_COLOR -2
-
-template<class Graph>
-struct MappingDescription {
-
+enum {
+    UNDEF_COLOR = -1,
+    DELETED_COLOR = - 2
 };
 
 template<class Graph>
@@ -36,7 +32,7 @@ public:
     typedef set<KmerCluster<Graph> > ClustersSet;
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef     debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> Index;
+    typedef debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> Index;
     typedef typename Index::KeyWithHash KeyWithHash;
 
 private:
@@ -69,18 +65,15 @@ public:
               debruijn_k(debruijn_k_),
               tmp_index((unsigned) pacbio_k, out_dir), ignore_map_to_middle(ignore_map_to_middle), pb_config_(pb_config) {
         DEBUG("PB Mapping Index construction started");
-
-        typedef typename debruijn_graph::EdgeIndexHelper<debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId>>::GraphPositionFillingIndexBuilderT Builder;
-
-        Builder().BuildIndexFromGraph(tmp_index, g_);
+        debruijn_graph::EdgeIndexRefiller().Refill(tmp_index, g_);
         INFO("Index constructed");
         FillBannedKmers();
         read_count = 0;
     }
     ~PacBioMappingIndex(){
         DEBUG("good/ugly/bad counts:" << good_follow << " "<<half_bad_follow << " " << bad_follow);
-
     }
+    
     void FillBannedKmers() {
         for (int i = 0; i < 4; i++) {
             auto base = nucl((unsigned char) i);
@@ -349,7 +342,7 @@ public:
                         DEBUG("Tangled region between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(debruijn_k - pacbio_k ) << " and seq "<< - seq_start + seq_end);
                         if (pb_config_.additional_debug_info) {
                             DEBUG(" escpected gap length: " << -int(g_.length(prev_edge)) + int(prev_last_index.edge_position) - int(cur_first_index.edge_position) + int(debruijn_k - pacbio_k ) - seq_start + seq_end);
-                            PathStorageCallback<Graph> callback(g_);
+                            omnigraph::PathStorageCallback<Graph> callback(g_);
                             ProcessPaths(g_, 0, 4000,
                                             start_v, end_v,
                                             callback);
@@ -619,7 +612,7 @@ public:
         vector<size_t> result;
         DEBUG("seq dist:" << s.size()/3);
         if (distance_cashed.find(vertex_pair) == distance_cashed.end()) {
-            DistancesLengthsCallback<Graph> callback(g_);
+            omnigraph::DistancesLengthsCallback<Graph> callback(g_);
             ProcessPaths(g_, 0, s.size() / 3, start_v,
                              end_v, callback);
             result = callback.distances();
@@ -676,7 +669,7 @@ public:
                                   int start_pos, int end_pos, string &s_add,
                                   string &e_add) {
         DEBUG(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
-        PathStorageCallback<Graph> callback(g_);
+        omnigraph::PathStorageCallback<Graph> callback(g_);
         ProcessPaths(g_,
                     path_min_length, path_max_length,
                     start_v, end_v,
@@ -719,7 +712,7 @@ public:
     }
 
     // Short read alignment
-    MappingPath<EdgeId> GetShortReadAlignment(const Sequence &s) const {
+    omnigraph::MappingPath<EdgeId> GetShortReadAlignment(const Sequence &s) const {
         ClustersSet mapping_descr = GetOrderClusters(s);
         map<EdgeId, KmerCluster<Graph> > largest_clusters;
 
@@ -749,13 +742,13 @@ public:
             }
         }
 
-        MappingPath<EdgeId> result;
+        omnigraph::MappingPath<EdgeId> result;
         for (auto iter = largest_clusters.begin(); iter != largest_clusters.end(); ++iter) {
             auto first_cluster = iter->second.sorted_positions[iter->second.first_trustable_index];
             auto last_cluster = iter->second.sorted_positions[iter->second.last_trustable_index];
-            MappingRange range(Range(first_cluster.read_position, last_cluster.read_position),
-                    Range(first_cluster.edge_position, last_cluster.edge_position));
-            result.join(MappingPath<EdgeId>(vector<EdgeId>(1, iter->second.edgeId), vector<MappingRange>(1, range)));
+            omnigraph::MappingRange range(Range(first_cluster.read_position, last_cluster.read_position),
+                                          Range(first_cluster.edge_position, last_cluster.edge_position));
+            result.join(omnigraph::MappingPath<EdgeId>(vector<EdgeId>(1, iter->second.edgeId), vector<omnigraph::MappingRange>(1, range)));
         }
 
         return result;
