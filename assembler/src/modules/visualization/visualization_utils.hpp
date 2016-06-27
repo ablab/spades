@@ -34,10 +34,10 @@ void WriteComponents(const Graph& g,
 }
 
 template<class Graph>
-void DrawComponentsOfShortEdges(const Graph& g, size_t min_length, size_t sinks, size_t sources)
+void DrawComponentsOfShortEdges(const Graph& g, const string &output_dir, size_t min_length, size_t sinks, size_t sources)
 {
     vector<typename Graph::EdgeId> short_edges;
-    std::string pics_folder_ = cfg::get().output_dir + ToString(min_length) + "_" + ToString(sinks) + "_" + ToString(sources) + "_"+ "pics_polymorphic/";
+    std::string pics_folder_ = output_dir + ToString(min_length) + "_" + ToString(sinks) + "_" + ToString(sources) + "_"+ "pics_polymorphic/";
     make_dir(pics_folder_);
     INFO("Writing pics with components consisting of short edges to " + pics_folder_);
     shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g, min_length);

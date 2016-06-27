@@ -104,13 +104,6 @@ private:
                 }
             }
         }
-        for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if (gp.g.length(*it) < cfg::get().max_repeat_length) {
-                //                    INFO("edge id " <<gp.g.int_id(*it) << " added to stat" );
-                //                    for(size_t i = 0; i < gp.g.length(*it) + gp.g.k(); i++)
-                //                        statistics_[*it].AddPosition(i);
-            }
-        }
     }
 
     void operator+=(const MismatchStatistics<EdgeId> &other) {
