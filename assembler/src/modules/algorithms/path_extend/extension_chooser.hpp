@@ -1401,8 +1401,8 @@ private:
             std::queue<VertexId>& can_be_processed, double path_coverage) const {
         DEBUG("Updating can be processed");
         for (EdgeId e : g_.OutgoingEdges(v)) {
-            VertexId neighbour_v = this->g_.EdgeEnd(e);
-            if (g_.length(e) < max_edge_length_in_repeat_ && GoodExtension(e, path_coverage)) {
+            VertexId neighbour_v = g_.EdgeEnd(e);
+            if (g_.length(e) <= max_edge_length_in_repeat_ && CompatibleEdge(e, path_coverage)) {
                 DEBUG("Adding vertex " << neighbour_v.int_id()
                                 << "through edge " << g_.str(e));
                 can_be_processed.push(neighbour_v);
@@ -1443,70 +1443,91 @@ private:
         return result;
     }
 
-    bool GoodExtension(EdgeId e, double path_coverage) const {
+    bool CompatibleEdge(EdgeId e, double path_coverage) const {
         return math::ge(g_.coverage(e), path_coverage * delta_);
     }
 
+    //returns lowest coverage among long compatible edges ahead of e
+    //if std::numeric_limits<double>::max() -- no such edges were detected
+    //if negative -- abort at once
+    double AnalyzeExtension(EdgeId ext, double path_coverage) const {
+        double answer = std::numeric_limits<double>::max();
+
+        if (!CompatibleEdge(ext, path_coverage)) {
+            DEBUG("Extension coverage too low");
+            return answer;
+        }
+
+        if (g_.length(ext) > max_edge_length_in_repeat_) {
+            DEBUG("Long extension");
+            return g_.coverage(ext);
+        } 
+
+        DEBUG("Short extension, launching repeat component analysis");
+        GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(ext), path_coverage);
+        if (gc.v_size() == 0) {
+            DEBUG("Component search failed");
+            return -1.;
+        }
+
+        for (auto e : gc.edges()) {
+            if (g_.length(e) > max_edge_length_in_repeat_) {
+                DEBUG("Repeat component contains long edges");
+                return -1.;
+            }
+        }
+
+        DEBUG("Checking long sinks");
+        for (auto v : gc.sinks()) {
+            for (auto e : g_.OutgoingEdges(v)) {
+                if (g_.length(e) > max_edge_length_in_repeat_ && 
+                        CompatibleEdge(e, path_coverage) &&
+                        math::ls(g_.coverage(e), answer)) {
+                    DEBUG("Updating answer to coverage of edge " << g_.str(e));
+                    answer = g_.coverage(e);
+                }
+            }
+        }
+
+        return answer;
+    }
+
     EdgeContainer FindExtensionTroughRepeat(const EdgeContainer& edges, double path_coverage) const {
-        set<EdgeId> good_extensions;
-        map<EdgeId, EdgeId> from_extensions_to_long_edges;
-        for(auto edge : edges) {
+        static EdgeContainer EMPTY_CONTAINER;
 
-            if(!GoodExtension(edge.e_, path_coverage)) {
-                continue;
-            }
+        map<EdgeId, double> good_extension_to_ahead_cov;
 
-            if (g_.length(edge.e_) > max_edge_length_in_repeat_) {
-                if (GoodExtension(edge.e_, path_coverage)) {
-                    good_extensions.insert(edge.e_);
-                    from_extensions_to_long_edges[edge.e_] = edge.e_;
-                }
-                continue;
-            }
+        for (auto edge : edges) {
+            DEBUG("Processing candidate extension " << g_.str(edge.e_));
+            double analysis_res = AnalyzeExtension(edge.e_, path_coverage);
 
-            GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(edge.e_), path_coverage);
-            if (gc.v_size() == 0) {
-                return EdgeContainer();
-            }
-
-            for (auto e : gc.edges()) {
-                if (g_.length(e) > max_edge_length_in_repeat_) {
-                    DEBUG("Repeat component contains long edges");
-                    return EdgeContainer();
-                }
-            }
-
-            for (auto v : gc.sinks()) {
-                for (auto e : g_.OutgoingEdges(v)) {
-                    if(g_.length(e) < max_edge_length_in_repeat_) {
-                        continue;
-                    }
-                    if (GoodExtension(e, path_coverage)) {
-                        good_extensions.insert(edge.e_);
-                        if(from_extensions_to_long_edges.find(edge.e_) == from_extensions_to_long_edges.end() || g_.coverage(e) < g_.coverage(from_extensions_to_long_edges[edge.e_])) {
-                            from_extensions_to_long_edges[edge.e_] = e;
-                        }
-                    }
-                }
+            if (analysis_res == std::numeric_limits<double>::max()) {
+                DEBUG("Ignoring extension");
+            } else if (math::ls(analysis_res, 0.)) {
+                DEBUG("Troubles detected, abort mission");
+                return EMPTY_CONTAINER;
+            } else {
+                good_extension_to_ahead_cov[edge.e_] = analysis_res;
+                DEBUG("Extension mapped to ahead coverage of " << analysis_res);
             }
         }
 
-        DEBUG("Number of good extensions is " << good_extensions.size());
+        DEBUG("Number of good extensions is " << good_extension_to_ahead_cov.size());
 
-        if (good_extensions.size() != 1) {
-            DEBUG("Returning");
-            return EdgeContainer();
+        if (good_extension_to_ahead_cov.size() == 1) {
+            auto extension_info = *good_extension_to_ahead_cov.begin();
+            DEBUG("Single extension candidate " << g_.str(extension_info.first));
+            if (math::le(extension_info.second, path_coverage / delta_)) {
+                DEBUG("Extending");
+                return FinalFilter(edges, extension_info.first);
+            } else {
+                DEBUG("Predicted ahead coverage is too high");
+            }
+        } else {
+            DEBUG("Multiple extension candidates");
         }
-        auto extension = *good_extensions.begin();
 
-        if(math::le(path_coverage, g_.coverage(from_extensions_to_long_edges[extension]) * delta_)) {
-            DEBUG("Long edge has too high coverage");
-            return EdgeContainer();
-        }
-
-
-        DEBUG("Filtering... Extend with edge " << extension.int_id());
-        return FinalFilter(edges, extension);
+        return EMPTY_CONTAINER;
     }
     
     CoverageAwareIdealInfoProvider provider_;
