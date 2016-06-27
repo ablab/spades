@@ -491,9 +491,10 @@ void GapClosing::run(conj_graph_pack &gp, const char *) {
     }
     gp.EnsureIndex();
 
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
-            auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
+    auto& dataset = cfg::get_writable().ds;
+    for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
+        if (dataset.reads[i].type() == io::LibraryType::PairedEnd) {
+            auto streams = paired_binary_readers(dataset.reads[i], false, 0);
             CloseGaps(gp, streams);
         }
     }

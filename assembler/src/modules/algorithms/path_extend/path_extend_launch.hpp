@@ -375,7 +375,8 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const config::dataset& d
     return make_shared<SimpleExtender>(gp, cov_map,
                                        long_read_ec,
                                        resolvable_repeat_length_bound,
-                                       params.pset.loop_removal.max_loops, true,
+                                       params.pset.loop_removal.max_loops,
+                                       true, /* investigate short loops */
                                        UseCoverageResolverForSingleReads(dataset_info, lib.type()));
 }
 
@@ -403,7 +404,7 @@ inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const config::dataset& 
                                        paired_lib->GetISMax(),
                                        params.pset.loop_removal.max_loops,
                                        investigate_loops,
-                                       false);
+                                       false /*use short loop coverage resolver*/);
 }
 
 inline shared_ptr<SimpleExtensionChooser> MakeMetaExtensionChooser(shared_ptr<PairedInfoLibrary> lib,
@@ -438,7 +439,7 @@ inline shared_ptr<SimpleExtender> MakeMetaExtender(const config::dataset& datase
                                        paired_lib->GetISMax(),
                                        params.pset.loop_removal.max_loops,
                                        investigate_loops,
-                                       false);
+                                       false /*use short loop coverage resolver*/);
 }
 
 inline shared_ptr<SimpleExtender> MakePEExtender(const config::dataset& dataset_info,
@@ -463,7 +464,7 @@ inline shared_ptr<SimpleExtender> MakePEExtender(const config::dataset& dataset_
                                        paired_lib->GetISMax(),
                                        params.pset.loop_removal.max_loops,
                                        investigate_loops,
-                                       false);
+                                       false /*use short loop coverage resolver*/);
 }
 
 inline shared_ptr<PathExtender> MakeScaffoldingExtender(const config::dataset& dataset_info,
@@ -496,13 +497,15 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const config::dataset& d
 
     auto composite_gap_joiner = std::make_shared<CompositeGapJoiner>(gp.g, 
                                                 joiners, 
-                                                size_t(pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
-                                                int(math::round((double) gp.g.k() - pset.scaffolder_options.var_coeff * (double) paired_lib->GetIsVar())),
+                                                size_t(pset.scaffolder_options.max_can_overlap * (double) gp.g.k()), /* may overlap threshold */
+                                                int(math::round((double) gp.g.k() - pset.scaffolder_options.var_coeff * (double) paired_lib->GetIsVar())),  /* must overlap threshold */
                                                 pset.scaffolder_options.artificial_gap);
 
     return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser,
-                                                composite_gap_joiner, paired_lib->GetISMax(),
-                                                pset.loop_removal.max_loops, false,
+                                                composite_gap_joiner,
+                                                paired_lib->GetISMax(),
+                                                pset.loop_removal.max_loops,
+                                                false, /* investigate short loops */
                                                 params.avoid_rc_connections);
 }
 
@@ -551,9 +554,9 @@ inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const config::datase
                                                 gap_joiner,
                                                 paired_lib->GetISMax(),
                                                 pset.loop_removal.max_loops,
-                                                false,
+                                                false, /* investigate short loops */
                                                 params.avoid_rc_connections,
-                                                false);
+                                                false /* jump only from tips */);
 }
 
 
@@ -584,7 +587,8 @@ inline shared_ptr<SimpleExtender> MakeMPExtender(const config::dataset& dataset_
                                        chooser,
                                        paired_lib->GetISMax(),
                                        params.pset.loop_removal.mp_max_loops,
-                                       true, false);
+                                       true, /* investigate short loops */
+                                       false /*use short loop coverage resolver*/);
 }
 
 
@@ -604,7 +608,11 @@ inline shared_ptr<SimpleExtender> MakeCoordCoverageExtender(const config::datase
                                                                           params.pset.coordinated_coverage.min_path_len);
     auto chooser = make_shared<JointExtensionChooser>(gp.g, MakeMetaExtensionChooser(paired_lib, params, gp, dataset_info.RL()), coord_chooser);
 
-    return make_shared<SimpleExtender>(gp, cov_map, chooser, -1ul, params.pset.loop_removal.mp_max_loops, true, false);
+    return make_shared<SimpleExtender>(gp, cov_map, chooser,
+                                       -1ul /* insert size */,
+                                       params.pset.loop_removal.mp_max_loops,
+                                       true, /* investigate short loops */
+                                       false /*use short loop coverage resolver*/);
 }
 
 
@@ -630,7 +638,8 @@ inline shared_ptr<SimpleExtender> MakeRNAExtender(const config::dataset& dataset
                                       extension,
                                       paired_lib->GetISMax(),
                                       params.pset.loop_removal.max_loops,
-                                      investigate_loops, false);
+                                      investigate_loops,
+                                      false /*use short loop coverage resolver*/);
 }
 
 
@@ -655,7 +664,7 @@ inline shared_ptr<SimpleExtender> MakeRNALongReadsExtender(const config::dataset
                                        long_reads_ec,
                                        resolvable_repeat_length_bound,
                                        params.pset.loop_removal.max_loops,
-                                       true,
+                                       true, /* investigate short loops */
                                        UseCoverageResolverForSingleReads(dataset_info, lib.type()));
 }
 
@@ -784,7 +793,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
 
     if (pset.use_coordinated_coverage) {
         INFO("Using additional coordinated coverage extender");
-        result.push_back(MakeCoordCoverageExtender(dataset_info, 0, params, gp, cov_map));
+        result.push_back(MakeCoordCoverageExtender(dataset_info, 0 /* lib index */, params, gp, cov_map));
     }
 
     PrintExtenders(result);

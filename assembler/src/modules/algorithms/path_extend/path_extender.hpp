@@ -997,7 +997,7 @@ class LoopDetectingPathExtender : public PathExtender {
 
 protected:
     size_t maxLoops_;
-    bool investigateShortLoops_;
+    bool investigate_short_loops_;
     bool use_short_loop_cov_resolver_;
     CovShortLoopResolver cov_loop_resolver_;
 
@@ -1006,11 +1006,12 @@ protected:
     const GraphCoverageMap& cov_map_;
 
 public:
-    LoopDetectingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t max_loops, bool investigateShortLoops,
+    LoopDetectingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t max_loops,
+                              bool investigate_short_loops,
                               bool use_short_loop_cov_resolver, size_t is)
             : PathExtender(gp.g),
               maxLoops_(max_loops),
-              investigateShortLoops_(investigateShortLoops),
+              investigate_short_loops_(investigate_short_loops),
               use_short_loop_cov_resolver_(use_short_loop_cov_resolver),
               cov_loop_resolver_(gp),
               is_detector_(gp.g, cov_map, is),
@@ -1023,11 +1024,11 @@ public:
     }
 
     bool isInvestigateShortLoops() const {
-        return investigateShortLoops_;
+        return investigate_short_loops_;
     }
 
     void setInvestigateShortLoops(bool investigateShortLoops) {
-        this->investigateShortLoops_ = investigateShortLoops;
+        this->investigate_short_loops_ = investigateShortLoops;
     }
 
     void setMaxLoops(size_t maxLoops) {
@@ -1163,7 +1164,7 @@ private:
     }
 
     bool InvestigateShortLoop() {
-        return investigateShortLoops_ && (use_short_loop_cov_resolver_ || CanInvestigateShortLoop());
+        return investigate_short_loops_ && (use_short_loop_cov_resolver_ || CanInvestigateShortLoop());
     }
 protected:
     DECL_LOGGER("LoopDetectingPathExtender")
@@ -1259,7 +1260,7 @@ protected:
         DEBUG(candidates.size())
         if (candidates.size() == 1) {
             LoopDetector loop_detector(&path, cov_map_);
-            if (!investigateShortLoops_ && (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
+            if (!investigate_short_loops_ && (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
                 && extensionChooser_->WeightCounterBased()) {
                 return false;
             }
@@ -1277,7 +1278,7 @@ protected:
 
         LoopDetector loop_detector(&path, cov_map_);
         DEBUG("loop detecor");
-        if (!investigateShortLoops_ &&
+        if (!investigate_short_loops_ &&
             (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
             && extensionChooser_->WeightCounterBased()) {
             return false;
@@ -1324,12 +1325,12 @@ protected:
         if (candidates.size() >= 1 && (max_candidates_ == 0 || candidates.size() <= max_candidates_)) {
             LoopDetector loop_detector(&path, cov_map_);
             DEBUG("loop detector");
-            if (!investigateShortLoops_ && loop_detector.EdgeInShortLoop(path.Back())
+            if (!investigate_short_loops_ && loop_detector.EdgeInShortLoop(path.Back())
                 && extensionChooser_->WeightCounterBased()) {
                 return false;
             }
 //First candidate is adding to THIS path.
-            else if (not (!investigateShortLoops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
+            else if (not (!investigate_short_loops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
                 && extensionChooser_->WeightCounterBased())) {
                 DEBUG("push");
                 path.PushBack(candidates.front().e_, candidates.front().d_);
@@ -1341,7 +1342,7 @@ protected:
             }
 //Creating new paths for other than new candidate.
             for (size_t i = 1; i < candidates.size(); ++i) {
-                if (not (!investigateShortLoops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
+                if (not (!investigate_short_loops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
                     && extensionChooser_->WeightCounterBased())) {
                     BidirectionalPath *p = new BidirectionalPath(path);
                     p->PushBack(candidates[i].e_, candidates[i].d_);
@@ -1392,10 +1393,10 @@ public:
                             std::shared_ptr<GapJoiner> gap_joiner,
                             size_t is,
                             size_t max_loops,
-                            bool investigateShortLoops,
+                            bool investigate_short_loops,
                             bool avoid_rc_connections,
                             bool check_sink = true):
-        LoopDetectingPathExtender(gp, cov_map, max_loops, investigateShortLoops, false, is),
+        LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, false, is),
         extension_chooser_(extension_chooser),
         gap_joiner_(gap_joiner),
         avoid_rc_connections_(avoid_rc_connections),

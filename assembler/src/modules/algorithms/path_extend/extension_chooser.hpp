@@ -715,6 +715,7 @@ private:
     }
 
     void FindAllUniqueCoverageEdges() {
+       VERIFY(!uneven_depth_);
        double sum_cov = 0;
        size_t sum_len = 0;
        size_t total_len = 0;

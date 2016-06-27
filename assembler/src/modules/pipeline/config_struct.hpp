@@ -107,16 +107,25 @@ struct DataSetData {
     double insert_size_mad;
     std::map<int, size_t> insert_size_distribution;
 
-    bool binary_coverted;
+    size_t lib_index;
     bool single_reads_mapped;
-
     uint64_t total_nucls;
+    size_t read_count;
+
     double average_coverage;
     double pi_threshold;
 
-    std::string paired_read_prefix;
-    std::string single_read_prefix;
-    size_t thread_num;
+    struct BinaryReadsInfo {
+        BinaryReadsInfo(): binary_coverted(false), chunk_num(0), buffer_size(0) {}
+
+        bool binary_coverted;
+        std::string bin_reads_info_file;
+        std::string paired_read_prefix;
+        std::string single_read_prefix;
+        size_t chunk_num;
+        size_t buffer_size;
+    } binary_reads_info;
+
 
     DataSetData(): read_length(0), avg_read_length(0.0),
                    mean_insert_size(0.0),
@@ -125,12 +134,13 @@ struct DataSetData {
                    insert_size_right_quantile(0.0),
                    median_insert_size(0.0),
                    insert_size_mad(0.0),
-                   binary_coverted(false),
+                   lib_index(0),
                    single_reads_mapped(false),
                    total_nucls(0),
+                   read_count(0),
                    average_coverage(0.0),
-                   pi_threshold(0.0) {
-    }
+                   pi_threshold(0.0),
+                   binary_reads_info() {}
 };
 
 struct dataset {

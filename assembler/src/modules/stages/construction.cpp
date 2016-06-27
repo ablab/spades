@@ -57,12 +57,13 @@ void Construction::run(conj_graph_pack &gp, const char*) {
         INFO("Trusted contigs will be used in graph construction");
     auto contigs_stream = MultifileWrap(trusted_contigs);
 
+    auto& dataset = cfg::get_writable().ds;
     std::vector<size_t> libs_for_construction;
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-        if (cfg::get().ds.reads[i].is_graph_contructable())
+    for (size_t i = 0; i < dataset.reads.lib_count(); ++i)
+        if (dataset.reads[i].is_graph_contructable())
             libs_for_construction.push_back(i);
 
-    auto streams = single_binary_readers_for_libs(libs_for_construction, true, true);
+    auto streams = single_binary_readers_for_libs(dataset, libs_for_construction, true, true);
     construct_graph<io::SingleReadSeq>(streams, gp, contigs_stream);
 }
 

@@ -17,7 +17,6 @@
 
 namespace debruijn_graph {
 
-typedef io::SequencingLibrary<config::DataSetData> SequencingLib;
 
 bool RefineInsertSizeForLib(conj_graph_pack &gp, size_t ilib, size_t edge_length_threshold) {
 
@@ -26,9 +25,10 @@ bool RefineInsertSizeForLib(conj_graph_pack &gp, size_t ilib, size_t edge_length
     SequenceMapperNotifier notifier(gp);
     notifier.Subscribe(ilib, &hist_counter);
 
-    SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
-    VERIFY(reads.data().read_length != 0);
+    auto& reads = cfg::get_writable().ds.reads[ilib];
     auto paired_streams = paired_binary_readers(reads, false);
+
+    VERIFY(reads.data().read_length != 0);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
 
     INFO(hist_counter.mapped() << " paired reads (" <<
@@ -56,7 +56,7 @@ bool RefineInsertSizeForLib(conj_graph_pack &gp, size_t ilib, size_t edge_length
 
 void ProcessSingleReads(conj_graph_pack &gp, size_t ilib,
                         bool use_binary = true) {
-    const SequencingLib &reads = cfg::get().ds.reads[ilib];
+    auto& reads = cfg::get_writable().ds.reads[ilib];
     SequenceMapperNotifier notifier(gp);
     GappedLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
     SimpleLongReadMapper simple_read_mapper(gp, gp.single_long_reads[ilib]);
@@ -80,7 +80,7 @@ void ProcessSingleReads(conj_graph_pack &gp, size_t ilib,
 }
 
 void ProcessPairedReads(conj_graph_pack &gp, size_t ilib, bool map_single_reads) {
-    const SequencingLib &reads = cfg::get().ds.reads[ilib];
+    auto& reads = cfg::get_writable().ds.reads[ilib];
     bool calculate_threshold = (reads.type() == io::LibraryType::PairedEnd);
     SequenceMapperNotifier notifier(gp);
     INFO("Left insert size qauntile " << reads.data().insert_size_left_quantile <<

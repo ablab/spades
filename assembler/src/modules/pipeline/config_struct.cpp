@@ -41,7 +41,7 @@ void SequencingLibrary<debruijn_graph::config::DataSetData>::yamlize(llvm::yaml:
   io.mapOptional("insert size distribution"   , data_.insert_size_distribution);
   io.mapOptional("average coverage"           , data_.average_coverage);
   io.mapOptional("pi threshold"               , data_.pi_threshold);
-  io.mapOptional("binary converted"           , data_.binary_coverted);
+  io.mapOptional("binary converted"           , data_.binary_reads_info.binary_coverted);
   io.mapOptional("single reads mapped"        , data_.single_reads_mapped);
 }
 
@@ -765,7 +765,7 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
     cfg.need_mapping = cfg.developer_mode || cfg.correct_mismatches
                        || cfg.gap_closer_enable || cfg.rr_enable;
 
-    cfg.output_dir = cfg.output_base + "/K" + ToString(cfg.K) + "/";
+    cfg.output_dir = cfg.output_base + "/K" + std::to_string(cfg.K) + "/";
 
     cfg.output_saves = cfg.output_dir + "saves/";
 
@@ -778,10 +778,17 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
             (cfg.output_base + "/" + cfg.temp_bin_reads_dir) :
             (cfg.output_base + cfg.project_name + "/"
              + cfg.temp_bin_reads_dir);
-    cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
+    //cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
 
-    cfg.paired_read_prefix = cfg.temp_bin_reads_path + "_paired";
-    cfg.single_read_prefix = cfg.temp_bin_reads_path + "_single";
+    for (size_t i = 0; i < cfg.ds.reads.lib_count(); ++i) {
+        auto& lib = cfg.ds.reads[i];
+        lib.data().lib_index = i;
+        lib.data().binary_reads_info.chunk_num = cfg.max_threads;
+        lib.data().binary_reads_info.bin_reads_info_file = cfg.temp_bin_reads_path + "INFO_" + std::to_string(i);
+        lib.data().binary_reads_info.buffer_size = cfg.buffer_size;
+        lib.data().binary_reads_info.paired_read_prefix = cfg.temp_bin_reads_path + "paired_" + std::to_string(i);
+        lib.data().binary_reads_info.single_read_prefix = cfg.temp_bin_reads_path + "single_" + std::to_string(i);
+    }
 }
 
 }
