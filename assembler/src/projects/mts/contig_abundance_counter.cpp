@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
             contig_id id = GetId(contig);
             DEBUG("Processing fragment # " << (i / split_length) << " with id " << id);
 
-            auto abundance_vec = abundance_counter(contig.GetSequenceString());
+            auto abundance_vec = abundance_counter(contig.GetSequenceString(), contig.name());
 
             if (abundance_vec) {
                 stringstream ss;

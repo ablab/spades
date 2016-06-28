@@ -102,38 +102,44 @@ public:
     }
 
     boost::optional<AbundanceVector> operator()(const std::vector<MplVector>& kmer_mpls) const {
-        MplVector center = MedianVector(kmer_mpls);
-        auto locality = CloseKmerMpls(kmer_mpls, center);
-
-        for (size_t it_cnt = 0; it_cnt < MAX_IT; ++it_cnt) {
-            DEBUG("Iteration " << it_cnt);
-            DEBUG("Center is " << PrintVector(center, sample_cnt_));
-
-            DEBUG("Locality size is " << locality.size()
-                      << " making " << (double(locality.size()) / double(kmer_mpls.size()))
-                      << " of total # points");
-
-            double center_share = double(locality.size()) / double(kmer_mpls.size());
-            if (math::ls(center_share, central_clust_share_)) {
-                DEBUG("Detected central area contains too few k-mers: share " << center_share
-                          << " ; center size " << locality.size()
-                          << " ; total size " << kmer_mpls.size());
-                return boost::none;
-            }
-
-            MplVector update = MedianVector(locality);
-            DEBUG("Center update is " << PrintVector(update, sample_cnt_));
-
-            if (center == update) {
-                DEBUG("Old and new centers matched on iteration " << it_cnt);
-                break;
-            }
-
-            center = update;
-            locality = CloseKmerMpls(kmer_mpls, center);
+        auto med = MedianVector(kmer_mpls);
+        AbundanceVector answer;
+        for (size_t i = 0; i < sample_cnt_; ++i) {
+            answer[i] = (double) med[i];
         }
+        return boost::optional<AbundanceVector>(answer);
+        //MplVector center = MedianVector(kmer_mpls);
+        //auto locality = CloseKmerMpls(kmer_mpls, center);
 
-        return boost::optional<AbundanceVector>(MeanVector(locality, sample_cnt_));
+        //for (size_t it_cnt = 0; it_cnt < MAX_IT; ++it_cnt) {
+        //    DEBUG("Iteration " << it_cnt);
+        //    DEBUG("Center is " << PrintVector(center, sample_cnt_));
+
+        //    DEBUG("Locality size is " << locality.size()
+        //              << " making " << (double(locality.size()) / double(kmer_mpls.size()))
+        //              << " of total # points");
+
+        //    double center_share = double(locality.size()) / double(kmer_mpls.size());
+        //    if (math::ls(center_share, central_clust_share_)) {
+        //        DEBUG("Detected central area contains too few k-mers: share " << center_share
+        //                  << " ; center size " << locality.size()
+        //                  << " ; total size " << kmer_mpls.size());
+        //        return boost::none;
+        //    }
+
+        //    MplVector update = MedianVector(locality);
+        //    DEBUG("Center update is " << PrintVector(update, sample_cnt_));
+
+        //    if (center == update) {
+        //        DEBUG("Old and new centers matched on iteration " << it_cnt);
+        //        break;
+        //    }
+
+        //    center = update;
+        //    locality = CloseKmerMpls(kmer_mpls, center);
+        //}
+
+        //return boost::optional<AbundanceVector>(MeanVector(locality, sample_cnt_));
     }
 
 private:
@@ -240,7 +246,12 @@ public:
         FillMplMap(kmer_mpl_file);
     }
 
-    boost::optional<AbundanceVector> operator()(const std::string& s) const {
+    boost::optional<AbundanceVector> operator()(const std::string& s, const std::string& /*name*/ = "") const {
+        //std::ofstream os;
+        //if (!name.empty()) {
+        //    os.open("/Sid/snurk/mts/out/infant_gut/stats/Peptoniphilus_harei_30_1/invest/kmers/" + name + ".kmers");
+        //}
+
         std::vector<MplVector> kmer_mpls;
 
         for (const auto& seq : SplitOnNs(s)) {
@@ -256,6 +267,9 @@ public:
                 if (kmer_mpl_.valid(kwh)) {
                     DEBUG("Valid");
                     kmer_mpls.push_back(kmer_mpl_.get_value(kwh, inverter_));
+                    //if (!name.empty()) {
+                    //    os << PrintVector(kmer_mpl_.get_value(kwh, inverter_), sample_cnt_) << std::endl;
+                    //}
                     DEBUG(PrintVector(kmer_mpl_.get_value(kwh, inverter_), sample_cnt_));
                 } else {
                     DEBUG("Invalid");
