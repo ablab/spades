@@ -1,16 +1,15 @@
 ############################################################################
-# Copyright (c) 2015 Saint Petersburg State University
-# Copyright (c) 2011-2014 Saint Petersburg Academic University
+# Copyright (c) 2016 Saint Petersburg State University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
 
-project(mph_test CXX)
+project(spades-kmercount CXX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 
-#add_executable(mph_test
-#               main.cpp)
+add_executable(spades-kmercount
+               main.cpp)
 
-#target_link_libraries(mph_test spades_modules ${COMMON_LIBRARIES})
+target_link_libraries(spades-kmercount spades_modules ${COMMON_LIBRARIES})
