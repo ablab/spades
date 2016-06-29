@@ -100,6 +100,10 @@ rule assemble:
              " -o {params} >{log} 2>&1 && "
              "cp {params}/scaffolds.fasta {output}"
 
+rule assemble_all:
+    input:   expand("assembly/{sample}.fasta", sample=SAMPLES)
+    message: "Assembled all samples"
+
 rule descriptions:
     output:  expand("profile/{sample}.desc", sample=SAMPLES)
     message: "Generating sample descriptions"
@@ -138,7 +142,7 @@ rule profile:
     log:     "profile/{sample}.log"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:   "{BIN}/contig_abundance_counter -k {SMALL_K} -w tmp -c {input.contigs}"
-             " -n {SAMPLE_COUNT} -m profile/kmers -o profile/{wildcards.sample}" 
+             " -n {SAMPLE_COUNT} -m profile/kmers -o profile/{wildcards.sample}"
              " -f profile/{wildcards.sample}_splits.fasta"
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
