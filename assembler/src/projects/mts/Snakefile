@@ -167,17 +167,17 @@ rule canopy_post:
 rule binning:
     input:   contigs="assembly/{sample}.fasta", ann="annotation/{sample}.ann",
              left=left_reads, right=right_reads
-    output:  "binning/{sample,sample\d+}.log", "annotation/{sample}_edges.ann"
-    params:  "assembly/{sample}/" + SAVES
+    output:  "annotation/{sample}_edges.ann"
+    params:  saves="assembly/{sample}/" + SAVES, splits="profile/{sample}_splits.fasta"
     log:     "binning/{sample}.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
-    shell:   "{BIN}/prop_binning -k {K} -s {params} -c {input.contigs} -a {input.ann}"
-             " -f profile/{wildcards.sample}_splits.fasta"
-             " -l {input.left} -r {input.right} -o binning -n {wildcards.sample} >{log} 2>&1"
+    shell:   "{BIN}/prop_binning -k {K} -s {params.saves} -c {input.contigs}"
+             " -a {input.ann} -f {params.splits} -l {input.left} -r {input.right}"
+             " -o binning -n {wildcards.sample} >{log} 2>&1"
 
 #Mock rule just for simplifying M-to-N dependencies in the stage graph
 rule binning_all:
-    input:   expand("binning/{sample}.log", sample=SAMPLES)
+    input:   expand("annotation/{sample}_edges.ann", sample=SAMPLES)
     output:  touch(FINISHED_BINNING)
     message: "Binned all samples"
 
@@ -185,14 +185,15 @@ rule choose_samples:
     input:   flag=FINISHED_BINNING, prof=rules.canopy.output.prof
     #It's impossible to output "binning/{cag}/left.fastq", "binning/{cag}/right.fastq"
     #because the CAG can be filtered out
-    output:  "binning/choose_{cag}.log"
+    output:  touch("binning/{cag,CAG\d+}.log")
     params:  cag="{cag}", dir="binning/{cag}"
+    log:     "binning/choose_{cag}.log"
     message: "Choosing samples for {params.cag}"
     shell:   "{SCRIPTS}/choose_samples.py {params.cag} {input.prof} {params.dir} >{output} 2>&1"
 
 #Launch this AFTER 'all'
 rule choose_all:
-    input:   expand("binning/choose_{cag}.log", cag=CAGS)
+    input:   expand("binning/{cag}.log", cag=CAGS)
     output:  touch(FINISHED_CHOOSING)
     message: "Filtered all CAGs"
 
@@ -306,11 +307,12 @@ PROP = {"prelim": "", "prop": "_edges"}
 rule split_bins:
     input:   lambda w: "assembly/{}{}.fasta".format(w.sample, PROP[w.prop]),
              lambda w: "annotation/{}{}.ann".format(w.sample, PROP[w.prop])
-    output:  "binning/{prop}/{sample}.log"
+    output:  touch("binning/{prop}/{sample}.log")
+    log:     "binning/{prop}/split_{sample}.log"
     params:  "binning/{prop}"
     message: "Splitting assembly of {wildcards.sample} between {wildcards.prop} bins"
     shell:   "mkdir -p {params} && rm -f {params}/{wildcards.sample}-*.fasta && "
-             "{SCRIPTS}/split_bins.py {input} {params} > {output}"
+             "{SCRIPTS}/split_bins.py {input} {params} >{log}"
 
 rule cat_binned_contigs:
     input:   expand("binning/{{prop}}/{sample}.log", sample=SAMPLES)
@@ -340,22 +342,22 @@ def stats_data(wildcards):
 
 rule quast_stats:
     input:   stats_input
-    output:  "stats/q_{stage}.log"
-    params:  data=stats_data, out="stats/q_{stage}", report="stats/summary/gf_{stage}.tsv"
+    output:  "stats/summary/gf_{stage}.tsv"
+    params:  data=stats_data, out="stats/q_{stage}"
     log:     "stats/q_{stage}.log"
     threads: THREADS
     message: "Aligning {wildcards.stage} assemblies on all references"
     shell:   "{METAQUAST} -t {threads} -R {ALL_REFS} {params.data} -o {params.out} >{log} 2>&1 && "
-             "cp '{params.out}/summary/TSV/Genome_fraction_(%).tsv' {params.report}"
+             "cp '{params.out}/summary/TSV/Genome_fraction_(%).tsv' {output}"
 
 # Run this AFTER 'all'
 rule stats_all:
-    input:   expand("stats/q_{bin}_{prop}.log", bin=["split", "bin"], prop=PROP)
+    input:   expand("stats/summary/q_{bin}_{prop}.tsv", bin=["bin"], prop=PROP)
     message: "Gathered some numbers, deal with them."
 
 # Run this AFTER 'reassembly_all'
 rule stats_reassembly:
-    input:   "stats/q_reassembly.log"
+    input:   "stats/summary/q_reassembly.tsv"
     message: "Gathered even more numbers, deal with them."
 
 # Don't run this
