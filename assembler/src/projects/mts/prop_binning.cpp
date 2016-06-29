@@ -39,7 +39,7 @@ void DumpEdgesAndAnnotation(const Graph& g,
         io::SingleRead edge_read("NODE_" + ToString(g.int_id(e)),
                                  g.EdgeNucls(e).str());
         oss << edge_read;
-        auto relevant_bins = edge_annotation.RelevantBins(edge_read);
+        auto relevant_bins = edge_annotation.Annotation(e);
         if (!relevant_bins.empty()) {
             annotation_out << ContigAnnotation(GetId(edge_read),
                                                vector<bin_id>(relevant_bins.begin(), relevant_bins.end()));
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     create_console_logger();
 
     size_t k;
-    string saves_path, contigs_path, annotation_path;
+    string saves_path, contigs_path, splits_path, annotation_path;
     string left_reads, right_reads;
     string out_root, sample_name;
     std::vector<bin_id> bins_of_interest;
@@ -65,6 +65,7 @@ int main(int argc, char** argv) {
         ops >> Option('k', k)
             >> Option('s', saves_path)
             >> Option('c', contigs_path)
+            >> Option('f', splits_path)
             >> Option('a', annotation_path)
             >> Option('l', left_reads)
             >> Option('r', right_reads)
@@ -73,8 +74,8 @@ int main(int argc, char** argv) {
             >> Option('b', bins_of_interest, {})
             >> OptionPresent('p', no_binning);
     } catch(GetOptEx &ex) {
-        cout << "Usage: prop_binning -k <K> -s <saves path> -c <contigs path> -a <binning annotation> "
-                "-l <left reads> -r <right reads> -o <output root> -n <sample name> "
+        cout << "Usage: prop_binning -k <K> -s <saves path> -c <contigs path> -f <splits path> "
+                "-a <binning annotation> -l <left reads> -r <right reads> -o <output root> -n <sample name> "
                 "[-p to disable binning] [-b <bins of interest>*]"  << endl;
         exit(1);
     }
@@ -88,11 +89,12 @@ int main(int argc, char** argv) {
     //Propagation stage
     INFO("Using contigs from " << contigs_path);
     io::FileReadStream contigs_stream(contigs_path);
+    io::FileReadStream split_stream(splits_path);
 
     AnnotationStream annotation_in(annotation_path);
     EdgeAnnotation edge_annotation(gp, bins_of_interest);
-    //TODO make fill trivial and remove logic with contig names parsing
-    edge_annotation.Fill(contigs_stream, annotation_in);
+    AnnotationFiller filler(gp, edge_annotation);
+    filler(contigs_stream, split_stream, annotation_in);
 
     INFO("Propagation launched");
     AnnotationPropagator propagator(gp);
@@ -109,11 +111,10 @@ int main(int argc, char** argv) {
     }
     //Binning stage
 //    contigs_stream.reset();
-    ContigBinner binner(gp, edge_annotation);
+    ContigBinner binner(gp, edge_annotation, out_root, sample_name);
     INFO("Initializing binner");
 //    INFO("Using propagated annotation from " << propagated_path);
 //    AnnotationStream binning_stream(propagated_path);
-    binner.Init(out_root, sample_name);
 
     auto paired_stream = io::PairedEasyStream(left_reads, right_reads, false, 0);
     INFO("Running binner on " << left_reads << " and " << right_reads);

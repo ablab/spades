@@ -84,22 +84,7 @@ public:
 class EdgeAnnotation {
     const conj_graph_pack& gp_;
     set<bin_id> bins_of_interest_;
-    shared_ptr<SequenceMapper<Graph>> mapper_;
     map<EdgeId, set<bin_id>> edge_annotation_;
-
-    vector<EdgeId> EdgesOfContig(const io::SingleRead& contig) const {
-        return mapper_->MapRead(contig).simple_path();
-    }
-
-    Bins FilterInteresting(const Bins& bins) const {
-        Bins answer;
-        for (const bin_id& bin : bins) {
-            if (bins_of_interest_.count(bin)) {
-                answer.push_back(bin);
-            }
-        }
-        return answer;
-    }
 
     template<class BinCollection>
     void InnerStickAnnotation(EdgeId e, const BinCollection& bins) {
@@ -111,8 +96,8 @@ public:
     EdgeAnnotation(const conj_graph_pack& gp,
                    const vector<bin_id>& bins_of_interest) :
                        gp_(gp),
-                       bins_of_interest_(bins_of_interest.begin(), bins_of_interest.end()),
-                       mapper_(MapperInstance(gp)) {
+                       bins_of_interest_(bins_of_interest.begin(), bins_of_interest.end())
+    {
     }
 
     template<class BinCollection>
@@ -132,47 +117,6 @@ public:
         }
     }
 
-    void Fill(io::SingleStream& contigs, AnnotationStream& annotation_stream) {
-        INFO("Filling edge annotation");
-        set<bin_id> all_bins;
-
-        INFO("Reading (split) contigs annotation");
-        map<contig_id, std::set<bin_id>> annotation_map;
-        ContigAnnotation contig_annotation;
-        while (!annotation_stream.eof()) {
-            annotation_stream >> contig_annotation;
-            auto bins = contig_annotation.second;
-            if (!bins_of_interest_.empty()) {
-                bins = FilterInteresting(bins);
-            } else {
-                insert_all(all_bins, bins);
-            }
-            if (!bins.empty()) {
-                insert_all(annotation_map[GetBaseId(contig_annotation.first)], bins);
-            }
-        }
-        INFO("Annotation available for " << annotation_map.size() << " contigs");
-        INFO("Sticking annotation to edges");
-
-        io::SingleRead contig;
-        while (!contigs.eof()) {
-            contigs >> contig;
-            contig_id id = GetBaseId(GetId(contig));
-            auto bins = annotation_map.find(id);
-            if (bins != annotation_map.end() && !(bins->second.empty())) {
-                for (EdgeId e : mapper_->MapRead(contig).simple_path()) {
-                    StickAnnotation(e, bins->second);
-                }
-            }
-        }
-
-        if (bins_of_interest_.empty()) {
-            INFO("Bins of interest not specified. Marking all bins as bins of interest");
-            bins_of_interest_ = all_bins;
-        }
-        INFO("Edge annotation filled. Annotated " << edge_annotation_.size() << " edges.");
-    }
-
     vector<bin_id> Annotation(EdgeId e) const {
         if (!edge_annotation_.count(e)) {
             return {};
@@ -181,9 +125,9 @@ public:
         return vector<bin_id>(annotation.begin(), annotation.end());
     }
 
-    set<bin_id> RelevantBins(const io::SingleRead& r) const {
+    set<bin_id> RelevantBins(const vector<EdgeId>& path) const {
         set<bin_id> answer;
-        for (EdgeId e : EdgesOfContig(r)) {
+        for (EdgeId e : path) {
             insert_all(answer, Annotation(e));
         }
         return answer;
@@ -200,10 +144,152 @@ public:
         return answer;
     }
 
+    size_t size() const {
+        return edge_annotation_.size();
+    }
+
     const set<bin_id>& interesting_bins() const {
         return bins_of_interest_;
     }
 
 };
 
+class AnnotationFiller {
+    const conj_graph_pack& gp_;
+    EdgeAnnotation& edge_annotation_;
+    shared_ptr<SequenceMapper<Graph>> mapper_;
+
+    vector<EdgeId> EdgesOfContig(const io::SingleRead& contig) const {
+        return mapper_->MapRead(contig).simple_path();
+    }
+
+    Bins FilterInteresting(const Bins& bins) const {
+        const auto& interesting = edge_annotation_.interesting_bins();
+        if (interesting.empty()) {
+            return bins;
+        } else {
+            Bins answer;
+            for (const bin_id& bin : bins) {
+                if (interesting.count(bin)) {
+                    answer.push_back(bin);
+                }
+            }
+            return answer;
+        }
+    }
+
+    map<contig_id, std::set<bin_id>> LoadAnnotation(AnnotationStream& splits_annotation_stream) const {
+        map<contig_id, std::set<bin_id>> annotation_map;
+        INFO("Reading (split) contigs annotation");
+        ContigAnnotation contig_annotation;
+        while (!splits_annotation_stream.eof()) {
+            splits_annotation_stream >> contig_annotation;
+            auto bins = FilterInteresting(contig_annotation.second);
+            if (!bins.empty()) {
+                insert_all(annotation_map[contig_annotation.first], bins);
+            }
+        }
+        INFO("Annotation available for " << annotation_map.size() << " splits");
+        return annotation_map;
+    };
+
+    void ProcessSplit(const io::SingleRead& split, std::set<bin_id> bins,
+                      map<EdgeId, map<bin_id, size_t>>& coloring) const {
+        auto mapping_path = mapper_->MapRead(split);
+        for (size_t i = 0; i < mapping_path.size(); ++i) {
+            auto map_info = mapping_path[i];
+            MappingRange mr = map_info.second;
+            auto& bin_lens = coloring[map_info.first];
+            for (bin_id b : bins) {
+                bin_lens[b] += mr.mapped_range.size();
+            }
+        }
+    }
+
+    map<EdgeId, map<bin_id, size_t>> FillColorInfo(io::SingleStream& splits_stream,
+                                               const map<contig_id, std::set<bin_id>>& split_annotation) const {
+        INFO("Sticking annotation to edges");
+        map<EdgeId, map<bin_id, size_t>> answer;
+        io::SingleRead split;
+        while (!splits_stream.eof()) {
+            splits_stream >> split;
+            auto id = GetId(split);
+            auto bins = split_annotation.find(id);
+            if (bins != split_annotation.end() && !(bins->second.empty())) {
+                ProcessSplit(split, bins->second, answer);
+                //TODO think if it is overkill
+                ProcessSplit(!split, bins->second, answer);
+            }
+        }
+        INFO("Color info available for " << answer.size() << " edges");
+        return answer;
+    };
+
+    void FilterSpuriousInfo(map<EdgeId, map<bin_id, size_t>>& coloring) const {
+        for (auto& edge_info : coloring) {
+            size_t edge_len = gp_.g.length(edge_info.first);
+            for (auto color_it = edge_info.second.begin(); color_it != edge_info.second.end(); ) {
+                if (math::ls(double(color_it->second) / double(edge_len), 0.3)) {
+                    edge_info.second.erase(color_it++);
+                } else {
+                    ++color_it;
+                }
+            }
+        }
+    }
+
+    set<bin_id> DetermineBins(const vector<EdgeId>& path,
+                              const map<EdgeId, map<bin_id, size_t>>& coloring) const {
+        map<bin_id, size_t> path_colors;
+        size_t total_len = 0;
+        for (EdgeId e : path) {
+            size_t edge_len = gp_.g.length(e);
+            total_len += edge_len;
+            auto it = coloring.find(e);
+            if (it != coloring.end()) {
+                for (auto color_info : it->second) {
+                    //TODO think carefully
+                    path_colors[color_info.first] += edge_len; //color_info.second;
+                }
+            }
+        }
+        set<bin_id> answer;
+        for (auto color_info : path_colors) {
+            if (math::gr(double(color_info.second) / double(total_len), 0.3)) {
+                answer.insert(color_info.first);
+            }
+        }
+        return answer;
+    }
+
+public:
+
+    AnnotationFiller(const conj_graph_pack& gp,
+                     EdgeAnnotation& annotation) :
+        gp_(gp),
+        edge_annotation_(annotation),
+        mapper_(MapperInstance(gp)) {
+    }
+
+    void operator() (io::SingleStream& contig_stream,
+                     io::SingleStream& splits_stream,
+                     AnnotationStream& splits_annotation_stream) {
+        INFO("Filling edge annotation");
+
+        auto coloring = FillColorInfo(splits_stream, LoadAnnotation(splits_annotation_stream));
+        FilterSpuriousInfo(coloring);
+
+        io::SingleRead contig;
+        while (!contig_stream.eof()) {
+            contig_stream >> contig;
+            auto path = mapper_->MapRead(contig).simple_path();
+            auto bins = DetermineBins(path, coloring);
+            for (EdgeId e : path) {
+                edge_annotation_.StickAnnotation(e, bins);
+            }
+        }
+
+        INFO("Edge annotation filled. Annotated " << edge_annotation_.size() << " edges.");
+    }
+};
 }

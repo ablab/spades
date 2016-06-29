@@ -42,11 +42,13 @@ io::SingleRead ReadGenome(const string& genome_path) {
 EdgeAnnotation LoadAnnotation(const conj_graph_pack& gp,
                               const vector<bin_id>& bins_of_interest,
                               io::SingleStream& contigs_stream,
+                              io::SingleStream& splits_stream,
                               const string& annotation_path) {
     EdgeAnnotation edge_annotation(gp, bins_of_interest);
 
+    AnnotationFiller filler(gp, edge_annotation);
     AnnotationStream annotation_stream(annotation_path);
-    edge_annotation.Fill(contigs_stream, annotation_stream);
+    filler(contigs_stream, splits_stream, annotation_stream);
     return edge_annotation;
 }
 
@@ -77,7 +79,7 @@ int main(int argc, char** argv) {
     using namespace GetOpt;
 
     size_t k;
-    string saves_path, contigs_path, edges_path;
+    string saves_path, contigs_path, splits_path, edges_path;
     vector<string> genomes_path;
     string annotation_in_fn, prop_annotation_in_fn;
     string table_fn, graph_dir;
@@ -90,6 +92,7 @@ int main(int argc, char** argv) {
             >> Option('s', saves_path)
             >> Option('r', genomes_path)
             >> Option('c', contigs_path)
+            >> Option('f', splits_path)
             >> Option('a', annotation_in_fn)
             >> Option('e', edges_path)
             >> Option('p', prop_annotation_in_fn)
@@ -99,7 +102,7 @@ int main(int argc, char** argv) {
         ;
     } catch(GetOptEx &ex) {
         cout << "Usage: stats -k <K> -s <saves path> -r <genomes path>+ "
-                "-c <contigs_path> -a <init binning info> -e <edges_path> -p <propagated binning info> "
+                "-f <splits_path> -c <contigs_path> -a <init binning info> -e <edges_path> -p <propagated binning info> "
                 "-o <stats table> [-d <graph directory> (currently disabled)] [-b (<bins of interest>)+]"
              << endl;
         exit(1);
@@ -128,12 +131,17 @@ int main(int argc, char** argv) {
         FillPos(gp, genome_path, "", true);
 
         io::FileReadStream contigs_stream(contigs_path);
+        io::FileReadStream splits_stream(splits_path);
         EdgeAnnotation edge_annotation = LoadAnnotation(
-            gp, bins_of_interest, contigs_stream, annotation_in_fn);
+            gp, bins_of_interest, contigs_stream, 
+            splits_stream, annotation_in_fn);
 
         io::FileReadStream edges_stream(edges_path);
+        io::FileReadStream edges_stream2(edges_path);
         EdgeAnnotation prop_edge_annotation = LoadAnnotation(
-            gp, bins_of_interest, edges_stream, prop_annotation_in_fn);
+            gp, bins_of_interest, 
+            edges_stream, edges_stream2, 
+            prop_annotation_in_fn);
 
         shared_ptr<SequenceMapper<Graph>> mapper(MapperInstance(gp));
 

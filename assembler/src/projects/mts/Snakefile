@@ -138,7 +138,8 @@ rule profile:
     log:     "profile/{sample}.log"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:   "{BIN}/contig_abundance_counter -k {SMALL_K} -w tmp -c {input.contigs}"
-             " -n {SAMPLE_COUNT} -m profile/kmers -o profile/{wildcards.sample}"
+             " -n {SAMPLE_COUNT} -m profile/kmers -o profile/{wildcards.sample}" 
+             " -f profile/{wildcards.sample}_splits.fasta"
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
 rule canopy_pre:
@@ -167,6 +168,7 @@ rule binning:
     log:     "binning/{sample}.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
     shell:   "{BIN}/prop_binning -k {K} -s {params} -c {input.contigs} -a {input.ann}"
+             " -f profile/{wildcards.sample}_splits.fasta"
              " -l {input.left} -r {input.right} -o binning -n {wildcards.sample} >{log} 2>&1"
 
 #Mock rule just for simplifying M-to-N dependencies in the stage graph

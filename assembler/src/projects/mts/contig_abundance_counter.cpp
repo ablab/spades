@@ -7,6 +7,7 @@
 #include "dev_support/logger/logger.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "io/reads_io/file_reader.hpp"
+#include "io/reads_io/osequencestream.hpp"
 #include "pipeline/graphio.hpp"
 #include "formats.hpp"
 #include "contig_abundance.hpp"
@@ -22,7 +23,7 @@ int main(int argc, char** argv) {
     using namespace GetOpt;
 
     size_t k, sample_cnt, min_length_bound;
-    std::string work_dir, contigs_path;
+    std::string work_dir, contigs_path, splits_path;
     std::string kmer_mult_fn, contigs_abundance_fn;
 
     try {
@@ -31,13 +32,14 @@ int main(int argc, char** argv) {
         ops >> Option('k', k)
             >> Option('w', work_dir)
             >> Option('c', contigs_path)
+            >> Option('f', splits_path)
             >> Option('n', sample_cnt)
             >> Option('m', kmer_mult_fn)
             >> Option('o', contigs_abundance_fn)
             >> Option('l', min_length_bound, size_t(0));
     } catch(GetOptEx &ex) {
         std::cout << "Usage: contig_abundance_counter -k <K> -w <work_dir> -c <contigs path> "
-                "-n <sample cnt> -m <kmer multiplicities path> "
+                "-n <sample cnt> -m <kmer multiplicities path> -f <splits_path> "
                 "-o <contigs abundance path> [-l <contig length bound> (default: 0)]"  << std::endl;
         exit(1);
     }
@@ -56,6 +58,7 @@ int main(int argc, char** argv) {
     io::FileReadStream contigs_stream(contigs_path);
 
     io::SingleRead full_contig;
+    io::osequencestream splits_os(splits_path);
     while (!contigs_stream.eof()) {
         contigs_stream >> full_contig;
         DEBUG("Analyzing contig " << GetId(full_contig));
@@ -67,6 +70,8 @@ int main(int argc, char** argv) {
             }
 
             io::SingleRead contig = full_contig.Substr(i, std::min(i + split_length, full_contig.size()));
+            splits_os << contig;
+
             contig_id id = GetId(contig);
             DEBUG("Processing fragment # " << (i / split_length) << " with id " << id);
 

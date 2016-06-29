@@ -22,14 +22,16 @@ void create_console_logger() {
 
 namespace debruijn_graph {
 
-void ContigBinner::Init(const string& output_root, const string& sample_name) {
-    for (bin_id bin : edge_annotation_.interesting_bins()) {
-        string out_dir = output_root + "/" + ToString(bin) + "/";
-        path::make_dirs(out_dir);
-        out_streams_.insert(make_pair(bin,
-                                      make_shared<io::OPairedReadStream>(out_dir + sample_name + "_1.fastq",
-                                                                                  out_dir + sample_name + "_2.fastq")));
-    }
+set<bin_id> ContigBinner::RelevantBins(const io::SingleRead& r) const {
+    return edge_annotation_.RelevantBins(mapper_->MapRead(r).simple_path());
+}
+
+void ContigBinner::Init(bin_id bin) {
+    string out_dir = out_root_ + "/" + ToString(bin) + "/";
+    path::make_dirs(out_dir);
+    out_streams_.insert(make_pair(bin,
+                                  make_shared<io::OPairedReadStream>(out_dir + sample_name_ + "_1.fastq",
+                                                                              out_dir + sample_name_ + "_2.fastq")));
 }
 
 void ContigBinner::Run(io::PairedStream& paired_reads) {
@@ -37,9 +39,12 @@ void ContigBinner::Run(io::PairedStream& paired_reads) {
     while (!paired_reads.eof()) {
         paired_reads >> paired_read;
         set<bin_id> bins;
-        insert_all(bins, edge_annotation_.RelevantBins(paired_read.first()));
-        insert_all(bins, edge_annotation_.RelevantBins(paired_read.second()));
+        insert_all(bins, RelevantBins(paired_read.first()));
+        insert_all(bins, RelevantBins(paired_read.second()));
         for (auto bin : bins) {
+            if (out_streams_.find(bin) == out_streams_.end()) {
+                Init(bin);
+            }
             (*(out_streams_[bin])) << paired_read;
         }
     }
