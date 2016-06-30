@@ -6,7 +6,6 @@ info_printers
        lib_info                         false
        save_all                         false
        save_full_graph                  false
-       save_graph                       false
        save_graph_pack                  false
        extended_stats                   false
        detailed_dot_write               false

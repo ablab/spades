@@ -287,8 +287,10 @@ struct detail_info_printer {
         }
 
         if (config.save_all) {
-            string p = path::append_path(path::append_path(folder_, "saves/"),
-                                                          ToString(call_cnt++, 2) + "_" + pos_name + "/saves");
+            string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
+                                                          ToString(call_cnt++, 2) + "_" + pos_name);
+            path::make_dirs(saves_folder);
+            string p = saves_folder + "/saves";
             INFO("Saving current state to " << p);
 
             debruijn_graph::graphio::PrintAll(p, gp_);
