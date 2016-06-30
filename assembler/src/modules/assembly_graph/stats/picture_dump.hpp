@@ -291,7 +291,7 @@ struct detail_info_printer {
                                                           ToString(call_cnt++, 2) + "_" + pos_name + "/saves");
             INFO("Saving current state to " << p);
 
-            debruijn_graph::graphio::PrintAll(p, gp);
+            debruijn_graph::graphio::PrintAll(p, gp_);
             debruijn_graph::config::write_lib_data(p);
         }
 
