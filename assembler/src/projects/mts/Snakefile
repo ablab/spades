@@ -352,12 +352,12 @@ rule quast_stats:
 
 # Run this AFTER 'all'
 rule stats_all:
-    input:   expand("stats/summary/q_{bin}_{prop}.tsv", bin=["bin"], prop=PROP)
+    input:   expand("stats/summary/gf_{bin}_{prop}.tsv", bin=["bin"], prop=PROP)
     message: "Gathered some numbers, deal with them."
 
 # Run this AFTER 'reassembly_all'
 rule stats_reassembly:
-    input:   "stats/summary/q_reassembly.tsv"
+    input:   "stats/summary/gf_reassembly.tsv"
     message: "Gathered even more numbers, deal with them."
 
 # Don't run this
