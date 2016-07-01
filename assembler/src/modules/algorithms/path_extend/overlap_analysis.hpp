@@ -88,7 +88,7 @@ public:
               aligner_(/*match_score*/2,
               /*mismatch_penalty*/6,
                        /*gap_opening_penalty*/8,
-                       /*gap_extending_penalty*/8) {
+                       /*gap_extending_penalty*/7) {
     }
 
 

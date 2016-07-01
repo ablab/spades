@@ -459,7 +459,8 @@ public:
             GapJoiner(g), min_la_length_(min_la_length), flank_addition_coefficient_(
                     flank_addition_coefficient), flank_multiplication_coefficient_(
                     flank_multiplication_coefficient) {
-        DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_); DEBUG("flank_addition_coefficient_  - " << flank_addition_coefficient_ );
+        DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_); 
+        DEBUG("flank_addition_coefficient_  - " << flank_addition_coefficient_ );
     }
 
     Gap FixGap(EdgeId source, EdgeId sink, int initial_gap) const override {
