@@ -11,12 +11,16 @@ SPADES_REASSEMBLY = config.get("SPADES_REASSEMBLY", SPADES)
 BIN = config["BIN"]
 SCRIPTS = config["SCRIPTS"]
 SOFT = config["SOFT"]
-QUAST = config["QUAST"]
-# TODO: there should be only one
-METAQUAST = QUAST.replace("quast.py", "metaquast.py")
+try:
+    QUAST_DIR = config["QUAST"]
+    QUAST = os.path.join(QUAST_DIR, "quast.py")
+    METAQUAST = os.path.join(QUAST_DIR, "metaquast.py")
+except KeyError:
+    QUAST = "quast"
+    METAQUAST = "metaquast"
 K = int(config.get("K", 55))
 SMALL_K = int(config.get("SMALL_K", 21))
-MIN_CONTIG_LENGTH = int(config["MIN_CONTIG_LENGTH"])
+MIN_CONTIG_LENGTH = int(config.get("MIN_CONTIG_LENGTH", 2000))
 THREADS = config.get("THREADS", 16)
 
 #Path to saves of necessary assembly stage
