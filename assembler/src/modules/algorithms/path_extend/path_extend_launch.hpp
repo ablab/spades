@@ -351,7 +351,7 @@ inline shared_ptr<SimpleExtensionChooser> MakeMetaExtensionChooser(const conj_gr
     VERIFY(cfg::get().mode == config::pipeline_type::meta);
     VERIFY(!lib->IsMp());
     shared_ptr<WeightCounter> wc = make_shared<MetagenomicWeightCounter>(gp.g, lib, /*read_length*/cfg::get().ds.RL(),
-        /*normalized_threshold*/ 0.3, /*raw_threshold*/ 3, /*estimation_edge_length*/ 300);
+        /*normalized_threshold*/ 0.3, /*raw_threshold*/ 3, /*estimation_edge_length*/ 0);
     return make_shared<SimpleExtensionChooser>(gp.g, wc,
                                                pset.extension_options.weight_threshold,
                                                pset.extension_options.priority_coeff);
