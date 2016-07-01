@@ -71,6 +71,9 @@ def compile_mts(workdir):
     #    log.log("Forced to use current build, will not compile");
     #    return 0
     os.chdir(workdir)
+    ecode = subprocess.call("./prepare_cfg")
+    if ecode != 0:
+        return ecode
     return subprocess.call(["make", "-C", "build/release/projects/mts"])
 
 def parse_args():
@@ -106,7 +109,7 @@ try:
     #    log.err("SPAdes compilation finished abnormally with exit code " + str(ecode))
     #    sys.exit(3)
 
-    #ecode = compile_mts(workdir)
+    ecode = compile_mts(workdir)
     if ecode != 0:
         log.err("MTS compilation finished abnormally with exit code " + str(ecode))
         sys.exit(3)
