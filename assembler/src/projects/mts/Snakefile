@@ -143,7 +143,7 @@ rule profile:
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:   "{BIN}/contig_abundance_counter -k {SMALL_K} -w tmp -c {input.contigs}"
              " -n {SAMPLE_COUNT} -m profile/kmers -o profile/{wildcards.sample}"
-             " -f profile/{wildcards.sample}_splits.fasta"
+             " -f assembly/{wildcards.sample}_splits.fasta"
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
 rule canopy_pre:
@@ -168,7 +168,7 @@ rule binning:
     input:   contigs="assembly/{sample}.fasta", ann="annotation/{sample}.ann",
              left=left_reads, right=right_reads
     output:  "annotation/{sample}_edges.ann"
-    params:  saves="assembly/{sample}/" + SAVES, splits="profile/{sample}_splits.fasta"
+    params:  saves="assembly/{sample}/" + SAVES, splits="assembly/{sample}_splits.fasta"
     log:     "binning/{sample}.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
     shell:   "{BIN}/prop_binning -k {K} -s {params.saves} -c {input.contigs}"
@@ -301,18 +301,18 @@ rule int_bins_all:
     message: "Gathered all interesting bins"
 
 #---- GF per bin per reference --------------------------------------
-PROP = {"prelim": "", "prop": "_edges"}
+PROP = {"prelim": ("_splits", ""), "prop": ("_edges", "_edges")}
 
 #TODO: split into different directories per sample
 rule split_bins:
-    input:   lambda w: "assembly/{}{}.fasta".format(w.sample, PROP[w.prop]),
-             lambda w: "annotation/{}{}.ann".format(w.sample, PROP[w.prop])
+    input:   lambda w: "assembly/{}{}.fasta".format(w.sample, PROP[w.prop][0]),
+             lambda w: "annotation/{}{}.ann".format(w.sample, PROP[w.prop][1])
     output:  touch("binning/{prop}/{sample}.log")
     log:     "binning/{prop}/split_{sample}.log"
     params:  "binning/{prop}"
     message: "Splitting assembly of {wildcards.sample} between {wildcards.prop} bins"
     shell:   "mkdir -p {params} && rm -f {params}/{wildcards.sample}-*.fasta && "
-             "{SCRIPTS}/split_bins.py {input} {params} >{log}"
+             "{SCRIPTS}/split_bins.py {wildcards.sample} {input} {params} >{log}"
 
 rule cat_binned_contigs:
     input:   expand("binning/{{prop}}/{sample}.log", sample=SAMPLES)

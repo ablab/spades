@@ -8,18 +8,18 @@ from Bio import SeqIO
 import common
 
 def print_usage():
-        print("Usage: split_bins.py <sample> <binning info> <output directory>")
+        print("Usage: split_bins.py <contigs> <binning info> <output directory>")
 
-sample = sys.argv[1]
-sample_name, _ = path.splitext(path.basename(sample))
+contigs = sys.argv[1]
+sample, _, _ = path.basename(file).partition(".")
 out_dir = sys.argv[3]
 
-binning = common.load_annotation(sys.argv[2])
+binning = common.load_annotation(sys.argv[2], False)
 
 cags = set()
-for seq in SeqIO.parse(sample, "fasta"):
-    seq.id = common.get_id(seq.id, sample_name)
-    seq.description = ""
+for seq in SeqIO.parse(contigs, "fasta"):
+    #seq.id = common.get_id(seq.id, sample)
+    #seq.description = ""
     for cag in binning.get(seq.id, []):
-        with open(path.join(out_dir, "{}-{}.fasta".format(sample_name, cag)), "a") as output:
+        with open(path.join(out_dir, "{}-{}.fasta".format(sample, cag)), "a") as output:
             SeqIO.write(seq, output, "fasta")
