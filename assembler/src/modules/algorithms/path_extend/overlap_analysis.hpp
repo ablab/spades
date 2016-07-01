@@ -85,10 +85,10 @@ class SWOverlapAnalyzer {
 public:
     SWOverlapAnalyzer(size_t flank_length)
             : flank_length_(flank_length),
-              aligner_(/*match_score*/2,
-              /*mismatch_penalty*/6,
-                       /*gap_opening_penalty*/8,
-                       /*gap_extending_penalty*/7) {
+              aligner_(/*match_score*/1,
+              /*mismatch_penalty*/3,
+                       /*gap_opening_penalty*/4,
+                       /*gap_extending_penalty*/3) {
     }
 
 
