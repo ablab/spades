@@ -80,6 +80,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", "-c", help="Config template")
     parser.add_argument("dir", help="Output directory")
+    parser.add_argument("--clean", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -92,9 +93,11 @@ def prepare_config(args, workdir):
             config.write(yaml.dump(params))
 
 def run_mts(args, workdir):
-    shutil.rmtree(args.dir, True)
-    os.mkdir(args.dir)
-    prepare_config(args, workdir)
+    if args.clean:
+        shutil.rmtree(args.dir, True)
+    if not os.path.exists(args.dir):
+        os.mkdir(args.dir)
+        prepare_config(args, workdir)
     os.chdir(os.path.join(workdir, "src/projects/mts"))
     return subprocess.call(["./mts.py", "--stats", args.dir])
 

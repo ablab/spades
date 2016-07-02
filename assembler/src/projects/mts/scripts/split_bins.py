@@ -11,7 +11,7 @@ def print_usage():
         print("Usage: split_bins.py <contigs> <binning info> <output directory>")
 
 contigs = sys.argv[1]
-sample, _, _ = path.basename(file).partition(".")
+sample, _ = path.splitext(path.basename(contigs))
 out_dir = sys.argv[3]
 
 binning = common.load_annotation(sys.argv[2], False)

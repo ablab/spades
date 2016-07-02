@@ -6,7 +6,7 @@ def get_id(internal_id, sample):
 
 def load_annotation(file, normalize=True):
     res = dict()
-    sample, _, _ = path.basename(file).partition(".")
+    sample, _ = path.splitext(path.basename(file))
     with open(file) as input:
         for line in input:
             info = line.split(" : ")
