@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 
         for (const auto& cfg_fn : cfg_fns)
             INFO("Loading config from " << cfg_fn);
-        
+
         VERIFY(cfg::get().K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K);
         VERIFY(cfg::get().K % 2 != 0);
 
@@ -85,6 +85,7 @@ int main(int argc, char **argv) {
                      SPADES_GIT_REFSPEC
                      ", git revision "
                      SPADES_GIT_SHA1);
+        INFO("Maximum k-mer length: " << runtime_k::MAX_K);
         INFO("Assembling dataset (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);
 
         spades::assemble_genome();
