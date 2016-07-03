@@ -489,7 +489,7 @@ public:
             return Gap(INVALID_GAP);
         }
 
-        if (overlap_info.identity() < IDENTITY_RATIO) {
+        if (math::ls(overlap_info.identity(), IDENTITY_RATIO)) {
             DEBUG("Low identity score");
             return Gap(INVALID_GAP);
         }
@@ -902,7 +902,7 @@ public:
 
         size_t current = 0;
         while (current < extenders_.size()) {
-            DEBUG("step " << current << " from " <<extenders_.size());
+            DEBUG("step " << current << " of total " << extenders_.size());
             if (extenders_[current]->MakeGrowStep(path, paths_storage)) {
                 return true;
             }
