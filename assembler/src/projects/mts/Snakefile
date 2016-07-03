@@ -305,7 +305,7 @@ rule int_bins_all:
     input:   expand("stats/{ref}/total.bin", ref=REFS)
     message: "Gathered all interesting bins"
 
-#---- GF per bin per reference --------------------------------------
+#---- GF per bin per reference -------------------------------------------------
 PROP = {"prelim": ("_splits", ""), "prop": ("_edges", "_edges")}
 
 #TODO: split into different directories per sample
@@ -360,18 +360,23 @@ rule stats_all:
     input:   expand("stats/summary/gf_{bin}_{prop}.tsv", bin=["bin"], prop=PROP)
     message: "Gathered some numbers, deal with them."
 
+#---- Reassembly statistics ----------------------------------------------------
+
 # Run this AFTER 'reassembly_all'
 rule stats_reassembly:
     input:   "stats/summary/gf_reassembly.tsv"
-    message: "Gathered even more numbers, deal with them."
+    output:  "stats/summary/pu_reassembly.tsv"
+    params:  "stats/q_reassembly"
+    message: "Gathered bins purity"
+    shell:   "Rscript {SCRIPTS}/purity.R {params} {output}"
 
-# Don't run this
-rule neat_table:
-    input:   "stats/q_split_prelim.log"
-    output:  "stats/summary/table.tsv"
-    params:  dir="stats/q_split_prelim", refs=" ".join(REFS)
-    message: "Formatting a human-readable table from results"
-    shell:   "{SCRIPTS}/format_table.py {output} {params.dir} {params.refs}"
+# # Don't run this
+# rule neat_table:
+#     input:   "stats/q_split_prelim.log"
+#     output:  "stats/summary/table.tsv"
+#     params:  dir="stats/q_split_prelim", refs=" ".join(REFS)
+#     message: "Formatting a human-readable table from results"
+#     shell:   "{SCRIPTS}/format_table.py {output} {params.dir} {params.refs}"
 
 #---- Propagator statistics ----------------------------------------------------
 rule prop_stats:
