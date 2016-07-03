@@ -34,10 +34,10 @@ FINISHED_CHOOSING = "binning/choose_all.log"
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
 
-FASTA_EXTS = {".fasta", ".fa", ".fna", ".fsa", ".fastq", ".fastq.gz", ".fq", ".fq.gz"}
+FASTA_EXTS = {"fasta", "fa", "fna", "fsa", "fastq", "fastq.gz", "fq", "fq.gz"}
 def gather_paths(path, basename=False):
     for filename in os.listdir(path):
-        name, ext = os.path.splitext(filename)
+        name, _, ext = os.path.basename(filename).partition(".")
         if ext in FASTA_EXTS:
             filepath = os.path.join(path, filename)
             if basename:
