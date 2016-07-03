@@ -114,6 +114,14 @@ public:
         push_back(s.data());
     }
 
+    void push_back(reference s) {
+        push_back(s.data());
+    }
+
+    void push_back(const value_type &s) {
+        push_back(s.data());
+    }
+
     void reserve(size_t amount) {
         if (capacity_ < amount) {
             capacity_ = amount;
