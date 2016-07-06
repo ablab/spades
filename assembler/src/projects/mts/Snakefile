@@ -34,7 +34,7 @@ FINISHED_CHOOSING = "binning/choose_all.log"
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
 
-FASTA_EXTS = {"fasta", "fa", "fna", "fsa", "fastq", "fastq.gz", "fq", "fq.gz"}
+FASTA_EXTS = {"fasta", "fa", "fna", "fsa", "fastq", "fastq.gz", "fq", "fq.gz", "fna.gz"}
 def gather_paths(path, basename=False):
     for filename in os.listdir(path):
         name, _, ext = os.path.basename(filename).partition(".")
@@ -86,6 +86,8 @@ onstart:
             os.mkdir(dir)
         except:
             pass
+    print("Detected samples:", SAMPLES)
+    print("Detected references:", REFS)
 
 # ---- Main pipeline -----------------------------------------------------------
 

@@ -123,6 +123,9 @@ try:
 
     sys.exit(ecode)
 
+except SystemExit:
+    raise
+
 except:
     log.err("The following unexpected error occured during the run:")
     print_exc()

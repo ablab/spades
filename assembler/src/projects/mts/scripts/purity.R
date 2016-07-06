@@ -19,7 +19,7 @@ calc_purity <- function(ref) {
     cag <- best_cag[[ref]]
     if(!(cag %in% colnames(stats_table)))
         return(0)
-    stats <- as.numeric(stats_table[,cag])
+    stats <- suppressWarnings(as.numeric(stats_table[,cag]))
     names(stats) <- rownames(stats_table)
     ref_len <- stats[["Reference length"]]
     gf <- stats[["Genome fraction (%)"]] / 100

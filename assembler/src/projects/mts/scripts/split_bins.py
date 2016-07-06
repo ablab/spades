@@ -18,8 +18,9 @@ binning = common.load_annotation(sys.argv[2], False)
 
 cags = set()
 for seq in SeqIO.parse(contigs, "fasta"):
-    #seq.id = common.get_id(seq.id, sample)
-    #seq.description = ""
-    for cag in binning.get(seq.id, []):
+    seq_id = seq.id
+    seq.id = common.get_id(seq.id, sample)
+    seq.description = ""
+    for cag in binning.get(seq_id, []):
         with open(path.join(out_dir, "{}-{}.fasta".format(sample, cag)), "a") as output:
             SeqIO.write(seq, output, "fasta")
