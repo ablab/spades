@@ -756,7 +756,7 @@ def main(args):
                     dataset_file.close()
                 spades_cfg.__dict__["dataset"] = dataset_filename
 
-                latest_dir = spades_logic.run_spades(tmp_configs_dir, bin_home, spades_cfg, dataset_data, ext_python_modules_home, log)
+                used_K = spades_logic.run_spades(tmp_configs_dir, bin_home, spades_cfg, dataset_data, ext_python_modules_home, log)
 
                 if os.path.isdir(misc_dir) and not options_storage.continue_mode:
                     shutil.rmtree(misc_dir)
@@ -768,7 +768,7 @@ def main(args):
                     if k_str.find(":") != -1:
                         k_str = k_str[:k_str.find(":")]
                     support.error("failed to continue from K=%s because this K was not processed in the original run!" % k_str, log)
-                log.info("\n===== %s finished. \n" % STAGE_NAME)
+                log.info("\n===== %s finished. Used k-mer sizes: %s \n" % (STAGE_NAME, ', '.join(map(str, used_K))))
             if not options_storage.run_completed:
                 if options_storage.stop_after == 'as' or options_storage.stop_after == 'scc' or (options_storage.stop_after and options_storage.stop_after.startswith('k')):
                     support.finish_here(log)

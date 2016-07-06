@@ -104,6 +104,7 @@ def recreate_dir(dirname):
         shutil.rmtree(dirname)
     os.makedirs(dirname)
 
+
 def check_files_duplication(filenames, log):
     for filename in filenames:
         if filenames.count(filename) != 1:
