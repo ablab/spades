@@ -11,17 +11,17 @@ import os
 import sys
 import sendgrid
 
-def send_messages(user_list, subject, text):
+def send_messages(username, password, user_list, subject, text):
     i = 0
     for address in user_list:
         i += 1
         print '\rSending ' + str(i) + '/' + str(len(user_list)),
         sys.stdout.flush()
-        send_message(address, subject, text)    
+        send_message(username, password, address, subject, text)    
     print '\nDone'
 
-def send_message(address, subject, text):
-    sg = sendgrid.SendGridClient("spades", "5phGnoqf2n")
+def send_message(username, password, address, subject, text):
+    sg = sendgrid.SendGridClient(username, password)
     message = sendgrid.Mail()
 
     message.add_to(address)
@@ -75,7 +75,9 @@ for line in message_file:
 
 send = raw_input('Are you sure you want to send the message with subject "' + subject + '" to ' + str(len(user_set)) + ' users? (yes/no) ')
 if (send.strip().upper() == 'YES'):
-    send_messages(user_set, subject, message)
+    username = raw_input('Username: ')
+    password = raw_input('Password: ')
+    send_messages(username, password, user_set, subject, message)
 else:
     print("Aborted")
 
