@@ -43,20 +43,37 @@ protected:
             ss << constructor_.construct(path[0]).first.substr(0, k_);
         }
 
-        for (size_t i = 0; i < path.Size(); ++i) {
+
+        size_t i = 0;
+        while (i < path.Size()) {
             int gap = i == 0 ? 0 : path.GapAt(i);
             if (gap > (int) k_) {
                 for (size_t j = 0; j < gap - k_; ++j) {
                     ss << "N";
                 }
                 ss << constructor_.construct(path[i]).first;
-            } else {
+            }
+            else {
                 int overlapLen = (int) k_ - gap;
                 if (overlapLen >= (int) g_.length(path[i]) + (int) k_) {
-                    if(overlapLen > (int) g_.length(path[i]) + (int) k_) {
-                        WARN("Such scaffolding logic leads to local misassemblies");
+                    overlapLen -= (int) g_.length(path[i]) + (int) k_;
+                    ++i;
+                    //skipping overlapping edges
+                    while (i < path.Size() && overlapLen >= (int) g_.length(path[i]) + path.GapAt(i)) {
+                        overlapLen -= (int) g_.length(path[i]) + path.GapAt(i);
+                        ++i;
                     }
-                    continue;
+                    if (i == path.Size()) {
+                        break;
+                    }
+
+                    overlapLen = overlapLen + (int) k_ - path.GapAt(i);
+                    if(overlapLen < 0) {
+                        for (size_t j = 0; j < abs(overlapLen); ++j) {
+                            ss << "N";
+                        }
+                        overlapLen = 0;
+                    }
                 }
                 auto temp_str = g_.EdgeNucls(path[i]).Subseq(overlapLen).str();
                 if(i != path.Size() - 1) {
@@ -69,6 +86,7 @@ protected:
                 }
                 ss << temp_str;
             }
+            ++i;
         }
         return ss.str();
     }
