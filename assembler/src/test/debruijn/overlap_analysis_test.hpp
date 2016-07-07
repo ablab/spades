@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE( LargeTest ) {
     std::cout << overlap << std::endl;
     BOOST_CHECK_EQUAL(overlap.match_cnt, 14);
     BOOST_CHECK_EQUAL(overlap.r1, Range(8, 24));
-    BOOST_CHECK_EQUAL(overlap.r1, Range(8, 24));
+    BOOST_CHECK_EQUAL(overlap.r2, Range(8, 24));
 }
 
 BOOST_AUTO_TEST_CASE( SimpleGapTest ) {
@@ -142,9 +142,9 @@ BOOST_AUTO_TEST_CASE( UndefinedBehavior ) {
     Sequence s2("CTCCCTCCTCCCGTCCTCCCCCTCCCTGTCTTCATTCGCCTCCCTTCCCCGGTCTTCGCATTTCTGCAAGCGCTTTACCGAGCGGTCAGCGTGCGATAGACTCGCGCCGATCGCTTCTGCTGGCCTCACGCAGGCTGGGGGTGTTTGTGTTTCGTCTGGACGCCGA");
     OverlapInfo overlap = analyzer.AnalyzeOverlap(s1, s2);
     std::cout << overlap << std::endl;
-    BOOST_CHECK_EQUAL(overlap.match_cnt, 14);
-    BOOST_CHECK_EQUAL(overlap.r1, Range(8, 24));
-    BOOST_CHECK_EQUAL(overlap.r1, Range(8, 24));
+    BOOST_CHECK_EQUAL(overlap.match_cnt, 140);
+    BOOST_CHECK_EQUAL(overlap.r1, Range(23, 166));
+    BOOST_CHECK_EQUAL(overlap.r2, Range(5, 146));
 }
 
 
