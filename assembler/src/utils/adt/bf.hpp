@@ -140,7 +140,7 @@ class bitcounting_bloom_filter : public counting_bloom_filter<T, width_> {
         uint64_t cellval = val >> width_ * epos;
         size_t cnt = (cellval == 0 ? 0 : 64 - __builtin_clzll(cellval)) + width_ * epos;
         
-        if ((std::atomic_fetch_or(&entry, 1ull << cnt) & mask) != val)
+        if ((std::atomic_fetch_or(&entry, uint64_t(1) << cnt) & mask) != val)
           continue;
 
         break;

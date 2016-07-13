@@ -16,6 +16,7 @@
 
 #include "io/kmers_io/kmer_iterator.hpp"
 #include "utils/adt/bf.hpp"
+#include "utils/adt/hll.hpp"
 
 using namespace hammer;
 
@@ -236,6 +237,61 @@ class KMerMultiplicityCounter {
   }
 };
 
+class KMerCountEstimator {
+  std::vector<hll::hll<KMer>> hll_;
+  size_t processed_;
+
+  public:
+  KMerCountEstimator(unsigned thread_num)
+          : processed_(0) {
+      hll_.reserve(thread_num);
+      for (unsigned i = 0; i < thread_num; ++i)
+          hll_.emplace_back([](const KMer &k) { return k.GetHash(); });
+  }
+
+  ~KMerCountEstimator() {}
+
+  bool operator()(const Read &r) {
+      int trim_quality = cfg::get().input_trim_quality;
+
+      // FIXME: Get rid of this
+      Read cr = r;
+      size_t sz = cr.trimNsAndBadQuality(trim_quality);
+
+#   pragma omp atomic
+      processed_ += 1;
+
+      if (sz < hammer::K)
+          return false;
+
+      ValidKMerGenerator<hammer::K> gen(cr);
+      for (; gen.HasMore(); gen.Next()) {
+          KMer kmer = gen.kmer();
+          auto &hll = hll_[omp_get_thread_num()];
+
+          hll.add(kmer);
+          hll.add(!kmer);
+      }
+
+      return (processed_ % (256*1024) == 0 && processed_ > 1024);
+  }
+
+  std::pair<double, bool> cardinality() const {
+      return hll_[0].cardinality();
+  }
+
+  void merge() {
+      for (size_t i = 1; i < hll_.size(); ++i) {
+          hll_[0].merge(hll_[i]);
+          hll_[i].clear();
+      }
+  }
+
+  size_t processed() const {
+      return processed_;
+  }
+};
+
 void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   // Build the index
   std::string workdir = cfg::get().input_working_dir;
@@ -244,11 +300,39 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   size_t kmers = 0;
   std::string final_kmers;
   if (cfg::get().count_filter_singletons) {
+      size_t buffer_size = cfg::get().count_split_buffer;
+      {
+          INFO("Estimating k-mer count");
+
+          size_t n = 15;
+          KMerCountEstimator mcounter(omp_get_max_threads());
+          for (const auto &reads : cfg::get().dataset.reads()) {
+              INFO("Processing " << reads);
+              ireadstream irs(reads, cfg::get().input_qvoffset);
+              while (!irs.eof()) {
+                  hammer::ReadProcessor rp(omp_get_max_threads());
+                  rp.Run(irs, mcounter);
+                  VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
+
+                  if (mcounter.processed() >> n) {
+                      INFO("Processed " << mcounter.processed() << " reads");
+                      n += 1;
+                  }
+              }
+          }
+          INFO("Total " << mcounter.processed() << " reads processed");
+          mcounter.merge();
+          std::pair<double, bool> res = mcounter.cardinality();
+          if (buffer_size == 0 || res.second == false) {
+              buffer_size = 512 * 1024 * 1024;
+          } else {
+              buffer_size = 3 * size_t(res.first);
+              INFO("Estimated " << buffer_size << " distinct kmers");
+          }
+      }
+
       INFO("Filtering singleton k-mers");
 
-      size_t buffer_size = cfg::get().count_split_buffer;
-      if (buffer_size == 0)
-          buffer_size = 512 * 1024 * 1024;
       KMerMultiplicityCounter mcounter(buffer_size);
 
       size_t n = 15;
