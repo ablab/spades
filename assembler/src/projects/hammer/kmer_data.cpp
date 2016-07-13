@@ -192,7 +192,7 @@ class KMerDataFiller {
 };
 
 class KMerMultiplicityCounter {
-  bf::counting_bloom_filter<KMer, 2> bf_;
+  bf::bitcounting_bloom_filter<KMer, 2> bf_;
   size_t processed_;
 
   public:
