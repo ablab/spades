@@ -53,14 +53,11 @@ class HammerFilteringKMerSplitter : public KMerSortingSplitter<hammer::KMer> {
 };
 
 class BufferFiller {
-  size_t processed_;
   HammerFilteringKMerSplitter &splitter_;
 
  public:
   BufferFiller(HammerFilteringKMerSplitter &splitter)
-      : processed_(0), splitter_(splitter) {}
-
-  size_t processed() const { return processed_; }
+      : splitter_(splitter) {}
 
   bool operator()(const Read &r) {
     int trim_quality = cfg::get().input_trim_quality;
@@ -68,9 +65,6 @@ class BufferFiller {
     // FIXME: Get rid of this
     Read cr = r;
     size_t sz = cr.trimNsAndBadQuality(trim_quality);
-
-    #pragma omp atomic
-    processed_ += 1;
 
     if (sz < hammer::K)
       return false;
@@ -99,25 +93,26 @@ path::files_t HammerFilteringKMerSplitter::Split(size_t num_files) {
 
   path::files_t out = PrepareBuffers(num_files, nthreads, reads_buffer_size);
 
-  size_t n = 15;
+  size_t n = 15, processed = 0;
   BufferFiller filler(*this);
   const auto& dataset = cfg::get().dataset;
-  for (auto I = dataset.reads_begin(), E = dataset.reads_end(); I != E; ++I) {
-    INFO("Processing " << *I);
-    ireadstream irs(*I, cfg::get().input_qvoffset);
+  for (const auto &reads : cfg::get().dataset.reads()) {
+    INFO("Processing " << reads);
+    ireadstream irs(reads, cfg::get().input_qvoffset);
     while (!irs.eof()) {
       hammer::ReadProcessor rp(nthreads);
       rp.Run(irs, filler);
       DumpBuffers(out);
       VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
+      processed += rp.processed();
 
-      if (filler.processed() >> n) {
-        INFO("Processed " << filler.processed() << " reads");
+      if (processed >> n) {
+        INFO("Processed " << processed << " reads");
         n += 1;
       }
     }
   }
-  INFO("Processed " << filler.processed() << " reads");
+  INFO("Total " << processed << " reads processed");
 
   return out;
 }
@@ -194,13 +189,11 @@ class KMerDataFiller {
 
 class KMerMultiplicityCounter {
   bf::bitcounting_bloom_filter<KMer, 2> bf_;
-  size_t processed_;
 
   public:
   KMerMultiplicityCounter(size_t size)
       : bf_([](const KMer &k, uint64_t seed) { return k.GetHash((uint32_t)seed); },
-            4 * size),
-        processed_(0) {}
+            4 * size) {}
 
   ~KMerMultiplicityCounter() {}
 
@@ -210,9 +203,6 @@ class KMerMultiplicityCounter {
       // FIXME: Get rid of this
       Read cr = r;
       size_t sz = cr.trimNsAndBadQuality(trim_quality);
-
-#   pragma omp atomic
-      processed_ += 1;
 
       if (sz < hammer::K)
           return false;
@@ -225,25 +215,19 @@ class KMerMultiplicityCounter {
           bf_.add(!kmer);
       }
 
-      return (processed_ % (256*1024) == 0 && processed_ > 1024);
+      return false;
   }
 
   size_t count(const KMer &k) const {
       return bf_.lookup(k);
   }
-
-  size_t processed() const {
-      return processed_;
-  }
 };
 
 class KMerCountEstimator {
   std::vector<hll::hll<KMer>> hll_;
-  size_t processed_;
 
   public:
-  KMerCountEstimator(unsigned thread_num)
-          : processed_(0) {
+  KMerCountEstimator(unsigned thread_num) {
       hll_.reserve(thread_num);
       for (unsigned i = 0; i < thread_num; ++i)
           hll_.emplace_back([](const KMer &k) { return k.GetHash(); });
@@ -254,17 +238,7 @@ class KMerCountEstimator {
   bool operator()(const Read &r) {
       int trim_quality = cfg::get().input_trim_quality;
 
-      // FIXME: Get rid of this
-      Read cr = r;
-      size_t sz = cr.trimNsAndBadQuality(trim_quality);
-
-#   pragma omp atomic
-      processed_ += 1;
-
-      if (sz < hammer::K)
-          return false;
-
-      ValidKMerGenerator<hammer::K> gen(cr);
+      ValidKMerGenerator<hammer::K> gen(r, (uint8_t)trim_quality);
       for (; gen.HasMore(); gen.Next()) {
           KMer kmer = gen.kmer();
           auto &hll = hll_[omp_get_thread_num()];
@@ -273,7 +247,7 @@ class KMerCountEstimator {
           hll.add(!kmer);
       }
 
-      return (processed_ % (256*1024) == 0 && processed_ > 1024);
+      return false;
   }
 
   std::pair<double, bool> cardinality() const {
@@ -286,10 +260,6 @@ class KMerCountEstimator {
           hll_[i].clear();
       }
   }
-
-  size_t processed() const {
-      return processed_;
-  }
 };
 
 void KMerDataCounter::BuildKMerIndex(KMerData &data) {
@@ -300,11 +270,11 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   size_t kmers = 0;
   std::string final_kmers;
   if (cfg::get().count_filter_singletons) {
-      size_t buffer_size = cfg::get().count_split_buffer;
+      size_t buffer_size;
       {
           INFO("Estimating k-mer count");
 
-          size_t n = 15;
+          size_t n = 15, processed = 0;
           KMerCountEstimator mcounter(omp_get_max_threads());
           for (const auto &reads : cfg::get().dataset.reads()) {
               INFO("Processing " << reads);
@@ -313,21 +283,23 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
                   hammer::ReadProcessor rp(omp_get_max_threads());
                   rp.Run(irs, mcounter);
                   VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
+                  processed += rp.processed();
 
-                  if (mcounter.processed() >> n) {
-                      INFO("Processed " << mcounter.processed() << " reads");
+                  if (processed >> n) {
+                      INFO("Processed " << processed << " reads");
                       n += 1;
                   }
               }
           }
-          INFO("Total " << mcounter.processed() << " reads processed");
+          INFO("Total " << processed << " reads processed");
           mcounter.merge();
           std::pair<double, bool> res = mcounter.cardinality();
-          if (buffer_size == 0 || res.second == false) {
-              buffer_size = 512 * 1024 * 1024;
+          if (res.second == false) {
+              buffer_size = cfg::get().count_split_buffer;
+              if (buffer_size == 0) buffer_size = 512ull * 1024 * 1024;
           } else {
+              INFO("Estimated " << size_t(res.first) << " distinct kmers");
               buffer_size = 3 * size_t(res.first);
-              INFO("Estimated " << buffer_size << " distinct kmers");
           }
       }
 
@@ -335,7 +307,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
 
       KMerMultiplicityCounter mcounter(buffer_size);
 
-      size_t n = 15;
+      size_t n = 15, processed = 0;
       for (const auto &reads : cfg::get().dataset.reads()) {
           INFO("Processing " << reads);
           ireadstream irs(reads, cfg::get().input_qvoffset);
@@ -343,14 +315,15 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
               hammer::ReadProcessor rp(omp_get_max_threads());
               rp.Run(irs, mcounter);
               VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
+              processed += rp.processed();
 
-              if (mcounter.processed() >> n) {
-                  INFO("Processed " << mcounter.processed() << " reads");
+              if (processed >> n) {
+                  INFO("Processed " << processed << " reads");
                   n += 1;
               }
           }
       }
-      INFO("Total " << mcounter.processed() << " reads processed");
+      INFO("Total " << processed << " reads processed");
 
       // FIXME: Reduce code duplication
       HammerFilteringKMerSplitter splitter(workdir,
