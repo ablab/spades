@@ -193,40 +193,47 @@ class KMerDataFiller {
 
 class KMerMultiplicityCounter {
   bf::counting_bloom_filter<KMer, 2> bf_;
+  size_t processed_;
 
   public:
   KMerMultiplicityCounter(size_t size)
       : bf_([](const KMer &k, uint64_t seed) { return k.GetHash((uint32_t)seed); },
-            4 * size) {}
+            4 * size),
+        processed_(0) {}
 
   ~KMerMultiplicityCounter() {}
 
   bool operator()(const Read &r) {
-        int trim_quality = cfg::get().input_trim_quality;
+      int trim_quality = cfg::get().input_trim_quality;
 
-        // FIXME: Get rid of this
-        Read cr = r;
-        size_t sz = cr.trimNsAndBadQuality(trim_quality);
+      // FIXME: Get rid of this
+      Read cr = r;
+      size_t sz = cr.trimNsAndBadQuality(trim_quality);
 
-        if (sz < hammer::K)
-            return false;
+#   pragma omp atomic
+      processed_ += 1;
 
-        ValidKMerGenerator<hammer::K> gen(cr);
-        while (gen.HasMore()) {
-            KMer kmer = gen.kmer();
+      if (sz < hammer::K)
+          return false;
 
-            bf_.add(kmer);
-            bf_.add(!kmer);
+      ValidKMerGenerator<hammer::K> gen(cr);
+      for (; gen.HasMore(); gen.Next()) {
+          KMer kmer = gen.kmer();
 
-            gen.Next();
-        }
+          bf_.add(kmer);
+          bf_.add(!kmer);
+      }
 
-        return false;
-    }
+      return (processed_ % (256*1024) == 0 && processed_ > 1024);
+  }
 
-    size_t count(const KMer &k) const {
+  size_t count(const KMer &k) const {
       return bf_.lookup(k);
-    }
+  }
+
+  size_t processed() const {
+      return processed_;
+  }
 };
 
 void KMerDataCounter::BuildKMerIndex(KMerData &data) {
@@ -237,34 +244,43 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   size_t kmers = 0;
   std::string final_kmers;
   if (cfg::get().count_filter_singletons) {
-    INFO("Filtering singleton k-mers");
+      INFO("Filtering singleton k-mers");
 
-    size_t buffer_size = cfg::get().count_split_buffer;
-    if (buffer_size == 0)
-      buffer_size = 512 * 1024 * 1024;
-    KMerMultiplicityCounter mcounter(buffer_size);
+      size_t buffer_size = cfg::get().count_split_buffer;
+      if (buffer_size == 0)
+          buffer_size = 512 * 1024 * 1024;
+      KMerMultiplicityCounter mcounter(buffer_size);
 
-    for (const auto &reads : cfg::get().dataset.reads()) {
-      INFO("Processing " << reads);
-      ireadstream irs(reads, cfg::get().input_qvoffset);
-      hammer::ReadProcessor rp(omp_get_max_threads());
-      rp.Run(irs, mcounter);
-      VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
-    }
+      size_t n = 15;
+      for (const auto &reads : cfg::get().dataset.reads()) {
+          INFO("Processing " << reads);
+          ireadstream irs(reads, cfg::get().input_qvoffset);
+          while (!irs.eof()) {
+              hammer::ReadProcessor rp(omp_get_max_threads());
+              rp.Run(irs, mcounter);
+              VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 
-    // FIXME: Reduce code duplication
-    HammerFilteringKMerSplitter splitter(workdir,
-                                         [&] (const KMer &k) { return mcounter.count(k) > 1; });
-    KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
+              if (mcounter.processed() >> n) {
+                  INFO("Processed " << mcounter.processed() << " reads");
+                  n += 1;
+              }
+          }
+      }
+      INFO("Total " << mcounter.processed() << " reads processed");
 
-    kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
-    final_kmers = counter.GetFinalKMersFname();
+      // FIXME: Reduce code duplication
+      HammerFilteringKMerSplitter splitter(workdir,
+                                           [&] (const KMer &k) { return mcounter.count(k) > 1; });
+      KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
+
+      kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
+      final_kmers = counter.GetFinalKMersFname();
   } else {
-    HammerFilteringKMerSplitter splitter(workdir);
-    KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
+      HammerFilteringKMerSplitter splitter(workdir);
+      KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
 
-    kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
-    final_kmers = counter.GetFinalKMersFname();
+      kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
+      final_kmers = counter.GetFinalKMersFname();
   }
 
 
