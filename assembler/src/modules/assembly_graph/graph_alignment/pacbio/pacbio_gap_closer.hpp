@@ -37,9 +37,10 @@ private:
 
 public:
     size_t min_gap_quantity;
-    GapStorage(Graph &g, size_t min_gap_quantity)
+    size_t long_seq_limit_;
+    GapStorage(Graph &g, size_t min_gap_quantity, size_t long_seq_limit)
             : g_(g),
-              inner_index(), min_gap_quantity(min_gap_quantity){
+              inner_index(), min_gap_quantity(min_gap_quantity), long_seq_limit_(long_seq_limit){
     }
 
     size_t FillIndex() {
@@ -73,7 +74,7 @@ public:
         HiddenAddGap(p);
         if (add_rc) {
             TRACE("Adding conjugate");
-            HiddenAddGap(p.conjugate(g_, (int) cfg::get().K));
+            HiddenAddGap(p.conjugate(g_, (int) g_.k() ));
         }
     }
 
@@ -174,14 +175,13 @@ public:
                 int end_max = 0;
                 size_t long_seqs = 0;
                 size_t short_seqs = 0;
-                size_t long_seq_limit = cfg::get().pb.long_seq_limit;  //400
                 bool exclude_long_seqs = false;
                 for (auto j_iter = cl_start; j_iter != next_iter; j_iter++) {
                     if (g_.length(j_iter->start) - j_iter->edge_gap_start_position > 500 || j_iter->edge_gap_end_position > 500) {
                         DEBUG("ignoring alingment to the middle of edge");
                         continue;
                     }
-                    if (j_iter->gap_seq.size() > long_seq_limit)
+                    if (j_iter->gap_seq.size() > long_seq_limit_)
                         long_seqs++;
                     else
                         short_seqs++;
@@ -199,7 +199,7 @@ public:
                     if (g_.length(j_iter->start) - j_iter->edge_gap_start_position > 500 || j_iter->edge_gap_end_position > 500)
                         continue;
 
-                    if (exclude_long_seqs && j_iter->gap_seq.size() > long_seq_limit)
+                    if (exclude_long_seqs && j_iter->gap_seq.size() > long_seq_limit_)
                         continue;
 
                     string s = g_.EdgeNucls(j_iter->start).Subseq(start_min, j_iter->edge_gap_start_position).str();
@@ -237,6 +237,7 @@ private:
     int not_unique_gaps;
     int chained_gaps;
     bool consensus_gap_closing;
+    size_t max_contigs_gap_length_;
 public:
     void CloseGapsInGraph(map<EdgeId, EdgeId> &replacement) {
         for (auto iter = new_edges_.begin(); iter != new_edges_.end(); ++iter) {
@@ -313,7 +314,7 @@ private:
                         transform(s.begin(), s.end(), s.begin(), ::toupper);
                         gap_variants.push_back(s);
                     }
-                    if (consensus_gap_closing || (gap_variants.size() > 0 && gap_variants[0].length() < cfg::get().pb.max_contigs_gap_length)) {
+                    if (consensus_gap_closing || (gap_variants.size() > 0 && gap_variants[0].length() < max_contigs_gap_length_)) {
                         map <EdgeId, pair<size_t, string>> tmp;
                         string tmp_string;
                         string s = g_.EdgeNucls(cl_start->start).Subseq(0, cl_start->edge_gap_start_position).str();
@@ -352,8 +353,8 @@ private:
     }
 
 public:
-    PacbioGapCloser(Graph &g, bool consensus_gap )
-            : g_(g), consensus_gap_closing(consensus_gap) {
+    PacbioGapCloser(Graph &g, bool consensus_gap, size_t max_contigs_gap_length )
+            : g_(g), consensus_gap_closing(consensus_gap), max_contigs_gap_length_(max_contigs_gap_length) {
         closed_gaps = 0;
         not_unique_gaps = 0;
         chained_gaps = 0;

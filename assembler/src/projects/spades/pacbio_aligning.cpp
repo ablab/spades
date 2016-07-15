@@ -22,7 +22,7 @@ void ProcessReadsBatch(conj_graph_pack &gp,
     vector<PathStorage<Graph> > long_reads_by_thread(cfg::get().max_threads,
                                                      PathStorage<Graph>(gp.g));
     vector<pacbio::GapStorage<Graph> > gaps_by_thread(cfg::get().max_threads,
-                                              pacbio::GapStorage<Graph>(gp.g, min_gap_quantity));
+                                              pacbio::GapStorage<Graph>(gp.g, min_gap_quantity,cfg::get().pb.long_seq_limit));
     vector<pacbio::StatsCounter> stats_by_thread(cfg::get().max_threads);
 
     size_t longer_500 = 0;
@@ -110,7 +110,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id, bool make_additional_saves) {
         min_gap_quantity = cfg::get().pb.contigs_min_gap_quantity;
         rtype = 2;
     }
-    pacbio::GapStorage<ConjugateDeBruijnGraph> gaps(gp.g, min_gap_quantity);
+    pacbio::GapStorage<ConjugateDeBruijnGraph> gaps(gp.g, min_gap_quantity, cfg::get().pb.long_seq_limit);
     size_t read_buffer_size = 50000;
     std::vector<io::SingleRead> reads(read_buffer_size);
     io::SingleRead read;
@@ -118,7 +118,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id, bool make_additional_saves) {
     INFO("Usign seed size: " << cfg::get().pb.pacbio_k);
     pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp.g,
                                                          cfg::get().pb.pacbio_k,
-                                                         cfg::get().K, cfg::get().pb.ignore_middle_alignment);
+                                                         cfg::get().K, cfg::get().pb.ignore_middle_alignment, cfg::get().output_dir, cfg::get().pb);
 
 //    path_extend::ContigWriter cw(gp.g);
 //    cw.WriteEdges("before_rr_with_ids.fasta");
@@ -149,7 +149,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id, bool make_additional_saves) {
     gaps.PadGapStrings();
     if (make_additional_saves)
         gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");
-    pacbio::PacbioGapCloser<Graph> gap_closer(gp.g, consensus_gap_closing);
+    pacbio::PacbioGapCloser<Graph> gap_closer(gp.g, consensus_gap_closing, cfg::get().pb.max_contigs_gap_length);
     gap_closer.ConstructConsensus(cfg::get().max_threads, gaps);
     gap_closer.CloseGapsInGraph(replacement);
     long_reads.ReplaceEdges(replacement);

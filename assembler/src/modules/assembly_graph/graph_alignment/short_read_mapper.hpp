@@ -40,7 +40,7 @@ public:
     {
         if (indices_.find(small_k_) == indices_.end()) {
             indices_.insert(make_pair(small_k_,
-                                      new pacbio::PacBioMappingIndex<Graph>(g, small_k_, graph_k, false)));
+                                      new pacbio::PacBioMappingIndex<Graph>(g, small_k_, graph_k, false, cfg::get().output_dir, cfg::get().pb)));
         }
         index_ = indices_[small_k_];
         ++active_mappers_;

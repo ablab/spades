@@ -17,6 +17,7 @@
 #include "data_structures/indices/edge_index_builders.hpp"
 #include <algorithm>
 #include "pacbio_read_structures.hpp"
+#include "pipeline/config_struct.hpp"
 
 namespace pacbio {
 #define UNDEF_COLOR -1
@@ -47,26 +48,26 @@ private:
     const static int short_edge_cutoff = 0;
     const static size_t min_cluster_size = 8;
     const static int max_similarity_distance = 500;
+
+//Debug stasts
     int good_follow = 0;
     int half_bad_follow = 0;
     int bad_follow = 0;
 
-    double compression_cutoff;
-    double domination_cutoff;
     set<Sequence> banned_kmers;
     debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> tmp_index;
     map<pair<VertexId, VertexId>, vector<size_t> > distance_cashed;
     size_t read_count;
     bool ignore_map_to_middle;
-
+    debruijn_graph::config::debruijn_config::pacbio_processor pb_config_;
 public:
     MappingDescription Locate(const Sequence &s) const;
 
-    PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_, bool ignore_map_to_middle)
+    PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_, bool ignore_map_to_middle, string out_dir, debruijn_graph::config::debruijn_config::pacbio_processor pb_config )
             : g_(g),
               pacbio_k(k),
               debruijn_k(debruijn_k_),
-              tmp_index((unsigned) pacbio_k, cfg::get().output_dir), ignore_map_to_middle(ignore_map_to_middle) {
+              tmp_index((unsigned) pacbio_k, out_dir), ignore_map_to_middle(ignore_map_to_middle), pb_config_(pb_config) {
         DEBUG("PB Mapping Index construction started");
 
         typedef typename debruijn_graph::EdgeIndexHelper<debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId>>::GraphPositionFillingIndexBuilderT Builder;
@@ -74,9 +75,6 @@ public:
         Builder().BuildIndexFromGraph(tmp_index, g_);
         INFO("Index constructed");
         FillBannedKmers();
-        compression_cutoff = cfg::get().pb.compression_cutoff;  // 0.6
-        domination_cutoff = cfg::get().pb.domination_cutoff;  //1.5
-        //INFO(tmp_index.size());
         read_count = 0;
     }
     ~PacBioMappingIndex(){
@@ -109,8 +107,8 @@ public:
         } else if (b.read_position == a.read_position) {
             return (abs(int(b.edge_position) + shift - int(a.edge_position)) < 2);
         } else {
-            return ((b.edge_position + shift - a.edge_position >= (b.read_position - a.read_position) * compression_cutoff) &&
-                ((b.edge_position + shift - a.edge_position) * compression_cutoff <= (b.read_position - a.read_position)));
+            return ((b.edge_position + shift - a.edge_position >= (b.read_position - a.read_position) * pb_config_.compression_cutoff) &&
+                ((b.edge_position + shift - a.edge_position) * pb_config_.compression_cutoff <= (b.read_position - a.read_position)));
         }
     }
 
@@ -292,7 +290,7 @@ public:
                           const KmerCluster<Graph> &b) const {
         size_t a_size = a.size;
         size_t b_size = b.size;
-        if ((double) a_size < (double) b_size * domination_cutoff
+        if ((double) a_size < (double) b_size * pb_config_.domination_cutoff
                 || a.sorted_positions[a.first_trustable_index].read_position
                         > b.sorted_positions[b.first_trustable_index].read_position
                 || a.sorted_positions[a.last_trustable_index].read_position
@@ -349,7 +347,7 @@ public:
                     vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
                     if (intermediate_path.size() == 0) {
                         DEBUG("Tangled region between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(debruijn_k - pacbio_k ) << " and seq "<< - seq_start + seq_end);
-                        if (cfg::get().pb.additional_debug_info) {
+                        if (pb_config_.additional_debug_info) {
                             DEBUG(" escpected gap length: " << -int(g_.length(prev_edge)) + int(prev_last_index.edge_position) - int(cur_first_index.edge_position) + int(debruijn_k - pacbio_k ) - seq_start + seq_end);
                             PathStorageCallback<Graph> callback(g_);
                             ProcessPaths(g_, 0, 4000,
@@ -591,8 +589,8 @@ public:
         int seq_len = -start_pos + end_pos;
         //int new_seq_len =
 //TODO::something more reasonable
-        int path_min_len = max(int(floor((seq_len - int(debruijn_k)) * cfg::get().pb.path_limit_pressing)), 0);
-        int path_max_len = (int) ((double) (seq_len + (int) debruijn_k) * cfg::get().pb.path_limit_stretching);
+        int path_min_len = max(int(floor((seq_len - int(debruijn_k)) * pb_config_.path_limit_pressing)), 0);
+        int path_max_len = (int) ((double) (seq_len + (int) debruijn_k) * pb_config_.path_limit_stretching);
         if (seq_len < 0) {
             DEBUG("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
             return std::make_pair(-1, -1);
