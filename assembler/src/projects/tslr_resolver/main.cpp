@@ -41,8 +41,10 @@ int main (int /*argc*/, char** argv) {
 		string cfg_filename = argv[1];
         load_config(cfg_filename);
 		create_console_logger(cfg_filename);
+        std::cout << cfg_filename << std::endl;
 
         string path_to_tslr_dataset = argv[2];
+        std::cout << path_to_tslr_dataset;
 		spades::run_tslr_resolver(path_to_tslr_dataset);
 	} catch (std::exception const& e) {
         std::cerr << "Exception caught " << e.what() << std::endl;

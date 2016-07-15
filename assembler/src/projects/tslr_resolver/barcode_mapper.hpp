@@ -1,15 +1,15 @@
 #pragma once
 
-#include <boost/unordered>
 #include <memory>
 #include <utility>
 #include <fstream>
 #include <string>
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
+#include <unordered_set>
+#include <unordered_map>
 #include "io/reads/paired_read.hpp"
 
 using std::string;
+using std::istringstream;
 
 namespace tslr_resolver {
     typedef debruijn_graph::conj_graph_pack graph_pack;
@@ -17,8 +17,8 @@ namespace tslr_resolver {
     typedef Graph::EdgeId EdgeId;
     typedef Graph::VertexId VertexId;
     typedef string BarcodeId;
-    typedef boost::unordered_set <BarcodeId> BarcodeSet;
-    typedef boost::unordered_map <EdgeId, BarcodeSet> barcode_map_t;
+    typedef std::unordered_set <BarcodeId> BarcodeSet;
+    typedef std::unordered_map <EdgeId, BarcodeSet> barcode_map_t;
     typedef omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
 
 
@@ -36,7 +36,7 @@ namespace tslr_resolver {
             return read.name().substr(0, barcode_len);
         }
     } //tenx_barcode_parser
-    
+
     struct barcode_library {
         string left_;
         string right_;
@@ -76,17 +76,35 @@ namespace tslr_resolver {
             return ans;
         }
 
+        double AverageBarcodeCoverage() {
+            edge_it_helper helper(gp_.g);
+            int64_t barcodes_overall = 0;
+            int64_t edges = 0;
+            for (auto it = helper.begin(); it != helper.end(); ++it) {
+                edges++;
+                barcodes_overall += barcode_map_.at(*it).size();
+            }
+            INFO(barcodes_overall);
+            INFO(edges);
+            return static_cast <double> (barcodes_overall) / static_cast <double> (edges);
+        }
+
     private:
         void ConstructMap() {
+            //TODO: Make it a separate method
             std::ifstream fin;
             fin.open(reads_filename_);
             std::vector <barcode_library> lib_vec;
-            while (!fin.eof()) {
-                barcode_library lib;
-                fin >> lib.barcode_;
-                fin >> lib.left_;
-                fin >> lib.right_;
-                lib_vec.push_back(lib);
+            string line;
+            while (getline(fin, line)) {
+                if (!line.empty()) {
+                    istringstream tmp_stream(line);
+                    barcode_library lib;
+                    tmp_stream >> lib.barcode_;
+                    tmp_stream >> lib.left_;
+                    tmp_stream >> lib.right_;
+                    lib_vec.push_back(lib);
+                }
             }
 
             edge_it_helper helper(gp_.g);
@@ -99,7 +117,7 @@ namespace tslr_resolver {
 
             for (auto lib: lib_vec) {
                 std::string barcode = lib.barcode_;
-                auto paired_read_stream = io::SeparatePairedReadStream(lib.left_, lib.right_, 0);
+                io::SeparatePairedReadStream paired_read_stream(lib.left_, lib.right_, 1);
                 io::PairedRead read;
                 while (!paired_read_stream.eof()) {
                     paired_read_stream >> read;
@@ -113,6 +131,7 @@ namespace tslr_resolver {
                     }
                 }
             }
+
         }
     };
 

@@ -24,8 +24,12 @@ namespace spades {
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
             INFO("Barcode map construction started...");
-            tslr_resolver::BarcodeMapper <io::SingleRead> bmapper (graph_pack, tslr_dataset_);
+            tslr_resolver::barcode_mapper <io::SingleRead> bmapper (graph_pack, tslr_dataset_);
             INFO("Barcode map construction finished.");
+            INFO("Average barcode coverage: " + std::to_string(bmapper.AverageBarcodeCoverage()));
+            INFO("Resolver started...");
+            LaunchBarcodePE (graph_pack, bmapper);
+            INFO("Resolver finished!");
         }
         DECL_LOGGER("TSLR Resolver Stage")
     };
