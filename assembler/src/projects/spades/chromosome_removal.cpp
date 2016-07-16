@@ -177,7 +177,7 @@ void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bo
 
 void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     //FIXME Seriously?! cfg::get().ds like hundred times...
-    OutputContigs(gp.g, cfg::get().output_dir + "before_chromosome_removal", false, 0, false);
+    OutputContigs(gp.g, cfg::get().output_dir + "before_chromosome_removal", false);
     INFO("Before iteration " << 0 << ", " << gp.g.size() << " vertices in graph");
     double chromosome_coverage = RemoveLongGenomicEdges(gp, cfg::get().pd->long_edge_length, cfg::get().pd->relative_coverage );
     PlasmidSimplify(gp, cfg::get().pd->long_edge_length);

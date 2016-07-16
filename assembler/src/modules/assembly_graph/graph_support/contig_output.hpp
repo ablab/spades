@@ -203,7 +203,7 @@ struct ExtendedContigIdT {
 template <class Graph>
 void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids, const ConnectedComponentCounter &cc_counter_, string prefix) {
     int counter = 0;
-    for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
         EdgeId e = *it;
         if (ids.count(e) == 0) {
             string id;
@@ -256,7 +256,7 @@ public:
     void PrintContigsFASTG(sequence_stream &os, const ConnectedComponentCounter & cc_counter) {
         map<EdgeId, ExtendedContigIdT> ids;
         MakeContigIdMap(graph_, ids, cc_counter, "EDGE");
-        for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
             set<string> next;
             VertexId v = graph_.EdgeEnd(*it);
             auto edges = graph_.OutgoingEdges(v);
@@ -264,8 +264,16 @@ public:
                 next.insert(ids[*next_it].full_id_);
             }
             ReportEdge(os, constructor_.construct(*it).first, ids[*it].full_id_, next);
-            //FASTG always needs both sets of edges
-            //it.HandleDelete(graph_.conjugate(*it));
+            if (*it != graph_.conjugate(*it))
+            {
+                set<string> next_conj;
+                v = graph_.EdgeEnd(graph_.conjugate(*it));
+                edges = graph_.OutgoingEdges(v);
+                for (auto next_it = edges.begin(); next_it != edges.end(); ++next_it) {
+                    next_conj.insert(ids[*next_it].full_id_);
+                }
+                ReportEdge(os, constructor_.construct(graph_.conjugate(*it)).first, ids[graph_.conjugate(*it)].full_id_, next_conj);               
+            }
         }
     }
 };
@@ -297,11 +305,7 @@ void ReportEdge(io::osequencestream_cov& oss
     }
 }
 
-inline void OutputContigs(ConjugateDeBruijnGraph& g,
-        const string& contigs_output_filename,
-        bool output_unipath,
-        size_t ,
-        bool /*cut_bad_connections*/) {
+inline void OutputContigs(ConjugateDeBruijnGraph &g, const string &contigs_output_filename, bool output_unipath) {
     INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
     DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
     io::osequencestream_cov oss(contigs_output_filename + ".fasta");
