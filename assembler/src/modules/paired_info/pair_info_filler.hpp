@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * pair_info_filler.hpp
- *
- *  Created on: Oct 3, 2013
- *      Author: andrey
- */
-
 #ifndef PAIR_INFO_FILLER_HPP_
 #define PAIR_INFO_FILLER_HPP_
 
@@ -31,18 +24,18 @@ class LatePairedIndexFiller : public SequenceMapperListener {
 public:
     LatePairedIndexFiller(const Graph &graph, WeightF weight_f, omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index)
             : graph_(graph),
-              weight_f_(weight_f),
+              weight_f_(std::move(weight_f)),
               paired_index_(paired_index) {
     }
 
-    virtual void StartProcessLibrary(size_t threads_count) {
+    void StartProcessLibrary(size_t threads_count) override {
         DEBUG("Start processing: start");
         paired_index_.Init();
         buffer_pi_ = {graph_, threads_count};
         DEBUG("Start processing: end");
     }
 
-    virtual void StopProcessLibrary() {
+    void StopProcessLibrary() override {
         DEBUG("Stop processing: start");
         for (size_t i = 0; i < buffer_pi_.size(); ++i)
             MergeBuffer(i);
@@ -51,33 +44,31 @@ public:
         DEBUG("Stop processing: end");
     }
 
-    virtual void ProcessPairedRead(size_t thread_index,
-                                   const io::PairedRead& r,
-                                   const MappingPath<EdgeId>& read1,
-                                   const MappingPath<EdgeId>& read2) {
-//        DEBUG("Processing paired read");
+    void ProcessPairedRead(size_t thread_index,
+                           const io::PairedRead& r,
+                           const MappingPath<EdgeId>& read1,
+                           const MappingPath<EdgeId>& read2) override {
         ProcessPairedRead(buffer_pi_[thread_index], read1, read2, r.distance());
 //        DEBUG("Processed");
     }
 
-    virtual void ProcessPairedRead(size_t thread_index,
-                                   const io::PairedReadSeq& r,
-                                   const MappingPath<EdgeId>& read1,
-                                   const MappingPath<EdgeId>& read2) {
-//        DEBUG("Processing binary paired read");
+    void ProcessPairedRead(size_t thread_index,
+                           const io::PairedReadSeq& r,
+                           const MappingPath<EdgeId>& read1,
+                           const MappingPath<EdgeId>& read2) override {
         ProcessPairedRead(buffer_pi_[thread_index], read1, read2, r.distance());
 //        DEBUG("Processed");
     }
 
-    virtual void ProcessSingleRead(size_t,
-                                   const io::SingleReadSeq&,
-                                   const MappingPath<EdgeId>&) {}
+    void ProcessSingleRead(size_t,
+                           const io::SingleReadSeq&,
+                           const MappingPath<EdgeId>&) override {}
 
-    virtual void ProcessSingleRead(size_t,
-                                   const io::SingleRead&,
-                                   const MappingPath<EdgeId>&) {}
+    void ProcessSingleRead(size_t,
+                           const io::SingleRead&,
+                           const MappingPath<EdgeId>&) override {}
 
-    virtual void MergeBuffer(size_t thread_index) {
+    void MergeBuffer(size_t thread_index) override {
         DEBUG("Merging buffer");
         paired_index_.Merge(buffer_pi_[thread_index]);
         buffer_pi_[thread_index].Clear();
