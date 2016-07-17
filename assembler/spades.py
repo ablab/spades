@@ -354,6 +354,11 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     if options_storage.meta:
         if options_storage.careful or options_storage.mismatch_corrector or options_storage.cov_cutoff != "off":
             support.error("you cannot specify --careful, --mismatch-correction or --cov-cutoff in metagenomic mode!", log)
+    if options_storage.rna:
+        if options_storage.careful:
+            support.error("you cannot specify --careful in RNA-Seq mode!", log)
+        if options_storage.k_mers and options_storage.k_mers != 'auto' and len(options_storage.k_mers) > 1:
+            support.error("you cannot specify multiple k-mer sizes in RNA-Seq mode!", log)
     if options_storage.continue_mode:
         return None, None
 
@@ -385,6 +390,12 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     support.check_dataset_reads(dataset_data, options_storage.only_assembler, log)
     if not support.get_lib_ids_by_type(dataset_data, spades_logic.READS_TYPES_USED_IN_CONSTRUCTION):
         support.error('you should specify at least one unpaired, paired-end, or high-quality mate-pairs library!')
+    if options_storage.rna:
+        if len(dataset_data) != len(support.get_lib_ids_by_type(dataset_data, spades_logic.READS_TYPES_USED_IN_RNA_SEQ)):
+            support.error('you cannot specify any data types except ' +
+                          ', '.join(spades_logic.READS_TYPES_USED_IN_RNA_SEQ) + ' in RNA-Seq mode!')
+        if len(support.get_lib_ids_by_type(dataset_data, 'paired-end')) > 1:
+            support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
 
     options_storage.set_default_values()
     ### FILLING cfg
@@ -426,6 +437,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.k_mers = None
         if options_storage.k_mers:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
+        elif options_storage.rna:
+            cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_RNA
         else:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_SHORT
         cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
@@ -688,6 +701,8 @@ def main(args):
         result_assembly_graph_filename = os.path.join(cfg["common"].output_dir, options_storage.assembly_graph_name)
         result_contigs_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.contigs_paths)
         result_scaffolds_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_paths)
+        result_transcripts_filename = os.path.join(cfg["common"].output_dir, options_storage.transcripts_name)
+        result_transcripts_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.transcripts_paths)
         truseq_long_reads_file_base = os.path.join(cfg["common"].output_dir, "truseq_long_reads")
         truseq_long_reads_file = truseq_long_reads_file_base + ".fasta"
         misc_dir = os.path.join(cfg["common"].output_dir, "misc")
@@ -702,6 +717,8 @@ def main(args):
             spades_cfg.__dict__["result_graph"] = result_assembly_graph_filename
             spades_cfg.__dict__["result_contigs_paths"] = result_contigs_paths_filename
             spades_cfg.__dict__["result_scaffolds_paths"] = result_scaffolds_paths_filename
+            spades_cfg.__dict__["result_transcripts"] = result_transcripts_filename
+            spades_cfg.__dict__["result_transcripts_paths"] = result_transcripts_paths_filename
 
             if options_storage.continue_mode and (os.path.isfile(spades_cfg.result_contigs)
                                                   or ("mismatch_corrector" in cfg and
@@ -861,20 +878,29 @@ def main(args):
             if "assembly" in cfg and os.path.isfile(result_contigs_filename):
                 message = " * Assembled contigs are in " + support.process_spaces(result_contigs_filename)
                 log.info(message)
-            if "assembly" in cfg and os.path.isfile(result_scaffolds_filename):
-                message = " * Assembled scaffolds are in " + support.process_spaces(result_scaffolds_filename)
-                log.info(message)
-            if "assembly" in cfg and os.path.isfile(result_assembly_graph_filename):
-                message = " * Assembly graph is in " + support.process_spaces(result_assembly_graph_filename)
-                log.info(message)
-            if "assembly" in cfg and os.path.isfile(result_contigs_paths_filename):
-                message = " * Paths in the assembly graph corresponding to the contigs are in " + \
-                          support.process_spaces(result_contigs_paths_filename)
-                log.info(message)
-            if "assembly" in cfg and os.path.isfile(result_scaffolds_paths_filename):
-                message = " * Paths in the assembly graph corresponding to the scaffolds are in " + \
-                          support.process_spaces(result_scaffolds_paths_filename)
-                log.info(message)
+            if options_storage.rna:
+                if "assembly" in cfg and os.path.isfile(result_transcripts_filename):
+                    message = " * Assembled transcripts are in " + support.process_spaces(result_transcripts_filename)
+                    log.info(message)
+                if "assembly" in cfg and os.path.isfile(result_transcripts_paths_filename):
+                    message = " * Paths in the assembly graph corresponding to the transcripts are in " + \
+                              support.process_spaces(result_transcripts_paths_filename)
+                    log.info(message)
+            else:
+                if "assembly" in cfg and os.path.isfile(result_scaffolds_filename):
+                    message = " * Assembled scaffolds are in " + support.process_spaces(result_scaffolds_filename)
+                    log.info(message)
+                if "assembly" in cfg and os.path.isfile(result_assembly_graph_filename):
+                    message = " * Assembly graph is in " + support.process_spaces(result_assembly_graph_filename)
+                    log.info(message)
+                if "assembly" in cfg and os.path.isfile(result_contigs_paths_filename):
+                    message = " * Paths in the assembly graph corresponding to the contigs are in " + \
+                              support.process_spaces(result_contigs_paths_filename)
+                    log.info(message)
+                if "assembly" in cfg and os.path.isfile(result_scaffolds_paths_filename):
+                    message = " * Paths in the assembly graph corresponding to the scaffolds are in " + \
+                              support.process_spaces(result_scaffolds_paths_filename)
+                    log.info(message)
             #log.info("")
 
         #breaking scaffolds
@@ -898,6 +924,9 @@ def main(args):
             if options_storage.truseq_mode:
                 if not os.path.isfile(truseq_long_reads_file):
                     support.error("TEST FAILED: %s does not exist!" % truseq_long_reads_file)
+            elif options_storage.rna:
+                if not os.path.isfile(result_transcripts_filename):
+                    support.error("TEST FAILED: %s does not exist!" % result_transcripts_filename)
             else:
                 for result_filename in [result_contigs_filename, result_scaffolds_filename]:
                     if os.path.isfile(result_filename):

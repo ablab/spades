@@ -33,6 +33,7 @@ cp assembler/LICENSE $TARGET_DIR/
 cp assembler/README $TARGET_DIR/
 cp assembler/VERSION $TARGET_DIR/
 cp assembler/spades.py $TARGET_DIR/
+cp assembler/rnaspades.py $TARGET_DIR/
 cp assembler/dipspades.py $TARGET_DIR/
 cp assembler/truspades.py $TARGET_DIR/
 cp assembler/spades_compile.sh $TARGET_DIR/

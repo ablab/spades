@@ -35,6 +35,8 @@ scaffolds_name = "scaffolds.fasta"
 assembly_graph_name = "assembly_graph.fastg"
 contigs_paths = "contigs.paths"
 scaffolds_paths = "scaffolds.paths"
+transcripts_name = "transcripts.fasta"
+transcripts_paths = "transcripts.paths"
 
 #other constants
 MIN_K = 1
@@ -45,6 +47,7 @@ THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS = 10
 #default values constants
 THREADS = 16
 MEMORY = 250
+K_MERS_RNA = [55]
 K_MERS_SHORT = [21,33,55]
 K_MERS_150 = [21,33,55,77]
 K_MERS_250 = [21,33,55,77,99,127]
@@ -184,7 +187,8 @@ def usage(spades_version, show_hidden=False, mode=None):
     if mode != "dip":
         sys.stderr.write("--sc\t\t\tthis flag is required for MDA (single-cell) data" + "\n")
         sys.stderr.write("--meta\t\t\tthis flag is required for metagenomic sample data" + "\n")
-        sys.stderr.write("--plasmid\tRuns plasmidSPAdes pipeline for plasmid detection \n");
+        sys.stderr.write("--rna\t\t\tthis flag is required for RNA-Seq data \n")
+        sys.stderr.write("--plasmid\t\truns plasmidSPAdes pipeline for plasmid detection \n")
 
     sys.stderr.write("--iontorrent\t\tthis flag is required for IonTorrent data" + "\n")
     sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
@@ -280,9 +284,14 @@ def usage(spades_version, show_hidden=False, mode=None):
     sys.stderr.write("\t\t\t\t[default: %s]\n" % MEMORY)
     sys.stderr.write("--tmp-dir\t<dirname>\tdirectory for temporary files" + "\n")
     sys.stderr.write("\t\t\t\t[default: <output_dir>/tmp]" + "\n")
-    sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
+    if mode != 'rna':
+        sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes" \
                          " (must be odd and" + "\n")
-    sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n")
+        sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n")
+    else:
+        sys.stderr.write("-k\t\t<int>\t\tk-mer size (must be odd and less than " + str(MAX_K + 1) + ") " \
+                         "[default: " + str(K_MERS_RNA[0]) + "]\n")
+
     sys.stderr.write("--cov-cutoff\t<float>\t\tcoverage cutoff value (a positive float number, "
                      "or 'auto', or 'off') [default: 'off']" + "\n")
     sys.stderr.write("--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
@@ -307,8 +316,7 @@ def usage(spades_version, show_hidden=False, mode=None):
                              " for BayesHammer" + "\n")
         sys.stderr.write("--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
                              " for SPAdes" + "\n")
-        sys.stderr.write("--large-genome\tEnables optimizations for large genomes \n");
-        sys.stderr.write("--rna\tRuns rnaSPAdes pipeline for RNA-Seq data \n");
+        sys.stderr.write("--large-genome\tEnables optimizations for large genomes \n")
         sys.stderr.write("--help-hidden\tprints this usage message with all hidden options" + "\n")
 
     if show_hidden and mode == "dip":
