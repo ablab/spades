@@ -88,6 +88,8 @@ public:
                 ++size;
                 NotifyProcessRead(r, mapper, lib_index, ithread);
             }
+#           pragma omp atomic
+            counter += size;
         }
         INFO("Total " << counter << " reads processed");
         NotifyStopProcessLibrary(lib_index);
