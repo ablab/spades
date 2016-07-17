@@ -19,8 +19,8 @@ namespace debruijn_graph {
  * todo talk with Anton about simplification and speed-up of procedure with little quality loss
  */
 class LatePairedIndexFiller : public SequenceMapperListener {
-    typedef std::function<double(MappingRange, MappingRange)> WeightF;
     typedef std::pair<EdgeId, EdgeId> EdgePair;
+    typedef std::function<double(const EdgePair&, const MappingRange&, const MappingRange&)> WeightF;
 public:
     LatePairedIndexFiller(const Graph &graph, WeightF weight_f, omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index)
             : graph_(graph),
@@ -86,9 +86,8 @@ private:
 
                 EdgePair ep{mapping_edge_1.first, mapping_edge_2.first};
 
-
                 omnigraph::de::DEWeight weight =
-                        weight_f_(mapping_edge_1.second, mapping_edge_2.second);
+                        weight_f_(ep, mapping_edge_1.second, mapping_edge_2.second);
                 size_t kmer_distance = read_distance
                         + mapping_edge_2.second.initial_range.end_pos
                         - mapping_edge_1.second.initial_range.start_pos;
@@ -96,8 +95,9 @@ private:
                         + (int) mapping_edge_1.second.mapped_range.start_pos
                         - (int) mapping_edge_2.second.mapped_range.end_pos;
 
-                paired_index.Add(mapping_edge_1.first, mapping_edge_2.first,
-                                         omnigraph::de::RawPoint(edge_distance, weight));
+                if (math::gr(weight, 0))
+                    paired_index.Add(mapping_edge_1.first, mapping_edge_2.first,
+                                     omnigraph::de::RawPoint(edge_distance, weight));
             }
         }
     }

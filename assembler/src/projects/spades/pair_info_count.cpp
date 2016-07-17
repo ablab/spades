@@ -14,15 +14,60 @@
 #include "paired_info/pair_info_filler.hpp"
 #include "algorithms/path_extend/split_graph_pair_info.hpp"
 #include "paired_info/bwa_pair_info_filler.hpp"
+#include "utils/adt/bf.hpp"
 
 namespace debruijn_graph {
 
+typedef io::SequencingLibrary<config::DataSetData> SequencingLib;
+using PairedInfoFilter = bf::counting_bloom_filter<std::pair<EdgeId, EdgeId>>;
 
-bool RefineInsertSizeForLib(conj_graph_pack &gp, size_t ilib, size_t edge_length_threshold) {
+class DEFilter : public SequenceMapperListener {
+  public:
+    DEFilter(PairedInfoFilter &filter)
+            : bf_(filter) {}
+
+    void StartProcessLibrary(size_t) override {}
+    void StopProcessLibrary() override {}
+    void ProcessSingleRead(size_t, const io::SingleRead&, const MappingPath<EdgeId>&) override {}
+    void ProcessSingleRead(size_t, const io::SingleReadSeq&, const MappingPath<EdgeId>&) override {};
+    void MergeBuffer(size_t) override {};
+    
+    void ProcessPairedRead(size_t,
+                           const io::PairedRead&,
+                           const MappingPath<EdgeId>& read1,
+                           const MappingPath<EdgeId>& read2) override {
+        ProcessPairedRead(read1, read2);
+    }
+    void ProcessPairedRead(size_t,
+                           const io::PairedReadSeq&,
+                           const MappingPath<EdgeId>& read1,
+                           const MappingPath<EdgeId>& read2) override {
+        ProcessPairedRead(read1, read2);
+    }
+  private:
+    void ProcessPairedRead(const MappingPath<EdgeId>& path1,
+                           const MappingPath<EdgeId>& path2) {
+        for (size_t i = 0; i < path1.size(); ++i) {
+            std::pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
+            for (size_t j = 0; j < path2.size(); ++j) {
+                std::pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
+                bf_.add({mapping_edge_1.first, mapping_edge_2.first});
+            }
+        }
+    }
+
+    PairedInfoFilter &bf_;
+};
+
+bool RefineInsertSizeForLib(const conj_graph_pack &gp,
+                            PairedInfoFilter &filter,
+                            size_t ilib, size_t edge_length_threshold) {
     INFO("Estimating insert size (takes a while)");
-    InsertSizeCounter hist_counter(gp, edge_length_threshold);
+    InsertSizeCounter hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
+    DEFilter filter_counter(filter);
     SequenceMapperNotifier notifier(gp);
     notifier.Subscribe(ilib, &hist_counter);
+    notifier.Subscribe(ilib, &filter_counter);
 
     SequencingLibrary &reads = cfg::get_writable().ds.reads[ilib];
     auto &data = reads.data();
@@ -80,28 +125,33 @@ void ProcessSingleReads(conj_graph_pack &gp,
     cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;
 }
 
-void ProcessPairedReads(conj_graph_pack &gp, size_t ilib) {
+void ProcessPairedReads(conj_graph_pack &gp, size_t ilib, PairedInfoFilter &filter) {
     SequencingLibrary &reads = cfg::get_writable().ds.reads[ilib];
     const auto &data = reads.data();
 
     bool calculate_threshold = (reads.type() == io::LibraryType::PairedEnd);
     SequenceMapperNotifier notifier(gp);
-    INFO("Left insert size qauntile " << data.insert_size_left_quantile <<
+    INFO("Left insert size quantile " << data.insert_size_left_quantile <<
          ", right insert size quantile " << data.insert_size_right_quantile);
 
-    path_extend::SplitGraphPairInfo split_graph(
-            gp, (size_t)data.median_insert_size,
-            (size_t) data.insert_size_deviation,
-            (size_t) data.insert_size_left_quantile,
-            (size_t) data.insert_size_right_quantile,
-            data.read_length, gp.g.k(),
-            cfg::get().pe_params.param_set.split_edge_length,
-            data.insert_size_distribution);
+    path_extend::SplitGraphPairInfo
+            split_graph(gp, (size_t)data.median_insert_size,
+                        (size_t) data.insert_size_deviation,
+                        (size_t) data.insert_size_left_quantile,
+                        (size_t) data.insert_size_right_quantile,
+                        data.read_length, gp.g.k(),
+                        cfg::get().pe_params.param_set.split_edge_length,
+                        data.insert_size_distribution);
 
     if (calculate_threshold)
         notifier.Subscribe(ilib, &split_graph);
 
-    LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[ilib]);
+    LatePairedIndexFiller pif(gp.g,
+                              [&](const std::pair<EdgeId, EdgeId> &ep,
+                                  const MappingRange&, const MappingRange&) {
+                                  return (filter.lookup(ep) > 1 ? 1. : 0.);
+                              },
+                              gp.paired_indices[ilib]);
     notifier.Subscribe(ilib, &pif);
 
     auto paired_streams = paired_binary_readers(reads, false, (size_t) data.mean_insert_size);
@@ -192,9 +242,14 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
             const auto &lib_data = lib.data();
             size_t rl = lib_data.read_length;
             size_t k = cfg::get().K;
-            bool insert_size_refined = RefineInsertSizeForLib(gp, i, edge_length_threshold);
+            PairedInfoFilter
+               filter([](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
+                       uint64_t h1 = e.first.hash();
+                       return CityHash64WithSeeds((const char*)&h1, sizeof(h1), e.second.hash(), seed);
+                   },
+                   1024*1024*1024);
 
-            if (!insert_size_refined) {
+            if (!RefineInsertSizeForLib(gp, filter, i, edge_length_threshold)) {
                 cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
                 WARN("Unable to estimate insert size for paired library #" << i);
                 if (rl > 0 && rl <= k) {
@@ -213,10 +268,9 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
                  ", right quantile = " << lib_data.insert_size_right_quantile <<
                  ", read length = " << lib_data.read_length);
 
-            if (lib_data.mean_insert_size < 1.1 * (double) rl) {
+            if (lib_data.mean_insert_size < 1.1 * (double) rl)
                 WARN("Estimated mean insert size " << lib_data.mean_insert_size
                      << " is very small compared to read length " << rl);
-            }
 
             INFO("Mapping library #" << i);
             bool map_single_reads = ShouldMapSingleReads(i);
@@ -224,7 +278,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
 
             if (lib.is_paired() && lib.data().mean_insert_size != 0.0) {
                 INFO("Mapping paired reads (takes a while) ");
-                ProcessPairedReads(gp, i);
+                ProcessPairedReads(gp, i, filter);
             }
 
             if (map_single_reads) {
