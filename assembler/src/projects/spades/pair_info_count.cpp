@@ -170,6 +170,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
     //fixme implement better universal logic
     size_t edge_length_threshold = cfg::get().mode == config::pipeline_type::meta ? 1000 : stats::Nx(gp.g, 50);
     INFO("Min edge length for estimation: " << edge_length_threshold);
+
     bwa_pair_info::BWAPairInfoFiller bwa_counter(gp.g,
                                                  cfg::get().bwa.path_to_bwa,
                                                  path::append_path(cfg::get().output_dir, "bwa_count"),
@@ -177,12 +178,16 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         const auto &lib = cfg::get().ds.reads[i];
-
-        if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
-            //Run insert size estimation and pair index filler together to save disc space (removes SAM file right after processing the lib)
+        if (lib.is_hybrid_lib()) {
+            INFO("Library #" << i << " was mapped earlier on hybrid aligning stage, skipping");
+            continue;
+        } else if (lib.is_contig_lib()) {
+            INFO("Mapping contigs library #" << i);
+            ProcessSingleReads(gp, i, false);
+        } else if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
             bwa_counter.ProcessLib(i, cfg::get_writable().ds.reads[i], gp.paired_indices[i],
                                    edge_length_threshold, cfg::get().bwa.min_contig_len);
-        } else if (lib.is_paired()) {
+        } else {
             INFO("Estimating insert size for library #" << i);
             const auto &lib_data = lib.data();
             size_t rl = lib_data.read_length;
@@ -200,33 +205,19 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
                     WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
                 }
                 continue;
-            } else {
-                INFO("  Insert size = " << lib_data.mean_insert_size <<
-                     ", deviation = " << lib_data.insert_size_deviation <<
-                     ", left quantile = " << lib_data.insert_size_left_quantile <<
-                     ", right quantile = " << lib_data.insert_size_right_quantile <<
-                     ", read length = " << lib_data.read_length);
-
-                if (lib_data.mean_insert_size < 1.1 * (double) rl) {
-                    WARN("Estimated mean insert size " << lib_data.mean_insert_size
-                         << " is very small compared to read length " << rl);
-                }
             }
-        }
-    }
 
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        const auto &lib = cfg::get().ds.reads[i];
-        if (lib.is_hybrid_lib()) {
-            INFO("Library #" << i << " was mapped earlier on hybrid aligning stage, skipping");
-            continue;
-        } else if (lib.is_contig_lib()) {
-            INFO("Mapping contigs library #" << i);
-            ProcessSingleReads(gp, i, /*use_binary*/false);
-        } else if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
-            INFO("Library #" << i << " was mapped by BWA, skipping");
-            continue;
-        } else {
+            INFO("  Insert size = " << lib_data.mean_insert_size <<
+                 ", deviation = " << lib_data.insert_size_deviation <<
+                 ", left quantile = " << lib_data.insert_size_left_quantile <<
+                 ", right quantile = " << lib_data.insert_size_right_quantile <<
+                 ", read length = " << lib_data.read_length);
+
+            if (lib_data.mean_insert_size < 1.1 * (double) rl) {
+                WARN("Estimated mean insert size " << lib_data.mean_insert_size
+                     << " is very small compared to read length " << rl);
+            }
+
             INFO("Mapping library #" << i);
             bool map_single_reads = ShouldMapSingleReads(i);
             cfg::get_writable().use_single_reads |= map_single_reads;
