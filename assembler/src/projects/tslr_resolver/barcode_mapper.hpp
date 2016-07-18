@@ -52,24 +52,24 @@ namespace tslr_resolver {
     private:
         barcode_map_t barcode_map_;
         const Graph &g;
-        Index index;
-        KmerSubs kmer_mapper;
+        const Index &index;
+        const KmerSubs &kmer_mapper;
     public:
         BarcodeMapper(const Graph &g, const Index& index,
                       const KmerSubs& kmer_mapper) :
                 g(g), index(index), kmer_mapper(kmer_mapper)
         {
-            edge_it_helper helper(g);
             barcode_map_ = barcode_map_t();
-            for (auto it = helper.begin(); it != helper.end(); ++it) {
-                BarcodeSet set;
-                barcode_map_.insert({*it, set});
-            }
         }
 
         BarcodeMapper(const BarcodeMapper& other) = default;
 
         void FillMap(const string &reads_filename, bool debug_mode = false) {
+                        edge_it_helper helper(g);
+            for (auto it = helper.begin(); it != helper.end(); ++it) {
+                BarcodeSet set;
+                barcode_map_.insert({*it, set});
+            }
             auto lib_vec = GetLibrary(reads_filename);
             auto mapper = std::make_shared<debruijn_graph::NewExtendedSequenceMapper<Graph, Index> >
                           (g, index, kmer_mapper);
@@ -126,6 +126,7 @@ namespace tslr_resolver {
             INFO(edges);
             return static_cast <double> (barcodes_overall) / static_cast <double> (edges);
         }
+        DECL_LOGGER("BarcodeMapper")
 
     private:
         std::vector <barcode_library> GetLibrary(const string& reads_filename) {

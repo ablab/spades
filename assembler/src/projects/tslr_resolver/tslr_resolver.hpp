@@ -12,43 +12,20 @@ namespace spades {
     private:
         size_t k_;
         std::string output_file_;
-        const std::string tslr_dataset_;
         //const Config &config_;
 
     public:
 
-        TslrResolverStage(size_t k, const std::string& output_file, const std::string& tslr_dataset) :
+        TslrResolverStage(size_t k, const std::string& output_file) :
                 AssemblyStage("TsrlResolver", "TSLR repeat resolver"),
-                k_(k), output_file_(output_file), tslr_dataset_(tslr_dataset) {
+                k_(k), output_file_(output_file) {
         }
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
             INFO("Resolver started...");
-            LaunchBarcodePE (graph_pack, graph_pack.barcode_mapper);
+            tslr_resolver::LaunchBarcodePE (graph_pack);
             INFO("Resolver finished!");
         }
-        DECL_LOGGER("TSLR Resolver Stage")
+        DECL_LOGGER("TSLRResolverStage")
     };
-
-
-    void run_tslr_resolver(const std::string path_to_tslr_dataset) {
-        INFO("TSLR resolver started");
-        debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
-                                                cfg::get().tmp_dir,
-                                                cfg::get().ds.reads.lib_count(),
-                                                cfg::get().ds.reference_genome,
-                                                cfg::get().flanking_range,
-                                                cfg::get().pos.max_mapping_gap,
-                                                cfg::get().pos.max_gap_diff);
-        StageManager manager({cfg::get().developer_mode,
-                              cfg::get().load_from,
-                              cfg::get().output_saves});
-        manager.add(new TslrResolverStage(cfg::get().K, cfg::get().output_dir + "resolver_output.fasta",
-                                           path_to_tslr_dataset));
-        INFO("Output directory: " << cfg::get().output_dir);
-        conj_gp.kmer_mapper.Attach();
-        conj_gp.edge_pos.Attach();
-        manager.run(conj_gp, cfg::get().entry_point.c_str());
-        INFO("TSLR resolver finished.");
-    }
 } //spades

@@ -16,16 +16,17 @@ using namespace path_extend;
 namespace tslr_resolver {
     class TrivialTSLRExtensionChooser : public ExtensionChooser {
 
-        BarcodeMapper<io::SingleRead> bmapper_;
+        const BarcodeMapper& bmapper_;
 
     public:
-        TrivialTSLRExtensionChooser(Graph &g, BarcodeMapper bmapper) :
+        TrivialTSLRExtensionChooser(Graph &g, const BarcodeMapper& bmapper) :
                 ExtensionChooser(g), bmapper_(bmapper) {
         }
 
         EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
             auto result = EdgeContainer();
             if (edges.size() == 1) {
+            	DEBUG("on branch 1");
                 return edges;
             }
             int reference_cov = 20;
@@ -41,8 +42,10 @@ namespace tslr_resolver {
                 }
             }
             if (!long_single_edge_exists || edges.size() == 0) {
+            	DEBUG("on branch 2");
                 return result;
             }
+            DEBUG("On branch 3");
             auto fittest_edge = std::max_element(edges.begin(), edges.end(),
                                                  [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
                                                      return this->bmapper_.IntersectionSize(edge1.e_, decisive_edge) <
@@ -51,6 +54,7 @@ namespace tslr_resolver {
             result.push_back(*fittest_edge);
             return result;
         }
+        DECL_LOGGER("TslrExtensionChooser")
     };
 
     class SimpleTSLRExtender : public LoopDetectingPathExtender { //Same as SimpleExtender, but with removed loop checks
@@ -163,7 +167,7 @@ namespace tslr_resolver {
 
     };
 
-    void LaunchBarcodePE (conj_graph_pack &gp, BarcodeMapper& bmapper) {
+    void LaunchBarcodePE (conj_graph_pack &gp) {
         path_extend::PathExtendParamsContainer params(cfg::get().pe_params,
                                                       cfg::get().output_dir,
                                                       "final_contigs",
@@ -180,7 +184,7 @@ namespace tslr_resolver {
         GraphCoverageMap clone_map(gp.g);
         const pe_config::ParamSetT &pset = params.pset;
         bool detect_repeats_online = false;
-        auto extension = make_shared<TrivialTSLRExtensionChooser>(gp.g, bmapper);
+        auto extension = make_shared<TrivialTSLRExtensionChooser>(gp.g, gp.barcode_mapper);
         auto tslr_extender = make_shared<SimpleTSLRExtender>(gp, clone_map,
                                                              extension,
                                                              0 /*insert size*/,

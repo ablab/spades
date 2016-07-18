@@ -27,9 +27,8 @@ namespace spades {
             graph_pack.barcode_mapper.FillMap(tslr_dataset_, true);
             INFO("Barcode map construction finished.");
             INFO("Average barcode coverage: " + std::to_string(graph_pack.barcode_mapper.AverageBarcodeCoverage()));
-            INFO("Barcode map construction finished.");
         }
-        DECL_LOGGER("Barcode map construction stage")
+        DECL_LOGGER("BarcodeMapConstructionStage")
     };
 
 } //spades
