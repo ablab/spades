@@ -94,6 +94,31 @@ public:
         return true;
     }
 
+    bool enqueue(T &&data) {
+        if (is_closed())
+            return false;
+
+        cell_t *cell;
+        size_t pos = enqueue_pos_.load(std::memory_order_relaxed);
+        for (; ;) {
+            cell = &buffer_[pos & buffer_mask_];
+            size_t seq = cell->sequence_.load(std::memory_order_acquire);
+            intptr_t dif = (intptr_t) seq - (intptr_t) pos;
+            if (dif == 0) {
+                if (enqueue_pos_.compare_exchange_weak(pos, pos + 1, std::memory_order_relaxed))
+                    break;
+            } else if (dif < 0)
+                return false;
+            else
+                pos = enqueue_pos_.load(std::memory_order_relaxed);
+        }
+
+        cell->data_ = std::move(data);
+        cell->sequence_.store(pos + 1, std::memory_order_release);
+
+        return true;
+    }
+
     bool dequeue(T &data) {
         cell_t *cell;
         size_t pos = dequeue_pos_.load(std::memory_order_relaxed);
@@ -110,7 +135,7 @@ public:
                 pos = dequeue_pos_.load(std::memory_order_relaxed);
         }
 
-        data = cell->data_;
+        data = std::move(cell->data_);
         cell->sequence_.store(pos + buffer_mask_ + 1, std::memory_order_release);
 
         return true;
