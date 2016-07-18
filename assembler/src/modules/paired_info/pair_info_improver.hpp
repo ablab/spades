@@ -110,11 +110,11 @@ class PairInfoImprover {
                                omnigraph::de::PairedInfoIndexT<Graph>& index, size_t max_repeat_length)
                 : to_remove_(to_remove), graph_(g), index_(index), max_repeat_length_(max_repeat_length) {}
 
-        bool operator()(EdgeId e) {
+        bool operator()(std::unique_ptr<EdgeId> e) {
             omnigraph::de::PairedInfoIndexT<Graph> &to_remove = to_remove_[omp_get_thread_num()];
 
-            if (graph_.length(e)>= max_repeat_length_ && index_.contains(e))
-                FindInconsistent(e, to_remove);
+            if (graph_.length(*e)>= max_repeat_length_ && index_.contains(*e))
+                FindInconsistent(*e, to_remove);
 
             return false;
         }

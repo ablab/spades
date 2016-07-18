@@ -12,6 +12,7 @@ class KMerData;
 class Read;
 
 #include <cstring>
+#include <memory>
 
 class Expander {
   KMerData &data_;
@@ -23,7 +24,7 @@ class Expander {
 
   size_t changed() const { return changed_; }
 
-  bool operator()(const Read &r);
+  bool operator()(std::unique_ptr<Read> r);
 };
 
 #endif

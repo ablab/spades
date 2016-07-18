@@ -17,11 +17,11 @@
 #include <vector>
 #include <cstring>
 
-bool Expander::operator()(const Read &r) {
-  int trim_quality = cfg::get().input_trim_quality;
+bool Expander::operator()(std::unique_ptr<Read> r) {
+  uint8_t trim_quality = (uint8_t)cfg::get().input_trim_quality;
 
   // FIXME: Get rid of this
-  Read cr = r;
+  Read cr = *r;
   size_t sz = cr.trimNsAndBadQuality(trim_quality);
 
   if (sz < hammer::K)
@@ -29,7 +29,7 @@ bool Expander::operator()(const Read &r) {
 
   std::vector<unsigned> covered_by_solid(sz, false);
   std::vector<size_t> kmer_indices(sz, -1ull);
-    
+
   ValidKMerGenerator<hammer::K> gen(cr);
   while (gen.HasMore()) {
     hammer::KMer kmer = gen.kmer();

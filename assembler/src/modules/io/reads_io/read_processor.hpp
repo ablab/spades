@@ -18,7 +18,7 @@
 #endif
 namespace hammer {
 class ReadProcessor {
-    static size_t const cacheline_size = 64;
+    static size_t constexpr cacheline_size = 64;
     typedef char cacheline_pad_t[cacheline_size];
 
     unsigned nthreads_;
@@ -31,13 +31,15 @@ class ReadProcessor {
 private:
     template<class Reader, class Op>
     bool RunSingle(Reader &irs, Op &op) {
+        using ReadPtr = std::unique_ptr<typename Reader::ReadT>;
+
         while (!irs.eof()) {
-            typename Reader::ReadT r;
-            irs >> r;
+            ReadPtr r = ReadPtr(new typename Reader::ReadT) ;
+            irs >> *r;
             read_ += 1;
 
             processed_ += 1;
-            if (op(r))
+            if (op(std::move(r))) // Pass ownership of read down to processor
                 return true;
         }
 
@@ -46,12 +48,14 @@ private:
 
     template<class Reader, class Op, class Writer>
     void RunSingle(Reader &irs, Op &op, Writer &writer) {
+        using ReadPtr = std::unique_ptr<typename Reader::ReadT>;
+
         while (!irs.eof()) {
-            typename Reader::ReadT r;
-            irs >> r;
+            ReadPtr r = ReadPtr(new typename Reader::ReadT) ;
+            irs >> *r;
             read_ += 1;
 
-            auto res = op(r);
+            auto res = op(std::move(r)); // Pass ownership of read down to processor
             processed_ += 1;
 
             if (res)
@@ -69,6 +73,8 @@ public:
 
     template<class Reader, class Op>
     bool Run(Reader &irs, Op &op) {
+        using ReadPtr = std::unique_ptr<typename Reader::ReadT>;
+
         if (nthreads_ < 2)
             return RunSingle(irs, op);
 
@@ -81,7 +87,7 @@ public:
         bufsize = (bufsize >> 16) | bufsize;
         bufsize += 1;
 
-        mpmc_bounded_queue<typename Reader::ReadT> in_queue(2 * bufsize);
+        mpmc_bounded_queue<ReadPtr> in_queue(2 * bufsize);
 
         bool stop = false;
 #   pragma omp parallel shared(in_queue, irs, op, stop) num_threads(nthreads_)
@@ -89,12 +95,12 @@ public:
 #     pragma omp master
             {
                 while (!irs.eof()) {
-                    typename Reader::ReadT r;
-                    irs >> r;
+                    ReadPtr r = ReadPtr(new typename Reader::ReadT) ;
+                    irs >> *r;
 #         pragma omp atomic
                     read_ += 1;
 
-                    while (!in_queue.enqueue(r))
+                    while (!in_queue.enqueue(std::move(r)))
                         sched_yield();
 
 #         pragma omp flush (stop)
@@ -106,7 +112,7 @@ public:
             }
 
             while (1) {
-                typename Reader::ReadT r;
+                ReadPtr r;
 
                 if (!in_queue.wait_dequeue(r))
                     break;
@@ -114,7 +120,7 @@ public:
 #       pragma omp atomic
                 processed_ += 1;
 
-                bool res = op(r);
+                bool res = op(std::move(r));
                 if (res) {
 #         pragma omp atomic
                     stop |= res;
@@ -128,6 +134,8 @@ public:
 
     template<class Reader, class Op, class Writer>
     void Run(Reader &irs, Op &op, Writer &writer) {
+        using ReadPtr = std::unique_ptr<typename Reader::ReadT>;
+
         if (nthreads_ < 2) {
             RunSingle(irs, op, writer);
             return;
@@ -142,55 +150,55 @@ public:
         bufsize = (bufsize >> 16) | bufsize;
         bufsize += 1;
 
-        mpmc_bounded_queue<typename Reader::ReadT> in_queue(bufsize), out_queue(2 * bufsize);
+        mpmc_bounded_queue<ReadPtr> in_queue(bufsize), out_queue(2 * bufsize);
 #   pragma omp parallel shared(in_queue, out_queue, irs, op, writer) num_threads(nthreads_)
         {
 #     pragma omp master
             {
                 while (!irs.eof()) {
-                    typename Reader::ReadT r;
-                    irs >> r;
+                    ReadPtr r = ReadPtr(new typename Reader::ReadT) ;
+                    irs >> *r;
 
                     // First, try to provide read to the queue. If it's full, never mind.
-                    bool status = in_queue.enqueue(r);
+                    bool status = in_queue.enqueue(std::move(r));
 
                     // Flush down the output queue
-                    typename Reader::ReadT outr;
+                    ReadPtr outr;
                     while (out_queue.dequeue(outr))
-                        writer << outr;
+                        writer << *outr;
 
                     // If the input queue was originally full, wait until we can insert
                     // the read once again.
                     if (!status)
-                        while (!in_queue.enqueue(r))
+                        while (!in_queue.enqueue(std::move(r)))
                             sched_yield();
                 }
 
                 in_queue.close();
 
                 // Flush down the output queue while in master threads.
-                typename Reader::ReadT outr;
+                ReadPtr outr;
                 while (out_queue.dequeue(outr))
-                    writer << outr;
+                    writer << *outr;
             }
 
             while (1) {
-                typename Reader::ReadT r;
+                ReadPtr r;
 
                 if (!in_queue.wait_dequeue(r))
                     break;
 
-                auto res = op(r);
+                auto res = op(std::move(r));
                 if (res)
-                    while (!out_queue.enqueue(*res))
+                    while (!out_queue.enqueue(std::move(res)))
                         sched_yield();
             }
         }
 
         // Flush down the output queue
-        typename Reader::ReadT outr;
+        ReadPtr outr;
         while (out_queue.dequeue(outr))
-            writer << outr;
+            writer << *outr;
     }
 };
 

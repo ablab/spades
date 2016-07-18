@@ -56,11 +56,11 @@ class ParallelSortingSplitter : public KMerSortingSplitter<runtime_k::RtSeq> {
 
       size_t processed() const { return processed_; }
 
-      bool operator()(const io::SingleRead &r) {
+      bool operator()(std::unique_ptr<io::SingleRead> r) {
 #         pragma omp atomic
           processed_ += 1;
 
-          const Sequence &seq = r.sequence();
+          const Sequence &seq = r->sequence();
 
           if (seq.size() < this->K_)
               return false;

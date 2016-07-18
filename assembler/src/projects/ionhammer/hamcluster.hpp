@@ -67,7 +67,6 @@ public:
 
 class SubKMerStridedSerializer{
   size_t from_;
-  size_t to_;
   size_t stride_;
 
 public:

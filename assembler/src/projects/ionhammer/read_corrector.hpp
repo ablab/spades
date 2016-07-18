@@ -318,11 +318,9 @@ class HKMerProlonger {
 
   /// @param[in] seed               kmer to prolong
   /// @param[in] bases_to_recover   maximum number of bases to recover
-  /// @param[in] side               side to prolong to (RightSide/LeftSide)
   template <typename Side>
   std::deque<hammer::HomopolymerRun> prolong(const hammer::HKMer &seed,
-                                             size_t bases_to_recover,
-                                             Side side) {
+                                             size_t bases_to_recover) {
     std::deque<hammer::HomopolymerRun> good_runs(hammer::K);
     for (size_t i = 0; i < hammer::K; ++i)
       good_runs[i] = seed[i];
@@ -1128,8 +1126,12 @@ public:
     kmer_data_(kmer_data), sam_header_(NULL),
     debug_pred_(debug), select_pred_(select) {}
 
-  boost::optional<io::SingleRead> operator()(const io::SingleRead &r) {
-    if (!select_pred_(r))return boost::optional<io::SingleRead>();
+  std::unique_ptr<io::SingleRead> operator()(std::unique_ptr<io::SingleRead> r) {
+    return operator()(*r);
+  }
+  
+  std::unique_ptr<io::SingleRead> operator()(const io::SingleRead &r) {
+    if (!select_pred_(r)) return nullptr;
     bool debug_mode = debug_pred_(r);
     if (debug_mode) {
       std::cerr << "=============================================" << std::endl;
@@ -1149,28 +1151,28 @@ public:
 
     auto seq = read.GetSequenceString();
     if (seq.empty())
-      return boost::optional<io::SingleRead>();
+      return nullptr;
 
-    return io::SingleRead(r.name(), seq);
+    return std::unique_ptr<io::SingleRead>(new io::SingleRead(r.name(), seq));
   }
 
-  boost::optional<io::BamRead>
-  operator()(BamTools::BamAlignment &alignment) {
+  std::unique_ptr<io::BamRead>
+  operator()(std::unique_ptr<BamTools::BamAlignment> alignment) {
     VERIFY(sam_header_);
-    io::SingleRead r(alignment.Name, alignment.QueryBases);
+    io::SingleRead r(alignment->Name, alignment->QueryBases);
     // reverse strand means we're working with a mapped BAM, might be
     // the case for datasets downloaded from IonCommunity
-    if (alignment.IsReverseStrand())
+    if (alignment->IsReverseStrand())
       r = !r;
     auto corrected_r = operator()(r);
     std::string rg;
-    if (!alignment.GetTag("RG", rg) || !corrected_r)
-      return boost::optional<io::BamRead>();
+    if (!alignment->GetTag("RG", rg) || !corrected_r)
+      return nullptr;
     auto flow_order = sam_header_->ReadGroups[rg].FlowOrder;
 
     float delta_score, fit_score;
-    auto seq = corrected_r.get().GetSequenceString();
-    if (alignment.IsReverseStrand()) {
+    auto seq = corrected_r->GetSequenceString();
+    if (alignment->IsReverseStrand()) {
       std::reverse(seq.begin(), seq.end());
       for (auto it = seq.begin(); it != seq.end(); ++it) {
         switch (*it) {
@@ -1183,17 +1185,17 @@ public:
       }
     }
 
-    BaseHypothesisEvaluator(alignment, flow_order, seq,
+    BaseHypothesisEvaluator(*alignment, flow_order, seq,
                             delta_score, fit_score, 0);
     std::stringstream ss;
-    ss << alignment.Name << "_" << delta_score << "_" << fit_score;
-    alignment.Name = ss.str();
+    ss << alignment->Name << "_" << delta_score << "_" << fit_score;
+    alignment->Name = ss.str();
     if (delta_score >= cfg::get().delta_score_threshold)
-       return io::BamRead(alignment);
+      return std::unique_ptr<io::BamRead>(new io::BamRead(*alignment));
 
-    BamTools::BamAlignment corrected(alignment);
-    corrected.QueryBases = corrected_r.get().GetSequenceString();
-    return io::BamRead(corrected);
+    BamTools::BamAlignment corrected(*alignment);
+    corrected.QueryBases = corrected_r->GetSequenceString();
+    return std::unique_ptr<io::BamRead>(new io::BamRead(corrected));
   }
 };
 
@@ -1204,14 +1206,14 @@ class PairedReadCorrector : public SingleReadCorrector {
                       SelectPredicate &select)
     : SingleReadCorrector(kmer_data, debug, select) {}
 
-  boost::optional<io::PairedRead> operator()(const io::PairedRead &r) {
-    auto corrected_r = SingleReadCorrector::operator()(r.first());
-    auto corrected_l = SingleReadCorrector::operator()(r.second());
+  std::unique_ptr<io::PairedRead> operator()(std::unique_ptr<io::PairedRead> r) {
+    auto corrected_r = SingleReadCorrector::operator()(r->first());
+    auto corrected_l = SingleReadCorrector::operator()(r->second());
 
     if (!corrected_r || !corrected_l)
-      return boost::optional<io::PairedRead>();
+      return nullptr;
 
-    return io::PairedRead(corrected_r.get(), corrected_l.get(), 0);
+    return std::unique_ptr<io::PairedRead>(new io::PairedRead(*corrected_r, *corrected_l, 0));
   }
 };
 

@@ -39,8 +39,8 @@ class BufferFiller {
 
   size_t processed() const { return processed_; }
 
-  bool operator()(const io::SingleRead &r) {
-    ValidHKMerGenerator<hammer::K> gen(r);
+    bool operator()(std::unique_ptr<io::SingleRead> r) {
+    ValidHKMerGenerator<hammer::K> gen(*r);
     unsigned thread_id = omp_get_thread_num();
 
 #   pragma omp atomic
@@ -121,8 +121,8 @@ class KMerDataFiller {
   KMerDataFiller(KMerData &data)
       : data_(data) {}
 
-  bool operator()(const io::SingleRead &r) const {
-    ValidHKMerGenerator<hammer::K> gen(r);
+    bool operator()(std::unique_ptr<io::SingleRead> r) const {
+    ValidHKMerGenerator<hammer::K> gen(*r);
     while (gen.HasMore()) {
       HKMer kmer = gen.kmer();
       double correct = gen.correct_probability();
