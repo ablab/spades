@@ -16,10 +16,10 @@ using namespace path_extend;
 namespace tslr_resolver {
     class TrivialTSLRExtensionChooser : public ExtensionChooser {
 
-        barcode_mapper<io::SingleRead> bmapper_;
+        BarcodeMapper<io::SingleRead> bmapper_;
 
     public:
-        TrivialTSLRExtensionChooser(Graph &g, barcode_mapper<io::SingleRead> bmapper) :
+        TrivialTSLRExtensionChooser(Graph &g, BarcodeMapper bmapper) :
                 ExtensionChooser(g), bmapper_(bmapper) {
         }
 
@@ -53,7 +53,7 @@ namespace tslr_resolver {
         }
     };
 
-    class SimpleTSLRExtender : public LoopDetectingPathExtender { //SimpleExtender with removed loop checks
+    class SimpleTSLRExtender : public LoopDetectingPathExtender { //Same as SimpleExtender, but with removed loop checks
 
     protected:
 
@@ -163,7 +163,7 @@ namespace tslr_resolver {
 
     };
 
-    void LaunchBarcodePE (conj_graph_pack &gp, barcode_mapper<io::SingleRead>& bmapper) {
+    void LaunchBarcodePE (conj_graph_pack &gp, BarcodeMapper& bmapper) {
         path_extend::PathExtendParamsContainer params(cfg::get().pe_params,
                                                       cfg::get().output_dir,
                                                       "final_contigs",
@@ -206,6 +206,7 @@ namespace tslr_resolver {
         auto last_paths = resolver.extendSeeds(seeds, *mainPE);
 
         debruijn_graph::GenomeConsistenceChecker genome_checker (gp, main_unique_storage, 1000, 0.2);
+        DebugOutputPaths(gp, params, last_paths, "final_tslr_paths");
 
         writer.OutputPaths(last_paths, params.output_dir + params.contigs_name);
         if (gp.genome.size() > 0)

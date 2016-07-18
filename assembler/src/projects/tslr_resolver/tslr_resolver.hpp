@@ -23,12 +23,8 @@ namespace spades {
         }
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
-            INFO("Barcode map construction started...");
-            tslr_resolver::barcode_mapper <io::SingleRead> bmapper (graph_pack, tslr_dataset_);
-            INFO("Barcode map construction finished.");
-            INFO("Average barcode coverage: " + std::to_string(bmapper.AverageBarcodeCoverage()));
             INFO("Resolver started...");
-            LaunchBarcodePE (graph_pack, bmapper);
+            LaunchBarcodePE (graph_pack, graph_pack.barcode_mapper);
             INFO("Resolver finished!");
         }
         DECL_LOGGER("TSLR Resolver Stage")
@@ -47,9 +43,8 @@ namespace spades {
         StageManager manager({cfg::get().developer_mode,
                               cfg::get().load_from,
                               cfg::get().output_saves});
-        manager.add(new debruijn_graph::Construction())
-                .add(new TslrResolverStage(cfg::get().K, cfg::get().output_dir + "resolver_output.fasta",
-                path_to_tslr_dataset));
+        manager.add(new TslrResolverStage(cfg::get().K, cfg::get().output_dir + "resolver_output.fasta",
+                                           path_to_tslr_dataset));
         INFO("Output directory: " << cfg::get().output_dir);
         conj_gp.kmer_mapper.Attach();
         conj_gp.edge_pos.Attach();

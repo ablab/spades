@@ -1,5 +1,5 @@
 #include <string>
-#include "tslr_resolver.hpp"
+#include "tslr_launch.hpp"
 #include <modules/dev_support/copy_file.hpp>
 #include <projects/online_vis/vis_logger.hpp>
 
