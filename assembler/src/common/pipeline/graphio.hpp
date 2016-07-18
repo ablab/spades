@@ -12,7 +12,7 @@
 #include "assembly_graph/handlers/id_track_handler.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/components/graph_component.hpp"
-#include "projects/tslr_resolver/barcode_mapper.hpp"
+#include "projects/tslr_resolver/barcode_map_io.hpp"
 
 #include "paired_info/paired_info.hpp"
 
@@ -28,7 +28,6 @@
 #include <algorithm>
 #include <fstream>
 #include <cstdio>
-#include <projects/tslr_resolver/barcode_mapper.hpp>
 
 namespace debruijn_graph {
 
