@@ -12,6 +12,7 @@
 #include "assembly_graph/handlers/id_track_handler.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/components/graph_component.hpp"
+#include "projects/tslr_resolver/barcode_mapper.hpp"
 
 #include "paired_info/paired_info.hpp"
 
@@ -27,6 +28,7 @@
 #include <algorithm>
 #include <fstream>
 #include <cstdio>
+#include <projects/tslr_resolver/barcode_mapper.hpp>
 
 namespace debruijn_graph {
 
@@ -236,7 +238,8 @@ class DataPrinter {
     }
 
     template<class Index>
-    void SavePaired(const string& file_name,
+    void
+    SavePaired(const string& file_name,
                     Index const& paired_index) const {
         FILE* file = fopen((file_name + ".prd").c_str(), "w");
         DEBUG("Saving paired info, " << file_name <<" created");
@@ -793,6 +796,7 @@ void PrintAll(const string& file_name, const graph_pack& gp) {
     PrintClusteredIndices(file_name, printer, gp.clustered_indices);
     PrintScaffoldingIndices(file_name, printer, gp.scaffolding_indices);
     PrintSingleLongReads(file_name, gp.single_long_reads);
+    SerializeMapper(file_name, gp.barcode_mapper);
     gp.ginfo.Save(file_name + ".ginfo");
 }
 
@@ -1024,12 +1028,14 @@ void ScanGraphPack(const string& file_name, graph_pack& gp) {
 template<class graph_pack>
 void ScanAll(const std::string& file_name, graph_pack& gp,
              bool force_exists = true) {
-    ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
+    ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g); //TODO: remove this!!!
     ScanGraphPack(file_name, scanner, gp);
     ScanPairedIndices(file_name, scanner, gp.paired_indices, force_exists);
     ScanClusteredIndices(file_name, scanner, gp.clustered_indices, force_exists);
     ScanScaffoldingIndices(file_name, scanner, gp.scaffolding_indices, force_exists);
     ScanSingleLongReads(file_name,  gp.single_long_reads);
+    std::map <size_t, EdgeId> edge_map = MakeEdgeMap<typename graph_pack::graph_t> (gp.g);
+    DeserializeMapper(file_name, edge_map, gp.barcode_mapper);
     gp.ginfo.Load(file_name + ".ginfo");
 }
 }

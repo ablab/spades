@@ -9,6 +9,7 @@
 #include <modules/pipeline/graph_pack.hpp>
 #include "io/reads/paired_read.hpp"
 #include <modules/assembly_graph/graph_alignment/sequence_mapper.hpp>
+#include <modules/pipeline/graphio.hpp>
 
 using std::string;
 using std::istringstream;
@@ -25,6 +26,7 @@ namespace tslr_resolver {
     typedef std::unordered_map <EdgeId, BarcodeSet> barcode_map_t;
     typedef omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
     typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
+    typedef std::map <size_t, size_t> barcode_distribution;
 
 
     namespace tenx_barcode_parser {
@@ -47,6 +49,7 @@ namespace tslr_resolver {
         string right_;
         string barcode_;
     };
+
 
     class BarcodeMapper {
     private:
@@ -114,6 +117,21 @@ namespace tslr_resolver {
             return result;
         }
 
+        void InsertBarcode(const BarcodeId& barcode, const EdgeId& edge) {
+            barcode_map_[edge].insert(barcode);
+        }
+
+        barcode_map_t::const_iterator cbegin() const noexcept {
+            return barcode_map_.cbegin();
+        }
+        barcode_map_t::const_iterator cend() const noexcept {
+            return barcode_map_.cend();
+        }
+
+        size_t size() const {
+            return barcode_map_.size();
+        }
+
         double AverageBarcodeCoverage() {
             edge_it_helper helper(g);
             int64_t barcodes_overall = 0;
@@ -126,6 +144,23 @@ namespace tslr_resolver {
             INFO(edges);
             return static_cast <double> (barcodes_overall) / static_cast <double> (edges);
         }
+
+        barcode_distribution GetBarcodeDistribution(const EdgeId &edge)  {
+            barcode_distribution distr;
+            auto Set = GetSet(edge);
+            for (auto it = GetSet(edge).begin(); it != GetSet(edge).end(); ++it) {
+                distr[it -> size()]++;
+            }
+            return distr;
+        }
+
+        void SerializeBarcodeDistribution(std::ofstream& fout, const EdgeId& edge) {
+            fout << edge.int_id() << std::endl;
+            for (auto it : GetBarcodeDistribution(edge)) {
+                fout << it.first << ' ' << it.second << std::endl;
+            }
+        }
+
         DECL_LOGGER("BarcodeMapper")
 
     private:
@@ -150,3 +185,68 @@ namespace tslr_resolver {
 
 
 } //tslr_resolver
+
+namespace debruijn_graph {
+    namespace graphio {
+        typedef string BarcodeId;
+
+        template <class Graph>
+        std::map <size_t, Graph::EdgeId> MakeEdgeMap(Graph& g) {
+            omnigraph::IterationHelper <Graph, Graph::EdgeId> helper(g);
+            std::map <size_t, Graph::EdgeId> edge_id_map;
+            for (auto it = helper.begin(); it != helper.end(); ++it) {
+                edge_id_map[it -> int_id()] = *it;
+            }
+            return edge_id_map;
+        };
+
+        void SerializeEntry(size_t e1, const std::unordered_set& set, ofstream& file) {
+            file << e1 << ' ' << set.size() << std::endl;
+            for (auto it : set) {
+                file << *it << ' ';
+            }
+            file << std::endl;
+        }
+
+        void SerializeMapper(const string& file_name, const tslr_resolver::BarcodeMapper& barcodeMapper) {
+            ofstream file;
+            file.open(file_name + ".bmp");
+            DEBUG("Saving barcode information, " << file_name <<" created");
+            VERIFY(file != NULL);
+            file << barcodeMapper.size() << std::endl;
+            for (auto it = barcodeMapper.cbegin(); it != barcodeMapper.cend(); ++it) {
+                SerializeEntry(it -> first.int_id(), it -> second, file);
+            }
+        }
+
+        void DeserializeEntry(ifstream& file, const std::map <size_t, EdgeId>& edge_map, tslr_resolver::BarcodeMapper& barcodeMapper) {
+            size_t edge_id;
+            size_t entry_size;
+
+            file >> edge_id;
+            file >> entry_size;
+            auto edge = edge_map.at(edge_id);
+            for (size_t i = 0; i < entry_size; ++i) {
+                BarcodeId barcode;
+                file >> barcode;
+                barcodeMapper.InsertBarcode(barcode, edge);
+            }
+        }
+
+        void DeserializeMapper(const string& file_name, const std::map <size_t, EdgeId>& edge_map,
+                               tslr_resolver::BarcodeMapper& barcodeMapper) {
+            ifstream file;
+            file.open(file_name);
+            DEBUG("Loading barcode information from " << file_name);
+            VERIFY(file != NULL);
+            size_t map_size;
+            file >> map_size;
+            for (size_t i = 0; i < map_size; ++i) {
+                DeserializeEntry(file, edge_map, barcodeMapper);
+            }
+        }
+
+
+
+    } //graphio
+} //debruijn_graph
