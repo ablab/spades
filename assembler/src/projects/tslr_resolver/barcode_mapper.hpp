@@ -6,8 +6,8 @@
 #include <string>
 #include <unordered_set>
 #include <unordered_map>
-#include <modules/pipeline/graph_pack.hpp>
 #include "io/reads/paired_read.hpp"
+#include "modules/assembly_graph/paths/mapping_path.hpp"
 #include <modules/assembly_graph/graph_alignment/sequence_mapper.hpp>
 
 using std::string;
@@ -25,6 +25,7 @@ namespace tslr_resolver {
     typedef std::unordered_map <EdgeId, BarcodeSet> barcode_map_t;
     typedef omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
     typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
+    typedef std::map <size_t, size_t> barcode_distribution;
 
 
     namespace tenx_barcode_parser {
@@ -47,6 +48,7 @@ namespace tslr_resolver {
         string right_;
         string barcode_;
     };
+
 
     class BarcodeMapper {
     private:
@@ -114,6 +116,21 @@ namespace tslr_resolver {
             return result;
         }
 
+        void InsertBarcode(const BarcodeId& barcode, const EdgeId& edge) {
+            barcode_map_[edge].insert(barcode);
+        }
+
+        barcode_map_t::const_iterator cbegin() const noexcept {
+            return barcode_map_.cbegin();
+        }
+        barcode_map_t::const_iterator cend() const noexcept {
+            return barcode_map_.cend();
+        }
+
+        size_t size() const {
+            return barcode_map_.size();
+        }
+
         double AverageBarcodeCoverage() {
             edge_it_helper helper(g);
             int64_t barcodes_overall = 0;
@@ -126,6 +143,23 @@ namespace tslr_resolver {
             INFO(edges);
             return static_cast <double> (barcodes_overall) / static_cast <double> (edges);
         }
+
+        barcode_distribution GetBarcodeDistribution(const EdgeId &edge)  {
+            barcode_distribution distr;
+            auto Set = GetSet(edge);
+            for (auto it = GetSet(edge).begin(); it != GetSet(edge).end(); ++it) {
+                distr[it -> size()]++;
+            }
+            return distr;
+        }
+
+        void SerializeBarcodeDistribution(std::ofstream& fout, const EdgeId& edge) {
+            fout << edge.int_id() << std::endl;
+            for (auto it : GetBarcodeDistribution(edge)) {
+                fout << it.first << ' ' << it.second << std::endl;
+            }
+        }
+
         DECL_LOGGER("BarcodeMapper")
 
     private:
@@ -150,3 +184,5 @@ namespace tslr_resolver {
 
 
 } //tslr_resolver
+
+
