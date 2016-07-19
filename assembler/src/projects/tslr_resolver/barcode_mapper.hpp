@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include "io/reads/paired_read.hpp"
+#include "modules/assembly_graph/paths/mapping_path.hpp"
 #include <modules/assembly_graph/graph_alignment/sequence_mapper.hpp>
 
 using std::string;

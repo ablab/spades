@@ -1,4 +1,4 @@
-#include "modules/assembly_graph/paths/mapping_path.hpp"
+#include <vector>
 #include "barcode_mapper.hpp"
 
 namespace debruijn_graph {

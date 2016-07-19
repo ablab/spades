@@ -12,7 +12,7 @@ namespace debruijn_graph {
 
         void SerializeMapper(const string& file_name, const tslr_resolver::BarcodeMapper& barcodeMapper) {
             ofstream file;
-            file.open(file_name + ".bmp");
+            file.open(file_name + ".bmap");
             DEBUG("Saving barcode information, " << file_name <<" created");
             VERIFY(file != NULL);
             file << barcodeMapper.size() << std::endl;
