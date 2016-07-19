@@ -74,7 +74,7 @@ namespace tslr_resolver {
             for (auto it = helper.begin(); it != helper.end(); ++it) {
                 BarcodeSet set;
                 barcode_map_heads.insert({*it, set});
-                barcode_map_tails;
+                barcode_map_tails.insert({*it, set});
             }
             auto lib_vec = GetLibrary(reads_filename);
             auto mapper = std::make_shared<debruijn_graph::NewExtendedSequenceMapper<Graph, Index> >
@@ -90,17 +90,14 @@ namespace tslr_resolver {
                     paired_read_stream >> read;
                     auto path_first = mapper -> MapRead(read.first());
                     auto path_second = mapper -> MapRead(read.second());
-                    for(size_t i = 0; i < path_first.size(); i++) {
-                        if (is_at_edge_head)
-                            barcode_map_heads.at(path_first[i].first).insert(barcode);
-                        if (is_at_edge_tail)
-                            barcode_map_tails.at(path_first[i].first).insert(barcode);
-                    }
-                    for(size_t i = 0; i < path_second.size(); i++) {
-                        if (is_at_edge_head)
-                            barcode_map_heads.at(path_first[i].first).insert(barcode);
-                        if (is_at_edge_tail)
-                            barcode_map_tails.at(path_first[i].first).insert(barcode);
+	            std::vector<omnigraph::MappingPath<EdgeId> > paths = {path_first, path_second};
+		    for (auto path : paths) {	
+                        for(size_t i = 0; i < path.size(); i++) {
+                            if (is_at_edge_head(path[i].second))
+                                barcode_map_heads.at(path[i].first).insert(barcode);
+                            if (is_at_edge_tail(path[i].first, path[i].second))
+                                barcode_map_tails.at(path[i].first).insert(barcode);
+                        }
                     }
                     if (debug_mode) {
                         debug_counter++;
@@ -109,11 +106,11 @@ namespace tslr_resolver {
             }
         }
 
-        bool is_at_edge_tail(const EdgeId& edge, const MappingRange& range) {
+        bool is_at_edge_tail(const EdgeId& edge, const omnigraph::MappingRange& range) {
             return range.mapped_range.start_pos > g.length(edge) - tail_threshold_;
         }
 
-        bool is_at_edge_head(const EdgeId& edge, const MappingRange& range) {
+        bool is_at_edge_head(const omnigraph::MappingRange& range) {
             return range.mapped_range.end_pos < tail_threshold_;
         }
 
@@ -168,7 +165,7 @@ namespace tslr_resolver {
             VERIFY(which_end == "head" || which_end == "tail");
             if (which_end == "head")
                 return barcode_map_heads.size();
-            barcode_map_tails.size();
+            return barcode_map_tails.size();
         }
 
         std::pair <double, double> AverageBarcodeCoverage() {

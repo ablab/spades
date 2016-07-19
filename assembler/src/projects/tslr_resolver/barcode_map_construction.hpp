@@ -1,7 +1,6 @@
 #pragma once
 
 #include <modules/pipeline/stage.hpp>
-#include <modules/stages/construction.hpp>
 #include <tslr_pe.hpp>
 #include <barcode_mapper.hpp>
 
@@ -18,7 +17,7 @@ namespace spades {
     public:
 
         BarcodeMapConstructionStage(size_t k, const std::string& tslr_dataset) :
-                AssemblyStage("Barcode Map Construction", "Barcode Map Construction"),
+                AssemblyStage("Barcode map construction", "barcode_map_construction"),
                 k_(k), tslr_dataset_(tslr_dataset) {
         }
 
@@ -27,7 +26,7 @@ namespace spades {
             graph_pack.barcode_mapper.FillMap(tslr_dataset_, true);
             INFO("Barcode map construction finished.");
             INFO("Average barcode coverage: " + std::to_string(graph_pack.barcode_mapper.AverageBarcodeCoverage().first) +
-                         std::to_string(graph_pack.barcode_mapper.AverageBarcodeCoverage().second);
+                         ' ' + std::to_string(graph_pack.barcode_mapper.AverageBarcodeCoverage().second));
         }
         DECL_LOGGER("BarcodeMapConstructionStage")
     };

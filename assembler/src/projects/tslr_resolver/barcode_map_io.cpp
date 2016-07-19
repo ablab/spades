@@ -10,22 +10,23 @@ namespace debruijn_graph {
             file << std::endl;
         }
 
-        void SerializeMapper(const string& file_name, const tslr_resolver::BarcodeMapper& barcodeMapper) {
+        void SerializeMapper(const string& path, const tslr_resolver::BarcodeMapper& barcodeMapper) {
             ofstream file;
-            file.open(file_name + ".bmap");
+            const string file_name = path + ".bmap";
+            file.open(file_name);
             DEBUG("Saving barcode information, " << file_name <<" created");
-            VERIFY(file != NULL);
             file << barcodeMapper.size("head") << std::endl;
             for (auto it = barcodeMapper.cbegin_heads(); it != barcodeMapper.cend_heads(); ++it) {
                 SerializeBarcodeMapEntry(it -> first.int_id(), it -> second, file);
             }
+            
             file << barcodeMapper.size("tail") << std::endl;
             for (auto it = barcodeMapper.cbegin_tails(); it != barcodeMapper.cend_tails(); ++it) {
                 SerializeBarcodeMapEntry(it -> first.int_id(), it -> second, file);
             }
         }
 
-        void DeserializeBarcodeMapEntry(ifstream& file, const std::map <size_t, EdgeId>& edge_map, 
+        void DeserializeBarcodeMapEntry(ifstream& file, const std::unordered_map <size_t, EdgeId>& edge_map, 
                         tslr_resolver::BarcodeMapper& barcodeMapper, const std::string& which) {
             VERIFY(which == "head" || which == "tail");
             size_t edge_id;
@@ -41,11 +42,12 @@ namespace debruijn_graph {
             }
         }
 
-        void DeserializeMapper(const string& file_name, const std::map <size_t, EdgeId>& edge_map,
+        void DeserializeMapper(const string& folder, const std::unordered_map <size_t, EdgeId>& edge_map,
                                tslr_resolver::BarcodeMapper& barcodeMapper) {
             ifstream file;
+            string file_name = folder + '/' + "Barcode_map_construction" + ".bmap";  //TODO: Get Stage name somehow
             file.open(file_name);
-            DEBUG("Loading barcode information from " << file_name);
+            INFO("Loading barcode information from " << file_name);
             VERIFY(file != NULL);
             size_t map_size;
             file >> map_size;

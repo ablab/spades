@@ -19,10 +19,10 @@ namespace debruijn_graph {
 
         void SerializeMapper(const string& file_name, const tslr_resolver::BarcodeMapper& barcodeMapper);
 
-        void DeserializeBarcodeMapEntry(ifstream& file, const std::map <size_t, EdgeId>& edge_map, 
+        void DeserializeBarcodeMapEntry(ifstream& file, const std::unordered_map <size_t, EdgeId>& edge_map, 
                         tslr_resolver::BarcodeMapper& barcodeMapper);
 
-        void DeserializeMapper(const string& file_name, const std::map <size_t, EdgeId>& edge_map,
+        void DeserializeMapper(const string& file_name, const std::unordered_map <size_t, EdgeId>& edge_map,
                                tslr_resolver::BarcodeMapper& barcodeMapper);
 
     } //graphio

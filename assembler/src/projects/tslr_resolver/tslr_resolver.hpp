@@ -17,7 +17,7 @@ namespace spades {
     public:
 
         TslrResolverStage(size_t k, const std::string& output_file) :
-                AssemblyStage("TsrlResolver", "TSLR repeat resolver"),
+                AssemblyStage("TSLR repeat resolver", "tslr_repeat_resolver"),
                 k_(k), output_file_(output_file) {
         }
 
