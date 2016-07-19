@@ -34,6 +34,7 @@ entry_point read_conversion
 ;entry_point hybrid_aligning
 ;entry_point late_pair_info_count
 ;entry_point distance_estimation
+;entry_point barcode_map_construction
 ;entry_point repeat_resolving
 
 checkpoints none
