@@ -26,7 +26,6 @@ namespace tslr_resolver {
         EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
             auto result = EdgeContainer();
             if (edges.size() == 1) {
-            	DEBUG("on branch 1");
                 return edges;
             }
             int reference_cov = 20;
@@ -42,14 +41,14 @@ namespace tslr_resolver {
                 }
             }
             if (!long_single_edge_exists || edges.size() == 0) {
-            	DEBUG("on branch 2");
                 return result;
             }
-            DEBUG("On branch 3");
+            DEBUG(bmapper_.size("head"));
+            DEBUG(bmapper_.size("tail"));
             auto fittest_edge = std::max_element(edges.begin(), edges.end(),
                                                  [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                                     return this->bmapper_.IntersectionSize(edge1.e_, decisive_edge) <
-                                                            this->bmapper_.IntersectionSize(edge2.e_, decisive_edge);
+                                                     return this->bmapper_.IntersectionSize(decisive_edge, edge1.e_) <
+                                                            this->bmapper_.IntersectionSize(decisive_edge, edge2.e_);
                                                  });
             result.push_back(*fittest_edge);
             return result;
