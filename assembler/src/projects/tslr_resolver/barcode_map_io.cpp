@@ -41,26 +41,5 @@ namespace debruijn_graph {
                 barcodeMapper.InsertBarcode(barcode, edge, which);
             }
         }
-
-        void DeserializeMapper(const string& folder, const std::unordered_map <size_t, EdgeId>& edge_map,
-                               tslr_resolver::BarcodeMapper& barcodeMapper) {
-            ifstream file;
-            string file_name = folder + '/' + "Barcode_map_construction" + ".bmap";  //TODO: Get Stage name somehow
-            file.open(file_name);
-            INFO("Loading barcode information from " << file_name);
-            VERIFY(file != NULL);
-            size_t map_size;
-            file >> map_size;
-            for (size_t i = 0; i < map_size; ++i) {
-                DeserializeBarcodeMapEntry(file, edge_map, barcodeMapper, "head");
-            }
-            file >> map_size;
-            for (size_t i = 0; i < map_size; ++i) {
-                DeserializeBarcodeMapEntry(file, edge_map, barcodeMapper, "tail");
-            }
-        }
-
-
-
     } //graphio
 } //debruijn_graph

@@ -6,6 +6,8 @@
 namespace spades {
 
     void run_tslr_resolver(const std::string path_to_tslr_dataset) {
+        INFO("Starting from stage " << cfg::get().entry_point.c_str());
+
         debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
                                                 cfg::get().tmp_dir,
                                                 cfg::get().ds.reads.lib_count(),
@@ -23,7 +25,6 @@ namespace spades {
         conj_gp.kmer_mapper.Attach();
         //conj_gp.edge_pos.Attach();
 
-        INFO(cfg::get().entry_point.c_str());
         manager.run(conj_gp, cfg::get().entry_point.c_str());
         INFO("TSLR resolver finished.");
     }

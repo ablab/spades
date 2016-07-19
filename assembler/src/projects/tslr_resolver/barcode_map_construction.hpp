@@ -23,7 +23,8 @@ namespace spades {
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
             INFO("Barcode map construction started...");
-            graph_pack.barcode_mapper.FillMap(tslr_dataset_, true);
+            graph_pack.barcode_mapper.InitialFillMap(graph_pack.g);
+            graph_pack.barcode_mapper.FillMap(tslr_dataset_);
             INFO("Barcode map construction finished.");
             INFO("Average barcode coverage: " + std::to_string(graph_pack.barcode_mapper.AverageBarcodeCoverage().first) +
                          ' ' + std::to_string(graph_pack.barcode_mapper.AverageBarcodeCoverage().second));
