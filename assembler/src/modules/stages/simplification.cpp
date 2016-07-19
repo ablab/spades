@@ -106,7 +106,7 @@ class GraphSimplifier {
                 "Self conjugate edge remover",
                 algos);
 
-        if (cfg::get().mode == config::pipeline_type::rna){
+        if (info_container_.mode() == config::pipeline_type::rna){
             RemoveShortPolyATEdges(1, removal_handler_, info_container_.chunk_cnt());
             PushValid(ShortPolyATEdgesRemoverInstance(g_, 1, removal_handler_, info_container_.chunk_cnt()), "Short PolyA/T Edges",algos) ;
             PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
@@ -147,7 +147,7 @@ class GraphSimplifier {
         RunAlgos(algos);
 
         //FIXME why called directly?
-        if (cfg::get().mode == config::pipeline_type::rna){
+        if (info_container_.mode() == config::pipeline_type::rna){
             RemoveHiddenLoopEC(g_, gp_.flanking_cov, info_container_.detected_coverage_bound(), simplif_cfg_.her, removal_handler_);
             cnt_callback_.Report();
         }
@@ -249,7 +249,7 @@ class GraphSimplifier {
 
         //FIXME need better configuration
 
-        if (cfg::get().mode == config::pipeline_type::meta) {
+        if (info_container_.mode() == config::pipeline_type::meta) {
             PushValid(
                     BRInstance(g_, simplif_cfg_.second_final_br,
                                        info_container_, removal_handler_),
@@ -257,7 +257,7 @@ class GraphSimplifier {
                     algos);
         }
 
-        if (cfg::get().mode == config::pipeline_type::rna) {
+        if (info_container_.mode() == config::pipeline_type::rna) {
             PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
         }
 
@@ -407,7 +407,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 //            boost::ref(qual_removal_handler), _1);
 
 
-    SimplifInfoContainer info_container;
+    SimplifInfoContainer info_container(cfg::get().mode);
     info_container.set_read_length(cfg::get().ds.RL())
         .set_main_iteration(cfg::get().main_iteration)
         .set_chunk_cnt(5 * cfg::get().max_threads);
@@ -427,7 +427,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 
 
 void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
-    SimplifInfoContainer info_container;
+    SimplifInfoContainer info_container(cfg::get().mode);
     info_container
         .set_read_length(cfg::get().ds.RL())
         .set_main_iteration(cfg::get().main_iteration)

@@ -621,7 +621,7 @@ class DrawCoverageDropsCommand : public DrawingCommand {
     const size_t min_ende_len = 2000;
 private:
 
-    bool IsRepeat(const GraphPack& gp, EdgeId e) {
+    bool IsRepeat(const GraphPack& gp, EdgeId e) const {
         auto v1 = gp.g.EdgeStart(e);
         auto v2 = gp.g.EdgeEnd(e);
         return gp.g.IncomingEdgeCount(v1) >= 2 || gp.g.OutgoingEdgeCount(v2) >= 2 ;

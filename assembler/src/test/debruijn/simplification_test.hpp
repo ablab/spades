@@ -110,7 +110,7 @@ debruijn_config::simplification::relative_coverage_comp_remover standard_rcc_con
 }
 
 debruijn::simplification::SimplifInfoContainer standard_simplif_relevant_info() {
-    debruijn::simplification::SimplifInfoContainer info;
+    debruijn::simplification::SimplifInfoContainer info(config::pipeline_type::base);
     return info.set_read_length(100)
             .set_detected_coverage_bound(10.)
             .set_main_iteration(true)

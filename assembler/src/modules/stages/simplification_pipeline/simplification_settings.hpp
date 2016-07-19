@@ -6,6 +6,7 @@
 //***************************************************************************
 
 #pragma once
+#include "modules/pipeline/config_struct.hpp"
 
 namespace debruijn {
 
@@ -40,14 +41,16 @@ class SimplifInfoContainer {
     double detected_coverage_bound_;
     bool main_iteration_;
     size_t chunk_cnt_;
+    debruijn_graph::config::pipeline_type mode_;
 
 public: 
-    SimplifInfoContainer() : 
+    SimplifInfoContainer(debruijn_graph::config::pipeline_type mode) : 
         read_length_(-1ul),
         detected_mean_coverage_(-1.0),
         detected_coverage_bound_(-1.0),
         main_iteration_(false),
-        chunk_cnt_(-1ul) {
+        chunk_cnt_(-1ul),
+        mode_(mode) {
     }
 
     size_t read_length() const {
@@ -72,6 +75,10 @@ public:
     size_t chunk_cnt() const {
         VERIFY(chunk_cnt_ != -1ul);
         return chunk_cnt_;
+    }
+
+    debruijn_graph::config::pipeline_type mode() const {
+        return mode_;
     }
 
     SimplifInfoContainer& set_read_length(size_t read_length) {

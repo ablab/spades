@@ -442,7 +442,7 @@ bool RemoveRelativelyLowCoverageComponents(
         size_t connecting_path_length_bound = LengthThresholdFinder::MaxErroneousConnectionLength(
             g.k(), rcc_config.max_ec_length_coefficient);
 
-        std::string pics_dir = "";//cfg::get().output_dir + "rel_cov_components/"
+        std::string pics_dir = "";
 
         double max_coverage = math::ge(rcc_config.max_coverage_coeff, 0.) 
                                 ? info.detected_coverage_bound() * rcc_config.max_coverage_coeff 
@@ -811,7 +811,7 @@ bool RemoveHiddenLoopEC(Graph& g,
         INFO("Removing loops and rc loops with erroneous connections");
         ECLoopRemover<Graph> hc(g, flanking_cov,
                                 determined_coverage_threshold,
-                                cfg::get().simp.her.relative_threshold, removal_handler);
+                                her_config.relative_threshold, removal_handler);
         bool res = hc.Run();
         hc.PrintLoopStats();
         return res;
