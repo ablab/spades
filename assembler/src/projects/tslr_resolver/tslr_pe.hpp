@@ -48,8 +48,8 @@ namespace tslr_resolver {
             DEBUG("On branch 3");
             auto fittest_edge = std::max_element(edges.begin(), edges.end(),
                                                  [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                                     return this->bmapper_.IntersectionSize(edge1.e_, decisive_edge) <
-                                                            this->bmapper_.IntersectionSize(edge2.e_, decisive_edge);
+                                                     return this->bmapper_.IntersectionSize(decisive_edge, edge1.e_) <
+                                                            this->bmapper_.IntersectionSize(decisive_edge, edge2.e_);
                                                  });
             result.push_back(*fittest_edge);
             return result;

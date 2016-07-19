@@ -15,14 +15,19 @@ namespace debruijn_graph {
             file.open(file_name + ".bmap");
             DEBUG("Saving barcode information, " << file_name <<" created");
             VERIFY(file != NULL);
-            file << barcodeMapper.size() << std::endl;
-            for (auto it = barcodeMapper.cbegin(); it != barcodeMapper.cend(); ++it) {
+            file << barcodeMapper.size("head") << std::endl;
+            for (auto it = barcodeMapper.cbegin_heads(); it != barcodeMapper.cend_heads(); ++it) {
+                SerializeBarcodeMapEntry(it -> first.int_id(), it -> second, file);
+            }
+            file << barcodeMapper.size("tail") << std::endl;
+            for (auto it = barcodeMapper.cbegin_tails(); it != barcodeMapper.cend_tails(); ++it) {
                 SerializeBarcodeMapEntry(it -> first.int_id(), it -> second, file);
             }
         }
 
         void DeserializeBarcodeMapEntry(ifstream& file, const std::map <size_t, EdgeId>& edge_map, 
-                        tslr_resolver::BarcodeMapper& barcodeMapper) {
+                        tslr_resolver::BarcodeMapper& barcodeMapper, const std::string& which) {
+            VERIFY(which == "head" || which == "tail");
             size_t edge_id;
             size_t entry_size;
 
@@ -32,7 +37,7 @@ namespace debruijn_graph {
             for (size_t i = 0; i < entry_size; ++i) {
                 BarcodeId barcode;
                 file >> barcode;
-                barcodeMapper.InsertBarcode(barcode, edge);
+                barcodeMapper.InsertBarcode(barcode, edge, which);
             }
         }
 
@@ -45,7 +50,11 @@ namespace debruijn_graph {
             size_t map_size;
             file >> map_size;
             for (size_t i = 0; i < map_size; ++i) {
-                DeserializeBarcodeMapEntry(file, edge_map, barcodeMapper);
+                DeserializeBarcodeMapEntry(file, edge_map, barcodeMapper, "head");
+            }
+            file >> map_size;
+            for (size_t i = 0; i < map_size; ++i) {
+                DeserializeBarcodeMapEntry(file, edge_map, barcodeMapper, "tail");
             }
         }
 

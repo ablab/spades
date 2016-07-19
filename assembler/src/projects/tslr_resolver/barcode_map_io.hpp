@@ -6,9 +6,9 @@ namespace debruijn_graph {
         typedef string BarcodeId;
 
         template <class Graph>
-        std::map <size_t, typename Graph::EdgeId> MakeEdgeMap(Graph& g) {
+        std::unordered_map <size_t, typename Graph::EdgeId> MakeEdgeMap(Graph& g) {
             omnigraph::IterationHelper <Graph, typename Graph::EdgeId> helper(g);
-            std::map <size_t, typename Graph::EdgeId> edge_id_map;
+            std::unordered_map <size_t, typename Graph::EdgeId> edge_id_map;
             for (auto it = helper.begin(); it != helper.end(); ++it) {
                 edge_id_map[it -> int_id()] = *it;
             }
