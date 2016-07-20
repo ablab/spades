@@ -223,10 +223,6 @@ public:
         return wc_ != nullptr;
     }
 
-    virtual double GetThreshold() const {
-        return 0.0;
-    }
-
     const WeightCounter& wc() const {
         VERIFY(wc_);
         return *wc_;
@@ -522,7 +518,7 @@ protected:
                 sum += histogram[j].second;
             }
             DEBUG("Weight for scaffolding = " << sum << ", threshold = " << cl_weight_threshold_)
-            if (sum < cl_weight_threshold_) {
+            if (math::ls(sum, cl_weight_threshold_)) {
                 continue;
             }
 
@@ -580,9 +576,6 @@ public:
         return result;
     }
 
-    double GetThreshold() const override {
-        return cl_weight_threshold_;
-    }
 private:
     DECL_LOGGER("ScaffoldingExtensionChooser");
 };

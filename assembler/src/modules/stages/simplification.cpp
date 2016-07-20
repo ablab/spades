@@ -19,8 +19,6 @@ using namespace debruijn::simplification;
 using namespace config;
 
 class GraphSimplifier {
-
-protected:
     typedef std::function<void(EdgeId)> HandlerF;
     typedef omnigraph::PersistentEdgeRemovingAlgorithm<Graph,
             omnigraph::ParallelInterestingElementFinder<Graph, EdgeId>,
@@ -396,8 +394,6 @@ public:
         }
 
         AlgoStorageT ec_algo;
-        PushValid(RelativeECRemoverInstance(g_, simplif_cfg_.rcec, info_container_, removal_handler_),
-                  "Relative low coverage edge remover", ec_algo);
 
         PushValid(ECRemoverInstance(g_, simplif_cfg_.ec, info_container_, removal_handler_,
                                             simplif_cfg_.cycle_iter_count), "Low coverage edge remover", ec_algo);

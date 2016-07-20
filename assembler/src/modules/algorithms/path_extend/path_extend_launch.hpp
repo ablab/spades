@@ -248,12 +248,9 @@ inline void FinalizePaths(const PathExtendParamsContainer& params,
         resolver.addUncoveredEdges(paths, cover_map);
     }
     if (params.pset.path_filtration.enabled) {
-        LengthPathFilter length_filter(g, params.pset.path_filtration.min_length);
-        length_filter.filter(paths);
-        IsolatedPathFilter low_coverage_filter(g, params.pset.path_filtration.min_length_for_low_covered, params.pset.path_filtration.min_coverage);
-        IsolatedPathFilter short_isolated_filter(g, params.pset.path_filtration.isolated_min_length);
-        low_coverage_filter.filter(paths);
-        short_isolated_filter.filter(paths);
+        LengthPathFilter(g, params.pset.path_filtration.min_length).filter(paths);;
+        IsolatedPathFilter(g, params.pset.path_filtration.min_length_for_low_covered, params.pset.path_filtration.min_coverage).filter(paths);
+        IsolatedPathFilter(g, params.pset.path_filtration.isolated_min_length).filter(paths);
     }
     paths.SortByLength();
     for(auto& path : paths) {

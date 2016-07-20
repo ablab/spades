@@ -163,9 +163,9 @@ void load(debruijn_config::simplification::dead_end_clipper& dead_end,
 
 void load(resolving_mode &rm, boost::property_tree::ptree const &pt,
           std::string const &key, bool complete) {
-  if (complete || pt.find(key) != pt.not_found()) {
-    rm = ModeByName<resolving_mode>(pt.get<std::string>(key), ResolveModeNames());
-  }
+    if (complete || pt.find(key) != pt.not_found()) {
+        rm = ModeByName<resolving_mode>(pt.get<std::string>(key), ResolveModeNames());
+    }
 }
 
 void load(single_read_resolving_mode &rm, boost::property_tree::ptree const &pt,

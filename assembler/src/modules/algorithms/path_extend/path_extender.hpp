@@ -1385,7 +1385,7 @@ protected:
 
 
 class ScaffoldingPathExtender: public LoopDetectingPathExtender {
-protected:
+private:
     std::shared_ptr<ExtensionChooser> extension_chooser_;
     ExtensionChooser::EdgeContainer sources_;
     std::shared_ptr<GapJoiner> gap_joiner_;
@@ -1408,31 +1408,10 @@ protected:
         return g_.OutgoingEdgeCount(g_.EdgeEnd(e)) == 0;
     }
 
+protected:
     virtual bool GapSatisfies(int /*gap*/) const {
         return true;
     }
-
-
-public:
-
-    ScaffoldingPathExtender(const conj_graph_pack& gp,
-                            const GraphCoverageMap& cov_map,
-                            std::shared_ptr<ExtensionChooser> extension_chooser,
-                            std::shared_ptr<GapJoiner> gap_joiner,
-                            size_t is,
-                            size_t max_loops,
-                            bool investigate_short_loops,
-                            bool avoid_rc_connections,
-                            bool check_sink = true):
-        LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, false, is),
-        extension_chooser_(extension_chooser),
-        gap_joiner_(gap_joiner),
-        avoid_rc_connections_(avoid_rc_connections),
-        check_sink_(check_sink)
-    {
-        InitSources();
-    }
-
 
     bool MakeSimpleGrowStepForChooser(BidirectionalPath& path, std::shared_ptr<ExtensionChooser> ec, bool must_overlap = false) {
         if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back()))) {
@@ -1444,7 +1423,7 @@ public:
         ExtensionChooser::EdgeContainer candidates = ec->Filter(path, sources_);
         DEBUG("scaffolding candidates " << candidates.size() << " from sources " << sources_.size());
 
-        DEBUG("Extension chooser threshold = " << ec->GetThreshold())
+        //DEBUG("Extension chooser threshold = " << ec->GetThreshold())
         DEBUG("Candidate size = " << candidates.size())
         if (candidates.size() == 1) {
             if (candidates[0].e_ == path.Back()
@@ -1508,6 +1487,26 @@ public:
         return false;
     }
 
+public:
+
+    ScaffoldingPathExtender(const conj_graph_pack& gp,
+                            const GraphCoverageMap& cov_map,
+                            std::shared_ptr<ExtensionChooser> extension_chooser,
+                            std::shared_ptr<GapJoiner> gap_joiner,
+                            size_t is,
+                            size_t max_loops,
+                            bool investigate_short_loops,
+                            bool avoid_rc_connections,
+                            bool check_sink = true):
+        LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, false, is),
+        extension_chooser_(extension_chooser),
+        gap_joiner_(gap_joiner),
+        avoid_rc_connections_(avoid_rc_connections),
+        check_sink_(check_sink)
+    {
+        InitSources();
+    }
+
     bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
         return MakeSimpleGrowStepForChooser(path, extension_chooser_);
     }
@@ -1553,7 +1552,7 @@ public:
 
 
     bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
-        return MakeSimpleGrowStepForChooser(path, extension_chooser_, true) ||
+        return MakeSimpleGrowStepForChooser(path, GetExtensionChooser(), true) ||
             MakeSimpleGrowStepForChooser(path, strict_extension_chooser_);
     }
 

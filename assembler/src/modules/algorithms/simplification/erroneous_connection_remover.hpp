@@ -39,15 +39,14 @@ class RelativeCoverageECCondition: public EdgeCondition<Graph> {
 
     const double rcec_ratio_;
 
-    template<class IteratorType>
-    double SumCompetitorCoverage(EdgeId ec_edge, IteratorType begin, IteratorType end) const {
+    template<class ContainerType>
+    double SumCompetitorCoverage(EdgeId ec_edge, const ContainerType& edges) const {
         const Graph &g = this->g();
         double sum = 0;
-        for (auto it = begin; it != end; ++it) {
-            EdgeId e = *it;
+        for (EdgeId e : edges) {
             //update if competitor edge is not loop
             if (e != ec_edge && g.EdgeStart(e) != g.EdgeEnd(e))
-                sum += g.coverage(*it);
+                sum += g.coverage(e);
         }
         return sum;
     }
@@ -61,21 +60,20 @@ class RelativeCoverageECCondition: public EdgeCondition<Graph> {
         auto out_end = g.OutgoingEdges(end);
         double total_edges = double(g.IncomingEdgeCount(start) + g.OutgoingEdgeCount(start) +
             g.IncomingEdgeCount(end) + g.OutgoingEdgeCount(end) - 2);
-        return (SumCompetitorCoverage(ec_edge, in_start.begin(), in_start.end()) +
-                SumCompetitorCoverage(ec_edge, out_start.begin(), out_start.end()) +
-                SumCompetitorCoverage(ec_edge, in_end.begin(), in_end.end()) +
-                SumCompetitorCoverage(ec_edge, out_end.begin(), out_end.end())) / total_edges;
+        return (SumCompetitorCoverage(ec_edge, in_start) +
+                SumCompetitorCoverage(ec_edge, out_start) +
+                SumCompetitorCoverage(ec_edge, in_end) +
+                SumCompetitorCoverage(ec_edge, out_end)) / total_edges;
     }
 
-    template<class IteratorType>
-    double MaxCompetitorCoverage(EdgeId ec_edge, IteratorType begin, IteratorType end) const {
+    template<class ContainerType>
+    double MaxCompetitorCoverage(EdgeId ec_edge, const ContainerType& edges) const {
         const Graph &g = this->g();
         double result = 0;
-        for (auto it = begin; it != end; ++it) {
-            EdgeId e = *it;
+        for (EdgeId e : edges) {
             //update if competitor edge is not loop
             if (e != ec_edge && g.EdgeStart(e) != g.EdgeEnd(e))
-                result = std::max(result, g.coverage(*it));
+                result = std::max(result, g.coverage(e));
         }
         return result;
     }
@@ -88,10 +86,10 @@ class RelativeCoverageECCondition: public EdgeCondition<Graph> {
         auto in_end = g.IncomingEdges(end);
         auto out_end = g.OutgoingEdges(end);
         return std::max(
-                std::max(MaxCompetitorCoverage(ec_edge, in_start.begin(), in_start.end()),
-                         MaxCompetitorCoverage(ec_edge, out_start.begin(), out_start.end())),
-                std::max(MaxCompetitorCoverage(ec_edge, in_end.begin(), in_end.end()),
-                         MaxCompetitorCoverage(ec_edge, out_end.begin(), out_end.end())));
+                std::max(MaxCompetitorCoverage(ec_edge, in_start),
+                         MaxCompetitorCoverage(ec_edge, out_start)),
+                std::max(MaxCompetitorCoverage(ec_edge, in_end),
+                         MaxCompetitorCoverage(ec_edge, out_end)));
     }
 
 public:
@@ -112,14 +110,6 @@ template<class Graph>
 pred::TypedPredicate<typename Graph::EdgeId> AddRelativeCoverageECCondition(const Graph &g, double rcec_ratio,
                                                                             pred::TypedPredicate<typename Graph::EdgeId> condition) {
     return pred::And(RelativeCoverageECCondition<Graph>(g, rcec_ratio), condition);
-}
-
-template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId>
-NecessaryRelativeECCondition(const Graph& g, double rcec_ratio, size_t max_length) {
-    return AddRelativeCoverageECCondition(g, rcec_ratio,
-                                          AddAlternativesPresenceCondition(g, pred::And(LengthUpperBound<Graph>(g, max_length),
-                                                                                        CoverageUpperBound<Graph>(g, 0.))));
 }
 
 template<class Graph>
@@ -161,13 +151,6 @@ template<class Graph>
 pred::TypedPredicate<typename Graph::EdgeId> AddNotBulgeECCondition(const Graph &g,
                                                                     pred::TypedPredicate<typename Graph::EdgeId> condition) {
     return pred::And(NotBulgeECCondition<Graph>(g), condition);
-}
-
-template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId>
-NecessaryNotBulgeECCondition(const Graph& g, size_t max_length, double max_coverage) {
-    return AddNotBulgeECCondition(g, AddAlternativesPresenceCondition(g, pred::And(LengthUpperBound<Graph>(g, max_length),
-                                               CoverageUpperBound<Graph>(g, max_coverage))));
 }
 
 template<class Graph>
