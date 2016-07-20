@@ -110,7 +110,7 @@ namespace tslr_resolver {
         }
 
         bool is_at_edge_tail(const EdgeId& edge, const omnigraph::MappingRange& range) {
-            return range.mapped_range.start_pos > g.length(edge) - tail_threshold_;
+            return range.mapped_range.start_pos + tail_threshold_ > g.length(edge);
         }
 
         bool is_at_edge_head(const omnigraph::MappingRange& range) {
