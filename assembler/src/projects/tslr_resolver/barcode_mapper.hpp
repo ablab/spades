@@ -58,6 +58,7 @@ namespace tslr_resolver {
         const Index &index;
         const KmerSubs &kmer_mapper;
         size_t tail_threshold_;
+        size_t norm_len = 10000;
     public:
         BarcodeMapper(const Graph &g, const Index& index,
                       const KmerSubs& kmer_mapper, size_t tail_threshold = 10000) :
@@ -110,7 +111,7 @@ namespace tslr_resolver {
         }
 
         bool is_at_edge_tail(const EdgeId& edge, const omnigraph::MappingRange& range) {
-            return range.mapped_range.start_pos > g.length(edge) - tail_threshold_;
+            return range.mapped_range.start_pos + tail_threshold_ > g.length(edge);
         }
 
         bool is_at_edge_head(const omnigraph::MappingRange& range) {
@@ -128,8 +129,8 @@ namespace tslr_resolver {
         //Get barcode intersection of tail of first with head of second
         size_t IntersectionSize(const EdgeId &edge1, const EdgeId &edge2) const {
             size_t result = 0;
-            auto Set1 = GetSetHeads(edge1);
-            auto Set2 = GetSetTails(edge2);
+            auto Set1 = GetSetTails(edge1);
+            auto Set2 = GetSetHeads(edge2);
             for (auto it = Set1.begin(); it != Set1.end(); ++it) {
                 auto it2 = Set2.find(*it);
                 if (it2 != Set2.end()) {
@@ -137,6 +138,10 @@ namespace tslr_resolver {
                 }
             }
             return result;
+        }
+
+        double IntersectionSizeNormalized(const EdgeId &edge1, const EdgeId &edge2) const {
+            return static_cast <double> (IntersectionSize(edge1, edge2)) / static_cast <double> (g.length(edge2) + norm_len);
         }
 
         //
