@@ -44,8 +44,11 @@ int main (int /*argc*/, char** argv) {
         std::cout << cfg_filename << std::endl;
 
         string path_to_tslr_dataset = argv[2];
-        std::cout << path_to_tslr_dataset;
-		spades::run_tslr_resolver(path_to_tslr_dataset);
+        std::cout << path_to_tslr_dataset << std::endl;
+
+        string path_to_reference = argv[3];
+        std::cout << path_to_reference << std::endl;
+		spades::run_tslr_resolver(path_to_tslr_dataset, path_to_reference);
 	} catch (std::exception const& e) {
         std::cerr << "Exception caught " << e.what() << std::endl;
         return EINTR;
