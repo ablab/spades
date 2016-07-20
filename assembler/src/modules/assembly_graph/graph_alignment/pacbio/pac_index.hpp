@@ -736,8 +736,7 @@ public:
 
                     edge_cluster->second = *iter;
                 }
-            }
-            else {
+            } else {
                 largest_clusters.insert(make_pair(iter->edgeId, *iter));
             }
         }
@@ -748,13 +747,13 @@ public:
             auto last_cluster = iter->second.sorted_positions[iter->second.last_trustable_index];
             omnigraph::MappingRange range(Range(first_cluster.read_position, last_cluster.read_position),
                                           Range(first_cluster.edge_position, last_cluster.edge_position));
-            result.join(omnigraph::MappingPath<EdgeId>(vector<EdgeId>(1, iter->second.edgeId), vector<omnigraph::MappingRange>(1, range)));
+            result.join({iter->second.edgeId, range});
         }
 
         return result;
     }
 
-    pair<EdgeId, size_t> GetUniqueKmerPos(const runtime_k::RtSeq& kmer) const {
+    std::pair<EdgeId, size_t> GetUniqueKmerPos(const runtime_k::RtSeq& kmer) const {
         KeyWithHash kwh = tmp_index.ConstructKWH(kmer);
 
         if (tmp_index.valid(kwh.key())) {
@@ -763,7 +762,7 @@ public:
                 return make_pair(keys[0].edge_id, keys[0].offset);
             }
         }
-        return make_pair(EdgeId(0), -1u);
+        return std::make_pair(EdgeId(0), -1u);
     }
 
 

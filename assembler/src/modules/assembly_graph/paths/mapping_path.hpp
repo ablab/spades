@@ -157,6 +157,11 @@ class MappingPath {
  public:
     MappingPath() {}
 
+    MappingPath(const ElementId &edge,
+                const MappingRange &range_mapping)
+            : edges_({ edge }),
+              range_mappings_({ range_mapping }) {}
+    
     MappingPath(const std::vector<ElementId>& edges,
                 const std::vector<MappingRange> range_mappings)
             : edges_(edges),
