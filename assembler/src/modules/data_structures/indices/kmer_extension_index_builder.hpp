@@ -9,14 +9,10 @@
 #include "kmer_extension_index.hpp"
 #include "kmer_splitters.hpp"
 
-template<class Builder>
-class DeBruijnExtensionIndexBuilder : public Builder {
-    typedef Builder base;
+class DeBruijnExtensionIndexBuilder {
 public:
-    typedef typename Builder::IndexT IndexT;
-
-    template<class ReadStream>
-    size_t FillExtensionsFromStream(ReadStream &stream, IndexT &index) const {
+    template<class ReadStream, class Index>
+    size_t FillExtensionsFromStream(ReadStream &stream, Index &index) const {
         unsigned k = index.k();
         size_t rl = 0;
 
@@ -29,7 +25,7 @@ public:
             if (seq.size() < k + 1)
                 continue;
 
-            typename IndexT::KeyWithHash kwh = index.ConstructKWH(seq.start<runtime_k::RtSeq>(k));
+            typename Index::KeyWithHash kwh = index.ConstructKWH(seq.start<runtime_k::RtSeq>(k));
             for (size_t j = k; j < seq.size(); ++j) {
                 char nnucl = seq[j], pnucl = kwh[0];
                 index.AddOutgoing(kwh, nnucl);
@@ -41,12 +37,13 @@ public:
         return rl;
     }
 
+    template<class Index>
     void FillExtensionsFromIndex(const std::string &KPlusOneMersFilename,
-                                 IndexT &index) const {
+                                 Index &index) const {
         unsigned KPlusOne = index.k() + 1;
 
-        typename IndexT::kmer_iterator it(
-                KPlusOneMersFilename, runtime_k::RtSeq::GetDataSize(KPlusOne));
+        typename Index::kmer_iterator it(KPlusOneMersFilename,
+                                         runtime_k::RtSeq::GetDataSize(KPlusOne));
         for (; it.good(); ++it) {
             runtime_k::RtSeq kpomer(KPlusOne, *it);
 
@@ -61,26 +58,28 @@ public:
     }
 
 public:
-    template<class Streams>
-    ReadStatistics BuildExtensionIndexFromStream(IndexT &index, Streams &streams, io::SingleStream* contigs_stream = 0,
+    template<class Index, class Streams>
+    ReadStatistics BuildExtensionIndexFromStream(Index &index, Streams &streams, io::SingleStream* contigs_stream = 0,
                                                  size_t read_buffer_size = 0) const {
         unsigned nthreads = (unsigned) streams.size();
 
         // First, build a k+1-mer index
-        DeBruijnReadKMerSplitter<typename Streams::ReadT, StoringTypeFilter<typename IndexT::storing_type>> splitter(
-                index.workdir(), index.k() + 1, 0xDEADBEEF, streams,
-                contigs_stream, read_buffer_size);
+        DeBruijnReadKMerSplitter<typename Streams::ReadT,
+                                 StoringTypeFilter<typename Index::storing_type>>
+                splitter(index.workdir(), index.k() + 1, 0xDEADBEEF, streams,
+                         contigs_stream, read_buffer_size);
         KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
         counter.CountAll(nthreads, nthreads, /* merge */false);
 
         // Now, count unique k-mers from k+1-mers
-        DeBruijnKMerKMerSplitter<StoringTypeFilter<typename IndexT::storing_type> > splitter2(index.workdir(), index.k(),
-                                           index.k() + 1, IndexT::storing_type::IsInvertable(), read_buffer_size);
+        DeBruijnKMerKMerSplitter<StoringTypeFilter<typename Index::storing_type> >
+                splitter2(index.workdir(), index.k(),
+                          index.k() + 1, Index::storing_type::IsInvertable(), read_buffer_size);
         for (unsigned i = 0; i < nthreads; ++i)
             splitter2.AddKMers(counter.GetMergedKMersFname(i));
         KMerDiskCounter<runtime_k::RtSeq> counter2(index.workdir(), splitter2);
 
-        DeBruijnKMerIndexBuilder<IndexT>().BuildIndex(index, counter2, 16, nthreads);
+        BuildIndex(index, counter2, 16, nthreads);
 
         // Build the kmer extensions
         INFO("Building k-mer extensions from k+1-mers");
@@ -98,11 +97,10 @@ private:
 
 template<class Index>
 struct ExtensionIndexHelper {
-    typedef Index IndexT;
-    typedef typename IndexT::traits_t traits_t;
-    typedef typename IndexT::KMer Kmer;
-    typedef typename IndexT::KMerIdx KMerIdx;
-    typedef DeBruijnStreamKMerIndexBuilder<IndexT> DeBruijnStreamKMerIndexBuilderT;
-    typedef DeBruijnExtensionIndexBuilder<DeBruijnStreamKMerIndexBuilderT> DeBruijnExtensionIndexBuilderT;
+    using IndexT = Index;
+    typedef typename Index::traits_t traits_t;
+    typedef typename Index::KMer Kmer;
+    typedef typename Index::KMerIdx KMerIdx;
+    using DeBruijnExtensionIndexBuilderT = DeBruijnExtensionIndexBuilder;
 };
 

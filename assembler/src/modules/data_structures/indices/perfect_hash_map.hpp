@@ -22,9 +22,6 @@
 
 namespace debruijn_graph {
 
-template<class Index>
-class DeBruijnKMerIndexBuilder;
-
 template<class K, class traits>
 class IndexWrapper {
     static const size_t InvalidIdx = size_t(-1);
@@ -33,7 +30,7 @@ public:
     typedef K KeyType;
     typedef traits traits_t;
 protected:
-    typedef KMerIndex<traits>        KMerIndexT;
+    typedef KMerIndex<traits> KMerIndexT;
     //these fields are protected only for reduction of storage in edge indices BinWrite
     KMerIndexT index_;
 private:
@@ -140,8 +137,7 @@ public:
         ValueBase::BinRead(reader, tmp);
     }
 
-    template<class Index>
-    friend class DeBruijnKMerIndexBuilder;
+    friend struct PerfectHashMapBuilder;
 };
 
 
@@ -283,8 +279,7 @@ public:
         return res;
     }
 
-    template<class Index>
-    friend class DeBruijnKMerIndexBuilder;
+    friend struct KeyStoringIndexBuilder;
 };
 
 template<class K, class V, class traits = kmer_index_traits<K>, class StoringType = SimpleStoring>
@@ -317,8 +312,7 @@ public:
         return io::make_kmer_iterator<KMer>(this->KMersFilename_, base::k(), parts);
     }
 
-    template<class Index>
-    friend class DeBruijnKMerIndexBuilder;
+    friend struct KeyIteratingIndexBuilder;
 };
 
 }
