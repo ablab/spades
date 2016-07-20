@@ -6,6 +6,7 @@
 #include <assembly_graph/graph_support/scaff_supplementary.hpp>
 #include <cmath>
 #include "barcode_mapper.hpp"
+#include "tslr_visualizer.hpp"
 
 #include <modules/algorithms/path_extend/path_extender.hpp>
 #include <modules/algorithms/path_extend/pe_resolver.hpp>
@@ -29,13 +30,13 @@ namespace tslr_resolver {
                 return edges;
             }
             int reference_cov = 20;
-            size_t len_threshold = 1000;
+            size_t len_threshold = 500;
             bool long_single_edge_exists = false;
             EdgeId decisive_edge;
             for (int i = static_cast<int> (path.Size()) - 1; !long_single_edge_exists && i >= 0; --i) {
                 EdgeId current_edge = path[i];
-                if (g_.coverage(current_edge) < reference_cov * 1.5 &&
-                    g_.length(current_edge) < len_threshold) {
+                if (g_.coverage(current_edge) < reference_cov * 1.1 &&
+                    g_.length(current_edge) > len_threshold) {
                     long_single_edge_exists = true;
                     decisive_edge = current_edge;
                 }
@@ -43,13 +44,12 @@ namespace tslr_resolver {
             if (!long_single_edge_exists || edges.size() == 0) {
                 return result;
             }
-            DEBUG(bmapper_.size("head"));
-            DEBUG(bmapper_.size("tail"));
             auto fittest_edge = std::max_element(edges.begin(), edges.end(),
                                                  [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                                     return this->bmapper_.IntersectionSize(decisive_edge, edge1.e_) <
-                                                            this->bmapper_.IntersectionSize(decisive_edge, edge2.e_);
+                                                     return this->bmapper_.IntersectionSizeNormalized(decisive_edge, edge1.e_) <
+                                                            this->bmapper_.IntersectionSizeNormalized(decisive_edge, edge2.e_);
                                                  });
+            DEBUG(bmapper_.IntersectionSize(decisive_edge, fittest_edge->e_));
             result.push_back(*fittest_edge);
             return result;
         }
@@ -169,8 +169,8 @@ namespace tslr_resolver {
     void LaunchBarcodePE (conj_graph_pack &gp) {
         path_extend::PathExtendParamsContainer params(cfg::get().pe_params,
                                                       cfg::get().output_dir,
-                                                      "final_contigs",
-                                                      "scaffolds",
+                                                      "final_contigs_tslr",
+                                                      "scaffolds_tslr",
                                                       cfg::get().mode,
                                                       cfg::get().uneven_depth,
                                                       cfg::get().avoid_rc_connections,
@@ -207,6 +207,8 @@ namespace tslr_resolver {
         seeds.SortByLength();
         INFO("Growing paths using paired-end and long single reads");
         auto last_paths = resolver.extendSeeds(seeds, *mainPE);
+        size_t min_edge_len = 100;
+        FinalizePaths(params, last_paths, clone_map, min_edge_len, max_is_right_quantile);
 
         debruijn_graph::GenomeConsistenceChecker genome_checker (gp, main_unique_storage, 1000, 0.2);
         DebugOutputPaths(gp, params, last_paths, "final_tslr_paths");
