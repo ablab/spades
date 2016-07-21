@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ############################################################################
-# Copyright (c) 2015 Saint Petersburg State University
+# Copyright (c) 2015-2016 Saint Petersburg State University
 # Copyright (c) 2011-2014 Saint Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
@@ -39,11 +39,11 @@ def error(err_str, log=None, dipspades=False, prefix=SPADES_PY_ERROR_MESSAGE):
     if log:
         log.info("\n\n" + prefix + " " + err_str)
         log_warnings(log, with_error=True)
-        log.info("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@bioinf.spbau.ru")
+        log.info("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@cab.spbu.ru")
         log.info("Please provide us with params.txt and " + binary_name.lower() + ".log files from the output directory.")
     else:
         sys.stderr.write("\n\n" + prefix + " " + err_str + "\n\n")
-        sys.stderr.write("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@bioinf.spbau.ru\n")
+        sys.stderr.write("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@cab.spbu.ru\n")
         sys.stderr.write("Please provide us with params.txt and " + binary_name.lower() + ".log files from the output directory.\n")
         sys.stderr.flush()
     if current_tmp_dir and os.path.isdir(current_tmp_dir):
