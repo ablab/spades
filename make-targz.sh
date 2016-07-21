@@ -41,6 +41,7 @@ cp assembler/spades_init.py $TARGET_DIR/
 cp assembler/manual.html $TARGET_DIR/
 cp assembler/dipspades_manual.html $TARGET_DIR/
 cp assembler/truspades_manual.html $TARGET_DIR/
+cp assembler/rnaspades_manual.html $TARGET_DIR/
 cp assembler/changelog.html $TARGET_DIR/
 cp assembler/GPLv2.txt $TARGET_DIR/
 
