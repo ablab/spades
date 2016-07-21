@@ -4,8 +4,7 @@ rm -rf $TARGET_DIR
 SRC_DIR=$TARGET_DIR/src
 mkdir -p $SRC_DIR
 
-cp -r assembler/src/modules $SRC_DIR/
-cp -r assembler/src/utils $SRC_DIR/
+cp -r assembler/src/common $SRC_DIR/
 cp -r assembler/src/projects $SRC_DIR/
 cp -r assembler/src/include $SRC_DIR/
 cp -r assembler/src/cmake $SRC_DIR/
@@ -25,6 +24,7 @@ rm -f $TARGET_DIR/ext/include/python_libs/joblib/*.pyo
 
 cp -r assembler/test_dataset $TARGET_DIR/test_dataset
 cp -r assembler/test_dataset_truspades $TARGET_DIR/test_dataset_truspades
+cp -r assembler/test_dataset_plasmid $TARGET_DIR/test_dataset_plasmid
 cp assembler/LICENSE $TARGET_DIR/
 cp assembler/README $TARGET_DIR/
 cp assembler/VERSION $TARGET_DIR/
