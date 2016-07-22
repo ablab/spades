@@ -44,12 +44,9 @@ EdgeAnnotation LoadAnnotation(const conj_graph_pack& gp,
                               io::SingleStream& contigs_stream,
                               io::SingleStream& splits_stream,
                               const string& annotation_path) {
-    EdgeAnnotation edge_annotation(gp, bins_of_interest);
-
-    AnnotationFiller filler(gp, edge_annotation);
+    AnnotationFiller filler(gp, bins_of_interest);
     AnnotationStream annotation_stream(annotation_path);
-    filler(contigs_stream, splits_stream, annotation_stream);
-    return edge_annotation;
+    return filler(contigs_stream, splits_stream, annotation_stream);
 }
 
 class BinnedInfo : public pair<size_t, size_t> {

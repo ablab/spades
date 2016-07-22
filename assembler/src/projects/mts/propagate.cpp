@@ -304,10 +304,16 @@ void AnnotationPropagator::Run(io::SingleStream& /*contigs*/,
 
     AnnotationChecker checker(gp_.g, edge_annotation);
 
+    for (const auto& bin_id : edge_annotation.interesting_bins()) {
+        size_t problem_cnt = checker.Check(bin_id, edge_annotation.EdgesOfBin(bin_id, EDGE_LENGTH_THRESHOLD));
+        DEBUG("Bin " << bin_id << " had " << problem_cnt << " problems");
+    }
+
     for (auto prop_ptr : propagator_pipeline) {
+        DEBUG("Propagating with: " << prop_ptr->name());
         auto propagation_map = prop_ptr->Propagate(edge_annotation);
 
-        DEBUG("Applying bin extensions from propagator " << prop_ptr->name());
+        DEBUG("Extending " << propagation_map.size() << " bins after propagation with: " << prop_ptr->name());
         for (const auto& bin_prop : propagation_map) {
             const auto& bin_id = bin_prop.first;
             const auto& edges = bin_prop.second;

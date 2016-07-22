@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     size_t k;
     string saves_path, contigs_path, splits_path, annotation_path;
     string left_reads, right_reads;
-    string out_root, sample_name;
+    string out_root, propagation_dump, sample_name;
     std::vector<bin_id> bins_of_interest;
     bool no_binning;
     try {
@@ -71,13 +71,18 @@ int main(int argc, char** argv) {
             >> Option('r', right_reads)
             >> Option('o', out_root)
             >> Option('n', sample_name)
+            >> Option('d', propagation_dump, "")
             >> Option('b', bins_of_interest, {})
             >> OptionPresent('p', no_binning);
     } catch(GetOptEx &ex) {
         cout << "Usage: prop_binning -k <K> -s <saves path> -c <contigs path> -f <splits path> "
                 "-a <binning annotation> -l <left reads> -r <right reads> -o <output root> -n <sample name> "
-                "[-p to disable binning] [-b <bins of interest>*]"  << endl;
+                "[-d <propagation info dump>] [-p to disable binning] [-b <bins of interest>*]"  << endl;
         exit(1);
+    }
+
+    for (const auto& bin_id : bins_of_interest) {
+        VERIFY_MSG(bin_id.find_last_of(',') == std::string::npos, "Specify bins of interest via space, not comma");
     }
 
     conj_graph_pack gp(k, "tmp", 1);
@@ -92,18 +97,21 @@ int main(int argc, char** argv) {
     io::FileReadStream split_stream(splits_path);
 
     AnnotationStream annotation_in(annotation_path);
-    EdgeAnnotation edge_annotation(gp, bins_of_interest);
-    AnnotationFiller filler(gp, edge_annotation);
-    filler(contigs_stream, split_stream, annotation_in);
+
+    AnnotationFiller filler(gp, bins_of_interest);
+    EdgeAnnotation edge_annotation = filler(contigs_stream, split_stream, annotation_in);
 
     INFO("Propagation launched");
     AnnotationPropagator propagator(gp);
     propagator.Run(contigs_stream, edge_annotation);
     INFO("Propagation finished");
 
-    DumpEdgesAndAnnotation(gp.g, edge_annotation,
-                           add_suffix(contigs_path, "_edges"),
-                           add_suffix(annotation_path, "_edges"));
+    if (!propagation_dump.empty()) {
+        INFO("Dumping propagation info to " << propagation_dump);
+        DumpEdgesAndAnnotation(gp.g, edge_annotation,
+                               propagation_dump + ".fasta",
+                               propagation_dump + ".ann");
+    }
 
     if (no_binning) {
         INFO("Binning was disabled with -p flag");

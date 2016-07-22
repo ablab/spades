@@ -21,6 +21,9 @@ public:
     }
 
     void Run(io::SingleStream& contigs, EdgeAnnotation& edge_annotation);
+
+private:
+    DECL_LOGGER("AnnotationChecker");
 };
 
 }

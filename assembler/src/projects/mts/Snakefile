@@ -174,17 +174,18 @@ rule canopy_post:
 rule binning:
     input:   contigs="assembly/{sample}.fasta", ann="annotation/{sample}.ann",
              left=left_reads, right=right_reads
-    output:  "annotation/{sample}_edges.ann"
+    output:  "propagation/{sample}_edges.ann", "propagation/{sample}_edges.fasta"
     params:  saves="assembly/{sample}/" + SAVES, splits="assembly/{sample}_splits.fasta"
     log:     "binning/{sample}.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
     shell:   "{BIN}/prop_binning -k {K} -s {params.saves} -c {input.contigs}"
              " -a {input.ann} -f {params.splits} -l {input.left} -r {input.right}"
-             " -o binning -n {wildcards.sample} >{log} 2>&1"
+             " -o binning -n {wildcards.sample}"
+             " -d propagation/{wildcards.sample}_edges >{log} 2>&1"
 
 #Mock rule just for simplifying M-to-N dependencies in the stage graph
 rule binning_all:
-    input:   expand("annotation/{sample}_edges.ann", sample=SAMPLES)
+    input:   expand("propagation/{sample}_edges.ann", sample=SAMPLES)
     output:  touch(FINISHED_BINNING)
     message: "Binned all samples"
 
