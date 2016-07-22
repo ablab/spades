@@ -60,10 +60,16 @@ class BufferFiller {
       : splitter_(splitter) {}
 
   bool operator()(std::unique_ptr<Read> r) {
-    uint8_t trim_quality = (uint8_t)cfg::get().input_trim_quality;
+    int trim_quality = cfg::get().input_trim_quality;
 
+    Read cr = *r;
+    size_t sz = cr.trimNsAndBadQuality(trim_quality);
+  
+    if (sz < hammer::K)
+      return false;
+    
     unsigned thread_id = omp_get_thread_num();
-    ValidKMerGenerator<hammer::K> gen(*r, trim_quality);
+    ValidKMerGenerator<hammer::K> gen(cr);
     bool stop = false;
     for (; gen.HasMore(); gen.Next()) {
       KMer seq = gen.kmer();
@@ -192,7 +198,14 @@ class KMerMultiplicityCounter {
     bool operator()(std::unique_ptr<Read> r) {
       uint8_t trim_quality = (uint8_t)cfg::get().input_trim_quality;
 
-      ValidKMerGenerator<hammer::K> gen(*r, trim_quality);
+      // FIXME: Get rid of this
+      Read cr = *r;
+      size_t sz = cr.trimNsAndBadQuality(trim_quality);
+
+      if (sz < hammer::K)
+        return false;
+
+      ValidKMerGenerator<hammer::K> gen(cr);
       for (; gen.HasMore(); gen.Next()) {
           KMer kmer = gen.kmer();
 
@@ -223,7 +236,14 @@ class KMerCountEstimator {
     bool operator()(std::unique_ptr<Read> r) {
       uint8_t trim_quality = (uint8_t)cfg::get().input_trim_quality;
 
-      ValidKMerGenerator<hammer::K> gen(*r, trim_quality);
+      // FIXME: Get rid of this
+      Read cr = *r;
+      size_t sz = cr.trimNsAndBadQuality(trim_quality);
+
+      if (sz < hammer::K)
+        return false;
+
+      ValidKMerGenerator<hammer::K> gen(cr);
       for (; gen.HasMore(); gen.Next()) {
           KMer kmer = gen.kmer();
           auto &hll = hll_[omp_get_thread_num()];
