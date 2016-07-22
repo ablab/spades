@@ -2,7 +2,7 @@
 
 # Script for compiling SPAdes using holy build box
 # To compile spades run
-# docker run -t -i -v <path with algorithmic-biology repository>:/gitrep --rm phusion/holy-build-box-64:latest  bash /gitrep/algorithmic-biology/assembler/src/tools/spades_holybox_compile.sh
+# docker run -t -i -v <path to spades_compile.sh>:/spades/ --rm phusion/holy-build-box-64:latest  bash /spades/src/tools/spades_holybox_compile.sh
 
 set -e
 source /hbb_exe/activate
@@ -11,7 +11,7 @@ set -x
 
 yum install bzip2-devel
 
-cd /gitrep/algorithmic-biology/assembler
+cd /spades
 ./spades_compile.sh -DSPADES_STATIC_BUILD=1
 
 cd build_spades
