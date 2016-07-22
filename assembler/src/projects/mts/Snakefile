@@ -80,14 +80,12 @@ def ref_path(wildcards):
     return REFS[wildcards.ref]
 
 onstart:
-    for dir in ["annotation", "assembly", "profile",
-                "reassembly", "stats", "stats/summary", "tmp"]:
-        try:
-            os.mkdir(dir)
-        except:
-            pass
+    try:
+        os.mkdir("tmp")
+    except:
+        pass
     print("Detected samples:", SAMPLES)
-    print("Detected references:", REFS)
+    print("Detected references:", REFS.keys())
 
 # ---- Main pipeline -----------------------------------------------------------
 
@@ -175,13 +173,13 @@ rule binning:
     input:   contigs="assembly/{sample}.fasta", ann="annotation/{sample}.ann",
              left=left_reads, right=right_reads
     output:  "propagation/{sample}_edges.ann", "propagation/{sample}_edges.fasta"
-    params:  saves="assembly/{sample}/" + SAVES, splits="assembly/{sample}_splits.fasta"
+    params:  saves="assembly/{sample}/" + SAVES, splits="assembly/{sample}_splits.fasta",
+             out="propagation/{sample}_edges"
     log:     "binning/{sample}.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
     shell:   "{BIN}/prop_binning -k {K} -s {params.saves} -c {input.contigs}"
              " -a {input.ann} -f {params.splits} -l {input.left} -r {input.right}"
-             " -o binning -n {wildcards.sample}"
-             " -d propagation/{wildcards.sample}_edges >{log} 2>&1"
+             " -o binning -n {wildcards.sample} -d {params.out} >{log} 2>&1"
 
 #Mock rule just for simplifying M-to-N dependencies in the stage graph
 rule binning_all:
@@ -309,18 +307,19 @@ rule int_bins_all:
     message: "Gathered all interesting bins"
 
 #---- GF per bin per reference -------------------------------------------------
-PROP = {"prelim": ("_splits", ""), "prop": ("_edges", "_edges")}
+#Helper formatters for determining input files from different stages
+PROP = {"prelim": ("assembly/{}_splits.fasta",   "annotation/{}.ann"),
+        "prop":   ("propagation/{}_edges.fasta", "propagation/{}_edges.ann")}
 
 #TODO: split into different directories per sample
 rule split_bins:
-    input:   lambda w: "assembly/{}{}.fasta".format(w.sample, PROP[w.prop][0]),
-             lambda w: "annotation/{}{}.ann".format(w.sample, PROP[w.prop][1])
+    input:   lambda w: PROP[w.prop][0].format(w.sample),
+             lambda w: PROP[w.prop][1].format(w.sample)
     output:  touch("binning/{prop}/{sample}.log")
     log:     "binning/{prop}/split_{sample}.log"
     params:  "binning/{prop}"
     message: "Splitting assembly of {wildcards.sample} between {wildcards.prop} bins"
-    shell:   "mkdir -p {params} && rm -f {params}/{wildcards.sample}-*.fasta && "
-             "{SCRIPTS}/split_bins.py {input} {params} >{log}"
+    shell:   "{SCRIPTS}/split_bins.py {input} {params} >{log}"
 
 rule cat_binned_contigs:
     input:   expand("binning/{{prop}}/{sample}.log", sample=SAMPLES)
@@ -389,8 +388,9 @@ rule prop_stats:
     output:  "stats/prop_{cag}/{sample}.tsv"
     log:     "stats/prop_{cag}/{sample}.log"
     message: "Calculating propagation statistics for {wildcards.sample}"
-    shell:   "mkdir -p stats/prop_{wildcards.cag} && "
-             "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref} -c {input.contigs} -a {input.prelim} -e {input.edges} -p {input.prop} -b {wildcards.cag} -o {output} >{log}"
+    shell:   "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref}"
+             " -c {input.contigs} -a {input.prelim} -e {input.edges} -p {input.prop}"
+             " -b {wildcards.cag} -o {output} >{log}"
 
 # Run this
 rule prop_stats_all:
