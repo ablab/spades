@@ -13,3 +13,7 @@ add_executable(spades-kmercount
                main.cpp)
 
 target_link_libraries(spades-kmercount spades_modules ${COMMON_LIBRARIES})
+
+if (SPADES_STATIC_BUILD)
+  set_target_properties(spades-kmercount PROPERTIES LINK_SEARCH_END_STATIC 1)
+endif()
