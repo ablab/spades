@@ -49,26 +49,46 @@ namespace tslr_resolver {
         string barcode_;
     };
 
-
     class BarcodeMapper {
+    public:
+
+
+    protected:
+        const Graph &g_;
+        const Index& index_;
+        const KmerSubs& kmer_mapper_;
+
+    public:
+        BarcodeMapper (const Graph &g, const Index& index, const KmerSubs& kmer_mapper) :
+                g_(g), index_(index), kmer_mapper_(kmer_mapper) {}
+
+        BarcodeMapper (const BarcodeMapper& other) = default;
+
+        virtual ~BarcodeMapper() {}
+        virtual void InitialFillMap (const Graph &g) = 0;
+        virtual void FillMap (const string& reads_filename, bool debug_mode = false) = 0;
+    };
+
+    class HeadTailBarcodeMapper : public BarcodeMapper { //TODO: compress
+        typedef string BarcodeId;
+        typedef std::unordered_set <BarcodeId> BarcodeSet;
+        typedef std::unordered_map <EdgeId, BarcodeSet> barcode_map_t;
     private:
+        using BarcodeMapper<Graph>::g_;
+        using BarcodeMapper<Graph>::index_;
+        using BarcodeMapper<Graph>::kmer_mapper_;
         barcode_map_t barcode_map_heads;
         barcode_map_t barcode_map_tails;
-        const Graph &g;
-        const Index &index;
-        const KmerSubs &kmer_mapper;
         size_t tail_threshold_;
-        size_t norm_len = 10000;
+        size_t norm_len_;
     public:
-        BarcodeMapper(const Graph &g, const Index& index,
-                      const KmerSubs& kmer_mapper, size_t tail_threshold = 10000) :
-                g(g), index(index), kmer_mapper(kmer_mapper), tail_threshold_(tail_threshold)
+        HeadTailBarcodeMapper(const Graph& g, const Index& index,
+                      const KmerSubs& kmer_mapper, size_t tail_threshold = 10000, size_t norm_len = 10000) :
+                BarcodeMapper(g, index, kmer_mapper), tail_threshold_(tail_threshold), norm_len_(norm_len)
         {
             barcode_map_heads = barcode_map_t();
             barcode_map_tails = barcode_map_t();
         }
-
-        BarcodeMapper(const BarcodeMapper& other) = default;
 
         void InitialFillMap(const Graph &g) {
             edge_it_helper helper(g);
@@ -82,7 +102,7 @@ namespace tslr_resolver {
         void FillMap(const string &reads_filename, bool debug_mode = false) {
             auto lib_vec = GetLibrary(reads_filename);
             auto mapper = std::make_shared<debruijn_graph::NewExtendedSequenceMapper<Graph, Index> >
-                          (g, index, kmer_mapper);
+                          (g_, index, kmer_mapper_);
 
             int debug_counter = 0;
 
@@ -111,7 +131,7 @@ namespace tslr_resolver {
         }
 
         bool is_at_edge_tail(const EdgeId& edge, const omnigraph::MappingRange& range) {
-            return range.mapped_range.start_pos + tail_threshold_ > g.length(edge);
+            return range.mapped_range.start_pos + tail_threshold_ > g_.length(edge);
         }
 
         bool is_at_edge_head(const omnigraph::MappingRange& range) {
@@ -141,7 +161,7 @@ namespace tslr_resolver {
         }
 
         double IntersectionSizeNormalized(const EdgeId &edge1, const EdgeId &edge2) const {
-            return static_cast <double> (IntersectionSize(edge1, edge2)) / static_cast <double> (g.length(edge2) + norm_len);
+            return static_cast <double> (IntersectionSize(edge1, edge2)) / static_cast <double> (g_.length(edge2) + norm_len_);
         }
 
         //
@@ -169,15 +189,12 @@ namespace tslr_resolver {
             return barcode_map_tails.cend();
         }
 
-        size_t size(const std::string& which_end) const {
-            VERIFY(which_end == "head" || which_end == "tail");
-            if (which_end == "head")
-                return barcode_map_heads.size();
+        size_t size() const {
             return barcode_map_tails.size();
         }
 
         std::pair <double, double> AverageBarcodeCoverage() {
-            edge_it_helper helper(g);
+            edge_it_helper helper(g_);
             int64_t barcodes_overall_heads = 0;
             int64_t barcodes_overall_tails = 0;
             int64_t edges = 0;

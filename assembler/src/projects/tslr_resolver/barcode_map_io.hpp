@@ -40,8 +40,8 @@ namespace debruijn_graph {
             for (size_t i = 0; i < map_size; ++i) {
                 DeserializeBarcodeMapEntry(file, edge_map, barcodeMapper, "tail");
             }
-            INFO(barcodeMapper.size("head"));
-            INFO(barcodeMapper.size("tail"));
+            INFO(barcodeMapper.size());
+            INFO(barcodeMapper.size());
         }
 
 
