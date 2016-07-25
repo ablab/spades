@@ -49,42 +49,22 @@ namespace tslr_resolver {
         string barcode_;
     };
 
-    class BarcodeMapper {
-    public:
-
-
-    protected:
-        const Graph &g_;
-        const Index& index_;
-        const KmerSubs& kmer_mapper_;
-
-    public:
-        BarcodeMapper (const Graph &g, const Index& index, const KmerSubs& kmer_mapper) :
-                g_(g), index_(index), kmer_mapper_(kmer_mapper) {}
-
-        BarcodeMapper (const BarcodeMapper& other) = default;
-
-        virtual ~BarcodeMapper() {}
-        virtual void InitialFillMap (const Graph &g) = 0;
-        virtual void FillMap (const string& reads_filename, bool debug_mode = false) = 0;
-    };
-
-    class HeadTailBarcodeMapper : public BarcodeMapper { //TODO: compress
+    class BarcodeMapper { 
         typedef string BarcodeId;
         typedef std::unordered_set <BarcodeId> BarcodeSet;
         typedef std::unordered_map <EdgeId, BarcodeSet> barcode_map_t;
     private:
-        using BarcodeMapper<Graph>::g_;
-        using BarcodeMapper<Graph>::index_;
-        using BarcodeMapper<Graph>::kmer_mapper_;
+        const Graph& g_;
+        const Index& index_;
+        const KmerSubs& kmer_mapper_;
         barcode_map_t barcode_map_heads;
         barcode_map_t barcode_map_tails;
         size_t tail_threshold_;
         size_t norm_len_;
     public:
-        HeadTailBarcodeMapper(const Graph& g, const Index& index,
+        BarcodeMapper(const Graph& g, const Index& index,
                       const KmerSubs& kmer_mapper, size_t tail_threshold = 10000, size_t norm_len = 10000) :
-                BarcodeMapper(g, index, kmer_mapper), tail_threshold_(tail_threshold), norm_len_(norm_len)
+                g_(g), index_(index), kmer_mapper_(kmer_mapper), tail_threshold_(tail_threshold), norm_len_(norm_len)
         {
             barcode_map_heads = barcode_map_t();
             barcode_map_tails = barcode_map_t();
@@ -102,7 +82,7 @@ namespace tslr_resolver {
         void FillMap(const string &reads_filename, bool debug_mode = false) {
             auto lib_vec = GetLibrary(reads_filename);
             auto mapper = std::make_shared<debruijn_graph::NewExtendedSequenceMapper<Graph, Index> >
-                          (g_, index, kmer_mapper_);
+                          (g_, index_, kmer_mapper_);
 
             int debug_counter = 0;
 

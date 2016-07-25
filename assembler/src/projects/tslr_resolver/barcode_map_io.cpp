@@ -15,12 +15,12 @@ namespace debruijn_graph {
             const string file_name = path + ".bmap";
             file.open(file_name);
             DEBUG("Saving barcode information, " << file_name <<" created");
-            file << barcodeMapper.size("head") << std::endl;
+            file << barcodeMapper.size() << std::endl;
             for (auto it = barcodeMapper.cbegin_heads(); it != barcodeMapper.cend_heads(); ++it) {
                 SerializeBarcodeMapEntry(it -> first.int_id(), it -> second, file);
             }
             
-            file << barcodeMapper.size("tail") << std::endl;
+            file << barcodeMapper.size() << std::endl;
             for (auto it = barcodeMapper.cbegin_tails(); it != barcodeMapper.cend_tails(); ++it) {
                 SerializeBarcodeMapEntry(it -> first.int_id(), it -> second, file);
             }
