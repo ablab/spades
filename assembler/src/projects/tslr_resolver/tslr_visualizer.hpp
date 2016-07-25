@@ -1,5 +1,6 @@
 #pragma once
 
+#include <modules/pipeline/graph_pack.hpp>
 #include "barcode_mapper.hpp"
 #include "../../modules/visualization/graph_labeler.hpp"
 
@@ -14,10 +15,9 @@ namespace tslr_resolver {
         typedef std::set <EdgeId> edge_set_t;
     private:
         const b_mapper &barcode_mapper_;
-        const edge_set_t &edge_set_;
     public:
-        BarcodeDistGraphLabeler(const G &g, const BarcodeMapper &mapper, const edge_set_t &edge_set) :
-                base(g), barcode_mapper_(mapper), edge_set_(edge_set) { }
+        BarcodeDistGraphLabeler(const G &g, const BarcodeMapper &mapper) :
+                base(g), barcode_mapper_(mapper){ }
 
         size_t barcode_threshold = 5;
 
@@ -25,15 +25,19 @@ namespace tslr_resolver {
             std::string ans;
             std::vector <std::string> head_labels;
             std::vector <std::string> tail_labels;
-            for (auto edge : edge_set_) {
+            size_t max_vertices = 60;
+            size_t edge_length_bound = 10000;
+            auto component = omnigraph::EdgeNeighborhood(graph(), e, max_vertices, edge_length_bound);
+            auto edge_set = component.edges();
+            for (auto edge : edge_set) {
                 if (barcode_mapper_.IntersectionSize(e, edge) >= barcode_threshold) {
                     std::string str = ToString(this->graph().int_id(edge)) + ": " +
-                                      std::to_string(barcode_mapper_.IntersectionSize(e, edge)) + ", ";
+                                      std::to_string(barcode_mapper_.IntersectionSizeRelative(e, edge)) + ", ";
                     head_labels.push_back(str);
                 }
                 if (barcode_mapper_.IntersectionSize(edge, e) >= barcode_threshold) {
                     std::string str = ToString(this->graph().int_id(edge)) + ": " +
-                                      std::to_string(barcode_mapper_.IntersectionSize(edge, e)) + ", ";
+                                      std::to_string(barcode_mapper_.IntersectionSizeRelative(edge, e)) + ", ";
                     tail_labels.push_back(str);
                 }
             }
@@ -69,10 +73,10 @@ namespace tslr_resolver {
     class TslrVisualizer {
         typedef BarcodeMapper b_mapper;
     private:
-        const conj_graph_pack &gp_;
+        const debruijn_graph::conj_graph_pack &gp_;
         const b_mapper &barcode_mapper_;
     public:
-        TslrVisualizer(const conj_graph_pack &gp, const b_mapper &barcode_mapper) :
+        TslrVisualizer(const debruijn_graph::conj_graph_pack &gp, const b_mapper &barcode_mapper) :
                 gp_(gp), barcode_mapper_(barcode_mapper) { }
 
         std::string pics_folder = cfg::get().output_dir + '/' + "pictures";
@@ -87,23 +91,10 @@ namespace tslr_resolver {
             omnigraph::CompositeLabeler <Graph> composite_labeler(pos_labeler, barcode_labeler);
             auto colorer = omnigraph::visualization::DefaultColorer(gp_.g);
             omnigraph::visualization::WriteComponent(component,
-                                                     pics_folder + "/vertex_component_" + std::to_string(num) + "_.dot",
+                                                     pics_folder + "/edge_component_" + std::to_string(num) + "_.dot",
                                                      colorer, composite_labeler);
         }
 
-        void DrawGraph() {
-            omnigraph::GraphComponent <Graph> all(gp_.g, gp_.g.begin(), gp_.g.end());
-            omnigraph::EdgePosGraphLabeler <Graph> pos_labeler(gp_.g, gp_.edge_pos);
-            std::set <EdgeId> edge_set;
-            edge_it_helper helper(gp_.g);
-            for (auto it = helper.begin(); it != helper.end(); ++it) {
-                edge_set.insert(*it);
-            }
-            BarcodeDistGraphLabeler<Graph> barcode_labeler(gp_.g, barcode_mapper_, edge_set);
-            omnigraph::CompositeLabeler <Graph> composite_labeler(pos_labeler, barcode_labeler);
-            auto colorer = omnigraph::visualization::DefaultColorer(gp_.g);
-            omnigraph::visualization::WriteSimpleComponent(all, pics_folder + "/nc_full_graph.dot", colorer, composite_labeler);
-        }
 
         void DrawRandomRepeats() {
             srand(3);
@@ -132,6 +123,10 @@ namespace tslr_resolver {
                 }
                 DrawEdgeComponent(*it, i);
             }
+        }
+
+        void DrawPosition(size_t position) {
+
         }
     };
 }

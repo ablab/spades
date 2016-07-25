@@ -24,10 +24,10 @@ namespace spades {
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
             INFO("Resolver started...");
+            debruijn_graph::FillPos(graph_pack, path_to_reference_, "");
             tslr_resolver::LaunchBarcodePE (graph_pack);
             INFO("Resolver finished!");
             INFO("Drawing pictures...");
-            // debruijn_graph::FillPos(graph_pack, path_to_reference_, "");
             // tslr_resolver::TslrVisualizer <debruijn_graph::ConjugateDeBruijnGraph> viz (graph_pack, graph_pack.barcode_mapper);
             // viz.DrawRandomRepeats();
             // viz.DrawGraph();
