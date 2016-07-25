@@ -33,7 +33,9 @@ class DebruijnEnvironment : public Environment {
         GraphElementFinder<Graph> element_finder_;
         std::shared_ptr<MapperClass> mapper_;
         FillerClass filler_;
-        visualization::graph_labeler::DefaultLabeler<Graph> labeler_;
+        visualization::graph_labeler::DefaultLabeler<Graph> pos_labeler_;
+        tslr_resolver::BarcodeDistGraphLabeler <Graph> barcode_labeler_;
+        omnigraph::CompositeLabeler <Graph> labeler_;
         debruijn_graph::ReadPathFinder<Graph> path_finder_;
         ColoringClass coloring_;
         //CompositeLabeler<Graph> labeler_;
@@ -45,8 +47,8 @@ class DebruijnEnvironment : public Environment {
               picture_counter_(0),
               folder_("pictures_" + name_),
               file_name_base_("picture"),
-              max_vertices_(40),
-              edge_length_bound_(1000),
+              max_vertices_(60),
+              edge_length_bound_(10000),
               gp_(K, "./tmp", cfg::get().ds.reads.lib_count(), 
                   std::vector<std::string>(0),
                   cfg::get().flanking_range,
@@ -55,7 +57,9 @@ class DebruijnEnvironment : public Environment {
               element_finder_(gp_.get<Graph>()),
               mapper_(debruijn_graph::MapperInstance(gp_)),
               filler_(gp_.get<Graph>(), mapper_, gp_.get_mutable<EdgePos>()),
-              labeler_(gp_.get<Graph>(), gp_.get<EdgePos>()),
+              pos_labeler_(gp_.get<Graph>(), gp_.get<EdgePos>()),
+              barcode_labeler_(gp_.g, gp_.barcode_mapper),
+              labeler_(pos_labeler_, barcode_labeler_),
               path_finder_(gp_.get<Graph>()) {
             DEBUG("Environment constructor");
             gp_.get_mutable<debruijn_graph::KmerMapper<Graph>>().Attach();
