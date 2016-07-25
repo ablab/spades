@@ -2,11 +2,8 @@
 
 namespace debruijn_graph {
     namespace graphio {
-        void SerializeBarcodeMapEntry(size_t e1, const std::unordered_set<BarcodeId>& set, ofstream& file) {
-            file << e1 << ' ' << set.size() << std::endl;
-            for (auto it : set) {
-                file << it << ' ';
-            }
+        void SerializeBarcodeMapEntry(size_t e1, const tslr_resolver::barcode_set_t& set, ofstream& file) {
+            file << e1 << ' ' << set << std::endl;
             file << std::endl;
         }
 
@@ -30,16 +27,12 @@ namespace debruijn_graph {
                         tslr_resolver::BarcodeMapper& barcodeMapper, const std::string& which) {
             VERIFY(which == "head" || which == "tail");
             size_t edge_id;
-            size_t entry_size;
+            tslr_resolver::barcode_set_t entry;
 
             file >> edge_id;
-            file >> entry_size;
+            file >> entry;
             auto edge = edge_map.at(edge_id);
-            for (size_t i = 0; i < entry_size; ++i) {
-                BarcodeId barcode;
-                file >> barcode;
-                barcodeMapper.InsertBarcode(barcode, edge, which);
-            }
+            barcodeMapper.InsertSet(entry, edge, which);
         }
     } //graphio
 } //debruijn_graph

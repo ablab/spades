@@ -14,6 +14,9 @@ using std::string;
 using std::istringstream;
 
 namespace tslr_resolver {
+    constexpr size_t max_barcodes = 384;
+
+
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
     typedef runtime_k::RtSeq seq_t;
     typedef debruijn_graph::KmerFreeEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>> KmerEdgeIndex;
@@ -21,8 +24,8 @@ namespace tslr_resolver {
     typedef Graph::EdgeId EdgeId;
     typedef Graph::VertexId VertexId;
     typedef string BarcodeId;
-    typedef std::unordered_set <BarcodeId> BarcodeSet;
-    typedef std::unordered_map <EdgeId, BarcodeSet> barcode_map_t;
+    typedef std::bitset<max_barcodes> barcode_set_t;
+    typedef std::unordered_map <EdgeId, barcode_set_t> barcode_map_t;
     typedef omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
     typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
     typedef std::map <size_t, size_t> barcode_distribution;
@@ -49,14 +52,42 @@ namespace tslr_resolver {
         string barcode_;
     };
 
+    class BarcodeEncoder {
+        std::unordered_map <BarcodeId, size_t> codes_;
+        size_t max_index;
+    public:
+        BarcodeEncoder() :
+            codes_(), max_index (0)
+        { }
+
+        void AddEntry (const string& barcode) {
+            auto it = codes_.find(barcode);
+            if (it == codes_.end()) {
+                codes_[barcode] = max_index;
+            }
+            VERIFY(max_index < max_barcodes);
+            max_index++;
+        }
+
+        size_t GetCode (const string& barcode) const {
+            VERIFY(codes_.find(barcode) != codes_.end());
+            return codes_.at(barcode);
+        }
+
+        size_t GetSize() const {
+            return max_index;
+        }
+    };
+
     class BarcodeMapper { 
         typedef string BarcodeId;
-        typedef std::unordered_set <BarcodeId> BarcodeSet;
-        typedef std::unordered_map <EdgeId, BarcodeSet> barcode_map_t;
+        //TODO: Make separate storing strategy
+//        typedef std::unordered_set <BarcodeId> BarcodeSet;
     private:
         const Graph& g_;
         const Index& index_;
         const KmerSubs& kmer_mapper_;
+        BarcodeEncoder barcode_codes_;
         barcode_map_t barcode_map_heads;
         barcode_map_t barcode_map_tails;
         size_t tail_threshold_;
@@ -64,7 +95,8 @@ namespace tslr_resolver {
     public:
         BarcodeMapper(const Graph& g, const Index& index,
                       const KmerSubs& kmer_mapper, size_t tail_threshold = 10000, size_t norm_len = 10000) :
-                g_(g), index_(index), kmer_mapper_(kmer_mapper), tail_threshold_(tail_threshold), norm_len_(norm_len)
+                g_(g), index_(index), kmer_mapper_(kmer_mapper), barcode_codes_(),
+                tail_threshold_(tail_threshold), norm_len_(norm_len)
         {
             barcode_map_heads = barcode_map_t();
             barcode_map_tails = barcode_map_t();
@@ -73,7 +105,7 @@ namespace tslr_resolver {
         void InitialFillMap(const Graph &g) {
             edge_it_helper helper(g);
             for (auto it = helper.begin(); it != helper.end(); ++it) {
-                BarcodeSet set;
+                barcode_set_t set;
                 barcode_map_heads.insert({*it, set});
                 barcode_map_tails.insert({*it, set});
             }
@@ -88,6 +120,8 @@ namespace tslr_resolver {
 
             for (auto lib: lib_vec) {
                 std::string barcode = lib.barcode_;
+                barcode_codes_.AddEntry(barcode);
+                size_t code = barcode_codes_.GetCode(barcode);
                 io::SeparatePairedReadStream paired_read_stream(lib.left_, lib.right_, 1);
                 io::PairedRead read;
                 while (!paired_read_stream.eof() && debug_counter < 100000) {
@@ -98,9 +132,9 @@ namespace tslr_resolver {
 		    for (auto path : paths) {	
                         for(size_t i = 0; i < path.size(); i++) {
                             if (is_at_edge_head(path[i].second))
-                                barcode_map_heads.at(path[i].first).insert(barcode);
+                                barcode_map_heads.at(path[i].first).set(code);
                             if (is_at_edge_tail(path[i].first, path[i].second))
-                                barcode_map_tails.at(path[i].first).insert(barcode);
+                                barcode_map_tails.at(path[i].first).set(code);
                         }
                     }
                     if (debug_mode) {
@@ -118,11 +152,11 @@ namespace tslr_resolver {
             return range.mapped_range.end_pos < tail_threshold_;
         }
 
-        BarcodeSet GetSetHeads(const EdgeId &edge) const {
+        barcode_set_t GetSetHeads(const EdgeId &edge) const {
             return barcode_map_heads.at(edge);
         }
 
-        BarcodeSet GetSetTails(const EdgeId& edge) const {
+        barcode_set_t GetSetTails(const EdgeId& edge) const {
             return barcode_map_tails.at(edge);
         }
 
@@ -131,13 +165,7 @@ namespace tslr_resolver {
             size_t result = 0;
             auto Set1 = GetSetTails(edge1);
             auto Set2 = GetSetHeads(edge2);
-            for (auto it = Set1.begin(); it != Set1.end(); ++it) {
-                auto it2 = Set2.find(*it);
-                if (it2 != Set2.end()) {
-                    result++;
-                }
-            }
-            return result;
+            return (Set1 & Set2).count();
         }
 
         double IntersectionSizeNormalized(const EdgeId &edge1, const EdgeId &edge2) const {
@@ -147,10 +175,20 @@ namespace tslr_resolver {
         //
         void InsertBarcode(const BarcodeId& barcode, const EdgeId& edge, const std::string& which) {
             VERIFY(which == "head" || which == "tail");
+            size_t code = barcode_codes_.GetCode(barcode);
             if (which == "head")
-                barcode_map_heads[edge].insert(barcode);
+                barcode_map_heads[edge].set(code);
             else
-                barcode_map_tails[edge].insert(barcode);
+                barcode_map_tails[edge].set(code);
+        }
+
+        void InsertSet (barcode_set_t& set, const EdgeId& edge, const std::string& which) {
+            VERIFY(which == "head" || which == "tail");
+            VERIFY(set.size() == max_barcodes);
+            if (which == "head")
+                barcode_map_heads[edge] = set;
+            else
+                barcode_map_tails[edge] = set;
         }
 
         barcode_map_t::const_iterator cbegin_heads() const noexcept {
