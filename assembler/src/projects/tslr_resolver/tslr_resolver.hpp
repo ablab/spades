@@ -27,10 +27,10 @@ namespace spades {
             tslr_resolver::LaunchBarcodePE (graph_pack);
             INFO("Resolver finished!");
             INFO("Drawing pictures...");
-            debruijn_graph::FillPos(graph_pack, path_to_reference_, "");
-            tslr_resolver::TslrVisualizer <debruijn_graph::ConjugateDeBruijnGraph> viz (graph_pack, graph_pack.barcode_mapper);
-            viz.DrawRandomRepeats();
-            viz.DrawGraph();
+            // debruijn_graph::FillPos(graph_pack, path_to_reference_, "");
+            // tslr_resolver::TslrVisualizer <debruijn_graph::ConjugateDeBruijnGraph> viz (graph_pack, graph_pack.barcode_mapper);
+            // viz.DrawRandomRepeats();
+            // viz.DrawGraph();
             INFO("Pictures drawn to " + cfg::get().output_dir + '/' + "pictures");
         }
         DECL_LOGGER("TSLRResolverStage")

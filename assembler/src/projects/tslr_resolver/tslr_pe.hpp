@@ -35,7 +35,7 @@ namespace tslr_resolver {
             EdgeId decisive_edge;
             for (int i = static_cast<int> (path.Size()) - 1; !long_single_edge_exists && i >= 0; --i) {
                 EdgeId current_edge = path[i];
-                if (g_.coverage(current_edge) < reference_cov * 1.5 &&
+                if (g_.coverage(current_edge) < reference_cov * 1.1 &&
                     g_.length(current_edge) > len_threshold) {
                     long_single_edge_exists = true;
                     decisive_edge = current_edge;
@@ -44,13 +44,12 @@ namespace tslr_resolver {
             if (!long_single_edge_exists || edges.size() == 0) {
                 return result;
             }
-            DEBUG(bmapper_.size("head"));
-            DEBUG(bmapper_.size("tail"));
             auto fittest_edge = std::max_element(edges.begin(), edges.end(),
                                                  [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                                     return this->bmapper_.IntersectionSize(decisive_edge, edge1.e_) <
-                                                            this->bmapper_.IntersectionSize(decisive_edge, edge2.e_);
+                                                     return this->bmapper_.IntersectionSizeNormalized(decisive_edge, edge1.e_) <
+                                                            this->bmapper_.IntersectionSizeNormalized(decisive_edge, edge2.e_);
                                                  });
+            DEBUG(bmapper_.IntersectionSize(decisive_edge, fittest_edge->e_));
             result.push_back(*fittest_edge);
             return result;
         }

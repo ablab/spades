@@ -37,7 +37,8 @@ namespace tslr_resolver {
                     tail_labels.push_back(str);
                 }
             }
-            ans += (this->graph().str(e) + '\n');
+            ans += ("Id: " + std::to_string(this->graph().int_id(e)) + ' ' +  "Length: " + 
+                std::to_string(this->graph().length(e)) + ' ' + "Coverage: " + std::to_string(this->graph().coverage(e)) + '\n');
             // INFO(std::to_string(barcode_mapper_.size("head")));
             // ans += (std::to_string(barcode_mapper_.size("head")) + '\n');
             ans += label_from_vector(head_labels, "head");
@@ -109,7 +110,7 @@ namespace tslr_resolver {
             std::string test_file = pics_folder + "/random_repeats";
             std::ofstream fout;
             fout.open(test_file);
-            size_t components_number = 5;
+            size_t components_number = 20;
             std::vector <EdgeId> repeats;
             edge_it_helper edge_it(gp_.g);
             for (auto it = edge_it.begin(); it != edge_it.end(); ++it) {
