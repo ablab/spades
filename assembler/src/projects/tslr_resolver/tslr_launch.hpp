@@ -23,7 +23,7 @@ namespace spades {
                 .add(new TslrResolverStage(cfg::get().K, cfg::get().output_dir + "resolver_output.fasta", path_to_reference));
         INFO("Output directory: " << cfg::get().output_dir);
         conj_gp.kmer_mapper.Attach();
-        //conj_gp.edge_pos.Attach();
+        conj_gp.edge_pos.Attach();
 
         manager.run(conj_gp, cfg::get().entry_point.c_str());
         INFO("TSLR resolver finished.");
