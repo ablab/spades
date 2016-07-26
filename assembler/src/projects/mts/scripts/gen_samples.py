@@ -1,30 +1,85 @@
 #!/usr/bin/env python3
+from __future__ import print_function
 
+import argparse
 import os
 import random
+import shutil
+import subprocess
+import sys
+import yaml
+from common import gather_refs
+#from scipy.stats import expon
 
-COUNT_SAMPLES = 5
-COUNT_REFS = 2
-REFS_DIR = "/Sid/eplekhanova/refs"
-OUT_DIR = "/Sid/eplekhanova/samples"
-WGSIM_PATH = "wgsim"
+def gen_profile(args):
+    refs = dict(gather_refs(args.references))
+    if args.dump_desc:
+        with open(args.dump_desc, "w") as desc:
+            yaml.dump(refs, desc)
+    for ref in refs:
+        print(ref, end=" ")
+        for _ in range(args.samples):
+            #abundance = expon.rvs(scale=30)
+            abundance=random.randint(2, 20)
+            print(int(abundance), end=" ")
+        print()
 
-files = [f for f in sorted(os.listdir(REFS_DIR)) if os.path.isfile(os.path.join(REFS_DIR, f))][:COUNT_REFS]
+def gen_samples(args):
+    refs = dict(gather_refs(args.references))
+    shutil.rmtree(args.out_dir, ignore_errors=True)
+    os.mkdir(args.out_dir)
 
-if os.path.exists(OUT_DIR):
-	os.system("rm -rf " + OUT_DIR + "/*")
+    read_len = 100
+    adj_qual = "2" * read_len + "\n"
 
+    with open(args.profile) as input:
+        first_line = True
+        for line in input:
+            params = line.split()
+            ref_name = params[0]
+            ref_path = refs.get(ref_name)
+            if not ref_path:
+                print("Warning: no reference provided for", ref_name)
+                continue
+            for i, abundance in enumerate(map(int, params[1:]), start=1):
+                print("Generating subsample", i, "for", ref_name)
+                sample_dir = "{}/sample{}".format(args.out_dir, i)
+                if first_line:
+                    subprocess.check_call(["mkdir", "-p", sample_dir])
 
-for i in range(1, COUNT_SAMPLES + 1):
-	print("Generating reads for sample {}/{}".format(i + 1, COUNT_SAMPLES))
+                reads = 10 ** 3 * abundance
 
-	os.system("mkdir -p {}/sample{}".format(OUT_DIR, i))
+                temp_1 = sample_dir + ".tmp.r1.fastq"
+                temp_2 = sample_dir + ".tmp.r2.fastq"
+                subprocess.check_call(["wgsim", "-N", str(reads), "-r", "0.01", "-1", str(read_len), "-2", str(read_len), "-d", "3", "-s", "10", "-e", "0", "-S", str(i), ref_path, temp_1, temp_2], stdout=subprocess.DEVNULL) #, stderr=subprocess.DEVNULL)
 
-	for f in files:
-		fname = os.path.splitext(f)[0]
-		os.system("{wgsim} -N {reads} -r 0.01 -1 100 -2 100 -S{seed} -d 300 -e0 {refs}/{ref} {out}/{read}.tmp.r1.fastq {out}/{read}.tmp.r2.fastq > /dev/null 2>&1"
-			.format(wgsim=WGSIM_PATH, refs=REFS_DIR, out=OUT_DIR, ref=f, read=fname, seed=i, reads=int((10 ** 6) * random.uniform(0.25, 2.0))))
+                out_1 = sample_dir + "/r1.fastq"
+                out_2 = sample_dir + "/r2.fastq"
+                print("Merging temporary files")
+                for temp, out in [(temp_1, out_1), (temp_2, out_2)]:
+                    with open(temp) as input, open(out, "w") as output:
+                        for line in input:
+                            if line.startswith("IIIII"):
+                                output.write(adj_qual)
+                            else:
+                                output.write(line)
+                    os.remove(temp)
+            print()
+            first_line = False
 
-	os.system("cat {out}/*.tmp.r1.fastq >> {out}/sample{ind}/r1.fastq".format(out=OUT_DIR, ind=i))
-	os.system("cat {out}/*.tmp.r2.fastq >> {out}/sample{ind}/r2.fastq".format(out=OUT_DIR, ind=i))
-	os.system("rm -f {out}/*.tmp.*.fastq".format(out=OUT_DIR))
+parser = argparse.ArgumentParser(description="Metagenomic Time Series Simulator")
+parser.add_argument("--references", "-r", type=str, help="List of references, or a directory with them, or a desc file with reference paths prepended with @", required=True)
+subparsers = parser.add_subparsers()
+
+gen_profile_args = subparsers.add_parser("prof", help="Generate a profile for the reference set")
+gen_profile_args.add_argument("--dump-desc", "-d", type=str, help="Dump description file with reference paths")
+gen_profile_args.add_argument("samples", type=int, help="Sample count")
+gen_profile_args.set_defaults(func=gen_profile)
+
+gen_samples_args = subparsers.add_parser("gen", help="Generate reads using a profile")
+gen_samples_args.add_argument("--out-dir", "-o", type=str, help="Output directory", default="./")
+gen_samples_args.add_argument("profile", type=str, help="File with reference profiles")
+gen_samples_args.set_defaults(func=gen_samples)
+
+args = parser.parse_args()
+args.func(args)

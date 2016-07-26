@@ -1,4 +1,36 @@
-from os import path
+import os
+import os.path
+import yaml
+
+FASTA_EXTS = {"fasta", "fa", "fna", "fsa", "fastq", "fastq.gz", "fq", "fq.gz", "fna.gz"}
+def gather_paths(path, basename=False):
+    for filename in os.listdir(path):
+        name, _, ext = os.path.basename(filename).partition(".")
+        if ext in FASTA_EXTS:
+            filepath = os.path.join(path, filename)
+            if basename:
+                yield (name, filepath)
+            else:
+                yield filepath
+
+def detect_reads(dir):
+    return sorted(list(gather_paths(dir)))[:2]
+
+#Autodetect references
+def gather_refs(data):
+    if type(data) is list:
+        for path in data:
+            yield from gather_refs(path)
+    else:
+        if data.startswith("@"):
+            with open(data[1:]) as input:
+                for ref in yaml.load(input).items():
+                    yield ref
+        elif os.path.isdir(data):
+            for ref in gather_paths(data, True):
+                yield ref
+        else:
+            yield (os.path.splitext(os.path.basename(data))[0], data)
 
 def get_id(internal_id, sample):
     res = internal_id.split("_", 2)[1]
@@ -6,7 +38,7 @@ def get_id(internal_id, sample):
 
 def load_annotation(file, normalize=True):
     res = dict()
-    sample, _ = path.splitext(path.basename(file))
+    sample, _ = os.path.splitext(os.path.basename(file))
     with open(file) as input:
         for line in input:
             info = line.split(" : ")

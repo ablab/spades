@@ -4,6 +4,8 @@ import functools
 import os
 import os.path
 
+from scripts.common import detect_reads, gather_refs
+
 #Config parameters
 IN = config["IN"]
 SPADES = config["SPADES"]
@@ -34,22 +36,7 @@ FINISHED_CHOOSING = "binning/choose_all.log"
 SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
 SAMPLE_COUNT = len(SAMPLES)
 
-FASTA_EXTS = {"fasta", "fa", "fna", "fsa", "fastq", "fastq.gz", "fq", "fq.gz", "fna.gz"}
-def gather_paths(path, basename=False):
-    for filename in os.listdir(path):
-        name, _, ext = os.path.basename(filename).partition(".")
-        if ext in FASTA_EXTS:
-            filepath = os.path.join(path, filename)
-            if basename:
-                yield (name, filepath)
-            else:
-                yield filepath
-
-def detect_reads(sample):
-    path = "{}/{}/".format(IN, sample)
-    return (sample, sorted(list(gather_paths(path)))[:2])
-
-SAMPLE_READS = dict(map(detect_reads, SAMPLES))
+SAMPLE_READS = dict(map(lambda sample: (sample, detect_reads(os.path.join(IN, sample))), SAMPLES))
 
 def sample_reads(dir, wildcards):
     return SAMPLE_READS[wildcards.sample][dir]
@@ -60,18 +47,6 @@ right_reads = functools.partial(sample_reads, 1)
 #Autodetect bins
 CAGS, = glob_wildcards("binning/{cag,CAG\d+}")
 GOOD_CAGS, = glob_wildcards("binning/{cag,CAG\d+}/left.fastq")
-
-#Autodetect references
-
-def gather_refs(data):
-    if type(data) is list:
-        for path in data:
-            yield from gather_refs(path)
-    else:
-        if os.path.isdir(data):
-            yield from gather_paths(data, True)
-        else:
-            yield (os.path.splitext(os.path.basename(data))[0], data)
 
 REFS = dict(gather_refs(config.get("REFS", [])))
 ALL_REFS = ",".join(path for path in REFS.values())
@@ -84,8 +59,8 @@ onstart:
         os.mkdir("tmp")
     except:
         pass
-    print("Detected samples:", SAMPLES)
-    print("Detected references:", REFS.keys())
+    print("Detected samples:", " ".join(SAMPLES))
+    print("Detected references:", " ".join(REFS))
 
 # ---- Main pipeline -----------------------------------------------------------
 
