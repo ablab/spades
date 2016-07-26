@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <modules/pipeline/graph_pack.hpp>
+#include <projects/tslr_resolver/tslr_visualizer.hpp>
 #include "environment.hpp"
 #include "pipeline/graphio.hpp"
 namespace online_visualization {
@@ -25,7 +27,9 @@ class DebruijnEnvironment : public Environment {
         GraphElementFinder<Graph> element_finder_;
         std::shared_ptr<MapperClass> mapper_;
         FillerClass filler_;
-        visualization::graph_labeler::DefaultLabeler<Graph> labeler_;
+    visualization::graph_labeler::DefaultLabeler<Graph> pos_labeler_;
+        tslr_resolver::BarcodeDistGraphLabeler <Graph> barcode_labeler_;
+        omnigraph::CompositeLabeler <Graph> labeler_;
         debruijn_graph::ReadPathFinder<Graph> path_finder_;
         ColoringClass coloring_;
         //CompositeLabeler<Graph> labeler_;
@@ -49,7 +53,9 @@ class DebruijnEnvironment : public Environment {
               element_finder_(gp_.g),
               mapper_(new MapperClass(gp_.g, gp_.index, gp_.kmer_mapper)),
               filler_(gp_.g, mapper_, gp_.edge_pos),
-              labeler_(gp_.g, gp_.edge_pos),
+              pos_labeler_(gp_.g, gp_.edge_pos),
+              barcode_labeler_(gp_.g, gp_.barcode_mapper),
+              labeler_(pos_labeler_, barcode_labeler_),
               path_finder_(gp_.g) {
             DEBUG("Environment constructor");
             gp_.kmer_mapper.Attach();

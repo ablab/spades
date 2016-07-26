@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_set>
 #include <unordered_map>
+#include <bitset>
 #include "io/reads/paired_read.hpp"
 #include "modules/assembly_graph/paths/mapping_path.hpp"
 #include <modules/assembly_graph/graph_alignment/sequence_mapper.hpp>
@@ -162,7 +163,6 @@ namespace tslr_resolver {
 
         //Get barcode intersection of tail of first with head of second
         size_t IntersectionSize(const EdgeId &edge1, const EdgeId &edge2) const {
-            size_t result = 0;
             auto Set1 = GetSetTails(edge1);
             auto Set2 = GetSetHeads(edge2);
             return (Set1 & Set2).count();
@@ -218,8 +218,8 @@ namespace tslr_resolver {
             int64_t edges = 0;
             for (auto it = helper.begin(); it != helper.end(); ++it) {
                 edges++;
-                barcodes_overall_heads += barcode_map_heads.at(*it).size();
-                barcodes_overall_tails += barcode_map_tails.at(*it).size();
+                barcodes_overall_heads += barcode_map_heads.at(*it).count();
+                barcodes_overall_tails += barcode_map_tails.at(*it).count();
             }
             DEBUG("heads: " + std::to_string(barcodes_overall_heads));
             DEBUG("tails: " + std::to_string(barcodes_overall_tails));

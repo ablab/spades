@@ -12,7 +12,6 @@
 #include "assembly_graph/handlers/id_track_handler.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/components/graph_component.hpp"
-#include "projects/tslr_resolver/barcode_map_io.hpp"
 
 #include "paired_info/paired_info.hpp"
 
@@ -28,6 +27,8 @@
 #include <algorithm>
 #include <fstream>
 #include <cstdio>
+
+#include "projects/tslr_resolver/barcode_map_io.hpp"
 
 namespace debruijn_graph {
 
@@ -884,6 +885,8 @@ void ScanGraphPack(const string& file_name,
         WARN("Cannot load flanking coverage, flanking coverage will be recovered from index");
         gp.flanking_cov.Fill(gp.index.inner_index());
     }
+    auto edge_map = MakeEdgeMap<typename graph_pack::graph_t> (gp.g);
+    DeserializeMapper(file_name, edge_map, gp.barcode_mapper, gp.g);
 }
 
 template<class Graph>
@@ -1033,8 +1036,8 @@ void ScanAll(const std::string& file_name, graph_pack& gp,
     ScanClusteredIndices(file_name, scanner, gp.clustered_indices, force_exists);
     ScanScaffoldingIndices(file_name, scanner, gp.scaffolding_indices, force_exists);
     ScanSingleLongReads(file_name,  gp.single_long_reads);
-    auto edge_map = MakeEdgeMap<typename graph_pack::graph_t> (gp.g);
-    DeserializeMapper(file_name, edge_map, gp.barcode_mapper, gp.g);
+    // auto edge_map = MakeEdgeMap<typename graph_pack::graph_t> (gp.g);
+    // DeserializeMapper(file_name, edge_map, gp.barcode_mapper, gp.g);
     gp.ginfo.Load(file_name + ".ginfo");
 }
 }
