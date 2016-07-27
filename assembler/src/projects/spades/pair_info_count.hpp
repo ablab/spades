@@ -8,8 +8,15 @@
 #pragma once
 
 #include "pipeline/stage.hpp"
+#include "assembly_graph/graph_alignment/sequence_mapper_notifier.hpp"
 
 namespace debruijn_graph {
+
+void ProcessSingleReads(conj_graph_pack &gp,
+                        size_t ilib,
+                        bool use_binary = true,
+                        bool map_paired = false,
+                        SequenceMapperListener* mapping_listener_ptr = nullptr);
 
 class PairInfoCount : public spades::AssemblyStage {
   public:

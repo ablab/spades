@@ -54,42 +54,38 @@ bool RefineInsertSizeForLib(conj_graph_pack &gp, size_t ilib, size_t edge_length
     return !reads.data().insert_size_distribution.empty();
 }
 
-void ProcessSingleReads(conj_graph_pack &gp, size_t ilib,
-                        bool use_binary = true) {
+void ProcessSingleReads(conj_graph_pack &gp,
+                        size_t ilib,
+                        bool use_binary,
+                        bool map_paired,
+                        SequenceMapperListener* mapping_listener_ptr) {
+    //FIXME make const
     auto& reads = cfg::get_writable().ds.reads[ilib];
-    SequenceMapperNotifier notifier(gp);
-    GappedLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
-    SimpleLongReadMapper simple_read_mapper(gp, gp.single_long_reads[ilib]);
 
-    if(reads.type() == io::LibraryType::PathExtendContigs) {
-        notifier.Subscribe(ilib, &read_mapper);
-    } else {
-        notifier.Subscribe(ilib, &simple_read_mapper);
-    }
+    SequenceMapperNotifier notifier(gp);
+    //FIXME pretty awful, would be much better if listeners were shared ptrs
+    LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib],
+                               ChooseProperReadPathExtractor(gp.g, reads.type()));
+    notifier.Subscribe(ilib, mapping_listener_ptr ? mapping_listener_ptr : &read_mapper);
 
     auto mapper_ptr = ChooseProperMapper(gp, reads);
     if (use_binary) {
-        auto single_streams = single_binary_readers(reads, false, true);
+        auto single_streams = single_binary_readers(reads, false, map_paired);
         notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
     } else {
         auto single_streams = single_easy_readers(reads, false,
-                                                  true, /*handle Ns*/false);
+                                                  map_paired, /*handle Ns*/false);
         notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
     }
     cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;
 }
 
-void ProcessPairedReads(conj_graph_pack &gp, size_t ilib, bool map_single_reads) {
+void ProcessPairedReads(conj_graph_pack &gp, size_t ilib) {
     auto& reads = cfg::get_writable().ds.reads[ilib];
     bool calculate_threshold = (reads.type() == io::LibraryType::PairedEnd);
     SequenceMapperNotifier notifier(gp);
     INFO("Left insert size qauntile " << reads.data().insert_size_left_quantile <<
          ", right insert size quantile " << reads.data().insert_size_right_quantile);
-
-    SimpleLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
-    if (map_single_reads) {
-        notifier.Subscribe(ilib, &read_mapper);
-    }
 
     path_extend::SplitGraphPairInfo split_graph(
             gp, (size_t) reads.data().median_insert_size,
@@ -109,10 +105,6 @@ void ProcessPairedReads(conj_graph_pack &gp, size_t ilib, bool map_single_reads)
     auto paired_streams = paired_binary_readers(reads, false, (size_t) reads.data().mean_insert_size);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
     cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
-
-    if (map_single_reads) {
-        ProcessSingleReads(gp, ilib);
-    }
 }
 
 bool HasGoodRRLibs() {
@@ -147,16 +139,20 @@ bool HasOnlyMP() {
 bool ShouldMapSingleReads(size_t ilib) {
     using config::single_read_resolving_mode;
     switch (cfg::get().single_reads_rr) {
-        case single_read_resolving_mode::none: {
-            return false;
-        }
+        case single_read_resolving_mode::none: {}
         case single_read_resolving_mode::all: {
             return true;
         }
         case single_read_resolving_mode::only_single_libs: {
             //Map when no PacBio/paried libs or only mate-pairs or single lib itself
-            return !HasGoodRRLibs() || HasOnlyMP() ||
-                   (cfg::get().ds.reads[ilib].type() == io::LibraryType::SingleReads);
+            if (!HasGoodRRLibs() || HasOnlyMP() ||
+                cfg::get().ds.reads[ilib].type() == io::LibraryType::SingleReads) {
+                if (cfg::get().mode != debruijn_graph::config::pipeline_type::meta) {
+                    return true;
+                } else {
+                    WARN("Single reads are not used in metagenomic mode");
+                }
+            }
         }
         default:
             VERIFY_MSG(false, "Invalid mode value");
@@ -218,12 +214,12 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         const auto &lib = cfg::get().ds.reads[i];
-        if (lib.is_pacbio_alignable()) {
-            INFO("Library #" << i << " was mapped by PacBio mapper, skipping");
+        if (lib.is_hybrid_lib()) {
+            INFO("Library #" << i << " was mapped earlier on hybrid aligning stage, skipping");
             continue;
         } else if (lib.is_contig_lib()) {
             INFO("Mapping contigs library #" << i);
-            ProcessSingleReads(gp, i, false);
+            ProcessSingleReads(gp, i, /*use_binary*/false);
         } else if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
             INFO("Library #" << i << " was mapped by BWA, skipping");
             continue;
@@ -232,24 +228,16 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
             bool map_single_reads = ShouldMapSingleReads(i);
             cfg::get_writable().use_single_reads |= map_single_reads;
 
-            if(cfg::get().mode == debruijn_graph::config::pipeline_type::meta 
-                        && cfg::get().use_single_reads) {
-                map_single_reads = false;
-                cfg::get_writable().use_single_reads = false;
-                WARN("Single reads mappings are not used in metagenomic mode");
-            }
-
             if (lib.is_paired() && lib.data().mean_insert_size != 0.0) {
                 INFO("Mapping paired reads (takes a while) ");
-                ProcessPairedReads(gp, i, map_single_reads);
-            } else if (map_single_reads) {
-                INFO("Mapping single reads (takes a while) ");
-                ProcessSingleReads(gp, i);
+                ProcessPairedReads(gp, i);
             }
-
             if (map_single_reads) {
+                INFO("Mapping single reads (takes a while) ");
+                ProcessSingleReads(gp, i, /*use_binary*/true, /*map_paired*/true);
                 INFO("Total paths obtained from single reads: " << gp.single_long_reads[i].size());
             }
+
         }
     }
 

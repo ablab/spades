@@ -12,6 +12,7 @@
 #include "assembly_graph/graph_alignment/sequence_mapper.hpp"
 #include "short_read_mapper.hpp"
 #include "io/reads/paired_read.hpp"
+#include "io/reads_io/read_stream_vector.hpp"
 #include "pipeline/graph_pack.hpp"
 
 #include <vector>
@@ -24,7 +25,7 @@ public:
     virtual void StartProcessLibrary(size_t threads_count) = 0;
     virtual void StopProcessLibrary() = 0;
 
-    //TODO: think about read ierarchy
+    //TODO: think about read hierarchy
     virtual void ProcessPairedRead(size_t thread_index, const io::PairedRead& pr, const MappingPath<EdgeId>& read1, const MappingPath<EdgeId>& read2) = 0;
     virtual void ProcessPairedRead(size_t thread_index, const io::PairedReadSeq& pr, const MappingPath<EdgeId>& read1, const MappingPath<EdgeId>& read2) = 0;
     virtual void ProcessSingleRead(size_t thread_index, const io::SingleRead& r, const MappingPath<EdgeId>& read) = 0;

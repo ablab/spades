@@ -11,175 +11,341 @@
 #include "io/reads_io/wrapper_collection.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "pacbio_aligning.hpp"
+#include "pair_info_count.hpp"
+#include "assembly_graph/graph_alignment/long_read_mapper.hpp"
+#include "io/reads_io/multifile_reader.hpp"
 
 namespace debruijn_graph {
 
-void ProcessReadsBatch(conj_graph_pack &gp,
-                       std::vector<io::SingleRead>& reads,
-                       pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index,
-                       PathStorage<Graph>& long_reads, pacbio::GapStorage<Graph>& gaps,
-                       size_t buf_size, int n, size_t min_gap_quantity, pacbio::StatsCounter& stats) {
-    vector<PathStorage<Graph> > long_reads_by_thread(cfg::get().max_threads,
-                                                     PathStorage<Graph>(gp.g));
-    vector<pacbio::GapStorage<Graph> > gaps_by_thread(cfg::get().max_threads,
-                                              pacbio::GapStorage<Graph>(gp.g, min_gap_quantity,cfg::get().pb.long_seq_limit));
-    vector<pacbio::StatsCounter> stats_by_thread(cfg::get().max_threads);
+class GapTrackingLongReadMapper : public LongReadMapper {
+    typedef LongReadMapper base;
+    pacbio::GapStorage<Graph>& gap_storage_;
+    const pacbio::GapStorage<Graph> empty_storage_;
+    vector<pacbio::GapStorage<Graph>> buffer_storages_;
 
-    size_t longer_500 = 0;
-    size_t aligned = 0;
-    size_t nontrivial_aligned = 0;
+    bool IsTip(VertexId v) const {
+        return g().IncomingEdgeCount(v) + g().OutgoingEdgeCount(v) == 1;
+    }
 
-#   pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n, aligned, nontrivial_aligned)
-    for (size_t i = 0; i < buf_size; ++i) {
-        if (i % 1000 == 0) {
-            DEBUG("thread number " << omp_get_thread_num());
+    Sequence ExtractSubseq(const io::SingleRead& read, size_t start, size_t end) const {
+        auto subread = read.Substr(start, end);
+        if (subread.IsValid()) {
+            return subread.sequence();
+        } else {
+            return Sequence();
         }
-        size_t thread_num = omp_get_thread_num();
-        Sequence seq(reads[i].sequence());
-#       pragma omp atomic
-        n++;
-        auto current_read_mapping = pac_index.GetReadAlignment(seq);
-        auto aligned_edges = current_read_mapping.main_storage;
-        auto gaps = current_read_mapping.gaps;
-        for (auto iter = gaps.begin(); iter != gaps.end(); ++iter)
-            gaps_by_thread[thread_num].AddGap(*iter, true);
+    }
 
-        for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter)
-            long_reads_by_thread[thread_num].AddPath(*iter, 1, true);
-        //counting stats:
-        for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
-            stats_by_thread[thread_num].path_len_in_edges[iter->size()]++;
+    Sequence ExtractSubseq(const io::SingleReadSeq& read, size_t start, size_t end) const {
+        return read.sequence().Subseq(start, end);
+    }
+
+    //FIXME should additional thresholds on gaps be introduced here?
+    template<class ReadT>
+    vector<GapDescription<Graph>> InferGaps(const ReadT& read, const MappingPath<EdgeId>& mapping) const {
+        vector<GapDescription<Graph>> answer;
+        for (size_t i = 0; i < mapping.size() - 1; ++i) {
+            EdgeId e1 = mapping.edge_at(i);
+            EdgeId e2 = mapping.edge_at(i + 1);
+
+            //sorry, loops!
+            if (e1 != e2 && IsTip(g().EdgeEnd(e1)) && IsTip(g().EdgeStart(e2))) {
+                MappingRange mr1 = mapping.mapping_at(i);
+                MappingRange mr2 = mapping.mapping_at(i + 1);
+                auto gap_seq = ExtractSubseq(read, mr1.initial_range.end_pos, mr2.initial_range.start_pos);
+                if (gap_seq.size() > 0) {
+                    //FIXME are the positions correct?!!!
+                    answer.push_back(GapDescription<Graph>(e1, e2,
+                                                           gap_seq,
+                                                           mr1.mapped_range.end_pos,
+                                                           mr2.mapped_range.start_pos));
+                }
+            }
         }
-#       pragma omp critical
-        {
-//            INFO(current_read_mapping.seed_num);
+        return answer;
+    }
+
+    template<class ReadT>
+    void InnerProcessRead(size_t thread_index, const ReadT& read, const MappingPath<EdgeId>& mapping) {
+        base::ProcessSingleRead(thread_index, read, mapping);
+        for (const auto& gap: InferGaps(read, mapping)) {
+            //FIXME should it really be "true" here?
+            buffer_storages_[thread_index].AddGap(gap, true);
+        }
+    }
+
+public:
+
+    //ALERT passed path_storage should be empty!
+    GapTrackingLongReadMapper(const Graph& g,
+                              PathStorage<Graph>& path_storage,
+                              pacbio::GapStorage<Graph>& gap_storage,
+                              PathExtractionF path_extractor = nullptr) :
+            base(g, path_storage, path_extractor),
+            gap_storage_(gap_storage), empty_storage_(gap_storage)
+    {
+        VERIFY(empty_storage_.size() == 0);
+    }
+
+
+public:
+
+    void StartProcessLibrary(size_t threads_count) override {
+        base::StartProcessLibrary(threads_count);
+        for (size_t i = 0; i < threads_count; ++i)
+            buffer_storages_.push_back(empty_storage_);
+    }
+
+    void StopProcessLibrary() override {
+        base::StopProcessLibrary();
+        buffer_storages_.clear();
+    }
+
+    void MergeBuffer(size_t thread_index) override {
+        DEBUG("Merge buffer " << thread_index << " with size " << buffer_storages_[thread_index].size());
+        gap_storage_.AddStorage(buffer_storages_[thread_index]);
+        buffer_storages_[thread_index].clear();
+        DEBUG("Now size " << gap_storage_.size());
+    }
+
+    void ProcessSingleRead(size_t thread_index,
+                           const io::SingleRead& read,
+                           const MappingPath<EdgeId>& mapping) override {
+        InnerProcessRead(thread_index, read, mapping);
+    }
+
+    void ProcessSingleRead(size_t thread_index,
+                           const io::SingleReadSeq& read,
+                           const MappingPath<EdgeId>& mapping) override {
+        InnerProcessRead(thread_index, read, mapping);
+    }
+
+};
+
+bool IsNontrivialAlignment(const vector<vector<EdgeId>>& aligned_edges) {
+    for (size_t j = 0; j < aligned_edges.size(); j++)
+        if (aligned_edges[j].size() > 1)
+            return true;
+    return false;
+}
+
+io::SingleStreamPtr GetReadsStream(const io::SequencingLibrary<config::DataSetData> &lib) {
+    io::ReadStreamList<io::SingleRead> streams;
+    for (const auto& reads : lib.single_reads())
+        //do we need input_file function here?
+        //FIXME should FixingWrapper be here?
+        streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(reads)));
+    return io::MultifileWrap(streams);
+}
+
+class PacbioAligner {
+    const conj_graph_pack& gp_;
+    const pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index_;
+    PathStorage<Graph>& path_storage_;
+    pacbio::GapStorage<Graph>& gap_storage_;
+    pacbio::StatsCounter stats_;
+    const PathStorage<Graph> empty_path_storage_;
+    const pacbio::GapStorage<Graph> empty_gap_storage_;
+    const size_t read_buffer_size_;
+
+    void ProcessReadsBatch(const std::vector<io::SingleRead>& reads, size_t thread_cnt) {
+        vector<PathStorage<Graph>> long_reads_by_thread(thread_cnt,
+                                                        empty_path_storage_);
+        vector<pacbio::GapStorage<Graph>> gaps_by_thread(thread_cnt,
+                                                         empty_gap_storage_);
+        vector<pacbio::StatsCounter> stats_by_thread(thread_cnt);
+
+        size_t longer_500 = 0;
+        size_t aligned = 0;
+        size_t nontrivial_aligned = 0;
+
+    #   pragma omp parallel for reduction(+: longer_500, aligned, nontrivial_aligned)
+        for (size_t i = 0; i < reads.size(); ++i) {
+            size_t thread_num = omp_get_thread_num();
+            Sequence seq(reads[i].sequence());
+            auto current_read_mapping = pac_index_.GetReadAlignment(seq);
+            for (const auto& gap : current_read_mapping.gaps)
+                gaps_by_thread[thread_num].AddGap(gap, true);
+
+            const auto& aligned_edges = current_read_mapping.main_storage;
+            for (const auto& path : aligned_edges)
+                long_reads_by_thread[thread_num].AddPath(path, 1, true);
+
+            //counting stats:
+            for (const auto& path : aligned_edges)
+                stats_by_thread[thread_num].path_len_in_edges[path.size()]++;
+
             if (seq.size() > 500) {
                 longer_500++;
                 if (aligned_edges.size() > 0) {
                     aligned++;
-                    stats_by_thread[thread_num].seeds_percentage[size_t(
-                            floor(double(current_read_mapping.seed_num) * 1000.0 / (double) seq.size()))]++;
-                    for (size_t j = 0; j < aligned_edges.size(); j++) {
-                        if (aligned_edges[j].size() > 1) {
-                            nontrivial_aligned++;
-                            break;
-                        }
+                    stats_by_thread[thread_num].seeds_percentage[
+                            size_t(floor(double(current_read_mapping.seed_num) * 1000.0
+                                         / (double) seq.size()))]++;
+
+                    if (IsNontrivialAlignment(aligned_edges)) {
+                        nontrivial_aligned++;
                     }
                 }
             }
         }
-#       pragma omp critical
-        {
-            VERBOSE_POWER(n, " reads processed");
+
+        INFO("Read batch of size: " << reads.size() << " processed; "
+                                    << longer_500 << " of them longer than 500; among long reads aligned: "
+                                    << aligned << "; paths of more than one edge received: "
+                                    << nontrivial_aligned );
+
+        for (size_t i = 0; i < thread_cnt; i++) {
+            path_storage_.AddStorage(long_reads_by_thread[i]);
+            gap_storage_.AddStorage(gaps_by_thread[i]);
+            stats_.AddStorage(stats_by_thread[i]);
         }
     }
-    INFO("Read batch of size: " << buf_size << " processed; "<< longer_500 << " of them longer than 500; among long reads aligned: " << aligned << "; paths of more than one edge received: " << nontrivial_aligned );
 
-    for (size_t i = 0; i < cfg::get().max_threads; i++) {
-        long_reads.AddStorage(long_reads_by_thread[i]);
-        gaps.AddStorage(gaps_by_thread[i]);
-        stats.AddStorage(stats_by_thread[i]);
+public:
+    PacbioAligner(const conj_graph_pack &gp,
+                  const pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index,
+                  PathStorage<Graph>& path_storage,
+                  pacbio::GapStorage<Graph>& gap_storage,
+                  size_t read_buffer_size = 50000) :
+            gp_(gp),
+            pac_index_(pac_index),
+            path_storage_(path_storage),
+            gap_storage_(gap_storage),
+            empty_path_storage_(path_storage),
+            empty_gap_storage_(gap_storage),
+            read_buffer_size_(read_buffer_size) {
+        VERIFY(empty_path_storage_.size() == 0);
+        VERIFY(empty_gap_storage_.size() == 0);
     }
+
+    void operator()(io::SingleStream& read_stream, size_t thread_cnt) {
+        size_t n = 0;
+        size_t buffer_no = 0;
+        while (!read_stream.eof()) {
+            std::vector<io::SingleRead> read_buffer;
+            read_buffer.reserve(read_buffer_size_);
+            io::SingleRead read;
+            for (size_t buf_size = 0; buf_size < read_buffer_size_ && !read_stream.eof(); ++buf_size) {
+                read_stream >> read;
+                read_buffer.push_back(std::move(read));
+            }
+            INFO("Prepared batch " << buffer_no << " of " << read_buffer.size() << " reads.");
+            DEBUG("master thread number " << omp_get_thread_num());
+            ProcessReadsBatch(read_buffer, thread_cnt);
+            ++buffer_no;
+            n += read_buffer.size();
+            INFO("Processed " << n << " reads");
+        }
+    }
+
+    const pacbio::StatsCounter& stats() const {
+        return stats_;
+    }
+};
+
+void PacbioAlignLibrary(const conj_graph_pack &gp,
+                  const io::SequencingLibrary<config::DataSetData>& lib,
+                  PathStorage<Graph>& path_storage,
+                  pacbio::GapStorage<ConjugateDeBruijnGraph>& gap_storage,
+                  size_t thread_cnt) {
+    INFO("Aligning library with Pacbio aligner");
+
+    INFO("Using seed size: " << cfg::get().pb.pacbio_k);
+
+    //initializing index
+    pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp.g,
+                                                                 cfg::get().pb.pacbio_k,
+                                                                 cfg::get().K,
+                                                                 cfg::get().pb.ignore_middle_alignment,
+                                                                 cfg::get().output_dir,
+                                                                 cfg::get().pb);
+
+    PacbioAligner aligner(gp, pac_index, path_storage, gap_storage);
+
+    auto stream = GetReadsStream(lib);
+    aligner(*stream, thread_cnt);
+
+    INFO("For library of " << (lib.is_long_read_lib() ? "long reads" : "contigs") << " :");
+    aligner.stats().report();
+    INFO("PacBio aligning finished");
 }
 
-void align_pacbio(conj_graph_pack &gp, int lib_id, bool make_additional_saves) {
-    io::ReadStreamList<io::SingleRead> streams;
-    for (const auto& reads : cfg::get().ds.reads[lib_id].single_reads())
-      //do we need input_file function here?
-      streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(reads)));
-
-    //make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
-    //    auto pacbio_read_stream = single_easy_reader(cfg::get().ds.reads[lib_id],
-//    false, false);
-
-//    io::ReadStreamList<io::SingleRead> streams(pacbio_read_stream);
- //   pacbio_read_stream.release();
-    int n = 0;
-    PathStorage<Graph>& long_reads = gp.single_long_reads[lib_id];
-    pacbio::StatsCounter stats;
-    size_t min_gap_quantity = 2;
-    size_t rtype = 0;
-    bool consensus_gap_closing = false;
-    if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::PacBioReads || 
-        cfg::get().ds.reads[lib_id].type() == io::LibraryType::SangerReads || 
-        cfg::get().ds.reads[lib_id].type() == io::LibraryType::NanoporeReads) {
-        min_gap_quantity = cfg::get().pb.pacbio_min_gap_quantity;
-        rtype = 1;
-        consensus_gap_closing = true;
-    } else {
-        min_gap_quantity = cfg::get().pb.contigs_min_gap_quantity;
-        rtype = 2;
-    }
-    pacbio::GapStorage<ConjugateDeBruijnGraph> gaps(gp.g, min_gap_quantity, cfg::get().pb.long_seq_limit);
-    size_t read_buffer_size = 50000;
-    std::vector<io::SingleRead> reads(read_buffer_size);
-    io::SingleRead read;
-    size_t buffer_no = 0;
-    INFO("Usign seed size: " << cfg::get().pb.pacbio_k);
-    pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp.g,
-                                                         cfg::get().pb.pacbio_k,
-                                                         cfg::get().K, cfg::get().pb.ignore_middle_alignment, cfg::get().output_dir, cfg::get().pb);
-
-//    path_extend::ContigWriter cw(gp.g);
-//    cw.WriteEdges("before_rr_with_ids.fasta");
-//    ofstream filestr("pacbio_mapped.mpr");
-//    filestr.close();
-    for (auto iter = streams.begin(); iter != streams.end(); ++iter) {
-        auto &stream = *iter;
-        while (!stream.eof()) {
-            size_t buf_size = 0;
-            for (; buf_size < read_buffer_size && !stream.eof(); ++buf_size)
-                stream >> reads[buf_size];
-            INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
-            DEBUG("master thread number " << omp_get_thread_num());
-            ProcessReadsBatch(gp, reads, pac_index, long_reads, gaps, buf_size, n, min_gap_quantity, stats);
-     //       INFO("Processed batch " << buffer_no);
-            ++buffer_no;
-        }
-    }
-    string ss = (rtype == 1 ? "long reads": "contigs");
-    INFO("For lib " << lib_id << " of " << ss <<" :");
-    stats.report();
-    map<EdgeId, EdgeId> replacement;
-    size_t min_stats_cutoff =(rtype == 1 ? 1  : 0);
-    if (make_additional_saves)
-        long_reads.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
-                          replacement, min_stats_cutoff, true);
-    gaps.DumpToFile(cfg::get().output_saves + "gaps.mpr");
-    gaps.PadGapStrings();
-    if (make_additional_saves)
-        gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");
-    pacbio::PacbioGapCloser<Graph> gap_closer(gp.g, consensus_gap_closing, cfg::get().pb.max_contigs_gap_length);
-    gap_closer.ConstructConsensus(cfg::get().max_threads, gaps);
-    gap_closer.CloseGapsInGraph(replacement);
-    long_reads.ReplaceEdges(replacement);
-    for(int j = 0; j < lib_id; j++) {
+void CloseGaps(conj_graph_pack &gp, bool rtype,
+               const pacbio::GapStorage<Graph>& gap_storage) {
+    INFO("Closing gaps with long reads");
+    pacbio::PacbioGapCloser<Graph> gap_closer(gp.g, rtype, cfg::get().pb.max_contigs_gap_length);
+    auto replacement = gap_closer.CloseGapsInGraph(gap_storage, cfg::get().max_threads);
+    for (size_t j = 0; j < cfg::get().ds.reads.lib_count(); j++) {
         gp.single_long_reads[j].ReplaceEdges(replacement);
     }
 
     gap_closer.DumpToFile(cfg::get().output_saves + "gaps_pb_closed.fasta");
-    INFO("PacBio aligning finished");
-    return;
+    INFO("Closing gaps with long reads finished");
 }
 
-void PacBioAligning::run(conj_graph_pack &gp, const char*) {
+bool ShouldAlignWithPacbioAligner(io::LibraryType lib_type) {
+    return lib_type == io::LibraryType::PacBioReads ||
+           lib_type == io::LibraryType::SangerReads ||
+           lib_type == io::LibraryType::NanoporeReads;
+}
+
+void HybridLibrariesAligning::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
-    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
-    int lib_id = -1;
+
+    bool launch_flag = false;
     bool make_additional_saves = parent_->saves_policy().make_saves_;
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if ( cfg::get().ds.reads[i].is_pacbio_alignable() ) {
-            lib_id = (int) i;
-            align_pacbio(gp, lib_id, make_additional_saves);
+    for (size_t lib_id = 0; lib_id < cfg::get().ds.reads.lib_count(); ++lib_id) {
+        if (cfg::get().ds.reads[lib_id].is_hybrid_lib()) {
+            launch_flag = true;
+            INFO("Pacbio-alignable library detected: #" << lib_id);
+
+            const auto& lib = cfg::get().ds.reads[lib_id];
+            bool rtype = lib.is_long_read_lib();
+
+            size_t min_gap_quantity = rtype ? cfg::get().pb.pacbio_min_gap_quantity
+                                            : cfg::get().pb.contigs_min_gap_quantity;
+
+            PathStorage<Graph>& path_storage = gp.single_long_reads[lib_id];
+            pacbio::GapStorage<ConjugateDeBruijnGraph> gap_storage(gp.g,
+                                                                   min_gap_quantity,
+                                                                   cfg::get().pb.long_seq_limit);
+
+            if (ShouldAlignWithPacbioAligner(lib.type())) {
+                //TODO put alternative alignment right here
+                PacbioAlignLibrary(gp, lib,
+                                   path_storage, gap_storage,
+                                   cfg::get().max_threads);
+            } else {
+                GapTrackingLongReadMapper mapping_listener(gp.g, path_storage,
+                                                           gap_storage,
+                                                           ChooseProperReadPathExtractor(gp.g, lib.type()));
+                ProcessSingleReads(gp, lib_id,
+                                   /*use binary*/false, /*map_paired*/false,
+                                   &mapping_listener);
+            }
+
+            if (make_additional_saves) {
+                path_storage.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
+                                        map<EdgeId, EdgeId>(), /*min_stats_cutoff*/rtype ? 1 : 0, true);
+                gap_storage.DumpToFile(cfg::get().output_saves + "gaps.mpr");
+            }
+
+            //FIXME move inside AlignLibrary
+            gap_storage.PadGapStrings();
+
+            if (make_additional_saves)
+                gap_storage.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");
+
+            CloseGaps(gp, rtype, gap_storage);
         }
     }
 
-    if (lib_id == -1)
-        INFO("no PacBio lib found");
-
-    stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
-    printer(config::info_printer_pos::final_gap_closed);
+    if (launch_flag) {
+        omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+        stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
+        printer(config::info_printer_pos::final_gap_closed);
+    }
 }
 
 }
-

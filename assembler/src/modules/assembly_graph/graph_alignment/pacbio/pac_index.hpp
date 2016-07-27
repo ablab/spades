@@ -52,7 +52,7 @@ private:
 
     set<Sequence> banned_kmers;
     debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> tmp_index;
-    map<pair<VertexId, VertexId>, vector<size_t> > distance_cashed;
+    mutable map<pair<VertexId, VertexId>, vector<size_t>> distance_cashed;
     size_t read_count;
     bool ignore_map_to_middle;
     debruijn_graph::config::debruijn_config::pacbio_processor pb_config_;
@@ -294,8 +294,8 @@ public:
         }
     }
 
-    vector<EdgeId> FillGapsInCluster(vector<pair<size_t, typename ClustersSet::iterator> > &cur_cluster,
-                                     const Sequence &s) {
+    vector<EdgeId> FillGapsInCluster(const vector<pair<size_t, typename ClustersSet::iterator> > &cur_cluster,
+                                     const Sequence &s) const {
         vector<EdgeId> cur_sorted;
         EdgeId prev_edge = EdgeId(0);
 
@@ -380,7 +380,7 @@ public:
         return res;
     }
 
-    vector<int> GetWeightedColors(ClustersSet &mapping_descr, Sequence &s) {
+    vector<int> GetWeightedColors(const ClustersSet &mapping_descr, const Sequence &s) const {
         int len = (int) mapping_descr.size();
         DEBUG("getting colors, table size "<< len);
         vector<vector<int> > cons_table(len);
@@ -472,10 +472,7 @@ public:
         return colors;
     }
 
-
-
-
-    OneReadMapping<Graph> GetReadAlignment(Sequence &s) {
+    OneReadMapping GetReadAlignment(Sequence &s) const {
         ClustersSet mapping_descr = GetOrderClusters(s);
         DEBUG("clusters got");
         int len = (int) mapping_descr.size();
@@ -484,7 +481,7 @@ public:
         vector<int> colors = GetWeightedColors(mapping_descr, s);
         vector<vector<EdgeId> > sortedEdges;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
-        vector<GapDescription<Graph> > illumina_gaps;
+        vector<GapDescription<Graph>> illumina_gaps;
         vector<int> used(len);
         size_t used_seed_count = 0;
         auto iter = mapping_descr.begin();
@@ -562,21 +559,22 @@ public:
                     if (i != j && TopologyGap(before_gap, after_gap, true)) {
                         if (start_clusters[j]->CanFollow(*end_clusters[i])) {
                             illumina_gaps.push_back(
-                                    GapDescription<Graph>(*end_clusters[i],
-                                                          *start_clusters[j], s,
-                                                          (int) pacbio_k));
+                                    CreateGapDescription(*end_clusters[i],
+                                                         *start_clusters[j],
+                                                         s,
+                                                         (int) pacbio_k));
                         }
 
                     }
                 }
             }
         }
-        return OneReadMapping<Graph>(sortedEdges, illumina_gaps, real_length, used_seed_count);
+        return OneReadMapping(sortedEdges, illumina_gaps, real_length, used_seed_count);
     }
 
     std::pair<int, int> GetPathLimits(const KmerCluster<Graph> &a,
                                       const KmerCluster<Graph> &b,
-                                      int s_add_len, int e_add_len) {
+                                      int s_add_len, int e_add_len) const {
         int start_pos = a.sorted_positions[a.last_trustable_index].read_position;
         int end_pos = b.sorted_positions[b.first_trustable_index].read_position;
         int seq_len = -start_pos + end_pos;
@@ -594,8 +592,8 @@ public:
     }
 
 //0 - No, 1 - Yes
-    int IsConsistent(Sequence &s, const KmerCluster<Graph> &a,
-                     const KmerCluster<Graph> &b) {
+    int IsConsistent(const Sequence &s, const KmerCluster<Graph> &a,
+                     const KmerCluster<Graph> &b) const {
         EdgeId a_edge = a.edgeId;
         EdgeId b_edge = b.edgeId;
         size_t a_id =  g_.int_id(a_edge);
@@ -611,20 +609,22 @@ public:
         pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
         vector<size_t> result;
         DEBUG("seq dist:" << s.size()/3);
-        if (distance_cashed.find(vertex_pair) == distance_cashed.end()) {
+        auto distance_it = distance_cashed.find(vertex_pair);
+        if (distance_it == distance_cashed.end()) {
             omnigraph::DistancesLengthsCallback<Graph> callback(g_);
             ProcessPaths(g_, 0, s.size() / 3, start_v,
                              end_v, callback);
             result = callback.distances();
-            distance_cashed[vertex_pair] = result;
+            distance_it = distance_cashed.insert({vertex_pair, result}).first;
         } else {
-      DEBUG("taking from cashed");
-    }
+            DEBUG("taking from cashed");
+        }
+
         DEBUG("addition: " << addition << " found " << result.size() << " lengths:" );
         for (size_t i = 0; i < result.size(); i++) {
             DEBUG(result[i]);
-    }
-        result = distance_cashed[vertex_pair];
+        }
+        result = distance_it->second;
         //TODO: Serious optimization possible
         for (size_t i = 0; i < result.size(); i++) {
             for (auto a_iter = a.sorted_positions.begin();
@@ -667,7 +667,7 @@ public:
     vector<EdgeId> BestScoredPath(const Sequence &s, VertexId start_v, VertexId end_v,
                                   int path_min_length, int path_max_length,
                                   int start_pos, int end_pos, string &s_add,
-                                  string &e_add) {
+                                  string &e_add) const {
         DEBUG(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
         omnigraph::PathStorageCallback<Graph> callback(g_);
         ProcessPaths(g_,

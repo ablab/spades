@@ -224,10 +224,6 @@ public:
 
 private:
 
-      bool IsTip(VertexId v) const {
-          return g_.IncomingEdgeCount(v) + g_.OutgoingEdgeCount(v) == 1;
-      }
-
       bool IsMappingPathValid(const MappingPath<EdgeId>& path) const {
           return path.size() != 0;
       }
@@ -383,5 +379,49 @@ template<class gp_t>
 std::shared_ptr<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> > MapperInstance(const gp_t& gp) {
   return std::make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> >(gp.g, gp.index, gp.kmer_mapper);
 }
+
+template<class Graph>
+struct GapDescription {
+    typedef typename Graph::EdgeId EdgeId;
+    EdgeId start, end;
+    Sequence gap_seq;
+    //FIXME discuss using size_t
+    unsigned edge_gap_start_position, edge_gap_end_position;
+
+
+    GapDescription(EdgeId start_e, EdgeId end_e,
+                   const Sequence &gap,
+                   unsigned gap_start, unsigned gap_end) :
+            start(start_e),
+            end(end_e),
+            gap_seq(gap.str()),
+            edge_gap_start_position(gap_start),
+            edge_gap_end_position(gap_end) {
+    }
+
+    GapDescription<Graph> conjugate(const Graph& g, int shift) const {
+        GapDescription<Graph> res(
+                g.conjugate(end), g.conjugate(start), !gap_seq,
+                unsigned(g.length(end)) + shift - edge_gap_end_position,
+                unsigned(g.length(start)) + shift - edge_gap_start_position);
+        return res;
+    }
+
+    string str(const Graph& g) const {
+        stringstream s;
+        s << g.int_id(start) << " " << edge_gap_start_position << endl
+          << g.int_id(end) << " " << edge_gap_end_position << endl
+          << gap_seq.str()<< endl;
+        return s.str();
+    }
+
+    bool operator <(const GapDescription& b) const {
+        return start < b.start ||
+               (start == b.start && end < b.end) ||
+               (start == b.start && end == b.end &&
+                       edge_gap_start_position < b.edge_gap_start_position);
+    }
+
+};
 
 }

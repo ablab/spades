@@ -26,10 +26,9 @@ class Path {
             : sequence_(sequence), start_pos_(start_pos),  end_pos_( end_pos) {
     }
 
-    Path()
-            : sequence_(),
-              start_pos_(-1ul),
-              end_pos_(-1ul) {
+    Path() : sequence_(),
+             start_pos_(-1ul),
+             end_pos_(-1ul) {
     }
 
     size_t start_pos() const { return start_pos_; }
@@ -168,6 +167,14 @@ class MappingPath {
               range_mappings_(range_mappings) {}
 
     size_t size() const { return edges_.size(); }
+
+    ElementId edge_at(size_t idx) const {
+       return edges_[idx];
+    };
+
+    MappingRange mapping_at(size_t idx) const {
+        return range_mappings_[idx];
+    };
 
     std::pair<const ElementId, const MappingRange> operator[](size_t idx) const {
         return std::make_pair(edges_[idx], range_mappings_[idx]);

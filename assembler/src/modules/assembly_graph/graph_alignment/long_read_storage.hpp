@@ -47,12 +47,13 @@ public:
     PathInfo(const vector<EdgeId> &p, size_t weight = 0) :
             path(p), w(weight) {
     }
+
     PathInfo(const PathInfo<Graph> &other) {
         path = other.path;
         w = other.w;
     }
 
-    string str(Graph &g_) {
+    string str(const Graph &g_) const {
         stringstream s;
         for(auto iter = path.begin(); iter != path.end(); iter ++ ){
             s << g_.int_id(*iter) << " ";
@@ -67,10 +68,10 @@ class PathStorage {
     friend class PathInfo<Graph> ;
     typedef typename Graph::EdgeId EdgeId;
     typedef map<EdgeId, set<PathInfo<Graph> > > InnerIndex;
-private:
-    Graph &g_;
+
+    const Graph &g_;
     InnerIndex inner_index_;
-    const size_t kLongEdgeForStats = 500;
+    static const size_t kLongEdgeForStats = 500;
 
     void HiddenAddPath(const vector<EdgeId> &p, int w){
         if (p.size() == 0 ) return;
@@ -87,11 +88,12 @@ private:
 
 public:
 
-    PathStorage(Graph &g)
+    PathStorage(const Graph &g)
             : g_(g),
               inner_index_(),
               size_(0) {
     }
+
     PathStorage(const PathStorage & p)
             : g_(p.g_),
               inner_index_(),
@@ -104,6 +106,7 @@ public:
             }
         }
     }
+
     void ReplaceEdges(map<EdgeId, EdgeId> &old_to_new){
         map<int, EdgeId> tmp_map;
 //        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
@@ -156,11 +159,14 @@ public:
             HiddenAddPath(rc_p, w);
         }
     }
-    void DumpToFile(const string filename) const{
+
+    void DumpToFile(const string& filename) const{
         map <EdgeId, EdgeId> auxilary;
         DumpToFile(filename, auxilary);
     }
-    void DumpToFile(const string filename, map<EdgeId, EdgeId> &replacement, size_t stats_weight_cutoff = 1, bool need_log = false) const {
+
+    void DumpToFile(const string& filename, const map<EdgeId, EdgeId>& replacement,
+                    size_t stats_weight_cutoff = 1, bool need_log = false) const {
         ofstream filestr(filename);
         set<EdgeId> continued_edges;
 
@@ -190,21 +196,23 @@ public:
         int continued = 0;
         if (need_log) {
             for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-                if (g_.length(*iter) > kLongEdgeForStats) {
-                    if (!g_.IsDeadEnd(g_.EdgeEnd(*iter))) {
-                        if (continued_edges.find(*iter) == continued_edges.end()) {
-                            if ((replacement.find(*iter) != replacement.end() &&
-                                 continued_edges.find(replacement[*iter]) != continued_edges.end())) {
-                                TRACE("found in teplacement, edges " << g_.int_id(*iter) << " " <<
-                                      g_.int_id(replacement[*iter]) << " skipping ");
+                EdgeId e = *iter;
+                if (g_.length(e) > kLongEdgeForStats) {
+                    if (!g_.IsDeadEnd(g_.EdgeEnd(e))) {
+                        if (continued_edges.find(e) == continued_edges.end()) {
+                            auto replacement_it = replacement.find(e);
+                            if (replacement_it != replacement.end() &&
+                                continued_edges.find(replacement_it->second) != continued_edges.end()) {
+                                TRACE("found in teplacement, edges " << g_.int_id(e) << " " <<
+                                      g_.int_id(replacement_it->second) << " skipping ");
                                 continue;
                             }
-                            TRACE("noncontinued end left " << g_.int_id(*iter));
+                            TRACE("noncontinued end left " << g_.int_id(e));
                             noncontinued++;
                         } else
                             continued++;
                     } else {
-                        TRACE("dead end left " << g_.int_id(*iter));
+                        TRACE("dead end left " << g_.int_id(e));
                         long_gapped++;
                     }
                 }
@@ -215,8 +223,8 @@ public:
         }
     }
 
-    vector<PathInfo<Graph> > GetAllPaths() const {
-        vector<PathInfo<Graph> > res;
+    vector<PathInfo<Graph>> GetAllPaths() const {
+        vector<PathInfo<Graph>> res;
         for (auto iter = inner_index_.begin(); iter != inner_index_.end();
                 ++iter) {
             for (auto j_iter = iter->second.begin();
@@ -229,10 +237,10 @@ public:
     }
 
 
-    vector<PathInfo<Graph> > GetAllPathsNoConjugate() {
-        vector<PathInfo<Graph> > res;
+    vector<PathInfo<Graph>> GetAllPathsNoConjugate() {
+        vector<PathInfo<Graph>> res;
 
-        std::set< PathInfo<Graph> > added;
+        std::set< PathInfo<Graph>> added;
         for (auto iter = inner_index_.begin(); iter != inner_index_.end();  ++iter) {
             for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
                 if (added.count(*j_iter) > 0) {
@@ -251,7 +259,6 @@ public:
         }
         return res;
     }
-
 
     void LoadFromFile(const string s, bool force_exists = true) {
         FILE* file = fopen(s.c_str(), "r");
@@ -319,7 +326,7 @@ public:
         size_ = 0;
     }
 
-    size_t size() {
+    size_t size() const {
         return size_;
     }
 

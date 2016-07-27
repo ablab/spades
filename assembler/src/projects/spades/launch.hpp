@@ -88,22 +88,10 @@ void assemble_genome() {
             SPAdes.add(new debruijn_graph::ChromosomeRemoval());
         }
 
-        //begin pacbio
-        bool run_pacbio = false;
-        for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-            if (cfg::get().ds.reads[i].is_pacbio_alignable()) {
-                run_pacbio = true;
-                break;
-            }
-        }
-        if (run_pacbio) {
-            //currently not integrated with two step rr process
-            VERIFY(!two_step_rr);
-            SPAdes.add(new debruijn_graph::PacBioAligning());
-        }
-        //not a handler, no graph modification allowed after PacBioAligning stage!
-        //end pacbio
-        
+        SPAdes.add(new debruijn_graph::HybridLibrariesAligning());
+
+        //No graph modification allowed after HybridLibrariesAligning stage!
+
         SPAdes.add(new debruijn_graph::PairInfoCount())
               .add(new debruijn_graph::DistanceEstimation())
               .add(new debruijn_graph::RepeatResolution());

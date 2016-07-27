@@ -147,22 +147,6 @@ public:
         return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_), right_offset_, left_offset_);
     }
 
-    SingleRead SubstrStrict(size_t from, size_t to) const {
-        size_t len = to - from;
-        //        return SingleRead(name_, seq_.substr(from, len), qual_.substr(from, len));
-        //        TODO remove naming?
-        std::string new_name;
-        if (name_.length() >= 3 && name_.substr(name_.length() - 3) == "_RC") {
-            new_name = name_.substr(0, name_.length() - 3) + "_SUBSTR(" + ToString(size() - to) + "," +
-                       ToString(size() - from) + ")" + "_RC";
-        } else {
-            new_name = name_ + "_SUBSTR(" + ToString(from) + "," + ToString(to) + ")";
-        }
-        return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len),
-                          SequenceOffsetT(from + (size_t) left_offset_),
-                          SequenceOffsetT(size() - to + (size_t) right_offset_));
-    }
-
     SingleRead Substr(size_t from, size_t to) const {
         size_t len = to - from;
         if (len == size()) {
@@ -245,6 +229,23 @@ private:
         VERIFY(seq_.size() == qual_.size());
         valid_ = SingleRead::IsValid(seq_);
     }
+
+    SingleRead SubstrStrict(size_t from, size_t to) const {
+        size_t len = to - from;
+        //        return SingleRead(name_, seq_.substr(from, len), qual_.substr(from, len));
+        //        TODO remove naming?
+        std::string new_name;
+        if (name_.length() >= 3 && name_.substr(name_.length() - 3) == "_RC") {
+            new_name = name_.substr(0, name_.length() - 3) + "_SUBSTR(" + ToString(size() - to) + "," +
+                       ToString(size() - from) + ")" + "_RC";
+        } else {
+            new_name = name_ + "_SUBSTR(" + ToString(from) + "," + ToString(to) + ")";
+        }
+        return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len),
+                          SequenceOffsetT(from + (size_t) left_offset_),
+                          SequenceOffsetT(size() - to + (size_t) right_offset_));
+    }
+
 
 };
 
