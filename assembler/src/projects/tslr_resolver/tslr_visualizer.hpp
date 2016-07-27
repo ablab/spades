@@ -32,12 +32,12 @@ namespace tslr_resolver {
             for (auto edge : edge_set) {
                 if (barcode_mapper_.IntersectionSize(e, edge) >= barcode_threshold) {
                     std::string str = ToString(this->graph().int_id(edge)) + ": " +
-                                      std::to_string(barcode_mapper_.IntersectionSize(e, edge)) + ", ";
+                                      std::to_string(barcode_mapper_.IntersectionSizeRelative(e, edge)) + ", ";
                     head_labels.push_back(str);
                 }
                 if (barcode_mapper_.IntersectionSize(edge, e) >= barcode_threshold) {
                     std::string str = ToString(this->graph().int_id(edge)) + ": " +
-                                      std::to_string(barcode_mapper_.IntersectionSize(edge, e)) + ", ";
+                                      std::to_string(barcode_mapper_.IntersectionSizeRelative(edge, e)) + ", ";
                     tail_labels.push_back(str);
                 }
             }

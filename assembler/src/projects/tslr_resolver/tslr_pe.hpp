@@ -70,7 +70,7 @@ namespace tslr_resolver {
                 return edges;
             }
             int reference_cov = 20;
-            size_t len_threshold = 500;
+            size_t len_threshold = 1000;
             bool long_single_edge_exists = false;
             EdgeId decisive_edge;
             for (int i = static_cast<int> (path.Size()) - 1; !long_single_edge_exists && i >= 0; --i) {
@@ -86,8 +86,8 @@ namespace tslr_resolver {
             }
             auto fittest_edge = std::max_element(edges.begin(), edges.end(),
                                                  [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                                     return this->bmapper_.IntersectionSizeNormalized(decisive_edge, edge1.e_) <
-                                                            this->bmapper_.IntersectionSizeNormalized(decisive_edge, edge2.e_);
+                                                     return this->bmapper_.IntersectionSizeRelative(decisive_edge, edge1.e_) <
+                                                            this->bmapper_.IntersectionSizeRelative(decisive_edge, edge2.e_);
                                                  });
 
             DEBUG(bmapper_.IntersectionSize(decisive_edge, fittest_edge->e_));
@@ -277,8 +277,8 @@ namespace tslr_resolver {
     protected:
 
         shared_ptr<ExtensionChooser> extensionChooser_;
-        size_t length_bound_ = 500;
-        size_t edge_threshold_ = 10000;  //TODO: configs
+        size_t length_bound_ = 10000;
+        size_t edge_threshold_ = 1000;  //TODO: configs
 
 
         void FindFollowingEdges(BidirectionalPath &path, ExtensionChooser::EdgeContainer *result) {
@@ -378,7 +378,7 @@ namespace tslr_resolver {
         }
 
     protected:
-        DECL_LOGGER("SimpleExtender")
+        DECL_LOGGER("InconsistentExtender")
 
     };
 

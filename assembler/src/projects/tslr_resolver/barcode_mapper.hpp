@@ -168,8 +168,18 @@ namespace tslr_resolver {
             return (Set1 & Set2).count();
         }
 
+        size_t UnionSize(const EdgeId &edge1, const EdgeId &edge2) const {
+            auto Set1 = GetSetTails(edge1);
+            auto Set2 = GetSetHeads(edge2);
+            return (Set1 | Set2).count();
+        }
+
         double IntersectionSizeNormalized(const EdgeId &edge1, const EdgeId &edge2) const {
             return static_cast <double> (IntersectionSize(edge1, edge2)) / static_cast <double> (g_.length(edge2) + norm_len_);
+        }
+
+        double IntersectionSizeRelative(const EdgeId &edge1, const EdgeId &edge2) const {
+            return static_cast <double> (IntersectionSize(edge1, edge2)) / static_cast <double> (UnionSize(edge1, edge2));
         }
 
         //

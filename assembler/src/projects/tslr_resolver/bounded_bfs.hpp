@@ -27,16 +27,29 @@ namespace tslr_resolver {
         void run () {
             std::queue <std::pair<VertexId, size_t> > vertices;
             vertices.push(std::make_pair(start_, 0));
+            std::set <VertexId> visited;
+            bool db = false;
+
+            if (g_.OutgoingEdgeCount(start_) == 1) {
+                result_.insert(std::make_pair(*(g_.OutgoingEdges(start_).begin()), 0));
+                return;
+            }
             while (!vertices.empty()) {
                 auto current_vertex = vertices.front().first;
                 size_t current_distance = vertices.front().second;
                 vertices.pop();
+                visited.insert(current_vertex);
                 auto container = g_.OutgoingEdges(current_vertex);
                 for (auto edge : container) {
+                    if (db) {
+                        INFO(g_.int_id(edge));
+                        INFO(g_.length(edge));
+                        INFO(current_distance);
+                    }
                     if (g_.length(edge) > edge_threshold_) {
                         result_.insert(std::make_pair(edge, current_distance));
                     }
-                    if (g_.length(edge) + current_distance < length_bound_) {
+                    if (visited.find(g_.EdgeEnd(edge)) == visited.end() && g_.length(edge) + current_distance < length_bound_) {
                         vertices.push(std::make_pair(g_.EdgeEnd(edge), current_distance + g_.length(edge)));
                     }
 
