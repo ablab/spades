@@ -9,37 +9,45 @@
 
 import os
 import sys
-import sendgrid
+import requests
 
-def send_messages(username, password, user_list, subject, text):
+MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY')
+MAILGUN_DOMAIN_NAME = 'sandbox9038560b99f44a9e8437e4d0b7afc506.mailgun.org'
+#MAILGUN_DOMAIN_NAME = 'cab.spbu.ru'
+MAILGUN_TAG = 'spades-3.9.0'
+
+def send_simple_message(to, subject, message):
+    url = 'https://api.mailgun.net/v3/{}/messages'.format(MAILGUN_DOMAIN_NAME)
+    auth = ('api', MAILGUN_API_KEY)
+    data = {
+        'from': 'SPAdes Team <spades.support@{}>'.format(MAILGUN_DOMAIN_NAME),
+        'to': to,
+        'subject': subject,
+        'html': message,
+        'o:tag' : MAILGUN_TAG,
+    }
+
+    response = requests.post(url, auth=auth, data=data)
+#    print 'Status: {0}'.format(response.status_code)
+#    print 'Body:   {0}'.format(response.text)
+    response.raise_for_status()
+
+def send_messages(user_list, subject, text):
     i = 0
     for address in user_list:
         i += 1
         print '\rSending ' + str(i) + '/' + str(len(user_list)),
         sys.stdout.flush()
-        send_message(username, password, address, subject, text)    
+        try:
+            send_simple_message(address, subject, text)
+        except:
+            print('Error occured while sending to ' + address)
     print '\nDone'
-
-def send_message(username, password, address, subject, text):
-    sg = sendgrid.SendGridClient(username, password)
-    message = sendgrid.Mail()
-
-    message.add_to(address)
-    message.set_from("spades.support@bioinf.spbau.ru")
-    message.set_subject(subject)
-    message.set_html(text)
-
-    try:
-        sg.send(message)
-    except SendGridClientError:
-        print('Client error occured while sending to ' + address)
-    except SendGridServerError:
-        print('Server error occured while sending to ' + address)
 
 def save_user_list(file_name, email_list):
     out_file = open(file_name, 'w')
     email_set = set(email_list)
-    
+
     for email in sorted(email_set):
         out_file.write(email + '\n')
     out_file.close()
@@ -75,9 +83,7 @@ for line in message_file:
 
 send = raw_input('Are you sure you want to send the message with subject "' + subject + '" to ' + str(len(user_set)) + ' users? (yes/no) ')
 if (send.strip().upper() == 'YES'):
-    username = raw_input('Username: ')
-    password = raw_input('Password: ')
-    send_messages(username, password, user_set, subject, message)
+    send_messages(user_set, subject, message)
 else:
     print("Aborted")
 
