@@ -49,6 +49,7 @@ struct graph_pack: private boost::noncopyable {
     UnclusteredPairedInfoIndicesT paired_indices;
     PairedInfoIndicesT clustered_indices;
     PairedInfoIndicesT scaffolding_indices;
+    mutable PairedInfoIndicesT scaffolding_single_long_reads;
     LongReadContainerT single_long_reads;
     GenomicInfo ginfo;
 
@@ -69,6 +70,7 @@ struct graph_pack: private boost::noncopyable {
               clustered_indices(g, lib_count),
               scaffolding_indices(g, lib_count),
               single_long_reads(g, lib_count),
+              scaffolding_single_long_reads(g, lib_count),
               genome(genome),
               edge_qual(g),
               edge_pos(g, max_mapping_gap + k, max_gap_diff),

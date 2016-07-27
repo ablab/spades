@@ -35,6 +35,7 @@ public:
             wc->get_libptr(), lib_index,
 //TODO: constants are subject to reconsider
             0), graph_connection_condition_(g, 2*unique_edges_.GetMinLength(), unique_edges), absolute_weight_threshold_(2), graph_connection_bonus_(2) {
+        INFO (wc->get_libptr()->GetIndexSize());
         INFO("ExtensionChooser2015 created");
     }
 /* @param edges are really not used and left for compatibility
