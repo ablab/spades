@@ -14,10 +14,10 @@ namespace tslr_resolver {
         typedef BarcodeMapper b_mapper;
         typedef std::set <EdgeId> edge_set_t;
     private:
-        const b_mapper &barcode_mapper_;
+        const shared_ptr <b_mapper>& barcode_mapper_;
     public:
-        BarcodeDistGraphLabeler(const G &g, const BarcodeMapper &mapper) :
-                base(g), barcode_mapper_(mapper){ }
+        BarcodeDistGraphLabeler(const G &g, shared_ptr <b_mapper>& mapper) :
+                base(g), barcode_mapper_(mapper){}
 
         size_t barcode_threshold = 5;
 
@@ -30,14 +30,14 @@ namespace tslr_resolver {
             auto component = omnigraph::EdgeNeighborhood(graph(), e, max_vertices, edge_length_bound);
             auto edge_set = component.edges();
             for (auto edge : edge_set) {
-                if (barcode_mapper_.IntersectionSize(e, edge) >= barcode_threshold) {
+                if (barcode_mapper_->IntersectionSize(e, edge) >= barcode_threshold) {
                     std::string str = ToString(this->graph().int_id(edge)) + ": " +
-                                      std::to_string(barcode_mapper_.IntersectionSizeRelative(e, edge)) + ", ";
+                                      std::to_string(barcode_mapper_->IntersectionSizeRelative(e, edge)) + ", ";
                     head_labels.push_back(str);
                 }
-                if (barcode_mapper_.IntersectionSize(edge, e) >= barcode_threshold) {
+                if (barcode_mapper_->IntersectionSize(edge, e) >= barcode_threshold) {
                     std::string str = ToString(this->graph().int_id(edge)) + ": " +
-                                      std::to_string(barcode_mapper_.IntersectionSizeRelative(edge, e)) + ", ";
+                                      std::to_string(barcode_mapper_->IntersectionSizeRelative(edge, e)) + ", ";
                     tail_labels.push_back(str);
                 }
             }
@@ -74,9 +74,9 @@ namespace tslr_resolver {
         typedef BarcodeMapper b_mapper;
     private:
         const debruijn_graph::conj_graph_pack &gp_;
-        const b_mapper &barcode_mapper_;
+        shared_ptr<b_mapper> barcode_mapper_;
     public:
-        TslrVisualizer(const debruijn_graph::conj_graph_pack &gp, const b_mapper &barcode_mapper) :
+        TslrVisualizer(const debruijn_graph::conj_graph_pack& gp, shared_ptr<b_mapper> barcode_mapper) :
                 gp_(gp), barcode_mapper_(barcode_mapper) { }
 
         std::string pics_folder = cfg::get().output_dir + '/' + "pictures";
@@ -87,7 +87,7 @@ namespace tslr_resolver {
             auto component = omnigraph::EdgeNeighborhood(gp_.g, edge, max_vertices, edge_length_bound);
             auto edge_set = component.edges();
             omnigraph::EdgePosGraphLabeler <Graph> pos_labeler(gp_.g, gp_.edge_pos);
-            BarcodeDistGraphLabeler<Graph> barcode_labeler(gp_.g, barcode_mapper_, edge_set);
+            BarcodeDistGraphLabeler<Graph> barcode_labeler(gp_.g, barcode_mapper_);
             omnigraph::CompositeLabeler <Graph> composite_labeler(pos_labeler, barcode_labeler);
             auto colorer = omnigraph::visualization::DefaultColorer(gp_.g);
             omnigraph::visualization::WriteComponent(component,

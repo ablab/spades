@@ -24,7 +24,19 @@ namespace spades {
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
             INFO("Resolver started...");
+            graph_pack.edge_pos.Attach();
             debruijn_graph::FillPos(graph_pack, path_to_reference_, "");
+            INFO(graph_pack.barcode_mapper->size());
+            std::static_pointer_cast<tslr_resolver::TrimmableBarcodeMapper>(graph_pack.barcode_mapper)->
+                SerializeOverallDistribution(cfg::get().output_dir + "bardistr");
+            INFO("Average barcode coverage before trimming: " + std::to_string(graph_pack.barcode_mapper->AverageBarcodeCoverage().first) +
+                         ' ' + std::to_string(graph_pack.barcode_mapper->AverageBarcodeCoverage().second));
+            std::static_pointer_cast<tslr_resolver::TrimmableBarcodeMapper>(graph_pack.barcode_mapper)-> Trim(3);
+
+            INFO("Average barcode coverage after trimming: " + std::to_string(graph_pack.barcode_mapper->AverageBarcodeCoverage().first) +
+                         ' ' + std::to_string(graph_pack.barcode_mapper->AverageBarcodeCoverage().second));
+            std::static_pointer_cast<tslr_resolver::TrimmableBarcodeMapper>(graph_pack.barcode_mapper)->
+                SerializeOverallDistribution(cfg::get().output_dir + "bardistr_after");
             tslr_resolver::LaunchBarcodePE (graph_pack);
             INFO("Resolver finished!");
             INFO("Drawing pictures...");
