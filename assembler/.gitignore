@@ -8,6 +8,7 @@ spades_test/
 teamcity_precompiled/
 CMakeFiles/
 share/
+picture*
 *.launch
 *.ebwt
 *.pyc
