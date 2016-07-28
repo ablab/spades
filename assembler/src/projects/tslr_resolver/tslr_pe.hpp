@@ -54,7 +54,7 @@ namespace tslr_resolver {
 
     class TrivialTSLRExtensionChooser : public ExtensionChooser {
 
-        const BarcodeMapper& bmapper_;
+        shared_ptr<BarcodeMapper> bmapper_;
         const EdgesPositionHandler<Graph>& edge_pos_;
         mutable res_statistics stats_;
 
@@ -86,11 +86,11 @@ namespace tslr_resolver {
             }
             auto fittest_edge = std::max_element(edges.begin(), edges.end(),
                                                  [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                                     return this->bmapper_.IntersectionSizeRelative(decisive_edge, edge1.e_) <
-                                                            this->bmapper_.IntersectionSizeRelative(decisive_edge, edge2.e_);
+                                                     return this->bmapper_->IntersectionSizeRelative(decisive_edge, edge1.e_) <
+                                                            this->bmapper_->IntersectionSizeRelative(decisive_edge, edge2.e_);
                                                  });
 
-            DEBUG(bmapper_.IntersectionSize(decisive_edge, fittest_edge->e_));
+            DEBUG(bmapper_->IntersectionSize(decisive_edge, fittest_edge->e_));
             CheckAnswer(edge_pos_, decisive_edge, fittest_edge->e_, edges);
             result.push_back(*fittest_edge);
             return result;
