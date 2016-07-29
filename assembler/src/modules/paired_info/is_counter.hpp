@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * is_counter.hpp
- *
- *  Created on: May 25, 2014
- *      Author: andrey
- */
-
 #ifndef IS_COUNTER_HPP_
 #define IS_COUNTER_HPP_
 
@@ -41,7 +34,7 @@ public:
     size_t negative() const { return negative_.total_; }
 
 
-    virtual void StartProcessLibrary(size_t threads_count) {
+    void StartProcessLibrary(size_t threads_count) override {
         hist_.clear();
         tmp_hists_ = vector<HistType>(threads_count);
 
@@ -50,42 +43,33 @@ public:
         negative_ = count_data(threads_count);
     }
 
-    virtual void StopProcessLibrary() {
-        for (size_t i = 0; i < tmp_hists_.size(); ++i) {
-            MergeBuffer(i);
-        }
+    void StopProcessLibrary() override {
         tmp_hists_.clear();
         total_.merge();
         counted_.merge();
         negative_.merge();
     }
 
-    virtual void ProcessPairedRead(size_t thread_index,
-                                   const io::PairedRead& r,
-                                   const MappingPath<EdgeId>& read1,
-                                   const MappingPath<EdgeId>& read2) {
+    void ProcessPairedRead(size_t thread_index,
+                           const io::PairedRead& r,
+                           const MappingPath<EdgeId>& read1,
+                           const MappingPath<EdgeId>& read2) override {
         ProcessPairedRead(thread_index, read1, read2, (int) r.second().size(),
                           (int) r.first().GetLeftOffset() + (int) r.second().GetRightOffset());
     }
 
-    virtual void ProcessPairedRead(size_t thread_index,
-                                   const io::PairedReadSeq& r,
-                                   const MappingPath<EdgeId>& read1,
-                                   const MappingPath<EdgeId>& read2) {
+    void ProcessPairedRead(size_t thread_index,
+                           const io::PairedReadSeq& r,
+                           const MappingPath<EdgeId>& read1,
+                           const MappingPath<EdgeId>& read2) override {
         ProcessPairedRead(thread_index, read1, read2, (int) r.second().size(),
                           (int) r.first().GetLeftOffset() + (int) r.second().GetRightOffset());
     }
 
-    virtual void ProcessSingleRead(size_t /*thread_index*/, const io::SingleRead&, const MappingPath<EdgeId>& /*read*/) {
-    }
-
-    virtual void ProcessSingleRead(size_t /*thread_index*/, const io::SingleReadSeq&, const MappingPath<EdgeId>& /*read*/) {
-    }
-
-    virtual void MergeBuffer(size_t thread_index) {
-        for (const auto& kv: tmp_hists_[thread_index]) {
+    void MergeBuffer(size_t thread_index) override {
+        for (const auto& kv: tmp_hists_[thread_index])
             hist_[kv.first] += kv.second;
-        }
+
         tmp_hists_[thread_index].clear();
     }
 
@@ -98,11 +82,10 @@ public:
     }
 
 private:
-    virtual void ProcessPairedRead(size_t thread_index,
-                                   const MappingPath<EdgeId>& read1,
-                                   const MappingPath<EdgeId>& read2,
-                                   int read2_size,
-                                   int is_delta) {
+    void ProcessPairedRead(size_t thread_index,
+                           const MappingPath<EdgeId>& read1, const MappingPath<EdgeId>& read2,
+                           int read2_size,
+                           int is_delta) {
 
         ++total_.arr_[thread_index];
 
@@ -133,13 +116,13 @@ private:
     struct count_data {
       size_t total_;
       vector<size_t> arr_;
-      count_data(): total_(0) {
-      }
-      count_data(size_t nthreads): total_(0), arr_(nthreads, 0) {
-      }
-      void inc(size_t i) {
-        ++arr_[i];
-      }
+      count_data()
+              : total_(0) {}
+
+      count_data(size_t nthreads)
+              : total_(0), arr_(nthreads, 0) {}
+
+      void inc(size_t i) { ++arr_[i]; }
       void merge() {
         for (size_t i = 0; i < arr_.size(); ++i) {
           total_ += arr_[i];
@@ -148,7 +131,7 @@ private:
     };
 
 private:
-    const conj_graph_pack& gp_;
+    const conj_graph_pack &gp_;
 
     HistType hist_;
     vector<HistType> tmp_hists_;

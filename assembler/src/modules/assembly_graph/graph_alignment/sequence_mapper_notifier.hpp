@@ -22,21 +22,24 @@ namespace debruijn_graph {
 //todo think if we still need all this
 class SequenceMapperListener {
 public:
-    virtual void StartProcessLibrary(size_t threads_count) = 0;
-    virtual void StopProcessLibrary() = 0;
+    virtual void StartProcessLibrary(size_t /* threads_count */) {}
+    virtual void StopProcessLibrary() {}
 
-    //TODO: think about read hierarchy
-    virtual void ProcessPairedRead(size_t thread_index, const io::PairedRead& pr, const MappingPath<EdgeId>& read1, const MappingPath<EdgeId>& read2) = 0;
-    virtual void ProcessPairedRead(size_t thread_index, const io::PairedReadSeq& pr, const MappingPath<EdgeId>& read1, const MappingPath<EdgeId>& read2) = 0;
-    virtual void ProcessSingleRead(size_t thread_index, const io::SingleRead& r, const MappingPath<EdgeId>& read) = 0;
-    virtual void ProcessSingleRead(size_t thread_index, const io::SingleReadSeq& r, const MappingPath<EdgeId>& read) = 0;
+    //TODO: think about read ierarchy
+    virtual void ProcessPairedRead(size_t /* thread_index */, const io::PairedRead&  /* pr */,
+                                   const MappingPath<EdgeId>& /* read1 */, const MappingPath<EdgeId>& /* read2 */) {}
+    virtual void ProcessPairedRead(size_t /* thread_index */, const io::PairedReadSeq& /* pr */,
+                                   const MappingPath<EdgeId>& /* read1 */, const MappingPath<EdgeId>& /* read2 */) {}
+    virtual void ProcessSingleRead(size_t /* thread_index */, const io::SingleRead& /* r */, const MappingPath<EdgeId>& /* read */) {}
+    virtual void ProcessSingleRead(size_t /* thread_index */, const io::SingleReadSeq& /* r */, const MappingPath<EdgeId>& /* read */) {}
 
-    virtual void MergeBuffer(size_t thread_index) = 0;
+    virtual void MergeBuffer(size_t /* thread_index */) {}
+    
     virtual ~SequenceMapperListener() {}
 };
 
 class SequenceMapperNotifier {
-    static const size_t BUFFER_SIZE = 200000;
+    static constexpr size_t BUFFER_SIZE = 200000;
 public:
     typedef SequenceMapper<conj_graph_pack::graph_t> SequenceMapperT;
 
@@ -90,6 +93,10 @@ public:
             #pragma omp atomic
             counter += size;
         }
+
+        for (size_t i = 0; i < threads_count; ++i)
+            NotifyMergeBuffer(lib_index, i);
+
         INFO("Total " << counter << " reads processed");
         NotifyStopProcessLibrary(lib_index);
     }

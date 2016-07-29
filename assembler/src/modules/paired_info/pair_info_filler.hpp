@@ -37,9 +37,6 @@ public:
 
     void StopProcessLibrary() override {
         DEBUG("Stop processing: start");
-        for (size_t i = 0; i < buffer_pi_.size(); ++i)
-            MergeBuffer(i);
-
         buffer_pi_.Clear();
         DEBUG("Stop processing: end");
     }
@@ -59,14 +56,6 @@ public:
         ProcessPairedRead(buffer_pi_[thread_index], read1, read2, r.distance());
 //        DEBUG("Processed");
     }
-
-    void ProcessSingleRead(size_t,
-                           const io::SingleReadSeq&,
-                           const MappingPath<EdgeId>&) override {}
-
-    void ProcessSingleRead(size_t,
-                           const io::SingleRead&,
-                           const MappingPath<EdgeId>&) override {}
 
     void MergeBuffer(size_t thread_index) override {
         DEBUG("Merging buffer");

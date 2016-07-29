@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * long_read_mapper.hpp
- *
- *  Created on: Jun 17, 2013
- *      Author: andrey
- */
-
 #ifndef LONG_READ_MAPPER_HPP_
 #define LONG_READ_MAPPER_HPP_
 
@@ -40,10 +33,6 @@ public:
     }
 
     void StopProcessLibrary() override {
-        //FIXME put this code into ancestor
-        for (size_t i = 0; i < buffer_storages_.size(); ++i) {
-            MergeBuffer(i);
-        }
         buffer_storages_.clear();
     }
 
@@ -52,20 +41,6 @@ public:
         storage_.AddStorage(buffer_storages_[thread_index]);
         buffer_storages_[thread_index].Clear();
         DEBUG("Now size " << storage_.size());
-    }
-
-    void ProcessPairedRead(size_t ,
-                           const io::PairedReadSeq&,
-                           const MappingPath<EdgeId>& ,
-                           const MappingPath<EdgeId>&) override {
-        //nothing to do
-    }
-
-    void ProcessPairedRead(size_t ,
-                           const io::PairedRead&,
-                           const MappingPath<EdgeId>& ,
-                           const MappingPath<EdgeId>&) override {
-        //nothing to do
     }
 
     void ProcessSingleRead(size_t thread_index,

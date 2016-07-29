@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * split_graph_pair_info.hpp
- *
- *  Created on: May 14, 2013
- *      Author: ira
- */
-
 #ifndef SPLIT_GRAPH_PAIR_INFO_HPP_
 #define SPLIT_GRAPH_PAIR_INFO_HPP_
 
@@ -288,22 +281,12 @@ public:
                           read1, read2, r.distance());
     }
 
-    void ProcessSingleRead(size_t, const io::SingleRead&, const MappingPath<EdgeId>&) override {
-        //only paired reads are interesting
-    }
-
-    void ProcessSingleRead(size_t, const io::SingleReadSeq&, const MappingPath<EdgeId>&) override {
-        //only paired reads are interesting
-    }
     void MergeBuffer(size_t thread_index) override {
         basket_index_.AddAll(baskets_buffer_[thread_index]);
         baskets_buffer_[thread_index].Clear();
     }
 
     void StopProcessLibrary() override {
-        for (size_t i = 0; i < baskets_buffer_.size(); ++i)
-            MergeBuffer(i);
-
         FindThreshold();
 
         baskets_buffer_.clear();
