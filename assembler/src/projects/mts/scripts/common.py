@@ -1,3 +1,8 @@
+try:
+    from future_builtins import zip
+except:
+    pass
+
 import os
 import os.path
 import yaml
@@ -49,3 +54,48 @@ def load_annotation(file, normalize=True):
             else:
                 res[id] = set(bins)
     return res
+
+class Row:
+    def __init__(self, data, colnames):
+        self.data = data
+        self.colnames = colnames
+
+    def __getitem__(self, index):
+        return self.data[self.colnames[index]]
+
+class Table:
+    def __init__(self):
+        self.data = []
+        self.colnames = None
+        self.rownames = None
+        self.rows = 0
+
+    @staticmethod
+    def read(filepath, sep="\t", headers=False):
+        res = Table()
+        with open(filepath) as input:
+            for line in input:
+                params = line.split(sep)
+                if not res.colnames:
+                    res.rownames = dict()
+                    if headers:
+                        res.colnames = dict(zip(params[1:], range(len(params))))
+                        continue
+                    else:
+                        res.colnames = dict((i, i) for i in range(len(params)))
+                if headers:
+                    res.rownames[params[0]] = res.rows
+                    res.data.append(params[1:])
+                else:
+                    res.rownames[res.rows] = res.rows
+                    res.data.append(params)
+                res.rows += 1
+        return res
+
+    def __getitem__(self, index):
+        return Row(self.data[self.rownames[index]], self.colnames)
+
+    def zip_with(self, other, method):
+        for rowname, i in self.rownames.items():
+            for colname, j in self.colnames.items():
+                method(rowname, colname, self.data[i][j], other.data[i][j])

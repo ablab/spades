@@ -1,13 +1,17 @@
 #!/usr/bin/python
 from __future__ import print_function
 
+import argparse
 import os
+import os.path
+import re
 import shutil
 import sys
-import argparse
 import subprocess
 from traceback import print_exc
 import yaml
+
+from scripts.common import Table
 
 #Log class, use it, not print
 class Log:
@@ -80,7 +84,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", "-c", help="Config template")
     parser.add_argument("dir", help="Output directory")
-    parser.add_argument("--clean", action="store_true")
+    parser.add_argument("--saves", type=str)
+    parser.add_argument("--no-clean", action="store_true")
+    parser.add_argument("--etalons", type=str, help="Directory of GF etalons")
     args = parser.parse_args()
     return args
 
@@ -93,40 +99,93 @@ def prepare_config(args, workdir):
             config.write(yaml.dump(params))
 
 def run_mts(args, workdir):
-    if args.clean:
+    if not args.no_clean:
         shutil.rmtree(args.dir, True)
     if not os.path.exists(args.dir):
         os.mkdir(args.dir)
         prepare_config(args, workdir)
+    mts_args = ["./mts.py", "--stats", args.dir]
+    if args.saves:
+        log.log("Copying saves from", args.saves)
+        shutil.copytree(args.saves, args.dir)
+        mts_args.append("--no-assembly")
     os.chdir(os.path.join(workdir, "src/projects/mts"))
-    return subprocess.call(["./mts.py", "--stats", args.dir])
+    return subprocess.call(mts_args)
 
-try:
-    sys.stderr = sys.stdout
-    args = parse_args()
-    workdir = os.getcwd()
-    ecode = 0
+def check_etalons(args, workdir):
+    class mut:
+        res = 0
 
-    #compile
-    #if compile_spades(args, dataset_info, working_dir) != 0:
-    #    log.err("SPAdes compilation finished abnormally with exit code " + str(ecode))
-    #    sys.exit(3)
+    re_num = re.compile("-?\d+(?:\.\d+)?")
+    def read_cell(str):
+        maybe_num = re_num.search(str)
+        if not maybe_num:
+            return 0
+        return float(maybe_num.group(0))
 
-    ecode = compile_mts(workdir)
-    if ecode != 0:
-        log.err("MTS compilation finished abnormally with exit code " + str(ecode))
-        sys.exit(3)
+    threshold = 0.1
 
-    ecode = run_mts(args, workdir)
-    if ecode != 0:
-        log.err("Error while running MTS: " + str(ecode))
+    def compare_gf(ref, cag, val1, val2):
+        log.log("Comparing {} in {}: {} vs {}".format(cag, ref, val1, val2))
+        et_val = read_cell(val1)
+        est_val = read_cell(val2)
+        lower = min(0, et_val * (1 - threshold))
+        upper = max(100, et_val * (1 + threshold))
+        if est_val < lower:
+            log.err("GF of {} in {} = {}% is less than expected {:.2f}%".format(cag, ref, est_val, lower))
+            mut.res = 7
+        elif est_val > upper:
+            log.err("GF of {} in {} = {}% is higher than expected {:.2f}%".format(cag, ref, est_val, upper))
+            mut.res = 7
 
-    sys.exit(ecode)
+    for file in os.listdir(args.etalons):
+        log.log("Trying to load " + file)
+        etalon = os.path.join(args.etalons, file)
+        estimated = os.path.join(args.dir, "stats", "summary", etalon)
+        if not os.path.isfile(estimated):
+            log.log("No table provided for " + file)
+            continue
+        try:
+            log.log("Loading " + etalon)
+            et_table = Table.read(etalon, True)
+            log.log("Loading " + estimated)
+            est_table = Table.read(estimated, True)
+            log.log("Comparing GF for " + file)
+            et_table.zip_with(est_table, compare_gf)
+        except:
+            log.err("Error while loading {}; skipping".format(file))
+    return mut.res
 
-except SystemExit:
-    raise
+if __name__ == "__main__":
+    try:
+        sys.stderr = sys.stdout
+        args = parse_args()
+        workdir = os.getcwd()
+        ecode = 0
 
-except:
-    log.err("The following unexpected error occured during the run:")
-    print_exc()
-    sys.exit(239)
+        #compile
+        #if compile_spades(args, dataset_info, working_dir) != 0:
+        #    log.err("SPAdes compilation finished abnormally with exit code " + str(ecode))
+        #    sys.exit(3)
+
+        ecode = compile_mts(workdir)
+        if ecode != 0:
+            log.err("MTS compilation finished abnormally with exit code " + str(ecode))
+            sys.exit(3)
+
+        ecode = run_mts(args, workdir)
+        if ecode != 0:
+            log.err("Error while running MTS: " + str(ecode))
+
+        if args.etalons:
+            ecode = check_etalons(args, workdir)
+
+        sys.exit(ecode)
+
+    except SystemExit:
+        raise
+
+    except:
+        log.err("The following unexpected error occured during the run:")
+        print_exc()
+        sys.exit(239)

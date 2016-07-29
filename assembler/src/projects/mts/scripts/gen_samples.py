@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import argparse
 import os
+import os.path
 import random
 import shutil
 import subprocess
@@ -42,21 +43,19 @@ def gen_samples(args):
                 print("Warning: no reference provided for", ref_name)
                 continue
             for i, abundance in enumerate(map(int, params[1:]), start=1):
-                print("Generating subsample", i, "for", ref_name)
-                sample_dir = "{}/sample{}".format(args.out_dir, i)
+                ref_len = 5000000
+                reads = ref_len * abundance // read_len
+                print("Generating", reads, "reads for subsample", i, "of", ref_name)
+                sample_dir = os.path.join(args.out_dir, "sample" + str(i))
                 if first_line:
                     subprocess.check_call(["mkdir", "-p", sample_dir])
 
-                reads = 10 ** 3 * abundance
-
                 temp_1 = sample_dir + ".tmp.r1.fastq"
                 temp_2 = sample_dir + ".tmp.r2.fastq"
-                subprocess.check_call(["wgsim", "-N", str(reads), "-r", "0.01", "-1", str(read_len), "-2", str(read_len), "-d", "3", "-s", "10", "-e", "0", "-S", str(i), ref_path, temp_1, temp_2], stdout=subprocess.DEVNULL) #, stderr=subprocess.DEVNULL)
+                subprocess.check_call(["wgsim", "-N", str(reads), "-r", "0.01", "-1", str(read_len), "-2", str(read_len), "-d", "3", "-s", "10", "-e", "0", "-S", str(i), ref_path, temp_1, temp_2], stdout=subprocess.DEVNULL)
 
-                out_1 = sample_dir + "/r1.fastq"
-                out_2 = sample_dir + "/r2.fastq"
                 print("Merging temporary files")
-                for temp, out in [(temp_1, out_1), (temp_2, out_2)]:
+                for temp, out in [(temp_1, os.path.join(sample_dir, "r1.fastq")), (temp_2, os.path.join(sample_dir, "r2.fastq"))]:
                     with open(temp) as input, open(out, "w") as output:
                         for line in input:
                             if line.startswith("IIIII"):
