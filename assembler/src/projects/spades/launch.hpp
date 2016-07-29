@@ -25,12 +25,23 @@
 
 namespace spades {
 
+inline bool MetaCompatibleLibraries() {
+    const auto& libs = cfg::get().ds.reads;
+    if (libs[0].type() != io::LibraryType::PairedEnd)
+        return false;
+    if (libs.lib_count() > 2)
+        return false;
+    if (libs.lib_count() == 2 && libs[1].type() != io::LibraryType::TSLReads)
+        return false;
+    return true;
+}
+
 void assemble_genome() {
     INFO("SPAdes started");
-    if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta &&
-            (cfg::get().ds.reads.lib_count() != 1 || cfg::get().ds.reads[0].type() != io::LibraryType::PairedEnd)) {
-            ERROR("Sorry, current version of metaSPAdes can work with single library only (paired-end only).");
-            exit(239);
+    if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta && !MetaCompatibleLibraries()) {
+        ERROR("Sorry, current version of metaSPAdes can work either with single library (paired-end only) "
+                      "or in paired-end + TSLR mode.");
+        exit(239);
     }
 
     INFO("Starting from stage: " << cfg::get().entry_point);

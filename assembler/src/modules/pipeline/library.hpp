@@ -30,6 +30,7 @@ enum class LibraryType {
     PacBioReads,
     SangerReads,
     NanoporeReads,
+    TSLReads,
     TrustedContigs,
     UntrustedContigs,
     PathExtendContigs
@@ -189,7 +190,8 @@ public:
     static bool is_long_read_lib(LibraryType type) {
         return type == io::LibraryType::PacBioReads ||
                type == io::LibraryType::SangerReads ||
-               type == io::LibraryType::NanoporeReads;
+               type == io::LibraryType::NanoporeReads ||
+               type == io::LibraryType::TSLReads;
     }
 
     bool is_contig_lib() const {

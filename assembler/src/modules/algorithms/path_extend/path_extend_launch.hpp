@@ -342,7 +342,8 @@ pe_config::LongReads GetLongReadsConfig(const PathExtendParamsContainer& params,
                                         const io::LibraryType& type) {
     if (io::SequencingLibraryBase::is_long_read_lib(type)) {
         return params.pe_cfg.long_reads.pacbio_reads;
-    } else if (type == io::LibraryType::PathExtendContigs){
+    } else if (type == io::LibraryType::PathExtendContigs
+               || type == io::LibraryType::TSLReads) {
         return params.pe_cfg.long_reads.meta_contigs;
     } else if (io::SequencingLibraryBase::is_contig_lib(type)) {
         return params.pe_cfg.long_reads.contigs;
