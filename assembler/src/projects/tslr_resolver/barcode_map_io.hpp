@@ -21,6 +21,7 @@ namespace debruijn_graph {
             switch(type) {
                 case mtype::Bitset : return "Bitset";
                 case mtype::Trimmable : return "Trimmable";
+                default : return "Trimmable";
             }
         }
 
@@ -31,39 +32,45 @@ namespace debruijn_graph {
             if (code == "Trimmable") {
                 return mtype::Trimmable;
             }
+            return mtype::Trimmable;
         }
 
-        inline void MapperChooser(std::shared_ptr<BMapper> mapper,
+        inline void MapperChooser(std::shared_ptr<BMapper>& mapper,
                            mtype map_type, Graph &g) { //TODO Make acceptable reflection
             switch (map_type) {
-                case mtype::Bitset :
+                case mtype::Bitset : {
                     mapper = make_shared<tslr_resolver::BitSetBarcodeMapper> (g, map_type);
                     return;
-                case mtype::Trimmable:
+                }
+                case mtype::Trimmable: {
                     mapper = make_shared<tslr_resolver::TrimmableBarcodeMapper> (g, map_type);
                     return;
+                }
             }
         }
 
-        inline void SerializeMapper(const string& path, shared_ptr<BMapper> barcodeMapper) {
+        template <class Graph>
+        inline void SerializeMapper(const string& path, const shared_ptr<BMapper>& barcodeMapper, const Graph& g) {
             ofstream file;
             const string file_name = path + ".bmap";
             file.open(file_name);
             DEBUG("Saving barcode information, " << file_name <<" created");
-            file << EncodeType(barcodeMapper -> type_);
-            file << barcodeMapper->size() << std::endl;
-            for (auto it = barcodeMapper->cbegin_heads(); it != barcodeMapper->cend_heads(); ++it) {
-                barcodeMapper->WriteEntry(file, it -> first, "head");
+            if (!barcodeMapper) {
+                return;
             }
-            
+            file << EncodeType(barcodeMapper -> type_) << std::endl;
             file << barcodeMapper->size() << std::endl;
-            for (auto it = barcodeMapper->cbegin_tails(); it != barcodeMapper->cend_tails(); ++it) {
-                barcodeMapper->WriteEntry(file, it -> first, "tail");
+            omnigraph::IterationHelper <Graph, typename Graph::EdgeId> helper(g);
+            for (auto it = helper.begin(); it != helper.end(); ++it) {
+                barcodeMapper->WriteEntry(file, *it, "head");
+            }
+            for (auto it = helper.begin(); it != helper.end(); ++it) {
+                barcodeMapper->WriteEntry(file, *it, "tail");
             }
         }
 
         inline void DeserializeBarcodeMapEntry(ifstream& file, const std::unordered_map <size_t, EdgeId>& edge_map, 
-                        shared_ptr<BMapper> barcodeMapper, const std::string& which_end) {
+                        shared_ptr<BMapper>& barcodeMapper, const std::string& which_end) {
             VERIFY(which_end == "head" || which_end == "tail");
             size_t edge_id;
             file >> edge_id;
@@ -72,7 +79,7 @@ namespace debruijn_graph {
 
         template <class Graph> 
         void DeserializeMapper(const string& path, const std::unordered_map <size_t, EdgeId>& edge_map,
-                               shared_ptr<BMapper> barcodeMapper, Graph& g)  {
+                               shared_ptr<BMapper>& barcodeMapper, Graph& g)  {
             ifstream file;
             string file_name = path + ".bmap";
             file.open(file_name);
@@ -83,15 +90,12 @@ namespace debruijn_graph {
             MapperChooser(barcodeMapper, DecodeType(map_type), g);
             size_t map_size;
             file >> map_size;
-            barcodeMapper->InitialFillMap(g);
             for (size_t i = 0; i < map_size; ++i) {
                 DeserializeBarcodeMapEntry(file, edge_map, barcodeMapper, "head");
             }
-            file >> map_size;
             for (size_t i = 0; i < map_size; ++i) {
                 DeserializeBarcodeMapEntry(file, edge_map, barcodeMapper, "tail");
             }
-            INFO(barcodeMapper->size());
         }
 
 

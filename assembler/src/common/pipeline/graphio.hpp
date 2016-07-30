@@ -796,7 +796,7 @@ void PrintAll(const string& file_name, const graph_pack& gp) {
     PrintClusteredIndices(file_name, printer, gp.clustered_indices);
     PrintScaffoldingIndices(file_name, printer, gp.scaffolding_indices);
     PrintSingleLongReads(file_name, gp.single_long_reads);
-    SerializeMapper(file_name, gp.barcode_mapper);
+    SerializeMapper(file_name, gp.barcode_mapper, gp.g);
     gp.ginfo.Save(file_name + ".ginfo");
 }
 

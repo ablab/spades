@@ -14,10 +14,10 @@ namespace tslr_resolver {
         typedef BarcodeMapper b_mapper;
         typedef std::set <EdgeId> edge_set_t;
     private:
-        shared_ptr <b_mapper> barcode_mapper_;
+        const shared_ptr <b_mapper>& barcode_mapper_;
     public:
-        BarcodeDistGraphLabeler(const G &g, shared_ptr <b_mapper> mapper) :
-                base(g), barcode_mapper_(mapper){ }
+        BarcodeDistGraphLabeler(const G &g, shared_ptr <b_mapper>& mapper) :
+                base(g), barcode_mapper_(mapper){}
 
         size_t barcode_threshold = 5;
 
@@ -29,6 +29,7 @@ namespace tslr_resolver {
             size_t edge_length_bound = 10000;
             auto component = omnigraph::EdgeNeighborhood(graph(), e, max_vertices, edge_length_bound);
             auto edge_set = component.edges();
+            INFO(barcode_mapper_->size());
             for (auto edge : edge_set) {
                 if (barcode_mapper_->IntersectionSize(e, edge) >= barcode_threshold) {
                     std::string str = ToString(this->graph().int_id(edge)) + ": " +
