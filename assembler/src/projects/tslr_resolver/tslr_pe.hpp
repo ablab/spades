@@ -7,7 +7,7 @@
 #include <cmath>
 #include "barcode_mapper.hpp"
 #include "tslr_visualizer.hpp"
-#include "bounded_bfs.hpp"
+#include "bounded_dijkstra.hpp"
 
 #include <modules/algorithms/path_extend/path_extender.hpp>
 #include <modules/algorithms/path_extend/pe_resolver.hpp>
@@ -277,18 +277,25 @@ namespace tslr_resolver {
     protected:
 
         shared_ptr<ExtensionChooser> extensionChooser_;
-        size_t length_bound_ = 10000;
+        size_t distance_bound_ = 10000;
         size_t edge_threshold_ = 1000;  //TODO: configs
 
 
         void FindFollowingEdges(BidirectionalPath &path, ExtensionChooser::EdgeContainer *result) {
-            auto bfs = BoundedBFS(g_, g_.EdgeEnd(path.Back()), length_bound_, edge_threshold_);
-            bfs.run();
-            auto edges = bfs.ReturnResult();
+            auto dij = LengthDijkstra<Graph>::CreateLengthBoundedDijkstra(g_, distance_bound_, edge_threshold_);
+            auto processed_vertices = dij.ProcessedVertices();
             result->clear();
-            result->reserve(edges.size());
-            for (auto it = edges.begin(); it != edges.end(); ++it) {
-                result->push_back(EdgeWithDistance(it->first, it->second));
+            std::vector<EdgeId> long_edges;
+            for (auto vertex : processed_vertices) {
+                for (auto edge : g_.OutgoingEdges(vertex)) {
+                    if (g_.length(edge) >= edge_threshold_) {
+                        long_edges.push_back(edge);
+                    }
+                }
+            }
+            result->reserve(long_edges.size());
+            for (auto edge : long_edges) {
+                result->push_back(EdgeWithDistance(edge, dij.GetDistance(g_.EdgeStart(edge))));
             }
         }
 
