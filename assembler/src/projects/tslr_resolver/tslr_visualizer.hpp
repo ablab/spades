@@ -29,7 +29,6 @@ namespace tslr_resolver {
             size_t edge_length_bound = 10000;
             auto component = omnigraph::EdgeNeighborhood(graph(), e, max_vertices, edge_length_bound);
             auto edge_set = component.edges();
-            INFO(barcode_mapper_->size());
             for (auto edge : edge_set) {
                 if (barcode_mapper_->IntersectionSize(e, edge) >= barcode_threshold) {
                     std::string str = ToString(this->graph().int_id(edge)) + ": " +
