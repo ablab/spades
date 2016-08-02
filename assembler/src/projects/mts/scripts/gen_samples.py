@@ -56,7 +56,7 @@ def gen_samples(args):
 
                 print("Merging temporary files")
                 for temp, out in [(temp_1, os.path.join(sample_dir, "r1.fastq")), (temp_2, os.path.join(sample_dir, "r2.fastq"))]:
-                    with open(temp) as input, open(out, "w") as output:
+                    with open(temp) as input, open(out, "a") as output:
                         for line in input:
                             if line.startswith("IIIII"):
                                 output.write(adj_qual)
