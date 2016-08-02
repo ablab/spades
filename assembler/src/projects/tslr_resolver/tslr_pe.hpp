@@ -229,12 +229,6 @@ namespace tslr_resolver {
             for (auto edge : long_edges) {
                 result->push_back(EdgeWithDistance(edge, dij.GetDistance(g_.EdgeStart(edge))));
             }
-            if (path.Back().int_id() == 188 || path.Back().int_id() == 278) {
-                INFO ("Reached from edge " << path.Back().int_id() << endl);
-                for (auto vertex : processed_vertices) {
-                    INFO (vertex.int_id() << endl);
-                }
-            }
         }
 
 
@@ -280,12 +274,6 @@ namespace tslr_resolver {
             DEBUG("Starting at vertex " << g_.EdgeEnd(path.Back()));
             FindFollowingEdges(path, &candidates);
             DEBUG("found candidates");
-            if (g_.EdgeEnd(path.Back()).int_id() == 580) {
-                DEBUG("Candidates list: " );
-                for (auto edge : candidates) {
-                    DEBUG(edge.e_);
-                }
-            }
             DEBUG(candidates.size())
             if (candidates.size() == 1) {
                 LoopDetector loop_detector(&path, cov_map_);
