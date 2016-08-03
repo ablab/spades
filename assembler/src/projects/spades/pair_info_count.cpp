@@ -15,23 +15,19 @@
 #include "algorithms/path_extend/split_graph_pair_info.hpp"
 #include "paired_info/bwa_pair_info_filler.hpp"
 #include "utils/adt/bf.hpp"
+#include "utils/adt/hll.hpp"
 
 namespace debruijn_graph {
 
 typedef io::SequencingLibrary<config::DataSetData> SequencingLib;
 using PairedInfoFilter = bf::counting_bloom_filter<std::pair<EdgeId, EdgeId>>;
+using EdgePairCounter = hll::hll<std::pair<EdgeId, EdgeId>>;
 
 class DEFilter : public SequenceMapperListener {
   public:
     DEFilter(PairedInfoFilter &filter)
             : bf_(filter) {}
 
-    void StartProcessLibrary(size_t) override {}
-    void StopProcessLibrary() override {}
-    void ProcessSingleRead(size_t, const io::SingleRead&, const MappingPath<EdgeId>&) override {}
-    void ProcessSingleRead(size_t, const io::SingleReadSeq&, const MappingPath<EdgeId>&) override {};
-    void MergeBuffer(size_t) override {};
-    
     void ProcessPairedRead(size_t,
                            const io::PairedRead&,
                            const MappingPath<EdgeId>& read1,
@@ -59,14 +55,71 @@ class DEFilter : public SequenceMapperListener {
     PairedInfoFilter &bf_;
 };
 
+class EdgePairCounterFiller : public SequenceMapperListener {
+    static uint64_t EdgePairHash(const std::pair<EdgeId, EdgeId> &e) {
+        uint64_t h1 = e.first.hash();
+        return CityHash64WithSeeds((const char*)&h1, sizeof(h1), e.second.hash(), 0x0BADF00D);
+    }
+    
+  public:
+    EdgePairCounterFiller(size_t thread_num)
+            : counter_(EdgePairHash) {
+        buf_.reserve(thread_num);
+        for (unsigned i = 0; i < thread_num; ++i)
+          buf_.emplace_back(EdgePairHash);
+    }
+
+    void MergeBuffer(size_t i) override {
+        counter_.merge(buf_[i]);
+        buf_[i].clear();
+    }
+    
+    void ProcessPairedRead(size_t idx,
+                           const io::PairedRead&,
+                           const MappingPath<EdgeId>& read1,
+                           const MappingPath<EdgeId>& read2) override {
+        ProcessPairedRead(buf_[idx], read1, read2);
+    }
+    void ProcessPairedRead(size_t idx,
+                           const io::PairedReadSeq&,
+                           const MappingPath<EdgeId>& read1,
+                           const MappingPath<EdgeId>& read2) override {
+        ProcessPairedRead(buf_[idx], read1, read2);
+    }
+
+    double cardinality() const {
+        std::pair<double, bool> res = counter_.cardinality();
+        INFO("" << res.first << ":" << res.second);
+        return (!res.second ? 512ull * 1024 * 1024 : res.first);
+    }
+  private:
+    void ProcessPairedRead(EdgePairCounter &buf,
+                           const MappingPath<EdgeId>& path1,
+                           const MappingPath<EdgeId>& path2) {
+        for (size_t i = 0; i < path1.size(); ++i) {
+            std::pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
+            for (size_t j = 0; j < path2.size(); ++j) {
+                std::pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
+                buf.add({mapping_edge_1.first, mapping_edge_2.first});
+            }
+        }
+    }
+
+    std::vector<EdgePairCounter> buf_;
+    EdgePairCounter counter_;
+};
+
 bool RefineInsertSizeForLib(const conj_graph_pack &gp,
                             PairedInfoFilter &filter,
                             size_t ilib, size_t edge_length_threshold) {
     INFO("Estimating insert size (takes a while)");
     InsertSizeCounter hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
     DEFilter filter_counter(filter);
+    EdgePairCounterFiller pcounter(cfg::get().max_threads);
+
     SequenceMapperNotifier notifier(gp);
     notifier.Subscribe(ilib, &hist_counter);
+    notifier.Subscribe(ilib, &pcounter);
     notifier.Subscribe(ilib, &filter_counter);
 
     SequencingLibrary &reads = cfg::get_writable().ds.reads[ilib];
@@ -85,6 +138,8 @@ bool RefineInsertSizeForLib(const conj_graph_pack &gp,
     if (hist_counter.mapped() == 0)
         return false;
 
+    INFO("Edge pairs: " << pcounter.cardinality());
+    
     std::map<size_t, size_t> percentiles;
     hist_counter.FindMean(data.mean_insert_size, data.insert_size_deviation, percentiles);
     hist_counter.FindMedian(data.median_insert_size, data.insert_size_mad,
