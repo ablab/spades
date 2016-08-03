@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * lc_launch.hpp
- *
- *  Created on: Dec 1, 2011
- *      Author: andrey
- */
-
 #ifndef PATH_EXTEND_LAUNCH_HPP_
 #define PATH_EXTEND_LAUNCH_HPP_
 
@@ -116,11 +109,10 @@ inline double GetPriorityCoeff(shared_ptr<PairedInfoLibrary> lib, const pe_confi
 }
 
 inline void SetSingleThresholdForLib(shared_ptr<PairedInfoLibrary> lib, const pe_config::ParamSetT &pset, double threshold, double correction_coeff = 1.0) {
-    if  (lib->IsMp()) {
+    if (lib->IsMp()) {
         lib->SetSingleThreshold(pset.mate_pair_options.use_default_single_threshold || math::le(threshold, 0.0) ?
                                 pset.mate_pair_options.single_threshold : threshold);
-    }
-    else {
+    } else {
         double t = pset.extension_options.use_default_single_threshold || math::le(threshold, 0.0) ?
                    pset.extension_options.single_threshold : threshold;
         t = correction_coeff * t;
@@ -134,9 +126,8 @@ inline void OutputBrokenScaffolds(PathContainer& paths,
                                   int k,
                                   const ContigWriter& writer,
                                   const std::string& filename) {
-    if (!params.pset.scaffolder_options.enabled
-        || !params.use_scaffolder
-        || params.pe_cfg.obs == obs_none) {
+    if (!params.pset.scaffolder_options.enabled ||
+        !params.use_scaffolder || params.pe_cfg.obs == obs_none) {
         return;
     }
 
@@ -153,9 +144,9 @@ inline void AddPathsToContainer(const conj_graph_pack& gp,
     for (size_t i = 0; i < paths.size(); ++i) {
         auto path = paths.at(i);
         vector<EdgeId> edges = path.getPath();
-        if (edges.size() <= size_threshold) {
+        if (edges.size() <= size_threshold)
             continue;
-        }
+
         BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
         BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
         new_path->SetWeight((float) path.getWeight());
@@ -424,9 +415,9 @@ inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const config::dataset& 
                                                          const conj_graph_pack& gp,
                                                          const GraphCoverageMap& cov_map,
                                                          bool investigate_loops) {
-
     const auto& lib = dataset_info.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(lib, gp.g, gp.clustered_indices[lib_index]);
+    VERIFY_MSG(math::ge(lib.data().pi_threshold, 0.0), "PI threshold should be set");
     SetSingleThresholdForLib(paired_lib, params.pset, lib.data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
@@ -493,9 +484,9 @@ inline shared_ptr<SimpleExtender> MakePEExtender(const config::dataset& dataset_
                                                  const conj_graph_pack& gp,
                                                  const GraphCoverageMap& cov_map,
                                                  bool investigate_loops) {
-
     const auto& lib = dataset_info.reads[lib_index];
-    shared_ptr<PairedInfoLibrary>  paired_lib = MakeNewLib(lib, gp.g, gp.clustered_indices[lib_index]);
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(lib, gp.g, gp.clustered_indices[lib_index]);
+    VERIFY_MSG(math::ge(lib.data().pi_threshold, 0.0), "PI threshold should be set");
     SetSingleThresholdForLib(paired_lib, params.pset, lib.data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
@@ -657,6 +648,7 @@ inline shared_ptr<SimpleExtender> MakeMPExtender(const config::dataset& dataset_
     const auto& lib = dataset_info.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(lib, gp.g, gp.paired_indices[lib_index]);
 
+    VERIFY_MSG(math::ge(lib.data().pi_threshold, 0.0), "PI threshold should be set");
     SetSingleThresholdForLib(paired_lib, params.pset, lib.data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
@@ -728,9 +720,9 @@ inline shared_ptr<SimpleExtender> MakeRNAExtender(const config::dataset& dataset
                                                   const conj_graph_pack& gp,
                                                   const GraphCoverageMap& cov_map,
                                                   bool investigate_loops) {
-
     const auto& lib = dataset_info.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(lib, gp.g, gp.clustered_indices[lib_index]);
+    VERIFY_MSG(math::ge(lib.data().pi_threshold, 0.0), "PI threshold should be set");
     SetSingleThresholdForLib(paired_lib, params.pset, lib.data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 

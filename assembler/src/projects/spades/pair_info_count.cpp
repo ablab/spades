@@ -129,7 +129,8 @@ void ProcessPairedReads(conj_graph_pack &gp, size_t ilib, PairedInfoFilter &filt
     SequencingLibrary &reads = cfg::get_writable().ds.reads[ilib];
     const auto &data = reads.data();
 
-    bool calculate_threshold = (reads.type() == io::LibraryType::PairedEnd);
+    bool calculate_threshold = (cfg::get().mode != config::pipeline_type::meta &&
+                                reads.type() == io::LibraryType::PairedEnd);
     SequenceMapperNotifier notifier(gp);
     INFO("Left insert size quantile " << data.insert_size_left_quantile <<
          ", right insert size quantile " << data.insert_size_right_quantile);
