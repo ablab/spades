@@ -86,15 +86,18 @@ public:
 
 private:
     void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& mapping) {
+        DEBUG("Processing read");
         for (const auto& path : path_extractor_(mapping)) {
             buffer_storages_[thread_index].AddPath(path, 1, false);
         }
+        DEBUG("Read processed");
     }
 
     const Graph& g_;
     PathStorage<Graph>& storage_;
     std::vector<PathStorage<Graph>> buffer_storages_;
     PathExtractionF path_extractor_;
+    DECL_LOGGER("LongReadMapper");
 };
 
 class GappedPathExtractor {
@@ -182,7 +185,9 @@ inline PathExtractionF ChooseProperReadPathExtractor(const Graph& g, io::Library
             return GappedPathExtractor(g)(mapping);
         };
     } else {
-        return PathExtractionF(nullptr);
+        return [&] (const MappingPath<EdgeId>& mapping) {
+            return vector<vector<EdgeId>>{ReadPathFinder<Graph>(g).FindReadPath(mapping)};
+        };
     }
 }
 

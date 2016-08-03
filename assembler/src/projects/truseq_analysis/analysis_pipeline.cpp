@@ -9,6 +9,7 @@
 // Created by anton on 16.05.15.
 //
 
+#include "io/reads_io/file_reader.hpp"
 #include "stages/construction.hpp"
 #include "dev_support/standard_base.hpp"
 #include "analysis_pipeline.hpp"

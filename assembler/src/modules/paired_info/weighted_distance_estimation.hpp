@@ -58,7 +58,7 @@ protected:
         vector<int> forward;
         for (auto length : raw_forward) {
             if (minD - (int) this->max_distance_ <= length && length <= maxD + (int) this->max_distance_) {
-                forward.push_back(length);
+                forward.push_back(int(length));
             }
         }
         if (forward.size() == 0)

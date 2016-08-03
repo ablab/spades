@@ -168,6 +168,8 @@ class MappingPath {
 
     size_t size() const { return edges_.size(); }
 
+    size_t empty() const { return edges_.empty(); }
+
     ElementId edge_at(size_t idx) const {
        return edges_[idx];
     };

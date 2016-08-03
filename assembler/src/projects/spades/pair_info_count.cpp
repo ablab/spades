@@ -66,7 +66,12 @@ void ProcessSingleReads(conj_graph_pack &gp,
     //FIXME pretty awful, would be much better if listeners were shared ptrs
     LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib],
                                ChooseProperReadPathExtractor(gp.g, reads.type()));
-    notifier.Subscribe(ilib, mapping_listener_ptr ? mapping_listener_ptr : &read_mapper);
+
+    if (mapping_listener_ptr != nullptr) {
+        notifier.Subscribe(ilib, mapping_listener_ptr);
+    }
+
+    notifier.Subscribe(ilib, &read_mapper);
 
     auto mapper_ptr = ChooseProperMapper(gp, reads);
     if (use_binary) {
@@ -139,7 +144,6 @@ bool HasOnlyMP() {
 bool ShouldMapSingleReads(size_t ilib) {
     using config::single_read_resolving_mode;
     switch (cfg::get().single_reads_rr) {
-        case single_read_resolving_mode::none: {}
         case single_read_resolving_mode::all: {
             return true;
         }
@@ -153,6 +157,10 @@ bool ShouldMapSingleReads(size_t ilib) {
                     WARN("Single reads are not used in metagenomic mode");
                 }
             }
+            break;
+        }
+        case single_read_resolving_mode::none: {
+            break;
         }
         default:
             VERIFY_MSG(false, "Invalid mode value");

@@ -157,9 +157,9 @@ GapDescription<Graph> CreateGapDescription(const KmerCluster<Graph>& a,
     return GapDescription<Graph>(a.edgeId,
                           b.edgeId,
                           read.Subseq(a.sorted_positions[a.last_trustable_index].read_position,
-                                                          b.sorted_positions[b.first_trustable_index].read_position + pacbio_k - 1),
+                                                          b.sorted_positions[b.first_trustable_index].read_position + pacbio_k),
                           a.sorted_positions[a.last_trustable_index].edge_position,
-                          b.sorted_positions[b.first_trustable_index].edge_position + pacbio_k - 1);
+                          b.sorted_positions[b.first_trustable_index].edge_position + pacbio_k);
 }
 
 //template<class Graph>

@@ -386,12 +386,12 @@ struct GapDescription {
     EdgeId start, end;
     Sequence gap_seq;
     //FIXME discuss using size_t
-    unsigned edge_gap_start_position, edge_gap_end_position;
+    size_t edge_gap_start_position, edge_gap_end_position;
 
 
     GapDescription(EdgeId start_e, EdgeId end_e,
                    const Sequence &gap,
-                   unsigned gap_start, unsigned gap_end) :
+                   size_t gap_start, size_t gap_end) :
             start(start_e),
             end(end_e),
             gap_seq(gap.str()),
@@ -402,8 +402,8 @@ struct GapDescription {
     GapDescription<Graph> conjugate(const Graph& g, int shift) const {
         GapDescription<Graph> res(
                 g.conjugate(end), g.conjugate(start), !gap_seq,
-                unsigned(g.length(end)) + shift - edge_gap_end_position,
-                unsigned(g.length(start)) + shift - edge_gap_start_position);
+                g.length(end) + shift - edge_gap_end_position,
+                g.length(start) + shift - edge_gap_start_position);
         return res;
     }
 

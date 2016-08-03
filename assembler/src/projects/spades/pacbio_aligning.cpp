@@ -17,44 +17,48 @@
 
 namespace debruijn_graph {
 
-class GapTrackingLongReadMapper : public LongReadMapper {
-    typedef LongReadMapper base;
+//TODO standard aligner badly needs additional filtering
+class GapTrackingListener : public SequenceMapperListener {
+    const Graph& g_;
     pacbio::GapStorage<Graph>& gap_storage_;
     const pacbio::GapStorage<Graph> empty_storage_;
     vector<pacbio::GapStorage<Graph>> buffer_storages_;
 
     bool IsTip(VertexId v) const {
-        return g().IncomingEdgeCount(v) + g().OutgoingEdgeCount(v) == 1;
+        return g_.IncomingEdgeCount(v) + g_.OutgoingEdgeCount(v) == 1;
     }
 
-    Sequence ExtractSubseq(const io::SingleRead& read, size_t start, size_t end) const {
+    Sequence Subseq(const io::SingleRead& read, size_t start, size_t end) const {
+        DEBUG("Requesting subseq of read length " << read.size() << " from " << start << " to " << end);
         auto subread = read.Substr(start, end);
         if (subread.IsValid()) {
+            DEBUG("Gap seq valid. Length " << subread.size());
             return subread.sequence();
         } else {
+            DEBUG("Gap seq invalid. Length " << subread.size());
             return Sequence();
         }
     }
 
-    Sequence ExtractSubseq(const io::SingleReadSeq& read, size_t start, size_t end) const {
+    Sequence Subseq(const io::SingleReadSeq& read, size_t start, size_t end) const {
         return read.sequence().Subseq(start, end);
     }
 
-    //FIXME should additional thresholds on gaps be introduced here?
     template<class ReadT>
     vector<GapDescription<Graph>> InferGaps(const ReadT& read, const MappingPath<EdgeId>& mapping) const {
+        DEBUG("Inferring gaps")
+        VERIFY(!mapping.empty());
         vector<GapDescription<Graph>> answer;
         for (size_t i = 0; i < mapping.size() - 1; ++i) {
             EdgeId e1 = mapping.edge_at(i);
             EdgeId e2 = mapping.edge_at(i + 1);
 
-            //sorry, loops!
-            if (e1 != e2 && IsTip(g().EdgeEnd(e1)) && IsTip(g().EdgeStart(e2))) {
+            //sorry, loops and!
+            if (e1 != e2 && e1 != g_.conjugate(e2) && IsTip(g_.EdgeEnd(e1)) && IsTip(g_.EdgeStart(e2))) {
                 MappingRange mr1 = mapping.mapping_at(i);
                 MappingRange mr2 = mapping.mapping_at(i + 1);
-                auto gap_seq = ExtractSubseq(read, mr1.initial_range.end_pos, mr2.initial_range.start_pos);
+                auto gap_seq = Subseq(read, mr1.initial_range.end_pos, mr2.initial_range.start_pos);
                 if (gap_seq.size() > 0) {
-                    //FIXME are the positions correct?!!!
                     answer.push_back(GapDescription<Graph>(e1, e2,
                                                            gap_seq,
                                                            mr1.mapped_range.end_pos,
@@ -67,37 +71,34 @@ class GapTrackingLongReadMapper : public LongReadMapper {
 
     template<class ReadT>
     void InnerProcessRead(size_t thread_index, const ReadT& read, const MappingPath<EdgeId>& mapping) {
-        base::ProcessSingleRead(thread_index, read, mapping);
-        for (const auto& gap: InferGaps(read, mapping)) {
-            //FIXME should it really be "true" here?
-            buffer_storages_[thread_index].AddGap(gap, true);
+        DEBUG("Processing read");
+        if (!mapping.empty()) {
+            for (const auto& gap: InferGaps(read, mapping)) {
+                DEBUG("Adding gap info " << gap.str(g_));
+                buffer_storages_[thread_index].AddGap(gap, true);
+            }
+        } else {
+            DEBUG("Mapping was empty");
         }
+        DEBUG("Read processed");
     }
 
 public:
 
     //ALERT passed path_storage should be empty!
-    GapTrackingLongReadMapper(const Graph& g,
-                              PathStorage<Graph>& path_storage,
-                              pacbio::GapStorage<Graph>& gap_storage,
-                              PathExtractionF path_extractor = nullptr) :
-            base(g, path_storage, path_extractor),
-            gap_storage_(gap_storage), empty_storage_(gap_storage)
+    GapTrackingListener(const Graph& g,
+                              pacbio::GapStorage<Graph>& gap_storage) :
+            g_(g), gap_storage_(gap_storage), empty_storage_(gap_storage)
     {
         VERIFY(empty_storage_.size() == 0);
     }
 
-
-public:
-
     void StartProcessLibrary(size_t threads_count) override {
-        base::StartProcessLibrary(threads_count);
         for (size_t i = 0; i < threads_count; ++i)
             buffer_storages_.push_back(empty_storage_);
     }
 
     void StopProcessLibrary() override {
-        base::StopProcessLibrary();
         buffer_storages_.clear();
     }
 
@@ -120,6 +121,22 @@ public:
         InnerProcessRead(thread_index, read, mapping);
     }
 
+    void ProcessPairedRead(size_t ,
+                           const io::PairedReadSeq&,
+                           const MappingPath<EdgeId>& ,
+                           const MappingPath<EdgeId>&) override {
+        //nothing to do
+    }
+
+    void ProcessPairedRead(size_t ,
+                           const io::PairedRead&,
+                           const MappingPath<EdgeId>& ,
+                           const MappingPath<EdgeId>&) override {
+        //nothing to do
+    }
+
+private:
+    DECL_LOGGER("GapTrackingListener");
 };
 
 bool IsNontrivialAlignment(const vector<vector<EdgeId>>& aligned_edges) {
@@ -133,7 +150,7 @@ io::SingleStreamPtr GetReadsStream(const io::SequencingLibrary<config::DataSetDa
     io::ReadStreamList<io::SingleRead> streams;
     for (const auto& reads : lib.single_reads())
         //do we need input_file function here?
-        //FIXME should FixingWrapper be here?
+        //TODO add decent support for N-s?
         streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(reads)));
     return io::MultifileWrap(streams);
 }
@@ -272,22 +289,28 @@ void PacbioAlignLibrary(const conj_graph_pack &gp,
 }
 
 void CloseGaps(conj_graph_pack &gp, bool rtype,
-               const pacbio::GapStorage<Graph>& gap_storage) {
+               const pacbio::GapStorage<Graph>& gap_storage,
+               const string& dump_dir = "") {
     INFO("Closing gaps with long reads");
-    pacbio::PacbioGapCloser<Graph> gap_closer(gp.g, rtype, cfg::get().pb.max_contigs_gap_length);
-    auto replacement = gap_closer.CloseGapsInGraph(gap_storage, cfg::get().max_threads);
+    if (!dump_dir.empty())
+        gap_storage.DumpToFile(dump_dir + "gaps_padded.mpr");
+
+    pacbio::PacbioGapCloser<Graph> gap_closer(gp.g, gap_storage, rtype, cfg::get().pb.max_contigs_gap_length);
+    auto replacement = gap_closer(cfg::get().max_threads,
+                                  dump_dir.empty() ? "" : dump_dir + "gaps_pb_closed.fasta");
+
     for (size_t j = 0; j < cfg::get().ds.reads.lib_count(); j++) {
         gp.single_long_reads[j].ReplaceEdges(replacement);
     }
 
-    gap_closer.DumpToFile(cfg::get().output_saves + "gaps_pb_closed.fasta");
     INFO("Closing gaps with long reads finished");
 }
 
 bool ShouldAlignWithPacbioAligner(io::LibraryType lib_type) {
     return lib_type == io::LibraryType::PacBioReads ||
            lib_type == io::LibraryType::SangerReads ||
-           lib_type == io::LibraryType::NanoporeReads;
+           lib_type == io::LibraryType::NanoporeReads; //||
+//           lib_type == io::LibraryType::TSLReads;
 }
 
 void HybridLibrariesAligning::run(conj_graph_pack &gp, const char*) {
@@ -298,7 +321,7 @@ void HybridLibrariesAligning::run(conj_graph_pack &gp, const char*) {
     for (size_t lib_id = 0; lib_id < cfg::get().ds.reads.lib_count(); ++lib_id) {
         if (cfg::get().ds.reads[lib_id].is_hybrid_lib()) {
             launch_flag = true;
-            INFO("Pacbio-alignable library detected: #" << lib_id);
+            INFO("Hybrid library detected: #" << lib_id);
 
             const auto& lib = cfg::get().ds.reads[lib_id];
             bool rtype = lib.is_long_read_lib();
@@ -306,7 +329,7 @@ void HybridLibrariesAligning::run(conj_graph_pack &gp, const char*) {
             size_t min_gap_quantity = rtype ? cfg::get().pb.pacbio_min_gap_quantity
                                             : cfg::get().pb.contigs_min_gap_quantity;
 
-            PathStorage<Graph>& path_storage = gp.single_long_reads[lib_id];
+            auto& path_storage = gp.single_long_reads[lib_id];
             pacbio::GapStorage<ConjugateDeBruijnGraph> gap_storage(gp.g,
                                                                    min_gap_quantity,
                                                                    cfg::get().pb.long_seq_limit);
@@ -317,27 +340,27 @@ void HybridLibrariesAligning::run(conj_graph_pack &gp, const char*) {
                                    path_storage, gap_storage,
                                    cfg::get().max_threads);
             } else {
-                GapTrackingLongReadMapper mapping_listener(gp.g, path_storage,
-                                                           gap_storage,
-                                                           ChooseProperReadPathExtractor(gp.g, lib.type()));
+                gp.EnsureBasicMapping();
+                GapTrackingListener mapping_listener(gp.g, gap_storage);
+                INFO("Processing reads from hybrid library " << lib_id);
                 ProcessSingleReads(gp, lib_id,
                                    /*use binary*/false, /*map_paired*/false,
                                    &mapping_listener);
+                INFO("Finished processing long reads from lib " << lib_id);
+                gp.index.Detach();
             }
 
             if (make_additional_saves) {
+                INFO("Producing additional saves");
                 path_storage.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
                                         map<EdgeId, EdgeId>(), /*min_stats_cutoff*/rtype ? 1 : 0, true);
                 gap_storage.DumpToFile(cfg::get().output_saves + "gaps.mpr");
             }
 
-            //FIXME move inside AlignLibrary
-            gap_storage.PadGapStrings();
+            INFO("Padding gaps");
+            gap_storage.PostProcess();
 
-            if (make_additional_saves)
-                gap_storage.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");
-
-            CloseGaps(gp, rtype, gap_storage);
+            CloseGaps(gp, rtype, gap_storage, make_additional_saves ? cfg::get().output_saves : "");
         }
     }
 

@@ -228,8 +228,8 @@ private:
 
         // Check, whether two histograms intersect. If not, we can just merge them
         // straightforwardly.
-        if (math::ls(where.rbegin()->d, what.min().d + shift) ||
-            math::gr(where.begin()->d, what.max().d + shift)) {
+        if (math::ls(where.rbegin()->d, what.min().d + float(shift)) ||
+            math::gr(where.begin()->d, what.max().d + float(shift))) {
             for (auto to_be_added : what) {
                 to_be_added.d += shift;
                 where.insert(to_be_added);

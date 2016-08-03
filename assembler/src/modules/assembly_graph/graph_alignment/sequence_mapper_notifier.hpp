@@ -59,16 +59,14 @@ public:
 
         streams.reset();
         NotifyStartProcessLibrary(lib_index, threads_count);
-
         size_t counter = 0, n = 15;
         size_t fmem = get_free_memory();
 
         #pragma omp parallel for num_threads(threads_count) shared(counter)
-        for (size_t ithread = 0; ithread < threads_count; ++ithread) {
+        for (size_t i = 0; i < streams.size(); ++i) {
             size_t size = 0;
             ReadType r;
-            auto& stream = streams[ithread];
-            stream.reset();
+            auto& stream = streams[i];
             while (!stream.eof()) {
                 if (size == BUFFER_SIZE || 
                     // Stop filling buffer if the amount of available is smaller
@@ -82,14 +80,14 @@ public:
                             n += 1;
                         }
                         size = 0;
-                        NotifyMergeBuffer(lib_index, ithread);
+                        NotifyMergeBuffer(lib_index, i);
                     }
                 }
                 stream >> r;
                 ++size;
-                NotifyProcessRead(r, mapper, lib_index, ithread);
+                NotifyProcessRead(r, mapper, lib_index, i);
             }
-#           pragma omp atomic
+            #pragma omp atomic
             counter += size;
         }
         INFO("Total " << counter << " reads processed");
