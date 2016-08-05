@@ -448,6 +448,17 @@ void load(debruijn_config::truseq_analysis& tsa,
   load(tsa.genome_file, pt, "genome_file");
 }
 
+void load(debruijn_config::tslr_resolver& ts_res, 
+      boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(ts_res.reference_cov, pt, "reference_cov");
+    load(ts_res.len_threshold, pt, "len_threshold");
+    load(ts_res.distance_bound, pt, "distance_bound");
+    load(ts_res.diff_threshold, pt, "diff_threshold");
+    load(ts_res.abs_threshold, pt, "abs_threshold");
+    load(ts_res.topsort_bound, pt, "topsort_bound");
+}
+
 void load(debruijn_config::bwa_aligner& bwa,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
@@ -727,6 +738,7 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
 
     //FIXME
     load(cfg.tsa, pt, "tsa", complete);
+    load(cfg.ts_res, pt, "ts_res", complete);
 
     load(cfg.co, pt, "contig_output", complete);
 

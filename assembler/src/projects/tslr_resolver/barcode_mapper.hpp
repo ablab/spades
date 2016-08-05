@@ -81,14 +81,18 @@ namespace tslr_resolver {
         virtual size_t IntersectionSize(const EdgeId& edge1, const EdgeId& edge2) const = 0;
         virtual size_t UnionSize(const EdgeId& edge1, const EdgeId& edge2) const = 0;
         virtual double IntersectionSizeRelative(const EdgeId& edge1, const EdgeId& edge2) const = 0;
-        virtual double IntersectionSizeNormalized(const EdgeId &edge1, const EdgeId &edge2) const = 0;
+        virtual double IntersectionSizeNormalizedBySecond(const EdgeId &edge1, const EdgeId &edge2) const = 0;
+        virtual double IntersectionSizeNormalizedByFirst(const EdgeId& edge1, const EdgeId& edge2) const = 0;
         virtual std::pair <double, double> AverageBarcodeCoverage () const = 0;
+        virtual size_t GetSizeHeads(const EdgeId& edge) const = 0;
+        virtual size_t GetSizeTails(const EdgeId& edge) const = 0;
         virtual void ReadEntry(ifstream& fin, const EdgeId& edge, const string& which_end) = 0;
         virtual void WriteEntry(ofstream& fin, const EdgeId& edge, const string& which_end) = 0;
+
     };
 
     template <class barcode_entry_t>
-    class HeadTailBarcodeMapper : public BarcodeMapper { //TODO: Make separate HeadTailBarcodeMapper
+    class HeadTailBarcodeMapper : public BarcodeMapper { 
     public:
         using BarcodeMapper::type_;
     protected:
@@ -140,19 +144,18 @@ namespace tslr_resolver {
         }
 
         virtual double IntersectionSizeRelative(const EdgeId& edge1, const EdgeId& edge2) const override {
-            return static_cast <double> (IntersectionSize(edge1, edge2)) / static_cast <double> (UnionSize(edge1, edge2));
+            return static_cast <double> (IntersectionSize(edge1, edge2)) / 
+                static_cast <double> (UnionSize(edge1, edge2));
         }
 
-        virtual double IntersectionSizeNormalized(const EdgeId &edge1, const EdgeId &edge2) const override {
-            return static_cast <double> (IntersectionSize(edge1, edge2)) / static_cast <double> (g_.length(edge2) + norm_len_);
-        }
-    protected:
-        barcode_entry_t GetSetHeads(const EdgeId &edge) {
-            return barcode_map_heads.at(edge);
+        virtual double IntersectionSizeNormalizedBySecond(const EdgeId &edge1, const EdgeId &edge2) const override {
+            return static_cast <double> (IntersectionSize(edge1, edge2)) / 
+                static_cast <double> (GetSizeHeads(edge2) * GetSizeHeads(edge2));
         }
 
-        barcode_entry_t GetSetTails(const EdgeId& edge) {
-            return barcode_map_tails.at(edge);
+        virtual double IntersectionSizeNormalizedByFirst(const EdgeId &edge1, const EdgeId& edge2) const override {
+            return static_cast <double> (IntersectionSize(edge1, edge2)) / 
+                static_cast <double> (GetSizeTails(edge1));
         }
 
         barcode_entry_t GetSetHeads(const EdgeId &edge) const {
@@ -160,6 +163,22 @@ namespace tslr_resolver {
         }
 
         barcode_entry_t GetSetTails(const EdgeId& edge) const {
+            return barcode_map_tails.at(edge);
+        }
+
+        size_t GetSizeHeads(const EdgeId& edge) const override {
+            return GetSetHeads(edge).size();
+        }
+
+        size_t GetSizeTails(const EdgeId& edge) const override {
+            return GetSetTails(edge).size();
+        }
+    protected:
+        barcode_entry_t GetSetHeads(const EdgeId &edge) {
+            return barcode_map_heads.at(edge);
+        }
+
+        barcode_entry_t GetSetTails(const EdgeId& edge) {
             return barcode_map_tails.at(edge);
         }
 

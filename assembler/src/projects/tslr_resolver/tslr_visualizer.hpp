@@ -32,20 +32,22 @@ namespace tslr_resolver {
             for (auto edge : edge_set) {
                 if (barcode_mapper_->IntersectionSize(e, edge) >= barcode_threshold) {
                     std::string str = ToString(this->graph().int_id(edge)) + ": " +
-                                      std::to_string(barcode_mapper_->IntersectionSizeRelative(e, edge)) + ", ";
+                                      std::to_string(barcode_mapper_->IntersectionSizeNormalizedByFirst(e, edge)) + ", ";
                     head_labels.push_back(str);
                 }
                 if (barcode_mapper_->IntersectionSize(edge, e) >= barcode_threshold) {
                     std::string str = ToString(this->graph().int_id(edge)) + ": " +
-                                      std::to_string(barcode_mapper_->IntersectionSizeRelative(edge, e)) + ", ";
+                                      std::to_string(barcode_mapper_->IntersectionSizeNormalizedByFirst(edge, e)) + ", ";
                     tail_labels.push_back(str);
                 }
             }
             ans += ("Id: " + std::to_string(this->graph().int_id(e)) + ' ' +  "Length: " + 
                 std::to_string(this->graph().length(e)) + ' ' + "Coverage: " + std::to_string(this->graph().coverage(e)) + '\n');
-            // INFO(std::to_string(barcode_mapper_.size("head")));
-            // ans += (std::to_string(barcode_mapper_.size("head")) + '\n');
+            ans += "Barcodes: " + std::to_string(std::static_pointer_cast<tslr_resolver::TrimmableBarcodeMapper>(barcode_mapper_) ->
+                    GetSizeHeads(e)) + '\n';
             ans += label_from_vector(head_labels, "head");
+            ans += "Barcodes: " + std::to_string(std::static_pointer_cast<tslr_resolver::TrimmableBarcodeMapper>(barcode_mapper_) ->
+                    GetSizeTails(e)) + '\n';
             ans += label_from_vector(tail_labels, "tail");
             return ans;
         }

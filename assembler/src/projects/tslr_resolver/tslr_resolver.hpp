@@ -37,13 +37,9 @@ namespace spades {
                          ' ' + std::to_string(graph_pack.barcode_mapper->AverageBarcodeCoverage().second));
             std::static_pointer_cast<tslr_resolver::TrimmableBarcodeMapper>(graph_pack.barcode_mapper)->
                 SerializeOverallDistribution(cfg::get().output_dir + "bardistr_after");
+                
             tslr_resolver::LaunchBarcodePE (graph_pack);
             INFO("Resolver finished!");
-            INFO("Drawing pictures...");
-            // tslr_resolver::TslrVisualizer <debruijn_graph::ConjugateDeBruijnGraph> viz (graph_pack, graph_pack.barcode_mapper);
-            // viz.DrawRandomRepeats();
-            // viz.DrawGraph();
-            INFO("Pictures drawn to " + cfg::get().output_dir + '/' + "pictures");
         }
         DECL_LOGGER("TSLRResolverStage")
     };
