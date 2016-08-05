@@ -1,0 +1,10 @@
+ts_res
+{
+	reference_cov  20
+	len_threshold  1000
+	diff_threshold 0.05
+	distance_bound 10000
+	abs_threshold 0.1
+	topsort_bound 5000
+	debug_construction false
+}

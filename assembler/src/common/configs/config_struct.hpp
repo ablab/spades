@@ -415,7 +415,7 @@ struct debruijn_config {
         bool enable;
         unsigned granularity;
     };
-    
+
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
     std::filesystem::path dataset_file;
@@ -455,10 +455,22 @@ struct debruijn_config {
         bool start_only_from_tips;
         bool set_copynumber;
     };
-    
+
     contig_output co;
 
     std::filesystem::path load_from;
+    struct tslr_resolver {
+        int reference_cov;
+        size_t len_threshold;
+        size_t distance_bound;
+        double diff_threshold;
+        double abs_threshold;
+        size_t topsort_bound;
+        bool debug_construction;
+    };
+
+    tslr_resolver ts_res;
+    std::string load_from;
     std::string entry_point;
 
     bool rr_enable;

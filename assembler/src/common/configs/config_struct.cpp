@@ -439,6 +439,34 @@ void load(debruijn_config::ambiguous_distance_estimator &amde,
     load(amde.relative_seq_threshold, pt, "relative_seq_threshold", complete);
 }
 
+void load(debruijn_config::scaffold_correction& sc_corr,
+        boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(sc_corr.scaffolds_file, pt, "scaffolds_file");
+    load(sc_corr.output_unfilled, pt, "output_unfilled");
+    load(sc_corr.max_insert, pt, "max_insert");
+    load(sc_corr.max_cut_length, pt, "max_cut_length");
+}
+
+void load(debruijn_config::truseq_analysis& tsa,
+      boost::property_tree::ptree const& pt, bool /*complete*/) {
+  using config_common::load;
+  load(tsa.scaffolds_file, pt, "scaffolds_file");
+  load(tsa.genome_file, pt, "genome_file");
+}
+
+void load(debruijn_config::tslr_resolver& ts_res,
+      boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(ts_res.reference_cov, pt, "reference_cov");
+    load(ts_res.len_threshold, pt, "len_threshold");
+    load(ts_res.distance_bound, pt, "distance_bound");
+    load(ts_res.diff_threshold, pt, "diff_threshold");
+    load(ts_res.abs_threshold, pt, "abs_threshold");
+    load(ts_res.topsort_bound, pt, "topsort_bound");
+    load(ts_res.debug_construction, pt, "debug_construction");
+}
+
 void load(bwa_aligner& bwa,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
@@ -746,6 +774,8 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     if (!mode_str.empty()) {
         cfg.mode = ModeByName<pipeline_type>(mode_str, PipelineTypeNames());
     }
+
+    load(cfg.ts_res, pt, "ts_res", complete);
 
     load(cfg.co, pt, "contig_output", complete);
 
