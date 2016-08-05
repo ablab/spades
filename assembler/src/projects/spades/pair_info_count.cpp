@@ -20,7 +20,7 @@
 namespace debruijn_graph {
 
 typedef io::SequencingLibrary<config::DataSetData> SequencingLib;
-using PairedInfoFilter = bf::counting_bloom_filter<std::pair<EdgeId, EdgeId>>;
+using PairedInfoFilter = bf::counting_bloom_filter<std::pair<EdgeId, EdgeId>, 2>;
 using EdgePairCounter = hll::hll<std::pair<EdgeId, EdgeId>>;
 
 class DEFilter : public SequenceMapperListener {
@@ -60,7 +60,7 @@ class EdgePairCounterFiller : public SequenceMapperListener {
         uint64_t h1 = e.first.hash();
         return CityHash64WithSeeds((const char*)&h1, sizeof(h1), e.second.hash(), 0x0BADF00D);
     }
-    
+
   public:
     EdgePairCounterFiller(size_t thread_num)
             : counter_(EdgePairHash) {
@@ -73,7 +73,7 @@ class EdgePairCounterFiller : public SequenceMapperListener {
         counter_.merge(buf_[i]);
         buf_[i].clear();
     }
-    
+
     void ProcessPairedRead(size_t idx,
                            const io::PairedRead&,
                            const MappingPath<EdgeId>& read1,
@@ -87,10 +87,8 @@ class EdgePairCounterFiller : public SequenceMapperListener {
         ProcessPairedRead(buf_[idx], read1, read2);
     }
 
-    double cardinality() const {
-        std::pair<double, bool> res = counter_.cardinality();
-        INFO("" << res.first << ":" << res.second);
-        return (!res.second ? 512ull * 1024 * 1024 : res.first);
+    std::pair<double, bool> cardinality() const {
+        return counter_.cardinality();
     }
   private:
     void ProcessPairedRead(EdgePairCounter &buf,
@@ -109,18 +107,16 @@ class EdgePairCounterFiller : public SequenceMapperListener {
     EdgePairCounter counter_;
 };
 
-bool RefineInsertSizeForLib(const conj_graph_pack &gp,
-                            PairedInfoFilter &filter,
-                            size_t ilib, size_t edge_length_threshold) {
+bool CollectLibInformation(const conj_graph_pack &gp,
+                           size_t &edgepairs,
+                           size_t ilib, size_t edge_length_threshold) {
     INFO("Estimating insert size (takes a while)");
     InsertSizeCounter hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
-    DEFilter filter_counter(filter);
     EdgePairCounterFiller pcounter(cfg::get().max_threads);
 
     SequenceMapperNotifier notifier(gp);
     notifier.Subscribe(ilib, &hist_counter);
     notifier.Subscribe(ilib, &pcounter);
-    notifier.Subscribe(ilib, &filter_counter);
 
     SequencingLibrary &reads = cfg::get_writable().ds.reads[ilib];
     auto &data = reads.data();
@@ -130,6 +126,10 @@ bool RefineInsertSizeForLib(const conj_graph_pack &gp,
     VERIFY(reads.data().read_length != 0);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
 
+    auto pres = pcounter.cardinality();
+    edgepairs = (!pres.second ? 64ull * 1024 * 1024 : size_t(pres.first));
+    INFO("Edge pairs: " << edgepairs << (!pres.second ? " (rough upper limit)" : ""));
+
     INFO(hist_counter.mapped() << " paired reads (" <<
          ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) <<
          "% of all) aligned to long edges");
@@ -138,8 +138,7 @@ bool RefineInsertSizeForLib(const conj_graph_pack &gp,
     if (hist_counter.mapped() == 0)
         return false;
 
-    INFO("Edge pairs: " << pcounter.cardinality());
-    
+
     std::map<size_t, size_t> percentiles;
     hist_counter.FindMean(data.mean_insert_size, data.insert_size_deviation, percentiles);
     hist_counter.FindMedian(data.median_insert_size, data.insert_size_mad,
@@ -205,7 +204,7 @@ void ProcessPairedReads(conj_graph_pack &gp, size_t ilib, PairedInfoFilter &filt
     LatePairedIndexFiller pif(gp.g,
                               [&](const std::pair<EdgeId, EdgeId> &ep,
                                   const MappingRange&, const MappingRange&) {
-                                  return (filter.lookup(ep) > 1 ? 1. : 0.);
+                                  return (filter.lookup(ep) > 2 ? 1. : 0.);
                               },
                               gp.paired_indices[ilib]);
     notifier.Subscribe(ilib, &pif);
@@ -283,7 +282,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
                                                  cfg::get().max_threads, !cfg::get().bwa.debug);
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        const auto &lib = cfg::get().ds.reads[i];
+        auto &lib = cfg::get_writable().ds.reads[i];
         if (lib.is_hybrid_lib()) {
             INFO("Library #" << i << " was mapped earlier on hybrid aligning stage, skipping");
             continue;
@@ -298,14 +297,9 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
             const auto &lib_data = lib.data();
             size_t rl = lib_data.read_length;
             size_t k = cfg::get().K;
-            PairedInfoFilter
-               filter([](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
-                       uint64_t h1 = e.first.hash();
-                       return CityHash64WithSeeds((const char*)&h1, sizeof(h1), e.second.hash(), seed);
-                   },
-                   1024*1024*1024);
 
-            if (!RefineInsertSizeForLib(gp, filter, i, edge_length_threshold)) {
+            size_t edgepairs = 0;
+            if (!CollectLibInformation(gp, edgepairs, i, edge_length_threshold)) {
                 cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
                 WARN("Unable to estimate insert size for paired library #" << i);
                 if (rl > 0 && rl <= k) {
@@ -327,6 +321,24 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
             if (lib_data.mean_insert_size < 1.1 * (double) rl)
                 WARN("Estimated mean insert size " << lib_data.mean_insert_size
                      << " is very small compared to read length " << rl);
+
+            PairedInfoFilter
+               filter([](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
+                       uint64_t h1 = e.first.hash();
+                       return CityHash64WithSeeds((const char*)&h1, sizeof(h1), e.second.hash(), seed);
+                   },
+                   12 * edgepairs);
+
+            INFO("Filtering data for library #" << i);
+            {
+                SequenceMapperNotifier notifier(gp);
+                DEFilter filter_counter(filter);
+                notifier.Subscribe(i, &filter_counter);
+
+                auto reads = paired_binary_readers(lib, false);
+                VERIFY(lib.data().read_length != 0);
+                notifier.ProcessLibrary(reads, i, *ChooseProperMapper(gp, lib));
+            }
 
             INFO("Mapping library #" << i);
             bool map_single_reads = ShouldMapSingleReads(i);
