@@ -459,6 +459,17 @@ struct debruijn_config {
     
     contig_output co;
 
+    struct tslr_resolver {
+        int reference_cov;
+        size_t len_threshold;
+        size_t distance_bound;
+        double diff_threshold;
+        double abs_threshold;
+        size_t topsort_bound;
+        bool debug_construction;
+    };
+
+    tslr_resolver ts_res;
     std::filesystem::path load_from;
     std::string entry_point;
 
