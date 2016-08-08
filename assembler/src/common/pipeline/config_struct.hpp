@@ -520,6 +520,7 @@ struct debruijn_config {
         double diff_threshold;
         double abs_threshold;
         size_t topsort_bound;
+        bool debug_construction;
     };
 
     boost::optional<scaffold_correction> sc_cor;

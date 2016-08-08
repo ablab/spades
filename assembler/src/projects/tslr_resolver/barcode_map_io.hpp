@@ -62,19 +62,15 @@ namespace debruijn_graph {
             file << barcodeMapper->size() << std::endl;
             omnigraph::IterationHelper <Graph, typename Graph::EdgeId> helper(g);
             for (auto it = helper.begin(); it != helper.end(); ++it) {
-                barcodeMapper->WriteEntry(file, *it, "head");
-            }
-            for (auto it = helper.begin(); it != helper.end(); ++it) {
-                barcodeMapper->WriteEntry(file, *it, "tail");
+                barcodeMapper->WriteEntry(file, *it);
             }
         }
 
         inline void DeserializeBarcodeMapEntry(ifstream& file, const std::unordered_map <size_t, EdgeId>& edge_map, 
-                        shared_ptr<BMapper>& barcodeMapper, const std::string& which_end) {
-            VERIFY(which_end == "head" || which_end == "tail");
+                        shared_ptr<BMapper>& barcodeMapper) {
             size_t edge_id;
             file >> edge_id;
-            barcodeMapper->ReadEntry(file, edge_map.find(edge_id) -> second, which_end);
+            barcodeMapper->ReadEntry(file, edge_map.find(edge_id) -> second);
         }
 
         template <class Graph> 
@@ -91,10 +87,7 @@ namespace debruijn_graph {
             size_t map_size;
             file >> map_size;
             for (size_t i = 0; i < map_size; ++i) {
-                DeserializeBarcodeMapEntry(file, edge_map, barcodeMapper, "head");
-            }
-            for (size_t i = 0; i < map_size; ++i) {
-                DeserializeBarcodeMapEntry(file, edge_map, barcodeMapper, "tail");
+                DeserializeBarcodeMapEntry(file, edge_map, barcodeMapper);
             }
         }
 
