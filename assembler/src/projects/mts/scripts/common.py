@@ -25,7 +25,8 @@ def detect_reads(dir):
 def gather_refs(data):
     if type(data) is list:
         for path in data:
-            yield from gather_refs(path)
+            for ref in gather_refs(path):
+                yield ref
     else:
         if data.startswith("@"):
             with open(data[1:]) as input:
@@ -98,4 +99,5 @@ class Table:
     def zip_with(self, other, method):
         for rowname, i in self.rownames.items():
             for colname, j in self.colnames.items():
-                method(rowname, colname, self.data[i][j], other.data[i][j])
+                other_cell = other.data[other.rownames[rowname]][other.colnames[colname]]
+                method(rowname, colname, self.data[i][j], other_cell)

@@ -84,9 +84,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", "-c", help="Config template")
     parser.add_argument("dir", help="Output directory")
-    parser.add_argument("--saves", type=str)
+    parser.add_argument("--saves", "-s", type=str)
     parser.add_argument("--no-clean", action="store_true")
-    parser.add_argument("--etalons", type=str, help="Directory of GF etalons")
+    parser.add_argument("--etalons", "-e", type=str, help="Directory of GF etalons")
     args = parser.parse_args()
     return args
 
@@ -106,9 +106,10 @@ def run_mts(args, workdir):
         prepare_config(args, workdir)
     mts_args = ["./mts.py", "--stats", args.dir]
     if args.saves:
-        log.log("Copying saves from", args.saves)
-        shutil.copytree(args.saves, args.dir)
-        mts_args.append("--no-assembly")
+        log.log("Copying saves from" + args.saves)
+        for saves_dir in ["assembly", "reassembly"]:
+            shutil.copytree(os.path.join(args.saves, saves_dir), os.path.join(args.dir, saves_dir))
+        mts_args.append("--reuse-assemblies")
     os.chdir(os.path.join(workdir, "src/projects/mts"))
     return subprocess.call(mts_args)
 
@@ -139,11 +140,11 @@ def check_etalons(args, workdir):
             mut.res = 7
 
     for file in os.listdir(args.etalons):
-        log.log("Trying to load " + file)
         etalon = os.path.join(args.etalons, file)
-        estimated = os.path.join(args.dir, "stats", "summary", etalon)
+        estimated = os.path.join(args.dir, "stats", "summary", file)
+        log.log("Trying to compare " + etalon + " and " + estimated)
         if not os.path.isfile(estimated):
-            log.log("No table provided for " + file)
+            log.warn("No table provided for " + file)
             continue
         try:
             log.log("Loading " + etalon)
@@ -153,7 +154,8 @@ def check_etalons(args, workdir):
             log.log("Comparing GF for " + file)
             et_table.zip_with(est_table, compare_gf)
         except:
-            log.err("Error while loading {}; skipping".format(file))
+            log.err("Cannot load {}".format(file))
+            raise
     return mut.res
 
 if __name__ == "__main__":
