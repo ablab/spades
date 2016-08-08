@@ -22,24 +22,21 @@
 
 namespace io {
 
-inline std::string MakeContigId(int number, size_t length, const std::string& prefix = "NODE") {
+inline std::string MakeContigId(size_t number, size_t length, const std::string& prefix = "NODE") {
     return prefix + "_" + ToString(number) + "_length_" + ToString(length);
 }
 
-inline std::string MakeContigId(int number, size_t length, double coverage, const std::string& prefix = "NODE") {
-    return prefix + "_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage);
+inline std::string MakeContigId(size_t number, size_t length, double coverage, const std::string& prefix = "NODE") {
+    return MakeContigId(number, length, prefix) + "_cov_" + ToString(coverage);
 }
 
-inline std::string MakeContigId(int number, size_t length, double coverage, size_t id, const std::string& prefix = "NODE") {
-    return prefix + "_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage)  + "_ID_" +  ToString(id);
-}
-inline std::string MakeContigComponentId(int number, size_t length, double coverage, size_t id, size_t component_id, const std::string& prefix = "NODE") {
-    return prefix + "_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage)  + "_ID_" +  ToString(id) + "_component_" + ToString(component_id);
-}
-inline std::string MakeContigComponentId(int number, size_t length, double coverage, size_t component_id, const std::string& prefix = "NODE") {
-    return prefix + "_"  + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage)  + "_component_" + ToString(component_id);
+inline std::string MakeContigId(size_t number, size_t length, double coverage, size_t id, const std::string& prefix = "NODE") {
+    return MakeContigId(number, length, coverage, prefix) + "_ID_" +  ToString(id);
 }
 
+inline std::string MakeContigComponentId(size_t number, size_t length, double coverage, size_t component_id, const std::string& prefix = "NODE") {
+    return MakeContigId(number, length, coverage, prefix)  + "_component_" + ToString(component_id);
+}
 
 class osequencestream {
 protected:
