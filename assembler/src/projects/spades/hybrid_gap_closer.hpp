@@ -7,15 +7,14 @@
 
 #pragma once
 
-#include "pacbio_read_structures.hpp"
-
+#include "assembly_graph/graph_alignment/sequence_mapper.hpp"
 #include "ConsensusCore/Poa/PoaConfig.hpp"
 #include "ConsensusCore/Poa/PoaConsensus.hpp"
 
 #include <algorithm>
 #include <fstream>
 
-namespace pacbio {
+namespace debruijn_graph {
 
 template<class Graph>
 class GapStorage {
@@ -213,7 +212,7 @@ public:
     };
 
 
-    void PostProcess() {
+    void PrepareGapsForClosure() {
         for (auto& e_gaps : inner_index_) {
             DEBUG("Padding gaps for first edge " << g_.str(e_gaps.first));
             auto& gaps = e_gaps.second;
@@ -255,13 +254,13 @@ public:
 };
 
 template<class Graph>
-class PacbioGapCloser {
+class HybridGapCloser {
     typedef typename Graph::EdgeId EdgeId;
     typedef runtime_k::RtSeq Kmer;
     typedef typename GapStorage<Graph>::gap_info_it gap_info_it;
     //first edge, second edge, weight, seq
     typedef map<EdgeId, map<EdgeId, pair<size_t, string>>> NewEdgeInfo;
-    DECL_LOGGER("PacbioGapCloser");
+    DECL_LOGGER("HybridGapCloser");
 
     Graph& g_;
     const GapStorage<Graph>& storage_;
@@ -444,7 +443,7 @@ class PacbioGapCloser {
     }
 
 public:
-    PacbioGapCloser(Graph &g, const GapStorage<Graph>& storage,
+    HybridGapCloser(Graph &g, const GapStorage<Graph>& storage,
                     bool consensus_gap, size_t max_contigs_gap_length)
             : g_(g), storage_(storage),
               consensus_gap_closing_(consensus_gap),

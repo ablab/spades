@@ -6,23 +6,22 @@
 //***************************************************************************
 
 #include "assembly_graph/graph_alignment/pacbio/pac_index.hpp"
-#include "assembly_graph/graph_alignment/pacbio/pacbio_gap_closer.hpp"
+#include "hybrid_gap_closer.hpp"
 #include "assembly_graph/graph_alignment/long_read_storage.hpp"
 #include "io/reads_io/wrapper_collection.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
-#include "pacbio_aligning.hpp"
+#include "hybrid_aligning.hpp"
 #include "pair_info_count.hpp"
-#include "assembly_graph/graph_alignment/long_read_mapper.hpp"
 #include "io/reads_io/multifile_reader.hpp"
 
 namespace debruijn_graph {
 
-//TODO standard aligner badly needs additional filtering
+//TODO standard aligner badly needs spurious match filtering
 class GapTrackingListener : public SequenceMapperListener {
     const Graph& g_;
-    pacbio::GapStorage<Graph>& gap_storage_;
-    const pacbio::GapStorage<Graph> empty_storage_;
-    vector<pacbio::GapStorage<Graph>> buffer_storages_;
+    GapStorage<Graph>& gap_storage_;
+    const GapStorage<Graph> empty_storage_;
+    vector<GapStorage<Graph>> buffer_storages_;
 
     bool IsTip(VertexId v) const {
         return g_.IncomingEdgeCount(v) + g_.OutgoingEdgeCount(v) == 1;
@@ -87,7 +86,7 @@ public:
 
     //ALERT passed path_storage should be empty!
     GapTrackingListener(const Graph& g,
-                              pacbio::GapStorage<Graph>& gap_storage) :
+                              GapStorage<Graph>& gap_storage) :
             g_(g), gap_storage_(gap_storage), empty_storage_(gap_storage)
     {
         VERIFY(empty_storage_.size() == 0);
@@ -159,16 +158,16 @@ class PacbioAligner {
     const conj_graph_pack& gp_;
     const pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index_;
     PathStorage<Graph>& path_storage_;
-    pacbio::GapStorage<Graph>& gap_storage_;
+    GapStorage<Graph>& gap_storage_;
     pacbio::StatsCounter stats_;
     const PathStorage<Graph> empty_path_storage_;
-    const pacbio::GapStorage<Graph> empty_gap_storage_;
+    const GapStorage<Graph> empty_gap_storage_;
     const size_t read_buffer_size_;
 
     void ProcessReadsBatch(const std::vector<io::SingleRead>& reads, size_t thread_cnt) {
         vector<PathStorage<Graph>> long_reads_by_thread(thread_cnt,
                                                         empty_path_storage_);
-        vector<pacbio::GapStorage<Graph>> gaps_by_thread(thread_cnt,
+        vector<GapStorage<Graph>> gaps_by_thread(thread_cnt,
                                                          empty_gap_storage_);
         vector<pacbio::StatsCounter> stats_by_thread(thread_cnt);
 
@@ -223,7 +222,7 @@ public:
     PacbioAligner(const conj_graph_pack &gp,
                   const pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index,
                   PathStorage<Graph>& path_storage,
-                  pacbio::GapStorage<Graph>& gap_storage,
+                  GapStorage<Graph>& gap_storage,
                   size_t read_buffer_size = 50000) :
             gp_(gp),
             pac_index_(pac_index),
@@ -264,7 +263,7 @@ public:
 void PacbioAlignLibrary(const conj_graph_pack &gp,
                   const io::SequencingLibrary<config::DataSetData>& lib,
                   PathStorage<Graph>& path_storage,
-                  pacbio::GapStorage<ConjugateDeBruijnGraph>& gap_storage,
+                  GapStorage<ConjugateDeBruijnGraph>& gap_storage,
                   size_t thread_cnt) {
     INFO("Aligning library with Pacbio aligner");
 
@@ -289,13 +288,13 @@ void PacbioAlignLibrary(const conj_graph_pack &gp,
 }
 
 void CloseGaps(conj_graph_pack &gp, bool rtype,
-               const pacbio::GapStorage<Graph>& gap_storage,
+               const GapStorage<Graph>& gap_storage,
                const string& dump_dir = "") {
     INFO("Closing gaps with long reads");
     if (!dump_dir.empty())
         gap_storage.DumpToFile(dump_dir + "gaps_padded.mpr");
 
-    pacbio::PacbioGapCloser<Graph> gap_closer(gp.g, gap_storage, rtype, cfg::get().pb.max_contigs_gap_length);
+    HybridGapCloser<Graph> gap_closer(gp.g, gap_storage, rtype, cfg::get().pb.max_contigs_gap_length);
     auto replacement = gap_closer(cfg::get().max_threads,
                                   dump_dir.empty() ? "" : dump_dir + "gaps_pb_closed.fasta");
 
@@ -330,9 +329,9 @@ void HybridLibrariesAligning::run(conj_graph_pack &gp, const char*) {
                                             : cfg::get().pb.contigs_min_gap_quantity;
 
             auto& path_storage = gp.single_long_reads[lib_id];
-            pacbio::GapStorage<ConjugateDeBruijnGraph> gap_storage(gp.g,
-                                                                   min_gap_quantity,
-                                                                   cfg::get().pb.long_seq_limit);
+            GapStorage<ConjugateDeBruijnGraph> gap_storage(gp.g,
+                                                           min_gap_quantity,
+                                                           cfg::get().pb.long_seq_limit);
 
             if (ShouldAlignWithPacbioAligner(lib.type())) {
                 //TODO put alternative alignment right here
@@ -358,7 +357,7 @@ void HybridLibrariesAligning::run(conj_graph_pack &gp, const char*) {
             }
 
             INFO("Padding gaps");
-            gap_storage.PostProcess();
+            gap_storage.PrepareGapsForClosure();
 
             CloseGaps(gp, rtype, gap_storage, make_additional_saves ? cfg::get().output_saves : "");
         }

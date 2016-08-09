@@ -19,7 +19,7 @@
 #include "second_phase_setup.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation.hpp"
-#include "pacbio_aligning.hpp"
+#include "hybrid_aligning.hpp"
 #include "chromosome_removal.hpp"
 #include "pipeline/stage.hpp"
 
