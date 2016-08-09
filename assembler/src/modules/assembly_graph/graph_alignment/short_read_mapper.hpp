@@ -21,13 +21,14 @@
 namespace debruijn_graph {
   
 template<class Graph>
-class SensitiveReadMapper: public SequenceMapper<Graph> {
+class SensitiveReadMapper: public AbstractSequenceMapper<Graph> {
     typedef typename Graph::EdgeId EdgeId;
-    using SequenceMapper<Graph>::g_;
+    using AbstractSequenceMapper<Graph>::g_;
 private:
 
     size_t small_k_;
 
+    //FIXME awful!
     static map<size_t, pacbio::PacBioMappingIndex<Graph>* > indices_;
     static size_t active_mappers_;
 
@@ -36,7 +37,7 @@ private:
 public:
 
     SensitiveReadMapper(const Graph& g, size_t k, size_t graph_k) :
-        SequenceMapper<Graph>(g), small_k_(k)
+        AbstractSequenceMapper<Graph>(g), small_k_(k)
     {
         if (indices_.find(small_k_) == indices_.end()) {
             indices_.insert(make_pair(small_k_,
@@ -48,10 +49,6 @@ public:
 
     MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
         return index_->GetShortReadAlignment(sequence);
-    }
-
-    size_t KmerSize() const {
-        return small_k_;
     }
 
     ~SensitiveReadMapper() {
@@ -79,15 +76,17 @@ size_t SensitiveReadMapper<Graph>::active_mappers_ = 0;
 
 template<class graph_pack, class SequencingLib>
 std::shared_ptr<SequenceMapper<typename graph_pack::graph_t>> ChooseProperMapper(const graph_pack& gp, const SequencingLib& library) {
+    typedef typename graph_pack::graph_t Graph;
+    typedef typename Graph::EdgeId EdgeId;
     if (library.type() == io::LibraryType::MatePairs) {
         INFO("Mapping mate-pair library, selecting sensitive read mapper with k=" << cfg::get().sensitive_map.k);
-        return std::make_shared<SensitiveReadMapper<typename graph_pack::graph_t>>(gp.g, cfg::get().sensitive_map.k, gp.k_value);
+        return std::make_shared<SensitiveReadMapper<Graph>>(gp.g, cfg::get().sensitive_map.k, gp.k_value);
     }
 
     size_t read_length = library.data().read_length;
     if (read_length < gp.k_value && library.type() == io::LibraryType::PairedEnd) {
         INFO("Read length = " << read_length << ", selecting short read mapper");
-        return std::make_shared<SensitiveReadMapper<typename graph_pack::graph_t>>(gp.g, read_length/ 3, gp.k_value);
+        return std::make_shared<SensitiveReadMapper<Graph>>(gp.g, read_length/ 3, gp.k_value);
     }
 
     INFO("Selecting usual mapper");

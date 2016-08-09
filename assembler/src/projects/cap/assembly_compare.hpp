@@ -113,7 +113,7 @@ public:
 //    typedef typename gp_t::graph_t Graph;
 //    typedef typename Graph::EdgeId EdgeId;
 //    typedef typename Graph::VertexId VertexId;
-//    typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper; // gp_t::k_value + 1
+//    typedef BasicSequenceMapper<Graph, typename gp_t::seq_t> Mapper; // gp_t::k_value + 1
 //
 //    gp_t gp_;
 //    ColorHandler<Graph> coloring_;

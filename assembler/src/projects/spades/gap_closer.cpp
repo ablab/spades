@@ -462,7 +462,7 @@ private:
 
 template<class Streams>
 void CloseGaps(conj_graph_pack &gp, Streams &streams) {
-    typedef NewExtendedSequenceMapper<Graph, Index> Mapper;
+    typedef BasicSequenceMapper<Graph, Index> Mapper;
     auto mapper = MapperInstance(gp);
     GapCloserPairedIndexFiller<Graph, Mapper> gcpif(gp.g, *mapper);
     PairedIndexT tips_paired_idx(gp.g);

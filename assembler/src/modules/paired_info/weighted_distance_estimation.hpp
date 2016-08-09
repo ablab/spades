@@ -55,7 +55,7 @@ protected:
 
         EstimHist result;
         int maxD = rounded_d(histogram.max()), minD = rounded_d(histogram.min());
-        vector<int> forward;
+        vector<size_t> forward;
         for (auto length : raw_forward) {
             if (minD - (int) this->max_distance_ <= length && length <= maxD + (int) this->max_distance_) {
                 forward.push_back(int(length));

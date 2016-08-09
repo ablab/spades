@@ -20,7 +20,7 @@ class ConservativeRegionsSearcher{
     SignedLabels signed_labels_;
     ConservativeRegionStorage cons_reg_storage_;
 
-    NewExtendedSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> mapper_;
+    BasicSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> mapper_;
     map<int, MappingPath<EdgeId> > contig_map_path_;
 
     typedef map<int, vector<int> > diff_labeled_contigs;

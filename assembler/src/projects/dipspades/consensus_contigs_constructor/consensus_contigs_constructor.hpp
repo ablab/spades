@@ -25,7 +25,7 @@ namespace dipspades{
 class ConsensusContigsConstructor {
     conj_graph_pack &graph_pack_;
     BaseHistogram<size_t> &bulge_len_hist_;
-    NewExtendedSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> seq_mapper_;
+    BasicSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> seq_mapper_;
     VertexPathIndex path_index_;
 
     CorrectionResult correction_result_;

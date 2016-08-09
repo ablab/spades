@@ -43,7 +43,7 @@ MappingPath<typename Graph::EdgeId>
 FindGenomeMappingPath(const Sequence& genome, const Graph& g,
                       const Index& index,
                       const KmerMapper<Graph>& kmer_mapper) {
-    NewExtendedSequenceMapper<Graph, Index> srt(g, index, kmer_mapper);
+    BasicSequenceMapper<Graph, Index> srt(g, index, kmer_mapper);
     return srt.MapSequence(genome);
 }
 
@@ -372,7 +372,7 @@ struct detail_info_printer {
     
         if (config.write_components_along_contigs) {
             make_dir(pics_folder + "along_contigs/");
-            NewExtendedSequenceMapper<Graph, Index> mapper(gp_.g, gp_.index, gp_.kmer_mapper);
+            BasicSequenceMapper<Graph, Index> mapper(gp_.g, gp_.index, gp_.kmer_mapper);
             WriteGraphComponentsAlongContigs(gp_.g, mapper, pics_folder + "along_contigs/", colorer, labeler_);
         }
 

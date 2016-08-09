@@ -46,22 +46,26 @@ public:
     typedef typename Graph::EdgeId EdgeId;
     typedef runtime_k::RtSeq Kmer;
 
-protected:
-    const Graph& g_;
-
-public:
-    SequenceMapper(const Graph& g): g_(g) {
-
-    }
-
-    virtual ~SequenceMapper() {
-
-    }
+    virtual ~SequenceMapper() {}
 
     virtual MappingPath<EdgeId> MapSequence(const Sequence &sequence) const = 0;
 
-  
-    MappingPath<EdgeId> MapRead(const io::SingleRead &read) const {
+    virtual MappingPath<EdgeId> MapRead(const io::SingleRead &read) const = 0;
+};
+
+template<class Graph>
+class AbstractSequenceMapper : public SequenceMapper<Graph> {
+protected:
+    const Graph& g_;
+
+//    const Graph& g() const {
+//        return g_;
+//    }
+public:
+    AbstractSequenceMapper(const Graph& g) : g_(g) {
+    }
+
+    MappingPath<EdgeId> MapRead(const io::SingleRead &read) const override {
 //      VERIFY(read.IsValid());
         DEBUG(read.name() << " is mapping");
         string s = read.GetSequenceString();
@@ -70,7 +74,7 @@ public:
         for(size_t i = 0; i < s.size(); i++) {
             if (read.GetSequenceString()[i] == 'N') {
                 if (r > l) {
-                    result.join(MapSequence(Sequence(s.substr(l, r - l))), int(l));
+                    result.join(this->MapSequence(Sequence(s.substr(l, r - l))), int(l));
                 }
                 r = i + 1;
                 l = i + 1;
@@ -79,16 +83,54 @@ public:
             }
         }
         if (r > l) {
-            result.join(MapSequence(Sequence(s.substr(l, r - l))), int(l));
+            result.join(this->MapSequence(Sequence(s.substr(l, r - l))), int(l));
         }
         DEBUG(read.name() << " is mapped");
         DEBUG("Number of edges is " << result.size());
 
-      return result;
+        return result;
     }
-
-    virtual size_t KmerSize() const = 0;
 };
+
+//potentially useful class
+//template<class Graph>
+//class DelegatingSequenceMapper : public SequenceMapper<Graph> {
+//public:
+//    typedef std::function<MappingPath<EdgeId> (const MappingPath<EdgeId>&, size_t)> ProcessingF;
+//private:
+//    shared_ptr<SequenceMapper<Graph>> inner_mapper_;
+//    ProcessingF processing_f_;
+//
+//public:
+//    DelegatingSequenceMapper(shared_ptr<SequenceMapper<Graph>> inner_mapper,
+//                             ProcessingF processing_f) :
+//            inner_mapper_(inner_mapper), processing_f_(processing_f) {
+//    }
+//
+//    MappingPath<EdgeId> MapSequence(const Sequence& s) const override {
+//        return processing_f_(inner_mapper_->MapSequence(s), s.size());
+//    }
+//
+//    MappingPath<EdgeId> MapRead(const io::SingleRead& r) const override {
+//        return processing_f_(inner_mapper_->MapRead(r), r.size());
+//    }
+//};
+
+template<class Graph>
+bool SpuriousMappingFilter(const Graph& /*g*/,
+                           const MappingPath<EdgeId>& mapping_path,
+                           size_t read_length,
+                           size_t max_range,
+                           size_t min_flank) {
+    if (mapping_path.size() == 1) {
+        Range read_range = mapping_path[0].second.initial_range;
+        if (read_range.size() <= max_range
+            && read_range.start_pos >= min_flank
+            && read_range.end_pos + min_flank <= read_length)
+            return false;
+    }
+    return true;
+}
 
 template<class Graph>
 class MappingPathFixer {
@@ -236,14 +278,12 @@ private:
 };
 
 template<class Graph, class Index>
-class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
- using SequenceMapper<Graph>::g_;
+class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
+  using AbstractSequenceMapper<Graph>::g_;
 
- public:
-  typedef std::vector<MappingRange> RangeMappings;
-
- private:
   const Index& index_;
+
+  typedef std::vector<MappingRange> RangeMappings;
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
   typedef typename Index::KMer Kmer;
@@ -324,18 +364,13 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
   }
 
  public:
-  NewExtendedSequenceMapper(const Graph& g,
+  BasicSequenceMapper(const Graph& g,
                             const Index& index,
                             const KmerSubs& kmer_mapper,
                 bool optimization_on = true) :
-      SequenceMapper<Graph>(g), index_(index), kmer_mapper_(kmer_mapper), k_(g.k()+1),
-    optimization_on_(optimization_on) { }
-
-  ~NewExtendedSequenceMapper() {
-    //        TRACE("In destructor of sequence mapper");
-    //        TRACE(mapped_ << " sequences were mapped");
-    //        TRACE(unmapped_ << " sequences couldn't be mapped");
-  }
+      AbstractSequenceMapper<Graph>(g), index_(index),
+      kmer_mapper_(kmer_mapper), k_(g.k()+1),
+      optimization_on_(optimization_on) { }
 
   MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
     std::vector<EdgeId> passed_edges;
@@ -346,7 +381,6 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
     }
 
     Kmer kmer = sequence.start<Kmer>(k_);
-    //kmer >>= 0;
     bool try_thread = false;
     try_thread = ProcessKmer(kmer, 0, passed_edges,
                              range_mapping, try_thread);
@@ -356,28 +390,16 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
                                range_mapping, try_thread);
     }
 
-    //        if (passed_edges.empty()) {
-    ////            TRACE("Sequence " << sequence << "couldn't be mapped");
-    //            unmapped_++;
-    //            //todo maybe check path consistency?
-    //        } else {
-    //            mapped_++;
-    //        }
-
     return MappingPath<EdgeId>(passed_edges, range_mapping);
   }
 
-  size_t KmerSize() const {
-      return k_;
-  }
-
-  DECL_LOGGER("NewExtendedSequenceMapper");
+  DECL_LOGGER("BasicSequenceMapper");
 };
 
 
 template<class gp_t>
-std::shared_ptr<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> > MapperInstance(const gp_t& gp) {
-  return std::make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> >(gp.g, gp.index, gp.kmer_mapper);
+std::shared_ptr<BasicSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t>> MapperInstance(const gp_t& gp) {
+  return std::make_shared<BasicSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t>>(gp.g, gp.index, gp.kmer_mapper);
 }
 
 template<class Graph>

@@ -18,7 +18,7 @@ namespace alignment_analysis {
         typedef debruijn_graph::conj_graph_pack::graph_t Graph;
         typedef Graph::EdgeId EdgeId;
         typedef Graph::VertexId VertexId;
-        typedef debruijn_graph::NewExtendedSequenceMapper<Graph, debruijn_graph::conj_graph_pack::index_t> Mapper;
+        typedef debruijn_graph::BasicSequenceMapper<Graph, debruijn_graph::conj_graph_pack::index_t> Mapper;
         stringstream log_;
         const Graph &graph_;
         const Mapper &mapper_;

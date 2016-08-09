@@ -47,7 +47,7 @@
 //    typedef io::SingleRead Contig;
 //    typedef io::IReader<io::SingleRead> ContigStream;
 //    typedef    io::MultifileReader<io::SingleRead> CompositeStream;
-//    typedef debruijn_graph::NewExtendedSequenceMapper<Graph, Index> Mapper;
+//    typedef debruijn_graph::BasicSequenceMapper<Graph, Index> Mapper;
 //
 //    const gp_t& gp_;
 //    const ColorHandler<Graph>& coloring_;

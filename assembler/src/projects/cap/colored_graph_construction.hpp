@@ -76,7 +76,7 @@ public:
     void FindCoveredRanges(CoveredRanges& crs, ContigStream& stream) const {
         io::SingleRead read;
         stream.reset();
-//        NewExtendedSequenceMapper<gp_t::k_value + 1, Graph> mapper(gp_.g,
+//        BasicSequenceMapper<gp_t::k_value + 1, Graph> mapper(gp_.g,
 //                gp_.index, gp_.kmer_mapper);
         while (!stream.eof()) {
             stream >> read;
@@ -366,7 +366,7 @@ void ConstructColoredGraph(gp_t& gp,
 //        vector<ContigStream*>& streams, const string& reference, bool fill_pos = true, int br_delta = -1) {
 //    typedef typename gp_t::graph_t Graph;
 //    const size_t k = gp_t::k_value;
-//    typedef NewExtendedSequenceMapper<k + 1, Graph> Mapper;
+//    typedef BasicSequenceMapper<k + 1, Graph> Mapper;
 //
 //    INFO("Constructing de Bruijn graph for k=" << k);
 //
