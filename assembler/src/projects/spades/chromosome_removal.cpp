@@ -6,11 +6,11 @@
 
 #include "assembly_graph/graph_support/contig_output.hpp"
 #include "stages/simplification_pipeline/graph_simplification.hpp"
-#include "algorithms/simplification/ec_threshold_finder.hpp"
-#include "assembly_graph/graph_core/basic_graph_stats.hpp"
+#include "modules/simplification/ec_threshold_finder.hpp"
+#include "assembly_graph/core/basic_graph_stats.hpp"
 #include "chromosome_removal.hpp"
 
-#include "math/xmath.h"
+#include "utils/math/xmath.h"
 
 
 namespace debruijn_graph {

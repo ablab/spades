@@ -5,14 +5,14 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "dev_support/logger/log_writers.hpp"
-#include "dev_support/segfault_handler.hpp"
-#include "data_structures/indices/perfect_hash_map.hpp"
-#include "data_structures/sequence/runtime_k.hpp"
-#include "data_structures/mph_index/kmer_index_builder.hpp"
+#include "utils/logger/log_writers.hpp"
+#include "utils/segfault_handler.hpp"
+#include "utils/indices/perfect_hash_map.hpp"
+#include "basic/sequence/runtime_k.hpp"
+#include "utils/mph_index/kmer_index_builder.hpp"
 
-#include "io/reads_io/read_processor.hpp"
-#include "io/reads_io/io_helper.hpp"
+#include "io/reads/read_processor.hpp"
+#include "io/reads/io_helper.hpp"
 
 #include "version.hpp"
 

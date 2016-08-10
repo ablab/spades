@@ -8,17 +8,17 @@
 #pragma once
 
 #include "pipeline/graphio.hpp"
-#include "dev_support/simple_tools.hpp"
-#include "assembly_graph/graph_core/graph.hpp"
+#include "utils/simple_tools.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "coordinates_handler.hpp"
-#include "math/xmath.h"
+#include "utils/math/xmath.h"
 #include <iostream>
 #include <vector>
-#include "dev_support/logger/logger.hpp"
-#include "io/reads_io/multifile_reader.hpp"
-#include "io/reads_io/splitting_wrapper.hpp"
-#include "io/reads_io/modifying_reader_wrapper.hpp"
-#include "io/reads_io/vector_reader.hpp"
+#include "utils/logger/logger.hpp"
+#include "io/reads/multifile_reader.hpp"
+#include "io/reads/splitting_wrapper.hpp"
+#include "io/reads/modifying_reader_wrapper.hpp"
+#include "io/reads/vector_reader.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 

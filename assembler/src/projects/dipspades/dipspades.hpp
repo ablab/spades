@@ -6,8 +6,8 @@
 //***************************************************************************
 
 
-#include "io/reads_io/splitting_wrapper.hpp"
-#include "algorithms/graph_construction.hpp"
+#include "io/reads/splitting_wrapper.hpp"
+#include "modules/graph_construction.hpp"
 #include "pipeline/stage.hpp"
 
 #include "dipspades_config.hpp"

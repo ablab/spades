@@ -9,17 +9,17 @@
 
 
 //#include "launch.hpp"
-#include "algorithms/graph_construction.hpp"
+#include "modules/graph_construction.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "io/reads_io/rc_reader_wrapper.hpp"
-#include "io/reads_io/vector_reader.hpp"
-#include "io/reads_io/converting_reader_wrapper.hpp"
-#include "io/reads_io/read_stream_vector.hpp"
-#include "dev_support/simple_tools.hpp"
+#include "io/reads/rc_reader_wrapper.hpp"
+#include "io/reads/vector_reader.hpp"
+#include "io/reads/converting_reader_wrapper.hpp"
+#include "io/reads/read_stream_vector.hpp"
+#include "utils/simple_tools.hpp"
 #include "paired_info/paired_info_helpers.hpp"
 #include "paired_info/weights.hpp"
 
-#include "assembly_graph/graph_alignment/sequence_mapper_notifier.hpp"
+#include "modules/alignment/sequence_mapper_notifier.hpp"
 #include "paired_info/pair_info_filler.hpp"
 
 #include <boost/test/unit_test.hpp>

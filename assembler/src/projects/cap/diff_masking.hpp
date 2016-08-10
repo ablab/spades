@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "io/reads_io/read_stream_vector.hpp"
-#include "algorithms/graph_construction.hpp"
+#include "io/reads/read_stream_vector.hpp"
+#include "modules/graph_construction.hpp"
 #include "stages/simplification_pipeline/graph_simplification.hpp"
-#include "algorithms/graph_read_correction.hpp"
+#include "modules/graph_read_correction.hpp"
 #include "test_utils.hpp"
 
 #include "coloring.hpp"

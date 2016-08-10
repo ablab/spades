@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include "io/reads/single_read.hpp"
+#include "common/basic/reads/single_read.hpp"
 #include "HSeq.hpp"
 
 #include <cstdint>

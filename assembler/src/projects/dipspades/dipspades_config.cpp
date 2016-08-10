@@ -8,7 +8,7 @@
 #include "dipspades_config.hpp"
 #include "pipeline/config_common.hpp"
 #include "utils/files_utils.hpp"
-#include "dev_support/path_helper.hpp"
+#include "utils/path_helper.hpp"
 
 using namespace dipspades;
 

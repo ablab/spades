@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "data_structures/sequence/nucl.hpp"
-#include "io/reads_io/modifying_reader_wrapper.hpp"
-#include "utils/adt/bag.hpp"
+#include "basic/sequence/nucl.hpp"
+#include "io/reads/modifying_reader_wrapper.hpp"
+#include "common/adt/bag.hpp"
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_01.hpp>
 #include <boost/random/uniform_int.hpp>

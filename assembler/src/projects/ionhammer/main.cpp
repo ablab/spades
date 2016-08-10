@@ -5,18 +5,18 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "dev_support/logger/log_writers.hpp"
+#include "utils/logger/log_writers.hpp"
 
-#include "io/reads_io/file_reader.hpp"
-#include "io/sam_io/bam_reader.hpp"
-#include "io/reads_io/paired_readers.hpp"
-#include "io/reads_io/osequencestream.hpp"
-#include "io/reads_io/read_processor.hpp"
+#include "io/reads/file_reader.hpp"
+#include "io/sam/bam_reader.hpp"
+#include "io/reads/paired_readers.hpp"
+#include "io/reads/osequencestream.hpp"
+#include "io/reads/read_processor.hpp"
 
-#include "utils/adt/concurrent_dsu.hpp"
+#include "common/adt/concurrent_dsu.hpp"
 
-#include "dev_support/segfault_handler.hpp"
-#include "dev_support/memory_limit.hpp"
+#include "utils/segfault_handler.hpp"
+#include "utils/memory_limit.hpp"
 
 #include "HSeq.hpp"
 #include "kmer_data.hpp"
@@ -27,7 +27,7 @@
 #include "expander.hpp"
 #include "config_struct.hpp"
 
-#include "dev_support/openmp_wrapper.h"
+#include "utils/openmp_wrapper.h"
 
 #include "version.hpp"
 

@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "assembly_graph/graph_core/graph.hpp"
-#include "assembly_graph/graph_alignment/sequence_mapper.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
 #include "ConsensusCore/Poa/PoaConfig.hpp"
 #include "ConsensusCore/Poa/PoaConsensus.hpp"
 #include "gap_closing.hpp"

@@ -7,14 +7,14 @@
 /*
  * Assembler Main
  */
-#include "dev_support/logger/log_writers.hpp"
+#include "utils/logger/log_writers.hpp"
 
-#include "dev_support/segfault_handler.hpp"
-#include "dev_support/stacktrace.hpp"
-#include "dev_support/memory_limit.hpp"
-#include "dev_support/copy_file.hpp"
-#include "dev_support/perfcounter.hpp"
-#include "data_structures/sequence/runtime_k.hpp"
+#include "utils/segfault_handler.hpp"
+#include "utils/stacktrace.hpp"
+#include "utils/memory_limit.hpp"
+#include "utils/copy_file.hpp"
+#include "utils/perfcounter.hpp"
+#include "basic/sequence/runtime_k.hpp"
 #include "scaffold_correction.hpp"
 
 #include "pipeline/config_struct.hpp"

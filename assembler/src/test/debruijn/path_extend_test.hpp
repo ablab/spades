@@ -18,8 +18,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include "test_utils.hpp"
-#include "algorithms/path_extend/path_visualizer.hpp"
-#include "algorithms/path_extend/pe_utils.hpp"
+#include "modules/path_extend/path_visualizer.hpp"
+#include "modules/path_extend/pe_utils.hpp"
 namespace path_extend {
 
 BOOST_FIXTURE_TEST_SUITE(path_extend_basic, TmpFolderFixture)

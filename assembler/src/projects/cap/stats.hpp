@@ -11,7 +11,7 @@
 #include "assembly_graph/components/graph_component.hpp"
 #include "assembly_graph/components/splitters.hpp"
 #include "utils.hpp"
-#include "dev_support/simple_tools.hpp"
+#include "utils/simple_tools.hpp"
 #include "comparison_utils.hpp"
 #include "assembly_graph/graph_support/basic_graph_stats.hpp"
 #include "coloring.hpp"

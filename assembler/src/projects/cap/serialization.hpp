@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "data_structures/sequence/sequence.hpp"
+#include "basic/sequence/sequence.hpp"
 
 namespace cap {
 

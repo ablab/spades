@@ -9,8 +9,8 @@
 #define __HAMMER_KMER_DATA_HPP__
 
 #include "kmer_stat.hpp"
-#include "utils/adt/array_vector.hpp"
-#include "data_structures/mph_index/kmer_index.hpp"
+#include "common/adt/array_vector.hpp"
+#include "utils/mph_index/kmer_index.hpp"
 #include <vector>
 
 typedef KMerIndex<kmer_index_traits<hammer::KMer> > HammerKMerIndex;

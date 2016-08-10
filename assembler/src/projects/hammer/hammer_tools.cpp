@@ -5,13 +5,13 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "io/reads_io/ireadstream.hpp"
+#include "io/reads/ireadstream.hpp"
 #include "valid_kmer_generator.hpp"
 #include "globals.hpp"
 #include "kmer_data.hpp"
 #include "read_corrector.hpp"
 
-#include "io/kmers_io/mmapped_writer.hpp"
+#include "io/kmers/mmapped_writer.hpp"
 
 #include <iostream>
 #include <fstream>

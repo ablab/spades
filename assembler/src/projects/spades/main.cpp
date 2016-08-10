@@ -8,12 +8,12 @@
 /*
  * Assembler Main
  */
-#include "dev_support/logger/log_writers.hpp"
+#include "utils/logger/log_writers.hpp"
 
-#include "dev_support/memory_limit.hpp"
-#include "dev_support/segfault_handler.hpp"
+#include "utils/memory_limit.hpp"
+#include "utils/segfault_handler.hpp"
 #include "launch.hpp"
-#include "dev_support/copy_file.hpp"
+#include "utils/copy_file.hpp"
 #include "version.hpp"
 
 void load_config(const vector<string>& cfg_fns) {

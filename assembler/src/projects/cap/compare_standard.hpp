@@ -7,16 +7,16 @@
 
 #pragma once
 
-#include "dev_support/standard_base.hpp"
+#include "utils/standard_base.hpp"
 
 // log
-#include "dev_support/logger/logger.hpp"
+#include "utils/logger/logger.hpp"
 
 // utils
-#include "dev_support/cpp_utils.hpp"
-#include "dev_support/path_helper.hpp"
+#include "utils/cpp_utils.hpp"
+#include "utils/path_helper.hpp"
 
-#include "dev_support/simple_tools.hpp"
+#include "utils/simple_tools.hpp"
 
 // longseq
 #include "longseq.hpp"
@@ -25,12 +25,12 @@
 #include "cap_config_struct.hpp"
 
 // io
-#include "io/reads_io/ireader.hpp"
-#include "io/reads_io/converting_reader_wrapper.hpp"
-#include "io/reads_io/vector_reader.hpp"
-#include "io/reads_io/multifile_reader.hpp"
-#include "io/reads_io/rc_reader_wrapper.hpp"
-#include "io/reads_io/osequencestream.hpp"
+#include "io/reads/ireader.hpp"
+#include "io/reads/converting_reader_wrapper.hpp"
+#include "io/reads/vector_reader.hpp"
+#include "io/reads/multifile_reader.hpp"
+#include "io/reads/rc_reader_wrapper.hpp"
+#include "io/reads/osequencestream.hpp"
 
 namespace cap {
 typedef io::SingleRead Contig;
@@ -42,6 +42,6 @@ typedef io::ReadStreamList<Contig> ContigStreams;
 }
 
 // debruijn
-#include "assembly_graph/graph_core/graph.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "algorithms/graph_construction.hpp"
+#include "modules/graph_construction.hpp"

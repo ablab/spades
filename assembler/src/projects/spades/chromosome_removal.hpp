@@ -7,8 +7,9 @@
 #pragma once
 
 #include "pipeline/stage.hpp"
-#include "assembly_graph/graph_core/graph.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
+
 namespace debruijn_graph {
 
 class ChromosomeRemoval : public spades::AssemblyStage {

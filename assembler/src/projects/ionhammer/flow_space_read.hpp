@@ -8,7 +8,7 @@
 #ifndef __HAMMER_IT_FLOW_SPACE_READ_HPP__
 #define __HAMMER_IT_FLOW_SPACE_READ_HPP__
 
-#include "io/reads/single_read.hpp"
+#include "common/basic/reads/single_read.hpp"
 #include "HSeq.hpp"
 
 #include <deque>

@@ -9,13 +9,13 @@
 #include "io/dataset_support/read_converter.hpp"
 
 #include "pair_info_count.hpp"
-#include "assembly_graph/graph_alignment/short_read_mapper.hpp"
-#include "assembly_graph/graph_alignment/long_read_mapper.hpp"
+#include "modules/alignment/short_read_mapper.hpp"
+#include "modules/alignment/long_read_mapper.hpp"
 #include "paired_info/pair_info_filler.hpp"
-#include "algorithms/path_extend/split_graph_pair_info.hpp"
+#include "modules/path_extend/split_graph_pair_info.hpp"
 #include "paired_info/bwa_pair_info_filler.hpp"
-#include "utils/adt/bf.hpp"
-#include "utils/adt/hll.hpp"
+#include "adt/bf.hpp"
+#include "adt/hll.hpp"
 
 namespace debruijn_graph {
 

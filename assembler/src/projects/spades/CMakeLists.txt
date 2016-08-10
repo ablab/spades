@@ -14,11 +14,11 @@ add_executable(spades main.cpp
             second_phase_setup.cpp
             distance_estimation.cpp
             repeat_resolving.cpp
-        hybrid_aligning.cpp
+            hybrid_aligning.cpp
             chromosome_removal.cpp)
 
 target_include_directories(spades PRIVATE ${EXT_DIR}/include/ConsensusCore)
-target_link_libraries(spades ConsensusCore spades_modules nlopt BamTools ssw ${COMMON_LIBRARIES})
+target_link_libraries(spades ConsensusCore common_modules nlopt BamTools ssw ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)

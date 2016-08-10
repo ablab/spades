@@ -11,8 +11,8 @@
 #include "../command.hpp"
 #include "../errors.hpp"
 #include "../argument_list.hpp"
-#include "assembly_graph/graph_alignment/sequence_mapper.hpp"
-#include "io/reads/single_read.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
+#include "common/basic/reads/single_read.hpp"
 
 namespace online_visualization {
 

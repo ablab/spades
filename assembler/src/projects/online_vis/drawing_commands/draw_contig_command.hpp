@@ -10,7 +10,7 @@
 #include "../environment.hpp"
 #include "../command.hpp"
 #include "../errors.hpp"
-#include "io/reads_io/wrapper_collection.hpp"
+#include "io/reads/wrapper_collection.hpp"
 
 namespace online_visualization {
 class DrawContigCommand : public DrawingCommand {

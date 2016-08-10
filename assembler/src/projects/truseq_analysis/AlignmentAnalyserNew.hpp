@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "assembly_graph/graph_core/graph.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "consistent_mapping.h"
 

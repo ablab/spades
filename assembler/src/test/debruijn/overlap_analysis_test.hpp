@@ -1,8 +1,8 @@
 #pragma once
 
 #include <boost/test/unit_test.hpp>
-#include "algorithms/path_extend/overlap_analysis.hpp"
-#include "algorithms/path_extend/path_extender.hpp"
+#include "modules/path_extend/overlap_analysis.hpp"
+#include "modules/path_extend/path_extender.hpp"
 //#include "repeat_resolving_routine.hpp"
 
 namespace debruijn_graph {

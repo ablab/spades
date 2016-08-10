@@ -10,8 +10,8 @@
 #include "cap_environment.hpp"
 #include "cap_environment_manager.hpp"
 #include "mosaic.hpp"
-#include "io/reads_io/sequence_reader.hpp"
-#include "dev_support/path_helper.hpp"
+#include "io/reads/sequence_reader.hpp"
+#include "utils/path_helper.hpp"
 
 namespace online_visualization {
 

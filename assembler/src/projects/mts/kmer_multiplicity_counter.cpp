@@ -5,15 +5,16 @@
 #include <sstream>
 #include <iostream>
 #include <memory>
-#include <io/kmers_io/mmapped_reader.hpp>
+#include <algorithm>
 #include <libcxx/sort.hpp>
+#include <boost/optional/optional.hpp>
 #include "getopt_pp/getopt_pp.h"
 #include "kmc_api/kmc_file.h"
 //#include "omp.h"
-#include <data_structures/sequence/runtime_k.hpp>
-#include <boost/optional/optional.hpp>
-#include "dev_support/path_helper.hpp"
-#include "dev_support/simple_tools.hpp"
+#include "io/kmers/mmapped_reader.hpp"
+#include "basic/sequence/runtime_k.hpp"
+#include "utils/path_helper.hpp"
+#include "utils/simple_tools.hpp"
 
 using std::string;
 using std::vector;

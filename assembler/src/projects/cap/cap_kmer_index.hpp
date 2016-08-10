@@ -10,11 +10,11 @@
 #include "compare_standard.hpp"
 #include "longseq.hpp"
 #include "polynomial_hash.hpp"
-#include "utils/adt/kmer_map.hpp"
-#include "data_structures/indices/edge_position_index.hpp"
+#include "common/adt/kmer_map.hpp"
+#include "utils/indices/edge_position_index.hpp"
 
-#include "io/reads_io/sequence_reader.hpp"
-#include "data_structures/mph_index/base_hash.hpp"
+#include "io/reads/sequence_reader.hpp"
+#include "utils/mph_index/base_hash.hpp"
 
 template<>
 struct kmer_index_traits<cap::LSeq> {

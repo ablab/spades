@@ -14,7 +14,7 @@
 
 #include "config_struct_hammer.hpp"
 #include "pipeline/config_common.hpp"
-#include "dev_support/openmp_wrapper.h"
+#include "utils/openmp_wrapper.h"
 
 #include <boost/property_tree/ptree.hpp>
 #include <string>

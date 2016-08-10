@@ -13,7 +13,7 @@
 #include "command.hpp"
 #include "loaded_environments.hpp"
 #include "environment.hpp"
-#include "dev_support/autocompletion.hpp"
+#include "utils/autocompletion.hpp"
 
 //#include "all_commands.hpp"
 #include "base_commands.hpp"

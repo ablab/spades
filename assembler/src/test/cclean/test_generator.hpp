@@ -17,10 +17,10 @@
 #include "running_modes.hpp"
 #include "io/read_processor.hpp"
 #include "io/read.hpp"
-#include "dev_support/logger/logger.hpp"
+#include "utils/logger/logger.hpp"
 #include "brute_force_clean.hpp"
-#include "dev_support/simple_tools.hpp"
-#include "dev_support/logger/log_writers.hpp"
+#include "utils/simple_tools.hpp"
+#include "utils/logger/log_writers.hpp"
 #include "adapter_index.hpp"
 
 constexpr int READS_IN_TEST = 700000;

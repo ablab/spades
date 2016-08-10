@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "data_structures/sequence/runtime_k.hpp"
+#include "basic/sequence/runtime_k.hpp"
 #include "compare_standard.hpp"
 #include "cap_kmer_index.hpp"
-#include "algorithms/graph_construction.hpp"
+#include "modules/graph_construction.hpp"
 
 namespace cap {
 

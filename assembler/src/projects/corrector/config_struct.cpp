@@ -7,7 +7,7 @@
 
 #include "config_struct.hpp"
 
-#include "dev_support/openmp_wrapper.h"
+#include "utils/openmp_wrapper.h"
 
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"

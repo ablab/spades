@@ -8,7 +8,7 @@
 #include "interesting_pos_processor.hpp"
 #include "config_struct.hpp"
 
-#include "dev_support/logger/logger.hpp"
+#include "utils/logger/logger.hpp"
 
 using namespace std;
 

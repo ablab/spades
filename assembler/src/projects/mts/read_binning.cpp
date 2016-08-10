@@ -5,11 +5,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "dev_support/simple_tools.hpp"
-#include "dev_support/logger/log_writers.hpp"
+#include "utils/simple_tools.hpp"
+#include "utils/logger/log_writers.hpp"
 
 #include "pipeline/graphio.hpp"
-#include "io/reads_io/file_reader.hpp"
+#include "io/reads/file_reader.hpp"
 #include "read_binning.hpp"
 
 namespace debruijn_graph {

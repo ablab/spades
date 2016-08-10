@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "dev_support/standard_base.hpp"
+#include "utils/standard_base.hpp"
 #include "alignment_analyser.hpp"
 
 namespace alignment_analysis {

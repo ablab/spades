@@ -3,7 +3,7 @@
 #include "pipeline/stage.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
-#include "algorithms/simplification/tip_clipper.hpp"
+#include "modules/simplification/tip_clipper.hpp"
 #include "projects/mts/contig_abundance.hpp"
 
 #include "llvm/Support/YAMLParser.h"

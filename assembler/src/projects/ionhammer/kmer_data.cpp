@@ -9,11 +9,11 @@
 #include "config_struct.hpp"
 #include "valid_hkmer_generator.hpp"
 
-#include "data_structures/mph_index/kmer_index_builder.hpp"
+#include "utils/mph_index/kmer_index_builder.hpp"
 
-#include "io/kmers_io/mmapped_writer.hpp"
-#include "io/reads_io/file_reader.hpp"
-#include "io/reads_io/read_processor.hpp"
+#include "io/kmers/mmapped_writer.hpp"
+#include "io/reads/file_reader.hpp"
+#include "io/reads/read_processor.hpp"
 
 using namespace hammer;
 

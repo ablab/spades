@@ -5,8 +5,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "io/reads_io/ireadstream.hpp"
-#include "dev_support/openmp_wrapper.h"
+#include "io/reads/ireadstream.hpp"
+#include "utils/openmp_wrapper.h"
 
 #include "hammer_tools.hpp"
 #include "hamcluster.hpp"

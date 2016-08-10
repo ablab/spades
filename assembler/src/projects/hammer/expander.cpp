@@ -12,7 +12,7 @@
 #include "kmer_data.hpp"
 #include "valid_kmer_generator.hpp"
 
-#include "io/reads/read.hpp"
+#include "common/basic/reads/read.hpp"
 
 #include <vector>
 #include <cstring>

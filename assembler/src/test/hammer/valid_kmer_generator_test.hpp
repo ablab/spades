@@ -12,7 +12,7 @@
 #include <map>
 #include "cute/cute.h"
 #include "io/read.hpp"
-#include "data_structures/sequence/seq.hpp"
+#include "basic/sequence/seq.hpp"
 #include "valid_kmer_generator.hpp"
 
 void TestValidKMerGenerator() {

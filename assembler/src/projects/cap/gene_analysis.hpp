@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "dev_support/standard_base.hpp"
-#include "dev_support/simple_tools.hpp"
+#include "utils/standard_base.hpp"
+#include "utils/simple_tools.hpp"
 #include "comparison_utils.hpp"
 #include "boost/tokenizer.hpp"
 #include "coloring.hpp"

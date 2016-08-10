@@ -9,10 +9,10 @@
 
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/graphio.hpp"
-#include "dev_support/simple_tools.hpp"
-#include "algorithms/simplification/cleaner.hpp"
-#include "io/reads_io/splitting_wrapper.hpp"
-#include "io/reads_io/multifile_reader.hpp"
+#include "utils/simple_tools.hpp"
+#include "modules/simplification/cleaner.hpp"
+#include "io/reads/splitting_wrapper.hpp"
+#include "io/reads/multifile_reader.hpp"
 #include <boost/algorithm/string/predicate.hpp>
 
 #include "coloring.hpp"

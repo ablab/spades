@@ -10,10 +10,10 @@
 
 #include "kmer_stat.hpp"
 #include "kmer_data.hpp"
-#include "io/kmers_io/mmapped_reader.hpp"
+#include "io/kmers/mmapped_reader.hpp"
 
-#include "dev_support/logger/logger.hpp"
-#include "data_structures/sequence/seq.hpp"
+#include "utils/logger/logger.hpp"
+#include "basic/sequence/seq.hpp"
 
 #include <iostream>
 #include <vector>

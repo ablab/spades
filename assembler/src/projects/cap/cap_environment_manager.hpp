@@ -22,7 +22,7 @@
 #include "test_utils.hpp"
 
 #include "cap_environment.hpp"
-#include "io/reads_io/sequence_reader.hpp"
+#include "io/reads/sequence_reader.hpp"
 #include "pipeline/config_struct.hpp"
 #include "junk_cropping_reader.hpp"
 

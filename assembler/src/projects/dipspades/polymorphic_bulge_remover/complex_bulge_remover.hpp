@@ -19,7 +19,7 @@
 #include "bulge_gluer.hpp"
 #include "diploid_bulge_finder.hpp"
 
-#include "io/reads_io/splitting_wrapper.hpp"
+#include "io/reads/splitting_wrapper.hpp"
 
 #include <stdlib.h>
 #include <memory.h>

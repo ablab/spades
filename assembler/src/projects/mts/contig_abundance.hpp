@@ -1,7 +1,7 @@
 #pragma once
 
-#include "data_structures/indices/kmer_splitters.hpp"
-#include "data_structures/indices/perfect_hash_map_builder.hpp"
+#include "utils/indices/kmer_splitters.hpp"
+#include "utils/indices/perfect_hash_map_builder.hpp"
 
 namespace debruijn_graph {
 

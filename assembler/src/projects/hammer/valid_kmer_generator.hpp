@@ -10,8 +10,8 @@
 
 #include "globals.hpp"
 
-#include "io/reads/read.hpp"
-#include "data_structures/sequence/seq.hpp"
+#include "common/basic/reads/read.hpp"
+#include "basic/sequence/seq.hpp"
 
 #include <string>
 #include <vector>

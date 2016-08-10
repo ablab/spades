@@ -2,10 +2,10 @@
 #include <string>
 #include <iostream>
 #include "getopt_pp/getopt_pp.h"
-#include "dev_support/verify.hpp"
+#include "utils/verify.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "io/reads_io/file_reader.hpp"
-#include "io/reads_io/osequencestream.hpp"
+#include "io/reads/file_reader.hpp"
+#include "io/reads/osequencestream.hpp"
 #include "pipeline/graphio.hpp"
 #include "logger.hpp"
 #include "formats.hpp"

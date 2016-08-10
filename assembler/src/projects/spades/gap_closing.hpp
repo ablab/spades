@@ -1,9 +1,9 @@
 #pragma once
 
-#include "assembly_graph/graph_core/graph.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 #include "assembly_graph/graph_support/edge_removal.hpp"
-#include "algorithms/simplification/compressor.hpp"
+#include "modules/simplification/compressor.hpp"
 
 namespace debruijn_graph {
 

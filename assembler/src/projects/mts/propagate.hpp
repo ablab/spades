@@ -5,9 +5,9 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "io/reads/single_read.hpp"
-#include "io/reads_io/io_helper.hpp"
-#include "io/reads_io/osequencestream.hpp"
+#include "basic/reads/single_read.hpp"
+#include "io/reads/io_helper.hpp"
+#include "io/reads/osequencestream.hpp"
 #include "annotation.hpp"
 
 namespace debruijn_graph {

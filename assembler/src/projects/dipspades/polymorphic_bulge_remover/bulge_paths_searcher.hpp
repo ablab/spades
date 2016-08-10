@@ -8,7 +8,7 @@
 #pragma once
 
 #include <vector>
-#include "algorithms/dijkstra/dijkstra_helper.hpp"
+#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 #include "dipspades_config.hpp"
 

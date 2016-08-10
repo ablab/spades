@@ -10,9 +10,9 @@
 #include "../environment.hpp"
 #include "../command.hpp"
 #include "../errors.hpp"
-#include "io/reads_io/wrapper_collection.hpp"
+#include "io/reads/wrapper_collection.hpp"
 #include <boost/algorithm/string.hpp>
-#include "assembly_graph/graph_core/basic_graph_stats.hpp"
+#include "assembly_graph/core/basic_graph_stats.hpp"
 
 #include <boost/algorithm/string/predicate.hpp>
 

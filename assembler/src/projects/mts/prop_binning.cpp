@@ -6,13 +6,13 @@
 //***************************************************************************
 
 #include "getopt_pp/getopt_pp.h"
-#include "io/reads_io/io_helper.hpp"
-#include "io/reads_io/osequencestream.hpp"
+#include "io/reads/io_helper.hpp"
+#include "io/reads/osequencestream.hpp"
 #include "pipeline/graphio.hpp"
 #include "logger.hpp"
 #include "read_binning.hpp"
 #include "propagate.hpp"
-#include <modules/visualization/position_filler.hpp>
+#include "visualization/position_filler.hpp"
 
 using namespace debruijn_graph;
 

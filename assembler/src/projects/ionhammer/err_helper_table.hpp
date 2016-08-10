@@ -16,7 +16,7 @@
 #include <cstdlib>
 #include <cassert>
 
-#include "dev_support/logger/logger.hpp"
+#include "utils/logger/logger.hpp"
 
 namespace hammer {
 

@@ -9,15 +9,15 @@
 #include "vis_logger.hpp"
 
 #include "standard_vis.hpp"
-#include "dev_support/segfault_handler.hpp"
-#include "dev_support/stacktrace.hpp"
+#include "utils/segfault_handler.hpp"
+#include "utils/stacktrace.hpp"
 #include "pipeline/config_struct.hpp"
-#include "io/reads_io/io_helper.hpp"
-#include "dev_support/simple_tools.hpp"
+#include "io/reads/io_helper.hpp"
+#include "utils/simple_tools.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "dev_support/memory_limit.hpp"
+#include "utils/memory_limit.hpp"
 #include "io/dataset_support/read_converter.hpp"
 
 #include "debruijn_online_visualizer.hpp"

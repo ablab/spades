@@ -14,7 +14,7 @@
 #include "consensus.hpp"
 #include "valid_hkmer_generator.hpp"
 #include "config_struct.hpp"
-#include "io/reads/single_read.hpp"
+#include "common/basic/reads/single_read.hpp"
 
 #include <boost/optional.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
@@ -35,7 +35,7 @@
 #include <fstream>
 
 #if 1
-#include "data_structures/sequence/nucl.hpp"
+#include "basic/sequence/nucl.hpp"
 #include <iostream>
 #include <iomanip>
 #endif

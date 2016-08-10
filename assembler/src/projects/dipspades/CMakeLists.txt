@@ -8,11 +8,11 @@
 project(dipspades CXX)
 
 add_executable(dipspades
-	       dipspades_config.cpp
-	       utils/files_utils.cpp
+               dipspades_config.cpp
+               utils/files_utils.cpp
                main.cpp)
 
-target_link_libraries(dipspades spades_modules ${COMMON_LIBRARIES})
+target_link_libraries(dipspades common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(dipspades PROPERTIES LINK_SEARCH_END_STATIC 1)

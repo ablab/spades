@@ -9,9 +9,9 @@
 #define HAMMER_SUBKMER_SORTER_HPP
 
 #include "kmer_data.hpp"
-#include "io/kmers_io/mmapped_reader.hpp"
+#include "io/kmers/mmapped_reader.hpp"
 
-#include "dev_support/logger/logger.hpp"
+#include "utils/logger/logger.hpp"
 #include "HSeq.hpp"
 
 #include <iostream>

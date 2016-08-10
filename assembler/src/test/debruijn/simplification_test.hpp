@@ -9,7 +9,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include "test_utils.hpp"
-#include "algorithms/simplification/parallel_simplification_algorithms.hpp"
+#include "modules/simplification/parallel_simplification_algorithms.hpp"
 #include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 //#include "repeat_resolving_routine.hpp"

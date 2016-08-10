@@ -5,12 +5,12 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "dev_support/standard_base.hpp"
-#include "io/reads_io/rc_reader_wrapper.hpp"
-#include "io/reads_io/sequence_reader.hpp"
+#include "utils/standard_base.hpp"
+#include "io/reads/rc_reader_wrapper.hpp"
+#include "io/reads/sequence_reader.hpp"
 #include "diff_masking.hpp"
-#include "utils/adt/bag.hpp"
-#include "io/reads_io/vector_reader.hpp"
+#include "common/adt/bag.hpp"
+#include "io/reads/vector_reader.hpp"
 #include "visualization/graph_colorer.hpp"
 
 namespace cap {

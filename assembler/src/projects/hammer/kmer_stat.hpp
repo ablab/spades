@@ -8,9 +8,9 @@
 #ifndef HAMMER_KMERSTAT_HPP_
 #define HAMMER_KMERSTAT_HPP_
 
-#include "dev_support/verify.hpp"
+#include "utils/verify.hpp"
 
-#include "data_structures/sequence/seq.hpp"
+#include "basic/sequence/seq.hpp"
 
 #include <folly/SmallLocks.h>
 

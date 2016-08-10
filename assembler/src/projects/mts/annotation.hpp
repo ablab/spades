@@ -6,10 +6,10 @@
 //***************************************************************************
 #pragma once
 
-#include "dev_support/standard_base.hpp"
+#include "utils/standard_base.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "assembly_graph/graph_alignment/sequence_mapper.hpp"
-#include "io/reads_io/io_helper.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
+#include "io/reads/io_helper.hpp"
 #include "formats.hpp"
 
 namespace debruijn_graph {

@@ -5,16 +5,15 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "modules/alignment/pacbio/pac_index.hpp"
 #include "hybrid_gap_closer.hpp"
-#include "hybrid_aligning.hpp"
-#include "assembly_graph/graph_alignment/pacbio/pac_index.hpp"
-#include "assembly_graph/graph_alignment/sequence_mapper_notifier.hpp"
-#include "assembly_graph/graph_alignment/long_read_storage.hpp"
+#include "modules/alignment/long_read_mapper.hpp"
+#include "modules/alignment/short_read_mapper.hpp"
+#include "io/reads/wrapper_collection.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
-#include "io/reads_io/wrapper_collection.hpp"
-#include "io/reads_io/multifile_reader.hpp"
-#include "assembly_graph/graph_alignment/long_read_mapper.hpp"
-#include "assembly_graph/graph_alignment/short_read_mapper.hpp"
+#include "hybrid_aligning.hpp"
+#include "pair_info_count.hpp"
+#include "io/reads/multifile_reader.hpp"
 
 namespace debruijn_graph {
 
@@ -225,7 +224,6 @@ io::SingleStreamPtr GetReadsStream(const io::SequencingLibrary<config::DataSetDa
 }
 
 class PacbioAligner {
-    const conj_graph_pack& gp_;
     const pacbio::PacBioMappingIndex<Graph>& pac_index_;
     PathStorage<Graph>& path_storage_;
     GapStorage& gap_storage_;
@@ -289,12 +287,10 @@ class PacbioAligner {
     }
 
 public:
-    PacbioAligner(const conj_graph_pack& gp,
-                  const pacbio::PacBioMappingIndex<Graph>& pac_index,
+    PacbioAligner(const pacbio::PacBioMappingIndex<Graph>& pac_index,
                   PathStorage<Graph>& path_storage,
                   GapStorage& gap_storage,
                   size_t read_buffer_size = 50000) :
-            gp_(gp),
             pac_index_(pac_index),
             path_storage_(path_storage),
             gap_storage_(gap_storage),
@@ -347,7 +343,7 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
                                                 cfg::get().output_dir,
                                                 cfg::get().pb);
 
-    PacbioAligner aligner(gp, pac_index, path_storage, gap_storage);
+    PacbioAligner aligner(pac_index, path_storage, gap_storage);
 
     auto stream = GetReadsStream(lib);
     aligner(*stream, thread_cnt);

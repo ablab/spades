@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #pragma once
-#include "assembly_graph/graph_alignment/sequence_mapper.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
 #include "visualization/visualization_utils.hpp"
 
 namespace cap {

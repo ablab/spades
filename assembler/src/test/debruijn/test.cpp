@@ -5,8 +5,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "dev_support/standard_base.hpp"
-#include "dev_support/logger/log_writers.hpp"
+#include "utils/standard_base.hpp"
+#include "utils/logger/log_writers.hpp"
 
 #include "pipeline/graphio.hpp"
 #include "test_utils.hpp"

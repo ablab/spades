@@ -10,7 +10,7 @@
 #include "consensus.hpp"
 #include "hkmer_distance.hpp"
 #include "kmer_data.hpp"
-#include "dev_support/logger/log_writers.hpp"
+#include "utils/logger/log_writers.hpp"
 
 #include <boost/numeric/ublas/matrix.hpp>
 

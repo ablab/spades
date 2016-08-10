@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "io/reads_io/io_helper.hpp"
+#include "io/reads/io_helper.hpp"
 
 #include "utils/element_printers.hpp"
 #include "utils/files_utils.hpp"

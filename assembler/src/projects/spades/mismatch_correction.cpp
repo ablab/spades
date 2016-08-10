@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include <algorithms/mismatch_shall_not_pass.hpp>
+#include <modules/mismatch_shall_not_pass.hpp>
 #include "mismatch_correction.hpp"
 
 #include "io/dataset_support/read_converter.hpp"

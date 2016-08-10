@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "dev_support/path_helper.hpp"
+#include "utils/path_helper.hpp"
 
-#include "io/reads_io/file_reader.hpp"
-#include "dev_support/path_helper.hpp"
+#include "io/reads/file_reader.hpp"
+#include "utils/path_helper.hpp"
 
 #include "pipeline/library.hpp"
 

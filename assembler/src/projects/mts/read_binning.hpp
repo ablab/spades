@@ -7,7 +7,7 @@
 #pragma once
 
 #include "annotation.hpp"
-#include "io/reads_io/io_helper.hpp"
+#include "io/reads/io_helper.hpp"
 
 namespace io {
 

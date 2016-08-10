@@ -5,12 +5,12 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "dev_support/simple_tools.hpp"
+#include "utils/simple_tools.hpp"
 
 //#include "pipeline/graphio.hpp"
 #include "pipeline/graph_pack.hpp"
 //#include "io/reads_io/file_reader.hpp"
-#include "algorithms/simplification/tip_clipper.hpp"
+#include "modules/simplification/tip_clipper.hpp"
 #include "propagate.hpp"
 #include "visualization.hpp"
 

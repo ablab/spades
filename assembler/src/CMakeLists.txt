@@ -20,7 +20,7 @@ set(CMAKE_MODULE_PATH
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 # Define various dirs
 set(SPADES_MAIN_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(SPADES_MODULES_DIR ${SPADES_MAIN_SRC_DIR}/modules)
+set(SPADES_MODULES_DIR ${SPADES_MAIN_SRC_DIR}/common)
 set(SPADES_MAIN_INCLUDE_DIR ${SPADES_MAIN_SRC_DIR}/include)
 set(SPADES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(SPADES_TOOLS_BINARY_DIR ${SPADES_BINARY_DIR}/bin)
@@ -82,7 +82,7 @@ if (NOT OPENMP_FOUND)
 endif()
 
 # sub projects
-add_subdirectory(modules)
+add_subdirectory(common)
 add_subdirectory(projects)
 add_subdirectory(spades_pipeline)
 

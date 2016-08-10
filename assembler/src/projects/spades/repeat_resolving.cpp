@@ -5,15 +5,15 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "dev_support/logger/logger.hpp"
+#include "utils/logger/logger.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "visualization/graph_labeler.hpp"
 #include "paired_info/distance_estimation.hpp"
 #include "paired_info/smoothing_distance_estimation.hpp"
-#include "algorithms/path_extend/path_extend_launch.hpp"
+#include "modules/path_extend/path_extend_launch.hpp"
 #include "assembly_graph/graph_support/contig_output.hpp"
 #include "visualization/position_filler.hpp"
-#include "assembly_graph/graph_alignment/long_read_storage.hpp"
+#include "modules/alignment/long_read_storage.hpp"
 #include "repeat_resolving.hpp"
 
 namespace debruijn_graph {

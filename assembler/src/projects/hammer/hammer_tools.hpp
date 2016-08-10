@@ -13,12 +13,12 @@
 #include <stdexcept>
 #include <iomanip>
 #include <fstream>
-#include "io/reads/read.hpp"
-#include "io/reads_io/ireadstream.hpp"
-#include "data_structures/sequence/seq.hpp"
+#include "common/basic/reads/read.hpp"
+#include "io/reads/ireadstream.hpp"
+#include "basic/sequence/seq.hpp"
 #include "globals.hpp"
 #include "kmer_stat.hpp"
-#include "io/kmers_io/mmapped_reader.hpp"
+#include "io/kmers/mmapped_reader.hpp"
 
 namespace hammer {
 

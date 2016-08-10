@@ -15,7 +15,7 @@
 #include "visualization/visualization.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/components/graph_component.hpp"
-#include "algorithms/simplification/compressor.hpp"
+#include "modules/simplification/compressor.hpp"
 
 using namespace debruijn_graph;
 

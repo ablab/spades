@@ -7,7 +7,7 @@
 
 #include "gap_closer.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
-#include "algorithms/simplification/compressor.hpp"
+#include "modules/simplification/compressor.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include <stack>
 

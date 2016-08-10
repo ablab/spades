@@ -1,6 +1,6 @@
 #pragma once
 
-#include "io/reads/single_read.hpp"
+#include "basic/reads/single_read.hpp"
 
 namespace debruijn_graph {
 

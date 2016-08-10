@@ -20,15 +20,15 @@
 #include "kmer_data.hpp"
 #include "expander.hpp"
 
-#include "utils/adt/concurrent_dsu.hpp"
-#include "dev_support/segfault_handler.hpp"
-#include "io/reads_io/read_processor.hpp"
-#include "io/reads_io/ireadstream.hpp"
+#include "common/adt/concurrent_dsu.hpp"
+#include "utils/segfault_handler.hpp"
+#include "io/reads/read_processor.hpp"
+#include "io/reads/ireadstream.hpp"
 
-#include "dev_support/memory_limit.hpp"
+#include "utils/memory_limit.hpp"
 
-#include "dev_support/logger/logger.hpp"
-#include "dev_support/logger/log_writers.hpp"
+#include "utils/logger/logger.hpp"
+#include "utils/logger/log_writers.hpp"
 
 #include "version.hpp"
 

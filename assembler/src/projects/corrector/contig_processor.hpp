@@ -15,10 +15,10 @@
 #pragma once
 #include "interesting_pos_processor.hpp"
 #include "positional_read.hpp"
-#include "dev_support/openmp_wrapper.h"
+#include "utils/openmp_wrapper.h"
 
-#include <io/sam_io/sam_reader.hpp>
-#include <io/sam_io/read.hpp>
+#include <io/sam/sam_reader.hpp>
+#include <io/sam/read.hpp>
 #include "pipeline/library.hpp"
 
 #include <string>

@@ -7,21 +7,21 @@
 
 #include "pipeline/graphio.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "dev_support/simple_tools.hpp"
-#include "dev_support/path_helper.hpp"
-#include "dev_support/logger/log_writers.hpp"
-#include "math/xmath.h"
+#include "utils/simple_tools.hpp"
+#include "utils/path_helper.hpp"
+#include "utils/logger/log_writers.hpp"
+#include "utils/math/xmath.h"
 #include <iostream>
 #include <vector>
-#include "io/reads_io/multifile_reader.hpp"
-#include "io/reads_io/splitting_wrapper.hpp"
-#include "io/reads_io/modifying_reader_wrapper.hpp"
-#include "io/reads_io/vector_reader.hpp"
-#include "io/reads_io/file_reader.hpp"
+#include "io/reads/multifile_reader.hpp"
+#include "io/reads/splitting_wrapper.hpp"
+#include "io/reads/modifying_reader_wrapper.hpp"
+#include "io/reads/vector_reader.hpp"
+#include "io/reads/file_reader.hpp"
 #include "annotation.hpp"
 #include "visualization.hpp"
 #include "visualization/position_filler.hpp"
-#include "algorithms/simplification/tip_clipper.hpp"
+#include "modules/simplification/tip_clipper.hpp"
 #include "getopt_pp/getopt_pp.h"
 
 using namespace debruijn_graph;

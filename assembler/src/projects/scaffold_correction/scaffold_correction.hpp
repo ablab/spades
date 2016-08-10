@@ -5,16 +5,16 @@
 //***************************************************************************
 
 #pragma once
-#include "io/reads_io/osequencestream.hpp"
-#include "io/reads_io/file_reader.hpp"
+#include "io/reads/osequencestream.hpp"
+#include "io/reads/file_reader.hpp"
 #include "pipeline/stage.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 #include "stages/construction.hpp"
 #include "pipeline/config_struct.hpp"
-#include "algorithms/dijkstra/dijkstra_algorithm.hpp"
-#include "algorithms/dijkstra/dijkstra_helper.hpp"
-#include "assembly_graph/graph_core/basic_graph_stats.hpp"
+#include "assembly_graph/dijkstra/dijkstra_algorithm.hpp"
+#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
+#include "assembly_graph/core/basic_graph_stats.hpp"
 
 namespace scaffold_correction {
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
