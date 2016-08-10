@@ -7,14 +7,16 @@ import os
 import os.path
 import yaml
 
-FASTA_EXTS = {"fasta", "fa", "fna", "fsa", "fastq", "fastq.gz", "fq", "fq.gz", "fna.gz"}
+FASTA_EXTS = {".fasta", ".fa", ".fna", ".fsa", ".fastq", ".fastq.gz", ".fq", ".fq.gz", ".fna.gz"}
 def gather_paths(path, basename=False):
     for filename in os.listdir(path):
-        name, _, ext = os.path.basename(filename).partition(".")
-        if ext in FASTA_EXTS:
+        name = os.path.basename(filename)
+        for ext in FASTA_EXTS:
+            if not name.endswith(ext):
+                continue
             filepath = os.path.join(path, filename)
             if basename:
-                yield (name, filepath)
+                yield (name[0:-len(ext)], filepath)
             else:
                 yield filepath
 
