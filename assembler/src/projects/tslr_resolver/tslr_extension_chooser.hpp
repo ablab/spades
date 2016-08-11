@@ -12,31 +12,33 @@
 using namespace path_extend;
 
 namespace tslr_resolver {
-
-    template <class Graph> //TODO remove from here
-        bool IsEdgeUnique(const Graph& g, const EdgeId& edge) {
-            return g.coverage(edge) < 1.1 * cfg::get().ts_res.reference_cov;
-        }
-
         class TrivialTSLRExtensionChooser : public ExtensionChooser {
 
             shared_ptr<BarcodeMapper> bmapper_;
             const EdgesPositionHandler<Graph>& edge_pos_;
-            int reference_cov_;
             size_t len_threshold_;
             double relative_diff_threshold_;
+            ScaffoldingUniqueEdgeStorage unique_storage_;
 
         public:
-            TrivialTSLRExtensionChooser(const conj_graph_pack& gp, const int& reference_cov, const size_t& len_threshold,
-                const double& relative_diff_threshold) :
-                    ExtensionChooser(gp.g), bmapper_(gp.barcode_mapper), 
-                    edge_pos_(gp.edge_pos), reference_cov_(reference_cov), 
-                    len_threshold_(len_threshold), relative_diff_threshold_(relative_diff_threshold) {
+            TrivialTSLRExtensionChooser(const conj_graph_pack& gp, size_t len_threshold,
+                double relative_diff_threshold, const ScaffoldingUniqueEdgeStorage& unique_storage) :
+                    ExtensionChooser(gp.g),
+                    bmapper_(gp.barcode_mapper),
+                    edge_pos_(gp.edge_pos),
+                    len_threshold_(len_threshold),
+                    relative_diff_threshold_(relative_diff_threshold),
+                    unique_storage_(unique_storage) {
             }
 
             EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
                 auto result = EdgeContainer();
                 if (edges.size() == 0) {
+                    return result;
+                }
+                //We might get single short edge as an input
+                if (edges.size() == 1 && g_.length(edges.back().e_) < len_threshold_) {
+                    result.push_back(edges.back());
                     return result;
                 }
                 //Find long unique edge earlier in path
@@ -45,7 +47,7 @@ namespace tslr_resolver {
                 EdgeId decisive_edge;
                 for (int i = static_cast<int> (path.Size()) - 1; !long_single_edge_exists && i >= 0; --i) {
                     EdgeId current_edge = path[i];
-                    if (IsEdgeUnique<Graph>(g_, current_edge) &&
+                    if (unique_storage_.IsUnique(current_edge) &&
                             g_.length(current_edge) > len_threshold_) {
                         long_single_edge_exists = true;
                         decisive_edge = current_edge;
@@ -55,9 +57,7 @@ namespace tslr_resolver {
                 //Exclude decisive edge from candidates
                 auto edges_copy = edges;
                 EraseEdge(edges_copy, decisive_edge);
-                if (edges_copy.size() == 1) {
-                    return edges_copy;
-                }
+
                 if (!long_single_edge_exists || edges_copy.size() == 0) {
                     if (edges_copy.size() == 0) {
                         DEBUG("Only decisive edge found");
@@ -65,12 +65,12 @@ namespace tslr_resolver {
                     return result;
                 }
                 
-                //Find edges with best barcode score
+                //Find edges with barcode score above threshold
                 auto fittest_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
-                                                     [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                                         return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) <
-                                                                this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge2.e_);
-                                                     }));
+                                         [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
+                                             return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) <
+                                                    this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge2.e_);
+                                         }));
                 double best_score = bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, fittest_edge.e_);
 
                 DEBUG("fittest edge " << fittest_edge.e_.int_id());
@@ -78,11 +78,10 @@ namespace tslr_resolver {
 
                 std::vector <EdgeWithDistance> best_candidates;
                 std::copy_if(edges_copy.begin(), edges_copy.end(), std::back_inserter(best_candidates), 
-                                    [this, &decisive_edge, best_score](const EdgeWithDistance& edge) {
-                                        return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) +
-                                        relative_diff_threshold_ > best_score &&
-                                        IsEdgeUnique<Graph>(g_, edge.e_);
-                                    });
+                                [this, &decisive_edge, best_score](const EdgeWithDistance& edge) {
+                                    return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
+                                                   relative_diff_threshold_ && unique_storage_.IsUnique(edge.e_);
+                                });
 
                 if (best_candidates.size() == 1) {
                     result.push_back(fittest_edge);
@@ -104,16 +103,16 @@ namespace tslr_resolver {
                 DEBUG("second best score " << second_best_score);
                 DEBUG(best_candidates.size() << " best candidates");
 
-                auto it = FindClosestEdge(best_candidates);
-                if (it == best_candidates.end()) {
-                    DEBUG("Closest edge wasn't found");
+                auto closest_edges = FindClosestEdge(best_candidates);
+                if (closest_edges.size() != 1) {
+                    DEBUG("Single topmin edge wasn't found");
                     for (auto edge : best_candidates) {
                         result.push_back(edge);
                     }
                 }
                 else {
-                    DEBUG("Found topologically closest edge");
-                    result.push_back(*it);
+                    DEBUG("Found topologically minimal edge");
+                    result.push_back(closest_edges.back());
                 }
                 return result;
             }
@@ -132,8 +131,9 @@ namespace tslr_resolver {
                     edges.erase(edges.begin() + ind);
             }
 
-            vector<EdgeWithDistance>::const_iterator FindClosestEdge(const vector<EdgeWithDistance>& edges) const {
+            vector<EdgeWithDistance> FindClosestEdge(const vector<EdgeWithDistance>& edges) const {
                 //Make it more effective if needed
+                vector <EdgeWithDistance> closest_edges;
                 auto it = edges.begin();
                 do {
                     auto edge = *it;
@@ -152,11 +152,11 @@ namespace tslr_resolver {
                         }
                     }
                     if (can_reach_everyone) {
-                        return it;
+                        closest_edges.push_back(*it);
                     }
                     ++it;
                 } while (it != edges.end());
-                return it;
+                return closest_edges;
             }
             DECL_LOGGER("TslrExtensionChooser")
         };

@@ -51,6 +51,7 @@ namespace omnigraph {
         const double barcode_threshold_;
         Bmapper mapper_;
         EdgeId decisive_edge_;
+        ScaffoldingUniqueEdgeStorage unique_storage_;
         vector <EdgeId>& candidates_;
     public:
         BarcodePutChecker(const Graph& g, 
@@ -58,26 +59,28 @@ namespace omnigraph {
             const double& barcode_threshold, 
             const Bmapper& mapper, 
             const EdgeId& decisive_edge,
+            const ScaffoldingUniqueEdgeStorage& unique_storage,
             vector<EdgeId>& candidates) : VertexPutChecker<Graph, distance_t> (),
                                                              g_(g), 
                                                              length_bound_(length_bound), 
                                                              barcode_threshold_(barcode_threshold),
                                                              mapper_(mapper), 
-                                                             decisive_edge_(decisive_edge), 
+                                                             decisive_edge_(decisive_edge),
+                                                             unique_storage_(unique_storage),
                                                              candidates_(candidates) { }
         bool Check(VertexId, EdgeId edge, distance_t) const {
             DEBUG("Checking edge " << edge.int_id());
             DEBUG("Length " << g_.length(edge)) 
-            DEBUG("decisive_edge" << decisive_edge_.int_id())
+            DEBUG("decisive_edge " << decisive_edge_.int_id())
             DEBUG("intersection " << mapper_->IntersectionSizeNormalizedByFirst(decisive_edge_, edge))
-            DEBUG("Is unique " << tslr_resolver::IsEdgeUnique(g_, edge))
+            DEBUG("Is unique " << unique_storage_.IsUnique(edge))
             if (g_.length(edge) < length_bound_ && 
                     mapper_->IntersectionSizeNormalizedByFirst(decisive_edge_, edge) > barcode_threshold_) {
                 DEBUG("Short edge, passed" << endl) 
                 return true;
             }
-            if (mapper_->IntersectionSizeNormalizedByFirst(decisive_edge_, edge) > barcode_threshold_) {
-                if (! tslr_resolver::IsEdgeUnique(g_, edge)) {
+//            if (mapper_->IntersectionSizeNormalizedByFirst(decisive_edge_, edge) > barcode_threshold_) {
+                if (! unique_storage_.IsUnique(edge)) {
                     DEBUG("Long non-unique nearby edge, passed" << endl) 
                     return true;
                 }
@@ -86,20 +89,16 @@ namespace omnigraph {
                     DEBUG("Long unique nearby edge, didn't pass" << endl)
                     return false;
                 }
-            }
-            DEBUG("Long edge, barcode check failed" << endl)
+//            }
+//            DEBUG("Long edge, barcode check failed" << endl)
             return false;
         }
 
-        vector <EdgeId> GetCandidates() const {
-            return candidates_;
-        }
         DECL_LOGGER("BarcodePutChecker")
     };
 
     template <class Graph>
     class BarcodeDijkstra {
-        typedef shared_ptr<tslr_resolver::BarcodeMapper> Bmapper;
         using BarcodeBoundedDijkstraSettings = ComposedDijkstraSettings<Graph,
                 LengthCalculator<Graph>,
                 BoundProcessChecker<Graph>,
