@@ -135,13 +135,6 @@ namespace tslr_resolver {
                 return false;
             }
 
-            LoopDetector loop_detector(&path, cov_map_);
-            DEBUG("loop detector");
-            if (!investigate_short_loops_ &&
-                (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
-                && extensionChooser_->WeightCounterBased()) {
-                return false;
-            }
             DEBUG("push");
             EdgeId eid = candidates.back().e_;
             
@@ -152,7 +145,6 @@ namespace tslr_resolver {
                     used_storage_->insert(eid);
                 }
             }
-
 
             path.PushBack(eid, candidates.back().d_);
             DEBUG("Push done, true");
@@ -251,8 +243,10 @@ namespace tslr_resolver {
                  pset.extension_options.max_repeat_length,
                  detect_repeats_online);
 
-        auto filtered_paths = FilterByLength(paths, len_threshold);
-        auto tslr_paths = resolver.extendSeeds(filtered_paths, *tslrPE);
+
+        seeds = resolver.makeSimpleSeeds();
+        //auto filtered_paths = FilterByLength(paths, len_threshold);
+        auto tslr_paths = resolver.extendSeeds(seeds, *tslrPE);
 
         FinalizePaths(params, tslr_paths, cover_map, min_edge_len, max_is_right_quantile);
 

@@ -91,15 +91,11 @@ namespace omnigraph {
             return false;
         }
 
-        vector <EdgeId> GetCandidates() const {
-            return candidates_;
-        }
         DECL_LOGGER("BarcodePutChecker")
     };
 
     template <class Graph>
     class BarcodeDijkstra {
-        typedef shared_ptr<tslr_resolver::BarcodeMapper> Bmapper;
         using BarcodeBoundedDijkstraSettings = ComposedDijkstraSettings<Graph,
                 LengthCalculator<Graph>,
                 BoundProcessChecker<Graph>,

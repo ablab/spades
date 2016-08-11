@@ -102,13 +102,12 @@ namespace tslr_resolver {
         using BarcodeMapper::g_;
         barcode_map_t barcode_map_heads;
         size_t tail_threshold_;
-        size_t norm_len_;
         BarcodeEncoder barcode_codes_;
 
     public:
-        HeadTailBarcodeMapper (const Graph &g, MapperType type, size_t tail_threshold, size_t norm_len) :
+        HeadTailBarcodeMapper (const Graph &g, MapperType type, size_t tail_threshold) :
                 BarcodeMapper(g, type), barcode_map_heads(),
-                tail_threshold_(tail_threshold), norm_len_(norm_len), barcode_codes_() {
+                tail_threshold_(tail_threshold),  barcode_codes_() {
             InitialFillMap();
         }
 
@@ -144,7 +143,7 @@ namespace tslr_resolver {
 
         virtual double IntersectionSizeNormalizedBySecond(const EdgeId &edge1, const EdgeId &edge2) const override {
             return static_cast <double> (IntersectionSize(edge1, edge2)) / 
-                static_cast <double> (GetSizeHeads(edge2) * GetSizeHeads(edge2));
+                static_cast <double> (GetSizeHeads(edge2));
         }
 
         virtual double IntersectionSizeNormalizedByFirst(const EdgeId &edge1, const EdgeId& edge2) const override {
@@ -180,10 +179,12 @@ namespace tslr_resolver {
             for (auto lib: lib_vec) {
                 std::string barcode = lib.barcode_;
                 barcode_codes_.AddEntry(barcode);
-                io::SeparatePairedReadStream paired_read_stream(lib.left_, lib.right_, 1);
+                std::shared_ptr<io::ReadStream<io::PairedRead>> paired_read_ptr =
+                        make_shared<io::SeparatePairedReadStream> (lib.left_, lib.right_, 1);
+                auto wrapped_stream = io::RCWrap(paired_read_ptr);
                 io::PairedRead read;
-                while (!paired_read_stream.eof() && debug_counter < debug_steps) {
-                    paired_read_stream >> read;
+                while (!wrapped_stream->eof() && debug_counter < debug_steps) {
+                    *wrapped_stream >> read;
                     auto path_first = mapper -> MapRead(read.first());
                     auto path_second = mapper -> MapRead(read.second());
                     std::vector<omnigraph::MappingPath<EdgeId> > paths = {path_first, path_second};
@@ -257,8 +258,8 @@ namespace tslr_resolver {
         using HeadTailBarcodeMapper::barcode_codes_;
     public:
         BitSetBarcodeMapper(const Graph& g, MapperType type,
-                            size_t tail_threshold = 10000, size_t norm_len = 10000) :
-                HeadTailBarcodeMapper(g, type, tail_threshold, norm_len)
+                            size_t tail_threshold = 1000) :
+                HeadTailBarcodeMapper(g, type, tail_threshold)
         {}
 
         size_t IntersectionSize(const EdgeId &edge1, const EdgeId &edge2) const override {
@@ -335,8 +336,8 @@ namespace tslr_resolver {
         using HeadTailBarcodeMapper::barcode_codes_;
     public:
         TrimmableBarcodeMapper(const Graph& g, MapperType type,
-                               size_t tail_threshold = 10000, size_t norm_len = 10000) :
-                HeadTailBarcodeMapper(g, type, tail_threshold, norm_len)
+                               size_t tail_threshold = 1000) :
+                HeadTailBarcodeMapper(g, type, tail_threshold)
         {}
 
         size_t IntersectionSize(const EdgeId &edge1, const EdgeId &edge2) const override {
@@ -374,7 +375,7 @@ namespace tslr_resolver {
             return static_cast <double> (barcodes_overall_heads) / static_cast <double> (edges);
         }
 
-        //Delete low abundant barcodes
+        //Delete low abundant barcodes from every edge
         void FilterByAbundance(size_t trimming_threshold) override {
             for (auto entry = barcode_map_heads.begin(); entry != barcode_map_heads.end(); ++entry) {
                 for (auto it = entry->second.begin(); it != entry->second.end() ;) {

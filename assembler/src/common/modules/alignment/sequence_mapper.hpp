@@ -71,7 +71,7 @@ public:
         size_t l = 0, r = 0;
         MappingPath<EdgeId> result;
         for(size_t i = 0; i < s.size(); i++) {
-            if (read.GetSequenceString()[i] == 'N') {
+            if (!is_nucl(read.GetSequenceString()[i])) {
                 if (r > l) {
                     result.join(this->MapSequence(Sequence(s.substr(l, r - l))), int(l));
                 }

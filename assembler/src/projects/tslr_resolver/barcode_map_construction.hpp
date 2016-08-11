@@ -23,7 +23,7 @@ namespace spades {
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
             INFO("Barcode map construction started...");
             graph_pack.barcode_mapper = std::make_shared<tslr_resolver::TrimmableBarcodeMapper>
-                    (graph_pack.g, tslr_resolver::MapperType::Trimmable);
+                    (graph_pack.g, tslr_resolver::MapperType::Trimmable, cfg::get().ts_res.edge_tail_len);
             bool debug_construction = cfg::get().ts_res.debug_construction;  //FIXME Remove that later
             graph_pack.barcode_mapper->FillMap(tslr_dataset_, graph_pack.index,
                                                graph_pack.kmer_mapper, debug_construction);

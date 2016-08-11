@@ -3,7 +3,6 @@
 
 namespace debruijn_graph {
     namespace graphio {
-        typedef string BarcodeId;
         typedef tslr_resolver::MapperType mtype;
         typedef tslr_resolver::BarcodeMapper BMapper;
 
@@ -36,7 +35,7 @@ namespace debruijn_graph {
         }
 
         inline void MapperChooser(std::shared_ptr<BMapper>& mapper,
-                           mtype map_type, Graph &g) { //TODO Make acceptable reflection
+                           mtype map_type, Graph &g) { //TODO Make acceptable deserialization
             switch (map_type) {
                 case mtype::Bitset : {
                     mapper = make_shared<tslr_resolver::BitSetBarcodeMapper> (g, map_type);

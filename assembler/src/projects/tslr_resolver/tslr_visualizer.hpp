@@ -25,7 +25,7 @@ namespace tslr_resolver {
             std::string ans;
             std::vector <std::string> head_labels;
             std::vector <std::string> tail_labels;
-            size_t max_vertices = 60;
+            size_t max_vertices = 10;
             size_t edge_length_bound = 10000;
             auto component = omnigraph::EdgeNeighborhood(graph(), e, max_vertices, edge_length_bound);
             auto edge_set = component.edges();

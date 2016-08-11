@@ -521,6 +521,7 @@ struct debruijn_config {
         double abs_threshold;
         size_t topsort_bound;
         bool debug_construction;
+        size_t edge_tail_len;
     };
 
     boost::optional<scaffold_correction> sc_cor;
