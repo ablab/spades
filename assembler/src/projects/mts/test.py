@@ -148,9 +148,9 @@ def check_etalons(args, workdir):
             continue
         try:
             log.log("Loading " + etalon)
-            et_table = Table.read(etalon, True)
+            et_table = Table.read(etalon, headers=True)
             log.log("Loading " + estimated)
-            est_table = Table.read(estimated, True)
+            est_table = Table.read(estimated, headers=True)
             log.log("Comparing GF for " + file)
             et_table.zip_with(est_table, compare_gf)
         except:

@@ -78,7 +78,7 @@ class Table:
         res = Table()
         with open(filepath) as input:
             for line in input:
-                params = line.split(sep)
+                params = line.strip("\n").split(sep)
                 if not res.colnames:
                     res.rownames = dict()
                     if headers:

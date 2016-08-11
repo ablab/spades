@@ -4,6 +4,7 @@ from __future__ import (print_function)
 import argparse
 import subprocess
 import sys
+import os
 
 parser = argparse.ArgumentParser(description="MTS - Metagenomic Time Series")
 
@@ -33,7 +34,7 @@ if args.stats:
 
 print("Step #3 - Bin reassembly")
 if args.reuse_assemblies and os.path.isdir(os.path.join(args.dir, "reassembly")):
-    call_snake(["reassemble_all", "--reuse-assemblies"])
+    call_snake(["reassemble_all", "--touch"])
 else:
     call_snake(["reassemble_all"])
 
