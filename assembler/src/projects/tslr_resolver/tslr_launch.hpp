@@ -2,6 +2,10 @@
 
 #include <barcode_map_construction.hpp>
 #include <tslr_resolver.hpp>
+#include <projects/spades/pair_info_count.hpp>
+#include <modules/stages/simplification.hpp>
+#include <modules/pipeline/genomic_info_filler.hpp>
+#include "projects/spades/distance_estimation.hpp"
 
 namespace spades {
 
@@ -19,7 +23,13 @@ namespace spades {
                               cfg::get().load_from,
                               cfg::get().output_saves});
         manager.add(new debruijn_graph::Construction())
-                .add(new BarcodeMapConstructionStage(cfg::get().K, path_to_tslr_dataset))
+                .add(new debruijn_graph::GenomicInfoFiller());
+        if (!cfg::get().ts_res.ideal_reads) {
+            manager.add(new debruijn_graph::Simplification);
+        }
+        manager.add(new BarcodeMapConstructionStage(cfg::get().K, path_to_tslr_dataset))
+                .add(new debruijn_graph::PairInfoCount())
+                .add(new debruijn_graph::DistanceEstimation())
                 .add(new TslrResolverStage(cfg::get().K, cfg::get().output_dir + "resolver_output.fasta", path_to_reference));
         INFO("Output directory: " << cfg::get().output_dir);
         conj_gp.kmer_mapper.Attach();
