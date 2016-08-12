@@ -310,7 +310,7 @@ void CloseGaps(conj_graph_pack& gp, bool rtype,
 
     HybridGapCloser gap_closer(gp.g, gap_storage,
                                gap_storage.min_gap_quantity(), consensus_f);
-    auto replacement = gap_closer(cfg::get().max_threads);
+    auto replacement = gap_closer();
 
     for (size_t j = 0; j < cfg::get().ds.reads.lib_count(); j++) {
         gp.single_long_reads[j].ReplaceEdges(replacement);
