@@ -8,14 +8,14 @@
 #pragma once
 
 #include "data_structures/indices/perfect_hash_map.hpp"
-#include "modules/assembly_graph/graph_alignment/sequence_mapper.hpp"
+#include "modules/assembly_graph/paths/mapping_path.hpp"
 #include "modules/assembly_graph/graph_core/graph.hpp"
 #include <algorithm>
 #include <map>
 #include <set>
 
 namespace pacbio {
-using debruijn_graph::GapDescription;
+typedef omnigraph::GapDescription<debruijn_graph::Graph> GapDescription;
 
 template<class T>
 struct pair_iterator_less {
@@ -149,19 +149,6 @@ private:
     ;
 };
 
-template<class Graph>
-GapDescription<Graph> CreateGapDescription(const KmerCluster<Graph>& a,
-                   const KmerCluster<Graph>& b,
-                   const Sequence& read,
-                   int pacbio_k) {
-    return GapDescription<Graph>(a.edgeId,
-                          b.edgeId,
-                          read.Subseq(a.sorted_positions[a.last_trustable_index].read_position,
-                                                          b.sorted_positions[b.first_trustable_index].read_position + pacbio_k),
-                          a.sorted_positions[a.last_trustable_index].edge_position,
-                          b.sorted_positions[b.first_trustable_index].edge_position + pacbio_k);
-}
-
 //template<class Graph>
 //struct GapDescription {
 //    typedef typename Graph::EdgeId EdgeId;
@@ -210,21 +197,6 @@ GapDescription<Graph> CreateGapDescription(const KmerCluster<Graph>& a,
 //    DECL_LOGGER("PacIndex")
 //    ;
 //}
-
-struct OneReadMapping {
-    vector<vector<debruijn_graph::EdgeId>> main_storage;
-    vector<GapDescription<debruijn_graph::Graph>> gaps;
-    vector<size_t> real_length;
-    //Total used seeds. sum over all subreads;
-    size_t seed_num;
-    OneReadMapping(const vector<vector<debruijn_graph::EdgeId>>& main_storage_,
-                   const vector<GapDescription<debruijn_graph::Graph>>& gaps_,
-                   const vector<size_t>& real_length_,
-                   size_t seed_num_) :
-            main_storage(main_storage_), gaps(gaps_), real_length(real_length_), seed_num(seed_num_) {
-    }
-
-};
 
 struct StatsCounter{
     map<size_t,size_t> path_len_in_edges;

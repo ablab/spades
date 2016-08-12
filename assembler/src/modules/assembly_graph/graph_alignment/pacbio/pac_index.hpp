@@ -14,7 +14,6 @@
 // FIXME: Layering violation, get rid of this
 #include "pipeline/config_struct.hpp"
 #include "pacbio_read_structures.hpp"
-#include "pipeline/config_struct.hpp"
 
 #include <algorithm>
 
@@ -23,6 +22,33 @@ enum {
     UNDEF_COLOR = -1,
     DELETED_COLOR = - 2
 };
+
+struct OneReadMapping {
+    vector<vector<debruijn_graph::EdgeId>> main_storage;
+    vector<GapDescription> gaps;
+    vector<size_t> real_length;
+    //Total used seeds. sum over all subreads;
+    size_t seed_num;
+    OneReadMapping(const vector<vector<debruijn_graph::EdgeId>>& main_storage_,
+                   const vector<GapDescription>& gaps_,
+                   const vector<size_t>& real_length_,
+                   size_t seed_num_) :
+            main_storage(main_storage_), gaps(gaps_), real_length(real_length_), seed_num(seed_num_) {
+    }
+
+};
+
+inline GapDescription CreateGapDescription(const KmerCluster<debruijn_graph::Graph>& a,
+                                    const KmerCluster<debruijn_graph::Graph>& b,
+                                    const Sequence& read,
+                                    int pacbio_k) {
+    return GapDescription(a.edgeId,
+                          b.edgeId,
+                          read.Subseq(a.sorted_positions[a.last_trustable_index].read_position,
+                                      b.sorted_positions[b.first_trustable_index].read_position + pacbio_k),
+                          a.sorted_positions[a.last_trustable_index].edge_position,
+                          b.sorted_positions[b.first_trustable_index].edge_position + pacbio_k);
+}
 
 template<class Graph>
 class PacBioMappingIndex {
@@ -279,7 +305,7 @@ public:
     }
 
     // is "non strictly dominates" required?
-    inline bool dominates(const KmerCluster<Graph> &a,
+    bool dominates(const KmerCluster<Graph> &a,
                           const KmerCluster<Graph> &b) const {
         size_t a_size = a.size;
         size_t b_size = b.size;
@@ -481,7 +507,7 @@ public:
         vector<int> colors = GetWeightedColors(mapping_descr, s);
         vector<vector<EdgeId> > sortedEdges;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
-        vector<GapDescription<Graph>> illumina_gaps;
+        vector<GapDescription> illumina_gaps;
         vector<int> used(len);
         size_t used_seed_count = 0;
         auto iter = mapping_descr.begin();

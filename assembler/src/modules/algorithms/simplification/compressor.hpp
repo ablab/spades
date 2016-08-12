@@ -8,13 +8,10 @@ namespace omnigraph {
 * simple one-by-one compressing has square complexity.
 */
 template<class Graph>
-class Compressor : public PersistentProcessingAlgorithm<Graph, typename Graph::VertexId,
-        ParallelInterestingElementFinder<Graph, typename Graph::VertexId>> {
+class Compressor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef PersistentProcessingAlgorithm <Graph,
-    VertexId, ParallelInterestingElementFinder<Graph, VertexId>> base;
-    typedef CompressCondition <Graph> ConditionT;
+    typedef CompressCondition<Graph> ConditionT;
 
     Graph &graph_;
     ConditionT compress_condition_;
@@ -40,9 +37,8 @@ class Compressor : public PersistentProcessingAlgorithm<Graph, typename Graph::V
         return true;
     }
 
-//do not use without checks:)
+    //do not use without checks:)
     EdgeId CompressWithoutChecks(VertexId v) {
-
         EdgeId e = graph_.GetUniqueOutgoingEdge(v);
         EdgeId start_edge = e;
         while (GoUniqueWayBackward(e) && e != start_edge
@@ -50,7 +46,6 @@ class Compressor : public PersistentProcessingAlgorithm<Graph, typename Graph::V
                                           graph_.EdgeEnd(e))) {
         }
         vector <EdgeId> mergeList;
-        //        e = graph_.conjugate(e);
         start_edge = e;
         do {
             mergeList.push_back(e);
@@ -64,25 +59,8 @@ class Compressor : public PersistentProcessingAlgorithm<Graph, typename Graph::V
 
     }
 
-//    //todo use graph method!
-//    bool CanCompressVertex(VertexId v) const {
-//        if (!graph_.CheckUniqueOutgoingEdge(v)
-//            || !graph_.CheckUniqueIncomingEdge(v)) {
-//            TRACE(
-//                    "Vertex "
-//                            << graph_.str(v)
-//                            << " judged NOT compressible. Proceeding to the next vertex");
-//            TRACE("Processing vertex " << graph_.str(v) << " finished");
-//            return false;
-//        }
-//        return true;
-//    }
 public:
-    Compressor(Graph &graph, size_t chunk_cnt = 1, bool safe_merging = true) :
-            base(graph,
-                 ParallelInterestingElementFinder<Graph, VertexId>(graph,
-                                                                   ConditionT(graph), chunk_cnt),
-                    /*canonical only*/true),
+    Compressor(Graph& graph, bool safe_merging = true) :
             graph_(graph),
             compress_condition_(graph),
             safe_merging_(safe_merging) {
@@ -94,13 +72,7 @@ public:
      * @return true if vertex can be compressed and false otherwise
      */
     bool CompressVertex(VertexId v) {
-        TRACE("Processing vertex " << graph_.str(v) << " started");
-        if (!compress_condition_.Check(v)) {
-            return false;
-        }
-        TRACE("Vertex " << graph_.str(v) << " judged compressible");
-        CompressWithoutChecks(v);
-        return true;
+        return CompressVertexEdgeId(v) != EdgeId(0);
     }
 
     EdgeId CompressVertexEdgeId(VertexId v) {
@@ -116,18 +88,33 @@ public:
 //        return CanCompressVertex(v);
 //    }
 
-protected:
-    bool Process(VertexId v) override {
-        if (compress_condition_.Check(v)) {
-            CompressWithoutChecks(v);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
 private:
     DECL_LOGGER("Compressor")
+};
+
+template<class Graph>
+class CompressingProcessor : public PersistentProcessingAlgorithm<Graph, typename Graph::VertexId,
+        ParallelInterestingElementFinder<Graph, typename Graph::VertexId>> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef PersistentProcessingAlgorithm <Graph,
+            VertexId, ParallelInterestingElementFinder<Graph, VertexId>> base;
+    typedef CompressCondition<Graph> ConditionT;
+
+    Compressor<Graph> compressor_;
+public:
+    CompressingProcessor(Graph &graph, size_t chunk_cnt = 1, bool safe_merging = true) :
+            base(graph,
+                 ParallelInterestingElementFinder<Graph, VertexId>(graph,
+                                                                   ConditionT(graph), chunk_cnt),
+                    /*canonical only*/true),
+            compressor_(graph, safe_merging) {
+    }
+
+protected:
+    bool Process(VertexId v) override {
+        return compressor_.CompressVertex(v);
+    }
 };
 
 /**
@@ -135,7 +122,7 @@ private:
 */
 template<class Graph>
 bool CompressAllVertices(Graph &g, bool safe_merging = true, size_t chunk_cnt = 1) {
-    Compressor<Graph> compressor(g, chunk_cnt, safe_merging);
+    CompressingProcessor<Graph> compressor(g, chunk_cnt, safe_merging);
     return compressor.Run();
 }
 }

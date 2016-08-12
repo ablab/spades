@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "data_structures/sequence/sequence.hpp"
 #include "dev_support/range.hpp"
 
 namespace omnigraph {
@@ -237,5 +238,64 @@ inline std::ostream& operator<<(std::ostream& os, const MappingPath<ElementId>& 
     os << " )";
     return os;
 }
+
+template<class Graph>
+struct GapDescription {
+    typedef typename Graph::EdgeId EdgeId;
+    EdgeId start, end;
+    Sequence gap_seq;
+    //FIXME discuss using size_t
+    size_t edge_gap_start_position, edge_gap_end_position;
+
+    GapDescription() :
+            start(0),
+            end(0),
+            edge_gap_start_position(0),
+            edge_gap_end_position(0) {
+    }
+
+    GapDescription(EdgeId start_e, EdgeId end_e,
+                   const Sequence &gap,
+                   size_t gap_start, size_t gap_end) :
+            start(start_e),
+            end(end_e),
+            gap_seq(gap.str()),
+            edge_gap_start_position(gap_start),
+            edge_gap_end_position(gap_end) {
+    }
+
+    GapDescription<Graph> conjugate(const Graph &g) const {
+        GapDescription<Graph> res(
+                g.conjugate(end), g.conjugate(start), !gap_seq,
+                g.length(end) - edge_gap_end_position,
+                g.length(start) - edge_gap_start_position);
+        return res;
+    }
+
+    string str(const Graph &g) const {
+        stringstream s;
+        s << g.int_id(start) << " " << edge_gap_start_position << endl
+          << g.int_id(end) << " " << edge_gap_end_position << endl
+          << gap_seq.str() << endl;
+        return s.str();
+    }
+
+    bool operator<(const GapDescription &b) const {
+        return start < b.start ||
+               (start == b.start && end < b.end) ||
+               (start == b.start && end == b.end &&
+                edge_gap_start_position < b.edge_gap_start_position);
+    }
+
+    bool operator!=(const GapDescription rhs) const {
+        return start != rhs.start
+               || end != rhs.end
+               || gap_seq != rhs.gap_seq
+               || edge_gap_start_position != rhs.edge_gap_start_position
+               || edge_gap_end_position != rhs.edge_gap_end_position;
+    }
+
+};
+
 
 }

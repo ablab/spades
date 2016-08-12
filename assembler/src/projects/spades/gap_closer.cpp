@@ -13,13 +13,10 @@
 
 namespace debruijn_graph {
 
-template<class Graph, class SequenceMapper>
 class GapCloserPairedIndexFiller {
 private:
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
     const Graph &graph_;
-    const SequenceMapper &mapper_;
+    const SequenceMapper<Graph> &mapper_;
 
     size_t CorrectLength(Path<EdgeId> path, size_t idx) const {
         size_t answer = graph_.length(path[idx]);
@@ -149,7 +146,7 @@ private:
 
 public:
 
-    GapCloserPairedIndexFiller(const Graph &graph, const SequenceMapper &mapper)
+    GapCloserPairedIndexFiller(const Graph &graph, const SequenceMapper<Graph> &mapper)
             : graph_(graph), mapper_(mapper) { }
 
     /**
@@ -167,11 +164,7 @@ public:
 
 };
 
-template<class Graph, class SequenceMapper>
 class GapCloser {
-public:
-    typedef std::function<bool(const Sequence &)> SequenceCheckF;
-private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 
@@ -183,7 +176,7 @@ private:
     const int init_gap_val_;
     const omnigraph::de::DEWeight weight_threshold_;
 
-    SequenceMapper mapper_;
+    const SequenceMapper<Graph>& mapper_;
     std::unordered_set<runtime_k::RtSeq> new_kmers_;
 
     bool CheckNoKmerClash(const Sequence &s) {
@@ -439,7 +432,7 @@ public:
 
     GapCloser(Graph &g, omnigraph::de::PairedInfoIndexT<Graph> &tips_paired_idx,
               size_t min_intersection, double weight_threshold,
-              const SequenceMapper &mapper,
+              const SequenceMapper<Graph> &mapper,
               size_t hamming_dist_bound = 0 /*min_intersection_ / 5*/)
             : g_(g),
               k_((int) g_.k()),
@@ -462,12 +455,11 @@ private:
 
 template<class Streams>
 void CloseGaps(conj_graph_pack &gp, Streams &streams) {
-    typedef BasicSequenceMapper<Graph, Index> Mapper;
     auto mapper = MapperInstance(gp);
-    GapCloserPairedIndexFiller<Graph, Mapper> gcpif(gp.g, *mapper);
+    GapCloserPairedIndexFiller gcpif(gp.g, *mapper);
     PairedIndexT tips_paired_idx(gp.g);
     gcpif.FillIndex(tips_paired_idx, streams);
-    GapCloser<Graph, Mapper> gap_closer(gp.g, tips_paired_idx,
+    GapCloser gap_closer(gp.g, tips_paired_idx,
                                         cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold,
                                         *mapper);
     gap_closer.CloseShortGaps();

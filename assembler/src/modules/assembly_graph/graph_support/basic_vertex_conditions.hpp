@@ -49,4 +49,19 @@ public:
     }
 };
 
+template<class Graph>
+class TerminalVertexCondition : public VertexCondition<Graph> {
+    typedef typename Graph::VertexId VertexId;
+
+public:
+    TerminalVertexCondition(const Graph& g) :
+            VertexCondition<Graph>(g) {
+    }
+
+    bool Check(VertexId v) const override {
+        return this->g().IncomingEdgeCount(v) + this->g().OutgoingEdgeCount(v) == 1;
+    }
+
+};
+
 }

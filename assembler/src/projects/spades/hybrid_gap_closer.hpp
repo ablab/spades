@@ -7,20 +7,21 @@
 
 #pragma once
 
+#include "assembly_graph/graph_core/graph.hpp"
 #include "assembly_graph/graph_alignment/sequence_mapper.hpp"
 #include "ConsensusCore/Poa/PoaConfig.hpp"
 #include "ConsensusCore/Poa/PoaConsensus.hpp"
+#include "gap_closing.hpp"
 
 #include <algorithm>
 #include <fstream>
 
 namespace debruijn_graph {
+namespace gap_closing {
 
-template<class Graph>
 class GapStorage {
 public:
-    typedef typename Graph::EdgeId EdgeId;
-    typedef vector<GapDescription<Graph>> GapInfos;
+    typedef vector<GapDescription> GapInfos;
     typedef typename GapInfos::const_iterator gap_info_it;
 private:
 
@@ -36,11 +37,11 @@ private:
 
     DECL_LOGGER("GapStorage");
 
-    void HiddenAddGap(const GapDescription<Graph> &p) {
+    void HiddenAddGap(const GapDescription& p) {
         inner_index_[p.start].push_back(p);
     }
 
-    bool CheckGap(const GapDescription<Graph>& gap) const {
+    bool CheckGap(const GapDescription& gap) const {
         return gap.edge_gap_start_position + max_flanking_region_length_ > g_.length(gap.start)
                && gap.edge_gap_end_position < max_flanking_region_length_;
     }
@@ -80,7 +81,7 @@ private:
             string s = g_.EdgeNucls(gap.start).Subseq(start_min, gap.edge_gap_start_position).str();
             s += gap.gap_seq.str();
             s += g_.EdgeNucls(gap.end).Subseq(gap.edge_gap_end_position, end_max).str();
-            answer.push_back(GapDescription<Graph>(gap.start, gap.end, Sequence(s), start_min, end_max));
+            answer.push_back(GapDescription(gap.start, gap.end, Sequence(s), start_min, end_max));
         }
         return answer;
     }
@@ -107,7 +108,7 @@ private:
 
 public:
 
-    GapStorage(const Graph &g, size_t min_gap_quantity, size_t long_seq_limit,
+    GapStorage(const Graph& g, size_t min_gap_quantity, size_t long_seq_limit,
                size_t max_flanking_region_length = 500)
             : g_(g),
               min_gap_quantity_(min_gap_quantity),
@@ -135,14 +136,14 @@ public:
         return transitively_ignored_pairs_.count(p) || symmetrically_ignored_pairs_.count(p);
     }
 
-    void AddGap(const GapDescription<Graph> &p, bool add_rc = false) {
+    void AddGap(const GapDescription& p, bool add_rc = false) {
         HiddenAddGap(p);
         if (add_rc) {
-            HiddenAddGap(p.conjugate(g_, (int) g_.k()));
+            HiddenAddGap(p.conjugate(g_));
         }
     }
 
-    void AddStorage(const GapStorage<Graph>& to_add) {
+    void AddStorage(const GapStorage& to_add) {
         const auto& idx = to_add.inner_index_;
         for (auto iter = idx.begin(); iter != idx.end(); ++iter)
             inner_index_[iter->first].insert(inner_index_[iter->first].end(), iter->second.begin(), iter->second.end());
@@ -161,7 +162,7 @@ public:
         for (const auto& e_gaps : inner_index_) {
             EdgeId e = e_gaps.first;
             auto gaps = e_gaps.second;
-            DEBUG(g_.int_id(e)<< " " << gaps.size());
+            DEBUG(g_.int_id(e) << " " << gaps.size());
             filestr << g_.int_id(e) << " " << gaps.size() << endl;
             sort(gaps.begin(), gaps.end());
             for (const auto& gap : gaps) {
@@ -253,74 +254,72 @@ public:
     }
 };
 
-template<class Graph>
+inline string PoaConsensus(const vector<string>& gap_seqs) {
+    const ConsensusCore::PoaConsensus* pc = ConsensusCore::PoaConsensus::FindConsensus(
+            gap_seqs,
+            ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
+    return pc->Sequence();
+}
+
+inline string TrivialConsenus(const vector<string>& gap_seqs, size_t max_length) {
+    VERIFY(!gap_seqs.empty());
+    return gap_seqs.front().length() < max_length ? gap_seqs.front() : "";
+}
+
 class HybridGapCloser {
-    typedef typename Graph::EdgeId EdgeId;
+public:
+    typedef std::function<string (const vector<string>&)> ConsensusF;
+private:
     typedef runtime_k::RtSeq Kmer;
-    typedef typename GapStorage<Graph>::gap_info_it gap_info_it;
-    //first edge, second edge, weight, seq
-    typedef map<EdgeId, map<EdgeId, pair<size_t, string>>> NewEdgeInfo;
+    typedef typename GapStorage::gap_info_it gap_info_it;
+
     DECL_LOGGER("HybridGapCloser");
 
     Graph& g_;
-    const GapStorage<Graph>& storage_;
-    const bool consensus_gap_closing_;
-    const size_t max_contigs_gap_length_;
-    int closed_gaps_;
-    int not_unique_gaps_;
-    int chained_gaps_;
+    const GapStorage& storage_;
+    const size_t min_weight_;
+    ConsensusF consensus_;
 
-    string ConstructGap(const vector<string>& gap_variants) const {
-        if (consensus_gap_closing_) {
-            const ConsensusCore::PoaConsensus *pc = ConsensusCore::PoaConsensus::FindConsensus(
-                    gap_variants,
-                    ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
-            return pc->Sequence();
-        } else if (gap_variants.size() > 0
-                   && gap_variants.front().length() < max_contigs_gap_length_) {
-            if (gap_variants.size() > 1) {
-                stringstream ss;
-                for (const auto& gap_v : gap_variants)
-                    ss << gap_v.length() << " ";
-                DEBUG(gap_variants.size() << " gap closing variant for contigs, lengths: " << ss.str());
-            }
-            return gap_variants.front();
-        } else {
-            return "";
-        }
+    const GapDescription INVALID_GAP;
+
+    string PrintLengths(const vector<string>& gap_seqs) const {
+        stringstream ss;
+        for (const auto& gap_v : gap_seqs)
+            ss << gap_v.length() << " ";
+        return ss.str();
     }
 
-    map<EdgeId, pair<size_t, string>> ConstructConsensus(EdgeId start,
-                              EdgeId end,
-                              size_t edge_gap_start_position,
-                              size_t edge_gap_end_position,
-                              const vector<string>& gap_variants) const {
-        map<EdgeId, pair<size_t, string>> answer;
-        string s = ConstructGap(gap_variants);
+    GapDescription ConstructConsensus(EdgeId start,
+                                      EdgeId end,
+                                      size_t edge_gap_start_position,
+                                      size_t edge_gap_end_position,
+                                      const vector<string>& gap_variants) const {
+        if (gap_variants.size() > 1) {
+            DEBUG(gap_variants.size() << " gap closing variants, lengths: " << PrintLengths(gap_variants));
+        }
+        string s = consensus_(gap_variants);
         if (!s.empty()) {
             DEBUG("consenus for " << g_.int_id(start)
                                   << " and " << g_.int_id(end)
                                   << "found: " << s);
-            s = g_.EdgeNucls(start).Subseq(0, edge_gap_start_position).str()
-                + s
-                + g_.EdgeNucls(end).Subseq(edge_gap_end_position).str();
-
-            answer[end] = make_pair(gap_variants.size(), s);
+            return GapDescription(start, end,
+                                  Sequence(s),
+                                  edge_gap_start_position, edge_gap_end_position);
         } else {
             INFO("Skipping gap of size " << gap_variants.front().length() << " multiplicity " << gap_variants.size());
         }
 
-        return answer;
+        return INVALID_GAP;
     }
 
-    map<EdgeId, pair<size_t, string>> ConstructConsensus(gap_info_it start_it, gap_info_it end_it) const {
+    GapDescription ConstructConsensus(gap_info_it start_it, gap_info_it end_it) const {
         size_t cur_len = end_it - start_it;
 
-        if (cur_len < storage_.min_gap_quantity() || storage_.IsIgnored(make_pair(start_it->start, start_it->end)))
-            return map<EdgeId, pair<size_t, string>>();
+        if (cur_len < min_weight_ || storage_.IsIgnored(make_pair(start_it->start, start_it->end)))
+            return INVALID_GAP;
 
         vector<string> gap_variants;
-        std::transform(start_it, end_it, std::back_inserter(gap_variants), [](const GapDescription<Graph>& gap) {
+        std::transform(start_it, end_it, std::back_inserter(gap_variants), [](const GapDescription& gap) {
             return gap.gap_seq.str();
         });
 
@@ -332,134 +331,89 @@ class HybridGapCloser {
         //}
 
         return ConstructConsensus(start_it->start, start_it->end,
-                           start_it->edge_gap_start_position,
-                           start_it->edge_gap_end_position,
-                           gap_variants);
+                                  start_it->edge_gap_start_position,
+                                  start_it->edge_gap_end_position,
+                                  gap_variants);
     }
 
-    NewEdgeInfo ConstructConsensus(EdgeId e) const {
-        NewEdgeInfo answer;
+    GapDescription ConstructConsensus(EdgeId e) const {
+        vector<GapDescription> closures;
         for (const auto& edge_pair_gaps : storage_.EdgePairGaps(get(storage_.inner_index(), e))) {
             auto consensus = ConstructConsensus(edge_pair_gaps.first, edge_pair_gaps.second);
-            if (!consensus.empty()) {
-                answer[e].insert(consensus.begin(), consensus.end());
+            if (consensus != INVALID_GAP) {
+                closures.push_back(consensus);
             }
         }
-        return answer;
+        if (closures.size() == 1)
+            return closures.front();
+
+        if (closures.size() > 1)
+            DEBUG("non-unique gap!!");
+        return INVALID_GAP;
     }
 
-    NewEdgeInfo ConstructConsensus(size_t nthreads) const {
-        vector<NewEdgeInfo> new_edges_by_thread(nthreads);
+    vector<GapDescription> ConstructConsensus(size_t nthreads) const {
+        vector<vector<GapDescription>> closures_by_thread(nthreads);
 
         # pragma omp parallel for num_threads(nthreads)
         for (size_t i = 0; i < storage_.size(); i++) {
             EdgeId e = storage_[i];
             size_t thread_num = omp_get_thread_num();
             DEBUG("constructing consenus for first edge " << g_.int_id(e) << " in thread " << thread_num);
-            auto consensus = ConstructConsensus(e);
-            new_edges_by_thread[thread_num].insert(consensus.begin(), consensus.end());
+            GapDescription gap = ConstructConsensus(e);
+            if (gap != INVALID_GAP) {
+                closures_by_thread[thread_num].push_back(gap);
+            }
         }
 
-        NewEdgeInfo new_edges;
-        for (auto& new_per_thread : new_edges_by_thread) {
-            new_edges.insert(new_per_thread.begin(), new_per_thread.end());
+        vector<GapDescription> closures;
+        for (auto& new_per_thread : closures_by_thread) {
+            std::copy(new_per_thread.begin(), new_per_thread.end(), std::back_inserter(closures));
             new_per_thread.clear();
         }
-        return new_edges;
+        return closures;
     }
 
-    map<EdgeId, EdgeId> CloseGapsInGraph(const NewEdgeInfo& new_edges) {
+    map<EdgeId, EdgeId> CloseGapsInGraph(const vector<GapDescription>& closures) {
         map<EdgeId, EdgeId> replacement;
-        for (auto new_edge_info : new_edges) {
-            if (new_edge_info.second.size() != 1) {
-                DEBUG("non-unique gap!!");
-                not_unique_gaps_++;
-                continue;
-            }
-            EdgeId first = new_edge_info.first;
-            auto gap_info = *(new_edge_info.second.begin());
-            EdgeId second = gap_info.first;
+        size_t closed_gaps = 0;
+        GapJoiner gap_joiner(g_);
+        for (auto new_edge_info : closures) {
+            EdgeId first = new_edge_info.start;
+            EdgeId second = new_edge_info.end;
             if (replacement.count(first) || replacement.count(second)) {
                 DEBUG("sorry, gap chains are not supported yet");
-                chained_gaps_++;
                 continue;
             }
 
-            EdgeId first_conj = g_.conjugate(first);
-            EdgeId second_conj = g_.conjugate(second);
-            VERIFY(first != second && first != second_conj);
-            //size_t len_f = g_.length(first);
-            //size_t len_s = g_.length(second);
-            //size_t len_sum = new_edge_info.second.begin()->second.second.length();
-            DEBUG("coverage was " << g_.coverage(first) << " " << g_.coverage(second));
-            double cov = (double) g_.length(first) * g_.coverage(first) + (double) g_.length(second) * g_.coverage(second);
+            EdgeId new_edge = gap_joiner(new_edge_info, /*compress*/true);
 
-            EdgeId new_edge = g_.AddEdge(g_.EdgeStart(first), g_.EdgeEnd(second), Sequence(gap_info.second.second));
-            TRACE("First edge " << g_.str(first));
-            TRACE("First edge nucls " << g_.EdgeNucls(first));
-            TRACE("Second edge " << g_.str(second));
-            TRACE("Second edge nucls " << g_.EdgeNucls(second));
-            TRACE("New edge " << g_.str(new_edge));
-            TRACE("New edge nucls " << g_.EdgeNucls(new_edge));
-            if (cov > UINT_MAX * 0.75 ) cov = UINT_MAX*0.75;
-            cov /= (double) g_.length(new_edge);
-            //int len_split = int(((double) len_f * (double) len_sum) / ((double)len_s + (double)len_f));
-            //if (len_split == 0) {
-            //    DEBUG(" zero split length, length are:" << len_f <<" " << len_sum <<" " << len_s);
-            //    len_split = 1;
-            //}
-            g_.DeleteEdge(first);
-            g_.DeleteEdge(second);
-            g_.coverage_index().SetAvgCoverage(new_edge, cov);
-            g_.coverage_index().SetAvgCoverage(g_.conjugate(new_edge), cov);
-            DEBUG("New edge coverage is " << g_.coverage(new_edge));
-            closed_gaps_++;
-            TRACE(g_.int_id(first) << " " << g_.int_id(second) << " " << g_.int_id(new_edge) << " " 
-                    << g_.int_id(first_conj) << " " << g_.int_id(second_conj) << " " << g_.int_id(g_.conjugate(new_edge)));
+            TRACE("New edge " << g_.str(new_edge) << " coverage " << g_.coverage(new_edge));
+            closed_gaps++;
+
             replacement[first] = new_edge;
             replacement[second] = new_edge;
-            replacement[first_conj] = g_.conjugate(new_edge);
-            replacement[second_conj] = g_.conjugate(new_edge);
+            replacement[g_.conjugate(first)] = g_.conjugate(new_edge);
+            replacement[g_.conjugate(second)] = g_.conjugate(new_edge);
         }
-        INFO("Closed " << closed_gaps_ << " gaps");
-        INFO("Total " << not_unique_gaps_ << " were not closed due to more than one possible pairing");
-        INFO("Total " << chained_gaps_ << " were skipped because of gap chains");
+        INFO("Closed " << closed_gaps << " gaps");
         //TODO: chains of gaps!
         return replacement;
     }
 
-    void DumpToFile(const NewEdgeInfo& new_edges, const string& filename) {
-        ofstream filestr(filename);
-        for (auto iter = new_edges.begin(); iter != new_edges.end(); ++iter) {
-            if (iter->second.size() > 1) {
-                DEBUG("nontrivial gap closing for edge" <<g_.int_id(iter->first));
-            }
-            for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
-                filestr << ">" << g_.int_id(iter->first) << "_" << iter->second.size() << "_"
-                        << g_.int_id(j_iter->first) << "_" << j_iter->second.first << endl;
-                filestr << j_iter->second.second << endl;
-            }
-        }
-    }
-
 public:
-    HybridGapCloser(Graph &g, const GapStorage<Graph>& storage,
-                    bool consensus_gap, size_t max_contigs_gap_length)
+    HybridGapCloser(Graph& g, const GapStorage& storage,
+                    size_t min_weight, ConsensusF consensus)
             : g_(g), storage_(storage),
-              consensus_gap_closing_(consensus_gap),
-              max_contigs_gap_length_(max_contigs_gap_length),
-              closed_gaps_(0), not_unique_gaps_(0), chained_gaps_(0) {
+              min_weight_(min_weight),
+              consensus_(consensus) {
     }
 
-    map<EdgeId, EdgeId> operator()(size_t nthreads, const string& dump_file) {
-        NewEdgeInfo new_edges = ConstructConsensus(nthreads);
-        map<EdgeId, EdgeId> replacement = CloseGapsInGraph(new_edges);
-        if (!dump_file.empty()) {
-            DumpToFile(new_edges, dump_file);
-        }
-        return replacement;
+    map<EdgeId, EdgeId> operator()(size_t nthreads) {
+        return CloseGapsInGraph(ConstructConsensus(nthreads));
     };
 
 };
 
+}
 }
