@@ -13,9 +13,9 @@ import os
 import time
 import commands
 
-gccversion = '4.8.5' if len(sys.argv) < 2 else sys.argv[1] 
+gccversion = '4.9.3' if len(sys.argv) < 2 else sys.argv[1] 
 
-cmd_list_to_check = ['gcc', 'g++', 'cc', 'c++']
+cmd_list_to_check = ['gcc', 'g++', 'cc']
 excode = 0
 
 for cmd in cmd_list_to_check:
