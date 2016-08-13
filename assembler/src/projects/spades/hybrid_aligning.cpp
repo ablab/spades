@@ -80,7 +80,7 @@ class GapTrackingListener : public SequenceMapperListener {
         if (!mapping.empty()) {
             for (const auto& gap: InferGaps(read, mapping)) {
                 DEBUG("Adding gap info " << gap.str(g_));
-                buffer_storages_[thread_index].AddGap(gap, true);
+                buffer_storages_[thread_index].AddGap(gap);
             }
         } else {
             DEBUG("Mapping was empty");
@@ -180,13 +180,13 @@ class PacbioAligner {
         size_t aligned = 0;
         size_t nontrivial_aligned = 0;
 
-#   pragma omp parallel for reduction(+: longer_500, aligned, nontrivial_aligned)
+        #pragma omp parallel for reduction(+: longer_500, aligned, nontrivial_aligned)
         for (size_t i = 0; i < reads.size(); ++i) {
             size_t thread_num = omp_get_thread_num();
             Sequence seq(reads[i].sequence());
             auto current_read_mapping = pac_index_.GetReadAlignment(seq);
             for (const auto& gap : current_read_mapping.gaps)
-                gaps_by_thread[thread_num].AddGap(gap, true);
+                gaps_by_thread[thread_num].AddGap(gap);
 
             const auto& aligned_edges = current_read_mapping.main_storage;
             for (const auto& path : aligned_edges)
@@ -293,11 +293,9 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
 }
 
 void CloseGaps(conj_graph_pack& gp, bool rtype,
-               const GapStorage& gap_storage,
-               const string& dump_dir = "") {
+               const GapStorage& gap_storage, 
+               size_t min_weight) {
     INFO("Closing gaps with long reads");
-    if (!dump_dir.empty())
-        gap_storage.DumpToFile(dump_dir + "gaps_padded.mpr");
 
     HybridGapCloser::ConsensusF consensus_f;
     if (rtype) {
@@ -309,7 +307,8 @@ void CloseGaps(conj_graph_pack& gp, bool rtype,
     }
 
     HybridGapCloser gap_closer(gp.g, gap_storage,
-                               gap_storage.min_gap_quantity(), consensus_f);
+                               min_weight, consensus_f,
+                               cfg::get().pb.long_seq_limit);
     auto replacement = gap_closer();
 
     for (size_t j = 0; j < cfg::get().ds.reads.lib_count(); j++) {
@@ -341,13 +340,8 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
             const auto& lib = cfg::get().ds.reads[lib_id];
             bool rtype = lib.is_long_read_lib();
 
-            size_t min_gap_quantity = rtype ? cfg::get().pb.pacbio_min_gap_quantity
-                                            : cfg::get().pb.contigs_min_gap_quantity;
-
             auto& path_storage = gp.single_long_reads[lib_id];
-            GapStorage gap_storage(gp.g,
-                                   min_gap_quantity,
-                                   cfg::get().pb.long_seq_limit);
+            GapStorage gap_storage(gp.g);
 
             if (ShouldAlignWithPacbioAligner(lib.type())) {
                 //TODO put alternative alignment right here
@@ -373,9 +367,12 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
             }
 
             INFO("Padding gaps");
-            gap_storage.PrepareGapsForClosure();
+            size_t min_gap_quantity = rtype ? cfg::get().pb.pacbio_min_gap_quantity
+                                            : cfg::get().pb.contigs_min_gap_quantity;
 
-            gap_closing::CloseGaps(gp, rtype, gap_storage, make_additional_saves ? cfg::get().output_saves : "");
+            gap_storage.PrepareGapsForClosure(min_gap_quantity);
+
+            gap_closing::CloseGaps(gp, rtype, gap_storage, min_gap_quantity);
         }
     }
 
