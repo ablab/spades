@@ -133,7 +133,7 @@ struct graph_pack: private boost::noncopyable {
 
     void ClearRRIndices() {
         for (auto& pi : paired_indices) {
-            pi.Clear();
+            pi.clear();
         }
         clustered_indices.Clear();
         scaffolding_indices.Clear();

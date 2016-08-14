@@ -140,7 +140,7 @@ private:
         INFO("Merging paired indices");
         for (auto &index: buffer_pi) {
             paired_index.Merge(index);
-            index.Clear();
+            index.clear();
         }
     }
 

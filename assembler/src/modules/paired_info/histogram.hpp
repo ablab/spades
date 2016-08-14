@@ -54,6 +54,10 @@ public:
         insert(b, e);
     }
 
+    Histogram(std::initializer_list<Point> l) {
+        insert(l.begin(), l.end());
+    }
+
     // Iterator routines.
     iterator begin() { return tree_.begin(); }
     const_iterator begin() const { return tree_.begin(); }

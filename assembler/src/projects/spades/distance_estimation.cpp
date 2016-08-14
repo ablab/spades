@@ -228,7 +228,7 @@ void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
             }
             if (!cfg::get().preserve_raw_paired_index) {
                 INFO("Clearing raw paired index");
-                gp.paired_indices[i].Clear();
+                gp.paired_indices[i].clear();
             }
         }
 }

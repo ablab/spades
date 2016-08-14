@@ -193,7 +193,7 @@ class PairInfoImprover {
         DEBUG("Merging maps");
         for (size_t i = 1; i < nthreads; ++i) {
             to_remove[0].Merge(to_remove[i]);
-            to_remove[i].Clear();
+            to_remove[i].clear();
         }
         DEBUG("Resulting size " << to_remove[0].size());
 
@@ -202,7 +202,7 @@ class PairInfoImprover {
             I != omnigraph::de::half_pair_end(to_remove[0]); ++I) {
             cnt += DeleteIfExist(I.first(), I.second(), *I);
         }
-        to_remove[0].Clear();
+        to_remove[0].clear();
 
         DEBUG("Size of index " << index_.size());
         DEBUG("ParallelRemoveContraditional: Clean finished");
@@ -249,7 +249,7 @@ class PairInfoImprover {
                 for (auto p : *I)
                     cnt += TryToAddPairInfo(index_, e1, e2, p);
             }
-            to_add[i].Clear();
+            to_add[i].clear();
         }
 
         DEBUG("Size of paired index " << index_.size());

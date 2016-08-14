@@ -25,49 +25,39 @@ public:
     LatePairedIndexFiller(const Graph &graph, WeightF weight_f, omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index)
             : graph_(graph),
               weight_f_(std::move(weight_f)),
-              paired_index_(paired_index) {
+              paired_index_(paired_index),
+              buffer_pi_(graph) {
     }
 
     void StartProcessLibrary(size_t threads_count) override {
         DEBUG("Start processing: start");
         paired_index_.Init();
-        buffer_pi_ = {graph_, threads_count};
+        buffer_pi_.clear();
         DEBUG("Start processing: end");
-    }
-
-    void StopProcessLibrary() override {
-        DEBUG("Stop processing: start");
-        buffer_pi_.Clear();
-        DEBUG("Stop processing: end");
     }
 
     void ProcessPairedRead(size_t thread_index,
                            const io::PairedRead& r,
                            const MappingPath<EdgeId>& read1,
                            const MappingPath<EdgeId>& read2) override {
-        ProcessPairedRead(buffer_pi_[thread_index], read1, read2, r.distance());
-//        DEBUG("Processed");
+        ProcessPairedRead(read1, read2, r.distance());
     }
 
     void ProcessPairedRead(size_t thread_index,
                            const io::PairedReadSeq& r,
                            const MappingPath<EdgeId>& read1,
                            const MappingPath<EdgeId>& read2) override {
-        ProcessPairedRead(buffer_pi_[thread_index], read1, read2, r.distance());
-//        DEBUG("Processed");
+        ProcessPairedRead(read1, read2, r.distance());
     }
 
     void MergeBuffer(size_t thread_index) override {
-        DEBUG("Merging buffer");
-        paired_index_.Merge(buffer_pi_[thread_index]);
-        buffer_pi_[thread_index].Clear();
-        DEBUG("Merged");
+        paired_index_.Merge(buffer_pi_);
+        buffer_pi_.clear();
     }
 
 private:
-    void ProcessPairedRead(omnigraph::de::PairedInfoBuffer<Graph>& paired_index,
-                           const MappingPath<EdgeId>& path1,
-                           const MappingPath<EdgeId>& path2, size_t read_distance) const {
+    void ProcessPairedRead(const MappingPath<EdgeId>& path1,
+                           const MappingPath<EdgeId>& path2, size_t read_distance) {
         for (size_t i = 0; i < path1.size(); ++i) {
             std::pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
             for (size_t j = 0; j < path2.size(); ++j) {
@@ -84,9 +74,11 @@ private:
                         + (int) mapping_edge_1.second.mapped_range.start_pos
                         - (int) mapping_edge_2.second.mapped_range.end_pos;
 
-                if (math::gr(weight, 0))
-                    paired_index.Add(mapping_edge_1.first, mapping_edge_2.first,
-                                     omnigraph::de::RawPoint(edge_distance, weight));
+                if (math::gr(weight, 0)) {
+                    buffer_pi_.Add(mapping_edge_1.first, mapping_edge_2.first,
+                                   omnigraph::de::RawPoint(edge_distance, weight));
+
+                }
             }
         }
     }
@@ -95,7 +87,7 @@ private:
     const Graph& graph_;
     WeightF weight_f_;
     omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index_;
-    omnigraph::de::PairedInfoBuffersT<Graph> buffer_pi_;
+    omnigraph::de::ConcurrentPairedInfoBuffer<Graph> buffer_pi_;
 
     DECL_LOGGER("LatePairedIndexFiller");
 };

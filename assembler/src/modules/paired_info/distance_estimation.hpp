@@ -204,7 +204,7 @@ public:
 
         for (size_t i = 0; i < nthreads; ++i) {
             result.Merge(buffer[i]);
-            buffer[i].Clear();
+            buffer[i].clear();
         }
     }
 
