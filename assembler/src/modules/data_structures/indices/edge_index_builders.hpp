@@ -8,25 +8,24 @@
 #pragma once
 
 #include "edge_position_index.hpp"
+#include "perfect_hash_map_builder.hpp"
 
 namespace debruijn_graph {
 
-template <class Builder>
-class GraphPositionFillingIndexBuilder : public Builder {
-    typedef Builder base;
+template<class Index>
+class GraphPositionFillingIndexBuilder {
 public:
-    typedef typename Builder::IndexT IndexT;
-    typedef typename IndexT::KMer Kmer;
-//    typedef typename IndexT::GraphT GraphT;
+    typedef Index IndexT;
+    typedef typename Index::KMer Kmer;
 
     template<class Graph>
-    void BuildIndexFromGraph(IndexT &index,
+    void BuildIndexFromGraph(Index &index,
                              const Graph/*T*/ &g, size_t read_buffer_size = 0) const {
-        base::BuildIndexFromGraph(index, g, read_buffer_size);
+        debruijn_graph::BuildIndexFromGraph(index, g, read_buffer_size);
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Collecting k-mer coverage information from graph, this takes a while.");
-        EdgeInfoUpdater<IndexT, Graph> updater(g, index);
+        EdgeInfoUpdater<Index, Graph> updater(g, index);
         updater.UpdateAll();
     }
 
@@ -146,7 +145,7 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
     size_t BuildIndexFromStream(IndexT &index,
                                 Streams &streams,
                                 io::SingleStream* contigs_stream = 0) const {
-        base::BuildIndexFromStream(index, streams, contigs_stream);
+        debruijn_graph::BuildIndexFromStream(index, streams, contigs_stream);
 
         return ParallelFillCoverage(index, streams, false);
     }
@@ -164,15 +163,11 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
 
 template<class Index>
 struct EdgeIndexHelper {
-    typedef Index IndexT;
-    typedef typename IndexT::KMer Kmer;
-    typedef typename IndexT::KMerIdx KMerIdx;
-    typedef typename IndexT::traits_t traits_t;
-//    typedef typename IndexT::IdType IdType;
-    typedef DeBruijnStreamKMerIndexBuilder<Kmer, IndexT> DeBruijnStreamKMerIndexBuilderT;
-    typedef CoverageFillingEdgeIndexBuilder<DeBruijnStreamKMerIndexBuilderT> CoverageFillingEdgeIndexBuilderT;
-    typedef DeBruijnGraphKMerIndexBuilder<IndexT> DeBruijnGraphKMerIndexBuilderT;
-    typedef GraphPositionFillingIndexBuilder<DeBruijnGraphKMerIndexBuilderT> GraphPositionFillingIndexBuilderT;
+    typedef typename Index::KMer Kmer;
+    typedef typename Index::KMerIdx KMerIdx;
+    typedef typename Index::traits_t traits_t;
+    typedef CoverageFillingEdgeIndexBuilder<Index> CoverageFillingEdgeIndexBuilderT;
+    typedef GraphPositionFillingIndexBuilder<Index> GraphPositionFillingIndexBuilderT;
     typedef CoverageFillingEdgeIndexBuilder<GraphPositionFillingIndexBuilderT> CoverageAndGraphPositionFillingIndexBuilderT;
 };
 

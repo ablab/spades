@@ -234,11 +234,11 @@ extern "C" {
 	 */
 	int bgzf_mt(BGZF *fp, int n_threads, int n_sub_blks);
 
-        inline void
+        static void
           packInt16(uint8_t* buffer, uint16_t value);
         inline int
           unpackInt16(const uint8_t* buffer);
-        inline void
+        static void
           packInt32(uint8_t* buffer, uint32_t value);
         int
           bgzf_check_header(const uint8_t* header);

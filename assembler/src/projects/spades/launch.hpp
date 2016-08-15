@@ -19,16 +19,28 @@
 #include "second_phase_setup.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation.hpp"
-#include "pacbio_aligning.hpp"
+#include "hybrid_aligning.hpp"
 #include "chromosome_removal.hpp"
 #include "pipeline/stage.hpp"
 
 namespace spades {
 
+inline bool MetaCompatibleLibraries() {
+    const auto& libs = cfg::get().ds.reads;
+    if (libs[0].type() != io::LibraryType::PairedEnd)
+        return false;
+    if (libs.lib_count() > 2)
+        return false;
+    if (libs.lib_count() == 2 && libs[1].type() != io::LibraryType::TSLReads)
+        return false;
+    return true;
+}
+
 void assemble_genome() {
     INFO("SPAdes started");
-    if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta && cfg::get().ds.reads.lib_count() != 1) {
-        ERROR("Sorry, current version of metaSPAdes can work with single library only (paired-end only).");
+    if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta && !MetaCompatibleLibraries()) {
+        ERROR("Sorry, current version of metaSPAdes can work either with single library (paired-end only) "
+                      "or in paired-end + TSLR mode.");
         exit(239);
     }
 
@@ -83,27 +95,19 @@ void assemble_genome() {
             SPAdes.add(new debruijn_graph::Simplification());
         }
 
-        //begin pacbio
-        bool run_pacbio = false;
-        for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-            if (cfg::get().ds.reads[i].is_pacbio_alignable()) {
-                run_pacbio = true;
-                break;
-            }
-        }
-        if (run_pacbio) {
-            //currently not integrated with two step rr process
-            VERIFY(!two_step_rr);
-            SPAdes.add(new debruijn_graph::PacBioAligning());
-        }
-        //end pacbio
         if (cfg::get().pd) {
             SPAdes.add(new debruijn_graph::ChromosomeRemoval());
         }
+
+        SPAdes.add(new debruijn_graph::HybridLibrariesAligning());
+
+        //No graph modification allowed after HybridLibrariesAligning stage!
+
         SPAdes.add(new debruijn_graph::PairInfoCount())
               .add(new debruijn_graph::DistanceEstimation())
               .add(new debruijn_graph::RepeatResolution());
 
+        
     } else {
         SPAdes.add(new debruijn_graph::ContigOutput());
     }

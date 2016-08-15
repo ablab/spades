@@ -6,12 +6,7 @@
 //***************************************************************************
 
 #pragma once
-/*
- * key_with_hash.hpp
- *
- *  Created on: Nov 7, 2013
- *      Author: anton
- */
+
 #include "storing_traits.hpp"
 
 namespace debruijn_graph {
@@ -112,8 +107,8 @@ private:
 
     const HashFunction &hash_;
     Key key_;
-    mutable bool is_minimal_;
     mutable IdxType idx_; //lazy computation
+    mutable bool is_minimal_;
     mutable bool ready_;
 
     void CountIdx() const {
@@ -126,29 +121,24 @@ private:
         }
     }
 
-    void SetKey(const Key &key) {
-        ready_ = false;
-        key_ = key;
-    }
-
     InvertableKeyWithHash(Key key, const HashFunction &hash, bool is_minimal,
-            size_t idx, bool ready) :
-            hash_(hash), key_(key), is_minimal_(is_minimal), idx_(idx), ready_(
-                    ready) {
+                          size_t idx, bool ready)
+            : hash_(hash), key_(key), idx_(idx),
+              is_minimal_(is_minimal), ready_(ready) {
     }
-public:
+  public:
 
-    InvertableKeyWithHash(Key key, const HashFunction &hash) : hash_(hash), key_(key), is_minimal_(false), idx_(0), ready_(false) {
-    }
+    InvertableKeyWithHash(Key key, const HashFunction &hash)
+            : hash_(hash), key_(key), idx_(0), is_minimal_(false), ready_(false) {}
 
-    Key key() const {
+    const Key &key() const {
         return key_;
     }
 
     IdxType idx() const {
-        if(!ready_) {
+        if (!ready_)
             CountIdx();
-        }
+
         return idx_;
     }
 
@@ -197,11 +187,13 @@ public:
     }
 
     void operator<<=(char nucl) {
-        SetKey(key_ << nucl);
+        key_ <<= nucl;
+        ready_ = false;
     }
 
     void operator>>=(char nucl) {
-        SetKey(key_ >> nucl);
+        key_ >>= nucl;
+        ready_ = false;
     }
 
     char operator[](size_t i) const {

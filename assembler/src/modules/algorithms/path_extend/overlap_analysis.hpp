@@ -85,29 +85,39 @@ class SWOverlapAnalyzer {
 public:
     SWOverlapAnalyzer(size_t flank_length)
             : flank_length_(flank_length),
-              aligner_(/*match_score*/2,
-              /*mismatch_penalty*/6,
-                       /*gap_opening_penalty*/8,
-                       /*gap_extending_penalty*/8) {
+              aligner_(/*match_score*/1,
+              /*mismatch_penalty*/3,
+                       /*gap_opening_penalty*/4,
+                       /*gap_extending_penalty*/3) {
     }
 
 
     OverlapInfo AnalyzeOverlap(const Sequence& s1, const Sequence& s2) const {
+        DEBUG("Analysis started");
         size_t start1 = flank_length_ > s1.size() ? 0 : s1.size() - flank_length_;
         size_t end2 = flank_length_ > s2.size() ? s2.size() : flank_length_;
 
+        DEBUG("s1 " << s1.Subseq(start1, s1.size()));
+        DEBUG("s2 " << s2.Subseq(0, end2));
         OverlapInfo result = InnerAnalyze(s1.Subseq(start1, s1.size()), s2.Subseq(0, end2));
-        if (result == OverlapInfo())
+        if (result == OverlapInfo()) {
+            DEBUG("Empty overlap")
             return result;
+        }
 
         result.r1.shift(int(start1));
+        DEBUG("Result " << result)
         return result;
     }
 
     template<class Graph>
     OverlapInfo AnalyzeOverlap(const Graph& g, EdgeId e1, EdgeId e2) const {
+        DEBUG("Analyzing edges " << g.str(e1) << " and " << g.str(e2));
         return AnalyzeOverlap(g.EdgeNucls(e1), g.EdgeNucls(e2));
     }
+
+private:
+    DECL_LOGGER("SWOverlapAnalyzer");
 };
 
 }

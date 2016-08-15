@@ -11,3 +11,12 @@ add_subdirectory(ionhammer)
 add_subdirectory(dipspades)
 add_subdirectory(corrector)
 add_subdirectory(scaffold_correction)
+
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+  # Require at least gcc 4.8
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.7)
+    add_subdirectory(mph_test)
+  endif()
+else()
+  add_subdirectory(mph_test)
+endif()

@@ -183,7 +183,7 @@ size_t KMerCoverageModel::EstimateValley() const {
 }
 
 void KMerCoverageModel::Fit() {
-    VERIFY_MSG(cov_.size() > 10, "Invalid kmer coverage histogram");
+    VERIFY_MSG(cov_.size() > 10, "Invalid kmer coverage histogram, make sure that the coverage is indeed uniform");
 
     // Find the minimal coverage point using smoothed histogram.
     Valley_ = EstimateValley();
@@ -214,7 +214,7 @@ void KMerCoverageModel::Fit() {
     }
 
     if (MaxCov_ - Valley_ < 3)
-        WARN("Too much erroneous kmers, the estimates might be unreliable");
+        WARN("Too many erroneous kmers, the estimates might be unreliable");
 
     std::vector <size_t> mvals(1 + MaxCov_ - Valley_);
     mvals[0] = cov_[MaxCov_];

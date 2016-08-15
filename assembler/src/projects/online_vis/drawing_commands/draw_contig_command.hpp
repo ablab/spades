@@ -58,11 +58,11 @@ public:
         if (!CheckFileExists(contigs_file))
             return;
 
-        auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(contigs_file));
+        io::FileReadStream reader(contigs_file);
 
-        while (!reader->eof()) {
+        while (!reader.eof()) {
             io::SingleRead read;
-            (*reader) >> read;
+            reader >> read;
             //LOG("Contig " << read.name() << " is being processed now");
 
             // if the name contains a given string <contig_name> as a substring.
@@ -112,11 +112,11 @@ public:
         if (!CheckFileExists(contigs_file))
             return;
 
-        auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(contigs_file));
+        io::FileReadStream reader(contigs_file);
 
-        while (!reader->eof()) {
+        while (!reader.eof()) {
             io::SingleRead read;
-            (*reader) >> read;
+            reader >> read;
             //LOG("Contig " << read.name() << " is being processed now");
 
             DrawPicturesAlongContig(curr_env, read);

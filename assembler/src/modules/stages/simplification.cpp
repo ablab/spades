@@ -106,7 +106,7 @@ class GraphSimplifier {
                 "Self conjugate edge remover",
                 algos);
 
-        if (cfg::get().mode == config::pipeline_type::rna){
+        if (info_container_.mode() == config::pipeline_type::rna){
             RemoveShortPolyATEdges(1, removal_handler_, info_container_.chunk_cnt());
             PushValid(ShortPolyATEdgesRemoverInstance(g_, 1, removal_handler_, info_container_.chunk_cnt()), "Short PolyA/T Edges",algos) ;
             PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
@@ -147,7 +147,7 @@ class GraphSimplifier {
         RunAlgos(algos);
 
         //FIXME why called directly?
-        if (cfg::get().mode == config::pipeline_type::rna){
+        if (info_container_.mode() == config::pipeline_type::rna){
             RemoveHiddenLoopEC(g_, gp_.flanking_cov, info_container_.detected_coverage_bound(), simplif_cfg_.her, removal_handler_);
             cnt_callback_.Report();
         }
@@ -249,7 +249,7 @@ class GraphSimplifier {
 
         //FIXME need better configuration
 
-        if (cfg::get().mode == config::pipeline_type::meta) {
+        if (info_container_.mode() == config::pipeline_type::meta) {
             PushValid(
                     BRInstance(g_, simplif_cfg_.second_final_br,
                                        info_container_, removal_handler_),
@@ -257,7 +257,7 @@ class GraphSimplifier {
                     algos);
         }
 
-        if (cfg::get().mode == config::pipeline_type::rna) {
+        if (info_container_.mode() == config::pipeline_type::rna) {
             PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
         }
 
@@ -382,7 +382,64 @@ public:
             INFO("PostSimplification disabled");
         }
     }
+
+    void SimplifyRNAGraph() {
+        printer_(info_printer_pos::before_simplification);
+        INFO("Graph simplification started");
+
+        InitialCleaning();
+
+        if (gp_.genome.GetSequence().size() > 0) {
+            DEBUG("Reference genome length = " + std::to_string(gp_.genome.GetSequence().size()));
+        }
+
+        AlgoStorageT ec_algo;
+
+        PushValid(ECRemoverInstance(g_, simplif_cfg_.ec, info_container_, removal_handler_,
+                                            simplif_cfg_.cycle_iter_count), "Low coverage edge remover", ec_algo);
+
+        size_t iteration = 0;
+        bool graph_changed_ec = true;
+        //TODO: config. Or just graph_changed?
+        size_t tc_max_iteration = 2;
+        //cannot stop simply if nothing changed, since threshold change on every iteration
+        while (iteration < simplif_cfg_.cycle_iter_count || graph_changed_ec) {
+            AlgoStorageT algos;
+            PushValid(
+                    TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_, tc_max_iteration),
+                    "Tip clipper",
+                    algos);
+            PushValid(
+                    DeadEndInstance(g_, simplif_cfg_.dead_end, info_container_, removal_handler_, tc_max_iteration),
+                    "Dead end clipper",
+                    algos);
+            PushValid(
+                    BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_, tc_max_iteration),
+                    "Bulge remover",
+                    algos);
+            bool graph_changed = true;
+            size_t tc_iteration = 0;
+
+            while (tc_iteration < tc_max_iteration || graph_changed) {
+                INFO("PROCEDURE == Tip clipper and bulge removal cycle, iteration " << iteration + 1 << "." << tc_iteration);
+                graph_changed = RunAlgos(algos);
+                ++tc_iteration;
+            }
+            INFO("PROCEDURE == Erroneous connection, iteration " << iteration + 1);
+            graph_changed_ec = RunAlgos(ec_algo);
+            ++iteration;
+        }
+
+        printer_(info_printer_pos::before_post_simplification);
+
+        if (simplif_cfg_.post_simplif_enabled) {
+            PostSimplification();
+        } else {
+            INFO("PostSimplification disabled");
+        }
+    }
 };
+
 
 void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
@@ -407,7 +464,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 //            boost::ref(qual_removal_handler), _1);
 
 
-    SimplifInfoContainer info_container;
+    SimplifInfoContainer info_container(cfg::get().mode);
     info_container.set_read_length(cfg::get().ds.RL())
         .set_main_iteration(cfg::get().main_iteration)
         .set_chunk_cnt(5 * cfg::get().max_threads);
@@ -419,21 +476,29 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
             .set_detected_coverage_bound(gp.ginfo.ec_bound());
 
     GraphSimplifier simplifier(gp, info_container,
-                                   preliminary_ ? *cfg::get().preliminary_simp : cfg::get().simp,
-                                   nullptr/*removal_handler_f*/,
-                                   printer);
-    simplifier.SimplifyGraph();
+                               preliminary_ ? *cfg::get().preliminary_simp : cfg::get().simp,
+                               nullptr/*removal_handler_f*/,
+                               printer);
+    if (cfg::get().mode == pipeline_type::rna)
+        simplifier.SimplifyRNAGraph();
+    else
+        simplifier.SimplifyGraph();
+
 }
 
 
 void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
-    SimplifInfoContainer info_container;
+    SimplifInfoContainer info_container(cfg::get().mode);
     info_container
         .set_read_length(cfg::get().ds.RL())
         .set_main_iteration(cfg::get().main_iteration)
         .set_chunk_cnt(5 * cfg::get().max_threads);
 
-    IsolatedEdgeRemoverInstance(gp.g, cfg::get().simp.ier, info_container, (HandlerF<Graph>)nullptr)->Run();
+
+    auto isolated_edge_remover =
+        IsolatedEdgeRemoverInstance(gp.g, cfg::get().simp.ier, info_container, (HandlerF<Graph>)nullptr);
+    if (isolated_edge_remover != nullptr)
+        isolated_edge_remover->Run();
 
     double low_threshold = gp.ginfo.trusted_bound();
     if (math::gr(low_threshold, 0.0)) {

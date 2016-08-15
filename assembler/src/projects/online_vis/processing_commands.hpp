@@ -58,7 +58,7 @@ private:
                                       std::ref(curr_env.graph_pack().edge_qual), std::placeholders::_1);
             }
         }
-        debruijn::simplification::SimplifInfoContainer info;
+        debruijn::simplification::SimplifInfoContainer info(debruijn_graph::config::pipeline_type::base);
         info.set_chunk_cnt(10);
         debruijn::simplification::TipClipperInstance(curr_env.graph(), condition, info, (omnigraph::HandlerF<Graph>)nullptr)->Run();
     }

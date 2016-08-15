@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 ############################################################################
 # Copyright (c) 2015 Saint Petersburg State University
 # Copyright (c) 2011-2014 Saint Petersburg Academic University
@@ -7,15 +9,17 @@
 
 import os
 import sys
+from os.path import abspath, dirname, realpath, join, isfile
 
 source_dirs = ["", "truspades", "common"]
 
 # developers configuration
-spades_home = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-bin_home = os.path.join(spades_home, 'bin')
-python_modules_home = os.path.join(spades_home, 'src')
-ext_python_modules_home = os.path.join(spades_home, 'ext', 'src', 'python_libs')
+spades_home = abspath(dirname(realpath(__file__)))
+bin_home = join(spades_home, 'bin')
+python_modules_home = join(spades_home, 'src')
+ext_python_modules_home = join(spades_home, 'ext', 'src', 'python_libs')
 spades_version = ''
+
 
 def init():
     global spades_home
@@ -25,14 +29,19 @@ def init():
     global ext_python_modules_home
 
     # users configuration (spades_init.py and spades binary are in the same directory)
-    if os.path.isfile(os.path.join(spades_home, 'spades')):
-        install_prefix = os.path.dirname(spades_home)
-        bin_home = os.path.join(install_prefix, 'bin')
-        spades_home = os.path.join(install_prefix, 'share', 'spades')
+    if isfile(os.path.join(spades_home, 'spades')):
+        install_prefix = dirname(spades_home)
+        bin_home = join(install_prefix, 'bin')
+        spades_home = join(install_prefix, 'share', 'spades')
         python_modules_home = spades_home
         ext_python_modules_home = spades_home
 
     for dir in source_dirs:
-        sys.path.append(os.path.join(python_modules_home, 'spades_pipeline', dir))
+        sys.path.append(join(python_modules_home, 'spades_pipeline', dir))
 
-    spades_version = open(os.path.join(spades_home, 'VERSION'), 'r').readline().strip()
+    spades_version = open(join(spades_home, 'VERSION'), 'r').readline().strip()
+
+
+if __name__ == '__main__':
+    spades_py_path = join(dirname(realpath(__file__)), 'spades.py')
+    sys.stderr.write('Please use ' + spades_py_path + ' for running SPAdes genome assembler\n')

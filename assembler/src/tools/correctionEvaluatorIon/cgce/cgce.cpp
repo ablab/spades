@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     params.con_mode = construction_mode::con_extention;
     params.early_tc.enable = false;
     params.keep_perfect_loops = true;
-    ConstructGraph(k, params, rc_read_stream_vector, gp.g, gp.index);
+    ConstructGraph(k, params, omp_get_max_threads(), rc_read_stream_vector, gp.g, gp.index);
     SplitAndColorGraph(gp, coloring, rc_read_stream_vector);
 
     std::ofstream red("red.fa");

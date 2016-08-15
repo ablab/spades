@@ -47,6 +47,14 @@ simp
         condition               "{ to_ec_lb 5, icb auto }"
        ; condition               "{ ec_lb 9, icb 40.0 }"
     }
+
+    ; relative coverage erroneous connections remover:
+    rcec
+        {
+            enabled false
+            rcec_lb 30
+            rcec_cb 0.5
+        }
     
     ; relative coverage erroneous component remover:
     rcc
@@ -194,6 +202,11 @@ simp
         ; edges with flank cov around alternative less than value will be disconnected 
         ; negative value to disable
         disconnect_flank_cov    -1.0
+    }
+
+    dead_end {
+        enabled false
+        condition ""
     }
     
 }

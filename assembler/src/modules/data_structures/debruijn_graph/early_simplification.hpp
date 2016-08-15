@@ -43,7 +43,7 @@ public:
 
     //TODO make parallel
     void CleanLinks() {
-        vector<Index::kmer_iterator> iters = index_.kmer_begin(10 * cfg::get().max_threads);
+        vector<Index::kmer_iterator> iters = index_.kmer_begin(10 * omp_get_max_threads());
 #   pragma omp parallel for schedule(guided)
         for(size_t i = 0; i < iters.size(); i++) {
             for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
@@ -59,83 +59,6 @@ public:
         }
     }
 };
-
-
-class EarlyTipClipper {
-private:
-    typedef DeBruijnExtensionIndex<> Index;
-    typedef Index::KMer Kmer;
-    typedef Index::KeyWithHash KeyWithHash;
-    Index &index_;
-    size_t length_bound_;
-
-//Not optimal with respect to the number of large array queries (the one that contains adjacency masks). Should be ok though in case cash works the way I think it does
-    size_t RemoveForward(KeyWithHash kh) {
-        std::vector<KeyWithHash> tip;
-        do {
-            tip.push_back(kh);
-            kh = index_.GetUniqueOutgoing(kh);
-        } while (tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh) && index_.CheckUniqueOutgoing(kh));
-
-        if (!index_.CheckUniqueIncoming(kh)) {
-            for (size_t i = 0; i < tip.size(); i++) {
-                index_.IsolateVertex(tip[i]);
-            }
-            return tip.size();
-        }
-
-        return 0;
-    }
-
-    size_t RemoveBackward(KeyWithHash kh) {
-        std::vector<KeyWithHash> tip;
-        do {
-            tip.push_back(kh);
-            kh = index_.GetUniqueIncoming(kh);
-        } while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh) && index_.CheckUniqueOutgoing(kh));
-
-        if (!index_.CheckUniqueOutgoing(kh)) {
-            for (size_t i = 0; i < tip.size(); i++) {
-                index_.IsolateVertex(tip[i]);
-            }
-            return tip.size();
-        }
-        return 0;
-    }
-
-    //TODO make parallel
-    size_t RoughClipTips() {
-        size_t result = 0;
-        for (auto it  = index_.kmer_begin(); it.good(); ++it) {
-            KeyWithHash kh = index_.ConstructKWH(runtime_k::RtSeq(index_.k(), *it));
-            if (index_.IsDeadEnd(kh) && index_.CheckUniqueIncoming(kh)) {
-                result += RemoveBackward(kh);
-            } else if(index_.IsDeadStart(kh) && index_.CheckUniqueOutgoing(kh)) {
-                result += RemoveForward(kh);
-            }
-        }
-        return result;
-    }
-
-
-public:
-    EarlyTipClipper(Index &index, size_t length_bound) :
-            index_(index), length_bound_(length_bound) {}
-
-    /*
-     * Method returns the number of removed edges
-     */
-    size_t ClipTips() {
-        INFO("Early tip clipping");
-        size_t result = RoughClipTips();
-        LinkCleaner(index_).CleanLinks();
-        INFO(result << " " << (index_.k()+1) <<"-mers were removed by early tip clipper");
-        return result;
-    }
-protected:
-    DECL_LOGGER("Early tip clipping");
-};
-
 
 class AlternativeEarlyTipClipper {
 private:
@@ -225,7 +148,7 @@ private:
 
     //TODO make parallel
     size_t RoughClipTips() {
-        vector<Index::kmer_iterator> iters = index_.kmer_begin(10 * cfg::get().max_threads);
+        vector<Index::kmer_iterator> iters = index_.kmer_begin(10 * omp_get_max_threads());
         vector<size_t> result(iters.size());
 #   pragma omp parallel for schedule(guided)
         for(size_t i = 0; i < iters.size(); i++) {

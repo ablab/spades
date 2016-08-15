@@ -6,6 +6,8 @@
 //***************************************************************************
 
 #include "io/reads_io/ireadstream.hpp"
+#include "dev_support/openmp_wrapper.h"
+
 #include "hammer_tools.hpp"
 #include "hamcluster.hpp"
 #include "kmer_cluster.hpp"

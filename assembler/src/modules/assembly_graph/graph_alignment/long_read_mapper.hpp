@@ -20,18 +20,27 @@
 
 namespace debruijn_graph {
 
-class AbstractLongReadMapper: public SequenceMapperListener {
+class LongReadMapper: public SequenceMapperListener {
 public:
-    AbstractLongReadMapper(conj_graph_pack& gp, PathStorage<conj_graph_pack::graph_t>& storage)
-            : gp_(gp), storage_(storage), path_finder_(gp_.g) {
+    typedef vector<vector<EdgeId>> PathsT;
+    typedef MappingPath<EdgeId> MappingT;
+    typedef std::function<PathsT (const MappingT&)> PathExtractionF;
+
+    LongReadMapper(const Graph& g,
+                   PathStorage<Graph>& storage,
+                   PathExtractionF path_extractor)
+            : g_(g),
+              storage_(storage),
+              path_extractor_(path_extractor) {
     }
 
     void StartProcessLibrary(size_t threads_count) override {
         for (size_t i = 0; i < threads_count; ++i)
-            buffer_storages_.emplace_back(gp_.g);
+            buffer_storages_.emplace_back(g_);
     }
 
     void StopProcessLibrary() override {
+        //FIXME put this code into ancestor
         for (size_t i = 0; i < buffer_storages_.size(); ++i) {
             MergeBuffer(i);
         }
@@ -71,44 +80,40 @@ public:
         ProcessSingleRead(thread_index, read);
     }
 
-    PathStorage<conj_graph_pack::graph_t>& GetPaths() {
-        return storage_;
+    const Graph& g() const {
+        return g_;
     }
 
 private:
+    void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& mapping) {
+        DEBUG("Processing read");
+        for (const auto& path : path_extractor_(mapping)) {
+            buffer_storages_[thread_index].AddPath(path, 1, false);
+        }
+        DEBUG("Read processed");
+    }
 
-    virtual void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& read) = 0;
-
-protected:
-    conj_graph_pack& gp_;
-    PathStorage<conj_graph_pack::graph_t>& storage_;
-    ReadPathFinder<conj_graph_pack::graph_t> path_finder_;
-    std::vector<PathStorage<conj_graph_pack::graph_t> > buffer_storages_;
-
+    const Graph& g_;
+    PathStorage<Graph>& storage_;
+    std::vector<PathStorage<Graph>> buffer_storages_;
+    PathExtractionF path_extractor_;
+    DECL_LOGGER("LongReadMapper");
 };
 
-class SimpleLongReadMapper: public AbstractLongReadMapper {
-public:
-    SimpleLongReadMapper(conj_graph_pack& gp, PathStorage<conj_graph_pack::graph_t>& storage)
-            : AbstractLongReadMapper(gp, storage) {
-    }
-
-private:
-
-    void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& read) override {
-        vector<EdgeId> path = path_finder_.FindReadPath(read);
-        buffer_storages_[thread_index].AddPath(path, 1, false);
-    }
-};
-
-class GappedLongReadMapper : public AbstractLongReadMapper {
-private:
-    typedef MappingPathFixer<Graph> GraphMappingPathFixer;
-    const GraphMappingPathFixer path_fixer_;
+class GappedPathExtractor {
+    const Graph& g_;
+    const MappingPathFixer<Graph> path_fixer_;
     const double MIN_MAPPED_RATIO = 0.3;
+    const size_t MIN_MAPPED_LENGTH = 100;
 public:
-    GappedLongReadMapper(conj_graph_pack& gp, PathStorage<conj_graph_pack::graph_t>& storage)
-            : AbstractLongReadMapper(gp, storage), path_fixer_(gp.g) {
+    GappedPathExtractor(const Graph& g): g_(g), path_fixer_(g) {
+    }
+
+    vector<vector<EdgeId>> operator() (const MappingPath<EdgeId>& mapping) const {
+        vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
+                mapping.simple_path());
+        corrected_path = FilterBadMappings(corrected_path, mapping);
+        return FindReadPathWithGaps(mapping, corrected_path);
     }
 
 private:
@@ -137,26 +142,16 @@ private:
     vector<EdgeId> FilterBadMappings(const vector<EdgeId>& corrected_path, const MappingPath<EdgeId>& mapping_path) const {
         vector<EdgeId> new_corrected_path;
         size_t mapping_index = 0;
-        for(auto edge : corrected_path) {
+        for (auto edge : corrected_path) {
             size_t mapping_size = CountMappedEdgeSize(edge, mapping_path, mapping_index);
-            size_t edge_len =  gp_.g.length(edge);
+            size_t edge_len =  g_.length(edge);
             //VERIFY(edge_len >= mapping_size);
-            if(math::gr((double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO)) {
+            if (mapping_size > MIN_MAPPED_LENGTH || 
+                    math::gr((double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO)) {
                 new_corrected_path.push_back(edge);
             }
         }
         return new_corrected_path;
-    }
-
-
-    void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& read) override {
-        vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
-                read.simple_path());
-        corrected_path = FilterBadMappings(corrected_path, read);
-        vector<vector<EdgeId>> paths = FindReadPathWithGaps(read, corrected_path);
-        for(auto path : paths) {
-            buffer_storages_[thread_index].AddPath(path, 1, false);
-        }
     }
 
     vector<vector<EdgeId>> FindReadPathWithGaps(const MappingPath<EdgeId>& mapping_path, vector<EdgeId>& corrected_path) const {
@@ -172,7 +167,7 @@ private:
         vector<vector<EdgeId>> result;
         size_t prev_start = 0;
         for (size_t i = 1; i < path.size(); ++i) {
-            if (gp_.g.EdgeEnd(path[i - 1]) != gp_.g.EdgeStart(path[i])) {
+            if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i])) {
                     result.push_back(vector<EdgeId>(path.begin() + prev_start, path.begin() + i));
                     prev_start = i;
             }
@@ -182,6 +177,19 @@ private:
     }
 };
 
+typedef std::function<vector<vector<EdgeId>> (const MappingPath<EdgeId>&)> PathExtractionF;
+
+inline PathExtractionF ChooseProperReadPathExtractor(const Graph& g, io::LibraryType lib_type) {
+    if (lib_type == io::LibraryType::PathExtendContigs) {
+        return [&] (const MappingPath<EdgeId>& mapping) {
+            return GappedPathExtractor(g)(mapping);
+        };
+    } else {
+        return [&] (const MappingPath<EdgeId>& mapping) {
+            return vector<vector<EdgeId>>{ReadPathFinder<Graph>(g).FindReadPath(mapping)};
+        };
+    }
+}
 
 }/*longreads*/
 

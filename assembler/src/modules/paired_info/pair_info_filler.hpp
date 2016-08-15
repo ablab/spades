@@ -36,29 +36,37 @@ public:
     }
 
     virtual void StartProcessLibrary(size_t threads_count) {
+        DEBUG("Start processing: start");
         paired_index_.Init();
         buffer_pi_ = {graph_, threads_count};
+        DEBUG("Start processing: end");
     }
 
     virtual void StopProcessLibrary() {
+        DEBUG("Stop processing: start");
         for (size_t i = 0; i < buffer_pi_.size(); ++i)
             MergeBuffer(i);
 
         buffer_pi_.Clear();
+        DEBUG("Stop processing: end");
     }
 
     virtual void ProcessPairedRead(size_t thread_index,
                                    const io::PairedRead& r,
                                    const MappingPath<EdgeId>& read1,
                                    const MappingPath<EdgeId>& read2) {
+//        DEBUG("Processing paired read");
         ProcessPairedRead(buffer_pi_[thread_index], read1, read2, r.distance());
+//        DEBUG("Processed");
     }
 
     virtual void ProcessPairedRead(size_t thread_index,
                                    const io::PairedReadSeq& r,
                                    const MappingPath<EdgeId>& read1,
                                    const MappingPath<EdgeId>& read2) {
+//        DEBUG("Processing binary paired read");
         ProcessPairedRead(buffer_pi_[thread_index], read1, read2, r.distance());
+//        DEBUG("Processed");
     }
 
     virtual void ProcessSingleRead(size_t,
@@ -70,11 +78,11 @@ public:
                                    const MappingPath<EdgeId>&) {}
 
     virtual void MergeBuffer(size_t thread_index) {
+        DEBUG("Merging buffer");
         paired_index_.Merge(buffer_pi_[thread_index]);
         buffer_pi_[thread_index].Clear();
+        DEBUG("Merged");
     }
-
-    virtual ~LatePairedIndexFiller() {}
 
 private:
     void ProcessPairedRead(omnigraph::de::PairedInfoBuffer<Graph>& paired_index,

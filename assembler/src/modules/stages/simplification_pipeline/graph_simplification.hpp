@@ -58,7 +58,7 @@ class ConditionParser {
 private:
     typedef typename Graph::EdgeId EdgeId;
 
-    const Graph& g_;
+    const Graph &g_;
     string next_token_;
     string input_;
     const SimplifInfoContainer settings_;
@@ -80,7 +80,7 @@ private:
     }
 
     template<typename T>
-    bool RelaxMax(T& cur_max, T t) {
+    bool RelaxMax(T &cur_max, T t) {
         if (t > cur_max) {
             cur_max = t;
             return true;
@@ -89,7 +89,7 @@ private:
     }
 
     template<typename T>
-    bool RelaxMin(T& cur_min, T t) {
+    bool RelaxMin(T &cur_min, T t) {
         if (t < cur_min) {
             cur_min = t;
             return true;
@@ -105,8 +105,8 @@ private:
         }
     }
 
-    pred::TypedPredicate<EdgeId> ParseCondition(size_t& min_length_bound,
-                                               double& min_coverage_bound) {
+    pred::TypedPredicate<EdgeId> ParseCondition(size_t &min_length_bound,
+                                               double &min_coverage_bound) {
         if (next_token_ == "tc_lb") {
             double length_coeff = std::stod(ReadNext());
 
@@ -142,7 +142,7 @@ private:
             RelaxMin(min_length_bound, length_bound);
             DEBUG("Min length bound - " << min_length_bound);
             return LengthUpperBound<Graph>(g_, length_bound);
-            
+
         } else if (next_token_ == "ec_lb") {
             size_t length_coeff = std::stoll(ReadNext());
 
@@ -195,8 +195,8 @@ private:
         }
     }
 
-    pred::TypedPredicate<EdgeId> ParseConjunction(size_t& min_length_bound,
-                                                  double& min_coverage_bound) {
+    pred::TypedPredicate<EdgeId> ParseConjunction(size_t &min_length_bound,
+                                                  double &min_coverage_bound) {
         pred::TypedPredicate<EdgeId> answer = pred::AlwaysTrue<EdgeId>();
         VERIFY(next_token_ == "{");
         ReadNext();
@@ -210,7 +210,7 @@ private:
 
 public:
 
-    ConditionParser(const Graph& g, string input, const SimplifInfoContainer& settings,
+    ConditionParser(const Graph &g, string input, const SimplifInfoContainer &settings,
                     size_t curr_iteration = -1ul, size_t iteration_cnt = -1ul)
             : g_(g),
               input_(input),
@@ -261,10 +261,10 @@ private:
 //todo move to visualization
 template<class graph_pack>
 shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
-        const graph_pack& gp) {
+        const graph_pack &gp) {
     auto mapper = MapperInstance(gp);
-    auto path1 = mapper->MapSequence(gp.genome).path();
-    auto path2 = mapper->MapSequence(!gp.genome).path();
+    auto path1 = mapper->MapSequence(gp.genome.GetSequence()).path();
+    auto path2 = mapper->MapSequence(!gp.genome.GetSequence()).path();
     return omnigraph::visualization::DefaultColorer(gp.g, path1, path2);
 }
 
@@ -272,14 +272,14 @@ template<class Graph>
 class EditDistanceTrackingCallback {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::EdgeData EdgeData;
-    const Graph& g_;
+    const Graph &g_;
 
 public:
-    EditDistanceTrackingCallback(const Graph& g)
+    EditDistanceTrackingCallback(const Graph &g)
             : g_(g) {
     }
 
-    bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
+    bool operator()(EdgeId edge, const vector<EdgeId> &path) const {
         vector<Sequence> path_sequences;
         for (auto it = path.begin(); it != path.end(); ++it) {
             path_sequences.push_back(g_.EdgeNucls(*it));
@@ -292,16 +292,15 @@ public:
     }
 
 private:
-    DECL_LOGGER("EditDistanceTrackingCallback")
-    ;
+    DECL_LOGGER("EditDistanceTrackingCallback");
 };
 
 //template<class Graph, class SmartEdgeIt>
 //bool ClipTips(
-//    Graph& g,
-//    SmartEdgeIt& it,
-//    const config::debruijn_config::simplification::tip_clipper& tc_config,
-//    const SimplifInfoContainer& info,
+//    Graph &g,
+//    SmartEdgeIt &it,
+//    const config::debruijn_config::simplification::tip_clipper &tc_config,
+//    const SimplifInfoContainer &info,
 //    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 //
 //    INFO("Clipping tips");
@@ -322,9 +321,9 @@ private:
 
 //template<class Graph>
 //bool ClipTips(
-//    Graph& g,
-//    const config::debruijn_config::simplification::tip_clipper& tc_config,
-//    const SimplifInfoContainer& info,
+//    Graph &g,
+//    const config::debruijn_config::simplification::tip_clipper &tc_config,
+//    const SimplifInfoContainer &info,
 //    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 //
 //    auto it = g.SmartEdgeBegin(LengthComparator<Graph>(g), true);
@@ -334,7 +333,7 @@ private:
 //enabling tip projection, todo optimize if hotspot
 template<class gp_t>
 HandlerF<typename gp_t::graph_t> WrapWithProjectionCallback(
-    gp_t& gp,
+    gp_t &gp,
     HandlerF<typename gp_t::graph_t> removal_handler) {
     typedef typename gp_t::graph_t Graph;
     typedef typename Graph::EdgeId EdgeId;
@@ -377,10 +376,10 @@ protected:
     }
 
 public:
-    LowCoverageEdgeRemovingAlgorithm(Graph& g,
-                                    const InterestingEdgeFinder& interest_edge_finder,
-                                    const SimplifInfoContainer& simplif_info,
-                                    const std::string& condition_str,
+    LowCoverageEdgeRemovingAlgorithm(Graph &g,
+                                    const InterestingEdgeFinder &interest_edge_finder,
+                                    const SimplifInfoContainer &simplif_info,
+                                    const std::string &condition_str,
                                     std::function<void(EdgeId)> removal_handler = nullptr,
                                     bool canonical_only = false,
                                     bool track_changes = true,
@@ -395,13 +394,14 @@ public:
             condition_str_(condition_str),
             remove_condition_(pred::AlwaysFalse<EdgeId>()),
             proceed_condition_(pred::AlwaysTrue<EdgeId>()) {}
+
 private:
     DECL_LOGGER("LowCoverageEdgeRemovingAlgorithm");
 };
 
 template<class Graph>
-AlternativesAnalyzer<Graph> ParseBRConfig(const Graph& g,
-                                          const config::debruijn_config::simplification::bulge_remover& config) {
+AlternativesAnalyzer<Graph> ParseBRConfig(const Graph &g,
+                                          const config::debruijn_config::simplification::bulge_remover &config) {
     size_t max_length = LengthThresholdFinder::MaxBulgeLength(
         g.k(), config.max_bulge_length_coefficient,
         config.max_additive_length_coefficient);
@@ -417,12 +417,12 @@ AlternativesAnalyzer<Graph> ParseBRConfig(const Graph& g,
 }
 
 template<class Graph>
-AlgoPtr<Graph> SelfConjugateEdgeRemoverInstance(Graph &g, const string& condition_str,
-                const SimplifInfoContainer& info,
+AlgoPtr<Graph> SelfConjugateEdgeRemoverInstance(Graph &g, const string &condition_str,
+                const SimplifInfoContainer &info,
                 HandlerF<Graph> removal_handler = 0) {
     ConditionParser<Graph> parser(g, condition_str, info);
     auto condition = pred::And(SelfConjugateCondition<Graph>(g), parser());
-    
+
     return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g,
                                                                   condition,
                                                                   info.chunk_cnt(),
@@ -433,19 +433,19 @@ AlgoPtr<Graph> SelfConjugateEdgeRemoverInstance(Graph &g, const string& conditio
 template<class Graph>
 bool RemoveRelativelyLowCoverageComponents(
         Graph &g,
-        const FlankingCoverage<Graph>& flanking_cov,
-        const config::debruijn_config::simplification::relative_coverage_comp_remover& rcc_config,
-        const SimplifInfoContainer& info,
+        const FlankingCoverage<Graph> &flanking_cov,
+        const config::debruijn_config::simplification::relative_coverage_comp_remover &rcc_config,
+        const SimplifInfoContainer &info,
         typename ComponentRemover<Graph>::HandlerF removal_handler = 0) {
     if (rcc_config.enabled) {
         INFO("Removing relatively low covered connections");
         size_t connecting_path_length_bound = LengthThresholdFinder::MaxErroneousConnectionLength(
             g.k(), rcc_config.max_ec_length_coefficient);
 
-        std::string pics_dir = "";//cfg::get().output_dir + "rel_cov_components/"
+        std::string pics_dir = "";
 
-        double max_coverage = math::ge(rcc_config.max_coverage_coeff, 0.) 
-                                ? info.detected_coverage_bound() * rcc_config.max_coverage_coeff 
+        double max_coverage = math::ge(rcc_config.max_coverage_coeff, 0.)
+                                ? info.detected_coverage_bound() * rcc_config.max_coverage_coeff
                                 : std::numeric_limits<double>::max();
 
         omnigraph::simplification::relative_coverage::
@@ -467,8 +467,8 @@ bool RemoveRelativelyLowCoverageComponents(
 
 template<class Graph>
 bool DisconnectRelativelyLowCoverageEdges(Graph &g,
-        const FlankingCoverage<Graph>& flanking_cov,
-        const config::debruijn_config::simplification::relative_coverage_edge_disconnector& rced_config) {
+        const FlankingCoverage<Graph> &flanking_cov,
+        const config::debruijn_config::simplification::relative_coverage_edge_disconnector &rced_config) {
     if (rced_config.enabled) {
         INFO("Disconnecting edges with relatively low coverage");
         omnigraph::simplification::relative_coverage::RelativeCoverageDisconnector<
@@ -484,7 +484,7 @@ bool DisconnectRelativelyLowCoverageEdges(Graph &g,
 
 template<class Graph>
 bool RemoveComplexBulges(
-    Graph& g,
+    Graph &g,
     config::debruijn_config::simplification::complex_bulge_remover cbr_config,
     size_t /*iteration*/ = 0) {
     if (!cbr_config.enabled)
@@ -531,8 +531,8 @@ bool RemoveComplexBulges(
 //}
 
 template<class Graph>
-bool ClipComplexTips(Graph& g, config::debruijn_config::simplification::complex_tip_clipper ctc_conf, const SimplifInfoContainer& info, HandlerF<Graph> removal_handler = 0) {
-    if(!ctc_conf.enabled) {
+bool ClipComplexTips(Graph &g, config::debruijn_config::simplification::complex_tip_clipper ctc_conf, const SimplifInfoContainer &info, HandlerF<Graph> removal_handler = 0) {
+    if (!ctc_conf.enabled) {
         INFO("Complex tip clipping disabled");
         return false;
     }
@@ -553,13 +553,13 @@ bool ClipComplexTips(Graph& g, config::debruijn_config::simplification::complex_
 }
 
 template<class Graph>
-AlgoPtr<Graph> ShortPolyATEdgesRemoverInstance (Graph &g, size_t max_length, HandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1){
+AlgoPtr<Graph> ShortPolyATEdgesRemoverInstance(Graph &g, size_t max_length, HandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
     auto condition = pred::And(ATCondition<Graph>(g, 0.8, max_length, false), LengthUpperBound<Graph>(g, 1));
     return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g, condition, chunk_cnt, removal_handler, true);
 }
 
 template<class Graph>
-AlgoPtr<Graph> ATTipClipperInstance (Graph &g, HandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
+AlgoPtr<Graph> ATTipClipperInstance(Graph &g, HandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
 //TODO: review params 0.8, 200?
     return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g, ATCondition<Graph>(g, 0.8, 200, true), chunk_cnt, removal_handler, true);
 }
@@ -567,7 +567,7 @@ AlgoPtr<Graph> ATTipClipperInstance (Graph &g, HandlerF<Graph> removal_handler =
 template<class Graph>
 AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
                                            config::debruijn_config::simplification::isolated_edges_remover ier,
-                                           const SimplifInfoContainer& info,
+                                           const SimplifInfoContainer &info,
                                            HandlerF<Graph> removal_handler = 0) {
     if (!ier.enabled) {
         return nullptr;
@@ -591,17 +591,17 @@ AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
 }
 
 template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId> NecessaryBulgeCondition(const Graph& g,
-                                                                    const config::debruijn_config::simplification::bulge_remover& br_config,
+pred::TypedPredicate<typename Graph::EdgeId> NecessaryBulgeCondition(const Graph &g,
+                                                                    const config::debruijn_config::simplification::bulge_remover &br_config,
                                                                     const SimplifInfoContainer&) {
     auto analyzer = ParseBRConfig(g, br_config);
     return omnigraph::NecessaryBulgeCondition(g, analyzer.max_length(), analyzer.max_coverage());
 }
 
 template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId> NecessaryTipCondition(const Graph& g,
-                                                                  const config::debruijn_config::simplification::tip_clipper& tc_config,
-                                                                  const SimplifInfoContainer& info) {
+pred::TypedPredicate<typename Graph::EdgeId> NecessaryTipCondition(const Graph &g,
+                                                                  const config::debruijn_config::simplification::tip_clipper &tc_config,
+                                                                  const SimplifInfoContainer &info) {
     ConditionParser<Graph> parser(g, tc_config.condition, info);
     auto condition = parser();
     return omnigraph::NecessaryTipCondition(g, parser.max_length_bound(),
@@ -609,9 +609,11 @@ pred::TypedPredicate<typename Graph::EdgeId> NecessaryTipCondition(const Graph& 
 }
 
 template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId> NecessaryECCondition(const Graph& g,
-                                                                 const config::debruijn_config::simplification::erroneous_connections_remover& ec_config,
-                                                                 const SimplifInfoContainer& info, size_t current_iteration = 0, size_t iteration_cnt = 1) {
+pred::TypedPredicate<typename Graph::EdgeId> NecessaryECCondition(const Graph &g,
+                                                                 const config::debruijn_config::simplification::erroneous_connections_remover &ec_config,
+                                                                 const SimplifInfoContainer &info,
+                                                                 size_t current_iteration = 0,
+                                                                 size_t iteration_cnt = 1) {
     ConditionParser<Graph> parser(g, ec_config.condition, info, current_iteration, iteration_cnt);
     auto condition = parser();
     return omnigraph::NecessaryECCondition(g, parser.max_length_bound(),
@@ -619,9 +621,9 @@ pred::TypedPredicate<typename Graph::EdgeId> NecessaryECCondition(const Graph& g
 }
 
 template<class Graph>
-AlgoPtr<Graph> ECRemoverInstance(Graph& g,
-                                 const config::debruijn_config::simplification::erroneous_connections_remover& ec_config,
-                                 const SimplifInfoContainer& info,
+AlgoPtr<Graph> ECRemoverInstance(Graph &g,
+                                 const config::debruijn_config::simplification::erroneous_connections_remover &ec_config,
+                                 const SimplifInfoContainer &info,
                                  HandlerF<Graph> removal_handler,
                                  size_t iteration_cnt = 1) {
     if (ec_config.condition.empty())
@@ -637,9 +639,47 @@ AlgoPtr<Graph> ECRemoverInstance(Graph& g,
 }
 
 template<class Graph>
-AlgoPtr<Graph> TipClipperInstance(Graph& g,
-                                  const EdgeConditionT<Graph>& condition,
-                                  const SimplifInfoContainer& info,
+AlgoPtr<Graph> RelativeECRemoverInstance(Graph &g,
+                                         const config::debruijn_config::simplification::relative_coverage_ec_remover &rcec_config,
+                                         const SimplifInfoContainer &info,
+                                         HandlerF<Graph> removal_handler,
+                                         size_t iteration_cnt = 1) {
+    if (!rcec_config.enabled)
+        return nullptr;
+
+    return make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g,
+            AddRelativeCoverageECCondition(g, rcec_config.rcec_ratio,
+                                           AddAlternativesPresenceCondition(g, pred::TypedPredicate<typename Graph::EdgeId>
+                                                   (LengthUpperBound<Graph>(g, rcec_config.max_ec_length)))),
+            info.chunk_cnt(), removal_handler, /*canonical_only*/true);
+}
+
+template<class Graph>
+AlgoPtr<Graph> NotBulgeECRemoverInstance(Graph &g,
+                                         const config::debruijn_config::simplification::erroneous_connections_remover &ec_config,
+                                         const SimplifInfoContainer &info, HandlerF<Graph> removal_handler,
+                                         size_t iteration_cnt = 1) {
+    if (ec_config.condition.empty())
+        return nullptr;
+
+    std::string curr_condition = ec_config.condition;
+    ConditionParser<Graph> parser(g, curr_condition, info, iteration_cnt - 1, iteration_cnt);
+    auto condition = parser();
+
+    typedef omnigraph::ParallelInterestingElementFinder<Graph> InterestingFinderT;
+    InterestingFinderT interesting_finder(g, AddNotBulgeECCondition(g, AddAlternativesPresenceCondition(g, pred::And(
+                                                  LengthUpperBound<Graph>(g, parser.max_length_bound()),
+                                                  CoverageUpperBound<Graph>(g, parser.max_coverage_bound())))),
+                                          info.chunk_cnt());
+    return make_shared<LowCoverageEdgeRemovingAlgorithm<Graph, InterestingFinderT>>(
+            g, interesting_finder, info, ec_config.condition, removal_handler,
+            /*canonical only*/ true, /*track changes*/ true, iteration_cnt);
+}
+
+template<class Graph>
+AlgoPtr<Graph> TipClipperInstance(Graph &g,
+                                  const EdgeConditionT<Graph> &condition,
+                                  const SimplifInfoContainer &info,
                                   HandlerF<Graph> removal_handler,
                                   bool track_changes = true,
                                   size_t /*iteration_cnt*/ = 1) {
@@ -653,9 +693,9 @@ AlgoPtr<Graph> TipClipperInstance(Graph& g,
 }
 
 template<class Graph>
-AlgoPtr<Graph> TipClipperInstance(Graph& g,
-                                           const config::debruijn_config::simplification::tip_clipper& tc_config,
-                                           const SimplifInfoContainer& info,
+AlgoPtr<Graph> TipClipperInstance(Graph &g,
+                                           const config::debruijn_config::simplification::tip_clipper &tc_config,
+                                           const SimplifInfoContainer &info,
                                            HandlerF<Graph> removal_handler,
                                            size_t iteration_cnt = 1) {
     if (tc_config.condition.empty())
@@ -667,10 +707,26 @@ AlgoPtr<Graph> TipClipperInstance(Graph& g,
 }
 
 template<class Graph>
+AlgoPtr<Graph> DeadEndInstance(Graph &g,
+                               const config::debruijn_config::simplification::dead_end_clipper &dead_end_config,
+                               const SimplifInfoContainer &info,
+                               HandlerF<Graph> removal_handler,
+                               size_t /*iteration_cnt*/ = 1) {
+    if (!dead_end_config.enabled || dead_end_config.condition.empty())
+        return nullptr;
+
+    ConditionParser<Graph> parser(g, dead_end_config.condition, info);
+    auto condition = parser();
+    return make_shared<ParallelEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>>>(g,
+            AddDeadEndCondition(g, condition), info.chunk_cnt(), removal_handler, /*canonical_only*/true,
+            LengthComparator<Graph>(g), /*track changes*/true);
+}
+
+template<class Graph>
 AlgoPtr<Graph> TopologyTipClipperInstance(
     Graph &g,
-    const config::debruijn_config::simplification::topology_tip_clipper& ttc_config,
-    const SimplifInfoContainer& info,
+    const config::debruijn_config::simplification::topology_tip_clipper &ttc_config,
+    const SimplifInfoContainer &info,
     HandlerF<Graph> removal_handler) {
 
     auto condition
@@ -684,12 +740,12 @@ AlgoPtr<Graph> TopologyTipClipperInstance(
 }
 
 template<class Graph>
-AlgoPtr<Graph> BRInstance(Graph& g,
-                          const config::debruijn_config::simplification::bulge_remover& br_config,
-                          const SimplifInfoContainer& info,
+AlgoPtr<Graph> BRInstance(Graph &g,
+                          const config::debruijn_config::simplification::bulge_remover &br_config,
+                          const SimplifInfoContainer &info,
                           HandlerF<Graph> removal_handler,
                           size_t /*iteration_cnt*/ = 1) {
-    typedef ParallelInterestingElementFinder<Graph, 
+    typedef ParallelInterestingElementFinder<Graph,
                                     typename Graph::EdgeId> InterestingEdgeFinder;
     if (!br_config.enabled || (br_config.main_iteration_only && !info.main_iteration())) {
         return nullptr;
@@ -697,11 +753,11 @@ AlgoPtr<Graph> BRInstance(Graph& g,
 
     auto alternatives_analyzer = ParseBRConfig(g, br_config);
 
-     
+
     InterestingEdgeFinder interesting_edge_finder(g,
                                                   NecessaryBulgeCondition(g,
                                                                           alternatives_analyzer.max_length(),
-                                                                          alternatives_analyzer.max_coverage()), 
+                                                                          alternatives_analyzer.max_coverage()),
                                                   info.chunk_cnt());
     if (br_config.parallel) {
         INFO("Creating parallel br instance");
@@ -731,11 +787,11 @@ template<class Graph>
 class FlankingCovBound : public EdgeCondition<Graph> {
     typedef EdgeCondition<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
-    const FlankingCoverage<Graph>& flanking_cov_;
+    const FlankingCoverage<Graph> &flanking_cov_;
     double max_coverage_;
 public:
-    FlankingCovBound(const Graph& g,
-                     const FlankingCoverage<Graph>& flanking_cov,
+    FlankingCovBound(const Graph &g,
+                     const FlankingCoverage<Graph> &flanking_cov,
                      double max_coverage)
         : base(g),
           flanking_cov_(flanking_cov),
@@ -743,8 +799,8 @@ public:
     }
 
     bool Check(EdgeId e) const override {
-        return this->g().length(e) > 1 
-                    && this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) > 1 
+        return this->g().length(e) > 1
+                    && this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) > 1
                     && math::le(flanking_cov_.CoverageOfStart(e), max_coverage_);
     }
 
@@ -761,11 +817,11 @@ class ParallelDisconnectionAlgorithm : public PersistentProcessingAlgorithm<Grap
     omnigraph::simplification::relative_coverage::EdgeDisconnector<Graph> disconnector_;
 
 public:
-    ParallelDisconnectionAlgorithm(Graph& g,
+    ParallelDisconnectionAlgorithm(Graph &g,
                                     pred::TypedPredicate<EdgeId> condition,
                                     size_t chunk_cnt,
                                     HandlerF<Graph> removal_handler,
-                                    const Comparator& comp = Comparator(),
+                                    const Comparator &comp = Comparator(),
                                     bool track_changes = true)
             : base(g,
                    ParallelInterestingElementFinder<Graph>(g, condition, chunk_cnt),
@@ -785,10 +841,10 @@ public:
 };
 
 template<class Graph>
-AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph& g,
-                                           const FlankingCoverage<Graph>& flanking_cov,
+AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph &g,
+                                           const FlankingCoverage<Graph> &flanking_cov,
                                            double cov_bound,
-                                           const SimplifInfoContainer& info,
+                                           const SimplifInfoContainer &info,
                                            HandlerF<Graph> removal_handler) {
     if (math::ls(cov_bound, 0.)) {
         INFO("Flanking coverage based disconnection disabled");
@@ -802,8 +858,8 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph& g,
 }
 
 template<class Graph>
-bool RemoveHiddenLoopEC(Graph& g,
-                        const FlankingCoverage<Graph>& flanking_cov,
+bool RemoveHiddenLoopEC(Graph &g,
+                        const FlankingCoverage<Graph> &flanking_cov,
                         double determined_coverage_threshold,
                         config::debruijn_config::simplification::hidden_ec_remover her_config,
                         HandlerF<Graph> removal_handler) {
@@ -811,7 +867,7 @@ bool RemoveHiddenLoopEC(Graph& g,
         INFO("Removing loops and rc loops with erroneous connections");
         ECLoopRemover<Graph> hc(g, flanking_cov,
                                 determined_coverage_threshold,
-                                cfg::get().simp.her.relative_threshold, removal_handler);
+                                her_config.relative_threshold, removal_handler);
         bool res = hc.Run();
         hc.PrintLoopStats();
         return res;
@@ -823,9 +879,9 @@ bool RemoveHiddenLoopEC(Graph& g,
 ////todo add chunk_cnt
 //template<class Graph>
 //bool ClipTips(
-//    Graph& g,
-//    const std::string& condition,
-//    const SimplifInfoContainer& info,
+//    Graph &g,
+//    const std::string &condition,
+//    const SimplifInfoContainer &info,
 //    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 //
 //    if (condition != "") {
@@ -845,9 +901,9 @@ bool RemoveHiddenLoopEC(Graph& g,
 
 //template<class Graph>
 //bool RemoveLowCoverageEdges(
-//    Graph& g,
-//    const std::string& condition,
-//    const SimplifInfoContainer& info,
+//    Graph &g,
+//    const std::string &condition,
+//    const SimplifInfoContainer &info,
 //    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 //
 //    if (condition != "") {
@@ -870,7 +926,7 @@ bool RemoveHiddenLoopEC(Graph& g,
 //Parallel algo launch
 
 template<class Graph>
-void ParallelCompress(Graph& g, size_t chunk_cnt, bool loop_post_compression = true) {
+void ParallelCompress(Graph &g, size_t chunk_cnt, bool loop_post_compression = true) {
     INFO("Parallel compression");
     debruijn::simplification::ParallelCompressor<Graph> compressor(g);
     TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> runner(g, false);
@@ -886,9 +942,9 @@ void ParallelCompress(Graph& g, size_t chunk_cnt, bool loop_post_compression = t
 }
 
 template<class Graph>
-bool ParallelClipTips(Graph& g,
-              const string& tip_condition,
-              const SimplifInfoContainer& info,
+bool ParallelClipTips(Graph &g,
+              const string &tip_condition,
+              const SimplifInfoContainer &info,
               std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
     INFO("Parallel tip clipping");
 
@@ -913,8 +969,8 @@ bool ParallelClipTips(Graph& g,
 }
 
 //template<class Graph>
-//bool ParallelRemoveBulges(Graph& g,
-//              const config::debruijn_config::simplification::bulge_remover& br_config,
+//bool ParallelRemoveBulges(Graph &g,
+//              const config::debruijn_config::simplification::bulge_remover &br_config,
 //              size_t /*read_length*/,
 //              std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 //    INFO("Parallel bulge remover");
@@ -941,9 +997,9 @@ bool ParallelClipTips(Graph& g,
 //}
 
 template<class Graph>
-bool ParallelEC(Graph& g,
-              const string& ec_condition,
-              const SimplifInfoContainer& info,
+bool ParallelEC(Graph &g,
+              const string &ec_condition,
+              const SimplifInfoContainer &info,
               std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
     INFO("Parallel ec remover");
 

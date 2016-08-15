@@ -330,6 +330,8 @@ def find_mis_positions(contig_report):
             currend_id = line.split()[1].strip()
         elif (line.find("Extensive misassembly") != -1):
             line2 = infile.readline()
+            if (line2.find("Real Alignment") == -1):
+                line2 = infile.readline()
             mis = parse_misassembly(prev_line, line2)
             if not mis:
                 log.warn("Failed to parse misassembly")

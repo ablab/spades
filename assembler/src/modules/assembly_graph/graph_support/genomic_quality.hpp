@@ -133,8 +133,8 @@ class QualityLoggingRemovalHandler {
     }
 
 public:
-    QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler, 
-                                    bool handle_all = false) :
+    QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler,
+                                 bool handle_all = false) :
             g_(g), quality_handler_(quality_handler), black_removed_(0), total_(0), handle_all_(handle_all) {
     }
 
@@ -183,7 +183,7 @@ public:
             , const string& output_folder, bool handle_all = false) :
             base(g, quality_handler, handle_all),
             printing_rh_(g, labeler, colorer, output_folder)
-            {}
+    {}
 
     virtual void HandlePositiveQuality(EdgeId e) {
         printing_rh_.HandleDelete(e, "_" + ToString(this->quality_handler().quality(e)));

@@ -84,8 +84,8 @@ class PairInfoImprover {
   public:
     PairInfoImprover(const Graph& g,
                      Index& clustered_index,
-                     const io::SequencingLibrary<config::DataSetData> &lib)
-            : graph_(g), index_(clustered_index), lib_(lib) { }
+                     const io::SequencingLibrary<config::DataSetData> &lib, size_t max_repeat_length)
+            : graph_(g), index_(clustered_index), lib_(lib), max_repeat_length_(max_repeat_length) { }
 
     void ImprovePairedInfo(unsigned num_threads = 1) {
         CorrectPairedInfo(num_threads);
@@ -107,14 +107,14 @@ class PairInfoImprover {
       public:
         ContradictionalRemover(omnigraph::de::PairedInfoIndicesT<Graph> &to_remove,
                                const Graph &g,
-                               omnigraph::de::PairedInfoIndexT<Graph>& index)
-                : to_remove_(to_remove), graph_(g), index_(index) {}
+                               omnigraph::de::PairedInfoIndexT<Graph>& index, size_t max_repeat_length)
+                : to_remove_(to_remove), graph_(g), index_(index), max_repeat_length_(max_repeat_length) {}
 
-        bool operator()(EdgeId e) {
+        bool operator()(std::unique_ptr<EdgeId> e) {
             omnigraph::de::PairedInfoIndexT<Graph> &to_remove = to_remove_[omp_get_thread_num()];
 
-            if (graph_.length(e)>= cfg::get().max_repeat_length && index_.contains(e))
-                FindInconsistent(e, to_remove);
+            if (graph_.length(*e)>= max_repeat_length_ && index_.contains(*e))
+                FindInconsistent(*e, to_remove);
 
             return false;
         }
@@ -176,6 +176,7 @@ class PairInfoImprover {
         omnigraph::de::PairedInfoIndicesT<Graph> &to_remove_;
         const Graph &graph_;
         Index& index_;
+        size_t max_repeat_length_;
     };
 
     size_t RemoveContradictional(unsigned nthreads) {
@@ -184,7 +185,7 @@ class PairInfoImprover {
         omnigraph::de::PairedInfoIndicesT<Graph> to_remove(graph_, nthreads);
 
         // FIXME: Replace with lambda
-        ContradictionalRemover remover(to_remove, graph_, index_);
+        ContradictionalRemover remover(to_remove, graph_, index_, max_repeat_length_);
         ParallelEdgeProcessor<Graph>(graph_, nthreads).Run(remover);
 
         DEBUG("ParallelRemoveContraditional: Threads finished");
@@ -272,7 +273,7 @@ class PairInfoImprover {
     const Graph& graph_;
     Index& index_;
     const io::SequencingLibrary<config::DataSetData>& lib_;
-
+    size_t max_repeat_length_;
     DECL_LOGGER("PairInfoImprover")
 };
 

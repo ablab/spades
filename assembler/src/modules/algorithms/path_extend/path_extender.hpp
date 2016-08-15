@@ -457,7 +457,8 @@ public:
             GapJoiner(g), min_la_length_(min_la_length), flank_addition_coefficient_(
                     flank_addition_coefficient), flank_multiplication_coefficient_(
                     flank_multiplication_coefficient) {
-        DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_); DEBUG("flank_addition_coefficient_  - " << flank_addition_coefficient_ );
+        DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_); 
+        DEBUG("flank_addition_coefficient_  - " << flank_addition_coefficient_ );
     }
 
     Gap FixGap(EdgeId source, EdgeId sink, int initial_gap) const override {
@@ -486,7 +487,7 @@ public:
             return Gap(INVALID_GAP);
         }
 
-        if (overlap_info.identity() < IDENTITY_RATIO) {
+        if (math::ls(overlap_info.identity(), IDENTITY_RATIO)) {
             DEBUG("Low identity score");
             return Gap(INVALID_GAP);
         }
@@ -773,20 +774,31 @@ struct UsedUniqueStorage {
     set<EdgeId> used_;
 
     const ScaffoldingUniqueEdgeStorage& unique_;
+
+    UsedUniqueStorage(const ScaffoldingUniqueEdgeStorage& unique ):used_(), unique_(unique) {}
+
     void insert(EdgeId e) {
         if (unique_.IsUnique(e)) {
             used_.insert(e);
             used_.insert(e->conjugate());
         }
     }
-    bool IsUsedAndUnique (EdgeId e) {
+
+    bool IsUsedAndUnique(EdgeId e) const {
         return (unique_.IsUnique(e) && used_.find(e) != used_.end());
     }
-    UsedUniqueStorage(const ScaffoldingUniqueEdgeStorage& unique ):used_(), unique_(unique) {}
+
+    bool UniqueCheckEnabled() const {
+        return unique_.size() > 0;
+    }
+
+
 };
+
 class PathExtender {
 public:
-    PathExtender(const Graph & g): g_(g){ }
+    PathExtender(const Graph & g):
+        g_(g){ }
 
     virtual ~PathExtender() { }
 
@@ -803,27 +815,34 @@ protected:
 
 class CompositeExtender : public ContigsMaker {
 public:
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, size_t max_diff_len,
-                      size_t max_repeat_length, bool detect_repeats_online)
+    CompositeExtender(Graph &g, GraphCoverageMap& cov_map,
+                      size_t max_diff_len,
+                      size_t max_repeat_length,
+                      bool detect_repeats_online)
             : ContigsMaker(g),
               cover_map_(cov_map),
               repeat_detector_(g, cover_map_, 2 * max_repeat_length),
               extenders_(),
               max_diff_len_(max_diff_len),
-              detect_repeats_online_(detect_repeats_online)  {
+              max_repeat_len_(max_repeat_length),
+              detect_repeats_online_(detect_repeats_online) {
     }
 
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<shared_ptr<PathExtender> > pes,
-                      size_t max_diff_len, const ScaffoldingUniqueEdgeStorage& unique,
-                      size_t max_repeat_length, bool detect_repeats_online)
+    CompositeExtender(Graph & g, GraphCoverageMap& cov_map,
+                      vector<shared_ptr<PathExtender> > pes,
+                      const ScaffoldingUniqueEdgeStorage& unique,
+                      size_t max_diff_len,
+                      size_t max_repeat_length,
+                      bool detect_repeats_online)
             : ContigsMaker(g),
               cover_map_(cov_map),
               repeat_detector_(g, cover_map_, 2 * max_repeat_length),
               extenders_(),
               max_diff_len_(max_diff_len),
+              max_repeat_len_(max_repeat_length),
               detect_repeats_online_(detect_repeats_online) {
         extenders_ = pes;
-        used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage( unique));
+        used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage(unique));
         for (auto ex: extenders_) {
             ex->AddUniqueEdgeStorage(used_storage_);
         }
@@ -848,6 +867,7 @@ public:
     void GrowPathSimple(BidirectionalPath& path, PathContainer* paths_storage) override {
         while (MakeGrowStep(path, paths_storage, false)) { }
     }
+
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage,
                       bool detect_repeats_online_local = true) {
@@ -899,7 +919,7 @@ public:
 
         size_t current = 0;
         while (current < extenders_.size()) {
-            DEBUG("step " << current << " from " <<extenders_.size());
+            DEBUG("step " << current << " of total " << extenders_.size());
             if (extenders_[current]->MakeGrowStep(path, paths_storage)) {
                 return true;
             }
@@ -913,8 +933,9 @@ private:
     RepeatDetector repeat_detector_;
     vector<shared_ptr<PathExtender> > extenders_;
     size_t max_diff_len_;
-    shared_ptr<UsedUniqueStorage> used_storage_;
+    size_t max_repeat_len_;
     bool detect_repeats_online_;
+    shared_ptr<UsedUniqueStorage> used_storage_;
 
     void SubscribeCoverageMap(BidirectionalPath * path) {
         path->Subscribe(&cover_map_);
@@ -931,8 +952,7 @@ private:
                 INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             }
 //In 2015 modes do not use a seed already used in paths.
-            auto sc_mode = cfg::get().pe_params.param_set.sm;
-            if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
+            if (used_storage_->UniqueCheckEnabled()) {
                 bool was_used = false;
                 for (size_t ind =0; ind < paths.Get(i)->Size(); ind++) {
                     EdgeId eid = paths.Get(i)->At(ind);
@@ -964,7 +984,7 @@ private:
                     GrowPath(*path, &result);
                     GrowPath(*conjugatePath, &result);
                 } while (count_trying < 10 && (path->Length() != current_path_len));
-                path->CheckConjugateEnd(cfg::get().max_repeat_length);
+                path->CheckConjugateEnd(max_repeat_len_);
                 DEBUG("result path " << path->GetId());
                 path->Print();
             }
@@ -979,7 +999,7 @@ class LoopDetectingPathExtender : public PathExtender {
 
 protected:
     size_t maxLoops_;
-    bool investigateShortLoops_;
+    bool investigate_short_loops_;
     bool use_short_loop_cov_resolver_;
     CovShortLoopResolver cov_loop_resolver_;
 
@@ -988,11 +1008,12 @@ protected:
     const GraphCoverageMap& cov_map_;
 
 public:
-    LoopDetectingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t max_loops, bool investigateShortLoops,
+    LoopDetectingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t max_loops,
+                              bool investigate_short_loops,
                               bool use_short_loop_cov_resolver, size_t is)
             : PathExtender(gp.g),
               maxLoops_(max_loops),
-              investigateShortLoops_(investigateShortLoops),
+              investigate_short_loops_(investigate_short_loops),
               use_short_loop_cov_resolver_(use_short_loop_cov_resolver),
               cov_loop_resolver_(gp),
               is_detector_(gp.g, cov_map, is),
@@ -1005,11 +1026,11 @@ public:
     }
 
     bool isInvestigateShortLoops() const {
-        return investigateShortLoops_;
+        return investigate_short_loops_;
     }
 
     void setInvestigateShortLoops(bool investigateShortLoops) {
-        this->investigateShortLoops_ = investigateShortLoops;
+        this->investigate_short_loops_ = investigateShortLoops;
     }
 
     void setMaxLoops(size_t maxLoops) {
@@ -1145,7 +1166,7 @@ private:
     }
 
     bool InvestigateShortLoop() {
-        return investigateShortLoops_ && (use_short_loop_cov_resolver_ || CanInvestigateShortLoop());
+        return investigate_short_loops_ && (use_short_loop_cov_resolver_ || CanInvestigateShortLoop());
     }
 protected:
     DECL_LOGGER("LoopDetectingPathExtender")
@@ -1241,7 +1262,7 @@ protected:
         DEBUG(candidates.size())
         if (candidates.size() == 1) {
             LoopDetector loop_detector(&path, cov_map_);
-            if (!investigateShortLoops_ && (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
+            if (!investigate_short_loops_ && (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
                 && extensionChooser_->WeightCounterBased()) {
                 return false;
             }
@@ -1259,17 +1280,16 @@ protected:
 
         LoopDetector loop_detector(&path, cov_map_);
         DEBUG("loop detecor");
-        if (!investigateShortLoops_ &&
+        if (!investigate_short_loops_ &&
             (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
             && extensionChooser_->WeightCounterBased()) {
             return false;
         }
         DEBUG("push");
-        auto sc_mode = cfg::get().pe_params.param_set.sm;
         EdgeId eid = candidates.back().e_;
 //In 2015 modes when trying to use already used unique edge, it is not added and path growing stops.
 //That allows us to avoid overlap removal hacks used earlier.
-        if (is_2015_scaffolder_enabled(sc_mode)) {
+        if (used_storage_->UniqueCheckEnabled()) {
             if (used_storage_->IsUsedAndUnique(eid)) {
                 return false;
             } else {
@@ -1304,15 +1324,38 @@ public:
 protected:
     virtual bool AddCandidates(BidirectionalPath& path, PathContainer* paths_storage, ExtensionChooser::EdgeContainer& candidates) override {
         bool res = false;
-        if (candidates.size() >= 1 && (max_candidates_ == 0 || candidates.size() <= max_candidates_)) {
+
+        if (candidates.size() == 1) {
+            LoopDetector loop_detector(&path, cov_map_);
+            DEBUG("loop detecor");
+            if (!investigate_short_loops_ &&
+                (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
+                && extensionChooser_->WeightCounterBased()) {
+                return false;
+            }
+            DEBUG("push");
+            EdgeId eid = candidates.back().e_;
+            path.PushBack(eid, candidates.back().d_);
+            DEBUG("push done");
+            return true;
+        }
+        else if (candidates.size() == 2 && (max_candidates_ == 0 || candidates.size() <= max_candidates_)) {
+            //Check for bulge
+            auto v = g_.EdgeStart(candidates.front().e_);
+            auto u = g_.EdgeEnd(candidates.front().e_);
+            for (auto edge : candidates) {
+                if (v != g_.EdgeStart(edge.e_) || u != g_.EdgeEnd(edge.e_))
+                    return false;
+            }
+
             LoopDetector loop_detector(&path, cov_map_);
             DEBUG("loop detector");
-            if (!investigateShortLoops_ && loop_detector.EdgeInShortLoop(path.Back())
+            if (!investigate_short_loops_ && loop_detector.EdgeInShortLoop(path.Back())
                 && extensionChooser_->WeightCounterBased()) {
                 return false;
             }
 //First candidate is adding to THIS path.
-            else if (not (!investigateShortLoops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
+            else if (not (!investigate_short_loops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
                 && extensionChooser_->WeightCounterBased())) {
                 DEBUG("push");
                 path.PushBack(candidates.front().e_, candidates.front().d_);
@@ -1324,7 +1367,7 @@ protected:
             }
 //Creating new paths for other than new candidate.
             for (size_t i = 1; i < candidates.size(); ++i) {
-                if (not (!investigateShortLoops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
+                if (not (!investigate_short_loops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
                     && extensionChooser_->WeightCounterBased())) {
                     BidirectionalPath *p = new BidirectionalPath(path);
                     p->PushBack(candidates[i].e_, candidates[i].d_);
@@ -1344,9 +1387,11 @@ protected:
 
 
 class ScaffoldingPathExtender: public LoopDetectingPathExtender {
+private:
     std::shared_ptr<ExtensionChooser> extension_chooser_;
     ExtensionChooser::EdgeContainer sources_;
     std::shared_ptr<GapJoiner> gap_joiner_;
+    bool avoid_rc_connections_;
 
 //When check_sink_ set to false we can scaffold not only tips
     bool check_sink_;
@@ -1365,67 +1410,71 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
         return g_.OutgoingEdgeCount(g_.EdgeEnd(e)) == 0;
     }
 
-
-public:
-
-    ScaffoldingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, std::shared_ptr<ExtensionChooser> extension_chooser,
-                            std::shared_ptr<GapJoiner> gap_joiner, size_t is, size_t max_loops, bool investigateShortLoops, bool check_sink = true):
-        LoopDetectingPathExtender(gp, cov_map, max_loops, investigateShortLoops, false, is),
-            extension_chooser_(extension_chooser),
-            gap_joiner_(gap_joiner),check_sink_(check_sink)
-    {
-        InitSources();
+protected:
+    virtual bool GapSatisfies(int /*gap*/) const {
+        return true;
     }
 
-    bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
-        if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back())) ) {
+    bool MakeSimpleGrowStepForChooser(BidirectionalPath& path, std::shared_ptr<ExtensionChooser> ec, bool must_overlap = false) {
+        if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back()))) {
             return false;
         }
         DEBUG("scaffolding:");
         DEBUG("Simple grow step, growing path");
         path.Print();
-        ExtensionChooser::EdgeContainer candidates = extension_chooser_->Filter(path, sources_);
+        ExtensionChooser::EdgeContainer candidates = ec->Filter(path, sources_);
         DEBUG("scaffolding candidates " << candidates.size() << " from sources " << sources_.size());
 
+        //DEBUG("Extension chooser threshold = " << ec->GetThreshold())
+        DEBUG("Candidate size = " << candidates.size())
         if (candidates.size() == 1) {
-            if (candidates[0].e_ == path.Back() || (cfg::get().avoid_rc_connections && candidates[0].e_ == g_.conjugate(path.Back()))) {
+            if (candidates[0].e_ == path.Back()
+                || (avoid_rc_connections_ && candidates[0].e_ == g_.conjugate(path.Back()))) {
                 return false;
             }
             BidirectionalPath temp_path(path);
             temp_path.PushBack(candidates[0].e_);
-            if(this->DetectCycleScaffolding(temp_path)) {
+            if (this->DetectCycleScaffolding(temp_path)) {
                 return false;
             }
 
-            auto sc_mode = cfg::get().pe_params.param_set.sm;
             EdgeId eid = candidates.back().e_;
-            if(cfg::get().pe_params.param_set.scaffolder_options.fix_gaps && check_sink_) {
+            if (check_sink_) {
                 Gap gap = gap_joiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_);
+                DEBUG("Gap after fixing " << gap.gap_ << " (was " << candidates.back().d_ << ")");
                 if (gap.gap_ != GapJoiner::INVALID_GAP) {
                     DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() <<
-                                                                                         ", fixed gap length: " << gap.gap_ << ", trash length: " << gap.trash_previous_ << "-" <<
-                                                                                         gap.trash_current_);
+                        ", fixed gap length: " << gap.gap_ << ", trash length: " << gap.trash_previous_ << "-" <<
+                        gap.trash_current_);
 
-                    if (is_2015_scaffolder_enabled(sc_mode)) {
+                    if (used_storage_->UniqueCheckEnabled()) {
                         if (used_storage_->IsUsedAndUnique(eid)) {
                             return false;
                         } else {
                             used_storage_->insert(eid);
                         }
                     }
+
+                    if (must_overlap && GapSatisfies(gap.gap_)) {
+                        DEBUG("Overlap is not large enogh")
+                        return false;
+                    }
+                    DEBUG("Overlap is good, success")
                     path.PushBack(eid, gap);
                     return true;
                 }
                 else {
                     DEBUG("Looks like wrong scaffolding. PathId: " << path.GetId() << " path length: " <<
-                                                                                      path.Length() << ", fixed gap length: " << candidates.back().d_);
+                        path.Length() << ", fixed gap length: " << candidates.back().d_ << ", fixed = " << gap.gap_);
                     return false;
                 }
             }
             else {
                 DEBUG("Gap joiners off");
-                DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << candidates.back().d_ );
-                if (is_2015_scaffolder_enabled(sc_mode)) {
+                DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length()
+                          << ", fixed gap length: " << candidates.back().d_);
+
+                if (used_storage_->UniqueCheckEnabled()) {
                     if (used_storage_->IsUsedAndUnique(eid)) {
                         return false;
                     } else {
@@ -1440,6 +1489,30 @@ public:
         return false;
     }
 
+public:
+
+    ScaffoldingPathExtender(const conj_graph_pack& gp,
+                            const GraphCoverageMap& cov_map,
+                            std::shared_ptr<ExtensionChooser> extension_chooser,
+                            std::shared_ptr<GapJoiner> gap_joiner,
+                            size_t is,
+                            size_t max_loops,
+                            bool investigate_short_loops,
+                            bool avoid_rc_connections,
+                            bool check_sink = true):
+        LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, false, is),
+        extension_chooser_(extension_chooser),
+        gap_joiner_(gap_joiner),
+        avoid_rc_connections_(avoid_rc_connections),
+        check_sink_(check_sink)
+    {
+        InitSources();
+    }
+
+    bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
+        return MakeSimpleGrowStepForChooser(path, extension_chooser_);
+    }
+
     bool ResolveShortLoopByCov(BidirectionalPath&) override {
         return false;
     }
@@ -1452,8 +1525,39 @@ public:
         return extension_chooser_;
     }
 
-private:
+protected:
     DECL_LOGGER("ScaffoldingPathExtender");
+};
+
+
+class RNAScaffoldingPathExtender: public ScaffoldingPathExtender {
+    std::shared_ptr<ExtensionChooser> strict_extension_chooser_;
+
+    int min_overlap_;
+
+protected:
+    bool GapSatisfies(int gap) const override {
+        return gap > (int) g_.k() - min_overlap_;
+    }
+
+public:
+
+    RNAScaffoldingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, std::shared_ptr<ExtensionChooser> extension_chooser,
+                               std::shared_ptr<ExtensionChooser> strict_extension_chooser,
+                               std::shared_ptr<GapJoiner> gap_joiner,
+                               size_t is,
+                               size_t max_loops,
+                               bool investigate_short_loops,
+                               int min_overlap = 0):
+        ScaffoldingPathExtender(gp, cov_map, extension_chooser, gap_joiner, is, max_loops, investigate_short_loops, true),
+        strict_extension_chooser_(strict_extension_chooser), min_overlap_(min_overlap) {}
+
+
+    bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
+        return MakeSimpleGrowStepForChooser(path, GetExtensionChooser(), true) ||
+            MakeSimpleGrowStepForChooser(path, strict_extension_chooser_);
+    }
+
 };
 
 }

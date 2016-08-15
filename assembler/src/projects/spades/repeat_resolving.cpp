@@ -19,14 +19,20 @@
 namespace debruijn_graph {
 
 void PEResolving(conj_graph_pack& gp) {
-    vector<size_t> indexes;
-    std::string name = "scaffolds";
-    bool traverse_loops = true;
-    if (!(cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on)) {
-        name = "final_contigs";
-        traverse_loops = false;
-    }
-    path_extend::ResolveRepeatsPe(gp, cfg::get().output_dir, name, traverse_loops, boost::optional<std::string>("final_contigs"));
+    string scaffolds_name = cfg::get().mode == config::pipeline_type::rna ? "transcripts" : "scaffolds";
+    bool output_broke_scaffolds = cfg::get().mode != config::pipeline_type::rna;
+
+    path_extend::PathExtendParamsContainer params(cfg::get().pe_params,
+                                                  cfg::get().output_dir,
+                                                  "final_contigs",
+                                                  scaffolds_name,
+                                                  cfg::get().mode,
+                                                  cfg::get().uneven_depth,
+                                                  cfg::get().avoid_rc_connections,
+                                                  cfg::get().use_scaffolder,
+                                                  output_broke_scaffolds);
+
+    path_extend::ResolveRepeatsPe(cfg::get().ds, params, gp);
 }
 
 inline bool HasValidLibs() {
@@ -55,7 +61,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         INFO("Setting up preliminary path extend settings")
         cfg::get_writable().pe_params = *cfg::get().prelim_pe_params;
     }
-    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", false, 0, false);
+    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", false);
     OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph",gp.components);
 
     bool no_valid_libs = !HasValidLibs();
@@ -65,7 +71,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
 
     if ((no_valid_libs || cfg::get().rm == config::resolving_mode::none) && !use_single_reads) {
-        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", false, 0, false);
+        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", false);
         return;
     }
     if (cfg::get().rm == config::resolving_mode::path_extend) {
@@ -73,7 +79,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         PEResolving(gp);
     } else {
         INFO("Unsupported repeat resolver");
-        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", false, 0, false);
+        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", false);
     }
     if (preliminary_) {
         INFO("Restoring initial path extend settings")
@@ -82,11 +88,10 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
 }
 
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
-    OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs", cfg::get().use_unipaths,
-                  cfg::get().simp.tec.plausibility_length, false);
-    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", false, 0, false);
+    OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs", cfg::get().use_unipaths);
+    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", false);
     OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph", gp.components);
-    OutputContigs(gp.g, cfg::get().output_dir + "final_contigs",  false, 0, false);
+    OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", false);
 
 }
 

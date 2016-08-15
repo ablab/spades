@@ -176,7 +176,9 @@ void estimate_distance(conj_graph_pack& gp,
     INFO("The refining of clustered pair information has been finished ");    // if so, it resolves such conflicts.
 
     INFO("Improving paired information");
-    PairInfoImprover<Graph> improver(gp.g, clustered_index, lib);
+    PairInfoImprover<Graph> improver(gp.g, clustered_index, lib,
+                                     config.mode == debruijn_graph::config::pipeline_type::meta  ? std::numeric_limits<size_t>::max() : config.max_repeat_length);
+
     improver.ImprovePairedInfo((unsigned) config.max_threads);
 
     if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
@@ -224,7 +226,10 @@ void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
                 INFO("Processing library #" << i);
                 estimate_distance(gp, cfg::get().ds.reads[i], gp.paired_indices[i], gp.clustered_indices[i], gp.scaffolding_indices[i]);
             }
-            gp.paired_indices[i].Clear();
+            if (!cfg::get().preserve_raw_paired_index) {
+                INFO("Clearing raw paired index");
+                gp.paired_indices[i].Clear();
+            }
         }
 }
 

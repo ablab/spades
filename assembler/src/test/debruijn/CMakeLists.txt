@@ -18,3 +18,6 @@ target_link_libraries(component_generator spades_modules cityhash ${COMMON_LIBRA
 
 add_executable(reference_fixer reference_fixer.cpp)
 target_link_libraries(reference_fixer spades_modules cityhash ${COMMON_LIBRARIES})
+
+add_executable(short_edge_contractor short_edge_contractor.cpp)
+target_link_libraries(short_edge_contractor spades_modules cityhash ${COMMON_LIBRARIES})

@@ -11,9 +11,9 @@
 
 namespace debruijn_graph {
 
-class PacBioAligning : public spades::AssemblyStage {
+class HybridLibrariesAligning : public spades::AssemblyStage {
 public:
-    PacBioAligning()
+    HybridLibrariesAligning()
             : AssemblyStage("PacBio Aligning", "pacbio_aligning") {
     }
     void run(conj_graph_pack &gp, const char*);

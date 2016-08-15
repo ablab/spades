@@ -37,7 +37,7 @@ class DebruijnOnlineVisualizer : public OnlineVisualizer<DebruijnEnvironment> {
     AddCommand(make_shared<DrawConnectedCommand>());
     AddCommand(make_shared<ShowPositionCommand>());
     AddCommand(make_shared<DrawMisassemblies>());
-
+    AddCommand(make_shared<DrawCoverageDropsCommand>());
     AddCommand(make_shared<PrintPathsCommand>());
     AddCommand(make_shared<PrintContigsStatsCommand>());
     AddCommand(make_shared<JunctionSequenceCommand>());

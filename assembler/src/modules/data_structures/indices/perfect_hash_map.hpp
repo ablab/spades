@@ -7,24 +7,18 @@
 //***************************************************************************
 
 #include "dev_support/openmp_wrapper.h"
-
-#include "io/reads_io/io_helper.hpp"
+#include "dev_support/path_helper.hpp"
+#include "io/kmers_io/kmer_iterator.hpp"
 
 #include "data_structures/mph_index/kmer_index.hpp"
-#include "utils/adt/kmer_vector.hpp"
 
-#include "libcxx/sort.hpp"
-
-#include "kmer_splitters.hpp"
 #include "key_with_hash.hpp"
 #include "values.hpp"
 #include "storing_traits.hpp"
 
 #include <vector>
 #include <cstdlib>
-#include <cstdio>
 #include <cstdint>
-#include <io/kmers_io/kmer_iterator.hpp>
 
 namespace debruijn_graph {
 
@@ -36,7 +30,7 @@ public:
     typedef K KeyType;
     typedef traits traits_t;
 protected:
-    typedef KMerIndex<traits>        KMerIndexT;
+    typedef KMerIndex<traits> KMerIndexT;
     //these fields are protected only for reduction of storage in edge indices BinWrite
     KMerIndexT index_;
 private:
@@ -84,7 +78,7 @@ public:
     }
 };
 
-template<class K, class V, class traits, class StoringType>
+template<class K, class V, class traits = kmer_index_traits<K>, class StoringType = SimpleStoring>
 class PerfectHashMap : public ValueArray<V>, public IndexWrapper<K, traits> {
 public:
     typedef size_t IdxType;
@@ -142,20 +136,12 @@ public:
         KeyBase::BinRead(reader, tmp);
         ValueBase::BinRead(reader, tmp);
     }
-//todo think more about hierarchy
-protected:
-    template <class KmerCounter>
-    void BuildIndex(KmerCounter& counter, size_t bucket_num, size_t thread_num, bool save_final = true) {
-        KMerIndexBuilder<KMerIndexT> builder(this->workdir(),
-                             (unsigned) bucket_num,
-                             (unsigned) thread_num);
-        size_t sz = builder.BuildIndex(index_, counter, save_final);
-        ValueBase::resize(sz);
-    }
+
+    friend struct PerfectHashMapBuilder;
 };
 
 
-template<class K, class V, class traits, class StoringType>
+template<class K, class V, class traits = kmer_index_traits<K>, class StoringType = SimpleStoring>
 class KeyStoringMap : public PerfectHashMap<K, V, traits, StoringType> {
 private:
     typedef PerfectHashMap<K, V, traits, StoringType> base;
@@ -170,7 +156,7 @@ public:
     using base::ConstructKWH;
 
 private:
-    typename traits::FinalKMerStorage *kmers_;
+    std::unique_ptr<typename traits::FinalKMerStorage> kmers_;
 
     void SortUniqueKMers() const {
         size_t swaps = 0;
@@ -215,13 +201,9 @@ protected:
 public:
 
     KeyStoringMap(size_t k, const std::string &workdir)
-            : base(k, workdir),
-              kmers_(NULL) {
-    }
+            : base(k, workdir), kmers_(nullptr) {}
 
-    ~KeyStoringMap() {
-        delete kmers_;
-    }
+    ~KeyStoringMap() {}
 
     KMer true_kmer(KeyWithHash kwh) const {
         VERIFY(this->valid(kwh));
@@ -232,8 +214,7 @@ public:
 
     void clear() {
         base::clear();
-        delete kmers_;
-        kmers_ = NULL;
+        kmers_ = nullptr;
     }
 
     kmer_iterator kmer_begin() {
@@ -255,7 +236,7 @@ public:
             return false;
 
         auto it = this->kmers_->begin() + kwh.idx();
-        if(!kwh.is_minimal())
+        if (!kwh.is_minimal())
             return (typename traits_t::raw_equal_to()(!kwh.key(), *it));
         else
             return (typename traits_t::raw_equal_to()(kwh.key(), *it));
@@ -298,18 +279,10 @@ public:
         return res;
     }
 
-    template<class KmerCounter>
-    void BuildIndex(KmerCounter& counter, size_t bucket_num,
-                    size_t thread_num) {
-        base::BuildIndex(counter, bucket_num, thread_num);
-        VERIFY(!kmers_);
-        kmers_ = counter.GetFinalKMers();
-        VERIFY(kmers_);
-        SortUniqueKMers();
-    }
+    friend struct KeyStoringIndexBuilder;
 };
 
-template<class K, class V, class traits, class StoringType>
+template<class K, class V, class traits = kmer_index_traits<K>, class StoringType = SimpleStoring>
 class KeyIteratingMap : public PerfectHashMap<K, V, traits, StoringType> {
     typedef PerfectHashMap<K, V, traits, StoringType> base;
 
@@ -325,12 +298,9 @@ public:
 public:
 
     KeyIteratingMap(size_t k, const std::string &workdir)
-            : base(k, workdir),
-              KMersFilename_("") {
-    }
+            : base(k, workdir), KMersFilename_("") {}
 
-    ~KeyIteratingMap() {
-    }
+    ~KeyIteratingMap() {}
 
     typedef MMappedFileRecordArrayIterator<typename KMer::DataType> kmer_iterator;
 
@@ -342,55 +312,7 @@ public:
         return io::make_kmer_iterator<KMer>(this->KMersFilename_, base::k(), parts);
     }
 
-
-    template<class KmerCounter>
-    void BuildIndex(KmerCounter& counter, size_t bucket_num,
-                    size_t thread_num) {
-        base::BuildIndex(counter, bucket_num, thread_num);
-        KMersFilename_ = counter.GetFinalKMersFname();
-    }
-};
-
-//Seq is here for partial specialization
-template <class Seq, class Index>
-class DeBruijnStreamKMerIndexBuilder {
-
-};
-
-template<class Index>
-class DeBruijnStreamKMerIndexBuilder<runtime_k::RtSeq, Index> {
- public:
-    typedef Index IndexT;
-
-    template <class Streams>
-    size_t BuildIndexFromStream(IndexT &index,
-                                Streams &streams,
-                                io::SingleStream* contigs_stream = 0) const {
-        DeBruijnReadKMerSplitter<typename Streams::ReadT, StoringTypeFilter<typename IndexT::storing_type>>
-                splitter(index.workdir(), index.k(), 0, streams, contigs_stream);
-        KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-
-        index.BuildIndex(counter, 16, streams.size());
-        return 0;
-    }
-};
-
-//fixme makes hierarchy a bit strange
-template <class Index, class Seq = typename Index::KMer>
-class DeBruijnGraphKMerIndexBuilder;
-
-template <class Index>
-class DeBruijnGraphKMerIndexBuilder<Index, runtime_k::RtSeq> {
- public:
-  typedef Index IndexT;
-
-  template<class Graph>
-  void BuildIndexFromGraph(IndexT &index, const Graph &g, size_t read_buffer_size = 0) const {
-      DeBruijnGraphKMerSplitter<Graph, StoringTypeFilter<typename Index::storing_type>> splitter(index.workdir(), index.k(),
-                                                g, read_buffer_size);
-      KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-      index.BuildIndex(counter, 16, 1);
-  }
+    friend struct KeyIteratingIndexBuilder;
 };
 
 }

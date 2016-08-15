@@ -29,8 +29,7 @@ class LoopTraverser {
     size_t long_edge_limit_;
     size_t component_size_limit_;
     size_t shortest_path_limit_;
-    static const size_t dijkstra_limit_ = 3000;
-
+    static const size_t MAX_EDGE_LENGTH = 3000;
 private:
     EdgeId FindStart(const set<VertexId>& component_set) const{
         EdgeId result;
@@ -155,7 +154,7 @@ private:
             if (firstVertex == lastVertex) {
                 nLen = 0;
             } else {
-                DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, shortest_path_limit_, dijkstra_limit_));
+                DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, shortest_path_limit_, MAX_EDGE_LENGTH));
                 dijkstra.Run(lastVertex);
                 vector<EdgeId> shortest_path = dijkstra.GetShortestPathTo(g_.EdgeStart(endPath->Front()));
 
@@ -169,7 +168,6 @@ private:
                     for (size_t i = 0; i < shortest_path.size(); ++i) {
                         nLen += g_.length(shortest_path[i]);
                     }
-                    nLen += g_.k();
                 }
             }
         }
@@ -188,6 +186,15 @@ private:
         return true;
     }
 
+    bool ContainsLongEdges(const GraphComponent<Graph>& component) const {
+        for(auto e : component.edges()) {
+            if(g_.length(e) > MAX_EDGE_LENGTH) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 public:
     LoopTraverser(const Graph& g, GraphCoverageMap& coverageMap, shared_ptr<ContigsMaker> extender, size_t long_edge_limit, size_t component_size_limit, size_t shortest_path_limit) :
             g_(g), covMap_(coverageMap), extender_(extender), long_edge_limit_(long_edge_limit), component_size_limit_(component_size_limit), shortest_path_limit_(shortest_path_limit) {
@@ -196,10 +203,12 @@ public:
     size_t TraverseAllLoops() {
         DEBUG("TraverseAllLoops");
         size_t traversed = 0;
-        shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g_, long_edge_limit_);
+        shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g_, MAX_EDGE_LENGTH);
         while (splitter->HasNext()) {
             GraphComponent<Graph> component = splitter->Next();
             if (component.v_size() > component_size_limit_)
+                continue;
+            if(ContainsLongEdges(component))
                 continue;
             set<VertexId> component_set(component.v_begin(), component.v_end());
             EdgeId start = FindStart(component_set);

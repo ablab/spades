@@ -86,6 +86,7 @@ pred::TypedPredicate<typename Graph::EdgeId> AddAlternativesPresenceCondition(co
     return pred::And(AlternativesPresenceCondition<Graph>(g), condition);
 }
 
+
 template<class Graph>
 class CoverageUpperBound : public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;

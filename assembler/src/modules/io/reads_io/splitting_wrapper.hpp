@@ -7,6 +7,7 @@
 
 #pragma once
 #include "io/reads/single_read.hpp"
+#include "read_stream_vector.hpp"
 #include "delegating_reader_wrapper.hpp"
 
 namespace io {

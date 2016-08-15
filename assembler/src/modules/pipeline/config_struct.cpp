@@ -41,7 +41,7 @@ void SequencingLibrary<debruijn_graph::config::DataSetData>::yamlize(llvm::yaml:
   io.mapOptional("insert size distribution"   , data_.insert_size_distribution);
   io.mapOptional("average coverage"           , data_.average_coverage);
   io.mapOptional("pi threshold"               , data_.pi_threshold);
-  io.mapOptional("binary converted"           , data_.binary_coverted);
+  io.mapOptional("binary converted"           , data_.binary_reads_info.binary_coverted);
   io.mapOptional("single reads mapped"        , data_.single_reads_mapped);
 }
 
@@ -153,6 +153,14 @@ void load(debruijn_config::simplification::tip_clipper &tc,
           boost::property_tree::ptree const &pt, bool /*complete*/) {
      using config_common::load;
      load(tc.condition, pt, "condition");
+}
+
+void load(debruijn_config::simplification::dead_end_clipper& dead_end,
+          boost::property_tree::ptree const &pt,
+          bool /* complete */) {
+    using config_common::load;
+    load(dead_end.condition, pt, "condition");
+    load(dead_end.enabled, pt, "enabled");
 }
 
 void load(resolving_mode &rm, boost::property_tree::ptree const &pt,
@@ -300,6 +308,15 @@ void load(debruijn_config::simplification::erroneous_connections_remover& ec,
   using config_common::load;
 
   load(ec.condition, pt, "condition");
+}
+
+void load(debruijn_config::simplification::relative_coverage_ec_remover& rcec,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+
+    load(rcec.enabled, pt, "enabled");
+    load(rcec.max_ec_length, pt, "rcec_lb");
+    load(rcec.rcec_ratio, pt, "rcec_cb");
 }
 
 void load(debruijn_config::simplification::topology_based_ec_remover& tec,
@@ -522,10 +539,13 @@ void load(debruijn_config::simplification& simp,
   load(simp.post_simplif_enabled, pt, "post_simplif_enabled", complete);
   load(simp.topology_simplif_enabled, pt, "topology_simplif_enabled", complete);
   load(simp.tc, pt, "tc", complete); // tip clipper:
+
+  load(simp.dead_end, pt, "dead_end", complete); // dead end:
   load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
   load(simp.complex_tc, pt, "complex_tc", complete); // complex tip clipper:
   load(simp.br, pt, "br", complete); // bulge remover:
   load(simp.ec, pt, "ec", complete); // erroneous connections remover:
+  load(simp.rcec, pt, "rcec", complete); // relative coverage erroneous connections remover
   load(simp.rcc, pt, "rcc", complete); // relative coverage component remover:
   load(simp.relative_ed, pt, "relative_ed", complete); // relative edge disconnector:
   load(simp.tec, pt, "tec", complete); // topology aware erroneous connections remover:
@@ -557,6 +577,8 @@ void load(debruijn_config::info_printer& printer,
   load(printer.write_components_along_contigs, pt,
        "write_components_along_contigs", complete);
   load(printer.save_full_graph, pt, "save_full_graph", complete);
+  load(printer.save_all, pt, "save_all", complete);
+  load(printer.save_graph_pack, pt, "save_graph_pack", complete);
   load(printer.write_full_graph, pt, "write_full_graph", complete);
   load(printer.write_full_nc_graph, pt, "write_full_nc_graph", complete);
   load(printer.write_error_loc, pt, "write_error_loc", complete);
@@ -628,6 +650,8 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
 
     load(cfg.use_additional_contigs, pt, "use_additional_contigs");
     load(cfg.additional_contigs, pt, "additional_contigs");
+    INFO("Additional contigs is " << cfg.additional_contigs);
+
     load(cfg.rr_enable, pt, "rr_enable");
 
     load(cfg.buffer_size, pt, "buffer_size");
@@ -673,6 +697,8 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.two_step_rr, pt, "two_step_rr", complete);
     load(cfg.use_intermediate_contigs, pt, "use_intermediate_contigs", complete);
     load(cfg.single_reads_rr, pt, "single_reads_rr", complete);
+
+    load(cfg.preserve_raw_paired_index, pt, "preserve_raw_paired_index", complete);
 
     load(cfg.correct_mismatches, pt, "correct_mismatches", complete);
     load(cfg.paired_info_statistics, pt, "paired_info_statistics", complete);
@@ -760,12 +786,12 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
     }
 
     if (!cfg.use_scaffolder) {
-        cfg.pe_params.param_set.scaffolder_options.on = false;
+        cfg.pe_params.param_set.scaffolder_options.enabled = false;
     }
     cfg.need_mapping = cfg.developer_mode || cfg.correct_mismatches
                        || cfg.gap_closer_enable || cfg.rr_enable;
 
-    cfg.output_dir = cfg.output_base + "/K" + ToString(cfg.K) + "/";
+    cfg.output_dir = cfg.output_base + "/K" + std::to_string(cfg.K) + "/";
 
     cfg.output_saves = cfg.output_dir + "saves/";
 
@@ -778,10 +804,17 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
             (cfg.output_base + "/" + cfg.temp_bin_reads_dir) :
             (cfg.output_base + cfg.project_name + "/"
              + cfg.temp_bin_reads_dir);
-    cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
+    //cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
 
-    cfg.paired_read_prefix = cfg.temp_bin_reads_path + "_paired";
-    cfg.single_read_prefix = cfg.temp_bin_reads_path + "_single";
+    for (size_t i = 0; i < cfg.ds.reads.lib_count(); ++i) {
+        auto& lib = cfg.ds.reads[i];
+        lib.data().lib_index = i;
+        lib.data().binary_reads_info.chunk_num = cfg.max_threads;
+        lib.data().binary_reads_info.bin_reads_info_file = cfg.temp_bin_reads_path + "INFO_" + std::to_string(i);
+        lib.data().binary_reads_info.buffer_size = cfg.buffer_size;
+        lib.data().binary_reads_info.paired_read_prefix = cfg.temp_bin_reads_path + "paired_" + std::to_string(i);
+        lib.data().binary_reads_info.single_read_prefix = cfg.temp_bin_reads_path + "single_" + std::to_string(i);
+    }
 }
 
 }

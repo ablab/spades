@@ -35,7 +35,7 @@ void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
     cfg::get_writable().ds.reads.push_back(untrusted_contigs);
 
     //FIXME get rid of this awful variable
-    cfg::get_writable().use_single_reads = false;
+    VERIFY(!cfg::get().use_single_reads);
     INFO("Ready to run second phase");
 }
 

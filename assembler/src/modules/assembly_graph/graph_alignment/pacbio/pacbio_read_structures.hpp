@@ -5,20 +5,18 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * pac_index.hpp
- *
- *  Created on: Jan 21, 2013
- *      Author: lab42
- */
 #pragma once
 
 #include "data_structures/indices/perfect_hash_map.hpp"
-#include "pipeline/graph_pack.hpp"
+#include "modules/assembly_graph/graph_alignment/sequence_mapper.hpp"
+#include "modules/assembly_graph/graph_core/graph.hpp"
 #include <algorithm>
-using std::map;
-using std::set;
+#include <map>
+#include <set>
+
 namespace pacbio {
+using debruijn_graph::GapDescription;
+
 template<class T>
 struct pair_iterator_less {
     bool operator ()(pair<size_t, T> const& a, pair<size_t, T> const& b) const {
@@ -152,70 +150,83 @@ private:
 };
 
 template<class Graph>
-struct GapDescription {
-    typedef typename Graph::EdgeId EdgeId;
-    typename Graph::EdgeId start, end;
-    Sequence gap_seq;
-    int edge_gap_start_position, edge_gap_end_position;
+GapDescription<Graph> CreateGapDescription(const KmerCluster<Graph>& a,
+                   const KmerCluster<Graph>& b,
+                   const Sequence& read,
+                   int pacbio_k) {
+    return GapDescription<Graph>(a.edgeId,
+                          b.edgeId,
+                          read.Subseq(a.sorted_positions[a.last_trustable_index].read_position,
+                                                          b.sorted_positions[b.first_trustable_index].read_position + pacbio_k),
+                          a.sorted_positions[a.last_trustable_index].edge_position,
+                          b.sorted_positions[b.first_trustable_index].edge_position + pacbio_k);
+}
 
+//template<class Graph>
+//struct GapDescription {
+//    typedef typename Graph::EdgeId EdgeId;
+//    EdgeId start, end;
+//    Sequence gap_seq;
+//    int edge_gap_start_position, edge_gap_end_position;
+//
+//
+//    GapDescription(EdgeId start_e, EdgeId end_e, const Sequence &gap, int gap_start, int gap_end) :
+//            start(start_e), end(end_e), gap_seq(gap.str()), edge_gap_start_position(gap_start), edge_gap_end_position(gap_end) {
+//    }
+//
+//    GapDescription(const KmerCluster<Graph> &a, const KmerCluster<Graph> & b, Sequence read, int pacbio_k) {
+//        edge_gap_start_position = a.sorted_positions[a.last_trustable_index].edge_position;
+//        edge_gap_end_position = b.sorted_positions[b.first_trustable_index].edge_position + pacbio_k - 1;
+//        start = a.edgeId;
+//        end = b.edgeId;
+//        DEBUG(read.str());
+//        gap_seq = read.Subseq(a.sorted_positions[a.last_trustable_index].read_position,
+//                              b.sorted_positions[b.first_trustable_index].read_position + pacbio_k - 1);
+//        DEBUG(gap_seq.str());
+//        DEBUG("gap added");
+//    }
+//
+//    GapDescription<Graph> conjugate(Graph &g, int shift) const {
+//        GapDescription<Graph> res(
+//                g.conjugate(end), g.conjugate(start), (!gap_seq),
+//                (int) g.length(end) + shift - edge_gap_end_position,
+//                (int) g.length(start) + shift - edge_gap_start_position);
+//         DEBUG("conjugate created" << res.str(g));
+//         return res;
+//    }
+//
+//    string str(Graph &g) const {
+//        stringstream s;
+//        s << g.int_id(start) << " " << edge_gap_start_position <<endl << g.int_id(end) << " " << edge_gap_end_position << endl << gap_seq.str()<< endl;
+//        return s.str();
+//    }
+//
+//    bool operator <(const GapDescription& b) const {
+//        return (start < b.start || (start == b.start &&  end < b.end) ||
+//                (start == b.start &&  end == b.end && edge_gap_start_position < b.edge_gap_start_position));
+//    }
+//
+//private:
+//    DECL_LOGGER("PacIndex")
+//    ;
+//}
 
-    GapDescription(EdgeId start_e, EdgeId end_e, const Sequence &gap, int gap_start, int gap_end) :
-            start(start_e), end(end_e), gap_seq(gap.str()), edge_gap_start_position(gap_start), edge_gap_end_position(gap_end) {
-    }
-
-    GapDescription(const KmerCluster<Graph> &a, const KmerCluster<Graph> & b, Sequence read, int pacbio_k) {
-        edge_gap_start_position = a.sorted_positions[a.last_trustable_index].edge_position;
-        edge_gap_end_position = b.sorted_positions[b.first_trustable_index].edge_position + pacbio_k - 1;
-        start = a.edgeId;
-        end = b.edgeId;
-        DEBUG(read.str());
-        gap_seq = read.Subseq(a.sorted_positions[a.last_trustable_index].read_position, b.sorted_positions[b.first_trustable_index].read_position + pacbio_k - 1);
-        DEBUG(gap_seq.str());
-        DEBUG("gap added");
-    }
-
-    GapDescription<Graph> conjugate(Graph &g_, int shift) const {
-        GapDescription<Graph> res(
-                g_.conjugate(end), g_.conjugate(start), (!gap_seq),
-                (int) g_.length(end) + shift - edge_gap_end_position,
-                (int) g_.length(start) + shift - edge_gap_start_position);
-         DEBUG("conjugate created" << res.str(g_));
-         return res;
-    }
-
-    string str(Graph &g_) const {
-        stringstream s;
-        s << g_.int_id(start) << " " << edge_gap_start_position <<endl << g_.int_id(end) << " " << edge_gap_end_position << endl << gap_seq.str()<< endl;
-        return s.str();
-    }
-
-    bool operator <(const GapDescription & b) const {
-        return (start < b.start || (start == b.start &&  end < b.end) ||
-                (start == b.start &&  end == b.end && edge_gap_start_position < b.edge_gap_start_position));
-    }
-
-private:
-    DECL_LOGGER("PacIndex")
-    ;
-};
-
-template<class Graph>
 struct OneReadMapping {
-    typedef typename Graph::EdgeId EdgeId;
-    vector<vector<EdgeId> > main_storage;
-    vector<GapDescription<Graph> > gaps;
+    vector<vector<debruijn_graph::EdgeId>> main_storage;
+    vector<GapDescription<debruijn_graph::Graph>> gaps;
     vector<size_t> real_length;
-//Total used seeds. sum over all subreads;
+    //Total used seeds. sum over all subreads;
     size_t seed_num;
-    OneReadMapping(vector<vector<EdgeId> > &paths_description, vector<GapDescription<Graph> > &gaps_description, vector<size_t> real_length, size_t seed_num) :
-            main_storage(paths_description), gaps(gaps_description), real_length(real_length), seed_num(seed_num) {
+    OneReadMapping(const vector<vector<debruijn_graph::EdgeId>>& main_storage_,
+                   const vector<GapDescription<debruijn_graph::Graph>>& gaps_,
+                   const vector<size_t>& real_length_,
+                   size_t seed_num_) :
+            main_storage(main_storage_), gaps(gaps_), real_length(real_length_), seed_num(seed_num_) {
     }
 
 };
-
 
 struct StatsCounter{
-
     map<size_t,size_t> path_len_in_edges;
     vector<size_t> subreads_length;
     size_t total_len ;
@@ -252,7 +263,7 @@ struct StatsCounter{
         }
     }
 
-    void report(){
+    void report() const {
         size_t total = 0;
         for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter){
             total += iter->second;
@@ -266,9 +277,9 @@ struct StatsCounter{
         }
         INFO("Median fraction of present seeds in maximal alignmnent among reads aligned to the graph: " << double(percentage) * 0.001);
     }
+
 private:
     DECL_LOGGER("StatsCounter");
-
 };
 
 inline int StringDistance(string &a, string &b) {

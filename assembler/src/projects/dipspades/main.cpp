@@ -19,6 +19,8 @@
 #include "pipeline/graph_pack.hpp"
 #include "stages/construction.hpp"
 
+#include "version.hpp"
+
 #include "dipspades.hpp"
 
 void make_dirs(){

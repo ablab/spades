@@ -517,9 +517,11 @@ protected:
             for (size_t j = 0; j < histogram.size(); ++j) {
                 sum += histogram[j].second;
             }
-            if (sum <= cl_weight_threshold_) {
+            DEBUG("Weight for scaffolding = " << sum << ", threshold = " << cl_weight_threshold_)
+            if (math::ls(sum, cl_weight_threshold_)) {
                 continue;
             }
+
             int gap = CountMean(histogram);
             if (HasIdealInfo(path, e, gap)) {
                 DEBUG("scaffolding " << g_.int_id(e) << " gap " << gap);
@@ -555,9 +557,12 @@ protected:
 
 public:
 
-    ScaffoldingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double is_scatter_coeff) :
+
+    ScaffoldingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc,
+                                double cl_weight_threshold,
+                                double is_scatter_coeff) :
         ExtensionChooser(g, wc), raw_weight_threshold_(0.0),
-        cl_weight_threshold_(cfg::get().pe_params.param_set.scaffolder_options.cl_threshold),
+        cl_weight_threshold_(cl_weight_threshold),
         is_scatter_coeff_(is_scatter_coeff) {
     }
 
@@ -570,6 +575,7 @@ public:
         FindBestFittedEdgesForClustered(path, candidates, result);
         return result;
     }
+
 private:
     DECL_LOGGER("ScaffoldingExtensionChooser");
 };
@@ -584,12 +590,15 @@ private:
     DECL_LOGGER("LongReadsUniqueEdgeAnalyzer")
 public:
     LongReadsUniqueEdgeAnalyzer(const Graph& g, const GraphCoverageMap& cov_map,
-                       double filter_threshold, double prior_threshold, size_t max_repeat_length)
+                                double filter_threshold, double prior_threshold,
+                                size_t max_repeat_length, bool uneven_depth)
             : g_(g),
               cov_map_(cov_map),
               filter_threshold_(filter_threshold),
               prior_threshold_(prior_threshold),
-              max_repeat_length_(max_repeat_length) {
+              max_repeat_length_(max_repeat_length),
+              uneven_depth_(uneven_depth) {
+
         FindAllUniqueEdges();
     }
 
@@ -710,15 +719,13 @@ private:
     }
 
     void FindAllUniqueCoverageEdges() {
-       if (cfg::get().uneven_depth) {
-           return;
-       }
+       VERIFY(!uneven_depth_);
        double sum_cov = 0;
        size_t sum_len = 0;
        size_t total_len = 0;
        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
            total_len += g_.length(*iter);
-           if (g_.length(*iter) >= cfg::get().max_repeat_length) {
+           if (g_.length(*iter) >= max_repeat_length_) {
                sum_cov += g_.coverage(*iter) * (double)g_.length(*iter);
                sum_len += g_.length(*iter);
            }
@@ -739,16 +746,17 @@ private:
 
 
     void FindAllUniqueEdges() {
-       DEBUG("Looking for unique edges");
-       for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-           if (UniqueEdge(*iter)) {
-               unique_edges_.insert(*iter);
-               unique_edges_.insert(g_.conjugate(*iter));
-           }
-       }
-       DEBUG("coverage based uniqueness started");
-       FindAllUniqueCoverageEdges();
-       DEBUG("Unique edges are found");
+        DEBUG("Looking for unique edges");
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+            if (UniqueEdge(*iter)) {
+                unique_edges_.insert(*iter);
+                unique_edges_.insert(g_.conjugate(*iter));
+            }
+        }
+        DEBUG("coverage based uniqueness started");
+        if (!uneven_depth_)
+            FindAllUniqueCoverageEdges();
+        DEBUG("Unique edges are found");
     }
 
     const Graph& g_;
@@ -757,6 +765,7 @@ private:
     double prior_threshold_;
     std::set<EdgeId> unique_edges_;
     size_t max_repeat_length_;
+    bool uneven_depth_;
 };
 
 class SimpleScaffolding {
@@ -812,13 +821,16 @@ public:
                               double weight_priority_threshold,
                               double unique_edge_priority_threshold,
                               size_t min_significant_overlap,
-                              size_t max_repeat_length)
+                              size_t max_repeat_length,
+                              bool uneven_depth)
             : ExtensionChooser(g),
               filtering_threshold_(filtering_threshold),
               weight_priority_threshold_(weight_priority_threshold),
               min_significant_overlap_(min_significant_overlap),
               cov_map_(g, pc),
-              unique_edge_analyzer_(g, cov_map_, filtering_threshold, unique_edge_priority_threshold, max_repeat_length),
+              unique_edge_analyzer_(g, cov_map_, filtering_threshold,
+                                    unique_edge_priority_threshold,
+                                    max_repeat_length, uneven_depth),
               simple_scaffolding_(g) {
 
     }
@@ -925,7 +937,8 @@ private:
 class MatePairExtensionChooser : public ExtensionChooser {
 public:
     MatePairExtensionChooser(const Graph& g, shared_ptr<PairedInfoLibrary> lib,
-                              const PathContainer& paths, size_t max_number_of_paths_to_search)
+                             const PathContainer& paths, size_t max_number_of_paths_to_search,
+                             bool uneven_depth)
             : ExtensionChooser(g),
               g_(g),
               lib_(lib),
@@ -933,7 +946,8 @@ public:
               weight_counter_(g, lib, 10),
               cov_map_(g_, paths),
               path_searcher_(g_, cov_map_, lib_->GetISMax(), PathsWeightCounter(g, lib, (size_t) lib->GetSingleThreshold()), max_number_of_paths_to_search),
-              unique_edge_analyzer_(g, cov_map_, 0., 1000., 8000.),
+              //TODO params
+              unique_edge_analyzer_(g, cov_map_, 0., 1000., 8000., uneven_depth),
               simple_scaffolder_(g) {
     }
 
@@ -1401,8 +1415,8 @@ private:
             std::queue<VertexId>& can_be_processed, double path_coverage) const {
         DEBUG("Updating can be processed");
         for (EdgeId e : g_.OutgoingEdges(v)) {
-            VertexId neighbour_v = this->g_.EdgeEnd(e);
-            if (g_.length(e) < max_edge_length_in_repeat_ && GoodExtension(e, path_coverage)) {
+            VertexId neighbour_v = g_.EdgeEnd(e);
+            if (g_.length(e) <= max_edge_length_in_repeat_ && CompatibleEdge(e, path_coverage)) {
                 DEBUG("Adding vertex " << neighbour_v.int_id()
                                 << "through edge " << g_.str(e));
                 can_be_processed.push(neighbour_v);
@@ -1443,61 +1457,91 @@ private:
         return result;
     }
 
-    bool GoodExtension(EdgeId e, double path_coverage) const {
+    bool CompatibleEdge(EdgeId e, double path_coverage) const {
         return math::ge(g_.coverage(e), path_coverage * delta_);
     }
 
+    //returns lowest coverage among long compatible edges ahead of e
+    //if std::numeric_limits<double>::max() -- no such edges were detected
+    //if negative -- abort at once
+    double AnalyzeExtension(EdgeId ext, double path_coverage) const {
+        double answer = std::numeric_limits<double>::max();
+
+        if (!CompatibleEdge(ext, path_coverage)) {
+            DEBUG("Extension coverage too low");
+            return answer;
+        }
+
+        if (g_.length(ext) > max_edge_length_in_repeat_) {
+            DEBUG("Long extension");
+            return g_.coverage(ext);
+        } 
+
+        DEBUG("Short extension, launching repeat component analysis");
+        GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(ext), path_coverage);
+        if (gc.v_size() == 0) {
+            DEBUG("Component search failed");
+            return -1.;
+        }
+
+        for (auto e : gc.edges()) {
+            if (g_.length(e) > max_edge_length_in_repeat_) {
+                DEBUG("Repeat component contains long edges");
+                return -1.;
+            }
+        }
+
+        DEBUG("Checking long sinks");
+        for (auto v : gc.sinks()) {
+            for (auto e : g_.OutgoingEdges(v)) {
+                if (g_.length(e) > max_edge_length_in_repeat_ && 
+                        CompatibleEdge(e, path_coverage) &&
+                        math::ls(g_.coverage(e), answer)) {
+                    DEBUG("Updating answer to coverage of edge " << g_.str(e));
+                    answer = g_.coverage(e);
+                }
+            }
+        }
+
+        return answer;
+    }
+
     EdgeContainer FindExtensionTroughRepeat(const EdgeContainer& edges, double path_coverage) const {
-        set<EdgeId> good_extensions;
-        for(auto edge : edges) {
+        static EdgeContainer EMPTY_CONTAINER;
 
-            if(!GoodExtension(edge.e_, path_coverage)) {
-                continue;
-            }
+        map<EdgeId, double> good_extension_to_ahead_cov;
 
-            if (g_.length(edge.e_) > max_edge_length_in_repeat_) {
-                if (GoodExtension(edge.e_, path_coverage)) {
-                    good_extensions.insert(edge.e_);
-                }
-                continue;
-            }
+        for (auto edge : edges) {
+            DEBUG("Processing candidate extension " << g_.str(edge.e_));
+            double analysis_res = AnalyzeExtension(edge.e_, path_coverage);
 
-            GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(edge.e_), path_coverage);
-            if (gc.v_size() == 0) {
-                return EdgeContainer();
-            }
-
-            for (auto e : gc.edges()) {
-                if (g_.length(e) > max_edge_length_in_repeat_) {
-                    DEBUG("Repeat component contains long edges");
-                    return EdgeContainer();
-                }
-            }
-
-            for (auto v : gc.sinks()) {
-                for (auto e : g_.OutgoingEdges(v)) {
-                    if (GoodExtension(e, path_coverage)) {
-                        good_extensions.insert(edge.e_);
-                    }
-                }
+            if (analysis_res == std::numeric_limits<double>::max()) {
+                DEBUG("Ignoring extension");
+            } else if (math::ls(analysis_res, 0.)) {
+                DEBUG("Troubles detected, abort mission");
+                return EMPTY_CONTAINER;
+            } else {
+                good_extension_to_ahead_cov[edge.e_] = analysis_res;
+                DEBUG("Extension mapped to ahead coverage of " << analysis_res);
             }
         }
 
-        DEBUG("Number of good extensions is " << good_extensions.size());
+        DEBUG("Number of good extensions is " << good_extension_to_ahead_cov.size());
 
-        if (good_extensions.size() != 1) {
-            DEBUG("Returning");
-            return EdgeContainer();
+        if (good_extension_to_ahead_cov.size() == 1) {
+            auto extension_info = *good_extension_to_ahead_cov.begin();
+            DEBUG("Single extension candidate " << g_.str(extension_info.first));
+            if (math::le(extension_info.second, path_coverage / delta_)) {
+                DEBUG("Extending");
+                return FinalFilter(edges, extension_info.first);
+            } else {
+                DEBUG("Predicted ahead coverage is too high");
+            }
+        } else {
+            DEBUG("Multiple extension candidates");
         }
-        auto extension = *good_extensions.begin();
 
-        if(math::ls(path_coverage, g_.coverage(extension) * delta_)) {
-            DEBUG("Extension coverage too high");
-            return EdgeContainer();
-        }
-
-        DEBUG("Filtering... Extend with edge " << extension.int_id());
-        return FinalFilter(edges, extension);
+        return EMPTY_CONTAINER;
     }
     
     CoverageAwareIdealInfoProvider provider_;

@@ -176,6 +176,11 @@ public:
         return answer;
     }
 
+    bool CanSubstitute(const Kmer &kmer) const {
+        const auto *rawval = mapping_.find(kmer);
+        return rawval != nullptr;
+    }
+
     void BinWrite(std::ostream &file) const {
         uint32_t sz = (uint32_t)size();
         file.write((const char *) &sz, sizeof(uint32_t));

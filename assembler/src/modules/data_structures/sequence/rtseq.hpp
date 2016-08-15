@@ -290,6 +290,9 @@ public:
         // which symbols does our string contain : 0123 or ACGT?
         bool digit_str = size_ == 0 || is_dignucl(s[0]);
 
+        // we fill everything with zeros (As) by default.
+        std::fill(data_.begin(), data_.end(), 0);
+
         // data -- one temporary variable corresponding to the i-th array element
         // and some counters
         T data = 0;
@@ -586,17 +589,18 @@ public:
 
     bool operator==(const RuntimeSeq<max_size_, T> &s) const {
         VERIFY(size_ == s.size_);
-        //        INFO(this->full_str());
-        //        INFO(s.full_str());
-        return 0 == memcmp(data_.data(), s.data_.data(), sizeof(T) * DataSize);
+
+        size_t data_size = GetDataSize(size_);
+        for (size_t i = 0; i < data_size; ++i)
+            if (data_[i] != s.data_[i])
+                return false;
+
+        return true;
     }
 
     /**
      * @see operator ==()
      */
-
-
-
     bool operator!=(const RuntimeSeq<max_size_, T> &s) const {
         return !operator==(s);
     }

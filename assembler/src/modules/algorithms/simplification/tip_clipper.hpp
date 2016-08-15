@@ -44,7 +44,7 @@ class RelativeCoverageTipCondition: public EdgeCondition<Graph> {
         auto out = g.OutgoingEdges(start);
         auto in = g.IncomingEdges(end);
         return std::max(
-                        MaxCompetitorCoverage(tip, out.begin(),    out.end()),
+                        MaxCompetitorCoverage(tip, out.begin(), out.end()),
                         MaxCompetitorCoverage(tip, in.begin(), in.end()));
 //        return std::max(
 //                MaxCompetitorCoverage(tip, g.out_begin(start),
@@ -178,11 +178,11 @@ public:
             counts[s_edge[position]] ++;
         }
         size_t curm = *std::max_element(counts.begin(), counts.end());
-        if (curm > (end - start) * max_AT_percentage_) {
+        if (curm > max_AT_percentage_ * double(end - start)) {
             DEBUG("deleting edge" << s_edge.str());;
 			DEBUG("curm: " << curm);
 			
-            DEBUG("start end cutoff" << start << " " << end << " " << this->g().length(e) * max_AT_percentage_);
+            DEBUG("start end cutoff" << start << " " << end << " " << max_AT_percentage_ * double(this->g().length(e)));
 
             return true;
         } else {
@@ -241,14 +241,16 @@ public:
                         + this->g().IncomingEdgeCount(this->g().EdgeStart(e)) >= 1);
     }
 
+    private:
+        DECL_LOGGER("DeadEndCondition");
+
 };
 
 template<class Graph>
 pred::TypedPredicate<typename Graph::EdgeId>AddDeadEndCondition(const Graph& g,
                                                                 pred::TypedPredicate<typename Graph::EdgeId> condition) {
-    return pred::And<typename Graph::EdgeId>(DeadEndCondition<Graph>(g), condition);
+    return pred::And(DeadEndCondition<Graph>(g), condition);
 }
-
 
 //template<class Graph>
 //bool ClipTips(

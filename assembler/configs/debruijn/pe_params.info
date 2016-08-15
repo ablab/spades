@@ -48,8 +48,9 @@ params {
     }
 
     scaffolder {
-        on            true
+        enabled       true
         cutoff        2
+        hard_cutoff   0
         rel_cutoff    0.1
         sum_threshold 3  
 
@@ -70,6 +71,14 @@ params {
         min_overlap_length 10
         flank_addition_coefficient -5.9
         flank_multiplication_coefficient 0.97
+
+	    var_coeff 3.0
+	    basic_overlap_coeff 2.0
+    }
+
+    path_cleaning
+    {
+        enabled false
     }
     
     loop_removal
@@ -91,6 +100,7 @@ params {
         min_unique_length 10000
         unique_coverage_variation 0.5
         ; (median * (1+variation) > unique > median * (1 - variation))
+	relative_weight_cutoff 2.0
     }
 
     scaffold_graph {

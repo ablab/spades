@@ -40,6 +40,7 @@ struct ScalarEnumerationTraits<LibraryType> {
         io.enumCase(value, "single",              LibraryType::SingleReads);
         io.enumCase(value, "sanger",              LibraryType::SangerReads);
         io.enumCase(value, "nanopore",            LibraryType::NanoporeReads);
+        io.enumCase(value, "tslr",                LibraryType::TSLReads);
         io.enumCase(value, "trusted-contigs",     LibraryType::TrustedContigs);
         io.enumCase(value, "untrusted-contigs",   LibraryType::UntrustedContigs);
         io.enumCase(value, "path-extend-contigs", LibraryType::PathExtendContigs);
@@ -98,6 +99,7 @@ void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
     case LibraryType::PacBioReads:
     case LibraryType::SangerReads:
     case LibraryType::NanoporeReads:
+    case LibraryType::TSLReads:
     case LibraryType::TrustedContigs:
     case LibraryType::UntrustedContigs:
     case LibraryType::PathExtendContigs:

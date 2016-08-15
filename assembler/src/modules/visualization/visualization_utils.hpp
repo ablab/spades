@@ -34,10 +34,10 @@ void WriteComponents(const Graph& g,
 }
 
 template<class Graph>
-void DrawComponentsOfShortEdges(const Graph& g, size_t min_length, size_t sinks, size_t sources)
+void DrawComponentsOfShortEdges(const Graph& g, const string &output_dir, size_t min_length, size_t sinks, size_t sources)
 {
     vector<typename Graph::EdgeId> short_edges;
-    std::string pics_folder_ = cfg::get().output_dir + ToString(min_length) + "_" + ToString(sinks) + "_" + ToString(sources) + "_"+ "pics_polymorphic/";
+    std::string pics_folder_ = output_dir + ToString(min_length) + "_" + ToString(sinks) + "_" + ToString(sources) + "_"+ "pics_polymorphic/";
     make_dir(pics_folder_);
     INFO("Writing pics with components consisting of short edges to " + pics_folder_);
     shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g, min_length);
@@ -172,7 +172,7 @@ public:
             labeler_(labeler),
             colorer_(colorer),
             output_folder_(output_folder) {
-        path::make_dirs(output_folder_);
+//        path::make_dirs(output_folder_);
     }
 
     void HandleDelete(EdgeId e, const string& add_label = "") {
@@ -180,11 +180,11 @@ public:
 //          map<EdgeId, string> empty_coloring;
         auto edge_colorer = make_shared<visualization::CompositeEdgeColorer<Graph>>("black");
         edge_colorer->AddColorer(colorer_);
-        edge_colorer->AddColorer(make_shared<visualization::SetColorer<Graph>>(this->g(), vector<EdgeId>(1, e), "green"));
+        edge_colorer->AddColorer(make_shared<visualization::SetColorer<Graph>>(g_, vector<EdgeId>(1, e), "green"));
         shared_ptr<visualization::GraphColorer<Graph>> resulting_colorer = make_shared<visualization::CompositeGraphColorer<Graph>>(colorer_, edge_colorer);
 
-        string fn = output_folder_ + "edge_" + ToString(this->g().int_id(e)) + add_label + ".dot";
-        omnigraph::visualization::WriteComponent(omnigraph::EdgeNeighborhood<Graph>(this->g(), e, 50, 250)
+        string fn = output_folder_ + "/edge_" + ToString(g_.int_id(e)) + add_label + ".dot";
+        omnigraph::visualization::WriteComponent(omnigraph::EdgeNeighborhood<Graph>(g_, e, 50, 250)
                 , fn
                 , resulting_colorer, labeler_);
     }

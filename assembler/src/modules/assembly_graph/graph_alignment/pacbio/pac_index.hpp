@@ -5,26 +5,23 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * pac_index.hpp
- *
- *  Created on: Jan 21, 2013
- *      Author: lab42
- */
 #pragma once
 
 #include "data_structures/indices/edge_multi_index.hpp"
-#include "data_structures/indices/edge_index_builders.hpp"
-#include <algorithm>
+#include "assembly_graph/graph_alignment/edge_index_refiller.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
+#include "assembly_graph/paths/path_processor.hpp"
+// FIXME: Layering violation, get rid of this
+#include "pipeline/config_struct.hpp"
 #include "pacbio_read_structures.hpp"
+#include "pipeline/config_struct.hpp"
+
+#include <algorithm>
 
 namespace pacbio {
-#define UNDEF_COLOR -1
-#define DELETED_COLOR -2
-
-template<class Graph>
-struct MappingDescription {
-
+enum {
+    UNDEF_COLOR = -1,
+    DELETED_COLOR = - 2
 };
 
 template<class Graph>
@@ -35,7 +32,7 @@ public:
     typedef set<KmerCluster<Graph> > ClustersSet;
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef     debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> Index;
+    typedef debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> Index;
     typedef typename Index::KeyWithHash KeyWithHash;
 
 private:
@@ -47,42 +44,36 @@ private:
     const static int short_edge_cutoff = 0;
     const static size_t min_cluster_size = 8;
     const static int max_similarity_distance = 500;
+
+//Debug stasts
     int good_follow = 0;
     int half_bad_follow = 0;
     int bad_follow = 0;
 
-    double compression_cutoff;
-    double domination_cutoff;
     set<Sequence> banned_kmers;
     debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> tmp_index;
-    map<pair<VertexId, VertexId>, vector<size_t> > distance_cashed;
+    mutable map<pair<VertexId, VertexId>, vector<size_t>> distance_cashed;
     size_t read_count;
     bool ignore_map_to_middle;
-
+    debruijn_graph::config::debruijn_config::pacbio_processor pb_config_;
 public:
     MappingDescription Locate(const Sequence &s) const;
 
-    PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_, bool ignore_map_to_middle)
+    PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_, bool ignore_map_to_middle, string out_dir, debruijn_graph::config::debruijn_config::pacbio_processor pb_config )
             : g_(g),
               pacbio_k(k),
               debruijn_k(debruijn_k_),
-              tmp_index((unsigned) pacbio_k, cfg::get().output_dir), ignore_map_to_middle(ignore_map_to_middle) {
+              tmp_index((unsigned) pacbio_k, out_dir), ignore_map_to_middle(ignore_map_to_middle), pb_config_(pb_config) {
         DEBUG("PB Mapping Index construction started");
-
-        typedef typename debruijn_graph::EdgeIndexHelper<debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId>>::GraphPositionFillingIndexBuilderT Builder;
-
-        Builder().BuildIndexFromGraph(tmp_index, g_);
+        debruijn_graph::EdgeIndexRefiller().Refill(tmp_index, g_);
         INFO("Index constructed");
         FillBannedKmers();
-        compression_cutoff = cfg::get().pb.compression_cutoff;  // 0.6
-        domination_cutoff = cfg::get().pb.domination_cutoff;  //1.5
-        //INFO(tmp_index.size());
         read_count = 0;
     }
     ~PacBioMappingIndex(){
         DEBUG("good/ugly/bad counts:" << good_follow << " "<<half_bad_follow << " " << bad_follow);
-
     }
+    
     void FillBannedKmers() {
         for (int i = 0; i < 4; i++) {
             auto base = nucl((unsigned char) i);
@@ -109,8 +100,8 @@ public:
         } else if (b.read_position == a.read_position) {
             return (abs(int(b.edge_position) + shift - int(a.edge_position)) < 2);
         } else {
-            return ((b.edge_position + shift - a.edge_position >= (b.read_position - a.read_position) * compression_cutoff) &&
-                ((b.edge_position + shift - a.edge_position) * compression_cutoff <= (b.read_position - a.read_position)));
+            return ((b.edge_position + shift - a.edge_position >= (b.read_position - a.read_position) * pb_config_.compression_cutoff) &&
+                ((b.edge_position + shift - a.edge_position) * pb_config_.compression_cutoff <= (b.read_position - a.read_position)));
         }
     }
 
@@ -292,7 +283,7 @@ public:
                           const KmerCluster<Graph> &b) const {
         size_t a_size = a.size;
         size_t b_size = b.size;
-        if ((double) a_size < (double) b_size * domination_cutoff
+        if ((double) a_size < (double) b_size * pb_config_.domination_cutoff
                 || a.sorted_positions[a.first_trustable_index].read_position
                         > b.sorted_positions[b.first_trustable_index].read_position
                 || a.sorted_positions[a.last_trustable_index].read_position
@@ -303,8 +294,8 @@ public:
         }
     }
 
-    vector<EdgeId> FillGapsInCluster(vector<pair<size_t, typename ClustersSet::iterator> > &cur_cluster,
-                                     const Sequence &s) {
+    vector<EdgeId> FillGapsInCluster(const vector<pair<size_t, typename ClustersSet::iterator> > &cur_cluster,
+                                     const Sequence &s) const {
         vector<EdgeId> cur_sorted;
         EdgeId prev_edge = EdgeId(0);
 
@@ -349,9 +340,9 @@ public:
                     vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
                     if (intermediate_path.size() == 0) {
                         DEBUG("Tangled region between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(debruijn_k - pacbio_k ) << " and seq "<< - seq_start + seq_end);
-                        if (cfg::get().pb.additional_debug_info) {
+                        if (pb_config_.additional_debug_info) {
                             DEBUG(" escpected gap length: " << -int(g_.length(prev_edge)) + int(prev_last_index.edge_position) - int(cur_first_index.edge_position) + int(debruijn_k - pacbio_k ) - seq_start + seq_end);
-                            PathStorageCallback<Graph> callback(g_);
+                            omnigraph::PathStorageCallback<Graph> callback(g_);
                             ProcessPaths(g_, 0, 4000,
                                             start_v, end_v,
                                             callback);
@@ -389,7 +380,7 @@ public:
         return res;
     }
 
-    vector<int> GetWeightedColors(ClustersSet &mapping_descr, Sequence &s) {
+    vector<int> GetWeightedColors(const ClustersSet &mapping_descr, const Sequence &s) const {
         int len = (int) mapping_descr.size();
         DEBUG("getting colors, table size "<< len);
         vector<vector<int> > cons_table(len);
@@ -481,10 +472,7 @@ public:
         return colors;
     }
 
-
-
-
-    OneReadMapping<Graph> GetReadAlignment(Sequence &s) {
+    OneReadMapping GetReadAlignment(Sequence &s) const {
         ClustersSet mapping_descr = GetOrderClusters(s);
         DEBUG("clusters got");
         int len = (int) mapping_descr.size();
@@ -493,7 +481,7 @@ public:
         vector<int> colors = GetWeightedColors(mapping_descr, s);
         vector<vector<EdgeId> > sortedEdges;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
-        vector<GapDescription<Graph> > illumina_gaps;
+        vector<GapDescription<Graph>> illumina_gaps;
         vector<int> used(len);
         size_t used_seed_count = 0;
         auto iter = mapping_descr.begin();
@@ -571,28 +559,29 @@ public:
                     if (i != j && TopologyGap(before_gap, after_gap, true)) {
                         if (start_clusters[j]->CanFollow(*end_clusters[i])) {
                             illumina_gaps.push_back(
-                                    GapDescription<Graph>(*end_clusters[i],
-                                                          *start_clusters[j], s,
-                                                          (int) pacbio_k));
+                                    CreateGapDescription(*end_clusters[i],
+                                                         *start_clusters[j],
+                                                         s,
+                                                         (int) pacbio_k));
                         }
 
                     }
                 }
             }
         }
-        return OneReadMapping<Graph>(sortedEdges, illumina_gaps, real_length, used_seed_count);
+        return OneReadMapping(sortedEdges, illumina_gaps, real_length, used_seed_count);
     }
 
     std::pair<int, int> GetPathLimits(const KmerCluster<Graph> &a,
                                       const KmerCluster<Graph> &b,
-                                      int s_add_len, int e_add_len) {
+                                      int s_add_len, int e_add_len) const {
         int start_pos = a.sorted_positions[a.last_trustable_index].read_position;
         int end_pos = b.sorted_positions[b.first_trustable_index].read_position;
         int seq_len = -start_pos + end_pos;
         //int new_seq_len =
 //TODO::something more reasonable
-        int path_min_len = max(int(floor((seq_len - int(debruijn_k)) * cfg::get().pb.path_limit_pressing)), 0);
-        int path_max_len = (int) ((double) (seq_len + (int) debruijn_k) * cfg::get().pb.path_limit_stretching);
+        int path_min_len = max(int(floor((seq_len - int(debruijn_k)) * pb_config_.path_limit_pressing)), 0);
+        int path_max_len = (int) ((double) (seq_len + (int) debruijn_k) * pb_config_.path_limit_stretching);
         if (seq_len < 0) {
             DEBUG("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
             return std::make_pair(-1, -1);
@@ -603,8 +592,8 @@ public:
     }
 
 //0 - No, 1 - Yes
-    int IsConsistent(Sequence &s, const KmerCluster<Graph> &a,
-                     const KmerCluster<Graph> &b) {
+    int IsConsistent(const Sequence &s, const KmerCluster<Graph> &a,
+                     const KmerCluster<Graph> &b) const {
         EdgeId a_edge = a.edgeId;
         EdgeId b_edge = b.edgeId;
         size_t a_id =  g_.int_id(a_edge);
@@ -620,20 +609,22 @@ public:
         pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
         vector<size_t> result;
         DEBUG("seq dist:" << s.size()/3);
-        if (distance_cashed.find(vertex_pair) == distance_cashed.end()) {
-            DistancesLengthsCallback<Graph> callback(g_);
+        auto distance_it = distance_cashed.find(vertex_pair);
+        if (distance_it == distance_cashed.end()) {
+            omnigraph::DistancesLengthsCallback<Graph> callback(g_);
             ProcessPaths(g_, 0, s.size() / 3, start_v,
                              end_v, callback);
             result = callback.distances();
-            distance_cashed[vertex_pair] = result;
+            distance_it = distance_cashed.insert({vertex_pair, result}).first;
         } else {
-      DEBUG("taking from cashed");
-    }
+            DEBUG("taking from cashed");
+        }
+
         DEBUG("addition: " << addition << " found " << result.size() << " lengths:" );
         for (size_t i = 0; i < result.size(); i++) {
             DEBUG(result[i]);
-    }
-        result = distance_cashed[vertex_pair];
+        }
+        result = distance_it->second;
         //TODO: Serious optimization possible
         for (size_t i = 0; i < result.size(); i++) {
             for (auto a_iter = a.sorted_positions.begin();
@@ -676,9 +667,9 @@ public:
     vector<EdgeId> BestScoredPath(const Sequence &s, VertexId start_v, VertexId end_v,
                                   int path_min_length, int path_max_length,
                                   int start_pos, int end_pos, string &s_add,
-                                  string &e_add) {
+                                  string &e_add) const {
         DEBUG(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
-        PathStorageCallback<Graph> callback(g_);
+        omnigraph::PathStorageCallback<Graph> callback(g_);
         ProcessPaths(g_,
                     path_min_length, path_max_length,
                     start_v, end_v,
@@ -721,7 +712,7 @@ public:
     }
 
     // Short read alignment
-    MappingPath<EdgeId> GetShortReadAlignment(const Sequence &s) const {
+    omnigraph::MappingPath<EdgeId> GetShortReadAlignment(const Sequence &s) const {
         ClustersSet mapping_descr = GetOrderClusters(s);
         map<EdgeId, KmerCluster<Graph> > largest_clusters;
 
@@ -745,25 +736,24 @@ public:
 
                     edge_cluster->second = *iter;
                 }
-            }
-            else {
+            } else {
                 largest_clusters.insert(make_pair(iter->edgeId, *iter));
             }
         }
 
-        MappingPath<EdgeId> result;
+        omnigraph::MappingPath<EdgeId> result;
         for (auto iter = largest_clusters.begin(); iter != largest_clusters.end(); ++iter) {
             auto first_cluster = iter->second.sorted_positions[iter->second.first_trustable_index];
             auto last_cluster = iter->second.sorted_positions[iter->second.last_trustable_index];
-            MappingRange range(Range(first_cluster.read_position, last_cluster.read_position),
-                    Range(first_cluster.edge_position, last_cluster.edge_position));
-            result.join(MappingPath<EdgeId>(vector<EdgeId>(1, iter->second.edgeId), vector<MappingRange>(1, range)));
+            omnigraph::MappingRange range(Range(first_cluster.read_position, last_cluster.read_position),
+                                          Range(first_cluster.edge_position, last_cluster.edge_position));
+            result.join({iter->second.edgeId, range});
         }
 
         return result;
     }
 
-    pair<EdgeId, size_t> GetUniqueKmerPos(const runtime_k::RtSeq& kmer) const {
+    std::pair<EdgeId, size_t> GetUniqueKmerPos(const runtime_k::RtSeq& kmer) const {
         KeyWithHash kwh = tmp_index.ConstructKWH(kmer);
 
         if (tmp_index.valid(kwh.key())) {
@@ -772,7 +762,7 @@ public:
                 return make_pair(keys[0].edge_id, keys[0].offset);
             }
         }
-        return make_pair(EdgeId(0), -1u);
+        return std::make_pair(EdgeId(0), -1u);
     }
 
 

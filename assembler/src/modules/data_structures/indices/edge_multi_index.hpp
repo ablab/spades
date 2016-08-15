@@ -6,15 +6,9 @@
 //***************************************************************************
 
 #pragma once
-/*
- * edge_multi_index.hpp
- *
- *  Created on: May 24, 2013
- *      Author: anton
- */
+
 #include "perfect_hash_map.hpp"
 #include "edge_info_updater.hpp"
-#include "kmer_splitters.hpp"
 #include "edge_position_index.hpp"
 
 #include <folly/SmallLocks.h>

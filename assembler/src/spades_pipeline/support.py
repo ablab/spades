@@ -104,6 +104,7 @@ def recreate_dir(dirname):
         shutil.rmtree(dirname)
     os.makedirs(dirname)
 
+
 def check_files_duplication(filenames, log):
     for filename in filenames:
         if filenames.count(filename) != 1:
@@ -847,6 +848,8 @@ def read_fasta(filename, gzipped=False):
         file_handler = open(filename)
     for line in file_handler:
         line = process_readline(line, gzipped and sys.version.startswith('3.'))
+        if not line:
+            continue
         if line[0] == '>':
             res_name.append(line.strip())
             if not first:

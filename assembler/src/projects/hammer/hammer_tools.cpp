@@ -185,6 +185,7 @@ void CorrectPairedReadFiles(const KMerData &data,
     INFO("Written batch " << buffer_no);
     ++buffer_no;
   }
+  VERIFY_MSG(irsl.eof() && irsr.eof(), "Pair of read files " + fnamel + " and " + fnamer + " contain unequal amount of reads");
 }
 
 std::string getLargestPrefix(const std::string &str1, const std::string &str2) {

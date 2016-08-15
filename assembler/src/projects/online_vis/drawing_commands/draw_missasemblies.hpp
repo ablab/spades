@@ -178,32 +178,23 @@ public:
         }
 
         string file = args[1];
-        auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
-        FillerClass& filler = curr_env.filler();
-        while (!reader->eof()) {
-            io::SingleRead read;
-            (*reader) >> read;
-            Sequence contig = read.sequence();
-            filler.Process(contig,  "miss_" + read.name());
-            filler.Process(!contig, "miss_" + read.name() + "_RC");
-        }
-        reader->close();
+        
+        FillPos(curr_env.graph_pack(), file, "miss", true);
         cout << "All contigs are mapped" << endl;
-        reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
+
 
         auto genome_mapping_path = curr_env.mapper().MapSequence(curr_env.genome());
         auto rc_genome_mapping_path = curr_env.mapper().MapSequence(!curr_env.genome());
 
         cout << "Genome is mapped" << endl;
 
-        while(!reader->eof()) {
+        io::FileReadStream reader(file);
+        while(reader.eof()) {
             io::SingleRead read;
-            (*reader) >> read;
-            Sequence contig = read.sequence();
-            cout << "Read " << read.name() << " is processed." << endl;
-
-            auto mapping_path = curr_env.mapper().MapSequence(contig);
+            reader >> read;
+            auto mapping_path = curr_env.mapper().MapRead(read);
             ProcessContig(curr_env, genome_mapping_path, rc_genome_mapping_path, mapping_path, read.name());
+            cout << "Read " << read.name() << " is processed." << endl;
         }
     }
 

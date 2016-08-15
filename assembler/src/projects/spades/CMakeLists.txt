@@ -14,7 +14,7 @@ add_executable(spades main.cpp
             second_phase_setup.cpp
             distance_estimation.cpp
             repeat_resolving.cpp
-            pacbio_aligning.cpp
+        hybrid_aligning.cpp
             chromosome_removal.cpp)
   
 target_include_directories(spades PRIVATE ${EXT_DIR}/include/ConsensusCore)

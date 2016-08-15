@@ -10,6 +10,8 @@
 #include "assembly_graph/graph_alignment/sequence_mapper.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "io/reads_io/wrapper_collection.hpp"
+#include "io/reads_io/easy_reader.hpp"
+#include "io/reads_io/io_helper.hpp"
 
 namespace debruijn_graph {
 
@@ -78,7 +80,7 @@ private:
 template<class gp_t>
 void FillPos(gp_t &gp, const string &contig_file, string prefix, bool with_rc = false) {
     PosFiller<typename gp_t::graph_t> pos_filler(gp.g, MapperInstance(gp), gp.edge_pos);
-    auto irs = std::make_shared<io::PrefixAddingReaderWrapper>(io::EasyStream(contig_file, with_rc), prefix);
+    auto irs = std::make_shared<io::PrefixAddingReaderWrapper>(io::EasyStream(contig_file, with_rc, false), prefix);
     pos_filler.Process(*irs);
 }
 

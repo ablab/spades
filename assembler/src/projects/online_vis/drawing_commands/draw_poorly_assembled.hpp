@@ -448,12 +448,12 @@ public:
             contig_cnt = std::stoll(args[4]);
         }
         
-        auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(contigs_file));
+        io::FileReadStream reader(contigs_file);
 
         size_t i = 0;
-        while (!reader->eof() && i < contig_cnt) {
+        while (!reader.eof() && i < contig_cnt) {
             io::SingleRead contig;
-            (*reader) >> contig;
+            reader >> contig;
             LOG("Considering contig " << contig.name());
 
             if (AnalyzeGaps(curr_env, contig, base_assembly_prefix,
@@ -585,6 +585,7 @@ public:
 
         if (!CheckFileExists(contigs_file)) {
             LOG("File with contigs " << contigs_file << " not found");
+            return;
         }
 
         size_t contig_cnt = -1u;
@@ -593,12 +594,12 @@ public:
             contig_cnt = std::stoll(args[3]);
         }
         
-        auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(contigs_file));
+        io::FileReadStream reader(contigs_file);
 
         size_t i = 0;
-        while (!reader->eof() && i < contig_cnt) {
+        while (!reader.eof() && i < contig_cnt) {
             io::SingleRead contig;
-            (*reader) >> contig;
+            reader >> contig;
             LOG("Considering contig " << contig.name());
 
             if (IsPoorlyAssembled(curr_env.graph_pack(), contig, base_assembly_prefix)) {
@@ -614,4 +615,126 @@ public:
     }
 
 };
+
+class DrawCoverageDropsCommand : public DrawingCommand {
+    const size_t cov_drop = 25;
+    const size_t min_ende_len = 2000;
+private:
+
+    bool IsRepeat(const GraphPack& gp, EdgeId e) const {
+        auto v1 = gp.g.EdgeStart(e);
+        auto v2 = gp.g.EdgeEnd(e);
+        return gp.g.IncomingEdgeCount(v1) >= 2 || gp.g.OutgoingEdgeCount(v2) >= 2 ;
+    }
+
+    std::vector<std::vector<EdgeId>> Split(const GraphPack& gp, std::vector<EdgeId> mapping_path) const {
+        std::vector<std::vector<EdgeId>> answer;
+        std::vector<EdgeId> temp;
+        for(auto e : mapping_path) {
+
+            if(gp.g.OutgoingEdgeCount(gp.g.EdgeEnd(e)) == 0) {
+                temp.push_back(e);
+                answer.push_back(temp);
+                temp.clear();
+                continue;
+            }
+
+            if(gp.g.IncomingEdgeCount(gp.g.EdgeStart(e)) == 0) {
+                answer.push_back(temp);
+                temp.clear();
+                temp.push_back(e);
+                continue;
+            }
+            temp.push_back(e);
+        }
+        if(temp.size() > 0) {
+            answer.push_back(temp);
+        }
+        return answer;
+    }
+
+    bool HasCoverageDrops(const GraphPack& gp, std::vector<EdgeId> mapping_path) const {
+        double min_coverage = std::numeric_limits<double>::max();
+        double max_coverage = 0;
+
+        std::for_each(mapping_path.begin(), mapping_path.end(), [this, &max_coverage, &min_coverage, &gp](EdgeId e){
+            if(!IsRepeat(gp, e) && gp.g.length(e) > min_ende_len) {
+                min_coverage = std::min(gp.g.coverage(e), min_coverage);
+                max_coverage = std::max(gp.g.coverage(e), max_coverage);
+            }
+        });
+        if(max_coverage > min_coverage && max_coverage - min_coverage > cov_drop) {
+            return true;
+        }
+        return false;
+    }
+
+protected:
+    size_t MinArgNumber() const {
+        return 1;
+    }
+
+    bool CheckCorrectness(const vector<string>& args) const {
+        if (!CheckEnoughArguments(args))
+            return false;
+        return true;
+    }
+
+public:
+    string Usage() const {
+        string answer;
+        answer = answer + "Command `draw_coverage_drops` \n" + "Usage:\n"
+                + "> draw_coverage_drops <contigs_file> [first N contigs to analyze]\n"
+                + " Draws pictures of contigs that have substantial coverage drops during theirs alignments to the graph.";
+        return answer;
+    }
+
+    DrawCoverageDropsCommand()
+            : DrawingCommand("draw_coverage_drops") {
+    }
+
+    void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
+        const vector<string>& args = arg_list.GetAllArguments();
+        if (!CheckCorrectness(args))
+            return;
+
+        std::string contigs_file = args[1];
+        if (!CheckFileExists(contigs_file)) {
+            LOG("File with contigs " << contigs_file << " not found");
+            return;
+        }
+
+        size_t contig_cnt = -1u;
+        if (args.size() > 2) {
+            LOG("Will analyze first " << args[2] << " contigs");
+            contig_cnt = std::stoll(args[2]);
+        }
+
+
+        io::FileReadStream reader(contigs_file);
+
+        size_t i = 0;
+        while (!reader.eof() && i < contig_cnt) {
+            io::SingleRead contig;
+            reader >> contig;
+            LOG("Considering contig " << contig.name());
+
+            std::vector<EdgeId> mapping_path = debruijn_graph::MapperInstance(curr_env.graph_pack())->MapRead(contig).simple_path();
+            std::vector<std::vector<EdgeId>> splitted_path = Split(curr_env.graph_pack(), mapping_path);
+            for(auto subpath : splitted_path) {
+                if (HasCoverageDrops(curr_env.graph_pack(), subpath)) {
+                    LOG("Has coverage drops, drawing");
+                    DrawPicturesAlongPath(curr_env, subpath, contig.name());
+                } else {
+                    LOG("OK");
+                }
+            }
+
+            ++i;
+        }
+
+    }
+
+};
+
 }

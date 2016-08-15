@@ -135,8 +135,14 @@ public:
         VERIFY(this->IsAttached());
         std::stringstream ss;
         vector<EdgePosition> positions = GetEdgePositions(edge);
+        size_t counter = 0;
         for (auto pos_it = positions.begin(), end = positions.end(); pos_it != end; ++pos_it) {
             ss << "(" << pos_it->contigId << ": " << pos_it->mr << ")\\n";
+            counter++;
+            if(counter > 30) {
+                ss << "and many more. Totally " << positions.size() << " positions.";
+                break;
+            }
         }
         return ss.str();
     }

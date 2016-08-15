@@ -6,16 +6,11 @@
 //***************************************************************************
 
 #pragma once
-/*
- * edge_index.hpp
- *
- *  Created on: May 24, 2013
- *      Author: anton
- */
 
 #include "perfect_hash_map.hpp"
 #include "edge_info_updater.hpp"
-#include "kmer_splitters.hpp"
+#include "data_structures/sequence/runtime_k.hpp"
+#include "modules/io/reads/single_read.hpp"
 
 namespace debruijn_graph {
 
@@ -82,25 +77,23 @@ public:
      */
     bool contains(const KeyWithHash &kwh) const {
         // Sanity check
-        if (!valid(kwh)) {
+        if (!valid(kwh))
             return false;
-        }
 
         Value entry = base::get_value(kwh);
-
-        if (entry.offset == -1u) {
+        if (entry.offset == -1u)
             return false;
-        }
 
-        return kwh.key() == KMer(this->k(), graph_.EdgeNucls(entry.edge_id), entry.offset);
+        return graph_.EdgeNucls(entry.edge_id).contains(kwh.key(), entry.offset);
     }
 
     void PutInIndex(KeyWithHash &kwh, IdType id, size_t offset) {
-        if (valid(kwh)) {
-            auto &entry = this->get_raw_value_reference(kwh);
-            if (!entry.valid() || contains(kwh)) {
-                this->put_value(kwh, Value(id, (unsigned)offset, entry.count));
-            }
+        if (!valid(kwh))
+            return;
+        
+        auto &entry = this->get_raw_value_reference(kwh);
+        if (!entry.valid() || contains(kwh)) {
+            this->put_value(kwh, Value(id, (unsigned)offset, entry.count));
         }
     }
 

@@ -10,9 +10,11 @@
  */
 #include "dev_support/logger/log_writers.hpp"
 
+#include "dev_support/memory_limit.hpp"
 #include "dev_support/segfault_handler.hpp"
 #include "launch.hpp"
 #include "dev_support/copy_file.hpp"
+#include "version.hpp"
 
 void load_config(const vector<string>& cfg_fns) {
     for (const auto& s : cfg_fns) {
@@ -71,7 +73,7 @@ int main(int argc, char **argv) {
 
         for (const auto& cfg_fn : cfg_fns)
             INFO("Loading config from " << cfg_fn);
-        
+
         VERIFY(cfg::get().K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K);
         VERIFY(cfg::get().K % 2 != 0);
 
@@ -84,6 +86,7 @@ int main(int argc, char **argv) {
                      SPADES_GIT_REFSPEC
                      ", git revision "
                      SPADES_GIT_SHA1);
+        INFO("Maximum k-mer length: " << runtime_k::MAX_K);
         INFO("Assembling dataset (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);
 
         spades::assemble_genome();

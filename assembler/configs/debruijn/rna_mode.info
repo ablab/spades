@@ -1,5 +1,7 @@
 mode rna
 
+preserve_raw_paired_index true
+
 simp
 {
     ; enable advanced ec removal algo
@@ -10,6 +12,13 @@ simp
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
         condition  "{ mmm 3 tc_lb 3.5, cb 100000, rctc 0.1 } { tc_lb 3.5, cb 4, rctc 10000 } { tc_lb 0.1, cb 20, rctc 10000 }"
     }
+
+    dead_end
+    {
+        condition  "{ tc_lb 3.5, cb 2 }"
+        enabled true
+    }
+
     ; bulge remover:
     br
     {
@@ -17,6 +26,7 @@ simp
         max_coverage            1000000.0
         max_relative_coverage       100000.0 ; bulge_cov < this * not_bulge_cov
     }
+
     ; erroneous connections remover:
     ec
     { 
@@ -24,8 +34,17 @@ simp
        ; icb: iterative coverage bound
        ; to_ec_lb: max_ec_length = 2*tip_length(to_ec_lb) - 1
        ; condition               "{ ec_lb 9, icb 40.0 }"
-       condition               "{ ec_lb 30, icb auto }"
+       condition               "{ ec_lb 30, icb 50 }"
     }
+
+    ; relative coverage erroneous connections remover:
+    rcec
+        {
+            enabled true
+            rcec_lb 30
+            rcec_cb 0.5
+        }
+
     rcc
     {
         enabled true
@@ -39,9 +58,9 @@ simp
     ;all topology based erroneous connection removers are off
     ier
     {
-        enabled                     true
-        max_length                  200
-        max_coverage                4
+        enabled                     false
+        max_length                  100
+        max_coverage                2
         max_length_any_cov          0 ; will be taken max with read_length
     }
     ; hidden ec remover
@@ -69,7 +88,26 @@ simp
 
 pe {
 params {
-    multi_path_extend   true
-    remove_overlaps     false
+    ;multi_path_extend   true
+    ;remove_overlaps     false
+
+    scaffolder {
+        cutoff        1
+        hard_cutoff   10
+
+	cluster_info false
+
+	min_overlap_for_rna_scaffolding 10
+    }
+
+    path_cleaning
+    {
+        enabled true
+        min_length  30
+        isolated_min_length 50
+        min_length_for_low_covered 150
+        min_coverage 2
+    }
+
 }
 }

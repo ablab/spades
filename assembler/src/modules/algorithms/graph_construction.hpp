@@ -110,11 +110,12 @@ void EarlyClipTips(size_t k, const config::debruijn_config::construction& params
     }
 }
 
+#include "data_structures/indices/kmer_extension_index_builder.hpp"
+
 template<class Graph, class Read, class Index>
 ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_config::construction params,
-        io::ReadStreamList<Read>& streams, Graph& g,
-        Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-
+                                                 io::ReadStreamList<Read>& streams, Graph& g,
+                                                 Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     size_t k = g.k();
     INFO("Constructing DeBruijn graph for k=" << k);
 
@@ -167,7 +168,7 @@ ReadStatistics ConstructGraphWithCoverage(const config::debruijn_config::constru
                                   io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     ReadStatistics rs = ConstructGraph(params, streams, g, index, contigs_stream);
 
-    typedef typename Index::InnerIndexT InnerIndex;
+    typedef typename Index::InnerIndex InnerIndex;
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
     INFO("Filling coverage index")
     IndexBuilder().ParallelFillCoverage(index.inner_index(), streams);

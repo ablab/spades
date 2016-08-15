@@ -8,9 +8,11 @@
 #ifndef SEQUENCE_MAPPER_NOTIFIER_HPP_
 #define SEQUENCE_MAPPER_NOTIFIER_HPP_
 
+#include "dev_support/memory_limit.hpp"
 #include "assembly_graph/graph_alignment/sequence_mapper.hpp"
 #include "short_read_mapper.hpp"
 #include "io/reads/paired_read.hpp"
+#include "io/reads_io/read_stream_vector.hpp"
 #include "pipeline/graph_pack.hpp"
 
 #include <vector>
@@ -23,7 +25,7 @@ public:
     virtual void StartProcessLibrary(size_t threads_count) = 0;
     virtual void StopProcessLibrary() = 0;
 
-    //TODO: think about read ierarchy
+    //TODO: think about read hierarchy
     virtual void ProcessPairedRead(size_t thread_index, const io::PairedRead& pr, const MappingPath<EdgeId>& read1, const MappingPath<EdgeId>& read2) = 0;
     virtual void ProcessPairedRead(size_t thread_index, const io::PairedReadSeq& pr, const MappingPath<EdgeId>& read1, const MappingPath<EdgeId>& read2) = 0;
     virtual void ProcessSingleRead(size_t thread_index, const io::SingleRead& r, const MappingPath<EdgeId>& read) = 0;
@@ -57,16 +59,14 @@ public:
 
         streams.reset();
         NotifyStartProcessLibrary(lib_index, threads_count);
-
         size_t counter = 0, n = 15;
         size_t fmem = get_free_memory();
 
         #pragma omp parallel for num_threads(threads_count) shared(counter)
-        for (size_t ithread = 0; ithread < threads_count; ++ithread) {
+        for (size_t i = 0; i < streams.size(); ++i) {
             size_t size = 0;
             ReadType r;
-            auto& stream = streams[ithread];
-            stream.reset();
+            auto& stream = streams[i];
             while (!stream.eof()) {
                 if (size == BUFFER_SIZE || 
                     // Stop filling buffer if the amount of available is smaller
@@ -80,13 +80,15 @@ public:
                             n += 1;
                         }
                         size = 0;
-                        NotifyMergeBuffer(lib_index, ithread);
+                        NotifyMergeBuffer(lib_index, i);
                     }
                 }
                 stream >> r;
                 ++size;
-                NotifyProcessRead(r, mapper, lib_index, ithread);
+                NotifyProcessRead(r, mapper, lib_index, i);
             }
+            #pragma omp atomic
+            counter += size;
         }
         INFO("Total " << counter << " reads processed");
         NotifyStopProcessLibrary(lib_index);

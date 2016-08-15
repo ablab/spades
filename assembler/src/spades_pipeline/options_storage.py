@@ -27,7 +27,7 @@ MAX_LIBS_NUMBER = 9
 OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s"]
 SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs", "nxmate": "nxmate"}
 # other libs types:
-LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "trusted-contigs", "untrusted-contigs"]
+LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "tslr", "trusted-contigs", "untrusted-contigs"]
 
 # final contigs and scaffolds names
 contigs_name = "contigs.fasta"
@@ -35,6 +35,8 @@ scaffolds_name = "scaffolds.fasta"
 assembly_graph_name = "assembly_graph.fastg"
 contigs_paths = "contigs.paths"
 scaffolds_paths = "scaffolds.paths"
+transcripts_name = "transcripts.fasta"
+transcripts_paths = "transcripts.paths"
 
 #other constants
 MIN_K = 1
@@ -45,6 +47,7 @@ THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS = 10
 #default values constants
 THREADS = 16
 MEMORY = 250
+K_MERS_RNA = [55]
 K_MERS_SHORT = [21,33,55]
 K_MERS_150 = [21,33,55,77]
 K_MERS_250 = [21,33,55,77,99,127]
@@ -181,10 +184,11 @@ def usage(spades_version, show_hidden=False, mode=None):
     sys.stderr.write("" + "\n")
     sys.stderr.write("Basic options:" + "\n")
     sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
-    if mode != "dip":
+    if mode is None:  # nothing special, just regular spades.py
         sys.stderr.write("--sc\t\t\tthis flag is required for MDA (single-cell) data" + "\n")
         sys.stderr.write("--meta\t\t\tthis flag is required for metagenomic sample data" + "\n")
-        sys.stderr.write("--plasmid\tRuns plasmidSPAdes pipeline for plasmid detection \n");
+        sys.stderr.write("--rna\t\t\tthis flag is required for RNA-Seq data \n")
+        sys.stderr.write("--plasmid\t\truns plasmidSPAdes pipeline for plasmid detection \n")
 
     sys.stderr.write("--iontorrent\t\tthis flag is required for IonTorrent data" + "\n")
     sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
@@ -213,33 +217,35 @@ def usage(spades_version, show_hidden=False, mode=None):
                          " for paired-end library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
     sys.stderr.write("--s<#>\t\t<filename>\tfile with unpaired reads"\
                      " for single reads library number <#> (<#> = 1,2,..,9)" + "\n")
-    sys.stderr.write("--mp<#>-12\t<filename>\tfile with interlaced"\
-                         " reads for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
-    sys.stderr.write("--mp<#>-1\t<filename>\tfile with forward reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
-    sys.stderr.write("--mp<#>-2\t<filename>\tfile with reverse reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
-    sys.stderr.write("--mp<#>-s\t<filename>\tfile with unpaired reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
-    sys.stderr.write("--mp<#>-<or>\torientation of reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
-    sys.stderr.write("--hqmp<#>-12\t<filename>\tfile with interlaced"\
-                     " reads for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
-    sys.stderr.write("--hqmp<#>-1\t<filename>\tfile with forward reads"\
-                     " for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
-    sys.stderr.write("--hqmp<#>-2\t<filename>\tfile with reverse reads"\
-                     " for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
-    sys.stderr.write("--hqmp<#>-s\t<filename>\tfile with unpaired reads"\
-                     " for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
-    sys.stderr.write("--hqmp<#>-<or>\torientation of reads"\
-                     " for high-quality mate-pair library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
-    sys.stderr.write("--nxmate<#>-1\t<filename>\tfile with forward reads"\
-                         " for Lucigen NxMate library number <#> (<#> = 1,2,..,9)" + "\n")
-    sys.stderr.write("--nxmate<#>-2\t<filename>\tfile with reverse reads"\
-                         " for Lucigen NxMate library number <#> (<#> = 1,2,..,9)" + "\n")
-    sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
-    sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
-    sys.stderr.write("--nanopore\t<filename>\tfile with Nanopore reads\n")
+    if mode not in ["rna", "meta"]:
+        sys.stderr.write("--mp<#>-12\t<filename>\tfile with interlaced"\
+                             " reads for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
+        sys.stderr.write("--mp<#>-1\t<filename>\tfile with forward reads"\
+                             " for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
+        sys.stderr.write("--mp<#>-2\t<filename>\tfile with reverse reads"\
+                             " for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
+        sys.stderr.write("--mp<#>-s\t<filename>\tfile with unpaired reads"\
+                             " for mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
+        sys.stderr.write("--mp<#>-<or>\torientation of reads"\
+                             " for mate-pair library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
+        sys.stderr.write("--hqmp<#>-12\t<filename>\tfile with interlaced"\
+                         " reads for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
+        sys.stderr.write("--hqmp<#>-1\t<filename>\tfile with forward reads"\
+                         " for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
+        sys.stderr.write("--hqmp<#>-2\t<filename>\tfile with reverse reads"\
+                         " for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
+        sys.stderr.write("--hqmp<#>-s\t<filename>\tfile with unpaired reads"\
+                         " for high-quality mate-pair library number <#> (<#> = 1,2,..,9)" + "\n")
+        sys.stderr.write("--hqmp<#>-<or>\torientation of reads"\
+                         " for high-quality mate-pair library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
+        sys.stderr.write("--nxmate<#>-1\t<filename>\tfile with forward reads"\
+                             " for Lucigen NxMate library number <#> (<#> = 1,2,..,9)" + "\n")
+        sys.stderr.write("--nxmate<#>-2\t<filename>\tfile with reverse reads"\
+                             " for Lucigen NxMate library number <#> (<#> = 1,2,..,9)" + "\n")
+        sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
+        sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
+        sys.stderr.write("--nanopore\t<filename>\tfile with Nanopore reads\n")
+    sys.stderr.write("--tslr\t<filename>\tfile with TSLR-contigs\n")
     sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")
     sys.stderr.write("--untrusted-contigs\t<filename>\tfile with untrusted contigs\n")
     if mode == "dip":
@@ -254,8 +260,8 @@ def usage(spades_version, show_hidden=False, mode=None):
     sys.stderr.write("--only-assembler\truns only assembling (without read error"\
                          " correction)" + "\n")
     if mode != "dip":
-        sys.stderr.write("--careful\t\ttries to reduce number"\
-                             " of mismatches and short indels" + "\n")
+        if mode not in ["rna", "meta"]:
+            sys.stderr.write("--careful\t\ttries to reduce number of mismatches and short indels" + "\n")
         sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
         sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc')" + "\n")
     sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
@@ -280,11 +286,17 @@ def usage(spades_version, show_hidden=False, mode=None):
     sys.stderr.write("\t\t\t\t[default: %s]\n" % MEMORY)
     sys.stderr.write("--tmp-dir\t<dirname>\tdirectory for temporary files" + "\n")
     sys.stderr.write("\t\t\t\t[default: <output_dir>/tmp]" + "\n")
-    sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
+    if mode != 'rna':
+        sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes" \
                          " (must be odd and" + "\n")
-    sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n")
-    sys.stderr.write("--cov-cutoff\t<float>\t\tcoverage cutoff value (a positive float number, "
-                     "or 'auto', or 'off') [default: 'off']" + "\n")
+        sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n")
+    else:
+        sys.stderr.write("-k\t\t<int>\t\tk-mer size (must be odd and less than " + str(MAX_K + 1) + ") " \
+                         "[default: " + str(K_MERS_RNA[0]) + "]\n")
+
+    if mode not in ["rna", "meta"]:
+        sys.stderr.write("--cov-cutoff\t<float>\t\tcoverage cutoff value (a positive float number, "
+                         "or 'auto', or 'off') [default: 'off']" + "\n")
     sys.stderr.write("--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
                          " input reads (33 or 64)" + "\n")
     sys.stderr.write("\t\t\t\t[default: auto-detect]" + "\n")    
@@ -307,8 +319,7 @@ def usage(spades_version, show_hidden=False, mode=None):
                              " for BayesHammer" + "\n")
         sys.stderr.write("--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
                              " for SPAdes" + "\n")
-        sys.stderr.write("--large-genome\tEnables optimizations for large genomes \n");
-        sys.stderr.write("--rna\tRuns rnaSPAdes pipeline for RNA-Seq data \n");
+        sys.stderr.write("--large-genome\tEnables optimizations for large genomes \n")
         sys.stderr.write("--help-hidden\tprints this usage message with all hidden options" + "\n")
 
     if show_hidden and mode == "dip":

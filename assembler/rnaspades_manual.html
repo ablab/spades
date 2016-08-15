@@ -1,0 +1,84 @@
+<html>
+<head>
+    <title>rnaSPAdes 1.0.0 Manual</title>
+    <style type="text/css">
+        .code {
+            background-color: lightgray;
+        }
+    </style>
+</head>
+<body>
+<h1>rnaSPAdes 1.0.0 Manual</h1>
+
+1. <a href="#sec1">About rnaSPAdes</a><br>
+2. <a href="#sec2">rnaSPAdes specifics</a><br>
+3. <a href="#sec3">Assembly evaluation</a><br>
+4. <a href="#sec4">Citation</a><br>
+5. <a href="#sec5">Feedback and bug reports</a><br>
+
+<a name="sec1"></a>
+<h2>1 About rnaSPAdes</h2>
+
+<p> rnaSPAdes is a tool for <i>de novo</i> transcriptome assembly from RNA-Seq data and is suitable for all kind of organisms. rnaSPAdes is a part of <a href="http://bioinf.spbau.ru/en/spades">SPAdes package</a> since version 3.9. Information about SPAdes download, requirements, installation and basic options can be found in <a href="manual.html">SPAdes manual</a>. Below you may find information about differences between SPAdes and rnaSPAdes.
+
+<a name="sec2"></a>
+<h2>2 rnaSPAdes specifics</h2>
+
+<p>
+To run rnaSPAdes use
+
+<pre class="code">
+<code>
+    rnaspades.py [options] -o &lt;output_dir>
+</code>
+</pre>
+
+or 
+
+<pre class="code">
+<code>
+    spades.py --rna [options] -o &lt;output_dir>
+</code>
+</pre>
+
+Note that we assume that SPAdes installation directory is added to the <code>PATH</code> variable (provide full path to rnaSPAdes executable otherwise: <code>&lt;rnaspades installation dir>/rnaspades.py</code>). 
+
+
+<p>Here are the main differences of rnaSPAdes:
+    <ul>
+        <li>rnaSPAdes outputs only one FASTA file named <code>transcripts.fasta</code>. The corresponding file with paths in the <code>assembly_graph.fastg</code> is <code>transcripts.paths</code>.</li>
+        <li>rnaSPAdes can take as an input only one paired-end library and multiple single-end libraries.</li>
+        <li>rnaSPAdes does not support <code>--careful</code> and <code>--cov-cutoff</code> options.</li>
+        <li>rnaSPAdes is not compatible with other pipeline options such as <code>--meta</code>, <code>--sc</code> and <code>--plasmid</code>.</li>
+        <li>rnaSPAdes works using only a single k-mer size (55 by the default). We strongly recommend no to change this parameter. In case your RNA-Seq data set contains long Illumina reads (150 bp and longer) you may try to use longer k-mer size (approximately half of the read length). In case you have any doubts about your run, do not hesitate to contact us using e-mail given below.</li>
+    </ul>
+
+
+<a name="sec3">
+<h2>3 Assembly evaluation</h2>
+
+<p>
+    <a href="http://bioinf.spbau.ru/en/rnaquast" target="_blank">rnaQUAST</a> may be used for transcriptome assembly quality assessment for model organisms when reference genome and gene database are available. rnaQUAST also includes  <a href="http://busco.ezlab.org/" target="_blank">BUSCO</a> and <a href="http://topaz.gatech.edu/GeneMark/" target="_blank"> GeneMarkS-T</a> tools for <i>de novo</i> evaluation.
+<br>
+
+<a name="sec4">
+<h2>4 Citation</h2>
+<p>
+If you use rnaSPAdes in your research, please include main SPAdes paper <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021" target="_blank">Bankevich, Nurk et al., 2012</a> in your reference list. Paper on rnaSPAdes is to be submitted.
+
+
+<a name="sec5">
+<h2>5 Feedback and bug reports</h2>
+<p>
+    Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve rnaSPAdes.
+
+<p>
+    If you have any troubles running rnaSPAdes, please send us <code>params.txt</code> and <code>spades.log</code> from the directory <code>&lt;output_dir></code>.
+
+<p>
+    Address for communications: <a href="mailto:spades.support@bioinf.spbau.ru" target="_blank">spades.support@bioinf.spbau.ru</a>.
+
+<br/><br/><br/><br/><br/>
+
+</body>
+</html>

@@ -30,6 +30,129 @@ NecessaryECCondition(const Graph& g, size_t max_length, double max_coverage) {
                                                         CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
+
+template<class Graph>
+class RelativeCoverageECCondition: public EdgeCondition<Graph> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef EdgeCondition<Graph> base;
+
+    const double rcec_ratio_;
+
+    template<class ContainerType>
+    double SumCompetitorCoverage(EdgeId ec_edge, const ContainerType& edges) const {
+        const Graph &g = this->g();
+        double sum = 0;
+        for (EdgeId e : edges) {
+            //update if competitor edge is not loop
+            if (e != ec_edge && g.EdgeStart(e) != g.EdgeEnd(e))
+                sum += g.coverage(e);
+        }
+        return sum;
+    }
+
+    double AvgLocalityCoverage(EdgeId ec_edge) const {
+        const Graph &g = this->g();
+        VertexId start = g.EdgeStart(ec_edge), end = g.EdgeEnd(ec_edge);
+        auto in_start = g.IncomingEdges(start);
+        auto out_start = g.OutgoingEdges(start);
+        auto in_end = g.IncomingEdges(end);
+        auto out_end = g.OutgoingEdges(end);
+        double total_edges = double(g.IncomingEdgeCount(start) + g.OutgoingEdgeCount(start) +
+            g.IncomingEdgeCount(end) + g.OutgoingEdgeCount(end) - 2);
+        return (SumCompetitorCoverage(ec_edge, in_start) +
+                SumCompetitorCoverage(ec_edge, out_start) +
+                SumCompetitorCoverage(ec_edge, in_end) +
+                SumCompetitorCoverage(ec_edge, out_end)) / total_edges;
+    }
+
+    template<class ContainerType>
+    double MaxCompetitorCoverage(EdgeId ec_edge, const ContainerType& edges) const {
+        const Graph &g = this->g();
+        double result = 0;
+        for (EdgeId e : edges) {
+            //update if competitor edge is not loop
+            if (e != ec_edge && g.EdgeStart(e) != g.EdgeEnd(e))
+                result = std::max(result, g.coverage(e));
+        }
+        return result;
+    }
+
+    double MaxCompetitorCoverage(EdgeId ec_edge) const {
+        const Graph &g = this->g();
+        VertexId start = g.EdgeStart(ec_edge), end = g.EdgeEnd(ec_edge);
+        auto in_start = g.IncomingEdges(start);
+        auto out_start = g.OutgoingEdges(start);
+        auto in_end = g.IncomingEdges(end);
+        auto out_end = g.OutgoingEdges(end);
+        return std::max(
+                std::max(MaxCompetitorCoverage(ec_edge, in_start),
+                         MaxCompetitorCoverage(ec_edge, out_start)),
+                std::max(MaxCompetitorCoverage(ec_edge, in_end),
+                         MaxCompetitorCoverage(ec_edge, out_end)));
+    }
+
+public:
+
+    RelativeCoverageECCondition(const Graph& g, double rcec_ratio) :
+            base(g), rcec_ratio_(rcec_ratio) {
+    }
+
+    bool Check(EdgeId e) const override {
+        //+1 is a trick to deal with edges of 0 coverage from iterative run
+        double locality_coverage = AvgLocalityCoverage(e) + 1;
+        return math::le(this->g().coverage(e), rcec_ratio_ * locality_coverage);
+    }
+
+};
+
+template<class Graph>
+pred::TypedPredicate<typename Graph::EdgeId> AddRelativeCoverageECCondition(const Graph &g, double rcec_ratio,
+                                                                            pred::TypedPredicate<typename Graph::EdgeId> condition) {
+    return pred::And(RelativeCoverageECCondition<Graph>(g, rcec_ratio), condition);
+}
+
+template<class Graph>
+inline bool IsSimpleBulge(const Graph &g, typename Graph::EdgeId e){
+    size_t edge_count = g.GetEdgesBetween(g.EdgeStart(e), g.EdgeEnd(e)).size();
+
+    return edge_count == g.OutgoingEdgeCount(g.EdgeStart(e)) &&
+           edge_count == g.IncomingEdgeCount(g.EdgeEnd(e)) &&
+           edge_count >= 2;
+}
+
+template<class Graph>
+class NotBulgeECCondition : public EdgeCondition<Graph> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef EdgeCondition<Graph> base;
+
+public:
+
+    NotBulgeECCondition(const Graph &g)
+            : base(g) {
+
+    }
+
+    bool Check(EdgeId e) const {
+        if (HasAlternatives(this->g(), e) && !IsSimpleBulge(this->g(), e)){
+            DEBUG("edge id = " << this->g().int_id(e)
+                 << " between = " << this->g().GetEdgesBetween(this->g().EdgeStart(e), this->g().EdgeEnd(e)).size()
+                 << " between ids: " << this->g().GetEdgesBetween(this->g().EdgeStart(e), this->g().EdgeEnd(e))
+                 << " outgoing s = " << this->g().OutgoingEdgeCount(this->g().EdgeStart(e))
+                 << " incoming e = " << this->g().IncomingEdgeCount(this->g().EdgeEnd(e)));
+        }
+        return !IsSimpleBulge(this->g(), e);
+    }
+
+};
+
+template<class Graph>
+pred::TypedPredicate<typename Graph::EdgeId> AddNotBulgeECCondition(const Graph &g,
+                                                                    pred::TypedPredicate<typename Graph::EdgeId> condition) {
+    return pred::And(NotBulgeECCondition<Graph>(g), condition);
+}
+
 template<class Graph>
 bool RemoveErroneousEdgesInCoverageOrder(Graph &g,
                                          pred::TypedPredicate<typename Graph::EdgeId> removal_condition,

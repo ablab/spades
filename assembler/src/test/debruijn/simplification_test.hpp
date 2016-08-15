@@ -110,7 +110,7 @@ debruijn_config::simplification::relative_coverage_comp_remover standard_rcc_con
 }
 
 debruijn::simplification::SimplifInfoContainer standard_simplif_relevant_info() {
-    debruijn::simplification::SimplifInfoContainer info;
+    debruijn::simplification::SimplifInfoContainer info(config::pipeline_type::base);
     return info.set_read_length(100)
             .set_detected_coverage_bound(10.)
             .set_main_iteration(true)
@@ -286,6 +286,7 @@ BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
        BOOST_CHECK_EQUAL(gp.g.size(), 66u);
 }
 
+// TODO: Remove this hack. We really need to save flcvr!
 template<class Graph, class InnerIndex>
 void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
     for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
@@ -296,7 +297,7 @@ void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
         kpomer >>= 0;
         for (size_t i = 0; i < g.length(e); ++i) {
             kpomer <<= nucls[i + g.k()];
-            idx.get_raw_value_reference(kpomer).count = unsigned(math::floor(cov));
+            idx.get_raw_value_reference(kpomer).count = unsigned(math::floor(cov)) / 2;
         }
     }
 }
@@ -304,8 +305,7 @@ void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
 //Relative coverage removal tests
 
 void TestRelativeCoverageRemover(std::string path, size_t graph_size) {
-    typedef graph_pack<ConjugateDeBruijnGraph,
-            KmerStoringEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, SimpleStoring>> gp_t;
+    typedef graph_pack<ConjugateDeBruijnGraph> gp_t;
     gp_t gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
     INFO("Relative coverage component removal:");

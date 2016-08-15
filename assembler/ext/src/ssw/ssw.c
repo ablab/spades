@@ -470,7 +470,8 @@ static alignment_end* sw_sse2_word (const int8_t* ref,
 			for (j = 0; LIKELY(j < segLen); ++j) {
 				vH = _mm_load_si128(pvHStore + j);
 				vH = _mm_max_epi16(vH, vF);
-				_mm_store_si128(pvHStore + j, vH);
+        vMaxColumn = _mm_max_epi16(vMaxColumn, vH);
+        _mm_store_si128(pvHStore + j, vH);
 				vH = _mm_subs_epu16(vH, vGapO);
 				vF = _mm_subs_epu16(vF, vGapE);
 				if (UNLIKELY(! _mm_movemask_epi8(_mm_cmpgt_epi16(vF, vH)))) goto end;

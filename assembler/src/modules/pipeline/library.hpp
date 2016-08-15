@@ -30,6 +30,7 @@ enum class LibraryType {
     PacBioReads,
     SangerReads,
     NanoporeReads,
+    TSLReads,
     TrustedContigs,
     UntrustedContigs,
     PathExtendContigs
@@ -157,9 +158,9 @@ public:
     }
 
     bool is_graph_contructable() const {
-        return (type_ == io::LibraryType::PairedEnd ||
-                type_ == io::LibraryType::SingleReads ||
-                type_ == io::LibraryType::HQMatePairs);
+        return type_ == io::LibraryType::PairedEnd ||
+               type_ == io::LibraryType::SingleReads ||
+               type_ == io::LibraryType::HQMatePairs;
     }
 
     bool is_bwa_alignable() const {
@@ -170,26 +171,14 @@ public:
         return is_graph_contructable();
     }
 
-    bool is_binary_covertable() {
-        return is_graph_contructable() || is_mismatch_correctable() || is_paired();
-    }
+//    bool is_binary_covertable() {
+//        return is_graph_contructable() || is_mismatch_correctable() || is_paired();
+//    }
 
     bool is_paired() const {
-        return (type_ == io::LibraryType::PairedEnd ||
-                type_ == io::LibraryType::MatePairs||
-                type_ == io::LibraryType::HQMatePairs);
-    }
-
-    bool is_repeat_resolvable() const {
-        return (type_ == io::LibraryType::PairedEnd ||
-                type_ == io::LibraryType::HQMatePairs ||
-                type_ == io::LibraryType::MatePairs ||
-                type_ == io::LibraryType::PacBioReads ||
-                type_ == io::LibraryType::SangerReads ||
-                type_ == io::LibraryType::NanoporeReads ||
-                type_ == io::LibraryType::TrustedContigs ||
-                type_ == io::LibraryType::UntrustedContigs ||
-                type_ == io::LibraryType::PathExtendContigs);
+        return type_ == io::LibraryType::PairedEnd ||
+               type_ == io::LibraryType::MatePairs ||
+               type_ == io::LibraryType::HQMatePairs;
     }
 
     static bool is_contig_lib(LibraryType type) {
@@ -199,9 +188,10 @@ public:
     }
 
     static bool is_long_read_lib(LibraryType type) {
-        return type == io::LibraryType::PacBioReads || 
-               type == io::LibraryType::SangerReads || 
-               type == io::LibraryType::NanoporeReads;
+        return type == io::LibraryType::PacBioReads ||
+               type == io::LibraryType::SangerReads ||
+               type == io::LibraryType::NanoporeReads ||
+               type == io::LibraryType::TSLReads;
     }
 
     bool is_contig_lib() const {
@@ -212,13 +202,18 @@ public:
         return is_long_read_lib(type_);
     }
 
-    bool is_pacbio_alignable() const {
-        return (type_ == io::LibraryType::PacBioReads ||
-                type_ == io::LibraryType::SangerReads ||
-                type_ == io::LibraryType::NanoporeReads ||
-                //comment next line to switch alignment method for trusted contigs
-                type_ == io::LibraryType::TrustedContigs ||
-                type_ == io::LibraryType::UntrustedContigs);
+    bool is_repeat_resolvable() const {
+        return is_paired() ||
+               is_long_read_lib() ||
+               is_contig_lib();
+    }
+
+    //hybrid libraries are used to close gaps in the graph during their alignment
+    bool is_hybrid_lib() const {
+        return is_long_read_lib() ||
+               //comment next line to switch alignment method for trusted contigs
+               type_ == io::LibraryType::TrustedContigs ||
+               type_ == io::LibraryType::UntrustedContigs;
     }
 
 private:
@@ -252,6 +247,7 @@ private:
 // Just convenient wrapper to "unwrap" the iterators over libraries.
 template<class Data = NoData>
 class DataSet {
+public:
     typedef SequencingLibrary<Data> Library;
     typedef std::vector<Library> LibraryStorage;
 
@@ -304,7 +300,7 @@ public:
     single_reads_iterator reads_end() const {
         return single_reads_iterator(libraries_.back().reads_end(), libraries_.back().reads_end());
     }
-    adt::iterator_range<single_reads_iterator> reads() {
+    adt::iterator_range<single_reads_iterator> reads() const {
         return adt::make_range(reads_begin(), reads_end());
     }
 
@@ -320,7 +316,7 @@ public:
     single_reads_iterator single_end() const {
         return single_reads_iterator(libraries_.back().single_end(), libraries_.back().single_end());
     }
-    adt::iterator_range<single_reads_iterator> single_reads() {
+    adt::iterator_range<single_reads_iterator> single_reads() const {
         return adt::make_range(single_begin(), single_end());
     }
 

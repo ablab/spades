@@ -19,6 +19,7 @@ import options_storage
 
 BASE_STAGE = "construction"
 READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]
+READS_TYPES_USED_IN_RNA_SEQ = ["paired-end", "single", "trusted-contigs", "untrusted-contigs"]
 
 
 def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home):
@@ -88,19 +89,19 @@ def update_k_mers_in_special_cases(cur_k_mers, RL, log, silent=False):
     if options_storage.auto_K_allowed():
         if RL >= 250:
             if not silent:
-                support.warning("Default k-mer sizes were set to %s because estimated "
-                                "read length (%d) is equal to or greater than 250" % (str(options_storage.K_MERS_250), RL), log)
+                log.info("Default k-mer sizes were set to %s because estimated "
+                         "read length (%d) is equal to or greater than 250" % (str(options_storage.K_MERS_250), RL))
             return options_storage.K_MERS_250
         if RL >= 150:
             if not silent:
-                support.warning("Default k-mer sizes were set to %s because estimated "
-                                "read length (%d) is equal to or greater than 150" % (str(options_storage.K_MERS_150), RL), log)
+                log.info("Default k-mer sizes were set to %s because estimated "
+                         "read length (%d) is equal to or greater than 150" % (str(options_storage.K_MERS_150), RL))
             return options_storage.K_MERS_150
     if RL <= max(cur_k_mers):
         new_k_mers = [k for k in cur_k_mers if k < RL]
         if not silent:
-            support.warning("K-mer sizes were set to %s because estimated "
-                            "read length (%d) is less than %d" % (str(new_k_mers), RL, max(cur_k_mers)), log)
+            log.info("K-mer sizes were set to %s because estimated "
+                     "read length (%d) is less than %d" % (str(new_k_mers), RL, max(cur_k_mers)))
         return new_k_mers
     return cur_k_mers
 
@@ -202,6 +203,7 @@ def prepare_config_scaffold_correction(filename, cfg, log, saves_dir, K):
     #todo
     process_cfg.substitute_params(filename, subst_dict, log)
 
+
 def run_scaffold_correction(configs_dir, execution_home, cfg, log, latest, K):
     data_dir = os.path.join(cfg.output_dir, "SCC", "K%d" % K)
     saves_dir = os.path.join(data_dir, 'saves')
@@ -233,6 +235,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
     if not isinstance(cfg.iterative_K, list):
         cfg.iterative_K = [cfg.iterative_K]
     cfg.iterative_K = sorted(cfg.iterative_K)
+    used_K = []
 
     # checking and removing conflicting K-mer directories
     if options_storage.restart_from:
@@ -250,7 +253,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
             k_to_delete = []
             for id, k in enumerate(needed_K):
                 if len(processed_K) == id:
-                    if processed_K[-1] == original_K[-1]: # the last K in the original run was processed in "last_one" mode
+                    if processed_K[-1] == original_K[-1]:  # the last K in the original run was processed in "last_one" mode
                         k_to_delete = [original_K[-1]]
                     break
                 if processed_K[id] != k:
@@ -273,8 +276,10 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
     K = cfg.iterative_K[0]
     if len(cfg.iterative_K) == 1:
         run_iteration(configs_dir, execution_home, cfg, log, K, None, True)
+        used_K.append(K)
     else:
         run_iteration(configs_dir, execution_home, cfg, log, K, None, False)
+        used_K.append(K)
         if options_storage.stop_after == "k%d" % K:
             finished_on_stop_after = True
         else:
@@ -291,6 +296,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
                                         "Rerunning for the first value of K (%d) with Repeat Resolving" %
                                         (cfg.iterative_K[1], RL, cfg.iterative_K[0]), log)
                     run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], None, True)
+                    used_K.append(cfg.iterative_K[0])
                     K = cfg.iterative_K[0]
             else:
                 rest_of_iterative_K = cfg.iterative_K
@@ -300,6 +306,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
                     count += 1
                     last_one = count == len(cfg.iterative_K) or (rest_of_iterative_K[count] + 1 > RL)
                     run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one)
+                    used_K.append(K)
                     prev_K = K
                     if last_one:
                         break
@@ -334,27 +341,34 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
             result_before_rr_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "before_rr.fasta")
             if not os.path.isfile(result_before_rr_contigs) or not options_storage.continue_mode:
                 shutil.copyfile(os.path.join(latest, "before_rr.fasta"), result_before_rr_contigs)
-        if os.path.isfile(os.path.join(latest, "final_contigs.fasta")):
-            if not os.path.isfile(cfg.result_contigs) or not options_storage.continue_mode:
-                shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
-        if os.path.isfile(os.path.join(latest, "first_pe_contigs.fasta")):
-            result_first_pe_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "first_pe_contigs.fasta")
-            if not os.path.isfile(result_first_pe_contigs) or not options_storage.continue_mode:
-                shutil.copyfile(os.path.join(latest, "first_pe_contigs.fasta"), result_first_pe_contigs)
-        if cfg.rr_enable:
-            if os.path.isfile(os.path.join(latest, "scaffolds.fasta")):
-                if not os.path.isfile(cfg.result_scaffolds) or not options_storage.continue_mode:
-                    shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)
-        if os.path.isfile(os.path.join(latest, "assembly_graph.fastg")):
-            if not os.path.isfile(cfg.result_graph) or not options_storage.continue_mode:
-                shutil.copyfile(os.path.join(latest, "assembly_graph.fastg"), cfg.result_graph)
-        if os.path.isfile(os.path.join(latest, "final_contigs.paths")):
-            if not os.path.isfile(cfg.result_contigs_paths) or not options_storage.continue_mode:
-                shutil.copyfile(os.path.join(latest, "final_contigs.paths"), cfg.result_contigs_paths)
-        if os.path.isfile(os.path.join(latest, "scaffolds.paths")):
-            if not os.path.isfile(cfg.result_scaffolds_paths) or not options_storage.continue_mode:
-                shutil.copyfile(os.path.join(latest, "scaffolds.paths"), cfg.result_scaffolds_paths)
-
+        if options_storage.rna:
+            if os.path.isfile(os.path.join(latest, "transcripts.fasta")):
+                    if not os.path.isfile(cfg.result_transcripts) or not options_storage.continue_mode:
+                        shutil.copyfile(os.path.join(latest, "transcripts.fasta"), cfg.result_transcripts)
+            if os.path.isfile(os.path.join(latest, "transcripts.paths")):
+                if not os.path.isfile(cfg.result_transcripts_paths) or not options_storage.continue_mode:
+                    shutil.copyfile(os.path.join(latest, "transcripts.paths"), cfg.result_transcripts_paths)
+        else:
+            if os.path.isfile(os.path.join(latest, "final_contigs.fasta")):
+                if not os.path.isfile(cfg.result_contigs) or not options_storage.continue_mode:
+                    shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
+            if os.path.isfile(os.path.join(latest, "first_pe_contigs.fasta")):
+                result_first_pe_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "first_pe_contigs.fasta")
+                if not os.path.isfile(result_first_pe_contigs) or not options_storage.continue_mode:
+                    shutil.copyfile(os.path.join(latest, "first_pe_contigs.fasta"), result_first_pe_contigs)
+            if cfg.rr_enable:
+                if os.path.isfile(os.path.join(latest, "scaffolds.fasta")):
+                    if not os.path.isfile(cfg.result_scaffolds) or not options_storage.continue_mode:
+                        shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)
+                if os.path.isfile(os.path.join(latest, "scaffolds.paths")):
+                    if not os.path.isfile(cfg.result_scaffolds_paths) or not options_storage.continue_mode:
+                        shutil.copyfile(os.path.join(latest, "scaffolds.paths"), cfg.result_scaffolds_paths)
+            if os.path.isfile(os.path.join(latest, "assembly_graph.fastg")):
+                if not os.path.isfile(cfg.result_graph) or not options_storage.continue_mode:
+                    shutil.copyfile(os.path.join(latest, "assembly_graph.fastg"), cfg.result_graph)
+            if os.path.isfile(os.path.join(latest, "final_contigs.paths")):
+                if not os.path.isfile(cfg.result_contigs_paths) or not options_storage.continue_mode:
+                    shutil.copyfile(os.path.join(latest, "final_contigs.paths"), cfg.result_contigs_paths)
 
 
     if cfg.developer_mode:
@@ -369,4 +383,4 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
     if os.path.isdir(cfg.tmp_dir):
         shutil.rmtree(cfg.tmp_dir)
 
-    return latest
+    return used_K

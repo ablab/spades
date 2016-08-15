@@ -21,8 +21,10 @@ output_base	      ./data/debruijn/
 tmp_dir	              spades_tmp/
 
 main_iteration  true
+; iterative mode switcher, activates additional contigs usage
+use_additional_contigs false
 additional_contigs	tmp_contigs.fasta
-load_from         latest/saves/ ; tmp or latest 
+load_from         latest/saves/ ; tmp or latest
 
 ; Multithreading options
 temp_bin_reads_dir	.bin_reads/
@@ -43,10 +45,13 @@ scaffold_correction_mode false
 ; enabled (1) or disabled (0) repeat resolution (former "paired_mode")
 rr_enable true
 
+;preserve raw paired index after distance estimation
+preserve_raw_paired_index false
+
 ; two-step pipeline
 two_step_rr false
 ; enables/disables usage of intermediate contigs in two-step pipeline
-use_intermediate_contigs true
+use_intermediate_contigs false
 
 ;use single reads for rr (all | only_single_libs | none )
 single_reads_rr only_single_libs
@@ -63,9 +68,6 @@ output_nonfinal_contigs true
 compute_paths_number false
 
 ; End of developer_mode parameters
-
-; iterative mode switcher, activates additional contigs usage
-use_additional_contigs false
 
 ; use unipaths as additional contigs instead of just graph edges
 use_unipaths false 

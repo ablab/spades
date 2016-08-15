@@ -108,16 +108,25 @@ struct DataSetData {
     double insert_size_mad;
     std::map<int, size_t> insert_size_distribution;
 
-    bool binary_coverted;
+    size_t lib_index;
     bool single_reads_mapped;
-
     uint64_t total_nucls;
+    size_t read_count;
+
     double average_coverage;
     double pi_threshold;
 
-    std::string paired_read_prefix;
-    std::string single_read_prefix;
-    size_t thread_num;
+    struct BinaryReadsInfo {
+        BinaryReadsInfo(): binary_coverted(false), chunk_num(0), buffer_size(0) {}
+
+        bool binary_coverted;
+        std::string bin_reads_info_file;
+        std::string paired_read_prefix;
+        std::string single_read_prefix;
+        size_t chunk_num;
+        size_t buffer_size;
+    } binary_reads_info;
+
 
     DataSetData(): read_length(0), avg_read_length(0.0),
                    mean_insert_size(0.0),
@@ -126,15 +135,18 @@ struct DataSetData {
                    insert_size_right_quantile(0.0),
                    median_insert_size(0.0),
                    insert_size_mad(0.0),
-                   binary_coverted(false),
+                   lib_index(0),
                    single_reads_mapped(false),
                    total_nucls(0),
+                   read_count(0),
                    average_coverage(0.0),
-                   pi_threshold(0.0) {
-    }
+                   pi_threshold(0.0),
+                   binary_reads_info() {}
 };
 
 struct dataset {
+    typedef io::DataSet<DataSetData>::Library Library;
+
     io::DataSet<DataSetData> reads;
 
     size_t max_read_length;
@@ -179,11 +191,18 @@ struct debruijn_config {
 
     bool developer_mode;
 
+    bool preserve_raw_paired_index;
+
     struct simplification {
         struct tip_clipper {
             std::string condition;
             tip_clipper() {}
             tip_clipper(std::string condition_) : condition(condition_) {}
+        };
+
+        struct dead_end_clipper {
+            std::string condition;
+            bool enabled;
         };
 
         struct topology_tip_clipper {
@@ -222,9 +241,9 @@ struct debruijn_config {
         };
 
         struct relative_coverage_ec_remover {
-            size_t max_ec_length_coefficient;
-            double max_coverage_coeff;
-            double coverage_gap;
+            bool enabled;
+            size_t max_ec_length;
+            double rcec_ratio;
         };
 
         struct topology_based_ec_remover {
@@ -302,10 +321,12 @@ struct debruijn_config {
         bool post_simplif_enabled;
         bool topology_simplif_enabled;
         tip_clipper tc;
+        dead_end_clipper dead_end;
         complex_tip_clipper complex_tc;
         topology_tip_clipper ttc;
         bulge_remover br;
         erroneous_connections_remover ec;
+        relative_coverage_ec_remover rcec;
         relative_coverage_comp_remover rcc;
         relative_coverage_edge_disconnector relative_ed;
         topology_based_ec_remover tec;
@@ -380,7 +401,6 @@ struct debruijn_config {
         double small_component_relative_coverage;
         size_t min_component_length;
         size_t min_isolated_length;
-
     };
 
     struct pacbio_processor {
@@ -426,6 +446,8 @@ struct debruijn_config {
         bool write_components_along_genome;
         bool write_components_along_contigs;
         bool save_full_graph;
+        bool save_all;
+        bool save_graph_pack;
         bool write_error_loc;
         bool write_full_graph;
         bool write_full_nc_graph;
