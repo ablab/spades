@@ -39,7 +39,7 @@ enum class pipeline_type : char {
     diploid,
     rna,
     plasmid,
-	large_genome,
+    large_genome,
 
     total
 };

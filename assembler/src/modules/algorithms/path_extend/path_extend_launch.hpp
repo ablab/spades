@@ -627,11 +627,11 @@ inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const config::datase
 
 inline shared_ptr<PairedInfoLibrary> MakeNewLibFromPaths(const config::dataset& dataset_info,
                                                          size_t lib_index,
-                                                         const conj_graph_pack::graph_t& g,
+                                                         const conj_graph_pack& gp,
                                                          const PathStorage<conj_graph_pack::graph_t>& long_reads,
-                                                         const ScaffoldingUniqueEdgeStorage& storage,
-                                                         const conj_graph_pack& gp) {
+                                                         const ScaffoldingUniqueEdgeStorage& storage) {
     const auto& lib = dataset_info.reads[lib_index];
+    const Graph& g = gp.g;
     size_t read_length = lib.data().read_length;
     DEBUG("rl " << read_length);
     size_t is = 10000;
@@ -672,7 +672,7 @@ inline shared_ptr<PairedInfoLibrary> MakeNewLibFromPaths(const config::dataset& 
     debruijn_graph::graphio::ConjugateDataPrinter<Graph> tmpdt(g);
 //    tmpdt.SavePaired<decltype(gp.scaffolding_single_long_reads[index])>("oppa.prd",   gp.scaffolding_single_long_reads[index]);
     DEBUG("ind size: " <<   gp.scaffolding_single_long_reads[lib_index].size());
-    return make_shared< PairedInfoLibraryWithIndex<decltype(gp.scaffolding_single_long_reads[lib_index])> >(cfg::get().K, g, read_length,
+    return make_shared< PairedInfoLibraryWithIndex<decltype(gp.scaffolding_single_long_reads[lib_index])> >(g.k(), g, read_length,
                                                                                     is, is_min > 0.0 ? size_t(is_min) : 0, is_max > 0.0 ? size_t(is_max) : 0,
                                                                                     size_t(var),
                                                                                     gp.scaffolding_single_long_reads[lib_index], is_mp,
@@ -690,7 +690,7 @@ inline shared_ptr<PathExtender> MakePacBioScaffolding2015Extender(const config::
 
     shared_ptr<PairedInfoLibrary> lib;
     INFO("for lib " << lib_index);
-    lib = MakeNewLibFromPaths(dataset_info, lib_index, gp.g, gp.single_long_reads[lib_index], storage, gp);
+    lib = MakeNewLibFromPaths(dataset_info, lib_index, gp, gp.single_long_reads[lib_index], storage);
     INFO(lib->GetIndexSize() << " index size from paths" );
 
     shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, lib);
@@ -1170,9 +1170,7 @@ inline ScaffoldingUniqueEdgeStorage FillUniqueEdgeStorage(const conj_graph_pack&
         INFO("Autodetecting unique edge set parameters...");
         bool pe_found = false;
         //TODO constants
-        size_t min_MP_IS = 500;
-        if (HasOnlyMPLibs(dataset_info))
-            min_MP_IS = 10000;
+        size_t min_MP_IS = 10000;
         for (size_t i = 0; i < dataset_info.reads.lib_count(); ++i) {
             if (IsForPEExtender(dataset_info.reads[i])) {
                 pe_found = true;
@@ -1216,10 +1214,14 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     auto min_unique_length = pset.scaffolding2015.min_unique_length;
     auto unique_variaton = pset.scaffolding2015.unique_coverage_variation;
     bool mp_exist = MPLibsExist(dataset_info);
-    bool detect_repeats_online = !((IsScaffolder2015Enabled(sc_mode) && mp_exist) || params.mode == config::pipeline_type::meta);
+    bool use_scaffolder_2015_pipeline = (sc_mode == sm_old_pe_2015 && mp_exist) ||
+        sc_mode == sm_2015 ||
+        sc_mode == sm_combined;
+
+    bool detect_repeats_online = !(use_scaffolder_2015_pipeline || params.mode == config::pipeline_type::meta);
 
     //Fill the storage to enable unique edge check
-    if (IsScaffolder2015Enabled(sc_mode)) {
+    if (use_scaffolder_2015_pipeline) {
         main_unique_storage = FillUniqueEdgeStorage(gp, dataset_info,
                                                     min_unique_length,
                                                     unique_variaton,
@@ -1255,7 +1257,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     //Parameters are subject to change
     size_t max_is_right_quantile = max(FindOverlapLenForStage(exspander_stage, dataset_info), gp.g.k() + 100);
     size_t min_edge_len = 100;
-    size_t max_edge_diff_pe = /*cfg::get().mode == config::pipeline_type::rna ? 0 :*/ max_is_right_quantile;
+    size_t max_edge_diff_pe = /*params.mode == config::pipeline_type::rna ? 0 :*/ max_is_right_quantile;
 
     shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
                                                                           main_unique_storage,
@@ -1269,8 +1271,8 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     DebugOutputPaths(gp, params, seeds, "init_paths");
     seeds.SortByLength();
     INFO("Growing paths using paired-end and long single reads");
-    INFO("Multi path extend is " << (cfg::get().pe_params.param_set.multi_path_extend ? "on" : "off"))
-    INFO("Overlap removal is " << (cfg::get().pe_params.param_set.remove_overlaps ? "on" : "off"))
+    INFO("Multi path extend is " << (params.pset.multi_path_extend ? "on" : "off"))
+    INFO("Overlap removal is " << (params.pset.remove_overlaps ? "on" : "off"))
     auto paths = resolver.extendSeeds(seeds, *mainPE);
     paths.SortByLength();
     DebugOutputPaths(gp, params, paths, "pe_before_overlap");
@@ -1292,7 +1294,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
 
     DebugOutputPaths(gp, params, paths, "pe_paths");
     //We do not run overlap removal in 2015 mode
-    if (!IsScaffolder2015Enabled(sc_mode)) {
+    if (use_scaffolder_2015_pipeline) {
         FinalizePaths(params, paths, gp.g, cover_map, min_edge_len, max_edge_diff_pe);
         DebugOutputPaths(gp, params, paths, "pe_finalized1");
     }
@@ -1325,7 +1327,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     size_t max_resolvable_len = max_is_right_quantile;
     PathContainer mp_paths(clone_paths);
 
-    if (IsScaffolder2015Enabled(sc_mode)) {
+    if (use_scaffolder_2015_pipeline) {
         //TODO: constants
         int length_step = 500;
         vector<ScaffoldingUniqueEdgeStorage> unique_storages(min_unique_length / length_step + 2);
@@ -1388,7 +1390,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
 
 //pe again
     PathContainer last_paths;
-    if (!IsScaffolder2015Enabled(sc_mode)) {
+    if (!use_scaffolder_2015_pipeline) {
         INFO("SUBSTAGE = polishing paths")
         exspander_stage = PathExtendStage::FinalizingPEStage;
         all_libs.clear();

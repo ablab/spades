@@ -78,12 +78,9 @@ ExtensionChooser::EdgeContainer ExtensionChooser2015::Filter(const Bidirectional
 
     }
     if (result.size() > 0) {
+//At least 10*"N" when scaffolding
         if (result[0].d_ < 10 + int(g_.k())) {
-//            if (g_.EdgeEnd(path.Back()) != g_.EdgeStart(result[0].e_)) {
                 result[0].d_ = 10 + int(g_.k());
-//            } else {
-//                result[0].d_ = 0;
-//            }
         }
     }
     return result;
