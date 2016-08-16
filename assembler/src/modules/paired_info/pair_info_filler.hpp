@@ -29,32 +29,32 @@ public:
               buffer_pi_(graph) {
     }
 
-    void StartProcessLibrary(size_t threads_count) override {
+    void StartProcessLibrary(size_t) override {
         DEBUG("Start processing: start");
         buffer_pi_.clear();
         DEBUG("Start processing: end");
     }
 
-    void ProcessPairedRead(size_t thread_index,
+    void StopProcessLibrary() override {
+        paired_index_.Merge(buffer_pi_);
+        buffer_pi_.clear();
+    }
+    
+    void ProcessPairedRead(size_t,
                            const io::PairedRead& r,
                            const MappingPath<EdgeId>& read1,
                            const MappingPath<EdgeId>& read2) override {
         ProcessPairedRead(read1, read2, r.distance());
     }
 
-    void ProcessPairedRead(size_t thread_index,
+    void ProcessPairedRead(size_t,
                            const io::PairedReadSeq& r,
                            const MappingPath<EdgeId>& read1,
                            const MappingPath<EdgeId>& read2) override {
         ProcessPairedRead(read1, read2, r.distance());
     }
 
-    void MergeBuffer(size_t thread_index) override {
-        if (buffer_pi_.size()) {
-            paired_index_.Merge(buffer_pi_);
-            buffer_pi_.clear();
-        }
-    }
+    virtual ~LatePairedIndexFiller() {}
 
 private:
     void ProcessPairedRead(const MappingPath<EdgeId>& path1,

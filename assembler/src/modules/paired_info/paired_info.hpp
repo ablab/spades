@@ -10,7 +10,6 @@
 #include "utils/adt/iterator_range.hpp"
 #include <boost/iterator/iterator_facade.hpp>
 #include <btree/safe_btree_map.h>
-#include <sparsehash/sparse_hash_map>
 #include <cuckoo/cuckoohash_map.hh>
 
 #include <type_traits>
@@ -791,9 +790,10 @@ template<typename Graph>
 using PairedInfoIndexT = PairedIndex<Graph, PointTraits, safe_btree_map>;
 
 template<typename K, typename V>
-using sparse_hash_map = NoLockingAdapter<google::sparse_hash_map<K, V>>; //Two-parameters wrapper
+using btree_map = NoLockingAdapter<btree::btree_map<K, V>>; //Two-parameters wrapper
+
 template<typename Graph>
-using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawPointTraits, sparse_hash_map>;
+using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawPointTraits, btree_map>;
 
 /**
  * @brief A collection of paired indexes which can be manipulated as one.
@@ -850,7 +850,7 @@ template<class Graph>
 using PairedInfoBuffersT = PairedIndices<PairedInfoBuffer<Graph>>;
 
 template<class Graph>
-using ConcurrentPairedInfoBuffer = ConcurrentPairedBuffer<Graph, RawPointTraits, unordered_map>;
+using ConcurrentPairedInfoBuffer = ConcurrentPairedBuffer<Graph, RawPointTraits, btree_map>;
 
 }
 
