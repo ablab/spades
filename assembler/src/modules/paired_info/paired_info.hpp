@@ -37,80 +37,6 @@ namespace de {
  * @param C map-like container type (parameterized by key and value type)
  */
 
-template<class T>
-class UpsertWrapper : public T {
-    using typename T::mapped_type;
-    using typename T::key_type;
-    using typename T::value_type;
-    typedef std::function<void(mapped_type&)> updater_type;
-
-  public:
-    template <typename Updater, typename K, typename... Args>
-    typename std::enable_if<
-      std::is_convertible<Updater, updater_type>::value,
-      void>::type
-    upsert(K&& key, Updater fn, Args&&... val) {
-        auto res = this->insert(std::make_pair(std::forward<K>(key), std::forward<Args>(val)...));
-        if (!res.second)
-            fn(this->operator[](res.first->first));
-    }
-
-
-    template <typename Updater>
-    typename std::enable_if<
-        std::is_convertible<Updater, updater_type>::value,
-        void>::type
-    update_fn(const key_type& key, Updater fn) {
-        fn(this->operator[](key));
-    }
-    
-    bool contains(const key_type &key) const {
-        return this->find(key) != this->end();
-    }
-};
-
-template<class T>
-class STLInsertWrapper : public T {
-    using typename T::mapped_type;
-    using typename T::key_type;
-    using typename T::value_type;
-
-  public:
-    void insert(const value_type &kv) {
-        T::insert(kv.first, kv.second);
-    }
-};
-
-template<class T>
-class NoLockingAdapter : public T {
-  public:
-    class locked_table {
-      public:
-        using iterator = typename T::iterator;
-        using const_iterator = typename T::const_iterator;
-
-        locked_table(T& table)
-                : table_(table) {}
-
-        iterator begin() { return table_.begin();  }
-        const_iterator begin() const { return table_.begin(); }
-        const_iterator cbegin() const { return table_.begin(); }
-
-        iterator end() { return table_.end(); }
-        const_iterator end() const { return table_.end(); }
-        const_iterator cend() const { return table_.end(); }
-
-      private:
-        T& table_;
-    };
-        
-    // Nothing to lock here
-    locked_table lock_table() {
-        return locked_table(*this);
-    }
-};
-    
-
 template<class Derived, class G, class Traits>
 class PairedBufferBase {
   protected:
@@ -829,14 +755,43 @@ public:
     InnerMap empty_map_; //null object
 };
 
+template<class T>
+class NoLockingAdapter : public T {
+  public:
+    class locked_table {
+      public:
+        using iterator = typename T::iterator;
+        using const_iterator = typename T::const_iterator;
+
+        locked_table(T& table)
+                : table_(table) {}
+
+        iterator begin() { return table_.begin();  }
+        const_iterator begin() const { return table_.begin(); }
+        const_iterator cbegin() const { return table_.begin(); }
+
+        iterator end() { return table_.end(); }
+        const_iterator end() const { return table_.end(); }
+        const_iterator cend() const { return table_.end(); }
+
+      private:
+        T& table_;
+    };
+        
+    // Nothing to lock here
+    locked_table lock_table() {
+        return locked_table(*this);
+    }
+};
+
 //Aliases for common graphs
 template<typename K, typename V>
-using safe_btree_map = NoLockingAdapter<UpsertWrapper<btree::safe_btree_map<K, V>>>; //Two-parameters wrapper
+using safe_btree_map = NoLockingAdapter<btree::safe_btree_map<K, V>>; //Two-parameters wrapper
 template<typename Graph>
 using PairedInfoIndexT = PairedIndex<Graph, PointTraits, safe_btree_map>;
 
 template<typename K, typename V>
-using sparse_hash_map = NoLockingAdapter<UpsertWrapper<google::sparse_hash_map<K, V>>>; //Two-parameters wrapper
+using sparse_hash_map = NoLockingAdapter<google::sparse_hash_map<K, V>>; //Two-parameters wrapper
 template<typename Graph>
 using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawPointTraits, sparse_hash_map>;
 
