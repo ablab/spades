@@ -52,11 +52,11 @@ def gen_samples(args):
 
                 temp_1 = sample_dir + ".tmp.r1.fastq"
                 temp_2 = sample_dir + ".tmp.r2.fastq"
-                subprocess.check_call(["wgsim", "-N", str(reads), "-r", "0", "-1", str(read_len), "-2", str(read_len), "-d", "300", "-s", "10", "-e", "0.01", "-S", str(i), ref_path, temp_1, temp_2], stdout=subprocess.DEVNULL)
+                subprocess.check_call(["wgsim", "-N", str(reads), "-r", "0", "-1", str(read_len), "-2", str(read_len), "-d", "300", "-s", "10", "-e", "0", "-S", str(i), ref_path, temp_1, temp_2], stdout=subprocess.DEVNULL)
 
                 print("Merging temporary files")
                 for temp, out in [(temp_1, os.path.join(sample_dir, "r1.fastq")), (temp_2, os.path.join(sample_dir, "r2.fastq"))]:
-                    with open(temp) as input, open(out, "w") as output:
+                    with open(temp) as input, open(out, "a") as output:
                         for line in input:
                             if line.startswith("IIIII"):
                                 output.write(adj_qual)

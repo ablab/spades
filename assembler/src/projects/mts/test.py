@@ -108,8 +108,14 @@ def run_mts(args, workdir):
     if args.saves:
         log.log("Copying saves from" + args.saves)
         for saves_dir in ["assembly", "reassembly"]:
-            shutil.copytree(os.path.join(args.saves, saves_dir), os.path.join(args.dir, saves_dir))
-        mts_args.append("--reuse-assemblies")
+            full_dir = os.path.join(args.saves, saves_dir)
+            if os.path.isdir(full_path):
+                #shutil.copytree(os.path.join(args.saves, saves_dir), os.path.join(args.dir, saves_dir))
+                os.symlink(full_path, os.path.join(args.dir, saves_dir))
+            else:
+                log.warn("No " + assembly + " dir provided; skipping")
+        #Don't touch symlinked assemblies because it may corrupt other runs with the same dependencies
+        #mts_args.append("--reuse-assemblies")
     os.chdir(os.path.join(workdir, "src/projects/mts"))
     return subprocess.call(mts_args)
 
