@@ -31,7 +31,6 @@ public:
 
     void StartProcessLibrary(size_t threads_count) override {
         DEBUG("Start processing: start");
-        paired_index_.Init();
         buffer_pi_.clear();
         DEBUG("Start processing: end");
     }
@@ -51,8 +50,10 @@ public:
     }
 
     void MergeBuffer(size_t thread_index) override {
-        paired_index_.Merge(buffer_pi_);
-        buffer_pi_.clear();
+        if (buffer_pi_.size()) {
+            paired_index_.Merge(buffer_pi_);
+            buffer_pi_.clear();
+        }
     }
 
 private:

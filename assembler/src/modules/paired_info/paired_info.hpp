@@ -594,6 +594,8 @@ public:
      */
     template<class Buffer>
     void Merge(Buffer& index_to_add) {
+        if (index_to_add.size() == 0)
+            return;
         auto& base_index = this->storage_;
         auto locked_table = index_to_add.lock_table();
         for (auto& kvpair : locked_table) {
