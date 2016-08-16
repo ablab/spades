@@ -521,6 +521,7 @@ public:
     void Merge(Buffer& index_to_add) {
         if (index_to_add.size() == 0)
             return;
+
         auto& base_index = this->storage_;
         auto locked_table = index_to_add.lock_table();
         for (auto& kvpair : locked_table) {
@@ -530,6 +531,18 @@ public:
             MergeInnerMaps(map_to_add, map_already_exists);
         }
         VERIFY(this->size() >= index_to_add.size());
+    }
+
+    template<class Buffer>
+    typename std::enable_if<std::is_convertible<typename Buffer::InnerMap, InnerMap>::value,
+        void>::type MoveAssign(Buffer& from) {
+        auto& base_index = this->storage_;
+        base_index.clear();
+        auto locked_table = from.lock_table();
+        for (auto& kvpair : locked_table) {
+            base_index[std::move(kvpair.first)] = std::move(kvpair.second);
+        }
+        this->size_ = from.size();
     }
 
 private:

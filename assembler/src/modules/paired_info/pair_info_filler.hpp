@@ -36,7 +36,8 @@ public:
     }
 
     void StopProcessLibrary() override {
-        paired_index_.Merge(buffer_pi_);
+        // paired_index_.Merge(buffer_pi_);
+        paired_index_.MoveAssign(buffer_pi_);
         buffer_pi_.clear();
     }
     
