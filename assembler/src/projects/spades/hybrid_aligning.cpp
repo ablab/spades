@@ -25,20 +25,20 @@ class GapTrackingListener : public SequenceMapperListener {
     const GapStorage empty_storage_;
     vector<GapStorage> buffer_storages_;
 
-    Sequence Subseq(const io::SingleRead& read, size_t start, size_t end) const {
+    boost::optional<Sequence> Subseq(const io::SingleRead& read, size_t start, size_t end) const {
         DEBUG("Requesting subseq of read length " << read.size() << " from " << start << " to " << end);
         auto subread = read.Substr(start, end);
         if (subread.IsValid()) {
             DEBUG("Gap seq valid. Length " << subread.size());
-            return subread.sequence();
+            return boost::make_optional(subread.sequence());
         } else {
             DEBUG("Gap seq invalid. Length " << subread.size());
-            return Sequence();
+            return boost::none;
         }
     }
 
-    Sequence Subseq(const io::SingleReadSeq& read, size_t start, size_t end) const {
-        return read.sequence().Subseq(start, end);
+    boost::optional<Sequence> Subseq(const io::SingleReadSeq& read, size_t start, size_t end) const {
+        return boost::make_optional(read.sequence().Subseq(start, end));
     }
 
     template<class ReadT>
@@ -49,8 +49,7 @@ class GapTrackingListener : public SequenceMapperListener {
         TerminalVertexCondition<Graph> tip_condition(g_);
         DEBUG("Inferring gaps")
         VERIFY(!mapping.empty());
-        vector<GapDescription>
-                answer;
+        vector<GapDescription> answer;
         for (size_t i = 0; i < mapping.size() - 1; ++i) {
             EdgeId e1 = mapping.edge_at(i);
             EdgeId e2 = mapping.edge_at(i + 1);
@@ -62,10 +61,16 @@ class GapTrackingListener : public SequenceMapperListener {
 
                 MappingRange mr1 = mapping.mapping_at(i);
                 MappingRange mr2 = mapping.mapping_at(i + 1);
-                auto gap_seq = Subseq(read, mr1.initial_range.end_pos, mr2.initial_range.start_pos);
-                if (gap_seq.size() > 0) {
+                size_t seq_start = mr1.initial_range.end_pos + g_.k();
+                size_t seq_end = mr2.initial_range.start_pos;
+                if (seq_start > seq_end) {
+                    WARN("Overlapping flanks not supported yet");
+                    continue;
+                }
+                auto gap_seq = Subseq(read, seq_start, seq_end);
+                if (gap_seq) {
                     answer.push_back(GapDescription(e1, e2,
-                                                    gap_seq,
+                                                    *gap_seq,
                                                     mr1.mapped_range.end_pos,
                                                     mr2.mapped_range.start_pos));
                 }

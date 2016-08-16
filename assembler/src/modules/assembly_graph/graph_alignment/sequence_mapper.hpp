@@ -305,6 +305,8 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
 
         range_mappings.push_back(MappingRange(Range(kmer_pos, kmer_pos + 1),
                                               Range(position.second, position.second + 1)));
+        //auto edge_kmer = Kmer(k_, g_.EdgeNucls(position.first), position.second);
+        //VERIFY_MSG(kmer == edge_kmer,  << kmer << " not equal to " << edge_kmer);
     } else {
         range_mappings.back().initial_range.end_pos = kmer_pos + 1;
         range_mappings.back().mapped_range.end_pos = position.second + 1;

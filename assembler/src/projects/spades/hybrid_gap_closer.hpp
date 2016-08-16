@@ -33,7 +33,6 @@ inline bool IsCanonical(const Graph& g, EdgeId a, EdgeId b) {
     return IsCanonical(g, EdgePair(a,b));
 }
 
-
 inline bool IsCanonical(const Graph& g, EdgeId e) {
     return e <= g.conjugate(e);
 }
@@ -217,9 +216,8 @@ public:
             sort(gaps.begin(), gaps.end());
         }
 
-        FillIndex();
-
         RemoveTransitive(min_weight);
+        FillIndex();
     }
 };
 
@@ -391,9 +389,10 @@ class MultiGapJoiner {
         return (left_split + right_split) / 2;
     }
 
-    void Update(EdgeId& e, size_t& gap_pos, EdgeId split_orig, EdgePair split_res, bool gap_start) const {
-        if (e == g_.conjugate(split_orig)) {
-            split_orig = g_.conjugate(split_orig);
+    bool Update(EdgeId& e, size_t& gap_pos, EdgePair split_orig_ep, EdgePair split_res, bool gap_start) const {
+        EdgeId split_orig = split_orig_ep.first;
+        if (e == split_orig_ep.second) {
+            split_orig = split_orig_ep.second;
             split_res = Conjugate(g_, split_res);
         }
         if (e == split_orig) {
@@ -403,14 +402,15 @@ class MultiGapJoiner {
             } else {
                 e = split_res.first;
             }
+            return true;
         }
+        return false;
     }
 
-    GapDescription UpdateGap(const GapDescription& gap, EdgeId split_orig, EdgePair split_res) const {
-        GapDescription answer(gap);
-        Update(answer.start, answer.edge_gap_start_position, split_orig, split_res, true);
-        Update(answer.end, answer.edge_gap_end_position, split_orig, split_res, false);
-        return answer;
+    void UpdateGap(GapDescription& gap, EdgePair split_orig, EdgePair split_res) const {
+        bool u1 = Update(gap.start, gap.edge_gap_start_position, split_orig, split_res, true);
+        bool u2 = Update(gap.end, gap.edge_gap_end_position, split_orig, split_res, false);
+        VERIFY(u1 != u2);
     }
 
     bool CheckInsert(EdgeId e, set<EdgeId>& used_edges) const {
@@ -449,7 +449,7 @@ class MultiGapJoiner {
         return true;
     }
 
-    vector<GapDescription> ArtificialSplitAndGapUpdate(const vector<GapDescription>& canonical_gaps) const {
+    vector<GapDescription> ArtificialSplitAndGapUpdate(vector<GapDescription> canonical_gaps) const {
         SplitInfo left_split_pos;
         SplitInfo right_split_pos;
         for (size_t i = 0; i < canonical_gaps.size(); ++i) {
@@ -459,23 +459,27 @@ class MultiGapJoiner {
             Add(i, gap.end, gap.edge_gap_end_position, left_split_pos, right_split_pos);
         }
 
-        vector<GapDescription> updated_gaps;
-        updated_gaps.reserve(canonical_gaps.size());
-        set<size_t> processed_idx;
+        set<size_t> to_ignore;
 
         for (EdgeId e : EdgesNeedingSplit(left_split_pos, right_split_pos)) {
-            processed_idx.insert(left_split_pos[e].first);
-            processed_idx.insert(right_split_pos[e].first);
             size_t artificial_split_pos = ArtificialSplitPos(e, left_split_pos[e].second, right_split_pos[e].second);
-            if (artificial_split_pos != -1ul) {
+            if (artificial_split_pos == -1ul) {
+                to_ignore.insert(left_split_pos[e].first);
+                to_ignore.insert(right_split_pos[e].first);
+            } else {
+                DEBUG("Splitting edge " << g_.str(e) << " at pos " << artificial_split_pos);
+                DEBUG("Will update gap " << canonical_gaps[left_split_pos[e].first].str(g_) << " and " << canonical_gaps[right_split_pos[e].first].str(g_));
+                EdgePair ep(e, g_.conjugate(e));
                 auto split_res = g_.SplitEdge(e, artificial_split_pos);
-                updated_gaps.push_back(UpdateGap(canonical_gaps[left_split_pos[e].first], e, split_res));
-                updated_gaps.push_back(UpdateGap(canonical_gaps[right_split_pos[e].first], e, split_res));
+                UpdateGap(canonical_gaps[left_split_pos[e].first], ep, split_res);
+                UpdateGap(canonical_gaps[right_split_pos[e].first], ep, split_res);
             }
         }
 
+        vector<GapDescription> updated_gaps;
+        updated_gaps.reserve(canonical_gaps.size());
         for (size_t i = 0; i < canonical_gaps.size(); ++i) {
-            if (!processed_idx.count(i)) {
+            if (!to_ignore.count(i)) {
                 updated_gaps.push_back(canonical_gaps[i]);
             }
         }
@@ -485,7 +489,7 @@ class MultiGapJoiner {
     };
 
 public:
-    MultiGapJoiner(Graph& g) : g_(g), inner_joiner_(g) {
+    MultiGapJoiner(Graph& g) : g_(g), inner_joiner_(g, true) {
     }
 
     //Resulting graph should be condensed
@@ -532,14 +536,14 @@ private:
                                       size_t edge_gap_start_position,
                                       size_t edge_gap_end_position,
                                       const vector<string>& gap_variants) const {
-        if (gap_variants.size() > 1) {
+        //if (gap_variants.size() > 1) {
             DEBUG(gap_variants.size() << " gap closing variants, lengths: " << PrintLengths(gap_variants));
-        }
+        //}
         string s = consensus_(gap_variants);
         if (!s.empty()) {
             DEBUG("consenus for " << g_.int_id(start)
                                   << " and " << g_.int_id(end)
-                                  << "found: " << s);
+                                  << " found: " << s);
             return GapDescription(start, end,
                                   Sequence(s),
                                   edge_gap_start_position, edge_gap_end_position);
@@ -589,7 +593,7 @@ private:
 
             string s = g_.EdgeNucls(gap.start).Subseq(start_min, gap.edge_gap_start_position).str();
             s += gap.gap_seq.str();
-            s += g_.EdgeNucls(gap.end).Subseq(gap.edge_gap_end_position, end_max).str();
+            s += g_.EdgeNucls(gap.end).Subseq(gap.edge_gap_end_position + g_.k(), end_max + g_.k()).str();
             answer.push_back(GapDescription(gap.start, gap.end, Sequence(s), start_min, end_max));
         }
         return answer;
@@ -603,6 +607,9 @@ private:
 
         auto padded_gaps = PadGaps(start_it, end_it);
         //all start and end positions are equal here
+        //FIXME check that it is desired behavior
+        if (padded_gaps.size() < min_weight_)
+            return INVALID_GAP;
 
         vector<string> gap_variants;
         std::transform(padded_gaps.begin(), padded_gaps.end(), std::back_inserter(gap_variants), 
@@ -616,10 +623,11 @@ private:
         //    VERIFY(it->edge_gap_start_position == start_it->edge_gap_start_position);
         //    VERIFY(it->edge_gap_end_position == start_it->edge_gap_end_position);
         //}
+        auto padded_gap = padded_gaps.front();
 
-        return ConstructConsensus(start_it->start, start_it->end,
-                                  start_it->edge_gap_start_position,
-                                  start_it->edge_gap_end_position,
+        return ConstructConsensus(padded_gap.start, padded_gap.end,
+                                  padded_gap.edge_gap_start_position,
+                                  padded_gap.edge_gap_end_position,
                                   gap_variants);
     }
 

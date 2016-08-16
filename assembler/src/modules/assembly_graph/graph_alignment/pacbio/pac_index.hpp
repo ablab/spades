@@ -38,18 +38,6 @@ struct OneReadMapping {
 
 };
 
-inline GapDescription CreateGapDescription(const KmerCluster<debruijn_graph::Graph>& a,
-                                    const KmerCluster<debruijn_graph::Graph>& b,
-                                    const Sequence& read,
-                                    int pacbio_k) {
-    return GapDescription(a.edgeId,
-                          b.edgeId,
-                          read.Subseq(a.sorted_positions[a.last_trustable_index].read_position,
-                                      b.sorted_positions[b.first_trustable_index].read_position + pacbio_k),
-                          a.sorted_positions[a.last_trustable_index].edge_position,
-                          b.sorted_positions[b.first_trustable_index].edge_position + pacbio_k);
-}
-
 template<class Graph>
 class PacBioMappingIndex {
 public:
@@ -498,6 +486,24 @@ public:
         return colors;
     }
 
+
+    GapDescription CreateGapDescription(const KmerCluster<debruijn_graph::Graph>& a,
+                                        const KmerCluster<debruijn_graph::Graph>& b,
+                                        const Sequence& read) const {
+        size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + debruijn_k + 1;
+        size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
+        if (seq_start > seq_end) {
+            WARN("Overlapping flanks not supported yet");
+            return GapDescription();
+        }
+        return GapDescription(a.edgeId,
+                              b.edgeId,
+                              read.Subseq(seq_start, seq_end),
+                              a.sorted_positions[a.last_trustable_index].edge_position + 1,
+                              b.sorted_positions[b.first_trustable_index].edge_position);
+    }
+
+
     OneReadMapping GetReadAlignment(Sequence &s) const {
         ClustersSet mapping_descr = GetOrderClusters(s);
         DEBUG("clusters got");
@@ -584,11 +590,12 @@ public:
                         && before_gap != g_.conjugate(after_gap)) {
                     if (i != j && TopologyGap(before_gap, after_gap, true)) {
                         if (start_clusters[j]->CanFollow(*end_clusters[i])) {
-                            illumina_gaps.push_back(
-                                    CreateGapDescription(*end_clusters[i],
-                                                         *start_clusters[j],
-                                                         s,
-                                                         (int) pacbio_k));
+                            auto gap = CreateGapDescription(*end_clusters[i],
+                                                            *start_clusters[j],
+                                                            s);
+                            if (gap != GapDescription()) {
+                                illumina_gaps.push_back(gap);
+                            }
                         }
 
                     }
