@@ -50,7 +50,7 @@ class PairedBufferBase {
   public:
     PairedBufferBase(const Graph &g)
             : graph_(g) {}
-    
+
     //---------------- Data inserting methods ----------------
     /**
      * @brief Adds a point between two edges to the index,
@@ -115,7 +115,7 @@ class PairedBufferBase {
     size_t size_;
     const Graph& graph_;
 };
-    
+
 
 template<typename G, typename Traits, template<typename, typename> class Container>
 class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
@@ -124,11 +124,11 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
     typedef PairedBufferBase<self, G, Traits> base;
 
     friend class PairedBufferBase<self, G, Traits>;
-    
+
   protected:
     using typename base::InnerPoint;
     typedef omnigraph::de::Histogram<InnerPoint> InnerHistogram;
-    
+
   public:
     using typename base::Graph;
     using typename base::EdgeId;
@@ -141,7 +141,7 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
   public:
     PairedBuffer(const Graph &g)
             : base(g), size_(0) {}
-    
+
 
     //---------------- Miscellaneous ----------------
 
@@ -166,7 +166,7 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
     void InsertOne(EdgeId e1, EdgeId e2, InnerPoint p) {
         size_ += storage_[e1][e2].merge_point(p);
     }
-    
+
   protected:
     size_t size_;
     StorageMap storage_;
@@ -180,11 +180,11 @@ class ConcurrentPairedBuffer : public PairedBufferBase<ConcurrentPairedBuffer<G,
     typedef PairedBufferBase<self, G, Traits> base;
 
     friend class PairedBufferBase<self, G, Traits>;
-    
+
   protected:
     using typename base::InnerPoint;
     typedef omnigraph::de::Histogram<InnerPoint> InnerHistogram;
-    
+
   public:
     using typename base::Graph;
     using typename base::EdgeId;
@@ -197,7 +197,7 @@ class ConcurrentPairedBuffer : public PairedBufferBase<ConcurrentPairedBuffer<G,
   public:
     ConcurrentPairedBuffer(const Graph &g)
             : base(g), size_(0) {}
-    
+
 
     //---------------- Miscellaneous ----------------
 
@@ -233,7 +233,7 @@ class ConcurrentPairedBuffer : public PairedBufferBase<ConcurrentPairedBuffer<G,
                                size_ += added;
                            });
     }
-    
+
   protected:
     size_t size_;
     StorageMap storage_;
@@ -248,7 +248,7 @@ class PairedIndex : public PairedBuffer<G, Traits, Container> {
     using typename base::InnerPoint;
 
     using typename base::EdgePair;
-    
+
 public:
     using typename base::Graph;
     using typename base::EdgeId;
@@ -540,7 +540,7 @@ public:
         base_index.clear();
         auto locked_table = from.lock_table();
         for (auto& kvpair : locked_table) {
-            base_index[std::move(kvpair.first)] = std::move(kvpair.second);
+            std::swap(base_index[kvpair.first], kvpair.second);
         }
         this->size_ = from.size();
     }
@@ -549,8 +549,7 @@ private:
     template<class OtherMap>
     void MergeInnerMaps(OtherMap& map_to_add,
                         InnerMap& map) {
-        auto locked_table = map_to_add.lock_table();
-        for (auto& to_add : locked_table) {
+        for (auto& to_add : map_to_add) {
             InnerHistogram& hist_exists = map[to_add.first];
             this->size_ += hist_exists.merge(to_add.second);
         }
@@ -786,10 +785,12 @@ class NoLockingAdapter : public T {
         const_iterator end() const { return table_.end(); }
         const_iterator cend() const { return table_.end(); }
 
+        size_t size() const { return table_.size(); }
+
       private:
         T& table_;
     };
-        
+
     // Nothing to lock here
     locked_table lock_table() {
         return locked_table(*this);

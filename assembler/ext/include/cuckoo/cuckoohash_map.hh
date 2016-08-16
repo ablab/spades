@@ -1798,6 +1798,7 @@ public:
         // A boolean shared to all iterators, indicating whether the
         // locked_table has ownership of the hashtable or not.
         std::shared_ptr<bool> has_table_lock_;
+        size_t size_;
 
         // The constructor locks the entire table, retrying until
         // snapshot_and_lock_all succeeds. We keep this constructor private (but
@@ -1807,7 +1808,9 @@ public:
                      SLOT_PER_BUCKET>& hm)
             : unlocker_(std::move(hm.snapshot_and_lock_all())),
               buckets_(hm.buckets_),
-              has_table_lock_(new bool(true)) {}
+              has_table_lock_(new bool(true)) {
+            size_ = hm.size();
+        }
 
     public:
         locked_table(locked_table&& lt)
@@ -1823,6 +1826,10 @@ public:
             return *this;
         }
 
+        size_t size() const {
+            return size_;
+        }
+        
         //! Returns true if the locked table still has ownership of the
         //! hashtable, false otherwise.
         bool has_table_lock() const noexcept {
