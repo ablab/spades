@@ -29,7 +29,7 @@ class LoopTraverser {
     size_t long_edge_limit_;
     size_t component_size_limit_;
     size_t shortest_path_limit_;
-    static const size_t MAX_EDGE_LENGTH = 3000;
+    static const size_t DIJKSTRA_LIMIT = 3000;
 private:
     EdgeId FindStart(const set<VertexId>& component_set) const{
         EdgeId result;
@@ -154,7 +154,8 @@ private:
             if (firstVertex == lastVertex) {
                 nLen = 0;
             } else {
-                DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, shortest_path_limit_, MAX_EDGE_LENGTH));
+                DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, shortest_path_limit_,
+                                                                                                             DIJKSTRA_LIMIT));
                 dijkstra.Run(lastVertex);
                 vector<EdgeId> shortest_path = dijkstra.GetShortestPathTo(g_.EdgeStart(endPath->Front()));
 
@@ -188,7 +189,7 @@ private:
 
     bool ContainsLongEdges(const GraphComponent<Graph>& component) const {
         for(auto e : component.edges()) {
-            if(g_.length(e) > MAX_EDGE_LENGTH) {
+            if(g_.length(e) > long_edge_limit_) {
                 return true;
             }
         }
@@ -203,7 +204,7 @@ public:
     size_t TraverseAllLoops() {
         DEBUG("TraverseAllLoops");
         size_t traversed = 0;
-        shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g_, MAX_EDGE_LENGTH);
+        shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g_, long_edge_limit_);
         while (splitter->HasNext()) {
             GraphComponent<Graph> component = splitter->Next();
             if (component.v_size() > component_size_limit_)

@@ -795,11 +795,60 @@ inline vector<shared_ptr<PathExtender> > MakeMPExtenders(PathExtendStage stage,
             }
         }
     }
-
     PrintExtenders(result);
     return result;
 }
 
+
+inline vector<shared_ptr<PathExtender> > MakePBScaffoldingExtenders(
+                                                         vector<shared_ptr<GraphCoverageMap>>& long_reads_cov_map,
+                                                         ScaffoldingUniqueEdgeStorage& unique_storage_pb,
+                                                         const config::dataset& dataset_info,
+                                                         const PathExtendParamsContainer& params,
+                                                         const conj_graph_pack& gp,
+                                                         vector<PathContainer>& long_reads_paths,
+                                                         const GraphCoverageMap& main_cov_map) {
+    const auto& pset = params.pset;
+    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer_pb(gp, 500 , 0.5);
+    unique_edge_analyzer_pb.FillUniqueEdgeStorage(unique_storage_pb);
+    vector<shared_ptr<PathExtender> > result;
+
+    for (size_t lib_index = 0 ; lib_index <dataset_info.reads.lib_count(); lib_index++) {
+        AddPathsToContainer(gp, gp.single_long_reads[lib_index].GetAllPaths(), 1, long_reads_paths[lib_index]);
+        long_reads_cov_map.push_back(make_shared<GraphCoverageMap>(gp.g, long_reads_paths[lib_index]));
+    }
+    for (size_t lib_index = 0 ; lib_index <dataset_info.reads.lib_count(); lib_index++) {
+        if (IsForSingleReadExtender(dataset_info.reads[lib_index])) {
+            INFO("creating scaffolding extender for lib "<< lib_index);
+            shared_ptr<ConnectionCondition> condition = make_shared<LongReadsLibConnectionCondition>(gp.g,
+                                                                                                     lib_index, 2,
+                                                                                                     *long_reads_cov_map[lib_index]);
+            auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g,
+                                                                        nullptr,
+                                                                        condition,
+                                                                        unique_storage_pb,
+                                                                        pset.scaffolder_options.cl_threshold,
+                                                                        pset.scaffolder_options.var_coeff,
+                                                                        pset.scaffolding2015.relative_weight_cutoff);
+
+            auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
+                                                                 pset.scaffolder_options.short_overlap,
+                                                                 (int) pset.scaffolder_options.basic_overlap_coeff *
+                                                                 dataset_info.RL());
+
+            result.push_back(make_shared<ScaffoldingPathExtender>(gp, main_cov_map ,
+                                                                    scaff_chooser,
+                                                                    gap_joiner,
+                                                                    10000, /* insert size */
+                                                                    pset.loop_removal.max_loops,
+                                                                    false, /* investigate short loops */
+                                                                    params.avoid_rc_connections,
+                                                                    false /* jump only from tips */));
+
+        }
+    }
+    return result;
+}
 
 inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                                                           const config::dataset& dataset_info,
@@ -979,13 +1028,13 @@ inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const co
     INFO("Constructing scaffold graph from set of size " << edge_storage.GetSet().size());
 
     DefaultScaffoldGraphConstructor constructor(gp.g, edge_storage.GetSet(), conditions, edge_condition);
-    auto scaffoldGraph = constructor.Construct();
+    auto scaffold_graph = constructor.Construct();
 
-    INFO("Scaffold graph contains " << scaffoldGraph->VertexCount() << " vertices and " << scaffoldGraph->EdgeCount() << " edges");
-    return scaffoldGraph;
+    INFO("Scaffold graph contains " << scaffold_graph->VertexCount() << " vertices and " << scaffold_graph->EdgeCount() << " edges");
+    return scaffold_graph;
 }
 
-inline void PrintScaffoldGraph(shared_ptr<scaffold_graph::ScaffoldGraph> scaffoldGraph,
+inline void PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph,
                                const set<EdgeId>& main_edge_set,
                                const debruijn_graph::GenomeConsistenceChecker& genome_checker,
                                const string& filename) {
@@ -1009,7 +1058,7 @@ inline void PrintScaffoldGraph(shared_ptr<scaffold_graph::ScaffoldGraph> scaffol
     CompositeGraphColorer <ScaffoldGraph> colorer(vcolorer, ecolorer);
 
     INFO("Visualizing scaffold grpah");
-    ScaffoldGraphVisualizer singleVisualizer(*scaffoldGraph, edge_labels);
+    ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, edge_labels);
     std::ofstream single_dot;
     single_dot.open((filename + "_single.dot").c_str());
     singleVisualizer.Visualize(single_dot, colorer);
@@ -1018,7 +1067,7 @@ inline void PrintScaffoldGraph(shared_ptr<scaffold_graph::ScaffoldGraph> scaffol
     INFO("Printing scaffold grpah");
     std::ofstream data_stream;
     data_stream.open((filename + ".data").c_str());
-    scaffoldGraph->Print(data_stream);
+    scaffold_graph.Print(data_stream);
     data_stream.close();
 }
 
@@ -1142,13 +1191,13 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     make_dir(params.etc_dir);
 
     //Scaffold graph
-    shared_ptr<scaffold_graph::ScaffoldGraph> scaffoldGraph;
+    shared_ptr<scaffold_graph::ScaffoldGraph> scaffold_graph;
     if (pset.scaffold_graph_params.construct) {
         //TODO params
         debruijn_graph::GenomeConsistenceChecker genome_checker(gp, main_unique_storage, 1000, 0.2);
-        scaffoldGraph = ConstructScaffoldGraph(dataset_info, params.pset.scaffold_graph_params, gp, main_unique_storage);
+        scaffold_graph = ConstructScaffoldGraph(dataset_info, params.pset.scaffold_graph_params, gp, main_unique_storage);
         if (pset.scaffold_graph_params.output) {
-            PrintScaffoldGraph(scaffoldGraph, main_unique_storage.GetSet(), genome_checker, params.etc_dir + "scaffold_graph");
+            PrintScaffoldGraph(*scaffold_graph, main_unique_storage.GetSet(), genome_checker, params.etc_dir + "scaffold_graph");
         }
     }
 
@@ -1204,7 +1253,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
 
     DebugOutputPaths(gp, params, paths, "pe_paths");
     //We do not run overlap removal in 2015 mode
-    if (use_scaffolder_2015_pipeline) {
+    if (!use_scaffolder_2015_pipeline) {
         FinalizePaths(params, paths, gp.g, cover_map, min_edge_len, max_edge_diff_pe);
         DebugOutputPaths(gp, params, paths, "pe_finalized1");
     }
@@ -1266,46 +1315,12 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
             auto additional_extenders = MakeMPExtenders(exspander_stage, dataset_info, params, gp, clone_map, unique_storages.back());
             all_libs.insert(all_libs.end(), additional_extenders.begin(), additional_extenders.end());
         }
-        ScaffoldingUniqueEdgeStorage unique_storage_pb;
-//TODO: constants to config
-        ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer_pb(gp, 500 , 0.5);
-        unique_edge_analyzer_pb.FillUniqueEdgeStorage(unique_storage_pb);
         vector<PathContainer> long_reads_paths(dataset_info.reads.lib_count());
         vector<shared_ptr<GraphCoverageMap>> long_reads_cov_map;
-        for (size_t lib_index = 0 ; lib_index <dataset_info.reads.lib_count(); lib_index++) {
-            AddPathsToContainer(gp, gp.single_long_reads[lib_index].GetAllPaths(), 1, long_reads_paths[lib_index]);
-            long_reads_cov_map.push_back(make_shared<GraphCoverageMap>(gp.g, long_reads_paths[lib_index]));
-        }
-        for (size_t lib_index = 0 ; lib_index <dataset_info.reads.lib_count(); lib_index++) {
-            if (IsForSingleReadExtender(dataset_info.reads[lib_index])) {
-                INFO("creating scaffolding extender for lib "<< lib_index);
-                shared_ptr<ConnectionCondition> condition = make_shared<LongReadsLibConnectionCondition>(gp.g,
-                                                                                                         lib_index, 2,
-                                                                                                         *long_reads_cov_map[lib_index]);
-                auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g,
-                                                                            nullptr,
-                                                                            condition,
-                                                                            unique_storage_pb,
-                                                                            pset.scaffolder_options.cl_threshold,
-                                                                            pset.scaffolder_options.var_coeff,
-                                                                            pset.scaffolding2015.relative_weight_cutoff);
-
-                auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
-                                                                     pset.scaffolder_options.short_overlap,
-                                                                     (int) pset.scaffolder_options.basic_overlap_coeff *
-                                                                     dataset_info.RL());
-
-                all_libs.push_back(make_shared<ScaffoldingPathExtender>(gp, clone_map,
-                                                                        scaff_chooser,
-                                                                        gap_joiner,
-                                                                        1000, /* insert size */
-                                                                        pset.loop_removal.max_loops,
-                                                                        false, /* investigate short loops */
-                                                                        params.avoid_rc_connections,
-                                                                        false /* jump only from tips */));
-
-            }
-        }
+        ScaffoldingUniqueEdgeStorage unique_storage_pb;
+//TODO: constants to config
+        auto pb_scaffolding_extenders = MakePBScaffoldingExtenders(long_reads_cov_map, unique_storage_pb, dataset_info, params, gp, long_reads_paths, clone_map);
+        all_libs.insert(all_libs.end(), pb_scaffolding_extenders.begin(), pb_scaffolding_extenders.end());
         INFO("Total number of extenders is " << all_libs.size());
         shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
                                                                                   main_unique_storage,

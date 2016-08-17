@@ -828,7 +828,7 @@ public:
               detect_repeats_online_(detect_repeats_online) {
     }
 
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map,
+    CompositeExtender(const Graph & g, GraphCoverageMap& cov_map,
                       vector<shared_ptr<PathExtender> > pes,
                       const ScaffoldingUniqueEdgeStorage& unique,
                       size_t max_diff_len,
