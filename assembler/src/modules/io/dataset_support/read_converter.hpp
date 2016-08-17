@@ -30,10 +30,14 @@ class ReadConverter {
 private:
     const static size_t current_binary_format_version = 11;
 
+    static bool CheckBinaryReadsExist(SequencingLibrary& lib) {
+        return path::FileExists(lib.data().binary_reads_info.bin_reads_info_file);
+    }
+
     static bool LoadLibIfExists(SequencingLibrary& lib) {
         auto& data = lib.data();
 
-        if (!path::FileExists(data.binary_reads_info.bin_reads_info_file))
+        if (!CheckBinaryReadsExist(lib))
             return false;
 
         std::ifstream info;
@@ -112,7 +116,7 @@ private:
 
 public:
     static void ConvertToBinaryIfNeeded(SequencingLibrary& lib) {
-        if (lib.data().binary_reads_info.binary_coverted)
+        if (lib.data().binary_reads_info.binary_coverted && CheckBinaryReadsExist(lib))
             return;
 
         if (LoadLibIfExists(lib)) {
