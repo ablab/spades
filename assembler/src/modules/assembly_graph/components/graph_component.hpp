@@ -190,6 +190,14 @@ public:
         return false;
     }
 
+    void AddEdge(EdgeId e) {
+        VertexId v = graph_.EdgeStart(e);
+        VertexId v2 = graph_.EdgeEnd(e);
+        edges_.insert(e);
+        vertices_.insert(v);
+        vertices_.insert(v2);
+    }
+
 };
 
 }

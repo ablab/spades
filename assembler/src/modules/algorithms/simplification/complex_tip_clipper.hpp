@@ -17,6 +17,51 @@ namespace omnigraph{
 
 
 template<class Graph>
+class ComplexTipSetFinder {
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    const Graph& g_;
+    size_t max_length_;
+    std::map<VertexId, Range> complex_tc_vertices_;
+    DECL_LOGGER("ComplexTipClipper")
+public:
+    ComplexTipSetFinder(const Graph& g, size_t max_length = std::numeric_limits<size_t>::max())
+            : g_(g), max_length_(max_length)
+    {    }
+
+
+    GraphComponent<Graph> GetComponent(VertexId v) {
+        if(g_.IncomingEdgeCount(v) != 0) {
+            return GraphComponent<Graph>(g_, false);
+        }
+        DominatedSetFinder<Graph> finder(g_, v, max_length_);
+        if(finder.FillDominated()) {
+            auto ranges = finder.dominated();
+            GraphComponent<Graph> dom_component = finder.AsGraphComponent();
+            GraphComponent<Graph> result(dom_component);
+            set<EdgeId> edges_to_add;
+            for(auto v : dom_component.sinks()) {
+                size_t current_path_length = ranges[v].end_pos;
+                for(auto e : g_.OutgoingEdges(v)) {
+                    if(current_path_length + g_.length(e) > max_length_) {
+                        DEBUG("Component contains too long paths");
+                        return GraphComponent<Graph>(g_, false);
+                    }
+                    result.AddEdge(e);
+                }
+            }
+            return result;
+        } else {
+            DEBUG("Component contains too long paths");
+            return GraphComponent<Graph>(g_, false);
+        }
+    }
+
+
+};
+
+
+template<class Graph>
 class ComplexTipClipper {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
@@ -38,13 +83,23 @@ class ComplexTipClipper {
     }
 
 
-    bool CheckSize(const GraphComponent<Graph> & component) const {
-        return (component.vertices().size() > 1);
+    bool IsCommonTip(const GraphComponent<Graph> & component) const {
+        return component.vertices().size() == 2;
+
     }
 
-    void RemoveComplexTip(GraphComponent<Graph>& component) {
+    template<class ElemType>
+    void InsertIfNotConjugate(std::set<ElemType>& elems, ElemType elem) const {
+        if (elems.count(g_.conjugate(elem)) == 0) {
+            elems.insert(elem);
+        }
+    }
+
+
+    bool RemoveComplexTip(const GraphComponent<Graph>& component) {
         ComponentRemover<Graph> remover(g_, removal_handler_);
         remover.DeleteComponent(component.edges().begin(), component.edges().end());
+        return true;
     }
 
 
@@ -88,7 +143,7 @@ class ComplexTipClipper {
     }
 
 public:
-    ComplexTipClipper(Graph& g, double relative_coverage, size_t max_edge_len, size_t max_path_len, const string& pics_folder = "", std::function<void(const set<EdgeId>&)> removal_handler = 0) :
+    ComplexTipClipper(Graph& g, double relative_coverage, size_t max_edge_len, size_t max_path_len, const string& pics_folder = "" , std::function<void(const set<EdgeId>&)> removal_handler = 0) :
             g_(g), relative_coverage_treshold_(math::ge(relative_coverage, 0.0) ? relative_coverage : std::numeric_limits<double>::max()), edge_length_treshold_(max_edge_len) ,max_path_length_(max_path_len), pics_folder_(pics_folder), removal_handler_(removal_handler)
     { }
 
@@ -100,35 +155,28 @@ public:
         }
 
         bool something_done_flag = false;
+        ComplexTipSetFinder<Graph> complex_tc_set_finder(g_, max_path_length_);
         for (auto it = g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
             if(g_.IncomingEdgeCount(*it) != 0) {
                 continue;
             }
             DEBUG("Processing vertex " << g_.str(*it));
 
-            DominatedSetFinder<Graph> dom_finder(g_, *it, max_path_length_ * 2);
-
-            if(!dom_finder.FillDominated()) {
-                DEBUG("Tip contains too long paths");
+            GraphComponent<Graph> component = complex_tc_set_finder.GetComponent(*it);
+            if(component.v_size() == 0) {
                 continue;
             }
-
-            auto component = dom_finder.AsGraphComponent();
 
             if(!CheckEdgeLenghts(component)) {
                 DEBUG("Tip contains too long edges");
                 continue;
             }
 
-            if(!CheckSize(component)) {
-                DEBUG("Component doesn't meet size requirements");
+            if(IsCommonTip(component)) {
+                DEBUG("Component is a tip! Exiting...");
                 continue;
             }
-            auto dominated = dom_finder.dominated();
-            if(!CheckPathLengths(dominated)) {
-                DEBUG("Tip contains too long paths");
-                continue;
-            }
+
 
             if(math::ge(GetRelativeTipCoverage(component), relative_coverage_treshold_)) {
                 DEBUG("Tip is too high covered with respect to external edges");
@@ -141,11 +189,15 @@ public:
                                 + ToString(g_.int_id(*it)) //+ "_" + ToString(candidate_cnt)
                                 + ".dot");
             }
+            DEBUG(component.vertices().size());
+            something_done_flag = RemoveComplexTip(component);
 
-            something_done_flag = true;
-            cnt++;
-            RemoveComplexTip(component);
+            if(something_done_flag) {
+                cnt++;
+                DEBUG("Removed");
+            }
         }
+
         CompressAllVertices(g_);
         DEBUG("Complex tip clipper finished");
         DEBUG("Tips processed " << cnt);

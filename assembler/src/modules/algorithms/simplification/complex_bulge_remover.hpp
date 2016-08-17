@@ -1058,7 +1058,6 @@ class ComplexBulgeRemover {
     Graph& g_;
     size_t max_length_;
     size_t length_diff_;
-
     string pics_folder_;
 
     bool ProcessComponent(LocalizedComponent<Graph>& component,
@@ -1069,7 +1068,7 @@ class ComplexBulgeRemover {
         DEBUG("Looking for a tree");
         if (tree_finder.FindTree()) {
             DEBUG("Tree found");
-
+            auto tree_edges = tree_finder.GetTreeEdges();
             SkeletonTree<Graph> tree(component, tree_finder.GetTreeEdges());
 
             if (!pics_folder_.empty()) {
@@ -1104,8 +1103,7 @@ class ComplexBulgeRemover {
 public:
     ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff,
             const string& pics_folder = "") :
-            g_(g), max_length_(max_length), length_diff_(length_diff), pics_folder_(
-                    pics_folder) {
+            g_(g), max_length_(max_length), length_diff_(length_diff), pics_folder_(pics_folder) {
     }
 
     bool Run() {
