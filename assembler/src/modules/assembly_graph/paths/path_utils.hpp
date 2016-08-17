@@ -127,12 +127,5 @@ Sequence PathSequence(const Graph& g, const omnigraph::Path<typename Graph::Edge
     return path_sequence.Subseq(start, end);
 }
 
-template<class Graph>
-size_t PathLength(const Graph& g, const vector<typename Graph::EdgeId>& path) {
-    size_t res = 0;
-    for (auto I = path.begin(); I != path.end(); ++I)
-        res += g.length(*I);
-    return res;
-}
 
 }

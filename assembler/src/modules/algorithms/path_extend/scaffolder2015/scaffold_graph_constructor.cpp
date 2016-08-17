@@ -50,12 +50,14 @@ void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const shared_ptr
             continue;
 
         auto connected_with = condition->ConnectedWith(v);
-        for (auto connected : connected_with) {
+        for (const auto& pair : connected_with) {
+            EdgeId connected = pair.first;
+            double w = pair.second;
             TRACE("Connected with " << graph_->int_id(connected));
             if (graph_->Exists(connected)) {
                 if (use_terminal_vertices_only && graph_->IncomingEdgeCount(connected) > 0)
                     continue;
-                graph_->AddEdge(v, connected, condition->GetLibIndex(), condition->GetWeight(v, connected));
+                graph_->AddEdge(v, connected, condition->GetLibIndex(), w);
             }
         }
     }

@@ -19,19 +19,18 @@ std::pair<EdgeId, int> ExtensionChooser2015::FindLastUniqueInPath(const Bidirect
 ExtensionChooser::EdgeContainer ExtensionChooser2015::FindNextUniqueEdge(const EdgeId from) const {
     VERIFY(unique_edges_.IsUnique(from));
     EdgeContainer result;
-    set<EdgeId> candidate_edges = paired_connection_condition_.ConnectedWith(from);
+    map<EdgeId, double> candidate_edges = lib_connection_condition_->ConnectedWith(from, unique_edges_);
+    DEBUG(candidate_edges.size() << " candidate edges");
     vector<pair<double, pair<EdgeId, int >>> to_sort;
-    for (EdgeId e : candidate_edges) {
-        if (!unique_edges_.IsUnique(e)) {
-            continue;
-        }
-        double sum = paired_connection_condition_.GetWeight(from, e);
+    for (const auto& pair: candidate_edges) {
+        EdgeId e = pair.first;
+        double sum = pair.second;
         DEBUG("edge " << g_.int_id(e) << " weight " << sum);
         if (sum < absolute_weight_threshold_) {
             DEBUG("Edge " << g_.int_id(e)  << " weight " << sum << " failed absolute weight threshold " << absolute_weight_threshold_);
             continue;
         }
-        int gap = paired_connection_condition_.GetMedianGap(from, e);
+        int gap = lib_connection_condition_->GetMedianGap(from, e);
 
         auto connected_with = graph_connection_condition_.ConnectedWith(from);
         if (connected_with.find(e) != connected_with.end()) {
@@ -53,10 +52,19 @@ ExtensionChooser::EdgeContainer ExtensionChooser2015::FindNextUniqueEdge(const E
     }
     return result;
 }
+void ExtensionChooser2015::InsertAdditionalGaps(ExtensionChooser::EdgeContainer& result) const{
+    for (size_t i = 0; i< result.size(); i++) {
+//At least 10*"N" when scaffolding
+        if (result[i].d_ < MIN_N_QUANTITY + int(g_.k())) {
+            result[i].d_ = MIN_N_QUANTITY + int(g_.k());
+        }
+    }
+}
 
 ExtensionChooser::EdgeContainer ExtensionChooser2015::Filter(const BidirectionalPath& path, const ExtensionChooser::EdgeContainer& /*edges*/) const {
-//    set<EdgeId> candidates = FindCandidates(path);
+    DEBUG("filtering started");
     pair<EdgeId, int> last_unique = FindLastUniqueInPath(path);
+    DEBUG ("last unique found");
     EdgeContainer result;
 
     if (last_unique.second < 0) {
@@ -65,24 +73,18 @@ ExtensionChooser::EdgeContainer ExtensionChooser2015::Filter(const Bidirectional
     }
 
     result = FindNextUniqueEdge(last_unique.first);
+    DEBUG("next unique edges found, there are " << result.size() << " of them");
 //Backward check. We connected edges iff they are best continuation to each other.
     if (result.size() == 1) {
         //We should reduce gap size with length of the edges that came after last unique.
         result[0].d_ -= int (path.LengthAt(last_unique.second) - g_.length(last_unique.first));
-
         DEBUG("For edge " << g_.int_id(last_unique.first) << " unique next edge "<< result[0].e_ <<" found, doing backwards check ");
         EdgeContainer backwards_check = FindNextUniqueEdge(g_.conjugate(result[0].e_));
         if ((backwards_check.size() != 1) || (g_.conjugate(backwards_check[0].e_) != last_unique.first)) {
             result.clear();
         }
-
     }
-    if (result.size() > 0) {
-//At least 10*"N" when scaffolding
-        if (result[0].d_ < 10 + int(g_.k())) {
-                result[0].d_ = 10 + int(g_.k());
-        }
-    }
+    InsertAdditionalGaps(result);
     return result;
 }
 

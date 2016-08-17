@@ -8,6 +8,7 @@
 #include <modules/assembly_graph/paths/path_processor.hpp>
 #include <modules/assembly_graph/paths/path_utils.hpp>
 #include <assembly_graph/paths/bidirectional_path.hpp>
+#include "assembly_graph/graph_core/basic_graph_stats.hpp"
 
 
 namespace path_extend {

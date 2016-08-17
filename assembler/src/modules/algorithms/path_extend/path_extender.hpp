@@ -815,7 +815,7 @@ protected:
 
 class CompositeExtender : public ContigsMaker {
 public:
-    CompositeExtender(Graph &g, GraphCoverageMap& cov_map,
+    CompositeExtender(const Graph &g, GraphCoverageMap& cov_map,
                       size_t max_diff_len,
                       size_t max_repeat_length,
                       bool detect_repeats_online)

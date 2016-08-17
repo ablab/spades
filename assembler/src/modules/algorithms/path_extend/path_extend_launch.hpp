@@ -305,6 +305,16 @@ inline bool IsForMPExtender(const io::SequencingLibrary<config::DataSetData> &li
              lib.type() == io::LibraryType::MatePairs);
 }
 
+inline bool HasLongReads(const config::dataset& dataset_info) {
+    for (const auto& lib : dataset_info.reads) {
+        if (IsForSingleReadExtender(lib)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 enum class PathExtendStage {
     PEStage,
     PEPolishing,
@@ -598,13 +608,12 @@ inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const config::datase
         ERROR("All paired indices are empty!");
     }
 
-    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, paired_lib);
 //TODO::was copypasted from MakeScaffoldingExtender, refactor 2015 extension chhoser
     DEBUG("creating extchooser");
-
+    shared_ptr<ConnectionCondition> condition = make_shared<PairedLibConnectionCondition>(gp.g, paired_lib, lib_index, 0);
     auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g,
-                                                                counter,
-                                                                lib_index,
+                                                                nullptr,
+                                                                condition,
                                                                 storage,
                                                                 pset.scaffolder_options.cl_threshold,
                                                                 pset.scaffolder_options.var_coeff,
@@ -623,103 +632,6 @@ inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const config::datase
                                                 params.avoid_rc_connections,
                                                 false /* jump only from tips */);
 }
-
-
-inline shared_ptr<PairedInfoLibrary> MakeNewLibFromPaths(const config::dataset& dataset_info,
-                                                         size_t lib_index,
-                                                         const conj_graph_pack& gp,
-                                                         const PathStorage<conj_graph_pack::graph_t>& long_reads,
-                                                         const ScaffoldingUniqueEdgeStorage& storage) {
-    const auto& lib = dataset_info.reads[lib_index];
-    const Graph& g = gp.g;
-    size_t read_length = lib.data().read_length;
-    DEBUG("rl " << read_length);
-    size_t is = 10000;
-    int is_min = 0;
-    int is_max = 20000;
-    int var = 10000;
-    bool is_mp = true;
-//    omnigraph::de::PairedIndex<conj_graph_pack::graph_t, omnigraph::de::PointTraits, omnigraph::de::safe_btree_map> ind(g);
-    gp.scaffolding_single_long_reads[lib_index].Init();
-    auto paths = long_reads.GetAllPaths();
-    DEBUG("we know " << paths.size() << "paths");
-    DEBUG("min unique length is " << storage.GetMinLength()<<", " << storage.size() << " unique edges ");
-    for (size_t i = 0; i < paths.size(); ++i) {
-        auto path = paths.at(i);
-
-        size_t previous = -1ul;
-        size_t cur_len = 0;
-        vector<EdgeId> edges = path.getPath();
-
-        size_t w = path.getWeight() * 2;
-        for (size_t k = 0; k < edges.size(); k++) {
-            if (storage.IsUnique(edges[k])) {
-                if (previous != -1ul) {
-                    gp.scaffolding_single_long_reads[lib_index].Add(edges[previous], edges[k], omnigraph::de::RawPoint(cur_len , double (w)));
-                    DEBUG("adding info between " << g.int_id(edges[previous]) << " " <<g.int_id(edges[k]) << " " << cur_len);
-                    auto infos =   gp.scaffolding_single_long_reads[lib_index].Get(edges[previous]);
-                    for (auto it : infos) {
-                        EdgeId e2 = it.first;
-                        DEBUG("got something" << g.int_id(e2));
-                    }
-                }
-                previous = k;
-                cur_len =  0;
-            }
-            cur_len += g.length(edges[k]);
-        }
-    }
-    debruijn_graph::graphio::ConjugateDataPrinter<Graph> tmpdt(g);
-//    tmpdt.SavePaired<decltype(gp.scaffolding_single_long_reads[index])>("oppa.prd",   gp.scaffolding_single_long_reads[index]);
-    DEBUG("ind size: " <<   gp.scaffolding_single_long_reads[lib_index].size());
-    return make_shared< PairedInfoLibraryWithIndex<decltype(gp.scaffolding_single_long_reads[lib_index])> >(g.k(), g, read_length,
-                                                                                    is, is_min > 0.0 ? size_t(is_min) : 0, is_max > 0.0 ? size_t(is_max) : 0,
-                                                                                    size_t(var),
-                                                                                    gp.scaffolding_single_long_reads[lib_index], is_mp,
-                                                                                    lib.data().insert_size_distribution);
-}
-
-
-inline shared_ptr<PathExtender> MakePacBioScaffolding2015Extender(const config::dataset& dataset_info,
-                                                                  size_t lib_index,
-                                                                  const PathExtendParamsContainer& params,
-                                                                  const conj_graph_pack& gp,
-                                                                  const GraphCoverageMap& cov_map,
-                                                                  const ScaffoldingUniqueEdgeStorage& storage) {
-    const auto& pset = params.pset;
-
-    shared_ptr<PairedInfoLibrary> lib;
-    INFO("for lib " << lib_index);
-    lib = MakeNewLibFromPaths(dataset_info, lib_index, gp, gp.single_long_reads[lib_index], storage);
-    INFO(lib->GetIndexSize() << " index size from paths" );
-
-    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, lib);
-    INFO (counter->get_libptr()->GetIndexSize() << "ind size from weight counter") ;
-//TODO::was copypasted from MakeScaffoldingExtender
-//TODO::REWRITE
-    double var_coeff = 3.0;
-    DEBUG("here creating extchooser");
-//TODO: 2 is relative weight cutoff, to config!
-    auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g,
-                                                                counter,
-                                                                lib_index,
-                                                                storage,
-                                                                params.pset.scaffolder_options.cl_threshold,
-                                                                params.pset.scaffolder_options.var_coeff,
-                                                                params.pset.scaffolding2015.relative_weight_cutoff);
-    auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, params.pset.scaffolder_options.min_gap_score,
-                                                         params.pset.scaffolder_options.short_overlap,
-                                                         (int) 2 * dataset_info.RL());
-
-    return make_shared<ScaffoldingPathExtender>(gp, cov_map,
-                                                scaff_chooser,
-                                                gap_joiner,
-                                                lib->GetISMax(),
-                                                params.pset.loop_removal.max_loops,
-                                                false,
-                                                false);
-}
-
 
 inline shared_ptr<SimpleExtender> MakeMPExtender(const config::dataset& dataset_info,
                                                  size_t lib_index,
@@ -996,11 +908,6 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                         break;
                 }
             }
-
-            if (IsForSingleReadExtender(lib) && IsScaffolder2015Enabled(pset.sm)) {
-                mps.push_back(MakePacBioScaffolding2015Extender(dataset_info, lib_index, params, gp, cov_map, storage));
-                ++mp_libs;
-            }
         }
 
         result.insert(result.end(), pes.begin(), pes.end());
@@ -1052,7 +959,7 @@ inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const co
                 INFO("Unusable paired lib #" << lib_index);
                 continue;
             }
-            conditions.push_back(make_shared<AdvancedPairedConnectionCondition>(gp.g, edge_storage.GetSet(),
+            conditions.push_back(make_shared<ScaffoldGraphPairedConnectionCondition>(gp.g, edge_storage.GetSet(),
                                                                                 paired_lib, lib_index,
                                                                                 params.always_add,
                                                                                 params.never_add,
@@ -1213,8 +1120,11 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     auto sc_mode = pset.sm;
     auto min_unique_length = pset.scaffolding2015.min_unique_length;
     auto unique_variaton = pset.scaffolding2015.unique_coverage_variation;
-    bool mp_exist = MPLibsExist(dataset_info);
-    bool use_scaffolder_2015_pipeline = (sc_mode == sm_old_pe_2015 && mp_exist) ||
+    bool mp_exists = MPLibsExist(dataset_info);
+    bool long_reads_exists = HasLongReads(dataset_info);
+//TODO: this is awful
+    bool mp_stage = mp_exists || long_reads_exists;
+    bool use_scaffolder_2015_pipeline = (sc_mode == sm_old_pe_2015 && mp_stage) ||
         sc_mode == sm_2015 ||
         sc_mode == sm_combined;
 
@@ -1280,7 +1190,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     PathContainer clone_paths;
     GraphCoverageMap clone_map(gp.g);
 
-    if (mp_exist) {
+    if (mp_stage) {
         ClonePathContainer(paths, clone_paths, clone_map);
     }
 
@@ -1300,7 +1210,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     }
     if (params.output_broken_scaffolds) {
         OutputBrokenScaffolds(paths, params, (int) gp.g.k(), writer,
-                              params.output_dir + (mp_exist ? "pe_contigs" : params.broken_contigs));
+                              params.output_dir + (mp_stage ? "pe_contigs" : params.broken_contigs));
     }
     DebugOutputPaths(gp, params, paths, "pe_before_traverse");
     if (params.traverse_loops) {
@@ -1308,13 +1218,14 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
         FinalizePaths(params, paths, gp.g, cover_map, min_edge_len, max_edge_diff_pe);
         DebugOutputPaths(gp, params, paths, "pe_finalized2");
     }
-    DebugOutputPaths(gp, params, paths, (mp_exist ? "pe_final_paths" : "final_paths"));
-    writer.OutputPaths(paths, params.output_dir + (mp_exist ? "pe_scaffolds" : params.contigs_name));
+    DebugOutputPaths(gp, params, paths, (mp_stage ? "pe_final_paths" : "final_paths"));
+    writer.OutputPaths(paths, params.output_dir + (mp_stage ? "pe_scaffolds" : params.contigs_name));
 
     cover_map.Clear();
     seeds.DeleteAllPaths();
     paths.DeleteAllPaths();
-    if (!mp_exist) {
+    if (!mp_stage ) {
+//TODO: RETURN  IN THE MIDDLE OF BIG FUNCTION SHOULD DIE
         return;
     }
 
@@ -1336,6 +1247,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
         INFO("Creating main exteders, unique edge length = " << min_unique_length);
         all_libs = MakeAllExtenders(exspander_stage, dataset_info, params, gp, clone_map, unique_storages.front());
 
+
         int cur_length = (int) min_unique_length - length_step;
         size_t i = 1;
         while (cur_length >= length_step) {
@@ -1354,7 +1266,47 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
             auto additional_extenders = MakeMPExtenders(exspander_stage, dataset_info, params, gp, clone_map, unique_storages.back());
             all_libs.insert(all_libs.end(), additional_extenders.begin(), additional_extenders.end());
         }
-        INFO("Total number of exterders is " << all_libs.size());
+        ScaffoldingUniqueEdgeStorage unique_storage_pb;
+//TODO: constants to config
+        ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer_pb(gp, 500 , 0.5);
+        unique_edge_analyzer_pb.FillUniqueEdgeStorage(unique_storage_pb);
+        vector<PathContainer> long_reads_paths(dataset_info.reads.lib_count());
+        vector<shared_ptr<GraphCoverageMap>> long_reads_cov_map;
+        for (size_t lib_index = 0 ; lib_index <dataset_info.reads.lib_count(); lib_index++) {
+            AddPathsToContainer(gp, gp.single_long_reads[lib_index].GetAllPaths(), 1, long_reads_paths[lib_index]);
+            long_reads_cov_map.push_back(make_shared<GraphCoverageMap>(gp.g, long_reads_paths[lib_index]));
+        }
+        for (size_t lib_index = 0 ; lib_index <dataset_info.reads.lib_count(); lib_index++) {
+            if (IsForSingleReadExtender(dataset_info.reads[lib_index])) {
+                INFO("creating scaffolding extender for lib "<< lib_index);
+                shared_ptr<ConnectionCondition> condition = make_shared<LongReadsLibConnectionCondition>(gp.g,
+                                                                                                         lib_index, 2,
+                                                                                                         *long_reads_cov_map[lib_index]);
+                auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g,
+                                                                            nullptr,
+                                                                            condition,
+                                                                            unique_storage_pb,
+                                                                            pset.scaffolder_options.cl_threshold,
+                                                                            pset.scaffolder_options.var_coeff,
+                                                                            pset.scaffolding2015.relative_weight_cutoff);
+
+                auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
+                                                                     pset.scaffolder_options.short_overlap,
+                                                                     (int) pset.scaffolder_options.basic_overlap_coeff *
+                                                                     dataset_info.RL());
+
+                all_libs.push_back(make_shared<ScaffoldingPathExtender>(gp, clone_map,
+                                                                        scaff_chooser,
+                                                                        gap_joiner,
+                                                                        1000, /* insert size */
+                                                                        pset.loop_removal.max_loops,
+                                                                        false, /* investigate short loops */
+                                                                        params.avoid_rc_connections,
+                                                                        false /* jump only from tips */));
+
+            }
+        }
+        INFO("Total number of extenders is " << all_libs.size());
         shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
                                                                                   main_unique_storage,
                                                                                   max_is_right_quantile,
@@ -1366,8 +1318,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
         mp_paths.FilterEmptyPaths();
         mp_paths.SortByLength();
         DebugOutputPaths(gp, params, paths, "mp_raw");
-    }
-    else {
+    } else {
         all_libs = MakeAllExtenders(exspander_stage, dataset_info, params, gp, clone_map,
                                     main_unique_storage, clone_paths);
         shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,

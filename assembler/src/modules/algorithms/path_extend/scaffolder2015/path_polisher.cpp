@@ -18,9 +18,9 @@ void PathGapCloser::PolishPaths(const PathContainer &paths, PathContainer &resul
 }
 
 size_t DijkstraGapCloser::MinPathLength(const omnigraph::PathStorageCallback<Graph>& path_storage) const {
-    size_t shortest_len = debruijn_graph::PathLength(g_, path_storage.paths().front());
+    size_t shortest_len = omnigraph::CumulativeLength(g_, path_storage.paths().front());
     for (size_t j = 1; j < path_storage.paths().size(); ++j) {
-        size_t cur_len = debruijn_graph::PathLength(g_, path_storage.paths()[j]);
+        size_t cur_len = omnigraph::CumulativeLength(g_, path_storage.paths()[j]);
         shortest_len = min(shortest_len, cur_len);
     }
     return shortest_len;
@@ -98,7 +98,7 @@ void CommonPrefixDijkstraGapCloser::FillWithMultiplePaths(const BidirectionalPat
     }
 
     int middle_gap = (int) max(size_t(100), MinPathLength(path_storage) -
-        debruijn_graph::PathLength(g_, left) - debruijn_graph::PathLength(g_, right));
+            omnigraph::CumulativeLength(g_, left) - omnigraph::CumulativeLength(g_, right));
 
     if (right.empty()) {
         result.PushBack(path[index], middle_gap);
