@@ -143,6 +143,15 @@ preliminary_simp
 
 ;NB decsends from sc_pe
 pe {
+
+long_reads {
+    pacbio_reads {
+        filtering   1.9
+        weight_priority    20.0
+        unique_edge_priority 10.0
+        min_significant_overlap 1000
+    }
+}
 params {
     remove_overlaps     true
     cut_all_overlaps  true

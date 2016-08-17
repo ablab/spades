@@ -180,7 +180,7 @@ private:
 typedef std::function<vector<vector<EdgeId>> (const MappingPath<EdgeId>&)> PathExtractionF;
 
 inline PathExtractionF ChooseProperReadPathExtractor(const Graph& g, io::LibraryType lib_type) {
-    if (lib_type == io::LibraryType::PathExtendContigs) {
+    if (lib_type == io::LibraryType::PathExtendContigs || lib_type == io::LibraryType::TSLReads) {
         return [&] (const MappingPath<EdgeId>& mapping) {
             return GappedPathExtractor(g)(mapping);
         };

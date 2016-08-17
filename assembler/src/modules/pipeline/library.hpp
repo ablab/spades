@@ -45,6 +45,7 @@ static std::vector<LibraryType> LibraryPriotity = {
     LibraryType::HQMatePairs,
     LibraryType::MatePairs,
     LibraryType::TrustedContigs,
+    LibraryType::TSLReads,
     LibraryType::PathExtendContigs,
     LibraryType::UntrustedContigs
 };

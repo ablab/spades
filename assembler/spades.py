@@ -208,6 +208,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.dataset_yaml_filename = support.check_file_existence(arg, 'dataset', log)
 
         elif opt in options_storage.reads_options:
+            if opt == "--tslr":
+                options_storage.tslr_mode = True
             support.add_to_dataset(opt, arg, dataset_data)
 
         elif opt == '-k':

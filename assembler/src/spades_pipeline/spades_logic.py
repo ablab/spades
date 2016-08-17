@@ -120,7 +120,8 @@ def reveal_original_k_mers(RL):
 def add_configs(command, configs_dir):
     #Order matters here!
     mode_config_mapping = [("single_cell", "mda_mode"), 
-                           ("meta", "meta_mode"), 
+                           ("meta", "meta_mode"),
+                           ("tslr_mode", "tslr_mode"),
                            ("truseq_mode", "moleculo_mode"),
                            ("rna", "rna_mode"),
                            ("plasmid", "plasmid_mode"),

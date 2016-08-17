@@ -61,6 +61,7 @@ output_dir = None
 single_cell = False
 iontorrent = False
 meta = False
+tslr_mode = False
 rna = False
 large_genome = False
 test_mode = False

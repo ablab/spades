@@ -559,7 +559,7 @@ def compile_spades(args, dataset_info, working_dir):
 #Create SPAdes command line
 def make_spades_cmd(args, dataset_info, spades_dir, output_dir):
     #Correct paths in params
-    input_file_option_list = ['-1', '-2', '--12', '-s', '--hap' , '--trusted-contigs', '--untrusted-contigs' , '--nanopore' , '--pacbio', '--sanger', '--pe1-1', '--pe1-2', '--pe1-s', '--pe2-1', '--pe2-2', '--pe2-s', '--mp1-1', '--mp1-2', '--mp1-s', '--mp2-1', '--mp2-2', '--mp2-s', '--hqmp1-1', '--hqmp1-2', '--hqmp1-s', '--hqmp2-1', '--hqmp2-2', '--hqmp2-s', '--dataset'];
+    input_file_option_list = ['-1', '-2', '--12', '-s', '--hap' , '--trusted-contigs', '--untrusted-contigs' , '--nanopore' , '--pacbio', '--sanger', '--pe1-1', '--pe1-2', '--pe1-s', '--pe2-1', '--pe2-2', '--pe2-s', '--mp1-1', '--mp1-2', '--mp1-s', '--mp2-1', '--mp2-2', '--mp2-s', '--hqmp1-1', '--hqmp1-2', '--hqmp1-s', '--hqmp2-1', '--hqmp2-2', '--hqmp2-s', '--tslr', '--dataset'];
     spades_params = []
     i = 0
     while i < len(dataset_info.spades_params):
