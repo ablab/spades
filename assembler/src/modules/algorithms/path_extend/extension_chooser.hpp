@@ -1394,7 +1394,7 @@ public:
         }
 
         double path_coverage = provider_.EstimatePathCoverage(path);
-        if (math::eq(path_coverage, -1.0)) {
+        if (math::eq(path_coverage, -1.0) || math::le(path_coverage, 10.0)) {
             DEBUG("Path coverage can't be calculated of too low");
             return EdgeContainer();
         }
@@ -1468,7 +1468,7 @@ private:
         double answer = std::numeric_limits<double>::max();
 
         if (!CompatibleEdge(ext, path_coverage)) {
-            DEBUG("Extension coverage too low");
+            DEBUG("Extension coverage is too low");
             return answer;
         }
 
