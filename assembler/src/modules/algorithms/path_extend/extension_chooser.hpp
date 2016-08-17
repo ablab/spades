@@ -283,20 +283,21 @@ public:
 class TrivialExtensionChooserWithPI: public ExtensionChooser {
 
 public:
-    TrivialExtensionChooserWithPI(Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold): 
+    TrivialExtensionChooserWithPI(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold):
             ExtensionChooser(g, wc, weight_threshold) {
     }
 
     EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
-        if (edges.size() == 1) {
-            double weight = wc_->CountWeight(path, edges.back().e_, std::set<size_t>());
+        EdgeContainer result;
+        for(auto iter = edges.begin(); iter != edges.end(); ++iter) {
+            double weight = wc_->CountWeight(path, iter->e_, std::set<size_t>());
             NotifyAll(weight);
 
             if (CheckThreshold(weight)) {
-                return edges;
+                result.push_back(*iter);
             }
         }
-        return EdgeContainer();
+        return result;
     }
 };
 
@@ -855,7 +856,6 @@ public:
         DEBUG("Found " << support_paths.size() << " covering paths!!!");
         for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
             auto positions = (*it)->FindAll(path.Back());
-            (*it)->Print();
             for (size_t i = 0; i < positions.size(); ++i) {
                 if ((int) positions[i] < (int) (*it)->Size() - 1
                         && EqualBegins(path, (int) path.Size() - 1, **it,
@@ -919,9 +919,9 @@ private:
     }
 
     vector<pair<EdgeId, double> > MapToSortVector(const map<EdgeId, double>& map) const {
-        vector<pair<EdgeId, double> > result1(map.begin(), map.end());
-        std::sort(result1.begin(), result1.end(), EdgeWithWeightCompareReverse);
-        return result1;
+        vector<pair<EdgeId, double> > result(map.begin(), map.end());
+        std::sort(result.begin(), result.end(), EdgeWithWeightCompareReverse);
+        return result;
     }
 
     double filtering_threshold_;
@@ -1395,7 +1395,7 @@ public:
 
         double path_coverage = provider_.EstimatePathCoverage(path);
         if (math::eq(path_coverage, -1.0)) {
-            DEBUG("Path coverage can't be calculated");
+            DEBUG("Path coverage can't be calculated of too low");
             return EdgeContainer();
         }
         DEBUG("Path coverage is " << path_coverage);
@@ -1550,6 +1550,191 @@ private:
     const size_t min_path_len_;
     DECL_LOGGER("CoordCoverageExtensionChooser");
 };
+
+class TSLRScaffoldingExtensionChooser: public ExtensionChooser {
+private:
+
+    size_t LastConservativeEdge(const BidirectionalPath& path) const {
+        for(int i = path.Size() - 1; i >= 0; --i) {
+            if(g_.length(path[i]) > min_conservative_edge_length_) {
+                return i;
+            }
+        }
+        return std::numeric_limits<size_t>::max();
+    }
+
+    EdgeId NextConservativeEdge(const BidirectionalPath& path, size_t from, VertexId end_vertex_of_path) const {
+        for(size_t i = from + 1; i < path.Size(); ++i) {
+            if(g_.length(path[i]) > min_conservative_edge_length_ && g_.EdgeStart(path[i]) != end_vertex_of_path) {
+                return path[i];
+            }
+        }
+        return EdgeId(0);
+    }
+
+
+    vector<pair<EdgeId, double> > MapToSortVector(const map<EdgeId, double>& map) const {
+        vector<pair<EdgeId, double> > result(map.begin(), map.end());
+        std::sort(result.begin(), result.end(), EdgeWithWeightCompareReverse);
+        return result;
+    }
+
+    std::map<EdgeId, double> FindWeights(EdgeId source, const BidirectionalPath& path, size_t idx) const {
+        VertexId end_vertex_of_path = g_.EdgeEnd(path.Back());
+        std::map<EdgeId, double> next_conservative_edges_with_weights;
+        auto coveringPaths = coverage_map_.GetCoveringPaths(source);
+        for(auto p : coveringPaths) {
+            DEBUG("Weight - " << p->GetWeight());
+            auto all_pos = p->FindAll(source);
+            if(all_pos.size() != 1) {
+                return std::map<EdgeId, double>();
+            }
+
+            size_t pos = all_pos[0];
+            EdgeId next_conservative_edge = NextConservativeEdge(*p, pos, end_vertex_of_path);
+            if(next_conservative_edge == EdgeId(0)){
+                continue;
+            }
+
+            if(CheckPrefixConservative(path, idx, *p, pos)) {
+                next_conservative_edges_with_weights[next_conservative_edge] += p->GetWeight();
+            }
+
+        }
+        return next_conservative_edges_with_weights;
+    }
+
+    EdgeContainer FindFeasibleExtension(const std::map<EdgeId, double>& next_long_edges_with_weights) const {
+        auto sorted_results = MapToSortVector(next_long_edges_with_weights);
+        for (auto iter = sorted_results.begin(); iter != sorted_results.end(); ++iter) {
+            DEBUG("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
+        }
+        EdgeContainer result;
+        if (sorted_results.size() < 1 || sorted_results[0].second < weight_threshold_) {
+            DEBUG("Doesn't  help");
+            return result;
+        } else if (sorted_results.size() == 1 || (sorted_results.size() > 1
+                && sorted_results[0].second > multiplicity_coef_ * sorted_results[1].second)) {
+            result.push_back(EdgeWithDistance(sorted_results[0].first, 0));
+            DEBUG("Feasible extension - " << g_.int_id(sorted_results[0].first));
+            return result;
+        }
+        return result;
+    }
+
+    void FindDistance(EdgeId start, EdgeId end, EdgeContainer& result) const {
+        VertexId last_vertex = g_.EdgeEnd(start);
+        VertexId first_vertex = g_.EdgeStart(end);
+        size_t distance = 0;
+        if (first_vertex == last_vertex) {
+            distance = 0;
+        } else {
+            DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, 1000, 3000));
+            dijkstra.Run(last_vertex);
+            vector<EdgeId> shortest_path = dijkstra.GetShortestPathTo(g_.EdgeStart(end));
+
+            if (shortest_path.empty()) {
+                DEBUG("Failed to find closing path");
+                result.clear();
+                return;
+            } else {
+                distance = CumulativeLength(g_, shortest_path);
+            }
+        }
+        result[0].d_ = (int)distance;
+    }
+
+
+    size_t CheckPrefixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const {
+        int cur_pos1 = (int) pos1;
+        int cur_pos2 = (int) pos2;
+        while (cur_pos1 >= 0 && cur_pos2 >= 0) {
+            if(g_.length(path1.At(cur_pos1)) < min_conservative_edge_length_) {
+                cur_pos1--;
+                continue;
+            }
+
+            if(g_.length(path2.At(cur_pos2)) < min_conservative_edge_length_) {
+                cur_pos2--;
+                continue;
+            }
+
+            if (path1.At(cur_pos1) == path2.At(cur_pos2)) {
+                cur_pos1--;
+                cur_pos2--;
+            } else {
+                DEBUG("Not Equal at " << cur_pos1 << " and " << cur_pos2);
+                return cur_pos1;
+
+            }
+        }
+        DEBUG("Equal!!");
+        return -1UL;
+    }
+
+    size_t CheckSuffixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const {
+        size_t cur_pos1 = pos1;
+        size_t cur_pos2 = pos2;
+        while (cur_pos1 < path1.Size() && cur_pos2 < path2.Size()) {
+            if(g_.length(path1.At(cur_pos1)) < min_conservative_edge_length_) {
+                cur_pos1++;
+                continue;
+            }
+
+            if(g_.length(path2.At(cur_pos2)) < min_conservative_edge_length_) {
+                cur_pos2++;
+                continue;
+            }
+
+            if (path1.At(cur_pos1) == path2.At(cur_pos2)) {
+                cur_pos1++;
+                cur_pos2++;
+            } else {
+                return cur_pos1;
+            }
+        }
+        return -1UL;
+    }
+
+
+public:
+    TSLRScaffoldingExtensionChooser(const Graph& g, PathContainer& pc,
+            double multiplicity_coef, double filtering_weight, size_t max_edge_length_in_repeat, size_t min_conservative_edge_length = 300) :
+            ExtensionChooser(g), coverage_map_(g, pc), multiplicity_coef_(multiplicity_coef), filtering_weight_(filtering_weight),
+            max_edge_len_in_repeat_(max_edge_length_in_repeat), min_conservative_edge_length_(min_conservative_edge_length) {
+    }
+
+    EdgeContainer Filter(const BidirectionalPath& path,
+            const EdgeContainer& /*edges*/) const override {
+        DEBUG("Tslr filtering extension chooser");
+        VertexId lastVertex = g_.EdgeEnd(path.Back());
+        DEBUG("Last vertex - " << g_.int_id(lastVertex));
+
+        size_t idx = LastConservativeEdge(path);
+        if(idx == std::numeric_limits<size_t>::max()) {
+            return EdgeContainer();
+        }
+        EdgeId last_conservative = path[idx];
+
+        DEBUG("Last long edge - " << g_.int_id(last_conservative));
+
+        auto next_long_edges_with_weights = FindWeights(last_conservative, path, idx);
+        EdgeContainer result = FindFeasibleExtension(next_long_edges_with_weights);
+        if(result.size() == 1) {
+            FindDistance(path.Back(), result[0].e_, result);
+        }
+        return result;
+    }
+
+private:
+    const GraphCoverageMap coverage_map_;
+    const double multiplicity_coef_;
+    const double filtering_weight_;
+    const size_t max_edge_len_in_repeat_;
+    const size_t min_conservative_edge_length_;
+    DECL_LOGGER("TSLRScaffoldingExtensionChooser");
+};
+
 
 }
 #endif /* EXTENSION_HPP_ */

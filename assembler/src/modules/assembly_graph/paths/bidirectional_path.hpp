@@ -792,6 +792,8 @@ inline void SkipGaps(const BidirectionalPath& path1, size_t& cur_pos1, int gap1,
     }
 }
 
+
+//Try do ignore multiple loop traversals
 inline size_t FirstNotEqualPosition(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2, bool use_gaps) {
     int cur_pos1 = (int) pos1;
     int cur_pos2 = (int) pos2;

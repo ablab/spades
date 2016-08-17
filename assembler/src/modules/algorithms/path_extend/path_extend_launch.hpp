@@ -342,8 +342,7 @@ pe_config::LongReads GetLongReadsConfig(const PathExtendParamsContainer& params,
                                         const io::LibraryType& type) {
     if (io::SequencingLibraryBase::is_long_read_lib(type)) {
         return params.pe_cfg.long_reads.pacbio_reads;
-    } else if (type == io::LibraryType::PathExtendContigs
-               || type == io::LibraryType::TSLReads) {
+    } else if (type == io::LibraryType::PathExtendContigs) {
         return params.pe_cfg.long_reads.meta_contigs;
     } else if (io::SequencingLibraryBase::is_contig_lib(type)) {
         return params.pe_cfg.long_reads.contigs;
@@ -368,6 +367,15 @@ inline shared_ptr<ExtensionChooser> MakeLongReadsExtensionChooser(const config::
                                                   params.uneven_depth);
 }
 
+inline shared_ptr<ExtensionChooser> MakeLongTSLRScaffoldingExtensionChooser(const conj_graph_pack& gp,
+                                                                  size_t lib_index, const PathExtendParamsContainer& params) {
+    PathContainer paths;
+    AddPathsToContainer(gp, gp.single_long_reads[lib_index].GetAllPaths(), 1, paths);
+
+    auto long_reads_config = GetLongReadsConfig(params, cfg::get().ds.reads[lib_index].type());
+    return make_shared<TSLRScaffoldingExtensionChooser>(gp.g, paths, long_reads_config.weight_priority, long_reads_config.filtering,
+            params.pset.extension_options.max_repeat_length);
+}
 
 inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const config::dataset& dataset_info,
                                                         size_t lib_index,
@@ -416,6 +424,13 @@ inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const config::dataset& 
                                        params.pset.loop_removal.max_loops,
                                        investigate_loops,
                                        false /*use short loop coverage resolver*/);
+}
+
+inline shared_ptr<SimpleExtender> MakeTSLRScaffoldingExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+                                                        size_t lib_index, const PathExtendParamsContainer& params) {
+    auto long_read_ec = MakeLongTSLRScaffoldingExtensionChooser(gp, lib_index, params);
+    return make_shared<SimpleExtender>(gp, cov_map, long_read_ec, 10000,
+            0, true, false);
 }
 
 inline shared_ptr<SimpleExtensionChooser> MakeMetaExtensionChooser(shared_ptr<PairedInfoLibrary> lib,
@@ -662,13 +677,9 @@ inline shared_ptr<SimpleExtender> MakeCoordCoverageExtender(const config::datase
                                                                           params.pset.coordinated_coverage.max_edge_length_in_repeat,
                                                                           params.pset.coordinated_coverage.delta,
                                                                           params.pset.coordinated_coverage.min_path_len);
-    auto chooser = make_shared<JointExtensionChooser>(gp.g, MakeMetaExtensionChooser(paired_lib, params, gp, dataset_info.RL()), coord_chooser);
-
-    return make_shared<SimpleExtender>(gp, cov_map, chooser,
-                                       -1ul /* insert size */,
-                                       params.pset.loop_removal.mp_max_loops,
-                                       true, /* investigate short loops */
-                                       false /*use short loop coverage resolver*/);
+    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, paired_lib, false);
+    auto chooser = make_shared<JointExtensionChooser>(gp.g, make_shared<TrivialExtensionChooserWithPI>(gp.g, counter, 10.0), coord_chooser);
+    return make_shared<SimpleExtender>(gp, cov_map, chooser, -1ul, params.pset.loop_removal.mp_max_loops, true, false);
 }
 
 
@@ -858,6 +869,12 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                         break;
                 }
             }
+
+            if (lib.type() == io::LibraryType::TSLReads) {
+                result.push_back(MakeTSLRScaffoldingExtender(gp, cov_map, lib_index, params));
+                ++single_read_libs;
+            }
+
         }
 
         result.insert(result.end(), pes.begin(), pes.end());
@@ -877,6 +894,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     INFO("Using " << mp_libs << " mate-pair " << LibStr(mp_libs));
     INFO("Using " << single_read_libs << " single read " << LibStr(single_read_libs));
     INFO("Scaffolder is " << (pset.scaffolder_options.enabled ? "on" : "off"));
+
 
     if (pset.use_coordinated_coverage) {
         INFO("Using additional coordinated coverage extender");

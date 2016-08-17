@@ -155,16 +155,14 @@ private:
                 dijkstra.Run(lastVertex);
                 vector<EdgeId> shortest_path = dijkstra.GetShortestPathTo(g_.EdgeStart(endPath->Front()));
 
-                if (shortest_path.size() == 0) {
+                if (shortest_path.empty()) {
                     DEBUG("Failed to find closing path");
                     return;
                 } else if (!IsEndInsideComponent(BidirectionalPath(g_, shortest_path), component_set)) {
                     DEBUG("Closing path is outside the component");
                     return;
                 } else {
-                    for (size_t i = 0; i < shortest_path.size(); ++i) {
-                        nLen += g_.length(shortest_path[i]);
-                    }
+                    nLen = CumulativeLength(g_, shortest_path);
                 }
             }
         }
