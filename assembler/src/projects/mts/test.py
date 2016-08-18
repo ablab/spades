@@ -130,14 +130,20 @@ def check_etalons(args, workdir):
             return 0
         return float(maybe_num.group(0))
 
-    threshold = 0.1
+    #TODO: more configurable? Ideally, to set custom threshold for each cell
+
+    #Margin values should stay close to margin, otherwise it's a false pos/neg
+    pos_threshold = 95
+    neg_threshold = 5
+    #For the rest ("floating" clusters we're unsure of), we allow broader +/- margin
+    threshold = 10
 
     def compare_gf(ref, cag, val1, val2):
         log.log("Comparing {} in {}: {} vs {}".format(cag, ref, val1, val2))
         et_val = read_cell(val1)
         est_val = read_cell(val2)
-        lower = min(0, et_val * (1 - threshold))
-        upper = max(100, et_val * (1 + threshold))
+        lower = pos_threshold if et_val > pos_threshold else max(0,   et_val - threshold)
+        upper = neg_threshold if et_val < neg_threshold else min(100, et_val + threshold)
         if est_val < lower:
             log.err("GF of {} in {} = {}% is less than expected {:.2f}%".format(cag, ref, est_val, lower))
             mut.res = 7
