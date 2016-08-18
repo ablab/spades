@@ -682,6 +682,29 @@ inline shared_ptr<SimpleExtender> MakeCoordCoverageExtender(const config::datase
     return make_shared<SimpleExtender>(gp, cov_map, chooser, -1ul, params.pset.loop_removal.mp_max_loops, true, false);
 }
 
+inline shared_ptr<SimpleExtender> MakeCoordCoverageExtenderOld(const config::dataset& dataset_info,
+                                                            size_t lib_index,
+                                                            const PathExtendParamsContainer& params,
+                                                            const conj_graph_pack& gp,
+                                                            const GraphCoverageMap& cov_map) {
+
+    const auto& lib = dataset_info.reads[lib_index];
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(lib, gp.g, gp.clustered_indices[lib_index]);
+
+    CoverageAwareIdealInfoProvider provider(gp.g, paired_lib, -1ul, 0);
+    auto coord_chooser = make_shared<CoordinatedCoverageExtensionChooser>(gp.g, provider,
+                                                                          params.pset.coordinated_coverage.max_edge_length_in_repeat,
+                                                                          params.pset.coordinated_coverage.delta,
+                                                                          params.pset.coordinated_coverage.min_path_len);
+    auto chooser = make_shared<JointExtensionChooser>(gp.g, MakeMetaExtensionChooser(paired_lib, params, gp, dataset_info.RL()), coord_chooser);
+
+    return make_shared<SimpleExtender>(gp, cov_map, chooser,
+                                       -1ul /* insert size */,
+                                       params.pset.loop_removal.mp_max_loops,
+                                       true, /* investigate short loops */
+                                       false /*use short loop coverage resolver*/);
+}
+
 
 inline shared_ptr<SimpleExtender> MakeRNAExtender(const config::dataset& dataset_info,
                                                   size_t lib_index,
