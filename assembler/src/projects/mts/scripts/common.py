@@ -9,6 +9,8 @@ try:
     import yaml
     def load_dict(input):
         return yaml.load(input)
+    def dump_dict(dict, output):
+        yaml.dump(dict, output)
 except:
     def load_dict(input):
         def load_pairs():
@@ -16,6 +18,9 @@ except:
                 params = line.split(":", 2)
                 yield (params[0].strip(), params[1].strip())
         return dict(load_pairs())
+    def dump_dict(dict, output):
+        for k, v in dict.items():
+            print(k, ": ", v, sep="", file=output)
 
 FASTA_EXTS = {".fasta", ".fa", ".fna", ".fsa", ".fastq", ".fastq.gz", ".fq", ".fq.gz", ".fna.gz"}
 def gather_paths(path, basename=False):
