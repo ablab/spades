@@ -166,11 +166,16 @@ public:
 
     template<class OtherHist>
     size_t merge(const OtherHist &other) {
-        size_t added = 0;
-        for (const auto &new_point : other) {
-            added += merge_point(new_point);
+        // If histogram is empty, we could simply insert everything
+        if (size() == 0) {
+            insert(other.begin(), other.end());
+            return size();
         }
-        return added;
+
+        size_t old_size = size();
+        for (const auto &new_point : other)
+            merge_point(new_point);
+        return size() - old_size;
     }
 };
 
