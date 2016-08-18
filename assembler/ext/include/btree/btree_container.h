@@ -200,6 +200,10 @@ class btree_unique_container : public btree_container<Tree> {
   void insert(InputIterator b, InputIterator e) {
     this->tree_.insert_unique(b, e);
   }
+  template<class P>
+  std::pair<iterator,bool> insert(P&& x) {
+    return this->tree_.insert_unique(std::forward<P>(x));
+  }
 
   // Deletion routines.
   int erase(const key_type &key) {
@@ -230,20 +234,6 @@ class btree_map_container : public btree_unique_container<Tree> {
   typedef typename Tree::key_compare key_compare;
   typedef typename Tree::allocator_type allocator_type;
 
- private:
-  // A pointer-like object which only generates its value when
-  // dereferenced. Used by operator[] to avoid constructing an empty data_type
-  // if the key already exists in the map.
-  struct generate_value {
-    generate_value(const key_type &k)
-        : key(k) {
-    }
-    value_type operator*() const {
-      return std::make_pair(key, data_type());
-    }
-    const key_type &key;
-  };
-
  public:
   // Default constructor.
   btree_map_container(const key_compare &comp = key_compare(),
@@ -266,7 +256,7 @@ class btree_map_container : public btree_unique_container<Tree> {
 
   // Insertion routines.
   data_type& operator[](const key_type &key) {
-    return this->tree_.insert_unique(key, generate_value(key)).first->second;
+    return this->tree_.insert_unique(key, std::make_pair(key, data_type())).first->second;
   }
 };
 

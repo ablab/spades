@@ -663,7 +663,8 @@ class btree_node {
 
   // Inserts the value x at position i, shifting all existing values and
   // children at positions >= i to the right by 1.
-  void insert_value(int i, const value_type &x);
+  template<typename V>
+  void insert_value(int i, V &&x);
 
   // Removes the value at position i, shifting all existing values and children
   // at positions > i to the left by 1.
@@ -724,6 +725,12 @@ class btree_node {
   void value_init(int i, const value_type &x) {
     new (&fields_.values[i]) mutable_value_type(x);
   }
+  
+  template<class V>
+  void value_init(int i, V&& x) {
+    new (&fields_.values[i]) mutable_value_type(std::forward<V>(x));
+  }
+  
   void value_destroy(int i) {
     fields_.values[i].~mutable_value_type();
   }
@@ -999,17 +1006,23 @@ class btree : public Params::key_compare {
   }
 
   // Inserts a value into the btree only if it does not already exist. The
-  // boolean return value indicates whether insertion succeeded or failed. The
-  // ValuePointer type is used to avoid instatiating the value unless the key
-  // is being inserted. Value is not dereferenced if the key already exists in
-  // the btree. See btree_map::operator[].
-  template <typename ValuePointer>
-  std::pair<iterator,bool> insert_unique(const key_type &key, ValuePointer value);
+  // boolean return value indicates whether insertion succeeded or failed.
+  std::pair<iterator,bool> insert_unique(const key_type &key, value_type&& value);
+
+  // Inserts a value into the btree only if it does not already exist. The
+  // boolean return value indicates whether insertion succeeded or failed.
+  std::pair<iterator,bool> insert_unique(const key_type &key, const value_type& value);
 
   // Inserts a value into the btree only if it does not already exist. The
   // boolean return value indicates whether insertion succeeded or failed.
   std::pair<iterator,bool> insert_unique(const value_type &v) {
-    return insert_unique(params_type::key(v), &v);
+    return insert_unique(params_type::key(v), v);
+  }
+
+  // Inserts a value into the btree only if it does not already exist. The
+  // boolean return value indicates whether insertion succeeded or failed.
+  std::pair<iterator,bool> insert_unique(value_type &&v) {
+    return insert_unique(params_type::key(v), std::move(v));
   }
 
   // Insert with hint. Check to see if the value should be placed immediately
@@ -1305,7 +1318,8 @@ class btree : public Params::key_compare {
 
   // Inserts a value into the btree immediately before iter. Requires that
   // key(v) <= iter.key() and (--iter).key() <= key(v).
-  iterator internal_insert(iterator iter, const value_type &v);
+  template<class V>
+  iterator internal_insert(iterator iter, V &&v);
 
   // Returns an iterator pointing to the first value >= the value "iter" is
   // pointing at. Note that "iter" might be pointing to an invalid location as
@@ -1419,9 +1433,10 @@ class btree : public Params::key_compare {
 ////
 // btree_node methods
 template <typename P>
-inline void btree_node<P>::insert_value(int i, const value_type &x) {
+template <typename V>
+inline void btree_node<P>::insert_value(int i, V &&x) {
   assert(i <= count());
-  value_init(count(), x);
+  value_init(count(), std::forward<V>(x));
   for (int j = count(); j > i; --j) {
     value_swap(j, this, j - 1);
   }
@@ -1739,9 +1754,9 @@ btree<P>::btree(const self_type &x)
   assign(x);
 }
 
-template <typename P> template <typename ValuePointer>
+template <typename P>
 std::pair<typename btree<P>::iterator, bool>
-btree<P>::insert_unique(const key_type &key, ValuePointer value) {
+btree<P>::insert_unique(const key_type &key, value_type&& value) {
   if (empty()) {
     *mutable_root() = new_leaf_root_node(1);
   }
@@ -1759,9 +1774,32 @@ btree<P>::insert_unique(const key_type &key, ValuePointer value) {
     }
   }
 
-  return std::make_pair(internal_insert(iter, *value), true);
+  return std::make_pair(internal_insert(iter, std::move(value)), true);
 }
 
+template <typename P>
+std::pair<typename btree<P>::iterator, bool>
+btree<P>::insert_unique(const key_type &key, const value_type& value) {
+  if (empty()) {
+    *mutable_root() = new_leaf_root_node(1);
+  }
+
+  std::pair<iterator, int> res = internal_locate(key, iterator(root(), 0));
+  iterator &iter = res.first;
+  if (res.second == kExactMatch) {
+    // The key already exists in the tree, do nothing.
+    return std::make_pair(internal_last(iter), false);
+  } else if (!res.second) {
+    iterator last = internal_last(iter);
+    if (last.node && !compare_keys(key, last.key())) {
+      // The key already exists in the tree, do nothing.
+      return std::make_pair(last, false);
+    }
+  }
+
+  return std::make_pair(internal_insert(iter, value), true);
+}
+  
 template <typename P>
 inline typename btree<P>::iterator
 btree<P>::insert_unique(iterator position, const value_type &v) {
@@ -2197,8 +2235,9 @@ inline IterType btree<P>::internal_last(IterType iter) {
 }
 
 template <typename P>
+template <typename V>
 inline typename btree<P>::iterator
-btree<P>::internal_insert(iterator iter, const value_type &v) {
+btree<P>::internal_insert(iterator iter, V &&v) {
   if (!iter.node->leaf()) {
     // We can't insert on an internal node. Instead, we'll insert after the
     // previous value which is guaranteed to be on a leaf node.
@@ -2223,7 +2262,7 @@ btree<P>::internal_insert(iterator iter, const value_type &v) {
   } else if (!root()->leaf()) {
     ++*mutable_size();
   }
-  iter.node->insert_value(iter.position, v);
+  iter.node->insert_value(iter.position, std::forward<V>(v));
   return iter;
 }
 
