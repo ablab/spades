@@ -158,8 +158,10 @@ class KMerSortingSplitter : public KMerSplitter<Seq> {
     }
 
     for (auto & entry : kmer_buffers_)
-      for (auto & eentry : entry)
+      for (auto & eentry : entry) {
         eentry.clear();
+        eentry.shrink_to_fit();
+      }
   }
 
   std::string GetRawKMersFname(unsigned suffix) const {

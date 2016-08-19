@@ -40,7 +40,7 @@ private:
     // No JEMalloc, no cookies
     ElTy *res = new ElTy[capacity_ * el_sz_];
     if (storage_)
-      std:: memcpy(res, storage_, size_ * sizeof(ElTy) * el_sz_);
+      std::memcpy(res, storage_, size_ * sizeof(ElTy) * el_sz_);
 
     delete[] storage_;
     storage_ = res;
@@ -79,7 +79,7 @@ public:
 #ifdef SPADES_USE_JEMALLOC
         je_free(storage_);
 #else
-    delete[] storage_;
+        delete[] storage_;
 #endif
     }
 
@@ -124,6 +124,11 @@ public:
     void clear() {
         size_ = 0;
         vector_.set_size(size_);
+    }
+
+    void shrink_to_fit() {
+        capacity_ = std::max(size_, size_t(1));
+        vector_.set_data(realloc());
     }
 
     iterator begin() {
