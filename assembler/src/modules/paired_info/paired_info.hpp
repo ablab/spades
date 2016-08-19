@@ -715,14 +715,6 @@ public:
         return Get(p.first, p.second);
     }
 
-    //Currently unused
-    /**
-     * @brief Returns a backwards histogram proxy for all points between two edges.
-     */
-    /*HistProxy<true> GetBack(EdgeId e1, EdgeId e2) const {
-        return HistProxy<true>(GetImpl(e2, e1), CalcOffset(e2));
-    }*/
-
     /**
      * @brief Checks if an edge (or its conjugated twin) is consisted in the index.
      */
@@ -751,29 +743,6 @@ public:
     }
 
 private:
-    PairedIndex(size_t size, const Graph& graph, const StorageMap& storage)
-            : base(graph) {
-        this->size_ = size;
-        this->storage_ = storage;
-    }
-
-public:
-    /**
-     * @brief Returns a copy of sub-index.
-     * @deprecated Needed only in smoothing distance estimator.
-     */
-    self SubIndex(EdgeId e1, EdgeId e2) const {
-        InnerMap tmp;
-        const auto& h1 = GetImpl(e1, e2);
-        size_t size = h1.size();
-        tmp[e1][e2] = h1;
-        SwapConj(e1, e2);
-        const auto& h2 = GetImpl(e1, e2);
-        size += h2.size();
-        tmp[e1][e2] = h2;
-        return self(size, this->graph_, tmp);
-    };
-
     InnerMap empty_map_; //null object
 };
 
