@@ -15,6 +15,7 @@
 #include <type_traits>
 
 #include "histogram.hpp"
+#include "histptr.hpp"
 
 namespace omnigraph {
 
@@ -128,6 +129,7 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
   protected:
     using typename base::InnerPoint;
     typedef omnigraph::de::Histogram<InnerPoint> InnerHistogram;
+    typedef omnigraph::de::StrongWeakPtr<InnerHistogram> InnerHistPtr;
 
   public:
     using typename base::Graph;
@@ -135,7 +137,7 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
     using typename base::EdgePair;
     using typename base::Point;
 
-    typedef Container<EdgeId, InnerHistogram> InnerMap;
+    typedef Container<EdgeId, InnerHistPtr> InnerMap;
     typedef Container<EdgeId, InnerMap> StorageMap;
 
   public:
@@ -164,7 +166,11 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
 
   private:
     void InsertOne(EdgeId e1, EdgeId e2, InnerPoint p) {
-        size_ += storage_[e1][e2].merge_point(p);
+        InnerMap& second = storage_[e1];
+        if (!second.count(e2))
+            second.insert(std::make_pair(e2, new InnerHistogram));
+        
+        size_ += second[e2]->merge_point(p);
     }
 
   protected:
@@ -184,6 +190,8 @@ class ConcurrentPairedBuffer : public PairedBufferBase<ConcurrentPairedBuffer<G,
   protected:
     using typename base::InnerPoint;
     typedef omnigraph::de::Histogram<InnerPoint> InnerHistogram;
+    typedef omnigraph::de::StrongWeakPtr<InnerHistogram> InnerHistPtr;
+
 
   public:
     using typename base::Graph;
@@ -191,7 +199,7 @@ class ConcurrentPairedBuffer : public PairedBufferBase<ConcurrentPairedBuffer<G,
     using typename base::EdgePair;
     using typename base::Point;
 
-    typedef Container<EdgeId, InnerHistogram> InnerMap;
+    typedef Container<EdgeId, InnerHistPtr> InnerMap;
     typedef cuckoohash_map<EdgeId, InnerMap> StorageMap;
 
   public:
@@ -226,9 +234,9 @@ class ConcurrentPairedBuffer : public PairedBufferBase<ConcurrentPairedBuffer<G,
         storage_.update_fn(e1,
                            [&](InnerMap &second) { // Now we will hold lock to the whole "subtree" starting from e1
                                if (!second.count(e2))
-                                   second.insert(std::make_pair(e2, InnerHistogram()));
+                                   second.insert(std::make_pair(e2, new InnerHistogram));
 
-                               size_t added = second[e2].merge_point(p);
+                               size_t added = second[e2]->merge_point(p);
                                #pragma omp atomic
                                size_ += added;
                            });
@@ -245,6 +253,7 @@ class PairedIndex : public PairedBuffer<G, Traits, Container> {
     typedef PairedBuffer<G, Traits, Container> base;
 
     using typename base::InnerHistogram;
+    using typename base::InnerHistPtr;
     using typename base::InnerPoint;
 
     using typename base::EdgePair;
@@ -452,7 +461,7 @@ public:
             }
 
             EdgeHist dereference() const {
-                const auto& hist = iter_->second;
+                const auto& hist = *iter_->second;
                 return std::make_pair(iter_->first, HistProxy(hist, index_.CalcOffset(edge_)));
             }
 
@@ -540,7 +549,7 @@ public:
         base_index.clear();
         auto locked_table = from.lock_table();
         for (auto& kvpair : locked_table) {
-            std::swap(base_index[kvpair.first], kvpair.second);
+            base_index[kvpair.first] = std::move(kvpair.second);
         }
         this->size_ = from.size();
     }
@@ -550,8 +559,10 @@ private:
     void MergeInnerMaps(OtherMap& map_to_add,
                         InnerMap& map) {
         for (auto& to_add : map_to_add) {
-            InnerHistogram& hist_exists = map[to_add.first];
-            this->size_ += hist_exists.merge(to_add.second);
+            InnerHistPtr& hist_exists = map[to_add.first];
+            if (hist_exists == nullptr)
+                hist_exists.reset(new InnerHistogram());
+            this->size_ += hist_exists->merge(*to_add.second);
         }
     }
 
@@ -597,7 +608,7 @@ private:
         auto i2 = map.find(e2);
         if (i2 == map.end())
             return 0;
-        InnerHistogram& hist = i2->second;
+        InnerHistogram& hist = *i2->second;
         if (!hist.erase(point))
            return 0;
         --this->size_;
@@ -617,7 +628,7 @@ private:
         auto i2 = map.find(e2);
         if (i2 == map.end())
             return 0;
-        InnerHistogram& hist = i2->second;
+        InnerHistogram& hist = *i2->second;
         size_t size_decrease = hist.size();
         map.erase(i2);
         this->size_ -= size_decrease;
@@ -660,7 +671,7 @@ private:
         if (i != this->storage_.end()) {
             auto j = i->second.find(e2);
             if (j != i->second.end())
-                return j->second;
+                return *j->second;
         }
         return HistProxy::empty_hist();
     }
