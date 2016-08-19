@@ -69,6 +69,14 @@ class safe_btree_map : public btree_map_container<
       : super_type(x) {
   }
 
+  safe_btree_map(self_type&& x) noexcept
+    : super_type(std::move(x)) {
+  }
+
+  self_type& operator=(safe_btree_map&& x) noexcept {
+    return static_cast<self_type&>(super_type::operator=(std::move(x)));
+  }
+
   // Range constructor.
   template <class InputIterator>
   safe_btree_map(InputIterator b, InputIterator e,

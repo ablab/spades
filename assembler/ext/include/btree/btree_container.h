@@ -56,6 +56,15 @@ class btree_container {
       : tree_(x.tree_) {
   }
 
+  btree_container(self_type &&x)
+      : tree_(std::move(x.tree_)) {
+  }
+
+  self_type& operator=(self_type&& x) noexcept {
+    tree_ = std::move(x.tree_);
+    return *this;
+  }
+  
   // Iterator routines.
   iterator begin() { return tree_.begin(); }
   const_iterator begin() const { return tree_.begin(); }
@@ -169,6 +178,14 @@ class btree_unique_container : public btree_container<Tree> {
       : super_type(x) {
   }
 
+  btree_unique_container(self_type &&x)
+      : super_type(std::move(x)) {
+  }
+
+  self_type& operator=(self_type&& x) noexcept {
+    return static_cast<self_type&>(super_type::operator=(std::move(x)));
+  }
+
   // Range constructor.
   template <class InputIterator>
   btree_unique_container(InputIterator b, InputIterator e,
@@ -244,6 +261,14 @@ class btree_map_container : public btree_unique_container<Tree> {
   // Copy constructor.
   btree_map_container(const self_type &x)
       : super_type(x) {
+  }
+
+  btree_map_container(self_type &&x) noexcept
+      : super_type(std::move(x)) {
+  }
+
+  self_type& operator=(self_type&& x) noexcept {
+    return static_cast<self_type&>(super_type::operator=(std::move(x)));
   }
 
   // Range constructor.

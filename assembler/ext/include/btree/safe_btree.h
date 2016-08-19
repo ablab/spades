@@ -206,6 +206,11 @@ class safe_btree {
         generation_(1) {
   }
 
+  safe_btree(self_type &&x) noexcept
+    : tree_(std::move(x.tree_)),
+      generation_(x.generation_) {
+  }
+  
   iterator begin() {
     return iterator(this, tree_.begin());
   }
@@ -274,14 +279,18 @@ class safe_btree {
   }
 
   // Insertion routines.
-  template <typename ValuePointer>
-  std::pair<iterator, bool> insert_unique(const key_type &key, ValuePointer value) {
-    std::pair<tree_iterator, bool> p = tree_.insert_unique(key, value);
+  std::pair<iterator, bool> insert_unique(const key_type &key, value_type &&value) {
+    std::pair<tree_iterator, bool> p = tree_.insert_unique(key, std::move(value));
     generation_ += p.second;
     return std::make_pair(iterator(this, p.first), p.second);
   }
   std::pair<iterator, bool> insert_unique(const value_type &v) {
     std::pair<tree_iterator, bool> p = tree_.insert_unique(v);
+    generation_ += p.second;
+    return std::make_pair(iterator(this, p.first), p.second);
+  }
+  std::pair<iterator, bool> insert_unique(value_type &&v) {
+    std::pair<tree_iterator, bool> p = tree_.insert_unique(std::move(v));
     generation_ += p.second;
     return std::make_pair(iterator(this, p.first), p.second);
   }
@@ -299,6 +308,15 @@ class safe_btree {
   iterator insert_multi(const value_type &v) {
     ++generation_;
     return iterator(this, tree_.insert_multi(v));
+  }
+  iterator insert_multi(value_type &&v) {
+    ++generation_;
+    return iterator(this, tree_.insert_multi(std::move(v)));
+  }
+  iterator insert_multi(iterator position, value_type &&v) {
+    tree_iterator tree_pos = position.iter();
+    ++generation_;
+    return iterator(this, tree_.insert_multi(tree_pos, std::move(v)));
   }
   iterator insert_multi(iterator position, const value_type &v) {
     tree_iterator tree_pos = position.iter();
@@ -318,6 +336,14 @@ class safe_btree {
     }
     ++generation_;
     tree_ = x.tree_;
+    return *this;
+  }
+
+  self_type& operator=(self_type&& x) noexcept {
+    tree_ = std::move(x.tree_);
+    generation_ = x.generation_;
+    x.generation_ = -1;
+
     return *this;
   }
 

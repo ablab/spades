@@ -892,11 +892,25 @@ class btree : public Params::key_compare {
   // class optimization] for more details.
   template <typename Base, typename Data>
   struct empty_base_handle : public Base {
-    empty_base_handle(const Base &b, const Data &d)
+    empty_base_handle(const Base &b, Data *d)
         : Base(b),
           data(d) {
     }
-    Data data;
+
+    empty_base_handle(empty_base_handle &&other) noexcept(std::is_nothrow_move_constructible<Base>::value)
+      : Base(std::move(other)) {
+      data = other.data;
+      other.data = nullptr;
+    }
+
+    empty_base_handle& operator=(empty_base_handle &&other) noexcept(std::is_nothrow_move_constructible<Base>::value) {
+      Base::operator=(std::move(other));
+      data = other.data;
+      other.data = nullptr;
+      return *this;
+    }
+    
+    Data *data;
   };
 
   struct node_stats {
@@ -943,6 +957,9 @@ class btree : public Params::key_compare {
 
   // Copy constructor.
   btree(const self_type &x);
+
+  // Move constructor.
+  btree(self_type &&x) noexcept(std::is_nothrow_move_constructible<decltype(this->root_)>::value);
 
   // Destructor.
   ~btree() {
@@ -1035,12 +1052,9 @@ class btree : public Params::key_compare {
   template <typename InputIterator>
   void insert_unique(InputIterator b, InputIterator e);
 
-  // Inserts a value into the btree. The ValuePointer type is used to avoid
-  // instatiating the value unless the key is being inserted. Value is not
-  // dereferenced if the key already exists in the btree. See
-  // btree_map::operator[].
-  template <typename ValuePointer>
-  iterator insert_multi(const key_type &key, ValuePointer value);
+  // Inserts a value into the btree.
+  iterator insert_multi(const key_type &key, const value_type &value);
+  iterator insert_multi(const key_type &key, value_type &&value);
 
   // Inserts a value into the btree.
   iterator insert_multi(const value_type &v) {
@@ -1125,6 +1139,14 @@ class btree : public Params::key_compare {
     return *this;
   }
 
+  self_type& operator=(self_type&& x) noexcept(std::is_nothrow_move_assignable<decltype(this->root_)>::value) {
+    key_compare::operator=(std::move(x.key_comp()));
+    root_ = std::move(x.root_);
+    x.root_.data = nullptr;
+
+    return *this;
+  }
+  
   key_compare* mutable_key_comp() {
     return this;
   }
@@ -1392,7 +1414,7 @@ class btree : public Params::key_compare {
   }
 
  private:
-  empty_base_handle<internal_allocator_type, node_type*> root_;
+  empty_base_handle<internal_allocator_type, node_type> root_;
 
  private:
   // A never instantiated helper function that returns big_ if we have a
@@ -1755,6 +1777,13 @@ btree<P>::btree(const self_type &x)
 }
 
 template <typename P>
+btree<P>::btree(self_type &&x) noexcept(std::is_nothrow_move_constructible<decltype(this->root_)>::value)
+  : key_compare(std::move(x.key_comp())),
+    root_(std::move(x.root_)) {
+  x.root_.data = nullptr;
+}
+
+template <typename P>
 std::pair<typename btree<P>::iterator, bool>
 btree<P>::insert_unique(const key_type &key, value_type&& value) {
   if (empty()) {
@@ -1833,9 +1862,9 @@ void btree<P>::insert_unique(InputIterator b, InputIterator e) {
   }
 }
 
-template <typename P> template <typename ValuePointer>
+template <typename P>
 typename btree<P>::iterator
-btree<P>::insert_multi(const key_type &key, ValuePointer value) {
+btree<P>::insert_multi(const key_type &key, value_type &&value) {
   if (empty()) {
     *mutable_root() = new_leaf_root_node(1);
   }
@@ -1844,7 +1873,21 @@ btree<P>::insert_multi(const key_type &key, ValuePointer value) {
   if (!iter.node) {
     iter = end();
   }
-  return internal_insert(iter, *value);
+  return internal_insert(iter, std::move(value));
+}
+
+template <typename P>
+typename btree<P>::iterator
+btree<P>::insert_multi(const key_type &key, const value_type &value) {
+  if (empty()) {
+    *mutable_root() = new_leaf_root_node(1);
+  }
+
+  iterator iter = internal_upper_bound(key, iterator(root(), 0));
+  if (!iter.node) {
+    iter = end();
+  }
+  return internal_insert(iter, value);
 }
 
 template <typename P>

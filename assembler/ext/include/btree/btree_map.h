@@ -63,6 +63,15 @@ class btree_map : public btree_map_container<
       : super_type(x) {
   }
 
+  // Move constructor.
+  btree_map(self_type &&x) noexcept
+    : super_type(std::move(x)) {
+  }
+
+  self_type& operator=(self_type&& x) noexcept {
+    return static_cast<self_type&>(super_type::operator=(std::move(x)));
+  }
+
   // Range constructor.
   template <class InputIterator>
   btree_map(InputIterator b, InputIterator e,
