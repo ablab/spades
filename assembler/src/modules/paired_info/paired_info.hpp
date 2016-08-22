@@ -10,242 +10,14 @@
 #include "utils/adt/iterator_range.hpp"
 #include <boost/iterator/iterator_facade.hpp>
 #include <btree/safe_btree_map.h>
-#include <cuckoo/cuckoohash_map.hh>
+
+#include "paired_info_buffer.hpp"
 
 #include <type_traits>
-
-#include "histogram.hpp"
-#include "histptr.hpp"
 
 namespace omnigraph {
 
 namespace de {
-
-/**
- * @brief Index of paired reads information. For each pair of edges, we store so-called histogram which is a set
- *        of points with distance between those edges. Index is internally arranged as a map of map of histograms:
- *        edge1 -> (edge2 -> histogram)
- *        When we add a point (a,b)->p into the index, we automatically insert a conjugate point (b',a')->p',
- *        (self-conjugate edge pairs are the sole exception), so the index is always conjugate-symmetrical.
- *        Index provides access for a lot of different information:
- *        - if you need to have a histogram between two edges, use Get(edge1, edge2);
- *        - if you need to get a neighbourhood of some edge (second edges with corresponding histograms), use Get(edge1);
- *        - if you need to skip a symmetrical half of that neighbourhood, use GetHalf(edge1);
- *        Backward information (e.g., (b,a)->-p) is currently inaccessible.
- * @param G graph type
- * @param Traits Policy-like structure with associated types of inner and resulting points, and how to convert between them
- * @param C map-like container type (parameterized by key and value type)
- */
-
-template<class Derived, class G, class Traits>
-class PairedBufferBase {
-  protected:
-    typedef typename Traits::Gapped InnerPoint;
-
-  public:
-    typedef G Graph;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef std::pair<EdgeId, EdgeId> EdgePair;
-    typedef typename Traits::Expanded Point;
-
-  public:
-    PairedBufferBase(const Graph &g)
-            : graph_(g) {}
-
-    //---------------- Data inserting methods ----------------
-    /**
-     * @brief Adds a point between two edges to the index,
-     *        merging weights if there's already one with the same distance.
-     */
-    void Add(EdgeId e1, EdgeId e2, Point p) {
-        InnerPoint sp = Traits::Shrink(p, CalcOffset(e1));
-        InsertWithConj(e1, e2, sp);
-    }
-
-    /**
-     * @brief Adds a whole set of points between two edges to the index.
-     */
-    template<typename TH>
-    void AddMany(EdgeId e1, EdgeId e2, const TH& hist) {
-        for (auto p : hist) {
-            InnerPoint sp = Traits::Shrink(p, CalcOffset(e1));
-            InsertWithConj(e1, e2, sp);
-        }
-    }
-
-    //---------------- Miscellaneous ----------------
-
-    /**
-     * Returns the graph the index is based on. Needed for custom iterators.
-     */
-    const Graph &graph() const { return graph_; }
-
-  public:
-    /**
-     * @brief Returns a conjugate pair for two edges.
-     */
-    EdgePair ConjugatePair(EdgeId e1, EdgeId e2) const {
-        return std::make_pair(this->graph_.conjugate(e2), this->graph_.conjugate(e1));
-    }
-    /**
-     * @brief Returns a conjugate pair for a pair of edges.
-     */
-    EdgePair ConjugatePair(EdgePair ep) const {
-        return ConjugatePair(ep.first, ep.second);
-    }
-
-  private:
-    void InsertWithConj(EdgeId e1, EdgeId e2, InnerPoint p) {
-        static_cast<Derived*>(this)->InsertOne(e1, e2, p);
-        SwapConj(e1, e2); //TODO: deal with loops and self-conj
-        static_cast<Derived*>(this)->InsertOne(e1, e2, p);
-    }
-
-  protected:
-    void SwapConj(EdgeId &e1, EdgeId &e2) const {
-        auto tmp = e1;
-        e1 = graph_.conjugate(e2);
-        e2 = graph_.conjugate(tmp);
-    }
-
-    size_t CalcOffset(EdgeId e) const {
-        return this->graph().length(e);
-    }
-
-  protected:
-    size_t size_;
-    const Graph& graph_;
-};
-
-
-template<typename G, typename Traits, template<typename, typename> class Container>
-class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
-                                             G, Traits> {
-    typedef PairedBuffer<G, Traits, Container> self;
-    typedef PairedBufferBase<self, G, Traits> base;
-
-    friend class PairedBufferBase<self, G, Traits>;
-
-  protected:
-    using typename base::InnerPoint;
-    typedef omnigraph::de::Histogram<InnerPoint> InnerHistogram;
-    typedef omnigraph::de::StrongWeakPtr<InnerHistogram> InnerHistPtr;
-
-  public:
-    using typename base::Graph;
-    using typename base::EdgeId;
-    using typename base::EdgePair;
-    using typename base::Point;
-
-    typedef Container<EdgeId, InnerHistPtr> InnerMap;
-    typedef Container<EdgeId, InnerMap> StorageMap;
-
-  public:
-    PairedBuffer(const Graph &g)
-            : base(g), size_(0) {}
-
-
-    //---------------- Miscellaneous ----------------
-
-    /**
-     * @brief Clears the whole index. Used in merging.
-     */
-    void clear() {
-        storage_.clear();
-        size_ = 0;
-    }
-
-    /**
-     * @brief Returns the physical index size (total count of all histograms).
-     */
-    size_t size() const { return size_; }
-
-    typename StorageMap::locked_table lock_table() {
-        return storage_.lock_table();
-    }
-
-  private:
-    void InsertOne(EdgeId e1, EdgeId e2, InnerPoint p) {
-        InnerMap& second = storage_[e1];
-        if (!second.count(e2))
-            second.insert(std::make_pair(e2, new InnerHistogram));
-        
-        size_ += second[e2]->merge_point(p);
-    }
-
-  protected:
-    size_t size_;
-    StorageMap storage_;
-};
-
-
-template<typename G, typename Traits, template<typename, typename> class Container>
-class ConcurrentPairedBuffer : public PairedBufferBase<ConcurrentPairedBuffer<G, Traits, Container>,
-                                                       G, Traits> {
-    typedef ConcurrentPairedBuffer<G, Traits, Container> self;
-    typedef PairedBufferBase<self, G, Traits> base;
-
-    friend class PairedBufferBase<self, G, Traits>;
-
-  protected:
-    using typename base::InnerPoint;
-    typedef omnigraph::de::Histogram<InnerPoint> InnerHistogram;
-    typedef omnigraph::de::StrongWeakPtr<InnerHistogram> InnerHistPtr;
-
-
-  public:
-    using typename base::Graph;
-    using typename base::EdgeId;
-    using typename base::EdgePair;
-    using typename base::Point;
-
-    typedef Container<EdgeId, InnerHistPtr> InnerMap;
-    typedef cuckoohash_map<EdgeId, InnerMap> StorageMap;
-
-  public:
-    ConcurrentPairedBuffer(const Graph &g)
-            : base(g), size_(0) {}
-
-
-    //---------------- Miscellaneous ----------------
-
-    /**
-     * @brief Clears the whole index. Used in merging.
-     */
-    void clear() {
-        storage_.clear();
-        size_ = 0;
-    }
-
-    /**
-     * @brief Returns the physical index size (total count of all histograms).
-     */
-    size_t size() const { return size_; }
-
-    typename StorageMap::locked_table lock_table() {
-        return storage_.lock_table();
-    }
-
-  private:
-    void InsertOne(EdgeId e1, EdgeId e2, InnerPoint p) {
-        if (!storage_.contains(e1))
-            storage_.insert(e1, InnerMap()); // We can fail to insert here, it's ok
-
-        storage_.update_fn(e1,
-                           [&](InnerMap &second) { // Now we will hold lock to the whole "subtree" starting from e1
-                               if (!second.count(e2))
-                                   second.insert(std::make_pair(e2, new InnerHistogram));
-
-                               size_t added = second[e2]->merge_point(p);
-                               #pragma omp atomic
-                               size_ += added;
-                           });
-    }
-
-  protected:
-    size_t size_;
-    StorageMap storage_;
-};
 
 template<typename G, typename Traits, template<typename, typename> class Container>
 class PairedIndex : public PairedBuffer<G, Traits, Container> {
@@ -517,10 +289,6 @@ private:
         return ep > this->ConjugatePair(ep);
     }
 
-    bool IsSelfConj(EdgeId e1, EdgeId e2) {
-        return e1 == this->graph_.conjugate(e2);
-    }
-
 public:
     /**
      * @brief Adds a lot of info from another index, using fast merging strategy.
@@ -531,13 +299,17 @@ public:
         if (index_to_add.size() == 0)
             return;
 
-        auto& base_index = this->storage_;
         auto locked_table = index_to_add.lock_table();
         for (auto& kvpair : locked_table) {
-            EdgeId e1_to_add = kvpair.first;
-            auto& map_to_add = kvpair.second;
-            InnerMap& map_already_exists = base_index[e1_to_add];
-            MergeInnerMaps(map_to_add, map_already_exists);
+            EdgeId e1_to_add = kvpair.first; auto& map_to_add = kvpair.second;
+
+            for (auto& to_add : map_to_add) {
+                EdgePair ep(e1_to_add, to_add.first), conj = this->ConjugatePair(e1_to_add, to_add.first);
+                if (ep > conj)
+                    continue;
+
+                base::Merge(ep.first, ep.second, *to_add.second);
+            }
         }
         VERIFY(this->size() >= index_to_add.size());
     }
@@ -554,18 +326,6 @@ public:
         this->size_ = from.size();
     }
 
-private:
-    template<class OtherMap>
-    void MergeInnerMaps(OtherMap& map_to_add,
-                        InnerMap& map) {
-        for (auto& to_add : map_to_add) {
-            InnerHistPtr& hist_exists = map[to_add.first];
-            if (hist_exists == nullptr)
-                hist_exists.reset(new InnerHistogram());
-            this->size_ += hist_exists->merge(*to_add.second);
-        }
-    }
-
 public:
     //---------------- Data deleting methods ----------------
 
@@ -576,11 +336,19 @@ public:
      */
     size_t Remove(EdgeId e1, EdgeId e2, Point p) {
         InnerPoint point = Traits::Shrink(p, this->graph_.length(e1));
-        auto res = RemoveSingle(e1, e2, point);
-        //TODO: deal with loops and self-conj
-        this->SwapConj(e1, e2);
-        res += RemoveSingle(e1, e2, point);
-        return res;
+
+        // We remove first "non-owning part"
+        EdgePair minep, maxep;
+        std::tie(minep, maxep) = this->MinMaxConjugatePair({ e1, e2 });
+
+        size_t res = RemoveSingle(minep.first, minep.second, point);
+        size_t removed = (this->IsSelfConj(e1, e2) ? res : 2 * res);
+        this->size_ -= removed;
+
+        Prune(maxep.first, maxep.second);
+        Prune(minep.first, minep.second);
+
+        return removed;
     }
 
     /**
@@ -589,34 +357,48 @@ public:
      * @return The number of deleted entries
      */
     size_t Remove(EdgeId e1, EdgeId e2) {
-        auto res = RemoveAll(e1, e2);
-        if (!IsSelfConj(e1, e2)) { //TODO: loops?
-            this->SwapConj(e1, e2);
-            res += RemoveAll(e1, e2);
-        }
-        return res;
+        EdgePair minep, maxep;
+        std::tie(minep, maxep) = this->MinMaxConjugatePair({ e1, e2 });
+
+        size_t removed = RemoveAll(maxep.first, maxep.second);
+        removed += RemoveAll(minep.first, minep.second);
+        this->size_ -= removed;
+
+        return removed;
     }
 
-private:
+  private:
+    void Prune(EdgeId e1, EdgeId e2) {
+        auto i1 = this->storage_.find(e1);
+        if (i1 == this->storage_.end())
+            return;
 
-    //TODO: remove duplicode
+        auto& map = i1->second;
+        auto i2 = map.find(e2);
+        if (i2 == map.end())
+            return;
+
+        if (!i2->second->empty())
+            return;
+
+        map.erase(e2);
+        if (map.empty())
+            this->storage_.erase(e1);
+    }
+
     size_t RemoveSingle(EdgeId e1, EdgeId e2, InnerPoint point) {
         auto i1 = this->storage_.find(e1);
         if (i1 == this->storage_.end())
             return 0;
+
         auto& map = i1->second;
         auto i2 = map.find(e2);
         if (i2 == map.end())
             return 0;
-        InnerHistogram& hist = *i2->second;
-        if (!hist.erase(point))
+
+        if (!i2->second->erase(point))
            return 0;
-        --this->size_;
-        if (hist.empty()) { //Prune empty maps
-            map.erase(e2);
-            if (map.empty())
-                this->storage_.erase(e1);
-        }
+
         return 1;
     }
 
@@ -628,10 +410,9 @@ private:
         auto i2 = map.find(e2);
         if (i2 == map.end())
             return 0;
-        InnerHistogram& hist = *i2->second;
-        size_t size_decrease = hist.size();
+
+        size_t size_decrease = i2->second->size();
         map.erase(i2);
-        this->size_ -= size_decrease;
         if (map.empty()) //Prune empty maps
             this->storage_.erase(i1);
         return size_decrease;
@@ -842,9 +623,6 @@ using PairedInfoBuffer = PairedBuffer<Graph, RawPointTraits, unordered_map>;
 
 template<class Graph>
 using PairedInfoBuffersT = PairedIndices<PairedInfoBuffer<Graph>>;
-
-template<class Graph>
-using ConcurrentPairedInfoBuffer = ConcurrentPairedBuffer<Graph, RawPointTraits, btree_map>;
 
 }
 

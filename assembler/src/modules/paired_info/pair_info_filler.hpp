@@ -9,6 +9,7 @@
 #define PAIR_INFO_FILLER_HPP_
 
 #include "assembly_graph/graph_alignment/sequence_mapper_notifier.hpp"
+#include "modules/paired_info/concurrent_pair_info_buffer.hpp"
 
 namespace debruijn_graph {
 
@@ -16,15 +17,13 @@ namespace debruijn_graph {
  * As for now it ignores sophisticated case of repeated consecutive
  * occurrence of edge in path due to gaps in mapping
  *
- * todo talk with Anton about simplification and speed-up of procedure with little quality loss
  */
 class LatePairedIndexFiller : public SequenceMapperListener {
     typedef std::pair<EdgeId, EdgeId> EdgePair;
     typedef std::function<double(const EdgePair&, const MappingRange&, const MappingRange&)> WeightF;
 public:
     LatePairedIndexFiller(const Graph &graph, WeightF weight_f, omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index)
-            : graph_(graph),
-              weight_f_(std::move(weight_f)),
+            : weight_f_(std::move(weight_f)),
               paired_index_(paired_index),
               buffer_pi_(graph) {
     }
@@ -86,7 +85,6 @@ private:
     }
 
 private:
-    const Graph& graph_;
     WeightF weight_f_;
     omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index_;
     omnigraph::de::ConcurrentPairedInfoBuffer<Graph> buffer_pi_;
