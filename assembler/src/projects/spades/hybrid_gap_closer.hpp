@@ -67,9 +67,7 @@ private:
         return index_.size();
     }
 
-    //FIXME is it correct?
     //FIXME extremely inefficient
-    //FIXME now done before filtering the gaps
     void RemoveTransitive(size_t min_weight) {
         set<EdgePair> nonempty_pairs;
         for (const auto& e_gaps : inner_index_) {
@@ -381,7 +379,7 @@ class MultiGapJoiner {
         return answer;
     }
 
-    size_t ArtificialSplitPos(EdgeId /*e*/, size_t left_split, size_t right_split) const {
+    size_t ArtificialSplitPos(size_t left_split, size_t right_split) const {
         if (right_split < left_split + 2) {
             DEBUG("Artificial split impossible");
             return -1ul;
@@ -462,7 +460,7 @@ class MultiGapJoiner {
         set<size_t> to_ignore;
 
         for (EdgeId e : EdgesNeedingSplit(left_split_pos, right_split_pos)) {
-            size_t artificial_split_pos = ArtificialSplitPos(e, left_split_pos[e].second, right_split_pos[e].second);
+            size_t artificial_split_pos = ArtificialSplitPos(left_split_pos[e].second, right_split_pos[e].second);
             if (artificial_split_pos == -1ul) {
                 to_ignore.insert(left_split_pos[e].first);
                 to_ignore.insert(right_split_pos[e].first);
@@ -536,9 +534,7 @@ private:
                                       size_t edge_gap_start_position,
                                       size_t edge_gap_end_position,
                                       const vector<string>& gap_variants) const {
-        //if (gap_variants.size() > 1) {
-            DEBUG(gap_variants.size() << " gap closing variants, lengths: " << PrintLengths(gap_variants));
-        //}
+        DEBUG(gap_variants.size() << " gap closing variants, lengths: " << PrintLengths(gap_variants));
         string s = consensus_(gap_variants);
         if (!s.empty()) {
             DEBUG("consenus for " << g_.int_id(start)
