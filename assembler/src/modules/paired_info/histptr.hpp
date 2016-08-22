@@ -16,19 +16,19 @@ class StrongWeakPtr {
     typedef T* pointer;
 
     StrongWeakPtr() noexcept
-            : ptr_(pointer()) {}
+            : ptr_(pointer(), false) {}
 
     StrongWeakPtr(std::nullptr_t) noexcept
-            : ptr_(pointer()) {}
+            : ptr_(pointer(), false) {}
 
-    StrongWeakPtr(pointer p) noexcept
-            : ptr_(std::move(p)) { }
+    StrongWeakPtr(pointer p, bool owning = true) noexcept
+            : ptr_(std::move(p), owning) { }
 
     StrongWeakPtr(StrongWeakPtr &&p) noexcept
-            : ptr_(p.release()) {}
+            : ptr_(p.release(), p.owning()) {}
 
     StrongWeakPtr& operator=(StrongWeakPtr &&p) noexcept {
-        reset(p.release());
+        reset(p.release(), p.owning());
         return *this;
     }
 
@@ -42,31 +42,36 @@ class StrongWeakPtr {
     }
 
     typename std::add_lvalue_reference<T>::type operator*() const {
-        return *ptr_;
+        return *ptr_.getPointer();
     }
 
     pointer operator->() const noexcept {
-        return ptr_;
+        return ptr_.getPointer();
     }
 
     pointer get() const noexcept {
-        return ptr_;
+        return ptr_.getPointer();
     }
     
     explicit operator bool() const noexcept {
-        return ptr_ != nullptr;
+        return ptr_.getPointer() != nullptr;
+    }
+
+    bool owning() const noexcept {
+        return ptr_.getInt();
     }
     
     pointer release() noexcept {
-        pointer p = ptr_;
-        ptr_ = pointer();
+        pointer p = ptr_.getPointer();
+        ptr_ = raw_type();
         return p;
     }
     
-    void reset(pointer p = pointer()) {
-        pointer tmp = ptr_;
-        ptr_ = p;
-        delete tmp;
+    void reset(pointer p = pointer(), bool own = true) {
+        pointer tmp = ptr_.getPointer(); bool is_owning = ptr_.getInt();
+        ptr_ = raw_type(p, own);
+        if (is_owning)
+            delete tmp;
     }
 
     void swap(StrongWeakPtr &p) noexcept {
@@ -74,7 +79,9 @@ class StrongWeakPtr {
     }
     
   private:
-    pointer ptr_;
+    llvm::PointerIntPair<pointer, 1, bool> ptr_;
+  public:
+    typedef decltype(ptr_) raw_type;
 };
 
 
