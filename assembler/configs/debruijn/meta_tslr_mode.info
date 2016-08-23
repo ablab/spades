@@ -1,0 +1,12 @@
+simp
+{
+    final_br
+    {
+        enabled false
+    }
+
+    relative_ed
+    {
+        enabled false
+    }
+}
