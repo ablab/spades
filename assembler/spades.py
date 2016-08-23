@@ -846,7 +846,9 @@ def main(args):
                         if options_storage.continue_mode and os.path.isfile(corrected):
                             log.info("\n== Skipping processing of " + assembly_type + " (already processed)\n")
                             continue
-
+                        if not os.path.isfile(assembled) or os.path.getsize(assembled) == 0:
+                            log.info("\n== Skipping processing of " + assembly_type + " (empty file)\n")
+                            continue
                         support.continue_from_here(log)
                         log.info("\n== Processing of " + assembly_type + "\n")
 
@@ -857,7 +859,6 @@ def main(args):
                         corr_cfg = merge_configs(cfg["mismatch_corrector"], cfg["common"])
                         
                         result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")
-
                         corrector_logic.run_corrector( tmp_configs_dir, bin_home, corr_cfg,
                         ext_python_modules_home, log, assembled, result_corrected_filename)
 
