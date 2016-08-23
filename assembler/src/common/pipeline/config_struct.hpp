@@ -521,6 +521,7 @@ struct debruijn_config {
         double abs_threshold;
         size_t topsort_bound;
         bool debug_construction;
+        bool join_paths;
         size_t edge_tail_len;
     };
 

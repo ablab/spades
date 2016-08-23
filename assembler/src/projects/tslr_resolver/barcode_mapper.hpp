@@ -10,13 +10,13 @@
 #include "io/reads/paired_read.hpp"
 #include "modules/assembly_graph/paths/mapping_path.hpp"
 #include <modules/assembly_graph/graph_alignment/sequence_mapper.hpp>
+#include <modules/pipeline/config_struct.hpp>
 
 using std::string;
 using std::istringstream;
 
 namespace tslr_resolver {
     constexpr int16_t max_barcodes = 384;
-
 
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
     typedef runtime_k::RtSeq seq_t;
@@ -77,7 +77,7 @@ namespace tslr_resolver {
         virtual ~BarcodeMapper() {}
         virtual size_t size() const = 0;
         virtual void FillMap (const string& reads_filename, const Index& index,
-                              const KmerSubs& kmer_mapper, bool debug_mode = false) = 0;
+                              const KmerSubs& kmer_mapper) = 0;
         virtual size_t IntersectionSize(const EdgeId& edge1, const EdgeId& edge2) const = 0;
         virtual size_t UnionSize(const EdgeId& edge1, const EdgeId& edge2) const = 0;
         virtual double IntersectionSizeNormalizedByUnion(const EdgeId& edge1, const EdgeId& edge2) const = 0;
@@ -168,13 +168,10 @@ namespace tslr_resolver {
         }
 
         void FillMap (const string& reads_filename, const Index& index,
-                      const KmerSubs& kmer_mapper, bool debug_mode = false) {
+                      const KmerSubs& kmer_mapper) {
             auto lib_vec = GetLibrary(reads_filename);
             auto mapper = std::make_shared<debruijn_graph::NewExtendedSequenceMapper<Graph, Index> >
                     (g_, index, kmer_mapper);
-
-            int debug_counter = 0;
-            int debug_steps = 100000;
 
             for (auto lib: lib_vec) {
                 std::string barcode = lib.barcode_;
@@ -183,7 +180,7 @@ namespace tslr_resolver {
                         make_shared<io::SeparatePairedReadStream> (lib.left_, lib.right_, 1);
                 auto wrapped_stream = io::RCWrap(paired_read_ptr);
                 io::PairedRead read;
-                while (!wrapped_stream->eof() && debug_counter < debug_steps) {
+                while (!wrapped_stream->eof()) {
                     *wrapped_stream >> read;
                     auto path_first = mapper -> MapRead(read.first());
                     auto path_second = mapper -> MapRead(read.second());
@@ -196,14 +193,27 @@ namespace tslr_resolver {
                                 InsertBarcode(barcode, g_.conjugate(path[i].first));
                         }
                     }
-                    if (debug_mode) {
-                        debug_counter++;
-                        if (debug_counter % 10000 == 0) {
-                            INFO(std::to_string(debug_counter) + " reads processed...");
-                        }
-                    }
                 }
             }
+        }
+
+        double AverageBarcodeCoverage() const override {
+            edge_it_helper helper(g_);
+            int64_t barcodes_overall_heads = 0;
+            int64_t barcodes_overall_tails = 0;
+            int64_t long_edges = 0;
+            size_t len_threshold = cfg::get().ts_res.len_threshold;
+            for (auto it = helper.begin(); it != helper.end(); ++it) {
+                if (g_.length(*it) > len_threshold) {
+                    long_edges++;
+                    barcodes_overall_heads += GetSizeHeads(*it);
+                    barcodes_overall_tails += GetSizeTails(*it);
+                }
+            }
+            DEBUG("heads: " + std::to_string(barcodes_overall_heads));
+            DEBUG("tails: " + std::to_string(barcodes_overall_tails));
+            DEBUG("Long edges" + long_edges);
+            return static_cast <double> (barcodes_overall_heads) / static_cast <double> (long_edges);
         }
 
     protected:
@@ -272,21 +282,6 @@ namespace tslr_resolver {
             auto Set1 = GetSetTails(edge1);
             auto Set2 = GetSetHeads(edge2);
             return (Set1 | Set2).count();
-        }
-
-        double AverageBarcodeCoverage() const override {
-            edge_it_helper helper(g_);
-            int64_t barcodes_overall_heads = 0;
-            int64_t barcodes_overall_tails = 0;
-            int64_t edges = 0;
-            for (auto it = helper.begin(); it != helper.end(); ++it) {
-                edges++;
-                barcodes_overall_heads += barcode_map_heads.at(*it).count();
-            }
-            DEBUG("heads: " + std::to_string(barcodes_overall_heads));
-            DEBUG("tails: " + std::to_string(barcodes_overall_tails));
-            DEBUG(edges);
-            return static_cast <double> (barcodes_overall_heads) / static_cast <double> (edges);
         }
 
         void ReadEntry (ifstream& fin, const EdgeId& edge) override {
@@ -358,22 +353,6 @@ namespace tslr_resolver {
             return Distr1.size() + Distr2.size() - IntersectionSize(edge1, edge2);
         }
 
-
-        double AverageBarcodeCoverage() const override {
-            edge_it_helper helper(g_);
-            int64_t barcodes_overall_heads = 0;
-            int64_t barcodes_overall_tails = 0;
-            int64_t edges = 0;
-            for (auto it = helper.begin(); it != helper.end(); ++it) {
-                edges++;
-                barcodes_overall_heads += barcode_map_heads.at(*it).size();
-                barcodes_overall_tails += barcode_map_heads.at(g_.conjugate(*it)).size();
-            }
-            DEBUG("heads: " + std::to_string(barcodes_overall_heads));
-            DEBUG("tails: " + std::to_string(barcodes_overall_tails));
-            DEBUG(edges);
-            return static_cast <double> (barcodes_overall_heads) / static_cast <double> (edges);
-        }
 
         //Delete low abundant barcodes from every edge
         void FilterByAbundance(size_t trimming_threshold) override {

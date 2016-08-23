@@ -614,7 +614,7 @@ private:
             VERIFY(edge_count == tmp_edge_count);
         }
 
-        const size_t longstring_size = 1000500; // TODO: O RLY magic constant? => Can't load edges >= 1Mbp
+        const size_t longstring_size = 4000000; // TODO: O RLY magic constant? => Can't load edges >= 1Mbp
         char longstring[longstring_size];
         for (size_t i = 0; i < edge_count; i++) {
             size_t e_real_id, start_id, fin_id, length, conjugate_edge_id;
