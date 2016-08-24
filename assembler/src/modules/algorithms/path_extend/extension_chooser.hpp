@@ -1555,7 +1555,7 @@ class TSLRScaffoldingExtensionChooser: public ExtensionChooser {
 private:
 
     size_t LastConservativeEdge(const BidirectionalPath& path) const {
-        for(int i = path.Size() - 1; i >= 0; --i) {
+        for(int i = ((int) path.Size()) - 1; i >= 0; --i) {
             if(g_.length(path[i]) > min_conservative_edge_length_) {
                 return i;
             }

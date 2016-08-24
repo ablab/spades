@@ -77,7 +77,6 @@ size_t SensitiveReadMapper<Graph>::active_mappers_ = 0;
 template<class graph_pack, class SequencingLib>
 std::shared_ptr<SequenceMapper<typename graph_pack::graph_t>> ChooseProperMapper(const graph_pack& gp, const SequencingLib& library) {
     typedef typename graph_pack::graph_t Graph;
-    typedef typename Graph::EdgeId EdgeId;
     if (library.type() == io::LibraryType::MatePairs) {
         INFO("Mapping mate-pair library, selecting sensitive read mapper with k=" << cfg::get().sensitive_map.k);
         return std::make_shared<SensitiveReadMapper<Graph>>(gp.g, cfg::get().sensitive_map.k, gp.k_value);
