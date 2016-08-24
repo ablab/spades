@@ -25,6 +25,8 @@ class GapTrackingListener : public SequenceMapperListener {
     const GapStorage empty_storage_;
     vector<GapStorage> buffer_storages_;
 
+    const GapDescription INVALID_GAP;
+
     boost::optional<Sequence> Subseq(const io::SingleRead& read, size_t start, size_t end) const {
         DEBUG("Requesting subseq of read length " << read.size() << " from " << start << " to " << end);
         auto subread = read.Substr(start, end);
@@ -42,10 +44,52 @@ class GapTrackingListener : public SequenceMapperListener {
     }
 
     template<class ReadT>
-    vector<GapDescription> InferGaps(
-            const ReadT& read,
-            const MappingPath<EdgeId>& mapping
-    ) const {
+    GapDescription
+    CreateDescription(const ReadT& read, size_t seq_start, size_t seq_end,
+                      EdgeId left, size_t left_offset,
+                      EdgeId right, size_t right_offset) const {
+        VERIFY(left_offset > 0 && right_offset < g_.length(right));
+
+        //trying to shift on the left edge
+        if (seq_start > seq_end) {
+            size_t overlap = seq_start - seq_end;
+            DEBUG("Overlap of size " << overlap << " detected. Fixing.");
+            size_t left_shift = std::min(overlap, left_offset - 1);
+            VERIFY(seq_start >= left_shift);
+            seq_start -= left_shift;
+            left_offset -= left_shift;
+        }
+        //trying to shift on the right edge
+        if (seq_start > seq_end) {
+            size_t overlap = seq_start - seq_end;
+            DEBUG("Overlap of size " << overlap << " remained. Fixing.");
+            size_t right_shift = std::min(overlap, g_.length(right) - right_offset - 1);
+            VERIFY(seq_end + right_shift <= read.size());
+            seq_end += right_shift;
+            right_offset += right_shift;
+        }
+
+        if (seq_start <= seq_end) {
+            auto gap_seq = Subseq(read, seq_start, seq_end);
+            if (gap_seq) {
+                DEBUG("Gap info successfully created");
+                return GapDescription(left, right,
+                                      *gap_seq,
+                                      left_offset,
+                                      right_offset);
+            } else {
+                DEBUG("Something wrong with read subsequence");
+            }
+        } else {
+            size_t overlap = seq_start - seq_end;
+            DEBUG("Failed to fix overlap of size " << overlap);
+        }
+        return INVALID_GAP;
+    }
+
+    template<class ReadT>
+    vector<GapDescription> InferGaps(const ReadT& read,
+            const MappingPath<EdgeId>& mapping) const {
         TerminalVertexCondition<Graph> tip_condition(g_);
         DEBUG("Inferring gaps")
         VERIFY(!mapping.empty());
@@ -63,16 +107,13 @@ class GapTrackingListener : public SequenceMapperListener {
                 MappingRange mr2 = mapping.mapping_at(i + 1);
                 size_t seq_start = mr1.initial_range.end_pos + g_.k();
                 size_t seq_end = mr2.initial_range.start_pos;
-                if (seq_start > seq_end) {
-                    WARN("Overlapping flanks not supported yet");
-                    continue;
-                }
-                auto gap_seq = Subseq(read, seq_start, seq_end);
-                if (gap_seq) {
-                    answer.push_back(GapDescription(e1, e2,
-                                                    *gap_seq,
-                                                    mr1.mapped_range.end_pos,
-                                                    mr2.mapped_range.start_pos));
+
+                auto gap = CreateDescription(read, seq_start, seq_end,
+                                             e1, mr1.mapped_range.end_pos,
+                                             e2, mr2.mapped_range.start_pos);
+
+                if (gap != INVALID_GAP) {
+                    answer.push_back(gap);
                 }
             }
         }
