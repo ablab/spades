@@ -21,6 +21,20 @@ namespace path_extend {
 
 using namespace debruijn_graph;
 
+struct IOContigStorage {
+    std::string sequence_;
+    double coverage_;
+    IOContigStorage(const std::string& sequence, double coverage) :
+    sequence_(sequence), coverage_(coverage) { }
+};
+
+struct IOContigStorageGreater
+{
+    bool operator()(IOContigStorage const &a, IOContigStorage const &b) const {
+        return a.sequence_.length() > b.sequence_.length();
+    }
+};
+
 class ContigWriter {
 protected:
     DECL_LOGGER("PathExtendIO")
@@ -217,7 +231,7 @@ public:
         std::ofstream os_fastg;
         if (write_fastg)
             os_fastg.open((filename_base + ".paths").c_str());
-
+        vector<IOContigStorage> storage;
         int i = 0;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             if (iter.get()->Length() <= 0)
@@ -233,16 +247,27 @@ public:
                 size_t component = c_counter_.GetComponent(e);
                 contig_id = io::MakeContigComponentId(i, path_string.length(), path->Coverage(), component);
             } else {
-                contig_id = io::MakeContigId(i, path_string.length(), path->Coverage());
+                if(path_string.length() >= g_.k()) {
+                    IOContigStorage precontig(path_string, path->Coverage());
+                    storage.push_back(precontig);
+                }
             }
-            oss.set_header(contig_id);
+
             if (write_fastg) {
                 os_fastg << contig_id<< endl;
                 os_fastg << ToFASTGString(*iter.get()) << endl;
                 os_fastg << contig_id << "'" << endl;
                 os_fastg << ToFASTGString(*iter.getConjugate()) << endl;
             }
-            oss << path_string;
+
+        }
+        std::sort(storage.begin(), storage.end(), IOContigStorageGreater());
+        i = 0;
+        for(auto precontig : storage) {
+            ++i;
+            std::string contig_id = io::MakeContigId(i, precontig.sequence_.length(), precontig.coverage_);
+            oss.set_header(contig_id);
+            oss << precontig.sequence_;
         }
         if (write_fastg)
             os_fastg.close();
