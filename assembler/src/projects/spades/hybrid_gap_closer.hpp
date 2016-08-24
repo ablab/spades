@@ -69,15 +69,23 @@ private:
         return index_.size();
     }
 
+    //work around gcc (pre-4.9) bug
+    typename std::vector<GapDescription>::iterator
+    const_iterator_cast(std::vector<GapDescription>& v, typename std::vector<GapDescription>::const_iterator iter) const
+    {
+        return v.begin() + (iter - v.cbegin());
+    }
+
     //Function should return true if corresponding part of the index should be removed
     void FilterIndex(FilterF filter_f) {
         for (auto it = inner_index_.begin(); it != inner_index_.end(); ) {
-            auto& gaps = it->second;
+            vector<GapDescription>& gaps = it->second;
             auto ep_ranges = EdgePairGaps(gaps);
             for (int i = int(ep_ranges.size()) - 1; i >= 0; i--) {
                 info_it_pair ep_gaps = ep_ranges[i];
                 if (filter_f(ep_gaps.first, ep_gaps.second)) {
-                    gaps.erase(ep_gaps.first, ep_gaps.second);
+                    gaps.erase(const_iterator_cast(gaps, ep_gaps.first),
+                               const_iterator_cast(gaps, ep_gaps.second));
                 }
             }
             if (gaps.empty()) {
