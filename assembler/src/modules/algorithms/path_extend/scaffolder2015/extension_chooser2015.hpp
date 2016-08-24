@@ -12,16 +12,17 @@
 namespace path_extend {
 class ExtensionChooser2015: public ScaffoldingExtensionChooser {
 private:
+    shared_ptr<ConnectionCondition> lib_connection_condition_;
     const ScaffoldingUniqueEdgeStorage& unique_edges_;
-// for possible connections e1 and e2 if weight(e1) > relative_weight_threshold_ * weight(e2) then e2 will be ignored
+
+    // for possible connections e1 and e2 if weight(e1) > relative_weight_threshold_ * weight(e2) then e2 will be ignored
     double relative_weight_threshold_;
-    PairedLibConnectionCondition paired_connection_condition_;
     AssemblyGraphConnectionCondition graph_connection_condition_;
 // weight < absolute_weight_threshold_ will be ignored
     size_t absolute_weight_threshold_;
 // multiplicator for the pairs which are connected in graph.
     double graph_connection_bonus_;
-
+    static const int MIN_N_QUANTITY = 10;
 protected:
 //If path contains no unique edges return -1
     pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path) const;
@@ -31,18 +32,18 @@ protected:
 public:
     ExtensionChooser2015(const Graph& g,
                          shared_ptr<WeightCounter> wc,
-                         size_t lib_index,
+                         shared_ptr<ConnectionCondition> condition,
                          const ScaffoldingUniqueEdgeStorage& unique_edges,
                          double cl_weight_threshold,
                          double is_scatter_coeff,
                          double relative_threshold):
             //TODO: constants are subject to reconsider
             ScaffoldingExtensionChooser(g, wc, cl_weight_threshold, is_scatter_coeff),
+            lib_connection_condition_(condition),
             unique_edges_(unique_edges),
             relative_weight_threshold_(relative_threshold),
-            paired_connection_condition_(g, wc->get_libptr(), lib_index, 0),
             graph_connection_condition_(g, 2 * unique_edges_.GetMinLength(), unique_edges),
-            //TODO to congif!
+            //TODO to config!
             absolute_weight_threshold_(2),
             graph_connection_bonus_(2) {
         INFO("ExtensionChooser2015 created");
@@ -53,6 +54,7 @@ public:
  */
 
     EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override;
+    void InsertAdditionalGaps(ExtensionChooser::EdgeContainer& result) const;
 };
 
 

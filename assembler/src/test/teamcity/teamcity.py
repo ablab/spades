@@ -188,7 +188,7 @@ def run_reads_assessment(dataset_info, working_dir, output_dir):
 ### QUAST ###
 
 # Run QUAST for a set of contigs
-def run_quast(dataset_info, contigs, quast_output_dir):
+def run_quast(dataset_info, contigs, quast_output_dir, opts):
     if not reduce(lambda x, y: os.path.exists(y) and x, contigs, True):
         log.warn("No contigs were found in " + output_dir)
         return 8
@@ -197,7 +197,7 @@ def run_quast(dataset_info, contigs, quast_output_dir):
         if 'meta' in dataset_info.__dict__ and dataset_info.meta:
             cmd = "metaquast.py"
         #Preparing params
-        quast_params = []
+        quast_params = [opts]
         if dataset_info.quast_params:
             i = 0
             while i < len(dataset_info.quast_params):
@@ -210,6 +210,7 @@ def run_quast(dataset_info, contigs, quast_output_dir):
 
         log.log('Running ' + cmd + ' on ' + ','.join(contigs))
         quast_cmd = os.path.join(dataset_info.quast_dir, cmd) + " " + " ".join(quast_params)
+        log.log(quast_cmd)
         ecode = os.system(quast_cmd + " -o " + quast_output_dir + " " + " ".join(contigs) + " > /dev/null")
         if ecode != 0:
             log.err("QUAST finished abnormally with exit code " + str(ecode))
@@ -230,10 +231,10 @@ def construct_quast_limit_map(dataset_info, prefix):
 
 
 # Run QUAST and assess its report for a single contig file
-def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exit_code):
+def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exit_code, opts):
     if os.path.exists(fn):
         log.log("Processing " + fn)
-        qcode = run_quast(dataset_info, [fn], output_dir)
+        qcode = run_quast(dataset_info, [fn], output_dir, opts)
         if qcode != 0:
             log.err("Failed to run QUAST!")
             if (prefix + 'assess') in dataset_info.__dict__ and dataset_info.__dict__[prefix + 'assess']:
@@ -258,12 +259,12 @@ def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exi
 # Run QUAST on all contigs that need to be evaluated
 def quast_analysis(contigs, dataset_info, folder):
     exit_code = 0
-    for name, file_name, prefix in contigs:
+    for name, file_name, prefix, opts in contigs:
         log.log("======= " + name.upper() + " SUMMARY =======")
         if prefix != "":
             prefix = prefix + "_"
         qcode = quast_run_and_assess(dataset_info, os.path.join(folder, file_name + ".fasta"),
-                        os.path.join(folder, "QUAST_RESULTS_" +name.upper()), name, prefix, 10)
+                        os.path.join(folder, "QUAST_RESULTS_" +name.upper()), name, prefix, 10, opts)
         if qcode != 0:
             log.err("Analysis for " + name + " did not pass, exit code " + str(qcode))
             exit_code = qcode
@@ -402,7 +403,7 @@ def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir)
         enable_comparison = False
 
     if enable_comparison and contig_storage_dir != '' and 'quast_params' in dataset_info.__dict__ and dataset_info.quast_params and '-R' in dataset_info.quast_params:
-        for name, file_name, prefix in contigs:
+        for name, file_name, prefix, opts in contigs:
             if (prefix + 'assess') in dataset_info.__dict__ and dataset_info.__dict__[prefix + 'assess']:
                 fn = os.path.join(output_dir, file_name + ".fasta") 
                 if not os.path.exists(fn):
@@ -412,7 +413,7 @@ def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir)
                 latest_ctg = os.path.join(contig_storage_dir, "latest_" + name + ".fasta")
                 if os.path.exists(latest_ctg):
                     quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS_CMP_" + name.upper())
-                    qcode = run_quast(dataset_info, [fn, latest_ctg], quast_output_dir)
+                    qcode = run_quast(dataset_info, [fn, latest_ctg], quast_output_dir, opts)
 
                     log.log("======= " + name.upper() + " COMPARISON =======")
                     if not cmp_misassemblies(quast_output_dir, "latest_" + name, file_name):
@@ -440,19 +441,24 @@ def load_info(dataset_path):
 
 
 # Get contig list to be assessed for this run
-def get_contigs_list(dataset_info, folder, before_rr = False):
+def get_contigs_list(args, dataset_info, folder, before_rr = False):
     truspades_mode = 'truseq' in dataset_info.__dict__ and dataset_info.truseq
     dipspades_mode = 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades
 
-    contigs = [("contigs", "contigs", ""), ("scaffolds", "scaffolds", "sc")]
+    contigs = [("contigs", "contigs", "", "")]
+    if args.scaffolds:
+        contigs.append(("scaffolds", "scaffolds", "sc", " --scaffolds "))
+    else:
+        contigs.append(("scaffolds", "scaffolds", "sc", ""))
+
     if dipspades_mode:
-        contigs = [("contigs", "consensus_contigs", "")]
+        contigs = [("contigs", "consensus_contigs", "", "")]
     if truspades_mode:
-        contigs = [("contigs", "truseq_long_reads", "")]
+        contigs = [("contigs", "truseq_long_reads", "", "")]
     if os.path.exists(os.path.join(folder, "first_pe_contigs.fasta")):
-        contigs.append(("preliminary", "first_pe_contigs", "prelim"))
+        contigs.append(("preliminary", "first_pe_contigs", "prelim", ""))
     if before_rr and not truspades_mode and not dipspades_mode:
-        contigs.append(("before_rr", "before_rr", ""))
+        contigs.append(("before_rr", "before_rr", "", ""))
     return contigs
 
 
@@ -462,9 +468,11 @@ def parse_args():
     parser.add_argument("--run_name", "-n", help="output dir custom suffix", type=str)
     parser.add_argument("--spades_path", "-p", help="custom directory to spades.py", type=str)
     parser.add_argument("--no_cfg_and_compilation", dest="cfg_compilation", help="don't copy configs or compile SPAdes even if .info file states otherwise", action='store_false')
-    parser.set_defaults(no_cfg_and_compilation=True)
+    parser.set_defaults(cfg_compilation=True)
     parser.add_argument("--no_contig_archive", dest="contig_archive", help="don't save contigs to common contig archive", action='store_false')
     parser.set_defaults(contig_archive=True)
+    parser.add_argument("--scaffolds", dest="scaffolds", help="evaluate scaffolds in scaffold mode", action='store_true')
+    parser.set_defaults(scaffolds=False)
     parser.add_argument("--contig_name", "-s", help="archive contig name custom suffix", type=str)
     parser.add_argument("--spades_cfg_dir", "-c", help="SPAdes config directory", type=str)
     parser.add_argument("--local_output_dir", "-o", help="use this output dir, override output directory provided in config", type=str)
@@ -609,7 +617,7 @@ def save_contigs(working_dir, contig_storage_dir, contigs, rewrite_latest):
         ctg_suffix = "_" + args.contig_name
         log.log("Contigs have suffix " + ctg_suffix)
 
-    for name, file_name, prefix in contigs:
+    for name, file_name, prefix, opts in contigs:
         saved_ctg_name = name_prefix + name + ctg_suffix + ".fasta"
         shutil.copy(os.path.join(output_dir, file_name + ".fasta"), os.path.join(contig_storage_dir, saved_ctg_name))
         log.log(name + " saved to " + os.path.join(contig_storage_dir, saved_ctg_name))
@@ -659,7 +667,7 @@ try:
 
     #QUAST
     rewrite_latest = True
-    contigs = get_contigs_list(dataset_info, output_dir)    
+    contigs = get_contigs_list(args, dataset_info, output_dir)    
     if 'quast_params' in dataset_info.__dict__:
         ecode = quast_analysis(contigs, dataset_info, output_dir)
         if ecode != 0:
@@ -684,7 +692,7 @@ try:
         log.err('Failed to compare misassemblies')
 
     #save contigs to storage
-    contigs = get_contigs_list(dataset_info, output_dir, True)
+    contigs = get_contigs_list(args, dataset_info, output_dir, True)
     save_contigs(working_dir, contig_storage_dir, contigs, rewrite_latest)
 
     sys.exit(exit_code)

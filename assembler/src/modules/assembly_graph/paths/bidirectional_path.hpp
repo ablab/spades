@@ -103,7 +103,12 @@ public:
     }
 
     void Unsubscribe(PathListener * listener) {
-        listeners_.push_back(listener);
+        for (auto it = listeners_.begin(); it != listeners_.end(); ++it) {
+            if (*it == listener) {
+                listeners_.erase(it);
+                break;
+            }
+        }
     }
 
     void SetConjPath(BidirectionalPath* path) {

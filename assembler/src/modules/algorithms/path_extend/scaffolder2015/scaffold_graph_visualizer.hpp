@@ -18,8 +18,11 @@ class ScaffoldGraphLabeler : public GraphLabeler<ScaffoldGraph> {
 private:
     const ScaffoldGraph &graph_;
 
+    const map<VertexId, string>& additional_vertex_labels_;
+
 public:
-    ScaffoldGraphLabeler(const ScaffoldGraph &graph) : graph_(graph) {
+    ScaffoldGraphLabeler(const ScaffoldGraph &graph, const map<VertexId, string>& additional_vertex_labels):
+        graph_(graph), additional_vertex_labels_(additional_vertex_labels) {
     }
 
     string label(VertexId v) const;
@@ -51,16 +54,19 @@ class ScaffoldVertexSetColorer : public ElementColorer<ScaffoldGraph::VertexId> 
 };
 
 class ScaffoldGraphVisualizer {
-
+private:
     const ScaffoldGraph &graph_;
-    const bool paired_;
+
+    const map<ScaffoldGraph::VertexId, string>& additional_vertex_labels_;
 
 private:
     void Visualize(GraphPrinter<ScaffoldGraph> &printer);
 
 public:
-    ScaffoldGraphVisualizer(const ScaffoldGraph &graph, bool paired = true) :
-            graph_(graph), paired_(paired) {
+    ScaffoldGraphVisualizer(const ScaffoldGraph &graph,
+                            const map<ScaffoldGraph::VertexId, string>& additional_vertex_labels) :
+            graph_(graph),
+            additional_vertex_labels_(additional_vertex_labels){
     }
 
     void Visualize(ostream &os, CompositeGraphColorer<ScaffoldGraph>& colorer);

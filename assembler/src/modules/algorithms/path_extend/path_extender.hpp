@@ -13,13 +13,11 @@
 
 #pragma once
 
-
 #include "extension_chooser.hpp"
 #include "path_filter.hpp"
 #include "overlap_analysis.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include <cmath>
-
 
 namespace path_extend {
 
@@ -817,7 +815,7 @@ protected:
 
 class CompositeExtender : public ContigsMaker {
 public:
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map,
+    CompositeExtender(const Graph &g, GraphCoverageMap& cov_map,
                       size_t max_diff_len,
                       size_t max_repeat_length,
                       bool detect_repeats_online)
@@ -830,7 +828,7 @@ public:
               detect_repeats_online_(detect_repeats_online) {
     }
 
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map,
+    CompositeExtender(const Graph & g, GraphCoverageMap& cov_map,
                       vector<shared_ptr<PathExtender> > pes,
                       const ScaffoldingUniqueEdgeStorage& unique,
                       size_t max_diff_len,
@@ -870,7 +868,9 @@ public:
         while (MakeGrowStep(path, paths_storage, false)) { }
     }
 
-    bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage, bool detect_repeats_online_local = true) {
+
+    bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage,
+                      bool detect_repeats_online_local = true) {
         DEBUG("make grow step composite extender");
         if (detect_repeats_online_ && detect_repeats_online_local) {
             BidirectionalPath *repeat_path = repeat_detector_.RepeatPath(path);
@@ -957,7 +957,9 @@ private:
                 for (size_t ind =0; ind < paths.Get(i)->Size(); ind++) {
                     EdgeId eid = paths.Get(i)->At(ind);
                     if (used_storage_->IsUsedAndUnique(eid)) {
-                        was_used = true; break;
+                        DEBUG("Used edge " << g_.int_id(eid));
+                        was_used = true;
+                        break;
                     } else {
                         used_storage_->insert(eid);
                     }

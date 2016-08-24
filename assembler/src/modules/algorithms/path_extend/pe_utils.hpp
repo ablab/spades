@@ -89,12 +89,16 @@ public:
         empty_ = new MapDataT();
     }
 
-    GraphCoverageMap(const Graph& g, const PathContainer& paths) : g_(g), edgeCoverage_() {
+    GraphCoverageMap(const Graph& g, const PathContainer& paths, bool subscribe = false) : g_(g), edgeCoverage_() {
         empty_ = new MapDataT();
         for (size_t i = 0; i < paths.size(); ++i) {
+            if (subscribe)
+                paths.Get(i)->Subscribe(this);
             for (size_t j = 0; j < paths.Get(i)->Size(); ++j) {
                 EdgeAdded(paths.Get(i)->At(j), paths.Get(i), paths.Get(i)->GapAt(j));
             }
+            if (subscribe)
+                paths.GetConjugate(i)->Subscribe(this);
             for (size_t j = 0; j < paths.GetConjugate(i)->Size(); ++j) {
                 EdgeAdded(paths.GetConjugate(i)->At(j), paths.GetConjugate(i), paths.GetConjugate(i)->GapAt(j));
             }

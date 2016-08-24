@@ -1,0 +1,11 @@
+mode large_genome
+
+
+pe {
+
+debug_output false
+
+params {
+    scaffolding_mode old_pe_2015
+}
+}

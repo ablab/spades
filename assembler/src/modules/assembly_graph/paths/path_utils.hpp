@@ -12,7 +12,9 @@
 
 #pragma once
 
-#include "assembly_graph/paths/path_processor.hpp"
+#include <modules/data_structures/sequence/sequence.hpp>
+#include "path_processor.hpp"
+#include "mapping_path.hpp"
 
 namespace debruijn_graph {
 
@@ -124,5 +126,6 @@ Sequence PathSequence(const Graph& g, const omnigraph::Path<typename Graph::Edge
                  - g.length(path[path.size() - 1]) + path.end_pos();
     return path_sequence.Subseq(start, end);
 }
+
 
 }

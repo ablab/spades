@@ -57,6 +57,7 @@ struct PairedInfoLibrary {
     virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const = 0;
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int distance, bool from_interval = false) const = 0;
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int dist_min, int dist_max) const = 0;
+    virtual size_t GetIndexSize() const = 0;
 
     double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance, bool additive = false) const {
         return ideal_pi_counter_.IdealPairedInfo(e1, e2, distance, additive);
@@ -166,7 +167,10 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         }
         return weight;
     }
-
+    size_t GetIndexSize() const override {
+        DEBUG("index size" << index_.size());
+        return index_.size();
+    }
     const Index& index_;
 protected:
     DECL_LOGGER("PathExtendPI");

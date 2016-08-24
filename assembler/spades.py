@@ -560,7 +560,7 @@ def main(args):
     mode = options_storage.get_mode()
     if mode is not None:
         args.append('--' + mode)
-
+    
     # parse options and safe all parameters to cfg
     options = args
     cfg, dataset_data = fill_cfg(options, log)

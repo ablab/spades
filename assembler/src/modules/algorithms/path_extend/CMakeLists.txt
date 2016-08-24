@@ -12,7 +12,8 @@ add_library(path_extend STATIC pe_config_struct.cpp
                     scaffolder2015/scaffold_graph.cpp
                     scaffolder2015/scaffold_graph_constructor.cpp
                     scaffolder2015/scaffold_graph_visualizer.cpp
-                    scaffolder2015/connection_condition2015.cpp)
+                    scaffolder2015/connection_condition2015.cpp 
+                    scaffolder2015/path_polisher.cpp)
 
 target_link_libraries(path_extend graph_support)
 
