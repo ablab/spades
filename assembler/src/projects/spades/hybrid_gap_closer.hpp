@@ -44,7 +44,9 @@ inline EdgePair GetCanonical(const Graph& g, const EdgePair& ep) {
 class GapStorage {
 public:
     typedef typename GapInfos::const_iterator gap_info_it;
+    typedef std::pair<gap_info_it, gap_info_it> info_it_pair;
 private:
+    typedef std::function<bool (gap_info_it, gap_info_it)> FilterF;
 
     const Graph& g_;
 
@@ -67,43 +69,14 @@ private:
         return index_.size();
     }
 
-    //FIXME extremely inefficient
-    void RemoveTransitive(size_t min_weight) {
-        set<EdgePair> nonempty_pairs;
-        for (const auto& e_gaps : inner_index_) {
-            for (const auto& edge_pair_gaps: EdgePairGaps(e_gaps.second)) {
-                if (edge_pair_gaps.second >= edge_pair_gaps.first + min_weight) {
-                    nonempty_pairs.insert(EdgePair(edge_pair_gaps.first->start, edge_pair_gaps.first->end));
-                }
-            }
-        }
-    
-        set<EdgeId> affected_edges;
-        for (const auto& ep : nonempty_pairs) {
-            affected_edges.insert(ep.first);
-            affected_edges.insert(g_.conjugate(ep.first));
-            affected_edges.insert(ep.second);
-            affected_edges.insert(g_.conjugate(ep.second));
-        }
-    
-        set<EdgePair> to_ignore;
-        for (const auto& edge_pair : nonempty_pairs) {
-            for (EdgeId e : affected_edges) {
-                if (nonempty_pairs.count(GetCanonical(g_, EdgePair(edge_pair.first, e)))
-                    && nonempty_pairs.count(GetCanonical(g_, EdgePair(e, edge_pair.second)))) {
-                    DEBUG("pair " << g_.int_id(edge_pair.first) << "," << g_.int_id(edge_pair.second)
-                                  << " is ignored because of edge between " << g_.int_id(e));
-                    to_ignore.insert(edge_pair);
-                }
-            }
-        }
-    
+    //Function should return true if corresponding part of the index should be removed
+    void FilterIndex(FilterF filter_f) {
         for (auto it = inner_index_.begin(); it != inner_index_.end(); ) {
             auto& gaps = it->second;
             auto ep_ranges = EdgePairGaps(gaps);
             for (int i = int(ep_ranges.size()) - 1; i >= 0; i--) {
-                auto ep_gaps = ep_ranges[i];
-                if (to_ignore.count(EdgePair(ep_gaps.first->start, ep_gaps.first->end))) {
+                info_it_pair ep_gaps = ep_ranges[i];
+                if (filter_f(ep_gaps.first, ep_gaps.second)) {
                     gaps.erase(ep_gaps.first, ep_gaps.second);
                 }
             }
@@ -113,6 +86,59 @@ private:
                 ++it;
             }
         }
+    }
+
+    vector<EdgeId> SecondEdges(const GapInfos& edge_gaps) const {
+        vector<EdgeId> jump_edges;
+        for (auto it_pair : EdgePairGaps(edge_gaps)) {
+            jump_edges.push_back(it_pair.first->end);
+        }
+        return jump_edges;
+    };
+
+    vector<EdgePair> DetectTransitive(EdgeId e,
+                                   const vector<EdgeId>& jumps,
+                                   const set<EdgePair>& connections) const {
+        VERIFY(!jumps.empty());
+        vector<EdgePair> answer;
+        for (size_t i = 0; i < jumps.size(); ++i) {
+            for (size_t j = 0; j < jumps.size(); ++j) {
+                if (i == j)
+                    continue;
+                if (connections.count(EdgePair(jumps[i], jumps[j]))) {
+                    answer.push_back(EdgePair(e, jumps[j]));
+                    DEBUG("pair " << g_.int_id(e) << "," << g_.int_id(jumps[j])
+                                  << " is ignored because of edge between "
+                                  << g_.int_id(jumps[i]));
+                }
+            }
+        }
+        return answer;
+    }
+
+    void FilterIndex(size_t min_weight) {
+        FilterIndex([=](gap_info_it info_start, gap_info_it info_end) {
+            return info_end < info_start + min_weight;
+        });
+
+        set<EdgePair> connections;
+        for (const auto& e_gaps : inner_index_) {
+            EdgeId e1 = e_gaps.first;
+            for (EdgeId e2: SecondEdges(e_gaps.second)) {
+                EdgePair ep(e1, e2);
+                connections.insert(ep);
+                connections.insert(Conjugate(g_, ep));
+            }
+        }
+    
+        set<EdgePair> transitive_ignore;
+        for (const auto& e_gaps : inner_index_) {
+            insert_all(transitive_ignore, DetectTransitive(e_gaps.first, SecondEdges(e_gaps.second), connections));
+        }
+
+        FilterIndex([&](gap_info_it info_start, gap_info_it /*info_end*/) {
+            return transitive_ignore.count(EdgePair(info_start->start, info_start->end));
+        });
     }
 
 public:
@@ -195,8 +221,8 @@ public:
 //    }
 
     //edge_gaps must be sorted
-    vector<pair<gap_info_it, gap_info_it>> EdgePairGaps(const GapInfos& edge_gaps) const {
-        vector<pair<gap_info_it, gap_info_it>> answer;
+    vector<info_it_pair> EdgePairGaps(const GapInfos& edge_gaps) const {
+        vector<info_it_pair> answer;
         auto ep_start = edge_gaps.begin();
         for (auto it = ep_start; it != edge_gaps.end(); ++it) {
             if (it->end != ep_start->end) {
@@ -214,10 +240,12 @@ public:
             sort(gaps.begin(), gaps.end());
         }
 
-        RemoveTransitive(min_weight);
+        FilterIndex(min_weight);
         FillIndex();
     }
 };
+
+
 
 inline string PoaConsensus(const vector<string>& gap_seqs) {
     const ConsensusCore::PoaConsensus* pc = ConsensusCore::PoaConsensus::FindConsensus(
