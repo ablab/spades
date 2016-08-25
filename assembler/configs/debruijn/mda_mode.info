@@ -98,6 +98,13 @@ simp
     }
 }
 
+de
+{
+    raw_filter_threshold	0
+    rounding_threshold          0
+}
+
+
 pe {
 params {
     normalize_weight        true

@@ -41,8 +41,7 @@ void estimate_with_estimator(const Graph &graph,
                                             cfg::get().amb_de.relative_length_threshold,
                                             cfg::get().amb_de.relative_seq_threshold);
         PairInfoFilter<Graph>(amb_de_checker).Filter(clustered_index);
-    }
-    else
+    } else
         PairInfoFilter<Graph>(checker).Filter(clustered_index);
 //    filter.Filter(clustered_index);
     DEBUG("Info Filtered");
@@ -126,8 +125,7 @@ void estimate_distance(conj_graph_pack& gp,
     }  else
         weight_function = UnityFunction;
 
-//    PairInfoWeightFilter<Graph> filter(gp.g, config.de.filter_threshold);
-    PairInfoWeightChecker<Graph> checker(gp.g, config.de.filter_threshold);
+    PairInfoWeightChecker<Graph> checker(gp.g, config.de.clustered_filter_threshold);
 
     INFO("Weight Filter Done");
 

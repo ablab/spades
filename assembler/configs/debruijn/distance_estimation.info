@@ -2,12 +2,14 @@
 
 de
 {
-    linkage_distance_coeff    0.0
-    max_distance_coeff        2.0
-    max_distance_coeff_scaff  2000.0
-    filter_threshold          2.0
+    linkage_distance_coeff    	0.0
+    max_distance_coeff        	2.0
+    max_distance_coeff_scaff  	2000.0
+    clustered_filter_threshold	2.0
+    raw_filter_threshold	2
+    rounding_coeff              0.5 ; rounding : min(de_max_distance * rounding_coeff, rounding_thr)
+    rounding_threshold          0
 }
-
 
 ade
 {

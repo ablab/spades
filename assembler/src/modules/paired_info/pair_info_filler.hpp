@@ -20,13 +20,16 @@ namespace debruijn_graph {
  */
 class LatePairedIndexFiller : public SequenceMapperListener {
     typedef std::pair<EdgeId, EdgeId> EdgePair;
-    typedef std::function<double(const EdgePair&, const MappingRange&, const MappingRange&)> WeightF;
 public:
-    LatePairedIndexFiller(const Graph &graph, WeightF weight_f, omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index)
+    typedef std::function<double(const EdgePair&, const MappingRange&, const MappingRange&)> WeightF;
+
+    LatePairedIndexFiller(const Graph &graph, WeightF weight_f,
+                          unsigned round_distance,
+                          omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index)
             : weight_f_(std::move(weight_f)),
               paired_index_(paired_index),
-              buffer_pi_(graph) {
-    }
+              buffer_pi_(graph),
+              round_distance_(round_distance) {}
 
     void StartProcessLibrary(size_t) override {
         DEBUG("Start processing: start");
@@ -64,18 +67,23 @@ private:
             for (size_t j = 0; j < path2.size(); ++j) {
                 std::pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
 
-                EdgePair ep{mapping_edge_1.first, mapping_edge_2.first};
-
                 omnigraph::de::DEWeight weight =
-                        weight_f_(ep, mapping_edge_1.second, mapping_edge_2.second);
-                size_t kmer_distance = read_distance
-                        + mapping_edge_2.second.initial_range.end_pos
-                        - mapping_edge_1.second.initial_range.start_pos;
-                int edge_distance = (int) kmer_distance
-                        + (int) mapping_edge_1.second.mapped_range.start_pos
-                        - (int) mapping_edge_2.second.mapped_range.end_pos;
+                        weight_f_({mapping_edge_1.first, mapping_edge_2.first},
+                                  mapping_edge_1.second, mapping_edge_2.second);
 
+                // Add only if weight is non-zero
                 if (math::gr(weight, 0)) {
+                    size_t kmer_distance = read_distance
+                                           + mapping_edge_2.second.initial_range.end_pos
+                                           - mapping_edge_1.second.initial_range.start_pos;
+                    int edge_distance = (int) kmer_distance
+                                        + (int) mapping_edge_1.second.mapped_range.start_pos
+                                        - (int) mapping_edge_2.second.mapped_range.end_pos;
+
+                    // Additionally round, if necessary
+                    if (round_distance_ > 1)
+                        edge_distance = int(std::round(edge_distance / double(round_distance_))) * round_distance_;
+
                     buffer_pi_.Add(mapping_edge_1.first, mapping_edge_2.first,
                                    omnigraph::de::RawPoint(edge_distance, weight));
 
@@ -88,6 +96,7 @@ private:
     WeightF weight_f_;
     omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index_;
     omnigraph::de::ConcurrentPairedInfoBuffer<Graph> buffer_pi_;
+    unsigned round_distance_;
 
     DECL_LOGGER("LatePairedIndexFiller");
 };

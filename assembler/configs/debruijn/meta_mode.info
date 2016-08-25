@@ -141,6 +141,14 @@ preliminary_simp
 	
 }
 
+; undo single cell config changes, enforce filtering
+de
+{
+    raw_filter_threshold	1
+    rounding_coeff              0.5 ; rounding : min(de_max_distance * rounding_coeff, rounding_thr)
+    rounding_threshold          0
+}
+
 ;NB decsends from sc_pe
 pe {
 

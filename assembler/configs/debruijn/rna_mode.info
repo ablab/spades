@@ -86,6 +86,12 @@ simp
 
 }
 
+; disable filtering in rna mode
+de
+{
+    raw_filter_threshold	0
+}
+
 pe {
 params {
     ;multi_path_extend   true

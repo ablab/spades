@@ -365,13 +365,16 @@ void load(debruijn_config::simplification::hidden_ec_remover& her,
 }
 
 void load(debruijn_config::distance_estimator& de,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
+          boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
-  load(de.linkage_distance_coeff, pt, "linkage_distance_coeff");
-  load(de.max_distance_coeff, pt, "max_distance_coeff");
-  load(de.max_distance_coeff_scaff, pt, "max_distance_coeff_scaff");
-  load(de.filter_threshold, pt, "filter_threshold");
+  load(de.linkage_distance_coeff, pt, "linkage_distance_coeff", complete);
+  load(de.max_distance_coeff, pt, "max_distance_coeff", complete);
+  load(de.max_distance_coeff_scaff, pt, "max_distance_coeff_scaff", complete);
+  load(de.clustered_filter_threshold, pt, "clustered_filter_threshold", complete);
+  load(de.raw_filter_threshold, pt, "raw_filter_threshold", complete);
+  load(de.rounding_coeff, pt, "rounding_coeff", complete);
+  load(de.rounding_thr, pt, "rounding_threshold", complete);
 }
 
 void load(debruijn_config::smoothing_distance_estimator& ade,
@@ -389,8 +392,8 @@ void load(debruijn_config::smoothing_distance_estimator& ade,
 }
 
 //FIXME make amb_de optional field
-inline void load(debruijn_config::ambiguous_distance_estimator &amde,
-                 boost::property_tree::ptree const &pt, bool complete) {
+void load(debruijn_config::ambiguous_distance_estimator &amde,
+          boost::property_tree::ptree const &pt, bool complete) {
     using config_common::load;
 
     load(amde.enabled, pt, "enabled", complete);

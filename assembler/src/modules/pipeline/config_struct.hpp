@@ -372,7 +372,10 @@ struct debruijn_config {
         double linkage_distance_coeff;
         double max_distance_coeff;
         double max_distance_coeff_scaff;
-        double filter_threshold;
+        double clustered_filter_threshold;
+        unsigned raw_filter_threshold;
+        double rounding_thr;
+        double rounding_coeff;
     };
 
     struct smoothing_distance_estimator {
