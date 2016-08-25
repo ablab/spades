@@ -1214,7 +1214,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     bool long_reads_exists = HasLongReads(dataset_info);
 //TODO: this is awful
 
-    bool use_scaffolder_2015_pipeline = (sc_mode == sm_old_pe_2015 && mp_stage) ||
+    bool use_scaffolder_2015_pipeline = (sc_mode == sm_old_pe_2015 && (mp_exists || long_reads_exists)) ||
         sc_mode == sm_2015 ||
         sc_mode == sm_combined;
     bool mp_stage = mp_exists || (long_reads_exists && use_scaffolder_2015_pipeline);
