@@ -84,6 +84,8 @@ private:
             for (int i = int(ep_ranges.size()) - 1; i >= 0; i--) {
                 info_it_pair ep_gaps = ep_ranges[i];
                 if (filter_f(ep_gaps.first, ep_gaps.second)) {
+                    DEBUG("Erasing connection between " << g_.int_id(ep_gaps.first->start) << " and "
+                                                        << g_.int_id(ep_gaps.first->end));
                     gaps.erase(const_iterator_cast(gaps, ep_gaps.first),
                                const_iterator_cast(gaps, ep_gaps.second));
                 }
@@ -125,6 +127,7 @@ private:
     }
 
     void FilterIndex(size_t min_weight) {
+        DEBUG("Filtering by weight " << min_weight);
         FilterIndex([=](gap_info_it info_start, gap_info_it info_end) {
             return info_end < info_start + min_weight;
         });
@@ -144,6 +147,7 @@ private:
             insert_all(transitive_ignore, DetectTransitive(e_gaps.first, SecondEdges(e_gaps.second), connections));
         }
 
+        DEBUG("Filtering transitive gaps");
         FilterIndex([&](gap_info_it info_start, gap_info_it /*info_end*/) {
             return transitive_ignore.count(EdgePair(info_start->start, info_start->end));
         });
@@ -632,16 +636,21 @@ private:
     }
 
     GapDescription ConstructConsensus(gap_info_it start_it, gap_info_it end_it) const {
+        DEBUG("Considering extension " << g_.str(start_it->end));
         size_t cur_len = end_it - start_it;
 
-        if (cur_len < min_weight_)
-            return INVALID_GAP;
+        //low weight connections filtered earlier
+        VERIFY(cur_len >= min_weight_);
+//        if (cur_len < min_weight_)
+//            return INVALID_GAP;
 
         auto padded_gaps = PadGaps(start_it, end_it);
         //all start and end positions are equal here
         //FIXME check that it is desired behavior
-        if (padded_gaps.size() < min_weight_)
+        if (padded_gaps.size() < min_weight_) {
+            DEBUG("Connection weight too low after padding");
             return INVALID_GAP;
+        }
 
         vector<string> gap_variants;
         std::transform(padded_gaps.begin(), padded_gaps.end(), std::back_inserter(gap_variants), 
@@ -664,6 +673,7 @@ private:
     }
 
     GapDescription ConstructConsensus(EdgeId e) const {
+        DEBUG("Constructing consensus for edge " << g_.str(e));
         vector<GapDescription> closures;
         for (const auto& edge_pair_gaps : storage_.EdgePairGaps(get(storage_.inner_index(), e))) {
             auto consensus = ConstructConsensus(edge_pair_gaps.first, edge_pair_gaps.second);
@@ -671,11 +681,15 @@ private:
                 closures.push_back(consensus);
             }
         }
-        if (closures.size() == 1)
-            return closures.front();
 
-        if (closures.size() > 1)
-            DEBUG("non-unique gap!!");
+        if (closures.size() == 1) {
+            DEBUG("Found unique extension " << closures.front().str(g_));
+            return closures.front();
+        }
+
+        if (closures.size() > 1) {
+            DEBUG("Non-unique extension");
+        }
         return INVALID_GAP;
     }
 
@@ -686,7 +700,6 @@ private:
         for (size_t i = 0; i < storage_.size(); i++) {
             EdgeId e = storage_[i];
             size_t thread_num = omp_get_thread_num();
-            DEBUG("constructing consenus for first edge " << g_.int_id(e) << " in thread " << thread_num);
             GapDescription gap = ConstructConsensus(e);
             if (gap != INVALID_GAP) {
                 closures_by_thread[thread_num].push_back(gap);
