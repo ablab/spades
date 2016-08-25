@@ -246,8 +246,10 @@ public:
                 EdgeId e = path->At(0);
                 size_t component = c_counter_.GetComponent(e);
                 contig_id = io::MakeContigComponentId(i, path_string.length(), path->Coverage(), component);
+                oss.set_header(contig_id);
+                oss << path_string;
             } else {
-                if(path_string.length() >= g_.k()) {
+                if (path_string.length() >= g_.k()) {
                     IOContigStorage precontig(path_string, path->Coverage());
                     storage.push_back(precontig);
                 }
@@ -263,7 +265,7 @@ public:
         }
         std::sort(storage.begin(), storage.end(), IOContigStorageGreater());
         i = 0;
-        for(auto precontig : storage) {
+        for (auto precontig : storage) {
             ++i;
             std::string contig_id = io::MakeContigId(i, precontig.sequence_.length(), precontig.coverage_);
             oss.set_header(contig_id);
