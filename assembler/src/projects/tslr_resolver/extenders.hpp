@@ -5,6 +5,9 @@
 using namespace path_extend;
 
 namespace tslr_resolver {
+/*todo this class is similar to CompositeExtender, but
+with slightly different usage of coverage map. Huge code duplication need to be removed /*/
+
     class PathJoiner : public ContigsMaker {
     public:
         PathJoiner(Graph & g, GraphCoverageMap& cov_map,
@@ -138,7 +141,6 @@ namespace tslr_resolver {
         void GrowAllPaths(PathContainer &paths, PathContainer &result) {
             for (size_t i = 0; i < paths.size(); ++i) {
                 DEBUG(i)
-                DEBUG(paths.size())
                 DEBUG("path id " << paths.Get(i) -> GetId())
                 VERBOSE_POWER_T2(i, 100,
                                  "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size()
@@ -231,6 +233,11 @@ namespace tslr_resolver {
 
             if (mapper_-> GetSizeTails(decisive_edge) > 3 * average_coverage_) {
                 DEBUG("Too many barcodes mapped to decisive edge")
+                return;
+            }
+
+            if (mapper_-> GetSizeTails(decisive_edge) < 5) {
+                DEBUG("Not enough barcodes mapped to decisive edge")
                 return;
             }
 

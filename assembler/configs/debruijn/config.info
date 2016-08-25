@@ -35,6 +35,8 @@ buffer_size     512; in Megabytes
 
 entry_point construction
 ;entry_point barcode_map_construction
+;entry_point late_pair_info_count
+;entry_point distance_estimation
 ;entry_point tslr_repeat_resolver
 
 ;entry_point simplification

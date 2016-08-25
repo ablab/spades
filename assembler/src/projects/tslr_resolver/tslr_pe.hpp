@@ -35,13 +35,15 @@ namespace tslr_resolver {
         ContigWriter writer(gp.g, constructor, gp.components, params.mode == config::pipeline_type::plasmid);
         GraphCoverageMap cover_map(gp.g);
         const pe_config::ParamSetT &pset = params.pset;
-        bool detect_repeats_online = false;
+        auto sc_mode = pset.sm;
+        bool detect_repeats_online = !(is_2015_scaffolder_enabled(sc_mode) || params.mode == config::pipeline_type::meta);;
 
         PathExtendResolver resolver(gp.g);
         auto min_unique_length = pset.scaffolding2015.min_unique_length;
         auto unique_variaton = pset.scaffolding2015.unique_coverage_variation;
         ScaffoldingUniqueEdgeStorage main_unique_storage;
         auto dataset_info = cfg::get().ds;
+
         main_unique_storage = FillUniqueEdgeStorage(gp, dataset_info,
                                                     min_unique_length,
                                                     unique_variaton,
@@ -65,28 +67,11 @@ namespace tslr_resolver {
         auto paths = resolver.extendSeeds(seeds, *mainPE);
         paths.SortByLength();
         FinalizePaths(params, paths, cover_map, min_edge_len, max_is_right_quantile);
-        INFO("Coverage map size " << cover_map.size())
+
+        writer.OutputPaths(paths, params.output_dir + "before_tslr");
+
         seeds.DeleteAllPaths();
         all_libs.clear();
-
-
-        exspander_stage = PathExtendStage::PEPolishing;
-        all_libs = MakeAllExtenders(exspander_stage, dataset_info, params, gp, cover_map, main_unique_storage);
-        mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
-                                                main_unique_storage,
-                                                max_is_right_quantile,
-                                                pset.extension_options.max_repeat_length,
-                                                detect_repeats_online);
-
-        FinalizePaths(params, paths, cover_map, min_edge_len, max_is_right_quantile);
-        DebugOutputPaths(gp, params, paths, "pe_before_traverse");
-        if (params.traverse_loops) {
-            TraverseLoops(paths, cover_map, mainPE);
-            FinalizePaths(params, paths, cover_map, min_edge_len, max_is_right_quantile);
-        }
-        bool mp_exist = MPLibsExist(dataset_info);
-        DebugOutputPaths(gp, params, paths, (mp_exist ? "pe_final_paths" : "final_paths"));
-        writer.OutputPaths(paths, params.output_dir + (mp_exist ? "pe_scaffolds" : params.contigs_name));
 
         //tslr extender
         INFO("SUBSTAGE = TSLR Resolver")
@@ -124,10 +109,8 @@ namespace tslr_resolver {
 
 
         INFO(paths.size() << " paths from previous stage")
-        auto filtered_paths = FilterByLength(paths, len_threshold);
-        INFO(filtered_paths.size() << " filtered paths")
 
-        auto final_paths = resolver.extendSeeds(filtered_paths, *tslrPE);
+        auto final_paths = resolver.extendSeeds(paths, *tslrPE);
 
         FinalizePaths(params, final_paths, cover_map, min_edge_len, max_is_right_quantile);
 
