@@ -1213,11 +1213,11 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     bool mp_exists = MPLibsExist(dataset_info);
     bool long_reads_exists = HasLongReads(dataset_info);
 //TODO: this is awful
-    bool mp_stage = mp_exists || long_reads_exists;
+
     bool use_scaffolder_2015_pipeline = (sc_mode == sm_old_pe_2015 && mp_stage) ||
         sc_mode == sm_2015 ||
         sc_mode == sm_combined;
-
+    bool mp_stage = mp_exists || (long_reads_exists && use_scaffolder_2015_pipeline);
     bool detect_repeats_online = !(use_scaffolder_2015_pipeline || params.mode == config::pipeline_type::meta);
 
     //Fill the storage to enable unique edge check
@@ -1314,7 +1314,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     cover_map.Clear();
     seeds.DeleteAllPaths();
     paths.DeleteAllPaths();
-    if (!mp_stage ) {
+    if (!mp_stage) {
 //TODO: RETURN  IN THE MIDDLE OF BIG FUNCTION SHOULD DIE
         return;
     }
