@@ -55,10 +55,11 @@ LongReadsLibConnectionCondition::LongReadsLibConnectionCondition(const debruijn_
                                     size_t lib_index,
                                     size_t min_read_count, const GraphCoverageMap& cov_map):graph_(graph), lib_index_(lib_index), min_read_count_(min_read_count), cov_map_(cov_map){}
 
-map <debruijn_graph::EdgeId, double> LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeId ) const {
+map<debruijn_graph::EdgeId, double> LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeId ) const {
     return map <debruijn_graph::EdgeId, double>();
 };
-map <debruijn_graph::EdgeId, double> LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeId e, const ScaffoldingUniqueEdgeStorage& storage) const {
+
+map<debruijn_graph::EdgeId, double> LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeId e, const ScaffoldingUniqueEdgeStorage& storage) const {
     map <debruijn_graph::EdgeId, double> res;
     auto cov_paths = cov_map_.GetCoveringPaths(e);
     DEBUG("Got cov paths " << cov_paths.size());

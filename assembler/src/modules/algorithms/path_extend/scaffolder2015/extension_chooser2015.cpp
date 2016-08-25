@@ -66,7 +66,7 @@ ExtensionChooser::EdgeContainer ExtensionChooser2015::Filter(const Bidirectional
     pair<EdgeId, int> last_unique = FindLastUniqueInPath(path);
     DEBUG ("last unique found");
     EdgeContainer result;
-
+    DEBUG(g_.int_id(last_unique.first)<< " " << last_unique.second << " " << path.Size());
     if (last_unique.second < 0) {
 // No unique edge found
         return result;

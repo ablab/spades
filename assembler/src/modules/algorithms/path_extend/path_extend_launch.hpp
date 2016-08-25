@@ -272,6 +272,7 @@ inline bool IsForSingleReadExtender(const io::SequencingLibrary<config::DataSetD
             lt == io::LibraryType::PacBioReads ||
             lt == io::LibraryType::SangerReads ||
             lt == io::LibraryType::NanoporeReads ||
+            lt == io::LibraryType::TSLReads ||
             lib.is_contig_lib());
 }
 
@@ -377,16 +378,6 @@ inline shared_ptr<ExtensionChooser> MakeLongReadsExtensionChooser(const config::
                                                   params.uneven_depth);
 }
 
-inline shared_ptr<ExtensionChooser> MakeLongTSLRScaffoldingExtensionChooser(const conj_graph_pack& gp,
-                                                                  size_t lib_index, const PathExtendParamsContainer& params) {
-    PathContainer paths;
-    AddPathsToContainer(gp, gp.single_long_reads[lib_index].GetAllPaths(), 1, paths);
-
-    auto long_reads_config = GetLongReadsConfig(params, cfg::get().ds.reads[lib_index].type());
-    return make_shared<TSLRScaffoldingExtensionChooser>(gp.g, paths, long_reads_config.weight_priority, long_reads_config.filtering,
-            params.pset.extension_options.max_repeat_length);
-}
-
 inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const config::dataset& dataset_info,
                                                         size_t lib_index,
                                                         const PathExtendParamsContainer& params,
@@ -434,13 +425,6 @@ inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const config::dataset& 
                                        params.pset.loop_removal.max_loops,
                                        investigate_loops,
                                        false /*use short loop coverage resolver*/);
-}
-
-inline shared_ptr<SimpleExtender> MakeTSLRScaffoldingExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                                        size_t lib_index, const PathExtendParamsContainer& params) {
-    auto long_read_ec = MakeLongTSLRScaffoldingExtensionChooser(gp, lib_index, params);
-    return make_shared<SimpleExtender>(gp, cov_map, long_read_ec, 10000,
-            0, true, false);
 }
 
 inline shared_ptr<SimpleExtensionChooser> MakeMetaExtensionChooser(shared_ptr<PairedInfoLibrary> lib,
@@ -826,24 +810,37 @@ inline vector<shared_ptr<PathExtender> > MakeMPExtenders(PathExtendStage stage,
 }
 
 
-inline vector<shared_ptr<PathExtender> > MakePBScaffoldingExtenders(
-                                                         vector<shared_ptr<GraphCoverageMap>>& long_reads_cov_map,
-                                                         ScaffoldingUniqueEdgeStorage& unique_storage_pb,
+inline vector<shared_ptr<PathExtender>> MakePBScaffoldingExtenders( ScaffoldingUniqueEdgeStorage& unique_storage_pb,
                                                          const config::dataset& dataset_info,
                                                          const PathExtendParamsContainer& params,
                                                          const conj_graph_pack& gp,
                                                          vector<PathContainer>& long_reads_paths,
                                                          const GraphCoverageMap& main_cov_map) {
+    vector<shared_ptr<GraphCoverageMap>> long_reads_cov_map;
     const auto& pset = params.pset;
-    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer_pb(gp, 500 , 0.5);
-    unique_edge_analyzer_pb.FillUniqueEdgeStorage(unique_storage_pb);
-    vector<shared_ptr<PathExtender> > result;
-
-    for (size_t lib_index = 0 ; lib_index <dataset_info.reads.lib_count(); lib_index++) {
+    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer_pb(gp, 500, 0.5);
+    vector<shared_ptr<PathExtender>> result;
+    for (size_t lib_index = 0 ; lib_index < dataset_info.reads.lib_count(); lib_index++) {
         AddPathsToContainer(gp, gp.single_long_reads[lib_index].GetAllPaths(), 1, long_reads_paths[lib_index]);
-        long_reads_cov_map.push_back(make_shared<GraphCoverageMap>(gp.g, long_reads_paths[lib_index]));
+        auto coverage_map = make_shared<GraphCoverageMap>(gp.g, long_reads_paths[lib_index]);
+        long_reads_cov_map.push_back(coverage_map);
     }
-    for (size_t lib_index = 0 ; lib_index <dataset_info.reads.lib_count(); lib_index++) {
+    INFO("Filling backbone edges for long reads scaffolding ...");
+    if (params.uneven_depth) {
+        INFO("with long reads paths.");
+//TODO:: muiltiple libraries?
+        for (size_t lib_index = 0 ; lib_index <dataset_info.reads.lib_count(); lib_index++) {
+            if (dataset_info.reads[lib_index].type() == io::LibraryType::TSLReads) {
+                unique_edge_analyzer_pb.FillUniqueEdgesWithLongReads(long_reads_cov_map[lib_index], unique_storage_pb);
+            }
+        }
+    } else {
+        INFO("with coverage.")
+        unique_edge_analyzer_pb.FillUniqueEdgeStorage(unique_storage_pb);
+    }
+    INFO(unique_storage_pb.size() << " unique edges");
+
+    for (size_t lib_index = 0 ; lib_index < dataset_info.reads.lib_count(); lib_index++) {
         if (IsForSingleReadExtender(dataset_info.reads[lib_index])) {
             INFO("creating scaffolding extender for lib "<< lib_index);
             shared_ptr<ConnectionCondition> condition = make_shared<LongReadsLibConnectionCondition>(gp.g,
@@ -983,12 +980,6 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                         break;
                 }
             }
-
-            if (lib.type() == io::LibraryType::TSLReads) {
-                result.push_back(MakeTSLRScaffoldingExtender(gp, cov_map, lib_index, params));
-                ++single_read_libs;
-            }
-
         }
 
         result.insert(result.end(), pes.begin(), pes.end());
@@ -1159,7 +1150,7 @@ inline ScaffoldingUniqueEdgeStorage FillUniqueEdgeStorage(const conj_graph_pack&
     if (autodetect) {
         INFO("Autodetecting unique edge set parameters...");
         //TODO constants
-        size_t min_MP_IS = 10000;
+        size_t min_MP_IS = min_unique_length;
         for (size_t i = 0; i < dataset_info.reads.lib_count(); ++i) {
             if (IsForMPExtender(dataset_info.reads[i])) {
                 min_MP_IS = min(min_MP_IS, (size_t) dataset_info.reads[i].data().mean_insert_size);
@@ -1211,7 +1202,6 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     bool use_scaffolder_2015_pipeline = (sc_mode == sm_old_pe_2015 && (mp_exists || long_reads_exists)) ||
         sc_mode == sm_2015 ||
         sc_mode == sm_combined;
-    bool mp_stage = mp_exists || (long_reads_exists && use_scaffolder_2015_pipeline);
     bool detect_repeats_online = !(use_scaffolder_2015_pipeline || params.mode == config::pipeline_type::meta);
 
     //Fill the storage to enable unique edge check
@@ -1248,14 +1238,24 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     INFO("SUBSTAGE = paired-end libraries")
     PathExtendStage exspander_stage = PathExtendStage::PEStage;
     vector<shared_ptr<PathExtender> > all_libs =
-        MakeAllExtenders(exspander_stage, dataset_info, params, gp, cover_map, main_unique_storage);
+    MakeAllExtenders(exspander_stage, dataset_info, params, gp, cover_map, main_unique_storage);
+
+//long reads scaffolding extenders.
+//Not within MakeAllExtenders because of specific long reads uniqueness detection
+//TODO: issue to pelaunch refactoring
+    vector<PathContainer> long_reads_paths(dataset_info.reads.lib_count());
+    ScaffoldingUniqueEdgeStorage unique_storage_pb;
+    if (use_scaffolder_2015_pipeline) {
+        push_back_all(all_libs, MakePBScaffoldingExtenders(unique_storage_pb, dataset_info,
+                                                                   params, gp, long_reads_paths, cover_map));
+    }
 
     //Parameters are subject to change
     size_t max_is_right_quantile = max(FindOverlapLenForStage(exspander_stage, dataset_info), gp.g.k() + 100);
     size_t min_edge_len = 100;
     size_t max_edge_diff_pe = /*params.mode == config::pipeline_type::rna ? 0 :*/ max_is_right_quantile;
 
-    shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
+    auto mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
                                                                           main_unique_storage,
                                                                           max_is_right_quantile,
                                                                           pset.extension_options.max_repeat_length,
@@ -1276,12 +1276,13 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     PathContainer clone_paths;
     GraphCoverageMap clone_map(gp.g);
 
-    if (mp_stage) {
+    if (mp_exists) {
         ClonePathContainer(paths, clone_paths, clone_map);
     }
 
     exspander_stage = PathExtendStage::PEPolishing;
     all_libs = MakeAllExtenders(exspander_stage, dataset_info, params, gp, cover_map, main_unique_storage);
+
     mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
                                             main_unique_storage,
                                             max_is_right_quantile,
@@ -1296,7 +1297,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     }
     if (params.output_broken_scaffolds) {
         OutputBrokenScaffolds(paths, params, (int) gp.g.k(), writer,
-                              params.output_dir + (mp_stage ? "pe_contigs" : params.broken_contigs));
+                              params.output_dir + (mp_exists ? "pe_contigs" : params.broken_contigs));
     }
     DebugOutputPaths(gp, params, paths, "pe_before_traverse");
     if (params.traverse_loops) {
@@ -1304,13 +1305,14 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
         FinalizePaths(params, paths, gp.g, cover_map, min_edge_len, max_edge_diff_pe);
         DebugOutputPaths(gp, params, paths, "pe_finalized2");
     }
-    DebugOutputPaths(gp, params, paths, (mp_stage ? "pe_final_paths" : "final_paths"));
-    writer.OutputPaths(paths, params.output_dir + (mp_stage ? "pe_scaffolds" : params.contigs_name));
+    DebugOutputPaths(gp, params, paths, (mp_exists ? "pe_final_paths" : "final_paths"));
+    writer.OutputPaths(paths, params.output_dir + (mp_exists ? "pe_scaffolds" : params.contigs_name));
 
     cover_map.Clear();
     seeds.DeleteAllPaths();
     paths.DeleteAllPaths();
-    if (!mp_stage) {
+//TODO: temporary solution!
+    if (!mp_exists) {
 //TODO: RETURN  IN THE MIDDLE OF BIG FUNCTION SHOULD DIE
         return;
     }
@@ -1351,12 +1353,6 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
             auto additional_extenders = MakeMPExtenders(exspander_stage, dataset_info, params, gp, clone_map, unique_storages.back());
             all_libs.insert(all_libs.end(), additional_extenders.begin(), additional_extenders.end());
         }
-        vector<PathContainer> long_reads_paths(dataset_info.reads.lib_count());
-        vector<shared_ptr<GraphCoverageMap>> long_reads_cov_map;
-        ScaffoldingUniqueEdgeStorage unique_storage_pb;
-//TODO: constants to config
-        auto pb_scaffolding_extenders = MakePBScaffoldingExtenders(long_reads_cov_map, unique_storage_pb, dataset_info, params, gp, long_reads_paths, clone_map);
-        all_libs.insert(all_libs.end(), pb_scaffolding_extenders.begin(), pb_scaffolding_extenders.end());
         INFO("Total number of extenders is " << all_libs.size());
         shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs,
                                                                                   main_unique_storage,

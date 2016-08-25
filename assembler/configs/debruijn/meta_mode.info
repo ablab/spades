@@ -184,5 +184,8 @@ prelim_pe {
 params {
     use_coordinated_coverage false
     remove_overlaps     false
+    scaffolding2015 {
+    min_unique_length 100000000
+}
 }
 }

@@ -10,3 +10,10 @@ simp
         enabled false
     }
 }
+pe {
+params {
+    multi_path_extend   false
+    ; old | 2015 | combined | old_pe_2015
+    scaffolding_mode old_pe_2015
+}
+}
