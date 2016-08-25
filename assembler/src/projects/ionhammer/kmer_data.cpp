@@ -87,6 +87,8 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   }
   INFO("Processed " << filler.processed() << " reads");
 
+  this->ClearBuffers();
+
   return out;
 }
 

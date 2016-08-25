@@ -112,6 +112,8 @@ path::files_t HammerFilteringKMerSplitter::Split(size_t num_files) {
   }
   INFO("Total " << processed << " reads processed");
 
+  this->ClearBuffers();
+
   return out;
 }
 

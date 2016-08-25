@@ -110,6 +110,8 @@ class ParallelSortingSplitter : public KMerSortingSplitter<runtime_k::RtSeq> {
         }
         INFO("Total " << filler.processed() << " reads processed");
 
+        this->ClearBuffers();
+
         return out;
     }
 };

@@ -168,6 +168,8 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
     }
   }
 
+  this->ClearBuffers();
+
   INFO("Used " << counter << " reads. Maximum read length " << rl);
   INFO("Average read length " << double(bases) / double(counter));
   rs_ = { counter, rl, bases };
@@ -228,6 +230,8 @@ path::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_fil
 
   INFO("Used " << counter << " sequences.");
 
+  this->ClearBuffers();
+  
   return out;
 }
 
@@ -305,6 +309,8 @@ path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_files) {
 
   INFO("Used " << counter << " kmers.");
 
+  this->ClearBuffers();
+  
   return out;
 }
 

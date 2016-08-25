@@ -158,12 +158,18 @@ class KMerSortingSplitter : public KMerSplitter<Seq> {
     }
 
     for (auto & entry : kmer_buffers_)
+      for (auto & eentry : entry)
+        eentry.clear();
+  }
+
+  void ClearBuffers() {
+    for (auto & entry : kmer_buffers_)
       for (auto & eentry : entry) {
         eentry.clear();
         eentry.shrink_to_fit();
       }
   }
-
+  
   std::string GetRawKMersFname(unsigned suffix) const {
     return path::append_path(this->work_dir_, "kmers.raw." + std::to_string(suffix));
   }
