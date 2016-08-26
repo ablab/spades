@@ -897,13 +897,13 @@ class btree : public Params::key_compare {
           data(d) {
     }
 
-    empty_base_handle(empty_base_handle &&other) noexcept(std::is_nothrow_move_constructible<Base>::value)
+    empty_base_handle(empty_base_handle &&other) noexcept
       : Base(std::move(other)) {
       data = other.data;
       other.data = nullptr;
     }
 
-    empty_base_handle& operator=(empty_base_handle &&other) noexcept(std::is_nothrow_move_constructible<Base>::value) {
+    empty_base_handle& operator=(empty_base_handle &&other) noexcept {
       Base::operator=(std::move(other));
       data = other.data;
       other.data = nullptr;
@@ -959,7 +959,7 @@ class btree : public Params::key_compare {
   btree(const self_type &x);
 
   // Move constructor.
-  btree(self_type &&x) noexcept(std::is_nothrow_move_constructible<decltype(this->root_)>::value);
+  btree(self_type &&x) noexcept;
 
   // Destructor.
   ~btree() {
@@ -1139,7 +1139,7 @@ class btree : public Params::key_compare {
     return *this;
   }
 
-  self_type& operator=(self_type&& x) noexcept(std::is_nothrow_move_assignable<decltype(this->root_)>::value) {
+  self_type& operator=(self_type&& x) noexcept {
     key_compare::operator=(std::move(x.key_comp()));
     root_ = std::move(x.root_);
     x.root_.data = nullptr;
@@ -1777,7 +1777,7 @@ btree<P>::btree(const self_type &x)
 }
 
 template <typename P>
-btree<P>::btree(self_type &&x) noexcept(std::is_nothrow_move_constructible<decltype(this->root_)>::value)
+btree<P>::btree(self_type &&x) noexcept
   : key_compare(std::move(x.key_comp())),
     root_(std::move(x.root_)) {
   x.root_.data = nullptr;
