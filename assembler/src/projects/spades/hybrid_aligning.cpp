@@ -144,11 +144,16 @@ public:
     }
 
     void StartProcessLibrary(size_t threads_count) override {
-        for (size_t i = 0; i < threads_count; ++i)
+        for (size_t i = 0; i < threads_count; ++i) {
             buffer_storages_.push_back(empty_storage_);
+        }
     }
 
     void StopProcessLibrary() override {
+        //FIXME put this code into ancestor
+        for (size_t i = 0; i < buffer_storages_.size(); ++i) {
+            MergeBuffer(i);
+        }
         buffer_storages_.clear();
     }
 

@@ -77,7 +77,7 @@ private:
     }
 
     //Function should return true if corresponding part of the index should be removed
-    void FilterIndex(FilterF filter_f) {
+    void FilterIndexByCondition(FilterF filter_f) {
         for (auto it = inner_index_.begin(); it != inner_index_.end(); ) {
             vector<GapDescription>& gaps = it->second;
             auto ep_ranges = EdgePairGaps(gaps);
@@ -128,7 +128,7 @@ private:
 
     void FilterIndex(size_t min_weight) {
         DEBUG("Filtering by weight " << min_weight);
-        FilterIndex([=](gap_info_it info_start, gap_info_it info_end) {
+        FilterIndexByCondition([=](gap_info_it info_start, gap_info_it info_end) {
             return info_end < info_start + min_weight;
         });
 
@@ -148,7 +148,7 @@ private:
         }
 
         DEBUG("Filtering transitive gaps");
-        FilterIndex([&](gap_info_it info_start, gap_info_it /*info_end*/) {
+        FilterIndexByCondition([&](gap_info_it info_start, gap_info_it /*info_end*/) {
             return transitive_ignore.count(EdgePair(info_start->start, info_start->end));
         });
     }
@@ -251,8 +251,10 @@ public:
             auto& gaps = e_gaps.second;
             sort(gaps.begin(), gaps.end());
         }
+        DEBUG("Raw extensions available for " << inner_index_.size() << " edges");
 
         FilterIndex(min_weight);
+        DEBUG("Filtered extensions available for " << inner_index_.size() << " edges");
         FillIndex();
     }
 };
