@@ -128,8 +128,11 @@ private:
 
     void FilterIndex(size_t min_weight) {
         DEBUG("Filtering by weight " << min_weight);
+
         FilterIndexByCondition([=](gap_info_it info_start, gap_info_it info_end) {
-            return info_end < info_start + min_weight;
+            int cnt = std::distance(info_start, info_end);
+            VERIFY(cnt > 0);
+            return size_t(cnt) < min_weight;
         });
 
         set<EdgePair> connections;
