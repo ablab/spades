@@ -4,6 +4,8 @@
 #include <tslr_pe.hpp>
 #include <barcode_mapper.hpp>
 
+using namespace tslr_resolver;
+
 namespace spades {
     class BarcodeMapConstructionStage : public AssemblyStage {
         // public:
@@ -22,8 +24,8 @@ namespace spades {
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
             INFO("Barcode map construction started...");
-            graph_pack.barcode_mapper = std::make_shared<tslr_resolver::TrimmableBarcodeMapper>
-                    (graph_pack.g, tslr_resolver::MapperType::Trimmable, cfg::get().ts_res.edge_tail_len);
+            graph_pack.barcode_mapper = std::make_shared<HeadTailBarcodeMapper<SimpleBarcodeEntry>>
+                    (graph_pack.g, cfg::get().ts_res.edge_tail_len);
             graph_pack.barcode_mapper->FillMap(tslr_dataset_, graph_pack.index, graph_pack.kmer_mapper);
             INFO("Barcode map construction finished.");
             INFO("Average barcode coverage: " +

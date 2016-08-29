@@ -231,7 +231,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                 return;
             }
 
-            if (mapper_-> GetSizeTails(decisive_edge) > 3 * average_coverage_) {
+            if (mapper_-> GetSizeTails(decisive_edge) > 80) {
                 DEBUG("Too many barcodes mapped to decisive edge")
                 return;
             }

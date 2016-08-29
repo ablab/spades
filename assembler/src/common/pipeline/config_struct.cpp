@@ -459,6 +459,7 @@ void load(debruijn_config::tslr_resolver& ts_res,
     load(ts_res.topsort_bound, pt, "topsort_bound");
     load(ts_res.debug_construction, pt, "debug_construction");
     load(ts_res.join_paths, pt, "join_paths");
+    load(ts_res.ideal_reads, pt, "ideal_reads");
     load(ts_res.edge_tail_len, pt, "edge_tail_len");
 }
 

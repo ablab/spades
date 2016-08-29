@@ -25,8 +25,8 @@ namespace spades {
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
             INFO("Resolver started...");
             graph_pack.edge_pos.Attach();
-            INFO("Filling positions")
-            debruijn_graph::FillPos(graph_pack, path_to_reference_, "");
+//            INFO("Filling positions")
+//            debruijn_graph::FillPos(graph_pack, path_to_reference_, "");
             INFO(graph_pack.barcode_mapper->size());
             graph_pack.barcode_mapper->
                 SerializeOverallDistribution(cfg::get().output_dir + "bardistr");

@@ -522,6 +522,7 @@ struct debruijn_config {
         size_t topsort_bound;
         bool debug_construction;
         bool join_paths;
+        bool ideal_reads;
         size_t edge_tail_len;
     };
 

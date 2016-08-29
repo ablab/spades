@@ -1,12 +1,24 @@
 ts_res
 {
-	reference_cov  38
+	;length threshold for reliable edges
 	len_threshold  500
+
+	;threshold on (intersection) / (number of barcodes on second edge)
+	;edge should pass this threshold to become candidate
 	diff_threshold 0.4
+
+	;Any andidate edge should be no further in graph. 
+	;In other words, that is the maximum size of resolvable repeat.
 	distance_bound 8000
-	abs_threshold 0.1
+
+	;Barcodes are counted on the last edge_tail_len nucleotides of the edge
+	edge_tail_len 500
+
 	topsort_bound 5000
 	debug_construction false
 	join_paths true
-	edge_tail_len 500
+	ideal_reads true
+
+	abs_threshold 0.1  ;deprecated
+	reference_cov  38  ;deprecated
 }
