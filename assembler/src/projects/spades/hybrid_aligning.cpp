@@ -29,12 +29,17 @@ class GapTrackingListener : public SequenceMapperListener {
 
     boost::optional<Sequence> Subseq(const io::SingleRead& read, size_t start, size_t end) const {
         DEBUG("Requesting subseq of read length " << read.size() << " from " << start << " to " << end);
+        if (end == start) {
+            DEBUG("Returning empty sequence");
+            return boost::make_optional(Sequence());
+        }
         auto subread = read.Substr(start, end);
         if (subread.IsValid()) {
             DEBUG("Gap seq valid. Length " << subread.size());
             return boost::make_optional(subread.sequence());
         } else {
             DEBUG("Gap seq invalid. Length " << subread.size());
+            DEBUG("sequence: " << subread.GetSequenceString());
             return boost::none;
         }
     }
@@ -49,6 +54,8 @@ class GapTrackingListener : public SequenceMapperListener {
                       EdgeId left, size_t left_offset,
                       EdgeId right, size_t right_offset) const {
         VERIFY(left_offset > 0 && right_offset < g_.length(right));
+
+        DEBUG("Creating gap description");
 
         //trying to shift on the left edge
         if (seq_start > seq_end) {
@@ -98,13 +105,15 @@ class GapTrackingListener : public SequenceMapperListener {
             EdgeId e1 = mapping.edge_at(i);
             EdgeId e2 = mapping.edge_at(i + 1);
 
-            //sorry, loops and!
+            //sorry, loops and other special cases
             if (e1 != e2 && e1 != g_.conjugate(e2)
+                && e1 != g_.conjugate(e1) && e2 != g_.conjugate(e2)
                 && tip_condition.Check(g_.EdgeEnd(e1))
                 && tip_condition.Check(g_.EdgeStart(e2))) {
 
                 MappingRange mr1 = mapping.mapping_at(i);
                 MappingRange mr2 = mapping.mapping_at(i + 1);
+                DEBUG("Creating description from mapping ranges " << mr1 << " and " << mr2);
                 size_t seq_start = mr1.initial_range.end_pos + g_.k();
                 size_t seq_end = mr2.initial_range.start_pos;
 
@@ -421,6 +430,7 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
             size_t min_gap_quantity = rtype ? cfg::get().pb.pacbio_min_gap_quantity
                                             : cfg::get().pb.contigs_min_gap_quantity;
 
+            INFO("Min gap weight set to " << min_gap_quantity);
             gap_storage.PrepareGapsForClosure(min_gap_quantity);
 
             gap_closing::CloseGaps(gp, rtype, gap_storage, min_gap_quantity);

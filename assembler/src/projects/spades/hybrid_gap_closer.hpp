@@ -262,8 +262,6 @@ public:
     }
 };
 
-
-
 inline string PoaConsensus(const vector<string>& gap_seqs) {
     const ConsensusCore::PoaConsensus* pc = ConsensusCore::PoaConsensus::FindConsensus(
             gap_seqs,
@@ -580,19 +578,13 @@ private:
                                       size_t edge_gap_end_position,
                                       const vector<string>& gap_variants) const {
         DEBUG(gap_variants.size() << " gap closing variants, lengths: " << PrintLengths(gap_variants));
-        string s = consensus_(gap_variants);
-        if (!s.empty()) {
-            DEBUG("consenus for " << g_.int_id(start)
-                                  << " and " << g_.int_id(end)
-                                  << " found: " << s);
-            return GapDescription(start, end,
-                                  Sequence(s),
-                                  edge_gap_start_position, edge_gap_end_position);
-        } else {
-            INFO("Skipping gap of size " << gap_variants.front().length() << " multiplicity " << gap_variants.size());
-        }
-
-        return INVALID_GAP;
+        auto s = consensus_(gap_variants);
+        DEBUG("consenus for " << g_.int_id(start)
+                              << " and " << g_.int_id(end)
+                              << " found: '" << s << "'");
+        return GapDescription(start, end,
+                              Sequence(s),
+                              edge_gap_start_position, edge_gap_end_position);
     }
 
     bool CheckGap(const GapDescription& gap) const {
@@ -646,8 +638,6 @@ private:
 
         //low weight connections filtered earlier
         VERIFY(cur_len >= min_weight_);
-//        if (cur_len < min_weight_)
-//            return INVALID_GAP;
 
         auto padded_gaps = PadGaps(start_it, end_it);
         //all start and end positions are equal here
