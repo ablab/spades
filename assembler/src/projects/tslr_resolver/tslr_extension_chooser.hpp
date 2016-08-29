@@ -103,9 +103,14 @@ namespace tslr_resolver {
                 DEBUG("second best score " << second_best_score);
                 DEBUG(best_candidates.size() << " best candidates");
 
+                if (best_score - second_best_score < 0.05) {
+                    DEBUG("Scores are too close, failed to select best candidate.");
+                    return result;
+                }
+
                 auto closest_edges = FindClosestEdge(best_candidates);
                 if (closest_edges.size() != 1) {
-                    DEBUG("Single topmin edge wasn't found");
+                    DEBUG("Unable to find single topologically minimal edge.");
                     for (auto edge : best_candidates) {
                         result.push_back(edge);
                     }
