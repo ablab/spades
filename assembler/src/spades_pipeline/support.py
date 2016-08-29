@@ -80,6 +80,7 @@ def check_binaries(binary_dir, log):
 
 def check_file_existence(input_filename, message="", log=None, dipspades=False):
     filename = abspath(expanduser(input_filename))
+    check_path_is_ascii(filename, message)
     if not os.path.isfile(filename):
         error("file not found: %s (%s)" % (filename, message), log=log, dipspades=dipspades)
     options_storage.dict_of_rel2abs[input_filename] = filename
@@ -88,16 +89,24 @@ def check_file_existence(input_filename, message="", log=None, dipspades=False):
 
 def check_dir_existence(input_dirname, message="", log=None, dipspades=False):
     dirname = abspath(expanduser(input_dirname))
+    check_path_is_ascii(dirname, message)
     if not os.path.isdir(dirname):
         error("directory not found: %s (%s)" % (dirname, message), log=log, dipspades=dipspades)
     options_storage.dict_of_rel2abs[input_dirname] = dirname
     return dirname
+
+
+def check_path_is_ascii(path, message=""):
+    if not is_ascii_string(path):
+        error("path contains non-ASCII characters: %s (%s)" % (path, message))
+
 
 def ensure_dir_existence(dirname):
     if os.path.isfile(dirname):
         os.remove(dirname)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
+
 
 def recreate_dir(dirname):
     if os.path.exists(dirname):
@@ -170,6 +179,18 @@ def get_available_memory():
         except IOError:
             return None
     return None
+
+
+# based on http://stackoverflow.com/questions/196345/how-to-check-if-a-string-in-python-is-in-ascii
+def is_ascii_string(line):
+    try:
+        line.encode('ascii')
+    except UnicodeDecodeError:  # python2
+        return False
+    except UnicodeEncodeError:  # python3
+        return False
+    else:
+        return True
 
 
 def process_readline(line, is_python3=sys.version.startswith('3.')):

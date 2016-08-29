@@ -197,9 +197,11 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                     support.error('-o option was specified at least twice')
                 options_storage.output_dir = abspath(expanduser(arg))
                 options_storage.dict_of_rel2abs[arg] = options_storage.output_dir
+                support.check_path_is_ascii(options_storage.output_dir, 'output directory')
         elif opt == "--tmp-dir":
             options_storage.tmp_dir = abspath(expanduser(arg))
             options_storage.dict_of_rel2abs[arg] = options_storage.tmp_dir
+            support.check_path_is_ascii(options_storage.tmp_dir, 'directory for temporary files')
         elif opt == "--configs-dir":
             options_storage.configs_dir = support.check_dir_existence(arg)
         elif opt == "--reference":
