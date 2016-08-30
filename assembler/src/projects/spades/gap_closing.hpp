@@ -40,6 +40,8 @@ class GapJoiner {
                        g_.VertexNucls(v2) << " not equal " << gap_seq.Subseq(gap_seq.size() - g_.k()));
             return g_.AddEdge(v1, v2, gap_seq);
         } else {
+            DEBUG("Adding gap seq " << gap_seq);
+            DEBUG("Between vertices " << g_.VertexNucls(v1) << " and " << g_.VertexNucls(v2));
             return g_.AddEdge(v1, v2, g_.VertexNucls(v1) + gap_seq + g_.VertexNucls(v2));
         }
     }

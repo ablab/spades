@@ -490,7 +490,7 @@ public:
     GapDescription CreateGapDescription(const KmerCluster<debruijn_graph::Graph>& a,
                                         const KmerCluster<debruijn_graph::Graph>& b,
                                         const Sequence& read) const {
-        size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + debruijn_k + 1;
+        size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + pacbio_k;
         size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
         if (seq_start > seq_end) {
             WARN("Overlapping flanks not supported yet");
@@ -499,7 +499,7 @@ public:
         return GapDescription(a.edgeId,
                               b.edgeId,
                               read.Subseq(seq_start, seq_end),
-                              a.sorted_positions[a.last_trustable_index].edge_position + 1,
+                              a.sorted_positions[a.last_trustable_index].edge_position + pacbio_k - debruijn_k,
                               b.sorted_positions[b.first_trustable_index].edge_position);
     }
 

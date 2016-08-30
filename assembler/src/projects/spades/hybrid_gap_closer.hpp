@@ -130,7 +130,7 @@ private:
         DEBUG("Filtering by weight " << min_weight);
 
         FilterIndexByCondition([=](gap_info_it info_start, gap_info_it info_end) {
-            int cnt = std::distance(info_start, info_end);
+            auto cnt = std::distance(info_start, info_end);
             VERIFY(cnt > 0);
             return size_t(cnt) < min_weight;
         });
