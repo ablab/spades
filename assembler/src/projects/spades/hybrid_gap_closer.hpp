@@ -624,9 +624,9 @@ private:
             if (exclude_long_seqs && gap.gap_seq.size() > long_seq_limit_)
                 continue;
 
-            string s = g_.EdgeNucls(gap.start).Subseq(start_min, gap.edge_gap_start_position).str();
+            string s = g_.EdgeNucls(gap.start).Subseq(start_min + g_.k(), gap.edge_gap_start_position + g_.k()).str();
             s += gap.gap_seq.str();
-            s += g_.EdgeNucls(gap.end).Subseq(gap.edge_gap_end_position + g_.k(), end_max + g_.k()).str();
+            s += g_.EdgeNucls(gap.end).Subseq(gap.edge_gap_end_position, end_max).str();
             answer.push_back(GapDescription(gap.start, gap.end, Sequence(s), start_min, end_max));
         }
         return answer;
