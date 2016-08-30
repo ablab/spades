@@ -381,7 +381,9 @@ void CloseGaps(conj_graph_pack& gp, bool rtype,
 using namespace gap_closing;
 
 bool ShouldAlignWithPacbioAligner(io::LibraryType lib_type) {
-    return lib_type == io::LibraryType::PacBioReads ||
+    return lib_type == io::LibraryType::TrustedContigs ||
+           lib_type == io::LibraryType::UntrustedContigs || 
+           lib_type == io::LibraryType::PacBioReads ||
            lib_type == io::LibraryType::SangerReads ||
            lib_type == io::LibraryType::NanoporeReads; //||
 //           lib_type == io::LibraryType::TSLReads;
