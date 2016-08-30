@@ -1645,7 +1645,7 @@ private:
     }
 
 
-    size_t CheckPrefixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const {
+    bool CheckPrefixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const {
         int cur_pos1 = (int) pos1;
         int cur_pos2 = (int) pos2;
         while (cur_pos1 >= 0 && cur_pos2 >= 0) {
@@ -1664,12 +1664,12 @@ private:
                 cur_pos2--;
             } else {
                 DEBUG("Not Equal at " << cur_pos1 << " and " << cur_pos2);
-                return cur_pos1;
+                return false;
 
             }
         }
         DEBUG("Equal!!");
-        return -1UL;
+        return true;
     }
 
     size_t CheckSuffixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const {
