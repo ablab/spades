@@ -255,9 +255,9 @@ def construct_quast_limit_map(dataset_info, prefix):
                                         ('min_genome_mapped', "Genome fraction (%)", True),
                                         ('min_genes', "# genes", True),       
                                         ('max_indels', "# indels per 100 kbp", False), 
-                                        ('max_subs', "# mismatches per 100 kbp", False)
+                                        ('max_subs', "# mismatches per 100 kbp", False),
                                         ('max_localmis', "# local misassemblies", False), 
-                                        ('max_ns', "# N's per 100 kbp", False)
+                                        ('max_ns', "# N's per 100 kbp", False),
                                         ('max_dr', "Duplication ratio", False)])
 
 # Construct limit map for rnaQUAST metrics
