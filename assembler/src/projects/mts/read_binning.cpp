@@ -12,14 +12,6 @@
 #include "io/reads_io/file_reader.hpp"
 #include "read_binning.hpp"
 
-/*
-void create_console_logger() {
-    logging::logger *log = logging::create_logger("", logging::L_INFO);
-    log->add_writer(std::make_shared<logging::console_writer>());
-    logging::attach_logger(log);
-}
-*/
-
 namespace debruijn_graph {
 
 set<bin_id> ContigBinner::RelevantBins(const io::SingleRead& r) const {

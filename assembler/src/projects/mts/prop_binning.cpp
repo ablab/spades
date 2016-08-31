@@ -8,19 +8,13 @@
 #include "getopt_pp/getopt_pp.h"
 #include "io/reads_io/io_helper.hpp"
 #include "io/reads_io/osequencestream.hpp"
-#include "dev_support/logger/log_writers.hpp"
 #include "pipeline/graphio.hpp"
+#include "logger.hpp"
 #include "read_binning.hpp"
 #include "propagate.hpp"
 #include <modules/visualization/position_filler.hpp>
 
 using namespace debruijn_graph;
-
-void create_console_logger() {
-    logging::logger *log = logging::create_logger("", logging::L_INFO);
-    log->add_writer(std::make_shared<logging::console_writer>());
-    logging::attach_logger(log);
-}
 
 std::string add_suffix(const std::string& path, const std::string& suffix) {
     auto ext = path::extension(path);

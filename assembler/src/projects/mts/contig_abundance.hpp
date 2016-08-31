@@ -247,11 +247,6 @@ public:
     }
 
     boost::optional<AbundanceVector> operator()(const std::string& s, const std::string& /*name*/ = "") const {
-        //std::ofstream os;
-        //if (!name.empty()) {
-        //    os.open("/Sid/snurk/mts/out/infant_gut/stats/Peptoniphilus_harei_30_1/invest/kmers/" + name + ".kmers");
-        //}
-
         std::vector<MplVector> kmer_mpls;
 
         for (const auto& seq : SplitOnNs(s)) {
@@ -263,16 +258,16 @@ public:
 
             for (size_t j = k_ - 1; j < seq.size(); ++j) {
                 kwh <<= seq[j];
-                DEBUG("Processing kmer " << kwh.key().str());
+                TRACE("Processing kmer " << kwh.key().str());
                 if (kmer_mpl_.valid(kwh)) {
-                    DEBUG("Valid");
+                    TRACE("Valid");
                     kmer_mpls.push_back(kmer_mpl_.get_value(kwh, inverter_));
                     //if (!name.empty()) {
                     //    os << PrintVector(kmer_mpl_.get_value(kwh, inverter_), sample_cnt_) << std::endl;
                     //}
-                    DEBUG(PrintVector(kmer_mpl_.get_value(kwh, inverter_), sample_cnt_));
+                    TRACE(PrintVector(kmer_mpl_.get_value(kwh, inverter_), sample_cnt_));
                 } else {
-                    DEBUG("Invalid");
+                    TRACE("Invalid");
                 }
             }
         }
