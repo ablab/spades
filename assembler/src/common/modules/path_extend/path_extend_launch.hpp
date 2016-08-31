@@ -57,6 +57,8 @@ struct PathExtendParamsContainer {
             traverse_loops = false;
             output_broken_scaffolds = false;
         }
+        if (mode_ == config::pipeline_type::rna)
+            traverse_loops = false;
     }
 
     const pe_config::MainPEParamsT& pe_cfg;
@@ -215,7 +217,7 @@ inline void ClonePathContainer(PathContainer& spaths, PathContainer& tpaths, Gra
 
 inline void FinalizePaths(const PathExtendParamsContainer& params,
                           PathContainer& paths,
-                          const Graph& g,
+                          const conj_graph_pack& gp,
                           GraphCoverageMap& cover_map,
                           size_t min_edge_len,
                           size_t max_path_diff,
@@ -223,12 +225,15 @@ inline void FinalizePaths(const PathExtendParamsContainer& params,
     PathExtendResolver resolver(cover_map.graph());
 
     if (params.pset.remove_overlaps) {
-        resolver.removeOverlaps(paths, cover_map, min_edge_len, max_path_diff,
+        resolver.RemoveOverlaps(paths, cover_map, min_edge_len, max_path_diff,
                                 params.pset.cut_all_overlaps,
                                 (params.mode == config::pipeline_type::moleculo));
     }
+    else if (params.mode == config::pipeline_type::rna) {
+        resolver.RemoveRNAOverlaps(paths, cover_map, min_edge_len, max_path_diff);
+    }
     else {
-        resolver.removeEqualPaths(paths, cover_map, min_edge_len);
+        resolver.RemoveEqualPaths(paths, cover_map, min_edge_len);
     }
     if (mate_pairs) {
         resolver.RemoveMatePairEnds(paths, min_edge_len);
@@ -238,12 +243,12 @@ inline void FinalizePaths(const PathExtendParamsContainer& params,
     }
     paths.FilterEmptyPaths();
     if (!mate_pairs) {
-        resolver.addUncoveredEdges(paths, cover_map);
+        resolver.AddUncoveredEdges(paths, cover_map);
     }
     if (params.pset.path_filtration.enabled) {
-        LengthPathFilter(g, params.pset.path_filtration.min_length).filter(paths);;
-        IsolatedPathFilter(g, params.pset.path_filtration.min_length_for_low_covered, params.pset.path_filtration.min_coverage).filter(paths);
-        IsolatedPathFilter(g, params.pset.path_filtration.isolated_min_length).filter(paths);
+        LengthPathFilter(gp.g, params.pset.path_filtration.min_length).filter(paths);;
+        IsolatedPathFilter(gp.g, params.pset.path_filtration.min_length_for_low_covered, params.pset.path_filtration.min_coverage).filter(paths);
+        IsolatedPathFilter(gp.g, params.pset.path_filtration.isolated_min_length).filter(paths);
     }
     paths.SortByLength();
     for(auto& path : paths) {
@@ -912,8 +917,10 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                         pes.push_back(MakeMetaExtender(dataset_info, lib_index, params, gp, cov_map, false));
                     else if (params.mode == config::pipeline_type::moleculo)
                         pes.push_back(MakeLongEdgePEExtender(dataset_info, lib_index, params, gp, cov_map, false));
-                    else if (pset.multi_path_extend  && !IsPolishingStage(stage))
+                    else if (pset.multi_path_extend  && !IsPolishingStage(stage)) {
+                        pes.push_back(MakePEExtender(dataset_info, lib_index, params, gp, cov_map, false));
                         pes.push_back(MakeRNAExtender(dataset_info, lib_index, params, gp, cov_map, false));
+                    }
                     else
                         pes.push_back(MakePEExtender(dataset_info, lib_index, params, gp, cov_map, false));
                 }
@@ -925,8 +932,9 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             if (IsForShortLoopExtender(lib) && IsOldPEEnabled(pset.sm)) {
                 if (params.mode == config::pipeline_type::meta)
                     pes.push_back(MakeMetaExtender(dataset_info, lib_index, params, gp, cov_map, true));
-                else if (pset.multi_path_extend && !IsPolishingStage(stage))
-                    pes.push_back(MakeRNAExtender(dataset_info, lib_index, params, gp, cov_map, true));
+                else if (pset.multi_path_extend && !IsPolishingStage(stage)) {
+                    pe_loops.push_back(MakePEExtender(dataset_info, lib_index, params, gp, cov_map, true));
+                }
                 else
                     pe_loops.push_back(MakePEExtender(dataset_info, lib_index, params, gp, cov_map, true));
             }
@@ -1201,7 +1209,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     bool use_scaffolder_2015_pipeline = (sc_mode == sm_old_pe_2015 && (mp_exists || long_reads_exists)) ||
         sc_mode == sm_2015 ||
         sc_mode == sm_combined;
-    bool detect_repeats_online = !(use_scaffolder_2015_pipeline || params.mode == config::pipeline_type::meta);
+    bool detect_repeats_online = !(use_scaffolder_2015_pipeline || params.mode == config::pipeline_type::meta || params.mode == config::pipeline_type::rna);
 
     //Fill the storage to enable unique edge check
     if (use_scaffolder_2015_pipeline) {
@@ -1252,7 +1260,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     //Parameters are subject to change
     size_t max_is_right_quantile = max(FindOverlapLenForStage(exspander_stage, dataset_info), gp.g.k() + 100);
     size_t min_edge_len = 100;
-    size_t max_edge_diff_pe = /*params.mode == config::pipeline_type::rna ? 0 :*/ max_is_right_quantile;
+    size_t max_edge_diff_pe = params.mode == config::pipeline_type::rna ? 1 : max_is_right_quantile;
 
     auto mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs,
                                                                           main_unique_storage,
@@ -1262,13 +1270,13 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
 
 //extend pe + long reads
     PathExtendResolver resolver(gp.g);
-    auto seeds = resolver.makeSimpleSeeds();
+    auto seeds = resolver.MakeSimpleSeeds();
     DebugOutputPaths(gp, params, seeds, "init_paths");
     seeds.SortByLength();
     INFO("Growing paths using paired-end and long single reads");
     INFO("Multi path extend is " << (params.pset.multi_path_extend ? "on" : "off"))
     INFO("Overlap removal is " << (params.pset.remove_overlaps ? "on" : "off"))
-    auto paths = resolver.extendSeeds(seeds, *mainPE);
+    auto paths = resolver.ExtendSeeds(seeds, *mainPE);
     paths.SortByLength();
     DebugOutputPaths(gp, params, paths, "pe_before_overlap");
 
@@ -1292,7 +1300,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     //We do not run overlap removal in 2015 mode
     //if (!use_scaffolder_2015_pipeline)
     {
-        FinalizePaths(params, paths, gp.g, cover_map, min_edge_len, max_edge_diff_pe);
+        FinalizePaths(params, paths, gp, cover_map, min_edge_len, max_edge_diff_pe);
         DebugOutputPaths(gp, params, paths, "pe_finalized1");
     }
     if (params.output_broken_scaffolds) {
@@ -1302,7 +1310,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     DebugOutputPaths(gp, params, paths, "pe_before_traverse");
     if (params.traverse_loops) {
         TraverseLoops(paths, cover_map, mainPE, 1000, 10, 1000);
-        FinalizePaths(params, paths, gp.g, cover_map, min_edge_len, max_edge_diff_pe);
+        FinalizePaths(params, paths, gp, cover_map, min_edge_len, max_edge_diff_pe);
         DebugOutputPaths(gp, params, paths, "pe_finalized2");
     }
     DebugOutputPaths(gp, params, paths, (mp_exists ? "pe_final_paths" : "final_paths"));
@@ -1360,7 +1368,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
                                                                                   pset.extension_options.max_repeat_length,
                                                                                   detect_repeats_online);
 
-        mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
+        mp_paths = resolver.ExtendSeeds(clone_paths, *mp_main_pe);
         clone_paths.DeleteAllPaths();
         mp_paths.FilterEmptyPaths();
         mp_paths.SortByLength();
@@ -1374,10 +1382,10 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
                                                                                   pset.extension_options.max_repeat_length,
                                                                                   detect_repeats_online);
         INFO("Growing paths using mate-pairs");
-        mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
+        mp_paths = resolver.ExtendSeeds(clone_paths, *mp_main_pe);
 
         DebugOutputPaths(gp, params, mp_paths, "mp_before_overlap");
-        FinalizePaths(params, mp_paths, gp.g, clone_map, max_is_right_quantile, max_is_right_quantile, true);
+        FinalizePaths(params, mp_paths, gp, clone_map, max_is_right_quantile, max_is_right_quantile, true);
         clone_paths.DeleteAllPaths();
 
     }
@@ -1399,9 +1407,9 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
                                                                                     max_is_right_quantile,
                                                                                     pset.extension_options.max_repeat_length,
                                                                                     detect_repeats_online);
-        last_paths = resolver.extendSeeds(mp_paths, *pe2_extender);
+        last_paths = resolver.ExtendSeeds(mp_paths, *pe2_extender);
         DebugOutputPaths(gp, params, last_paths, "mp2_before_overlap");
-        FinalizePaths(params, last_paths, gp.g, clone_map, min_edge_len, max_is_right_quantile);
+        FinalizePaths(params, last_paths, gp, clone_map, min_edge_len, max_is_right_quantile);
         DebugOutputPaths(gp, params, last_paths, "mp2_before_traverse");
     }
     else {
@@ -1430,7 +1438,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
 
     DebugOutputPaths(gp, params, polished_paths, "mp2_polished");
     GraphCoverageMap polished_map(gp.g, polished_paths, true);
-    FinalizePaths(params, polished_paths, gp.g, polished_map, min_edge_len, max_is_right_quantile);
+    FinalizePaths(params, polished_paths, gp, polished_map, min_edge_len, max_is_right_quantile);
 
 //result
     if (params.output_broken_scaffolds) {

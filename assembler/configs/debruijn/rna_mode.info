@@ -94,8 +94,8 @@ de
 
 pe {
 params {
-    ;multi_path_extend   true
-    ;remove_overlaps     false
+    multi_path_extend   true
+    remove_overlaps     false
 
     scaffolder {
         cutoff        1

@@ -58,7 +58,7 @@ public:
         EdgeId back = path->Back();
         vector<size_t> all_pos = path->FindAll(back);
         for (size_t i = 0; i < all_pos.size() - 1; ++i) {
-            answer = std::max(answer, NonUniqueCommon(path, all_pos[i], path->Size() - 1));
+            answer = std::max(answer, NonUniqueCommon(path, (int) all_pos[i], (int) path->Size() - 1));
         }
         return answer;
     }
@@ -381,8 +381,8 @@ private:
             path1->SetOverlapedEndTo(path2);
         } else if (overlap_size < path2->Size()
                 && overlap_size < path1->Size()) {
-            BidirectionalPath* overlap = new BidirectionalPath(g_, path1->Back());
-            BidirectionalPath* conj_overlap = new BidirectionalPath(g_, g_.conjugate(path1->Back()));
+            BidirectionalPath *overlap = new BidirectionalPath(g_, path1->Back());
+            BidirectionalPath *conj_overlap = new BidirectionalPath(g_, g_.conjugate(path1->Back()));
             SubscribeCoverageMap(overlap);
             SubscribeCoverageMap(conj_overlap);
             paths.AddPair(overlap, conj_overlap);
@@ -469,7 +469,7 @@ public:
     PathExtendResolver(const Graph& g): g_(g), k_(g.k()) {
     }
 
-    PathContainer makeSimpleSeeds() {
+    PathContainer MakeSimpleSeeds() {
         std::set<EdgeId> included;
         PathContainer edges;
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -486,20 +486,31 @@ public:
         return edges;
     }
 
-    PathContainer extendSeeds(PathContainer& seeds, ContigsMaker& pathExtender) {
+    PathContainer ExtendSeeds(PathContainer &seeds, ContigsMaker &pathExtender) {
         PathContainer paths;
         pathExtender.GrowAll(seeds, paths);
         return paths;
     }
 
-    void removeEqualPaths(PathContainer& paths, GraphCoverageMap& coverage_map,
-                          size_t max_overlap) {
+    void RemoveEqualPaths(PathContainer &paths, GraphCoverageMap &coverage_map,
+                          size_t min_edge_len) {
 
         SimpleOverlapRemover remover(g_, coverage_map);
-        remover.RemoveSimilarPaths(paths, max_overlap, max_overlap, true, false, false, false, false);
+        remover.RemoveSimilarPaths(paths, min_edge_len, min_edge_len, true, false, false, false, false);
     }
 
-    void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
+    void RemoveRNAOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
+                          size_t min_edge_len, size_t max_path_diff) {
+
+        SimpleOverlapRemover remover(g_, coverage_map);
+        remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, true, false, false, false, false);
+
+        remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, false, true, false, false, false);
+
+        remover.RemoveOverlaps(paths);
+    }
+
+    void RemoveOverlaps(PathContainer &paths, GraphCoverageMap &coverage_map,
                         size_t min_edge_len, size_t max_path_diff,
                         bool add_overlaps_begin,
                         bool cut_preudo_self_conjugate) {
@@ -531,7 +542,7 @@ public:
         }
     }
 
-    void addUncoveredEdges(PathContainer& paths, GraphCoverageMap& coverageMap) {
+    void AddUncoveredEdges(PathContainer &paths, GraphCoverageMap &coverageMap) {
         std::set<EdgeId> included;
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (included.count(*iter) == 0 && !coverageMap.IsCovered(*iter)) {

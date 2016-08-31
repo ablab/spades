@@ -31,6 +31,14 @@ class LoopTraverser {
     size_t shortest_path_limit_;
     static const size_t DIJKSTRA_LIMIT = 3000;
 private:
+    bool AnyTipsInComponent(const GraphComponent<Graph>& component) const{
+        for(auto e : component.edges()) {
+            if (g_.IncomingEdgeCount(g_.EdgeStart(e)) == 0 || g_.OutgoingEdgeCount(g_.EdgeEnd(e)) == 0)
+                return true;
+        }
+        return false;
+    }
+
     EdgeId FindStart(const set<VertexId>& component_set) const{
         EdgeId result;
         for (auto it = component_set.begin(); it != component_set.end(); ++it) {
@@ -207,8 +215,11 @@ public:
             GraphComponent<Graph> component = splitter->Next();
             if (component.v_size() > component_size_limit_)
                 continue;
-            if(ContainsLongEdges(component))
+            if (ContainsLongEdges(component))
                 continue;
+            if (AnyTipsInComponent(component))
+                continue;
+
             set<VertexId> component_set(component.v_begin(), component.v_end());
             EdgeId start = FindStart(component_set);
             EdgeId finish = FindFinish(component_set);

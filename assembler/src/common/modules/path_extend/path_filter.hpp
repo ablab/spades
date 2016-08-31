@@ -22,10 +22,10 @@ namespace path_extend {
 class CopyOnWritePathFilter {
 
 protected:
-    Graph& g;
+    const Graph& g;
 
 public:
-    CopyOnWritePathFilter(Graph& g_): g(g_) {
+    CopyOnWritePathFilter(const Graph& g_): g(g_) {
     }
 
     virtual bool predicate(BidirectionalPath& path) = 0;
@@ -52,7 +52,7 @@ protected:
 
 public:
 
-    IdFilter(Graph& g_, std::set<size_t> ids_): CopyOnWritePathFilter(g_), ids(ids_) {
+    IdFilter(const Graph& g_, std::set<size_t> ids_): CopyOnWritePathFilter(g_), ids(ids_) {
     }
 
     virtual bool predicate(BidirectionalPath& path) {
@@ -60,6 +60,34 @@ public:
     }
 };
 
+
+class DuplicateFilter {
+
+protected:
+    const Graph& g;
+
+public:
+    DuplicateFilter(const Graph& g_): g(g_) {
+    }
+
+    PathContainer filter(PathContainer& paths) {
+        PathContainer result;
+
+        for (size_t i = 0; i < paths.size(); ++i) {
+            bool duplicate = false;
+            for (size_t j = 0; j < result.size(); ++j) {
+                if (result[j] == paths[j])
+                    duplicate = true;
+            }
+            if (!duplicate) {
+                result.AddPair(paths.Get(i), paths.GetConjugate(i));
+            }
+        }
+
+        return result;
+    }
+
+};
 
 class ErasingPathFilter {
 

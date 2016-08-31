@@ -1323,24 +1323,27 @@ public:
 
 protected:
     virtual bool AddCandidates(BidirectionalPath& path, PathContainer* paths_storage, ExtensionChooser::EdgeContainer& candidates) override {
-        bool res = false;
+        if (candidates.size() == 0)
+            return false;
 
+        bool res = false;
+        LoopDetector loop_detector(&path, cov_map_);
+        DEBUG("loop detecor");
+        if (!investigate_short_loops_ &&
+            (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
+            && extensionChooser_->WeightCounterBased()) {
+	    DEBUG("loop deteced");
+            return false;
+        }
         if (candidates.size() == 1) {
-            LoopDetector loop_detector(&path, cov_map_);
-            DEBUG("loop detecor");
-            if (!investigate_short_loops_ &&
-                (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
-                && extensionChooser_->WeightCounterBased()) {
-                return false;
-            }
             DEBUG("push");
             EdgeId eid = candidates.back().e_;
             path.PushBack(eid, candidates.back().d_);
             DEBUG("push done");
             return true;
         }
-        else if (candidates.size() == 2 && (max_candidates_ == 0 || candidates.size() <= max_candidates_)) {
-            //Check for bulge
+        else if (candidates.size() == 2) {
+             //Check for bulge
             auto v = g_.EdgeStart(candidates.front().e_);
             auto u = g_.EdgeEnd(candidates.front().e_);
             for (auto edge : candidates) {
@@ -1348,32 +1351,22 @@ protected:
                     return false;
             }
 
-            LoopDetector loop_detector(&path, cov_map_);
-            DEBUG("loop detector");
-            if (!investigate_short_loops_ && loop_detector.EdgeInShortLoop(path.Back())
-                && extensionChooser_->WeightCounterBased()) {
-                return false;
+            //Creating new paths for other than new candidate.
+            for (size_t i = 1; i < candidates.size(); ++i) {
+                DEBUG("push other candidates " << i);
+                BidirectionalPath *p = new BidirectionalPath(path);
+                p->PushBack(candidates[i].e_, candidates[i].d_);
+                BidirectionalPath *cp = new BidirectionalPath(p->Conjugate());
+                paths_storage->AddPair(p, cp);
             }
-//First candidate is adding to THIS path.
-            else if (not (!investigate_short_loops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
-                && extensionChooser_->WeightCounterBased())) {
-                DEBUG("push");
-                path.PushBack(candidates.front().e_, candidates.front().d_);
-                DEBUG("push done");
-                res = true;
-            }
+
+            DEBUG("push");
+            path.PushBack(candidates.front().e_, candidates.front().d_);
+            DEBUG("push done");
+            res = true;
+
             if (candidates.size() > 1) {
                 DEBUG("Found " << candidates.size() << " candidates");
-            }
-//Creating new paths for other than new candidate.
-            for (size_t i = 1; i < candidates.size(); ++i) {
-                if (not (!investigate_short_loops_ && loop_detector.EdgeInShortLoop(candidates.front().e_)
-                    && extensionChooser_->WeightCounterBased())) {
-                    BidirectionalPath *p = new BidirectionalPath(path);
-                    p->PushBack(candidates[i].e_, candidates[i].d_);
-                    BidirectionalPath *cp = new BidirectionalPath(p->Conjugate());
-                    paths_storage->AddPair(p, cp);
-                }
             }
         }
 

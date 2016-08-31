@@ -427,7 +427,21 @@ private:
 
 class RNAExtensionChooser: public ExcludingExtensionChooser {
 protected:
-    void ExcludeEdges(const BidirectionalPath& /*path*/, const EdgeContainer& /*edges*/, std::set<size_t>& /*to_exclude*/) const override {
+    void ExcludeEdges(const BidirectionalPath& path, const EdgeContainer& edges, std::set<size_t>& to_exclude) const override {
+        if (edges.size() < 2) {
+            return;
+        }
+        size_t i = path.Size() - 1;
+        PathAnalyzer analyzer(g_);
+        while (i > 0) {
+            if (g_.IncomingEdgeCount(g_.EdgeStart(path[i])) > 1)
+                break;
+            to_exclude.insert(i);
+            --i;
+            }
+
+        if (i == 0)
+            to_exclude.clear();
     }
 
 public:
