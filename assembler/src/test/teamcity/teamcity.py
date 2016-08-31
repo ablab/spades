@@ -522,7 +522,7 @@ def get_contigs_list(args, dataset_info, folder, before_rr = False):
     if os.path.exists(os.path.join(folder, "first_pe_contigs.fasta")):
         contigs.append(("preliminary", "first_pe_contigs", "prelim", ""))
     if before_rr and dataset_info.mode in ("standard", "meta"):
-        contigs.append(("before_rr", "before_rr", ""))
+        contigs.append(("before_rr", "before_rr", "", ""))
     return contigs
 
 
