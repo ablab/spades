@@ -8,10 +8,11 @@
 #pragma once
 
 #include "pipeline/stage.hpp"
-#include "assembly_graph/graph_alignment/sequence_mapper_notifier.hpp"
 
 namespace debruijn_graph {
 
+// FIXME: very awful, get rid of this!
+class SequenceMapperListener;
 void ProcessSingleReads(conj_graph_pack &gp,
                         size_t ilib,
                         bool use_binary = true,

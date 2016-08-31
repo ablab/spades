@@ -5,14 +5,16 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "assembly_graph/graph_alignment/pacbio/pac_index.hpp"
 #include "hybrid_gap_closer.hpp"
-#include "assembly_graph/graph_alignment/long_read_storage.hpp"
-#include "io/reads_io/wrapper_collection.hpp"
-#include "assembly_graph/stats/picture_dump.hpp"
 #include "hybrid_aligning.hpp"
-#include "pair_info_count.hpp"
+#include "assembly_graph/graph_alignment/pacbio/pac_index.hpp"
+#include "assembly_graph/graph_alignment/sequence_mapper_notifier.hpp"
+#include "assembly_graph/graph_alignment/long_read_storage.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
+#include "io/reads_io/wrapper_collection.hpp"
 #include "io/reads_io/multifile_reader.hpp"
+// FIXME: Get rid of this, this is trash
+#include "pair_info_count.hpp"
 
 namespace debruijn_graph {
 

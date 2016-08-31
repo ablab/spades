@@ -8,6 +8,7 @@
 #pragma once
 
 #include "data_structures/sequence/sequence_tools.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 #include "assembly_graph/graph_core/basic_graph_stats.hpp"
 
@@ -15,8 +16,9 @@
 #include "edge_index.hpp"
 #include "kmer_mapper.hpp"
 
-#include <cstdlib>
 #include "assembly_graph/graph_core/basic_graph_stats.hpp"
+
+#include <cstdlib>
 
 namespace debruijn_graph {
 using omnigraph::MappingPath;
