@@ -1437,7 +1437,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     polisher.PolishPaths(last_paths, polished_paths);
     polished_paths.SortByLength();
 
-    DebugOutputPaths(gp, params, last_paths, "mp2_polished");
+    DebugOutputPaths(gp, params, polished_paths, "mp2_polished");
     GraphCoverageMap polished_map(gp.g, polished_paths, true);
     FinalizePaths(params, polished_paths, gp.g, polished_map, min_edge_len, max_is_right_quantile);
 

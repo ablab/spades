@@ -58,12 +58,13 @@ log = Log()
 ### Quality assessment ###
 
 # Element of quality assessment map
-class MetricEnty:
+class MetricEntry:
     config_name = ''
     quast_name = ''
     should_be_higher_than_theshold = True
     simple_parsing = True
     value = 0.0
+    assess = True
 
     def __init__(self, cfg_name, name, higher, simple_parse = True):
         self.config_name = cfg_name
@@ -81,19 +82,25 @@ class MetricEnty:
             return float(p)
             
 
-# Construct limit map for given metrics ---  list of triplets (congig_name, report_name, should_be_higher_that_threshold)
+# Construct limit map for given metrics ---  list of triplets (config_name, report_name, should_be_higher_that_threshold)
 def construct_limit_map(dataset_info, prefix, metric_list):
     limit_map = {}
-    params = map(lambda x: MetricEnty(prefix + x[0], x[1], x[2]), metric_list)
+    params = map(lambda x: MetricEntry(prefix + x[0], x[1], x[2]), metric_list)
 
     if prefix + 'assess' in dataset_info.__dict__ and dataset_info.__dict__[prefix + 'assess']:
         log.log("Assessing quality results...")
         for p in params:
+            if not p.quast_name in limit_map.keys():
+                limit_map[p.quast_name] = []
+
+            new_entry = p
             if p.config_name in dataset_info.__dict__:
-                if not p.quast_name in limit_map.keys():
-                    limit_map[p.quast_name] = []
-                new_entry = p
+                #add metric entry that is to be assessed using valued from config
                 new_entry.value = float(dataset_info.__dict__[p.config_name])
+                limit_map[p.quast_name].append(new_entry)
+            elif len(limit_map[p.quast_name]) == 0:
+                #add metric with no value in config, just print it to the log later
+                new_entry.assess = False
                 limit_map[p.quast_name].append(new_entry)
 
     return limit_map
@@ -106,6 +113,9 @@ def assess_map(result_map, limit_map):
     for metric in sorted(result_map.keys()):
         if metric in limit_map and len(limit_map[metric]) > 0:
             for entry in limit_map[metric]:
+                if not entry.assess:
+                    log.log(metric + " = " + str(result_map[metric]))
+                    continue
                 #that metric shouold be higher than threshold (e.g. N50)
                 if entry.should_be_higher_than_theshold:
                     if result_map[metric] < entry.value:
@@ -128,9 +138,14 @@ def assess_map(result_map, limit_map):
 
 # Assess report
 def assess_report(report, limit_map, name = ""):
+    columns = []
+    values = []
     f = open(report, 'r')
-    columns = map(lambda s: s.strip(), f.readline().split('\t'))
-    values = map(lambda s: s.strip(), f.readline().split('\t'))
+    for l in f:
+        row = l.split('\t')
+        if len(row) >= 2:
+            columns.append(row[0].strip())
+            values.append(row[1].strip())
     f.close()
 
     result_map = {}
@@ -192,29 +207,42 @@ def run_quast(dataset_info, contigs, quast_output_dir, opts):
     if not reduce(lambda x, y: os.path.exists(y) and x, contigs, True):
         log.warn("No contigs were found in " + output_dir)
         return 8
-    else:
-        cmd = "quast.py"
-        if 'meta' in dataset_info.__dict__ and dataset_info.meta:
-            cmd = "metaquast.py"
-        #Preparing params
-        quast_params = [opts]
-        if dataset_info.quast_params:
-            i = 0
-            while i < len(dataset_info.quast_params):
-                option = dataset_info.quast_params[i]
-                quast_params.append(str(option))
-                if i < len(dataset_info.quast_params) - 1 and option in ['-R', '-G', '-O']:
-                    quast_params.append(os.path.join(dataset_info.dataset_path, str(dataset_info.quast_params[i + 1])))
-                    i += 1
-                i += 1
 
-        log.log('Running ' + cmd + ' on ' + ','.join(contigs))
-        quast_cmd = os.path.join(dataset_info.quast_dir, cmd) + " " + " ".join(quast_params)
-        log.log(quast_cmd)
-        ecode = os.system(quast_cmd + " -o " + quast_output_dir + " " + " ".join(contigs) + " > /dev/null")
-        if ecode != 0:
-            log.err("QUAST finished abnormally with exit code " + str(ecode))
-            return 9
+    cmd = "quast.py"
+    if dataset_info.mode == "meta":
+        cmd = "metaquast.py"
+    elif dataset_info.mode == "rna":
+        cmd = "rnaquast.py"
+    #Preparing params
+    path_options = ['-R', '-G', '-O']
+    if dataset_info.mode == "rna":
+        path_options = ['-r', '--reference', '--gmap_index', '--gene_database', '-gtf']
+
+    quast_params = [opts]
+    if dataset_info.quast_params:
+        i = 0
+        while i < len(dataset_info.quast_params):
+            option = dataset_info.quast_params[i]
+            quast_params.append(str(option))
+            if i < len(dataset_info.quast_params) - 1 and option in  path_options:
+                quast_params.append(os.path.join(dataset_info.dataset_path, str(dataset_info.quast_params[i + 1])))
+                i += 1
+            i += 1
+
+    log.log('Running ' + cmd + ' on ' + ','.join(contigs))
+    quast_cmd = os.path.join(dataset_info.quast_dir, cmd) + " " + " ".join(quast_params) + " "
+
+    ctg_option = ""
+    if dataset_info.mode == "rna":
+        ctg_option = " -c "
+
+    quast_cmd += " -o " + quast_output_dir + " " + ctg_option + " ".join(contigs) + " > /dev/null"
+    log.log('Executing ' + quast_cmd)
+    ecode = os.system(quast_cmd)
+    if ecode != 0:
+        log.err(cmd + " finished abnormally with exit code " + str(ecode))
+        return 9
+
     return 0
 
 
@@ -227,7 +255,29 @@ def construct_quast_limit_map(dataset_info, prefix):
                                         ('min_genome_mapped', "Genome fraction (%)", True),
                                         ('min_genes', "# genes", True),       
                                         ('max_indels', "# indels per 100 kbp", False), 
-                                        ('max_subs', "# mismatches per 100 kbp", False)])
+                                        ('max_subs', "# mismatches per 100 kbp", False)
+                                        ('max_localmis', "# local misassemblies", False), 
+                                        ('max_ns', "# N's per 100 kbp", False)
+                                        ('max_dr', "Duplication ratio", False)])
+
+# Construct limit map for rnaQUAST metrics
+def construct_rnaquast_limit_map(dataset_info, prefix):
+    return construct_limit_map(dataset_info, prefix, [
+                                        ('min_transcripts', "Transcripts", True),
+                                        ('min_transcripts_500', "Transcripts > 500 bp", True),
+                                        ('min_aligned', "Aligned", True),
+                                        ('max_unaligned', "Unaligned", False),
+                                        ('min_db_cov', "Database coverage", True),
+                                        ('max_db_cov', "Database coverage", False),
+                                        ('min_50_genes', "50%-assembled genes", True),
+                                        ('min_95_genes', "95%-assembled genes", True),
+                                        ('max_95_genes', "95%-assembled genes", False),
+                                        ('min_95_cov_genes', "95%-covered genes", True),
+                                        ('min_95_cov_genes', "95%-covered genes", True),
+                                        ('min_50_iso', "50%-assembled isoforms", True),
+                                        ('min_95_iso', "95%-assembled isoforms", True),
+                                        ('max_95_iso', "95%-assembled isoforms", False),
+                                        ('max_mis', "Misassemblies", False)])
 
 
 # Run QUAST and assess its report for a single contig file
@@ -242,10 +292,15 @@ def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exi
             return qcode
      
         limit_map = construct_quast_limit_map(dataset_info, prefix)
+            
         report_path = output_dir
-        if 'meta' in dataset_info.__dict__ and dataset_info.meta:
+        if dataset_info.mode == "meta":
             report_path = os.path.join(report_path, "combined_reference")
-        report_path = os.path.join(report_path, "transposed_report.tsv")
+
+        if dataset_info.mode == "rna":
+            report_path = os.path.join(report_path, "short_report.tsv")
+        else:
+            report_path = os.path.join(report_path, "report.tsv")
 
         if assess_report(report_path, limit_map, name) != 0:
             return special_exit_code
@@ -398,9 +453,7 @@ def cmp_misassemblies(quast_output_dir, old_ctgs, new_ctgs):
 def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir):
     exit_code = 0
     rewrite_latest = True
-    enable_comparison = True
-    if 'meta' in dataset_info.__dict__ and dataset_info.meta:
-        enable_comparison = False
+    enable_comparison = (dataset_info.mode in ("standard", "tru", "dip"))
 
     if enable_comparison and contig_storage_dir != '' and 'quast_params' in dataset_info.__dict__ and dataset_info.quast_params and '-R' in dataset_info.quast_params:
         for name, file_name, prefix, opts in contigs:
@@ -437,28 +490,39 @@ def load_info(dataset_path):
 
     info = process_cfg.load_config_from_file(dataset_path)
     info.__dict__["dataset_path"] = os.path.split(dataset_path)[0]
+
+    if "mode" not in info.__dict__:
+        if 'truseq' in info.__dict__ and info.truseq:
+            info.__dict__["mode"] = "tru"
+        elif 'dipspades' in info.__dict__ and info.dipspades:
+            info.__dict__["mode"] = "dip"
+        elif 'meta' in info.__dict__ and info.meta:
+            info.__dict__["mode"] = "meta"
+        elif 'rna' in info.__dict__ and info.rna:
+            info.__dict__["mode"] = "rna"
+        elif 'plasmid' in info.__dict__ and info.plasmid:
+            info.__dict__["mode"] = "plasmid"
+        else:
+            info.__dict__["mode"] = "standard"
     return info
 
 
 # Get contig list to be assessed for this run
 def get_contigs_list(args, dataset_info, folder, before_rr = False):
-    truspades_mode = 'truseq' in dataset_info.__dict__ and dataset_info.truseq
-    dipspades_mode = 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades
-
     contigs = [("contigs", "contigs", "", "")]
     if args.scaffolds:
         contigs.append(("scaffolds", "scaffolds", "sc", " --scaffolds "))
     else:
         contigs.append(("scaffolds", "scaffolds", "sc", ""))
 
-    if dipspades_mode:
-        contigs = [("contigs", "consensus_contigs", "", "")]
-    if truspades_mode:
+    if dataset_info.mode == "dip":
+        contigs = [("contigs", "dipspades/consensus_contigs", "", "")]
+    if dataset_info.mode == "tru":
         contigs = [("contigs", "truseq_long_reads", "", "")]
     if os.path.exists(os.path.join(folder, "first_pe_contigs.fasta")):
         contigs.append(("preliminary", "first_pe_contigs", "prelim", ""))
-    if before_rr and not truspades_mode and not dipspades_mode:
-        contigs.append(("before_rr", "before_rr", "", ""))
+    if before_rr and dataset_info.mode in ("standard", "meta"):
+        contigs.append(("before_rr", "before_rr", ""))
     return contigs
 
 
@@ -582,13 +646,13 @@ def make_spades_cmd(args, dataset_info, spades_dir, output_dir):
         spades_params.append("--configs-dir")
         spades_params.append(args.spades_cfg_dir)
 
-    spades_cmd = ""
-    if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
-        #FIXME why not running dipspades.py?
-        spades_cmd = os.path.join(spades_dir, "src/spades_pipeline/dipspades_logic.py") + " " + " ".join(spades_params) + " -o " + output_dir
-    else:
-        spades_cmd = os.path.join(spades_dir, "spades.py") + " --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
-    return spades_cmd
+    spades_exec = dataset_info.mode + "spades.py"
+    if dataset_info.mode in ['standard', 'tru']:
+        spades_exec = "spades.py"
+    if ("--only-assembler" not in spades_params) and (dataset_info.mode != "dip"):
+        spades_exec += " --disable-gzip-output "
+
+    return os.path.join(spades_dir, spades_exec) + " " + " ".join(spades_params) + " -o " + output_dir
 
 
 # Check etalon saves using detect_diffs.sh
@@ -645,7 +709,8 @@ try:
     save_run_info(args, output_dir)
 
     #compile
-    if compile_spades(args, dataset_info, working_dir) != 0:
+    ecode = compile_spades(args, dataset_info, working_dir)
+    if ecode != 0:
         log.err("Compilation finished abnormally with exit code " + str(ecode))
         sys.exit(3)
  
@@ -656,8 +721,10 @@ try:
         spades_dir = args.spades_path
         log.log("Different spades.py path specified: " + spades_dir)
     spades_cmd = make_spades_cmd(args, dataset_info, spades_dir, output_dir)
+    #log.log("Launching: " + spades_cmd)
 
-    if os.system(spades_cmd) != 0:
+    ecode = os.system(spades_cmd) 
+    if ecode != 0:
         log.err("SPAdes finished abnormally with exit code " + str(ecode))
         sys.exit(4)
 
@@ -678,7 +745,7 @@ try:
     #etalon saves
     if 'etalon_saves' in dataset_info.__dict__:
         log.log("Comparing etalon saves now")
-        ecode = os.system("./src/test/teamcity/detect_diffs.sh " + output_dir + " " + dataset_info.etalon_saves)
+        ecode = os.system(os.path.join(spades_dir, "./src/test/teamcity/detect_diffs.sh") + " " + output_dir + " " + dataset_info.etalon_saves)
         if ecode != 0:
             rewrite_latest = False
             log.err("Comparing etalon saves did not pass, exit code " + str(ecode))

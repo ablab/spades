@@ -19,7 +19,18 @@ import datetime
 
 def remove_in_dir(contig_dir, days_difference):
     contigs = sorted(glob.glob(os.path.join(contig_dir, "*.fasta")))
+    except_list = []
     for c in contigs:
+        if c.find("latest_") != -1:
+            print("Will not remove symlink " + c)
+            except_list.append[c]
+            print("Will not remove " + os.path.realpath(c))
+            except_list.append[os.path.realpath(c)]
+
+    for c in contigs:
+        if c in except_list:
+            print("Skipping " + c)
+            continue
         diff = datetime.datetime.now() - datetime.datetime.fromtimestamp(os.path.getmtime(c))
         if diff.days >= days_difference:
             try:
