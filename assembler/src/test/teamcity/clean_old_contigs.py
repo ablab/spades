@@ -23,9 +23,9 @@ def remove_in_dir(contig_dir, days_difference):
     for c in contigs:
         if c.find("latest_") != -1:
             print("Will not remove symlink " + c)
-            except_list.append[c]
+            except_list.append(c)
             print("Will not remove " + os.path.realpath(c))
-            except_list.append[os.path.realpath(c)]
+            except_list.append(os.path.realpath(c))
 
     for c in contigs:
         if c in except_list:
