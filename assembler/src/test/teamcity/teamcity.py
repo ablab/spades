@@ -212,7 +212,7 @@ def run_quast(dataset_info, contigs, quast_output_dir, opts):
     if dataset_info.mode == "meta":
         cmd = "metaquast.py"
     elif dataset_info.mode == "rna":
-        cmd = "rnaquast.py"
+        cmd = "rnaQUAST.py"
     #Preparing params
     path_options = ['-R', '-G', '-O']
     if dataset_info.mode == "rna":
@@ -519,6 +519,8 @@ def get_contigs_list(args, dataset_info, folder, before_rr = False):
         contigs = [("contigs", "dipspades/consensus_contigs", "", "")]
     if dataset_info.mode == "tru":
         contigs = [("contigs", "truseq_long_reads", "", "")]
+    if dataset_info.mode == "rna":
+        contigs = [("transcripts", "transcripts", "", "")]
     if os.path.exists(os.path.join(folder, "first_pe_contigs.fasta")):
         contigs.append(("preliminary", "first_pe_contigs", "prelim", ""))
     if before_rr and dataset_info.mode in ("standard", "meta"):
