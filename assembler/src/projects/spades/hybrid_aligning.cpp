@@ -31,10 +31,11 @@ class GapTrackingListener : public SequenceMapperListener {
 
     boost::optional<Sequence> Subseq(const io::SingleRead& read, size_t start, size_t end) const {
         DEBUG("Requesting subseq of read length " << read.size() << " from " << start << " to " << end);
-        if (end == start) {
-            DEBUG("Returning empty sequence");
-            return boost::make_optional(Sequence());
-        }
+        VERIFY(end > start);
+        //if (end == start) {
+        //    DEBUG("Returning empty sequence");
+        //    return boost::make_optional(Sequence());
+        //}
         auto subread = read.Substr(start, end);
         if (subread.IsValid()) {
             DEBUG("Gap seq valid. Length " << subread.size());
@@ -60,8 +61,9 @@ class GapTrackingListener : public SequenceMapperListener {
         DEBUG("Creating gap description");
 
         //trying to shift on the left edge
-        if (seq_start > seq_end) {
-            size_t overlap = seq_start - seq_end;
+        if (seq_start >= seq_end) {
+            //+1 is a trick to avoid empty gap sequences
+            size_t overlap = seq_start - seq_end + 1;
             DEBUG("Overlap of size " << overlap << " detected. Fixing.");
             size_t left_shift = std::min(overlap, left_offset - 1);
             VERIFY(seq_start >= left_shift);
@@ -69,8 +71,9 @@ class GapTrackingListener : public SequenceMapperListener {
             left_offset -= left_shift;
         }
         //trying to shift on the right edge
-        if (seq_start > seq_end) {
-            size_t overlap = seq_start - seq_end;
+        if (seq_start >= seq_end) {
+            //+1 is a trick to avoid empty gap sequences
+            size_t overlap = seq_start - seq_end + 1;
             DEBUG("Overlap of size " << overlap << " remained. Fixing.");
             size_t right_shift = std::min(overlap, g_.length(right) - right_offset - 1);
             VERIFY(seq_end + right_shift <= read.size());
@@ -78,7 +81,7 @@ class GapTrackingListener : public SequenceMapperListener {
             right_offset += right_shift;
         }
 
-        if (seq_start <= seq_end) {
+        if (seq_start < seq_end) {
             auto gap_seq = Subseq(read, seq_start, seq_end);
             if (gap_seq) {
                 DEBUG("Gap info successfully created");
@@ -90,7 +93,7 @@ class GapTrackingListener : public SequenceMapperListener {
                 DEBUG("Something wrong with read subsequence");
             }
         } else {
-            size_t overlap = seq_start - seq_end;
+            size_t overlap = seq_start - seq_end + 1;
             DEBUG("Failed to fix overlap of size " << overlap);
         }
         return INVALID_GAP;
