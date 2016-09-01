@@ -18,7 +18,7 @@ DESIRED_ABUNDANCE = 50
 MIN_ABUNDANCE = 4
 MIN_TOTAL_ABUNDANCE = 20
 
-#TODO: non-consecutive sample indexes
+#Assuming that samples are enumerated consecutively from 1 to N
 profile = [CAG] + map(float, subprocess.check_output(["grep", "-e", CAG + "\\s", PROF]).split()[1:])
 print("Profile of", CAG, ":", profile)
 

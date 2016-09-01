@@ -4,7 +4,7 @@ import functools
 import os
 import os.path
 
-from scripts.common import detect_reads, gather_refs
+from scripts.common import detect_reads, gather_refs, dump_dict
 
 #Config parameters
 IN = config["IN"]
@@ -33,8 +33,14 @@ FINISHED_BINNING = "binning/all.log"
 FINISHED_CHOOSING = "binning/choose_all.log"
 
 #Autodetect samples and their reads
-SAMPLES, = glob_wildcards(IN + "/{sample,sample\d+}")
-SAMPLE_COUNT = len(SAMPLES)
+SAMPLE_DIRS = set(glob_wildcards(IN + "/{sample,sample\d+}")[0])
+SAMPLE_COUNT = len(SAMPLE_DIRS)
+SAMPLES = list()
+for i in range(1, SAMPLE_COUNT + 1):
+    sample_name = "sample" + str(i)
+    if sample_name not in SAMPLE_DIRS:
+        raise WorkflowError("Samples must be consecutive; missing " + sample_name)
+    SAMPLES.append(sample_name)
 
 SAMPLE_READS = dict(map(lambda sample: (sample, detect_reads(os.path.join(IN, sample))), SAMPLES))
 
@@ -46,7 +52,9 @@ right_reads = functools.partial(sample_reads, 1)
 
 #Autodetect bins
 CAGS, = glob_wildcards("binning/{cag,CAG\d+}")
+CAGS.sort()
 GOOD_CAGS, = glob_wildcards("binning/{cag,CAG\d+}/left.fastq")
+GOOD_CAGS.sort()
 
 REFS = dict(gather_refs(config.get("REFS", [])))
 ALL_REFS = ",".join(path for path in REFS.values())
@@ -59,8 +67,11 @@ onstart:
         os.mkdir("tmp")
     except:
         pass
-    print("Detected samples:", " ".join(SAMPLES))
-    print("Detected references:", " ".join(REFS))
+    print("Detected", SAMPLE_COUNT, "samples in", IN)
+    if GOOD_CAGS:
+        print("Detected good (abundant) CAGs:", " ".join(GOOD_CAGS))
+    if REFS:
+        print("Detected references:", " ".join(REFS))
 
 # ---- Main pipeline -----------------------------------------------------------
 
@@ -184,12 +195,10 @@ rule generate_yaml:
     message: "Generated config file for reassembly"
     run:
         with open(output[0], "w") as outfile:
-            yaml = {"k": SMALL_K, "sample_cnt": SAMPLE_COUNT,
+            conf = {"k": SMALL_K, "sample_cnt": SAMPLE_COUNT,
                     "kmer_mult": rules.multiplicities.params.out,
                     "bin": wildcards.cag, "bin_prof": rules.canopy.output.prof}
-            #TODO: some sort of PyYAML
-            for key, value in yaml.items():
-                print(key, ": ", value, sep="", file=outfile)
+            dump_dict(conf, outfile)
 
 rule reassemble:
     input:   left="binning/{cag}/left.fastq", right="binning/{cag}/right.fastq",
