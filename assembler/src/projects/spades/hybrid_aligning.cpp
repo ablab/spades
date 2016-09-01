@@ -13,8 +13,8 @@
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "io/reads_io/wrapper_collection.hpp"
 #include "io/reads_io/multifile_reader.hpp"
-// FIXME: Get rid of this, this is trash
-#include "pair_info_count.hpp"
+#include "assembly_graph/graph_alignment/long_read_mapper.hpp"
+#include "assembly_graph/graph_alignment/short_read_mapper.hpp"
 
 namespace debruijn_graph {
 
@@ -383,8 +383,7 @@ void CloseGaps(conj_graph_pack& gp, bool rtype,
 using namespace gap_closing;
 
 bool ShouldAlignWithPacbioAligner(io::LibraryType lib_type) {
-    return lib_type == io::LibraryType::TrustedContigs ||
-           lib_type == io::LibraryType::UntrustedContigs || 
+    return lib_type == io::LibraryType::UntrustedContigs || 
            lib_type == io::LibraryType::PacBioReads ||
            lib_type == io::LibraryType::SangerReads ||
            lib_type == io::LibraryType::NanoporeReads; //||
@@ -416,9 +415,26 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
                 gp.EnsureBasicMapping();
                 GapTrackingListener mapping_listener(gp.g, gap_storage);
                 INFO("Processing reads from hybrid library " << lib_id);
-                ProcessSingleReads(gp, lib_id,
-                        /*use binary*/false, /*map_paired*/false,
-                                   &mapping_listener);
+
+                //FIXME make const
+                auto& reads = cfg::get_writable().ds.reads[lib_id];
+
+                SequenceMapperNotifier notifier(gp);
+                //FIXME pretty awful, would be much better if listeners were shared ptrs
+                LongReadMapper read_mapper(gp.g, gp.single_long_reads[lib_id],
+                                           ChooseProperReadPathExtractor(gp.g, reads.type()));
+
+                notifier.Subscribe(lib_id, &mapping_listener);
+                notifier.Subscribe(lib_id, &read_mapper);
+
+                auto mapper_ptr = ChooseProperMapper(gp, reads);
+                //FIXME think of N's proper handling
+                auto single_streams = single_easy_readers(reads, false,
+                                                          /*map_paired*/false, /*handle Ns*/false);
+
+                notifier.ProcessLibrary(single_streams, lib_id, *mapper_ptr);
+                cfg::get_writable().ds.reads[lib_id].data().single_reads_mapped = true;
+
                 INFO("Finished processing long reads from lib " << lib_id);
                 gp.index.Detach();
             }

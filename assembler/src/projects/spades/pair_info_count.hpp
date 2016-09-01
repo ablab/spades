@@ -11,14 +11,6 @@
 
 namespace debruijn_graph {
 
-// FIXME: very awful, get rid of this!
-class SequenceMapperListener;
-void ProcessSingleReads(conj_graph_pack &gp,
-                        size_t ilib,
-                        bool use_binary = true,
-                        bool map_paired = false,
-                        SequenceMapperListener* mapping_listener_ptr = nullptr);
-
 class PairInfoCount : public spades::AssemblyStage {
   public:
     PairInfoCount(bool preliminary = false)

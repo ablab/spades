@@ -56,9 +56,8 @@ bool RefineInsertSizeForLib(conj_graph_pack &gp, size_t ilib, size_t edge_length
 
 void ProcessSingleReads(conj_graph_pack &gp,
                         size_t ilib,
-                        bool use_binary,
-                        bool map_paired,
-                        SequenceMapperListener* mapping_listener_ptr) {
+                        bool use_binary = true,
+                        bool map_paired = false) {
     //FIXME make const
     auto& reads = cfg::get_writable().ds.reads[ilib];
 
@@ -66,10 +65,6 @@ void ProcessSingleReads(conj_graph_pack &gp,
     //FIXME pretty awful, would be much better if listeners were shared ptrs
     LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib],
                                ChooseProperReadPathExtractor(gp.g, reads.type()));
-
-    if (mapping_listener_ptr != nullptr) {
-        notifier.Subscribe(ilib, mapping_listener_ptr);
-    }
 
     notifier.Subscribe(ilib, &read_mapper);
 
