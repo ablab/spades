@@ -30,7 +30,7 @@
 #include "scaffolder2015/scaffold_graph.hpp"
 #include "scaffolder2015/scaffold_graph_visualizer.hpp"
 #include "scaffolder2015/path_polisher.hpp"
-
+#include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
 namespace path_extend {
 
 using namespace debruijn_graph;
@@ -1163,30 +1163,32 @@ inline ScaffoldingUniqueEdgeStorage FillUniqueEdgeStorage(const conj_graph_pack&
 
     ScaffoldingUniqueEdgeStorage main_unique_storage;
     //Setting scaffolding2015 parameters
+    bool uniform_coverage = false;
     if (autodetect) {
         INFO("Autodetecting unique edge set parameters...");
-        bool pe_found = false;
         //TODO constants
         size_t min_MP_IS = 10000;
         for (size_t i = 0; i < dataset_info.reads.lib_count(); ++i) {
-            if (IsForPEExtender(dataset_info.reads[i])) {
-                pe_found = true;
-            }
             if (IsForMPExtender(dataset_info.reads[i])) {
                 min_MP_IS = min(min_MP_IS, (size_t) dataset_info.reads[i].data().mean_insert_size);
             }
         }
-        if (pe_found) {
-            //TODO constants
-            unique_variation = 0.5;
-            INFO("PE lib found, we believe in coverage");
-        } else {
-            unique_variation = 50;
-            INFO("No paired libs found, we do not believe in coverage");
-        }
-        
         min_unique_length = min_MP_IS;
         INFO("Minimal unique edge length set to the smallest MP library IS: " << min_unique_length);
+
+        CoverageUniformityAnalyzer coverage_analyzer(gp.g, min_unique_length);
+        double median_coverage = coverage_analyzer.CountMedianCoverage();
+//TODO:: constants
+        double uniformity_fraction = coverage_analyzer.UniformityFraction(0.5, median_coverage);
+        INFO ("median coverage for edges longer than " << min_unique_length << " is " << median_coverage <<
+              " uniformity " << size_t(uniformity_fraction * 100) << "%");
+        if (math::gr(uniformity_fraction, 0.8)) {
+            uniform_coverage = true;
+        }
+        if (!uniform_coverage) {
+            unique_variation = 50;
+            INFO("Coverage is not uniform, we do not rely on coverage for long edge uniqueness");
+        }
 
     } else {
         INFO("Unique edge set constructed with parameters from config : length " << min_unique_length
@@ -1222,6 +1224,8 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
 
     //Fill the storage to enable unique edge check
     if (use_scaffolder_2015_pipeline) {
+//NB: for autodetect on this will modify min_unique_length and variation
+//TODO: subject of refactoring
         main_unique_storage = FillUniqueEdgeStorage(gp, dataset_info,
                                                     min_unique_length,
                                                     unique_variaton,
@@ -1327,7 +1331,6 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     max_is_right_quantile = FindOverlapLenForStage(exspander_stage, dataset_info);
     size_t max_resolvable_len = max_is_right_quantile;
     PathContainer mp_paths(clone_paths);
-
     if (use_scaffolder_2015_pipeline) {
         //TODO: constants
         int length_step = 500;
@@ -1340,8 +1343,8 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
 
         int cur_length = (int) min_unique_length - length_step;
         size_t i = 1;
-        while (cur_length >= length_step) {
-            INFO("Adding exteder with length " << cur_length);
+        while (cur_length > length_step) {
+            INFO("Adding extender with length " << cur_length);
             ScaffoldingUniqueEdgeAnalyzer additional_edge_analyzer(gp, (size_t) cur_length, unique_variaton);
             additional_edge_analyzer.FillUniqueEdgeStorage(unique_storages[i]);
             auto additional_extenders = MakeMPExtenders(exspander_stage, dataset_info, params, gp, clone_map, unique_storages[i]);
@@ -1350,7 +1353,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
             ++i;
         }
         if ((int) min_unique_length > length_step) {
-            INFO("Adding exteder with length " << length_step);
+            INFO("Adding extender with length " << length_step);
             ScaffoldingUniqueEdgeAnalyzer additional_edge_analyzer(gp, (size_t) length_step, unique_variaton);
             additional_edge_analyzer.FillUniqueEdgeStorage(unique_storages.back());
             auto additional_extenders = MakeMPExtenders(exspander_stage, dataset_info, params, gp, clone_map, unique_storages.back());

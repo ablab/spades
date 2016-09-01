@@ -8,8 +8,10 @@
 #include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "algorithms/simplification/ec_threshold_finder.hpp"
 #include "assembly_graph/graph_core/basic_graph_stats.hpp"
-
 #include "chromosome_removal.hpp"
+
+#include "math/xmath.h"
+
 
 namespace debruijn_graph {
 
@@ -90,16 +92,8 @@ size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
 
 double ChromosomeRemoval::RemoveLongGenomicEdges(conj_graph_pack &gp, size_t long_edge_bound, double coverage_limits, double external_chromosome_coverage){
     INFO("Removing of long chromosomal edges started");
-    vector <pair<double, size_t> > coverages;
-    size_t total_len = 0, short_len = 0, cur_len = 0;
-    for (auto iter = gp.g.ConstEdgeBegin(); ! iter.IsEnd(); ++iter){
-        if (gp.g.length(*iter) > cfg::get().pd->edge_length_for_median) {
-            coverages.push_back(make_pair(gp.g.coverage(*iter), gp.g.length(*iter)));
-            total_len += gp.g.length(*iter);
-        } else {
-            short_len += gp.g.length(*iter);
-        }
-    }
+    CoverageUniformityAnalyzer coverage_analyzer(gp.g, long_edge_bound);
+    size_t total_len = coverage_analyzer.TotalLongEdgeLength();
     if (total_len == 0) {
         if (external_chromosome_coverage < 1.0) {
             WARN("plasmid detection failed, not enough long edges");
@@ -109,29 +103,17 @@ double ChromosomeRemoval::RemoveLongGenomicEdges(conj_graph_pack &gp, size_t lon
         }
         return 0;
     }
-    std::sort(coverages.begin(), coverages.end());
-    size_t i = 0;
-    while (cur_len < total_len/2 && i <coverages.size()) {
-        cur_len += coverages[i].second;
-        i++;
-    }
 
     double median_long_edge_coverage;
     if (external_chromosome_coverage < 1.0) {
-        median_long_edge_coverage = coverages[i-1].first;
-        INFO ("genomic coverage is "<< median_long_edge_coverage << " calculated of length " << size_t (double(total_len) * 0.5));
-        size_t outsiders_length = 0;
-        for (size_t j = 0; j < coverages.size(); j++) {
-            if ( coverages[j].first >= median_long_edge_coverage * (1 + coverage_limits) || coverages[j].first <= median_long_edge_coverage * (1 - coverage_limits)) {
-                outsiders_length += coverages[j].second;
-            }
-        }
-        if (outsiders_length * 5 > total_len) {
-            WARN ("More than 20% of long edges have coverage significantly different from median (total " << size_t (double(outsiders_length) * 0.5) <<" of "<< size_t (double(total_len) * 0.5) << " bases).");
+        median_long_edge_coverage = coverage_analyzer.CountMedianCoverage();
+        double fraction = coverage_analyzer.UniformityFraction(coverage_limits, median_long_edge_coverage);
+        if (math::gr(0.8, fraction)) {
+            WARN ("More than 20% of long edges have coverage significantly different from median (total " << size_t ((1-fraction) * 0.5 * double(total_len)) <<" of "<< size_t (double(total_len) * 0.5) << " bases).");
             WARN ("In most cases it means that either read coverage is uneven or significant contamination is present - both of these two cases make plasmidSPAdes' results unreliable");
             WARN ("However, that situation may still be OK if you expect to see large plasmids in your dataset, so plasmidSPAdes will continue to work");
         } else {
-            INFO(size_t(double(outsiders_length)/ double(total_len) * 100) << "% of bases from long edges have coverage significantly different from median");
+            INFO(size_t((1 - fraction) * 100) << "% of bases from long edges have coverage significantly different from median");
         }
         for (auto iter = gp.g.ConstEdgeBegin(); ! iter.IsEnd(); ++iter) {
             if (long_component_.find(*iter) == long_component_.end()) {
@@ -167,7 +149,6 @@ void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bo
     DEBUG("Simplifying graph for plasmid project");
     size_t iteration_count = 10;
     for (size_t i = 0; i < iteration_count; i++) {
-        //pred::TypedPredicate<typename Graph::EdgeId> condition = make_shared<LengthUpperBound<Graph>>(gp.g, long_edge_bound) ;
         omnigraph::EdgeRemovingAlgorithm<Graph> tc(gp.g, pred::And(DeadEndCondition<Graph>(gp.g), LengthUpperBound<Graph>(gp.g, long_edge_bound)),
                                                    removal_handler, true);
         tc.Run();

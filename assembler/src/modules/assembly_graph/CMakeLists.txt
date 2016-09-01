@@ -8,5 +8,5 @@
 project(graph_support CXX)
 
 add_library(graph_support STATIC
-            components/connected_component.cpp paths/bidirectional_path.cpp graph_support/scaff_supplementary.cpp graph_alignment/edge_index_refiller.cpp)
+            components/connected_component.cpp paths/bidirectional_path.cpp graph_support/scaff_supplementary.cpp graph_alignment/edge_index_refiller.cpp graph_support/coverage_uniformity_analyzer.cpp)
 target_link_libraries(graph_support hattrie)
