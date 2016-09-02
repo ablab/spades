@@ -694,7 +694,7 @@ inline shared_ptr<SimpleExtender> MakeCoordCoverageExtender(const config::datase
                                                                           params.pset.coordinated_coverage.delta,
                                                                           params.pset.coordinated_coverage.min_path_len);
     shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, paired_lib, false);
-    auto chooser = make_shared<JointExtensionChooser>(gp.g, make_shared<TrivialExtensionChooserWithPI>(gp.g, counter, 10.0), coord_chooser);
+    auto chooser = make_shared<JointExtensionChooser>(gp.g, make_shared<TrivialExtensionChooserWithPI>(gp.g, counter, 1.5), coord_chooser);
     return make_shared<SimpleExtender>(gp, cov_map, chooser, -1ul, params.pset.loop_removal.mp_max_loops, true, false);
 }
 
