@@ -196,8 +196,8 @@ rule generate_yaml:
     run:
         with open(output[0], "w") as outfile:
             conf = {"k": SMALL_K, "sample_cnt": SAMPLE_COUNT,
-                    "kmer_mult": rules.multiplicities.params.out,
-                    "bin": wildcards.cag, "bin_prof": rules.canopy.output.prof}
+                    "kmer_mult": str(rules.multiplicities.params.out),
+                    "bin": wildcards.cag, "bin_prof": str(rules.canopy.output.prof)}
             dump_dict(conf, outfile)
 
 rule reassemble:
