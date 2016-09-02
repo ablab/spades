@@ -290,9 +290,13 @@ def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exi
             if (prefix + 'assess') in dataset_info.__dict__ and dataset_info.__dict__[prefix + 'assess']:
                 return special_exit_code
             return qcode
-     
-        limit_map = construct_quast_limit_map(dataset_info, prefix)
-            
+
+        limit_map = None
+        if dataset_info.mode == "rna":
+            limit_map = construct_rnaquast_limit_map(dataset_info, prefix)
+        else:
+            limit_map = construct_quast_limit_map(dataset_info, prefix)
+
         report_path = output_dir
         if dataset_info.mode == "meta":
             report_path = os.path.join(report_path, "combined_reference")
