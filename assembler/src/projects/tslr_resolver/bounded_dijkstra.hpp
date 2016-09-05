@@ -74,24 +74,19 @@ namespace omnigraph {
             DEBUG("decisive_edge " << decisive_edge_.int_id())
             DEBUG("intersection " << mapper_->IntersectionSizeNormalizedByFirst(decisive_edge_, edge))
             DEBUG("Is unique " << unique_storage_.IsUnique(edge))
-            if (g_.length(edge) < length_bound_ && 
-                    mapper_->IntersectionSizeNormalizedByFirst(decisive_edge_, edge) > barcode_threshold_) {
-                DEBUG("Short edge, passed" << endl) 
+            if (g_.length(edge) < length_bound_) {
+                DEBUG("Short edge, passed" << endl)  //todo use short edges to shorten list of candidates
                 return true;
             }
-//            if (mapper_->IntersectionSizeNormalizedByFirst(decisive_edge_, edge) > barcode_threshold_) {
-                if (! unique_storage_.IsUnique(edge)) {
-                    DEBUG("Long non-unique nearby edge, passed" << endl) 
-                    return true;
-                }
-                else {
-                    candidates_.push_back(edge);
-                    DEBUG("Long unique nearby edge, didn't pass" << endl)
-                    return false;
-                }
-//            }
-//            DEBUG("Long edge, barcode check failed" << endl)
-            return false;
+            if (! unique_storage_.IsUnique(edge)) {
+                DEBUG("Long non-unique nearby edge, barcode check passed" << endl)
+                return true;
+            }
+            else {
+                candidates_.push_back(edge);
+                DEBUG("Long unique nearby edge, barcode check didn't pass" << endl)
+                return false;
+            }
         }
 
         DECL_LOGGER("BarcodePutChecker")

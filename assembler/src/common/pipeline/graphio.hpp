@@ -886,7 +886,7 @@ void ScanGraphPack(const string& file_name,
         gp.flanking_cov.Fill(gp.index.inner_index());
     }
     auto edge_map = MakeEdgeMap<typename graph_pack::graph_t> (gp.g);
-    DeserializeMapper(file_name, edge_map, gp.barcode_mapper);
+    DeserializeMapper(file_name, edge_map, gp.barcode_mapper, gp.g);
 }
 
 template<class Graph>
