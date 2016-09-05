@@ -238,7 +238,7 @@ private:
             for (auto to_be_added : what) {
                 to_be_added.d += shift;
                 auto low_bound = std::lower_bound(where.begin(), where.end(), to_be_added);
-                if (to_be_added == *low_bound) {
+                if (low_bound != where.end() && to_be_added == *low_bound) {
                     to_be_added.weight += low_bound->weight;
                     where.erase(to_be_added);
                     where.insert(to_be_added);
