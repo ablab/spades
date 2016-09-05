@@ -3,6 +3,8 @@
 #include <vector>
 #include "barcode_mapper.hpp"
 
+using namespace tslr_resolver;
+
 namespace debruijn_graph {
     namespace graphio {
         typedef tslr_resolver::BarcodeMapper BMapper;
@@ -40,13 +42,15 @@ namespace debruijn_graph {
             barcodeMapper->ReadEntry(file, edge_map.find(edge_id) -> second);
         }
 
-        inline void DeserializeMapper(const string& path, const std::unordered_map <size_t, EdgeId>& edge_map,
-                               shared_ptr<BMapper>& barcodeMapper)  {
+        template <class Graph>
+        void DeserializeMapper(const string& path, const std::unordered_map <size_t, EdgeId>& edge_map,
+                               shared_ptr<BMapper>& barcodeMapper, Graph& g)  {
             ifstream file;
             string file_name = path + ".bmap";
             file.open(file_name);
             INFO("Loading barcode information from " << file_name);
             VERIFY(file != NULL);
+            barcodeMapper = make_shared<HeadTailBarcodeMapper<SimpleBarcodeEntry>>(g, cfg::get().ts_res.edge_tail_len);
             size_t map_size;
             file >> map_size;
             for (size_t i = 0; i < map_size; ++i) {
