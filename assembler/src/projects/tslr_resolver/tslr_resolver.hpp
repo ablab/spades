@@ -7,13 +7,10 @@
 
 namespace spades {
     class TslrResolverStage : public AssemblyStage {
-        // public:
-        //     typedef debruijn_graph::debruijn_config::tenx_resolver Config;
     private:
         size_t k_;
         std::string output_file_;
         std::string path_to_reference_;
-        //const Config &config_;
 
     public:
 
