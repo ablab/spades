@@ -15,19 +15,17 @@ namespace tslr_resolver {
         class TrivialTSLRExtensionChooser : public ExtensionChooser {
 
             shared_ptr<BarcodeMapper> bmapper_;
-            const EdgesPositionHandler<Graph>& edge_pos_;
             size_t len_threshold_;
-            double relative_diff_threshold_;
+            double absolute_barcode_threshold_;
             ScaffoldingUniqueEdgeStorage unique_storage_;
 
         public:
             TrivialTSLRExtensionChooser(const conj_graph_pack& gp, size_t len_threshold,
-                double relative_diff_threshold, const ScaffoldingUniqueEdgeStorage& unique_storage) :
+                double absolute_barcode_threshold, const ScaffoldingUniqueEdgeStorage& unique_storage) :
                     ExtensionChooser(gp.g),
                     bmapper_(gp.barcode_mapper),
-                    edge_pos_(gp.edge_pos),
                     len_threshold_(len_threshold),
-                    relative_diff_threshold_(relative_diff_threshold),
+                    absolute_barcode_threshold_(absolute_barcode_threshold),
                     unique_storage_(unique_storage) {
             }
 
@@ -54,60 +52,61 @@ namespace tslr_resolver {
                     }
                 }
 
-                //Exclude decisive edge from candidates
+                //Exclude decisive edge from the candidates
                 auto edges_copy = edges;
                 EraseEdge(edges_copy, decisive_edge);
 
                 if (!long_single_edge_exists || edges_copy.size() == 0) {
                     if (edges_copy.size() == 0) {
-                        DEBUG("Only decisive edge found");
+                        DEBUG("Only decisive edge was found");
                     }
                     return result;
                 }
                 
-                //Find edges with barcode score above threshold
-                auto fittest_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
-                                         [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                             return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) <
-                                                    this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge2.e_);
-                                         }));
-                double best_score = bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, fittest_edge.e_);
-
-                DEBUG("fittest edge " << fittest_edge.e_.int_id());
-                DEBUG("score " << best_score);
-
+                //Find edges with barcode score greater than some threshold
                 std::vector <EdgeWithDistance> best_candidates;
-                std::copy_if(edges_copy.begin(), edges_copy.end(), std::back_inserter(best_candidates), 
-                                [this, &decisive_edge, best_score](const EdgeWithDistance& edge) {
-                                    return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
-                                                   relative_diff_threshold_ && unique_storage_.IsUnique(edge.e_);
-                                });
-
+                std::copy_if(edges_copy.begin(), edges_copy.end(), std::back_inserter(best_candidates),
+                             [this, &decisive_edge](const EdgeWithDistance& edge) {
+                                 return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
+                                        absolute_barcode_threshold_ && unique_storage_.IsUnique(edge.e_);
+                             });
                 if (best_candidates.size() == 1) {
-                    result.push_back(fittest_edge);
+                    result.push_back(best_candidates[0]);
                     return result;
                 }
                 if (best_candidates.size() == 0) {
                     return result;
                 }
-                //Try to find topologically closest edge
+
+
+                //Check the difference between two best scores
                 DEBUG("Several candidates found. Further filtering.");
-                std::nth_element(edges_copy.begin(), edges_copy.begin() + 1, edges_copy.end(), 
-                                                 [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                                     return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) >
-                                                            this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge2.e_);
-                                                 });
+                auto fittest_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
+                                                     [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
+                                                         return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) <
+                                                                this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge2.e_);
+                                                     }));
+                double best_score = bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, fittest_edge.e_);
+                DEBUG("fittest edge " << fittest_edge.e_.int_id());
+                DEBUG("score " << best_score);
+                std::nth_element(edges_copy.begin(), edges_copy.begin() + 1, edges_copy.end(),
+                                 [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
+                                     return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) >
+                                            this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge2.e_);
+                                 });
                 auto second_best_edge = edges_copy.at(1);
                 double second_best_score = bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, second_best_edge.e_);
                 DEBUG("Second best edge " << second_best_edge.e_.int_id());
                 DEBUG("second best score " << second_best_score);
                 DEBUG(best_candidates.size() << " best candidates");
+                VERIFY(best_score >= second_best_score)
+//                if (best_score - second_best_score < 0.03) { //todo configs
+//                    DEBUG("Scores are too close, failed to select the best candidate.");
+//                    return result;
+//                }
 
-                if (best_score - second_best_score < 0.05) {
-                    DEBUG("Scores are too close, failed to select best candidate.");
-                    return result;
-                }
-
+                //Try to find topologically closest edge to resolve loops
+                //FIXME This have nothing to do with barcodes. Need to be moved somewhere else.
                 auto closest_edges = FindClosestEdge(best_candidates);
                 if (closest_edges.size() != 1) {
                     DEBUG("Unable to find single topologically minimal edge.");
@@ -136,13 +135,13 @@ namespace tslr_resolver {
                     edges.erase(edges.begin() + ind);
             }
 
+            //make it more effective if needed
             vector<EdgeWithDistance> FindClosestEdge(const vector<EdgeWithDistance>& edges) const {
-                //Make it more effective if needed
                 vector <EdgeWithDistance> closest_edges;
-                auto it = edges.begin();
+                auto edges_iter = edges.begin();
+                size_t path_len_bound = cfg::get().ts_res.topsort_bound;
                 do {
-                    auto edge = *it;
-                    size_t path_len_bound = cfg::get().ts_res.topsort_bound;
+                    auto edge = *edges_iter;
                     VertexId start_vertex = g_.EdgeEnd(edge.e_);
                     auto dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, path_len_bound);
                     dijkstra.Run(start_vertex);
@@ -157,10 +156,10 @@ namespace tslr_resolver {
                         }
                     }
                     if (can_reach_everyone) {
-                        closest_edges.push_back(*it);
+                        closest_edges.push_back(*edges_iter);
                     }
-                    ++it;
-                } while (it != edges.end());
+                    ++edges_iter;
+                } while (edges_iter != edges.end());
                 return closest_edges;
             }
             DECL_LOGGER("TslrExtensionChooser")
