@@ -33,7 +33,6 @@ template<class Derived, class G, class Traits>
 class PairedBufferBase {
   protected:
     typedef typename Traits::Gapped InnerPoint;
-    typedef omnigraph::de::Histogram<InnerPoint> InnerHistogram;
 
   public:
     typedef G Graph;
@@ -154,7 +153,7 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
 
   protected:
     using typename base::InnerPoint;
-    using typename base::InnerHistogram;
+    typedef omnigraph::de::Histogram<InnerPoint> InnerHistogram;
     typedef omnigraph::de::StrongWeakPtr<InnerHistogram> InnerHistPtr;
 
   public:

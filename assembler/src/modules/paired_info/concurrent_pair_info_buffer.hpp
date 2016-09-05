@@ -26,7 +26,7 @@ class ConcurrentPairedBuffer : public PairedBufferBase<ConcurrentPairedBuffer<G,
 
   protected:
     using typename base::InnerPoint;
-    using typename base::InnerHistogram;
+    typedef omnigraph::de::Histogram<InnerPoint> InnerHistogram;
     typedef omnigraph::de::StrongWeakPtr<InnerHistogram> InnerHistPtr;
 
 
