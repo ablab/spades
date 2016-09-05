@@ -35,8 +35,8 @@ namespace tslr_resolver {
         ContigWriter writer(gp.g, constructor, gp.components, params.mode == config::pipeline_type::plasmid);
         GraphCoverageMap cover_map(gp.g);
         const pe_config::ParamSetT &pset = params.pset;
-        auto sc_mode = pset.sm;
-        bool detect_repeats_online = !(is_2015_scaffolder_enabled(sc_mode) || params.mode == config::pipeline_type::meta);;
+        bool use_scaffolder_2015_pipeline = false;
+        bool detect_repeats_online = !(use_scaffolder_2015_pipeline || params.mode == config::pipeline_type::meta);
 
         PathExtendResolver resolver(gp.g);
         auto min_unique_length = pset.scaffolding2015.min_unique_length;
@@ -50,7 +50,7 @@ namespace tslr_resolver {
                                                     false);
 
         //mp extender
-        INFO("SUBSTAGE = paired-end libraries")
+        INFO("SUBSTAGE = paired-end libraries");
         PathExtendStage exspander_stage = PathExtendStage::PEStage;
         vector<shared_ptr<PathExtender> > all_libs =
             MakeAllExtenders(exspander_stage, dataset_info, params, gp, cover_map, main_unique_storage);
@@ -66,7 +66,7 @@ namespace tslr_resolver {
         seeds.SortByLength();
         auto paths = resolver.extendSeeds(seeds, *mainPE);
         paths.SortByLength();
-        FinalizePaths(params, paths, cover_map, min_edge_len, max_is_right_quantile);
+        FinalizePaths(params, paths, gp.g, cover_map, min_edge_len, max_is_right_quantile);
 
         writer.OutputPaths(paths, params.output_dir + "before_tslr");
 
@@ -74,10 +74,10 @@ namespace tslr_resolver {
         all_libs.clear();
 
         //tslr extender
-        INFO("SUBSTAGE = TSLR Resolver")
+        INFO("SUBSTAGE = TSLR Resolver");
         auto tslr_resolver_params = cfg::get().ts_res;
         size_t len_threshold = tslr_resolver_params.len_threshold;
-        double relative_diff_threshold = tslr_resolver_params.diff_threshold;
+        double absolute_barcode_threshold = tslr_resolver_params.diff_threshold;
         size_t distance_bound = tslr_resolver_params.distance_bound;
         double abs_threshold = tslr_resolver_params.abs_threshold;
         bool join_paths = tslr_resolver_params.join_paths;
@@ -85,7 +85,7 @@ namespace tslr_resolver {
         max_is_right_quantile = gp.g.k() + 10000;
         auto extension = make_shared<TrivialTSLRExtensionChooser>(gp,
                                                                   len_threshold,
-                                                                  relative_diff_threshold,
+                                                                  absolute_barcode_threshold,
                                                                   main_unique_storage);
         auto tslr_extender = make_shared<InconsistentTSLRExtender>(gp, cover_map,
                                                              extension,
@@ -108,11 +108,11 @@ namespace tslr_resolver {
                  detect_repeats_online);
 
 
-        INFO(paths.size() << " paths from previous stage")
+        INFO(paths.size() << " paths from previous stage");
 
         auto final_paths = resolver.extendSeeds(paths, *tslrPE);
 
-        FinalizePaths(params, final_paths, cover_map, min_edge_len, max_is_right_quantile);
+        FinalizePaths(params, final_paths, gp.g, cover_map, min_edge_len, max_is_right_quantile);
 
         debruijn_graph::GenomeConsistenceChecker genome_checker (gp, main_unique_storage, 1000, 0.2);
         DebugOutputPaths(gp, params, final_paths, "final_tslr_paths");

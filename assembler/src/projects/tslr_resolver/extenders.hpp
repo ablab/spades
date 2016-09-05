@@ -60,57 +60,11 @@ with slightly different usage of coverage map. Huge code duplication need to be 
         }
 
         void GrowPathSimple(BidirectionalPath &path, PathContainer *paths_storage) override {
-            while (MakeGrowStep(path, paths_storage, false)) {}
+            while (MakeGrowStep(path, paths_storage)) {}
         }
 
-        bool MakeGrowStep(BidirectionalPath &path, PathContainer *paths_storage, bool detect_repeats_online_local = true) {
+        bool MakeGrowStep(BidirectionalPath &path, PathContainer *paths_storage) {
             DEBUG("make grow step composite extender");
-            if (detect_repeats_online_ && detect_repeats_online_local) {
-                BidirectionalPath *repeat_path = repeat_detector_.RepeatPath(path);
-                size_t repeat_size = repeat_detector_.MaxCommonSize(path, *repeat_path);
-
-                if (repeat_size > 0) {
-                    DEBUG("repeat with length " << repeat_size);
-                    path.Print();
-                    repeat_path->Print();
-                    BidirectionalPath repeat = path.SubPath(path.Size() - repeat_size);
-                    int begin_repeat = repeat_path->FindLast(repeat);
-                    VERIFY(begin_repeat > -1);
-                    size_t end_repeat = (size_t) begin_repeat + repeat_size;
-                    DEBUG("not consistent subpaths ");
-                    BidirectionalPath begin1 = path.SubPath(0, path.Size() - repeat_size);
-                    begin1.Print();
-                    BidirectionalPath begin2 = repeat_path->SubPath(0, begin_repeat);
-                    begin2.Print();
-                    int gpa_in_repeat_path = repeat_path->GapAt(begin_repeat);
-                    BidirectionalPath end2 = repeat_path->SubPath(end_repeat);
-                    BidirectionalPath begin1_conj = path.SubPath(0, path.Size() - repeat_size + 1).Conjugate();
-                    BidirectionalPath begin2_conj = repeat_path->SubPath(0, begin_repeat + 1).Conjugate();
-                    pair <size_t, size_t> last = ComparePaths(0, 0, begin1_conj, begin2_conj, max_diff_len_);
-                    DEBUG("last " << last.first << " last2 " << last.second);
-                    path.Clear();
-                    repeat_path->Clear();
-                    int gap_len = repeat.GapAt(0);
-
-                    if (begin2.Size() == 0 ||
-                        last.second != 0) { //TODO: incorrect: common edges, but then different ends
-                        path.PushBack(begin1);
-                        repeat_path->PushBack(begin2);
-                    } else {
-                        gap_len = gpa_in_repeat_path;
-                        path.PushBack(begin2);
-                        repeat_path->PushBack(begin1);
-                    }
-
-                    path.PushBack(repeat.At(0), gap_len);
-                    path.PushBack(repeat.SubPath(1));
-                    path.PushBack(end2);
-                    DEBUG("new path");
-                    path.Print();
-                    return false;
-                }
-            }
-
             size_t current = 0;
             while (current < extenders_.size()) {
                 DEBUG("step " << current << " of total " << extenders_.size());
@@ -148,9 +102,6 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                 if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
                     INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
                 }
-                DEBUG("sIZE")
-                DEBUG(paths.Get(i) -> Size())
-                DEBUG(paths.Get(i) -> Empty())
                 if (paths.Get(i) -> Size() != 0) {
 
 //In 2015 modes do not use a seed already used in paths.
@@ -232,12 +183,12 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             }
 
             if (mapper_-> GetSizeTails(decisive_edge) > 80) {
-                DEBUG("Too many barcodes mapped to decisive edge")
+                DEBUG("Too many barcodes mapped to the decisive edge")
                 return;
             }
 
             if (mapper_-> GetSizeTails(decisive_edge) < 5) {
-                DEBUG("Not enough barcodes mapped to decisive edge")
+                DEBUG("Not enough barcodes mapped to the decisive edge")
                 return;
             }
 
@@ -336,7 +287,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             return true;
         }
 
-        virtual bool AddCandidates(BidirectionalPath &path, PathContainer * /*paths_storage*/,
+        virtual bool AddCandidates(BidirectionalPath &path, PathContainer *paths_storage,
                                    ExtensionChooser::EdgeContainer &candidates) {
             if (candidates.size() != 1) {
                 if (candidates.size() > 1) {
@@ -368,10 +319,12 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                 }
                 path.PushBack(eid, candidates.back().d_);
             }
+                
             else {
                 DEBUG("Trying to add next path")
                 return AddPathFromPreviousStage(path, covering_paths.back());
             }
+            
             DEBUG("Push done, true");
             DEBUG("Path length: " << path.Length());
             return true;
@@ -396,14 +349,14 @@ with slightly different usage of coverage map. Huge code duplication need to be 
         }
 
         bool AddPathFromPreviousStage(BidirectionalPath &current_path,
-                                      BidirectionalPath* path_to_add) {
+                                      BidirectionalPath* additive_path) {
             //Count distance between paths
             size_t path_len_bound = cfg::get().ts_res.topsort_bound;
-            size_t overlap_size = current_path.OverlapEndSize(path_to_add);
+            size_t overlap_size = current_path.OverlapEndSize(additive_path);
             DEBUG("First path size " << current_path.Size())
-            DEBUG("Second path size " << path_to_add -> Size())
+            DEBUG("Second path size " << additive_path -> Size())
             DEBUG("Overlap size " << overlap_size)
-            BidirectionalPath suffix = path_to_add->SubPath(overlap_size);
+            BidirectionalPath suffix = additive_path->SubPath(overlap_size);
 
             VertexId start_vertex = g_.EdgeEnd(current_path.Back());
             auto dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, path_len_bound);
@@ -417,11 +370,13 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             else {
                 DEBUG("Adding path")
                 DEBUG("path id " << current_path.GetId())
-                DEBUG("Added path id " << path_to_add -> GetId())
+                DEBUG("Added path id " << additive_path -> GetId())
                 DEBUG("Distance " << dijkstra.GetDistance(g_.EdgeStart(suffix.Front())))
                 int gap = static_cast<int> (dijkstra.GetDistance(g_.EdgeStart(suffix.Front())));
+
                 current_path.PushBack(suffix.At(0), gap);
                 current_path.PushBack(suffix.SubPath(1));
+                
 
                 return true;
             }
