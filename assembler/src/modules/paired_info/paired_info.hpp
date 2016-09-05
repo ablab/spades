@@ -35,6 +35,7 @@ public:
     using typename base::EdgeId;
     using typename base::InnerMap;
     using typename base::StorageMap;
+    using typename base::Point;
 
     typedef omnigraph::de::Histogram<Point> Histogram;
 
