@@ -32,23 +32,29 @@ public:
 protected:
     typedef KMerIndex<traits> KMerIndexT;
     //these fields are protected only for reduction of storage in edge indices BinWrite
-    KMerIndexT index_;
+    std::shared_ptr<KMerIndexT> index_ptr_;
 private:
     std::string workdir_;
     unsigned k_;
 
 protected:
     size_t raw_seq_idx(const typename KMerIndexT::KMerRawReference s) const {
-        return index_.raw_seq_idx(s);
+        return index_ptr_->raw_seq_idx(s);
     }
 
     bool valid(const size_t idx) const {
-        return idx != InvalidIdx && idx < index_.size();
+        return idx != InvalidIdx && idx < index_ptr_->size();
     }
 public:
     IndexWrapper(size_t k, const std::string &workdir) : k_((unsigned) k) {
         //fixme string literal
         workdir_ = path::make_temp_dir(workdir, "kmeridx");
+        index_ptr_ = std::make_shared<KMerIndexT>();
+    }
+
+    IndexWrapper(size_t k, const std::string &workdir, std::shared_ptr<KMerIndexT> index_ptr)
+            : IndexWrapper(k, workdir) {
+        index_ptr_ = index_ptr;
     }
 
     ~IndexWrapper() {
@@ -56,7 +62,7 @@ public:
     }
 
     void clear() {
-        index_.clear();
+        index_ptr_->clear();
     }
 
     unsigned k() const { return k_; }
@@ -64,13 +70,13 @@ public:
 public:
     template<class Writer>
     void BinWrite(Writer &writer) const {
-        index_.serialize(writer);
+        index_ptr_->serialize(writer);
     }
 
     template<class Reader>
     void BinRead(Reader &reader, const std::string &) {
         clear();
-        index_.deserialize(reader);
+        index_ptr_->deserialize(reader);
     }
 
     const std::string &workdir() const {
@@ -85,12 +91,12 @@ public:
     typedef K KeyType;
     typedef ValueArray<V> ValueBase;
     typedef IndexWrapper<KeyType, traits> KeyBase;
-    using KeyBase::index_;
+    using KeyBase::index_ptr_;
     typedef typename KeyBase::KMerIndexT KMerIndexT;
     typedef typename StoringTraits<K, KMerIndexT, StoringType>::KeyWithHash KeyWithHash;
 
     KeyWithHash ConstructKWH(const KeyType &key) const {
-        return KeyWithHash(key, index_);
+        return KeyWithHash(key, *index_ptr_);
     }
 
     bool valid(const KeyWithHash &kwh) const {
@@ -98,6 +104,11 @@ public:
     }
 
     PerfectHashMap(size_t k, const std::string &workdir) : KeyBase(k, workdir) {
+    }
+
+    PerfectHashMap(size_t k, const std::string &workdir, std::shared_ptr<KMerIndexT> index_ptr)
+        : KeyBase(k, workdir, index_ptr) {
+        ValueBase::resize(index_ptr->size());
     }
 
     ~PerfectHashMap() {
@@ -108,8 +119,15 @@ public:
         ValueBase::clear();
     }
 
+    std::shared_ptr<KMerIndexT> index_ptr() const { return index_ptr_; }
+
     const V get_value(const KeyWithHash &kwh) const {
         return StoringType::get_value(*this, kwh);
+    }
+
+    template<typename F>
+    const V get_value(const KeyWithHash &kwh, const F& inverter) const {
+        return StoringType::get_value(*this, kwh, inverter);
     }
 
     //Think twice or ask AntonB if you want to use it!
@@ -123,6 +141,11 @@ public:
 
     void put_value(const KeyWithHash &kwh, const V &value) {
         StoringType::set_value(*this, kwh, value);
+    }
+
+    template<typename F>
+    void put_value(const KeyWithHash &kwh, const V &value, const F& inverter) {
+        StoringType::set_value(*this, kwh, value, inverter);
     }
 
     template<class Writer>

@@ -540,8 +540,8 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const config::dataset& d
                                                          pset.scaffolder_options.short_overlap,
                                                          (int) pset.scaffolder_options.basic_overlap_coeff * dataset_info.RL()));
 
-    auto composite_gap_joiner = std::make_shared<CompositeGapJoiner>(gp.g, 
-                                                joiners, 
+    auto composite_gap_joiner = std::make_shared<CompositeGapJoiner>(gp.g,
+                                                joiners,
                                                 size_t(pset.scaffolder_options.max_can_overlap * (double) gp.g.k()), /* may overlap threshold */
                                                 int(math::round((double) gp.g.k() - pset.scaffolder_options.var_coeff * (double) paired_lib->GetIsVar())),  /* must overlap threshold */
                                                 pset.scaffolder_options.artificial_gap);
@@ -1184,7 +1184,7 @@ inline ScaffoldingUniqueEdgeStorage FillUniqueEdgeStorage(const conj_graph_pack&
             unique_variation = 50;
             INFO("No paired libs found, we do not believe in coverage");
         }
-        
+
         min_unique_length = min_MP_IS;
         INFO("Minimal unique edge length set to the smallest MP library IS: " << min_unique_length);
 
@@ -1270,6 +1270,11 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     auto seeds = resolver.makeSimpleSeeds();
     DebugOutputPaths(gp, params, seeds, "init_paths");
     seeds.SortByLength();
+//    //FIXME for debug purposes
+//    writer.OutputPaths(seeds, output_dir + "scaffolds");
+//    return;
+//    //debug end
+
     INFO("Growing paths using paired-end and long single reads");
     INFO("Multi path extend is " << (params.pset.multi_path_extend ? "on" : "off"))
     INFO("Overlap removal is " << (params.pset.remove_overlaps ? "on" : "off"))
@@ -1394,6 +1399,10 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     DEBUG("Paths are grown with mate-pairs");
 
 //MP end
+
+//    ContigsMultiplicity::Calculate(gp, paths,
+//                                   "/home/toxa31/work/kmers_mpl/nice",
+//                                   "/home/toxa31/work/contigs");
 
 //pe again
     PathContainer last_paths;

@@ -151,7 +151,7 @@ private:
             min_len_(min_len), max_len_(max_len),
             callback_(callback),
             edge_depth_bound_(edge_depth_bound),
-            curr_len_(0), curr_depth_(0), call_cnt_(0), 
+            curr_len_(0), curr_depth_(0), call_cnt_(0),
             g_(outer.g_),
             dijkstra_(outer.dijkstra_) {
             reversed_edge_path_.reserve(PathProcessor::MAX_CALL_CNT);
@@ -160,6 +160,10 @@ private:
 
         //returns true iff limits were exceeded
         bool Go() {
+            if (!dijkstra_.DistanceCounted(end_) || dijkstra_.GetDistance(end_) > max_len_) {
+                return false;
+            }
+
             bool code = Go(end_, min_len_);
             VERIFY(curr_len_ == 0);
             VERIFY(curr_depth_ == 0);
@@ -249,6 +253,23 @@ public:
 
 private:
     vector<typename PathProcessor<Graph>::Callback*> processors_;
+};
+
+template<class Graph>
+class AdapterCallback: public PathProcessor<Graph>::Callback {
+    typedef typename Graph::EdgeId EdgeId;
+	typedef vector<EdgeId> Path;
+    std::function<void(const Path&)> func_;
+    bool reverse_;
+public:
+
+    AdapterCallback(const std::function<void(const Path&)>& func, bool reverse = false) :
+        func_(func), reverse_(reverse) {}
+
+    void HandleReversedPath(const Path& path) override {
+        func_(reverse_ ? this->ReversePath(path) : path);
+	}
+
 };
 
 template<class Graph, class Comparator>

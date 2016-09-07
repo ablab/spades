@@ -102,7 +102,7 @@ public:
     }
 
 private:
-    
+
     void SubscribeCoverageMap(BidirectionalPath* path) const {
         path->Subscribe(&coverage_map_);
         for (size_t i = 0; i < path->Size(); ++i) {
@@ -430,11 +430,11 @@ public:
     }
 
     PathContainer makeSimpleSeeds() {
-        std::set<EdgeId> included;
-        PathContainer edges;
-        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            if (g_.int_id(*iter) <= 0 or InTwoEdgeCycle(*iter, g_))
-                continue;
+		std::set<EdgeId> included;
+		PathContainer edges;
+		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+//			if (g_.int_id(*iter) <= 0 or InTwoEdgeCycle(*iter, g_))
+//				continue;
             if (included.count(*iter) == 0) {
                 BidirectionalPath * first = new BidirectionalPath(g_, *iter);
                 BidirectionalPath * second = new BidirectionalPath(g_, g_.conjugate(*iter));

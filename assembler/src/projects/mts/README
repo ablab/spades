@@ -1,0 +1,21 @@
+1. Installing Snakemake
+If you have properly installed Python 3.3+, just
+> easy_install3 snakemake
+or
+> pip3 install snakemake
+In case you have to install Python 3 yourself, we recommend to use the Miniconda Python 3 distribution is recommended.
+With Miniconda installed, you can issue
+> conda install -c bioconda snakemake
+
+2. Running MTS
+Make a directory for output, place config.yaml there, and configure it. Then run
+> snakemake --directory <output directory>  --cores XX
+
+3. Gathering stats
+To render some interesting info, you need to specify some references in config:
+REFS: path
+or
+REFS: [path1, path2, ...]
+where path can be either a single reference or a folder with references.
+Then run the stats target manually:
+> snakemake --directory <output directory> stats_all

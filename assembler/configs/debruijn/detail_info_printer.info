@@ -27,7 +27,7 @@ info_printers
     {
     }
 
-    before_post_simplification    
+    before_post_simplification
     {
     }
 
@@ -41,6 +41,7 @@ info_printers
 
     before_repeat_resolution
     {
+       save_graph_pack                  true
     }
 
-}  
+}

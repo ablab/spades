@@ -485,6 +485,7 @@ struct debruijn_config {
     std::string output_saves;
     std::string final_contigs_file;
     std::string log_filename;
+    std::string series_analysis;
 
     bool output_pictures;
     bool output_nonfinal_contigs;

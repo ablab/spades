@@ -706,6 +706,17 @@ public:
         }
     };
 
+    struct less3 {
+        bool operator()(const RuntimeSeq<max_size_, T> &l, const RuntimeSeq<max_size_, T> &r) const {
+            VERIFY(l.size() == r.size());
+            const T* l_data = l.data();
+            const T* r_data = r.data();
+            for (size_t i = 0; i < l.data_size(); ++i)
+                if (l_data[i] != r_data[i])
+                    return l_data[i] < r_data[i];
+            return false;
+        }
+    };
 };
 
 template<size_t max_size_, typename T = seq_element_type>

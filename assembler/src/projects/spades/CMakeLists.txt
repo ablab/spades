@@ -16,7 +16,7 @@ add_executable(spades main.cpp
             repeat_resolving.cpp
         hybrid_aligning.cpp
             chromosome_removal.cpp)
-  
+
 target_include_directories(spades PRIVATE ${EXT_DIR}/include/ConsensusCore)
 target_link_libraries(spades ConsensusCore spades_modules nlopt BamTools ssw ${COMMON_LIBRARIES})
 

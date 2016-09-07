@@ -4,12 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-//
-// Created by lab42 on 8/19/15.
-//
-
-#ifndef GENOME_STORAGE_HPP_
-#define GENOME_STORAGE_HPP_
+#pragma once
 
 #include <string>
 #include "data_structures/sequence/sequence.hpp"
@@ -30,4 +25,3 @@ namespace debruijn_graph {
         size_t size() const;
     };
 }
-#endif //PROJECT_GENOME_STORAGE_HPP

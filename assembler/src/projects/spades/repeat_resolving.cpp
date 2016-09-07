@@ -40,7 +40,7 @@ inline bool HasValidLibs() {
         if (lib.is_repeat_resolvable()) {
             if (!lib.is_paired() || !math::eq(lib.data().mean_insert_size, 0.0)) {
                 return true;
-            } 
+            }
         }
     }
     return false;
@@ -62,7 +62,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         cfg::get_writable().pe_params = *cfg::get().prelim_pe_params;
     }
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr", false);
-    OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph",gp.components);
+    OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph", gp.components);
 
     bool no_valid_libs = !HasValidLibs();
 
@@ -96,6 +96,3 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 }
 
 } // debruijn_graph
-
-
-

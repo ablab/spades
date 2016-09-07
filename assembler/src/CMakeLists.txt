@@ -10,7 +10,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 
 # allow more human readable "if then else" constructs
-set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE) 
+set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
 # modules to find additional libraries (like zlib, boost and etc)
 # Add path for custom modules
@@ -33,7 +33,7 @@ set(SPADES_CFG_DIR "${CMAKE_SOURCE_DIR}/../configs")
 include(options)
 
 # Sanity check our source directory to make sure that we are not trying to
-# generate an in-tree build 
+# generate an in-tree build
 if ((CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR) OR
     (CMAKE_SOURCE_DIR STREQUAL "${CMAKE_BINARY_DIR}/src"))
   message(FATAL_ERROR "In-source builds are not allowed.
@@ -85,7 +85,6 @@ endif()
 add_subdirectory(modules)
 add_subdirectory(projects)
 add_subdirectory(spades_pipeline)
-
 
 # Main pipeline script
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"

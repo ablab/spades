@@ -55,7 +55,7 @@ FindGenomeMappingPath(const Sequence& genome, const graph_pack& gp) {
 
 template <class graph_pack>
 shared_ptr<omnigraph::visualization::GraphColorer<Graph>> DefaultColorer(const graph_pack& gp) {
-    return omnigraph::visualization::DefaultColorer(gp.g, 
+    return omnigraph::visualization::DefaultColorer(gp.g,
         FindGenomeMappingPath(gp.genome.GetSequence(), gp.g, gp.index, gp.kmer_mapper).path(),
         FindGenomeMappingPath(!gp.genome.GetSequence(), gp.g, gp.index, gp.kmer_mapper).path());
 }
@@ -64,11 +64,11 @@ template <class graph_pack>
 void CollectContigPositions(graph_pack &gp) {
     if (!cfg::get().pos.contigs_for_threading.empty() &&
         path::FileExists(cfg::get().pos.contigs_for_threading))
-      FillPos(gp, cfg::get().pos.contigs_for_threading, "thr_", true);
+    FillPos(gp, cfg::get().pos.contigs_for_threading, "thr_", true);
 
     if (!cfg::get().pos.contigs_to_analyze.empty() &&
         path::FileExists(cfg::get().pos.contigs_to_analyze))
-      FillPos(gp, cfg::get().pos.contigs_to_analyze, "anlz_", true);
+    FillPos(gp, cfg::get().pos.contigs_to_analyze, "anlz_", true);
 }
 
 template<class Graph, class Index>
@@ -245,7 +245,7 @@ void PrepareForDrawing(conj_graph_pack &gp) {
 
 struct detail_info_printer {
     detail_info_printer(conj_graph_pack &gp,
-                        const omnigraph::GraphLabeler<Graph>& labeler, 
+                        const omnigraph::GraphLabeler<Graph>& labeler,
                         const string& folder)
             :  gp_(gp),
                labeler_(labeler),
@@ -267,9 +267,9 @@ struct detail_info_printer {
 
         auto it = cfg::get().info_printers.find(pos);
         VERIFY(it != cfg::get().info_printers.end());
-    
+
         const config::debruijn_config::info_printer & config = it->second;
-    
+
         if (config.basic_stats) {
             VertexEdgeStat<conj_graph_pack::graph_t> stats(gp_.g);
             INFO("Number of vertices : " << stats.vertices() << ", number of edges : "
@@ -326,37 +326,37 @@ struct detail_info_printer {
             config.write_components_along_contigs ||
             !config.components_for_genome_pos.empty())) {
             return;
-        } 
+        }
 
         VERIFY(cfg::get().developer_mode);
         string pics_folder = path::append_path(path::append_path(folder_, "pictures/"),
-                                          ToString(call_cnt++, 2) + "_" + pos_name + "/");
+                                          ToString(call_cnt, 2) + "_" + pos_name + "/");
         path::make_dirs(pics_folder);
         PrepareForDrawing(gp_);
-    
+
         auto path1 = FindGenomeMappingPath(gp_.genome.GetSequence(), gp_.g, gp_.index,
                                           gp_.kmer_mapper).path();
-    
+
         auto colorer = DefaultColorer(gp_);
-    
+
         if (config.write_error_loc) {
             make_dir(pics_folder + "error_loc/");
             WriteErrorLoc(gp_.g, pics_folder + "error_loc/", colorer, labeler_);
         }
-    
+
         if (config.write_full_graph) {
             WriteComponent(GraphComponent<Graph>(gp_.g, gp_.g.begin(), gp_.g.end()), pics_folder + "full_graph.dot", colorer, labeler_);
         }
-    
+
         if (config.write_full_nc_graph) {
             WriteSimpleComponent(GraphComponent<Graph>(gp_.g, gp_.g.begin(), gp_.g.end()), pics_folder + "nc_full_graph.dot", colorer, labeler_);
         }
-    
+
         if (config.write_components) {
             make_dir(pics_folder + "components/");
             omnigraph::visualization::WriteComponents(gp_.g, pics_folder + "components/", omnigraph::ReliableSplitter<Graph>(gp_.g), colorer, labeler_);
         }
-    
+
         if (!config.components_for_kmer.empty()) {
             string kmer_folder = path::append_path(pics_folder, "kmer_loc/");
             make_dir(kmer_folder);
@@ -364,12 +364,12 @@ struct detail_info_printer {
             string file_name = path::append_path(kmer_folder, pos_name + ".dot");
             WriteKmerComponent(gp_, kmer, file_name, colorer, labeler_);
         }
-    
+
         if (config.write_components_along_genome) {
             make_dir(pics_folder + "along_genome/");
             omnigraph::visualization::WriteComponentsAlongPath(gp_.g, path1.sequence(), pics_folder + "along_genome/", colorer, labeler_);
         }
-    
+
         if (config.write_components_along_contigs) {
             make_dir(pics_folder + "along_contigs/");
             BasicSequenceMapper<Graph, Index> mapper(gp_.g, gp_.index, gp_.kmer_mapper);

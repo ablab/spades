@@ -47,7 +47,7 @@ struct EdgeInfo {
 
 template<class stream, class IdType>
 stream &operator<<(stream &s, const EdgeInfo<IdType> &info) {
-    return s << "EdgeInfo[" << info.edge_id << ", " << info.offset << ", " << info.count << "]"; 
+    return s << "EdgeInfo[" << info.edge_id << ", " << info.offset << ", " << info.count << "]";
 }
 
 template<class Graph, class Seq = runtime_k::RtSeq, class traits = kmer_index_traits<Seq>, class StoringType = DefaultStoring>
@@ -100,7 +100,7 @@ public:
     //Only coverage is loaded
     template<class Writer>
     void BinWrite(Writer &writer) const {
-        this->index_.serialize(writer);
+        this->index_ptr_->serialize(writer);
         size_t sz = this->data_.size();
         writer.write((char*)&sz, sizeof(sz));
         for (size_t i = 0; i < sz; ++i)
@@ -110,7 +110,7 @@ public:
     template<class Reader>
     void BinRead(Reader &reader, const std::string/* &FileName*/) {
         this->clear();
-        this->index_.deserialize(reader);
+        this->index_ptr_->deserialize(reader);
         size_t sz = 0;
         reader.read((char*)&sz, sizeof(sz));
         this->data_.resize(sz);
@@ -152,7 +152,7 @@ public:
 
   template<class Writer>
   void BinWrite(Writer &writer) const {
-      this->index_.serialize(writer);
+      this->index_ptr_->serialize(writer);
       size_t sz = this->data_.size();
       writer.write((char*)&sz, sizeof(sz));
       for (size_t i = 0; i < sz; ++i)
@@ -163,7 +163,7 @@ public:
   template<class Reader>
   void BinRead(Reader &reader, const std::string &FileName) {
       this->clear();
-      this->index_.deserialize(reader);
+      this->index_ptr_->deserialize(reader);
       size_t sz = 0;
       reader.read((char*)&sz, sizeof(sz));
       this->data_.resize(sz);

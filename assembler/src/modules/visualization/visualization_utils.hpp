@@ -140,7 +140,7 @@ void WriteSimpleComponent(const GraphComponent<Graph>& gc,
 }
 
 template<class Graph>
-void WriteComponentsAlongPath(const Graph& g, vector<typename Graph::EdgeId> path,
+void WriteComponentsAlongPath(const Graph& g, const vector<typename Graph::EdgeId>& path,
         const string& prefix_path, shared_ptr<GraphColorer<Graph>> colorer,
         const GraphLabeler<Graph> &labeler, bool color_path = true) {
     auto edge_colorer = make_shared<CompositeEdgeColorer<Graph>>("black");
