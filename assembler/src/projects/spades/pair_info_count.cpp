@@ -25,8 +25,8 @@ using EdgePairCounter = hll::hll<std::pair<EdgeId, EdgeId>>;
 
 class DEFilter : public SequenceMapperListener {
   public:
-    DEFilter(PairedInfoFilter &filter)
-            : bf_(filter) {}
+    DEFilter(PairedInfoFilter &filter, const Graph &g)
+            : bf_(filter), g_(g) {}
 
     void ProcessPairedRead(size_t,
                            const io::PairedRead&,
@@ -48,11 +48,13 @@ class DEFilter : public SequenceMapperListener {
             for (size_t j = 0; j < path2.size(); ++j) {
                 std::pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
                 bf_.add({mapping_edge_1.first, mapping_edge_2.first});
+                bf_.add({g_.conjugate(mapping_edge_2.first), g_.conjugate(mapping_edge_1.first)});
             }
         }
     }
 
     PairedInfoFilter &bf_;
+    const Graph &g_;
 };
 
 class EdgePairCounterFiller : public SequenceMapperListener {
@@ -357,7 +359,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
                 INFO("Filtering data for library #" << i);
                 {
                     SequenceMapperNotifier notifier(gp);
-                    DEFilter filter_counter(*filter);
+                    DEFilter filter_counter(*filter, gp.g);
                     notifier.Subscribe(i, &filter_counter);
 
                     auto reads = paired_binary_readers(lib, false);
