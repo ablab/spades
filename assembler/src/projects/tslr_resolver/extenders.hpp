@@ -187,11 +187,6 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                 return;
             }
 
-            if (mapper_-> GetSizeTails(decisive_edge) < 5) {
-                DEBUG("Not enough barcodes mapped to the decisive edge")
-                return;
-            }
-
             DEBUG("At edge " << path.Back().int_id());
             DEBUG("decisive edge " << decisive_edge.int_id());
 

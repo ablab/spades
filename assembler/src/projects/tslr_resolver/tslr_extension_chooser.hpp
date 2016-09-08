@@ -52,7 +52,7 @@ namespace tslr_resolver {
                     }
                 }
 
-                //Exclude decisive edge from the candidates
+                //Exclude this edge from the candidates
                 auto edges_copy = edges;
                 EraseEdge(edges_copy, decisive_edge);
 
@@ -72,10 +72,15 @@ namespace tslr_resolver {
                              });
                 if (best_candidates.size() == 1) {
                     result.push_back(best_candidates[0]);
+                    DEBUG("Only one candidate passed threshold")
                     return result;
                 }
                 if (best_candidates.size() == 0) {
+                    DEBUG("No candidates found")
                     return result;
+                }
+                if (bmapper_ -> GetSizeTails(decisive_edge) < 4) {
+                    DEBUG("Not enough barcodes on decisive edge")
                 }
 
 
@@ -100,7 +105,7 @@ namespace tslr_resolver {
                 DEBUG("second best score " << second_best_score);
                 DEBUG(best_candidates.size() << " best candidates");
                 VERIFY(best_score >= second_best_score)
-//                if (best_score - second_best_score < 0.03) { //todo configs
+//                if (best_score - second_best_score < 0.03) {
 //                    DEBUG("Scores are too close, failed to select the best candidate.");
 //                    return result;
 //                }
