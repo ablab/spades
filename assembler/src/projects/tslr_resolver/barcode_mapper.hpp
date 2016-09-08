@@ -18,7 +18,7 @@ using std::string;
 using std::istringstream;
 
 namespace tslr_resolver {
-    constexpr int16_t max_barcodes = 384;
+    //constexpr int16_t max_barcodes = 384;
 
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
     typedef debruijn_graph::KmerFreeEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>> KmerEdgeIndex;
@@ -38,19 +38,19 @@ namespace tslr_resolver {
 
     class BarcodeEncoder {
         std::unordered_map <BarcodeId, int16_t> codes_;
-        int16_t max_index;
+        int16_t barcode_encoder_size;
     public:
         BarcodeEncoder() :
-                codes_(), max_index (0)
+                codes_(), barcode_encoder_size (0)
         { }
 
         void AddBarcode(const string &barcode) {
             auto it = codes_.find(barcode);
             if (it == codes_.end()) {
-                codes_[barcode] = max_index;
+                codes_[barcode] = barcode_encoder_size;
+                barcode_encoder_size++;
             }
-            VERIFY(max_index < max_barcodes);
-            max_index++;
+            //VERIFY(barcode_encoder_size < max_barcodes);
         }
 
         int16_t GetCode (const string& barcode) const {
@@ -59,7 +59,7 @@ namespace tslr_resolver {
         }
 
         int16_t GetSize() const {
-            return max_index;
+            return barcode_encoder_size;
         }
     };
 
@@ -167,29 +167,36 @@ namespace tslr_resolver {
         void FillMap (const string& reads_filename, const Index& index,
                       const KmerSubs& kmer_mapper) {
             auto lib_vec = GetLibrary(reads_filename);
+            INFO("Constructing mapper")
             auto mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, Index> >
                     (g_, index, kmer_mapper);
+            INFO("Finished mapper construction")
 
-            for (auto lib: lib_vec) {
-                std::string barcode = lib.barcode_;
-                barcode_codes_.AddBarcode(barcode);
-                std::shared_ptr<io::ReadStream<io::PairedRead>> paired_read_ptr =
-                        make_shared<io::SeparatePairedReadStream> (lib.left_, lib.right_, 1);
-                auto wrapped_stream = io::RCWrap(paired_read_ptr);
+            for (size_t i = 0; i < lib_vec.size(); ++i) {
+                std::string barcode = lib_vec[i].barcode_;
+                std::shared_ptr<io::ReadStream<io::PairedRead>> paired_stream =
+                        make_shared<io::SeparatePairedReadStream> (lib_vec[i].left_, lib_vec[i].right_, 1);
+                //auto wrapped_stream = io::RCWrap(paired_stream);
                 io::PairedRead read;
-                while (!wrapped_stream->eof()) {
-                    *wrapped_stream >> read;
+                while (!paired_stream->eof()) {
+                    *paired_stream >> read;
                     auto path_first = mapper -> MapRead(read.first());
                     auto path_second = mapper -> MapRead(read.second());
                     std::vector<omnigraph::MappingPath<EdgeId> > paths = {path_first, path_second};
                     for (auto path : paths) {
-                        for(size_t i = 0; i < path.size(); i++) {
+                        for (size_t i = 0; i < path.size(); i++) {
                             if (IsAtEdgeHead(path[i].second))
                                 InsertBarcode(barcode, path[i].first);
                             if (IsAtEdgeTail(path[i].first, path[i].second))
                                 InsertBarcode(barcode, g_.conjugate(path[i].first));
                         }
                     }
+                }
+                VERBOSE_POWER_T2(i, 100,
+                                 "Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size()
+                                              << "%)");
+                if (lib_vec.size() > 10 && i % (lib_vec.size() / 10 + 1) == 0) {
+                    INFO("Processed " << i << " paths from " << lib_vec.size() << " (" << i * 100 / lib_vec.size() << "%)");
                 }
             }
         }
@@ -293,6 +300,9 @@ namespace tslr_resolver {
                     tmp_stream >> lib.barcode_;
                     tmp_stream >> lib.left_;
                     tmp_stream >> lib.right_;
+                    //lib.barcode_ = lib.barcode_.substr(lib.barcode_.length() - 8);
+                    INFO(lib.barcode_)
+                    barcode_codes_.AddBarcode(lib.barcode_);
                     lib_vec.push_back(lib);
                 }
             }
@@ -390,6 +400,7 @@ namespace tslr_resolver {
                 barcode_distribution_.at(code) += abundance;
             }
         }
+
 
     };
 

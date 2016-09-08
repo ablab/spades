@@ -13,14 +13,16 @@ with slightly different usage of coverage map. Huge code duplication need to be 
         PathJoiner(Graph & g, GraphCoverageMap& cov_map,
                 size_t max_diff_len,
         size_t max_repeat_length,
-        bool detect_repeats_online)
+        bool detect_repeats_online,
+        std::unordered_map <size_t, size_t> id_to_index)
         : ContigsMaker(g),
                 cover_map_(cov_map),
                 repeat_detector_(g, cover_map_, 2 * max_repeat_length),
         extenders_(),
         max_diff_len_(max_diff_len),
         max_repeat_len_(max_repeat_length),
-        detect_repeats_online_(detect_repeats_online) {
+        detect_repeats_online_(detect_repeats_online),
+        id_to_index_(id_to_index){
         }
 
         PathJoiner(Graph & g, GraphCoverageMap& cov_map,
@@ -28,14 +30,16 @@ with slightly different usage of coverage map. Huge code duplication need to be 
         const ScaffoldingUniqueEdgeStorage& unique,
                 size_t max_diff_len,
         size_t max_repeat_length,
-        bool detect_repeats_online)
+        bool detect_repeats_online,
+        std::unordered_map <size_t, size_t>& id_to_index)
         : ContigsMaker(g),
                 cover_map_(cov_map),
                 repeat_detector_(g, cover_map_, 2 * max_repeat_length),
         extenders_(),
         max_diff_len_(max_diff_len),
         max_repeat_len_(max_repeat_length),
-        detect_repeats_online_(detect_repeats_online) {
+        detect_repeats_online_(detect_repeats_online),
+        id_to_index_(id_to_index) {
             extenders_ = pes;
             used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage(unique));
             for (auto ex: extenders_) {
@@ -84,6 +88,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
         size_t max_repeat_len_;
         bool detect_repeats_online_;
         shared_ptr <UsedUniqueStorage> used_storage_;
+        unordered_map <size_t, size_t>& id_to_index_;
 
         void SubscribeCoverageMap(BidirectionalPath *path) {
             path->Subscribe(&cover_map_);
@@ -93,41 +98,41 @@ with slightly different usage of coverage map. Huge code duplication need to be 
         }
 
         void GrowAllPaths(PathContainer &paths, PathContainer &result) {
+            size_t sum_length = 0;
+            cover_map_.Clear();
             for (size_t i = 0; i < paths.size(); ++i) {
-                DEBUG(i)
-                DEBUG("path id " << paths.Get(i) -> GetId())
-                VERBOSE_POWER_T2(i, 100,
-                                 "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size()
-                                              << "%)");
-                if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
-                    INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
-                }
-                if (paths.Get(i) -> Size() != 0) {
-
-//In 2015 modes do not use a seed already used in paths.
-                    if (used_storage_->UniqueCheckEnabled()) {
-                        bool was_used = false;
-                        for (size_t ind = 0; ind < paths.Get(i)->Size(); ind++) {
-                            EdgeId eid = paths.Get(i)->At(ind);
-                            if (used_storage_->IsUsedAndUnique(eid)) {
-                                was_used = true;
-                                break;
-                            } else {
-                                used_storage_->insert(eid);
-                            }
-                        }
-                        if (was_used) {
-                            DEBUG("skipping already used seed");
-                            continue;
-                        }
+                BidirectionalPath *path = new BidirectionalPath(*paths.Get(i));
+                DEBUG("new path id " << paths.Get(i) -> GetId())
+                BidirectionalPath *conjugatePath = new BidirectionalPath(*paths.GetConjugate(i));
+                DEBUG("conjugate path id " << paths.Get(i) -> GetId())
+                result.AddPair(path, conjugatePath);
+                id_to_index_[path->GetId()] = result.size() - 1;
+                id_to_index_[conjugatePath->GetId()] = result.size() - 1;
+                SubscribeCoverageMap(path);
+                SubscribeCoverageMap(conjugatePath);
+                path->CheckConjugateEnd(max_repeat_len_);
+                DEBUG("result path " << path->GetId());
+                sum_length += path->Length();
+                DEBUG("path length " << path->Length());
+                path->Print();
+            }
+            INFO("overall path length before " << sum_length)
+            sum_length = 0;
+            for (size_t i = 0; i < result.size(); i++) {
+                if (result.Get(i)->Size() > 0) {
+                    DEBUG(i)
+                    DEBUG("path id " << paths.Get(i) -> GetId())
+                    VERBOSE_POWER_T2(i, 100,
+                                     "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size()
+                                                  << "%)");
+                    if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
+                        INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
                     }
-                    BidirectionalPath *path = new BidirectionalPath(*paths.Get(i));
-                    DEBUG("new path id " << paths.Get(i) -> GetId())
-                    BidirectionalPath *conjugatePath = new BidirectionalPath(*paths.GetConjugate(i));
-                    DEBUG("conjugate path id " << paths.Get(i) -> GetId())
-                    result.AddPair(path, conjugatePath);
-                    SubscribeCoverageMap(path);
-                    SubscribeCoverageMap(conjugatePath);
+                    TRACE("i / size " << i << " " << result.size());
+                    BidirectionalPath *path = result.Get(i);
+                    BidirectionalPath *conjugatePath = result.GetConjugate(i);
+                    DEBUG ("readding ids " << path->GetId() << " " << conjugatePath->GetId() << " "
+                                           << id_to_index_.size());
                     size_t count_trying = 0;
                     size_t current_path_len = 0;
                     do {
@@ -136,11 +141,18 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                         GrowPath(*path, &result);
                         GrowPath(*conjugatePath, &result);
                     } while (count_trying < 10 && (path->Length() != current_path_len));
-                    path->CheckConjugateEnd(max_repeat_len_);
+                    path->CheckConjugateEnd(cfg::get().max_repeat_length);
                     DEBUG("result path " << path->GetId());
+                    sum_length += path->Length();
+                    DEBUG("path length " << path->Length() << endl);
                     path->Print();
                 }
+                else {
+                    DEBUG("Ignoring empty path")
+                }
             }
+            INFO("overall path length after " << sum_length)
+            result.FilterEmptyPaths();
         }
         DECL_LOGGER("PathJoiner")
     };
@@ -155,26 +167,28 @@ with slightly different usage of coverage map. Huge code duplication need to be 
         bool join_paths;
         ScaffoldingUniqueEdgeStorage unique_storage_;
         shared_ptr<tslr_resolver::BarcodeMapper> mapper_;
-        double average_coverage_;
+        std::unordered_map <size_t, size_t>& id_to_index_;
 
 
         void FindFollowingEdges(BidirectionalPath &path, ExtensionChooser::EdgeContainer *result) {
             result->clear();
-            if (g_.OutgoingEdgeCount(g_.EdgeEnd(path.Back())) == 1) {
-                result->push_back(EdgeWithDistance(*(g_.OutgoingEdges(g_.EdgeEnd(path.Back())).begin()), 0));
-                return;
-            }
+//            if (g_.OutgoingEdgeCount(g_.EdgeEnd(path.Back())) == 1) {
+//                result->push_back(EdgeWithDistance(*(g_.OutgoingEdges(g_.EdgeEnd(path.Back())).begin()), 0));
+//                return;
+//            }
 
             //find long unique edge earlier in path
             bool long_single_edge_exists = false;
             EdgeId decisive_edge;
             for (int i = static_cast<int> (path.Size()) - 1; !long_single_edge_exists && i >= 0; --i) {
                 EdgeId current_edge = path.At(i);
-                if (unique_storage_.IsUnique(current_edge) &&
-                    g_.length(current_edge) > edge_threshold_) {
+                if (g_.length(current_edge) > edge_threshold_) {
                     long_single_edge_exists = true;
                     decisive_edge = current_edge;
                 }
+                //unique_storage_.IsUnique(current_edge)
+                DEBUG("Length " << g_.length(current_edge));
+                DEBUG("Is unique " << unique_storage_.IsUnique(current_edge))
             }
 
             if (!long_single_edge_exists) {
@@ -182,13 +196,9 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                 return;
             }
 
-            if (mapper_-> GetSizeTails(decisive_edge) > 80) {
+            //todo configs
+            if (mapper_-> GetSizeTails(decisive_edge) > 200) {
                 DEBUG("Too many barcodes mapped to the decisive edge")
-                return;
-            }
-
-            if (mapper_-> GetSizeTails(decisive_edge) < 5) {
-                DEBUG("Not enough barcodes mapped to the decisive edge")
                 return;
             }
 
@@ -224,7 +234,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                                  size_t edge_threshold,
                                  bool join_paths,
                                  const ScaffoldingUniqueEdgeStorage& unique_storage,
-                                 double average_coverage)
+                                 std::unordered_map <size_t, size_t>& id_to_index)
                 :
                 LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, use_short_loop_cov_resolver,
                                           is),
@@ -235,7 +245,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                 join_paths(join_paths),
                 unique_storage_(unique_storage),
                 mapper_(gp.barcode_mapper),
-                average_coverage_(average_coverage) {
+                id_to_index_(id_to_index) {
         }
 
         std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
@@ -261,29 +271,15 @@ with slightly different usage of coverage map. Huge code duplication need to be 
 
     protected:
         virtual bool FilterCandidates(BidirectionalPath &path, ExtensionChooser::EdgeContainer &candidates) {
-            DEBUG("Cov map size " << cov_map_.size())
-            if (path.Size() == 0) {
-                return false;
-            }
             DEBUG("Simple grow step");
             path.Print();
             DEBUG("Path size " << path.Size())
             DEBUG("Starting at vertex " << g_.EdgeEnd(path.Back()));
             FindFollowingEdges(path, &candidates);
-            DEBUG("found candidates");
-            DEBUG(candidates.size())
-            if (candidates.size() == 1) {
-                LoopDetector loop_detector(&path, cov_map_);
-                if (!investigate_short_loops_ &&
-                    (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
-                    && extensionChooser_->WeightCounterBased()) {
-                    return false;
-                }
-            }
-            DEBUG("more filtering");
+            DEBUG("Found " << candidates.size() << " candidates");
+            DEBUG("Filtering");
             candidates = extensionChooser_->Filter(path, candidates);
-            DEBUG("filtered candidates");
-            DEBUG(candidates.size())
+            DEBUG(candidates.size() << " candidates passed");
             return true;
         }
 
@@ -301,42 +297,32 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             }
 
             DEBUG("push");
-            EdgeId eid = candidates.back().e_;
-
-            if (used_storage_->UniqueCheckEnabled()) {
-                if (used_storage_->IsUsedAndUnique(eid)) {
-                    return false;
-                } else {
-                    used_storage_->insert(eid);
-                }
-            }
+//            EdgeId eid = candidates.back().e_;
+//            if (used_storage_->UniqueCheckEnabled()) {
+//                if (used_storage_->IsUsedAndUnique(eid)) {
+//                    return false;
+//                } else {
+//                    used_storage_->insert(eid);
+//                }
+//            }
             auto candidate = candidates.back();
             auto covering_paths = GetCoveringPaths(path, candidate.e_);
-            if (!join_paths || covering_paths.size() != 1)
+            if (covering_paths.size() != 1)
             {
-                if (join_paths) {
-                    DEBUG("Next path indetermined")
-                }
-                path.PushBack(eid, candidates.back().d_);
+                DEBUG("Too many paths, can't determine the right one")
+                return false;
             }
                 
-            else {
-                DEBUG("Trying to add next path")
-                return AddPathFromPreviousStage(path, covering_paths.back());
-            }
-            
-            DEBUG("Push done, true");
-            DEBUG("Path length: " << path.Length());
-            return true;
+            DEBUG("Trying to add next path")
+            return AddPathFromPreviousStage(path, covering_paths.back(), paths_storage);
+
         }
 
     protected:
         vector <BidirectionalPath*> GetCoveringPaths(const BidirectionalPath& path, const EdgeId& e) const {
             DEBUG("Getting covering paths...")
-            DEBUG(cov_map_.size())
             BidirectionalPathSet cov_paths = cov_map_.GetCoveringPaths(e);
             vector <BidirectionalPath*> result;
-            DEBUG(cov_paths.size())
             for (auto it = cov_paths.begin(); it != cov_paths.end(); ++it) {
                 DEBUG("Processing path...")
                 BidirectionalPath* cov_path = *it;
@@ -345,11 +331,13 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                     result.push_back(cov_path);
                 }
             }
+            DEBUG("Found " << result.size() << " paths")
             return result;
         }
 
         bool AddPathFromPreviousStage(BidirectionalPath &current_path,
-                                      BidirectionalPath* additive_path) {
+                                      BidirectionalPath* additive_path,
+                                      PathContainer* paths_storage) {
             //Count distance between paths
             size_t path_len_bound = cfg::get().ts_res.topsort_bound;
             size_t overlap_size = current_path.OverlapEndSize(additive_path);
@@ -376,8 +364,15 @@ with slightly different usage of coverage map. Huge code duplication need to be 
 
                 current_path.PushBack(suffix.At(0), gap);
                 current_path.PushBack(suffix.SubPath(1));
-                
+                size_t current_index = id_to_index_[current_path . GetId()];
+                size_t added_index = id_to_index_[additive_path -> GetId()];
+                DEBUG("current index " << current_index)
+                DEBUG("added index " << added_index)
+                DEBUG("Clearing path " << paths_storage->Get(added_index)->GetId())
+                paths_storage->Get(added_index)->Clear();
 
+                DEBUG("Successfully added path");
+                DEBUG("Path length: " << current_path.Length());
                 return true;
             }
         }
