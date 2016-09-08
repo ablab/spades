@@ -102,9 +102,6 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                 if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
                     INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
                 }
-                DEBUG("sIZE")
-                DEBUG(paths.Get(i) -> Size())
-                DEBUG(paths.Get(i) -> Empty())
                 if (paths.Get(i) -> Size() != 0) {
 
 //In 2015 modes do not use a seed already used in paths.

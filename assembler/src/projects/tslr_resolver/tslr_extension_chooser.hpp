@@ -70,27 +70,25 @@ namespace tslr_resolver {
                                  return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
                                         absolute_barcode_threshold_ && unique_storage_.IsUnique(edge.e_);
                              });
-                //Find the best edge
-                auto fittest_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
-                                         [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                             return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) <
-                                                    this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge2.e_);
-                                         }));
-                double best_score = bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, fittest_edge.e_);
-
-                DEBUG("fittest edge " << fittest_edge.e_.int_id());
-                DEBUG("score " << best_score);
-
                 if (best_candidates.size() == 1) {
-                    result.push_back(fittest_edge);
+                    result.push_back(best_candidates[0]);
                     return result;
                 }
                 if (best_candidates.size() == 0) {
                     return result;
                 }
 
-                //Check difference between two best scores
+
+                //Check the difference between two best scores
                 DEBUG("Several candidates found. Further filtering.");
+                auto fittest_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
+                                                     [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
+                                                         return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) <
+                                                                this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge2.e_);
+                                                     }));
+                double best_score = bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, fittest_edge.e_);
+                DEBUG("fittest edge " << fittest_edge.e_.int_id());
+                DEBUG("score " << best_score);
                 std::nth_element(edges_copy.begin(), edges_copy.begin() + 1, edges_copy.end(),
                                  [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
                                      return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) >
@@ -101,13 +99,13 @@ namespace tslr_resolver {
                 DEBUG("Second best edge " << second_best_edge.e_.int_id());
                 DEBUG("second best score " << second_best_score);
                 DEBUG(best_candidates.size() << " best candidates");
+                VERIFY(best_score >= second_best_score)
+//                if (best_score - second_best_score < 0.03) { //todo configs
+//                    DEBUG("Scores are too close, failed to select the best candidate.");
+//                    return result;
+//                }
 
-                if (best_score - second_best_score < 0.05) { //todo configs
-                    DEBUG("Scores are too close, failed to select best candidate.");
-                    return result;
-                }
-
-                //Try to find topologically closest edge
+                //Try to find topologically closest edge to resolve loops
                 //FIXME This have nothing to do with barcodes. Need to be moved somewhere else.
                 auto closest_edges = FindClosestEdge(best_candidates);
                 if (closest_edges.size() != 1) {
@@ -137,7 +135,7 @@ namespace tslr_resolver {
                     edges.erase(edges.begin() + ind);
             }
 
-            //FIXME make it more effective
+            //make it more effective if needed
             vector<EdgeWithDistance> FindClosestEdge(const vector<EdgeWithDistance>& edges) const {
                 vector <EdgeWithDistance> closest_edges;
                 auto edges_iter = edges.begin();

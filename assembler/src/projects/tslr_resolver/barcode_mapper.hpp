@@ -44,7 +44,7 @@ namespace tslr_resolver {
                 codes_(), max_index (0)
         { }
 
-        void AddEntry (const string& barcode) {
+        void AddBarcode(const string &barcode) {
             auto it = codes_.find(barcode);
             if (it == codes_.end()) {
                 codes_[barcode] = max_index;
@@ -62,6 +62,7 @@ namespace tslr_resolver {
             return max_index;
         }
     };
+
 
     class BarcodeMapper {
     public:
@@ -131,27 +132,36 @@ namespace tslr_resolver {
 
 
         virtual double IntersectionSizeNormalizedByUnion(const EdgeId& edge1, const EdgeId& edge2) const override {
-            return static_cast <double> (IntersectionSize(edge1, edge2)) / 
-                static_cast <double> (UnionSize(edge1, edge2));
+            if (UnionSize(edge1, edge2)) {
+                return static_cast <double> (IntersectionSize(edge1, edge2)) /
+                       static_cast <double> (UnionSize(edge1, edge2));
+            }
+            return 0;
         }
 
         virtual double IntersectionSizeNormalizedBySecond(const EdgeId &edge1, const EdgeId &edge2) const override {
-            return static_cast <double> (IntersectionSize(edge1, edge2)) / 
-                static_cast <double> (GetSizeHeads(edge2));
+            if (GetSizeHeads(edge2) > 0) {
+                return static_cast <double> (IntersectionSize(edge1, edge2)) /
+                       static_cast <double> (GetSizeHeads(edge2));
+            }
+            return 0;
         }
 
         virtual double IntersectionSizeNormalizedByFirst(const EdgeId &edge1, const EdgeId& edge2) const override {
-            return static_cast <double> (IntersectionSize(edge1, edge2)) / 
-                static_cast <double> (GetSizeTails(edge1));
+            if (GetSizeTails(edge1) > 0) {
+                return static_cast <double> (IntersectionSize(edge1, edge2)) /
+                       static_cast <double> (GetSizeTails(edge1));
+            }
+            return 0;
         }
 
 
         size_t GetSizeHeads(const EdgeId& edge) const override {
-            return edge_to_distribution_.at(edge).Size();
+            return GetEntryHeads(edge).Size();
         }
 
         size_t GetSizeTails(const EdgeId& edge) const override {
-            return edge_to_distribution_.at(g_.conjugate(edge)).Size();
+            return GetEntryTails(edge).Size();
         }
 
         void FillMap (const string& reads_filename, const Index& index,
@@ -162,7 +172,7 @@ namespace tslr_resolver {
 
             for (auto lib: lib_vec) {
                 std::string barcode = lib.barcode_;
-                barcode_codes_.AddEntry(barcode);
+                barcode_codes_.AddBarcode(barcode);
                 std::shared_ptr<io::ReadStream<io::PairedRead>> paired_read_ptr =
                         make_shared<io::SeparatePairedReadStream> (lib.left_, lib.right_, 1);
                 auto wrapped_stream = io::RCWrap(paired_read_ptr);
@@ -174,9 +184,9 @@ namespace tslr_resolver {
                     std::vector<omnigraph::MappingPath<EdgeId> > paths = {path_first, path_second};
                     for (auto path : paths) {
                         for(size_t i = 0; i < path.size(); i++) {
-                            if (is_at_edge_head(path[i].second))
+                            if (IsAtEdgeHead(path[i].second))
                                 InsertBarcode(barcode, path[i].first);
-                            if (is_at_edge_tail(path[i].first, path[i].second))
+                            if (IsAtEdgeTail(path[i].first, path[i].second))
                                 InsertBarcode(barcode, g_.conjugate(path[i].first));
                         }
                     }
@@ -204,11 +214,11 @@ namespace tslr_resolver {
         }
 
         size_t IntersectionSize(const EdgeId &edge1, const EdgeId &edge2) const override {
-            return edge_to_distribution_.at(edge1).IntersectionSize(edge2);
+            return GetEntryTails(edge1).IntersectionSize(GetEntryHeads(edge2));
         }
 
         size_t UnionSize(const EdgeId &edge1, const EdgeId &edge2) const override {
-            return edge_to_distribution_.at(edge1).UnionSize(edge2);
+            return GetEntryHeads(edge1).UnionSize(edge2);
         }
 
 
@@ -250,11 +260,11 @@ namespace tslr_resolver {
         }
 
     protected:
-        barcode_entry_t GetEntryHeads(const EdgeId &edge) {
+        barcode_entry_t GetEntryHeads(const EdgeId &edge) const {
             return edge_to_distribution_.at(edge);
         }
 
-        barcode_entry_t GetEntryTails(const EdgeId &edge) {
+        barcode_entry_t GetEntryTails(const EdgeId &edge) const {
             return edge_to_distribution_.at(g_.conjugate(edge));
         }
 
@@ -263,11 +273,11 @@ namespace tslr_resolver {
             edge_to_distribution_.at(edge).InsertBarcode(code);
         }
 
-        bool is_at_edge_tail(const EdgeId& edge, const omnigraph::MappingRange& range) {
+        bool IsAtEdgeTail(const EdgeId &edge, const omnigraph::MappingRange &range) {
             return range.mapped_range.start_pos + tail_threshold_ > g_.length(edge);
         }
 
-        bool is_at_edge_head(const omnigraph::MappingRange& range) {
+        bool IsAtEdgeHead(const omnigraph::MappingRange &range) {
             return range.mapped_range.end_pos < tail_threshold_;
         }
 
@@ -292,6 +302,8 @@ namespace tslr_resolver {
 
 
     class SimpleBarcodeEntry {
+        friend class HeadTailBarcodeMapper<SimpleBarcodeEntry>;
+
         typedef std::unordered_map <int64_t, size_t> barcode_distribution_t;
         EdgeId edge_;
         barcode_distribution_t barcode_distribution_;
@@ -302,8 +314,6 @@ namespace tslr_resolver {
         SimpleBarcodeEntry(const EdgeId& edge) :
                 edge_(edge), barcode_distribution_() {}
 
-        SimpleBarcodeEntry(const SimpleBarcodeEntry& other) = default;
-        SimpleBarcodeEntry& operator =(const    SimpleBarcodeEntry& other) = default;
 
         barcode_distribution_t GetDistribution() const {
             return barcode_distribution_;
@@ -311,10 +321,8 @@ namespace tslr_resolver {
 
         size_t IntersectionSize(const SimpleBarcodeEntry& other) const {
             size_t result = 0;
-            auto distr_this = barcode_distribution_;
-            auto distr_other = other.GetDistribution();
-            for (auto it = distr_this.begin(); it != distr_this.end(); ++it) {
-                if (distr_other.find(it-> first) != distr_other.end()) {
+            for (auto it = barcode_distribution_.begin(); it != barcode_distribution_.end(); ++it) {
+                if (other.GetDistribution().find(it-> first) != other.GetDistribution().end()) {
                     result++;
                 }
             }
@@ -325,15 +333,6 @@ namespace tslr_resolver {
             auto distr_this = barcode_distribution_;
             auto distr_other = other.GetDistribution();
             return Size() + other.Size() - IntersectionSize(other);
-        }
-
-        void InsertBarcode(int16_t code, size_t abundance = 1) {
-            if (barcode_distribution_.find(code) == barcode_distribution_.end()) {
-                barcode_distribution_.insert({code, abundance});
-            }
-            else {
-                barcode_distribution_.at(code) += abundance;
-            }
         }
 
         void InsertSet (barcode_distribution_t& set) {
@@ -380,6 +379,16 @@ namespace tslr_resolver {
 
         decltype(barcode_distribution_.cend()) cend() const {
             return barcode_distribution_.cend();
+        }
+
+    private:
+        void InsertBarcode(int16_t code, size_t abundance = 1) {
+            if (barcode_distribution_.find(code) == barcode_distribution_.end()) {
+                barcode_distribution_.insert({code, abundance});
+            }
+            else {
+                barcode_distribution_.at(code) += abundance;
+            }
         }
 
     };

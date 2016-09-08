@@ -72,19 +72,21 @@ namespace omnigraph {
             DEBUG("Checking edge " << edge.int_id());
             DEBUG("Length " << g_.length(edge)) 
             DEBUG("decisive_edge " << decisive_edge_.int_id())
-            DEBUG("intersection " << mapper_->IntersectionSizeNormalizedByFirst(decisive_edge_, edge))
+            DEBUG("intersection " << mapper_->IntersectionSize(decisive_edge_, edge))
+            DEBUG("Barcodes " << mapper_->GetSizeHeads(edge))
+            DEBUG("Normalized intersection " << mapper_->IntersectionSizeNormalizedByFirst(decisive_edge_, edge))
             DEBUG("Is unique " << unique_storage_.IsUnique(edge))
             if (g_.length(edge) < length_bound_) {
-                DEBUG("Short edge, passed" << endl)  //todo use short edges to shorten list of candidates
+                DEBUG("Short edge, passed" << endl)  //todo use short edges to reduce number of candidates
                 return true;
             }
             if (! unique_storage_.IsUnique(edge)) {
-                DEBUG("Long non-unique nearby edge, barcode check passed" << endl)
+                DEBUG("Long non-unique nearby edge, passed" << endl)
                 return true;
             }
             else {
                 candidates_.push_back(edge);
-                DEBUG("Long unique nearby edge, barcode check didn't pass" << endl)
+                DEBUG("Long unique nearby edge, put to candidates list and stop" << endl)
                 return false;
             }
         }

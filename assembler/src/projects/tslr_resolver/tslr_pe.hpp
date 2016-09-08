@@ -77,7 +77,7 @@ namespace tslr_resolver {
         INFO("SUBSTAGE = TSLR Resolver");
         auto tslr_resolver_params = cfg::get().ts_res;
         size_t len_threshold = tslr_resolver_params.len_threshold;
-        double relative_diff_threshold = tslr_resolver_params.diff_threshold;
+        double absolute_barcode_threshold = tslr_resolver_params.diff_threshold;
         size_t distance_bound = tslr_resolver_params.distance_bound;
         double abs_threshold = tslr_resolver_params.abs_threshold;
         bool join_paths = tslr_resolver_params.join_paths;
@@ -85,7 +85,7 @@ namespace tslr_resolver {
         max_is_right_quantile = gp.g.k() + 10000;
         auto extension = make_shared<TrivialTSLRExtensionChooser>(gp,
                                                                   len_threshold,
-                                                                  relative_diff_threshold,
+                                                                  absolute_barcode_threshold,
                                                                   main_unique_storage);
         auto tslr_extender = make_shared<InconsistentTSLRExtender>(gp, cover_map,
                                                              extension,
