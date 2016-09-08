@@ -376,7 +376,6 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                 existing_dataset_data = None
     if existing_dataset_data is not None:
         dataset_data = existing_dataset_data
-        options_storage.dataset_yaml_filename = processed_dataset_fpath
     else:
         if options_storage.dataset_yaml_filename:
             try:
@@ -388,8 +387,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         else:
             dataset_data = support.correct_dataset(dataset_data)
             dataset_data = support.relative2abs_paths(dataset_data, os.getcwd())
-        options_storage.dataset_yaml_filename = processed_dataset_fpath
-        pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
+    options_storage.dataset_yaml_filename = processed_dataset_fpath
 
     support.check_dataset_reads(dataset_data, options_storage.only_assembler, log)
     if not support.get_lib_ids_by_type(dataset_data, spades_logic.READS_TYPES_USED_IN_CONSTRUCTION):
@@ -400,6 +398,9 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                           ', '.join(spades_logic.READS_TYPES_USED_IN_RNA_SEQ) + ' in RNA-Seq mode!')
         if len(support.get_lib_ids_by_type(dataset_data, 'paired-end')) > 1:
             support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
+
+    if existing_dataset_data is None:
+        pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
 
     options_storage.set_default_values()
     ### FILLING cfg
