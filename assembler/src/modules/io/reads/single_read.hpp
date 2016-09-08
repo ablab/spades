@@ -46,7 +46,7 @@ public:
 
     SingleRead() :
             name_(""), seq_(""), qual_(""), left_offset_(0), right_offset_(0), valid_(false) {
-        TRACE(name_ << " created");
+        DEBUG(name_ << " created");
     }
 
     SingleRead(const std::string &name, const std::string &seq,
@@ -54,7 +54,7 @@ public:
                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
             name_(name), seq_(seq), qual_(qual), left_offset_(left_offset), right_offset_(right_offset) {
         Init();
-        TRACE(name_ << " created");
+        DEBUG(name_ << " created");
         for (size_t i = 0; i < qual_.size(); ++i) {
             qual_[i] = (char) (qual_[i] - offset);
         }
@@ -64,7 +64,7 @@ public:
                const std::string &qual,
                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
             name_(name), seq_(seq), qual_(qual), left_offset_(left_offset), right_offset_(right_offset) {
-        TRACE(name_ << " created");
+        DEBUG(name_ << " created");
         Init();
     }
 
@@ -72,7 +72,7 @@ public:
                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
             name_(name), seq_(seq), qual_(EmptyQuality(seq_)), left_offset_(left_offset),
             right_offset_(right_offset) {
-        TRACE(name_ << " created");
+        DEBUG(name_ << " created");
         Init();
     }
 

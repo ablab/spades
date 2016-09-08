@@ -69,7 +69,7 @@ public:
 
     MappingPath<EdgeId> MapRead(const io::SingleRead &read) const override {
 //      VERIFY(read.IsValid());
-        TRACE(read.name() << " is mapping");
+        DEBUG(read.name() << " is mapping");
         string s = read.GetSequenceString();
         size_t l = 0, r = 0;
         MappingPath<EdgeId> result;
@@ -87,8 +87,8 @@ public:
         if (r > l) {
             result.join(this->MapSequence(Sequence(s.substr(l, r - l))), int(l));
         }
-        TRACE(read.name() << " is mapped");
-        TRACE("Number of edges is " << result.size());
+        DEBUG(read.name() << " is mapped");
+        DEBUG("Number of edges is " << result.size());
 
         return result;
     }
@@ -248,7 +248,7 @@ public:
                   mapping_path.simple_path());
           PrintPathInfo(corrected_path);
           if(corrected_path.size() != mapping_path.simple_path().size()) {
-              TRACE("Some edges were deleted");
+              DEBUG("Some edges were deleted");
           }
           vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
           if (!path_fixer_.CheckContiguous(fixed_path)) {
@@ -260,10 +260,11 @@ public:
               TRACE(debug_stream.str());
               return vector<EdgeId>();
           } else {
-              TRACE("Path fix works");
+              DEBUG("Path fix works");
           }
           return fixed_path;
       }
+
 
 private:
 
@@ -273,7 +274,7 @@ private:
 
       void PrintPathInfo(vector<EdgeId>& corrected_path) const {
           for(size_t i = 0; i < corrected_path.size(); ++i) {
-              TRACE(i + 1 << "-th edge is " << corrected_path[i].int_id());
+              DEBUG(i + 1 << "-th edge is " << corrected_path[i].int_id());
           }
       }
 };

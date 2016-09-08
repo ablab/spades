@@ -15,10 +15,10 @@
 #include "assembly_graph/graph_core/graph.hpp"
 #include "paired_info/paired_info.hpp"
 #include "pipeline/config_struct.hpp"
-#include "genomic_info.hpp"
 #include "assembly_graph/graph_alignment/edge_index.hpp"
 #include "assembly_graph/graph_support/genomic_quality.hpp"
 #include "assembly_graph/graph_alignment/sequence_mapper.hpp"
+#include "genomic_info.hpp"
 #include "assembly_graph/graph_alignment/long_read_storage.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/components/connected_component.hpp"
@@ -71,7 +71,7 @@ struct graph_pack: private boost::noncopyable {
               edge_qual(g),
               edge_pos(g, max_mapping_gap + k, max_gap_diff),
               components(g)
-    {
+    { 
         if (detach_indices) {
             DetachAll();
         }
@@ -119,7 +119,7 @@ struct graph_pack: private boost::noncopyable {
         FillPos(*this, genome.GetSequence(), "ref0");
         FillPos(*this, !genome.GetSequence(), "ref1");
     }
-
+    
     void EnsureDebugInfo() {
         EnsureBasicMapping();
         EnsureQuality();

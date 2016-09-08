@@ -42,10 +42,10 @@ rv:
 dv:
 	$(MAKE) -C build/debug/projects/online_vis
 
-rp:
+rp:	
 	$(MAKE) -C build/release/projects/corrector
 
-dp:
+dp:      
 	$(MAKE) -C build/debug/projects/corrector
 
 rs:
@@ -63,7 +63,6 @@ dts:
 dt:
 	$(MAKE) ddt
 	$(MAKE) dit
-
 clean:
 	$(MAKE) -C build/debug/projects/cclean
 	$(MAKE) -C build/release/projects/cclean
