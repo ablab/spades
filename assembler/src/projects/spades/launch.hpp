@@ -21,6 +21,7 @@
 #include "distance_estimation.hpp"
 #include "hybrid_aligning.hpp"
 #include "chromosome_removal.hpp"
+#include "series_analysis.hpp"
 #include "pipeline/stage.hpp"
 
 namespace spades {
@@ -64,7 +65,6 @@ void assemble_genome() {
                                             cfg::get().flanking_range,
                                             cfg::get().pos.max_mapping_gap,
                                             cfg::get().pos.max_gap_diff);
-
     if (cfg::get().need_mapping) {
         INFO("Will need read mapping, kmer mapper will be attached");
         conj_gp.kmer_mapper.Attach();
@@ -95,6 +95,9 @@ void assemble_genome() {
             SPAdes.add(new debruijn_graph::Simplification());
         }
 
+        if (!cfg::get().series_analysis.empty())
+            SPAdes.add(new debruijn_graph::SeriesAnalysis());
+
         if (cfg::get().pd) {
             SPAdes.add(new debruijn_graph::ChromosomeRemoval());
         }
@@ -107,7 +110,7 @@ void assemble_genome() {
               .add(new debruijn_graph::DistanceEstimation())
               .add(new debruijn_graph::RepeatResolution());
 
-        
+
     } else {
         SPAdes.add(new debruijn_graph::ContigOutput());
     }

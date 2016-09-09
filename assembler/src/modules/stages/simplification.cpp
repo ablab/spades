@@ -18,6 +18,16 @@ namespace debruijn_graph {
 using namespace debruijn::simplification;
 using namespace config;
 
+template<class graph_pack>
+shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
+    const graph_pack& gp) {
+    io::SingleRead genome("ref", gp.genome.str());
+    auto mapper = MapperInstance(gp);
+    auto path1 = mapper->MapRead(genome).path();
+    auto path2 = mapper->MapRead(!genome).path();
+    return omnigraph::visualization::DefaultColorer(gp.g, path1, path2);
+}
+
 class GraphSimplifier {
     typedef std::function<void(EdgeId)> HandlerF;
     typedef omnigraph::PersistentEdgeRemovingAlgorithm<Graph,

@@ -561,7 +561,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.init_clean, pt, "init_clean", complete); // presimplification
   load(simp.final_tc, pt, "final_tc", complete);
   load(simp.final_br, pt, "final_br", complete);
-  simp.second_final_br = simp.final_br; 
+  simp.second_final_br = simp.final_br;
   load(simp.second_final_br, pt, "second_final_br", false);
 }
 
@@ -734,6 +734,8 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.info_printers, pt, "info_printers", complete);
 
     load(cfg.bwa, pt, "bwa_aligner", complete);
+
+    load(cfg.series_analysis, pt, "series_analysis");
 
     if (pt.count("plasmid")) {
         VERIFY_MSG(!cfg.pd, "Option can be loaded only once");

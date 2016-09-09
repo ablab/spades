@@ -18,11 +18,11 @@ struct PerfectHashMapBuilder {
                     Counter& counter, size_t bucket_num,
                     size_t thread_num, bool save_final = true) const {
         using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
-        
+
         KMerIndexBuilder<KMerIndex> builder(index.workdir(),
                                             (unsigned) bucket_num,
                                             (unsigned) thread_num);
-        size_t sz = builder.BuildIndex(index.index_, counter, save_final);
+        size_t sz = builder.BuildIndex(*index.index_ptr_, counter, save_final);
         index.resize(sz);
     }
 };
