@@ -216,7 +216,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl
     gp.kmer_mapper.Attach();
     gp.EnsureBasicMapping();
     SequenceMapperNotifier notifier(gp);
-    LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[0]);
+    LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, 0, gp.paired_indices[0]);
     notifier.Subscribe(0, &pif);
     notifier.ProcessLibrary(paired_streams, 0, *MapperInstance(gp));
     

@@ -383,8 +383,8 @@ private:
             pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
             for (size_t j = 0; j < path2.size(); ++j) {
                 pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
-                double weight = PairedReadCountWeight(mapping_edge_1.second,
-                                                      mapping_edge_2.second);
+                double weight = PairedReadCountWeight(std::make_pair(mapping_edge_1.first, mapping_edge_2.first),
+                                                      mapping_edge_1.second, mapping_edge_2.second);
                 size_t kmer_distance = read_distance
                         + mapping_edge_2.second.initial_range.end_pos
                         - mapping_edge_1.second.initial_range.start_pos;

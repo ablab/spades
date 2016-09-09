@@ -6,12 +6,13 @@ using omnigraph::Range;
 using omnigraph::MappingRange;
 
 namespace debruijn_graph {
-inline double PairedReadCountWeight(const MappingRange&, const MappingRange&) {
+inline double PairedReadCountWeight(const std::pair<EdgeId, EdgeId>&,
+                                    const MappingRange&, const MappingRange&) {
     return 1.;
 }
 
-inline double KmerCountProductWeight(const MappingRange& mr1,
-                                     const MappingRange& mr2) {
+inline double KmerCountProductWeight(const std::pair<EdgeId, EdgeId>&,
+                                     const MappingRange& mr1, const MappingRange& mr2) {
     return (double)(mr1.initial_range.size() * mr2.initial_range.size());
 }
 
