@@ -10,7 +10,7 @@
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "chromosome_removal.hpp"
 
-#include "utils/math/xmath.h"
+#include "math/xmath.h"
 
 
 namespace debruijn_graph {

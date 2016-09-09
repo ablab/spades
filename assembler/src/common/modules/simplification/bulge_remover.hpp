@@ -24,7 +24,7 @@
 #include "utils/standard_base.hpp"
 #include <cmath>
 #include <stack>
-#include "utils/math/xmath.h"
+#include "math/xmath.h"
 
 namespace omnigraph {
 

@@ -11,7 +11,7 @@
 #include "utils/simple_tools.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "coordinates_handler.hpp"
-#include "utils/math/xmath.h"
+#include "math/xmath.h"
 #include <iostream>
 #include <vector>
 #include "utils/logger/logger.hpp"

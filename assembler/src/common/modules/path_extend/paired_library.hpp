@@ -19,7 +19,7 @@
 #include "paired_info/paired_info.hpp"
 #include "ideal_pair_info.hpp"
 
-#include "utils/math/xmath.h"
+#include "math/xmath.h"
 
 namespace path_extend {
 

@@ -13,7 +13,7 @@
 #include "assembly_graph/core/graph_iterators.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "edge_removal.hpp"
-#include "utils/math/pred.hpp"
+#include "math/pred.hpp"
 #include "utils/logger/logger.hpp"
 
 namespace omnigraph {

@@ -7,7 +7,7 @@
 
 #include "genomic_info_filler.hpp"
 
-#include "utils/math/kmer_coverage_model.hpp"
+#include "math/kmer_coverage_model.hpp"
 #include "modules/simplification/ec_threshold_finder.hpp"
 
 #include "llvm/Support/YAMLTraits.h"

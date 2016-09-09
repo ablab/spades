@@ -10,7 +10,7 @@
 #include "utils/simple_tools.hpp"
 #include "utils/path_helper.hpp"
 #include "utils/logger/log_writers.hpp"
-#include "utils/math/xmath.h"
+#include "math/xmath.h"
 #include <iostream>
 #include <vector>
 #include "io/reads/multifile_reader.hpp"

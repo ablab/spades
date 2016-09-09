@@ -11,7 +11,7 @@
 #include "pipeline/library.hpp"
 
 #include <boost/optional.hpp>
-#include "utils/math/xmath.h"
+#include "math/xmath.h"
 
 namespace debruijn_graph {
 namespace config {

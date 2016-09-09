@@ -13,7 +13,7 @@
 #include "common/adt/concurrent_dsu.hpp"
 #include "utils/standard_base.hpp"
 #include "assembly_graph/components/graph_component.hpp"
-#include "utils/math/xmath.h"
+#include "math/xmath.h"
 #include "basic/sequence/sequence_tools.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 #include "visualization/visualization.hpp"

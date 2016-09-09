@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "utils/math/xmath.h"
+#include "math/xmath.h"
 #include "utils/func.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"

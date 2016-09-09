@@ -8,7 +8,7 @@
 #pragma once
 
 #include "common/adt/queue_iterator.hpp"
-#include "utils/math/pred.hpp"
+#include "math/pred.hpp"
 #include "action_handlers.hpp"
 #include "utils/simple_tools.hpp"
 #include <boost/iterator/iterator_facade.hpp>

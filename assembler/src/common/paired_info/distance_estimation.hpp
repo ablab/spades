@@ -8,7 +8,7 @@
 #ifndef DISTANCE_ESTIMATION_HPP_
 #define DISTANCE_ESTIMATION_HPP_
 
-#include "utils/math/xmath.h"
+#include "math/xmath.h"
 #include "utils/openmp_wrapper.h"
 
 #include "paired_info.hpp"
