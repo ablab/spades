@@ -150,7 +150,7 @@ private:
 };
 
 class ContigAbundanceCounter {
-    typedef typename InvertableStoring::immutant_inverter<MplVector> InverterT;
+    typedef typename InvertableStoring::trivial_inverter<MplVector> InverterT;
 
     unsigned k_;
     size_t sample_cnt_;

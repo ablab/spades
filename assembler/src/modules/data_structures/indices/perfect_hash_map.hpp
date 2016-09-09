@@ -46,10 +46,11 @@ protected:
         return idx != InvalidIdx && idx < index_ptr_->size();
     }
 public:
-    IndexWrapper(size_t k, const std::string &workdir) : k_((unsigned) k) {
+    IndexWrapper(size_t k, const std::string &workdir)
+            : index_ptr_(std::make_shared<KMerIndexT>())
+            , k_((unsigned) k) {
         //fixme string literal
         workdir_ = path::make_temp_dir(workdir, "kmeridx");
-        index_ptr_ = std::make_shared<KMerIndexT>();
     }
 
     IndexWrapper(size_t k, const std::string &workdir, std::shared_ptr<KMerIndexT> index_ptr)
@@ -108,7 +109,7 @@ public:
 
     PerfectHashMap(size_t k, const std::string &workdir, std::shared_ptr<KMerIndexT> index_ptr)
         : KeyBase(k, workdir, index_ptr) {
-        ValueBase::resize(index_ptr->size());
+        ValueBase::resize(index_ptr_->size());
     }
 
     ~PerfectHashMap() {
@@ -118,8 +119,6 @@ public:
         KeyBase::clear();
         ValueBase::clear();
     }
-
-    std::shared_ptr<KMerIndexT> index_ptr() const { return index_ptr_; }
 
     const V get_value(const KeyWithHash &kwh) const {
         return StoringType::get_value(*this, kwh);
