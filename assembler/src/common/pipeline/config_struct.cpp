@@ -735,7 +735,7 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
 
     load(cfg.bwa, pt, "bwa_aligner", complete);
 
-    load(cfg.series_analysis, pt, "series_analysis");
+    load(cfg.series_analysis, pt, "series_analysis", complete);
 
     if (pt.count("plasmid")) {
         VERIFY_MSG(!cfg.pd, "Option can be loaded only once");

@@ -138,9 +138,7 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
     load(p.scaffolding2015, pt, "scaffolding2015", complete);
     load(p.scaffold_graph_params, pt, "scaffold_graph", complete);
     load(p.path_filtration, pt, "path_cleaning", complete);
-
 }
-
 
 void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,
           bool complete) {
@@ -153,13 +151,12 @@ void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,
 }
 
 void load(pe_config::ParamSetT::Scaffolding2015& p, boost::property_tree::ptree const& pt,
-          bool) {
+          bool complete) {
     using config_common::load;
-    load(p.autodetect, pt, "autodetect");
-    load(p.min_unique_length, pt, "min_unique_length");
-    load(p.unique_coverage_variation, pt, "unique_coverage_variation");
-    load(p.relative_weight_cutoff, pt, "relative_weight_cutoff");
-
+    load(p.autodetect, pt, "autodetect", complete);
+    load(p.min_unique_length, pt, "min_unique_length", complete);
+    load(p.unique_coverage_variation, pt, "unique_coverage_variation", complete);
+    load(p.relative_weight_cutoff, pt, "relative_weight_cutoff", complete);
 }
 
 void load(pe_config::AllLongReads& p, boost::property_tree::ptree const& pt,
