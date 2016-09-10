@@ -24,7 +24,7 @@ class EdgeIndex: public omnigraph::GraphActionHandler<Graph> {
 
 public:
     typedef typename Graph::EdgeId EdgeId;
-    using InnerIndex = KmerFreeEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, DefaultStoring>;
+    using InnerIndex = KmerFreeEdgeIndex<Graph, DefaultStoring>;
     typedef Graph GraphT;
     typedef typename InnerIndex::KMer KMer;
     typedef typename InnerIndex::KMerIdx KMerIdx;

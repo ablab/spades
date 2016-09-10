@@ -64,9 +64,11 @@ stream &operator<<(stream &s, const EdgeInfo<IdType> &info) {
     return s << "EdgeInfo[" << info.edge_id << ", " << info.offset << ", " << info.count << "]";
 }
 
-template<class Graph, class Seq = runtime_k::RtSeq, class traits = kmer_index_traits<Seq>, class StoringType = DefaultStoring>
-class KmerFreeEdgeIndex : public KeyIteratingMap<Seq, EdgeInfo<typename Graph::EdgeId>, traits, StoringType> {
-    typedef KeyIteratingMap<Seq, EdgeInfo<typename Graph::EdgeId>, traits, StoringType> base;
+template<class Graph, class StoringType = DefaultStoring>
+class KmerFreeEdgeIndex : public KeyIteratingMap<runtime_k::RtSeq, EdgeInfo<typename Graph::EdgeId>,
+        kmer_index_traits<runtime_k::RtSeq>, StoringType> {
+    typedef KeyIteratingMap<runtime_k::RtSeq, EdgeInfo<typename Graph::EdgeId>,
+            kmer_index_traits<runtime_k::RtSeq>, StoringType> base;
     const Graph &graph_;
 
 public:
@@ -138,9 +140,11 @@ public:
     }
 };
 
-template<class Graph, class Seq = runtime_k::RtSeq, class traits = kmer_index_traits<Seq>, class StoringType = DefaultStoring>
-class KmerStoringEdgeIndex : public KeyStoringMap<Seq, EdgeInfo<typename Graph::EdgeId>, traits, StoringType> {
-  typedef KeyStoringMap<Seq, EdgeInfo<typename Graph::EdgeId>, traits, StoringType> base;
+template<class Graph, class StoringType = DefaultStoring>
+class KmerStoringEdgeIndex : public KeyStoringMap<runtime_k::RtSeq, EdgeInfo<typename Graph::EdgeId>,
+        kmer_index_traits<runtime_k::RtSeq>, StoringType> {
+  typedef KeyStoringMap<runtime_k::RtSeq, EdgeInfo<typename Graph::EdgeId>,
+          kmer_index_traits<runtime_k::RtSeq>, StoringType> base;
 
 public:
   typedef typename base::traits_t traits_t;

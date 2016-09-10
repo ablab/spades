@@ -12,7 +12,7 @@
 
 namespace debruijn_graph {
 
-using EdgeIndex = KmerFreeEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>>;
+using EdgeIndex = KmerFreeEdgeIndex<ConjugateDeBruijnGraph>;
 
 template<>
 void EdgeIndexRefiller::Refill(EdgeIndex &index,
