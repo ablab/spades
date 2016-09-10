@@ -215,7 +215,7 @@ class SimultaneousCoverageFiller {
     const CountIndex& count_index_;
     FlankingCoverage<Graph>& flanking_coverage_;
     omnigraph::CoverageIndex<Graph>& coverage_index_;
-    typedef typename CountIndex::Value Value;
+    typedef typename CountIndex::KmerPos Value;
 public:
     SimultaneousCoverageFiller(const Graph& g, const CountIndex& count_index,
                                FlankingCoverage<Graph>& flanking_coverage,
@@ -241,7 +241,7 @@ public:
         for (auto I = count_index_.value_cbegin(), E = count_index_.value_cend();
                 I != E; ++I) {
             const auto& edge_info = *I;
-            VERIFY(edge_info.valid());
+            VERIFY(edge_info.Valid());
             VERIFY(edge_info.edge_id.get() != NULL);
             SimultaneousCoverageCollector<typename CountIndex::storing_type>::CollectCoverage(*this, edge_info);
         }

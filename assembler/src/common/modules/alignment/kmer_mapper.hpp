@@ -47,13 +47,14 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     }
 
 public:
-    KmerMapper(const Graph &g, bool verification_on = true) :
-            base(g, "KmerMapper"), k_(unsigned(g.k() + 1)), mapping_(k_), verification_on_(verification_on), normalized_(false) {
+    KmerMapper(const Graph &g) :
+            base(g, "KmerMapper"),
+            k_(unsigned(g.k() + 1)),
+            mapping_(k_),
+            normalized_(false) {
     }
 
     virtual ~KmerMapper() {}
-
-    unsigned get_k() const { return k_; }
 
     auto begin() const -> decltype(mapping_.begin()) {
         return mapping_.begin();
@@ -78,47 +79,21 @@ public:
         normalized_ = true;
     }
 
-    void Revert(const Kmer &kmer) {
-        Kmer old_value = Substitute(kmer);
-        if (old_value != kmer) {
-            mapping_.erase(kmer);
-            mapping_.set(old_value, kmer);
-            normalized_ = false;
-        }
+    unsigned k() const {
+        return k_;
     }
+
+//    void Revert(const Kmer &kmer) {
+//        Kmer old_value = Substitute(kmer);
+//        if (old_value != kmer) {
+//            mapping_.erase(kmer);
+//            mapping_.set(old_value, kmer);
+//            normalized_ = false;
+//        }
+//    }
 
     void Normalize(const Kmer &kmer) {
         mapping_.set(kmer, Substitute(kmer));
-    }
-
-    bool CheckCanRemap(const Sequence &old_s, const Sequence &new_s) const {
-        if (!CheckAllDifferent(old_s, new_s))
-            return false;
-
-        size_t old_length = old_s.size() - k_ + 1;
-        size_t new_length = new_s.size() - k_ + 1;
-        UniformPositionAligner aligner(old_s.size() - k_ + 1,
-                                       new_s.size() - k_ + 1);
-        Kmer old_kmer = old_s.start<Kmer>(k_);
-        old_kmer >>= 0;
-        for (size_t i = k_ - 1; i < old_s.size(); ++i) {
-            old_kmer <<= old_s[i];
-            size_t old_kmer_offset = i - k_ + 1;
-            size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
-            if (old_kmer_offset * 2 + 1 == old_length && new_length % 2 == 0) {
-                Kmer middle(k_ - 1, new_s, new_length / 2);
-                if (typename Kmer::less2()(middle, !middle)) {
-                    new_kmer_offest = new_length - 1 - new_kmer_offest;
-                }
-            }
-            Kmer new_kmer(k_, new_s, new_kmer_offest);
-            if (mapping_.count(new_kmer)) {
-                if (Substitute(new_kmer) != old_kmer) {
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
     void RemapKmers(const Sequence &old_s, const Sequence &new_s) {
@@ -127,32 +102,38 @@ public:
         size_t new_length = new_s.size() - k_ + 1;
         UniformPositionAligner aligner(old_s.size() - k_ + 1,
                                        new_s.size() - k_ + 1);
-        Kmer old_kmer = old_s.start<Kmer>(k_);
-
+        Kmer old_kmer = old_s.start<Kmer>(k_) >> 'A';
+        typename Kmer::less2 kmer_less;
         for (size_t i = k_ - 1; i < old_s.size(); ++i) {
-            // Instead of shifting right
-            if (i != k_ - 1) {
-                old_kmer <<= old_s[i];
-            }
+            old_kmer <<= old_s[i];
+
+            // Checking if already have info for this kmer
+            if (mapping_.count(old_kmer))
+                continue;
 
             size_t old_kmer_offset = i - k_ + 1;
             size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
             if (old_kmer_offset * 2 + 1 == old_length && new_length % 2 == 0) {
                 Kmer middle(k_-1, new_s, new_length / 2);
-                if (typename Kmer::less2()(middle, !middle)) {
+                if (kmer_less(middle, !middle)) {
                     new_kmer_offest = new_length - 1 - new_kmer_offest;
                 }
             }
             Kmer new_kmer(k_, new_s, new_kmer_offest);
+            if (old_kmer == new_kmer)
+                continue;
+
             if (mapping_.count(new_kmer)) {
-                if (verification_on_)
-                    VERIFY(Substitute(new_kmer) == old_kmer);
-                mapping_.erase(new_kmer);
+                // Special case of remapping back.
+                // Not sure that we actually need it
+                if (Substitute(new_kmer) == old_kmer)
+                    mapping_.erase(new_kmer);
+                else
+                    continue;
             }
-            if (old_kmer != new_kmer) {
-                mapping_.set(old_kmer, new_kmer);
-                normalized_ = false;
-            }
+
+            mapping_.set(old_kmer, new_kmer);
+            normalized_ = false;
         }
     }
 

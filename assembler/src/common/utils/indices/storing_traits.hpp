@@ -54,20 +54,19 @@ struct InvertableStoring {
     template<class K, class V, class F = default_inverter<V>>
     static V get_value(const ValueArray<V> &values, const K& key,
                        const F& inverter = F()) {
-        if(key.is_minimal())
+        if (key.is_minimal())
             return values[key.idx()];
         else
             return inverter(values[key.idx()], key);
     }
 
     template<class K, class V, class F = default_inverter<V>>
-    static void set_value(ValueArray<V> &values, const K& key, const V& value,
+    static void set_value(ValueArray<V>& values, const K& key, const V& value,
                           const F& inverter = F()) {
-	VERIFY(key.idx() < values.size());
-        if(key.is_minimal()) {
-            	values[key.idx()] = value;
-	}
-        else {
+        VERIFY(key.idx() < values.size());
+        if (key.is_minimal()) {
+            values[key.idx()] = value;
+        } else {
             values[key.idx()] = inverter(value, key);
         }
     }

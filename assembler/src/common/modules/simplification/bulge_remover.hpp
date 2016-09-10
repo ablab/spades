@@ -136,8 +136,6 @@ class BulgeGluer {
 
         TRACE("Process bulge " << path.size() << " edges");
 
-        //fixme remove after checking results
-        bool flag = false;
         VERIFY(bulge_prefix_lengths.back() == g_.length(edge));
 
         for (size_t i = 0; i < path.size(); ++i) {
@@ -158,18 +156,15 @@ class BulgeGluer {
                     edge_to_split = split_result.second;
 
                     TRACE("GlueEdges " << g_.str(split_result.first));
-                    flag = true;
                     g_.GlueEdges(split_result.first, path[i]);
 
                 } else {
                     TRACE("GlueEdges " << g_.str(edge_to_split));
-                    flag = true;
                     g_.GlueEdges(edge_to_split, path[i]);
                 }
             }
             prev_length = bulge_prefix_lengths[i];
         }
-        VERIFY(flag);
     }
 
 public:

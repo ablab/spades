@@ -20,8 +20,10 @@ struct EdgeInfo {
     unsigned offset;
     unsigned count;
 
-    EdgeInfo(IdType edge_id_ = IdType(), unsigned offset_ = -1u, unsigned count_ = 0) :
-            edge_id(edge_id_), offset(offset_), count(count_) { }
+    EdgeInfo(IdType edge_id_ = IdType(), unsigned offset_ = unsigned(-1), unsigned count_ = 0) :
+            edge_id(edge_id_), offset(offset_), count(count_) {
+        VERIFY(clean());
+    }
 
     template<class KWH>
     EdgeInfo conjugate(const KWH &kwh) const {
@@ -29,19 +31,31 @@ struct EdgeInfo {
     }
 
     EdgeInfo conjugate(size_t k) const {
-        if(!valid()) {
+        if(!Valid()) {
             return EdgeInfo(IdType(0), unsigned(-1), count);
         } else {
             return EdgeInfo(edge_id->conjugate(), (unsigned)edge_id->length(k) - offset, count);
         }
     }
 
-    void invalidate() {
+    void clear() {
         offset = unsigned(-1);
     }
 
-    bool valid() const {
-        return offset != unsigned(-1);
+    bool clean() const {
+        return offset == unsigned(-1);
+    }
+
+    void remove() {
+        offset = unsigned(-2);
+    }
+
+    bool removed() const {
+        return offset == unsigned(-2);
+    }
+
+    bool Valid() const {
+        return !clean() && !removed();
     }
 };
 
@@ -63,7 +77,7 @@ public:
     typedef Graph GraphT;
     typedef typename Graph::EdgeId IdType;
     typedef typename base::KeyWithHash KeyWithHash;
-    typedef EdgeInfo<typename Graph::EdgeId> Value;
+    typedef EdgeInfo<typename Graph::EdgeId> KmerPos;
     using base::valid;
     using base::ConstructKWH;
 
@@ -80,10 +94,9 @@ public:
         if (!valid(kwh))
             return false;
 
-        Value entry = base::get_value(kwh);
-        if (entry.offset == -1u)
+        KmerPos entry = base::get_value(kwh);
+        if (!entry.Valid())
             return false;
-
         return graph_.EdgeNucls(entry.edge_id).contains(kwh.key(), entry.offset);
     }
 
@@ -91,9 +104,15 @@ public:
         if (!valid(kwh))
             return;
         
-        auto &entry = this->get_raw_value_reference(kwh);
-        if (!entry.valid() || contains(kwh)) {
-            this->put_value(kwh, Value(id, (unsigned)offset, entry.count));
+        KmerPos &entry = this->get_raw_value_reference(kwh);
+        if (entry.removed())
+            return;
+        if (entry.clean()) {
+            this->put_value(kwh, KmerPos(id, (unsigned)offset, entry.count));
+        } else if (contains(kwh)) {
+            entry.remove();
+        } else {
+            //FIXME bad situation; some other kmer is there; think of putting verify
         }
     }
 
@@ -131,7 +150,7 @@ public:
   typedef Graph GraphT;
   typedef typename Graph::EdgeId IdType;
   typedef typename base::KeyWithHash KeyWithHash;
-  typedef EdgeInfo<typename Graph::EdgeId> Value;
+  typedef EdgeInfo<typename Graph::EdgeId> KmerPos;
   using base::valid;
   using base::ConstructKWH;
 
@@ -147,7 +166,7 @@ public:
   bool contains(const KeyWithHash &kwh) const {
       if (!base::valid(kwh))
           return false;
-      return this->get_raw_value_reference(kwh).valid();
+      return this->get_raw_value_reference(kwh).Valid();
   }
 
   template<class Writer>
@@ -171,11 +190,17 @@ public:
           reader.read((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
       this->BinReadKmers(reader, FileName);
   }
+
   void PutInIndex(KeyWithHash &kwh, IdType id, size_t offset) {
-      if (valid(kwh)) {
-          auto &entry = this->get_raw_value_reference(kwh);
-          if (!entry.valid() || contains(kwh)) {
-              this->put_value(kwh, Value(id, (unsigned)offset, entry.count));
+      //here valid already checks equality of query-kmer and stored-kmer sequences
+      if (base::valid(kwh)) {
+          KmerPos &entry = this->get_raw_value_reference(kwh);
+          if (entry.removed())
+              return;
+          if (!entry.clean()) {
+              this->put_value(kwh, KmerPos(id, (unsigned)offset, entry.count));
+          } else {
+              entry.remove();
           }
       }
   }

@@ -28,7 +28,7 @@ public:
     typedef Graph GraphT;
     typedef typename InnerIndex::KMer KMer;
     typedef typename InnerIndex::KMerIdx KMerIdx;
-    typedef typename InnerIndex::Value Value;
+    typedef typename InnerIndex::KmerPos Value;
 
 private:
     InnerIndex inner_index_;

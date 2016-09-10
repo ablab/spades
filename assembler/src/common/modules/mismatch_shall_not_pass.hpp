@@ -215,20 +215,14 @@ private:
             edge = tmp.first;
             mismatch = tmp.second;
         }
-        const Sequence &s_mm = gp_.g.EdgeNucls(mismatch);
+        Sequence s_mm = gp_.g.EdgeNucls(mismatch);
         Sequence correct = s_mm.Subseq(0, gp_.g.k()) + Sequence(string(1, nucl)) +
                            s_mm.Subseq(gp_.g.k() + 1, gp_.g.k() * 2 + 1);
-        if (!gp_.kmer_mapper.CheckCanRemap(s_mm, correct)) {
-            return edge;
-        }
+
         VERIFY(nucl != s_mm[gp_.g.k()]);
         EdgeId correct_edge = gp_.g.AddEdge(gp_.g.EdgeStart(mismatch), gp_.g.EdgeEnd(mismatch), correct);
-        if (position > gp_.g.k()) {
-            gp_.g.GlueEdges(mismatch, correct_edge);
-            return edge;
-        } else {
-            return gp_.g.GlueEdges(mismatch, correct_edge);
-        }
+        EdgeId glued = gp_.g.GlueEdges(mismatch, correct_edge);
+        return position > gp_.g.k() ? edge : glued;
     }
 
     EdgeId CorrectNucls(EdgeId edge, const std::vector<pair<size_t, char>> &mismatches) {
@@ -305,8 +299,9 @@ private:
     }
 
 public:
-    MismatchShallNotPass(graph_pack &gp, double relative_threshold = 1.5) : gp_(gp), relative_threshold_(
-            relative_threshold) {
+    MismatchShallNotPass(graph_pack &gp, double relative_threshold = 1.5) :
+            gp_(gp),
+            relative_threshold_(relative_threshold) {
         VERIFY(relative_threshold >= 1);
     }
 

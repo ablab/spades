@@ -45,8 +45,8 @@ void SaveKmerMapper(const string& file_name,
     DEBUG("Saving kmer mapper, " << file_name <<" created");
     VERIFY(file.is_open());
 
-    uint32_t k_ = (uint32_t) mapper.get_k();
-    file.write((char *) &k_, sizeof(uint32_t));
+    uint32_t k = (uint32_t) mapper.k();
+    file.write((char *) &k, sizeof(uint32_t));
     mapper.BinWrite(file);
 
     file.close();
@@ -68,7 +68,7 @@ bool LoadKmerMapper(const string& file_name,
     uint32_t k_;
     file.read((char *) &k_, sizeof(uint32_t));
 
-    VERIFY_MSG(k_ == kmer_mapper.get_k(), "Cannot read kmer mapper, different Ks");
+    VERIFY_MSG(k_ == kmer_mapper.k(), "Cannot read kmer mapper, different Ks");
     kmer_mapper.BinRead(file);
 
     file.close();
