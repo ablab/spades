@@ -814,8 +814,8 @@ inline vector<shared_ptr<PathExtender>> MakePBScaffoldingExtenders( ScaffoldingU
                                                          const PathExtendParamsContainer& params,
                                                          const conj_graph_pack& gp,
                                                          vector<PathContainer>& long_reads_paths,
-                                                         const GraphCoverageMap& main_cov_map) {
-    vector<shared_ptr<GraphCoverageMap>> long_reads_cov_map;
+                                                         const GraphCoverageMap& main_cov_map,
+                                                         vector<shared_ptr<GraphCoverageMap>>& long_reads_cov_map) {
     const auto& pset = params.pset;
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer_pb(gp, 500, 0.5);
     vector<shared_ptr<PathExtender>> result;
@@ -1244,9 +1244,9 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
 //TODO: issue to pelaunch refactoring
     vector<PathContainer> long_reads_paths(dataset_info.reads.lib_count());
     ScaffoldingUniqueEdgeStorage unique_storage_pb;
+    vector<shared_ptr<GraphCoverageMap>> long_reads_cov_map;
     if (use_scaffolder_2015_pipeline) {
-        push_back_all(all_libs, MakePBScaffoldingExtenders(unique_storage_pb, dataset_info,
-                                                                   params, gp, long_reads_paths, cover_map));
+        push_back_all(all_libs, MakePBScaffoldingExtenders(unique_storage_pb, dataset_info,  params, gp, long_reads_paths, cover_map,long_reads_cov_map));
     }
 
     //Parameters are subject to change
