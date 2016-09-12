@@ -154,7 +154,10 @@ void load(pe_config::ParamSetT::Scaffolding2015& p, boost::property_tree::ptree 
           bool complete) {
     using config_common::load;
     load(p.autodetect, pt, "autodetect", complete);
-    load(p.min_unique_length, pt, "min_unique_length", complete);
+    load(p.unique_length_lower_bound, pt, "unique_length_lower_bound", complete);
+    load(p.unique_length_upper_bound, pt, "unique_length_upper_bound", complete);
+    load(p.unique_length_step, pt, "unique_length_step", complete);
+    load(p.graph_connectivity_max_edges, pt, "graph_connectivity_max_edges", complete);
     load(p.unique_coverage_variation, pt, "unique_coverage_variation", complete);
     load(p.relative_weight_cutoff, pt, "relative_weight_cutoff", complete);
 }

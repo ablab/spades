@@ -23,6 +23,7 @@ private:
 // multiplicator for the pairs which are connected in graph.
     double graph_connection_bonus_;
     static const int MIN_N_QUANTITY = 10;
+    bool use_graph_connectivity_;
 protected:
 //If path contains no unique edges return -1
     pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path) const;
@@ -36,7 +37,8 @@ public:
                          const ScaffoldingUniqueEdgeStorage& unique_edges,
                          double cl_weight_threshold,
                          double is_scatter_coeff,
-                         double relative_threshold):
+                         double relative_threshold,
+                         bool use_graph_connectivity = true):
             //TODO: constants are subject to reconsider
             ScaffoldingExtensionChooser(g, wc, cl_weight_threshold, is_scatter_coeff),
             lib_connection_condition_(condition),
@@ -45,7 +47,8 @@ public:
             graph_connection_condition_(g, 2 * unique_edges_.GetMinLength(), unique_edges),
             //TODO to config!
             absolute_weight_threshold_(2),
-            graph_connection_bonus_(2) {
+            graph_connection_bonus_(2),
+            use_graph_connectivity_(use_graph_connectivity) {
         INFO("ExtensionChooser2015 created");
     }
 /* @param edges are really not used and left for compatibility

@@ -214,9 +214,14 @@ struct pe_config {
 
         struct Scaffolding2015 {
             bool autodetect;
-            size_t min_unique_length;
             double unique_coverage_variation;
             double relative_weight_cutoff;
+
+            size_t unique_length_upper_bound;
+            size_t unique_length_lower_bound;
+            size_t unique_length_step;
+
+            size_t graph_connectivity_max_edges;
         } scaffolding2015;
 
         struct ScaffoldGraphParamsT {

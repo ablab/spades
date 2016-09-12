@@ -32,9 +32,11 @@ ExtensionChooser::EdgeContainer ExtensionChooser2015::FindNextUniqueEdge(const E
         }
         int gap = lib_connection_condition_->GetMedianGap(from, e);
 
-        auto connected_with = graph_connection_condition_.ConnectedWith(from);
-        if (connected_with.find(e) != connected_with.end()) {
-            sum *= graph_connection_bonus_;
+        if (use_graph_connectivity_) {
+            auto connected_with = graph_connection_condition_.ConnectedWith(from);
+            if (connected_with.find(e) != connected_with.end()) {
+                sum *= graph_connection_bonus_;
+            }
         }
         to_sort.push_back(make_pair(sum, make_pair(e, gap)));
     }

@@ -20,7 +20,7 @@ output_broken_scaffolds     break_gaps
 params {
     multi_path_extend   false
     ; old | 2015 | combined | old_pe_2015
-    scaffolding_mode old
+    scaffolding_mode old_pe_2015
 
     remove_overlaps     true
     cut_all_overlaps  false
@@ -72,8 +72,8 @@ params {
         flank_addition_coefficient -5.9
         flank_multiplication_coefficient 0.97
 
-	    var_coeff 3.0
-	    basic_overlap_coeff 2.0
+        var_coeff 3.0
+        basic_overlap_coeff 2.0
     }
 
     path_cleaning
@@ -97,10 +97,15 @@ params {
 
     scaffolding2015 {
         autodetect      true
-        min_unique_length 10000
         unique_coverage_variation 0.5
         ; (median * (1+variation) > unique > median * (1 - variation))
-	relative_weight_cutoff 2.0
+        relative_weight_cutoff 2.0
+
+        unique_length_upper_bound 2000   ; max(unique_length_upper_bound, max_is(all libs))
+        unique_length_lower_bound 500    ; max(unique_length_lower_bound, unique_length_step)
+        unique_length_step 300
+
+        graph_connectivity_max_edges 200000
     }
 
     scaffold_graph {

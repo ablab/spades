@@ -54,7 +54,7 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgeStorage(ScaffoldingUniqueEdgeS
     }
     INFO ("With length cutoff: " << length_cutoff_ <<", median long edge coverage: " << median_coverage_ << ", and maximal unique coverage: " <<
                                                                                                             relative_coverage_variation_);
-    INFO("Unique edges quantity: " << unique_num << ", unique edges length " << unique_len <<", total edges length" << total_len);
+    INFO("Unique edges quantity: " << unique_num << ", unique edges length " << unique_len <<", total edges length " << total_len);
     if (unique_len * 2 < total_len) {
         WARN("Less than half of genome in unique edges!");
     }

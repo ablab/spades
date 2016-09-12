@@ -611,7 +611,8 @@ inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const config::datase
                                                                 storage,
                                                                 pset.scaffolder_options.cl_threshold,
                                                                 pset.scaffolder_options.var_coeff,
-                                                                pset.scaffolding2015.relative_weight_cutoff);
+                                                                pset.scaffolding2015.relative_weight_cutoff,
+                                                                gp.g.size() <= params.pset.scaffolding2015.graph_connectivity_max_edges);
 
     auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
                                                          pset.scaffolder_options.short_overlap,
@@ -1157,20 +1158,20 @@ inline ScaffoldingUniqueEdgeStorage FillUniqueEdgeStorage(const conj_graph_pack&
     if (autodetect) {
         INFO("Autodetecting unique edge set parameters...");
         //TODO constants
-        size_t min_MP_IS = min_unique_length;
+        size_t max_is = min_unique_length;
         for (size_t i = 0; i < dataset_info.reads.lib_count(); ++i) {
             if (IsForMPExtender(dataset_info.reads[i])) {
-                min_MP_IS = min(min_MP_IS, (size_t) dataset_info.reads[i].data().mean_insert_size);
+                max_is = max(max_is, (size_t) dataset_info.reads[i].data().mean_insert_size);
             }
         }
-        min_unique_length = min_MP_IS;
+        min_unique_length = max_is;
         INFO("Minimal unique edge length set to the smallest MP library IS: " << min_unique_length);
 
         CoverageUniformityAnalyzer coverage_analyzer(gp.g, min_unique_length);
         double median_coverage = coverage_analyzer.CountMedianCoverage();
 //TODO:: constants
         double uniformity_fraction = coverage_analyzer.UniformityFraction(0.5, median_coverage);
-        INFO ("median coverage for edges longer than " << min_unique_length << " is " << median_coverage <<
+        INFO ("Median coverage for edges longer than " << min_unique_length << " is " << median_coverage <<
               " uniformity " << size_t(uniformity_fraction * 100) << "%");
         if (math::gr(uniformity_fraction, 0.8)) {
             uniform_coverage = true;
@@ -1200,7 +1201,7 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
 
     ScaffoldingUniqueEdgeStorage main_unique_storage;
     auto sc_mode = pset.sm;
-    auto min_unique_length = pset.scaffolding2015.min_unique_length;
+    auto min_unique_length = pset.scaffolding2015.unique_length_upper_bound;
     auto unique_variaton = pset.scaffolding2015.unique_coverage_variation;
     bool mp_exists = MPLibsExist(dataset_info);
     bool long_reads_exists = HasLongReads(dataset_info);
@@ -1333,32 +1334,35 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     max_is_right_quantile = FindOverlapLenForStage(exspander_stage, dataset_info);
     size_t max_resolvable_len = max_is_right_quantile;
     PathContainer mp_paths(clone_paths);
+
+    vector<ScaffoldingUniqueEdgeStorage*> unique_storages;
     if (use_scaffolder_2015_pipeline) {
-        //TODO: constants
-        int length_step = 500;
-        vector<ScaffoldingUniqueEdgeStorage> unique_storages(min_unique_length / length_step + 2);
+        size_t length_step = pset.scaffolding2015.unique_length_step;
+        size_t lower_bound = max(pset.scaffolding2015.unique_length_lower_bound, length_step);
+
         ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, min_unique_length, unique_variaton);
-        unique_edge_analyzer.FillUniqueEdgeStorage(unique_storages.front());
+        unique_storages.push_back(new ScaffoldingUniqueEdgeStorage());
+        unique_edge_analyzer.FillUniqueEdgeStorage(*unique_storages.front());
         INFO("Creating main exteders, unique edge length = " << min_unique_length);
-        all_libs = MakeAllExtenders(exspander_stage, dataset_info, params, gp, clone_map, unique_storages.front());
+        all_libs = MakeAllExtenders(exspander_stage, dataset_info, params, gp, clone_map, *unique_storages.front());
 
 
-        int cur_length = (int) min_unique_length - length_step;
-        size_t i = 1;
-        while (cur_length > length_step) {
+        size_t cur_length = min_unique_length - length_step;
+        while (cur_length > lower_bound) {
             INFO("Adding extender with length " << cur_length);
             ScaffoldingUniqueEdgeAnalyzer additional_edge_analyzer(gp, (size_t) cur_length, unique_variaton);
-            additional_edge_analyzer.FillUniqueEdgeStorage(unique_storages[i]);
-            auto additional_extenders = MakeMPExtenders(exspander_stage, dataset_info, params, gp, clone_map, unique_storages[i]);
+            unique_storages.push_back(new ScaffoldingUniqueEdgeStorage());
+            additional_edge_analyzer.FillUniqueEdgeStorage(*unique_storages.back());
+            auto additional_extenders = MakeMPExtenders(exspander_stage, dataset_info, params, gp, clone_map, *unique_storages.back());
             all_libs.insert(all_libs.end(), additional_extenders.begin(), additional_extenders.end());
             cur_length -= length_step;
-            ++i;
         }
-        if ((int) min_unique_length > length_step) {
-            INFO("Adding extender with length " << length_step);
-            ScaffoldingUniqueEdgeAnalyzer additional_edge_analyzer(gp, (size_t) length_step, unique_variaton);
-            additional_edge_analyzer.FillUniqueEdgeStorage(unique_storages.back());
-            auto additional_extenders = MakeMPExtenders(exspander_stage, dataset_info, params, gp, clone_map, unique_storages.back());
+        if (min_unique_length > lower_bound) {
+            INFO("Adding final extender with length " << lower_bound);
+            ScaffoldingUniqueEdgeAnalyzer additional_edge_analyzer(gp, lower_bound, unique_variaton);
+            unique_storages.push_back(new ScaffoldingUniqueEdgeStorage());
+            additional_edge_analyzer.FillUniqueEdgeStorage(*unique_storages.back());
+            auto additional_extenders = MakeMPExtenders(exspander_stage, dataset_info, params, gp, clone_map, *unique_storages.back());
             all_libs.insert(all_libs.end(), additional_extenders.begin(), additional_extenders.end());
         }
         INFO("Total number of extenders is " << all_libs.size());
@@ -1458,6 +1462,9 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
     seeds.DeleteAllPaths();
     mp_paths.DeleteAllPaths();
     polished_paths.DeleteAllPaths();
+
+    for (auto storage : unique_storages)
+       delete storage;
 
     INFO("ExSPAnder repeat resolving tool finished");
 }
