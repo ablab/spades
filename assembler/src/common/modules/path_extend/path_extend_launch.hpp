@@ -632,7 +632,6 @@ inline shared_ptr<SimpleExtender> MakeMPExtender(const config::dataset& dataset_
     const auto& lib = dataset_info.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(lib, gp.g, gp.paired_indices[lib_index]);
 
-    VERIFY_MSG(math::ge(lib.data().pi_threshold, 0.0), "PI threshold should be set");
     SetSingleThresholdForLib(paired_lib, params.pset, lib.data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
@@ -706,7 +705,7 @@ inline shared_ptr<SimpleExtender> MakeRNAExtender(const config::dataset& dataset
                                                   bool investigate_loops) {
     const auto& lib = dataset_info.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(lib, gp.g, gp.clustered_indices[lib_index]);
-    VERIFY_MSG(math::ge(lib.data().pi_threshold, 0.0), "PI threshold should be set");
+
     SetSingleThresholdForLib(paired_lib, params.pset, lib.data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 

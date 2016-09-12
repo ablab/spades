@@ -122,11 +122,11 @@ static bool CollectLibInformation(const conj_graph_pack &gp,
 
     SequencingLibrary &reads = cfg::get_writable().ds.reads[ilib];
     auto &data = reads.data();
-    VERIFY(data.read_length != 0);
     auto paired_streams = paired_binary_readers(reads, false);
 
-    VERIFY(reads.data().read_length != 0);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
+    //Check read length after lib processing since mate pairs a not used until this step
+    VERIFY(reads.data().read_length != 0);
 
     auto pres = pcounter.cardinality();
     edgepairs = (!pres.second ? 64ull * 1024 * 1024 : size_t(pres.first));
