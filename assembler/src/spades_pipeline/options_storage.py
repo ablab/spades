@@ -505,3 +505,10 @@ def enable_truseq_mode():
     correct_scaffolds = True
     run_truseq_postprocessing = True
     only_assembler = True
+
+
+def will_rerun(options):
+    for opt, arg in options:
+        if opt == '--continue' or opt.startswith('--restart-from'):  # checks both --restart-from k33 and --restart-from=k33
+            return True
+    return False

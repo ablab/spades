@@ -186,6 +186,12 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                                       len(options_storage.SHORT_READS_TYPES.keys()) +
                                       len(options_storage.LONG_READS_TYPES))]  # "[{}]*num" doesn't work here!
 
+    # auto detecting SPAdes mode (rna, meta, etc) if it is not a rerun (--continue or --restart-from)
+    if not secondary_filling and not options_storage.will_rerun(options):
+        mode = options_storage.get_mode()
+        if mode is not None:
+            options.append(('--' + mode, ''))
+
     # for parsing options from "previous run command"
     options_storage.continue_mode = False
     options_storage.k_mers = None
@@ -562,11 +568,6 @@ def main(args):
     log.addHandler(console)
 
     support.check_binaries(bin_home, log)
-
-    # auto detecting SPAdes mode (rna, meta, etc)
-    mode = options_storage.get_mode()
-    if mode is not None:
-        args.append('--' + mode)
     
     # parse options and safe all parameters to cfg
     options = args
