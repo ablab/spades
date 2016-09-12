@@ -316,69 +316,69 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
             bwa_counter.ProcessLib(i, cfg::get_writable().ds.reads[i], gp.paired_indices[i],
                                    edge_length_threshold, cfg::get().bwa.min_contig_len);
         } else {
-            INFO("Estimating insert size for library #" << i);
-            const auto &lib_data = lib.data();
-            size_t rl = lib_data.read_length;
-            size_t k = cfg::get().K;
+            if (lib.is_paired()) {
+                INFO("Estimating insert size for library #" << i);
+                const auto &lib_data = lib.data();
+                size_t rl = lib_data.read_length;
+                size_t k = cfg::get().K;
 
-            size_t edgepairs = 0;
-            if (!CollectLibInformation(gp, edgepairs, i, edge_length_threshold)) {
-                cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
-                WARN("Unable to estimate insert size for paired library #" << i);
-                if (rl > 0 && rl <= k) {
-                    WARN("Maximum read length (" << rl << ") should be greater than K (" << k << ")");
-                } else if (rl <= k * 11 / 10) {
-                    WARN("Maximum read length (" << rl << ") is probably too close to K (" << k << ")");
-                } else {
-                    WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
+                size_t edgepairs = 0;
+                if (!CollectLibInformation(gp, edgepairs, i, edge_length_threshold)) {
+                    cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
+                    WARN("Unable to estimate insert size for paired library #" << i);
+                    if (rl > 0 && rl <= k) {
+                        WARN("Maximum read length (" << rl << ") should be greater than K (" << k << ")");
+                    } else if (rl <= k * 11 / 10) {
+                        WARN("Maximum read length (" << rl << ") is probably too close to K (" << k << ")");
+                    } else {
+                        WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
+                    }
+                    continue;
                 }
-                continue;
-            }
 
-            INFO("  Insert size = " << lib_data.mean_insert_size <<
-                 ", deviation = " << lib_data.insert_size_deviation <<
-                 ", left quantile = " << lib_data.insert_size_left_quantile <<
-                 ", right quantile = " << lib_data.insert_size_right_quantile <<
-                 ", read length = " << lib_data.read_length);
+                INFO("  Insert size = " << lib_data.mean_insert_size <<
+                     ", deviation = " << lib_data.insert_size_deviation <<
+                     ", left quantile = " << lib_data.insert_size_left_quantile <<
+                     ", right quantile = " << lib_data.insert_size_right_quantile <<
+                     ", read length = " << lib_data.read_length);
 
-            if (lib_data.mean_insert_size < 1.1 * (double) rl)
-                WARN("Estimated mean insert size " << lib_data.mean_insert_size
-                     << " is very small compared to read length " << rl);
+                if (lib_data.mean_insert_size < 1.1 * (double) rl)
+                    WARN("Estimated mean insert size " << lib_data.mean_insert_size
+                         << " is very small compared to read length " << rl);
 
-            std::unique_ptr<PairedInfoFilter> filter;
-            unsigned filter_threshold = cfg::get().de.raw_filter_threshold;
+                std::unique_ptr<PairedInfoFilter> filter;
+                unsigned filter_threshold = cfg::get().de.raw_filter_threshold;
 
-            // Only filter paired-end libraries
-            if (filter_threshold && lib.type() == io::LibraryType::PairedEnd) {
-                filter.reset(new PairedInfoFilter([](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
-                            uint64_t h1 = e.first.hash();
-                            return CityHash64WithSeeds((const char*)&h1, sizeof(h1), e.second.hash(), seed);
-                        },
-                        12 * edgepairs));
+                // Only filter paired-end libraries
+                if (filter_threshold && lib.type() == io::LibraryType::PairedEnd) {
+                    filter.reset(new PairedInfoFilter([](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
+                                uint64_t h1 = e.first.hash();
+                                return CityHash64WithSeeds((const char*)&h1, sizeof(h1), e.second.hash(), seed);
+                            },
+                            12 * edgepairs));
 
-                INFO("Filtering data for library #" << i);
-                {
-                    SequenceMapperNotifier notifier(gp);
-                    DEFilter filter_counter(*filter, gp.g);
-                    notifier.Subscribe(i, &filter_counter);
+                    INFO("Filtering data for library #" << i);
+                    {
+                        SequenceMapperNotifier notifier(gp);
+                        DEFilter filter_counter(*filter, gp.g);
+                        notifier.Subscribe(i, &filter_counter);
 
-                    auto reads = paired_binary_readers(lib, false);
-                    VERIFY(lib.data().read_length != 0);
-                    notifier.ProcessLibrary(reads, i, *ChooseProperMapper(gp, lib));
+                        auto reads = paired_binary_readers(lib, false);
+                        VERIFY(lib.data().read_length != 0);
+                        notifier.ProcessLibrary(reads, i, *ChooseProperMapper(gp, lib));
+                    }
+                }
+
+                INFO("Mapping library #" << i);
+                if (lib.data().mean_insert_size != 0.0) {
+                    INFO("Mapping paired reads (takes a while) ");
+                    ProcessPairedReads(gp, std::move(filter), filter_threshold, i);
                 }
             }
 
-            INFO("Mapping library #" << i);
-            bool map_single_reads = ShouldMapSingleReads(i);
-            cfg::get_writable().use_single_reads |= map_single_reads;
-
-            if (lib.is_paired() && lib.data().mean_insert_size != 0.0) {
-                INFO("Mapping paired reads (takes a while) ");
-                ProcessPairedReads(gp, std::move(filter), filter_threshold, i);
-            }
-
-            if (map_single_reads) {
-                INFO("Mapping single reads (takes a while) ");
+            if (ShouldMapSingleReads(i)) {
+                cfg::get_writable().use_single_reads = true;
+                INFO("Mapping single reads of library #" << i);
                 ProcessSingleReads(gp, i, /*use_binary*/true, /*map_paired*/true);
                 INFO("Total paths obtained from single reads: " << gp.single_long_reads[i].size());
             }

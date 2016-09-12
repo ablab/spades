@@ -18,8 +18,8 @@
 
 namespace debruijn_graph {
 
-void PEResolving(conj_graph_pack& gp) {
-    string scaffolds_name = cfg::get().mode == config::pipeline_type::rna ? "transcripts" : "scaffolds";
+static void PEResolving(conj_graph_pack& gp) {
+    std::string scaffolds_name = cfg::get().mode == config::pipeline_type::rna ? "transcripts" : "scaffolds";
     bool output_broke_scaffolds = cfg::get().mode != config::pipeline_type::rna;
 
     path_extend::PathExtendParamsContainer params(cfg::get().pe_params,
@@ -37,21 +37,23 @@ void PEResolving(conj_graph_pack& gp) {
     path_extend::ResolveRepeatsPe(cfg::get().ds, params, gp);
 }
 
-inline bool HasValidLibs() {
+static bool HasValidLibs() {
     for (const auto& lib : cfg::get().ds.reads) {
-        if (lib.is_repeat_resolvable()) {
-            if (!lib.is_paired() || !math::eq(lib.data().mean_insert_size, 0.0)) {
-                return true;
-            }
+        if (!lib.is_repeat_resolvable())
+            continue;
+
+        if (!lib.is_paired() ||
+            !math::eq(lib.data().mean_insert_size, 0.0)) {
+            return true;
         }
     }
+    
     return false;
 }
 
 void RepeatResolution::run(conj_graph_pack &gp, const char*) {
-    if (cfg::get().developer_mode) {
+    if (cfg::get().developer_mode)
         stats::PrepareForDrawing(gp);
-    }
 
     omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
