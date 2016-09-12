@@ -121,7 +121,7 @@ params {
 
 long_reads {
     pacbio_reads {
-        unique_edge_priority 10000.0
+        unique_edge_priority 10.0
     }
 }
 }
