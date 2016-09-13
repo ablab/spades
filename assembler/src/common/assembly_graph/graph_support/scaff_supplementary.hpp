@@ -5,7 +5,7 @@
 #include "utils/logger/logger.hpp"
 //FIXME
 #include "modules/path_extend/pe_utils.hpp"
-
+#include "modules/path_extend/pe_config_struct.hpp"
 namespace path_extend {
 typedef debruijn_graph::EdgeId EdgeId;
 
@@ -65,7 +65,7 @@ class ScaffoldingUniqueEdgeAnalyzer {
     bool CheckSuffixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const;
     bool CheckPrefixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const;
     bool ConsistentPath(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const;
-    bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map);
+    bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config);
     bool ConservativeByLength(EdgeId e);
     void CheckCorrectness(ScaffoldingUniqueEdgeStorage& unique_storage_pb);
 protected:
@@ -78,7 +78,7 @@ public:
         SetCoverageBasedCutoff();
     }
     void FillUniqueEdgeStorage(ScaffoldingUniqueEdgeStorage &storage_);
-    void FillUniqueEdgesWithLongReads(shared_ptr<GraphCoverageMap>& long_reads_cov_map, ScaffoldingUniqueEdgeStorage& unique_storage_pb);
+    void FillUniqueEdgesWithLongReads(shared_ptr<GraphCoverageMap>& long_reads_cov_map, ScaffoldingUniqueEdgeStorage& unique_storage_pb, const pe_config::LongReads lr_config);
 };
 }
 

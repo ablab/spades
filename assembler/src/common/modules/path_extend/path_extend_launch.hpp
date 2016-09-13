@@ -830,7 +830,8 @@ inline vector<shared_ptr<PathExtender>> MakePBScaffoldingExtenders( ScaffoldingU
 //TODO:: muiltiple libraries?
         for (size_t lib_index = 0 ; lib_index <dataset_info.reads.lib_count(); lib_index++) {
             if (dataset_info.reads[lib_index].type() == io::LibraryType::TSLReads) {
-                unique_edge_analyzer_pb.FillUniqueEdgesWithLongReads(long_reads_cov_map[lib_index], unique_storage_pb);
+
+                unique_edge_analyzer_pb.FillUniqueEdgesWithLongReads(long_reads_cov_map[lib_index], unique_storage_pb, GetLongReadsConfig(params, dataset_info.reads[lib_index].type()));
             }
         }
     } else {

@@ -70,7 +70,7 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByLength(EdgeId e) {
     return gp_.g.length(e) >= length_cutoff_;
 }
 
-bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map) {
+bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config) {
     auto covering_paths = long_reads_cov_map->GetCoveringPaths(e);
     for (auto it1 = covering_paths.begin(); it1 != covering_paths.end(); ++it1) {
         auto pos1 = (*it1)->FindAll(e);
@@ -83,7 +83,11 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<Gra
             if (pos2.size() > 1) {
                 return false;
             }
-
+//TODO do we need absolute threshold?
+//TODO or gluing together paths which differs on only short edges?
+            if ((*it1)->GetWeight() > (*it2)->GetWeight() * lr_config.unique_edge_priority ||
+                (*it2)->GetWeight() > (*it1)->GetWeight() * lr_config.unique_edge_priority)
+                continue;
             if (!ConsistentPath(**it1, pos1[0], **it2, pos2[0])) {
                 return false;
             }
@@ -108,10 +112,10 @@ void ScaffoldingUniqueEdgeAnalyzer::CheckCorrectness(ScaffoldingUniqueEdgeStorag
     }
 }
 
-void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(shared_ptr<GraphCoverageMap>& long_reads_cov_map, ScaffoldingUniqueEdgeStorage& unique_storage_pb) {
+void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(shared_ptr<GraphCoverageMap>& long_reads_cov_map, ScaffoldingUniqueEdgeStorage& unique_storage_pb, const pe_config::LongReads lr_config) {
     for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
         EdgeId e = *iter;
-        if (ConservativeByLength(e) && ConservativeByPaths(e, long_reads_cov_map)) {
+        if (ConservativeByLength(e) && ConservativeByPaths(e, long_reads_cov_map, lr_config)) {
             unique_storage_pb.unique_edges_.insert(e);
         }
     }
