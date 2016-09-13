@@ -85,6 +85,8 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<Gra
             }
 //TODO do we need absolute threshold?
 //TODO or gluing together paths which differs on only short edges?
+            if ((*it1)->GetWeight() == 1 || (*it2)->GetWeight() == 1)
+                continue;
             if ((*it1)->GetWeight() > (*it2)->GetWeight() * lr_config.unique_edge_priority ||
                 (*it2)->GetWeight() > (*it1)->GetWeight() * lr_config.unique_edge_priority)
                 continue;
