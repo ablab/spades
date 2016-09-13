@@ -30,7 +30,7 @@ class CloseGapsCorrector : public AbstractContigCorrector{
             if(i == gap_index[current_gap]){
                 VertexId start = g_.EdgeEnd(cur_edge);
                 VertexId end = g_.EdgeStart(path[i + 1]);
-                auto dijkstra = DijkstraHelper<Graph>::CreateTargeredBoundedDijkstra(g_,
+                auto dijkstra = DijkstraHelper<Graph>::CreateTargetedBoundedDijkstra(g_,
                         end, dsp_cfg::get().pbr.max_bulge_nucls_len); //DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, dsp_cfg::get().pbr.max_bulge_nucls_len);
                 dijkstra.Run(start);
                 if(dijkstra.DistanceCounted(end)){

@@ -145,14 +145,14 @@ public:
             LengthCalculator<Graph>,
             BoundedVertexTargetedProcessChecker<Graph>,
             BoundPutChecker<Graph>,
-            ForwardNeighbourIteratorFactory<Graph> > TargeredBoundedDijkstraSettings;
+            ForwardNeighbourIteratorFactory<Graph> > TargetedBoundedDijkstraSettings;
 
-    typedef Dijkstra<Graph, TargeredBoundedDijkstraSettings> TargeredBoundedDijkstra;
+    typedef Dijkstra<Graph, TargetedBoundedDijkstraSettings> TargetedBoundedDijkstra;
 
-    static TargeredBoundedDijkstra CreateTargeredBoundedDijkstra(const Graph &graph,
+    static TargetedBoundedDijkstra CreateTargetedBoundedDijkstra(const Graph &graph,
             VertexId target_vertex, size_t bound, size_t max_vertex_number = size_t(-1)){
-        return TargeredBoundedDijkstra(graph,
-                TargeredBoundedDijkstraSettings(LengthCalculator<Graph>(graph),
+        return TargetedBoundedDijkstra(graph,
+                TargetedBoundedDijkstraSettings(LengthCalculator<Graph>(graph),
                         BoundedVertexTargetedProcessChecker<Graph>(target_vertex, bound),
                         BoundPutChecker<Graph>(bound),
                         ForwardNeighbourIteratorFactory<Graph>(graph)),
