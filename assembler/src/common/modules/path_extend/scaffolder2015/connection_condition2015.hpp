@@ -61,6 +61,9 @@ protected:
 //Minimal number of reads to call connection sound
     size_t min_read_count_;
     const GraphCoverageMap& cov_map_;
+
+    bool CheckPath(BidirectionalPath *path, EdgeId e1, EdgeId e2) const;
+
 public:
 //Only paired info with gap between e1 and e2 between -left_dist_delta_ and right_dist_delta_ taken in account
 
@@ -72,6 +75,7 @@ public:
     map<EdgeId, double> ConnectedWith(EdgeId e, const ScaffoldingUniqueEdgeStorage& storage) const override;
 // Returns median gap size
     int GetMedianGap (EdgeId e1, EdgeId e2) const override;
+
 };
 
 

@@ -59,6 +59,18 @@ map<debruijn_graph::EdgeId, double> LongReadsLibConnectionCondition::ConnectedWi
     return map <debruijn_graph::EdgeId, double>();
 };
 
+bool LongReadsLibConnectionCondition::CheckPath(BidirectionalPath *path, EdgeId e1, EdgeId e2) const {
+    auto pos1 = path->FindAll(e1);
+    if (pos1.size() != 1) return false;
+    auto pos2 = path->FindAll(e2);
+    if (pos2.size() != 1) {
+        INFO("Something went wrong:: Edge " << graph_.int_id(e2) << "is called unique but presents in path twice!");
+        return false;
+    }
+    if (pos1[0] == path->Size() - 1) return false;
+    return true;
+}
+
 map<debruijn_graph::EdgeId, double> LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeId e, const ScaffoldingUniqueEdgeStorage& storage) const {
     map <debruijn_graph::EdgeId, double> res;
     auto cov_paths = cov_map_.GetCoveringPaths(e);
@@ -73,7 +85,9 @@ map<debruijn_graph::EdgeId, double> LongReadsLibConnectionCondition::ConnectedWi
         pos++;
         while (pos < path->Size()){
             if (storage.IsUnique(path->At(pos))) {
-                res[path->At(pos)] += path->GetWeight();
+                if (CheckPath(path, path->At(pos), path->At(pos1[0]))) {
+                    res[path->At(pos)] += path->GetWeight();
+                }
                 break;
             }
             pos++;
@@ -96,12 +110,11 @@ int LongReadsLibConnectionCondition::GetMedianGap(debruijn_graph::EdgeId e1, deb
     auto cov_paths = cov_map_.GetCoveringPaths(e1);
     std::vector<pair<int, double> > h;
     for (const auto path: cov_paths) {
-        auto pos1 = path->FindAll(e1);
-        if (pos1.size() != 1) continue;
-        auto pos2 = path->FindAll(e2);
-        if (pos2.size() != 1) continue;
-        if (pos1[0] == path->Size()) continue;
-        h.push_back(make_pair(path->LengthAt(pos1[0] + 1) - path->LengthAt(pos2[0]), path->GetWeight()));
+        if (CheckPath(path, e1, e2)) {
+            auto pos1 = path->FindAll(e1);
+            auto pos2 = path->FindAll(e2);
+            h.push_back(make_pair(path->LengthAt(pos1[0] + 1) - path->LengthAt(pos2[0]), path->GetWeight()));
+        }
     }
     std::sort(h.begin(), h.end());
     double sum = 0.0;
@@ -115,6 +128,11 @@ int LongReadsLibConnectionCondition::GetMedianGap(debruijn_graph::EdgeId e1, deb
         if (sum2 * 2 > sum)
             break;
     }
+    if (h.size() == 0) {
+        WARN("filtering incorrectness");
+        return 0;
+    }
+
     return h[i].first;
 }
 
@@ -169,6 +187,7 @@ int PairedLibConnectionCondition::GetMedianGap(debruijn_graph::EdgeId e1, debrui
     lib_->CountDistances(e1, e2, distances, weights);
     std::vector<pair<int, double> >h(distances.size());
     for (size_t i = 0; i< distances.size(); i++) {
+//TODO:: we make same checks twice! That's bad
         if (distances[i] >= e_length - left_dist_delta_ && distances[i] <= e_length + right_dist_delta_)
             h.push_back(std::make_pair(distances[i], weights[i]));
     }
@@ -184,6 +203,10 @@ int PairedLibConnectionCondition::GetMedianGap(debruijn_graph::EdgeId e1, debrui
         sum2 += h[i].second;
         if (sum2 * 2 > sum)
             break;
+    }
+    if (h.size() == 0) {
+        WARN("filtering incorrectness");
+        return 0;
     }
     return (int) round(h[i].first - e_length);
 }
