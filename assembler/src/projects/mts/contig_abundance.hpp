@@ -3,15 +3,13 @@
 namespace debruijn_graph {
 
 static const uint INVALID_MPL = uint(-1);
-//TODO get rid of MAX_SAMPLE_CNT
-static const uint MAX_SAMPLE_CNT = 20;
 typedef uint Mpl;
-typedef typename std::array<Mpl, MAX_SAMPLE_CNT> MplVector;
-typedef typename std::array<double, MAX_SAMPLE_CNT> AbundanceVector;
+typedef typename std::vector<Mpl> MplVector;
+typedef typename std::vector<double> AbundanceVector;
 
 template<class CovVecs>
 AbundanceVector MeanVector(const CovVecs& cov_vecs, size_t sample_cnt) {
-    AbundanceVector answer;
+    AbundanceVector answer(sample_cnt, 0.);
 
     for (const auto& cov_vec : cov_vecs) {
         for (size_t i = 0; i < sample_cnt; ++i) {
@@ -57,7 +55,7 @@ class SingleClusterAnalyzer {
     }
 
     MplVector MedianVector(const std::vector<MplVector>& kmer_mpls) const {
-        MplVector answer;
+        MplVector answer(sample_cnt_, 0);
         for (size_t i = 0; i < sample_cnt_; ++i) {
             answer[i] = SampleMedian(kmer_mpls, i);
         }
@@ -103,11 +101,8 @@ public:
 
     boost::optional<AbundanceVector> operator()(const std::vector<MplVector>& kmer_mpls) const {
         auto med = MedianVector(kmer_mpls);
-        AbundanceVector answer;
-        for (size_t i = 0; i < sample_cnt_; ++i) {
-            answer[i] = (double) med[i];
-        }
-        return boost::optional<AbundanceVector>(answer);
+        return AbundanceVector(med.begin(), med.end());
+        //return boost::optional<AbundanceVector>(answer);
         //MplVector center = MedianVector(kmer_mpls);
         //auto locality = CloseKmerMpls(kmer_mpls, center);
 
@@ -164,7 +159,7 @@ class ContigAbundanceCounter {
     void FillMplMap(const std::string& kmers_mpl_file) {
         //INFO("Fill start");
         for (auto it = kmer_mpl_.value_begin(); it != kmer_mpl_.value_end(); ++it) {
-            it->fill(INVALID_MPL);
+            it->resize(sample_cnt_, INVALID_MPL);
         }
         std::ifstream kmers_in(kmers_mpl_file + ".kmer", std::ios::binary);
         //std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl", std::ios::binary);
@@ -182,8 +177,7 @@ class ContigAbundanceCounter {
 //            conj_graph_pack::seq_t kmer(k_, kmer_str.c_str());
 //            kmer = gp_.kmer_mapper.Substitute(kmer);
 
-            MplVector mpls;
-            mpls.fill(INVALID_MPL);
+            MplVector mpls(sample_cnt_, INVALID_MPL);
             for (size_t i = 0; i < sample_cnt_; ++i) {
 //                kmers_mpl_in.read((char*) &kmer_mpl[i], sizeof(uint));
                 kmers_mpl_in >> mpls[i];
