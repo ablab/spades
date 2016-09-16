@@ -21,12 +21,8 @@ THREADS = config.get("THREADS", 16)
 #Path to saves of necessary assembly stage
 SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(K)
 
-#Flag files for stages completion
-FINISHED_BINNING = "binning/all.log"
-FINISHED_CHOOSING = "binning/choose_all.log"
-
 #Autodetect samples and their reads
-SAMPLE_DIRS = set(glob_wildcards(IN + "/{sample,sample\d+}")[0])
+SAMPLE_DIRS = set(glob_wildcards(os.path.join(IN, "{sample,sample\d+}"))[0])
 SAMPLE_COUNT = len(SAMPLE_DIRS)
 SAMPLES = list()
 for i in range(1, SAMPLE_COUNT + 1):
@@ -43,29 +39,21 @@ def sample_reads(dir, wildcards):
 left_reads  = functools.partial(sample_reads, 0)
 right_reads = functools.partial(sample_reads, 1)
 
-#Autodetect bins
-CAGS, = glob_wildcards("binning/{cag,CAG\d+}")
-CAGS.sort()
-GOOD_CAGS, = glob_wildcards("binning/{cag,CAG\d+}/left.fastq")
-GOOD_CAGS.sort()
-
 onstart:
     try:
         os.mkdir("tmp")
     except:
         pass
     print("Detected", SAMPLE_COUNT, "samples in", IN)
-    if GOOD_CAGS:
-        print("Detected good (abundant) CAGs:", " ".join(GOOD_CAGS))
 
 # ---- Main pipeline -----------------------------------------------------------
 
 rule all:
-    input:   FINISHED_BINNING
+    input:   dynamic("reassembly/{cag}.fasta")
     message: "Dataset of {SAMPLE_COUNT} samples from {IN} has been processed."
 
 rule assemble:
-    input:   left = left_reads, right = right_reads
+    input:   left=left_reads, right=right_reads
     output:  "assembly/{sample,sample\d+}.fasta"
     params:  "assembly/{sample}"
     log:     "assembly/{sample}.log"
@@ -143,8 +131,9 @@ rule canopy_post:
 rule binning:
     input:   contigs="assembly/{sample}.fasta", ann="annotation/{sample}.ann",
              left=left_reads, right=right_reads
-    output:  "propagation/{sample}_edges.ann", "propagation/{sample}_edges.fasta"
-    params:  saves="assembly/{sample}/" + SAVES, splits="assembly/{sample}_splits.fasta",
+    output:  "propagation/{sample}_edges.ann"
+    params:  saves=os.path.join("assembly/{sample}/", SAVES),
+             splits="assembly/{sample}_splits.fasta",
              out="propagation/{sample}_edges"
     log:     "binning/{sample}.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
@@ -152,32 +141,19 @@ rule binning:
              " -a {input.ann} -f {params.splits} -l {input.left} -r {input.right}"
              " -o binning -n {wildcards.sample} -d {params.out} >{log} 2>&1"
 
-#Mock rule just for simplifying M-to-N dependencies in the stage graph
-rule binning_all:
-    input:   expand("propagation/{sample}_edges.ann", sample=SAMPLES)
-    output:  touch(FINISHED_BINNING)
-    message: "Binned all samples"
-
 rule choose_samples:
-    input:   flag=FINISHED_BINNING, prof=rules.canopy.output.prof
-    #It's impossible to output "binning/{cag}/left.fastq", "binning/{cag}/right.fastq"
-    #because the CAG can be filtered out
-    output:  touch("binning/{cag,CAG\d+}.log")
-    params:  cag="{cag}", dir="binning/{cag}"
-    log:     "binning/choose_{cag}.log"
-    message: "Choosing samples for {params.cag}"
-    shell:   "{SCRIPTS}/choose_samples.py {params.cag} {input.prof} {params.dir} >{output} 2>&1"
+    input:   binned=expand("propagation/{sample}_edges.ann", sample=SAMPLES),
+             prof=rules.canopy.output.prof
+    output:  dynamic("binning/{cag}/left.fastq"),
+             dynamic("binning/{cag}/right.fastq")
+    log:     "binning/choose_samples.log"
+    message: "Choosing samples for all CAGs"
+    shell:   "{SCRIPTS}/choose_samples.py {input.prof} binning/ >{log} 2>&1"
 
-#Launch this AFTER 'all'
-rule choose_all:
-    input:   expand("binning/{cag}.log", cag=CAGS)
-    output:  touch(FINISHED_CHOOSING)
-    message: "Filtered all CAGs"
-
-rule generate_yaml:
-    input:   FINISHED_CHOOSING
+rule reassembly_config:
+    input:   "binning/{cag}/left.fastq"
     output:  "reassembly/{cag}.yaml"
-    message: "Generated config file for reassembly"
+    message: "Generated config file for reassembly of {wildcards.cag}"
     run:
         with open(output[0], "w") as outfile:
             conf = {"k": SMALL_K, "sample_cnt": SAMPLE_COUNT,
@@ -197,8 +173,3 @@ rule reassemble:
              " --pe1-1 {input.left} --pe1-2 {input.right} --pe1-ff"
              " -o {params} --series-analysis {input.config} >{log} 2>&1 && "
              "cp {params}/scaffolds.fasta {output}"
-
-#Launch this AFTER 'choose_all'
-rule reassemble_all:
-    input:   expand("reassembly/{cag}.fasta", cag=GOOD_CAGS)
-    message: "Reassembled reads for all bins"

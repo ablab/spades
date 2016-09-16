@@ -18,6 +18,7 @@ try:
 except KeyError:
     QUAST = "quast"
     METAQUAST = "metaquast"
+MIN_CONTIG_LENGTH = int(config.get("MIN_CONTIG_LENGTH", 2000))
 THREADS = config.get("THREADS", 16)
 
 #Autodetect samples and their reads
@@ -51,9 +52,6 @@ onstart:
     if REFS:
         print("Detected references:", " ".join(REFS))
 
-subworkflow pipeline:
-    snakefile: "Snakefile"
-
 #===============================================================================
 #---- Statistics section -------------------------------------------------------
 #===============================================================================
@@ -81,12 +79,12 @@ rule filter_all_samples:
 rule combine_filtered:
     input:   contigs=expand("assembly/{sample}.fasta", sample=SAMPLES),
              filters=expand("stats/{{ref}}/{sample}.cont", sample=SAMPLES)
-    output:  "stats/{ref}/{sample}.fasta"
+    output:  "stats/{ref}.fasta"
     message: "Gathering all interesting contigs for {wildcards.ref} into a single assembly"
     shell:   "{SCRIPTS}/filter_contigs.py {SAMPLE_COUNT} {output} {input.contigs} {input.filters}"
 
 rule quast_combined:
-    input:   ref=ref_path, contigs="summary/{ref}.fasta"
+    input:   ref=ref_path, contigs="stats/{ref}.fasta"
     output:  "stats/q_{ref}_all/report.tsv"
     params:  "stats/q_{ref}_all"
     log:     "stats/q_{ref}_all.log"
@@ -192,14 +190,6 @@ rule stats_reassembly:
     message: "Gathered bins purity"
     shell:   "Rscript {SCRIPTS}/purity.R {params} {output}"
 
-# # Don't run this
-# rule neat_table:
-#     input:   "stats/q_split_prelim.log"
-#     output:  "stats/summary/table.tsv"
-#     params:  dir="stats/q_split_prelim", refs=" ".join(REFS)
-#     message: "Formatting a human-readable table from results"
-#     shell:   "{SCRIPTS}/format_table.py {output} {params.dir} {params.refs}"
-
 #---- Propagator statistics ----------------------------------------------------
 rule prop_stats:
     input:   prelim="annotation/{sample}.ann", prop="annotation/{sample}_edges.ann",
@@ -219,7 +209,7 @@ rule prop_stats_all:
 
 #---- PCA ----------------------------------------------------------------------
 rule pca:
-    input:   pipeline("profile/canopy.in"), pipeline("profile/canopy.out"), "{sample}.cont"
+    input:   "profile/canopy.in", "profile/canopy.out", "{sample}.cont"
     output:  "stats/{sample}.png"
     message: "Doing some visualization"
     shell:
@@ -237,6 +227,6 @@ rule combine_contigs:
 
 # Run this
 rule pca_total:
-    input:   pipeline("profile/canopy.in"), pipeline("profile/canopy.out"), "stats/total.cont"
+    input:   "profile/canopy.in", "profile/canopy.out", "stats/total.cont"
     output:  "stats/summary/pca.png"
     shell:   "Rscript {SCRIPTS}/pca.R {input} {output}"
