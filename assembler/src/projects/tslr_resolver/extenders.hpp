@@ -197,7 +197,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             }
 
             //todo configs
-            if (mapper_-> GetSizeTails(decisive_edge) > 200) {
+            if (mapper_-> GetSizeTails(decisive_edge) > 400) {
                 DEBUG("Too many barcodes mapped to the decisive edge")
                 return;
             }
