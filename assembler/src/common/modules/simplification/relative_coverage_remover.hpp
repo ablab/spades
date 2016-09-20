@@ -380,10 +380,14 @@ public:
     }
 
     EdgeId operator()(EdgeId e) {
-        VERIFY(g_.length(e) > 1);
-        pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, 1);
-        edge_remover_.DeleteEdge(split_res.first);
-        return split_res.first;
+        if (g_.length(e) > 1) {
+            pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, 1);
+            edge_remover_.DeleteEdge(split_res.first);
+            return split_res.first;
+        } else {
+            edge_remover_.DeleteEdge(e);
+            return e;
+        }
     }
 };
 
