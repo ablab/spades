@@ -423,9 +423,8 @@ protected:
         DEBUG("Local flanking coverage - " << coverage_edge_around_v);
         DEBUG("Max local coverage incoming  - " << rel_helper_.MaxLocalCoverage(this->g().IncomingEdges(v), v));
         DEBUG("Max local coverage outgoing  - " << rel_helper_.MaxLocalCoverage(this->g().OutgoingEdges(v), v));
-        if (this->g().length(edge) > 1 &&
-                rel_helper_.CheckAnyHighlyCovered(this->g().IncomingEdges(v), v, coverage_edge_around_v) &&
-                rel_helper_.CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, coverage_edge_around_v)) {
+        if (rel_helper_.CheckAnyHighlyCovered(this->g().IncomingEdges(v), v, coverage_edge_around_v) &&
+            rel_helper_.CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, coverage_edge_around_v)) {
             DEBUG("Disconnecting");
             disconnector_(edge);
             cnt_++;
