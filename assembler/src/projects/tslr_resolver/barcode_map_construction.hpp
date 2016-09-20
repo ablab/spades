@@ -26,6 +26,8 @@ namespace spades {
             INFO("Barcode map construction started...");
             graph_pack.barcode_mapper = std::make_shared<HeadTailBarcodeMapper<SimpleBarcodeEntry>>
                     (graph_pack.g, cfg::get().ts_res.edge_tail_len);
+            graph_pack.EnsureIndex();
+            graph_pack.EnsureBasicMapping();
             graph_pack.barcode_mapper->FillMap(tslr_dataset_, graph_pack.index, graph_pack.kmer_mapper);
             INFO("Barcode map construction finished.");
             INFO("Average barcode coverage: " +

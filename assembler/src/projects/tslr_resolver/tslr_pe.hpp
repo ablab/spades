@@ -9,17 +9,6 @@
 using namespace path_extend;
 
 namespace tslr_resolver {
-
-    PathContainer FilterByLength(const PathContainer& seeds, size_t len_threshold) {
-        PathContainer result;
-        for (auto it = seeds.begin(); it != seeds.end(); ++it) {
-            if (it->first->Length() > len_threshold) {
-                result.AddPair(it->first, it->second);
-            }
-        }
-        return result;
-    }
-
     void LaunchBarcodePE (conj_graph_pack &gp) {
         path_extend::PathExtendParamsContainer params(cfg::get().pe_params,
                                                       cfg::get().output_dir,
@@ -46,7 +35,7 @@ namespace tslr_resolver {
         ScaffoldingUniqueEdgeStorage pe_unique_storage = FillUniqueEdgeStorage(gp, dataset_info,
                                                     min_unique_length,
                                                     unique_variaton,
-                                                    false /*autodetect*/);
+                                                    pset.scaffolding2015.autodetect);
 
         //mp extender
         INFO("SUBSTAGE = paired-end libraries");
@@ -84,7 +73,8 @@ namespace tslr_resolver {
         ScaffoldingUniqueEdgeStorage tslr_unique_storage = FillUniqueEdgeStorage(gp, dataset_info,
                                                                                  min_unique_length,
                                                                                  unique_variaton,
-                                                                                 false /*autodetect*/);
+                                                                                 pset.scaffolding2015.autodetect);
+        std::unordered_map <size_t, size_t> id_to_index;
 
 
         max_is_right_quantile = gp.g.k() + 10000;
@@ -103,14 +93,15 @@ namespace tslr_resolver {
                                                              len_threshold,
                                                              join_paths,
                                                              tslr_unique_storage,
-                                                             gp.barcode_mapper -> AverageBarcodeCoverage());
+                                                             id_to_index);
         all_libs.push_back(tslr_extender);
         shared_ptr<PathJoiner> tslrPE = make_shared<PathJoiner>
                 (gp.g, cover_map, all_libs,
                  pe_unique_storage,
                  max_is_right_quantile,
                  pset.extension_options.max_repeat_length,
-                 detect_repeats_online);
+                 detect_repeats_online,
+                 id_to_index);
 
 
         INFO(paths.size() << " paths from previous stage");

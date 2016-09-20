@@ -45,11 +45,11 @@ namespace tslr_resolver {
                 EdgeId decisive_edge;
                 for (int i = static_cast<int> (path.Size()) - 1; !long_single_edge_exists && i >= 0; --i) {
                     EdgeId current_edge = path[i];
-                    if (unique_storage_.IsUnique(current_edge) &&
-                            g_.length(current_edge) > len_threshold_) {
+                    if (g_.length(current_edge) > len_threshold_) {
                         long_single_edge_exists = true;
                         decisive_edge = current_edge;
                     }
+                    //unique_storage_.IsUnique(current_edge)
                 }
 
                 //Exclude this edge from the candidates
@@ -68,7 +68,7 @@ namespace tslr_resolver {
                 std::copy_if(edges_copy.begin(), edges_copy.end(), std::back_inserter(best_candidates),
                              [this, &decisive_edge](const EdgeWithDistance& edge) {
                                  return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
-                                        absolute_barcode_threshold_ && unique_storage_.IsUnique(edge.e_);
+                                        absolute_barcode_threshold_ && g_.length(edge.e_) > len_threshold_;
                              });
                 if (best_candidates.size() == 1) {
                     result.push_back(best_candidates[0]);
