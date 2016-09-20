@@ -64,8 +64,10 @@ bool LongReadsLibConnectionCondition::CheckPath(BidirectionalPath *path, EdgeId 
     if (pos1.size() != 1) return false;
     auto pos2 = path->FindAll(e2);
     if (pos2.size() != 1) {
-//TODO:: explore how can that happen
-        DEBUG("Something went wrong:: Edge " << graph_.int_id(e2) << "is called unique but presents in path twice!");
+        if (pos2.size() >= 2) {
+            DEBUG("Something went wrong:: Edge " << graph_.int_id(e2) << "is called unique but presents in path twice! first edge " << graph_.int_id(e1) << " path ");
+            path->Print();
+        }
         return false;
     }
     if (pos1[0] == path->Size() - 1) return false;
@@ -86,7 +88,7 @@ map<debruijn_graph::EdgeId, double> LongReadsLibConnectionCondition::ConnectedWi
         pos++;
         while (pos < path->Size()){
             if (storage.IsUnique(path->At(pos))) {
-                if (CheckPath(path, path->At(pos), path->At(pos1[0]))) {
+                if (CheckPath(path, path->At(pos1[0]), path->At(pos))) {
                     res[path->At(pos)] += path->GetWeight();
                 }
                 break;
