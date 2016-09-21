@@ -62,10 +62,9 @@ class ScaffoldingUniqueEdgeAnalyzer {
     double median_coverage_;
     double relative_coverage_variation_;
 
-    bool CheckSuffixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const;
-    bool CheckPrefixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const;
-    bool ConsistentPath(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const;
-    bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config);
+    map<EdgeId, size_t> FillNextEdgeVoting(BidirectionalPathMap<size_t>& active_paths, int direction) const;
+    bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config) const;
+    bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config, int direction) const;
     bool ConservativeByLength(EdgeId e);
     void CheckCorrectness(ScaffoldingUniqueEdgeStorage& unique_storage_pb);
 protected:

@@ -61,42 +61,88 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgeStorage(ScaffoldingUniqueEdgeS
 
 }
 
-bool ScaffoldingUniqueEdgeAnalyzer::ConsistentPath(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const {
-    return (CheckPrefixConservative(path1, pos1, path2, pos2)
-            && CheckSuffixConservative(path1, pos1, path2, pos2));
-}
-
 bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByLength(EdgeId e) {
     return gp_.g.length(e) >= length_cutoff_;
 }
 
-bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config) {
-    auto covering_paths = long_reads_cov_map->GetCoveringPaths(e);
-    for (auto it1 = covering_paths.begin(); it1 != covering_paths.end(); ++it1) {
-        auto pos1 = (*it1)->FindAll(e);
-        if (pos1.size() > 1) {
-            return false;
-        }
-        for (auto it2 = it1; it2 != covering_paths.end(); it2++) {
-            auto pos2 = (*it2)->FindAll(e);
-
-            if (pos2.size() > 1) {
-                return false;
+map<EdgeId, size_t> ScaffoldingUniqueEdgeAnalyzer::FillNextEdgeVoting(BidirectionalPathMap<size_t>& active_paths, int direction) const {
+    map<EdgeId, size_t> voting;
+    for (const auto &pair: active_paths) {
+        int current_pos = int(pair.second) + direction;
+        auto path_iter = pair.first;
+        //not found
+        active_paths[path_iter] = path_iter->Size();
+        while (current_pos >= 0 && current_pos < (int) path_iter->Size()) {
+            if (gp_.g.length(path_iter->At(current_pos)) >= length_cutoff_) {
+                voting[path_iter->At(current_pos)] += size_t(round(path_iter->GetWeight()));
+                active_paths[path_iter] = size_t(current_pos);
+                break;
             }
-//TODO do we need absolute threshold?
-//TODO or gluing together paths which differs on only short edges?
-            if ((*it1)->GetWeight() == 1 || (*it2)->GetWeight() == 1)
-                continue;
-            if ((*it1)->GetWeight() > (*it2)->GetWeight() * lr_config.unique_edge_priority ||
-                (*it2)->GetWeight() > (*it1)->GetWeight() * lr_config.unique_edge_priority)
-                continue;
-            if (!ConsistentPath(**it1, pos1[0], **it2, pos2[0])) {
-                return false;
-            }
+            current_pos += direction;
         }
     }
+    return voting;
+}
+
+bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config, int direction) const {
+    BidirectionalPathSet all_set = long_reads_cov_map->GetCoveringPaths(e);
+    BidirectionalPathMap<size_t> active_paths;
+    size_t loop_weight = 0;
+    for (auto path_iter: all_set) {
+        auto pos = path_iter->FindAll(e);
+        if (pos.size() > 1)
+//TODO:: path weight should be size_t?
+            loop_weight += size_t(round(path_iter->GetWeight()));
+        else
+            active_paths[path_iter] = pos[0];
+    }
+//TODO: small plasmid, paths a-b-a, b-a-b ?
+    if (loop_weight > 1)
+        return false;
+    EdgeId prev_unique = e;
+    while (active_paths.size() > 0) {
+        size_t alt = 0;
+        size_t maxx = 0;
+        map<EdgeId, size_t> voting = FillNextEdgeVoting(active_paths, direction);
+
+        if (voting.size() == 0)
+            break;
+        EdgeId next_unique = prev_unique;
+        for (const auto &pair: voting)
+            if (pair.second > maxx) {
+                next_unique = pair.first;
+                maxx = pair.second;
+            }
+        for (const auto &pair: voting)
+            //TODO:: 1 from config?
+            if (pair.first != next_unique && pair.second > 1)
+                alt += pair.second;
+        if (maxx < lr_config.unique_edge_priority * double(alt)) {
+            DEBUG("edge " << gp_.g.int_id(e) <<" dir "<< direction << " was not unique" );
+            DEBUG("current edge " << gp_.g.int_id(next_unique));
+            DEBUG("Paths " << active_paths.size());
+            return false;
+        } else {
+            DEBUG("cur " << gp_.g.int_id(prev_unique) << " next " << gp_.g.int_id(next_unique) <<" sz " << active_paths.size());
+            for (auto iter = active_paths.begin(); iter != active_paths.end();) {
+                if (iter->second >= iter->first->Size() || iter->first->At(iter->second) != next_unique) {
+                    iter = active_paths.erase(iter);
+                } else {
+                    iter++;
+                }
+            }
+            prev_unique = next_unique;
+            DEBUG(active_paths.size() << " "<< gp_.g.int_id(next_unique));
+        }
+    }
+    DEBUG("edge " << gp_.g.int_id(e) <<" dir "<< direction << " was unique" );
     return true;
 }
+
+bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config) const{
+    return (ConservativeByPaths(e, long_reads_cov_map, lr_config, 1) && ConservativeByPaths(e, long_reads_cov_map, lr_config, -1));
+}
+
 
 void ScaffoldingUniqueEdgeAnalyzer::CheckCorrectness(ScaffoldingUniqueEdgeStorage& unique_storage_pb) {
     for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -124,55 +170,5 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(shared_ptr<Grap
     CheckCorrectness(unique_storage_pb);
 }
 
-
- bool ScaffoldingUniqueEdgeAnalyzer::CheckPrefixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const {
-     int cur_pos1 = (int) pos1;
-     int cur_pos2 = (int) pos2;
-     while (cur_pos1 >= 0 && cur_pos2 >= 0) {
-         if (gp_.g.length(path1.At(cur_pos1)) < length_cutoff_) {
-             cur_pos1--;
-             continue;
-         }
-
-         if (gp_.g.length(path2.At(cur_pos2)) < length_cutoff_) {
-             cur_pos2--;
-             continue;
-         }
-
-         if (path1.At(cur_pos1) == path2.At(cur_pos2)) {
-             cur_pos1--;
-             cur_pos2--;
-         } else {
-             return false;
-
-         }
-     }
-     return true;
- }
-
-bool ScaffoldingUniqueEdgeAnalyzer::CheckSuffixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const {
-
-     size_t cur_pos1 = pos1;
-     size_t cur_pos2 = pos2;
-     while (cur_pos1 < path1.Size() && cur_pos2 < path2.Size()) {
-         if (gp_.g.length(path1.At(cur_pos1)) < length_cutoff_) {
-             cur_pos1++;
-             continue;
-         }
-
-         if (gp_.g.length(path2.At(cur_pos2)) < length_cutoff_) {
-             cur_pos2++;
-             continue;
-         }
-
-         if (path1.At(cur_pos1) == path2.At(cur_pos2)) {
-             cur_pos1++;
-             cur_pos2++;
-         } else {
-             return false;
-         }
-     }
-     return true;
- }
 
 }

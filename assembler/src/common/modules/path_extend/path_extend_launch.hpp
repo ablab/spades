@@ -249,7 +249,6 @@ inline void FinalizePaths(const PathExtendParamsContainer& params,
     for(auto& path : paths) {
         path.first->ResetOverlaps();
     }
-
 }
 
 inline size_t TraverseLoops(PathContainer& paths,
@@ -1291,7 +1290,8 @@ inline void ResolveRepeatsPe(const config::dataset& dataset_info,
 
     DebugOutputPaths(gp, params, paths, "pe_paths");
     //We do not run overlap removal in 2015 mode
-    if (!use_scaffolder_2015_pipeline) {
+    //if (!use_scaffolder_2015_pipeline)
+    {
         FinalizePaths(params, paths, gp.g, cover_map, min_edge_len, max_edge_diff_pe);
         DebugOutputPaths(gp, params, paths, "pe_finalized1");
     }
