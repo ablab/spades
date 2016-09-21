@@ -35,9 +35,49 @@ public:
         }
     }
 
+    size_t NonUniqueCommon(BidirectionalPath * path, int pos1, int pos2) {
+        size_t answer = 0;
+        while (pos1 >= 0) {
+            if (path->At(pos1) == path->At(pos2)) {
+                pos1--;
+                pos2--;
+                answer++;
+            } else {
+                break;
+            }
+        }
+        return answer;
+    }
+
+    size_t MaximumNonUniqueSuffix(BidirectionalPath * path) {
+        if (path->Size() == 0) {
+            return 0;
+        }
+
+        size_t answer = 0;
+        EdgeId back = path->Back();
+        vector<size_t> all_pos = path->FindAll(back);
+        for (size_t i = 0; i < all_pos.size() - 1; ++i) {
+            answer = std::max(answer, NonUniqueCommon(path, all_pos[i], path->Size() - 1));
+        }
+        return answer;
+    }
+
+    void CutNonUniqueSuffix(PathContainer& paths) {
+        vector<pair<BidirectionalPath *, BidirectionalPath *>> tmp_paths(paths.begin(), paths.end());
+        for (auto it = tmp_paths.begin(); it != tmp_paths.end(); ++it) {
+            BidirectionalPath * path1 = it->first;
+            BidirectionalPath * path2 = it->second;
+            size_t longest_suffix1 = MaximumNonUniqueSuffix(path1);
+            path1->PopBack(longest_suffix1);
+            size_t longest_suffix2 = MaximumNonUniqueSuffix(path2);
+            path2->PopBack(longest_suffix2);
+        }
+    }
+
     void CutPseudoSelfConjugatePaths(PathContainer& paths) {
         vector<pair<BidirectionalPath *, BidirectionalPath *>> tmp_paths(paths.begin(), paths.end());
-        for(auto it = tmp_paths.begin(); it != tmp_paths.end(); ++it) {
+        for (auto it = tmp_paths.begin(); it != tmp_paths.end(); ++it) {
             BidirectionalPath * path1 = it->first;
             BidirectionalPath * path2 = it->second;
             bool ups = false;
@@ -466,6 +506,8 @@ public:
         SimpleOverlapRemover remover(g_, coverage_map);
         if (cut_preudo_self_conjugate)
             remover.CutPseudoSelfConjugatePaths(paths);
+
+        remover.CutNonUniqueSuffix(paths);
         //writer.WritePathsToFASTA(paths, output_dir + "/before.fasta");
         //DEBUG("Removing subpaths");
         //delete not only eq,
