@@ -1,9 +1,10 @@
 #pragma once
 
+#include <common/modules/path_extend/path_extend_launch.hpp>
 #include "tslr_extension_chooser.hpp"
 #include "tslr_visualizer.hpp"
 #include "bounded_dijkstra.hpp"
-#include "algorithms/dijkstra/dijkstra_helper.hpp"
+#include "common/assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "extenders.hpp"
 
 using namespace path_extend;
@@ -69,7 +70,7 @@ namespace tslr_resolver {
         size_t distance_bound = tslr_resolver_params.distance_bound;
         double abs_threshold = tslr_resolver_params.abs_threshold;
         bool join_paths = tslr_resolver_params.join_paths;
-        //fixme code duplication: unique storage can't be cleared
+        //fixme duplication: unique storage can't be cleared
         ScaffoldingUniqueEdgeStorage tslr_unique_storage = FillUniqueEdgeStorage(gp, dataset_info,
                                                                                  min_unique_length,
                                                                                  unique_variaton,

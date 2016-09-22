@@ -10,7 +10,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
 
     class PathJoiner : public ContigsMaker {
     public:
-        PathJoiner(Graph & g, GraphCoverageMap& cov_map,
+        PathJoiner(const Graph & g, GraphCoverageMap& cov_map,
                 size_t max_diff_len,
         size_t max_repeat_length,
         bool detect_repeats_online,
@@ -172,23 +172,15 @@ with slightly different usage of coverage map. Huge code duplication need to be 
 
         void FindFollowingEdges(BidirectionalPath &path, ExtensionChooser::EdgeContainer *result) {
             result->clear();
-//            if (g_.OutgoingEdgeCount(g_.EdgeEnd(path.Back())) == 1) {
-//                result->push_back(EdgeWithDistance(*(g_.OutgoingEdges(g_.EdgeEnd(path.Back())).begin()), 0));
-//                return;
-//            }
 
             //find long unique edge earlier in path
+            pair<EdgeId, int> last_unique =
+                    TrivialTSLRExtensionChooser::FindLastUniqueInPath(path, unique_storage_);
             bool long_single_edge_exists = false;
             EdgeId decisive_edge;
-            for (int i = static_cast<int> (path.Size()) - 1; !long_single_edge_exists && i >= 0; --i) {
-                EdgeId current_edge = path.At(i);
-                if (g_.length(current_edge) > edge_threshold_) {
-                    long_single_edge_exists = true;
-                    decisive_edge = current_edge;
-                }
-                //unique_storage_.IsUnique(current_edge)
-                DEBUG("Length " << g_.length(current_edge));
-                DEBUG("Is unique " << unique_storage_.IsUnique(current_edge))
+            if (last_unique.second == -1) {
+                long_single_edge_exists = true;
+                decisive_edge = last_unique.first;
             }
 
             if (!long_single_edge_exists) {
@@ -196,16 +188,17 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                 return;
             }
 
-            //todo configs
-            if (mapper_-> GetSizeTails(decisive_edge) > 400) {
+            //Check if there is too much barcodes aligned to the last unique edge
+            //todo save dataset params somewhere
+            if (mapper_-> GetSizeTails(decisive_edge) >
+                    GetMaximalBarcodeNumber(cfg::get().ts_res.tslr_barcode_dataset)) {
                 DEBUG("Too many barcodes mapped to the decisive edge")
                 return;
             }
 
             DEBUG("At edge " << path.Back().int_id());
-            DEBUG("decisive edge " << decisive_edge.int_id());
-
-            DEBUG("decisive edge barcodes: " <<  mapper_->GetSizeTails(decisive_edge));
+            DEBUG("Decisive edge " << decisive_edge.int_id());
+            DEBUG("Decisive edge barcodes: " <<  mapper_->GetSizeTails(decisive_edge));
 
             //find reliable unique edges further in graph
             vector <EdgeId> candidates;
@@ -377,6 +370,18 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             }
         }
         DECL_LOGGER("InconsistentExtender")
+
+        //todo should be precounted at barcode map construction stage
+        size_t GetMaximalBarcodeNumber (const std::string& path_to_tslr_dataset) const {
+            size_t result = 0;
+            std::ifstream fin;
+            fin.open(path_to_tslr_dataset);
+            string line;
+            while (getline(fin, line)) {
+                ++result;
+            }
+            return result / 2;
+        }
 
     };
 } //tslr_resolver
