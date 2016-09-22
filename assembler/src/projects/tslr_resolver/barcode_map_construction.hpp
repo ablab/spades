@@ -11,7 +11,6 @@ namespace spades {
     class BarcodeMapConstructionStage : public AssemblyStage {
     private:
         size_t k_;
-        const std::string tslr_dataset_;
 
     public:
 

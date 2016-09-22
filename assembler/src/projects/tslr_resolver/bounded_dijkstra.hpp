@@ -50,7 +50,7 @@ namespace omnigraph {
         const double barcode_threshold_;
         Bmapper mapper_;
         EdgeId decisive_edge_;
-        ScaffoldingUniqueEdgeStorage unique_storage_;
+        const ScaffoldingUniqueEdgeStorage& unique_storage_;
         vector <EdgeId>& candidates_;
     public:
         BarcodePutChecker(const Graph& g, 
@@ -70,8 +70,8 @@ namespace omnigraph {
         bool Check(VertexId, EdgeId edge, distance_t) const {
             DEBUG("Checking edge " << edge.int_id());
             DEBUG("Length " << g_.length(edge)) 
-            DEBUG("decisive_edge " << decisive_edge_.int_id())
-            DEBUG("intersection " << mapper_->GetIntersectionSize(decisive_edge_, edge))
+            DEBUG("Decisive_edge " << decisive_edge_.int_id())
+            DEBUG("Intersection " << mapper_->GetIntersectionSize(decisive_edge_, edge))
             DEBUG("Barcodes " << mapper_->GetSizeHeads(edge))
             DEBUG("Normalized intersection " << mapper_->GetIntersectionSizeNormalizedByFirst(decisive_edge_, edge))
             DEBUG("Is unique " << unique_storage_.IsUnique(edge))

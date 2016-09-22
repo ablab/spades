@@ -64,6 +64,9 @@ namespace tslr_resolver {
     };
 
 
+    /*This structure contains barcodes extracted from reads aligned to the
+     * beginning (first 500 bp) of every edge in assembly graph.
+     */
     class BarcodeMapper {
     public:
     protected:
@@ -72,19 +75,36 @@ namespace tslr_resolver {
         BarcodeMapper (const Graph &g) :
                 g_(g) {}
         virtual ~BarcodeMapper() {}
+
+        //Number of entries in the barcode map. Currently equals to number of edges.
         virtual size_t size() const = 0;
+
+        //Extract information from reads and insert it to the barcode map.
         virtual void FillMap (const Index& index, const KmerSubs& kmer_mapper) = 0;
+
+        //Get number of shared barcodes between two edges.
         virtual size_t GetIntersectionSize(const EdgeId &edge1, const EdgeId &edge2) const = 0;
-        virtual size_t UnionSize(const EdgeId& edge1, const EdgeId& edge2) const = 0;
         virtual double GetIntersectionSizeNormalizedByUnion(const EdgeId &edge1, const EdgeId &edge2) const = 0;
         virtual double GetIntersectionSizeNormalizedBySecond(const EdgeId &edge1, const EdgeId &edge2) const = 0;
         virtual double GetIntersectionSizeNormalizedByFirst(const EdgeId &edge1, const EdgeId &edge2) const = 0;
+        virtual size_t GetUnionSize(const EdgeId &edge1, const EdgeId &edge2) const = 0;
+
+        //Average barcode coverage of long edges
         virtual double AverageBarcodeCoverage () const = 0;
+
+        //Number of barcodes on the beginning/end of the edge
         virtual size_t GetSizeHeads(const EdgeId& edge) const = 0;
         virtual size_t GetSizeTails(const EdgeId& edge) const = 0;
+
+        //fixme these methods should be moved to DataScanner
         virtual void ReadEntry(ifstream& fin, const EdgeId& edge) = 0;
         virtual void WriteEntry(ofstream& fin, const EdgeId& edge) = 0;
+
+        //Remove low abundant barcodes
         virtual void FilterByAbundance(size_t threshold) = 0;
+
+        //Serialize barcode abundancies. Format:
+        //abundancy: number of edges.
         virtual void SerializeOverallDistribution(const string& path) const = 0;
 
     };
@@ -131,9 +151,9 @@ namespace tslr_resolver {
 
 
         virtual double GetIntersectionSizeNormalizedByUnion(const EdgeId &edge1, const EdgeId &edge2) const override {
-            if (UnionSize(edge1, edge2)) {
+            if (GetUnionSize(edge1, edge2)) {
                 return static_cast <double> (GetIntersectionSize(edge1, edge2)) /
-                       static_cast <double> (UnionSize(edge1, edge2));
+                       static_cast <double> (GetUnionSize(edge1, edge2));
             }
             return 0;
         }
@@ -164,18 +184,18 @@ namespace tslr_resolver {
         }
 
         void FillMap (const Index& index, const KmerSubs& kmer_mapper) {
+            //fixme this is so very wrong
             std::string tslr_dataset = cfg::get().ts_res.tslr_barcode_dataset;
+
             auto lib_vec = GetLibrary(tslr_dataset);
-            INFO("Constructing mapper")
             auto mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, Index> >
                     (g_, index, kmer_mapper);
-            INFO("Finished mapper construction")
 
+            //Process every barcode from truspades dataset
             for (size_t i = 0; i < lib_vec.size(); ++i) {
                 std::string barcode = lib_vec[i].barcode_;
                 std::shared_ptr<io::ReadStream<io::PairedRead>> paired_stream =
                         make_shared<io::SeparatePairedReadStream> (lib_vec[i].left_, lib_vec[i].right_, 1);
-                //auto wrapped_stream = io::RCWrap(paired_stream);
                 io::PairedRead read;
                 while (!paired_stream->eof()) {
                     *paired_stream >> read;
@@ -223,8 +243,8 @@ namespace tslr_resolver {
             return GetEntryTails(edge1).GetIntersectionSize(GetEntryHeads(edge2));
         }
 
-        size_t UnionSize(const EdgeId &edge1, const EdgeId &edge2) const override {
-            return GetEntryHeads(edge1).UnionSize(edge2);
+        size_t GetUnionSize(const EdgeId &edge1, const EdgeId &edge2) const override {
+            return GetEntryHeads(edge1).GetUnionSize(edge2);
         }
 
 
@@ -308,6 +328,7 @@ namespace tslr_resolver {
     };
 
 
+    //Contains abundancy for each barcode aligned to given edge
     class SimpleBarcodeEntry {
         friend class HeadTailBarcodeMapper<SimpleBarcodeEntry>;
 
@@ -336,7 +357,7 @@ namespace tslr_resolver {
             return result;
         }
 
-        size_t UnionSize(const SimpleBarcodeEntry& other) const {
+        size_t GetUnionSize(const SimpleBarcodeEntry& other) const {
             auto distr_this = barcode_distribution_;
             auto distr_other = other.GetDistribution();
             return Size() + other.Size() - GetIntersectionSize(other);

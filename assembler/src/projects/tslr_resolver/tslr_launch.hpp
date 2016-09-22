@@ -1,7 +1,7 @@
 #pragma once
 
 #include <barcode_map_construction.hpp>
-#include <tslr_resolver.hpp>
+#include <barcode_repeat_resolution.hpp>
 #include <projects/spades/pair_info_count.hpp>
 #include <projects/spades/gap_closer.hpp>
 #include <common/stages/construction.hpp>

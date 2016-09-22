@@ -39,17 +39,13 @@ namespace tslr_resolver {
                     result.push_back(edges.back());
                     return result;
                 }
-                //Find long unique edge earlier in path
-                //FIXME code duplication
+                //Find last unique edge earlier in path
+                pair<EdgeId, int> last_unique = FindLastUniqueInPath(path, unique_storage_);
                 bool long_single_edge_exists = false;
                 EdgeId decisive_edge;
-                for (int i = static_cast<int> (path.Size()) - 1; !long_single_edge_exists && i >= 0; --i) {
-                    EdgeId current_edge = path[i];
-                    if (g_.length(current_edge) > len_threshold_) {
-                        long_single_edge_exists = true;
-                        decisive_edge = current_edge;
-                    }
-                    //unique_storage_.IsUnique(current_edge)
+                if (last_unique.second == -1) {
+                    long_single_edge_exists = true;
+                    decisive_edge = last_unique.first;
                 }
 
                 //Exclude this edge from the candidates
@@ -86,15 +82,15 @@ namespace tslr_resolver {
 
                 //Check the difference between two best scores
                 DEBUG("Several candidates found. Further filtering.");
-                auto fittest_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
+                auto best_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
                                                      [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
                                                          return this->bmapper_->GetIntersectionSizeNormalizedBySecond(
                                                                  decisive_edge, edge1.e_) <
                                                                  this->bmapper_->GetIntersectionSizeNormalizedBySecond(
                                                                          decisive_edge, edge2.e_);
                                                      }));
-                double best_score = bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, fittest_edge.e_);
-                DEBUG("fittest edge " << fittest_edge.e_.int_id());
+                double best_score = bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, best_edge.e_);
+                DEBUG("fittest edge " << best_edge.e_.int_id());
                 DEBUG("score " << best_score);
                 std::nth_element(edges_copy.begin(), edges_copy.begin() + 1, edges_copy.end(),
                                  [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
@@ -129,6 +125,16 @@ namespace tslr_resolver {
                     result.push_back(closest_edges.back());
                 }
                 return result;
+            }
+
+            static std::pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path,
+                                                               const ScaffoldingUniqueEdgeStorage& storage) {
+                for (int i =  (int)path.Size() - 1; i >= 0; --i) {
+                    if (storage.IsUnique(path.At(i))) {
+                        return std::make_pair(path.At(i), i);
+                    }
+                }
+                return std::make_pair(EdgeId(0), -1);
             }
 
         private:

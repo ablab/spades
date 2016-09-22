@@ -13,7 +13,7 @@ namespace spades {
 
     public:
 
-        TslrResolverStage(size_t k, const std::string& output_file) :
+        TslrResolverStage(size_t k, const std::string &output_file) :
                 AssemblyStage("TSLR repeat resolver", "tslr_repeat_resolver"),
                 k_(k), output_file_(output_file) {
         }
@@ -21,23 +21,23 @@ namespace spades {
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
             INFO("Resolver started...");
             graph_pack.edge_pos.Attach();
-//            INFO("Filling positions")
-//            debruijn_graph::FillPos(graph_pack, path_to_reference_, "");
             INFO(graph_pack.barcode_mapper->size());
             graph_pack.barcode_mapper->
-                SerializeOverallDistribution(cfg::get().output_dir + "bardistr");
+                    SerializeOverallDistribution(cfg::get().output_dir + "barcode_distribution");
             INFO("Average barcode coverage before trimming: " +
-                         std::to_string(graph_pack.barcode_mapper->AverageBarcodeCoverage()));
-            graph_pack.barcode_mapper-> FilterByAbundance(5);
+                 std::to_string(graph_pack.barcode_mapper->AverageBarcodeCoverage()));
 
-            INFO("Average barcode coverage after trimming: " +
-                         std::to_string(graph_pack.barcode_mapper->AverageBarcodeCoverage()));
-            graph_pack.barcode_mapper ->SerializeOverallDistribution
-                    (cfg::get().output_dir + "bardistr_after");
-                
-            tslr_resolver::LaunchBarcodePE (graph_pack);
+            //todo get trimming threshold from distribution
+            size_t trimming_threshold = cfg::get().ts_res.trimming_threshold;
+            graph_pack.barcode_mapper->FilterByAbundance(trimming_threshold);
+
+
+            tslr_resolver::LaunchBarcodePE(graph_pack);
             INFO("Resolver finished!");
         }
+
         DECL_LOGGER("TSLRResolverStage")
+
+
     };
 } //spades
