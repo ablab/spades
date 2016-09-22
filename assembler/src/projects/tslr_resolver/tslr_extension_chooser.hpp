@@ -1,10 +1,10 @@
 #pragma once
 
-#include <algorithms/path_extend/extension_chooser.hpp>
-#include <algorithms/path_extend/path_filter.hpp>
-#include <algorithms/path_extend/path_extender.hpp>
-#include <algorithms/path_extend/pe_resolver.hpp>
-#include <algorithms/path_extend/path_extend_launch.hpp>
+#include <common/modules/path_extend/extension_chooser.hpp>
+#include <common/modules/path_extend/path_filter.hpp>
+#include <common/modules/path_extend/path_extender.hpp>
+#include <common/modules/path_extend/pe_resolver.hpp>
+#include <common/modules/path_extend/path_extend_launch.hpp>
 #include <assembly_graph/graph_support/scaff_supplementary.hpp>
 #include <cmath>
 #include "barcode_mapper.hpp"
@@ -39,17 +39,13 @@ namespace tslr_resolver {
                     result.push_back(edges.back());
                     return result;
                 }
-                //Find long unique edge earlier in path
-                //FIXME code duplication
+                //Find last unique edge earlier in path
+                pair<EdgeId, int> last_unique = FindLastUniqueInPath(path, unique_storage_);
                 bool long_single_edge_exists = false;
                 EdgeId decisive_edge;
-                for (int i = static_cast<int> (path.Size()) - 1; !long_single_edge_exists && i >= 0; --i) {
-                    EdgeId current_edge = path[i];
-                    if (g_.length(current_edge) > len_threshold_) {
-                        long_single_edge_exists = true;
-                        decisive_edge = current_edge;
-                    }
-                    //unique_storage_.IsUnique(current_edge)
+                if (last_unique.second == -1) {
+                    long_single_edge_exists = true;
+                    decisive_edge = last_unique.first;
                 }
 
                 //Exclude this edge from the candidates
@@ -67,7 +63,7 @@ namespace tslr_resolver {
                 std::vector <EdgeWithDistance> best_candidates;
                 std::copy_if(edges_copy.begin(), edges_copy.end(), std::back_inserter(best_candidates),
                              [this, &decisive_edge](const EdgeWithDistance& edge) {
-                                 return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
+                                 return this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
                                         absolute_barcode_threshold_ && g_.length(edge.e_) > len_threshold_;
                              });
                 if (best_candidates.size() == 1) {
@@ -86,21 +82,26 @@ namespace tslr_resolver {
 
                 //Check the difference between two best scores
                 DEBUG("Several candidates found. Further filtering.");
-                auto fittest_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
+                auto best_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
                                                      [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                                         return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) <
-                                                                this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge2.e_);
+                                                         return this->bmapper_->GetIntersectionSizeNormalizedBySecond(
+                                                                 decisive_edge, edge1.e_) <
+                                                                 this->bmapper_->GetIntersectionSizeNormalizedBySecond(
+                                                                         decisive_edge, edge2.e_);
                                                      }));
-                double best_score = bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, fittest_edge.e_);
-                DEBUG("fittest edge " << fittest_edge.e_.int_id());
+                double best_score = bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, best_edge.e_);
+                DEBUG("fittest edge " << best_edge.e_.int_id());
                 DEBUG("score " << best_score);
                 std::nth_element(edges_copy.begin(), edges_copy.begin() + 1, edges_copy.end(),
                                  [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                     return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) >
-                                            this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge2.e_);
+                                     return this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
+                                                                                                  edge1.e_) >
+                                             this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
+                                                                                                   edge2.e_);
                                  });
                 auto second_best_edge = edges_copy.at(1);
-                double second_best_score = bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, second_best_edge.e_);
+                double second_best_score = bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
+                                                                                           second_best_edge.e_);
                 DEBUG("Second best edge " << second_best_edge.e_.int_id());
                 DEBUG("second best score " << second_best_score);
                 DEBUG(best_candidates.size() << " best candidates");
@@ -124,6 +125,16 @@ namespace tslr_resolver {
                     result.push_back(closest_edges.back());
                 }
                 return result;
+            }
+
+            static std::pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path,
+                                                               const ScaffoldingUniqueEdgeStorage& storage) {
+                for (int i =  (int)path.Size() - 1; i >= 0; --i) {
+                    if (storage.IsUnique(path.At(i))) {
+                        return std::make_pair(path.At(i), i);
+                    }
+                }
+                return std::make_pair(EdgeId(0), -1);
             }
 
         private:
