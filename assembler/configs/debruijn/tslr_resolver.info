@@ -1,7 +1,12 @@
 ts_res
 {
+	tslr_barcode_dataset  /home/itolstoganov/tslr_project/resolver_test/mock/data/truspades_dataset/dataset.info
+
 	;length threshold for reliable edges
 	len_threshold  500
+
+	;edges with less than trimming threshold barcodes will be deleted
+	trimming_threshold 3
 
 	;threshold on (intersection) / (number of barcodes on second edge)
 	;edge should pass this threshold to become candidate

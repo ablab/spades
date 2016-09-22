@@ -1,25 +1,22 @@
 #pragma once
 
-#include <modules/pipeline/stage.hpp>
-#include <tslr_pe.hpp>
-#include <barcode_mapper.hpp>
+#include "tslr_pe.hpp"
+#include "utils/logger/logger.hpp"
+#include "barcode_mapper.hpp"
+#include "common/pipeline/stage.hpp"
 
 using namespace tslr_resolver;
 
 namespace spades {
     class BarcodeMapConstructionStage : public AssemblyStage {
-        // public:
-        //     typedef debruijn_graph::debruijn_config::tenx_resolver Config;
     private:
         size_t k_;
-        const std::string tslr_dataset_;
-        //const Config &config_;
 
     public:
 
-        BarcodeMapConstructionStage(size_t k, const std::string& tslr_dataset) :
+        BarcodeMapConstructionStage(size_t k) :
                 AssemblyStage("Barcode map construction", "barcode_map_construction"),
-                k_(k), tslr_dataset_(tslr_dataset) {
+                k_(k) {
         }
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
@@ -28,7 +25,7 @@ namespace spades {
                     (graph_pack.g, cfg::get().ts_res.edge_tail_len);
             graph_pack.EnsureIndex();
             graph_pack.EnsureBasicMapping();
-            graph_pack.barcode_mapper->FillMap(tslr_dataset_, graph_pack.index, graph_pack.kmer_mapper);
+            graph_pack.barcode_mapper->FillMap(graph_pack.index, graph_pack.kmer_mapper);
             INFO("Barcode map construction finished.");
             INFO("Average barcode coverage: " +
                          std::to_string(graph_pack.barcode_mapper->AverageBarcodeCoverage()));
