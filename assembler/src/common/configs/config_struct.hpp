@@ -456,8 +456,10 @@ struct debruijn_config {
     contig_output co;
 
     struct tslr_resolver {
+        std::string tslr_barcode_dataset;
         int reference_cov;
         size_t len_threshold;
+        size_t trimming_threshold;
         size_t distance_bound;
         double diff_threshold;
         double abs_threshold;

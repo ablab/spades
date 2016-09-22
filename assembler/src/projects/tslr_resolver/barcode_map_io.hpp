@@ -24,7 +24,7 @@ namespace debruijn_graph {
             ofstream file;
             const string file_name = path + ".bmap";
             file.open(file_name);
-            DEBUG("Saving barcode information, " << file_name <<" created");
+            INFO("Saving barcode information, " << file_name <<" created");
             if (!barcodeMapper) {
                 return;
             }

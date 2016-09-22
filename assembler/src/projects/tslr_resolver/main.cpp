@@ -1,12 +1,13 @@
 #include <string>
 #include "tslr_launch.hpp"
-#include <modules/dev_support/copy_file.hpp>
 #include <projects/online_vis/vis_logger.hpp>
 
-void load_config(string cfg_filename) {
-    path::CheckFileExistenceFATAL(cfg_filename);
+void load_config(const vector<string>& cfg_fns) {
+    for (const auto& s : cfg_fns) {
+        path::CheckFileExistenceFATAL(s);
+    }
 
-    cfg::create_instance(cfg_filename);
+    cfg::create_instance(cfg_fns);
 
     if (!cfg::get().project_name.empty()) {
         make_dir(cfg::get().output_base + cfg::get().project_name);
@@ -15,7 +16,6 @@ void load_config(string cfg_filename) {
     make_dir(cfg::get().output_dir);
     make_dir(cfg::get().tmp_dir);
 
-    make_dir(cfg::get().output_dir);
     if (cfg::get().developer_mode)
         make_dir(cfg::get().output_saves);
 
@@ -35,20 +35,28 @@ void create_console_logger(string cfg_filename) {
     attach_logger(lg);
 }
 
-int main (int /*argc*/, char** argv) {
+int main (int argc, char** argv) {
 
 	try {
-		string cfg_filename = argv[1];
-        load_config(cfg_filename);
-		create_console_logger(cfg_filename);
-        std::cout << cfg_filename << std::endl;
+        string cfg_dir = path::parent_path(argv[1]);
 
-        string path_to_tslr_dataset = argv[2];
-        std::cout << path_to_tslr_dataset << std::endl;
+        vector<string> cfg_fns;
+        for (int i = 1; i < argc; ++i) {
+            cfg_fns.push_back(argv[i]);
+        }
 
-        string path_to_reference = argv[3];
-        std::cout << path_to_reference << std::endl;
-		spades::run_tslr_resolver(path_to_tslr_dataset, path_to_reference);
+        load_config(cfg_fns);
+
+        create_console_logger(cfg_dir);
+
+        for (const auto& cfg_fn : cfg_fns)
+        INFO("Loading config from " << cfg_fn);
+
+
+        VERIFY(cfg::get().K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K);
+        VERIFY(cfg::get().K % 2 != 0);
+
+		spades::run_tslr_resolver();
 	} catch (std::exception const& e) {
         std::cerr << "Exception caught " << e.what() << std::endl;
         return EINTR;

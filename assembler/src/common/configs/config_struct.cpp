@@ -458,8 +458,10 @@ void load(debruijn_config::truseq_analysis& tsa,
 void load(debruijn_config::tslr_resolver& ts_res,
       boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
+    load(ts_res.tslr_barcode_dataset, pt, "tslr_barcode_dataset");
     load(ts_res.reference_cov, pt, "reference_cov");
     load(ts_res.len_threshold, pt, "len_threshold");
+    load(ts_res.trimming_threshold, pt, "trimming_threshold");
     load(ts_res.distance_bound, pt, "distance_bound");
     load(ts_res.diff_threshold, pt, "diff_threshold");
     load(ts_res.abs_threshold, pt, "abs_threshold");
