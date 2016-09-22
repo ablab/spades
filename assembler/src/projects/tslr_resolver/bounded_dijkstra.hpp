@@ -1,7 +1,6 @@
 #pragma once
 #include "barcode_mapper.hpp"
 #include "tslr_extension_chooser.hpp"
-#include "../../modules/algorithms/dijkstra/vertex_put_checker.hpp"
 
 namespace omnigraph {
 
@@ -51,7 +50,7 @@ namespace omnigraph {
         const double barcode_threshold_;
         Bmapper mapper_;
         EdgeId decisive_edge_;
-        ScaffoldingUniqueEdgeStorage unique_storage_;
+        const ScaffoldingUniqueEdgeStorage& unique_storage_;
         vector <EdgeId>& candidates_;
     public:
         BarcodePutChecker(const Graph& g, 
@@ -71,10 +70,10 @@ namespace omnigraph {
         bool Check(VertexId, EdgeId edge, distance_t) const {
             DEBUG("Checking edge " << edge.int_id());
             DEBUG("Length " << g_.length(edge)) 
-            DEBUG("decisive_edge " << decisive_edge_.int_id())
-            DEBUG("intersection " << mapper_->IntersectionSize(decisive_edge_, edge))
+            DEBUG("Decisive_edge " << decisive_edge_.int_id())
+            DEBUG("Intersection " << mapper_->GetIntersectionSize(decisive_edge_, edge))
             DEBUG("Barcodes " << mapper_->GetSizeHeads(edge))
-            DEBUG("Normalized intersection " << mapper_->IntersectionSizeNormalizedByFirst(decisive_edge_, edge))
+            DEBUG("Normalized intersection " << mapper_->GetIntersectionSizeNormalizedByFirst(decisive_edge_, edge))
             DEBUG("Is unique " << unique_storage_.IsUnique(edge))
             if (g_.length(edge) < length_bound_) {
                 DEBUG("Short edge, passed" << endl)  //todo use short edges to reduce number of candidates
