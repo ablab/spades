@@ -7,12 +7,13 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <bitset>
-#include "io/reads/paired_read.hpp"
-#include "modules/assembly_graph/paths/mapping_path.hpp"
-#include <modules/assembly_graph/graph_alignment/sequence_mapper.hpp>
-#include <modules/pipeline/config_struct.hpp>
-#include <modules/io/reads_io/paired_readers.hpp>
-#include <modules/io/reads_io/rc_reader_wrapper.hpp>
+#include "io/reads/paired_readers.hpp"
+#include <common/assembly_graph/paths/mapping_path.hpp>
+#include <cassert>
+#include "common/modules/alignment/edge_index.hpp"
+#include "common/modules/alignment/kmer_mapper.hpp"
+#include "common/modules/alignment/sequence_mapper.hpp"
+#include "common/pipeline/config_struct.hpp"
 
 using std::string;
 using std::istringstream;
@@ -21,7 +22,6 @@ namespace tslr_resolver {
     //constexpr int16_t max_barcodes = 384;
 
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
-    typedef debruijn_graph::KmerFreeEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>> KmerEdgeIndex;
     typedef debruijn_graph::EdgeIndex<Graph> Index;
     typedef Graph::EdgeId EdgeId;
     typedef Graph::VertexId VertexId;
@@ -73,13 +73,12 @@ namespace tslr_resolver {
                 g_(g) {}
         virtual ~BarcodeMapper() {}
         virtual size_t size() const = 0;
-        virtual void FillMap (const string& reads_filename, const Index& index,
-                              const KmerSubs& kmer_mapper) = 0;
-        virtual size_t IntersectionSize(const EdgeId& edge1, const EdgeId& edge2) const = 0;
+        virtual void FillMap (const Index& index, const KmerSubs& kmer_mapper) = 0;
+        virtual size_t GetIntersectionSize(const EdgeId &edge1, const EdgeId &edge2) const = 0;
         virtual size_t UnionSize(const EdgeId& edge1, const EdgeId& edge2) const = 0;
-        virtual double IntersectionSizeNormalizedByUnion(const EdgeId& edge1, const EdgeId& edge2) const = 0;
-        virtual double IntersectionSizeNormalizedBySecond(const EdgeId &edge1, const EdgeId &edge2) const = 0;
-        virtual double IntersectionSizeNormalizedByFirst(const EdgeId& edge1, const EdgeId& edge2) const = 0;
+        virtual double GetIntersectionSizeNormalizedByUnion(const EdgeId &edge1, const EdgeId &edge2) const = 0;
+        virtual double GetIntersectionSizeNormalizedBySecond(const EdgeId &edge1, const EdgeId &edge2) const = 0;
+        virtual double GetIntersectionSizeNormalizedByFirst(const EdgeId &edge1, const EdgeId &edge2) const = 0;
         virtual double AverageBarcodeCoverage () const = 0;
         virtual size_t GetSizeHeads(const EdgeId& edge) const = 0;
         virtual size_t GetSizeTails(const EdgeId& edge) const = 0;
@@ -131,25 +130,25 @@ namespace tslr_resolver {
         }
 
 
-        virtual double IntersectionSizeNormalizedByUnion(const EdgeId& edge1, const EdgeId& edge2) const override {
+        virtual double GetIntersectionSizeNormalizedByUnion(const EdgeId &edge1, const EdgeId &edge2) const override {
             if (UnionSize(edge1, edge2)) {
-                return static_cast <double> (IntersectionSize(edge1, edge2)) /
+                return static_cast <double> (GetIntersectionSize(edge1, edge2)) /
                        static_cast <double> (UnionSize(edge1, edge2));
             }
             return 0;
         }
 
-        virtual double IntersectionSizeNormalizedBySecond(const EdgeId &edge1, const EdgeId &edge2) const override {
+        virtual double GetIntersectionSizeNormalizedBySecond(const EdgeId &edge1, const EdgeId &edge2) const override {
             if (GetSizeHeads(edge2) > 0) {
-                return static_cast <double> (IntersectionSize(edge1, edge2)) /
+                return static_cast <double> (GetIntersectionSize(edge1, edge2)) /
                        static_cast <double> (GetSizeHeads(edge2));
             }
             return 0;
         }
 
-        virtual double IntersectionSizeNormalizedByFirst(const EdgeId &edge1, const EdgeId& edge2) const override {
+        virtual double GetIntersectionSizeNormalizedByFirst(const EdgeId &edge1, const EdgeId &edge2) const override {
             if (GetSizeTails(edge1) > 0) {
-                return static_cast <double> (IntersectionSize(edge1, edge2)) /
+                return static_cast <double> (GetIntersectionSize(edge1, edge2)) /
                        static_cast <double> (GetSizeTails(edge1));
             }
             return 0;
@@ -164,9 +163,9 @@ namespace tslr_resolver {
             return GetEntryTails(edge).Size();
         }
 
-        void FillMap (const string& reads_filename, const Index& index,
-                      const KmerSubs& kmer_mapper) {
-            auto lib_vec = GetLibrary(reads_filename);
+        void FillMap (const Index& index, const KmerSubs& kmer_mapper) {
+            std::string tslr_dataset = cfg::get().ts_res.tslr_barcode_dataset;
+            auto lib_vec = GetLibrary(tslr_dataset);
             INFO("Constructing mapper")
             auto mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, Index> >
                     (g_, index, kmer_mapper);
@@ -196,7 +195,7 @@ namespace tslr_resolver {
                                  "Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size()
                                               << "%)");
                 if (lib_vec.size() > 10 && i % (lib_vec.size() / 10 + 1) == 0) {
-                    INFO("Processed " << i << " paths from " << lib_vec.size() << " (" << i * 100 / lib_vec.size() << "%)");
+                    INFO("Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size() << "%)");
                 }
             }
         }
@@ -220,8 +219,8 @@ namespace tslr_resolver {
             return static_cast <double> (barcodes_overall_heads) / static_cast <double> (long_edges);
         }
 
-        size_t IntersectionSize(const EdgeId &edge1, const EdgeId &edge2) const override {
-            return GetEntryTails(edge1).IntersectionSize(GetEntryHeads(edge2));
+        size_t GetIntersectionSize(const EdgeId &edge1, const EdgeId &edge2) const override {
+            return GetEntryTails(edge1).GetIntersectionSize(GetEntryHeads(edge2));
         }
 
         size_t UnionSize(const EdgeId &edge1, const EdgeId &edge2) const override {
@@ -300,8 +299,6 @@ namespace tslr_resolver {
                     tmp_stream >> lib.barcode_;
                     tmp_stream >> lib.left_;
                     tmp_stream >> lib.right_;
-                    //lib.barcode_ = lib.barcode_.substr(lib.barcode_.length() - 8);
-                    INFO(lib.barcode_)
                     barcode_codes_.AddBarcode(lib.barcode_);
                     lib_vec.push_back(lib);
                 }
@@ -329,7 +326,7 @@ namespace tslr_resolver {
             return barcode_distribution_;
         }
 
-        size_t IntersectionSize(const SimpleBarcodeEntry& other) const {
+        size_t GetIntersectionSize(const SimpleBarcodeEntry &other) const {
             size_t result = 0;
             for (auto it = barcode_distribution_.begin(); it != barcode_distribution_.end(); ++it) {
                 if (other.GetDistribution().find(it-> first) != other.GetDistribution().end()) {
@@ -342,7 +339,7 @@ namespace tslr_resolver {
         size_t UnionSize(const SimpleBarcodeEntry& other) const {
             auto distr_this = barcode_distribution_;
             auto distr_other = other.GetDistribution();
-            return Size() + other.Size() - IntersectionSize(other);
+            return Size() + other.Size() - GetIntersectionSize(other);
         }
 
         void InsertSet (barcode_distribution_t& set) {

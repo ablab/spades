@@ -1,10 +1,10 @@
 #pragma once
 
-#include <algorithms/path_extend/extension_chooser.hpp>
-#include <algorithms/path_extend/path_filter.hpp>
-#include <algorithms/path_extend/path_extender.hpp>
-#include <algorithms/path_extend/pe_resolver.hpp>
-#include <algorithms/path_extend/path_extend_launch.hpp>
+#include <common/modules/path_extend/extension_chooser.hpp>
+#include <common/modules/path_extend/path_filter.hpp>
+#include <common/modules/path_extend/path_extender.hpp>
+#include <common/modules/path_extend/pe_resolver.hpp>
+#include <common/modules/path_extend/path_extend_launch.hpp>
 #include <assembly_graph/graph_support/scaff_supplementary.hpp>
 #include <cmath>
 #include "barcode_mapper.hpp"
@@ -67,7 +67,7 @@ namespace tslr_resolver {
                 std::vector <EdgeWithDistance> best_candidates;
                 std::copy_if(edges_copy.begin(), edges_copy.end(), std::back_inserter(best_candidates),
                              [this, &decisive_edge](const EdgeWithDistance& edge) {
-                                 return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
+                                 return this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
                                         absolute_barcode_threshold_ && g_.length(edge.e_) > len_threshold_;
                              });
                 if (best_candidates.size() == 1) {
@@ -88,19 +88,24 @@ namespace tslr_resolver {
                 DEBUG("Several candidates found. Further filtering.");
                 auto fittest_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
                                                      [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                                         return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) <
-                                                                this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge2.e_);
+                                                         return this->bmapper_->GetIntersectionSizeNormalizedBySecond(
+                                                                 decisive_edge, edge1.e_) <
+                                                                 this->bmapper_->GetIntersectionSizeNormalizedBySecond(
+                                                                         decisive_edge, edge2.e_);
                                                      }));
-                double best_score = bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, fittest_edge.e_);
+                double best_score = bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, fittest_edge.e_);
                 DEBUG("fittest edge " << fittest_edge.e_.int_id());
                 DEBUG("score " << best_score);
                 std::nth_element(edges_copy.begin(), edges_copy.begin() + 1, edges_copy.end(),
                                  [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                     return this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge1.e_) >
-                                            this->bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, edge2.e_);
+                                     return this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
+                                                                                                  edge1.e_) >
+                                             this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
+                                                                                                   edge2.e_);
                                  });
                 auto second_best_edge = edges_copy.at(1);
-                double second_best_score = bmapper_->IntersectionSizeNormalizedBySecond(decisive_edge, second_best_edge.e_);
+                double second_best_score = bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
+                                                                                           second_best_edge.e_);
                 DEBUG("Second best edge " << second_best_edge.e_.int_id());
                 DEBUG("second best score " << second_best_score);
                 DEBUG(best_candidates.size() << " best candidates");

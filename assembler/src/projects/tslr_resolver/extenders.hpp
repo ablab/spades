@@ -10,7 +10,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
 
     class PathJoiner : public ContigsMaker {
     public:
-        PathJoiner(Graph & g, GraphCoverageMap& cov_map,
+        PathJoiner(const Graph & g, GraphCoverageMap& cov_map,
                 size_t max_diff_len,
         size_t max_repeat_length,
         bool detect_repeats_online,

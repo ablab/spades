@@ -1,8 +1,6 @@
 #pragma once
 
-#include <modules/pipeline/graph_pack.hpp>
 #include "barcode_mapper.hpp"
-#include "../../modules/visualization/graph_labeler.hpp"
 
 namespace tslr_resolver {
 
@@ -30,14 +28,14 @@ namespace tslr_resolver {
             auto component = omnigraph::EdgeNeighborhood(graph(), e, max_vertices, edge_length_bound);
             auto edge_set = component.edges();
             for (auto edge : edge_set) {
-                if (barcode_mapper_->IntersectionSize(e, edge) >= barcode_threshold) {
+                if (barcode_mapper_->GetIntersectionSize(e, edge) >= barcode_threshold) {
                     std::string str = ToString(this->graph().int_id(edge)) + ": " +
-                                      std::to_string(barcode_mapper_->IntersectionSizeNormalizedByFirst(e, edge)) + ", ";
+                                      std::to_string(barcode_mapper_->GetIntersectionSizeNormalizedByFirst(e, edge)) + ", ";
                     head_labels.push_back(str);
                 }
-                if (barcode_mapper_->IntersectionSize(edge, e) >= barcode_threshold) {
+                if (barcode_mapper_->GetIntersectionSize(edge, e) >= barcode_threshold) {
                     std::string str = ToString(this->graph().int_id(edge)) + ": " +
-                                      std::to_string(barcode_mapper_->IntersectionSizeNormalizedByFirst(edge, e)) + ", ";
+                                      std::to_string(barcode_mapper_->GetIntersectionSizeNormalizedByFirst(edge, e)) + ", ";
                     tail_labels.push_back(str);
                 }
             }

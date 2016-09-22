@@ -1,9 +1,8 @@
 #pragma once
 
-#include <modules/pipeline/stage.hpp>
-#include <modules/stages/construction.hpp>
 #include <tslr_pe.hpp>
 #include <barcode_mapper.hpp>
+#include "common/pipeline/stage.hpp"
 
 namespace spades {
     class TslrResolverStage : public AssemblyStage {
@@ -14,9 +13,9 @@ namespace spades {
 
     public:
 
-        TslrResolverStage(size_t k, const std::string& output_file, const std::string& path_to_reference) :
+        TslrResolverStage(size_t k, const std::string& output_file) :
                 AssemblyStage("TSLR repeat resolver", "tslr_repeat_resolver"),
-                k_(k), output_file_(output_file), path_to_reference_(path_to_reference) {
+                k_(k), output_file_(output_file) {
         }
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
