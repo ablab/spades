@@ -21,6 +21,9 @@
 #include "utils/memory_limit.hpp"
 #include "utils/file_limit.hpp"
 
+#include "adt/iterator_range.hpp"
+#include "adt/loser_tree.hpp"
+
 #include "mphf.hpp"
 #include "base_hash.hpp"
 #include "hypergraph.hpp"
@@ -150,9 +153,18 @@ class KMerSortingSplitter : public KMerSplitter<Seq> {
 
 #     pragma omp critical
       {
+        size_t cnt =  it - SortBuffer.begin();
+
+        // Write k-mers
         FILE *f = fopen(ostreams[k].c_str(), "ab");
         VERIFY_MSG(f, "Cannot open temporary file to write");
-        fwrite(SortBuffer.data(), SortBuffer.el_data_size(), it - SortBuffer.begin(), f);
+        fwrite(SortBuffer.data(), SortBuffer.el_data_size(), cnt, f);
+        fclose(f);
+
+        // Write index
+        f = fopen((ostreams[k] + ".idx").c_str(), "ab");
+        VERIFY_MSG(f, "Cannot open temporary file to write");
+        fwrite(&cnt, sizeof(cnt), 1, f);
         fclose(f);
       }
     }
@@ -308,18 +320,80 @@ private:
                     unsigned K) {
     MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::GetDataSize(K), /* unlink */ true);
 
-    // Sort the stuff
-    libcxx::sort(ins.begin(), ins.end(), array_less<typename Seq::DataType>());
+    std::string IdxFileName = ifname + ".idx";
+    if (FILE *f = fopen(IdxFileName.c_str(), "rb")) {
+      fclose(f);
+      MMappedRecordReader<size_t> index(ifname + ".idx", true, -1ULL);
 
-    // FIXME: Use something like parallel version of unique_copy but with explicit
-    // resizing.
-    auto it = std::unique(ins.begin(), ins.end(), array_equal_to<typename Seq::DataType>());
+      // INFO("Total runs: " << index.size());
 
-    MMappedRecordArrayWriter<typename Seq::DataType> os(ofname, Seq::GetDataSize(K));
-    os.resize(it - ins.begin());
-    std::copy(ins.begin(), it, os.begin());
+      // Prepare runs
+      std::vector<adt::iterator_range<decltype(ins.begin())>> ranges;
+      auto beg = ins.begin();
+      for (size_t sz : index) {
+        auto end = std::next(beg, sz);
+        ranges.push_back(adt::make_range(beg, end));
+        VERIFY(std::is_sorted(beg, end, array_less<typename Seq::DataType>()));
+        beg = end;
+      }
 
-    return it - ins.begin();
+      // Construct tree on top entries of runs
+      adt::loser_tree<decltype(beg),
+                      array_less<typename Seq::DataType>> tree(ranges);
+
+      if (tree.empty()) {
+        FILE *g = fopen(ofname.c_str(), "ab");
+        VERIFY_MSG(g, "Cannot open temporary file to write");
+        fclose(g);
+        return 0;
+      }
+
+      // Write it down!
+      KMerVector<Seq> buf(K, 32*1024*1024);
+      auto pval = tree.pop();
+      size_t total = 0;
+      while (!tree.empty()) {
+          buf.clear();
+          for (size_t cnt = 0; cnt < buf.capacity() && !tree.empty(); ) {
+              auto cval = tree.pop();
+              if (!array_equal_to<typename Seq::DataType>()(pval, cval)) {
+                  buf.push_back(pval);
+                  pval = cval;
+                  cnt += 1;
+              }
+          }
+          total += buf.size();
+
+          FILE *g = fopen(ofname.c_str(), "ab");
+          VERIFY_MSG(g, "Cannot open temporary file to write");
+          fwrite(buf.data(), buf.el_data_size(), buf.size(), g);
+          fclose(g);
+      }
+
+      // Handle very last value
+      {
+        FILE *g = fopen(ofname.c_str(), "ab");
+        VERIFY_MSG(g, "Cannot open temporary file to write");
+        fwrite(pval.data(), pval.data_size(), 1, g);
+        fclose(g);
+        total += 1;
+      }
+      
+      return total;
+    } else {
+      // Sort the stuff
+      libcxx::sort(ins.begin(), ins.end(), array_less<typename Seq::DataType>());
+
+      // FIXME: Use something like parallel version of unique_copy but with explicit
+      // resizing.
+      auto it = std::unique(ins.begin(), ins.end(), array_equal_to<typename Seq::DataType>());
+
+      MMappedRecordArrayWriter<typename Seq::DataType> os(ofname, Seq::GetDataSize(K));
+      os.resize(it - ins.begin());
+      std::copy(ins.begin(), it, os.begin());
+
+      return it - ins.begin();
+    }
   }
 };
 
