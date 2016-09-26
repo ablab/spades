@@ -67,9 +67,6 @@ clean:
 	$(MAKE) -C build/debug/projects/cclean
 	$(MAKE) -C build/release/projects/cclean
 
-#all:
-#	$(MAKE) -C build/release all
-#	$(MAKE) -C build/debug all
-
-all: 
+all:
 	$(MAKE) -C build/release all
+	$(MAKE) -C build/debug all

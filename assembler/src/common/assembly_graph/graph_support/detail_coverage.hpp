@@ -241,7 +241,7 @@ public:
         for (auto I = count_index_.value_cbegin(), E = count_index_.value_cend();
                 I != E; ++I) {
             const auto& edge_info = *I;
-            VERIFY(edge_info.Valid());
+            VERIFY(edge_info.valid());
             VERIFY(edge_info.edge_id.get() != NULL);
             SimultaneousCoverageCollector<typename CountIndex::storing_type>::CollectCoverage(*this, edge_info);
         }

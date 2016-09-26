@@ -31,7 +31,7 @@ struct EdgeInfo {
     }
 
     EdgeInfo conjugate(size_t k) const {
-        if(!Valid()) {
+        if(!valid()) {
             return EdgeInfo(IdType(0), unsigned(-1), count);
         } else {
             return EdgeInfo(edge_id->conjugate(), (unsigned)edge_id->length(k) - offset, count);
@@ -54,7 +54,7 @@ struct EdgeInfo {
         return offset == unsigned(-2);
     }
 
-    bool Valid() const {
+    bool valid() const {
         return !clean() && !removed();
     }
 };
@@ -97,7 +97,7 @@ public:
             return false;
 
         KmerPos entry = base::get_value(kwh);
-        if (!entry.Valid())
+        if (!entry.valid())
             return false;
         return graph_.EdgeNucls(entry.edge_id).contains(kwh.key(), entry.offset);
     }
@@ -170,7 +170,7 @@ public:
   bool contains(const KeyWithHash &kwh) const {
       if (!base::valid(kwh))
           return false;
-      return this->get_raw_value_reference(kwh).Valid();
+      return this->get_raw_value_reference(kwh).valid();
   }
 
   template<class Writer>
