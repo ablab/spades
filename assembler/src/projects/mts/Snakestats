@@ -127,7 +127,7 @@ rule int_bins_all:
 #---- GF per bin per reference -------------------------------------------------
 #Helper formatters for determining input files from different stages
 PROP = {"prelim": ("assembly/{}_splits.fasta",   "annotation/{}.ann"),
-        "prop":   ("propagation/{}_edges.fasta", "propagation/{}_edges.ann")}
+        "concoct": ("assembly/{}_splits.fasta",  "annotation/concoct/{}.ann")}
 
 #TODO: split into different directories per sample
 rule split_bins:
@@ -177,7 +177,7 @@ rule quast_stats:
 
 # Run this AFTER 'all'
 rule stats_all:
-    input:   expand("stats/summary/gf_{bin}_{prop}.tsv", bin=["bin"], prop=PROP)
+    input:   expand("stats/summary/gf_{bin}_{prop}.tsv", bin=["bin"], prop=["prelim", "prop"])
     message: "Gathered some numbers, deal with them."
 
 #---- Reassembly statistics ----------------------------------------------------

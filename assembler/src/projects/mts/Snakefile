@@ -17,6 +17,7 @@ K = int(config.get("K", 55))
 SMALL_K = int(config.get("SMALL_K", 21))
 MIN_CONTIG_LENGTH = int(config.get("MIN_CONTIG_LENGTH", 2000))
 THREADS = config.get("THREADS", 16)
+BINNER = config.get("BINNER", "canopy")
 
 #Path to saves of necessary assembly stage
 SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(K)
@@ -101,7 +102,7 @@ rule multiplicities:
 
 rule profile:
     input:   contigs="assembly/{sample}.fasta", mpl="profile/kmers.mpl"
-    output:  "profile/{sample}.id", "profile/{sample}.mpl"
+    output:  "profile/{sample}.id", "profile/{sample}.mpl", "assembly/{sample}_splits.fasta"
     log:     "profile/{sample}.log"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:   "{BIN}/contig_abundance_counter -k {SMALL_K} -w tmp -c {input.contigs}"
@@ -109,26 +110,47 @@ rule profile:
              " -f assembly/{wildcards.sample}_splits.fasta"
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
-rule canopy_pre:
+#Clustering with canopy
+rule binning_pre:
     input:   expand("profile/{sample}.id", sample=SAMPLES)
-    output:  "profile/canopy.in"
-    message: "Preparing canopy input"
-    shell:   "{SCRIPTS}/make_canopy_input.py {output} {input}"
+    output:  "binning/{binner}/profiles.in"
+    message: "Preparing input for {wildcards.binner}"
+    shell:   "{SCRIPTS}/make_input.py -t {wildcards.binner} -d profile -o {output} {SAMPLES}"
 
+#Default clustering with CONCOCT
 rule canopy:
-    input:   rules.canopy_pre.output
-    output:  out="profile/canopy.out", prof="profile/canopy.prof"
+    input:   "binning/canopy/profiles.in"
+    output:  out="binning/canopy/binning.out", prof="binning/canopy/bins.prof"
     threads: THREADS
     message: "Running canopy clustering"
-    shell:   "{SOFT}/cc.bin -n {threads} -i {input} -o {output.out} -c {output.prof} >profile/canopy.log 2>&1"
+    shell:   "{SOFT}/cc.bin -n {threads} -i {input} -o {output.out} -c {output.prof} >binning/canopy/canopy.log 2>&1"
 
-rule canopy_post:
-    input:   rules.canopy.output.out
+#Alternative clustering with CONCOCT
+rule combine_splits:
+    input:   expand("assembly/{sample}_splits.fasta", sample=SAMPLES)
+    output:  "assembly/samples_splits.fasta"
+    message: "Combine splitted contigs"
+    shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
+
+rule concoct:
+    input:   contigs=rules.combine_splits.output[0], profiles="binning/concoct/profiles.in"
+    output:  out="binning/concoct/clustering_gt1000.csv"
+    params:  "binning/concoct"
+    message: "Running CONCOCT clustering"
+    shell:   "mkdir -p {params} && "
+             "set +u; source activate concoct_env; set -u && "
+             "concoct --composition_file {input.contigs} --coverage_file {input.profiles} -b {params}"
+
+binning_inputs = {"canopy": rules.canopy.output.out, "concoct": rules.concoct.output.out}
+
+rule binning_post:
+    input:   binning_inputs[BINNER]
     output:  expand("annotation/{sample}.ann", sample=SAMPLES)
     message: "Preparing raw annotations"
-    shell:   "{SCRIPTS}/parse_canopy_out.py {input} ./annotation"
+    shell:   "{SCRIPTS}/parse_output.py -t {BINNER} -o annotation {input}"
 
-rule binning:
+#Post-clustering pipeline
+rule read_binning:
     input:   contigs="assembly/{sample}.fasta", ann="annotation/{sample}.ann",
              left=left_reads, right=right_reads
     output:  "propagation/{sample}_edges.ann"
@@ -141,6 +163,7 @@ rule binning:
              " -a {input.ann} -f {params.splits} -l {input.left} -r {input.right}"
              " -o binning -n {wildcards.sample} -d {params.out} >{log} 2>&1"
 
+#TODO: bin profiles for CONCOCT
 rule choose_samples:
     input:   binned=expand("propagation/{sample}_edges.ann", sample=SAMPLES),
              prof=rules.canopy.output.prof
