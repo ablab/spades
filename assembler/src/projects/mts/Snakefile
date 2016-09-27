@@ -130,7 +130,7 @@ rule combine_splits:
     input:   expand("assembly/{sample}_splits.fasta", sample=SAMPLES)
     output:  "assembly/samples_splits.fasta"
     message: "Combine splitted contigs"
-    shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
+    shell:   "{SCRIPTS}/combine_contigs.py -r {input} > {output}"
 
 rule concoct:
     input:   contigs=rules.combine_splits.output[0], profiles="binning/concoct/profiles.in"

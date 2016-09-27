@@ -32,7 +32,7 @@ with open(PROF) as input:
         print("Profile of", CAG, ":", profile)
 
         weighted_profile = list((i, ab)
-            for i, ab in enumerate(profile) if ab >= MIN_ABUNDANCE and path.exists("{}/{}/sample{}_1.fastq".format(DIR, CAG, i)))
+            for i, ab in enumerate(profile) if ab >= MIN_ABUNDANCE and path.exists("{}/{}/sample{}_1.fastq".format(DIR, CAG, i + 1)))
         weighted_profile.sort(key = itemgetter(1))
 
         sum = 0
