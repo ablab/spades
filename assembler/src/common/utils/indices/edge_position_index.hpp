@@ -22,7 +22,7 @@ struct EdgeInfo {
 
     EdgeInfo(IdType edge_id_ = IdType(), unsigned offset_ = unsigned(-1), unsigned count_ = 0) :
             edge_id(edge_id_), offset(offset_), count(count_) {
-        VERIFY(clean());
+        VERIFY(edge_id != IdType() || clean());
     }
 
     template<class KWH>
@@ -61,7 +61,7 @@ struct EdgeInfo {
 
 template<class stream, class IdType>
 stream &operator<<(stream &s, const EdgeInfo<IdType> &info) {
-    return s << "EdgeInfo[" << info.edge_id << ", " << info.offset << ", " << info.count << "]";
+    return s << "EdgeInfo[" << info.edge_id.int_id() << ", " << info.offset << ", " << info.count << "]";
 }
 
 template<class Graph, class StoringType = DefaultStoring>

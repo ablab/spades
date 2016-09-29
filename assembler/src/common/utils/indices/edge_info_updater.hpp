@@ -46,10 +46,12 @@ class EdgeInfoUpdater {
     void UpdateKMers(const Sequence &nucls, EdgeId e) {
         VERIFY(nucls.size() >= index_.k());
         KeyWithHash kwh = index_.ConstructKWH(Kmer(index_.k(), nucls));
-        index_.PutInIndex(kwh, e, 0);
+        if (kwh.is_minimal())
+            index_.PutInIndex(kwh, e, 0);
         for (size_t i = index_.k(), n = nucls.size(); i < n; ++i) {
             kwh <<= nucls[i];
-            index_.PutInIndex(kwh, e, i - index_.k() + 1);
+            if (kwh.is_minimal())
+                index_.PutInIndex(kwh, e, i - index_.k() + 1);
         }
     }
 
