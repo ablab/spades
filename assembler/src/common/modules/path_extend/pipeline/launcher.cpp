@@ -95,14 +95,14 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
     auto edge_colorer = make_shared<ScaffoldEdgeColorer>();
     graph_colorer::CompositeGraphColorer<ScaffoldGraph> colorer(vertex_colorer, edge_colorer);
 
-    INFO("Visualizing scaffold grpah");
+    INFO("Visualizing scaffold graph");
     ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, edge_labels);
     std::ofstream single_dot;
     single_dot.open((filename + "_single.dot").c_str());
     singleVisualizer.Visualize(single_dot, colorer);
     single_dot.close();
 
-    INFO("Printing scaffold grpah");
+    INFO("Printing scaffold graph");
     std::ofstream data_stream;
     data_stream.open((filename + ".data").c_str());
     scaffold_graph.Print(data_stream);
@@ -343,7 +343,7 @@ void PathExtendLauncher::PrepareForRun() const {
 void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &result) const {
     //Fixes distances for paths gaps and tries to fill them in
     INFO("Closing gaps in paths");
-    CommonPrefixDijkstraGapCloser polisher(gp_.g, params_.max_polisher_gap);
+    PathPolisher polisher(gp_, dataset_info_, main_unique_storage_, params_.max_polisher_gap);
     polisher.PolishPaths(paths, result);
     result.SortByLength();
     INFO("Gap closing completed")

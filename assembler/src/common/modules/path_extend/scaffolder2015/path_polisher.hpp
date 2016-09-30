@@ -1,71 +1,81 @@
-//
-// Created by andrey on 12.05.16.
-//
 #pragma once
 
 #include "assembly_graph/paths/path_processor.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
-
+#include "modules/path_extend/paired_library.hpp"
+#include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "common/pipeline/graph_pack.hpp"
 
 namespace path_extend {
 
 class PathGapCloser {
-
 protected:
-
     const Graph& g_;
-
-    virtual BidirectionalPath Polish(const BidirectionalPath& path) = 0;
-
+    size_t max_path_len_;
+    int min_gap_;
 public:
-    PathGapCloser(const Graph& g): g_(g) {}
+    virtual BidirectionalPath Polish(const BidirectionalPath& path) = 0;
+//TODO:: config
+    PathGapCloser(const Graph& g, size_t max_path_len): g_(g), max_path_len_(max_path_len), min_gap_(int(g.k() + 10)) {}
 
-    virtual void PolishPaths(const PathContainer& paths, PathContainer& result);
 };
 
+class MatePairGapCloser: public PathGapCloser {
+    const shared_ptr<PairedInfoLibrary> lib_;
+    const ScaffoldingUniqueEdgeStorage& storage_;
+
+//TODO: config? somewhere else?
+    static constexpr double weight_priority = 5;
+public:
+    EdgeId FindNext(const BidirectionalPath& path, size_t index,
+                        const set<EdgeId>& present_in_paths, VertexId v) const;
+    MatePairGapCloser(const Graph& g, size_t max_path_len, const shared_ptr<PairedInfoLibrary> lib, const ScaffoldingUniqueEdgeStorage& storage):
+            PathGapCloser(g, max_path_len), lib_(lib), storage_(storage) {}
+    BidirectionalPath Polish(const BidirectionalPath& path) override;
+};
 
 class DijkstraGapCloser: public PathGapCloser {
 
 protected:
-    size_t max_path_len_;
 
     BidirectionalPath Polish(const BidirectionalPath& path) override;
 
     size_t MinPathLength(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
 
-    virtual void FillWithMultiplePaths(const BidirectionalPath& path, size_t index,
+    bool FillWithMultiplePaths(const BidirectionalPath& path, size_t index,
                                        const omnigraph::PathStorageCallback<Graph>& path_storage,
-                                       BidirectionalPath& result);
+                                       BidirectionalPath& result) const;
+    bool FillWithBridge(const BidirectionalPath& path, size_t index,
+                                                                  const omnigraph::PathStorageCallback<Graph>& path_storage,
+                                                                  BidirectionalPath& result) const;
+    size_t MinPathSize(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
+    vector<EdgeId> LCP(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
+    std::map<EdgeId, size_t> CountEdgesQuantity(const omnigraph::PathStorageCallback<Graph>& path_storage, size_t length_limit) const;
+
 
 public:
     DijkstraGapCloser(const Graph& g, size_t max_path_len):
-        PathGapCloser(g), max_path_len_(max_path_len) {}
+        PathGapCloser(g, max_path_len) {}
 
 
 };
 
-
-class CommonPrefixDijkstraGapCloser: public DijkstraGapCloser {
+class PathPolisher{
 
 protected:
 
-    size_t MinPathSize(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
-
-    vector<EdgeId> LCS(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
-
-    vector<EdgeId> LCP(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
-
-    void FillWithMultiplePaths(const BidirectionalPath& path, size_t index,
-                               const omnigraph::PathStorageCallback<Graph>& path_storage,
-                               BidirectionalPath& result) override ;
+    const conj_graph_pack& gp_;
+    void InfoAboutGaps(PathContainer & result);
+    vector<shared_ptr<PathGapCloser>> gap_closers;
+    BidirectionalPath Polish(const BidirectionalPath& path);
 
 public:
-    CommonPrefixDijkstraGapCloser(const Graph& g, size_t max_path_len):
-        DijkstraGapCloser(g, max_path_len) {}
+    PathPolisher(const conj_graph_pack& gp, const config::dataset& dataset_info, const ScaffoldingUniqueEdgeStorage& storage, size_t max_resolvable_len);
 
-
+    void PolishPaths(const PathContainer& paths, PathContainer& result);
 };
+
 
 }
