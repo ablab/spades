@@ -689,7 +689,11 @@ def save_contigs(working_dir, contig_storage_dir, contigs, rewrite_latest):
 
     for name, file_name, prefix, opts in contigs:
         saved_ctg_name = name_prefix + name + ctg_suffix + ".fasta"
-        shutil.copy(os.path.join(output_dir, file_name + ".fasta"), os.path.join(contig_storage_dir, saved_ctg_name))
+        spades_filename = os.path.join(output_dir, file_name + ".fasta")
+        if not os.path.exists(spades_filename):
+            log.warn("Contigs " + spades_filename + " do not exist ")
+            continue
+        shutil.copy(spades_filename, os.path.join(contig_storage_dir, saved_ctg_name))
         log.log(name + " saved to " + os.path.join(contig_storage_dir, saved_ctg_name))
 
         if rewrite_latest:
