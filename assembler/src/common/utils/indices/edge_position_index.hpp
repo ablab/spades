@@ -8,7 +8,6 @@
 #pragma once
 
 #include "perfect_hash_map.hpp"
-#include "edge_info_updater.hpp"
 #include "basic/sequence/runtime_k.hpp"
 #include "common/basic/reads/single_read.hpp"
 
@@ -107,13 +106,18 @@ public:
             return;
         
         KmerPos &entry = this->get_raw_value_reference(kwh);
-        if (entry.removed())
+        if (entry.removed()) {
+            //VERIFY(false);
             return;
+        }
         if (entry.clean()) {
+            //put verify on this conversion!
             this->put_value(kwh, KmerPos(id, (unsigned)offset, entry.count));
         } else if (contains(kwh)) {
+            //VERIFY(false);
             entry.remove();
         } else {
+            //VERIFY(false);
             //FIXME bad situation; some other kmer is there; think of putting verify
         }
     }

@@ -11,6 +11,7 @@
 #include "utils/openmp_wrapper.h"
 #include "basic/sequence/sequence.hpp"
 #include "assembly_graph/core/graph_iterators.hpp"
+#include "utils/indices/edge_position_index.hpp"
 
 namespace debruijn_graph {
 

@@ -885,6 +885,7 @@ void ScanGraphPack(const string& file_name,
             WARN("Cannot load kmer_mapper, information on projected kmers will be missed");
         }
     if (!scanner.LoadFlankingCoverage(file_name, gp.flanking_cov)) {
+        WARN("Cannot load flanking coverage, flanking coverage will be recovered from index");
         gp.flanking_cov.Fill(gp.index.inner_index());
     }
 }

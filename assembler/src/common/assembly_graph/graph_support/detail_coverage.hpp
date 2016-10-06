@@ -73,7 +73,7 @@ public:
         return averaging_range_;
     }
 
-    //todo currently left for saves compatibility! remove later!
+    //left for saves compatibility and tests remove later!
     template<class CoverageIndex>
     void Fill(const CoverageIndex& count_index) {
         TRACE("Filling flanking coverage from index");
@@ -84,7 +84,7 @@ public:
             EdgeId e = edge_info.edge_id;
             unsigned offset = edge_info.offset;
             unsigned count = edge_info.count;
-            VERIFY(offset != -1u);
+            VERIFY(edge_info.valid());
             VERIFY(e.get() != NULL);
             if (offset < averaging_range_) {
                 IncRawCoverage(e, count);
@@ -241,9 +241,14 @@ public:
         for (auto I = count_index_.value_cbegin(), E = count_index_.value_cend();
                 I != E; ++I) {
             const auto& edge_info = *I;
-            VERIFY(edge_info.valid());
-            VERIFY(edge_info.edge_id.get() != NULL);
-            SimultaneousCoverageCollector<typename CountIndex::storing_type>::CollectCoverage(*this, edge_info);
+            //VERIFY(edge_info.valid());
+            if (edge_info.valid()) {
+                VERIFY(edge_info.edge_id.get() != NULL);
+                SimultaneousCoverageCollector<typename CountIndex::storing_type>::CollectCoverage(*this, edge_info);
+            } else {
+                VERIFY(edge_info.removed());
+                WARN("Duplicating k+1-mers in graph (known bug in construction)");
+            }
         }
     }
 };

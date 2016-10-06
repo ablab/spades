@@ -9,7 +9,7 @@
 
 #include "common/assembly_graph/core/graph.hpp"
 #include "common/assembly_graph/core/action_handlers.hpp"
-#include "utils/indices/edge_position_index.hpp"
+#include "utils/indices/edge_info_updater.hpp"
 #include "edge_index_refiller.hpp"
     
 namespace debruijn_graph {
