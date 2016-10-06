@@ -219,13 +219,24 @@ public:
         return ConstructSeqGoingRight(edge);
     }
 
+    //Loop consists of 4 parts: 2 selfRC k+1-mers and two sequences of arbitrary length RC to each other; pos is a position of one of selfRC edges
+    vector<Sequence> SplitLoop(Sequence s, size_t pos) {
+        return {s.Subseq(pos, pos + kmer_size_ + 1), s.Subseq(pos + 1, s.size() - kmer_size_) + s.Subseq(0, pos + kmer_size_)};
+
+    }
+
 //TODO Think about what happends to self rc perfect loops
-    Sequence ConstructLoopFromVertex(const KeyWithHash &kh) {
+    vector<Sequence> ConstructLoopFromVertex(const KeyWithHash &kh) {
         DeEdge break_point(kh, origin_.GetUniqueOutgoing(kh));
-        Sequence result = ConstructSequenceWithEdge(break_point);
-        if (clean_condensed_)
-            origin_.IsolateVertex(kh);
-        return result;
+        Sequence s = ConstructSequenceWithEdge(break_point);
+        Kmer kmer = s.start<Kmer>(kmer_size_ + 1) >> 'A';
+        for(size_t i = kmer_size_; i < s.size(); i++) {
+            kmer = kmer << s[i];
+            if (kmer == !kmer) {
+                return SplitLoop(s, i - kmer_size_);
+            }
+        }
+        return {s};
     }
 };
 
@@ -307,12 +318,13 @@ private:
         for (kmer_iterator it = origin_.kmer_begin(); it.good(); ++it) {
             KeyWithHash kh = origin_.ConstructKWH(Kmer(kmer_size_, *it));
             if (!IsJunction(kh)) {
-                Sequence loop = finder.ConstructLoopFromVertex(kh);
-                result.push_back(loop);
-                CleanCondensed(loop);
-                if(loop != (!loop)) {
-                    CleanCondensed(!loop);
-                    result.push_back(!loop);
+                vector<Sequence> loop = finder.ConstructLoopFromVertex(kh);
+                for(Sequence s: loop) {
+                    result.push_back(s);
+                    CleanCondensed(s);
+                    if(s != (!s)) {
+                        result.push_back(!s);
+                    }
                 }
             }
         }
