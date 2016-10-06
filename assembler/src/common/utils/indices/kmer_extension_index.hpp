@@ -196,7 +196,7 @@ struct AbstractDeEdge {
     }
 
     bool operator==(const AbstractDeEdge &other) {
-        return start.idx() == other.start.idx() && end.idx() == other.end.idx();
+        return start == other.start && end == other.end;
     }
 
     bool operator!=(const AbstractDeEdge &other) {
