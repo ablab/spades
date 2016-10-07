@@ -44,20 +44,20 @@ shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>>
     return omnigraph::visualization::DefaultColorer(gp.g, path1, path2);
 }
 
-inline double l2_norm(const AbundanceVector& v, size_t sample_cnt) {
+inline double l2_norm(const AbundanceVector& v) {
     double s = 0.;
-    for (size_t i = 0; i < sample_cnt; ++i) {
-        s += v[i] * v[i];
+    for (auto val : v) {
+        s += val * val;
     }
     return std::sqrt(s);
 }
 
-inline double cosine_sim(const AbundanceVector& v1, const AbundanceVector& v2, size_t sample_cnt) {
+inline double cosine_sim(const AbundanceVector& v1, const AbundanceVector& v2) {
     double s = 0.;
-    for (size_t i = 0; i < sample_cnt; ++i) {
+    for (size_t i = 0; i < v1.size(); ++i) {
         s += v1[i] * v2[i];
     }
-    return s / (l2_norm(v1, sample_cnt) * l2_norm(v2, sample_cnt));
+    return s / (l2_norm(v1) * l2_norm(v2));
 }
 
 template<class Graph>
@@ -110,7 +110,6 @@ private:
 template<class Graph>
 class AggressiveClearing: public omnigraph::EdgeProcessingAlgorithm<Graph> {
     typedef typename Graph::EdgeId EdgeId;
-    const size_t sample_cnt_;
     const EdgeAbundance<Graph>& edge_abundance_;
     const AbundanceVector base_profile_;
     const double similarity_threshold_;
@@ -131,13 +130,13 @@ protected:
             return false;
         }
         const auto& profile = it->second;
-        DEBUG("Edge profile " << PrintVector(profile, sample_cnt_));
-        double sim = cosine_sim(profile, base_profile_, sample_cnt_);
-        double norm_ratio = l2_norm(profile, sample_cnt_) / l2_norm(base_profile_, sample_cnt_);
+        DEBUG("Edge profile " << PrintVector(profile));
+        double sim = cosine_sim(profile, base_profile_);
+        double norm_ratio = l2_norm(profile) / l2_norm(base_profile_);
 
         DEBUG("Similarity between edge and base profiles " << sim);
         DEBUG("Norm ratio " << norm_ratio);
-        if (math::ls(norm_ratio, norm_ratio_threshold_) 
+        if (math::ls(norm_ratio, norm_ratio_threshold_)
                 || math::ls(sim, similarity_threshold_)) {
             DEBUG("Removing edge " << this->g().str(e));
 
@@ -149,21 +148,19 @@ protected:
 
 public:
     AggressiveClearing(Graph &g,
-                       size_t sample_cnt,
                        const EdgeAbundance<Graph>& edge_abundance,
                        const AbundanceVector& base_profile,
                        double similarity_threshold,
                        double norm_ratio_threshold,
                        const std::function<void(EdgeId)> &removal_handler = 0) :
         EdgeProcessingAlgorithm<Graph>(g, true),
-        sample_cnt_(sample_cnt),
         edge_abundance_(edge_abundance),
         base_profile_(base_profile),
         similarity_threshold_(similarity_threshold),
         norm_ratio_threshold_(norm_ratio_threshold),
         edge_remover_(g, removal_handler),
-        topological_condition_(pred::Or(AlternativesPresenceCondition<Graph>(g), TipCondition<Graph>(g))) { 
-            DEBUG("Base profile " << PrintVector(base_profile_, sample_cnt_));
+        topological_condition_(pred::Or(AlternativesPresenceCondition<Graph>(g), TipCondition<Graph>(g))) {
+            DEBUG("Base profile " << PrintVector(base_profile_));
         }
 private:
     DECL_LOGGER("AggressiveClearing");
@@ -171,9 +168,8 @@ private:
 
 class SeriesAnalysis : public spades::AssemblyStage {
 
-    boost::optional<AbundanceVector> InferAbundance(const std::string bin_mult_fn,
-                                                    const std::string& b_id,
-                                                    size_t sample_cnt) const {
+    boost::optional<AbundanceVector> InferAbundance(const std::string& bin_mult_fn,
+                                                    const std::string& b_id) const {
         path::CheckFileExistenceFATAL(bin_mult_fn);
 
         ifstream is(bin_mult_fn);
@@ -182,8 +178,8 @@ class SeriesAnalysis : public spades::AssemblyStage {
             string name;
             is >> name;
             if (!is.fail()) {
-                AbundanceVector vec;
-                for (size_t i = 0; i < sample_cnt; ++i) {
+                AbundanceVector vec(SampleCount(), 0.0);
+                for (size_t i = 0; i < SampleCount(); ++i) {
                     is >> vec[i];
                     VERIFY(!is.fail());
                 }
@@ -195,8 +191,7 @@ class SeriesAnalysis : public spades::AssemblyStage {
                 break;
             }
         }
-
-        return boost::optional<AbundanceVector>(MeanVector(abundances, sample_cnt));
+        return boost::optional<AbundanceVector>(MeanVector(abundances));
     }
 
 public:
@@ -207,7 +202,7 @@ public:
     void save(const conj_graph_pack &, const std::string &, const char *) const { }
 
     void run(conj_graph_pack &gp, const char *) {
-        std::string cfg = cfg::get().series_analysis;//"/Sid/snurk/mts/out/infant_gut_2/reassembly.yaml";
+        std::string cfg = cfg::get().series_analysis;
         if (cfg.empty()) {
             INFO("No series analysis config was provided via --series-analysis");
             return;
@@ -221,13 +216,13 @@ public:
         llvm::yaml::Input yin(*Buf.get());
         SeriesAnalysisConfig config;
         yin >> config;
-        
-        ContigAbundanceCounter abundance_counter(config.k, config.sample_cnt, 
-                                                 SingleClusterAnalyzer(config.sample_cnt, 2., 0.4),
+
+        ContigAbundanceCounter abundance_counter(config.k, config.sample_cnt,
+                                                 SingleClusterAnalyzer(2., 0.4),
                                                  cfg::get().tmp_dir);
 
         abundance_counter.Init(config.kmer_mult);
-        boost::optional<AbundanceVector> bin_profile = InferAbundance(config.bin_prof, config.bin, config.sample_cnt);
+        boost::optional<AbundanceVector> bin_profile = InferAbundance(config.bin_prof, config.bin);
         if (!bin_profile) {
             ERROR("Couldn't estimate profile of bin");
             return;
@@ -246,7 +241,7 @@ public:
 
         INFO("Launching aggressive graph clearing");
         //positive quality edges removed (folder colored_edges_deleted)
-        AggressiveClearing<Graph> clearing(gp.g, config.sample_cnt, edge_abundance,
+        AggressiveClearing<Graph> clearing(gp.g, edge_abundance,
                                             *bin_profile, 0.8, 0.3, [&](EdgeId e) {
                         qual_removal_handler.HandleDelete(e);});
         clearing.Run();
@@ -261,7 +256,7 @@ public:
             EdgeId e = *it;
             if (edge_abundance.count(e) == 0) {
                 qual_removal_handler2.HandleDelete(e);
-            } 
+            }
         }
     }
 };

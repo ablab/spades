@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
     //TmpFolderFixture fixture("tmp");
     create_console_logger();
 
-    ContigAbundanceCounter abundance_counter(k, sample_cnt, SingleClusterAnalyzer(sample_cnt), work_dir);
+    ContigAbundanceCounter abundance_counter(k, sample_cnt, SingleClusterAnalyzer(), work_dir);
     abundance_counter.Init(kmer_mult_fn);
 
     io::FileReadStream contigs_stream(contigs_path);
