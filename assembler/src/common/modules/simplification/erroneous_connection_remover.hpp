@@ -20,6 +20,7 @@
 #include "math/xmath.h"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/core/coverage.hpp"
+#include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "modules/simplification/topological_edge_conditions.hpp"
 
 namespace omnigraph {
@@ -331,7 +332,7 @@ class ECLoopRemover : public EdgeProcessingAlgorithm<Graph> {
 
     double ec_threshold_;
     double relative_threshold_;
-    const AbstractFlankingCoverage<Graph> &flanking_coverage_;
+    const FlankingCoverage<Graph> &flanking_coverage_;
     EdgeRemover<Graph> edge_remover_;
     size_t coverage_loops_removed = 0;
     size_t dead_loops_removed = 0;
@@ -412,7 +413,7 @@ class ECLoopRemover : public EdgeProcessingAlgorithm<Graph> {
 
 
 public:
-    ECLoopRemover(Graph &g, const AbstractFlankingCoverage<Graph> &flanking_coverage, double ec_threshold, double relative_threshold,
+    ECLoopRemover(Graph &g, const FlankingCoverage<Graph> &flanking_coverage, double ec_threshold, double relative_threshold,
                   HandlerF<Graph> removal_handler = 0): base(g),ec_threshold_(ec_threshold),
                                                                             relative_threshold_(relative_threshold), flanking_coverage_(flanking_coverage),
                                                                             edge_remover_(g, removal_handler){
@@ -436,7 +437,7 @@ private:
     double unreliability_threshold_;
     double ec_threshold_;
     double relative_threshold_;
-    const AbstractFlankingCoverage<Graph> &flanking_coverage_;
+    const FlankingCoverage<Graph> &flanking_coverage_;
     EdgeRemover<Graph> edge_remover_;
     MultiplicityCountingCondition<Graph> condition_;
 private:
@@ -504,7 +505,7 @@ private:
 
 public:
     HiddenECRemover(Graph& g, size_t uniqueness_length,
-                    const AbstractFlankingCoverage<Graph> &flanking_coverage,
+                    const FlankingCoverage<Graph> &flanking_coverage,
                     double unreliability_threshold, double ec_threshold,
                     double relative_threshold,
                     std::function<void(EdgeId)> removal_handler = 0)

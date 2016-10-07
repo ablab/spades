@@ -93,7 +93,7 @@ bool MaxFlowRemoveErroneousEdges(
 
 template<class Graph>
 bool RemoveHiddenEC(Graph& g,
-                    const debruijn_graph::FlankingCoverage<Graph>& flanking_cov,
+                    const omnigraph::FlankingCoverage<Graph>& flanking_cov,
                     const debruijn_graph::config::debruijn_config::simplification::hidden_ec_remover& her_config,
                     const SimplifInfoContainer& info,
                     omnigraph::HandlerF<Graph> removal_handler) {

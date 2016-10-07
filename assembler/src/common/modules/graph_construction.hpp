@@ -25,7 +25,7 @@
 #include "io/dataset_support/read_converter.hpp"
 
 #include "assembly_graph/handlers/edges_position_handler.hpp"
-#include "assembly_graph/graph_support/detail_coverage.hpp"
+#include "assembly_graph/graph_support/coverage_filling.hpp"
 #include "utils/indices/storing_traits.hpp"
 #include "utils/indices/edge_index_builders.hpp"
 #include "utils/openmp_wrapper.h"

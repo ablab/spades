@@ -332,12 +332,4 @@ class CoverageIndex : public GraphActionHandler<Graph> {
     }
 };
 
-//todo discuss with Anton
-template<class Graph>
-class AbstractFlankingCoverage {
-public:
-    virtual double GetInCov(typename Graph::EdgeId edge) const = 0;
-    virtual double GetOutCov(typename Graph::EdgeId edge) const = 0;
-};
-
 }
