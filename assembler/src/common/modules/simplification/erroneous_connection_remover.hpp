@@ -20,6 +20,7 @@
 #include "math/xmath.h"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/core/coverage.hpp"
+#include "modules/simplification/topological_edge_conditions.hpp"
 
 namespace omnigraph {
 
@@ -30,7 +31,7 @@ NecessaryECCondition(const Graph& g, size_t max_length, double max_coverage) {
                                                         CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
-
+//todo move to rnaSPAdes project
 template<class Graph>
 class RelativeCoverageECCondition: public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
@@ -106,12 +107,14 @@ public:
 
 };
 
+//todo move to rnaSPAdes project
 template<class Graph>
 pred::TypedPredicate<typename Graph::EdgeId> AddRelativeCoverageECCondition(const Graph &g, double rcec_ratio,
                                                                             pred::TypedPredicate<typename Graph::EdgeId> condition) {
     return pred::And(RelativeCoverageECCondition<Graph>(g, rcec_ratio), condition);
 }
 
+//todo move to rnaSPAdes project
 template<class Graph>
 inline bool IsSimpleBulge(const Graph &g, typename Graph::EdgeId e){
     size_t edge_count = g.GetEdgesBetween(g.EdgeStart(e), g.EdgeEnd(e)).size();
@@ -121,6 +124,7 @@ inline bool IsSimpleBulge(const Graph &g, typename Graph::EdgeId e){
            edge_count >= 2;
 }
 
+//todo move to rnaSPAdes project
 template<class Graph>
 class NotBulgeECCondition : public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
@@ -147,6 +151,7 @@ public:
 
 };
 
+//todo move to rnaSPAdes project
 template<class Graph>
 pred::TypedPredicate<typename Graph::EdgeId> AddNotBulgeECCondition(const Graph &g,
                                                                     pred::TypedPredicate<typename Graph::EdgeId> condition) {
@@ -178,26 +183,6 @@ bool RemoveErroneousEdgesInLengthOrder(Graph &g,
     return erroneous_edge_remover.Run(LengthComparator<Graph>(g),
                                       LengthUpperBound<Graph>(g, max_length));
 }
-
-template<class Graph>
-class SelfConjugateCondition : public EdgeCondition<Graph> {
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef EdgeCondition<Graph> base;
-
- public:
-
-    SelfConjugateCondition(const Graph& g)
-            : base(g) {
-    }
-
-    bool Check(EdgeId e) const {
-        return e == this->g().conjugate(e);
-    }
-
- private:
-    DECL_LOGGER("SelfConjugateCondition");
-};
 
 //coverage comparator
 //template<class Graph>
@@ -336,129 +321,7 @@ class ThornCondition : public EdgeCondition<Graph> {
 
 };
 
-
-template<class Graph>
-class MultiplicityCounter {
-private:
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-    const Graph &graph_;
-    size_t uniqueness_length_;
-    size_t max_depth_;
-
-    bool search(VertexId a, VertexId start, EdgeId e, size_t depth,
-                std::set<VertexId> &was, pair<size_t, size_t> &result) const {
-        if (depth > max_depth_)
-            return false;
-        if (was.count(a) == 1)
-            return true;
-        was.insert(a);
-        if (graph_.OutgoingEdgeCount(a) == 0
-            || graph_.IncomingEdgeCount(a) == 0)
-            return false;
-        for (auto I = graph_.out_begin(a), E = graph_.out_end(a); I != E; ++I) {
-            if (*I == e) {
-                if (a != start) {
-                    return false;
-                }
-            } else {
-                if (graph_.length(*I) >= uniqueness_length_) {
-                    result.second++;
-                } else {
-                    if (!search(graph_.EdgeEnd(*I), start, e,
-                                depth + 1 /*graph_.length(*it)*/, was, result))
-                        return false;
-                }
-            }
-        }
-        for (EdgeId in_e : graph_.IncomingEdges(a)) {
-            if (in_e == e) {
-                if (a != start) {
-                    return false;
-                }
-            } else {
-                if (graph_.length(in_e) >= uniqueness_length_) {
-                    result.first++;
-                } else {
-                    if (!search(graph_.EdgeStart(in_e), start, e,
-                                depth + 1 /*graph_.length(*it)*/, was, result))
-                        return false;
-                }
-            }
-        }
-        return true;
-    }
-
-public:
-    MultiplicityCounter(const Graph &graph, size_t uniqueness_length,
-                        size_t max_depth)
-            : graph_(graph),
-              uniqueness_length_(uniqueness_length),
-              max_depth_(max_depth) {
-    }
-
-    size_t count(EdgeId e, VertexId start) const {
-        std::pair<size_t, size_t> result;
-        std::set<VertexId> was;
-        bool valid = search(start, start, e, 0, was, result);
-        if (!valid) {
-            return (size_t) (-1);
-        }
-        if (graph_.EdgeStart(e) == start) {
-            if (result.first < result.second) {
-                return (size_t) (-1);
-            }
-            return result.first - result.second;
-        } else {
-            if (result.first > result.second) {
-                return (size_t) (-1);
-            }
-            return -result.first + result.second;
-        }
-    }
-};
-
-template<class Graph>
-class MultiplicityCountingCondition : public UniquenessPlausabilityCondition<Graph> {
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef pred::TypedPredicate<EdgeId> EdgePredicate;
-    typedef UniquenessPlausabilityCondition<Graph> base;
-
-    MultiplicityCounter<Graph> multiplicity_counter_;
-    EdgePredicate plausiblity_condition_;
-
-public:
-    bool CheckUniqueness(EdgeId e, bool forward) const {
-        TRACE( "Checking " << this->g().int_id(e) << " for uniqueness in " << (forward ? "forward" : "backward") << " direction");
-        VertexId start =
-                forward ? this->g().EdgeEnd(e) : this->g().EdgeStart(e);
-        bool result = multiplicity_counter_.count(e, start) <= 1;
-        TRACE( "Edge " << this->g().int_id(e) << " is" << (result ? "" : " not") << " unique");
-        return result;
-    }
-
-    bool CheckPlausibility(EdgeId e, bool) const {
-        return plausiblity_condition_(e);
-    }
-
-    MultiplicityCountingCondition(const Graph& g, size_t uniqueness_length,
-                                  EdgePredicate plausiblity_condition)
-            :
-              //todo why 8???
-              base(g),
-              multiplicity_counter_(g, uniqueness_length, 8),
-              plausiblity_condition_(plausiblity_condition) {
-
-    }
-
- private:
-
-    DECL_LOGGER("MultiplicityCountingCondition")
-    ;
-};
-
-
+//todo move to rnaSPAdes simplification
 template<class Graph>
 class ECLoopRemover : public EdgeProcessingAlgorithm<Graph> {
     typedef std::less<typename Graph::EdgeId> Comparator;
