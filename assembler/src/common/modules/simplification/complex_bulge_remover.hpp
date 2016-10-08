@@ -1133,7 +1133,7 @@ public:
 
     //track_changes=false leads to every iteration run from scratch
     ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff,
-            size_t chunk_cnt = 100, const string& pics_folder = "") :
+            size_t chunk_cnt, const string& pics_folder = "") :
             base(g, std::make_shared<ParallelInterestingElementFinder<Graph, VertexId>>(CandidatePredicate(g, max_length, length_diff), chunk_cnt),
                     false, std::less<VertexId>(), /*track changes*/false),
             max_length_(max_length), length_diff_(length_diff), pics_folder_(pics_folder) {

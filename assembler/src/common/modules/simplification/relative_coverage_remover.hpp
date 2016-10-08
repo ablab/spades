@@ -16,15 +16,6 @@ namespace omnigraph {
 
 namespace simplification {
 
-template<class EdgeContainer>
-void SingleEdgeAdapter(
-        const EdgeContainer& edges,
-        std::function<void(typename EdgeContainer::value_type)> single_edge_handler_f) {
-    for (auto e : edges) {
-        single_edge_handler_f(e);
-    }
-}
-
 namespace relative_coverage {
 
 template<class Graph>

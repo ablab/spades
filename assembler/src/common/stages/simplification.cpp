@@ -191,14 +191,12 @@ class GraphSimplifier {
     //            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
     //            boost::ref(qual_removal_handler), _1);
     //
-    //    std::function<void(set<EdgeId>)> set_removal_handler_f = boost::bind(
-    //                &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, _1, qual_removal_handler_f);
-    //
 
         std::function<void(set<EdgeId>)> set_removal_handler_f(0);
         if (removal_handler_) {
-            set_removal_handler_f = std::bind(
-                &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, std::placeholders::_1, removal_handler_);
+            set_removal_handler_f = [=](const set<EdgeId>& edges) {
+                std::for_each(edges.begin(), edges.end(), removal_handler_);
+            };
         }
 
         bool changed = RemoveRelativelyLowCoverageComponents(gp_.g, gp_.flanking_cov,
@@ -281,7 +279,7 @@ class GraphSimplifier {
             enable_flag |=  ClipComplexTips(gp_.g, simplif_cfg_.complex_tc, info_container_, removal_handler_);
             cnt_callback_.Report();
 
-            enable_flag |= RemoveComplexBulges(gp_.g, simplif_cfg_.cbr, iteration);
+            enable_flag |= RemoveComplexBulges(gp_.g, simplif_cfg_.cbr, info_container_, iteration);
             cnt_callback_.Report();
 
             enable_flag |= RunAlgos(algos);

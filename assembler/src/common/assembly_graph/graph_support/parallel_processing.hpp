@@ -133,9 +133,9 @@ template<class Graph, class ElementId,
 class PersistentProcessingAlgorithm : public PersistentAlgorithmBase<Graph> {
 protected:
     typedef std::shared_ptr<InterestingElementFinder<Graph, ElementId>> CandidateFinderPtr;
-private:
     CandidateFinderPtr interest_el_finder_;
 
+private:
     SmartSetIterator<Graph, ElementId, Comparator> it_;
     //todo remove
     bool tracking_;

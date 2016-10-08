@@ -198,6 +198,10 @@ public:
         vertices_.insert(v2);
     }
 
+    bool empty() const {
+        return v_size() == 0;
+    }
+
 };
 
 }

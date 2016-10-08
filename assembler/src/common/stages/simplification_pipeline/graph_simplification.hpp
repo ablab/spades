@@ -488,6 +488,7 @@ template<class Graph>
 bool RemoveComplexBulges(
     Graph &g,
     config::debruijn_config::simplification::complex_bulge_remover cbr_config,
+    const SimplifInfoContainer &info,
     size_t /*iteration*/ = 0) {
     if (!cbr_config.enabled)
         return false;
@@ -495,7 +496,7 @@ bool RemoveComplexBulges(
     size_t max_length = (size_t) ((double) g.k() * cbr_config.max_relative_length);
     size_t max_diff = cbr_config.max_length_difference;
     omnigraph::complex_br::ComplexBulgeRemover<Graph> complex_bulge_remover(
-        g, max_length, max_diff);
+        g, max_length, max_diff, info.chunk_cnt());
     return complex_bulge_remover.Run();
 }
 
@@ -533,16 +534,20 @@ bool RemoveComplexBulges(
 //}
 
 template<class Graph>
-bool ClipComplexTips(Graph &g, config::debruijn_config::simplification::complex_tip_clipper ctc_conf, const SimplifInfoContainer &info, HandlerF<Graph> removal_handler = 0) {
+bool ClipComplexTips(Graph &g,
+                     config::debruijn_config::simplification::complex_tip_clipper ctc_conf,
+                     const SimplifInfoContainer &info,
+                     HandlerF<Graph> removal_handler = 0) {
     if (!ctc_conf.enabled) {
         INFO("Complex tip clipping disabled");
         return false;
     }
 
-    std::function<void(set<EdgeId>)> set_removal_handler_f(0);
+    std::function<void(const set<EdgeId>&)> set_removal_handler_f(0);
     if (removal_handler) {
-        set_removal_handler_f = std::bind(
-            &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, std::placeholders::_1, removal_handler);
+        set_removal_handler_f = [=](const set<EdgeId>& edges) {
+            std::for_each(edges.begin(), edges.end(), removal_handler);
+        };
     }
 
     INFO("Complex tip clipping");
@@ -550,7 +555,10 @@ bool ClipComplexTips(Graph &g, config::debruijn_config::simplification::complex_
     ConditionParser<Graph> parser(g, ctc_conf.condition, info);
     parser();
 
-    ComplexTipClipper<Graph> tip_clipper(g, ctc_conf.max_relative_coverage, ctc_conf.max_edge_len, parser.max_length_bound(), "", set_removal_handler_f);
+    ComplexTipClipper<Graph> tip_clipper(g, ctc_conf.max_relative_coverage,
+                                         ctc_conf.max_edge_len,
+                                         parser.max_length_bound(), info.chunk_cnt(),
+                                         "", set_removal_handler_f);
     return tip_clipper.Run();
 }
 
