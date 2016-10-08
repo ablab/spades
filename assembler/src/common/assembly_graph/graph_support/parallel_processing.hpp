@@ -145,6 +145,10 @@ private:
 
 protected:
 
+    void ReturnForConsideration(ElementId el) {
+        it_.push(el);
+    }
+
     virtual bool Process(ElementId el) = 0;
     virtual bool Proceed(ElementId /*el*/) const { return true; }
 
@@ -153,17 +157,17 @@ protected:
 public:
 
     PersistentProcessingAlgorithm(Graph& g,
-                                      const CandidateFinderPtr& interest_el_finder,
-                                      bool canonical_only = false,
-                                      const Comparator& comp = Comparator(),
-                                      bool track_changes = true,
-                                      size_t total_iteration_estimate = -1ul) :
-                                      PersistentAlgorithmBase<Graph>(g),
-                                      interest_el_finder_(interest_el_finder),
-                                      it_(g, true, comp, canonical_only),
-                                      tracking_(track_changes),
-                                      total_iteration_estimate_(total_iteration_estimate),
-                                      curr_iteration_(0) {
+                                  const CandidateFinderPtr& interest_el_finder,
+                                  bool canonical_only = false,
+                                  const Comparator& comp = Comparator(),
+                                  bool track_changes = true,
+                                  size_t total_iteration_estimate = -1ul) :
+            PersistentAlgorithmBase<Graph>(g),
+            interest_el_finder_(interest_el_finder),
+            it_(g, true, comp, canonical_only),
+            tracking_(track_changes),
+            total_iteration_estimate_(total_iteration_estimate),
+            curr_iteration_(0) {
         it_.Detach();
     }
 

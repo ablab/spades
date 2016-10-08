@@ -18,6 +18,7 @@
 #include "assembly_graph/paths/path_processor.hpp"
 #include "visualization/visualization.hpp"
 #include "dominated_set_finder.hpp"
+#include "assembly_graph/graph_support/parallel_processing.hpp"
 
 
 namespace omnigraph {
@@ -36,7 +37,6 @@ class LocalizedComponent: public GraphActionHandler<Graph> /*: public GraphCompo
     //usage of inclusive-inclusive range!!!
     map<VertexId, Range> vertex_depth_;
     multimap<size_t, VertexId> height_2_vertices_;
-    size_t diff_threshold_;
 
     bool AllEdgeOut(VertexId v) const {
         for (EdgeId e : g_.OutgoingEdges(v)) {
@@ -87,8 +87,7 @@ public:
         DEBUG("Adding vertex " << g_.str(v) << " to the component");
         vertex_depth_.insert(make_pair(v, dist_range));
         height_2_vertices_.insert(make_pair(Average(dist_range), v));
-        DEBUG(
-                "Range " << dist_range << " Average height " << Average(dist_range));
+        DEBUG("Range " << dist_range << " Average height " << Average(dist_range));
         for (EdgeId e : g_.IncomingEdges(v)) {
             end_vertices_.erase(g_.EdgeStart(e));
         }
@@ -741,7 +740,6 @@ class ComponentProjector {
         DEBUG("Level heights " << ToString<size_t>(level_heights));
 
         GraphComponent<Graph> gc = component_.AsGraphComponent();
-        SmartSetIterator<Graph, VertexId> added_vertices(g_, true);
 
         for (auto it = gc.e_begin(); it != gc.e_end(); ++it) {
             VertexId start_v = g_.EdgeStart(*it);
@@ -763,11 +761,6 @@ class ComponentProjector {
                 DEBUG("Splitting on " << curr);
                 size_t pos = curr - offset;
                 if (pos >= g_.length(e)) {
-                    //reverting changes
-                    Compressor<Graph> compressor(g_);
-                    for (; !added_vertices.IsEnd(); ++added_vertices) {
-                        compressor.CompressVertex(*added_vertices);
-                    }
                     return false;
                 }
                 DEBUG("Splitting edge " << g_.str(e) << " on position " << pos);
@@ -809,7 +802,7 @@ class ComponentProjector {
 public:
 
     bool ProjectComponent() {
-        if(!SplitComponent()) {
+        if (!SplitComponent()) {
             DEBUG("Component can't be split");
             return false;
         }
@@ -823,8 +816,7 @@ public:
             EdgeId target = CorrespondingTreeEdge(*it);
             DEBUG("Target found " << g_.str(target));
             if (target != *it) {
-                DEBUG(
-                        "Glueing " << g_.str(*it) << " to target " << g_.str(target));
+                DEBUG("Glueing " << g_.str(*it) << " to target " << g_.str(target));
                 g_.GlueEdges(*it, target);
                 DEBUG("Glued");
             }
@@ -853,7 +845,7 @@ class LocalizedComponentFinder {
     static const size_t exit_bound = 32;
     static const size_t inf = -1ul;
 
-    Graph& g_;
+    const Graph& g_;
     size_t max_length_;
     size_t length_diff_threshold_;
 
@@ -980,7 +972,7 @@ class LocalizedComponentFinder {
     }
 
 public:
-    LocalizedComponentFinder(Graph& g, size_t max_length,
+    LocalizedComponentFinder(const Graph& g, size_t max_length,
             size_t length_diff_threshold, VertexId start_v) :
             g_(g), max_length_(max_length), length_diff_threshold_(
                     length_diff_threshold), comp_(g, start_v) {
@@ -1045,11 +1037,11 @@ private:
 };
 
 template<class Graph>
-class ComplexBulgeRemover {
+class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename Graph::VertexId> {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
+    typedef PersistentProcessingAlgorithm<Graph, VertexId> base;
 
-    Graph& g_;
     size_t max_length_;
     size_t length_diff_;
     string pics_folder_;
@@ -1062,86 +1054,121 @@ class ComplexBulgeRemover {
         DEBUG("Looking for a tree");
         if (tree_finder.FindTree()) {
             DEBUG("Tree found");
-            auto tree_edges = tree_finder.GetTreeEdges();
             SkeletonTree<Graph> tree(component, tree_finder.GetTreeEdges());
 
             if (!pics_folder_.empty()) {
                 PrintComponent(component, tree,
                         pics_folder_ + "success/"
-                                + ToString(g_.int_id(component.start_vertex()))
+                                + ToString(this->g().int_id(component.start_vertex()))
                                 + "_" + ToString(candidate_cnt) + ".dot");
             }
 
-            ComponentProjector<Graph> projector(g_, component, coloring, tree);
-            if(!projector.ProjectComponent()) {
+            ComponentProjector<Graph> projector(this->g(), component, coloring, tree);
+            if (!projector.ProjectComponent()) {
+                //todo think of stopping the whole process
                 DEBUG("Component can't be projected");
                 return false;
             }
-            DEBUG(
-                    "Successfully processed component candidate " << candidate_cnt << " start_v " << g_.str(component.start_vertex()));
+            DEBUG("Successfully processed component candidate " << candidate_cnt << " start_v " << this->g().str(component.start_vertex()));
             return true;
         } else {
-            DEBUG(
-                    "Failed to find skeleton tree for candidate " << candidate_cnt << " start_v " << g_.str(component.start_vertex()));
+            DEBUG("Failed to find skeleton tree for candidate " << candidate_cnt << " start_v " << this->g().str(component.start_vertex()));
             if (!pics_folder_.empty()) {
                 //todo check if we rewrite all of the previous pics!
                 PrintComponent(component,
                         pics_folder_ + "fail/"
-                                + ToString(g_.int_id(component.start_vertex())) //+ "_" + ToString(candidate_cnt)
+                                + ToString(this->g().int_id(component.start_vertex())) //+ "_" + ToString(candidate_cnt)
                                 + ".dot");
             }
             return false;
         }
     }
 
-public:
-    ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff,
-            const string& pics_folder = "") :
-            g_(g), max_length_(max_length), length_diff_(length_diff), pics_folder_(pics_folder) {
+    bool InnerProcess(VertexId v, std::vector<VertexId>& vertices_to_post_process) {
+        size_t candidate_cnt = 0;
+        LocalizedComponentFinder<Graph> comp_finder(this->g(), max_length_,
+                                                    length_diff_, v);
+        while (comp_finder.ProceedFurther()) {
+            candidate_cnt++;
+            DEBUG("Found component candidate " << candidate_cnt << " start_v " << this->g().str(v));
+            LocalizedComponent<Graph> component = comp_finder.component();
+            if (ProcessComponent(component, candidate_cnt)) {
+                GraphComponent<Graph> gc = component.AsGraphComponent();
+                std::copy(gc.v_begin(), gc.v_end(), std::back_inserter(vertices_to_post_process));
+                return true;
+            }
+        }
+        return false;
     }
 
-    bool Run() {
-        size_t cnt = 0;
-        DEBUG("Complex bulge remover started");
+    static pred::TypedPredicate<VertexId> CandidatePredicate(const Graph& g, size_t max_length, size_t length_diff) {
+        return [=, &g](VertexId v) {
+            LocalizedComponentFinder<Graph> comp_finder(g, max_length,
+                                                        length_diff, v);
+            while (comp_finder.ProceedFurther()) {
+                DEBUG("Found component candidate start_v " << g.str(v));
+                LocalizedComponent<Graph> component = comp_finder.component();
+                ComponentColoring<Graph> coloring(component);
+                SkeletonTreeFinder<Graph> tree_finder(component, coloring);
+                DEBUG("Looking for a tree");
+                if (tree_finder.FindTree()) {
+                    return true;
+                }
+            }
+            return false;
+        };
+    }
+
+    //todo shrink this set if needed
+    set<VertexId> Neighbours(VertexId v) const {
+        set<VertexId> answer;
+        for (EdgeId e : this->g().IncidentEdges(v)) {
+            answer.insert(this->g().EdgeStart(e));
+            answer.insert(this->g().EdgeEnd(e));
+        }
+        return answer;
+    }
+
+public:
+
+    //track_changes=false leads to every iteration run from scratch
+    ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff,
+            size_t chunk_cnt = 100, const string& pics_folder = "") :
+            base(g, std::make_shared<ParallelInterestingElementFinder<Graph, VertexId>>(CandidatePredicate(g, max_length, length_diff), chunk_cnt),
+                    false, std::less<VertexId>(), /*track changes*/false),
+            max_length_(max_length), length_diff_(length_diff), pics_folder_(pics_folder) {
         if (!pics_folder_.empty()) {
 //            remove_dir(pics_folder_);
             make_dir(pics_folder_);
             make_dir(pics_folder_ + "success/");
             make_dir(pics_folder_ + "fail/");
         }
-        bool something_done_flag = false;
-        for (auto it = g_.SmartVertexBegin(); !it.IsEnd(); ++it) {
-            DEBUG("Processing vertex " << g_.str(*it));
-            size_t candidate_cnt = 0;
-            vector<VertexId> vertices_to_post_process;
-            { //important scope!!!
-                LocalizedComponentFinder<Graph> comp_finder(g_, max_length_,
-                        length_diff_, *it);
-                while (comp_finder.ProceedFurther()) {
-                    candidate_cnt++;
-                    DEBUG(
-                            "Found component candidate " << candidate_cnt << " start_v " << g_.str(*it));
-                    LocalizedComponent<Graph> component =
-                            comp_finder.component();
-                    if (ProcessComponent(component, candidate_cnt)) {
-                        something_done_flag = true;
-                        cnt++;
-                        GraphComponent<Graph> gc = component.AsGraphComponent();
-                        vertices_to_post_process.insert(
-                                vertices_to_post_process.end(), gc.v_begin(),
-                                gc.v_end());
-                        break;
-                    }
+    }
+
+    bool Process(VertexId v) override {
+        DEBUG("Processing vertex " << this->g().str(v));
+        vector<VertexId> vertices_to_post_process;
+        //a bit of hacking (look further)
+        SmartSetIterator<Graph, VertexId> added_vertices(this->g(), true);
+
+        if (InnerProcess(v, vertices_to_post_process)) {
+            for (VertexId p_p : vertices_to_post_process) {
+                //Neighbours(p_p) includes p_p
+                for (VertexId n : Neighbours(p_p)) {
+                    this->ReturnForConsideration(n);
                 }
+                this->g().CompressVertex(p_p);
             }
-            for (VertexId v : vertices_to_post_process) {
-                it.HandleAdd(v);
-                g_.CompressVertex(v);
+            return true;
+        } else {
+            //a bit of hacking:
+            //reverting changes resulting from potentially attempted, but failed split
+            Compressor<Graph> compressor(this->g());
+            for (; !added_vertices.IsEnd(); ++added_vertices) {
+                compressor.CompressVertex(*added_vertices);
             }
+            return false;
         }
-        DEBUG("Complex bulge remover finished");
-        DEBUG("Bulges processed " << cnt);
-        return something_done_flag;
     }
 
 private:
