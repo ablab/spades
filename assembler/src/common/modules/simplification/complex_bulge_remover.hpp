@@ -262,8 +262,7 @@ public:
     }
 
 private:
-    DECL_LOGGER("LocalizedComponent")
-    ;
+    DECL_LOGGER("LocalizedComponent");
 };
 
 template<class Graph>
@@ -354,8 +353,7 @@ private:
     set<VertexId> vertices_;
 
 private:
-    DECL_LOGGER("SkeletonTree")
-    ;
+    DECL_LOGGER("SkeletonTree");
 };
 
 typedef size_t mask;
@@ -446,10 +444,8 @@ public:
         auto it = vertex_colors_.find(v);
         if (it == vertex_colors_.end()) {
             DEBUG("No color for vertex " << comp_.g().str(v));
-            DEBUG(
-                    "Incoming edges " << comp_.g().str(comp_.g().IncomingEdges(v)));
-            DEBUG(
-                    "Outgoing edges " << comp_.g().str(comp_.g().OutgoingEdges(v)));
+            DEBUG("Incoming edges " << comp_.g().str(comp_.g().IncomingEdges(v)));
+            DEBUG("Outgoing edges " << comp_.g().str(comp_.g().OutgoingEdges(v)));
         }
         VERIFY(it != vertex_colors_.end());
         return it->second;
@@ -483,8 +479,7 @@ public:
     }
 
 private:
-    DECL_LOGGER("ComponentColoring")
-    ;
+    DECL_LOGGER("ComponentColoring");
 };
 
 template<class Graph>
@@ -727,8 +722,6 @@ void PrintComponent(const LocalizedComponent<Graph>& component,
             *StrGraphLabelerInstance(component.g()));
 }
 
-
-
 template<class Graph>
 class ComponentProjector {
     typedef typename Graph::EdgeId EdgeId;
@@ -748,14 +741,14 @@ class ComponentProjector {
         DEBUG("Level heights " << ToString<size_t>(level_heights));
 
         GraphComponent<Graph> gc = component_.AsGraphComponent();
+        SmartSetIterator<Graph, VertexId> added_vertices(g_, true);
 
         for (auto it = gc.e_begin(); it != gc.e_end(); ++it) {
             VertexId start_v = g_.EdgeStart(*it);
             VertexId end_v = g_.EdgeEnd(*it);
             size_t start_dist = component_.avg_distance(start_v);
             size_t end_dist = component_.avg_distance(end_v);
-            DEBUG(
-                    "Processing edge " << g_.str(*it) << " avg_start " << start_dist << " avg_end " << end_dist);
+            DEBUG("Processing edge " << g_.str(*it) << " avg_start " << start_dist << " avg_end " << end_dist);
             set<size_t> dist_to_split(level_heights.lower_bound(start_dist),
                     level_heights.upper_bound(end_dist));
             DEBUG("Distances to split " << ToString<size_t>(dist_to_split));
@@ -769,7 +762,12 @@ class ComponentProjector {
                     continue;
                 DEBUG("Splitting on " << curr);
                 size_t pos = curr - offset;
-                if(pos >= g_.length(e)) {
+                if (pos >= g_.length(e)) {
+                    //reverting changes
+                    Compressor<Graph> compressor(g_);
+                    for (; !added_vertices.IsEnd(); ++added_vertices) {
+                        compressor.CompressVertex(*added_vertices);
+                    }
                     return false;
                 }
                 DEBUG("Splitting edge " << g_.str(e) << " on position " << pos);
@@ -796,8 +794,7 @@ class ComponentProjector {
         for (VertexId v : component_.vertices_on_height(start_height)) {
             if (component_.end_vertices().count(v) == 0) {
                 for (EdgeId e : g_.OutgoingEdges(v)) {
-                    VERIFY(
-                            component_.avg_distance(g_.EdgeEnd(e)) == end_height);
+                    VERIFY(component_.avg_distance(g_.EdgeEnd(e)) == end_height);
                     if (tree_.Contains(e)
                             && coloring_.IsSubset(coloring_.color(e), color)) {
                         return e;
@@ -845,8 +842,7 @@ public:
     }
 
 private:
-    DECL_LOGGER("ComponentProjector")
-    ;
+    DECL_LOGGER("ComponentProjector");
 };
 
 template<class Graph>
@@ -988,8 +984,7 @@ public:
             size_t length_diff_threshold, VertexId start_v) :
             g_(g), max_length_(max_length), length_diff_threshold_(
                     length_diff_threshold), comp_(g, start_v) {
-        DEBUG(
-                "Component finder from vertex " << g_.str(comp_.start_vertex()) << " created");
+        DEBUG("Component finder from vertex " << g_.str(comp_.start_vertex()) << " created");
         DominatedSetFinder<Graph> dominated_set_finder(g_, start_v, max_length);
         dominated_set_finder.FillDominated();
         dominated_ = dominated_set_finder.dominated();
@@ -1046,8 +1041,7 @@ public:
     }
 
 private:
-    DECL_LOGGER("LocalizedComponentFinder")
-    ;
+    DECL_LOGGER("LocalizedComponentFinder");
 };
 
 template<class Graph>
@@ -1151,8 +1145,7 @@ public:
     }
 
 private:
-    DECL_LOGGER("ComplexBulgeRemover")
-    ;
+    DECL_LOGGER("ComplexBulgeRemover");
 };
 
 }

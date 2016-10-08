@@ -500,6 +500,7 @@ private:
             id(-1ul) {
         }
 
+        //passing by value is not a mistake!
         BulgeInfo(size_t id_, EdgeId e_, std::vector<EdgeId> alternative_) :
             id(id_), e(e_), alternative(std::move(alternative_)) {
 
@@ -603,7 +604,7 @@ private:
         }
     }
 
-    std::vector<std::vector<BulgeInfo>> FindBulges(const std::vector<EdgeId> edge_buffer) const {
+    std::vector<std::vector<BulgeInfo>> FindBulges(const std::vector<EdgeId>& edge_buffer) const {
         DEBUG("Looking for bulges (in parallel). Edge buffer size " << edge_buffer.size());
         perf_counter perf;
         std::vector<std::vector<BulgeInfo>> bulge_buffers(omp_get_max_threads());
