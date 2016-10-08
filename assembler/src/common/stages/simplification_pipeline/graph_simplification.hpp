@@ -345,11 +345,12 @@ HandlerF<typename gp_t::graph_t> WrapWithProjectionCallback(
     return func::Composition<EdgeId>(std::ref(removal_handler), projecting_callback);
 }
 
-template<class Graph, class InterestingEdgeFinder>
+template<class Graph>
 class LowCoverageEdgeRemovingAlgorithm : public PersistentEdgeRemovingAlgorithm<Graph,
-                                                                                InterestingEdgeFinder, CoverageComparator<Graph>> {
+                                                                                omnigraph::CoverageComparator<Graph>> {
     typedef typename Graph::EdgeId EdgeId;
-    typedef PersistentEdgeRemovingAlgorithm<Graph, InterestingEdgeFinder, CoverageComparator<Graph>> base;
+    typedef PersistentEdgeRemovingAlgorithm<Graph, omnigraph::CoverageComparator<Graph>> base;
+
     SimplifInfoContainer simplif_info_;
     std::string condition_str_;
     pred::TypedPredicate<EdgeId> remove_condition_;
@@ -376,9 +377,10 @@ protected:
     }
 
 public:
+    typedef typename base::CandidateFinderPtr CandidateFinderPtr;
     LowCoverageEdgeRemovingAlgorithm(Graph &g,
-                                    const InterestingEdgeFinder &interest_edge_finder,
-                                    const SimplifInfoContainer &simplif_info,
+                                    const CandidateFinderPtr& interest_edge_finder,
+                                    const SimplifInfoContainer& simplif_info,
                                     const std::string &condition_str,
                                     std::function<void(EdgeId)> removal_handler = nullptr,
                                     bool canonical_only = false,
@@ -387,7 +389,7 @@ public:
             : base(g, interest_edge_finder,
                    removal_handler,
                    canonical_only,
-                   CoverageComparator<Graph>(g),
+                   omnigraph::CoverageComparator<Graph>(g),
                    track_changes,
                    total_iteration_estimate),
             simplif_info_(simplif_info),
@@ -629,12 +631,11 @@ AlgoPtr<Graph> ECRemoverInstance(Graph &g,
     if (ec_config.condition.empty())
         return nullptr;
 
-    typedef omnigraph::ParallelInterestingElementFinder<Graph> InterestingFinderT;
-    InterestingFinderT interesting_finder(g,
+    auto candidate_finder = std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(
                                           NecessaryECCondition(g, ec_config, info, iteration_cnt - 1, iteration_cnt),
                                           info.chunk_cnt());
-    return make_shared<LowCoverageEdgeRemovingAlgorithm<Graph, InterestingFinderT>>(
-            g, interesting_finder, info, ec_config.condition, removal_handler,
+    return make_shared<LowCoverageEdgeRemovingAlgorithm<Graph>>(
+            g, candidate_finder, info, ec_config.condition, removal_handler,
             /*canonical only*/ true, /*track changes*/ true, iteration_cnt);
 }
 
@@ -666,12 +667,13 @@ AlgoPtr<Graph> NotBulgeECRemoverInstance(Graph &g,
     ConditionParser<Graph> parser(g, curr_condition, info, iteration_cnt - 1, iteration_cnt);
     auto condition = parser();
 
-    typedef omnigraph::ParallelInterestingElementFinder<Graph> InterestingFinderT;
-    InterestingFinderT interesting_finder(g, AddNotBulgeECCondition(g, AddAlternativesPresenceCondition(g, pred::And(
+    auto interesting_finder =
+            std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(g,
+                                                  AddNotBulgeECCondition(g, AddAlternativesPresenceCondition(g, pred::And(
                                                   LengthUpperBound<Graph>(g, parser.max_length_bound()),
                                                   CoverageUpperBound<Graph>(g, parser.max_coverage_bound())))),
                                           info.chunk_cnt());
-    return make_shared<LowCoverageEdgeRemovingAlgorithm<Graph, InterestingFinderT>>(
+    return make_shared<LowCoverageEdgeRemovingAlgorithm<Graph>>(
             g, interesting_finder, info, ec_config.condition, removal_handler,
             /*canonical only*/ true, /*track changes*/ true, iteration_cnt);
 }
@@ -745,8 +747,6 @@ AlgoPtr<Graph> BRInstance(Graph &g,
                           const SimplifInfoContainer &info,
                           HandlerF<Graph> removal_handler,
                           size_t /*iteration_cnt*/ = 1) {
-    typedef ParallelInterestingElementFinder<Graph,
-                                    typename Graph::EdgeId> InterestingEdgeFinder;
     if (!br_config.enabled || (br_config.main_iteration_only && !info.main_iteration())) {
         return nullptr;
     }
@@ -754,15 +754,15 @@ AlgoPtr<Graph> BRInstance(Graph &g,
     auto alternatives_analyzer = ParseBRConfig(g, br_config);
 
 
-    InterestingEdgeFinder interesting_edge_finder(g,
-                                                  NecessaryBulgeCondition(g,
-                                                                          alternatives_analyzer.max_length(),
-                                                                          alternatives_analyzer.max_coverage()),
+    auto candidate_finder = std::make_shared<ParallelInterestingElementFinder<Graph>>(
+                                                          NecessaryBulgeCondition(g,
+                                                                                  alternatives_analyzer.max_length(),
+                                                                              alternatives_analyzer.max_coverage()),
                                                   info.chunk_cnt());
     if (br_config.parallel) {
         INFO("Creating parallel br instance");
-        return make_shared<ParallelBulgeRemover<Graph, InterestingEdgeFinder>>(g,
-                interesting_edge_finder,
+        return make_shared<ParallelBulgeRemover<Graph>>(g,
+                candidate_finder,
                 br_config.buff_size,
                 br_config.buff_cov_diff,
                 br_config.buff_cov_rel_diff,
@@ -772,8 +772,8 @@ AlgoPtr<Graph> BRInstance(Graph &g,
                 /*track_changes*/true);
     } else {
         INFO("Creating br instance");
-        return make_shared<BulgeRemover<Graph, InterestingEdgeFinder>>(g,
-                interesting_edge_finder,
+        return make_shared<BulgeRemover<Graph>>(g,
+                candidate_finder,
                 alternatives_analyzer,
                 nullptr,
                 removal_handler,
@@ -809,10 +809,9 @@ public:
 template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
 class ParallelDisconnectionAlgorithm : public PersistentProcessingAlgorithm<Graph,
                                                 typename Graph::EdgeId,
-                                                ParallelInterestingElementFinder<Graph>, Comparator> {
+                                                Comparator> {
     typedef typename Graph::EdgeId EdgeId;
-    typedef PersistentProcessingAlgorithm<Graph, EdgeId,
-            ParallelInterestingElementFinder<Graph>, Comparator> base;
+    typedef PersistentProcessingAlgorithm<Graph, EdgeId, Comparator> base;
     pred::TypedPredicate<EdgeId> condition_;
     omnigraph::simplification::relative_coverage::EdgeDisconnector<Graph> disconnector_;
 
@@ -824,7 +823,7 @@ public:
                                     const Comparator &comp = Comparator(),
                                     bool track_changes = true)
             : base(g,
-                   ParallelInterestingElementFinder<Graph>(g, condition, chunk_cnt),
+                   std::make_shared<ParallelInterestingElementFinder<Graph>>(condition, chunk_cnt),
                            /*canonical_only*/false, comp, track_changes),
                    condition_(condition),
                    disconnector_(g, removal_handler) {

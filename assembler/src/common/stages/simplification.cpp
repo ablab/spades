@@ -31,10 +31,8 @@ shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>>
 class GraphSimplifier {
     typedef std::function<void(EdgeId)> HandlerF;
     typedef omnigraph::PersistentEdgeRemovingAlgorithm<Graph,
-            omnigraph::ParallelInterestingElementFinder<Graph, EdgeId>,
             LengthComparator<Graph>> TipClipperT;
     typedef omnigraph::PersistentEdgeRemovingAlgorithm<Graph,
-            omnigraph::ParallelInterestingElementFinder<Graph, EdgeId>,
             CoverageComparator<Graph>> ECRemoverT;
 
     typedef std::vector<std::pair<AlgoPtr<Graph>, std::string>> AlgoStorageT;

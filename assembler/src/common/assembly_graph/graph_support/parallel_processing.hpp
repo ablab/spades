@@ -14,12 +14,12 @@
 
 namespace omnigraph {
 
-template<class ItVec, class SmartIt, class Predicate>
-void FillInterestingFromChunkIterators(const ItVec& chunk_iterators,
-                                       SmartIt& smart_it,
-                                       const Predicate& predicate) {
+template<class ItVec, class Condition, class Handler>
+void FindInterestingFromChunkIterators(const ItVec& chunk_iterators,
+                                         const Condition& predicate,
+                                         const Handler& handler) {
     VERIFY(chunk_iterators.size() > 1);
-    typedef typename Predicate::checked_type ElementType;
+    typedef typename Condition::checked_type ElementType;
     std::vector<std::vector<ElementType>> of_interest(omp_get_max_threads());
 
     #pragma omp parallel for schedule(guided)
@@ -33,41 +33,56 @@ void FillInterestingFromChunkIterators(const ItVec& chunk_iterators,
     }
 
     for (auto& chunk : of_interest) {
-        smart_it.insert(chunk.begin(), chunk.end());
+        for (const auto& el : chunk) {
+            handler(el);
+        }
         chunk.clear();
     }
 }
 
-template<class Graph, class ElementId = typename Graph::EdgeId>
-class TrivialInterestingElementFinder {
+template<class Graph, class ElementId>
+class InterestingElementFinder {
+protected:
+    typedef std::function<void (ElementId)> HandlerF;
+    const pred::TypedPredicate<ElementId> condition_;
 public:
 
-    TrivialInterestingElementFinder() {
+    InterestingElementFinder(pred::TypedPredicate<ElementId> condition): condition_(condition) {
     }
 
-    template<class SmartIt>
-    bool Run(SmartIt& /*it*/) const {
+    virtual ~InterestingElementFinder() {}
+
+    virtual bool Run(const Graph& /*g*/, HandlerF /*handler*/) const = 0;
+};
+
+template<class Graph, class ElementId = typename Graph::EdgeId>
+class TrivialInterestingElementFinder :
+        public InterestingElementFinder<Graph, ElementId> {
+public:
+
+    TrivialInterestingElementFinder() :
+            InterestingElementFinder<Graph, ElementId>(pred::AlwaysTrue<ElementId>()) {
+    }
+
+    bool Run(const Graph& /*g*/, std::function<void (ElementId)> /*handler*/) const override {
         return false;
     }
 };
 
 template<class Graph, class ElementId = typename Graph::EdgeId>
-class SimpleInterestingElementFinder {
-    typedef GraphEdgeIterator<Graph> EdgeIt;
-
-    const Graph& g_;
-    pred::TypedPredicate<ElementId> condition_;
+class SimpleInterestingElementFinder : public InterestingElementFinder<Graph, ElementId> {
+    typedef InterestingElementFinder<Graph, ElementId> base;
+    typedef typename base::HandlerF HandlerF;
 public:
 
-    SimpleInterestingElementFinder(const Graph& g,
-                                   pred::TypedPredicate<ElementId> condition = pred::AlwaysTrue<ElementId>())
-            :  g_(g), condition_(condition) {}
+    SimpleInterestingElementFinder(pred::TypedPredicate<ElementId> condition = pred::AlwaysTrue<ElementId>())
+            :  base(condition) {}
 
-    template<class SmartIt>
-    bool Run(SmartIt& interest) const {
-        for (EdgeIt it = EdgeIt(g_, g_.begin()), end = EdgeIt(g_, g_.end()); it != end; ++it) {
-            if (condition_(*it)) {
-                interest.push(*it);
+    bool Run(const Graph& g, HandlerF handler) const override {
+        const IterationHelper<Graph, ElementId> it_helper(g);
+        for (auto it = it_helper.begin(), end = it_helper.end(); it != end; ++it) {
+            if (this->condition_(*it)) {
+                handler(*it);
             }
         }
         return false;
@@ -75,27 +90,25 @@ public:
 };
 
 template<class Graph, class ElementId = typename Graph::EdgeId>
-class ParallelInterestingElementFinder {
-    typedef GraphEdgeIterator<Graph> EdgeIt;
+class ParallelInterestingElementFinder : public InterestingElementFinder<Graph, ElementId> {
+    typedef InterestingElementFinder<Graph, ElementId> base;
+    typedef typename base::HandlerF HandlerF;
 
-    const Graph& g_;
-    pred::TypedPredicate<ElementId> condition_;
     const size_t chunk_cnt_;
 public:
 
-    ParallelInterestingElementFinder(const Graph& g,
-                                     pred::TypedPredicate<ElementId> condition,
+    ParallelInterestingElementFinder(pred::TypedPredicate<ElementId> condition,
                                      size_t chunk_cnt)
-            : g_(g), condition_(condition), chunk_cnt_(chunk_cnt) {}
+            : base(condition), chunk_cnt_(chunk_cnt) {}
 
-    template<class SmartIt>
-    bool Run(SmartIt& it) const {
+    bool Run(const Graph& g, HandlerF handler) const override {
         TRACE("Looking for interesting elements");
         TRACE("Splitting graph into " << chunk_cnt_ << " chunks");
-        FillInterestingFromChunkIterators(IterationHelper<Graph, ElementId>(g_).Chunks(chunk_cnt_), it, condition_);
-        TRACE("Found " << it.size() << " interesting elements");
+        FindInterestingFromChunkIterators(IterationHelper<Graph, ElementId>(g).Chunks(chunk_cnt_),
+                                            this->condition_, handler);
         return false;
     }
+
 private:
     DECL_LOGGER("ParallelInterestingElementFinder");
 };
@@ -115,10 +128,13 @@ public:
 };
 
 //todo use add_condition in it_
-template<class Graph, class ElementId, class InterestingElementFinder,
+template<class Graph, class ElementId,
          class Comparator = std::less<ElementId>>
 class PersistentProcessingAlgorithm : public PersistentAlgorithmBase<Graph> {
-    InterestingElementFinder interest_el_finder_;
+protected:
+    typedef std::shared_ptr<InterestingElementFinder<Graph, ElementId>> CandidateFinderPtr;
+private:
+    CandidateFinderPtr interest_el_finder_;
 
     SmartSetIterator<Graph, ElementId, Comparator> it_;
     //todo remove
@@ -137,7 +153,7 @@ protected:
 public:
 
     PersistentProcessingAlgorithm(Graph& g,
-                                      const InterestingElementFinder& interest_el_finder,
+                                      const CandidateFinderPtr& interest_el_finder,
                                       bool canonical_only = false,
                                       const Comparator& comp = Comparator(),
                                       bool track_changes = true,
@@ -160,18 +176,14 @@ public:
             it_.clear();
             TRACE("Primary launch.");
             TRACE("Start preprocessing");
-            interest_el_finder_.Run(it_);
+            interest_el_finder_->Run(this->g(), [&](ElementId el) {it_.push(el);});
             TRACE(it_.size() << " edges to process after preprocessing");
         } else {
             TRACE(it_.size() << " edges to process");
             VERIFY(tracking_);
         }
 
-        if (curr_iteration_ >= total_iteration_estimate_) {
-            PrepareIteration(total_iteration_estimate_ - 1, total_iteration_estimate_);
-        } else {
-            PrepareIteration(curr_iteration_, total_iteration_estimate_);
-        }
+        PrepareIteration(std::min(curr_iteration_, total_iteration_estimate_ - 1), total_iteration_estimate_);
 
         bool triggered = false;
         TRACE("Start processing");
@@ -195,17 +207,19 @@ public:
 
 };
 
-template<class Graph, class InterestingEdgeFinder,
+template<class Graph,
          class Comparator = std::less<typename Graph::EdgeId>>
 class PersistentEdgeRemovingAlgorithm : public PersistentProcessingAlgorithm<Graph,
                                                                             typename Graph::EdgeId,
-                                                                            InterestingEdgeFinder, Comparator> {
+                                                                            Comparator> {
     typedef typename Graph::EdgeId EdgeId;
-    typedef PersistentProcessingAlgorithm<Graph, EdgeId, InterestingEdgeFinder, Comparator> base;
+    typedef PersistentProcessingAlgorithm<Graph, EdgeId, Comparator> base;
+
     EdgeRemover<Graph> edge_remover_;
 public:
+    typedef typename base::CandidateFinderPtr CandidateFinderPtr;
     PersistentEdgeRemovingAlgorithm(Graph& g,
-                                    const InterestingEdgeFinder& interest_edge_finder,
+                                    const CandidateFinderPtr& interest_edge_finder,
                                     std::function<void(EdgeId)> removal_handler = boost::none,
                                     bool canonical_only = false,
                                     const Comparator& comp = Comparator(),
@@ -235,14 +249,16 @@ protected:
 
 };
 
-template<class Graph, class InterestingEdgeFinder,
+template<class Graph,
          class Comparator = std::less<typename Graph::EdgeId>>
 class ConditionEdgeRemovingAlgorithm : public PersistentEdgeRemovingAlgorithm<Graph,
-                                                                              InterestingEdgeFinder, Comparator> {
+                                                                              Comparator> {
     typedef typename Graph::EdgeId EdgeId;
-    typedef PersistentEdgeRemovingAlgorithm<Graph, InterestingEdgeFinder, Comparator> base;
+    typedef PersistentEdgeRemovingAlgorithm<Graph, Comparator> base;
+
     pred::TypedPredicate<EdgeId> remove_condition_;
 protected:
+    typedef typename base::CandidateFinderPtr CandidateFinderPtr;
 
     bool ShouldRemove(EdgeId e) const override {
         return remove_condition_(e);
@@ -250,7 +266,7 @@ protected:
 
 public:
     ConditionEdgeRemovingAlgorithm(Graph& g,
-                                   const InterestingEdgeFinder& interest_edge_finder,
+                                   const CandidateFinderPtr& interest_edge_finder,
                                    pred::TypedPredicate<EdgeId> remove_condition,
                                    std::function<void(EdgeId)> removal_handler = boost::none,
                                    bool canonical_only = false,
@@ -265,10 +281,8 @@ public:
 };
 
 template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
-class ParallelEdgeRemovingAlgorithm : public ConditionEdgeRemovingAlgorithm<Graph,
-                                                ParallelInterestingElementFinder<Graph>, Comparator> {
-    typedef ConditionEdgeRemovingAlgorithm<Graph,
-            ParallelInterestingElementFinder<Graph>, Comparator> base;
+class ParallelEdgeRemovingAlgorithm : public ConditionEdgeRemovingAlgorithm<Graph, Comparator> {
+    typedef ConditionEdgeRemovingAlgorithm<Graph, Comparator> base;
     typedef typename Graph::EdgeId EdgeId;
 
 public:
@@ -280,7 +294,7 @@ public:
                                   const Comparator& comp = Comparator(),
                                   bool track_changes = true)
             : base(g,
-                   ParallelInterestingElementFinder<Graph>(g, remove_condition, chunk_cnt),
+                   std::make_shared<ParallelInterestingElementFinder<Graph>>(remove_condition, chunk_cnt),
                    remove_condition, removal_handler,
                    canonical_only, comp, track_changes) {
     }

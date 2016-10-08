@@ -93,20 +93,17 @@ private:
 };
 
 template<class Graph>
-class CompressingProcessor : public PersistentProcessingAlgorithm<Graph, typename Graph::VertexId,
-        ParallelInterestingElementFinder<Graph, typename Graph::VertexId>> {
+class CompressingProcessor : public PersistentProcessingAlgorithm<Graph, typename Graph::VertexId> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef PersistentProcessingAlgorithm <Graph,
-            VertexId, ParallelInterestingElementFinder<Graph, VertexId>> base;
+    typedef PersistentProcessingAlgorithm<Graph, VertexId> base;
     typedef CompressCondition<Graph> ConditionT;
 
     Compressor<Graph> compressor_;
 public:
     CompressingProcessor(Graph &graph, size_t chunk_cnt = 1, bool safe_merging = true) :
             base(graph,
-                 ParallelInterestingElementFinder<Graph, VertexId>(graph,
-                                                                   ConditionT(graph), chunk_cnt),
+                 std::make_shared<ParallelInterestingElementFinder<Graph, VertexId>>(ConditionT(graph), chunk_cnt),
                     /*canonical only*/true),
             compressor_(graph, safe_merging) {
     }

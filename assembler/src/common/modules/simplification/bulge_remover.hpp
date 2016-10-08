@@ -391,15 +391,13 @@ inline double AbsoluteMaxCoverage(const std::vector<AlternativesAnalyzer<Graph>>
 }
 
 //fixme maybe switch on parallel finder?
-template<class Graph, class InterestingElementFinder>
+template<class Graph>
 class BulgeRemover: public PersistentProcessingAlgorithm<Graph,
                                                         typename Graph::EdgeId,
-                                                        InterestingElementFinder,
                                                         CoverageComparator<Graph>> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef PersistentProcessingAlgorithm<Graph, EdgeId,
-            InterestingElementFinder, CoverageComparator<Graph>> base;
+    typedef PersistentProcessingAlgorithm<Graph, EdgeId, CoverageComparator<Graph>> base;
 
 protected:
 
@@ -446,7 +444,7 @@ public:
 //                                                    max_delta, max_relative_delta, max_edge_cnt));
 //    }
 
-    BulgeRemover(Graph& g, const InterestingElementFinder& interesting_finder,
+    BulgeRemover(Graph& g, const std::shared_ptr<InterestingElementFinder<Graph, EdgeId>>& interesting_finder,
             const AlternativesAnalyzer<Graph>& alternatives_analyzer,
             BulgeCallbackF opt_callback = 0,
             std::function<void(EdgeId)> removal_handler = 0,
@@ -467,10 +465,12 @@ private:
     DECL_LOGGER("BulgeRemover")
 };
 
-template<class Graph, class InterestingElementFinder>
+template<class Graph>
 class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
+private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
+    typedef std::shared_ptr<InterestingElementFinder<Graph, EdgeId>> CandidateFinderPtr;
     typedef SmartSetIterator<Graph, EdgeId, CoverageComparator<Graph>> SmartEdgeSet;
 
     size_t buff_size_;
@@ -478,7 +478,7 @@ class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
     double buff_cov_rel_diff_;
     AlternativesAnalyzer<Graph> alternatives_analyzer_;
     BulgeGluer<Graph> gluer_;
-    InterestingElementFinder interesting_edge_finder_;
+    CandidateFinderPtr interesting_edge_finder_;
     //todo remove
     bool tracking_;
 
@@ -706,7 +706,7 @@ public:
 
     typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
 
-    ParallelBulgeRemover(Graph& g, const InterestingElementFinder& interesting_edge_finder,
+    ParallelBulgeRemover(Graph& g, const CandidateFinderPtr& interesting_edge_finder,
                          size_t buff_size, double buff_cov_diff,
                          double buff_cov_rel_diff, const AlternativesAnalyzer<Graph>& alternatives_analyzer,
                          BulgeCallbackF opt_callback = 0,
@@ -739,7 +739,7 @@ public:
             it_.clear();
             TRACE("Primary launch.");
             TRACE("Start search for interesting edges");
-            interesting_edge_finder_.Run(it_);
+            interesting_edge_finder_->Run(this->g(), [&](EdgeId e) {it_.push(e);});
             TRACE(it_.size() << " interesting edges to process");
         } else {
             VERIFY(tracking_);
