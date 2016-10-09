@@ -11,6 +11,7 @@
 #include "assembly_graph/components/graph_component.hpp"
 #include "visualization/graph_colorer.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
+#include "assembly_graph/graph_support/detail_coverage.hpp"
 
 namespace omnigraph {
 
@@ -162,24 +163,25 @@ template<class Graph>
 class RelativeCoverageHelper {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef std::function<double(EdgeId, VertexId)> LocalCoverageFT;
 
     const Graph& g_;
-    LocalCoverageFT local_coverage_f_;
+    const FlankingCoverage<Graph>& flanking_cov_;
     double min_coverage_gap_;
 
 public:
-    RelativeCoverageHelper(const Graph& g, LocalCoverageFT local_coverage_f,
+    RelativeCoverageHelper(const Graph& g,
+                           const FlankingCoverage<Graph>& flanking_cov,
                            double min_coverage_gap)
             : g_(g),
-              local_coverage_f_(local_coverage_f),
+              flanking_cov_(flanking_cov),
               min_coverage_gap_(min_coverage_gap) {
         VERIFY(math::gr(min_coverage_gap, 1.));
     }
 
     double LocalCoverage(EdgeId e, VertexId v) const {
-        DEBUG("Local coverage of edge " << g_.str(e) << " around vertex " << g_.str(v) << " was " << local_coverage_f_(e, v));
-        return local_coverage_f_(e, v);
+        double ans = flanking_cov_.LocalCoverage(e, v);
+        DEBUG("Local coverage of edge " << g_.str(e) << " around vertex " << g_.str(v) << " was " << ans);
+        return ans;
     }
 
     template<class EdgeContainer>
@@ -196,6 +198,16 @@ public:
                                double base_coverage) const {
         return math::gr(MaxLocalCoverage(edges, v),
                         base_coverage * min_coverage_gap_);
+    }
+
+    bool AnyHighlyCoveredOnBothSides(VertexId v, double base_coverage) const {
+        return CheckAnyHighlyCovered(g_.IncomingEdges(v), v, base_coverage) &&
+                CheckAnyHighlyCovered(g_.OutgoingEdges(v), v, base_coverage);
+    }
+
+    bool AnyHighlyCoveredOnFourSides(EdgeId e) const {
+        return AnyHighlyCoveredOnBothSides(g_.EdgeStart(e), LocalCoverage(e, g_.EdgeStart(e))) &&
+                AnyHighlyCoveredOnBothSides(g_.EdgeEnd(e), LocalCoverage(e, g_.EdgeEnd(e)));
     }
 
     double RelativeCoverageToReport(VertexId v, double base_coverage) const {
@@ -357,79 +369,76 @@ private:
     DECL_LOGGER("RelativelyLowCoveredComponentChecker");
 };
 
-//Removes last (k+1)-mer of graph edge
 template<class Graph>
-class EdgeDisconnector {
-    typedef typename Graph::EdgeId EdgeId;
-    Graph& g_;
-    EdgeRemover<Graph> edge_remover_;
-
-public:
-    EdgeDisconnector(Graph& g,
-                     HandlerF<Graph> removal_handler = nullptr):
-                                 g_(g), edge_remover_(g, removal_handler) {
-    }
-
-    EdgeId operator()(EdgeId e) {
-        if (g_.length(e) > 1) {
-            pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, 1);
-            edge_remover_.DeleteEdge(split_res.first);
-            return split_res.first;
-        } else {
-            edge_remover_.DeleteEdge(e);
-            return e;
-        }
-    }
-};
-
-//todo make parallel
-template<class Graph>
-class RelativeCoverageDisconnector: public EdgeProcessingAlgorithm<Graph> {
+class RelativeCovDisconnectionCondition : public EdgeCondition<Graph> {
+    typedef EdgeCondition<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef std::function<double(EdgeId, VertexId)> LocalCoverageFT;
-    typedef EdgeProcessingAlgorithm<Graph> base;
-
     const RelativeCoverageHelper<Graph> rel_helper_;
-    EdgeDisconnector<Graph> disconnector_;
-    size_t cnt_;
 public:
-    RelativeCoverageDisconnector(Graph& g,
-            LocalCoverageFT local_coverage_f, double diff_mult) :
-            base(g, false),
-            rel_helper_(g, local_coverage_f, diff_mult),
-            disconnector_(g),
-            cnt_(0) {
+    RelativeCovDisconnectionCondition(const Graph& g,
+                                      const FlankingCoverage<Graph>& flanking_cov,
+                                      double diff_mult) :
+            base(g),
+            rel_helper_(g, flanking_cov, diff_mult) {
     }
 
-    ~RelativeCoverageDisconnector() {
-        DEBUG("Disconnected edge cnt " << cnt_);
-    }
-
-protected:
-    bool ProcessEdge(EdgeId edge) {
-        DEBUG("Processing edge " << this->g().int_id(edge));
-        VertexId v = this->g().EdgeStart(edge);
-        double coverage_edge_around_v = rel_helper_.LocalCoverage(edge, v);
+    bool Check(EdgeId e) const override {
+        VertexId v = this->g().EdgeStart(e);
+        double coverage_edge_around_v = rel_helper_.LocalCoverage(e, v);
         DEBUG("Local flanking coverage - " << coverage_edge_around_v);
         DEBUG("Max local coverage incoming  - " << rel_helper_.MaxLocalCoverage(this->g().IncomingEdges(v), v));
         DEBUG("Max local coverage outgoing  - " << rel_helper_.MaxLocalCoverage(this->g().OutgoingEdges(v), v));
-        if (rel_helper_.CheckAnyHighlyCovered(this->g().IncomingEdges(v), v, coverage_edge_around_v) &&
-            rel_helper_.CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, coverage_edge_around_v)) {
-            DEBUG("Disconnecting");
-            disconnector_(edge);
-            cnt_++;
-            return true;
-        } else {
-            DEBUG("No need to disconnect");
-            return false;
-      }
+        return rel_helper_.AnyHighlyCoveredOnBothSides(v, coverage_edge_around_v);
     }
 
 private:
-
-    DECL_LOGGER("RelativeCoverageDisconnector");
+    DECL_LOGGER("RelativeCovDisconnectionCondition");
 };
+
+////todo make parallel
+//template<class Graph>
+//class RelativeCoverageDisconnector: public EdgeProcessingAlgorithm<Graph> {
+//    typedef typename Graph::EdgeId EdgeId;
+//    typedef typename Graph::VertexId VertexId;
+//    typedef std::function<double(EdgeId, VertexId)> LocalCoverageFT;
+//    typedef EdgeProcessingAlgorithm<Graph> base;
+//
+//    const RelativeCoverageHelper<Graph> rel_helper_;
+//    EdgeDisconnector<Graph> disconnector_;
+//    size_t cnt_;
+//public:
+//    RelativeCoverageDisconnector(Graph& g,
+//                                 const FlankingCoverage<Graph>& flanking_cov,
+//                                 double diff_mult) :
+//            base(g, false),
+//            rel_helper_(g, flanking_cov, diff_mult),
+//            disconnector_(g) {
+//    }
+//
+//protected:
+//    bool ProcessEdge(EdgeId edge) {
+//        DEBUG("Processing edge " << this->g().int_id(edge));
+//        VertexId v = this->g().EdgeStart(edge);
+//        double coverage_edge_around_v = rel_helper_.LocalCoverage(edge, v);
+//        DEBUG("Local flanking coverage - " << coverage_edge_around_v);
+//        DEBUG("Max local coverage incoming  - " << rel_helper_.MaxLocalCoverage(this->g().IncomingEdges(v), v));
+//        DEBUG("Max local coverage outgoing  - " << rel_helper_.MaxLocalCoverage(this->g().OutgoingEdges(v), v));
+//        if (rel_helper_.AnyHighlyCoveredOnBothSides(v, coverage_edge_around_v)) {
+//            DEBUG("Disconnecting");
+//            disconnector_(edge);
+//            cnt_++;
+//            return true;
+//        } else {
+//            DEBUG("No need to disconnect");
+//            return false;
+//        }
+//    }
+//
+//private:
+//
+//    DECL_LOGGER("RelativeCoverageDisconnector");
+//};
 
 template<class Graph>
 class ComponentSearcher {
@@ -578,7 +587,8 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
 
 public:
     RelativeCoverageComponentRemover(
-            Graph& g, LocalCoverageFT local_coverage_f,
+            Graph& g,
+            const FlankingCoverage<Graph>& flanking_cov,
             double min_coverage_gap,
             size_t length_bound,
             size_t tip_allowing_length_bound,
@@ -587,7 +597,7 @@ public:
             HandlerF handler_function = 0, size_t vertex_count_limit = 10, 
             std::string vis_dir = "")
             : base(g),
-              rel_helper_(g, local_coverage_f, min_coverage_gap),
+              rel_helper_(g, flanking_cov, min_coverage_gap),
               length_bound_(length_bound),
               tip_allowing_length_bound_(tip_allowing_length_bound),
               longest_connecting_path_bound_(longest_connecting_path_bound),

@@ -119,7 +119,6 @@ private:
             }
 
             TRACE("Iterating through incoming edges of vertex " << g_.int_id(v))
-            //TODO: doesn`t work with parallel simplification
             vector<EdgeId> incoming;
             incoming.reserve(4);
             std::copy_if(g_.in_begin(v), g_.in_end(v), std::back_inserter(incoming), [&] (EdgeId e) {
@@ -278,30 +277,28 @@ class BestPathStorage: public PathProcessor<Graph>::Callback {
     typedef vector<EdgeId> Path;
 public:
     BestPathStorage(const Graph& g, Comparator comparator) :
-            g_(g), cnt_(0), comparator_(comparator) {
+            g_(g), comparator_(comparator) {
     }
 
-    void HandleReversedPath(const vector<EdgeId>& path) override {
-        cnt_++;
-        if(best_path_.size() == 0 || comparator_(path, best_path_))
-            best_path_ = path;
+    void HandleReversedPath(const Path& path) override {
+        if (!best_path_ || comparator_(path, *best_path_))
+            best_path_ = boost::make_optional(path);
     }
 
-    vector<EdgeId> BestPath() const {
+    boost::optional<Path> best_path() const {
         return best_path_;
-    }
-
-    size_t size() const {
-        return cnt_;
     }
 
 private:
     const Graph& g_;
-    size_t cnt_;
     Comparator comparator_;
-    vector<vector<Path>> best_path_;
+    boost::optional<Path> best_path_;
 };
 
+template<class Graph, class Comparator>
+BestPathStorage<Graph, Comparator> BestPathStorageInstance(const Graph& g, Comparator c) {
+    return BestPathStorage<Graph, Comparator>(g, c);
+};
 
 template<class Graph>
 class PathStorageCallback: public PathProcessor<Graph>::Callback {
@@ -371,7 +368,7 @@ private:
     const Graph& g_;
     vector<size_t> counts_;
     size_t count_;
-    vector<vector<Path> > all_paths_;
+    vector<vector<Path>> all_paths_;
     vector<Path> cur_paths_;
 };
 

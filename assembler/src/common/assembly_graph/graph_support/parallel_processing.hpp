@@ -302,7 +302,40 @@ public:
                    remove_condition, removal_handler,
                    canonical_only, comp, track_changes) {
     }
+};
+
+template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
+class DisconnectionAlgorithm : public PersistentProcessingAlgorithm<Graph,
+        typename Graph::EdgeId,
+        Comparator> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef PersistentProcessingAlgorithm<Graph, EdgeId, Comparator> base;
+    pred::TypedPredicate<EdgeId> condition_;
+    EdgeDisconnector<Graph> disconnector_;
+
+public:
+    DisconnectionAlgorithm(Graph& g,
+                           pred::TypedPredicate<EdgeId> condition,
+                           size_t chunk_cnt,
+                           HandlerF<Graph> removal_handler,
+                           const Comparator& comp = Comparator(),
+                           bool track_changes = true)
+            : base(g,
+                   std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(condition, chunk_cnt),
+            /*canonical_only*/false, comp, track_changes),
+              condition_(condition),
+              disconnector_(g, removal_handler) {
+    }
+
+    bool Process(EdgeId e) override {
+        if (condition_(e)) {
+            disconnector_(e);
+            return true;
+        }
+        return false;
+    }
 
 };
+
 
 }

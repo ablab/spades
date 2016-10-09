@@ -204,7 +204,8 @@ class GraphSimplifier {
 
         cnt_callback_.Report();
 
-        changed |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov, simplif_cfg_.relative_ed);
+        changed |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov,
+                                                        simplif_cfg_.relative_ed, info_container_);
 
         if (simplif_cfg_.topology_simplif_enabled && info_container_.main_iteration()) {
             changed |= AllTopology();

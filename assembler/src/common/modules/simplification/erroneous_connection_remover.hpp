@@ -231,33 +231,18 @@ bool RemoveErroneousEdgesInLengthOrder(Graph &g,
 //
 //};
 
-//todo refactor
 template<class Graph>
-class ThornCondition : public EdgeCondition<Graph> {
+class TopologicalThornCondition : public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef EdgeCondition<Graph> base;
+    typedef std::vector<EdgeId> Path;
 
-    size_t uniqueness_length_;
-    size_t dijkstra_depth_;
+    size_t max_jump_distance_;
 
-    bool Unique(const vector<EdgeId>& edges, bool forward) const {
-        return edges.size() == 1 && CheckUniqueness(*edges.begin(), forward);
-    }
-
-    bool CheckUnique(EdgeId e) const {
-        TRACE("Checking conditions for edge start");
-        return Unique(vector<EdgeId>(this->g().in_begin(this->g().EdgeStart(e)), this->g().in_end(this->g().EdgeStart(e))), false)
-                || Unique(vector<EdgeId>(this->g().out_begin(this->g().EdgeEnd(e)), this->g().out_end(this->g().EdgeEnd(e))), true);
-    }
-
-    bool CheckThorn(EdgeId e) const {
+    bool CheckEdgeCounts(EdgeId e) const {
         if (this->g().EdgeStart(e) == this->g().EdgeEnd(e))
             return false;
-        if (this->g().RelatedVertices(this->g().EdgeStart(e),
-                                      this->g().EdgeEnd(e))) {
-            return true;
-        }
         if (this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) != 2)
             return false;
         if (this->g().IncomingEdgeCount(this->g().EdgeStart(e)) != 1)
@@ -266,60 +251,91 @@ class ThornCondition : public EdgeCondition<Graph> {
             return false;
         if (this->g().IncomingEdgeCount(this->g().EdgeEnd(e)) != 2)
             return false;
+        return true;
+    }
 
-        auto dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(this->g(), dijkstra_depth_);
-        dij.Run(this->g().EdgeStart(e));
-        vector<VertexId> reached = dij.ReachedVertices();
-        for (auto it = reached.begin(); it != reached.end(); ++it) {
-            if (*it != this->g().EdgeEnd(e)
-                    && this->g().RelatedVertices(*it, this->g().EdgeEnd(e))) {
-                return true;
-            }
+public:
+
+    TopologicalThornCondition(Graph& g, size_t max_jump_dist)
+            : base(g),
+              max_jump_distance_(max_jump_dist) {
+    }
+
+    bool Check(EdgeId e) const override {
+        const Graph& g = this->g();
+        if (!CheckEdgeCounts(e))
+            return false;
+
+        //fixme micro-optimization to be removed
+        if (g.conjugate(g.EdgeStart(e)) == g.EdgeEnd(e)) {
+            return true;
         }
-        return false;
+
+        auto comparator = [](const Path& a, const Path& b) {return a.size() >= b.size();};
+
+        auto callback = BestPathStorageInstance(g, comparator);
+        //fixme put 10 in config
+        ProcessPaths(g, 0, max_jump_distance_, g.EdgeStart(e), g.conjugate(g.EdgeEnd(e)), callback, 10);
+        return (bool) callback.best_path();
+    }
+};
+
+//todo refactor
+template<class Graph>
+class ThornCondition : public TopologicalThornCondition<Graph> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef TopologicalThornCondition<Graph> base;
+    typedef std::vector<EdgeId> Path;
+
+    size_t uniqueness_length_;
+
+    bool CheckUniqueness(EdgeId e) const {
+        return this->g().length(e) >= uniqueness_length_;
+    }
+
+    bool CheckUnique(VertexId v) const {
+        return this->g().CheckUniqueIncomingEdge(v) &&
+                CheckUniqueness(this->g().GetUniqueIncomingEdge(v));
+    }
+
+    bool CheckUniqueCondition(EdgeId e) const {
+        TRACE("Checking conditions for edge start");
+        return CheckUnique(this->g().EdgeStart(e)) ||
+                CheckUnique(this->g().conjugate(this->g().EdgeEnd(e)));
     }
 
     template<class EdgeContainer>
-    bool CheckAlternativeCoverage(const EdgeContainer& edges, EdgeId base) const {
+    bool CheckAlternativesForEC(const EdgeContainer& edges, EdgeId base) const {
         for (EdgeId e: edges) {
             if (e != base && this->g().length(e) < 400
-                    && this->g().coverage(e) < 15 * this->g().coverage(base)) {
+                    && math::ls(this->g().coverage(e) / this->g().coverage(base), 15.)) {
                 return false;
             }
         }
         return true;
     }
 
-    bool CheckCoverageAround(EdgeId e) const {
-        return CheckAlternativeCoverage(
+    bool CheckForECAround(EdgeId e) const {
+        return CheckAlternativesForEC(
                 this->g().IncidentEdges(this->g().EdgeStart(e)), e)
-                && CheckAlternativeCoverage(
-                        this->g().IncidentEdges(this->g().EdgeEnd(e)), e);
-    }
-
-    bool CheckUniqueness(EdgeId e, bool /*forward*/) const {
-        return this->g().length(e) >= uniqueness_length_;
+                && CheckAlternativesForEC(
+                this->g().IncidentEdges(this->g().EdgeEnd(e)), e);
     }
 
  public:
 
     ThornCondition(Graph& g, size_t uniqueness_length, size_t dijkstra_depth)
-            : base(g),
-              uniqueness_length_(uniqueness_length),
-              dijkstra_depth_(dijkstra_depth) {
+            : base(g, dijkstra_depth),
+              uniqueness_length_(uniqueness_length) {
     }
 
-    bool Check(EdgeId e) const {
-        bool tmp = (CheckUnique(e) || CheckCoverageAround(e));
-        if (tmp)
-            tmp &= CheckThorn(e);
-        return tmp;
+    bool Check(EdgeId e) const override {
+        return (CheckUniqueCondition(e) || CheckForECAround(e)) && base::Check(e);
     }
 
  private:
-    DECL_LOGGER("ThornCondition")
-    ;
-
+    DECL_LOGGER("ThornCondition");
 };
 
 //todo move to rnaSPAdes simplification
@@ -432,15 +448,14 @@ class HiddenECRemover: public EdgeProcessingAlgorithm<Graph> {
     typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-private:
     size_t uniqueness_length_;
     double unreliability_threshold_;
     double ec_threshold_;
     double relative_threshold_;
-    const FlankingCoverage<Graph> &flanking_coverage_;
+    const FlankingCoverage<Graph>& flanking_coverage_;
     EdgeRemover<Graph> edge_remover_;
     MultiplicityCountingCondition<Graph> condition_;
-private:
+
     void RemoveHiddenEC(EdgeId edge) {
         if (this->g().length(edge) <= this->g().k() || (edge == this->g().conjugate(edge) && this->g().length(edge) <= 2 * this->g().k()))
             edge_remover_.DeleteEdge(edge);
@@ -451,7 +466,9 @@ private:
     }
 
     void RemoveHiddenECWithNoCompression(EdgeId edge) {
-        if (this->g().length(edge) <= this->g().k() || (edge == this->g().conjugate(edge) && this->g().length(edge) <= 2 * this->g().k())) {
+        if (this->g().length(edge) <= this->g().k() ||
+                (edge == this->g().conjugate(edge) &&
+                        this->g().length(edge) <= 2 * this->g().k())) {
             edge_remover_.DeleteEdgeWithNoCompression(edge);
         } else {
             auto split_result = this->g().SplitEdge(edge, this->g().k());
@@ -467,18 +484,19 @@ private:
 
     bool FindHiddenEC(VertexId v) {
         vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
-        if(flanking_coverage_.GetInCov(edges[0]) > flanking_coverage_.GetInCov(edges[1])) {
+        if(math::gr(flanking_coverage_.GetInCov(edges[0]), flanking_coverage_.GetInCov(edges[1]))) {
             auto tmp = edges[0];
             edges[0] = edges[1];
             edges[1] = tmp;
         }
 //        cout << flanking_coverage_.GetInCov(edges[0]) << " " << flanking_coverage_.GetInCov(edges[1]) << endl;
-        if(flanking_coverage_.GetInCov(edges[1]) < unreliability_threshold_) {
+        if (math::ls(flanking_coverage_.GetInCov(edges[1]), unreliability_threshold_)) {
             DisconnectEdges(v);
 //            cout << "disconnected" << endl;
             return true;
         }
-        if(flanking_coverage_.GetInCov(edges[0]) * relative_threshold_ < flanking_coverage_.GetInCov(edges[1]) && flanking_coverage_.GetInCov(edges[0]) < ec_threshold_) {
+        if(math::ls(flanking_coverage_.GetInCov(edges[0]) * relative_threshold_, flanking_coverage_.GetInCov(edges[1])) &&
+                math::ls(flanking_coverage_.GetInCov(edges[0]), ec_threshold_)) {
             RemoveHiddenEC(edges[0]);
 //            cout << "success" << endl;
             return true;
@@ -494,9 +512,9 @@ private:
         return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1] && condition_.CheckUniqueness(this->g().GetUniqueIncomingEdge(v), false)) || this->g().length(this->g().GetUniqueIncomingEdge(v)) >= uniqueness_length_;
     }
 
-    bool ProcessEdge(EdgeId e) {
+    bool ProcessEdge(EdgeId e) override {
         VertexId v = this->g().EdgeEnd(e);
-        if(CheckSuspicious(v)) {
+        if (CheckSuspicious(v)) {
 //            cout << "client: " << this->g().int_id(v) << endl;
             return FindHiddenEC(v);
         }

@@ -120,4 +120,31 @@ public:
     }
 
 };
+
+//Removes first (k+1)-mer of graph edge, disconnecting it from starting vertex
+template<class Graph>
+class EdgeDisconnector {
+    typedef typename Graph::EdgeId EdgeId;
+    Graph& g_;
+    EdgeRemover<Graph> edge_remover_;
+    typedef std::function<void(EdgeId)> HandlerF;
+
+public:
+    EdgeDisconnector(Graph& g,
+                     HandlerF removal_handler = nullptr):
+            g_(g), edge_remover_(g, removal_handler) {
+    }
+
+    EdgeId operator()(EdgeId e) {
+        if (g_.length(e) > 1) {
+            pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, 1);
+            edge_remover_.DeleteEdge(split_res.first);
+            return split_res.first;
+        } else {
+            edge_remover_.DeleteEdge(e);
+            return e;
+        }
+    }
+};
+
 }

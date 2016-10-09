@@ -453,8 +453,7 @@ bool RemoveRelativelyLowCoverageComponents(
         omnigraph::simplification::relative_coverage::
             RelativeCoverageComponentRemover<Graph> rel_rem(
                 g,
-                std::bind(&FlankingCoverage<Graph>::LocalCoverage,
-                          std::cref(flanking_cov), std::placeholders::_1, std::placeholders::_2),
+                flanking_cov,
                 rcc_config.coverage_gap, size_t(double(info.read_length()) * rcc_config.length_coeff),
                 size_t(double(info.read_length()) * rcc_config.tip_allowing_length_coeff),
                 connecting_path_length_bound,
@@ -467,23 +466,27 @@ bool RemoveRelativelyLowCoverageComponents(
     }
 }
 
+//FIXME add to algo chain
 template<class Graph>
 bool DisconnectRelativelyLowCoverageEdges(Graph &g,
         const FlankingCoverage<Graph> &flanking_cov,
-        const config::debruijn_config::simplification::relative_coverage_edge_disconnector &rced_config) {
+        const config::debruijn_config::simplification::relative_coverage_edge_disconnector &rced_config,
+        const SimplifInfoContainer &info) {
     if (rced_config.enabled) {
         INFO("Disconnecting edges with relatively low coverage");
-        omnigraph::simplification::relative_coverage::RelativeCoverageDisconnector<
-                Graph> disconnector(g, std::bind(&FlankingCoverage<Graph>::LocalCoverage,
-                                std::cref(flanking_cov), std::placeholders::_1,
-                                std::placeholders::_2), rced_config.diff_mult);
-        return disconnector.Run();
+        omnigraph::DisconnectionAlgorithm<Graph> algo(g,
+                omnigraph::simplification::relative_coverage::
+                RelativeCovDisconnectionCondition<Graph>(g, flanking_cov, rced_config.diff_mult),
+                info.chunk_cnt(),
+                nullptr);
+        return algo.Run();
     } else {
         INFO("Disconnection of relatively low covered edges disabled");
         return false;
     }
 }
 
+//FIXME add to algo chain
 template<class Graph>
 bool RemoveComplexBulges(
     Graph &g,
@@ -762,14 +765,14 @@ AlgoPtr<Graph> BRInstance(Graph &g,
     auto alternatives_analyzer = ParseBRConfig(g, br_config);
 
 
-    auto candidate_finder = std::make_shared<ParallelInterestingElementFinder<Graph>>(
+    auto candidate_finder = std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(
                                                           NecessaryBulgeCondition(g,
                                                                                   alternatives_analyzer.max_length(),
                                                                               alternatives_analyzer.max_coverage()),
                                                   info.chunk_cnt());
     if (br_config.parallel) {
         INFO("Creating parallel br instance");
-        return make_shared<ParallelBulgeRemover<Graph>>(g,
+        return make_shared<omnigraph::ParallelBulgeRemover<Graph>>(g,
                 candidate_finder,
                 br_config.buff_size,
                 br_config.buff_cov_diff,
@@ -780,7 +783,7 @@ AlgoPtr<Graph> BRInstance(Graph &g,
                 /*track_changes*/true);
     } else {
         INFO("Creating br instance");
-        return make_shared<BulgeRemover<Graph>>(g,
+        return make_shared<omnigraph::BulgeRemover<Graph>>(g,
                 candidate_finder,
                 alternatives_analyzer,
                 nullptr,
@@ -807,42 +810,10 @@ public:
     }
 
     bool Check(EdgeId e) const override {
+        //FIXME do we need length check here?
         return this->g().length(e) > 1
-                    && this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) > 1
-                    && math::le(flanking_cov_.CoverageOfStart(e), max_coverage_);
-    }
-
-};
-
-template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
-class ParallelDisconnectionAlgorithm : public PersistentProcessingAlgorithm<Graph,
-                                                typename Graph::EdgeId,
-                                                Comparator> {
-    typedef typename Graph::EdgeId EdgeId;
-    typedef PersistentProcessingAlgorithm<Graph, EdgeId, Comparator> base;
-    pred::TypedPredicate<EdgeId> condition_;
-    omnigraph::simplification::relative_coverage::EdgeDisconnector<Graph> disconnector_;
-
-public:
-    ParallelDisconnectionAlgorithm(Graph &g,
-                                    pred::TypedPredicate<EdgeId> condition,
-                                    size_t chunk_cnt,
-                                    HandlerF<Graph> removal_handler,
-                                    const Comparator &comp = Comparator(),
-                                    bool track_changes = true)
-            : base(g,
-                   std::make_shared<ParallelInterestingElementFinder<Graph>>(condition, chunk_cnt),
-                           /*canonical_only*/false, comp, track_changes),
-                   condition_(condition),
-                   disconnector_(g, removal_handler) {
-    }
-
-    bool Process(EdgeId e) override {
-        if (condition_(e)) {
-            disconnector_(e);
-            return true;
-        }
-        return false;
+               && this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) > 1
+               && math::le(flanking_cov_.CoverageOfStart(e), max_coverage_);
     }
 
 };
@@ -858,10 +829,10 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph &g,
         return nullptr;
     }
 
-    return make_shared<ParallelDisconnectionAlgorithm<Graph>>(g,
-                                                              FlankingCovBound<Graph>(g, flanking_cov, cov_bound),
-                                                              info.chunk_cnt(),
-                                                              removal_handler);
+    return make_shared<DisconnectionAlgorithm<Graph>>(g,
+                                                      FlankingCovBound<Graph>(g, flanking_cov, cov_bound),
+                                                      info.chunk_cnt(),
+                                                      removal_handler);
 }
 
 template<class Graph>
