@@ -36,18 +36,11 @@ class ComplexTipFinder {
         return cov;
     }
 
-    //FIXME is everything ok with it?
     double GetOutwardCoverage(const GraphComponent<Graph>& component) const {
         double cov = 0.0;
         for (auto v : component.vertices()) {
-            for (auto edge : g_.OutgoingEdges(v)) {
-                if (component.contains(edge)) {
-                    cov = std::max(cov, g_.coverage(edge));
-                }
-            }
-
-            for (auto edge : g_.IncomingEdges(v)) {
-                if (component.contains(edge)) {
+            for (auto edge : g_.IncidentEdges(v)) {
+                if (!component.contains(edge)) {
                     cov = std::max(cov, g_.coverage(edge));
                 }
             }
