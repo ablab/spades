@@ -301,7 +301,7 @@ protected:
 
 public:
 
-    void WritePaths(const PathContainer &paths, const string &filename){
+    void WritePaths(const PathContainer &paths, const string &filename) const {
         std::ofstream oss(filename.c_str());
 
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {

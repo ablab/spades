@@ -28,7 +28,7 @@ private:
     mutable size_t w;
 
 public:
-    vector<EdgeId> getPath() const {
+    const vector<EdgeId>& getPath() const {
         return path;
     }
 

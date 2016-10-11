@@ -8,10 +8,6 @@ namespace path_extend {
 namespace scaffold_graph {
 
 
-bool LengthEdgeCondition::IsSuitable(debruijn_graph::EdgeId e) const {
-    return graph_.length(e) >= min_length_;
-}
-
 void BaseScaffoldGraphConstructor::ConstructFromEdgeConditions(const EdgeCondition &edge_condition,
                                                            vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                                                            bool use_terminal_vertices_only) {

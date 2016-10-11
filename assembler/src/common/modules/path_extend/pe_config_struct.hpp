@@ -40,6 +40,8 @@ enum scaffolding_mode {
     sm_old_pe_2015
 };
 
+//Both this functions return always true, right?
+//still necessary?
 inline bool IsScaffolder2015Enabled(const scaffolding_mode mode) {
     return (mode == sm_old_pe_2015 || mode == sm_2015 || mode == sm_combined);
 }
@@ -213,8 +215,6 @@ struct pe_config {
         } coordinated_coverage;
 
         struct Scaffolding2015 {
-            bool autodetect;
-            double unique_coverage_variation;
             double relative_weight_cutoff;
 
             size_t unique_length_upper_bound;
@@ -230,9 +230,29 @@ struct pe_config {
             size_t always_add;
             size_t never_add;
             double relative_threshold;
-            bool graph_connectivity;
+            bool use_graph_connectivity;
             size_t max_path_length;
         } scaffold_graph_params;
+
+        struct GenomeConsistencyCheckerParamsT {
+            size_t max_gap;
+            double relative_max_gap;
+        } genome_consistency_checker;
+
+        struct LoopTraversalParamsT {
+            size_t min_edge_length ;
+            size_t max_component_size;
+            size_t max_path_length;
+        } loop_traversal;
+
+        struct UniquenessAnalyserParamsT  {
+            bool enabled;
+            double unique_coverage_variation;
+
+            double nonuniform_coverage_variation;
+            double uniformity_fraction_threshold;
+        } uniqueness_analyser;
+
     };
 
     struct LongReads {

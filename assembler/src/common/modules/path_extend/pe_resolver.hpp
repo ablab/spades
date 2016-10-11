@@ -469,7 +469,7 @@ public:
     PathExtendResolver(const Graph& g): g_(g), k_(g.k()) {
     }
 
-    PathContainer MakeSimpleSeeds() {
+    PathContainer MakeSimpleSeeds() const {
         std::set<EdgeId> included;
         PathContainer edges;
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -486,21 +486,21 @@ public:
         return edges;
     }
 
-    PathContainer ExtendSeeds(PathContainer &seeds, ContigsMaker &pathExtender) {
+    PathContainer ExtendSeeds(PathContainer &seeds, ContigsMaker &pathExtender) const {
         PathContainer paths;
         pathExtender.GrowAll(seeds, paths);
         return paths;
     }
 
     void RemoveEqualPaths(PathContainer &paths, GraphCoverageMap &coverage_map,
-                          size_t min_edge_len) {
+                          size_t min_edge_len) const  {
 
         SimpleOverlapRemover remover(g_, coverage_map);
         remover.RemoveSimilarPaths(paths, min_edge_len, min_edge_len, true, false, false, false, false);
     }
 
     void RemoveRNAOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
-                          size_t min_edge_len, size_t max_path_diff) {
+                          size_t min_edge_len, size_t max_path_diff) const  {
 
         SimpleOverlapRemover remover(g_, coverage_map);
         remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, true, false, false, false, false);
@@ -513,7 +513,7 @@ public:
     void RemoveOverlaps(PathContainer &paths, GraphCoverageMap &coverage_map,
                         size_t min_edge_len, size_t max_path_diff,
                         bool add_overlaps_begin,
-                        bool cut_preudo_self_conjugate) {
+                        bool cut_preudo_self_conjugate) const {
         SimpleOverlapRemover remover(g_, coverage_map);
         if (cut_preudo_self_conjugate)
             remover.CutPseudoSelfConjugatePaths(paths);
@@ -542,7 +542,7 @@ public:
         }
     }
 
-    void AddUncoveredEdges(PathContainer &paths, GraphCoverageMap &coverageMap) {
+    void AddUncoveredEdges(PathContainer &paths, GraphCoverageMap &coverageMap) const {
         std::set<EdgeId> included;
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (included.count(*iter) == 0 && !coverageMap.IsCovered(*iter)) {

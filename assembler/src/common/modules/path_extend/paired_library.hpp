@@ -178,6 +178,29 @@ protected:
 
 typedef std::vector<shared_ptr<PairedInfoLibrary> > PairedInfoLibraries;
 
+template<class Index>
+inline shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph& g,
+                                                const debruijn_graph::config::dataset::Library &lib,
+                                                const Index &paired_index) {
+    //why all those local variables? :)
+    size_t read_length = lib.data().read_length;
+    size_t is = (size_t) lib.data().mean_insert_size;
+    int is_min = (int) lib.data().insert_size_left_quantile;
+    int is_max = (int) lib.data().insert_size_right_quantile;
+    int var = (int) lib.data().insert_size_deviation;
+    bool is_mp = lib.type() == io::LibraryType::MatePairs || lib.type() == io::LibraryType::HQMatePairs;
+    return make_shared<PairedInfoLibraryWithIndex<decltype(paired_index)> >(g.k(),
+                                                                            g,
+                                                                            read_length,
+                                                                            is,
+                                                                            is_min > 0.0 ? size_t(is_min) : 0,
+                                                                            is_max > 0.0 ? size_t(is_max) : 0,
+                                                                            size_t(var),
+                                                                            paired_index,
+                                                                            is_mp,
+                                                                            lib.data().insert_size_distribution);
+}
+
 }  // path extend
 
 #endif /* PAIRED_LIBRARY_HPP_ */

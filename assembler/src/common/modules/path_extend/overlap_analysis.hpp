@@ -42,7 +42,7 @@ struct OverlapInfo {
     }
 };
 
-std::ostream& operator<<(std::ostream& os, const OverlapInfo& info) {
+inline std::ostream& operator<<(std::ostream& os, const OverlapInfo& info) {
     return os << "R1: [" << info.r1.start_pos << ", " << info.r1.end_pos
             << "]; R2: [" << info.r2.start_pos << ", " << info.r2.end_pos << "]"
             << "; match_cnt: " << info.match_cnt;

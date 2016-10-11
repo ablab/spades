@@ -97,6 +97,8 @@ params {
     multi_path_extend   true
     remove_overlaps     false
 
+    scaffolding_mode old
+
     scaffolder {
         cutoff        1
         hard_cutoff   10

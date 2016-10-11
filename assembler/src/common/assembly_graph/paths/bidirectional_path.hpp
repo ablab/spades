@@ -940,6 +940,10 @@ public:
         clear();
     }
 
+    ~PathContainer() {
+        DeleteAllPaths();
+    }
+
     size_t size() const {
         return data_.size();
     }

@@ -13,6 +13,29 @@ namespace path_extend {
 using debruijn_graph::EdgeId;
 using debruijn_graph::Graph;
 
+
+//De Bruijn graph edge condition interface
+class EdgeCondition {
+public:
+    virtual bool IsSuitable(debruijn_graph::EdgeId e) const = 0;
+
+    virtual ~EdgeCondition() { }
+
+};
+
+//Edge length condition
+class LengthEdgeCondition: public EdgeCondition {
+    const debruijn_graph::Graph &graph_;
+
+    size_t min_length_;
+
+public:
+    LengthEdgeCondition(const debruijn_graph::Graph &graph, size_t min_len) : graph_(graph), min_length_(min_len) {
+    }
+
+    bool IsSuitable(debruijn_graph::EdgeId e) const;
+};
+
 /* Connection condition are used by both scaffolder's extension chooser and scaffold graph */
 
 class ConnectionCondition {
@@ -115,7 +138,7 @@ protected:
 public:
     AssemblyGraphConnectionCondition(const Graph &g, size_t max_connection_length,
                                      const ScaffoldingUniqueEdgeStorage& unique_edges);
-    void AddInterestingEdge(EdgeId e);
+    void AddInterestingEdges(const EdgeCondition& edge_condition);
     map<EdgeId, double> ConnectedWith(EdgeId e) const;
     size_t GetLibIndex() const override;
     int GetMedianGap(EdgeId, EdgeId ) const override;

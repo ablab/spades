@@ -182,6 +182,11 @@ public:
                type_ == io::LibraryType::HQMatePairs;
     }
 
+    bool is_mate_pair() const {
+        return type_ == io::LibraryType::MatePairs ||
+               type_ == io::LibraryType::HQMatePairs;
+    }
+
     static bool is_contig_lib(LibraryType type) {
         return type == io::LibraryType::TrustedContigs ||
                type == io::LibraryType::UntrustedContigs ||

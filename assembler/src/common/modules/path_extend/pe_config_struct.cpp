@@ -31,7 +31,7 @@ void load(pe_config::ParamSetT::ScaffoldGraphParamsT& sg, boost::property_tree::
     load(sg.always_add,         pt, "always_add"        );
     load(sg.never_add,          pt, "never_add"         );
     load(sg.relative_threshold,  pt, "relative_threshold" );
-    load(sg.graph_connectivity, pt, "graph_connectivity");
+    load(sg.use_graph_connectivity, pt, "use_graph_connectivity");
     load(sg.max_path_length,    pt, "max_path_length"   );
 }
 
@@ -121,6 +121,14 @@ void load(pe_config::ParamSetT::PathFiltrationT& pf,
     }
 }
 
+void load(pe_config::ParamSetT::GenomeConsistencyCheckerParamsT& gcc,
+          boost::property_tree::ptree const& pt, bool complete)
+{
+    using config_common::load;
+    load(gcc.max_gap      , pt, "max_gap"      , complete);
+    load(gcc.relative_max_gap      , pt, "relative_max_gap"      , complete);
+}
+
 void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool complete) {
     using config_common::load;
     load(p.sm, pt, "scaffolding_mode", complete);
@@ -138,6 +146,7 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
     load(p.scaffolding2015, pt, "scaffolding2015", complete);
     load(p.scaffold_graph_params, pt, "scaffold_graph", complete);
     load(p.path_filtration, pt, "path_cleaning", complete);
+    load(p.genome_consistency_checker, pt, "genome_consistency_checker", complete);
 }
 
 void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,
@@ -150,15 +159,30 @@ void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,
 
 }
 
+void load(pe_config::ParamSetT::LoopTraversalParamsT& p, boost::property_tree::ptree const& pt,
+          bool complete) {
+    using config_common::load;
+    load(p.min_edge_length, pt, "min_edge_length", complete);
+    load(p.max_component_size, pt, "max_component_size", complete);
+    load(p.max_path_length, pt, "max_path_length", complete);
+}
+
+void load(pe_config::ParamSetT::UniquenessAnalyserParamsT& p, boost::property_tree::ptree const& pt,
+          bool complete) {
+    using config_common::load;
+    load(p.enabled, pt, "enabled", complete);
+    load(p.nonuniform_coverage_variation, pt, "nonuniform_coverage_variation", complete);
+    load(p.uniformity_fraction_threshold, pt, "uniformity_fraction_threshold", complete);
+    load(p.unique_coverage_variation, pt, "unique_coverage_variation", complete);
+}
+
 void load(pe_config::ParamSetT::Scaffolding2015& p, boost::property_tree::ptree const& pt,
           bool complete) {
     using config_common::load;
-    load(p.autodetect, pt, "autodetect", complete);
     load(p.unique_length_lower_bound, pt, "unique_length_lower_bound", complete);
     load(p.unique_length_upper_bound, pt, "unique_length_upper_bound", complete);
     load(p.unique_length_step, pt, "unique_length_step", complete);
     load(p.graph_connectivity_max_edges, pt, "graph_connectivity_max_edges", complete);
-    load(p.unique_coverage_variation, pt, "unique_coverage_variation", complete);
     load(p.relative_weight_cutoff, pt, "relative_weight_cutoff", complete);
 }
 

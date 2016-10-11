@@ -25,7 +25,6 @@ class LoopTraverser {
 
     const Graph& g_;
     GraphCoverageMap& covMap_;
-    shared_ptr<ContigsMaker> extender_;
     size_t long_edge_limit_;
     size_t component_size_limit_;
     size_t shortest_path_limit_;
@@ -70,15 +69,6 @@ private:
         return result;
     }
 
-    void TryToGrow(BidirectionalPath* path, EdgeId component_entrance) {
-        BidirectionalPath clone = *path;
-        extender_->GrowPathSimple(*path);
-        if (!path->Contains(component_entrance)) {
-            DEBUG("Grown paths do not contain initial edges, rolling back");
-            path->Clear();
-            path->PushBack(clone);
-        }
-    }
 
     bool IsEndInsideComponent(const BidirectionalPath &path,
                               const set <VertexId> &component_set) {
@@ -141,9 +131,6 @@ private:
             return false;
         }
 
-        //TryToGrow(startPath, start);
-        //TryToGrow(endPath->GetConjPath(), g_.conjugate(end));
-
         //Checking that paths ends are within component
         if (!IsEndInsideComponent(*startPath, start, component_set) ||
                 !IsEndInsideComponent(*endPath->GetConjPath(), g_.conjugate(end), component_set, true)) {
@@ -203,8 +190,8 @@ private:
     }
 
 public:
-    LoopTraverser(const Graph& g, GraphCoverageMap& coverageMap, shared_ptr<ContigsMaker> extender, size_t long_edge_limit, size_t component_size_limit, size_t shortest_path_limit) :
-            g_(g), covMap_(coverageMap), extender_(extender), long_edge_limit_(long_edge_limit), component_size_limit_(component_size_limit), shortest_path_limit_(shortest_path_limit) {
+    LoopTraverser(const Graph& g, GraphCoverageMap& coverageMap, size_t long_edge_limit, size_t component_size_limit, size_t shortest_path_limit) :
+            g_(g), covMap_(coverageMap), long_edge_limit_(long_edge_limit), component_size_limit_(component_size_limit), shortest_path_limit_(shortest_path_limit) {
     }
 
     size_t TraverseAllLoops() {

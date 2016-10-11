@@ -110,7 +110,8 @@ void GenomeConsistenceChecker::SpellGenome() {
         i++;
     }
     INFO("Assuming gaps of length > " << storage_.GetMinLength() << " unresolvable..");
-    INFO("ROUGH estimates on N50/L50:" << lengths[i - 1] << " / " << i - 1 << " with len " << total_len);
+    if (lengths.size() > 0)
+        INFO("Rough estimates on N50/L50:" << lengths[i - 1] << " / " << i - 1 << " with len " << total_len);
 }
 
 PathScore GenomeConsistenceChecker::CountMisassembliesWithStrand(const BidirectionalPath &path, const string strand) const {

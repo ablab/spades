@@ -10,27 +10,6 @@
 namespace path_extend {
 namespace scaffold_graph {
 
-//De Bruijn graph edge condition interface
-class EdgeCondition {
-public:
-    virtual bool IsSuitable(debruijn_graph::EdgeId e) const = 0;
-
-    virtual ~EdgeCondition() { }
-
-};
-
-//Edge length condition
-class LengthEdgeCondition: public EdgeCondition {
-    const debruijn_graph::Graph &graph_;
-
-    size_t min_length_;
-
-public:
-    LengthEdgeCondition(const debruijn_graph::Graph &graph, size_t min_len) : graph_(graph), min_length_(min_len) {
-    }
-
-    bool IsSuitable(debruijn_graph::EdgeId e) const;
-};
 
 //Iterface
 class ScaffoldGraphConstructor {

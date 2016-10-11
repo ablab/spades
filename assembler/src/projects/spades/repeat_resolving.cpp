@@ -7,22 +7,21 @@
 
 #include "utils/logger/logger.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
-#include "visualization/graph_labeler.hpp"
 #include "paired_info/distance_estimation.hpp"
 #include "paired_info/smoothing_distance_estimation.hpp"
-#include "modules/path_extend/path_extend_launch.hpp"
-#include "assembly_graph/graph_support/contig_output.hpp"
-#include "visualization/position_filler.hpp"
-#include "modules/alignment/long_read_storage.hpp"
+#include "modules/path_extend/pipeline/launcher.hpp"
+
 #include "repeat_resolving.hpp"
 
 namespace debruijn_graph {
 
 static void PEResolving(conj_graph_pack& gp) {
+    //this definitely should be configured and overloaded in rna config!
     std::string scaffolds_name = cfg::get().mode == config::pipeline_type::rna ? "transcripts" : "scaffolds";
-    bool output_broke_scaffolds = cfg::get().mode != config::pipeline_type::rna;
+    bool output_broken_scaffolds = cfg::get().mode != config::pipeline_type::rna;
 
-    path_extend::PathExtendParamsContainer params(cfg::get().pe_params,
+    path_extend::PathExtendParamsContainer params(cfg::get().ds,
+                                                  cfg::get().pe_params,
                                                   cfg::get().output_dir,
                                                   "final_contigs",
                                                   scaffolds_name,
@@ -30,11 +29,10 @@ static void PEResolving(conj_graph_pack& gp) {
                                                   cfg::get().uneven_depth,
                                                   cfg::get().avoid_rc_connections,
                                                   cfg::get().use_scaffolder,
-                                                  output_broke_scaffolds);
+                                                  output_broken_scaffolds);
 
-
-
-    path_extend::ResolveRepeatsPe(cfg::get().ds, params, gp);
+    path_extend::PathExtendLauncher exspander(cfg::get().ds, params, gp);
+    exspander.Launch();
 }
 
 static bool HasValidLibs() {
@@ -60,6 +58,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     printer(config::info_printer_pos::before_repeat_resolution);
 
     //todo awful hack to get around PE using cfg::get everywhere...
+    //Is it possible to fix this problem now or still too soon?
     auto tmp_params_storage = cfg::get().pe_params;
     if (preliminary_) {
         INFO("Setting up preliminary path extend settings")

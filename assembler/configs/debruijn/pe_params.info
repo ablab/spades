@@ -20,7 +20,7 @@ output_broken_scaffolds     break_gaps
 params {
     multi_path_extend   false
     ; old | 2015 | combined | old_pe_2015
-    scaffolding_mode old
+    scaffolding_mode old_pe_2015
 
     remove_overlaps     true
     cut_all_overlaps  false
@@ -35,6 +35,7 @@ params {
         single_threshold           1.75676
         weight_threshold           0.5
         priority_coeff             1.5
+        ;TODO remove from here
         max_repeat_length          8000
     }    
 
@@ -44,6 +45,7 @@ params {
         single_threshold           30
         weight_threshold           0.5
         priority_coeff             1.5
+        ;TODO remove from here
         max_repeat_length          8000
     }
 
@@ -96,8 +98,6 @@ params {
     }
 
     scaffolding2015 {
-        autodetect      true
-        unique_coverage_variation 0.5
         ; (median * (1+variation) > unique > median * (1 - variation))
         relative_weight_cutoff 2.0
 
@@ -114,8 +114,28 @@ params {
         always_add   40         ; connection with read count >= always_add are always added to the graph
         never_add     5         ; connection with read count < never_add are never added to the graph
         relative_threshold 0.25 ; connection with read count >= max_read_count * relative_threshod are added to the graph if satisfy condition above, max_read_count is calculated amond all alternatives
-        graph_connectivity false
+        use_graph_connectivity false
         max_path_length 10000
+    }
+
+    genome_consistency_checker {
+        max_gap 1000
+        relative_max_gap 0.2
+    }
+
+    uniqueness_analyser {
+        enabled        true
+        unique_coverage_variation 0.5
+
+        nonuniform_coverage_variation 50
+        uniformity_fraction_threshold 0.8
+    }
+
+    loop_traversal
+    {
+        min_edge_length         1000
+        max_component_size      10
+        max_path_length         1000
     }
 }
 

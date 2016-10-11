@@ -24,6 +24,8 @@
 #include "scaffolder2015/scaffold_graph_visualizer.hpp"
 #include "scaffolder2015/path_polisher.hpp"
 #include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
+
+
 namespace path_extend {
 
 using namespace debruijn_graph;
@@ -43,7 +45,7 @@ struct PathExtendParamsContainer {
         pset(pe_cfg_.param_set),
         output_dir(output_dir_),
         etc_dir(output_dir + pe_cfg_.etc_dir + "/"),
-        contigs_name(scf_name_),
+        contigs_name(scf_name_),git ll
         broken_contigs(contigs_name_),
         mode(mode_),
         uneven_depth(uneven_depth_),
@@ -519,8 +521,8 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const config::dataset& d
                                                          pset.scaffolder_options.short_overlap,
                                                          (int) pset.scaffolder_options.basic_overlap_coeff * dataset_info.RL()));
 
-    auto composite_gap_joiner = std::make_shared<CompositeGapJoiner>(gp.g, 
-                                                joiners, 
+    auto composite_gap_joiner = std::make_shared<CompositeGapJoiner>(gp.g,
+                                                joiners,
                                                 size_t(pset.scaffolder_options.max_can_overlap * (double) gp.g.k()), /* may overlap threshold */
                                                 int(math::round((double) gp.g.k() - pset.scaffolder_options.var_coeff * (double) paired_lib->GetIsVar())),  /* must overlap threshold */
                                                 pset.scaffolder_options.artificial_gap);
@@ -839,12 +841,6 @@ inline vector<shared_ptr<PathExtender>> MakePBScaffoldingExtenders( ScaffoldingU
                 unique_edge_analyzer_pb.FillUniqueEdgesWithLongReads(long_reads_cov_map[lib_index], unique_storage_pb, GetLongReadsConfig(params, dataset_info.reads[lib_index].type()));
             }
         }
-        INFO("removing fake unique wuth paired-end libs");
-        for (size_t lib_index = 0 ; lib_index <dataset_info.reads.lib_count(); lib_index++) {
-            if (dataset_info.reads[lib_index].type() == io::LibraryType::PairedEnd ) {
-                unique_edge_analyzer_pb.ClearLongEdgesWithPairedLib(lib_index, unique_storage_pb);
-            }
-        }
     } else {
         INFO("with coverage.")
         unique_edge_analyzer_pb.FillUniqueEdgeStorage(unique_storage_pb);
@@ -1055,7 +1051,7 @@ inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const co
                                                                                 params.relative_threshold));
         }
     }
-    if (params.graph_connectivity) {
+    if (params.use_graph_connectivity) {
         auto as_con = make_shared<AssemblyGraphConnectionCondition>(gp.g, params.max_path_length, edge_storage);
         for (auto e_iter = gp.g.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
             if (edge_condition.IsSuitable(*e_iter))
@@ -1095,7 +1091,7 @@ inline void PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_gra
 
     auto vcolorer = make_shared<ScaffoldVertexSetColorer>(main_edge_set);
     auto ecolorer = make_shared<ScaffoldEdgeColorer>();
-    graph_colorer::CompositeGraphColorer <ScaffoldGraph> colorer(vcolorer, ecolorer);
+    CompositeGraphColorer <ScaffoldGraph> colorer(vcolorer, ecolorer);
 
     INFO("Visualizing scaffold grpah");
     ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, edge_labels);
@@ -1202,7 +1198,7 @@ inline ScaffoldingUniqueEdgeStorage FillUniqueEdgeStorage(const conj_graph_pack&
 
 inline void ResolveRepeatsPe(const config::dataset& dataset_info,
                              const PathExtendParamsContainer& params,
-                             conj_graph_pack& gp) {
+                             const conj_graph_pack& gp) {
 
     INFO("ExSPAnder repeat resolving tool started");
     const pe_config::ParamSetT &pset = params.pset;

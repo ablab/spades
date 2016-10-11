@@ -2,6 +2,10 @@
 namespace path_extend {
 
 
+bool LengthEdgeCondition::IsSuitable(debruijn_graph::EdgeId e) const {
+    return graph_.length(e) >= min_length_;
+}
+
 map <debruijn_graph::EdgeId, double> ConnectionCondition::ConnectedWith(debruijn_graph::EdgeId e, const ScaffoldingUniqueEdgeStorage& storage) const {
     auto all_edges = this->ConnectedWith(e);
     map <debruijn_graph::EdgeId, double> res;
@@ -242,8 +246,11 @@ map <debruijn_graph::EdgeId, double> AssemblyGraphConnectionCondition::Connected
     }
     return stored_distances_[e];
 }
-void AssemblyGraphConnectionCondition::AddInterestingEdge(debruijn_graph::EdgeId e) {
-    interesting_edge_set_.insert(e);
+void AssemblyGraphConnectionCondition::AddInterestingEdges(const EdgeCondition& edge_condition) {
+    for (auto e_iter = g_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+        if (edge_condition.IsSuitable(*e_iter))
+            interesting_edge_set_.insert(*e_iter);
+    }
 }
 
 size_t AssemblyGraphConnectionCondition::GetLibIndex() const {

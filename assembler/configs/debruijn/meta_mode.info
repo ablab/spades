@@ -191,6 +191,8 @@ params {
 
 prelim_pe {
 params {
+    scaffolding_mode old
+
     use_coordinated_coverage false
     remove_overlaps     false
     scaffolding2015 {

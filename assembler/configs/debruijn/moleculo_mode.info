@@ -103,6 +103,8 @@ params {
     normalize_weight        true
     cut_all_overlaps  true
 
+    scaffolding_mode old
+
     ; extension selection
     extension_options
     {
