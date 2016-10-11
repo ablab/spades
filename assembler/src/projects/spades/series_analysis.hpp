@@ -217,7 +217,8 @@ public:
         SeriesAnalysisConfig config;
         yin >> config;
 
-        ContigAbundanceCounter abundance_counter(config.k, config.sample_cnt,
+        SetSampleCount(config.sample_cnt);
+        ContigAbundanceCounter abundance_counter(config.k,
                                                  SingleClusterAnalyzer(2., 0.4),
                                                  cfg::get().tmp_dir);
 

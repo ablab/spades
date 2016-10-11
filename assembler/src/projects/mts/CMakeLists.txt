@@ -36,6 +36,7 @@ add_executable(stats
 target_link_libraries(stats spades_modules nlopt BamTools ssw getopt_pp ${COMMON_LIBRARIES})
 
 add_executable(contig_abundance_counter
-               contig_abundance_counter.cpp)
+               contig_abundance_counter.cpp
+               contig_abundance.cpp)
 
 target_link_libraries(contig_abundance_counter spades_modules nlopt BamTools ssw getopt_pp ${COMMON_LIBRARIES})
