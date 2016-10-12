@@ -9,9 +9,17 @@ import shutil
 import subprocess
 import sys
 from common import gather_refs, dump_dict
-#from scipy.stats import expon
+from scipy.stats import expon
 
 def gen_profile(args):
+    if args.distribution == "uni":
+        #def rand():
+        #    return random.randint(0, args.scale)
+        pass
+    elif args.distribution == "exp":
+        def rand():
+            return int(expon.rvs(scale=args.scale))
+
     refs = dict(gather_refs(args.references))
     if args.dump_desc:
         with open(args.dump_desc, "w") as desc:
@@ -19,15 +27,15 @@ def gen_profile(args):
     for ref in refs:
         print(ref, end=" ")
         for _ in range(args.samples):
-            #abundance = expon.rvs(scale=30)
-            abundance=random.randint(2, 20)
-            print(int(abundance), end=" ")
+            print(rand(), end=" ")
         print()
 
 def gen_samples(args):
-    refs = dict(gather_refs(args.references))
-    shutil.rmtree(args.out_dir, ignore_errors=True)
-    os.mkdir(args.out_dir)
+    refs = dict(gather_refs(args.references.split(",")))
+    try:
+        os.mkdir(args.out_dir)
+    except OSError:
+        pass
 
     read_len = args.read_length
     adj_qual = "2" * read_len + "\n"
@@ -47,6 +55,7 @@ def gen_samples(args):
                 print("Generating", reads, "reads for subsample", i, "of", ref_name)
                 sample_dir = os.path.join(args.out_dir, "sample" + str(i))
                 if first_line:
+                    shutil.rmtree(sample_dir, ignore_errors=True)
                     subprocess.check_call(["mkdir", "-p", sample_dir])
 
                 temp_1 = sample_dir + ".tmp.r1.fastq"
@@ -66,16 +75,18 @@ def gen_samples(args):
             first_line = False
 
 parser = argparse.ArgumentParser(description="Metagenomic Time Series Simulator")
-parser.add_argument("--references", "-r", type=str, help="List of references, or a directory with them, or a desc file with reference paths prepended with @", required=True)
+parser.add_argument("--references", "-r", type=str, help="Comma-separated list of references, or a directory with them, or a desc file with reference paths prepended with @", required=True)
 subparsers = parser.add_subparsers()
 
 gen_profile_args = subparsers.add_parser("prof", help="Generate a profile for the reference set")
 gen_profile_args.add_argument("--dump-desc", "-d", type=str, help="Dump description file with reference paths")
-gen_profile_args.add_argument("--samples", "-s", type=int, help="Sample count", default=1)
+gen_profile_args.add_argument("--samples", "-n", type=int, help="Sample count", default=1)
+gen_profile_args.add_argument("--scale", "-s", type=int, help="Distribution scale", default=20)
+gen_profile_args.add_argument("--distribution", "-t", choices=["uni", "exp"], help="Distribution type", default="uni")
 gen_profile_args.set_defaults(func=gen_profile)
 
 gen_samples_args = subparsers.add_parser("gen", help="Generate reads using a profile")
-gen_samples_args.add_argument("--out-dir", "-o", type=str, help="Output directory", default="./")
+gen_samples_args.add_argument("--out-dir", "-o", type=str, help="Output directory. Will be totally overwritten!")
 gen_samples_args.add_argument("--read-length", "-l", type=int, help="Read length", default=100)
 gen_samples_args.add_argument("--error-rate", "-e", type=float, help="Base error rate", default=0)
 gen_samples_args.add_argument("profile", type=str, help="File with reference profiles")

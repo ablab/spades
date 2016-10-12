@@ -25,19 +25,9 @@ if args.reuse_assemblies:
     call_snake(["assemble_all", "--touch"])
 call_snake()
 
-print("Step #2 - Bin filtering")
-call_snake(["choose_all"])
-
 if args.stats:
-    print("Step #2b - Assembly statistics")
-    call_snake(["stats_all"])
+    print("Step #2a - Assembly statistics")
+    call_snake(["--snakefile", "Snakestats", "stats_all"])
 
-print("Step #3 - Bin reassembly")
-if args.reuse_assemblies and os.path.isdir(os.path.join(args.dir, "reassembly")):
-    call_snake(["reassemble_all", "--touch"])
-else:
-    call_snake(["reassemble_all"])
-
-if args.stats:
-    print("Step #3b - Reassembly statistics")
-    call_snake(["stats_reassembly"])
+    print("Step #2b - Reassembly statistics")
+    call_snake(["--snakefile", "Snakestats", "stats_reassembly"])

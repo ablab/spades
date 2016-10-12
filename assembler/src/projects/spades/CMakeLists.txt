@@ -15,7 +15,8 @@ add_executable(spades main.cpp
             distance_estimation.cpp
             repeat_resolving.cpp
             hybrid_aligning.cpp
-            chromosome_removal.cpp)
+            chromosome_removal.cpp
+            ../mts/contig_abundance.cpp)
 
 target_include_directories(spades PRIVATE ${EXT_DIR}/include/ConsensusCore)
 target_link_libraries(spades ConsensusCore common_modules nlopt BamTools ssw ${COMMON_LIBRARIES})

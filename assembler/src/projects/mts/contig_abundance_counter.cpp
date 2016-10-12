@@ -2,8 +2,6 @@
 #include <string>
 #include <iostream>
 #include "getopt_pp/getopt_pp.h"
-#include "utils/verify.hpp"
-#include "pipeline/graph_pack.hpp"
 #include "io/reads/file_reader.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "pipeline/graphio.hpp"
@@ -86,7 +84,7 @@ int main(int argc, char** argv) {
     //TmpFolderFixture fixture("tmp");
     create_console_logger();
 
-    ContigAbundanceCounter abundance_counter(k, sample_cnt, SingleClusterAnalyzer(sample_cnt), work_dir);
+    ContigAbundanceCounter abundance_counter(k, SingleClusterAnalyzer(), work_dir);
     abundance_counter.Init(kmer_mult_fn);
 
     io::FileReadStream contigs_stream(contigs_path);
