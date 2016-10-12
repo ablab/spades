@@ -124,7 +124,7 @@ protected:
     const Graph& g() const { return g_; }
 public:
     virtual ~PersistentAlgorithmBase() {}
-    virtual bool Run(bool force_primary_launch = false) = 0;
+    virtual size_t Run(bool force_primary_launch = false) = 0;
 };
 
 //todo use add_condition in it_
@@ -171,7 +171,7 @@ public:
         it_.Detach();
     }
 
-    bool Run(bool force_primary_launch = false) {
+    size_t Run(bool force_primary_launch = false) override {
         bool primary_launch = !tracking_ || (curr_iteration_ == 0) || force_primary_launch ;
         if (!it_.IsAttached()) {
             it_.Attach();
@@ -189,7 +189,7 @@ public:
 
         PrepareIteration(std::min(curr_iteration_, total_iteration_estimate_ - 1), total_iteration_estimate_);
 
-        bool triggered = false;
+        size_t triggered = 0;
         TRACE("Start processing");
         for (; !it_.IsEnd(); ++it_) {
             ElementId el = *it_;
@@ -199,7 +199,8 @@ public:
                 break;
             }
             TRACE("Processing edge " << this->g().str(el));
-            triggered |= Process(el);
+            if (Process(el))
+                triggered++;
         }
         TRACE("Finished processing. Triggered = " << triggered);
         if (!tracking_)

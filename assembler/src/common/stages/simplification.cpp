@@ -331,7 +331,9 @@ class GraphSimplifier {
         bool changed = false;
         for (auto algo_comment : algos) {
              INFO("Running " << algo_comment.second);
-             changed |= algo_comment.first->Run(force_primary_launch);
+             size_t triggered = algo_comment.first->Run(force_primary_launch);
+             INFO("Triggered " << triggered << " times");
+             changed |= (triggered > 0);
              cnt_callback_.Report();
          }
         return changed;

@@ -673,15 +673,15 @@ private:
         return interacting_edges;
     }
 
-    bool ProcessBulges(const std::vector<BulgeInfo>& independent_bulges, SmartEdgeSet&& interacting_edges) {
+    size_t ProcessBulges(const std::vector<BulgeInfo>& independent_bulges, SmartEdgeSet&& interacting_edges) {
         DEBUG("Processing bulges");
         perf_counter perf;
 
-        bool triggered = false;
+        size_t triggered = 0;
 
         for (const BulgeInfo& info : independent_bulges) {
             TRACE("Processing bulge " << info.str(this->g()));
-            triggered = true;
+            triggered++;
             gluer_(info.e, info.alternative);
         }
 
@@ -696,7 +696,7 @@ private:
             std::vector<EdgeId> alternative = alternatives_analyzer_(e);
             if (!alternative.empty()) {
                 gluer_(e, alternative);
-                triggered = true;
+                triggered++;
             }
         }
         DEBUG("Interacting edges processed in " << perf.time() << " seconds");
@@ -727,7 +727,7 @@ public:
         it_.Detach();
     }
 
-    bool Run(bool force_primary_launch = false) override {
+    size_t Run(bool force_primary_launch = false) override {
         bool primary_launch = force_primary_launch ? true : curr_iteration_ == 0;
         //todo remove if not needed;
         //potentially can vary coverage threshold in coordination with ec threshold
@@ -747,7 +747,7 @@ public:
             TRACE(it_.size() << " edges to process");
         }
 
-        bool triggered = false;
+        size_t triggered = 0;
         bool proceed = true;
         while (proceed) {
             std::vector<EdgeId> edge_buffer;
@@ -758,9 +758,9 @@ public:
 
             auto interacting_edges = RetainIndependentBulges(bulges);
 
-            bool inner_triggered  = ProcessBulges(bulges, std::move(interacting_edges));
-            proceed |= inner_triggered;
-            triggered |= inner_triggered;
+            size_t inner_triggered = ProcessBulges(bulges, std::move(interacting_edges));
+            proceed |= (inner_triggered > 0);
+            triggered += inner_triggered;
         }
 
         TRACE("Finished processing. Triggered = " << triggered);
