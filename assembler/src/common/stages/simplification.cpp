@@ -177,36 +177,7 @@ class GraphSimplifier {
     }
 
     bool FinalRemoveErroneousEdges() {
-
-    //    gp.ClearQuality();
-    //    gp.FillQuality();
-    //    auto colorer = debruijn_graph::DefaultGPColorer(gp);
-    //    omnigraph::DefaultLabeler<typename gp_t::graph_t> labeler(gp.g, gp.edge_pos);
-    //    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
-    //                                   cfg::get().output_dir + "pictures/colored_edges_deleted/");
-    //
-    //    //positive quality edges removed (folder colored_edges_deleted)
-    //    std::function<void(EdgeId)> qual_removal_handler_f = boost::bind(
-    //            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
-    //            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
-    //            boost::ref(qual_removal_handler), _1);
-    //
-
-        std::function<void(set<EdgeId>)> set_removal_handler_f(0);
-        if (removal_handler_) {
-            set_removal_handler_f = [=](const set<EdgeId>& edges) {
-                std::for_each(edges.begin(), edges.end(), removal_handler_);
-            };
-        }
-
-        bool changed = RemoveRelativelyLowCoverageComponents(gp_.g, gp_.flanking_cov,
-                                              simplif_cfg_.rcc, info_container_, set_removal_handler_f);
-
-        cnt_callback_.Report();
-
-        changed |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov,
-                                                        simplif_cfg_.relative_ed, info_container_);
-
+        bool changed = false;
         if (simplif_cfg_.topology_simplif_enabled && info_container_.main_iteration()) {
             changed |= AllTopology();
             changed |= MaxFlowRemoveErroneousEdges(gp_.g, simplif_cfg_.mfec,
@@ -221,6 +192,50 @@ class GraphSimplifier {
         size_t iteration = 0;
 
         AlgoStorageT algos;
+
+        //    gp.ClearQuality();
+        //    gp.FillQuality();
+        //    auto colorer = debruijn_graph::DefaultGPColorer(gp);
+        //    omnigraph::DefaultLabeler<typename gp_t::graph_t> labeler(gp.g, gp.edge_pos);
+        //    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
+        //                                   cfg::get().output_dir + "pictures/colored_edges_deleted/");
+        //
+        //    //positive quality edges removed (folder colored_edges_deleted)
+        //    std::function<void(EdgeId)> qual_removal_handler_f = boost::bind(
+        //            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
+        //            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
+        //            boost::ref(qual_removal_handler), _1);
+        //
+
+        typename ComponentRemover<Graph>::HandlerF set_removal_handler_f;
+        if (removal_handler_) {
+            set_removal_handler_f = [=](const set<EdgeId>& edges) {
+                std::for_each(edges.begin(), edges.end(), removal_handler_);
+            };
+        }
+
+        PushValid(
+                RelativelyLowCoverageComponentRemoverInstance(gp_.g, gp_.flanking_cov,
+                                                              simplif_cfg_.rcc, info_container_, set_removal_handler_f),
+                "Relative coverage component remover",
+                algos);
+
+
+        PushValid(
+                RelativelyLowCoverageDisconnectorInstance(gp_.g, gp_.flanking_cov,
+                                                          simplif_cfg_.relative_ed, info_container_),
+                "Disconnecting edges with relatively low coverage",
+                algos);
+
+        PushValid(
+                ComplexTipClipperInstance(gp_.g, simplif_cfg_.complex_tc, info_container_, set_removal_handler_f),
+                "Complex tip clipper",
+                algos);
+
+        PushValid(
+                ComplexBRInstance(gp_.g, simplif_cfg_.cbr, info_container_, iteration),
+                "Complex bulge remover",
+                algos);
 
         PushValid(
                 TipClipperInstance(g_, simplif_cfg_.tc,
@@ -277,12 +292,6 @@ class GraphSimplifier {
             enable_flag |= FinalRemoveErroneousEdges();
             cnt_callback_.Report();
 
-            enable_flag |=  ClipComplexTips(gp_.g, simplif_cfg_.complex_tc, info_container_, removal_handler_);
-            cnt_callback_.Report();
-
-            enable_flag |= RemoveComplexBulges(gp_.g, simplif_cfg_.cbr, info_container_, iteration);
-            cnt_callback_.Report();
-
             enable_flag |= RunAlgos(algos);
 
             iteration++;
@@ -315,11 +324,6 @@ class GraphSimplifier {
     //    }
     //    CompressAllVertices(graph);
     //}
-
-//    std::shared_ptr<Predicate<EdgeId>> ParseCondition(const string& condition) const {
-//        ConditionParser<Graph> parser(g_, condition, info_container_);
-//        return parser();
-//    }
 
     void PushValid(const AlgoPtr<Graph>& algo_ptr, std::string comment, AlgoStorageT& algos) const {
         if (algo_ptr) {

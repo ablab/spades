@@ -271,7 +271,6 @@ shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>>
 template<class Graph>
 class EditDistanceTrackingCallback {
     typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::EdgeData EdgeData;
     const Graph &g_;
 
 public:
@@ -279,10 +278,10 @@ public:
             : g_(g) {
     }
 
-    bool operator()(EdgeId edge, const vector<EdgeId> &path) const {
+    bool operator()(EdgeId edge, const vector<EdgeId>& path) const {
         vector<Sequence> path_sequences;
-        for (auto it = path.begin(); it != path.end(); ++it) {
-            path_sequences.push_back(g_.EdgeNucls(*it));
+        for (EdgeId e : path) {
+            path_sequences.push_back(g_.EdgeNucls(e));
         }
         Sequence path_sequence(
             MergeOverlappingSequences(path_sequences, g_.k()));
@@ -425,7 +424,7 @@ AlgoPtr<Graph> SelfConjugateEdgeRemoverInstance(Graph &g, const string &conditio
     ConditionParser<Graph> parser(g, condition_str, info);
     auto condition = pred::And(SelfConjugateCondition<Graph>(g), parser());
 
-    return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g,
+    return std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>(g,
                                                                   condition,
                                                                   info.chunk_cnt(),
                                                                   removal_handler,
@@ -433,74 +432,68 @@ AlgoPtr<Graph> SelfConjugateEdgeRemoverInstance(Graph &g, const string &conditio
 }
 
 template<class Graph>
-bool RemoveRelativelyLowCoverageComponents(
-        Graph &g,
-        const FlankingCoverage<Graph> &flanking_cov,
-        const config::debruijn_config::simplification::relative_coverage_comp_remover &rcc_config,
-        const SimplifInfoContainer &info,
+AlgoPtr<Graph> RelativelyLowCoverageComponentRemoverInstance(
+        Graph& g,
+        const FlankingCoverage<Graph>& flanking_cov,
+        const config::debruijn_config::simplification::relative_coverage_comp_remover& rcc_config,
+        const SimplifInfoContainer& info,
         typename ComponentRemover<Graph>::HandlerF removal_handler = 0) {
-    if (rcc_config.enabled) {
-        INFO("Removing relatively low covered connections");
-        size_t connecting_path_length_bound = LengthThresholdFinder::MaxErroneousConnectionLength(
+    if (!rcc_config.enabled) {
+        return nullptr;
+        INFO("Removal of relatively low covered connections disabled");
+    }
+
+    //     INFO("Removing relatively low covered connections");
+    size_t connecting_path_length_bound = LengthThresholdFinder::MaxErroneousConnectionLength(
             g.k(), rcc_config.max_ec_length_coefficient);
 
-        std::string pics_dir = "";
+    std::string pics_dir = "";
 
-        double max_coverage = math::ge(rcc_config.max_coverage_coeff, 0.)
-                                ? info.detected_coverage_bound() * rcc_config.max_coverage_coeff
-                                : std::numeric_limits<double>::max();
+    double max_coverage = math::ge(rcc_config.max_coverage_coeff, 0.)
+                          ? info.detected_coverage_bound() * rcc_config.max_coverage_coeff
+                          : std::numeric_limits<double>::max();
 
-        omnigraph::simplification::relative_coverage::
-            RelativeCoverageComponentRemover<Graph> rel_rem(
-                g,
-                flanking_cov,
-                rcc_config.coverage_gap, size_t(double(info.read_length()) * rcc_config.length_coeff),
-                size_t(double(info.read_length()) * rcc_config.tip_allowing_length_coeff),
-                connecting_path_length_bound,
-                max_coverage,
-                removal_handler, rcc_config.vertex_count_limit, pics_dir);
-        return rel_rem.Run();
-    } else {
-        INFO("Removal of relatively low covered connections disabled");
-        return false;
-    }
+    return std::make_shared<omnigraph::simplification::relative_coverage::
+    RelativeCoverageComponentRemover<Graph>>(
+            g,
+            info.chunk_cnt(),
+            flanking_cov,
+            rcc_config.coverage_gap, size_t(double(info.read_length()) * rcc_config.length_coeff),
+            size_t(double(info.read_length()) * rcc_config.tip_allowing_length_coeff),
+            connecting_path_length_bound,
+            max_coverage,
+            removal_handler, rcc_config.vertex_count_limit, pics_dir);
 }
 
-//FIXME add to algo chain
 template<class Graph>
-bool DisconnectRelativelyLowCoverageEdges(Graph &g,
+AlgoPtr<Graph> RelativelyLowCoverageDisconnectorInstance(Graph &g,
         const FlankingCoverage<Graph> &flanking_cov,
         const config::debruijn_config::simplification::relative_coverage_edge_disconnector &rced_config,
         const SimplifInfoContainer &info) {
-    if (rced_config.enabled) {
-        INFO("Disconnecting edges with relatively low coverage");
-        omnigraph::DisconnectionAlgorithm<Graph> algo(g,
-                omnigraph::simplification::relative_coverage::
-                RelativeCovDisconnectionCondition<Graph>(g, flanking_cov, rced_config.diff_mult),
-                info.chunk_cnt(),
-                nullptr);
-        return algo.Run();
-    } else {
+    if (!rced_config.enabled) {
         INFO("Disconnection of relatively low covered edges disabled");
-        return false;
+        return nullptr;
     }
+
+    return std::make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g,
+            omnigraph::simplification::relative_coverage::
+            RelativeCovDisconnectionCondition<Graph>(g, flanking_cov, rced_config.diff_mult),
+            info.chunk_cnt(),
+            nullptr);
 }
 
-//FIXME add to algo chain
 template<class Graph>
-bool RemoveComplexBulges(
+AlgoPtr<Graph> ComplexBRInstance(
     Graph &g,
     config::debruijn_config::simplification::complex_bulge_remover cbr_config,
     const SimplifInfoContainer &info,
     size_t /*iteration*/ = 0) {
     if (!cbr_config.enabled)
-        return false;
-    INFO("Removing complex bulges");
+        return nullptr;
     size_t max_length = (size_t) ((double) g.k() * cbr_config.max_relative_length);
     size_t max_diff = cbr_config.max_length_difference;
-    omnigraph::complex_br::ComplexBulgeRemover<Graph> complex_bulge_remover(
-        g, max_length, max_diff, info.chunk_cnt());
-    return complex_bulge_remover.Run();
+    return std::make_shared<omnigraph::complex_br::ComplexBulgeRemover<Graph>>(g, max_length,
+                                                                               max_diff, info.chunk_cnt());
 }
 
 //template<class Graph>
@@ -537,44 +530,34 @@ bool RemoveComplexBulges(
 //}
 
 template<class Graph>
-bool ClipComplexTips(Graph &g,
+AlgoPtr<Graph> ComplexTipClipperInstance(Graph &g,
                      config::debruijn_config::simplification::complex_tip_clipper ctc_conf,
                      const SimplifInfoContainer &info,
-                     HandlerF<Graph> removal_handler = 0) {
+                     typename ComponentRemover<Graph>::HandlerF removal_handler = 0) {
     if (!ctc_conf.enabled) {
         INFO("Complex tip clipping disabled");
-        return false;
+        return nullptr;
     }
-
-    std::function<void(const set<EdgeId>&)> set_removal_handler_f(0);
-    if (removal_handler) {
-        set_removal_handler_f = [=](const set<EdgeId>& edges) {
-            std::for_each(edges.begin(), edges.end(), removal_handler);
-        };
-    }
-
-    INFO("Complex tip clipping");
 
     ConditionParser<Graph> parser(g, ctc_conf.condition, info);
     parser();
 
-    ComplexTipClipper<Graph> tip_clipper(g, ctc_conf.max_relative_coverage,
+    return std::make_shared<omnigraph::ComplexTipClipper<Graph>>(g, ctc_conf.max_relative_coverage,
                                          ctc_conf.max_edge_len,
                                          parser.max_length_bound(), info.chunk_cnt(),
-                                         "", set_removal_handler_f);
-    return tip_clipper.Run();
+                                         "", removal_handler);
 }
 
 template<class Graph>
 AlgoPtr<Graph> ShortPolyATEdgesRemoverInstance(Graph &g, size_t max_length, HandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
     auto condition = pred::And(ATCondition<Graph>(g, 0.8, max_length, false), LengthUpperBound<Graph>(g, 1));
-    return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g, condition, chunk_cnt, removal_handler, true);
+    return std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>(g, condition, chunk_cnt, removal_handler, true);
 }
 
 template<class Graph>
 AlgoPtr<Graph> ATTipClipperInstance(Graph &g, HandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
 //TODO: review params 0.8, 200?
-    return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g, ATCondition<Graph>(g, 0.8, 200, true), chunk_cnt, removal_handler, true);
+    return std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>(g, ATCondition<Graph>(g, 0.8, 200, true), chunk_cnt, removal_handler, true);
 }
 
 template<class Graph>
@@ -596,7 +579,7 @@ AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
                                       pred::And(LengthUpperBound<Graph>(g, ier.max_length),
                                                CoverageUpperBound<Graph>(g, ier.max_coverage))));
 
-    return std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g,
+    return std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>(g,
                                                                   condition,
                                                                   info.chunk_cnt(),
                                                                   removal_handler,
@@ -645,7 +628,7 @@ AlgoPtr<Graph> ECRemoverInstance(Graph &g,
     auto candidate_finder = std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(
                                           NecessaryECCondition(g, ec_config, info, iteration_cnt - 1, iteration_cnt),
                                           info.chunk_cnt());
-    return make_shared<LowCoverageEdgeRemovingAlgorithm<Graph>>(
+    return std::make_shared<LowCoverageEdgeRemovingAlgorithm<Graph>>(
             g, candidate_finder, info, ec_config.condition, removal_handler,
             /*canonical only*/ true, /*track changes*/ true, iteration_cnt);
 }
@@ -659,7 +642,7 @@ AlgoPtr<Graph> RelativeECRemoverInstance(Graph &g,
     if (!rcec_config.enabled)
         return nullptr;
 
-    return make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g,
+    return std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>(g,
             AddRelativeCoverageECCondition(g, rcec_config.rcec_ratio,
                                            AddAlternativesPresenceCondition(g, pred::TypedPredicate<typename Graph::EdgeId>
                                                    (LengthUpperBound<Graph>(g, rcec_config.max_ec_length)))),
@@ -684,7 +667,7 @@ AlgoPtr<Graph> NotBulgeECRemoverInstance(Graph &g,
                                                   LengthUpperBound<Graph>(g, parser.max_length_bound()),
                                                   CoverageUpperBound<Graph>(g, parser.max_coverage_bound())))),
                                           info.chunk_cnt());
-    return make_shared<LowCoverageEdgeRemovingAlgorithm<Graph>>(
+    return std::make_shared<LowCoverageEdgeRemovingAlgorithm<Graph>>(
             g, interesting_finder, info, ec_config.condition, removal_handler,
             /*canonical only*/ true, /*track changes*/ true, iteration_cnt);
 }
@@ -696,7 +679,7 @@ AlgoPtr<Graph> TipClipperInstance(Graph &g,
                                   HandlerF<Graph> removal_handler,
                                   bool track_changes = true,
                                   size_t /*iteration_cnt*/ = 1) {
-    return make_shared<ParallelEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>>>(g,
+    return make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph, omnigraph::LengthComparator<Graph>>>(g,
                                                                         AddTipCondition(g, condition),
                                                                         info.chunk_cnt(),
                                                                         removal_handler,
@@ -730,7 +713,7 @@ AlgoPtr<Graph> DeadEndInstance(Graph &g,
 
     ConditionParser<Graph> parser(g, dead_end_config.condition, info);
     auto condition = parser();
-    return make_shared<ParallelEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>>>(g,
+    return make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph, omnigraph::LengthComparator<Graph>>>(g,
             AddDeadEndCondition(g, condition), info.chunk_cnt(), removal_handler, /*canonical_only*/true,
             LengthComparator<Graph>(g), /*track changes*/true);
 }
@@ -766,10 +749,10 @@ AlgoPtr<Graph> BRInstance(Graph &g,
 
 
     auto candidate_finder = std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(
-                                                          NecessaryBulgeCondition(g,
-                                                                                  alternatives_analyzer.max_length(),
+                                                          omnigraph::NecessaryBulgeCondition(g,
+                                                                              alternatives_analyzer.max_length(),
                                                                               alternatives_analyzer.max_coverage()),
-                                                  info.chunk_cnt());
+                                                          info.chunk_cnt());
     if (br_config.parallel) {
         INFO("Creating parallel br instance");
         return make_shared<omnigraph::ParallelBulgeRemover<Graph>>(g,
@@ -829,7 +812,7 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph &g,
         return nullptr;
     }
 
-    return make_shared<DisconnectionAlgorithm<Graph>>(g,
+    return make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g,
                                                       FlankingCovBound<Graph>(g, flanking_cov, cov_bound),
                                                       info.chunk_cnt(),
                                                       removal_handler);
