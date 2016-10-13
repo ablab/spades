@@ -1101,24 +1101,6 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
         return false;
     }
 
-    static pred::TypedPredicate<VertexId> CandidatePredicate(const Graph& g, size_t max_length, size_t length_diff) {
-        return [=, &g](VertexId v) {
-            LocalizedComponentFinder<Graph> comp_finder(g, max_length,
-                                                        length_diff, v);
-            while (comp_finder.ProceedFurther()) {
-                DEBUG("Found component candidate start_v " << g.str(v));
-                LocalizedComponent<Graph> component = comp_finder.component();
-                ComponentColoring<Graph> coloring(component);
-                SkeletonTreeFinder<Graph> tree_finder(component, coloring);
-                DEBUG("Looking for a tree");
-                if (tree_finder.FindTree()) {
-                    return true;
-                }
-            }
-            return false;
-        };
-    }
-
     //todo shrink this set if needed
     set<VertexId> Neighbours(VertexId v) const {
         set<VertexId> answer;
@@ -1133,9 +1115,8 @@ public:
 
     //track_changes=false leads to every iteration run from scratch
     ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff,
-            size_t chunk_cnt, const string& pics_folder = "") :
-            base(g, std::make_shared<ParallelInterestingElementFinder<Graph, VertexId>>(CandidatePredicate(g, max_length, length_diff), chunk_cnt),
-                    false, std::less<VertexId>(), /*track changes*/false),
+                        size_t chunk_cnt, const string& pics_folder = "") :
+            base(g, nullptr, false, std::less<VertexId>(), /*track changes*/false),
             max_length_(max_length), length_diff_(length_diff), pics_folder_(pics_folder) {
         if (!pics_folder_.empty()) {
 //            remove_dir(pics_folder_);
@@ -1143,6 +1124,23 @@ public:
             make_dir(pics_folder_ + "success/");
             make_dir(pics_folder_ + "fail/");
         }
+
+        this->interest_el_finder_ = std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph, VertexId>>(
+                [=, &g](VertexId v) {
+                    LocalizedComponentFinder<Graph> comp_finder(g, max_length_,
+                                                                length_diff_, v);
+                    while (comp_finder.ProceedFurther()) {
+                        DEBUG("Found component candidate start_v " << g.str(v));
+                        LocalizedComponent<Graph> component = comp_finder.component();
+                        ComponentColoring<Graph> coloring(component);
+                        SkeletonTreeFinder<Graph> tree_finder(component, coloring);
+                        DEBUG("Looking for a tree");
+                        if (tree_finder.FindTree()) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }, chunk_cnt);
     }
 
     bool Process(VertexId v) override {

@@ -11,6 +11,7 @@
 #include "bulge_remover.hpp"
 #include "utils/standard_base.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
+#include "assembly_graph/graph_support/parallel_processing.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/core/construction_helper.hpp"
 #include "assembly_graph/graph_support/marks_and_locks.hpp"
@@ -20,30 +21,16 @@ namespace debruijn {
 
 namespace simplification {
 
-//    bool EnableParallel() {
-//        if (simplif_cfg_.presimp.parallel) {
-//            INFO("Trying to enable parallel presimplification.");
-//            if (gp_.g.AllHandlersThreadSafe()) {
-//                return true;
-//            } else {
-//                WARN("Not all handlers are threadsafe, switching to non-parallel presimplif");
-//                //gp.g.PrintHandlersNames();
-//            }
-//        }
-//        return false;
-//    }
-
 template<class Graph>
 class ParallelTipClippingFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef std::function<void(EdgeId)> HandlerF;
     typedef omnigraph::GraphElementLock<VertexId> VertexLockT;
 
     Graph& g_;
     size_t length_bound_;
     double coverage_bound_;
-    HandlerF handler_f_;
+    omnigraph::HandlerF<Graph> handler_f_;
 
     size_t LockingIncomingCount(VertexId v) const {
         VertexLockT lock(v);
@@ -69,7 +56,8 @@ class ParallelTipClippingFunctor {
 
 public:
 
-    ParallelTipClippingFunctor(Graph& g, size_t length_bound, double coverage_bound, HandlerF handler_f = 0)
+    ParallelTipClippingFunctor(Graph& g, size_t length_bound, double coverage_bound,
+                               omnigraph::HandlerF<Graph> handler_f = nullptr)
             : g_(g),
               length_bound_(length_bound),
               coverage_bound_(coverage_bound),
@@ -145,7 +133,7 @@ class ParallelSimpleBRFunctor {
             if (g_.length(e) <= max_length_ && math::le(g_.coverage(e), max_coverage_)) {
                 EdgeId alt = Alternative(e, edges);
                 if (alt != EdgeId(0) && math::ge(g_.coverage(alt) * max_relative_coverage_, g_.coverage(e))) {
-                    //todo is not work in multiple threads for now :)
+                    //does not work in multiple threads for now...
                     //Reasons: id distribution, kmer-mapping
                     handler_f_(e);
                     g_.GlueEdges(e, alt);
@@ -244,7 +232,6 @@ template<class Graph>
 class CriticalEdgeMarker {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef std::function<void(EdgeId)> HandlerF;
 
     Graph& g_;
     size_t chunk_cnt_;
@@ -298,13 +285,12 @@ template<class Graph>
 class ParallelLowCoverageFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef std::function<void(EdgeId)> HandlerF;
     typedef omnigraph::GraphElementLock<VertexId> VertexLockT;
 
     Graph& g_;
     typename Graph::HelperT helper_;
     pred::TypedPredicate<EdgeId> ec_condition_;
-    HandlerF handler_f_;
+    omnigraph::HandlerF<Graph> handler_f_;
 
     omnigraph::GraphElementMarker<EdgeId> edge_marker_;
     vector<EdgeId> edges_to_remove_;
@@ -324,7 +310,8 @@ class ParallelLowCoverageFunctor {
 public:
 
     //should be launched with conjugate copies filtered
-    ParallelLowCoverageFunctor(Graph& g, size_t max_length, double max_coverage, HandlerF handler_f = 0)
+    ParallelLowCoverageFunctor(Graph& g, size_t max_length, double max_coverage,
+                               omnigraph::HandlerF<Graph> handler_f = nullptr)
             : g_(g),
               helper_(g_.GetConstructionHelper()),
               ec_condition_(pred::And(pred::And(omnigraph::LengthUpperBound<Graph>(g, max_length),
@@ -764,8 +751,9 @@ public:
         VERIFY(chunk_iterators.size() > 1);
         omnigraph::SmartSetIterator<Graph, ElementType, Comparator> it(g_, false, comp);
 
-        FillInterestingFromChunkIterators(chunk_iterators, it,
-                                          std::bind(&Algo::IsOfInterest, std::ref(algo), std::placeholders::_1));
+        omnigraph::FindInterestingFromChunkIterators(chunk_iterators,
+                                          [&](ElementType el) {return algo.IsOfInterest(el);},
+                                          [&](ElementType el) {it.push(el);});
 
         bool changed = false;
         for (; !it.IsEnd(); ++it) {
@@ -775,11 +763,9 @@ public:
     }
 
 private:
-    DECL_LOGGER("SemiParallelAlgorithmRunner")
-    ;
+    DECL_LOGGER("SemiParallelAlgorithmRunner");
 };
 
-//todo generalize to use for other algorithms if needed
 template<class Graph>
 class SemiParallelEdgeRemovingAlgorithm {
     typedef typename Graph::EdgeId EdgeId;
@@ -796,7 +782,7 @@ public:
     }
 
     bool IsOfInterest(EdgeId e) const {
-        return condition_->Check(e);
+        return condition_(e);
     }
 
     bool Process(EdgeId e) {
@@ -813,6 +799,100 @@ bool RunVertexAlgorithm(Graph& g, AlgoRunner& runner, Algo& algo, size_t chunk_c
 template<class Graph, class AlgoRunner, class Algo>
 bool RunEdgeAlgorithm(Graph& g, AlgoRunner& runner, Algo& algo, size_t chunk_cnt) {
     return runner.RunFromChunkIterators(algo, omnigraph::IterationHelper<Graph, typename Graph::EdgeId>(g).Chunks(chunk_cnt));
+}
+
+template<class Graph>
+void ParallelCompress(Graph &g, size_t chunk_cnt, bool loop_post_compression = true) {
+    INFO("Parallel compression");
+    debruijn::simplification::ParallelCompressor<Graph> compressor(g);
+    TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> runner(g, false);
+    RunVertexAlgorithm(g, runner, compressor, chunk_cnt);
+
+    //have to call cleaner to get rid of new isolated vertices
+    omnigraph::Cleaner<Graph>(g, chunk_cnt).Run();
+
+    if (loop_post_compression) {
+        INFO("Launching post-compression to compress loops");
+        omnigraph::CompressAllVertices(g, chunk_cnt);
+    }
+}
+
+template<class Graph>
+bool ParallelClipTips(Graph &g,
+                      size_t max_length,
+                      double max_coverage,
+                      size_t chunk_cnt,
+                      omnigraph::HandlerF<Graph> removal_handler = nullptr) {
+    INFO("Parallel tip clipping");
+
+    debruijn::simplification::ParallelTipClippingFunctor<Graph> tip_clipper(g,
+                                                                            max_length, max_coverage, removal_handler);
+
+    AlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
+
+    RunVertexAlgorithm(g, runner, tip_clipper, chunk_cnt);
+
+    ParallelCompress(g, chunk_cnt);
+    //Cleaner is launched inside ParallelCompression
+    //CleanGraph(g, info.chunk_cnt());
+
+    return true;
+}
+
+//template<class Graph>
+//bool ParallelRemoveBulges(Graph &g,
+//              const config::debruijn_config::simplification::bulge_remover &br_config,
+//              size_t /*read_length*/,
+//              std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+//    INFO("Parallel bulge remover");
+//
+//    size_t max_length = LengthThresholdFinder::MaxBulgeLength(
+//        g.k(), br_config.max_bulge_length_coefficient,
+//        br_config.max_additive_length_coefficient);
+//
+//    DEBUG("Max bulge length " << max_length);
+//
+//    debruijn::simplification::ParallelSimpleBRFunctor<Graph> bulge_remover(g,
+//                            max_length,
+//                            br_config.max_coverage,
+//                            br_config.max_relative_coverage,
+//                            br_config.max_delta,
+//                            br_config.max_relative_delta,
+//                            removal_handler);
+//    for (VertexId v : g) {
+//        bulge_remover(v);
+//    }
+//
+//    Compress(g);
+//    return true;
+//}
+
+template<class Graph>
+bool ParallelEC(Graph &g,
+                size_t max_length,
+                double max_coverage,
+                size_t chunk_cnt,
+                omnigraph::HandlerF<Graph> removal_handler = nullptr) {
+    INFO("Parallel ec remover");
+
+    debruijn::simplification::CriticalEdgeMarker<Graph> critical_marker(g, chunk_cnt);
+    critical_marker.PutMarks();
+
+    debruijn::simplification::ParallelLowCoverageFunctor<Graph> ec_remover(g,
+                                                                           max_length,
+                                                                           max_coverage,
+                                                                           removal_handler);
+
+    TwoStepAlgorithmRunner<Graph, typename Graph::EdgeId> runner(g, true);
+
+    RunEdgeAlgorithm(g, runner, ec_remover, chunk_cnt);
+
+    critical_marker.ClearMarks();
+
+    ParallelCompress(g, chunk_cnt);
+    //called in parallel compress
+    //CleanGraph(g, info.chunk_cnt());
+    return true;
 }
 
 }

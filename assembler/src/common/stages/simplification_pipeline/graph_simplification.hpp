@@ -294,41 +294,6 @@ private:
     DECL_LOGGER("EditDistanceTrackingCallback");
 };
 
-//template<class Graph, class SmartEdgeIt>
-//bool ClipTips(
-//    Graph &g,
-//    SmartEdgeIt &it,
-//    const config::debruijn_config::simplification::tip_clipper &tc_config,
-//    const SimplifInfoContainer &info,
-//    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-//
-//    INFO("Clipping tips");
-//
-//    string condition_str = tc_config.condition;
-//
-//    ConditionParser<Graph> parser(g, condition_str, info);
-//    auto condition = parser();
-//
-//    omnigraph::EdgeRemovingAlgorithm<Graph> tc(g,
-//                                               omnigraph::AddTipCondition(g, condition),
-//                                               removal_handler, true);
-//
-//    TRACE("Tip length bound " << parser.max_length_bound());
-//    return tc.RunFromIterator(it,
-//                      make_shared<LengthUpperBound<Graph>>(g, parser.max_length_bound()));
-//}
-
-//template<class Graph>
-//bool ClipTips(
-//    Graph &g,
-//    const config::debruijn_config::simplification::tip_clipper &tc_config,
-//    const SimplifInfoContainer &info,
-//    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-//
-//    auto it = g.SmartEdgeBegin(LengthComparator<Graph>(g), true);
-//    return ClipTips(g, it, tc_config, info, removal_handler);
-//}
-
 //enabling tip projection, todo optimize if hotspot
 template<class gp_t>
 HandlerF<typename gp_t::graph_t> WrapWithProjectionCallback(
@@ -437,7 +402,7 @@ AlgoPtr<Graph> RelativelyLowCoverageComponentRemoverInstance(
         const FlankingCoverage<Graph>& flanking_cov,
         const config::debruijn_config::simplification::relative_coverage_comp_remover& rcc_config,
         const SimplifInfoContainer& info,
-        typename ComponentRemover<Graph>::HandlerF removal_handler = 0) {
+        typename ComponentRemover<Graph>::HandlerF removal_handler = nullptr) {
     if (!rcc_config.enabled) {
         return nullptr;
         INFO("Removal of relatively low covered connections disabled");
@@ -454,15 +419,15 @@ AlgoPtr<Graph> RelativelyLowCoverageComponentRemoverInstance(
                           : std::numeric_limits<double>::max();
 
     return std::make_shared<omnigraph::simplification::relative_coverage::
-    RelativeCoverageComponentRemover<Graph>>(
-            g,
-            info.chunk_cnt(),
-            flanking_cov,
-            rcc_config.coverage_gap, size_t(double(info.read_length()) * rcc_config.length_coeff),
-            size_t(double(info.read_length()) * rcc_config.tip_allowing_length_coeff),
-            connecting_path_length_bound,
-            max_coverage,
-            removal_handler, rcc_config.vertex_count_limit, pics_dir);
+        RelativeCoverageComponentRemover<Graph>>(g,
+                                                 info.chunk_cnt(),
+                                                 flanking_cov,
+                                                 rcc_config.coverage_gap,
+                                                 size_t(double(info.read_length()) * rcc_config.length_coeff),
+                                                 size_t(double(info.read_length()) * rcc_config.tip_allowing_length_coeff),
+                                                 connecting_path_length_bound,
+                                                 max_coverage,
+                                                 removal_handler, rcc_config.vertex_count_limit, pics_dir);
 }
 
 template<class Graph>
@@ -495,39 +460,6 @@ AlgoPtr<Graph> ComplexBRInstance(
     return std::make_shared<omnigraph::complex_br::ComplexBulgeRemover<Graph>>(g, max_length,
                                                                                max_diff, info.chunk_cnt());
 }
-
-//template<class Graph>
-//bool RemoveIsolatedEdges(Graph &g, size_t max_length, double max_coverage, size_t max_length_any_cov,
-//                 std::function<void(typename Graph::EdgeId)> removal_handler = 0, size_t chunk_cnt = 1) {
-//    typedef typename Graph::EdgeId EdgeId;
-//
-//    //todo add info that some other edges might be removed =)
-//    INFO("Removing isolated edges");
-//    INFO("All edges shorter than " << max_length_any_cov << " will be removed");
-//    INFO("Also edges shorter than " << max_length << " and coverage smaller than " << max_coverage << " will be removed");
-//    //todo add warn on max_length_any_cov > max_length
-//
-//    auto condition = func::And<EdgeId>(
-//            make_shared<IsolatedEdgeCondition<Graph>>(g),
-//            func::Or<EdgeId>(
-//                make_shared<LengthUpperBound<Graph>>(g, max_length_any_cov),
-//                func::And<EdgeId>(
-//                    make_shared<LengthUpperBound<Graph>>(g, max_length),
-//                    make_shared<CoverageUpperBound<Graph>>(g, max_coverage)
-//                )));
-//
-//    if (chunk_cnt == 1) {
-//        omnigraph::EdgeRemovingAlgorithm<Graph> removing_algo(g, condition, removal_handler);
-//
-//        return removing_algo.Run(LengthComparator<Graph>(g),
-//                                         make_shared<LengthUpperBound<Graph>>(g, std::max(max_length, max_length_any_cov)));
-//    } else {
-//        SemiParallelAlgorithmRunner<Graph, EdgeId> runner(g);
-//        SemiParallelEdgeRemovingAlgorithm<Graph> removing_algo(g, condition, removal_handler);
-//
-//        return RunEdgeAlgorithm(g, runner, removing_algo, chunk_cnt);
-//    }
-//}
 
 template<class Graph>
 AlgoPtr<Graph> ComplexTipClipperInstance(Graph &g,
@@ -834,161 +766,6 @@ bool RemoveHiddenLoopEC(Graph &g,
         return res;
     }
     return false;
-}
-
-
-////todo add chunk_cnt
-//template<class Graph>
-//bool ClipTips(
-//    Graph &g,
-//    const std::string &condition,
-//    const SimplifInfoContainer &info,
-//    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-//
-//    if (condition != "") {
-//        ConditionParser<Graph> parser(g, condition, info);
-//        auto condition = parser();
-//        ParallelEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> algo(g,
-//                                                                           AddTipCondition(g, condition),
-//                                            info.chunk_cnt(),
-//                                            removal_handler,
-//                                            /*canonical_only*/true,
-//                                            LengthComparator<Graph>(g));
-//        return algo.Run();
-//    } else {
-//        return false;
-//    }
-//}
-
-//template<class Graph>
-//bool RemoveLowCoverageEdges(
-//    Graph &g,
-//    const std::string &condition,
-//    const SimplifInfoContainer &info,
-//    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-//
-//    if (condition != "") {
-//        ConditionParser<Graph> parser(g, condition, info);
-//         auto condition = parser();
-//         blahblahblah
-//         ParallelEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> algo(g,
-//                                             condition,
-//                                             info.chunk_cnt(),
-//                                             removal_handler,
-//                                             /*canonical_only*/true,
-//                                             CoverageComparator<Graph>(g));
-//        return algo.Run();
-//    } else {
-//        return false;
-//    }
-//}
-
-
-//Parallel algo launch
-
-template<class Graph>
-void ParallelCompress(Graph &g, size_t chunk_cnt, bool loop_post_compression = true) {
-    INFO("Parallel compression");
-    debruijn::simplification::ParallelCompressor<Graph> compressor(g);
-    TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> runner(g, false);
-    RunVertexAlgorithm(g, runner, compressor, chunk_cnt);
-
-    //have to call cleaner to get rid of new isolated vertices
-    omnigraph::Cleaner<Graph>(g, chunk_cnt).Run();
-
-    if (loop_post_compression) {
-        INFO("Launching post-compression to compress loops");
-        CompressAllVertices(g, chunk_cnt);
-    }
-}
-
-template<class Graph>
-bool ParallelClipTips(Graph &g,
-              const string &tip_condition,
-              const SimplifInfoContainer &info,
-              std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-    INFO("Parallel tip clipping");
-
-    string condition_str = tip_condition;
-
-    ConditionParser<Graph> parser(g, condition_str, info);
-
-    parser();
-
-    debruijn::simplification::ParallelTipClippingFunctor<Graph> tip_clipper(g,
-        parser.max_length_bound(), parser.max_coverage_bound(), removal_handler);
-
-    AlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
-
-    RunVertexAlgorithm(g, runner, tip_clipper, info.chunk_cnt());
-
-    ParallelCompress(g, info.chunk_cnt());
-    //Cleaner is launched inside ParallelCompression
-    //CleanGraph(g, info.chunk_cnt());
-
-    return true;
-}
-
-//template<class Graph>
-//bool ParallelRemoveBulges(Graph &g,
-//              const config::debruijn_config::simplification::bulge_remover &br_config,
-//              size_t /*read_length*/,
-//              std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-//    INFO("Parallel bulge remover");
-//
-//    size_t max_length = LengthThresholdFinder::MaxBulgeLength(
-//        g.k(), br_config.max_bulge_length_coefficient,
-//        br_config.max_additive_length_coefficient);
-//
-//    DEBUG("Max bulge length " << max_length);
-//
-//    debruijn::simplification::ParallelSimpleBRFunctor<Graph> bulge_remover(g,
-//                            max_length,
-//                            br_config.max_coverage,
-//                            br_config.max_relative_coverage,
-//                            br_config.max_delta,
-//                            br_config.max_relative_delta,
-//                            removal_handler);
-//    for (VertexId v : g) {
-//        bulge_remover(v);
-//    }
-//
-//    Compress(g);
-//    return true;
-//}
-
-template<class Graph>
-bool ParallelEC(Graph &g,
-              const string &ec_condition,
-              const SimplifInfoContainer &info,
-              std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-    INFO("Parallel ec remover");
-
-    ConditionParser<Graph> parser(g, ec_condition, info);
-
-    auto condition = parser();
-
-    size_t max_length = parser.max_length_bound();
-    double max_coverage = parser.max_coverage_bound();
-
-    debruijn::simplification::CriticalEdgeMarker<Graph> critical_marker(g, info.chunk_cnt());
-    critical_marker.PutMarks();
-
-    debruijn::simplification::ParallelLowCoverageFunctor<Graph> ec_remover(g,
-                            max_length,
-                            max_coverage,
-                            removal_handler);
-
-    TwoStepAlgorithmRunner<Graph, typename Graph::EdgeId> runner(g, true);
-
-    RunEdgeAlgorithm(g, runner, ec_remover, info.chunk_cnt());
-
-    critical_marker.ClearMarks();
-
-    ParallelCompress(g, info.chunk_cnt());
-    //called in parallel compress
-    //CleanGraph(g, info.chunk_cnt());
-    return true;
 }
 
 }

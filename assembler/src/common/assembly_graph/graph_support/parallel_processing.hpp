@@ -16,8 +16,8 @@ namespace omnigraph {
 
 template<class ItVec, class Condition, class Handler>
 void FindInterestingFromChunkIterators(const ItVec& chunk_iterators,
-                                         const Condition& predicate,
-                                         const Handler& handler) {
+                                       const Condition& predicate,
+                                       const Handler& handler) {
     VERIFY(chunk_iterators.size() > 1);
     typedef typename Condition::checked_type ElementType;
     std::vector<std::vector<ElementType>> of_interest(omp_get_max_threads());
@@ -47,7 +47,8 @@ protected:
     const pred::TypedPredicate<ElementId> condition_;
 public:
 
-    InterestingElementFinder(pred::TypedPredicate<ElementId> condition): condition_(condition) {
+    InterestingElementFinder(pred::TypedPredicate<ElementId> condition):
+            condition_(condition) {
     }
 
     virtual ~InterestingElementFinder() {}
@@ -105,7 +106,7 @@ public:
         TRACE("Looking for interesting elements");
         TRACE("Splitting graph into " << chunk_cnt_ << " chunks");
         FindInterestingFromChunkIterators(IterationHelper<Graph, ElementId>(g).Chunks(chunk_cnt_),
-                                            this->condition_, handler);
+                                          this->condition_, handler);
         return false;
     }
 
@@ -209,7 +210,8 @@ public:
         curr_iteration_++;
         return triggered;
     }
-
+private:
+    DECL_LOGGER("PersistentProcessingAlgorithm"); 
 };
 
 template<class Graph,

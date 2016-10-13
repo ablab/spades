@@ -396,6 +396,7 @@ public:
         }
     }
 
+    //FIXME reduce code duplication
     void SimplifyRNAGraph() {
         printer_(info_printer_pos::before_simplification);
         INFO("Graph simplification started");
