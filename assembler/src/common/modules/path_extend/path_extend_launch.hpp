@@ -839,6 +839,12 @@ inline vector<shared_ptr<PathExtender>> MakePBScaffoldingExtenders( ScaffoldingU
                 unique_edge_analyzer_pb.FillUniqueEdgesWithLongReads(long_reads_cov_map[lib_index], unique_storage_pb, GetLongReadsConfig(params, dataset_info.reads[lib_index].type()));
             }
         }
+        INFO("removing fake unique wuth paired-end libs");
+        for (size_t lib_index = 0 ; lib_index <dataset_info.reads.lib_count(); lib_index++) {
+            if (dataset_info.reads[lib_index].type() == io::LibraryType::PairedEnd ) {
+                unique_edge_analyzer_pb.ClearLongEdgesWithPairedLib(lib_index, unique_storage_pb);
+            }
+        }
     } else {
         INFO("with coverage.")
         unique_edge_analyzer_pb.FillUniqueEdgeStorage(unique_storage_pb);

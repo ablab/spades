@@ -160,6 +160,89 @@ void ScaffoldingUniqueEdgeAnalyzer::CheckCorrectness(ScaffoldingUniqueEdgeStorag
     }
 }
 
+set<VertexId> ScaffoldingUniqueEdgeAnalyzer::GetChilds(VertexId v) const{
+    DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
+            DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(gp_.g, max_dijkstra_depth));
+    dijkstra.Run(v);
+
+    if (dijkstra_cash.find(v) == dijkstra_cash.end()) {
+        dijkstra_cash[v] = dijkstra.ReachedVertices();
+        dijkstra_cash[v].push_back(v);
+    }
+    return set<VertexId> (dijkstra_cash[v].begin(), dijkstra_cash[v].end());
+}
+
+bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChilds(EdgeId e1, EdgeId e2) const{
+    auto s1 = GetChilds(gp_.g.EdgeEnd(e1));
+    auto s2 = GetChilds(gp_.g.EdgeEnd(e2));
+    if (s1.find(gp_.g.EdgeStart(e2)) != s1.end()) {
+        return true;
+    }
+    if (s2.find(gp_.g.EdgeStart(e1)) != s2.end()) {
+        return true;
+    }
+    for (VertexId v: s1) {
+        if (s2.find(v) != s2.end()) {
+            DEBUG("bulge-like structure, edges "<< gp_.g.int_id(e1) << " " << gp_.g.int_id(e2));
+            return true;
+        }
+    }
+    return false;
+}
+
+void ScaffoldingUniqueEdgeAnalyzer::ClearLongEdgesWithPairedLib(size_t lib_index, ScaffoldingUniqueEdgeStorage &storage_) const {
+    set<EdgeId> to_erase;
+    for (EdgeId edge: storage_ ) {
+        DEBUG("processing unique edge " << gp_.g.int_id(edge));
+        dijkstra_cash.clear();
+        auto next_edges = gp_.clustered_indices[lib_index].Get(edge);
+        vector<pair< EdgeId, size_t > > next_weights;
+        for (auto hist:next_edges) {
+            if (hist.first == edge || hist.first == gp_.g.conjugate(edge)) 
+                continue;
+            double total_w = 0;
+            for (auto w: hist.second)
+                total_w += w.weight;
+            size_t new_w = lrint(total_w);
+            if (new_w > 1)
+                next_weights.push_back(make_pair(hist.first, new_w));
+        }
+        sort(next_weights.begin(), next_weights.end(), [&](pair<EdgeId ,size_t >a, pair<EdgeId, size_t >b){
+            return a.second > b.second;
+        });
+//most popular edges. think whether it can be done faster
+        if (next_weights.size() > max_different_edges) {
+            DEBUG(next_weights.size() << " continuations");
+            next_weights.resize(max_different_edges);
+        }
+        bool find_common = true;
+        size_t i = 0;
+        size_t j = 0;
+        for (; i < next_weights.size(); i ++) {
+            for (j = i + 1; j < next_weights.size(); j++) {
+                find_common = FindCommonChilds(next_weights[i].first, next_weights[j].first);
+                if (!find_common)
+                    break;
+            }
+            if (!find_common)
+                break;
+        }
+        if (! find_common) {
+            DEBUG("Edge "<< gp_.g.int_id(edge) << " has multiple paired info on edges " <<next_weights[i].first <<" and "<< next_weights[j].first);
+            to_erase.insert(edge);
+            to_erase.insert(gp_.g.conjugate(edge));
+        }
+    }
+    for (auto iter = storage_.begin(); iter !=  storage_.end(); ){
+        if (to_erase.find(*iter) != to_erase.end()){
+            iter = storage_.erase(iter);
+        } else {
+            iter++;
+        }
+    }
+}
+
+
 void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(shared_ptr<GraphCoverageMap>& long_reads_cov_map, ScaffoldingUniqueEdgeStorage& unique_storage_pb, const pe_config::LongReads lr_config) {
     for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
         EdgeId e = *iter;

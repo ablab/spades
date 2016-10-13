@@ -6,6 +6,8 @@
 //FIXME
 #include "modules/path_extend/pe_utils.hpp"
 #include "modules/path_extend/pe_config_struct.hpp"
+#include "modules/path_extend/paired_library.hpp"
+
 namespace path_extend {
 typedef debruijn_graph::EdgeId EdgeId;
 
@@ -34,6 +36,10 @@ public:
         return unique_edges_.end();
     }
 
+    decltype(unique_edges_.begin()) erase(decltype(unique_edges_.begin()) iter){
+        return unique_edges_.erase(iter);
+    }
+
     size_t size() const {
         return unique_edges_.size();
     }
@@ -57,11 +63,17 @@ protected:
 
 
 class ScaffoldingUniqueEdgeAnalyzer {
+
     const debruijn_graph::conj_graph_pack &gp_;
     size_t length_cutoff_;
     double median_coverage_;
     double relative_coverage_variation_;
-
+//for uniqueness detection
+    mutable map <VertexId, vector<VertexId> > dijkstra_cash;
+    const size_t max_different_edges = 20;
+    const size_t max_dijkstra_depth = 1000;
+    set<VertexId> GetChilds(VertexId v) const;
+    bool FindCommonChilds(EdgeId e1, EdgeId e2) const;
     map<EdgeId, size_t> FillNextEdgeVoting(BidirectionalPathMap<size_t>& active_paths, int direction) const;
     bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config) const;
     bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config, int direction) const;
@@ -77,6 +89,7 @@ public:
         SetCoverageBasedCutoff();
     }
     void FillUniqueEdgeStorage(ScaffoldingUniqueEdgeStorage &storage_);
+    void ClearLongEdgesWithPairedLib(size_t lib_index, ScaffoldingUniqueEdgeStorage &storage_) const;
     void FillUniqueEdgesWithLongReads(shared_ptr<GraphCoverageMap>& long_reads_cov_map, ScaffoldingUniqueEdgeStorage& unique_storage_pb, const pe_config::LongReads lr_config);
 };
 }
