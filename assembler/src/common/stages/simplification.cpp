@@ -30,10 +30,6 @@ shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>>
 
 class GraphSimplifier {
     typedef std::function<void(EdgeId)> HandlerF;
-    typedef omnigraph::PersistentEdgeRemovingAlgorithm<Graph,
-            LengthComparator<Graph>> TipClipperT;
-    typedef omnigraph::PersistentEdgeRemovingAlgorithm<Graph,
-            CoverageComparator<Graph>> ECRemoverT;
 
     typedef std::vector<std::pair<AlgoPtr<Graph>, std::string>> AlgoStorageT;
 
@@ -45,33 +41,6 @@ class GraphSimplifier {
     CountingCallback<Graph> cnt_callback_;
     HandlerF removal_handler_;
     stats::detail_info_printer& printer_;
-
-//    bool FastModeAvailable(const SimplifInfoContainer& info, double activation_cov_threshold) {
-//        const auto& cfg = cfg::get();
-//
-//        //todo fix logic
-//        //also handles meta case for now
-//        if (cfg.ds.single_cell) {
-//            return !cfg::get().main_iteration;
-//        }
-//
-//        if (math::eq(info.detected_mean_coverage(), 0.) &&
-//            !cfg.kcm.use_coverage_threshold) {
-//            WARN("Mean coverage wasn't reliably estimated");
-//            return false;
-//        }
-//
-//        //todo review logic
-//        if (math::ls(info.detected_mean_coverage(), activation_cov_threshold) &&
-//            !(cfg.kcm.use_coverage_threshold &&
-//              math::ge(cfg.kcm.coverage_threshold, activation_cov_threshold))) {
-//            INFO("Estimated mean coverage " << info.detected_mean_coverage() <<
-//                 " is less than fast mode activation coverage " << activation_cov_threshold);
-//            return false;
-//        }
-//
-//        return true;
-//    }
 
     bool PerformInitCleaning() {
 
@@ -96,7 +65,7 @@ class GraphSimplifier {
         ATCondition<Graph> condition (g_, 0.8, max_length, false);
         for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
             if (g_.length(*iter) == 1 && condition.Check(*iter)) {
-                er.DeleteEdgeWithNoCompression(*iter);
+                er.DeleteEdgeNoCompress(*iter);
             }
         }
         ParallelCompress(g_, chunk_cnt);

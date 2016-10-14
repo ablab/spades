@@ -159,32 +159,6 @@ pred::TypedPredicate<typename Graph::EdgeId> AddNotBulgeECCondition(const Graph 
     return pred::And(NotBulgeECCondition<Graph>(g), condition);
 }
 
-template<class Graph>
-bool RemoveErroneousEdgesInCoverageOrder(Graph &g,
-                                         pred::TypedPredicate<typename Graph::EdgeId> removal_condition,
-                                         double max_coverage,
-                                         std::function<void(typename Graph::EdgeId)> removal_handler) {
-    omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
-                                                                   AddAlternativesPresenceCondition(g, removal_condition),
-                                                                   removal_handler);
-
-    return erroneous_edge_remover.Run(CoverageComparator<Graph>(g),
-                                      CoverageUpperBound<Graph>(g, max_coverage));
-}
-
-template<class Graph>
-bool RemoveErroneousEdgesInLengthOrder(Graph &g,
-                                       pred::TypedPredicate<typename Graph::EdgeId> removal_condition,
-                                       size_t max_length,
-                                       std::function<void(typename Graph::EdgeId)> removal_handler) {
-    omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
-                                                                   AddAlternativesPresenceCondition(g, removal_condition),
-                                                                   removal_handler);
-
-    return erroneous_edge_remover.Run(LengthComparator<Graph>(g),
-                                      LengthUpperBound<Graph>(g, max_length));
-}
-
 //coverage comparator
 //template<class Graph>
 //class RelativeCoverageCondition : public EdgeCondition<Graph> {
@@ -442,7 +416,6 @@ private:
     DECL_LOGGER("ECLoopRemover");
 };
 
-
 template<class Graph>
 class HiddenECRemover: public EdgeProcessingAlgorithm<Graph> {
     typedef EdgeProcessingAlgorithm<Graph> base;
@@ -453,52 +426,30 @@ class HiddenECRemover: public EdgeProcessingAlgorithm<Graph> {
     double ec_threshold_;
     double relative_threshold_;
     const FlankingCoverage<Graph>& flanking_coverage_;
-    EdgeRemover<Graph> edge_remover_;
+    EdgeDisconnector<Graph> edge_disconnector_;
     MultiplicityCountingCondition<Graph> condition_;
-
-    void RemoveHiddenEC(EdgeId edge) {
-        if (this->g().length(edge) <= this->g().k() || (edge == this->g().conjugate(edge) && this->g().length(edge) <= 2 * this->g().k()))
-            edge_remover_.DeleteEdge(edge);
-        else {
-            auto split_result = this->g().SplitEdge(edge, this->g().k());
-            edge_remover_.DeleteEdge(split_result.first);
-        }
-    }
-
-    void RemoveHiddenECWithNoCompression(EdgeId edge) {
-        if (this->g().length(edge) <= this->g().k() ||
-                (edge == this->g().conjugate(edge) &&
-                        this->g().length(edge) <= 2 * this->g().k())) {
-            edge_remover_.DeleteEdgeWithNoCompression(edge);
-        } else {
-            auto split_result = this->g().SplitEdge(edge, this->g().k());
-            edge_remover_.DeleteEdgeWithNoCompression(split_result.first);
-        }
-    }
 
     void DisconnectEdges(VertexId v) {
         while(!this->g().IsDeadEnd(v)) {
-            RemoveHiddenECWithNoCompression(*(this->g().out_begin(v)));
+            edge_disconnector_(*(this->g().out_begin(v)), /*compress*/false);
         }
     }
 
     bool FindHiddenEC(VertexId v) {
+        VERIFY(this->g().OutgoingEdgeCount(v) == 2)
         vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
-        if(math::gr(flanking_coverage_.GetInCov(edges[0]), flanking_coverage_.GetInCov(edges[1]))) {
-            auto tmp = edges[0];
-            edges[0] = edges[1];
-            edges[1] = tmp;
+        if(math::gr(flanking_coverage_.CoverageOfStart(edges.front()),
+                    flanking_coverage_.CoverageOfStart(edges.back()))) {
+            std::swap(edges.front(), edges.back());
         }
-//        cout << flanking_coverage_.GetInCov(edges[0]) << " " << flanking_coverage_.GetInCov(edges[1]) << endl;
-        if (math::ls(flanking_coverage_.GetInCov(edges[1]), unreliability_threshold_)) {
+        double c1 = flanking_coverage_.CoverageOfStart(edges.front());
+        double c2 = flanking_coverage_.CoverageOfStart(edges.back());
+        if (math::ls(c2, unreliability_threshold_)) {
             DisconnectEdges(v);
-//            cout << "disconnected" << endl;
             return true;
         }
-        if(math::ls(flanking_coverage_.GetInCov(edges[0]) * relative_threshold_, flanking_coverage_.GetInCov(edges[1])) &&
-                math::ls(flanking_coverage_.GetInCov(edges[0]), ec_threshold_)) {
-            RemoveHiddenEC(edges[0]);
-//            cout << "success" << endl;
+        if (math::ls(c1 * relative_threshold_, c2) && math::ls(c1, ec_threshold_)) {
+            edge_disconnector_(edges.front());
             return true;
         }
         return false;
@@ -509,13 +460,14 @@ class HiddenECRemover: public EdgeProcessingAlgorithm<Graph> {
             return false;
         }
         vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
-        return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1] && condition_.CheckUniqueness(this->g().GetUniqueIncomingEdge(v), false)) || this->g().length(this->g().GetUniqueIncomingEdge(v)) >= uniqueness_length_;
+        return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1] &&
+                condition_.CheckUniqueness(this->g().GetUniqueIncomingEdge(v), false)) ||
+                this->g().length(this->g().GetUniqueIncomingEdge(v)) >= uniqueness_length_;
     }
 
     bool ProcessEdge(EdgeId e) override {
         VertexId v = this->g().EdgeEnd(e);
         if (CheckSuspicious(v)) {
-//            cout << "client: " << this->g().int_id(v) << endl;
             return FindHiddenEC(v);
         }
         return false;
@@ -530,7 +482,7 @@ public:
             : base(g), uniqueness_length_(uniqueness_length),
               unreliability_threshold_(unreliability_threshold * ec_threshold), ec_threshold_(ec_threshold),
               relative_threshold_(relative_threshold), flanking_coverage_(flanking_coverage),
-              edge_remover_(g, removal_handler),
+              edge_disconnector_(g, removal_handler, g.k()),
               condition_(g, uniqueness_length, pred::AlwaysTrue<EdgeId>()) {
     }
 

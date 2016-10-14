@@ -30,7 +30,7 @@ public:
     void DeleteEdge(EdgeId e) {
         VertexId start = g_.EdgeStart(e);
         VertexId end = g_.EdgeEnd(e);
-        DeleteEdgeWithNoCompression(e);
+        DeleteEdgeNoCompress(e);
         // NOTE: e here is already dead!
         TRACE("Compressing locality");
         if (!g_.RelatedVertices(start, end)) {
@@ -44,7 +44,7 @@ public:
         TRACE("Start processed");
     }
 
-    void DeleteEdgeWithNoCompression(EdgeId e) {
+    void DeleteEdgeNoCompress(EdgeId e) {
         TRACE("Deletion of edge " << g_.str(e));
         TRACE("Start " << g_.str(g_.EdgeStart(e)));
         TRACE("End " << g_.str(g_.EdgeEnd(e)));
@@ -54,6 +54,13 @@ public:
         }
         TRACE("Deleting edge");
         g_.DeleteEdge(e);
+    }
+
+    void DeleteEdgeOptCompress(EdgeId e, bool compress) {
+        if (compress)
+            DeleteEdge(e);
+        else
+            DeleteEdgeNoCompress(e);
     }
 
 private:
@@ -127,22 +134,28 @@ class EdgeDisconnector {
     typedef typename Graph::EdgeId EdgeId;
     Graph& g_;
     EdgeRemover<Graph> edge_remover_;
+    const size_t trim_len_;
     typedef std::function<void(EdgeId)> HandlerF;
 
 public:
     EdgeDisconnector(Graph& g,
-                     HandlerF removal_handler = nullptr):
-            g_(g), edge_remover_(g, removal_handler) {
+                     HandlerF removal_handler = nullptr,
+                     size_t trim_len = 1):
+            g_(g),
+            edge_remover_(g, removal_handler),
+            trim_len_(trim_len) {
+        VERIFY(trim_len_ > 0);
     }
 
-    EdgeId operator()(EdgeId e) {
-        if (g_.length(e) > 1) {
-            pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, 1);
-            edge_remover_.DeleteEdge(split_res.first);
-            return split_res.first;
+    EdgeId operator()(EdgeId e, bool compress = true) {
+        if (g_.length(e) <= trim_len_
+                || (e == g_.conjugate(e) && g_.length(e) <= 2 * trim_len_)) {
+            edge_remover_.DeleteEdgeOptCompress(e, compress);
+            return EdgeId(0);
         } else {
-            edge_remover_.DeleteEdge(e);
-            return e;
+            pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, trim_len_);
+            edge_remover_.DeleteEdgeOptCompress(split_res.first, compress);
+            return split_res.second;
         }
     }
 };

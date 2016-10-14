@@ -1,13 +1,43 @@
 #pragma once
 
 #include "pipeline/config_struct.hpp"
+#include "assembly_graph/graph_support/comparators.hpp"
+#include "assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "modules/simplification/erroneous_connection_remover.hpp"
 #include "modules/simplification/mf_ec_remover.hpp"
 #include "stages/simplification_pipeline/simplification_settings.hpp"
-#include "assembly_graph/graph_support/detail_coverage.hpp"
 
 namespace debruijn {
 namespace simplification {
+
+//deprecated
+template<class Graph>
+bool RemoveErroneousEdgesInCoverageOrder(Graph &g,
+                                         pred::TypedPredicate<typename Graph::EdgeId> removal_condition,
+                                         double max_coverage,
+                                         std::function<void(typename Graph::EdgeId)> removal_handler) {
+    omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
+                                                                   AddAlternativesPresenceCondition(g, removal_condition),
+                                                                   removal_handler);
+
+    return erroneous_edge_remover.Run(omnigraph::CoverageComparator<Graph>(g),
+                                      omnigraph::CoverageUpperBound<Graph>(g, max_coverage));
+}
+
+//deprecated
+template<class Graph>
+bool RemoveErroneousEdgesInLengthOrder(Graph &g,
+                                       pred::TypedPredicate<typename Graph::EdgeId> removal_condition,
+                                       size_t max_length,
+                                       std::function<void(typename Graph::EdgeId)> removal_handler) {
+    omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
+                                                                   AddAlternativesPresenceCondition(g, removal_condition),
+                                                                   removal_handler);
+
+    return erroneous_edge_remover.Run(omnigraph::LengthComparator<Graph>(g),
+                                      omnigraph::LengthUpperBound<Graph>(g, max_length));
+}
 
 template<class Graph>
 bool TopologyRemoveErroneousEdges(
@@ -21,7 +51,7 @@ bool TopologyRemoveErroneousEdges(
     pred::TypedPredicate<typename Graph::EdgeId>
             condition(omnigraph::DefaultUniquenessPlausabilityCondition<Graph>(g, tec_config.uniqueness_length, tec_config.plausibility_length));
 
-    return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
+    return RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }
 
 template<class Graph>
@@ -38,7 +68,7 @@ bool MultiplicityCountingRemoveErroneousEdges(
                                           /*plausibility*/ MakePathLengthLowerBound(g,
                                           omnigraph::PlausiblePathFinder<Graph>(g, 2 * tec_config.plausibility_length), tec_config.plausibility_length)));
 
-    return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
+    return RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }
 
 template<class Graph>
@@ -54,7 +84,7 @@ bool RemoveThorns(
             = pred::And(omnigraph::LengthUpperBound<Graph>(g, max_length),
                         omnigraph::ThornCondition<Graph>(g, isec_config.uniqueness_length, isec_config.span_distance));
 
-    return omnigraph::RemoveErroneousEdgesInCoverageOrder(g, condition, numeric_limits<double>::max(), removal_handler);
+    return RemoveErroneousEdgesInCoverageOrder(g, condition, numeric_limits<double>::max(), removal_handler);
 }
 
 template<class Graph>
@@ -72,7 +102,7 @@ bool TopologyReliabilityRemoveErroneousEdges(
                         /*uniqueness*/omnigraph::MakePathLengthLowerBound(g, omnigraph::UniquePathFinder<Graph>(g), trec_config.uniqueness_length),
                         /*plausibility*/pred::AlwaysTrue<typename Graph::EdgeId>()));
 
-    return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
+    return RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }
 
 template<class Graph>

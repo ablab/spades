@@ -307,80 +307,6 @@ NecessaryBulgeCondition(const Graph& g, size_t max_length, double max_coverage) 
                                                      CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
-/**
- * This class removes simple bulges from given graph with the following algorithm: it iterates through all edges of
- * the graph and for each edge checks if this edge is likely to be a simple bulge
- * if edge is judged to be one it is removed.
- */
-//template<class Graph>
-//class OldBulgeRemover: public EdgeProcessingAlgorithm<Graph> {
-//    typedef EdgeProcessingAlgorithm<Graph> base;
-//    typedef typename Graph::EdgeId EdgeId;
-//    typedef typename Graph::VertexId VertexId;
-//
-//protected:
-//
-//    /*virtual*/
-//    bool ProcessEdge(EdgeId e) {
-//        TRACE("Considering edge " << this->g().str(e)
-//                      << " of length " << this->g().length(e)
-//                      << " and avg coverage " << this->g().coverage(e));
-//
-//        if (!HasAlternatives(this->g(), e)) {
-//            TRACE("Not possible bulge edge");
-//            return false;
-//        }
-//
-//        for (const auto& analyzer : alternatives_analyzers_) {
-//            vector<EdgeId> alternative = analyzer(e);
-//            if (!alternative.empty()) {
-//                gluer_(e, alternative);
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
-//
-//public:
-//
-//    typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
-//
-////    BulgeRemover(Graph& g,  double max_coverage, size_t max_length,
-////            double max_relative_coverage, size_t max_delta,
-////            double max_relative_delta,
-////            size_t max_edge_cnt,
-////            BulgeCallbackF opt_callback = 0,
-////            std::function<void(EdgeId)> removal_handler = 0) :
-////            base(g, true),
-////            gluer_(g, opt_callback, removal_handler) {
-////                DEBUG("Launching br max_length=" << max_length
-////                << " max_coverage=" << max_coverage
-////                << " max_relative_coverage=" << max_relative_coverage
-////                << " max_delta=" << max_delta
-////                << " max_relative_delta=" << max_relative_delta
-////                << " max_number_edges=" << max_edge_cnt);
-////                alternatives_analyzers_.push_back(
-////                        AlternativesAnalyzer<Graph>(g, max_coverage,
-////                                                    max_length, max_relative_coverage,
-////                                                    max_delta, max_relative_delta, max_edge_cnt));
-////    }
-//
-//    OldBulgeRemover(Graph& g,
-//            const std::vector<AlternativesAnalyzer<Graph>>& alternatives_analyzers,
-//            BulgeCallbackF opt_callback = 0,
-//            std::function<void(EdgeId)> removal_handler = 0) :
-//            base(g, true),
-//            alternatives_analyzers_(alternatives_analyzers),
-//            gluer_(g, opt_callback, removal_handler) {
-//    }
-//
-//private:
-//    std::vector<AlternativesAnalyzer<Graph>> alternatives_analyzers_;
-//    BulgeGluer<Graph> gluer_;
-//private:
-//    DECL_LOGGER("BulgeRemover")
-//};
-
 template<class Graph>
 inline double AbsoluteMaxCoverage(const std::vector<AlternativesAnalyzer<Graph>>& alternatives_analyzers) {
     double ans = -1.;
@@ -390,7 +316,11 @@ inline double AbsoluteMaxCoverage(const std::vector<AlternativesAnalyzer<Graph>>
     return ans;
 }
 
-//fixme maybe switch on parallel finder?
+/**
+ * This class removes simple bulges from given graph with the following algorithm: it iterates through all edges of
+ * the graph and for each edge checks if this edge is likely to be a simple bulge
+ * if edge is judged to be one it is removed.
+ */
 template<class Graph>
 class BulgeRemover: public PersistentProcessingAlgorithm<Graph,
                                                         typename Graph::EdgeId,
@@ -423,26 +353,6 @@ protected:
 public:
 
     typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
-
-//  BulgeRemover(Graph& g,  double max_coverage, size_t max_length,
-//          double max_relative_coverage, size_t max_delta,
-//          double max_relative_delta,
-//          size_t max_edge_cnt,
-//          BulgeCallbackF opt_callback = 0,
-//          std::function<void(EdgeId)> removal_handler = 0) :
-//          base(g, true),
-//          gluer_(g, opt_callback, removal_handler) {
-//                DEBUG("Launching br max_length=" << max_length
-//                << " max_coverage=" << max_coverage
-//                << " max_relative_coverage=" << max_relative_coverage
-//                << " max_delta=" << max_delta
-//                << " max_relative_delta=" << max_relative_delta
-//                << " max_number_edges=" << max_edge_cnt);
-//                alternatives_analyzers_.push_back(
-//                        AlternativesAnalyzer<Graph>(g, max_coverage,
-//                                                    max_length, max_relative_coverage,
-//                                                    max_delta, max_relative_delta, max_edge_cnt));
-//    }
 
     BulgeRemover(Graph& g, const std::shared_ptr<InterestingElementFinder<Graph, EdgeId>>& interesting_finder,
             const AlternativesAnalyzer<Graph>& alternatives_analyzer,
