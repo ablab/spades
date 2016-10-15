@@ -392,11 +392,9 @@ bool ShouldAlignWithPacbioAligner(io::LibraryType lib_type) {
 void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
     using namespace omnigraph;
 
-    bool launch_flag = false;
     bool make_additional_saves = parent_->saves_policy().make_saves_;
     for (size_t lib_id = 0; lib_id < cfg::get().ds.reads.lib_count(); ++lib_id) {
         if (cfg::get().ds.reads[lib_id].is_hybrid_lib()) {
-            launch_flag = true;
             INFO("Hybrid library detected: #" << lib_id);
 
             const auto& lib = cfg::get().ds.reads[lib_id];
@@ -456,11 +454,9 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
         }
     }
 
-    if (launch_flag) {
-        omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
-        stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
-        printer(config::info_printer_pos::final_gap_closed);
-    }
+    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
+    printer(config::info_printer_pos::final_gap_closed);
 }
 
 }

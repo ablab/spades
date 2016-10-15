@@ -37,6 +37,13 @@ inline bool MetaCompatibleLibraries() {
     return true;
 }
 
+inline bool HybridLibrariesPresent() {
+    for (size_t lib_id = 0; lib_id < cfg::get().ds.reads.lib_count(); ++lib_id) 
+        if (cfg::get().ds.reads[lib_id].is_hybrid_lib()) 
+            return true;
+    return false;
+}
+
 void assemble_genome() {
     INFO("SPAdes started");
     if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta && !MetaCompatibleLibraries()) {
@@ -102,7 +109,9 @@ void assemble_genome() {
             SPAdes.add(new debruijn_graph::ChromosomeRemoval());
         }
 
-        SPAdes.add(new debruijn_graph::HybridLibrariesAligning());
+        if (HybridLibrariesPresent()) {
+            SPAdes.add(new debruijn_graph::HybridLibrariesAligning());
+        }
 
         //No graph modification allowed after HybridLibrariesAligning stage!
 
