@@ -176,22 +176,6 @@ class GapCloser {
     const int init_gap_val_;
     const omnigraph::de::DEWeight weight_threshold_;
 
-    const SequenceMapper<Graph>& mapper_;
-    std::unordered_set<runtime_k::RtSeq> new_kmers_;
-
-    bool CheckNoKmerClash(const Sequence &s) {
-        runtime_k::RtSeq kmer(k_ + 1, s);
-        kmer >>= 'A';
-        for (size_t i = k_; i < s.size(); ++i) {
-            kmer <<= s[i];
-            if (new_kmers_.count(kmer)) {
-                return false;
-            }
-        }
-        std::vector<EdgeId> path = mapper_.MapSequence(s).simple_path();
-        return path.empty();
-    }
-
     std::vector<size_t> DiffPos(const Sequence &s1, const Sequence &s2) const {
         VERIFY(s1.size() == s2.size());
         std::vector<size_t> answer;
@@ -252,67 +236,40 @@ class GapCloser {
                           : long_seq.Subseq(long_seq.size() - short_seq.size()) == short_seq;
     }
 
-    void AddEdge(VertexId start, VertexId end, const Sequence &s) {
-        runtime_k::RtSeq kmer(k_ + 1, s);
-        kmer >>= 'A';
-        for (size_t i = k_; i < s.size(); ++i) {
-            kmer <<= s[i];
-            new_kmers_.insert(kmer);
-            new_kmers_.insert(!kmer);
-        }
-        g_.AddEdge(start, end, s);
-    }
-
-    bool CorrectLeft(EdgeId first, EdgeId second, int overlap, const vector<size_t> &diff_pos) {
+    void CorrectLeft(EdgeId first, EdgeId second, int overlap, const vector<size_t> &diff_pos) {
         DEBUG("Can correct first with sequence from second.");
         Sequence new_sequence = g_.EdgeNucls(first).Subseq(g_.length(first) - overlap + diff_pos.front(),
                                                            g_.length(first) + k_ - overlap)
                                 + g_.EdgeNucls(second).First(k_);
         DEBUG("Checking new k+1-mers.");
-        if (CheckNoKmerClash(new_sequence)) {
-            DEBUG("Check ok.");
-            DEBUG("Splitting first edge.");
-            pair<EdgeId, EdgeId> split_res = g_.SplitEdge(first, g_.length(first) - overlap + diff_pos.front());
-            first = split_res.first;
-            tips_paired_idx_.Remove(split_res.second);
-            DEBUG("Adding new edge.");
-            VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeEnd(first)), true));
-            VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeStart(second)), false));
-            AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second),
-                    new_sequence);
-            return true;
-        } else {
-            DEBUG("Check fail.");
-            DEBUG("Filled k-mer already present in graph");
-            return false;
-        }
-        return false;
+        DEBUG("Check ok.");
+        DEBUG("Splitting first edge.");
+        pair<EdgeId, EdgeId> split_res = g_.SplitEdge(first, g_.length(first) - overlap + diff_pos.front());
+        first = split_res.first;
+        tips_paired_idx_.Remove(split_res.second);
+        DEBUG("Adding new edge.");
+        VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeEnd(first)), true));
+        VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeStart(second)), false));
+        g_.AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second),
+                new_sequence);
     }
 
-    bool CorrectRight(EdgeId first, EdgeId second, int overlap, const vector<size_t> &diff_pos) {
+    void CorrectRight(EdgeId first, EdgeId second, int overlap, const vector<size_t> &diff_pos) {
         DEBUG("Can correct second with sequence from first.");
         Sequence new_sequence =
                 g_.EdgeNucls(first).Last(k_) + g_.EdgeNucls(second).Subseq(overlap, diff_pos.back() + 1 + k_);
         DEBUG("Checking new k+1-mers.");
-        if (CheckNoKmerClash(new_sequence)) {
-            DEBUG("Check ok.");
-            DEBUG("Splitting second edge.");
-            pair<EdgeId, EdgeId> split_res = g_.SplitEdge(second, diff_pos.back() + 1);
-            second = split_res.second;
-            tips_paired_idx_.Remove(split_res.first);
-            DEBUG("Adding new edge.");
-            VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeEnd(first)), true));
-            VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeStart(second)), false));
+        DEBUG("Check ok.");
+        DEBUG("Splitting second edge.");
+        pair<EdgeId, EdgeId> split_res = g_.SplitEdge(second, diff_pos.back() + 1);
+        second = split_res.second;
+        tips_paired_idx_.Remove(split_res.first);
+        DEBUG("Adding new edge.");
+        VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeEnd(first)), true));
+        VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeStart(second)), false));
 
-            AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second),
-                    new_sequence);
-            return true;
-        } else {
-            DEBUG("Check fail.");
-            DEBUG("Filled k-mer already present in graph");
-            return false;
-        }
-        return false;
+        g_.AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second),
+                new_sequence);
     }
 
     bool HandlePositiveHammingDistanceCase(EdgeId first, EdgeId second, int overlap) {
@@ -320,9 +277,11 @@ class GapCloser {
         vector<size_t> diff_pos = DiffPos(g_.EdgeNucls(first).Last(overlap),
                                           g_.EdgeNucls(second).First(overlap));
         if (CanCorrectLeft(first, overlap, diff_pos)) {
-            return CorrectLeft(first, second, overlap, diff_pos);
+            CorrectLeft(first, second, overlap, diff_pos);
+            return true;
         } else if (CanCorrectRight(second, overlap, diff_pos)) {
-            return CorrectRight(first, second, overlap, diff_pos);
+            CorrectRight(first, second, overlap, diff_pos);
+            return true;
         } else {
             DEBUG("Can't correct tips due to the graph structure");
             return false;
@@ -340,15 +299,10 @@ class GapCloser {
         //old code
         Sequence edge_sequence = g_.EdgeNucls(first).Last(k_)
                                  + g_.EdgeNucls(second).Subseq(overlap, k_);
-        if (CheckNoKmerClash(edge_sequence)) {
-            DEBUG("Gap filled: Gap size = " << k_ - overlap << "  Result seq "
-                  << edge_sequence.str());
-            AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second), edge_sequence);
-            return true;
-        } else {
-            DEBUG("Filled k-mer already present in graph");
-            return false;
-        }
+        DEBUG("Gap filled: Gap size = " << k_ - overlap << "  Result seq "
+              << edge_sequence.str());
+        g_.AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second), edge_sequence);
+        return true;
     }
 
     bool ProcessPair(EdgeId first, EdgeId second) {
@@ -432,7 +386,6 @@ public:
 
     GapCloser(Graph &g, omnigraph::de::PairedInfoIndexT<Graph> &tips_paired_idx,
               size_t min_intersection, double weight_threshold,
-              const SequenceMapper<Graph> &mapper,
               size_t hamming_dist_bound = 0 /*min_intersection_ / 5*/)
             : g_(g),
               k_((int) g_.k()),
@@ -440,9 +393,7 @@ public:
               min_intersection_(min_intersection),
               hamming_dist_bound_(hamming_dist_bound),
               init_gap_val_(-10),
-              weight_threshold_(weight_threshold),
-              mapper_(mapper),
-              new_kmers_() {
+              weight_threshold_(weight_threshold)  {
         VERIFY(min_intersection_ < g_.k());
         DEBUG("weight_threshold=" << weight_threshold_);
         DEBUG("min_intersect=" << min_intersection_);
@@ -460,8 +411,7 @@ void CloseGaps(conj_graph_pack &gp, Streams &streams) {
     PairedIndexT tips_paired_idx(gp.g);
     gcpif.FillIndex(tips_paired_idx, streams);
     GapCloser gap_closer(gp.g, tips_paired_idx,
-                                        cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold,
-                                        *mapper);
+                         cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold);
     gap_closer.CloseShortGaps();
 }
 
