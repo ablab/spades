@@ -131,11 +131,11 @@ void PrintGraph(const Graph & g) {
 }
 
 void DefaultClipTips(Graph& graph) {
-    debruijn::simplification::TipClipperInstance(graph, standard_tc_config(), standard_simplif_relevant_info(), (HandlerF<Graph>)nullptr)->Run();
+    debruijn::simplification::TipClipperInstance(graph, standard_tc_config(), standard_simplif_relevant_info())->Run();
 }
 
 void DefaultRemoveBulges(Graph& graph) {
-    debruijn::simplification::BRInstance(graph, standard_br_config(), standard_simplif_relevant_info(), (HandlerF<Graph>)nullptr)->Run();
+    debruijn::simplification::BRInstance(graph, standard_br_config(), standard_simplif_relevant_info())->Run();
 }
 
 BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {
@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE( SimpleECTest ) {
     debruijn_config::simplification::erroneous_connections_remover ec_config;
     ec_config.condition = "{ icb 7000 , ec_lb 20 }";
 
-    debruijn::simplification::ECRemoverInstance(g, ec_config, standard_simplif_relevant_info(), (HandlerF<Graph>)nullptr)->Run();
+    debruijn::simplification::ECRemoverInstance(g, ec_config, standard_simplif_relevant_info())->Run();
 
     BOOST_CHECK_EQUAL(g.size(), 16u);
 }
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE( IterECTest ) {
     debruijn_config::simplification::erroneous_connections_remover ec_config;
     ec_config.condition = "{ icb 7000 , ec_lb 20 }";
 
-    auto ec_remover_ptr = debruijn::simplification::ECRemoverInstance(g, ec_config, standard_simplif_relevant_info(), (HandlerF<Graph>)nullptr, 2);
+    auto ec_remover_ptr = debruijn::simplification::ECRemoverInstance(g, ec_config, standard_simplif_relevant_info(), (EdgeRemovalHandlerF<Graph>)nullptr, 2);
 
     ec_remover_ptr->Run();
     BOOST_CHECK_EQUAL(g.size(), 20u);

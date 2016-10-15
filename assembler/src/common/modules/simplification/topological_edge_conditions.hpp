@@ -42,11 +42,18 @@ public:
 };
 
 template<class Graph, class PathFinder>
-PathLengthLowerBound<Graph, PathFinder>
+EdgePredicate<Graph>
 MakePathLengthLowerBound(const Graph &g, const PathFinder &path_finder, size_t min_length) {
     return PathLengthLowerBound<Graph, PathFinder>(g, path_finder, min_length);
 }
 
+template<class Graph>
+EdgePredicate<Graph>
+UniquePathLengthLowerBound(const Graph &g, size_t min_length) {
+    return MakePathLengthLowerBound(g, UniquePathFinder<Graph>(g), min_length);
+}
+
+//todo obsolete since graph is always conjugate
 template<class Graph>
 class UniquenessPlausabilityCondition : public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
@@ -100,11 +107,10 @@ class PredicateUniquenessPlausabilityCondition :
         public UniquenessPlausabilityCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef pred::TypedPredicate<EdgeId> EdgePredicate;
     typedef UniquenessPlausabilityCondition<Graph> base;
 
-    EdgePredicate uniqueness_condition_;
-    EdgePredicate plausiblity_condition_;
+    EdgePredicate<Graph> uniqueness_condition_;
+    EdgePredicate<Graph> plausiblity_condition_;
 
     bool CheckUniqueness(EdgeId e, bool) const {
         return uniqueness_condition_(e);
@@ -117,8 +123,8 @@ class PredicateUniquenessPlausabilityCondition :
 public:
 
     PredicateUniquenessPlausabilityCondition(
-            const Graph &g, EdgePredicate uniqueness_condition,
-            EdgePredicate plausiblity_condition)
+            const Graph &g, EdgePredicate<Graph> uniqueness_condition,
+            EdgePredicate<Graph> plausiblity_condition)
             : base(g),
               uniqueness_condition_(uniqueness_condition),
               plausiblity_condition_(plausiblity_condition) {
@@ -131,7 +137,6 @@ class DefaultUniquenessPlausabilityCondition :
         public PredicateUniquenessPlausabilityCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef pred::TypedPredicate<EdgeId> EdgePredicate;
     typedef PredicateUniquenessPlausabilityCondition<Graph> base;
 
 public:
@@ -140,8 +145,7 @@ public:
                                            size_t uniqueness_length,
                                            size_t plausibility_length)
             : base(g,
-                   MakePathLengthLowerBound(g,
-                                            UniquePathFinder<Graph>(g), uniqueness_length),
+                   UniquePathLengthLowerBound(g, uniqueness_length),
                    MakePathLengthLowerBound(g,
                                             PlausiblePathFinder<Graph>(g, 2 * plausibility_length),
                                             plausibility_length)) {
@@ -234,11 +238,10 @@ template<class Graph>
 class MultiplicityCountingCondition : public UniquenessPlausabilityCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef pred::TypedPredicate<EdgeId> EdgePredicate;
     typedef UniquenessPlausabilityCondition<Graph> base;
 
     MultiplicityCounter<Graph> multiplicity_counter_;
-    EdgePredicate plausiblity_condition_;
+    EdgePredicate<Graph> plausiblity_condition_;
 
 public:
     bool CheckUniqueness(EdgeId e, bool forward) const {
@@ -255,7 +258,7 @@ public:
     }
 
     MultiplicityCountingCondition(const Graph& g, size_t uniqueness_length,
-                                  EdgePredicate plausiblity_condition)
+                                  EdgePredicate<Graph> plausiblity_condition)
             :
     //todo why 8???
             base(g),
@@ -266,8 +269,7 @@ public:
 
 private:
 
-    DECL_LOGGER("MultiplicityCountingCondition")
-    ;
+    DECL_LOGGER("MultiplicityCountingCondition");
 };
 
 

@@ -82,7 +82,8 @@ bool RemoveThorns(
 
     auto condition
             = pred::And(omnigraph::LengthUpperBound<Graph>(g, max_length),
-                        omnigraph::ThornCondition<Graph>(g, isec_config.uniqueness_length, isec_config.span_distance));
+                        pred::And(omnigraph::AdditionalMDAThornCondition<Graph>(g, isec_config.uniqueness_length),
+                                  omnigraph::TopologicalThornCondition<Graph>(g, isec_config.span_distance)));
 
     return RemoveErroneousEdgesInCoverageOrder(g, condition, numeric_limits<double>::max(), removal_handler);
 }
@@ -109,7 +110,7 @@ template<class Graph>
 bool MaxFlowRemoveErroneousEdges(
     Graph &g,
     const debruijn_graph::config::debruijn_config::simplification::max_flow_ec_remover& mfec_config,
-    omnigraph::HandlerF<Graph> removal_handler = 0) {
+    omnigraph::EdgeRemovalHandlerF<Graph> removal_handler = 0) {
     if (!mfec_config.enabled)
         return false;
     INFO("Removing connections based on max flow strategy");
@@ -126,12 +127,21 @@ bool RemoveHiddenEC(Graph& g,
                     const omnigraph::FlankingCoverage<Graph>& flanking_cov,
                     const debruijn_graph::config::debruijn_config::simplification::hidden_ec_remover& her_config,
                     const SimplifInfoContainer& info,
-                    omnigraph::HandlerF<Graph> removal_handler) {
+                    omnigraph::EdgeRemovalHandlerF<Graph> removal_handler) {
     if (her_config.enabled) {
         INFO("Removing hidden erroneous connections");
-        return omnigraph::HiddenECRemover<Graph>(g, her_config.uniqueness_length, flanking_cov,
+        omnigraph::HiddenECRemover<Graph> remover(g, info.chunk_cnt(), flanking_cov,
                                her_config.unreliability_threshold, info.detected_coverage_bound(),
-                               her_config.relative_threshold, removal_handler).Run();
+                               her_config.relative_threshold, [&] (typename Graph::EdgeId e) {
+                    //todo why 8???
+                    omnigraph::MultiplicityCounter<Graph> mult_counter(g, her_config.uniqueness_length, 8);
+
+                    vector<typename Graph::EdgeId> edges(g.out_begin(g.EdgeEnd(e)), g.out_end(g.EdgeEnd(e)));
+                    VERIFY(edges.size() == 2);
+                    return (g.conjugate(edges[0]) == edges[1] && mult_counter.count(e, g.EdgeStart(e)) <= 1) ||
+                            g.length(e) >= her_config.uniqueness_length;
+                },removal_handler);
+        return remover.Run() > 0;
     }
     return false;
 }

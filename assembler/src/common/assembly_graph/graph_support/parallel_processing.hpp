@@ -320,7 +320,7 @@ public:
     DisconnectionAlgorithm(Graph& g,
                            pred::TypedPredicate<EdgeId> condition,
                            size_t chunk_cnt,
-                           HandlerF<Graph> removal_handler,
+                           EdgeRemovalHandlerF<Graph> removal_handler,
                            const Comparator& comp = Comparator(),
                            bool track_changes = true)
             : base(g,

@@ -159,52 +159,6 @@ pred::TypedPredicate<typename Graph::EdgeId> AddNotBulgeECCondition(const Graph 
     return pred::And(NotBulgeECCondition<Graph>(g), condition);
 }
 
-//coverage comparator
-//template<class Graph>
-//class RelativeCoverageCondition : public EdgeCondition<Graph> {
-//    typedef typename Graph::EdgeId EdgeId;
-//    typedef typename Graph::VertexId VertexId;
-//    typedef EdgeCondition<Graph> base;
-//
-//    double min_coverage_gap_;
-//
-//    bool StrongNeighbourCondition(EdgeId neighbour_edge,
-//                                  EdgeId possible_ec) const {
-//        return neighbour_edge == possible_ec
-//                || math::gr(this->g().coverage(neighbour_edge),
-//                            this->g().coverage(possible_ec) * min_coverage_gap_);
-////                  || this->g().length(neighbour_edge)
-////                          >= neighbour_length_threshold_;
-//    }
-//
-//    bool CheckAdjacent(const vector<EdgeId>& edges, EdgeId possible_ec) const {
-//        FOREACH (EdgeId e, edges) {
-//            if (!StrongNeighbourCondition(e, possible_ec))
-//                return false;
-//        }
-//        return true;
-//    }
-//
-// public:
-//
-//    RelativeCoverageCondition(const Graph& g, double min_coverage_gap)
-//            : base(g),
-//              min_coverage_gap_(min_coverage_gap) {
-//
-//    }
-//
-//    bool Check(EdgeId e) const {
-//        const Graph& g = this->g();
-//        return CheckAdjacent(g.IncidentEdges(g.EdgeStart(e)), e)
-//                && CheckAdjacent(g.IncidentEdges(g.EdgeEnd(e)), e);
-//    }
-//
-// private:
-//    DECL_LOGGER("RelativeCoverageCondition")
-//    ;
-//
-//};
-
 template<class Graph>
 class TopologicalThornCondition : public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
@@ -249,17 +203,16 @@ public:
 
         auto callback = BestPathStorageInstance(g, comparator);
         //fixme put 10 in config
-        ProcessPaths(g, 0, max_jump_distance_, g.EdgeStart(e), g.conjugate(g.EdgeEnd(e)), callback, 10);
+        ProcessPaths(g, 0, max_jump_distance_, g.EdgeStart(e), g.conjugate(g.EdgeEnd(e)), callback/*, 10*/);
         return (bool) callback.best_path();
     }
 };
 
-//todo refactor
 template<class Graph>
-class ThornCondition : public TopologicalThornCondition<Graph> {
+class AdditionalMDAThornCondition : public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef TopologicalThornCondition<Graph> base;
+    typedef EdgeCondition<Graph> base;
     typedef std::vector<EdgeId> Path;
 
     size_t uniqueness_length_;
@@ -299,17 +252,17 @@ class ThornCondition : public TopologicalThornCondition<Graph> {
 
  public:
 
-    ThornCondition(Graph& g, size_t uniqueness_length, size_t dijkstra_depth)
-            : base(g, dijkstra_depth),
+    AdditionalMDAThornCondition(Graph& g, size_t uniqueness_length)
+            : base(g),
               uniqueness_length_(uniqueness_length) {
     }
 
     bool Check(EdgeId e) const override {
-        return (CheckUniqueCondition(e) || CheckForECAround(e)) && base::Check(e);
+        return CheckUniqueCondition(e) || CheckForECAround(e);
     }
 
  private:
-    DECL_LOGGER("ThornCondition");
+    DECL_LOGGER("AdditionalMDAThornCondition");
 };
 
 //todo move to rnaSPAdes simplification
@@ -404,7 +357,7 @@ class ECLoopRemover : public EdgeProcessingAlgorithm<Graph> {
 
 public:
     ECLoopRemover(Graph &g, const FlankingCoverage<Graph> &flanking_coverage, double ec_threshold, double relative_threshold,
-                  HandlerF<Graph> removal_handler = 0): base(g),ec_threshold_(ec_threshold),
+                  EdgeRemovalHandlerF<Graph> removal_handler = 0): base(g),ec_threshold_(ec_threshold),
                                                                             relative_threshold_(relative_threshold), flanking_coverage_(flanking_coverage),
                                                                             edge_remover_(g, removal_handler){
     }
@@ -417,25 +370,26 @@ private:
 };
 
 template<class Graph>
-class HiddenECRemover: public EdgeProcessingAlgorithm<Graph> {
-    typedef EdgeProcessingAlgorithm<Graph> base;
+class HiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename Graph::VertexId> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
+    typedef PersistentProcessingAlgorithm<Graph, VertexId> base;
+    const FlankingCoverage<Graph>& flanking_coverage_;
     size_t uniqueness_length_;
     double unreliability_threshold_;
     double ec_threshold_;
     double relative_threshold_;
-    const FlankingCoverage<Graph>& flanking_coverage_;
-    EdgeDisconnector<Graph> edge_disconnector_;
-    MultiplicityCountingCondition<Graph> condition_;
+
+    EdgePredicate<Graph> uniqueness_check_;
+    EdgeDisconnector<Graph> disconnector_;
 
     void DisconnectEdges(VertexId v) {
         while(!this->g().IsDeadEnd(v)) {
-            edge_disconnector_(*(this->g().out_begin(v)), /*compress*/false);
+            disconnector_(*(this->g().out_begin(v)), /*compress*/false);
         }
     }
 
-    bool FindHiddenEC(VertexId v) {
+    bool ProcessHiddenEC(VertexId v) {
         VERIFY(this->g().OutgoingEdgeCount(v) == 2)
         vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
         if(math::gr(flanking_coverage_.CoverageOfStart(edges.front()),
@@ -449,7 +403,7 @@ class HiddenECRemover: public EdgeProcessingAlgorithm<Graph> {
             return true;
         }
         if (math::ls(c1 * relative_threshold_, c2) && math::ls(c1, ec_threshold_)) {
-            edge_disconnector_(edges.front());
+            disconnector_(edges.front());
             return true;
         }
         return false;
@@ -459,31 +413,34 @@ class HiddenECRemover: public EdgeProcessingAlgorithm<Graph> {
         if (this->g().IncomingEdgeCount(v) != 1 || this->g().OutgoingEdgeCount(v) != 2) {
             return false;
         }
-        vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
-        return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1] &&
-                condition_.CheckUniqueness(this->g().GetUniqueIncomingEdge(v), false)) ||
-                this->g().length(this->g().GetUniqueIncomingEdge(v)) >= uniqueness_length_;
+        return uniqueness_check_(this->g().GetUniqueIncomingEdge(v));
     }
 
-    bool ProcessEdge(EdgeId e) override {
-        VertexId v = this->g().EdgeEnd(e);
+protected:
+
+    bool Process(VertexId v) override {
         if (CheckSuspicious(v)) {
-            return FindHiddenEC(v);
+            return ProcessHiddenEC(v);
         }
         return false;
     }
 
 public:
-    HiddenECRemover(Graph& g, size_t uniqueness_length,
+    HiddenECRemover(Graph& g, size_t chunk_cnt,
                     const FlankingCoverage<Graph> &flanking_coverage,
-                    double unreliability_threshold, double ec_threshold,
-                    double relative_threshold,
-                    std::function<void(EdgeId)> removal_handler = 0)
-            : base(g), uniqueness_length_(uniqueness_length),
+                    double unreliability_threshold,
+                    double ec_threshold, double relative_threshold,
+                    EdgePredicate<Graph> uniqueness_check,
+                    EdgeRemovalHandlerF<Graph> removal_handler = 0)
+            : base(g, nullptr), flanking_coverage_(flanking_coverage),
               unreliability_threshold_(unreliability_threshold * ec_threshold), ec_threshold_(ec_threshold),
-              relative_threshold_(relative_threshold), flanking_coverage_(flanking_coverage),
-              edge_disconnector_(g, removal_handler, g.k()),
-              condition_(g, uniqueness_length, pred::AlwaysTrue<EdgeId>()) {
+              relative_threshold_(relative_threshold),
+              uniqueness_check_(uniqueness_check),
+              disconnector_(g, removal_handler, g.k()) {
+        this->interest_el_finder_ = std::make_shared<ParallelInterestingElementFinder<Graph, VertexId>>(
+                [&](VertexId v) {
+                    return CheckSuspicious(v);
+                }, chunk_cnt);
     }
 
 private:

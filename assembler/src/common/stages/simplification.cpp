@@ -479,7 +479,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
 
 
     auto isolated_edge_remover =
-        IsolatedEdgeRemoverInstance(gp.g, cfg::get().simp.ier, info_container, (HandlerF<Graph>)nullptr);
+        IsolatedEdgeRemoverInstance(gp.g, cfg::get().simp.ier, info_container, (EdgeRemovalHandlerF<Graph>)nullptr);
     if (isolated_edge_remover != nullptr)
         isolated_edge_remover->Run();
 
@@ -490,7 +490,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
                 cov_cleaner(gp.g,
                             CoverageUpperBound<Graph>(gp.g, low_threshold),
                             info_container.chunk_cnt(),
-                            (HandlerF<Graph>)nullptr,
+                            (EdgeRemovalHandlerF<Graph>)nullptr,
                             /*canonical_only*/true,
                             CoverageComparator<Graph>(gp.g));
         cov_cleaner.Run();

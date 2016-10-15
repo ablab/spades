@@ -19,7 +19,7 @@
 namespace omnigraph {
 
 template<class Graph>
-using HandlerF = std::function<void(typename Graph::EdgeId)>;
+using EdgeRemovalHandlerF = std::function<void(typename Graph::EdgeId)>;
 
 template<class Graph>
 class EdgeProcessingAlgorithm {

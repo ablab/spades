@@ -3,10 +3,9 @@
 #include "utils/func.hpp"
 
 namespace omnigraph {
-using func::Predicate;
 
 template<class Graph>
-class VertexCondition : public Predicate<typename Graph::VertexId> {
+class VertexCondition : public func::Predicate<typename Graph::VertexId> {
     typedef typename Graph::VertexId VertexId;
     const Graph &g_;
 protected:

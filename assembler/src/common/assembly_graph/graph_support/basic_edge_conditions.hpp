@@ -16,6 +16,9 @@
 namespace omnigraph {
 
 template<class Graph>
+using EdgePredicate = pred::TypedPredicate<typename Graph::EdgeId>;
+
+template<class Graph>
 class EdgeCondition : public func::Predicate<typename Graph::EdgeId> {
     typedef typename Graph::EdgeId EdgeId;
 

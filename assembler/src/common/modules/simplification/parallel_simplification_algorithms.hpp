@@ -30,7 +30,7 @@ class ParallelTipClippingFunctor {
     Graph& g_;
     size_t length_bound_;
     double coverage_bound_;
-    omnigraph::HandlerF<Graph> handler_f_;
+    omnigraph::EdgeRemovalHandlerF<Graph> handler_f_;
 
     size_t LockingIncomingCount(VertexId v) const {
         VertexLockT lock(v);
@@ -57,7 +57,7 @@ class ParallelTipClippingFunctor {
 public:
 
     ParallelTipClippingFunctor(Graph& g, size_t length_bound, double coverage_bound,
-                               omnigraph::HandlerF<Graph> handler_f = nullptr)
+                               omnigraph::EdgeRemovalHandlerF<Graph> handler_f = nullptr)
             : g_(g),
               length_bound_(length_bound),
               coverage_bound_(coverage_bound),
@@ -290,7 +290,7 @@ class ParallelLowCoverageFunctor {
     Graph& g_;
     typename Graph::HelperT helper_;
     pred::TypedPredicate<EdgeId> ec_condition_;
-    omnigraph::HandlerF<Graph> handler_f_;
+    omnigraph::EdgeRemovalHandlerF<Graph> handler_f_;
 
     omnigraph::GraphElementMarker<EdgeId> edge_marker_;
     vector<EdgeId> edges_to_remove_;
@@ -311,7 +311,7 @@ public:
 
     //should be launched with conjugate copies filtered
     ParallelLowCoverageFunctor(Graph& g, size_t max_length, double max_coverage,
-                               omnigraph::HandlerF<Graph> handler_f = nullptr)
+                               omnigraph::EdgeRemovalHandlerF<Graph> handler_f = nullptr)
             : g_(g),
               helper_(g_.GetConstructionHelper()),
               ec_condition_(pred::And(pred::And(omnigraph::LengthUpperBound<Graph>(g, max_length),
@@ -822,7 +822,7 @@ bool ParallelClipTips(Graph &g,
                       size_t max_length,
                       double max_coverage,
                       size_t chunk_cnt,
-                      omnigraph::HandlerF<Graph> removal_handler = nullptr) {
+                      omnigraph::EdgeRemovalHandlerF<Graph> removal_handler = nullptr) {
     INFO("Parallel tip clipping");
 
     debruijn::simplification::ParallelTipClippingFunctor<Graph> tip_clipper(g,
@@ -872,7 +872,7 @@ bool ParallelEC(Graph &g,
                 size_t max_length,
                 double max_coverage,
                 size_t chunk_cnt,
-                omnigraph::HandlerF<Graph> removal_handler = nullptr) {
+                omnigraph::EdgeRemovalHandlerF<Graph> removal_handler = nullptr) {
     INFO("Parallel ec remover");
 
     debruijn::simplification::CriticalEdgeMarker<Graph> critical_marker(g, chunk_cnt);

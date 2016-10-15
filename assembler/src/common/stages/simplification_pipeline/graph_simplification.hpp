@@ -296,14 +296,14 @@ private:
 
 //enabling tip projection, todo optimize if hotspot
 template<class gp_t>
-HandlerF<typename gp_t::graph_t> WrapWithProjectionCallback(
+EdgeRemovalHandlerF<typename gp_t::graph_t> WrapWithProjectionCallback(
     gp_t &gp,
-    HandlerF<typename gp_t::graph_t> removal_handler) {
+    EdgeRemovalHandlerF<typename gp_t::graph_t> removal_handler) {
     typedef typename gp_t::graph_t Graph;
     typedef typename Graph::EdgeId EdgeId;
     TipsProjector<gp_t> tip_projector(gp);
 
-    HandlerF<Graph> projecting_callback = std::bind(&TipsProjector<gp_t>::ProjectTip,
+    EdgeRemovalHandlerF<Graph> projecting_callback = std::bind(&TipsProjector<gp_t>::ProjectTip,
                                              tip_projector, std::placeholders::_1);
 
     return func::Composition<EdgeId>(std::ref(removal_handler), projecting_callback);
@@ -385,7 +385,7 @@ AlternativesAnalyzer<Graph> ParseBRConfig(const Graph &g,
 template<class Graph>
 AlgoPtr<Graph> SelfConjugateEdgeRemoverInstance(Graph &g, const string &condition_str,
                 const SimplifInfoContainer &info,
-                HandlerF<Graph> removal_handler = 0) {
+                EdgeRemovalHandlerF<Graph> removal_handler = 0) {
     ConditionParser<Graph> parser(g, condition_str, info);
     auto condition = pred::And(SelfConjugateCondition<Graph>(g), parser());
 
@@ -481,13 +481,13 @@ AlgoPtr<Graph> ComplexTipClipperInstance(Graph &g,
 }
 
 template<class Graph>
-AlgoPtr<Graph> ShortPolyATEdgesRemoverInstance(Graph &g, size_t max_length, HandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
+AlgoPtr<Graph> ShortPolyATEdgesRemoverInstance(Graph &g, size_t max_length, EdgeRemovalHandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
     auto condition = pred::And(ATCondition<Graph>(g, 0.8, max_length, false), LengthUpperBound<Graph>(g, 1));
     return std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>(g, condition, chunk_cnt, removal_handler, true);
 }
 
 template<class Graph>
-AlgoPtr<Graph> ATTipClipperInstance(Graph &g, HandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
+AlgoPtr<Graph> ATTipClipperInstance(Graph &g, EdgeRemovalHandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
 //TODO: review params 0.8, 200?
     return std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>(g, ATCondition<Graph>(g, 0.8, 200, true), chunk_cnt, removal_handler, true);
 }
@@ -496,7 +496,7 @@ template<class Graph>
 AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
                                            config::debruijn_config::simplification::isolated_edges_remover ier,
                                            const SimplifInfoContainer &info,
-                                           HandlerF<Graph> removal_handler = 0) {
+                                           EdgeRemovalHandlerF<Graph> removal_handler = 0) {
     if (!ier.enabled) {
         return nullptr;
     }
@@ -552,7 +552,7 @@ template<class Graph>
 AlgoPtr<Graph> ECRemoverInstance(Graph &g,
                                  const config::debruijn_config::simplification::erroneous_connections_remover &ec_config,
                                  const SimplifInfoContainer &info,
-                                 HandlerF<Graph> removal_handler,
+                                 EdgeRemovalHandlerF<Graph> removal_handler = nullptr,
                                  size_t iteration_cnt = 1) {
     if (ec_config.condition.empty())
         return nullptr;
@@ -569,7 +569,7 @@ template<class Graph>
 AlgoPtr<Graph> RelativeECRemoverInstance(Graph &g,
                                          const config::debruijn_config::simplification::relative_coverage_ec_remover &rcec_config,
                                          const SimplifInfoContainer &info,
-                                         HandlerF<Graph> removal_handler,
+                                         EdgeRemovalHandlerF<Graph> removal_handler,
                                          size_t iteration_cnt = 1) {
     if (!rcec_config.enabled)
         return nullptr;
@@ -584,7 +584,7 @@ AlgoPtr<Graph> RelativeECRemoverInstance(Graph &g,
 template<class Graph>
 AlgoPtr<Graph> NotBulgeECRemoverInstance(Graph &g,
                                          const config::debruijn_config::simplification::erroneous_connections_remover &ec_config,
-                                         const SimplifInfoContainer &info, HandlerF<Graph> removal_handler,
+                                         const SimplifInfoContainer &info, EdgeRemovalHandlerF<Graph> removal_handler,
                                          size_t iteration_cnt = 1) {
     if (ec_config.condition.empty())
         return nullptr;
@@ -608,7 +608,7 @@ template<class Graph>
 AlgoPtr<Graph> TipClipperInstance(Graph &g,
                                   const EdgeConditionT<Graph> &condition,
                                   const SimplifInfoContainer &info,
-                                  HandlerF<Graph> removal_handler,
+                                  EdgeRemovalHandlerF<Graph> removal_handler = nullptr,
                                   bool track_changes = true,
                                   size_t /*iteration_cnt*/ = 1) {
     return make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph, omnigraph::LengthComparator<Graph>>>(g,
@@ -622,10 +622,10 @@ AlgoPtr<Graph> TipClipperInstance(Graph &g,
 
 template<class Graph>
 AlgoPtr<Graph> TipClipperInstance(Graph &g,
-                                           const config::debruijn_config::simplification::tip_clipper &tc_config,
-                                           const SimplifInfoContainer &info,
-                                           HandlerF<Graph> removal_handler,
-                                           size_t iteration_cnt = 1) {
+                                  const config::debruijn_config::simplification::tip_clipper &tc_config,
+                                  const SimplifInfoContainer &info,
+                                  EdgeRemovalHandlerF<Graph> removal_handler = nullptr,
+                                  size_t iteration_cnt = 1) {
     if (tc_config.condition.empty())
         return nullptr;
 
@@ -638,7 +638,7 @@ template<class Graph>
 AlgoPtr<Graph> DeadEndInstance(Graph &g,
                                const config::debruijn_config::simplification::dead_end_clipper &dead_end_config,
                                const SimplifInfoContainer &info,
-                               HandlerF<Graph> removal_handler,
+                               EdgeRemovalHandlerF<Graph> removal_handler,
                                size_t /*iteration_cnt*/ = 1) {
     if (!dead_end_config.enabled || dead_end_config.condition.empty())
         return nullptr;
@@ -655,7 +655,7 @@ AlgoPtr<Graph> TopologyTipClipperInstance(
     Graph &g,
     const config::debruijn_config::simplification::topology_tip_clipper &ttc_config,
     const SimplifInfoContainer &info,
-    HandlerF<Graph> removal_handler) {
+    EdgeRemovalHandlerF<Graph> removal_handler = nullptr) {
 
     auto condition
             = pred::And(LengthUpperBound<Graph>(g,
@@ -671,7 +671,7 @@ template<class Graph>
 AlgoPtr<Graph> BRInstance(Graph &g,
                           const config::debruijn_config::simplification::bulge_remover &br_config,
                           const SimplifInfoContainer &info,
-                          HandlerF<Graph> removal_handler,
+                          EdgeRemovalHandlerF<Graph> removal_handler = nullptr,
                           size_t /*iteration_cnt*/ = 1) {
     if (!br_config.enabled || (br_config.main_iteration_only && !info.main_iteration())) {
         return nullptr;
@@ -738,7 +738,7 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph &g,
                                            const FlankingCoverage<Graph> &flanking_cov,
                                            double cov_bound,
                                            const SimplifInfoContainer &info,
-                                           HandlerF<Graph> removal_handler) {
+                                           EdgeRemovalHandlerF<Graph> removal_handler) {
     if (math::ls(cov_bound, 0.)) {
         INFO("Flanking coverage based disconnection disabled");
         return nullptr;
@@ -755,7 +755,7 @@ bool RemoveHiddenLoopEC(Graph &g,
                         const FlankingCoverage<Graph> &flanking_cov,
                         double determined_coverage_threshold,
                         config::debruijn_config::simplification::hidden_ec_remover her_config,
-                        HandlerF<Graph> removal_handler) {
+                        EdgeRemovalHandlerF<Graph> removal_handler) {
     if (her_config.enabled) {
         INFO("Removing loops and rc loops with erroneous connections");
         ECLoopRemover<Graph> hc(g, flanking_cov,

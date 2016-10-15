@@ -60,7 +60,7 @@ private:
         }
         debruijn::simplification::SimplifInfoContainer info(debruijn_graph::config::pipeline_type::base);
         info.set_chunk_cnt(10);
-        debruijn::simplification::TipClipperInstance(curr_env.graph(), condition, info, (omnigraph::HandlerF<Graph>)nullptr)->Run();
+        debruijn::simplification::TipClipperInstance(curr_env.graph(), condition, info, (omnigraph::EdgeRemovalHandlerF<Graph>)nullptr)->Run();
     }
 };
 }
