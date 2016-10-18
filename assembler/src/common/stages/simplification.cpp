@@ -157,6 +157,8 @@ class GraphSimplifier {
     }
 
     void PostSimplification() {
+        using namespace omnigraph;
+        using namespace pred;
         INFO("PROCEDURE == Post simplification");
         size_t iteration = 0;
 
@@ -246,6 +248,38 @@ class GraphSimplifier {
                                        info_container_, removal_handler_),
                     "Yet another final bulge remover",
                     algos);
+
+            EdgePredicate<Graph> meta_thorn_condition
+                    = And(LengthUpperBound<Graph>(g_, LengthThresholdFinder::MaxErroneousConnectionLength(
+                                                                           g_.k(), simplif_cfg_.isec.max_ec_length_coefficient)),
+
+                      And([&] (EdgeId e) {
+                              //todo configure!
+                              simplification::relative_coverage::RelativeCoverageHelper<Graph> helper(g_, gp_.flanking_cov, 2.);
+                              return helper.AnyHighlyCoveredOnFourSides(e);
+                          },
+
+                      And(UniqueIncomingPathLengthLowerBound(g_, simplif_cfg_.isec.uniqueness_length),
+
+                          //todo configure!
+                          TopologicalThornCondition<Graph>(g_, simplif_cfg_.isec.span_distance, /*max edge cnt*/5))));
+
+            PushValid(std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g_, meta_thorn_condition, info_container_.chunk_cnt(), removal_handler_),
+                      "Removing thorns (meta)",
+                      algos);
+
+
+//            if (simplif_cfg_.her.enabled) {
+            INFO("Removing hidden erroneous connections");
+            PushValid(std::make_shared<HiddenECRemover<Graph>>(g_, info_container_.chunk_cnt(), gp_.flanking_cov,
+                                                      simplif_cfg_.her.unreliability_threshold,
+                                                      /*coverage upper bound*/std::numeric_limits<double>::max(),
+                                                      simplif_cfg_.her.relative_threshold,
+                                                      UniquePathLengthLowerBound(g_, simplif_cfg_.her.uniqueness_length),
+                                                               removal_handler_),
+                      "Removing thorns (meta)",
+                      algos);
+//            }
         }
 
         if (info_container_.mode() == config::pipeline_type::rna) {

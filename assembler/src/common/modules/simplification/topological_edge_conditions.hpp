@@ -53,7 +53,17 @@ UniquePathLengthLowerBound(const Graph &g, size_t min_length) {
     return MakePathLengthLowerBound(g, UniquePathFinder<Graph>(g), min_length);
 }
 
-//todo obsolete since graph is always conjugate
+template<class Graph>
+EdgePredicate<Graph>
+UniqueIncomingPathLengthLowerBound(const Graph &g, size_t min_length) {
+    return [&] (typename Graph::EdgeId e) {
+        typename Graph::VertexId v = g.EdgeStart(e);
+        return g.CheckUniqueIncomingEdge(v) &&
+                UniquePathLengthLowerBound(g, min_length)(g.GetUniqueIncomingEdge(v));
+    };
+}
+
+//todo can disconnect uniqueness and plausibility conditions, since graph is always conjugate!
 template<class Graph>
 class UniquenessPlausabilityCondition : public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;

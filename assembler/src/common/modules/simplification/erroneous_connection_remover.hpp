@@ -167,6 +167,7 @@ class TopologicalThornCondition : public EdgeCondition<Graph> {
     typedef std::vector<EdgeId> Path;
 
     size_t max_jump_distance_;
+    size_t max_edge_cnt_;
 
     bool CheckEdgeCounts(EdgeId e) const {
         if (this->g().EdgeStart(e) == this->g().EdgeEnd(e))
@@ -184,9 +185,12 @@ class TopologicalThornCondition : public EdgeCondition<Graph> {
 
 public:
 
-    TopologicalThornCondition(Graph& g, size_t max_jump_dist)
+    TopologicalThornCondition(Graph& g,
+                              size_t max_jump_dist,
+                              size_t max_edge_cnt = -1ul)
             : base(g),
-              max_jump_distance_(max_jump_dist) {
+              max_jump_distance_(max_jump_dist),
+              max_edge_cnt_(max_edge_cnt) {
     }
 
     bool Check(EdgeId e) const override {
@@ -202,8 +206,7 @@ public:
         auto comparator = [](const Path& a, const Path& b) {return a.size() >= b.size();};
 
         auto callback = BestPathStorageInstance(g, comparator);
-        //fixme put 10 in config
-        ProcessPaths(g, 0, max_jump_distance_, g.EdgeStart(e), g.conjugate(g.EdgeEnd(e)), callback/*, 10*/);
+        ProcessPaths(g, 0, max_jump_distance_, g.EdgeStart(e), g.conjugate(g.EdgeEnd(e)), callback, max_edge_cnt_);
         return (bool) callback.best_path();
     }
 };
@@ -375,7 +378,6 @@ class HiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename Grap
     typedef typename Graph::VertexId VertexId;
     typedef PersistentProcessingAlgorithm<Graph, VertexId> base;
     const FlankingCoverage<Graph>& flanking_coverage_;
-    size_t uniqueness_length_;
     double unreliability_threshold_;
     double ec_threshold_;
     double relative_threshold_;
