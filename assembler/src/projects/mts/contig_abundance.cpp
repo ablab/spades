@@ -160,6 +160,7 @@ vector<std::string> ContigAbundanceCounter::SplitOnNs(const std::string& seq) co
 
 void ContigAbundanceCounter::Init(const std::string& kmer_mpl_file,
         size_t /*fixme some buffer size*/read_buffer_size) {
+    VERIFY(SampleCount() != 0);
     INFO("Initializing kmer profile index");
     DeBruijnKMerKMerSplitter<StoringTypeFilter<InvertableStoring>>
         splitter(kmer_mpl_.workdir(), k_, k_, true, read_buffer_size);
