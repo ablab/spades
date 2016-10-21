@@ -97,16 +97,21 @@ public:
     }
 
     //todo what if path processor will fail inside
-    size_t TotalPathCount() const {
-        size_t answer = 0;
-        for (VertexId end_v : end_vertices_) {
-            PathStorageCallback<Graph> path_storage(g_);
-            Range r = vertex_depth_.find(end_v)->second;
-            ProcessPaths(g_, r.start_pos, r.end_pos, start_vertex_, end_v, path_storage);
-            answer += path_storage.size();
-        }
-        return answer;
-    }
+//    size_t TotalPathCount() const {
+//        size_t answer = 0;
+//        size_t max_len = 0;
+//        for (VertexId end_v : end_vertices_) {
+//            max_len = std::max(max_len, vertex_depth_.find(end_v)->second.end_pos);
+//        }
+//        PathProcessor<Graph> processor(g_, start_vertex_, max_len);
+//        for (VertexId end_v : end_vertices_) {
+//            PathStorageCallback<Graph> path_storage(g_);
+//            Range r = vertex_depth_.find(end_v)->second;
+//            processor.Process(end_v, r.start_pos, r.end_pos, path_storage, /*max_edge_cnt*/ -1ul);
+//            answer += path_storage.size();
+//        }
+//        return answer;
+//    }
 
     bool CheckCompleteness() const {
         for (VertexId v : key_set(vertex_depth_)) {
@@ -120,9 +125,20 @@ public:
 
     bool NeedsProjection() const {
         DEBUG("Checking if component needs projection");
-        size_t tot_path_count = TotalPathCount();
-        bool answer = tot_path_count > end_vertices_.size();
+//        size_t tot_path_count = TotalPathCount();
+//        bool answer = tot_path_count > end_vertices_.size();
 //        more robust to path processor failure this way VERIFY(tot_path_count >= end_vertices_.size());
+        bool answer = false;
+        //todo if warn is not seen -- change to trivial check of IncomingEdgeCount
+        for (VertexId v : key_set(vertex_depth_)) {
+            vector<EdgeId> filtered_incoming;
+            std::copy_if(g_.in_begin(v), g_.in_end(v), std::back_inserter(filtered_incoming), 
+                        [&] (EdgeId e) {return contains(g_.EdgeStart(e));});
+            if (v != start_vertex_ && filtered_incoming.size() != g_.IncomingEdgeCount(v)) {
+                WARN("Strange component");
+            }
+            answer = (filtered_incoming.size() > 1);
+        }
         if (answer) {
             DEBUG("Needs projection");
         } else {
@@ -155,6 +171,10 @@ public:
             distances.insert(avg_distance(v));
         }
         return distances;
+    }
+
+    size_t v_size() const {
+        return vertex_depth_.size();
     }
 
     VertexId start_vertex() const {
@@ -918,6 +938,7 @@ class LocalizedComponentFinder {
         return true;
     }
 
+    //todo optimize
     boost::optional<VertexId> ClosestNeigbour() const {
         size_t min_dist = inf;
         boost::optional<VertexId> answer = boost::none;
@@ -977,10 +998,10 @@ public:
             g_(g), max_length_(max_length), length_diff_threshold_(
                     length_diff_threshold), comp_(g, start_v) {
         DEBUG("Component finder from vertex " << g_.str(comp_.start_vertex()) << " created");
-        DominatedSetFinder<Graph> dominated_set_finder(g_, start_v, max_length);
+        //todo introduce reasonable vertex bound
+        DominatedSetFinder<Graph> dominated_set_finder(g_, start_v, max_length/*, 1000*/);
         dominated_set_finder.FillDominated();
         dominated_ = dominated_set_finder.dominated();
-//        ProcessStartVertex();
     }
 
     bool ProceedFurther() {
@@ -991,8 +1012,7 @@ public:
             optional<VertexId> next_v = ClosestNeigbour();
 
             if (next_v) {
-                DEBUG(
-                        "Vertex " << g_.str(*next_v) << " was chosen as closest neighbour");
+                DEBUG("Vertex " << g_.str(*next_v) << " was chosen as closest neighbour");
                 interfering_.insert(*next_v);
                 DEBUG("Trying to construct closure");
                 if (!CloseComponent()) {
@@ -1034,6 +1054,41 @@ public:
 
 private:
     DECL_LOGGER("LocalizedComponentFinder");
+};
+
+template<class Graph>
+class CandidateFinder : public VertexCondition<Graph> {
+    typedef typename Graph::VertexId VertexId;
+    size_t max_length_;
+    size_t length_diff_;
+
+public:
+    CandidateFinder(const Graph& g, size_t max_length, size_t length_diff) : 
+        VertexCondition<Graph>(g), max_length_(max_length), length_diff_(length_diff) {
+    }
+
+    bool Check(VertexId v) const override {
+        const Graph& g = this->g();
+        LocalizedComponentFinder<Graph> comp_finder(g, max_length_,
+                                                    length_diff_, v);
+        while (comp_finder.ProceedFurther()) {
+            DEBUG("Found component candidate start_v " << g.str(v));
+            LocalizedComponent<Graph> component = comp_finder.component();
+            //todo introduce reasonable size bound
+            //if (component.size() > 1000) {
+            //    return false;
+            //}
+            ComponentColoring<Graph> coloring(component);
+            SkeletonTreeFinder<Graph> tree_finder(component, coloring);
+            DEBUG("Looking for a tree");
+            if (tree_finder.FindTree()) {
+                return true;
+            }
+        }
+        return false;
+    }
+private:
+    DECL_LOGGER("CBRCandidateFinder");
 };
 
 template<class Graph>
@@ -1116,8 +1171,12 @@ public:
     //track_changes=false leads to every iteration run from scratch
     ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff,
                         size_t chunk_cnt, const string& pics_folder = "") :
-            base(g, nullptr, false, std::less<VertexId>(), /*track changes*/false),
-            max_length_(max_length), length_diff_(length_diff), pics_folder_(pics_folder) {
+            base(g, std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph, VertexId>>(
+                CandidateFinder<Graph>(g, max_length, length_diff), chunk_cnt), 
+                false, std::less<VertexId>(), /*track changes*/false),
+            max_length_(max_length), 
+            length_diff_(length_diff), 
+            pics_folder_(pics_folder) {
         if (!pics_folder_.empty()) {
 //            remove_dir(pics_folder_);
             make_dir(pics_folder_);
@@ -1125,22 +1184,6 @@ public:
             make_dir(pics_folder_ + "fail/");
         }
 
-        this->interest_el_finder_ = std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph, VertexId>>(
-                [=, &g](VertexId v) {
-                    LocalizedComponentFinder<Graph> comp_finder(g, max_length_,
-                                                                length_diff_, v);
-                    while (comp_finder.ProceedFurther()) {
-                        DEBUG("Found component candidate start_v " << g.str(v));
-                        LocalizedComponent<Graph> component = comp_finder.component();
-                        ComponentColoring<Graph> coloring(component);
-                        SkeletonTreeFinder<Graph> tree_finder(component, coloring);
-                        DEBUG("Looking for a tree");
-                        if (tree_finder.FindTree()) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }, chunk_cnt);
     }
 
     bool Process(VertexId v) override {

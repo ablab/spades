@@ -270,7 +270,6 @@ class GraphSimplifier {
 
 
 //            if (simplif_cfg_.her.enabled) {
-            INFO("Removing hidden erroneous connections");
             PushValid(std::make_shared<HiddenECRemover<Graph>>(g_, info_container_.chunk_cnt(), gp_.flanking_cov,
                                                       simplif_cfg_.her.unreliability_threshold,
                                                       /*coverage upper bound*/std::numeric_limits<double>::max(),
