@@ -10,42 +10,43 @@ with slightly different usage of coverage map. Huge code duplication need to be 
 
     class PathJoiner : public ContigsMaker {
     public:
-        PathJoiner(const Graph & g, GraphCoverageMap& cov_map,
-                size_t max_diff_len,
-        size_t max_repeat_length,
-        bool detect_repeats_online,
-        std::unordered_map <size_t, size_t> id_to_index)
-        : ContigsMaker(g),
-                cover_map_(cov_map),
-                repeat_detector_(g, cover_map_, 2 * max_repeat_length),
-        extenders_(),
-        max_diff_len_(max_diff_len),
-        max_repeat_len_(max_repeat_length),
-        detect_repeats_online_(detect_repeats_online),
-        id_to_index_(id_to_index){
-        }
+        PathJoiner(const Graph & g,
+                        GraphCoverageMap& cov_map,
+                        size_t max_diff_len,
+                        size_t max_repeat_length,
+                        bool detect_repeats_online,
+                        std::unordered_map <size_t, size_t> id_to_index)
+            : ContigsMaker(g),
+            cover_map_(cov_map),
+            repeat_detector_(g, cover_map_, 2 * max_repeat_length),
+            extenders_(),
+            max_diff_len_(max_diff_len),
+            max_repeat_len_(max_repeat_length),
+            detect_repeats_online_(detect_repeats_online),
+            id_to_index_(id_to_index) {}
 
-        PathJoiner(Graph & g, GraphCoverageMap& cov_map,
-                vector<shared_ptr<PathExtender> > pes,
-        const ScaffoldingUniqueEdgeStorage& unique,
-                size_t max_diff_len,
-        size_t max_repeat_length,
-        bool detect_repeats_online,
-        std::unordered_map <size_t, size_t>& id_to_index)
-        : ContigsMaker(g),
+        PathJoiner(const Graph & g,
+                        GraphCoverageMap& cov_map,
+                        vector<shared_ptr<PathExtender> > pes,
+                        const ScaffoldingUniqueEdgeStorage& unique,
+                        size_t max_diff_len,
+                        size_t max_repeat_length,
+                        bool detect_repeats_online,
+                        std::unordered_map <size_t, size_t>& id_to_index)
+                : ContigsMaker(g),
                 cover_map_(cov_map),
                 repeat_detector_(g, cover_map_, 2 * max_repeat_length),
-        extenders_(),
-        max_diff_len_(max_diff_len),
-        max_repeat_len_(max_repeat_length),
-        detect_repeats_online_(detect_repeats_online),
-        id_to_index_(id_to_index) {
-            extenders_ = pes;
-            used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage(unique));
-            for (auto ex: extenders_) {
-                ex->AddUniqueEdgeStorage(used_storage_);
-            }
-        }
+                extenders_(),
+                max_diff_len_(max_diff_len),
+                max_repeat_len_(max_repeat_length),
+                detect_repeats_online_(detect_repeats_online),
+                id_to_index_(id_to_index) {
+                    extenders_ = pes;
+                    used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage(unique));
+                    for (auto ex: extenders_) {
+                        ex->AddUniqueEdgeStorage(used_storage_);
+                    }
+                }
 
         void AddExtender(shared_ptr <PathExtender> pe) {
             extenders_.push_back(pe);
@@ -164,7 +165,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
         size_t distance_bound_;
         double barcode_threshold_;
         size_t edge_threshold_;
-        bool join_paths;
+        size_t max_barcodes_on_edge_;
         ScaffoldingUniqueEdgeStorage unique_storage_;
         shared_ptr<tslr_resolver::BarcodeMapper> mapper_;
         std::unordered_map <size_t, size_t>& id_to_index_;
@@ -178,7 +179,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                     TrivialTSLRExtensionChooser::FindLastUniqueInPath(path, unique_storage_);
             bool long_single_edge_exists = false;
             EdgeId decisive_edge;
-            if (last_unique.second == -1) {
+            if (last_unique.second != -1) {
                 long_single_edge_exists = true;
                 decisive_edge = last_unique.first;
             }
@@ -189,9 +190,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             }
 
             //Check if there is too much barcodes aligned to the last unique edge
-            //todo save dataset params somewhere
-            if (mapper_-> GetSizeTails(decisive_edge) >
-                    GetMaximalBarcodeNumber(cfg::get().ts_res.tslr_barcode_dataset)) {
+            if (mapper_-> GetSizeTails(decisive_edge) > max_barcodes_on_edge_) {
                 DEBUG("Too many barcodes mapped to the decisive edge")
                 return;
             }
@@ -225,7 +224,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                                  size_t distance_bound,
                                  double barcode_threshold,
                                  size_t edge_threshold,
-                                 bool join_paths,
+                                 size_t max_barcodes_on_edge,
                                  const ScaffoldingUniqueEdgeStorage& unique_storage,
                                  std::unordered_map <size_t, size_t>& id_to_index)
                 :
@@ -235,7 +234,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                 distance_bound_(distance_bound),
                 barcode_threshold_(barcode_threshold),
                 edge_threshold_(edge_threshold),
-                join_paths(join_paths),
+                max_barcodes_on_edge_(max_barcodes_on_edge),
                 unique_storage_(unique_storage),
                 mapper_(gp.barcode_mapper),
                 id_to_index_(id_to_index) {
@@ -299,10 +298,16 @@ with slightly different usage of coverage map. Huge code duplication need to be 
 //                }
 //            }
             auto candidate = candidates.back();
+            DEBUG("Final candidate " << candidate.e_.int_id())
             auto covering_paths = GetCoveringPaths(path, candidate.e_);
-            if (covering_paths.size() != 1)
+            if (covering_paths.size() > 1)
             {
                 DEBUG("Too many paths, can't determine the right one")
+                return false;
+            }
+            if (covering_paths.size() == 0)
+            {
+                DEBUG("Couldn't find any covering paths")
                 return false;
             }
                 
@@ -320,6 +325,8 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                 DEBUG("Processing path...")
                 BidirectionalPath* cov_path = *it;
                 DEBUG("processed path id " << cov_path -> GetId())
+                DEBUG("current path id " << path.GetId())
+                DEBUG("conj path id " << path.GetConjPath() -> GetId())
                 if (*cov_path != path && *cov_path != *(path.GetConjPath())) {
                     result.push_back(cov_path);
                 }
@@ -357,7 +364,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
 
                 current_path.PushBack(suffix.At(0), gap);
                 current_path.PushBack(suffix.SubPath(1));
-                size_t current_index = id_to_index_[current_path . GetId()];
+                size_t current_index = id_to_index_[current_path.GetId()];
                 size_t added_index = id_to_index_[additive_path -> GetId()];
                 DEBUG("current index " << current_index)
                 DEBUG("added index " << added_index)
@@ -370,18 +377,6 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             }
         }
         DECL_LOGGER("InconsistentExtender")
-
-        //todo should be precounted at barcode map construction stage
-        size_t GetMaximalBarcodeNumber (const std::string& path_to_tslr_dataset) const {
-            size_t result = 0;
-            std::ifstream fin;
-            fin.open(path_to_tslr_dataset);
-            string line;
-            while (getline(fin, line)) {
-                ++result;
-            }
-            return result / 2;
-        }
 
     };
 } //tslr_resolver
