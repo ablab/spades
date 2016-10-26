@@ -463,6 +463,7 @@ struct debruijn_config {
         size_t distance_bound;
         double diff_threshold;
         double abs_threshold;
+        double barcode_number_threshold;
         size_t topsort_bound;
         bool debug_construction;
         bool join_paths;
