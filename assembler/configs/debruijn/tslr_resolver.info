@@ -10,9 +10,14 @@ ts_res
 
 	;threshold on (intersection) / (number of barcodes on second edge)
 	;edge should pass this threshold to become candidate
-	diff_threshold 0.4
+	diff_threshold 0.5
 
-	;Any andidate edge should be no further in graph. 
+	;threshold on barcode coverage difference
+	;first_barcodes / second_barcodes > barcode_number_threshold and
+	;second_barcodes / first_barcodes > barcode_number_threshold
+	barcode_number_threshold 0.2
+
+	;Any candidate edge should be no further in graph. 
 	;In other words, that is the maximum size of resolvable repeat.
 	distance_bound 8000
 
@@ -22,7 +27,7 @@ ts_res
 	topsort_bound 5000
 	debug_construction false
 	join_paths true
-	ideal_reads true
+	ideal_reads false
 
 	abs_threshold 0.1  ;deprecated
 	reference_cov  38  ;deprecated

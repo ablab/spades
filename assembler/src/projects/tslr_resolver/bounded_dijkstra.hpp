@@ -54,8 +54,8 @@ namespace omnigraph {
         vector <EdgeId>& candidates_;
     private:
         bool CheckNumberOfBarcodes(size_t first_barcodes, size_t second_barcodes, double threshold) const {
-            return (first_barcodes < threshold * second_barcodes or
-                    second_barcodes < threshold * first_barcodes);
+            return (first_barcodes > threshold * (double)second_barcodes and
+                    second_barcodes > threshold * (double)first_barcodes);
         }
 
     public:
