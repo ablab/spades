@@ -10,6 +10,18 @@
 using namespace path_extend;
 
 namespace tslr_resolver {
+    //fixme move this to FillMap at BarcodeMapper
+    size_t GetMaximalBarcodeNumber (const std::string& path_to_tslr_dataset) {
+        size_t result = 0;
+        std::ifstream fin;
+        fin.open(path_to_tslr_dataset);
+        string line;
+        while (getline(fin, line)) {
+            ++result;
+        }
+        return result / 2; //todo unrandomize this
+    }
+
     void LaunchBarcodePE (conj_graph_pack &gp) {
         path_extend::PathExtendParamsContainer params(cfg::get().pe_params,
                                                       cfg::get().output_dir,
@@ -27,6 +39,8 @@ namespace tslr_resolver {
         const pe_config::ParamSetT &pset = params.pset;
         bool use_scaffolder_2015_pipeline = false;
         bool detect_repeats_online = !(use_scaffolder_2015_pipeline || params.mode == config::pipeline_type::meta);
+
+        OutputContigs(gp.g, cfg::get().output_dir + "barcodes_before_rr", false);
 
         PathExtendResolver resolver(gp.g);
         auto min_unique_length = pset.scaffolding2015.min_unique_length;
@@ -69,20 +83,18 @@ namespace tslr_resolver {
         double absolute_barcode_threshold = tslr_resolver_params.diff_threshold;
         size_t distance_bound = tslr_resolver_params.distance_bound;
         double abs_threshold = tslr_resolver_params.abs_threshold;
-        bool join_paths = tslr_resolver_params.join_paths;
         //fixme duplication: unique storage can't be cleared
         ScaffoldingUniqueEdgeStorage tslr_unique_storage = FillUniqueEdgeStorage(gp, dataset_info,
                                                                                  min_unique_length,
                                                                                  unique_variaton,
                                                                                  pset.scaffolding2015.autodetect);
         std::unordered_map <size_t, size_t> id_to_index;
-
-
         max_is_right_quantile = gp.g.k() + 10000;
         auto extension = make_shared<TrivialTSLRExtensionChooser>(gp,
                                                                   len_threshold,
                                                                   absolute_barcode_threshold,
                                                                   tslr_unique_storage);
+        size_t max_barcodes_on_edge = GetMaximalBarcodeNumber(cfg::get().ts_res.tslr_barcode_dataset);
         auto tslr_extender = make_shared<InconsistentTSLRExtender>(gp, cover_map,
                                                              extension,
                                                              2500 /*insert size*/,
@@ -92,7 +104,7 @@ namespace tslr_resolver {
                                                              distance_bound,
                                                              abs_threshold,
                                                              len_threshold,
-                                                             join_paths,
+                                                             max_barcodes_on_edge,
                                                              tslr_unique_storage,
                                                              id_to_index);
         all_libs.push_back(tslr_extender);
@@ -115,6 +127,7 @@ namespace tslr_resolver {
         DebugOutputPaths(gp, params, final_paths, "final_tslr_paths");
 
         writer.OutputPaths(final_paths, params.output_dir + params.contigs_name);
+        writer.WritePathsWithPrefixes(final_paths, params.output_dir + "barcode_res_paths");
         if (gp.genome.size() > 0)
             CountMisassembliesWithReference(genome_checker, final_paths);
     };
