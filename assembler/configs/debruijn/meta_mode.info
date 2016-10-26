@@ -100,6 +100,15 @@ simp
         max_number_edges        3
     }
 
+    ; hidden ec remover
+    her
+    {
+        enabled                     true
+        uniqueness_length           1500
+        unreliability_threshold     -1.
+        relative_threshold          5     
+    }
+
     init_clean
     {
        early_it_only   true

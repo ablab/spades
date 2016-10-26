@@ -373,28 +373,124 @@ private:
 };
 
 template<class Graph>
+class MetaHiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename Graph::VertexId> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef PersistentProcessingAlgorithm<Graph, VertexId> base;
+    const FlankingCoverage<Graph>& flanking_coverage_;
+    size_t uniqueness_length_;
+    double relative_threshold_;
+
+    EdgeDisconnector<Graph> disconnector_;
+
+    void DisconnectEdges(VertexId v) {
+        while (!this->g().IsDeadEnd(v)) {
+            disconnector_(*(this->g().out_begin(v)), /*compress*/false);
+        }
+    }
+
+    bool CheckUniqueness(EdgeId e) {
+        return UniquePathLengthLowerBound(this->g(), uniqueness_length_)(e);
+    }
+
+    void ProcessHiddenEC(VertexId v) {
+        VERIFY(this->g().OutgoingEdgeCount(v) == 2);
+        vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
+        if (math::gr(flanking_coverage_.CoverageOfStart(edges.front()),
+                    flanking_coverage_.CoverageOfStart(edges.back()))) {
+            std::swap(edges.front(), edges.back());
+        }
+        double c1 = flanking_coverage_.CoverageOfStart(edges.front());
+        double c2 = flanking_coverage_.CoverageOfStart(edges.back());
+        DEBUG("c1 " << c1 << "; c2 " << c2);
+        DEBUG("rel thr " << relative_threshold_);
+        if (math::ls(c1 * relative_threshold_, c2)) {
+            DEBUG("Disconnecting " << this->g().str(edges.front()));
+            disconnector_(edges.front());
+        } else {
+            DEBUG("Disconnecting " << this->g().str(edges.front()) << " and " << this->g().str(edges.back()));
+            DisconnectEdges(v);
+        }
+    }
+
+    bool CheckSuspicious(VertexId v) {
+        if (this->g().IncomingEdgeCount(v) != 1 || this->g().OutgoingEdgeCount(v) != 2) {
+            return false;
+        }
+        vector<EdgeId> edges;
+        push_back_all(edges, this->g().OutgoingEdges(v));
+        VERIFY(edges.size() == 2);
+        if (this->g().conjugate(edges[0]) != edges[1]) {
+            return false;
+        }
+        return CheckUniqueness(this->g().GetUniqueIncomingEdge(v));
+    }
+
+protected:
+
+    bool Process(VertexId v) override {
+        if (CheckSuspicious(v)) {
+            ProcessHiddenEC(v);
+            return true;
+        }
+        return false;
+    }
+
+public:
+    MetaHiddenECRemover(Graph& g, size_t chunk_cnt,
+                    const FlankingCoverage<Graph> &flanking_coverage,
+                    size_t uniqueness_length,
+                    double relative_threshold,
+                    EdgeRemovalHandlerF<Graph> removal_handler = 0)
+            : base(g, nullptr), flanking_coverage_(flanking_coverage),
+              uniqueness_length_(uniqueness_length),
+              relative_threshold_(relative_threshold),
+              disconnector_(g, removal_handler, g.k()) {
+        this->interest_el_finder_ = std::make_shared<ParallelInterestingElementFinder<Graph, VertexId>>(
+                [&](VertexId v) {
+                    return CheckSuspicious(v);
+                }, chunk_cnt);
+    }
+
+private:
+    DECL_LOGGER("MetaHiddenECRemover");
+};
+
+//be careful unreliability_threshold_ is dependent on ec_threshold_!
+template<class Graph>
 class HiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename Graph::VertexId> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef PersistentProcessingAlgorithm<Graph, VertexId> base;
     const FlankingCoverage<Graph>& flanking_coverage_;
+    size_t uniqueness_length_;
     double unreliability_threshold_;
     double ec_threshold_;
     double relative_threshold_;
 
-    EdgePredicate<Graph> uniqueness_check_;
     EdgeDisconnector<Graph> disconnector_;
 
     void DisconnectEdges(VertexId v) {
-        while(!this->g().IsDeadEnd(v)) {
+        while (!this->g().IsDeadEnd(v)) {
             disconnector_(*(this->g().out_begin(v)), /*compress*/false);
         }
+    }
+
+    bool CheckUniqueness(EdgeId e) {
+        //todo why 8???
+        omnigraph::MultiplicityCounter<Graph> mult_counter(this->g(), uniqueness_length_, 8);
+
+        vector<EdgeId> edges;
+        push_back_all(edges, this->g().OutgoingEdges(this->g().EdgeEnd(e)));
+        VERIFY(edges.size() == 2);
+        return (this->g().conjugate(edges[0]) == edges[1] && mult_counter.count(e, this->g().EdgeStart(e)) <= 1) ||
+                this->g().length(e) >= uniqueness_length_;
     }
 
     bool ProcessHiddenEC(VertexId v) {
         VERIFY(this->g().OutgoingEdgeCount(v) == 2)
         vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
-        if(math::gr(flanking_coverage_.CoverageOfStart(edges.front()),
+        if (math::gr(flanking_coverage_.CoverageOfStart(edges.front()),
                     flanking_coverage_.CoverageOfStart(edges.back()))) {
             std::swap(edges.front(), edges.back());
         }
@@ -415,7 +511,7 @@ class HiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename Grap
         if (this->g().IncomingEdgeCount(v) != 1 || this->g().OutgoingEdgeCount(v) != 2) {
             return false;
         }
-        return uniqueness_check_(this->g().GetUniqueIncomingEdge(v));
+        return CheckUniqueness(this->g().GetUniqueIncomingEdge(v));
     }
 
 protected:
@@ -430,15 +526,16 @@ protected:
 public:
     HiddenECRemover(Graph& g, size_t chunk_cnt,
                     const FlankingCoverage<Graph> &flanking_coverage,
-                    double unreliability_threshold,
+                    size_t uniqueness_length,
+                    double unreliability_coeff,
                     double ec_threshold, double relative_threshold,
-                    EdgePredicate<Graph> uniqueness_check,
                     EdgeRemovalHandlerF<Graph> removal_handler = 0)
             : base(g, nullptr), flanking_coverage_(flanking_coverage),
-              unreliability_threshold_(unreliability_threshold * ec_threshold), ec_threshold_(ec_threshold),
+              uniqueness_length_(uniqueness_length),
+              unreliability_threshold_(unreliability_coeff * ec_threshold), ec_threshold_(ec_threshold),
               relative_threshold_(relative_threshold),
-              uniqueness_check_(uniqueness_check),
               disconnector_(g, removal_handler, g.k()) {
+        VERIFY(math::gr(unreliability_coeff, 0.));
         this->interest_el_finder_ = std::make_shared<ParallelInterestingElementFinder<Graph, VertexId>>(
                 [&](VertexId v) {
                     return CheckSuspicious(v);

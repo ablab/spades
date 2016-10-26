@@ -128,7 +128,7 @@ public:
 
 };
 
-//Removes first (k+1)-mer of graph edge, disconnecting it from starting vertex
+//Removes first 'trim_len' (k+1)-mers of graph edge, disconnecting it from starting vertex
 template<class Graph>
 class EdgeDisconnector {
     typedef typename Graph::EdgeId EdgeId;

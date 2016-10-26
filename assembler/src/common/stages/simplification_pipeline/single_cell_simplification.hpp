@@ -130,17 +130,9 @@ bool RemoveHiddenEC(Graph& g,
                     omnigraph::EdgeRemovalHandlerF<Graph> removal_handler) {
     if (her_config.enabled) {
         INFO("Removing hidden erroneous connections");
-        omnigraph::HiddenECRemover<Graph> remover(g, info.chunk_cnt(), flanking_cov,
+        omnigraph::HiddenECRemover<Graph> remover(g, info.chunk_cnt(), flanking_cov, her_config.uniqueness_length,
                                her_config.unreliability_threshold, info.detected_coverage_bound(),
-                               her_config.relative_threshold, [&] (typename Graph::EdgeId e) {
-                    //todo why 8???
-                    omnigraph::MultiplicityCounter<Graph> mult_counter(g, her_config.uniqueness_length, 8);
-
-                    vector<typename Graph::EdgeId> edges(g.out_begin(g.EdgeEnd(e)), g.out_end(g.EdgeEnd(e)));
-                    VERIFY(edges.size() == 2);
-                    return (g.conjugate(edges[0]) == edges[1] && mult_counter.count(e, g.EdgeStart(e)) <= 1) ||
-                            g.length(e) >= her_config.uniqueness_length;
-                },removal_handler);
+                               her_config.relative_threshold, removal_handler);
         return remover.Run() > 0;
     }
     return false;

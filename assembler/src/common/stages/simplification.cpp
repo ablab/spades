@@ -164,10 +164,11 @@ class GraphSimplifier {
 
         AlgoStorageT algos;
 
+        //auto colorer = debruijn_graph::DefaultGPColorer(gp_);
+        //omnigraph::DefaultLabeler<Graph> labeler(g_, gp_.edge_pos);
+
         //    gp.ClearQuality();
         //    gp.FillQuality();
-        //    auto colorer = debruijn_graph::DefaultGPColorer(gp);
-        //    omnigraph::DefaultLabeler<typename gp_t::graph_t> labeler(gp.g, gp.edge_pos);
         //    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
         //                                   cfg::get().output_dir + "pictures/colored_edges_deleted/");
         //
@@ -176,7 +177,13 @@ class GraphSimplifier {
         //            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
         //            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
         //            boost::ref(qual_removal_handler), _1);
-        //
+        
+        //omnigraph::visualization::LocalityPrintingRH<Graph> drawing_handler(gp_.g, labeler, colorer, "/home/snurk/pics");
+        //auto printing_handler=[&] (EdgeId e) {
+        //    std::cout << "Edge:" << g_.str(e) << "; cov: " << g_.coverage(e) << "; start " << g_.str(g_.EdgeStart(e)) << "; end " << g_.str(g_.EdgeEnd(e)) << std::endl;
+        //};
+        //auto extensive_handler = [&] (EdgeId e) {removal_handler_(e) ; printing_handler(e); drawing_handler.HandleDelete(e);};
+
 
         typename ComponentRemover<Graph>::HandlerF set_removal_handler_f;
         if (removal_handler_) {
@@ -255,8 +262,8 @@ class GraphSimplifier {
 
                       And([&] (EdgeId e) {
                               //todo configure!
-                              simplification::relative_coverage::RelativeCoverageHelper<Graph> helper(g_, gp_.flanking_cov, 2.);
-                              return helper.AnyHighlyCoveredOnFourSides(e);
+                              return simplification::relative_coverage::
+                                         RelativeCoverageHelper<Graph>(g_, gp_.flanking_cov, 2).AnyHighlyCoveredOnFourSides(e);
                           },
 
                       And(UniqueIncomingPathLengthLowerBound(g_, simplif_cfg_.isec.uniqueness_length),
@@ -264,21 +271,21 @@ class GraphSimplifier {
                           //todo configure!
                           TopologicalThornCondition<Graph>(g_, simplif_cfg_.isec.span_distance, /*max edge cnt*/5))));
 
-            PushValid(std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g_, meta_thorn_condition, info_container_.chunk_cnt(), removal_handler_),
-                      "Removing thorns (meta)",
+            PushValid(std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g_, meta_thorn_condition, info_container_.chunk_cnt(), 
+                      removal_handler_),
+                      "Thorn remover (meta)",
                       algos);
 
 
-//            if (simplif_cfg_.her.enabled) {
-            PushValid(std::make_shared<HiddenECRemover<Graph>>(g_, info_container_.chunk_cnt(), gp_.flanking_cov,
-                                                      simplif_cfg_.her.unreliability_threshold,
-                                                      /*coverage upper bound*/std::numeric_limits<double>::max(),
-                                                      simplif_cfg_.her.relative_threshold,
-                                                      UniquePathLengthLowerBound(g_, simplif_cfg_.her.uniqueness_length),
-                                                               removal_handler_),
-                      "Removing thorns (meta)",
-                      algos);
-//            }
+            if (simplif_cfg_.her.enabled) {
+                VERIFY(math::ls(simplif_cfg_.her.unreliability_threshold, 0.));
+                PushValid(std::make_shared<MetaHiddenECRemover<Graph>>(g_, info_container_.chunk_cnt(), gp_.flanking_cov,
+                                                          simplif_cfg_.her.uniqueness_length,
+                                                          simplif_cfg_.her.relative_threshold,
+                                                          removal_handler_),
+                          "Hidden EC remover (meta)",
+                          algos);
+            }
         }
 
         if (info_container_.mode() == config::pipeline_type::rna) {
