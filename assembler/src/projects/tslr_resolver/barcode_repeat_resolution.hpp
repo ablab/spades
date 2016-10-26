@@ -20,7 +20,6 @@ namespace spades {
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
             INFO("Resolver started...");
-            graph_pack.edge_pos.Attach();
             INFO(graph_pack.barcode_mapper->size());
             graph_pack.barcode_mapper->
                     SerializeOverallDistribution(cfg::get().output_dir + "barcode_distribution");

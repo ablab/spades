@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <modules/pipeline/graph_pack.hpp>
+#include <common/pipeline/graph_pack.hpp>
 #include <projects/tslr_resolver/tslr_visualizer.hpp>
 #include "environment.hpp"
 #include "pipeline/graphio.hpp"
