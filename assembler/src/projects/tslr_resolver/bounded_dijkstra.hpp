@@ -49,9 +49,15 @@ namespace omnigraph {
         const distance_t length_bound_;
         const double barcode_threshold_;
         Bmapper mapper_;
-        EdgeId decisive_edge_;
+        EdgeId decisive_edge_;;
         const ScaffoldingUniqueEdgeStorage& unique_storage_;
         vector <EdgeId>& candidates_;
+    private:
+        bool CheckNumberOfBarcodes(size_t first_barcodes, size_t second_barcodes, double threshold) const {
+            return (first_barcodes > threshold * (double)second_barcodes and
+                    second_barcodes > threshold * (double)first_barcodes);
+        }
+
     public:
         BarcodePutChecker(const Graph& g, 
             const distance_t& length_bound, 
@@ -67,14 +73,24 @@ namespace omnigraph {
                                                              decisive_edge_(decisive_edge),
                                                              unique_storage_(unique_storage),
                                                              candidates_(candidates) { }
+        //This method performs simple checks on edges to compose candidate set for further filtering
         bool Check(VertexId, EdgeId edge, distance_t) const {
             DEBUG("Checking edge " << edge.int_id());
             DEBUG("Length " << g_.length(edge)) 
-            DEBUG("Decisive_edge " << decisive_edge_.int_id())
+            DEBUG("Decisive edge " << decisive_edge_.int_id())
             DEBUG("Intersection " << mapper_->GetIntersectionSize(decisive_edge_, edge))
-            DEBUG("Barcodes " << mapper_->GetSizeHeads(edge))
-            DEBUG("Normalized intersection " << mapper_->GetIntersectionSizeNormalizedByFirst(decisive_edge_, edge))
-            DEBUG("Is unique " << unique_storage_.IsUnique(edge))
+            DEBUG("Normalized intersection (first) "
+                          << mapper_->GetIntersectionSizeNormalizedByFirst(decisive_edge_, edge))
+            DEBUG("Normalized intersection (second) "
+                          << mapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge_, edge))
+
+            size_t decisive_barcodes = mapper_ -> GetSizeTails(decisive_edge_);
+            size_t current_barcodes = mapper_ -> GetSizeHeads(edge);
+
+            DEBUG("Barcodes " << current_barcodes);
+            DEBUG("Decisive edge barcodes " << decisive_barcodes);
+            DEBUG("Is unique " << unique_storage_.IsUnique(edge));
+
             if (g_.length(edge) < length_bound_) {
                 DEBUG("Short edge, passed" << endl)  //todo use short edges to reduce number of candidates
                 return true;
@@ -84,6 +100,12 @@ namespace omnigraph {
                 return true;
             }
             else {
+                //Barcode number should be similar on nearby genome fragments.
+                if (!CheckNumberOfBarcodes(decisive_barcodes, current_barcodes,
+                                           cfg::get().ts_res.barcode_number_threshold)) {
+                        DEBUG("Barcode numbers significantly differ, don't put to candidates list");
+                        return false;
+                }
                 candidates_.push_back(edge);
                 DEBUG("Long unique nearby edge, put to candidates list and stop" << endl)
                 return false;

@@ -184,7 +184,7 @@ namespace tslr_resolver {
         }
 
         void FillMap (const Index& index, const KmerSubs& kmer_mapper) {
-            //fixme this is so very wrong
+            //fixme need nice pipeline
             std::string tslr_dataset = cfg::get().ts_res.tslr_barcode_dataset;
 
             auto lib_vec = GetLibrary(tslr_dataset);

@@ -467,6 +467,7 @@ void load(debruijn_config::tslr_resolver& ts_res,
     load(ts_res.distance_bound, pt, "distance_bound");
     load(ts_res.diff_threshold, pt, "diff_threshold");
     load(ts_res.abs_threshold, pt, "abs_threshold");
+    load(ts_res.barcode_number_threshold, pt, "barcode_number_threshold");
     load(ts_res.topsort_bound, pt, "topsort_bound");
     load(ts_res.debug_construction, pt, "debug_construction");
     load(ts_res.join_paths, pt, "join_paths");

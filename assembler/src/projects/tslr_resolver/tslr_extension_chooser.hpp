@@ -39,11 +39,11 @@ namespace tslr_resolver {
                     result.push_back(edges.back());
                     return result;
                 }
-                //Find last unique edge earlier in path
+                //Find last unique edge earlier in the path
                 pair<EdgeId, int> last_unique = FindLastUniqueInPath(path, unique_storage_);
                 bool long_single_edge_exists = false;
                 EdgeId decisive_edge;
-                if (last_unique.second == -1) {
+                if (last_unique.second != -1) {
                     long_single_edge_exists = true;
                     decisive_edge = last_unique.first;
                 }
@@ -80,10 +80,11 @@ namespace tslr_resolver {
                 }
 
 
-                //Check the difference between two best scores
+                //Check the difference between two best scores (currently inactive)
                 DEBUG("Several candidates found. Further filtering.");
                 auto best_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
-                                                     [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
+                                                     [this, & decisive_edge](const EdgeWithDistance& edge1,
+                                                                             const EdgeWithDistance& edge2) {
                                                          return this->bmapper_->GetIntersectionSizeNormalizedBySecond(
                                                                  decisive_edge, edge1.e_) <
                                                                  this->bmapper_->GetIntersectionSizeNormalizedBySecond(
@@ -112,7 +113,7 @@ namespace tslr_resolver {
 //                }
 
                 //Try to find topologically closest edge to resolve loops
-                //FIXME This have nothing to do with barcodes. Need to be moved somewhere else.
+                //FIXME This have nothing to do with barcodes. Need to be moved to the general repeat resolution.
                 auto closest_edges = FindClosestEdge(best_candidates);
                 if (closest_edges.size() != 1) {
                     DEBUG("Unable to find single topologically minimal edge.");
