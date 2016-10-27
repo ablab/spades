@@ -8,10 +8,10 @@ from scripts.common import detect_reads, dump_dict
 
 #Config parameters
 IN = config["IN"]
-SPADES = config["SPADES"]
+SPADES = config.get("SPADES", config["LOCAL_DIR"])
 SPADES_REASSEMBLY = config.get("SPADES_REASSEMBLY", SPADES)
-BIN = config["BIN"]
-SCRIPTS = config["SCRIPTS"]
+BIN = config.get("BIN", os.path.join(SPADES, "build/release/bin"))
+SCRIPTS = config.get("SCRIPTS", os.path.join(SPADES, "src/projects/mts/scripts"))
 SOFT = config["SOFT"]
 K = int(config.get("K", 55))
 SMALL_K = int(config.get("SMALL_K", 21))

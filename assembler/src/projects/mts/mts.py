@@ -5,6 +5,7 @@ import argparse
 import subprocess
 import sys
 import os
+import os.path
 
 parser = argparse.ArgumentParser(description="MTS - Metagenomic Time Series")
 
@@ -15,7 +16,9 @@ parser.add_argument("--reuse-assemblies", action="store_true", help="Use existin
 
 args = parser.parse_args()
 
-base_params = ["snakemake", "--directory", args.dir, "--cores", str(args.threads)]
+LOCAL_DIR = os.path.realpath(os.path.join(os.getcwd(), "../../../"))
+
+base_params = ["snakemake", "--directory", args.dir, "--cores", str(args.threads), "--config", "LOCAL_DIR" + "=" + LOCAL_DIR]
 
 def call_snake(extra_params=[]):
     subprocess.check_call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)
