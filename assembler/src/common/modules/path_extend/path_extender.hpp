@@ -91,9 +91,9 @@ public:
             double in_cov = gp_.flanking_cov.GetOutCov(e_in); //g_.coverage(e_in);
             double out_cov = gp_.flanking_cov.GetInCov(e_out); //g_.coverage(e_out);
             double cov = (in_cov + out_cov) / 2.0;
-            double time1 = math::round(gp_.flanking_cov.GetInCov(e1) / cov);//math::round(gp_.g.coverage(e1) / cov);
-            double time2 = math::round(gp_.flanking_cov.GetInCov(e2) / cov);////math::round(gp_.g.coverage(e2) / cov);
-            size_t time = (size_t) std::max(0.0, std::min(time1 - 1.0, time2));
+            double time1 = math::round(gp_.g.coverage(e1) / cov);
+            double time2 = math::round(gp_.g.coverage(e2) / cov);
+            size_t time = (size_t) std::max(1.0, std::min(time1 - 1.0, time2));
             for (size_t i = 0; i < time; ++i) {
                 MakeCycleStep(path, edges.first);
             }
@@ -145,7 +145,8 @@ public:
     LoopResolver(const Graph& g, const WeightCounter& wc)
             : ShortLoopResolver(g),
               wc_(wc) { }
-
+    //This code works only if loop wasn't fairly resolved
+    //
     void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) const {
         UndoCycles(path, edges.first);
         BidirectionalPath experiment(path);
@@ -169,7 +170,8 @@ public:
         for (size_t i = 0; i < maxIter; ++i) {
             MakeCycleStep(path, edges.first);
         }
-        path.PushBack(edges.second);
+        int gap = maxIter == 0 ? 0 : g_.k() + 100;
+        path.PushBack(edges.second, gap);
     }
 
     void ResolveShortLoop(BidirectionalPath& path) const override {

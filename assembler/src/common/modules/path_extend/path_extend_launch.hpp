@@ -675,7 +675,7 @@ inline shared_ptr<SimpleExtender> MakeCoordCoverageExtender(const config::datase
                                                                           params.pset.coordinated_coverage.min_path_len);
     shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, paired_lib, false);
     auto chooser = make_shared<JointExtensionChooser>(gp.g, make_shared<TrivialExtensionChooserWithPI>(gp.g, counter, 1.5), coord_chooser);
-    return make_shared<SimpleExtender>(gp, cov_map, chooser, -1ul, params.pset.loop_removal.mp_max_loops, true, false);
+    return make_shared<SimpleExtender>(gp, cov_map, chooser, -1ul, params.pset.loop_removal.mp_max_loops, false, false);
 }
 
 inline shared_ptr<SimpleExtender> MakeCoordCoverageExtenderOld(const config::dataset& dataset_info,
@@ -697,7 +697,7 @@ inline shared_ptr<SimpleExtender> MakeCoordCoverageExtenderOld(const config::dat
     return make_shared<SimpleExtender>(gp, cov_map, chooser,
                                        -1ul /* insert size */,
                                        params.pset.loop_removal.mp_max_loops,
-                                       true, /* investigate short loops */
+                                       false, /* investigate short loops */
                                        false /*use short loop coverage resolver*/);
 }
 
@@ -992,15 +992,16 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
 
         result.insert(result.end(), pes.begin(), pes.end());
         result.insert(result.end(), pes2015.begin(), pes2015.end());
-        result.insert(result.end(), pe_loops.begin(), pe_loops.end());
         result.insert(result.end(), pe_scafs.begin(), pe_scafs.end());
         result.insert(result.end(), mps.begin(), mps.end());
         pes.clear();
-        pe_loops.clear();
         pe_scafs.clear();
         pes2015.clear();
         mps.clear();
     }
+
+    result.insert(result.end(), pe_loops.begin(), pe_loops.end());
+    pe_loops.clear();
 
     INFO("Using " << pe_libs << " paired-end " << LibStr(pe_libs));
     INFO("Using " << scf_pe_libs << " paired-end scaffolding " << LibStr(scf_pe_libs));
