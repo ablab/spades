@@ -123,7 +123,6 @@ class GraphSimplifier {
 
         RunAlgos(algos);
 
-        //FIXME why called directly?
         if (info_container_.mode() == config::pipeline_type::rna){
             RemoveHiddenLoopEC(g_, gp_.flanking_cov, info_container_.detected_coverage_bound(), simplif_cfg_.her, removal_handler_);
             cnt_callback_.Report();
@@ -275,17 +274,6 @@ class GraphSimplifier {
                       removal_handler_),
                       "Thorn remover (meta)",
                       algos);
-
-
-            if (simplif_cfg_.her.enabled) {
-                VERIFY(math::ls(simplif_cfg_.her.unreliability_threshold, 0.));
-                PushValid(std::make_shared<MetaHiddenECRemover<Graph>>(g_, info_container_.chunk_cnt(), gp_.flanking_cov,
-                                                          simplif_cfg_.her.uniqueness_length,
-                                                          simplif_cfg_.her.relative_threshold,
-                                                          removal_handler_),
-                          "Hidden EC remover (meta)",
-                          algos);
-            }
         }
 
         if (info_container_.mode() == config::pipeline_type::rna) {
@@ -311,10 +299,20 @@ class GraphSimplifier {
             //        printer(ipp_final_bulge_removal, str(format("_%d") % iteration));
         }
 
-        //fixme move to AllTopology?
         if (simplif_cfg_.topology_simplif_enabled) {
             RemoveHiddenEC(gp_.g, gp_.flanking_cov, simplif_cfg_.her, info_container_, removal_handler_);
 
+            cnt_callback_.Report();
+        }
+
+        if (info_container_.mode() == config::pipeline_type::meta && simplif_cfg_.her.enabled) {
+            VERIFY(math::ls(simplif_cfg_.her.unreliability_threshold, 0.));
+            auto algo = std::make_shared<MetaHiddenECRemover<Graph>>(g_, info_container_.chunk_cnt(), gp_.flanking_cov,
+                                                      simplif_cfg_.her.uniqueness_length,
+                                                      simplif_cfg_.her.relative_threshold,
+                                                      removal_handler_);
+            INFO("Running Hidden EC remover (meta)");
+            algo->Run();
             cnt_callback_.Report();
         }
 
