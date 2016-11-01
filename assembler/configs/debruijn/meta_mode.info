@@ -106,7 +106,7 @@ simp
         enabled                     true
         uniqueness_length           1500
         unreliability_threshold     -1.
-        relative_threshold          5     
+        relative_threshold          3.     
     }
 
     init_clean
