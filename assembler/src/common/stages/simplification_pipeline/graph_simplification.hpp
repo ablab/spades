@@ -725,9 +725,7 @@ public:
     }
 
     bool Check(EdgeId e) const override {
-        //FIXME do we need length check here?
-        return this->g().length(e) > 1
-               && this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) > 1
+        return this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) > 1
                && math::le(flanking_cov_.CoverageOfStart(e), max_coverage_);
     }
 
