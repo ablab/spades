@@ -141,6 +141,23 @@ class LoopResolver : public ShortLoopResolver {
     static const size_t ITER_COUNT = 10;
     const WeightCounter& wc_;
 
+private:
+    bool CheckLoopPlausible(const BidirectionalPath& path, size_t pre_cycle_path_size, EdgeId loop_exit) const {
+        DEBUG("Checking loop solution, initial size " << pre_cycle_path_size << ", loop exit " << g_.int_id(loop_exit));
+        path.Print();
+
+        if (pre_cycle_path_size < 2)
+            return false;
+
+        EdgeId pre_cycle_edge = path[pre_cycle_path_size - 2];
+        size_t distance_to_exit = path.LengthAt(pre_cycle_path_size - 2);
+        DEBUG("Distance from pre-cycle edge " << g_.int_id(pre_cycle_edge) << " to loop exit = " << distance_to_exit);
+
+        double weight = wc_.get_libptr()->CountPairedInfo(pre_cycle_edge, loop_exit, (int) distance_to_exit, true);
+        DEBUG("PI weight " << weight);
+        return math::gr(weight, 0.0);
+    }
+
 public:
     LoopResolver(const Graph& g, const WeightCounter& wc)
             : ShortLoopResolver(g),
@@ -167,10 +184,13 @@ public:
                 }
             }
         }
+
+        size_t pre_cycle_path_size = path.Size();
         for (size_t i = 0; i < maxIter; ++i) {
             MakeCycleStep(path, edges.first);
         }
-        int gap = maxIter == 0 ? 0 : g_.k() + 100;
+
+        int gap = CheckLoopPlausible(path, pre_cycle_path_size, edges.second) ? 0 : int(g_.k() + 100);
         path.PushBack(edges.second, gap);
     }
 
@@ -182,6 +202,7 @@ public:
             DEBUG("Resolving short loop done");
         }
     }
+
 };
 
 class GapJoiner {
