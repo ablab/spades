@@ -1003,6 +1003,7 @@ protected:
     bool use_short_loop_cov_resolver_;
     CovShortLoopResolver cov_loop_resolver_;
 
+    vector<shared_ptr<BidirectionalPath> > visited_cycles_;
     InsertSizeLoopDetector is_detector_;
     const GraphCoverageMap& cov_map_;
 
@@ -1020,6 +1021,79 @@ public:
 
     }
 
+    size_t getMaxLoops() const {
+        return maxLoops_;
+    }
+
+    bool isInvestigateShortLoops() const {
+        return investigate_short_loops_;
+    }
+
+    void setInvestigateShortLoops(bool investigateShortLoops) {
+        this->investigate_short_loops_ = investigateShortLoops;
+    }
+
+    void setMaxLoops(size_t maxLoops) {
+        if (maxLoops != 0) {
+            this->maxLoops_ = maxLoops;
+        }
+    }
+//seems that it is outofdate
+    bool InExistingLoop(const BidirectionalPath& path) {
+        TRACE("Checking existing loops");
+        int j = 0;
+        for (auto cycle : visited_cycles_) {
+            VERBOSE_POWER2(j++, "checking ");
+            int pos = path.FindLast(*cycle);
+            if (pos == -1)
+                continue;
+
+            int start_cycle_pos = pos + (int) cycle->Size();
+            bool only_cycles_in_tail = true;
+            int last_cycle_pos = start_cycle_pos;
+            DEBUG("start_cycle pos "<< last_cycle_pos);
+            for (int i = start_cycle_pos; i < (int) path.Size() - (int) cycle->Size(); i += (int) cycle->Size()) {
+                if (!path.CompareFrom(i, *cycle)) {
+                    only_cycles_in_tail = false;
+                    break;
+                } else {
+                    last_cycle_pos = i + (int) cycle->Size();
+                    DEBUG("last cycle pos changed " << last_cycle_pos);
+                }
+            }
+            DEBUG("last_cycle_pos " << last_cycle_pos);
+            only_cycles_in_tail = only_cycles_in_tail && cycle->CompareFrom(0, path.SubPath(last_cycle_pos));
+            if (only_cycles_in_tail) {
+// seems that most of this is useless, checking
+                VERIFY (last_cycle_pos == start_cycle_pos);
+                DEBUG("find cycle " << last_cycle_pos);
+                DEBUG("path");
+                path.Print();
+                DEBUG("last subpath");
+                path.SubPath(last_cycle_pos).Print();
+                DEBUG("cycle");
+                cycle->Print();
+                DEBUG("last_cycle_pos " << last_cycle_pos << " path size " << path.Size());
+                VERIFY(last_cycle_pos <= (int)path.Size());
+                DEBUG("last cycle pos + cycle " << last_cycle_pos + (int)cycle->Size());
+                VERIFY(last_cycle_pos + (int)cycle->Size() >= (int)path.Size());
+
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void AddCycledEdges(const BidirectionalPath& path, size_t pos) {
+        if (pos >= path.Size()) {
+            DEBUG("Wrong position in IS cycle");
+            return;
+        }
+        visited_cycles_.push_back(std::make_shared<BidirectionalPath>(path.SubPath(pos)));
+        DEBUG("add cycle");
+        path.SubPath(pos).Print();
+    }
+
     bool DetectCycle(BidirectionalPath& path) {
         DEBUG("detect cycle");
         if (is_detector_.CheckCycled(path)) {
@@ -1027,6 +1101,7 @@ public:
             int loop_pos = is_detector_.RemoveCycle(path);
             DEBUG("Removed IS cycle");
             if (loop_pos != -1) {
+                AddCycledEdges(path, loop_pos);
                 return true;
             }
         }
@@ -1048,7 +1123,10 @@ public:
     }
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override {
-
+        if (InExistingLoop(path)) {
+            DEBUG("in existing loop");
+            return false;
+        }
         bool result = false;
         LoopDetector loop_detector(&path, cov_map_);
         if (DetectCycle(path)) {
