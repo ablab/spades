@@ -6,6 +6,7 @@
 namespace debruijn_graph {
 
 typedef uint16_t Mpl;
+typedef std::size_t Offset;
 static const Mpl INVALID_MPL = Mpl(-1);
 
 typedef typename std::vector<Mpl> MplVector;
@@ -19,11 +20,11 @@ class KmerProfile {
 public:
     typedef Mpl value_type;
 
-    KmerProfile(Mpl* ptr = nullptr):
+    KmerProfile(const value_type* ptr = nullptr):
         ptr_(ptr) {
     }
 
-    KmerProfile(MplVector& vec):
+    KmerProfile(const MplVector& vec):
         ptr_(&vec.front()) {
     }
 
@@ -36,24 +37,16 @@ public:
         return ptr_[i];
     }
 
-    Mpl* begin() {
+    const value_type* begin() const {
         return ptr_;
     }
 
-    const Mpl* begin() const {
-        return ptr_;
-    }
-
-    Mpl* end() {
-        return ptr_ + size();
-    }
-
-    const Mpl* end() const {
+    const value_type* end() const {
         return ptr_ + size();
     }
 
 private:
-    Mpl* ptr_;
+    const value_type* ptr_;
 };
 
 typedef std::vector<KmerProfile> KmerProfiles;
@@ -110,10 +103,10 @@ private:
 };
 
 class ContigAbundanceCounter {
-    typedef typename InvertableStoring::trivial_inverter<KmerProfile> InverterT;
+    typedef typename InvertableStoring::trivial_inverter<Offset> InverterT;
 
     typedef KeyStoringMap<conj_graph_pack::seq_t,
-                          KmerProfile,
+                          Offset,
                           kmer_index_traits<conj_graph_pack::seq_t>,
                           InvertableStoring> IndexT;
 
@@ -139,8 +132,7 @@ public:
         kmer_mpl_(k_, work_dir) {
     }
 
-    void Init(const std::string& kmer_mpl_file,
-              size_t /*fixme some buffer size*/read_buffer_size = 0);
+    void Init(const std::string& kmer_mpl_file);
 
     boost::optional<AbundanceVector> operator()(const std::string& s, const std::string& /*name*/ = "") const;
 

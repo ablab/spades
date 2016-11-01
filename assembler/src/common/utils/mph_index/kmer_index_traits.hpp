@@ -72,6 +72,11 @@ struct kmer_index_traits {
     writer.write((char*)data->data(), data->data_size());
   }
 
+  template<class Writer>
+  static void raw_serialize(Writer &writer, const std::unique_ptr<RawKMerStorage> &data) {
+    raw_serialize(writer, data.get());
+  }
+
   template<class Reader>
   static std::unique_ptr<RawKMerStorage> raw_deserialize(Reader &reader, const std::string &FileName) {
     size_t sz, off, elcnt;

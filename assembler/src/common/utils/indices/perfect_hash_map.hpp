@@ -149,8 +149,8 @@ public:
 
     template<class Writer>
     void BinWrite(Writer &writer) const {
-        ValueBase::BinWrite(writer);
         KeyBase::BinWrite(writer);
+        ValueBase::BinWrite(writer);
     }
 
     template<class Reader>
@@ -208,6 +208,7 @@ protected:
         this->kmers_ = traits_t::raw_deserialize(reader, FileName);
     }
 
+public:
     template<class Writer>
     void BinWrite(Writer &writer) const {
         base::BinWrite(writer);
@@ -219,8 +220,6 @@ protected:
         base::BinRead(reader, FileName);
         BinReadKmers(reader, FileName);
     }
-
-public:
 
     KeyStoringMap(size_t k, const std::string &workdir)
             : base(k, workdir), kmers_(nullptr) {}

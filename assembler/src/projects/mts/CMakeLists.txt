@@ -20,7 +20,7 @@ add_executable(kmer_multiplicity_counter
         kmc_api/mmer.cpp
         kmer_multiplicity_counter.cpp)
 
-target_link_libraries(kmer_multiplicity_counter utils input getopt_pp ${COMMON_LIBRARIES})
+target_link_libraries(kmer_multiplicity_counter common_modules utils input getopt_pp ${COMMON_LIBRARIES})
 
 add_executable(prop_binning
                propagate.cpp

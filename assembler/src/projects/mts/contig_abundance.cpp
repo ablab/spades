@@ -6,12 +6,10 @@ namespace debruijn_graph {
 size_t sample_cnt_ = 0;
 
 void SetSampleCount(size_t sample_cnt) {
-    //Settings::instance().sample_cnt = sample_cnt;
     sample_cnt_ = sample_cnt;
 }
 
 size_t SampleCount() {
-    //return Settings::instance().sample_cnt;
     return sample_cnt_;
 }
 
@@ -106,43 +104,6 @@ boost::optional<AbundanceVector> SingleClusterAnalyzer::operator()(const KmerPro
     //return boost::optional<AbundanceVector>(MeanVector(locality, sample_cnt_));
 }
 
-void ContigAbundanceCounter::FillMplMap(const std::string& kmers_mpl_file) {
-    INFO("Kmer profile fill start");
-    //We must allocate the whole buffer for all profiles at once
-    //to avoid pointer invalidation after possible vector resize
-    const size_t data_size = SampleCount() * kmer_mpl_.size();
-    mpl_data_.reserve(data_size);
-    INFO("Allocated buffer of " << data_size << " elements");
-    std::ifstream kmers_in(kmers_mpl_file + ".kmer", std::ios::binary);
-    std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl");
-    while (true) {
-        runtime_k::RtSeq kmer(k_);
-        kmer.BinRead(kmers_in);
-        if (kmers_in.fail()) {
-            break;
-        }
-
-//            VERIFY(kmer_str.length() == k_);
-//            conj_graph_pack::seq_t kmer(k_, kmer_str.c_str());
-//            kmer = gp_.kmer_mapper.Substitute(kmer);
-
-        KmerProfile mpls(&*mpl_data_.end());
-        for (size_t i = 0; i < SampleCount(); ++i) {
-            Mpl mpl;
-            kmers_mpl_in >> mpl;
-            VERIFY(!kmers_mpl_in.fail());
-            mpl_data_.push_back(mpl);
-        }
-        //Double-check we haven't invalidated vector views
-        VERIFY(mpl_data_.size() <= data_size);
-
-        auto kwh = kmer_mpl_.ConstructKWH(kmer);
-        VERIFY(kmer_mpl_.valid(kwh));
-        kmer_mpl_.put_value(kwh, mpls, inverter_);
-    }
-    INFO("Kmer profile fill finish");
-}
-
 vector<std::string> ContigAbundanceCounter::SplitOnNs(const std::string& seq) const {
     vector<std::string> answer;
     for (size_t i = 0; i < seq.size(); i++) {
@@ -158,20 +119,17 @@ vector<std::string> ContigAbundanceCounter::SplitOnNs(const std::string& seq) co
     return answer;
 }
 
-void ContigAbundanceCounter::Init(const std::string& kmer_mpl_file,
-        size_t /*fixme some buffer size*/read_buffer_size) {
+void ContigAbundanceCounter::Init(const std::string& file_prefix) {
     VERIFY(SampleCount() != 0);
-    INFO("Initializing kmer profile index");
-    DeBruijnKMerKMerSplitter<StoringTypeFilter<InvertableStoring>>
-        splitter(kmer_mpl_.workdir(), k_, k_, true, read_buffer_size);
+    INFO("Loading kmer index");
+    std::ifstream kmers_in(file_prefix + ".kmm", std::ios::binary);
+    kmer_mpl_.BinRead(kmers_in, file_prefix + ".kmm");
 
-    splitter.AddKMers(kmer_mpl_file + ".kmer");
-
-    KMerDiskCounter<runtime_k::RtSeq> counter(kmer_mpl_.workdir(), splitter);
-
-    BuildIndex(kmer_mpl_, counter, 16, /*nthreads*/ 1);
-
-    FillMplMap(kmer_mpl_file);
+    INFO("Loading kmer profiles data");
+    const size_t data_size = SampleCount() * kmer_mpl_.size();
+    mpl_data_.resize(data_size);
+    std::ifstream mpls_in(file_prefix + ".bpr", std::ios::binary);
+    mpls_in.read((char *)&mpl_data_[0], data_size * sizeof(Mpl));
 }
 
 boost::optional<AbundanceVector> ContigAbundanceCounter::operator()(
@@ -191,11 +149,12 @@ boost::optional<AbundanceVector> ContigAbundanceCounter::operator()(
             TRACE("Processing kmer " << kwh.key().str());
             if (kmer_mpl_.valid(kwh)) {
                 TRACE("Valid");
-                kmer_mpls.push_back(kmer_mpl_.get_value(kwh, inverter_));
+                KmerProfile prof(&mpl_data_[kmer_mpl_.get_value(kwh, inverter_)]);
+                kmer_mpls.push_back(prof);
                 //if (!name.empty()) {
                 //    os << PrintVector(kmer_mpl_.get_value(kwh, inverter_), sample_cnt_) << std::endl;
                 //}
-                TRACE(PrintVector(kmer_mpl_.get_value(kwh, inverter_)));
+                TRACE(PrintVector(prof));
             } else {
                 TRACE("Invalid");
             }
