@@ -37,6 +37,7 @@ namespace spades {
                    .add(new debruijn_graph::SimplificationCleanup());
         }
 
+
         barcode_resolver_pipeline.add(new debruijn_graph::HybridLibrariesAligning());
 
         barcode_resolver_pipeline.add(new BarcodeMapConstructionStage(cfg::get().K))

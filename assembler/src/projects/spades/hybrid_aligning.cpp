@@ -5,6 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include <common/assembly_graph/graph_support/contig_output.hpp>
 #include "modules/alignment/pacbio/pac_index.hpp"
 #include "hybrid_gap_closer.hpp"
 #include "modules/alignment/long_read_mapper.hpp"
@@ -320,6 +321,8 @@ bool ShouldAlignWithPacbioAligner(io::LibraryType lib_type) {
 void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
     using namespace omnigraph;
 
+    OutputContigs(gp.g, cfg::get().output_dir + "before_gap_closure", false);
+    bool launch_flag = false;
     bool make_additional_saves = parent_->saves_policy().make_saves_;
     for (size_t lib_id = 0; lib_id < cfg::get().ds.reads.lib_count(); ++lib_id) {
         if (cfg::get().ds.reads[lib_id].is_hybrid_lib()) {

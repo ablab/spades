@@ -12,20 +12,26 @@
 using namespace path_extend;
 
 namespace tslr_resolver {
+
         class TrivialTSLRExtensionChooser : public ExtensionChooser {
 
             shared_ptr<BarcodeMapper> bmapper_;
             size_t len_threshold_;
             double absolute_barcode_threshold_;
+            size_t fragment_len_;
             ScaffoldingUniqueEdgeStorage unique_storage_;
 
         public:
-            TrivialTSLRExtensionChooser(const conj_graph_pack& gp, size_t len_threshold,
-                double absolute_barcode_threshold, const ScaffoldingUniqueEdgeStorage& unique_storage) :
+            TrivialTSLRExtensionChooser(const conj_graph_pack& gp,
+                                        size_t len_threshold,
+                                        double absolute_barcode_threshold,
+                                        size_t fragment_len,
+                                        const ScaffoldingUniqueEdgeStorage& unique_storage) :
                     ExtensionChooser(gp.g),
                     bmapper_(gp.barcode_mapper),
                     len_threshold_(len_threshold),
                     absolute_barcode_threshold_(absolute_barcode_threshold),
+                    fragment_len_(fragment_len),
                     unique_storage_(unique_storage) {
             }
 
@@ -34,7 +40,7 @@ namespace tslr_resolver {
                 if (edges.size() == 0) {
                     return result;
                 }
-                //We might get single short edge as an input
+                //We might get a single short edge as an input
                 if (edges.size() == 1 && g_.length(edges.back().e_) < len_threshold_) {
                     result.push_back(edges.back());
                     return result;
@@ -64,7 +70,7 @@ namespace tslr_resolver {
                 std::copy_if(edges_copy.begin(), edges_copy.end(), std::back_inserter(best_candidates),
                              [this, &decisive_edge](const EdgeWithDistance& edge) {
                                  return this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
-                                        absolute_barcode_threshold_ && g_.length(edge.e_) > len_threshold_;
+                                        absolute_barcode_threshold_ * GetGapCoefficient(edge.d_);
                              });
                 if (best_candidates.size() == 1) {
                     result.push_back(best_candidates[0]);
@@ -113,7 +119,7 @@ namespace tslr_resolver {
 //                }
 
                 //Try to find topologically closest edge to resolve loops
-                //FIXME This have nothing to do with barcodes. Need to be moved to the general repeat resolution.
+                //fixme This have nothing to do with barcodes. Need to be moved elsewhere.
                 auto closest_edges = FindClosestEdge(best_candidates);
                 if (closest_edges.size() != 1) {
                     DEBUG("Unable to find single topologically minimal edge.");
@@ -128,6 +134,14 @@ namespace tslr_resolver {
                 return result;
             }
 
+            //barcode threshold depends on gap between edges
+            //Public version of this method
+            static double GetGapCoefficient(int gap, size_t fragment_len) {
+                return static_cast<double>(fragment_len - gap) /
+                       static_cast<double>(fragment_len);
+            }
+
+            //todo Does it really belong here?
             static std::pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path,
                                                                const ScaffoldingUniqueEdgeStorage& storage) {
                 for (int i =  (int)path.Size() - 1; i >= 0; --i) {
@@ -138,7 +152,23 @@ namespace tslr_resolver {
                 return std::make_pair(EdgeId(0), -1);
             }
 
+            static std::pair<EdgeId, int> FindFirstUniqueInPath(const BidirectionalPath& path,
+                                                               const ScaffoldingUniqueEdgeStorage& storage) {
+                for (int i = 0; i < (int)path.Size(); ++i) {
+                    if (storage.IsUnique(path.At(i))) {
+                        return std::make_pair(path.At(i), i);
+                    }
+                }
+                return std::make_pair(EdgeId(0), -1);
+            }
+
         private:
+
+            //barcode threshold depends on gap between edges
+            double GetGapCoefficient(int gap) const {
+                return static_cast<double>(fragment_len_ - gap) /
+                        static_cast<double>(fragment_len_);
+            }
 
             void EraseEdge (EdgeContainer& edges, const EdgeId& edge_to_be_erased) const {
                 size_t ind = edges.size() + 1;

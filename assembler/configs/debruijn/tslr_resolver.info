@@ -5,12 +5,15 @@ ts_res
 	;length threshold for reliable edges
 	len_threshold  500
 
+	;Average length of TSLR fragment
+	fragment_len 10000
+
 	;edges with less than trimming threshold barcodes will be deleted
 	trimming_threshold 3
 
 	;threshold on (intersection) / (number of barcodes on second edge)
 	;edge should pass this threshold to become candidate
-	diff_threshold 0.5
+	diff_threshold 0.75
 
 	;threshold on barcode coverage difference
 	;first_barcodes / second_barcodes > barcode_number_threshold and
@@ -19,7 +22,7 @@ ts_res
 
 	;Any candidate edge should be no further in graph. 
 	;In other words, that is the maximum size of resolvable repeat.
-	distance_bound 8000
+	distance_bound 7000
 
 	;Barcodes are counted on the last edge_tail_len nucleotides of the edge
 	edge_tail_len 500
