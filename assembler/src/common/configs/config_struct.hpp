@@ -461,6 +461,7 @@ struct debruijn_config {
         size_t len_threshold;
         size_t trimming_threshold;
         size_t distance_bound;
+        size_t fragment_len;
         double diff_threshold;
         double abs_threshold;
         double barcode_number_threshold;

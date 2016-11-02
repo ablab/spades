@@ -29,13 +29,13 @@ namespace spades {
         barcode_resolver_pipeline.add(new debruijn_graph::Construction())
                 .add(new debruijn_graph::GenomicInfoFiller());
 
-        //todo remove this, ideal read tests are over
         if (!cfg::get().ts_res.ideal_reads) {
             barcode_resolver_pipeline.add(new debruijn_graph::GapClosing("early_gapcloser"))
                    .add(new debruijn_graph::Simplification)
                    .add(new debruijn_graph::GapClosing("late_gapcloser"))
                    .add(new debruijn_graph::SimplificationCleanup());
         }
+
 
         barcode_resolver_pipeline.add(new debruijn_graph::HybridLibrariesAligning());
 
