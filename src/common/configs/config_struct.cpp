@@ -473,6 +473,7 @@ void load(debruijn_config::tslr_resolver& ts_res,
     load(ts_res.join_paths, pt, "join_paths");
     load(ts_res.ideal_reads, pt, "ideal_reads");
     load(ts_res.edge_tail_len, pt, "edge_tail_len");
+    load(ts_res.fragment_len, pt, "fragment_len");
 }
 
 void load(bwa_aligner& bwa,

@@ -21,6 +21,7 @@ namespace spades {
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
             INFO("Barcode map construction started...");
+            OutputContigs(graph_pack.g, cfg::get().output_dir + "after_gap_closure", false);
             graph_pack.barcode_mapper = std::make_shared<HeadTailBarcodeMapper<SimpleBarcodeEntry>>
                     (graph_pack.g, cfg::get().ts_res.edge_tail_len);
             graph_pack.EnsureIndex();

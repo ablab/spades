@@ -53,7 +53,7 @@ namespace tslr_resolver {
                                                     pset.scaffolding2015.autodetect);
 
         //mp extender
-        INFO("SUBSTAGE = paired-end libraries");
+        INFO("SUBSTAGE: paired-end libraries");
         PathExtendStage exspander_stage = PathExtendStage::PEStage;
         vector<shared_ptr<PathExtender> > all_libs =
             MakeAllExtenders(exspander_stage, dataset_info, params, gp, cover_map, pe_unique_storage);
@@ -76,23 +76,27 @@ namespace tslr_resolver {
         seeds.DeleteAllPaths();
         all_libs.clear();
 
-        //tslr extender
-        INFO("SUBSTAGE = TSLR Resolver");
+        //read cloud extender
+        INFO("SUBSTAGE: read cloud resolver");
         auto tslr_resolver_params = cfg::get().ts_res;
         size_t len_threshold = tslr_resolver_params.len_threshold;
         double absolute_barcode_threshold = tslr_resolver_params.diff_threshold;
         size_t distance_bound = tslr_resolver_params.distance_bound;
         double abs_threshold = tslr_resolver_params.abs_threshold;
-        //fixme duplication: unique storage can't be cleared
-        ScaffoldingUniqueEdgeStorage tslr_unique_storage = FillUniqueEdgeStorage(gp, dataset_info,
-                                                                                 min_unique_length,
-                                                                                 unique_variaton,
-                                                                                 pset.scaffolding2015.autodetect);
+        const size_t fragment_length = tslr_resolver_params.fragment_len;
+        VERIFY(fragment_length > distance_bound);
+        //fixme unhardcode
+        ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, 500, 0.5);
+        ScaffoldingUniqueEdgeStorage tslr_unique_storage;
+        unique_edge_analyzer.FillUniqueEdgesWithTopology(tslr_unique_storage);
+
         std::unordered_map <size_t, size_t> id_to_index;
-        max_is_right_quantile = gp.g.k() + 10000;
+        max_is_right_quantile = gp.g.k() + 10000;                   //huh?
+
         auto extension = make_shared<TrivialTSLRExtensionChooser>(gp,
                                                                   len_threshold,
                                                                   absolute_barcode_threshold,
+                                                                  fragment_length,
                                                                   tslr_unique_storage);
         size_t max_barcodes_on_edge = GetMaximalBarcodeNumber(cfg::get().ts_res.tslr_barcode_dataset);
         auto tslr_extender = make_shared<InconsistentTSLRExtender>(gp, cover_map,
@@ -128,6 +132,7 @@ namespace tslr_resolver {
 
         writer.OutputPaths(final_paths, params.output_dir + params.contigs_name);
         writer.WritePathsWithPrefixes(final_paths, params.output_dir + "barcode_res_paths");
+        writer.WriteLongEdgesList(final_paths, tslr_unique_storage, params.output_dir + "unique_edges");
         if (gp.genome.size() > 0)
             CountMisassembliesWithReference(genome_checker, final_paths);
     };
