@@ -178,6 +178,27 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e,
 }
 
 
+
+//Primitive topology check. Consider the edge non-unique if
+//there are multiple incoming and outgoing edges
+bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByTopology(EdgeId e) {
+    size_t incoming = gp_.g.IncomingEdgeCount(gp_.g.EdgeStart(e));
+    size_t outcoming = gp_.g.OutgoingEdgeCount(gp_.g.EdgeEnd(e));
+    return incoming < 2 and outcoming < 2;
+}
+
+
+void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithTopology(ScaffoldingUniqueEdgeStorage &storage_) {
+    for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+        EdgeId e = *iter;
+        if (ConservativeByLength(e) && ConservativeByTopology(e)) {
+            storage_.unique_edges_.insert(e);
+        }
+    }
+    CheckCorrectness(storage_);
+}
+
+
 void ScaffoldingUniqueEdgeAnalyzer::CheckCorrectness(ScaffoldingUniqueEdgeStorage& unique_storage_pb) {
     for (EdgeId e : graph_.edges()) {
         bool e_unique = unique_storage_pb.IsUnique(e);
@@ -298,4 +319,53 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(GraphCoverageMa
 }
 
 
+ bool ScaffoldingUniqueEdgeAnalyzer::CheckPrefixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const {
+     int cur_pos1 = (int) pos1;
+     int cur_pos2 = (int) pos2;
+     while (cur_pos1 >= 0 && cur_pos2 >= 0) {
+         if (gp_.g.length(path1.At(cur_pos1)) < length_cutoff_) {
+             cur_pos1--;
+             continue;
+         }
+
+         if (gp_.g.length(path2.At(cur_pos2)) < length_cutoff_) {
+             cur_pos2--;
+             continue;
+         }
+
+         if (path1.At(cur_pos1) == path2.At(cur_pos2)) {
+             cur_pos1--;
+             cur_pos2--;
+         } else {
+             return false;
+
+         }
+     }
+     return true;
+ }
+
+bool ScaffoldingUniqueEdgeAnalyzer::CheckSuffixConservative(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2) const {
+
+     size_t cur_pos1 = pos1;
+     size_t cur_pos2 = pos2;
+     while (cur_pos1 < path1.Size() && cur_pos2 < path2.Size()) {
+         if (gp_.g.length(path1.At(cur_pos1)) < length_cutoff_) {
+             cur_pos1++;
+             continue;
+         }
+
+         if (gp_.g.length(path2.At(cur_pos2)) < length_cutoff_) {
+             cur_pos2++;
+             continue;
+         }
+
+         if (path1.At(cur_pos1) == path2.At(cur_pos2)) {
+             cur_pos1++;
+             cur_pos2++;
+         } else {
+             return false;
+         }
+     }
+     return true;
+ }
 }

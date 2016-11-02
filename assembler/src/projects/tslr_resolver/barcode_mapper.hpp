@@ -211,12 +211,12 @@ namespace tslr_resolver {
                         }
                     }
                 }
-                VERBOSE_POWER_T2(i, 100,
-                                 "Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size()
-                                              << "%)");
-                if (lib_vec.size() > 10 && i % (lib_vec.size() / 10 + 1) == 0) {
-                    INFO("Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size() << "%)");
-                }
+//                VERBOSE_POWER_T2(i, 100,
+//                                 "Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size()
+//                                              << "%)");
+//                if (lib_vec.size() > 10 && i % (lib_vec.size() / 10 + 1) == 0) {
+//                    INFO("Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size() << "%)");
+//                }
             }
         }
 

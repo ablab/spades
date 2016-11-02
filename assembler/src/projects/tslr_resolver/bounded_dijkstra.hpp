@@ -73,8 +73,9 @@ namespace omnigraph {
                                                              decisive_edge_(decisive_edge),
                                                              unique_storage_(unique_storage),
                                                              candidates_(candidates) { }
-        //This method performs simple checks on edges to compose candidate set for further filtering
-        bool Check(VertexId, EdgeId edge, distance_t) const {
+
+        //This method performs simple checks on nearby edges to compose candidate set for further filtering
+        bool Check(VertexId, EdgeId edge, distance_t gap) const {
             DEBUG("Checking edge " << edge.int_id());
             DEBUG("Length " << g_.length(edge)) 
             DEBUG("Decisive edge " << decisive_edge_.int_id())
@@ -83,6 +84,9 @@ namespace omnigraph {
                           << mapper_->GetIntersectionSizeNormalizedByFirst(decisive_edge_, edge))
             DEBUG("Normalized intersection (second) "
                           << mapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge_, edge))
+            DEBUG("Gap " << gap)
+            DEBUG("Threshold: " << TrivialTSLRExtensionChooser::GetGapCoefficient(gap, 10000)
+                                   * barcode_threshold_)
 
             size_t decisive_barcodes = mapper_ -> GetSizeTails(decisive_edge_);
             size_t current_barcodes = mapper_ -> GetSizeHeads(edge);
@@ -95,7 +99,7 @@ namespace omnigraph {
                 DEBUG("Short edge, passed" << endl)  //todo use short edges to reduce number of candidates
                 return true;
             }
-            if (! unique_storage_.IsUnique(edge)) {
+            if (!unique_storage_.IsUnique(edge)) {
                 DEBUG("Long non-unique nearby edge, passed" << endl)
                 return true;
             }

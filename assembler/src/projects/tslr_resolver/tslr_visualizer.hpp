@@ -13,6 +13,19 @@ namespace tslr_resolver {
         typedef std::set <EdgeId> edge_set_t;
     private:
         const shared_ptr <b_mapper>& barcode_mapper_;
+        /* Code duplication to avoid passing unique edge storage to Labeler.
+        That might be even more horrible
+        Could have helped if conservative checks there were static. */
+
+        bool ConservativeByTopology(EdgeId e, const Graph& g ) const {
+            size_t incoming = g.IncomingEdgeCount(g.EdgeStart(e));
+            size_t outcoming = g.OutgoingEdgeCount(g.EdgeEnd(e));
+            return incoming < 2 and outcoming < 2;
+        }
+
+        bool ConservativeByLength(EdgeId e, const Graph& g, size_t threshold) const {
+            return g.length(e) > threshold;
+        }
     public:
         BarcodeDistGraphLabeler(const G &g, shared_ptr <b_mapper>& mapper) :
                 base(g), barcode_mapper_(mapper){}
@@ -45,6 +58,14 @@ namespace tslr_resolver {
             //ans += GetLabelFromVector(head_labels, "head");
             ans += "Barcodes: " + std::to_string(barcode_mapper_ -> GetSizeTails(e)) + '\n';
             //ans += GetLabelFromVector(tail_labels, "tail");
+
+            bool is_unique = ConservativeByTopology(e, this->graph()) and
+                    ConservativeByLength(e, this->graph(), 500);
+            if(is_unique) {
+                ans += "Unique\n";
+            }
+            else
+                ans += "Non-unique\n";
             return ans;
         }
 
