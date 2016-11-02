@@ -502,9 +502,9 @@ AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
     }
     size_t max_length_any_cov = std::max(info.read_length(), ier.max_length_any_cov);
 
-    INFO("Removing isolated edges");
-    INFO("All isolated edges shorter than " << max_length_any_cov << " will be removed");
-    INFO("Also isolated edges shorter than " << ier.max_length << " and coverage smaller than " << ier.max_coverage << " will be removed");
+    //INFO("Creating isolated edges remover");
+    //INFO("All isolated edges shorter than " << max_length_any_cov << " will be removed");
+    //INFO("Also isolated edges shorter than " << ier.max_length << " and coverage smaller than " << ier.max_coverage << " will be removed");
 
     auto condition = pred::And(IsolatedEdgeCondition<Graph>(g),
                               pred::Or(LengthUpperBound<Graph>(g, max_length_any_cov),
