@@ -639,8 +639,8 @@ public:
             double max_coverage = std::numeric_limits<double>::max(),
             HandlerF handler_function = nullptr, size_t vertex_count_limit = 10,
             std::string vis_dir = "")
-            : base(g, nullptr,
-            /*canonical only*/ false, CoverageComparator<Graph>(g)),
+            : base(g, nullptr, /*canonical only*/ false, 
+                    CoverageComparator<Graph>(g), /*track changes*/ false),
               finder_(g, flanking_cov,
                       min_coverage_gap, length_bound,
                       tip_allowing_length_bound, longest_connecting_path_bound,

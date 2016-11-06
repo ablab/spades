@@ -125,26 +125,20 @@ public:
 
     bool NeedsProjection() const {
         DEBUG("Checking if component needs projection");
-//        size_t tot_path_count = TotalPathCount();
-//        bool answer = tot_path_count > end_vertices_.size();
-//        more robust to path processor failure this way VERIFY(tot_path_count >= end_vertices_.size());
-        bool answer = false;
-        //todo if warn is not seen -- change to trivial check of IncomingEdgeCount
         for (VertexId v : key_set(vertex_depth_)) {
+            if (v == start_vertex_)
+                continue;
             vector<EdgeId> filtered_incoming;
             std::copy_if(g_.in_begin(v), g_.in_end(v), std::back_inserter(filtered_incoming), 
                         [&] (EdgeId e) {return contains(g_.EdgeStart(e));});
-            if (v != start_vertex_ && filtered_incoming.size() != g_.IncomingEdgeCount(v)) {
-                WARN("Strange component");
+            VERIFY_MSG(filtered_incoming.size() == g_.IncomingEdgeCount(v), "Strange component");
+            if (g_.IncomingEdgeCount(v) > 1) {
+                DEBUG("Needs projection");
+                return true;
             }
-            answer = (filtered_incoming.size() > 1);
         }
-        if (answer) {
-            DEBUG("Needs projection");
-        } else {
-            DEBUG("Doesn't need projection");
-        }
-        return answer;
+        DEBUG("Doesn't need projection");
+        return false;
     }
 
     bool contains(VertexId v) const {
