@@ -402,13 +402,12 @@ class MetaHiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename 
         }
         double c1 = flanking_coverage_.CoverageOfStart(edges.front());
         double c2 = flanking_coverage_.CoverageOfStart(edges.back());
-        DEBUG("c1 " << c1 << "; c2 " << c2);
-        DEBUG("rel thr " << relative_threshold_);
+        TRACE("c1 " << c1 << "; c2 " << c2);
         if (math::ls(c1 * relative_threshold_, c2)) {
-            DEBUG("Disconnecting " << this->g().str(edges.front()));
+            TRACE("Disconnecting " << this->g().str(edges.front()));
             disconnector_(edges.front());
         } else {
-            DEBUG("Disconnecting " << this->g().str(edges.front()) << " and " << this->g().str(edges.back()));
+            TRACE("Disconnecting " << this->g().str(edges.front()) << " and " << this->g().str(edges.back()));
             DisconnectEdges(v);
         }
     }
@@ -442,10 +441,11 @@ public:
                     size_t uniqueness_length,
                     double relative_threshold,
                     EdgeRemovalHandlerF<Graph> removal_handler = 0)
-            : base(g, nullptr), flanking_coverage_(flanking_coverage),
+            : base(g, nullptr, /*canonical only*/ false, std::less<VertexId>(), /*track changes*/false), 
+              flanking_coverage_(flanking_coverage),
               uniqueness_length_(uniqueness_length),
               relative_threshold_(relative_threshold),
-              disconnector_(g, removal_handler, g.k()) {
+              disconnector_(g, removal_handler, g.k() + 1) {
         this->interest_el_finder_ = std::make_shared<ParallelInterestingElementFinder<Graph, VertexId>>(
                 [&](VertexId v) {
                     return CheckSuspicious(v);
@@ -488,6 +488,7 @@ class HiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename Grap
     }
 
     bool ProcessHiddenEC(VertexId v) {
+        TRACE("Processing outgoing edges for vertex " << this->g().str(v));
         VERIFY(this->g().OutgoingEdgeCount(v) == 2)
         vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
         if (math::gr(flanking_coverage_.CoverageOfStart(edges.front()),
@@ -495,12 +496,16 @@ class HiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename Grap
             std::swap(edges.front(), edges.back());
         }
         double c1 = flanking_coverage_.CoverageOfStart(edges.front());
+        TRACE("Flank start of e1 " << this->g().str(edges.front()) << ": " << c1);
         double c2 = flanking_coverage_.CoverageOfStart(edges.back());
+        TRACE("Flank start of e1 " << this->g().str(edges.back()) << ": " << c2);
         if (math::ls(c2, unreliability_threshold_)) {
+            TRACE("Disconnecting both edges from vertex " << this->g().str(v));
             DisconnectEdges(v);
             return true;
         }
         if (math::ls(c1 * relative_threshold_, c2) && math::ls(c1, ec_threshold_)) {
+            TRACE("Disconnecting edge " << this->g().str(edges.front()) << " from vertex " << this->g().str(v));
             disconnector_(edges.front());
             return true;
         }
@@ -530,11 +535,12 @@ public:
                     double unreliability_coeff,
                     double ec_threshold, double relative_threshold,
                     EdgeRemovalHandlerF<Graph> removal_handler = 0)
-            : base(g, nullptr), flanking_coverage_(flanking_coverage),
+            : base(g, nullptr, /*canonical only*/ false, std::less<VertexId>(), /*track changes*/false), 
+              flanking_coverage_(flanking_coverage),
               uniqueness_length_(uniqueness_length),
               unreliability_threshold_(unreliability_coeff * ec_threshold), ec_threshold_(ec_threshold),
               relative_threshold_(relative_threshold),
-              disconnector_(g, removal_handler, g.k()) {
+              disconnector_(g, removal_handler, g.k() + 1) {
         VERIFY(math::gr(unreliability_coeff, 0.));
         this->interest_el_finder_ = std::make_shared<ParallelInterestingElementFinder<Graph, VertexId>>(
                 [&](VertexId v) {

@@ -307,12 +307,12 @@ class GraphSimplifier {
 
         if (info_container_.mode() == config::pipeline_type::meta && simplif_cfg_.her.enabled) {
             VERIFY(math::ls(simplif_cfg_.her.unreliability_threshold, 0.));
-            auto algo = std::make_shared<MetaHiddenECRemover<Graph>>(g_, info_container_.chunk_cnt(), gp_.flanking_cov,
+            MetaHiddenECRemover<Graph> algo(g_, info_container_.chunk_cnt(), gp_.flanking_cov,
                                                       simplif_cfg_.her.uniqueness_length,
                                                       simplif_cfg_.her.relative_threshold,
                                                       removal_handler_);
             INFO("Running Hidden EC remover (meta)");
-            algo->Run();
+            LoopedRun(algo);
             cnt_callback_.Report();
         }
 

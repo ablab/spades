@@ -131,6 +131,18 @@ public:
     virtual size_t Run(bool force_primary_launch = false) = 0;
 };
 
+template<class Algo>
+inline size_t LoopedRun(Algo& algo) {
+    size_t total_triggered = 0;
+    bool run = true;
+    while (run) {
+        size_t triggered = algo.Run();
+        total_triggered += triggered;
+        run = (triggered > 0);
+    }
+    return total_triggered;
+}
+
 //todo use add_condition in it_
 template<class Graph, class ElementId,
          class Comparator = std::less<ElementId>>

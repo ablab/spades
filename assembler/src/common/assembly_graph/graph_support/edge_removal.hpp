@@ -129,9 +129,11 @@ public:
 };
 
 //Removes first 'trim_len' (k+1)-mers of graph edge, disconnecting it from starting vertex
+//In case edge was removed, its end will be compressed even with "compress = false" parameter
 template<class Graph>
 class EdgeDisconnector {
     typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
     Graph& g_;
     EdgeRemover<Graph> edge_remover_;
     const size_t trim_len_;
@@ -150,7 +152,14 @@ public:
     EdgeId operator()(EdgeId e, bool compress = true) {
         if (g_.length(e) <= trim_len_
                 || (e == g_.conjugate(e) && g_.length(e) <= 2 * trim_len_)) {
+            VertexId start = g_.EdgeStart(e);
+            VertexId end = g_.EdgeEnd(e);
             edge_remover_.DeleteEdgeOptCompress(e, compress);
+            if (!compress && !g_.RelatedVertices(start, end)) {
+                TRACE("Processing end");
+                RemoveIsolatedOrCompress(g_, end);
+                TRACE("End processed");
+            }
             return EdgeId(0);
         } else {
             pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, trim_len_);
