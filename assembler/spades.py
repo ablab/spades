@@ -187,7 +187,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                                       len(options_storage.LONG_READS_TYPES))]  # "[{}]*num" doesn't work here!
 
     # auto detecting SPAdes mode (rna, meta, etc) if it is not a rerun (--continue or --restart-from)
-    if not secondary_filling and not options_storage.will_rerun(options):
+    if secondary_filling or not options_storage.will_rerun(options):
         mode = options_storage.get_mode()
         if mode is not None:
             options.append(('--' + mode, ''))
@@ -513,9 +513,11 @@ def check_cfg_for_partial_run(cfg, type='restart-from'):  # restart-from ot stop
                 support.error("failed to " + action + " K=%s because this K " % k_str + verb + " not specified!")
 
 
-def get_options_from_params(params_filename, spades_py_name=None):
+def get_options_from_params(params_filename, running_script):
+    cmd_line = None
+    options = None
     if not os.path.isfile(params_filename):
-        return None, None
+        return cmd_line, options, "failed to parse command line of the previous run (%s not found)!" % params_filename
     params = open(params_filename, 'r')
     cmd_line = params.readline().strip()
     spades_prev_version = None
@@ -525,20 +527,22 @@ def get_options_from_params(params_filename, spades_py_name=None):
             break
     params.close()
     if spades_prev_version is None:
-        support.error("failed to parse SPAdes version of the previous run! "
-                      "Please restart from the beginning or specify another output directory.")
+        return cmd_line, options, "failed to parse SPAdes version of the previous run!"
     if spades_prev_version.strip() != spades_version.strip():
-        support.error("SPAdes version of the previous run (%s) is not equal to the current version of SPAdes (%s)! "
-                      "Please restart from the beginning or specify another output directory."
-                      % (spades_prev_version.strip(), spades_version.strip()))
-    if spades_py_name is None or cmd_line.find(os.path.basename(spades_py_name)) == -1:
-        spades_py_name = 'spades.py'  # try default name
-    else:
-        spades_py_name = os.path.basename(spades_py_name)
-    spades_py_pos = cmd_line.find(spades_py_name)
-    if spades_py_pos == -1:
-        return None, None
-    return cmd_line, cmd_line[spades_py_pos + len(spades_py_name):].split('\t')
+        return cmd_line, options, "SPAdes version of the previous run (%s) is not equal " \
+                                  "to the current version of SPAdes (%s)!" \
+                                  % (spades_prev_version.strip(), spades_version.strip())
+    if 'Command line: ' not in cmd_line or '\t' not in cmd_line:
+        return cmd_line, options, "failed to parse executable script of the previous run!"
+    options = cmd_line.split('\t')[1:]
+    prev_running_script = cmd_line.split('\t')[0][len('Command line: '):]
+    # we cannot restart/continue spades.py run with metaspades.py/rnaspades.py/etc and vice versa
+    if os.path.basename(prev_running_script) != os.path.basename(running_script):
+        return cmd_line, options, "executable script of the previous run (%s) is not equal " \
+                                  "to the current executable script (%s)!" \
+                                  % (os.path.basename(prev_running_script),
+                                     os.path.basename(running_script))
+    return cmd_line, options, ""
 
 
 def show_version():
@@ -566,15 +570,15 @@ def main(args):
     log.addHandler(console)
 
     support.check_binaries(bin_home, log)
-    
+
     # parse options and safe all parameters to cfg
     options = args
     cfg, dataset_data = fill_cfg(options, log)
 
     if options_storage.continue_mode:
-        cmd_line, options = get_options_from_params(os.path.join(options_storage.output_dir, "params.txt"), args[0])
-        if not options:
-            support.error("failed to parse command line of the previous run! Please restart from the beginning or specify another output directory.")
+        cmd_line, options, err_msg = get_options_from_params(os.path.join(options_storage.output_dir, "params.txt"), args[0])
+        if err_msg:
+            support.error(err_msg + " Please restart from the beginning or specify another output directory.")
         cfg, dataset_data = fill_cfg(options, log, secondary_filling=True)
         if options_storage.restart_from:
             check_cfg_for_partial_run(cfg, type='restart-from')
