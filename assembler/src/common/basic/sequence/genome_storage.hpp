@@ -7,21 +7,49 @@
 #pragma once
 
 #include <string>
-#include "basic/sequence/sequence.hpp"
-namespace debruijn_graph {
-    class GenomeStorage {
-    private:
-        std::string s_;
-    public:
-        GenomeStorage():s_(""){
-        }
+#include "sequence.hpp"
+#include "nucl.hpp"
 
-        GenomeStorage(const std::string &s): s_(s){
-        }
+class GenomeStorage {
+    std::string s_;
+public:
+    GenomeStorage() {
+    }
 
-        Sequence GetSequence() const;
-        void SetSequence(const Sequence &s);
-        std::string str() const;
-        size_t size() const;
-    };
-}
+    GenomeStorage(const std::string &s): s_(s) {
+    }
+
+    //TODO exterminate this where possible
+    Sequence GetSequence() const {
+        stringstream ss;
+        size_t l = 0, r = 0;
+        for(size_t i = 0; i < s_.size(); i++) {
+            if (!is_nucl(s_[i]) ) {
+                if (r > l) {
+                    ss << s_.substr(l, r - l);
+                }
+                r = i + 1;
+                l = i + 1;
+            } else {
+                r++;
+            }
+        }
+        if (r > l) {
+            ss << s_.substr(l, r - l);
+        }
+        return Sequence(ss.str());
+    }
+
+    void SetSequence(const Sequence &s) {
+        s_ = s.str();
+    }
+
+    std::string str() const {
+        return s_;
+    }
+
+    size_t size() const {
+        return s_.size();
+    }
+};
+

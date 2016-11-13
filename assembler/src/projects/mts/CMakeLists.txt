@@ -30,8 +30,7 @@ add_executable(prop_binning
 target_link_libraries(prop_binning common_modules nlopt BamTools ssw getopt_pp ${COMMON_LIBRARIES})
 
 add_executable(stats
-               stats.cpp
-               ../../common/basic/sequence/genome_storage.cpp)
+               stats.cpp)
 
 target_link_libraries(stats common_modules nlopt BamTools ssw getopt_pp ${COMMON_LIBRARIES})
 
