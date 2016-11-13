@@ -5,8 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#ifndef __SMOTH_HPP__
-#define __SMOTH_HPP__
+#pragma once
 
 #include <cmath>
 
@@ -42,23 +41,23 @@ static int IndexOfMedianOf3(T u, T v, T w) {
     /* else */ return -1;
 }
 
-enum {
-    SmoothNoEndRule,
-    SmoothCopyEndRule,
-    SmoothTukeyEndRule
+enum class SmoothEndRule {
+    No,
+    Copy,
+    Tukey
 };
 
 template<typename T>
-static bool SmoothEndStep(const T *x, T *y, size_t n, unsigned end_rule) {
+static bool SmoothEndStep(const T *x, T *y, size_t n, SmoothEndRule end_rule) {
     switch (end_rule) {
         default:
-        case SmoothNoEndRule:
+        case SmoothEndRule::No:
             return false;
-        case SmoothCopyEndRule:
+        case SmoothEndRule::Copy:
             y[0] = x[0];
             y[n - 1] = x[n - 1];
             return false;
-        case SmoothTukeyEndRule: {
+        case SmoothEndRule::Tukey: {
             bool chg = false;
             y[0] = MedianOf3(3 * y[1] - 2 * y[2], x[0], y[1]);
             chg = chg || (y[0] != x[0]);
@@ -67,12 +66,10 @@ static bool SmoothEndStep(const T *x, T *y, size_t n, unsigned end_rule) {
             return chg;
         }
     }
-
-    return false;
 }
 
 template<typename T>
-static bool Smooth3(const T *x, T *y, size_t n, unsigned end_rule) {
+static bool Smooth3(const T *x, T *y, size_t n, SmoothEndRule end_rule) {
     // y[] := Running Median of three (x) = "3 (x[])" with "copy ends"
     // ---  return chg := ( y != x )
     bool chg = false;
@@ -89,15 +86,15 @@ static bool Smooth3(const T *x, T *y, size_t n, unsigned end_rule) {
 }
 
 template<typename T>
-static size_t Smooth3R(const T *x, T *y, T *z, size_t n, unsigned end_rule) {
+static size_t Smooth3R(const T *x, T *y, T *z, size_t n, SmoothEndRule end_rule) {
     // y[] := "3R"(x) ; 3R = Median of three, repeated until convergence
     size_t iter;
     bool chg;
 
-    iter = chg = Smooth3(x, y, n, SmoothCopyEndRule);
+    iter = chg = Smooth3(x, y, n, SmoothEndRule::Copy);
 
     while (chg) {
-        if ((chg = Smooth3(y, z, n, SmoothNoEndRule))) {
+        if ((chg = Smooth3(y, z, n, SmoothEndRule::No))) {
             iter += 1;
             for (size_t i = 1; i < n - 1; i++)
                 y[i] = z[i];
@@ -111,7 +108,6 @@ static size_t Smooth3R(const T *x, T *y, T *z, size_t n, unsigned end_rule) {
        = 1   <==>  either ["3" w/o change + endchange]
        or   [two "3"s, 2nd w/o change  ] */
 }
-
 
 template<typename T>
 static bool SplitTest(const T *x, size_t i) {
@@ -172,7 +168,7 @@ static bool SmoothSplit3(const T *x, T *y, size_t n, bool do_ends) {
 
 template<typename T>
 size_t Smooth3RS3R(std::vector <T> &y, const std::vector <T> &x,
-                   unsigned end_rule = SmoothTukeyEndRule, bool split_ends = false) {
+                   SmoothEndRule end_rule = SmoothEndRule::Tukey, bool split_ends = false) {
     // y[1:n] := "3R S 3R"(x[1:n]);  z = "work";
     size_t iter;
     bool chg;
@@ -190,6 +186,4 @@ size_t Smooth3RS3R(std::vector <T> &y, const std::vector <T> &x,
     return (iter + chg);
 }
 
-};
-
-#endif
+}
