@@ -1,29 +1,14 @@
-#ifndef __ADT_PRED_HPP__
-#define __ADT_PRED_HPP__
-
 #pragma once
 
-#include "common/adt/function_traits.hpp"
+#include "function_traits.hpp"
 
 #include <memory>
 #include <functional>
 
-namespace pred {
+namespace func {
 
 template<typename T>
 class TypedPredicate {
-public:
-    typedef T checked_type;
-
-    template<typename P>
-    TypedPredicate(P p)
-            : self_(std::make_shared<TypedPredicateModel < P> > (std::move(p))) { }
-
-    bool operator()(T x) const {
-        return self_->operator()(x);
-    }
-
-private:
     struct TypedPredicateConcept {
         virtual ~TypedPredicateConcept() { };
 
@@ -43,6 +28,17 @@ private:
     };
 
     std::shared_ptr<const TypedPredicateConcept> self_;
+
+public:
+    typedef T checked_type;
+
+    template<typename P>
+    TypedPredicate(P p)
+            : self_(std::make_shared<TypedPredicateModel<P>>(std::move(p))) { }
+
+    bool operator()(T x) const {
+        return self_->operator()(x);
+    }
 };
 
 template<typename T>
@@ -115,8 +111,8 @@ private:
 };
 
 template<class P,
-        bool = adt::function_traits<P>::arity == 1 &&
-               std::is_same<typename adt::function_traits<P>::return_type, bool>::value>
+        bool = function_traits<P>::arity == 1 &&
+               std::is_same<typename function_traits<P>::return_type, bool>::value>
 struct is_predicate : public std::true_type {
 };
 
@@ -125,8 +121,8 @@ struct is_predicate<P, false> : public std::false_type {
 };
 
 template<class TP1, class TP2,
-        typename _T1 = typename adt::function_traits<TP1>::template arg<0>::type,
-        typename _T2 = typename adt::function_traits<TP2>::template arg<0>::type,
+        typename _T1 = typename function_traits<TP1>::template arg<0>::type,
+        typename _T2 = typename function_traits<TP2>::template arg<0>::type,
         typename =
         typename std::enable_if<std::is_same<_T1, _T2>::value &&
                                 is_predicate<TP1>::value && is_predicate<TP2>::value
@@ -136,8 +132,8 @@ TypedPredicate<_T1> And(TP1 lhs, TP2 rhs) {
 }
 
 template<class TP1, class TP2,
-        typename _T1 = typename adt::function_traits<TP1>::template arg<0>::type,
-        typename _T2 = typename adt::function_traits<TP2>::template arg<0>::type,
+        typename _T1 = typename function_traits<TP1>::template arg<0>::type,
+        typename _T2 = typename function_traits<TP2>::template arg<0>::type,
         typename =
         typename std::enable_if<std::is_same<_T1, _T2>::value &&
                                 is_predicate<TP1>::value && is_predicate<TP2>::value
@@ -147,7 +143,7 @@ TypedPredicate<_T1> Or(TP1 lhs, TP2 rhs) {
 }
 
 template<class TP,
-        typename _T = typename adt::function_traits<TP>::template arg<0>::type,
+        typename _T = typename function_traits<TP>::template arg<0>::type,
         typename =
         typename std::enable_if<is_predicate<TP>::value>::type>
 TypedPredicate<_T> Not(TP p) {
@@ -164,6 +160,4 @@ TypedPredicate<T> AlwaysFalse() {
     return AlwaysFalseOperator<T>();
 }
 
-} // namespace pred
-
-#endif // __ADT_PRED_HPP__
+} // namespace func

@@ -1,6 +1,6 @@
 #pragma once
-#include "math/pred.hpp"
-#include "utils/func.hpp"
+#include "func/pred.hpp"
+#include "func/func.hpp"
 
 namespace omnigraph {
 

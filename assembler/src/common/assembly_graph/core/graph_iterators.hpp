@@ -8,7 +8,7 @@
 #pragma once
 
 #include "common/adt/queue_iterator.hpp"
-#include "math/pred.hpp"
+#include "func/pred.hpp"
 #include "action_handlers.hpp"
 #include "utils/simple_tools.hpp"
 #include <boost/iterator/iterator_facade.hpp>
@@ -27,7 +27,7 @@ class SmartIterator : public GraphActionHandler<Graph> {
     bool add_new_;
     bool canonical_only_;
     //todo think of checking it in HandleAdd
-    pred::TypedPredicate<ElementId> add_condition_;
+    func::TypedPredicate<ElementId> add_condition_;
 
 protected:
 
@@ -57,7 +57,7 @@ protected:
 
     SmartIterator(const Graph &g, const std::string &name, bool add_new,
                   const Comparator& comparator, bool canonical_only,
-                  pred::TypedPredicate<ElementId> add_condition = pred::AlwaysTrue<ElementId>())
+                  func::TypedPredicate<ElementId> add_condition = func::AlwaysTrue<ElementId>())
             : base(g, name),
               inner_it_(comparator),
               add_new_(add_new),
@@ -119,7 +119,7 @@ public:
                      bool add_new = false,
                      const Comparator& comparator = Comparator(),
                      bool canonical_only = false,
-                     pred::TypedPredicate<ElementId> add_condition = pred::AlwaysTrue<ElementId>())
+                     func::TypedPredicate<ElementId> add_condition = func::AlwaysTrue<ElementId>())
             : base(g, "SmartSet " + ToString(this), add_new, comparator, canonical_only, add_condition) {
     }
 
@@ -128,7 +128,7 @@ public:
                      bool add_new = false,
                      const Comparator& comparator = Comparator(),
                      bool canonical_only = false,
-                     pred::TypedPredicate<ElementId> add_condition = pred::AlwaysTrue<ElementId>())
+                     func::TypedPredicate<ElementId> add_condition = func::AlwaysTrue<ElementId>())
             : SmartSetIterator(g, add_new, comparator, canonical_only, add_condition) {
         insert(begin, end);
     }

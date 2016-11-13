@@ -300,10 +300,10 @@ private:
 };
 
 template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId>
+func::TypedPredicate<typename Graph::EdgeId>
 NecessaryBulgeCondition(const Graph& g, size_t max_length, double max_coverage) {
     return AddAlternativesPresenceCondition(g,
-                                            pred::And(LengthUpperBound<Graph>(g, max_length),
+                                            func::And(LengthUpperBound<Graph>(g, max_length),
                                                      CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
@@ -472,7 +472,7 @@ private:
     }
 
     //false if time to stop
-    bool FillEdgeBuffer(vector<EdgeId>& buffer, pred::TypedPredicate<EdgeId> proceed_condition) {
+    bool FillEdgeBuffer(vector<EdgeId>& buffer, func::TypedPredicate<EdgeId> proceed_condition) {
         VERIFY(buffer.empty());
         DEBUG("Filling edge buffer of size " << buff_size_);
         perf_counter perf;
@@ -641,7 +641,7 @@ public:
         bool primary_launch = force_primary_launch ? true : curr_iteration_ == 0;
         //todo remove if not needed;
         //potentially can vary coverage threshold in coordination with ec threshold
-        auto proceed_condition = pred::AlwaysTrue<EdgeId>();
+        auto proceed_condition = func::AlwaysTrue<EdgeId>();
 
         if (!it_.IsAttached()) {
             it_.Attach();

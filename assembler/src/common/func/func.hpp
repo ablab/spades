@@ -27,42 +27,16 @@ std::function<void(T)> Composition(std::function<void(T)> f1,
     return std::bind(func::Compose<T>, std::placeholders::_1, f1, f2);
 }
 
-template<class A, class B>
-class Func {
-public:
-    typedef std::function<B(A)> function_t;
-
-    virtual B Apply(A a) const = 0;
-
-    virtual ~Func() {
-    }
-};
-
 template<class T>
-class AndOperator;
-
-template<class T>
-class OrOperator;
-
-template<class T>
-class NotOperator;
-
-template<class T>
-class Predicate: public Func<T, bool> {
+class Predicate {
 public:
     typedef T checked_type;
-
-    bool Apply(T t) const {
-        return Check(t);
-    }
 
     virtual bool Check(T t) const = 0;
 
     bool operator()(T t) const { return Check(t); }
 
-
-    virtual ~Predicate() {
-    }
+    virtual ~Predicate() {}
 };
 
 

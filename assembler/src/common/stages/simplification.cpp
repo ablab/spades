@@ -157,7 +157,7 @@ class GraphSimplifier {
 
     void PostSimplification() {
         using namespace omnigraph;
-        using namespace pred;
+        using namespace func;
         INFO("PROCEDURE == Post simplification");
         size_t iteration = 0;
 

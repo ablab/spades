@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "utils/func.hpp"
+#include "func/func.hpp"
 #include <boost/none.hpp>
 #include <atomic>
 #include "assembly_graph/core/graph_iterators.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "edge_removal.hpp"
-#include "math/pred.hpp"
+#include "func/pred.hpp"
 #include "utils/logger/logger.hpp"
 
 namespace omnigraph {
@@ -24,7 +24,7 @@ using EdgeRemovalHandlerF = std::function<void(typename Graph::EdgeId)>;
 template<class Graph>
 class EdgeProcessingAlgorithm {
     typedef typename Graph::EdgeId EdgeId;
-    typedef pred::TypedPredicate<EdgeId> ProceedConditionT;
+    typedef func::TypedPredicate<EdgeId> ProceedConditionT;
 
     Graph& g_;
     bool conjugate_symmetry_;
@@ -55,7 +55,7 @@ class EdgeProcessingAlgorithm {
 //    }
 
     template<class Comparator = std::less<EdgeId>>
-    bool Run(const Comparator& comp = Comparator(), ProceedConditionT proceed_condition = pred::AlwaysTrue<EdgeId>()) {
+    bool Run(const Comparator& comp = Comparator(), ProceedConditionT proceed_condition = func::AlwaysTrue<EdgeId>()) {
         bool triggered = false;
         for (auto it = g_.SmartEdgeBegin(comp, conjugate_symmetry_); !it.IsEnd(); ++it) {
             EdgeId e = *it;
@@ -115,7 +115,7 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
     typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
 
-    pred::TypedPredicate<EdgeId> remove_condition_;
+    func::TypedPredicate<EdgeId> remove_condition_;
     EdgeRemover<Graph> edge_remover_;
 
  protected:
@@ -132,7 +132,7 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
 
  public:
     EdgeRemovingAlgorithm(Graph& g,
-                          pred::TypedPredicate<EdgeId> remove_condition,
+                          func::TypedPredicate<EdgeId> remove_condition,
                           std::function<void (EdgeId)> removal_handler = boost::none,
                           bool conjugate_symmetry = false)
             : base(g, conjugate_symmetry),
