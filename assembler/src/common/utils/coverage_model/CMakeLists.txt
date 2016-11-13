@@ -5,10 +5,10 @@
 # See file LICENSE for details.
 ############################################################################
 
-project(math_module CXX)
+project(coverage_model CXX)
 
-add_library(math_module STATIC
+add_library(coverage_model STATIC
         kmer_coverage_model.cpp)
 
-target_link_libraries(math_module nlopt)
+target_link_libraries(coverage_model nlopt)
 
