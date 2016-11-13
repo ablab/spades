@@ -19,7 +19,7 @@ template<class Graph>
 using EdgePredicate = func::TypedPredicate<typename Graph::EdgeId>;
 
 template<class Graph>
-class EdgeCondition : public func::Predicate<typename Graph::EdgeId> {
+class EdgeCondition : public func::AbstractPredicate<typename Graph::EdgeId> {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &g_;

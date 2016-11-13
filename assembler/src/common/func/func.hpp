@@ -27,17 +27,4 @@ std::function<void(T)> Composition(std::function<void(T)> f1,
     return std::bind(func::Compose<T>, std::placeholders::_1, f1, f2);
 }
 
-template<class T>
-class Predicate {
-public:
-    typedef T checked_type;
-
-    virtual bool Check(T t) const = 0;
-
-    bool operator()(T t) const { return Check(t); }
-
-    virtual ~Predicate() {}
-};
-
-
 }

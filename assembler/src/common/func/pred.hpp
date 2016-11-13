@@ -7,6 +7,18 @@
 
 namespace func {
 
+template<class T>
+class AbstractPredicate {
+public:
+    typedef T checked_type;
+
+    virtual bool Check(T t) const = 0;
+
+    bool operator()(T t) const { return Check(t); }
+
+    virtual ~AbstractPredicate() {}
+};
+
 template<typename T>
 class TypedPredicate {
     struct TypedPredicateConcept {

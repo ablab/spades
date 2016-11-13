@@ -5,7 +5,7 @@
 namespace omnigraph {
 
 template<class Graph>
-class VertexCondition : public func::Predicate<typename Graph::VertexId> {
+class VertexCondition : public func::AbstractPredicate<typename Graph::VertexId> {
     typedef typename Graph::VertexId VertexId;
     const Graph &g_;
 protected:
