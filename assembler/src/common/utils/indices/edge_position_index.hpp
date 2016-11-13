@@ -9,7 +9,7 @@
 
 #include "perfect_hash_map.hpp"
 #include "sequence/runtime_k.hpp"
-#include "common/basic/reads/single_read.hpp"
+#include "io/reads/single_read.hpp"
 
 namespace debruijn_graph {
 

@@ -8,11 +8,11 @@
 #pragma once
 
 #include "utils/verify.hpp"
-#include "io/reads/delegating_reader_wrapper.hpp"
+#include "delegating_reader_wrapper.hpp"
+#include "single_read.hpp"
 #include "paired_readers.hpp"
 
 #include <memory>
-#include <common/basic/reads/single_read.hpp>
 
 namespace io {
 

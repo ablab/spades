@@ -11,7 +11,7 @@
 #include "utils/memory_limit.hpp"
 #include "sequence_mapper.hpp"
 #include "short_read_mapper.hpp"
-#include "common/basic/reads/paired_read.hpp"
+#include "io/reads/paired_read.hpp"
 #include "io/reads/read_stream_vector.hpp"
 #include "pipeline/graph_pack.hpp"
 

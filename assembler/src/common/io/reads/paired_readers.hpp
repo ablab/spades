@@ -9,7 +9,7 @@
 
 #include <string>
 #include "ireader.hpp"
-#include "common/basic/reads/paired_read.hpp"
+#include "paired_read.hpp"
 #include "file_reader.hpp"
 #include "orientation.hpp"
 

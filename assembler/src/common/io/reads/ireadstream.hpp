@@ -18,7 +18,7 @@
 #include "kseq/kseq.h"
 #include <zlib.h>
 #include "utils/verify.hpp"
-#include "common/basic/reads/read.hpp"
+#include "read.hpp"
 #include "sequence/nucl.hpp"
 
 // STEP 1: declare the type of file handler and the read() function

@@ -14,7 +14,7 @@
 #include "consensus.hpp"
 #include "valid_hkmer_generator.hpp"
 #include "config_struct.hpp"
-#include "common/basic/reads/single_read.hpp"
+#include "io/reads/single_read.hpp"
 
 #include <boost/optional.hpp>
 #include <boost/numeric/ublas/matrix.hpp>

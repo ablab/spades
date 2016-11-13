@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <iomanip>
 #include <fstream>
-#include "common/basic/reads/read.hpp"
+#include "io/reads/read.hpp"
 #include "io/reads/ireadstream.hpp"
 #include "sequence/seq.hpp"
 #include "globals.hpp"

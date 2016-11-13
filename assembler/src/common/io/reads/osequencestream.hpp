@@ -17,8 +17,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "common/basic/reads/single_read.hpp"
-#include "common/basic/reads/paired_read.hpp"
+#include "single_read.hpp"
+#include "paired_read.hpp"
 
 namespace io {
 

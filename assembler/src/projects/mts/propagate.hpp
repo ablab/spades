@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "basic/reads/single_read.hpp"
+#include "io/reads/single_read.hpp"
 #include "io/reads/io_helper.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "annotation.hpp"
