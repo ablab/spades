@@ -11,20 +11,15 @@
 
 namespace func {
 
-//to use with std::function-s
 template<class T>
-void Compose(T t, std::function<void(T)> f1,
-        std::function<void(T)> f2) {
-    if (f1)
-        f1(t);
-    if (f2)
-        f2(t);
-}
-
-template<class T>
-std::function<void(T)> Composition(std::function<void(T)> f1,
-                                     std::function<void(T)> f2) {
-    return std::bind(func::Compose<T>, std::placeholders::_1, f1, f2);
+std::function<void(T)> CombineCallbacks(const std::function<void(T)>& f1,
+                                        const std::function<void(T)>& f2) {
+    return [=] (T t) {
+        if (f1)
+            f1(t);
+        if (f2)
+            f2(t);
+    };
 }
 
 }

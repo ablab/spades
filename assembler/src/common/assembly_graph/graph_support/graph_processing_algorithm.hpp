@@ -107,7 +107,7 @@ private:
 template<class Graph>
 std::function<void(typename Graph::EdgeId)> AddCountingCallback(CountingCallback<Graph>& cnt_callback, std::function<void(typename Graph::EdgeId)> handler) {
     std::function<void(typename Graph::EdgeId)> cnt_handler = std::bind(&CountingCallback<Graph>::HandleDelete, std::ref(cnt_callback), std::placeholders::_1);
-    return func::Composition<typename Graph::EdgeId>(handler, cnt_handler);
+    return func::CombineCallbacks<typename Graph::EdgeId>(handler, cnt_handler);
 }
 
 template<class Graph>
