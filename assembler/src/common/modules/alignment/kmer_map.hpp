@@ -7,7 +7,7 @@
 #ifndef __KMER_MAP_HPP__
 #define __KMER_MAP_HPP__
 
-#include "basic/sequence/runtime_k.hpp"
+#include "sequence/runtime_k.hpp"
 
 #include <htrie/hat-trie.h>
 #include <boost/iterator/iterator_facade.hpp>

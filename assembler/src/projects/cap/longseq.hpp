@@ -11,7 +11,7 @@
 #include <cstdint>
 #include "polynomial_hash.hpp"
 #include "utils/log.hpp"
-#include "basic/sequence/sequence.hpp"
+#include "sequence/sequence.hpp"
 #include "utils/openmp_wrapper.h"
 
 namespace cap {

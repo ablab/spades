@@ -10,7 +10,7 @@
 #include <map>
 #include <exception>
 
-#include "basic/sequence/seq.hpp"
+#include "sequence/seq.hpp"
 #include "utils/logger/log_writers.hpp"
 #include "utils/memory_limit.hpp"
 #include "running_modes.hpp"

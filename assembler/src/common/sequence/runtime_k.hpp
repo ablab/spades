@@ -8,10 +8,10 @@
 #ifndef RUNTIME_K_HPP_
 #define RUNTIME_K_HPP_
 
-#include "basic/sequence/sequence.hpp"
-#include "basic/sequence/seq.hpp"
-#include "basic/sequence/simple_seq.hpp"
-#include "basic/sequence/rtseq.hpp"
+#include "sequence.hpp"
+#include "seq.hpp"
+#include "simple_seq.hpp"
+#include "rtseq.hpp"
 
 #include "k_range.hpp"
 

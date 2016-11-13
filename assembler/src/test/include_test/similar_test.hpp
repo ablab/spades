@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "basic/sequence/sequence.hpp"
+#include "sequence/sequence.hpp"
 #include "cute/cute.h"
 #include <vector>
 

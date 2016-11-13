@@ -12,7 +12,7 @@
 #include "kmc_api/kmc_file.h"
 //#include "omp.h"
 #include "io/kmers/mmapped_reader.hpp"
-#include "basic/sequence/runtime_k.hpp"
+#include "sequence/runtime_k.hpp"
 #include "utils/path_helper.hpp"
 #include "utils/simple_tools.hpp"
 #include "utils/indices/perfect_hash_map_builder.hpp"

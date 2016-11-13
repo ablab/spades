@@ -12,8 +12,8 @@
 #include <string>
 #include <vector>
 
-#include "basic/sequence/nucl.hpp"
-#include "basic/sequence/sequence.hpp"
+#include "nucl.hpp"
+#include "sequence.hpp"
 #include "utils/levenshtein.hpp"
 
 inline const std::string Reverse(const std::string &s) {

@@ -19,7 +19,7 @@
 #include "utils/verify.hpp"
 #include <array>
 #include <algorithm>
-#include "basic/sequence/nucl.hpp"
+#include "nucl.hpp"
 #include "utils/log.hpp"
 #include "seq_common.hpp"
 #include "seq.hpp"

@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "basic/sequence/sequence_tools.hpp"
-#include "basic/sequence/runtime_k.hpp"
+#include "sequence/sequence_tools.hpp"
+#include "sequence/runtime_k.hpp"
 #include "common/adt/kmer_vector.hpp"
 #include "edge_index.hpp"
 

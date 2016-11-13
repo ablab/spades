@@ -7,7 +7,7 @@
 
 #pragma once
 #include <boost/test/unit_test.hpp>
-#include "basic/sequence/nucl.hpp"
+#include "sequence/nucl.hpp"
 
 BOOST_AUTO_TEST_CASE( TestNucl ) {
     BOOST_CHECK_EQUAL('A', nucl(0));

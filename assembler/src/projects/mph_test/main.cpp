@@ -8,7 +8,7 @@
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 #include "utils/indices/perfect_hash_map.hpp"
-#include "basic/sequence/runtime_k.hpp"
+#include "sequence/runtime_k.hpp"
 #include "utils/mph_index/kmer_index_builder.hpp"
 
 #include "io/reads/read_processor.hpp"

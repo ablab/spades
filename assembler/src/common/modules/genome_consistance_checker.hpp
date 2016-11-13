@@ -10,7 +10,7 @@
 #include "visualization/graph_labeler.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
-#include "basic/sequence/sequence.hpp"
+#include "sequence/sequence.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "visualization/position_filler.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"

@@ -8,7 +8,7 @@
 #ifndef CCLEAN_ADAPTERINDEX_HPP
 #define CCLEAN_ADAPTERINDEX_HPP
 
-#include "basic/sequence/seq.hpp"
+#include "sequence/seq.hpp"
 #include "utils/mph_index/kmer_index.hpp"
 
 #include <string>

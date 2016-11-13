@@ -11,7 +11,7 @@
 #include "storing_traits.hpp"
 
 #include "utils/file_limit.hpp"
-#include "basic/sequence/runtime_k.hpp"
+#include "sequence/runtime_k.hpp"
 #include "utils/mph_index/kmer_index_builder.hpp"
 
 namespace debruijn_graph {

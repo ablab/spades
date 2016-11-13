@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "basic/sequence/sequence.hpp"
+#include "sequence/sequence.hpp"
 #include "path_processor.hpp"
 #include "mapping_path.hpp"
 

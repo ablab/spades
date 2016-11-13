@@ -11,7 +11,7 @@
 #include "func/func.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
-#include "basic/sequence/sequence.hpp"
+#include "sequence/sequence.hpp"
 
 #include <set>
 

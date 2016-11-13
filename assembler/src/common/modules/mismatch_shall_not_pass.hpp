@@ -12,7 +12,7 @@
 #include "utils/logger/logger.hpp"
 
 #include "io/reads/read_stream_vector.hpp"
-#include "basic/sequence/runtime_k.hpp"
+#include "sequence/runtime_k.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 
 #include "pipeline/config_struct.hpp"
