@@ -120,7 +120,7 @@ static bool CollectLibInformation(const conj_graph_pack &gp,
     notifier.Subscribe(ilib, &hist_counter);
     notifier.Subscribe(ilib, &pcounter);
 
-    SequencingLibrary &reads = cfg::get_writable().ds.reads[ilib];
+    SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
     auto &data = reads.data();
     auto paired_streams = paired_binary_readers(reads, false);
 
@@ -185,7 +185,7 @@ void ProcessSingleReads(conj_graph_pack &gp,
 static void ProcessPairedReads(conj_graph_pack &gp,
                                std::unique_ptr<PairedInfoFilter> filter, unsigned filter_threshold,
                                size_t ilib) {
-    SequencingLibrary &reads = cfg::get_writable().ds.reads[ilib];
+    SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
     const auto &data = reads.data();
 
     bool calculate_threshold = (cfg::get().mode != config::pipeline_type::meta &&

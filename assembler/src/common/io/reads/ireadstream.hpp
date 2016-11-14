@@ -33,13 +33,11 @@ class ireadstream {
 public:
 typedef Read ReadT;
 
-ireadstream(const std::string &filename) : offset_(Read::PHRED_OFFSET) {
-    filename_ = filename;
+ireadstream(const std::string &filename) : filename_(filename), offset_(Read::PHRED_OFFSET)  {
     is_open_ = open(filename);
 }
 
-ireadstream(const std::string &filename, int offset) : offset_(offset) {
-    filename_ = filename;
+ireadstream(const std::string &filename, int offset) : filename_(filename), offset_(offset) {
     is_open_ = open(filename);
 }
 

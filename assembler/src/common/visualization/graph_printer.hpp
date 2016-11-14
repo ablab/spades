@@ -8,7 +8,7 @@
 #pragma once
 
 #include "utils/standard_base.hpp"
-#include "io/graph/graph_print_utils.hpp"
+#include "graph_print_utils.hpp"
 #include "graph_labeler.hpp"
 #include "graph_colorer.hpp"
 #include "vertex_linker.hpp"
@@ -42,13 +42,13 @@ protected:
     }
 
     template<class GvisVertexId>
-    gvis::BaseVertex<GvisVertexId> CreateBaseVertex(GvisVertexId id, VertexId v) {
-        return gvis::BaseVertex<GvisVertexId>(id, labeler_.label(v), linker_.GetValue(v), colorer_.GetValue(v));
+    BaseVertex<GvisVertexId> CreateBaseVertex(GvisVertexId id, VertexId v) {
+        return BaseVertex<GvisVertexId>(id, labeler_.label(v), linker_.GetValue(v), colorer_.GetValue(v));
     }
 
     template<class GvisVertexId>
-    gvis::BaseEdge<GvisVertexId> CreateBaseEdge(GvisVertexId from, GvisVertexId to, EdgeId e) {
-        return gvis::BaseEdge<GvisVertexId>(from, to, this->labeler_.label(e), this->colorer_.GetValue(e));
+    BaseEdge<GvisVertexId> CreateBaseEdge(GvisVertexId from, GvisVertexId to, EdgeId e){
+        return BaseEdge<GvisVertexId>(from, to, this->labeler_.label(e), this->colorer_.GetValue(e));
     }
 
     virtual void ManageDrawn(VertexId v, set<VertexId> &visited) {
@@ -100,7 +100,7 @@ private:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
-    gvis::DotSingleGraphRecorder<size_t> recorder_;
+    DotSingleGraphRecorder<size_t> recorder_;
 
 public:
     SingleGraphPrinter(const Graph &graph, ostream &os,
@@ -136,12 +136,11 @@ private:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
-    gvis::DotPairedGraphRecorder<size_t> recorder_;
+    DotPairedGraphRecorder<size_t> recorder_;
 
-    pair<gvis::BaseVertex<size_t>, gvis::BaseVertex<size_t>> CreateDoubleVertex(VertexId v) {
-        gvis::BaseVertex<size_t> u1 = this->CreateBaseVertex((size_t) this->graph().int_id(v), v);
-        gvis::BaseVertex<size_t> u2 = this->CreateBaseVertex(
-                (size_t) this->graph().int_id(this->graph().conjugate(v)), this->graph().conjugate(v));
+    pair<BaseVertex<size_t>, BaseVertex<size_t>> CreateDoubleVertex(VertexId v) {
+        BaseVertex<size_t> u1 = this->CreateBaseVertex((size_t)this->graph().int_id(v), v);
+        BaseVertex<size_t> u2 = this->CreateBaseVertex((size_t)this->graph().int_id(this->graph().conjugate(v)), this->graph().conjugate(v));
         return make_pair(u1, u2);
     }
 
@@ -179,8 +178,7 @@ public:
     void AddEdge(EdgeId edge) {
         auto vid1 = CreateDoubleVertexId(this->graph().EdgeStart(edge));
         auto vid2 = CreateDoubleVertexId(this->graph().EdgeEnd(edge));
-        recorder_.recordEdge(gvis::BaseEdge<pair<size_t, size_t>>(vid1, vid2, this->labeler_.label(edge),
-                                                                  this->colorer_.GetValue(edge)));
+        recorder_.recordEdge(BaseEdge<pair<size_t, size_t>>(vid1, vid2, this->labeler_.label(edge), this->colorer_.GetValue(edge)));
     }
 };
 

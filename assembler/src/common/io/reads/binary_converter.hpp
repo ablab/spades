@@ -253,39 +253,6 @@ public:
         return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num, orientation);
     }
 
-//    template<class Read>
-//    void WriteReads(std::vector<Read>& data) {
-//        size_t chunk_size = data.size() / file_num_;
-//        size_t last_chunk_size = chunk_size + data.size() % file_num_;
-//
-//        for (size_t i = 0; i < file_num_ - 1; ++i) {
-//            file_ds_[i]->write((const char *) &chunk_size, sizeof(chunk_size));
-//        }
-//        file_ds_.back()->write((const char *) &last_chunk_size, sizeof(last_chunk_size));
-//
-//        size_t start_pos = 0;
-//        for (size_t i = 0; i < file_num_ - 1; ++i, start_pos += chunk_size) {
-//            FlushBuffer(data, *file_ds_[i], start_pos, start_pos + chunk_size);
-//        }
-//        FlushBuffer(data, file_ds_.back(), start_pos, data.size());
-//    }
-//
-//    template<class Read>
-//    void WriteSeparatedReads(std::vector< std::vector<Read> >& data) {
-//        if (data.size() != file_num_) {
-//            WARN("Cannot write reads, number of vectors is not equal to thread number");
-//            return;
-//        }
-//
-//        for (size_t i = 0; i < file_num_; ++i) {
-//            size_t size = data[i].size();
-//            file_ds_[i]->write((const char *) &size, sizeof(size));
-//        }
-//
-//        for (size_t i = 0; i < file_num_; ++i) {
-//            FlushBuffer(data[i], *file_ds_[i]);
-//        }
-//    }
 };
 
 

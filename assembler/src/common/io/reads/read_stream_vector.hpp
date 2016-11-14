@@ -41,11 +41,6 @@ public:
     explicit ReadStreamList(size_t size) : readers_(size) {
     }
 
-//  std::vector<Reader*>& get() {
-//      destroy_readers_ = false;
-//      return streams_;
-//  }
-
     //todo use boost iterator facade
     class iterator : public std::iterator<std::input_iterator_tag, ReaderT> {
         typedef typename std::vector<ReaderPtrT>::iterator vec_it;
@@ -71,31 +66,6 @@ public:
             return *(*it_);
         }
     };
-
-//  class const_iterator: public std::iterator<std::input_iterator_tag, Reader> {
-//    typedef typename std::vector<Reader*>::iterator vec_it;
-//    vec_it it_;
-//   public:
-//
-//    const_iterator(vec_it it) : it_(it) {
-//    }
-//
-//    void operator++ () {
-//        ++it_;
-//    }
-//
-//    bool operator== (const const_iterator& that) {
-//        return it_ == that.it_;
-//    }
-//
-//    bool operator!= (const const_iterator& that) {
-//        return it_ != that.it_;
-//    }
-//
-//    ReaderT& operator*() {
-//        return *(*it_);
-//    }
-//  };
 
     ReaderT &operator[](size_t i) {
         return *readers_.at(i);
@@ -130,14 +100,6 @@ public:
         return iterator(readers_.end());
     }
 
-//  const_iterator begin() const {
-//    return iterator(streams_.begin());
-//  }
-//
-//  const_iterator end() const {
-//    return iterator(streams_.end());
-//  }
-
     void push_back(ReaderT *reader_ptr) {
         readers_.push_back(ReaderPtrT(reader_ptr));
     }
@@ -169,14 +131,6 @@ public:
         }
         return stat;
     }
-
-//  void release() {
-//      destroy_readers_ = false;
-//  }
-
-//  const std::vector< Reader * >& get() const {
-//      return streams_;
-//  }
 
 };
 

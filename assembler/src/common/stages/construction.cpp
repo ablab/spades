@@ -63,7 +63,7 @@ void Construction::run(conj_graph_pack &gp, const char*) {
         if (dataset.reads[i].is_graph_contructable())
             libs_for_construction.push_back(i);
 
-    auto streams = single_binary_readers_for_libs(dataset, libs_for_construction, true, true);
+    auto streams = io::single_binary_readers_for_libs(dataset, libs_for_construction, true, true);
     construct_graph<io::SingleReadSeq>(streams, gp, contigs_stream);
 }
 

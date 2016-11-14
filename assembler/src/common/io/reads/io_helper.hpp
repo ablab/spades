@@ -35,12 +35,6 @@ namespace io {
     typedef std::shared_ptr<BinaryPairedStream> BinaryPairedStreamPtr;
     typedef ReadStreamList<PairedReadSeq> BinaryPairedStreams;
 
-    //old
-//    typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
-//    typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
-//    typedef io::MultifileReader<io::PairedRead> MultiPairedStream;
-//    typedef io::MultifileReader<io::SingleRead> MultiSingleStream;
-
     inline BinarySingleStreams apply_single_wrappers(bool followed_by_rc,
                                                      BinarySingleStreams& single_readers,
                                                      BinaryPairedStreams* paired_readers = 0) {

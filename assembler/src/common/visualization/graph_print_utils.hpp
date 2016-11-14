@@ -10,7 +10,7 @@
 
 #include "utils/standard_base.hpp"
 
-namespace gvis {
+namespace visualization {
 
 template<class VertexId>
 struct BaseVertex {
@@ -129,9 +129,9 @@ protected:
         int bound = approximateLength / 6;
         int num = currentLength / bound;
         double perc = (currentLength % bound) * 1. / bound;
-        for(int i = 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             ss << getColorParameter(points[num][i], points[num + 1][i], perc);
-            if(i != 2)
+            if (i != 2)
                 ss << ",";
         }
         return ss.str();
@@ -322,7 +322,6 @@ public:
         this->os() << "}" << endl;
     }
 };
-
 
 }
 #endif //GRAPH_PRINTER_HPP_//

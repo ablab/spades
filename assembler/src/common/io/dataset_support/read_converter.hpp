@@ -21,20 +21,22 @@
 
 #include <fstream>
 
-namespace debruijn_graph {
+namespace io {
 
-typedef io::SequencingLibrary<config::DataSetData> SequencingLibrary;
+typedef debruijn_graph::config::dataset dataset;
+typedef debruijn_graph::config::DataSetData DataSetData;
+typedef SequencingLibrary<DataSetData> SequencingLibraryT;
 
 class ReadConverter {
 
 private:
     const static size_t current_binary_format_version = 11;
 
-    static bool CheckBinaryReadsExist(SequencingLibrary& lib) {
+    static bool CheckBinaryReadsExist(SequencingLibraryT& lib) {
         return path::FileExists(lib.data().binary_reads_info.bin_reads_info_file);
     }
 
-    static bool LoadLibIfExists(SequencingLibrary& lib) {
+    static bool LoadLibIfExists(SequencingLibraryT& lib) {
         auto& data = lib.data();
 
         if (!CheckBinaryReadsExist(lib))
@@ -72,7 +74,7 @@ private:
         return true;
     }
 
-    static void ConvertToBinary(SequencingLibrary& lib) {
+    static void ConvertToBinary(SequencingLibraryT& lib) {
         auto& data = lib.data();
         std::ofstream info;
         info.open(data.binary_reads_info.bin_reads_info_file.c_str(), std::ios_base::out);
@@ -81,21 +83,21 @@ private:
 
         INFO("Converting reads to binary format for library #" << data.lib_index << " (takes a while)");
         INFO("Converting paired reads");
-        io::PairedStreamPtr paired_reader = paired_easy_reader(lib, false, 0, false, false);
-        io::BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix,
+        PairedStreamPtr paired_reader = paired_easy_reader(lib, false, 0, false, false);
+        BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix,
                                           data.binary_reads_info.chunk_num,
                                           data.binary_reads_info.buffer_size);
 
-        io::ReadStreamStat paired_stat = paired_converter.ToBinary(*paired_reader, lib.orientation());
+        ReadStreamStat paired_stat = paired_converter.ToBinary(*paired_reader, lib.orientation());
         paired_stat.read_count_ *= 2;
 
         INFO("Converting single reads");
 
-        io::SingleStreamPtr single_reader = single_easy_reader(lib, false, false);
-        io::BinaryWriter single_converter(data.binary_reads_info.single_read_prefix,
+        SingleStreamPtr single_reader = single_easy_reader(lib, false, false);
+        BinaryWriter single_converter(data.binary_reads_info.single_read_prefix,
                                           data.binary_reads_info.chunk_num,
                                           data.binary_reads_info.buffer_size);
-        io::ReadStreamStat single_stat = single_converter.ToBinary(*single_reader);
+        ReadStreamStat single_stat = single_converter.ToBinary(*single_reader);
 
         paired_stat.merge(single_stat);
         data.read_length = paired_stat.max_len_;
@@ -115,7 +117,7 @@ private:
     }
 
 public:
-    static void ConvertToBinaryIfNeeded(SequencingLibrary& lib) {
+    static void ConvertToBinaryIfNeeded(SequencingLibraryT& lib) {
         if (lib.data().binary_reads_info.binary_coverted && CheckBinaryReadsExist(lib))
             return;
 
@@ -129,50 +131,50 @@ public:
 
 
 inline
-io::BinaryPairedStreams raw_paired_binary_readers(io::SequencingLibrary<config::DataSetData> &lib,
+BinaryPairedStreams raw_paired_binary_readers(SequencingLibraryT &lib,
                                                   bool followed_by_rc,
                                                   size_t insert_size = 0) {
     ReadConverter::ConvertToBinaryIfNeeded(lib);
     const auto& data = lib.data();
     VERIFY_MSG(data.binary_reads_info.binary_coverted, "Lib was not converted to binary, cannot produce binary stream");
 
-    io::ReadStreamList<io::PairedReadSeq> paired_streams;
+    ReadStreamList<PairedReadSeq> paired_streams;
     for (size_t i = 0; i < data.binary_reads_info.chunk_num; ++i) {
-        paired_streams.push_back(make_shared<io::BinaryFilePairedStream>(data.binary_reads_info.paired_read_prefix,
+        paired_streams.push_back(make_shared<BinaryFilePairedStream>(data.binary_reads_info.paired_read_prefix,
                                                                          i, insert_size));
     }
-    return io::apply_paired_wrappers(followed_by_rc, paired_streams);
+    return apply_paired_wrappers(followed_by_rc, paired_streams);
 }
 
 inline
-io::BinarySingleStreams raw_single_binary_readers(io::SequencingLibrary<config::DataSetData> &lib,
+BinarySingleStreams raw_single_binary_readers(SequencingLibraryT &lib,
                                                   bool followed_by_rc,
                                                   bool including_paired_reads) {
     const auto& data = lib.data();
     ReadConverter::ConvertToBinaryIfNeeded(lib);
     VERIFY_MSG(data.binary_reads_info.binary_coverted, "Lib was not converted to binary, cannot produce binary stream");
 
-    io::BinarySingleStreams single_streams;
+    BinarySingleStreams single_streams;
     for (size_t i = 0; i < data.binary_reads_info.chunk_num; ++i) {
-        single_streams.push_back(make_shared<io::BinaryFileSingleStream>(data.binary_reads_info.single_read_prefix, i));
+        single_streams.push_back(make_shared<BinaryFileSingleStream>(data.binary_reads_info.single_read_prefix, i));
     }
     if (including_paired_reads) {
-        io::BinaryPairedStreams paired_streams;
+        BinaryPairedStreams paired_streams;
         for (size_t i = 0; i < data.binary_reads_info.chunk_num; ++i) {
-            paired_streams.push_back(make_shared<io::BinaryFilePairedStream>(data.binary_reads_info.paired_read_prefix,
+            paired_streams.push_back(make_shared<BinaryFilePairedStream>(data.binary_reads_info.paired_read_prefix,
                                                                              i, 0));
         }
 
-        return io::apply_single_wrappers(followed_by_rc, single_streams, &paired_streams);
+        return apply_single_wrappers(followed_by_rc, single_streams, &paired_streams);
     }
     else {
-        return io::apply_single_wrappers(followed_by_rc, single_streams);
+        return apply_single_wrappers(followed_by_rc, single_streams);
     }
 }
 
 
 inline
-io::BinaryPairedStreams paired_binary_readers(io::SequencingLibrary<config::DataSetData> &lib,
+BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
                                               bool followed_by_rc,
                                               size_t insert_size = 0) {
     return raw_paired_binary_readers(lib, followed_by_rc, insert_size);
@@ -180,7 +182,7 @@ io::BinaryPairedStreams paired_binary_readers(io::SequencingLibrary<config::Data
 
 
 inline
-io::BinarySingleStreams single_binary_readers(io::SequencingLibrary<config::DataSetData> &lib,
+BinarySingleStreams single_binary_readers(SequencingLibraryT &lib,
                                               bool followed_by_rc,
                                               bool including_paired_reads) {
     return raw_single_binary_readers(lib, followed_by_rc, including_paired_reads);
@@ -189,7 +191,7 @@ io::BinarySingleStreams single_binary_readers(io::SequencingLibrary<config::Data
 
 inline
 //todo simplify
-io::BinaryPairedStreams paired_binary_readers_for_libs(config::dataset& dataset_info,
+BinaryPairedStreams paired_binary_readers_for_libs(dataset& dataset_info,
                                                        const std::vector<size_t>& libs,
                                                        bool followed_by_rc,
                                                        size_t insert_size = 0) {
@@ -197,51 +199,51 @@ io::BinaryPairedStreams paired_binary_readers_for_libs(config::dataset& dataset_
     VERIFY(!libs.empty())
     size_t chunk_num = dataset_info.reads[libs.front()].data().binary_reads_info.chunk_num;
 
-    std::vector<io::BinaryPairedStreams> streams(chunk_num);
+    std::vector<BinaryPairedStreams> streams(chunk_num);
     for (size_t i = 0; i < libs.size(); ++i) {
         VERIFY_MSG(chunk_num == dataset_info.reads[libs[i]].data().binary_reads_info.chunk_num,
                    "Cannot create stream for multiple libraries with different chunk_num")
-        io::BinaryPairedStreams lib_streams = raw_paired_binary_readers(dataset_info.reads[libs[i]], followed_by_rc, insert_size);
+        BinaryPairedStreams lib_streams = raw_paired_binary_readers(dataset_info.reads[libs[i]], followed_by_rc, insert_size);
         for (size_t j = 0; j < chunk_num; ++j) {
             streams[j].push_back(lib_streams.ptr_at(j));
         }
     }
 
-    io::BinaryPairedStreams joint_streams;
+    BinaryPairedStreams joint_streams;
     for (size_t j = 0; j < chunk_num; ++j) {
-      joint_streams.push_back(io::MultifileWrap<io::PairedReadSeq>(streams[j]));
+      joint_streams.push_back(MultifileWrap<PairedReadSeq>(streams[j]));
     }
     return joint_streams;
 }
 
 inline
-io::BinarySingleStreams single_binary_readers_for_libs(config::dataset& dataset_info,
+BinarySingleStreams single_binary_readers_for_libs(dataset& dataset_info,
                                                        const std::vector<size_t>& libs,
                                                        bool followed_by_rc,
                                                        bool including_paired_reads) {
     VERIFY(!libs.empty())
     size_t chunk_num = dataset_info.reads[libs.front()].data().binary_reads_info.chunk_num;
 
-    std::vector<io::BinarySingleStreams> streams(chunk_num);
+    std::vector<BinarySingleStreams> streams(chunk_num);
     for (size_t i = 0; i < libs.size(); ++i) {
         VERIFY_MSG(chunk_num == dataset_info.reads[libs[i]].data().binary_reads_info.chunk_num,
                    "Cannot create stream for multiple libraries with different chunk_num")
-        io::BinarySingleStreams lib_streams = raw_single_binary_readers(dataset_info.reads[libs[i]], followed_by_rc, including_paired_reads);
+        BinarySingleStreams lib_streams = raw_single_binary_readers(dataset_info.reads[libs[i]], followed_by_rc, including_paired_reads);
 
         for (size_t j = 0; j < chunk_num; ++j) {
             streams[j].push_back(lib_streams.ptr_at(j));
         }
     }
 
-    io::BinarySingleStreams joint_streams;
+    BinarySingleStreams joint_streams;
     for (size_t j = 0; j < chunk_num; ++j) {
-      joint_streams.push_back(io::MultifileWrap<io::SingleReadSeq>(streams[j]));
+      joint_streams.push_back(MultifileWrap<SingleReadSeq>(streams[j]));
     }
     return joint_streams;
 }
 
 inline
-io::BinaryPairedStreams paired_binary_readers(config::dataset& dataset_info,
+BinaryPairedStreams paired_binary_readers(dataset& dataset_info,
                                               bool followed_by_rc,
                                               size_t insert_size = 0) {
 
@@ -253,7 +255,7 @@ io::BinaryPairedStreams paired_binary_readers(config::dataset& dataset_info,
 }
 
 inline
-io::BinarySingleStreams single_binary_readers(config::dataset& dataset_info,
+BinarySingleStreams single_binary_readers(dataset& dataset_info,
                                               bool followed_by_rc,
                                               bool including_paired_reads) {
   std::vector<size_t> all_libs(dataset_info.reads.lib_count());
@@ -264,13 +266,13 @@ io::BinarySingleStreams single_binary_readers(config::dataset& dataset_info,
 }
 
 inline
-io::BinarySingleStreamPtr single_binary_multireader(config::dataset& dataset_info, bool followed_by_rc, bool including_paired_reads) {
-    return io::MultifileWrap<io::SingleReadSeq>(single_binary_readers(dataset_info, followed_by_rc, including_paired_reads));
+BinarySingleStreamPtr single_binary_multireader(dataset& dataset_info, bool followed_by_rc, bool including_paired_reads) {
+    return MultifileWrap<SingleReadSeq>(single_binary_readers(dataset_info, followed_by_rc, including_paired_reads));
 }
 
 inline
-io::BinaryPairedStreamPtr paired_binary_multireader(config::dataset& dataset_info, bool followed_by_rc, size_t insert_size = 0) {
-    return io::MultifileWrap<io::PairedReadSeq>(paired_binary_readers(dataset_info, followed_by_rc, insert_size));
+BinaryPairedStreamPtr paired_binary_multireader(dataset& dataset_info, bool followed_by_rc, size_t insert_size = 0) {
+    return MultifileWrap<PairedReadSeq>(paired_binary_readers(dataset_info, followed_by_rc, insert_size));
 }
 
 

@@ -11,112 +11,111 @@
 #include "utils/simple_tools.hpp"
 #include "io/reads/io_helper.hpp"
 #include "pipeline/library.hpp"
-
 #include "pipeline/config_struct.hpp"
 
-namespace debruijn_graph {
+namespace io {
 
 inline
-io::PairedStreamPtr paired_easy_reader(const io::SequencingLibrary<config::DataSetData> &lib,
-                                       bool followed_by_rc,
-                                       size_t insert_size,
-                                       bool change_read_order = false,
-                                       bool use_orientation = true,
-                                       io::OffsetType offset_type = io::PhredOffset) {
-  io::ReadStreamList<io::PairedRead> streams;
-  for (auto read_pair : lib.paired_reads()) {
-      streams.push_back(io::PairedEasyStream(read_pair.first, read_pair.second, followed_by_rc, insert_size, change_read_order,
-                                             use_orientation, lib.orientation(), offset_type));
-  }
-  return io::MultifileWrap<io::PairedRead>(streams);
-}
-
-inline
-io::ReadStreamList<io::SingleRead> single_easy_readers(const io::SequencingLibrary<config::DataSetData> &lib,
-                                       bool followed_by_rc,
-                                       bool including_paired_reads,
-                                       bool handle_Ns = true,
-                                       io::OffsetType offset_type = io::PhredOffset) {
-  io::ReadStreamList<io::SingleRead> streams;
-  if (including_paired_reads) {
-    for (const auto& read : lib.reads()) {
-      //do we need input_file function here?
-      streams.push_back(io::EasyStream(read, followed_by_rc, handle_Ns, offset_type));
+PairedStreamPtr paired_easy_reader(const SequencingLibrary<debruijn_graph::config::DataSetData> &lib,
+                                   bool followed_by_rc,
+                                   size_t insert_size,
+                                   bool change_read_order = false,
+                                   bool use_orientation = true,
+                                   OffsetType offset_type = PhredOffset) {
+    ReadStreamList<PairedRead> streams;
+    for (auto read_pair : lib.paired_reads()) {
+        streams.push_back(PairedEasyStream(read_pair.first, read_pair.second, followed_by_rc, insert_size, change_read_order,
+                                           use_orientation, lib.orientation(), offset_type));
     }
-  } else {
-    for (const auto& read : lib.single_reads()) {
-      streams.push_back(io::EasyStream(read, followed_by_rc, handle_Ns, offset_type));
+    return MultifileWrap<PairedRead>(streams);
+}
+
+inline
+ReadStreamList<SingleRead> single_easy_readers(const SequencingLibrary<debruijn_graph::config::DataSetData> &lib,
+                                               bool followed_by_rc,
+                                               bool including_paired_reads,
+                                               bool handle_Ns = true,
+                                               OffsetType offset_type = PhredOffset) {
+    ReadStreamList<SingleRead> streams;
+    if (including_paired_reads) {
+      for (const auto& read : lib.reads()) {
+        //do we need input_file function here?
+        streams.push_back(EasyStream(read, followed_by_rc, handle_Ns, offset_type));
+      }
+    } else {
+      for (const auto& read : lib.single_reads()) {
+        streams.push_back(EasyStream(read, followed_by_rc, handle_Ns, offset_type));
+      }
     }
-  }
-  return streams;
+    return streams;
 }
 
 inline
-io::SingleStreamPtr single_easy_reader(const io::SequencingLibrary<config::DataSetData> &lib,
-                                       bool followed_by_rc,
-                                       bool including_paired_reads,
-                                       bool handle_Ns = true,
-                                       io::OffsetType offset_type = io::PhredOffset) {
-  return io::MultifileWrap<io::SingleRead>(
-          single_easy_readers(lib, followed_by_rc, including_paired_reads, handle_Ns, offset_type));
+SingleStreamPtr single_easy_reader(const SequencingLibrary<debruijn_graph::config::DataSetData> &lib,
+                                   bool followed_by_rc,
+                                   bool including_paired_reads,
+                                   bool handle_Ns = true,
+                                   OffsetType offset_type = PhredOffset) {
+    return MultifileWrap<io::SingleRead>(
+           single_easy_readers(lib, followed_by_rc, including_paired_reads, handle_Ns, offset_type));
 }
 
 inline
-io::PairedStreamPtr paired_easy_reader_for_libs(std::vector<size_t> libs,
-                                                bool followed_by_rc,
-                                                size_t insert_size,
-                                                bool change_read_order = false,
-                                                bool use_orientation = true,
-                                                io::OffsetType offset_type = io::PhredOffset) {
-  io::ReadStreamList<io::PairedRead> streams;
-  for (size_t i = 0; i < libs.size(); ++i) {
-    streams.push_back(paired_easy_reader(cfg::get().ds.reads[libs[i]],
-                                         followed_by_rc, insert_size, change_read_order, use_orientation, offset_type));
-  }
-  return io::MultifileWrap<io::PairedRead>(streams);
-}
-
-
-inline
-io::PairedStreamPtr paired_easy_reader(bool followed_by_rc,
-                                       size_t insert_size,
-                                       bool change_read_order = false,
-                                       bool use_orientation = true,
-                                       io::OffsetType offset_type = io::PhredOffset) {
-
-  std::vector<size_t> all_libs(cfg::get().ds.reads.lib_count());
-  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-    all_libs[i] = i;
-
-  // FIXME: Should we use only first library?
-  // No, this one is for all libs together
-  return paired_easy_reader_for_libs(all_libs, followed_by_rc, insert_size, change_read_order, use_orientation, offset_type);
+PairedStreamPtr paired_easy_reader_for_libs(std::vector<size_t> libs,
+                                            bool followed_by_rc,
+                                            size_t insert_size,
+                                            bool change_read_order = false,
+                                            bool use_orientation = true,
+                                            OffsetType offset_type = PhredOffset) {
+    ReadStreamList<io::PairedRead> streams;
+    for (size_t i = 0; i < libs.size(); ++i) {
+      streams.push_back(paired_easy_reader(cfg::get().ds.reads[libs[i]],
+                                           followed_by_rc, insert_size, change_read_order, use_orientation, offset_type));
+    }
+    return MultifileWrap<PairedRead>(streams);
 }
 
 
 inline
-io::SingleStreamPtr single_easy_reader_for_libs(vector<size_t> libs,
-                                                bool followed_by_rc,
-                                                bool including_paired_reads,
-                                                io::OffsetType offset_type = io::PhredOffset) {
-  io::ReadStreamList<io::SingleRead> streams;
-  for (size_t i = 0; i < libs.size(); ++i) {
-    streams.push_back(single_easy_reader(cfg::get().ds.reads[libs[i]],
-                                         followed_by_rc, including_paired_reads, offset_type));
-  }
-  return io::MultifileWrap<io::SingleRead>(streams);
+PairedStreamPtr paired_easy_reader(bool followed_by_rc,
+                                   size_t insert_size,
+                                   bool change_read_order = false,
+                                   bool use_orientation = true,
+                                   OffsetType offset_type = PhredOffset) {
+
+    std::vector<size_t> all_libs(cfg::get().ds.reads.lib_count());
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
+        all_libs[i] = i;
+
+    // FIXME: Should we use only first library?
+    // No, this one is for all libs together
+    return paired_easy_reader_for_libs(all_libs, followed_by_rc, insert_size, change_read_order, use_orientation, offset_type);
+}
+
+
+inline
+SingleStreamPtr single_easy_reader_for_libs(vector<size_t> libs,
+                                            bool followed_by_rc,
+                                            bool including_paired_reads,
+                                            OffsetType offset_type = PhredOffset) {
+    ReadStreamList<SingleRead> streams;
+    for (size_t i = 0; i < libs.size(); ++i) {
+        streams.push_back(single_easy_reader(cfg::get().ds.reads[libs[i]],
+                                             followed_by_rc, including_paired_reads, offset_type));
+    }
+    return MultifileWrap<SingleRead>(streams);
 }
 
 inline
-io::SingleStreamPtr single_easy_reader(bool followed_by_rc,
-                                       bool including_paired_reads,
-                                       io::OffsetType offset_type = io::PhredOffset) {
+SingleStreamPtr single_easy_reader(bool followed_by_rc,
+                                   bool including_paired_reads,
+                                   OffsetType offset_type = PhredOffset) {
 
-  std::vector<size_t> all_libs(cfg::get().ds.reads.lib_count());
-  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-    all_libs[i] = i;
+    std::vector<size_t> all_libs(cfg::get().ds.reads.lib_count());
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
+        all_libs[i] = i;
 
-  return single_easy_reader_for_libs(all_libs, followed_by_rc, including_paired_reads, offset_type);
+    return single_easy_reader_for_libs(all_libs, followed_by_rc, including_paired_reads, offset_type);
 }
 
 }

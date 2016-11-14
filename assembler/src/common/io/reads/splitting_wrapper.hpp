@@ -20,12 +20,12 @@ private:
 
     void FillBuffer(SingleRead& tmp_read) {
         buffer_.clear();
-        for(size_t i = 0; i < tmp_read.size(); i++) {
+        for (size_t i = 0; i < tmp_read.size(); ++i) {
             size_t j = i;
-            while(j < tmp_read.size() && is_nucl(tmp_read.GetSequenceString()[j])) {
+            while (j < tmp_read.size() && is_nucl(tmp_read.GetSequenceString()[j])) {
                 j++;
             }
-            if(j > i) {
+            if (j > i) {
                 buffer_.push_back(tmp_read.Substr(i, j));
                 i = j - 1;
             }
@@ -34,7 +34,7 @@ private:
     }
 
     bool Skip() {
-        while(!this->reader().eof() && buffer_position_ == buffer_.size()) {
+        while (!this->reader().eof() && buffer_position_ == buffer_.size()) {
             SingleRead tmp_read;
             this->reader() >> tmp_read;
             FillBuffer(tmp_read);

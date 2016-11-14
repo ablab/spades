@@ -8,8 +8,6 @@
 #include <io/sam/read.hpp>
 #include <io/sam/sam_reader.hpp>
 
-using namespace std;
-
 namespace sam_reader {
 
 bool MappedSamStream::eof() const {

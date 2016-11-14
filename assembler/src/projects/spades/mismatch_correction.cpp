@@ -21,7 +21,7 @@ void MismatchCorrection::run(conj_graph_pack &gp, const char*) {
         if (dataset.reads[i].is_mismatch_correctable())
             libs.push_back(i);
     }
-    auto streams = single_binary_readers_for_libs(dataset, libs, true,  true);
+    auto streams = io::single_binary_readers_for_libs(dataset, libs, true,  true);
     size_t corrected = MismatchShallNotPass<conj_graph_pack, io::SingleReadSeq>(gp, 2).ParallelStopAllMismatches(streams, 1);
     INFO("Corrected " << corrected << " nucleotides");
 }
