@@ -16,7 +16,6 @@
 #define EDGES_POSITION_HANDLER_HPP_
 
 //#include "utils.hpp"
-#include "visualization/graph_labeler.hpp"
 #include "utils/simple_tools.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/core/action_handlers.hpp"

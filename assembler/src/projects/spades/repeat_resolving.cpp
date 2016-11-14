@@ -55,7 +55,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     if (cfg::get().developer_mode)
         stats::PrepareForDrawing(gp);
 
-    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(config::info_printer_pos::before_repeat_resolution);
 

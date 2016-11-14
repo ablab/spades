@@ -25,7 +25,7 @@ class DebruijnEnvironment : public Environment {
         GraphElementFinder<Graph> element_finder_;
         std::shared_ptr<MapperClass> mapper_;
         FillerClass filler_;
-        omnigraph::DefaultLabeler<Graph> labeler_;
+        visualization::graph_labeler::DefaultLabeler<Graph> labeler_;
         debruijn_graph::ReadPathFinder<Graph> path_finder_;
         ColoringClass coloring_;
         //CompositeLabeler<Graph> labeler_;
@@ -87,7 +87,7 @@ class DebruijnEnvironment : public Environment {
             DEBUG("Colorer done");
             Path<EdgeId> path1 = mapper_->MapSequence(gp_.genome.GetSequence()).path();
             Path<EdgeId> path2 = mapper_->MapSequence(!gp_.genome.GetSequence()).path();
-            coloring_ = omnigraph::visualization::DefaultColorer(gp_.g, path1, path2);
+            coloring_ = visualization::graph_colorer::DefaultColorer(gp_.g, path1, path2);
             ResetPositions();
         }
 
@@ -193,7 +193,7 @@ class DebruijnEnvironment : public Environment {
             return filler_;
         }
 
-        omnigraph::GraphLabeler<Graph>& labeler() {
+        visualization::graph_labeler::GraphLabeler<Graph>& labeler() {
             return labeler_;
         }
 

@@ -204,7 +204,7 @@
 //    }
 //
 //    void ReportLocality(VertexId v, const vector<EdgeId>& good_contig_path, const string& best_contig, const Contig& c, const string& folder) {
-//        using namespace omnigraph::visualization;
+//        using namespace visualization;
 //        make_dir(folder);
 //        LengthIdGraphLabeler<Graph> basic_labeler(gp_.g);
 //        EdgePosGraphLabeler<Graph> pos_labeler(gp_.g, gp_.edge_pos);
@@ -398,7 +398,7 @@
 //    }
 //
 //    void ReportEdge(EdgeId e, const string& folder) {
-//        using namespace omnigraph::visualization;
+//        using namespace visualization;
 //        INFO(
 //                "Can close gap between edges " << g_.str(g_.GetUniqueIncomingEdge(g_.EdgeStart(e))) << " and " << g_.str(g_.GetUniqueOutgoingEdge(g_.EdgeEnd(e))) << " with edge " << g_.str(e));
 //        LengthIdGraphLabeler<Graph> basic_labeler(g_);
@@ -407,7 +407,7 @@
 //        CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 //        GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g_, e);
 //        auto colorer = coloring_.ConstructColorer(component);
-//        omnigraph::visualization::WriteComponent(component, folder + ToString(g_.int_id(e)) + "_loc.dot", colorer, labeler);
+//        visualization::visualization_utils::WriteComponent(component, folder + ToString(g_.int_id(e)) + "_loc.dot", colorer, labeler);
 //    }
 //
 ////    bool CheckEdges(const vector<EdgeId>& edges) {

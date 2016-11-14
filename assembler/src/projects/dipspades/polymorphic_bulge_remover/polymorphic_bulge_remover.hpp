@@ -75,12 +75,12 @@ class PolymorphicBulgeRemover {
 
         graph_pack_.EnsureDebugInfo();
         make_dir(dsp_cfg::get().io.output_dir + "components/");
-        omnigraph::DefaultLabeler<Graph> labeler(graph_pack_.g, graph_pack_.edge_pos);
+        visualization::graph_labeler::DefaultLabeler<Graph> labeler(graph_pack_.g, graph_pack_.edge_pos);
         make_dir(dsp_cfg::get().io.output_dir + "components/" + component_dir + "/");
-        omnigraph::visualization::WriteComponents(graph_pack_.g,
+        visualization::visualization_utils::WriteComponents(graph_pack_.g,
                 dsp_cfg::get().io.output_dir + "components/" + component_dir + "/",
                 omnigraph::ReliableSplitter<Graph>(graph_pack_.g),
-                omnigraph::visualization::DefaultColorer(graph_pack_.g, Path<EdgeId>(), Path<EdgeId>()),
+                visualization::graph_colorer::DefaultColorer(graph_pack_.g, Path<EdgeId>(), Path<EdgeId>()),
                 labeler);
     }
 

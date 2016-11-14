@@ -32,7 +32,7 @@ string ScaffoldGraphLabeler::label(VertexId v) const {
         additional_label;
 }
 
-void ScaffoldGraphVisualizer::Visualize(GraphPrinter<ScaffoldGraph> &printer) {
+void ScaffoldGraphVisualizer::Visualize(graph_printer::GraphPrinter<ScaffoldGraph> &printer) {
     printer.open();
     printer.AddVertices(graph_.vbegin(), graph_.vend());
     for (const auto& e : graph_.edges()) {
@@ -41,11 +41,11 @@ void ScaffoldGraphVisualizer::Visualize(GraphPrinter<ScaffoldGraph> &printer) {
     printer.close();
 }
 
-void ScaffoldGraphVisualizer::Visualize(ostream &os, CompositeGraphColorer<ScaffoldGraph>& colorer) {
+void ScaffoldGraphVisualizer::Visualize(ostream &os, graph_colorer::CompositeGraphColorer<ScaffoldGraph>& colorer) {
     ScaffoldGraphLabeler labeler(graph_, additional_vertex_labels_);
-    EmptyGraphLinker<ScaffoldGraph> linker;
+    vertex_linker::EmptyGraphLinker<ScaffoldGraph> linker;
 
-    SingleGraphPrinter <ScaffoldGraph> printer(graph_, os, labeler, colorer, linker);
+    graph_printer::SingleGraphPrinter <ScaffoldGraph> printer(graph_, os, labeler, colorer, linker);
     Visualize(printer);
 }
 

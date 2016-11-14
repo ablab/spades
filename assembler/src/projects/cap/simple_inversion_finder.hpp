@@ -299,9 +299,9 @@ class SimpleInversionFinder {
     MappingPath<EdgeId> mpath = TrivialMappingPath(g_, path);
     //Path<EdgeId> cpath(path, mpath.start_pos(), mpath.end_pos());
 
-    LengthIdGraphLabeler<Graph> basic_labeler(g_);
-    EdgePosGraphLabeler<Graph> pos_labeler(g_, gp_.edge_pos);
-    CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+    visualization::graph_labeler::LengthIdGraphLabeler<Graph> basic_labeler(g_);
+    visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(g_, gp_.edge_pos);
+    visualization::graph_labeler::CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 
     WriteComponentsAlongPath(g_, labeler, out_file, edge_length, max_vertices,
       mpath, *ConstructBorderColorer(g_, coloring_));

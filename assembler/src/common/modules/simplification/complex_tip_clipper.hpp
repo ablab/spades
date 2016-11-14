@@ -153,7 +153,7 @@ public:
         }
 
         if (!pics_folder_.empty()) {
-            visualization::WriteComponentSinksSources(*opt_component,
+            visualization::visualization_utils::WriteComponentSinksSources(*opt_component,
                                                       pics_folder_
                                                       + ToString(this->g().int_id(v)) //+ "_" + ToString(candidate_cnt)
                                                       + ".dot");

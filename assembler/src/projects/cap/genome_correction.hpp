@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <map>
+#include <common/visualization/graph_labeler.hpp>
 #include "common/adt/bag.hpp"
 
 namespace cap {
@@ -376,7 +377,7 @@ class SimpleInDelCorrector {
 
     void GenPicAlongPath(const vector<EdgeId> path, size_t cnt) {
     utils::MakeDirPath("ref_correction");
-        WriteComponentsAlongPath(g_, StrGraphLabeler<Graph>(g_),
+        WriteComponentsAlongPath(g_, visualization::graph_labeler::StrGraphLabeler<Graph>(g_),
                 "ref_correction/" + ToString(cnt) + ".dot", 100000, 10,
                 TrivialMappingPath(g_, path), *ConstructColorer(coloring_));
     }
@@ -384,7 +385,8 @@ class SimpleInDelCorrector {
     void GenPicAroundEdge(EdgeId e, size_t cnt) {
         utils::MakeDirPath("ref_correction");
         GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g_, e, 10, 100000);
-        omnigraph::visualization::WriteComponent(g_, "ref_correction/" + ToString(cnt) + ".dot", component, coloring_.GetInstance(), StrGraphLabeler<Graph>(g_));
+        visualization::visualization_utils::WriteComponent(g_, "ref_correction/" + ToString(cnt) + ".dot", component, coloring_.GetInstance(),
+                                      visualization::graph_labeler::StrGraphLabeler<Graph>(g_));
     }
 
     void CorrectGenomePath(size_t genome_start, size_t genome_end,

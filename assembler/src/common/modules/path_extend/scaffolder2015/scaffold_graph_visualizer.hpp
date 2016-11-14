@@ -10,10 +10,10 @@
 
 namespace path_extend { namespace scaffold_graph {
 
-using namespace omnigraph::visualization;
+using namespace visualization;
 
 
-class ScaffoldGraphLabeler : public GraphLabeler<ScaffoldGraph> {
+class ScaffoldGraphLabeler : public graph_labeler::GraphLabeler<ScaffoldGraph> {
 
 private:
     const ScaffoldGraph &graph_;
@@ -31,7 +31,7 @@ public:
 };
 
 
-class ScaffoldEdgeColorer : public ElementColorer<ScaffoldGraph::EdgeId> {
+class ScaffoldEdgeColorer : public graph_colorer::ElementColorer<ScaffoldGraph::EdgeId> {
 private:
     static const map<size_t, string> color_map;
 
@@ -42,7 +42,7 @@ public:
 };
 
 
-class ScaffoldVertexSetColorer : public ElementColorer<ScaffoldGraph::VertexId> {
+class ScaffoldVertexSetColorer : public graph_colorer::ElementColorer<ScaffoldGraph::VertexId> {
  private:
   set<ScaffoldGraph::VertexId> vertex_set_;
 
@@ -60,7 +60,7 @@ private:
     const map<ScaffoldGraph::VertexId, string>& additional_vertex_labels_;
 
 private:
-    void Visualize(GraphPrinter<ScaffoldGraph> &printer);
+    void Visualize(graph_printer::GraphPrinter<ScaffoldGraph> &printer);
 
 public:
     ScaffoldGraphVisualizer(const ScaffoldGraph &graph,
@@ -69,7 +69,7 @@ public:
             additional_vertex_labels_(additional_vertex_labels){
     }
 
-    void Visualize(ostream &os, CompositeGraphColorer<ScaffoldGraph>& colorer);
+    void Visualize(ostream &os, graph_colorer::CompositeGraphColorer<ScaffoldGraph>& colorer);
 };
 
 } //scaffold_graph

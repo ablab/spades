@@ -5,20 +5,21 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#ifndef GRAPH_LABELER_HPP_
-#define GRAPH_LABELER_HPP_
+#pragma once
 
 #include "utils/simple_tools.hpp"
 #include "utils/standard_base.hpp"
-#include "assembly_graph/handlers/edges_position_handler.hpp"
+#include "common/assembly_graph/handlers/edges_position_handler.hpp"
 
-namespace omnigraph {
+namespace visualization {
+
+namespace graph_labeler {
 
 /**
- * (Interface)
- * Provides string labels for vertices and edges of some graph.
- * Used with GraphPrinter to visualize graphs.
- */
+* (Interface)
+* Provides string labels for vertices and edges of some graph.
+* Used with GraphPrinter to visualize graphs.
+*/
 template<class Graph>
 class GraphLabeler {
 public:
@@ -62,16 +63,16 @@ public:
 //};
 
 template<class Graph>
-class AbstractGraphLabeler: public GraphLabeler<Graph> {
+class AbstractGraphLabeler : public GraphLabeler<Graph> {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    const Graph& g_;
+    const Graph &g_;
 protected:
-    AbstractGraphLabeler(const Graph& g): g_(g) {
+    AbstractGraphLabeler(const Graph &g) : g_(g) {
 
     }
 
-    const Graph& graph() const {
+    const Graph &graph() const {
         return g_;
     }
 
@@ -87,9 +88,9 @@ public:
 };
 
 /**
- * Trivial implementation of GraphLabeler.
- * All labels are "".
- */
+* Trivial implementation of GraphLabeler.
+* All labels are "".
+*/
 template<class Graph>
 class EmptyGraphLabeler : public GraphLabeler<Graph> {
     typedef GraphLabeler<Graph> base;
@@ -108,16 +109,16 @@ public:
 };
 
 /**
- * Implementation of GraphLabeler for Graphs that have methods
- * str(VertexId) and str(EdgeId), such as AbstractGraph.
- */
+* Implementation of GraphLabeler for Graphs that have methods
+* str(VertexId) and str(EdgeId), such as AbstractGraph.
+*/
 template<class Graph>
 class StrGraphLabeler : public AbstractGraphLabeler<Graph> {
     typedef AbstractGraphLabeler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 public:
-    StrGraphLabeler(const Graph& g) : base(g) {}
+    StrGraphLabeler(const Graph &g) : base(g) {}
 
     /*virtual*/ std::string label(VertexId v) const {
         return this->graph().str(v);
@@ -132,8 +133,8 @@ public:
     }
 };
 
-template <class Graph>
-shared_ptr<GraphLabeler<Graph>> StrGraphLabelerInstance(const Graph& g) {
+template<class Graph>
+shared_ptr<GraphLabeler<Graph>> StrGraphLabelerInstance(const Graph &g) {
     return make_shared<StrGraphLabeler<Graph>>(g);
 }
 
@@ -143,7 +144,7 @@ class LengthIdGraphLabeler : public StrGraphLabeler<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 public:
-    LengthIdGraphLabeler(const Graph& g) : base(g) {}
+    LengthIdGraphLabeler(const Graph &g) : base(g) {}
 
     /*virtual*/ std::string label(EdgeId e) const {
         std::stringstream ss;
@@ -159,7 +160,7 @@ class LengthGraphLabeler : public StrGraphLabeler<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 public:
-    LengthGraphLabeler(const Graph& g) : base(g) {}
+    LengthGraphLabeler(const Graph &g) : base(g) {}
 
     /*virtual*/ std::string label(EdgeId e) const {
         return ToString(this->graph().length(e));
@@ -173,7 +174,7 @@ class CoverageGraphLabeler : public AbstractGraphLabeler<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 public:
-    CoverageGraphLabeler(const Graph& g) : base(g) {}
+    CoverageGraphLabeler(const Graph &g) : base(g) {}
 
     std::string label(EdgeId e) const {
         double coverage = this->graph().coverage(e);
@@ -186,21 +187,21 @@ class CompositeLabeler : public GraphLabeler<Graph> {
 private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    vector<GraphLabeler<Graph>*> list_;
+    vector<GraphLabeler<Graph> *> list_;
 
     template<typename ElementId>
     string ConstructLabel(ElementId id) const {
         vector<string> to_print;
-        for(size_t i = 0; i < list_.size(); i++) {
+        for (size_t i = 0; i < list_.size(); i++) {
             string next = list_[i]->label(id);
-            if(next.size() != 0) {
+            if (next.size() != 0) {
                 to_print.push_back(next);
             }
         }
         string result = "";
-        for(size_t i = 0; i < to_print.size(); i++) {
+        for (size_t i = 0; i < to_print.size(); i++) {
             result += to_print[i];
-            if(i + 1 < to_print.size())
+            if (i + 1 < to_print.size())
                 result += "\\n";
         }
         return result;
@@ -210,14 +211,17 @@ public:
     CompositeLabeler() {
     }
 
-    CompositeLabeler(GraphLabeler<Graph> &labeler1, GraphLabeler<Graph> &labeler2, GraphLabeler<Graph> &labeler3, GraphLabeler<Graph> &labeler4) {
+    CompositeLabeler(GraphLabeler<Graph> &labeler1, GraphLabeler<Graph> &labeler2,
+                     GraphLabeler<Graph> &labeler3,
+                     GraphLabeler<Graph> &labeler4) {
         AddLabeler(labeler1);
         AddLabeler(labeler2);
         AddLabeler(labeler3);
         AddLabeler(labeler4);
     }
 
-    CompositeLabeler(GraphLabeler<Graph> &labeler1, GraphLabeler<Graph> &labeler2, GraphLabeler<Graph> &labeler3) {
+    CompositeLabeler(GraphLabeler<Graph> &labeler1, GraphLabeler<Graph> &labeler2,
+                     GraphLabeler<Graph> &labeler3) {
         AddLabeler(labeler1);
         AddLabeler(labeler2);
         AddLabeler(labeler3);
@@ -245,14 +249,14 @@ public:
 };
 
 template<class Graph>
-class EdgePosGraphLabeler: public AbstractGraphLabeler<Graph> {
+class EdgePosGraphLabeler : public AbstractGraphLabeler<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 public:
-    const EdgesPositionHandler<Graph>& edge_pos_;
+    const omnigraph::EdgesPositionHandler<Graph> &edge_pos_;
 
-    EdgePosGraphLabeler(const Graph& g, const EdgesPositionHandler<Graph>& edge_pos) :
-        AbstractGraphLabeler<Graph>(g), edge_pos_(edge_pos) {
+    EdgePosGraphLabeler(const Graph &g, const omnigraph::EdgesPositionHandler<Graph> &edge_pos) :
+            AbstractGraphLabeler<Graph>(g), edge_pos_(edge_pos) {
     }
 
     virtual std::string label(EdgeId edgeId) const {
@@ -262,23 +266,24 @@ public:
     virtual ~EdgePosGraphLabeler() {
 //        TRACE("~EdgePosGraphLabeler");
     }
+
 private:
     DECL_LOGGER("EdgePosGraphLabeler")
 };
 
 template<class Graph>
-class DefaultLabeler: public GraphLabeler<Graph> {
+class DefaultLabeler : public GraphLabeler<Graph> {
 private:
-    const Graph& g_;
-    const EdgesPositionHandler<Graph> &edges_positions_;
+    const Graph &g_;
+    const omnigraph::EdgesPositionHandler<Graph> &edges_positions_;
 protected:
     typedef GraphLabeler<Graph> super;
     typedef typename super::EdgeId EdgeId;
     typedef typename super::VertexId VertexId;
 public:
 
-    DefaultLabeler(const Graph &g, const EdgesPositionHandler<Graph> &position_handler) :
-        g_(g), edges_positions_(position_handler) {
+    DefaultLabeler(const Graph &g, const omnigraph::EdgesPositionHandler<Graph> &position_handler) :
+            g_(g), edges_positions_(position_handler) {
     }
 
     virtual std::string label(VertexId vertexId) const {
@@ -288,7 +293,7 @@ public:
     virtual std::string label(EdgeId edgeId) const {
         std::string ret_label;
         ret_label += "Id " + g_.str(edgeId) + "\\n";
-        ret_label += "Positions:\\n"+ edges_positions_.str(edgeId);
+        ret_label += "Positions:\\n" + edges_positions_.str(edgeId);
         size_t len = g_.length(edgeId);
         double cov = g_.coverage(edgeId);
         ret_label += "Len(cov): " + ToString(len) + "(" + ToString(cov) + ")";
@@ -298,7 +303,6 @@ public:
     virtual ~DefaultLabeler() {
     }
 };
-
+}
 }
 
-#endif /* GRAPH_LABELER_HPP_ */

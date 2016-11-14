@@ -54,8 +54,8 @@ FindGenomeMappingPath(const Sequence& genome, const graph_pack& gp) {
 }
 
 template <class graph_pack>
-shared_ptr<omnigraph::visualization::GraphColorer<Graph>> DefaultColorer(const graph_pack& gp) {
-    return omnigraph::visualization::DefaultColorer(gp.g, 
+shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultColorer(const graph_pack& gp) {
+    return visualization::graph_colorer::DefaultColorer(gp.g,
         FindGenomeMappingPath(gp.genome.GetSequence(), gp.g, gp.index, gp.kmer_mapper).path(),
         FindGenomeMappingPath(!gp.genome.GetSequence(), gp.g, gp.index, gp.kmer_mapper).path());
 }
@@ -64,11 +64,11 @@ template <class graph_pack>
 void CollectContigPositions(graph_pack &gp) {
     if (!cfg::get().pos.contigs_for_threading.empty() &&
         path::FileExists(cfg::get().pos.contigs_for_threading))
-      FillPos(gp, cfg::get().pos.contigs_for_threading, "thr_", true);
+      visualization::position_filler::FillPos(gp, cfg::get().pos.contigs_for_threading, "thr_", true);
 
     if (!cfg::get().pos.contigs_to_analyze.empty() &&
         path::FileExists(cfg::get().pos.contigs_to_analyze))
-      FillPos(gp, cfg::get().pos.contigs_to_analyze, "anlz_", true);
+      visualization::position_filler::FillPos(gp, cfg::get().pos.contigs_to_analyze, "anlz_", true);
 }
 
 template<class Graph, class Index>
@@ -131,8 +131,8 @@ class GenomeMappingStat: public AbstractStatCounter {
 template<class Graph>
 void WriteErrorLoc(const Graph &g,
                    const string& folder_name,
-                   std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> genome_colorer,
-                   const omnigraph::GraphLabeler<Graph>& labeler) {
+                   std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> genome_colorer,
+                   const visualization::graph_labeler::GraphLabeler<Graph>& labeler) {
     INFO("Writing error localities for graph to folder " << folder_name);
     GraphComponent<Graph> all(g, g.begin(), g.end());
     set<typename Graph::EdgeId> edges = genome_colorer->ColoredWith(all.edges().begin(),
@@ -143,7 +143,7 @@ void WriteErrorLoc(const Graph &g,
         to_draw.insert(g.EdgeStart(*it));
     }
     shared_ptr<GraphSplitter<Graph>> splitter = StandardSplitter(g, to_draw);
-    WriteComponents(g, folder_name, splitter, genome_colorer, labeler);
+    visualization::visualization_utils::WriteComponents(g, folder_name, splitter, genome_colorer, labeler);
     INFO("Error localities written written to folder " << folder_name);
 }
 
@@ -171,14 +171,16 @@ void CountStats(const graph_pack& gp) {
 
 template<class Graph>
 void WriteGraphComponentsAlongGenome(const Graph& g,
-                                     const GraphLabeler<Graph>& labeler,
+                                     const visualization::graph_labeler::GraphLabeler<Graph>& labeler,
                                      const string& folder,
                                      const Path<typename Graph::EdgeId>& path1,
                                      const Path<typename Graph::EdgeId>& path2) {
     INFO("Writing graph components along genome");
 
     make_dir(folder);
-    omnigraph::visualization::WriteComponentsAlongPath(g, path1, folder, omnigraph::visualization::DefaultColorer(g, path1, path2), labeler);
+    visualization::visualization_utils::WriteComponentsAlongPath(g, path1, folder,
+                                                                 visualization::graph_colorer::DefaultColorer(g, path1, path2),
+                                                                 labeler);
 
     INFO("Writing graph components along genome finished");
 }
@@ -188,8 +190,8 @@ template<class Graph, class Mapper>
 void WriteGraphComponentsAlongContigs(const Graph& g,
                                       Mapper &mapper,
                                       const std::string& folder,
-                                      std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer,
-                                      const GraphLabeler<Graph>& labeler) {
+                                      std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer,
+                                      const visualization::graph_labeler::GraphLabeler<Graph>& labeler) {
     INFO("Writing graph components along contigs");
     auto contigs_to_thread = io::EasyStream(cfg::get().pos.contigs_to_analyze, false);
     contigs_to_thread->reset();
@@ -197,16 +199,16 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
     while (!contigs_to_thread->eof()) {
         (*contigs_to_thread) >> read;
         make_dir(folder + read.name());
-        omnigraph::visualization::WriteComponentsAlongPath(g, mapper.MapSequence(read.sequence()).simple_path(), folder + read.name() + "/",
-                                                           colorer, labeler);
+        visualization::visualization_utils::WriteComponentsAlongPath(g, mapper.MapSequence(read.sequence()).simple_path(),
+                                                                     folder + read.name() + "/", colorer, labeler);
     }
     INFO("Writing graph components along contigs finished");
 }
 
 template<class Graph>
 void WriteKmerComponent(conj_graph_pack &gp, runtime_k::RtSeq const& kp1mer, const std::string& file,
-                        std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer,
-                        const omnigraph::GraphLabeler<Graph>& labeler) {
+                        std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer,
+                        const visualization::graph_labeler::GraphLabeler<Graph>& labeler) {
     if(!gp.index.contains(kp1mer)) {
         WARN("no such kmer in the graph");
         return;
@@ -215,7 +217,7 @@ void WriteKmerComponent(conj_graph_pack &gp, runtime_k::RtSeq const& kp1mer, con
     auto pos = gp.index.get(kp1mer);
     typename Graph::VertexId v = pos.second * 2 < gp.g.length(pos.first) ? gp.g.EdgeStart(pos.first) : gp.g.EdgeEnd(pos.first);
     GraphComponent<Graph> component = omnigraph::VertexNeighborhood<Graph>(gp.g, v);
-    omnigraph::visualization::WriteComponent<Graph>(component, file, colorer, labeler);
+    visualization::visualization_utils::WriteComponent<Graph>(component, file, colorer, labeler);
 }
 
 inline
@@ -245,7 +247,7 @@ void PrepareForDrawing(conj_graph_pack &gp) {
 
 struct detail_info_printer {
     detail_info_printer(conj_graph_pack &gp,
-                        const omnigraph::GraphLabeler<Graph>& labeler, 
+                        const visualization::graph_labeler::GraphLabeler<Graph>& labeler,
                         const string& folder)
             :  gp_(gp),
                labeler_(labeler),
@@ -263,6 +265,8 @@ struct detail_info_printer {
 
     void ProduceDetailedInfo(const string &pos_name,
                              config::info_printer_pos pos) {
+        using namespace visualization;
+
         static size_t call_cnt = 0;
 
         auto it = cfg::get().info_printers.find(pos);
@@ -345,16 +349,19 @@ struct detail_info_printer {
         }
     
         if (config.write_full_graph) {
-            WriteComponent(GraphComponent<Graph>(gp_.g, gp_.g.begin(), gp_.g.end()), pics_folder + "full_graph.dot", colorer, labeler_);
+            visualization_utils::WriteComponent(GraphComponent<Graph>(gp_.g, gp_.g.begin(), gp_.g.end()),
+                                                pics_folder + "full_graph.dot", colorer, labeler_);
         }
     
         if (config.write_full_nc_graph) {
-            WriteSimpleComponent(GraphComponent<Graph>(gp_.g, gp_.g.begin(), gp_.g.end()), pics_folder + "nc_full_graph.dot", colorer, labeler_);
+            visualization_utils::WriteSimpleComponent(GraphComponent<Graph>(gp_.g, gp_.g.begin(), gp_.g.end()),
+                                                      pics_folder + "nc_full_graph.dot", colorer, labeler_);
         }
     
         if (config.write_components) {
             make_dir(pics_folder + "components/");
-            omnigraph::visualization::WriteComponents(gp_.g, pics_folder + "components/", omnigraph::ReliableSplitter<Graph>(gp_.g), colorer, labeler_);
+            visualization_utils::WriteComponents(gp_.g, pics_folder + "components/",
+                                                 omnigraph::ReliableSplitter<Graph>(gp_.g), colorer, labeler_);
         }
     
         if (!config.components_for_kmer.empty()) {
@@ -367,7 +374,8 @@ struct detail_info_printer {
     
         if (config.write_components_along_genome) {
             make_dir(pics_folder + "along_genome/");
-            omnigraph::visualization::WriteComponentsAlongPath(gp_.g, path1.sequence(), pics_folder + "along_genome/", colorer, labeler_);
+            visualization_utils::WriteComponentsAlongPath
+                    (gp_.g, path1.sequence(), pics_folder + "along_genome/", colorer, labeler_);
         }
     
         if (config.write_components_along_contigs) {
@@ -399,7 +407,7 @@ struct detail_info_printer {
     }
 
     conj_graph_pack& gp_;
-    const omnigraph::GraphLabeler<Graph>& labeler_;
+    const visualization::graph_labeler::GraphLabeler<Graph>& labeler_;
     string folder_;
 };
 

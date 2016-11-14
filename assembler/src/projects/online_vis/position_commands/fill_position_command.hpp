@@ -50,7 +50,7 @@ namespace online_visualization {
                 string name = args[1];
                 string file = args[2];
 
-                FillPos(curr_env.graph_pack(), file, name, true);
+                visualization::position_filler::FillPos(curr_env.graph_pack(), file, name, true);
             }
     };
 }

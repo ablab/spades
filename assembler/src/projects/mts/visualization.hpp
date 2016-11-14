@@ -7,7 +7,7 @@ namespace debruijn_graph {
 
 template <class Graph>
 class AnnotatedGraphColorer
-    : public omnigraph::visualization::GraphColorer<Graph> {
+    : public visualization::graph_colorer::GraphColorer<Graph> {
 
     EdgeAnnotation annotation_;
     std::map<bin_id, std::string> color_map_;
@@ -46,23 +46,21 @@ void PrintColoredAnnotatedGraphAroundEdge(const conj_graph_pack& gp,
                                           const EdgeAnnotation& annotation,
                                           const string& output_filename) {
     //std::cout << output_filename << std::endl;
-    DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     auto colorer_ptr =
         std::make_shared<AnnotatedGraphColorer<Graph>>(annotation);
     GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(gp.g, edge, 100, 10000);
-    omnigraph::visualization::WriteComponent<Graph>(component, output_filename,
-                                                    colorer_ptr, labeler);
+    visualization::visualization_utils::WriteComponent<Graph>(component, output_filename, colorer_ptr, labeler);
 }
 
 void PrintAnnotatedAlongPath(const conj_graph_pack& gp,
                                           const vector<EdgeId>& path,
                                           const EdgeAnnotation& annotation,
                                           const string& output_prefix) {
-    DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     auto colorer_ptr =
         std::make_shared<AnnotatedGraphColorer<Graph>>(annotation);
-    omnigraph::visualization::WriteComponentsAlongPath<Graph>(gp.g, path, output_prefix,
-                                                    colorer_ptr, labeler);
+    visualization::visualization_utils::WriteComponentsAlongPath<Graph>(gp.g, path, output_prefix, colorer_ptr, labeler);
 }
 
 }

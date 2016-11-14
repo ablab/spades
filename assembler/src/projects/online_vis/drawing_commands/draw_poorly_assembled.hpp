@@ -120,7 +120,7 @@ public:
 class UnresolvedPrinter : public RepeatProcessor {
 
     void DrawGap(DebruijnEnvironment& curr_env, const vector<EdgeId>& path, string filename, string /*label*/ = "") const {
-        omnigraph::visualization::WriteComponentsAlongPath<Graph>(curr_env.graph(), path, filename, curr_env.coloring(), curr_env.labeler());
+        visualization::visualization_utils::WriteComponentsAlongPath<Graph>(curr_env.graph(), path, filename, curr_env.coloring(), curr_env.labeler());
         LOG("The pictures is written to " << filename);
     }
 

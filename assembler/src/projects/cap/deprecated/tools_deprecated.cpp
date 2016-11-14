@@ -64,8 +64,8 @@
 //     ConstructColoredGraph(gp, coloring, streams, false, br_delta);
 
 // //    INFO("Filling ref pos " << gp.genome.size());
-// //            FillPos(gp_, gp_.genome, "ref_0");
-// //            FillPos(gp_, !gp_.genome, "ref_1");
+// //            visualization::position_filler::FillPos(gp_, gp_.genome, "ref_0");
+// //            visualization::position_filler::FillPos(gp_, !gp_.genome, "ref_1");
 
 // //Indels
 // //    make_dir(output_folder + "indels/");

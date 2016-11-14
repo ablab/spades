@@ -80,8 +80,12 @@ class DrawPolymorphicRegions : public DrawingCommand {
 
                     if(polymorphicRegion.e_size() > 5)
                     {
-                        visualization::WriteComponentSinksSources(polymorphicRegion, curr_env.folder() + "/" + ToString(curr_env.graph().int_id(*polymorphicRegion.vertices().begin())) + ".dot", visualization::DefaultColorer(curr_env.graph()),
-                                                                  curr_env.labeler());
+                        using namespace visualization::visualization_utils;
+                        WriteComponentSinksSources(polymorphicRegion,
+                                                   curr_env.folder() + "/" +
+                                                           ToString(curr_env.graph().int_id(*polymorphicRegion.vertices().begin())) + ".dot",
+                                                   visualization::graph_colorer::DefaultColorer(curr_env.graph()),
+                                                   curr_env.labeler());
 
                         INFO("Component is written to " + curr_env.folder() + ToString(curr_env.graph().int_id(*polymorphicRegion.vertices().begin())) + ".dot");
                     }

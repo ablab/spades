@@ -514,16 +514,16 @@ class RelativeCovComponentFinder {
     mutable std::atomic_uint succ_cnt_;
 
     void VisualizeNontrivialComponent(const set<typename Graph::EdgeId>& edges, bool success) const {
-        auto colorer = omnigraph::visualization::DefaultColorer(g_);
-        auto edge_colorer = make_shared<visualization::CompositeEdgeColorer<Graph>>("black");
+        auto colorer = visualization::graph_colorer::DefaultColorer(g_);
+        auto edge_colorer = make_shared<visualization::graph_colorer::CompositeEdgeColorer<Graph>>("black");
         edge_colorer->AddColorer(colorer);
-        edge_colorer->AddColorer(make_shared<visualization::SetColorer<Graph>>(g_, edges, "green"));
-        //    shared_ptr<visualization::GraphColorer<Graph>>
-        auto resulting_colorer = make_shared<visualization::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
+        edge_colorer->AddColorer(make_shared<visualization::graph_colorer::SetColorer<Graph>>(g_, edges, "green"));
+        //    shared_ptr<visualization::graph_colorer::GraphColorer<Graph>>
+        auto resulting_colorer = make_shared<visualization::graph_colorer::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
 
-        StrGraphLabeler<Graph> str_labeler(g_);
-        CoverageGraphLabeler<Graph> cov_labler(g_);
-        CompositeLabeler<Graph> labeler(str_labeler, cov_labler);
+        visualization::graph_labeler::StrGraphLabeler<Graph> str_labeler(g_);
+        visualization::graph_labeler::CoverageGraphLabeler<Graph> cov_labler(g_);
+        visualization::graph_labeler::CompositeLabeler<Graph> labeler(str_labeler, cov_labler);
 
         if (edges.size() > 1) {
             set<typename Graph::VertexId> vertices;
@@ -533,7 +533,7 @@ class RelativeCovComponentFinder {
             }
 
             auto filename = success ? vis_dir_ + "/success/" + ToString(succ_cnt_++) : vis_dir_ + "/fail/" + ToString(fail_cnt_++);
-            visualization::WriteComponent(
+            visualization::visualization_utils::WriteComponent(
                     ComponentCloser<Graph>(g_, 0).CloseComponent(GraphComponent<Graph>(g_, vertices.begin(), vertices.end())),
                     filename + ".dot", colorer, labeler);
         }

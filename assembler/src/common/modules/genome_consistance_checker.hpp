@@ -63,8 +63,8 @@ public:
             gp.edge_pos.Attach();
         }
         gp.edge_pos.clear();
-        FillPos(gp_, gp_.genome.GetSequence(), "0");
-        FillPos(gp_, !gp_.genome.GetSequence(), "1");
+        visualization::position_filler::FillPos(gp_, gp_.genome.GetSequence(), "0");
+        visualization::position_filler::FillPos(gp_, !gp_.genome.GetSequence(), "1");
         RefillPos();
     }
     PathScore CountMisassemblies(const BidirectionalPath &path) const;

@@ -75,10 +75,10 @@ template<class Graph>
 void PrintColoredGraph(const Graph& g, const ColorHandler<Graph>& coloring,
         const EdgesPositionHandler<Graph>& pos, const string& output_filename) {
     shared_ptr<GraphSplitter<Graph>> splitter = ReliableSplitter<Graph>(g, 1000000, 30);
-    LengthIdGraphLabeler<Graph> basic_labeler(g);
-    EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
+    visualization::graph_labeler::LengthIdGraphLabeler<Graph> basic_labeler(g);
+    visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
 
-    CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+    visualization::graph_labeler::CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
     WriteComponents(g, splitter, output_filename,
 //                *ConstructColorer(coloring),
             *ConstructBorderColorer(g, coloring), labeler);
@@ -89,12 +89,12 @@ void PrintColoredGraphAroundEdge(const Graph& g,
     const ColorHandler<Graph>& coloring, const EdgeId edge,
     const EdgesPositionHandler<Graph>& pos, const string& output_filename) {
   INFO(output_filename);
-    LengthIdGraphLabeler<Graph> basic_labeler(g);
-    EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
+    visualization::graph_labeler::LengthIdGraphLabeler<Graph> basic_labeler(g);
+    visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
 
-    CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+    visualization::graph_labeler::CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
     GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g, edge);
-    omnigraph::visualization::WriteComponent(component, output_filename, coloring.ConstructColorer(component), labeler);
+    visualization::visualization_utils::WriteComponent(component, output_filename, coloring.ConstructColorer(component), labeler);
 }
 
 template<class Graph>
@@ -111,8 +111,8 @@ void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> 
     LengthIdGraphLabeler<Graph> basic_labeler(g);
     EdgeCoordinatesGraphLabeler<Graph> pos_labeler(g, pos, genome_names);
 
-    CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
-    omnigraph::visualization::WriteComponents(g, output_folder, fs, coloring.ConstructColorer(), labeler);
+    visualization::graph_labeler::CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+    visualization::visualization_utils::WriteComponents(g, output_folder, fs, coloring.ConstructColorer(), labeler);
 }
 
 //fixme code duplication
@@ -130,8 +130,8 @@ void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> 
     LengthIdGraphLabeler<Graph> basic_labeler(g);
     EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
 
-    CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
-    omnigraph::visualization::WriteComponents(g, output_folder, fs, coloring.ConstructColorer(), labeler);
+    visualization::graph_labeler::CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+    visualization::visualization_utils::WriteComponents(g, output_folder, fs, coloring.ConstructColorer(), labeler);
 }
 
 //todo alert!!! magic constants!!!
@@ -146,7 +146,7 @@ void WriteComponentsAlongSequence(
     typedef typename gp_t::graph_t Graph;
     LengthIdGraphLabeler < Graph > basic_labeler(gp.g);
     EdgePosGraphLabeler < Graph > pos_labeler(gp.g, gp.edge_pos);
-    CompositeLabeler < Graph > labeler(basic_labeler, pos_labeler);
+    visualization::graph_labeler::CompositeLabeler < Graph > labeler(basic_labeler, pos_labeler);
 }
 
 template<class gp_t>
@@ -156,7 +156,7 @@ void PrintColoredGraphAlongRef(const gp_t& gp,
     LengthIdGraphLabeler < Graph > basic_labeler(gp.g);
     EdgePosGraphLabeler < Graph > pos_labeler(gp.g, gp.edge_pos);
 
-    CompositeLabeler < Graph > labeler(basic_labeler, pos_labeler);
+    visualization::graph_labeler::CompositeLabeler < Graph > labeler(basic_labeler, pos_labeler);
 
 //      only breakpoints
     TrivialBreakpointFinder<Graph> bp_f(gp.g, coloring, gp.edge_pos);
