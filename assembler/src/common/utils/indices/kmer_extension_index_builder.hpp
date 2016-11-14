@@ -25,7 +25,7 @@ public:
             if (seq.size() < k + 1)
                 continue;
 
-            typename Index::KeyWithHash kwh = index.ConstructKWH(seq.start<runtime_k::RtSeq>(k));
+            typename Index::KeyWithHash kwh = index.ConstructKWH(seq.start<RtSeq>(k));
             for (size_t j = k; j < seq.size(); ++j) {
                 char nnucl = seq[j], pnucl = kwh[0];
                 index.AddOutgoing(kwh, nnucl);
@@ -43,16 +43,16 @@ public:
         unsigned KPlusOne = index.k() + 1;
 
         typename Index::kmer_iterator it(KPlusOneMersFilename,
-                                         runtime_k::RtSeq::GetDataSize(KPlusOne));
+                                         RtSeq::GetDataSize(KPlusOne));
         for (; it.good(); ++it) {
-            runtime_k::RtSeq kpomer(KPlusOne, *it);
+            RtSeq kpomer(KPlusOne, *it);
 
             char pnucl = kpomer[0], nnucl = kpomer[KPlusOne - 1];
             TRACE("processing k+1-mer " << kpomer);
-            index.AddOutgoing(index.ConstructKWH(runtime_k::RtSeq(KPlusOne - 1, kpomer)),
+            index.AddOutgoing(index.ConstructKWH(RtSeq(KPlusOne - 1, kpomer)),
                               nnucl);
             // FIXME: This is extremely ugly. Needs to add start / end methods to extract first / last N symbols...
-            index.AddIncoming(index.ConstructKWH(runtime_k::RtSeq(KPlusOne - 1, kpomer << 0)),
+            index.AddIncoming(index.ConstructKWH(RtSeq(KPlusOne - 1, kpomer << 0)),
                               pnucl);
         }
     }
@@ -68,7 +68,7 @@ public:
                                  StoringTypeFilter<typename Index::storing_type>>
                 splitter(index.workdir(), index.k() + 1, 0xDEADBEEF, streams,
                          contigs_stream, read_buffer_size);
-        KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
+        KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
         counter.CountAll(nthreads, nthreads, /* merge */false);
 
         // Now, count unique k-mers from k+1-mers
@@ -77,7 +77,7 @@ public:
                           index.k() + 1, Index::storing_type::IsInvertable(), read_buffer_size);
         for (unsigned i = 0; i < nthreads; ++i)
             splitter2.AddKMers(counter.GetMergedKMersFname(i));
-        KMerDiskCounter<runtime_k::RtSeq> counter2(index.workdir(), splitter2);
+        KMerDiskCounter<RtSeq> counter2(index.workdir(), splitter2);
 
         BuildIndex(index, counter2, 16, nthreads);
 

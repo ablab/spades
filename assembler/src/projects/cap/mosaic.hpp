@@ -950,7 +950,7 @@ void DrawGraph(const vector<StrandRange>& all_ranges,
                const vector<StrandRange>& full_mosaic_ranges,
                const GenomeBlockComposition& block_composition) {
     make_dir("tmp");
-    graph_pack<Graph, runtime_k::RtSeq> gp(block_composition.block_info().g().k(), "tmp", 0);
+    graph_pack<Graph, RtSeq> gp(block_composition.block_info().g().k(), "tmp", 0);
 
     auto stream = io::RCWrap(StreamInstance(ExtractSequences(all_ranges, block_composition)));
     auto streams = io::ReadStreamList<io::SingleRead>(stream);

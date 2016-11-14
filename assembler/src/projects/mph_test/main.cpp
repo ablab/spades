@@ -8,7 +8,6 @@
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 #include "utils/indices/perfect_hash_map.hpp"
-#include "sequence/runtime_k.hpp"
 #include "utils/mph_index/kmer_index_builder.hpp"
 
 #include "io/reads/read_processor.hpp"
@@ -31,15 +30,15 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
-class SimplePerfectHashMap : public debruijn_graph::KeyIteratingMap<runtime_k::RtSeq, uint32_t> {
-    using base = debruijn_graph::KeyIteratingMap<runtime_k::RtSeq, uint32_t>;
+class SimplePerfectHashMap : public debruijn_graph::KeyIteratingMap<RtSeq, uint32_t> {
+    using base = debruijn_graph::KeyIteratingMap<RtSeq, uint32_t>;
   public:
     SimplePerfectHashMap(size_t k, const std::string &workdir)
             : base(k, workdir) {}
 };
 
-class ParallelSortingSplitter : public KMerSortingSplitter<runtime_k::RtSeq> {
-  using Seq = runtime_k::RtSeq;
+class ParallelSortingSplitter : public KMerSortingSplitter<RtSeq> {
+  using Seq = RtSeq;
 
   std::vector<std::string> files_;
   unsigned nthreads_;
@@ -67,7 +66,7 @@ class ParallelSortingSplitter : public KMerSortingSplitter<runtime_k::RtSeq> {
 
           unsigned thread_id = omp_get_thread_num();
           bool stop = false;
-          runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(this->K_) >> 'A';
+          RtSeq kmer = seq.start<RtSeq>(this->K_) >> 'A';
           for (size_t j = this->K_ - 1; j < seq.size(); ++j) {
               kmer <<= seq[j];
               stop |= splitter_.push_back_internal(kmer, thread_id);
@@ -171,7 +170,7 @@ int main(int argc, char* argv[]) {
             for (const auto& s : input)
                 splitter.push_back(s);
         }
-        KMerDiskCounter<runtime_k::RtSeq> counter(workdir, splitter);
+        KMerDiskCounter<RtSeq> counter(workdir, splitter);
         counter.CountAll(16, nthreads);
         INFO("K-mer counting done, kmers saved to " << counter.GetFinalKMersFname());
     } catch (std::string const &s) {

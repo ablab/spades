@@ -7,15 +7,15 @@
 #ifndef __KMER_MAP_HPP__
 #define __KMER_MAP_HPP__
 
-#include "sequence/runtime_k.hpp"
+#include "sequence/rtseq.hpp"
 
 #include <htrie/hat-trie.h>
 #include <boost/iterator/iterator_facade.hpp>
 
 namespace debruijn_graph {
 class KMerMap {
-    typedef runtime_k::RtSeq Kmer;
-    typedef runtime_k::RtSeq Seq;
+    typedef RtSeq Kmer;
+    typedef RtSeq Seq;
     typedef typename Seq::DataType RawSeqData;
 
     value_t* internal_tryget(const Kmer &key) const {

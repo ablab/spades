@@ -8,7 +8,6 @@
 #pragma once
 
 #include "sequence/sequence_tools.hpp"
-#include "sequence/runtime_k.hpp"
 #include "common/adt/kmer_vector.hpp"
 #include "edge_index.hpp"
 
@@ -22,8 +21,8 @@ template<class Graph>
 class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     typedef omnigraph::GraphActionHandler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
-    typedef runtime_k::RtSeq Kmer;
-    typedef runtime_k::RtSeq Seq;
+    typedef RtSeq Kmer;
+    typedef RtSeq Seq;
     typedef typename Seq::DataType RawSeqData;
 
     unsigned k_;

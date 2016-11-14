@@ -122,7 +122,7 @@ public:
         size_t cnt = 0;
         for(auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
             Sequence nucls = graph_.EdgeNucls(*it);
-            runtime_k::RtSeq kmer = nucls.start<runtime_k::RtSeq>(graph_.k() + 1) >> 'A';
+            RtSeq kmer = nucls.start<RtSeq>(graph_.k() + 1) >> 'A';
             for(size_t i = graph_.k(); i < graph_.length(*it); i++) {
                 kmer = kmer << graph_.EdgeNucls(*it)[i];
                 if(!index_.contains(kmer)) {

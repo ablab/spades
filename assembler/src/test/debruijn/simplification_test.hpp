@@ -293,7 +293,7 @@ void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
         EdgeId e = *it;
         Sequence nucls = g.EdgeNucls(e);
         double cov = g.coverage(e);
-        auto kpomer = idx.ConstructKWH(runtime_k::RtSeq(g.k() + 1, nucls));
+        auto kpomer = idx.ConstructKWH(RtSeq(g.k() + 1, nucls));
         kpomer >>= 0;
         for (size_t i = 0; i < g.length(e); ++i) {
             kpomer <<= nucls[i + g.k()];

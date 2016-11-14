@@ -40,8 +40,8 @@ class DrawPolymorphicRegions : public DrawingCommand {
         size_t windowSize = 500;
         for(size_t i = 0; i < genome.size() - windowSize - 1 - curr_env.k_value(); ++i)
         {
-            runtime_k::RtSeq firstKmer = genome.Subseq(i).start<runtime_k::RtSeq>(curr_env.k_value() + 1);
-            runtime_k::RtSeq secondKmer = genome.Subseq(i + windowSize).start<runtime_k::RtSeq>(curr_env.k_value() + 1);
+            RtSeq firstKmer = genome.Subseq(i).start<RtSeq>(curr_env.k_value() + 1);
+            RtSeq secondKmer = genome.Subseq(i + windowSize).start<RtSeq>(curr_env.k_value() + 1);
             firstKmer = curr_env.kmer_mapper().Substitute(firstKmer);
             secondKmer = curr_env.kmer_mapper().Substitute(secondKmer);
             pair<EdgeId, size_t> positionFirst = curr_env.index().get(firstKmer);

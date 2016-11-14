@@ -21,7 +21,7 @@ public:
 
     typedef runtime_k::KmerMap<int> destination_container_t;
 
-    typedef runtime_k::RtSeq Kmer;
+    typedef RtSeq Kmer;
 
 private:
 

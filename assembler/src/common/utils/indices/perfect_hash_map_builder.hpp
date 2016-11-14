@@ -85,7 +85,7 @@ size_t BuildIndexFromStream(Index &index,
     DeBruijnReadKMerSplitter<typename Streams::ReadT,
                              StoringTypeFilter<typename Index::storing_type>>
             splitter(index.workdir(), index.k(), 0, streams, contigs_stream);
-    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
+    KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
     BuildIndex(index, counter, 16, streams.size());
     return 0;
 }
@@ -95,7 +95,7 @@ void BuildIndexFromGraph(Index &index, const Graph &g, size_t read_buffer_size =
     DeBruijnGraphKMerSplitter<Graph,
                               StoringTypeFilter<typename Index::storing_type>>
             splitter(index.workdir(), index.k(), g, read_buffer_size);
-    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
+    KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
     BuildIndex(index, counter, 16, 1);
 }
 

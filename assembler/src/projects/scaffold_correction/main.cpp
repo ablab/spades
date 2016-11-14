@@ -14,7 +14,6 @@
 #include "utils/memory_limit.hpp"
 #include "utils/copy_file.hpp"
 #include "utils/perfcounter.hpp"
-#include "sequence/runtime_k.hpp"
 #include "scaffold_correction.hpp"
 
 #include "pipeline/config_struct.hpp"

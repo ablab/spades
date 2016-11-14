@@ -14,8 +14,6 @@
 #include <boost/bind.hpp>
 #include <string>
 
-typedef RuntimeSeq<64> RtSeq;
-
 typedef unsigned long long ull;
 
 BOOST_AUTO_TEST_CASE( TestRtSeqSelector ) {

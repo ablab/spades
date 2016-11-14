@@ -135,7 +135,7 @@ ContigStreams RefineStreams(ContigStreams& streams,
                                size_t k,
                                size_t delta = 5,
                                const std::string &workdir = "tmp") {
-    typedef debruijn_graph::KmerStoringEdgeIndex<Graph, Seq, kmer_index_traits<runtime_k::RtSeq>, debruijn_graph::SimpleStoring> RefiningIndex;
+    typedef debruijn_graph::KmerStoringEdgeIndex<Graph, Seq, kmer_index_traits<RtSeq>, debruijn_graph::SimpleStoring> RefiningIndex;
     typedef graph_pack<ConjugateDeBruijnGraph, Seq, RefiningIndex> refining_gp_t;
     refining_gp_t gp(k, workdir);
 
@@ -281,7 +281,7 @@ inline void PerformIterativeRefinement(ContigStreams& streams,
                 gene_collection);
     } else {
         omp_set_num_threads(8);
-        PerformRefinement<runtime_k::RtSeq>(streams, root, suffixes, current_k,
+        PerformRefinement<RtSeq>(streams, root, suffixes, current_k,
                 gene_root, gene_collection);
     }
 

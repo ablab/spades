@@ -90,7 +90,7 @@ public:
 };
 
 //todo it is not handling graph events!!!
-template<class IdType, class Seq = runtime_k::RtSeq,
+template<class IdType, class Seq = RtSeq,
     class traits = kmer_index_traits<Seq>,  class StoringType = SimpleStoring >
 class DeBruijnEdgeMultiIndex : public KeyStoringMap<Seq, EdgeInfoStorage<IdType>, traits, StoringType > {
   typedef KeyStoringMap<Seq, EdgeInfoStorage<IdType>, traits, StoringType > base;

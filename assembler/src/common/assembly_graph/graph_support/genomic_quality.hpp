@@ -26,7 +26,7 @@ class EdgeQuality: public omnigraph::GraphLabeler<Graph>, public omnigraph::Grap
             , const KmerMapper<Graph>& kmer_mapper, const Sequence &genome) {
         if (genome.size() < k_)
             return;
-        runtime_k::RtSeq cur = genome.start<runtime_k::RtSeq>(k_);
+        RtSeq cur = genome.start<RtSeq>(k_);
         cur >>= 0;
         for (size_t i = 0; i + k_ - 1 < genome.size(); i++) {
             cur <<= genome[i + k_ - 1];
@@ -286,7 +286,7 @@ private:
 //            , const KmerMapper<Graph>& kmer_mapper, const Sequence &genome) {
 //        if (genome.size() < k_)
 //            return;
-//        runtime_k::RtSeq cur = genome.start<runtime_k::RtSeq>(k_);
+//        RtSeq cur = genome.start<RtSeq>(k_);
 //        cur >>= 0;
 //        for (size_t i = 0; i + k_ - 1 < genome.size(); i++) {
 //            cur <<= genome[i + k_ - 1];

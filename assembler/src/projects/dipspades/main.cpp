@@ -13,8 +13,6 @@
 #include "utils/segfault_handler.hpp"
 #include "utils/memory_limit.hpp"
 #include "utils/copy_file.hpp"
-#include "sequence/runtime_k.hpp"
-
 
 #include "pipeline/graph_pack.hpp"
 #include "stages/construction.hpp"

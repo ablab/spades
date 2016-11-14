@@ -786,7 +786,7 @@ public:
         return result;
     }
 
-    std::pair<EdgeId, size_t> GetUniqueKmerPos(const runtime_k::RtSeq& kmer) const {
+    std::pair<EdgeId, size_t> GetUniqueKmerPos(const RtSeq& kmer) const {
         KeyWithHash kwh = tmp_index.ConstructKWH(kmer);
 
         if (tmp_index.valid(kwh.key())) {
@@ -810,8 +810,8 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
     if (s.size() < pacbio_k)
         return res;
 
-    //runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq>(pacbio_k);
-    KeyWithHash kwh = tmp_index.ConstructKWH(s.start<runtime_k::RtSeq>(pacbio_k));
+    //RtSeq kmer = s.start<RtSeq>(pacbio_k);
+    KeyWithHash kwh = tmp_index.ConstructKWH(s.start<RtSeq>(pacbio_k));
 
     for (size_t j = pacbio_k; j < s.size(); ++j) {
         kwh = kwh << s[j];

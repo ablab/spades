@@ -132,7 +132,7 @@ public:
 
 class RepeatMasker : public io::SequenceModifier {
 private:
-    typedef runtime_k::RtSeq Kmer;
+    typedef RtSeq Kmer;
     typedef KeyIteratingMap<Kmer, Count, kmer_index_traits<Kmer>, SimpleStoring> KmerCountIndex;
     typedef typename KmerCountIndex::KeyWithHash KeyWithHash;
     typedef KmerCountIndex::KMerIdx KmerIdx;

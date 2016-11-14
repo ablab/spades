@@ -11,7 +11,6 @@
 #include "storing_traits.hpp"
 
 #include "utils/file_limit.hpp"
-#include "sequence/runtime_k.hpp"
 #include "utils/mph_index/kmer_index_builder.hpp"
 
 namespace debruijn_graph {
@@ -36,7 +35,7 @@ struct StoringTypeFilter<InvertableStoring> {
     }
 };
 
-using RtSeqKMerSplitter = ::KMerSortingSplitter<runtime_k::RtSeq>;
+using RtSeqKMerSplitter = ::KMerSortingSplitter<RtSeq>;
 
 template<class KmerFilter>
 class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
@@ -50,7 +49,7 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
       if (seq.size() < this->K_)
         return false;
 
-      runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(this->K_) >> 'A';
+      RtSeq kmer = seq.start<RtSeq>(this->K_) >> 'A';
       bool stop = false;
       for (size_t j = this->K_ - 1; j < seq.size(); ++j) {
         kmer <<= seq[j];
@@ -238,7 +237,7 @@ path::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_fil
 
 template<class KmerFilter>
 class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
-  typedef MMappedFileRecordArrayIterator<runtime_k::RtSeq::DataType> kmer_iterator;
+  typedef MMappedFileRecordArrayIterator<RtSeq::DataType> kmer_iterator;
 
   unsigned K_source_;
   std::vector<std::string> kmers_;
@@ -265,7 +264,7 @@ inline size_t DeBruijnKMerKMerSplitter<KmerFilter>::FillBufferFromKMers(kmer_ite
                                                                         unsigned thread_id) {
   size_t seqs = 0;
   for (; kmer.good(); ++kmer) {
-    Sequence nucls(runtime_k::RtSeq(K_source_, *kmer));
+    Sequence nucls(RtSeq(K_source_, *kmer));
     seqs += 1;
 
     bool stop = this->FillBufferFromSequence(nucls, thread_id);
@@ -291,7 +290,7 @@ path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_files) {
   std::vector<kmer_iterator> its;
   its.reserve(nthreads);
   for (auto it = kmers_.begin(), et = kmers_.end(); it != et; ++it)
-    its.emplace_back(*it, runtime_k::RtSeq::GetDataSize(K_source_));
+    its.emplace_back(*it, RtSeq::GetDataSize(K_source_));
 
   while (std::any_of(its.begin(), its.end(),
                      [](const kmer_iterator &it) { return it.good(); })) {

@@ -12,7 +12,6 @@
 #include "kmc_api/kmc_file.h"
 //#include "omp.h"
 #include "io/kmers/mmapped_reader.hpp"
-#include "sequence/runtime_k.hpp"
 #include "utils/path_helper.hpp"
 #include "utils/simple_tools.hpp"
 #include "utils/indices/perfect_hash_map_builder.hpp"
@@ -21,7 +20,6 @@
 
 using std::string;
 using std::vector;
-using runtime_k::RtSeq;
 
 const string KMER_PARSED_EXTENSION = ".bin";
 const string KMER_SORTED_EXTENSION = ".sorted";
@@ -152,7 +150,7 @@ class KmerMultiplicityCounter {
         //TODO: get rid of temporary .mker & .mpl files
         splitter.AddKMers(file_prefix_ + ".kmer");
 
-        KMerDiskCounter<runtime_k::RtSeq> counter(kmer_mpl.workdir(), splitter);
+        KMerDiskCounter<RtSeq> counter(kmer_mpl.workdir(), splitter);
 
         BuildIndex(kmer_mpl, counter, 16, nthreads);
 
@@ -167,7 +165,7 @@ class KmerMultiplicityCounter {
         std::ifstream kmers_in(file_prefix_ + ".kmer", std::ios::binary);
         std::ifstream kmers_mpl_in(file_prefix_ + ".mpl");
         while (true) {
-            runtime_k::RtSeq kmer(k_);
+            RtSeq kmer(k_);
             kmer.BinRead(kmers_in);
             if (kmers_in.fail()) {
                 break;

@@ -31,7 +31,7 @@ struct graph_pack: private boost::noncopyable {
     typedef Graph graph_t;
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef runtime_k::RtSeq seq_t;
+    typedef RtSeq seq_t;
     typedef EdgeIndex<graph_t> index_t;
     using PairedInfoIndicesT = omnigraph::de::PairedInfoIndicesT<Graph>;
     //typedef omnigraph::de::PairedInfoIndicesT<Graph> PairedInfoIndicesT;
