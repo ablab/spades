@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <common/assembly_graph/paths/path_utils.hpp>
 #include "utils/logger/logger.hpp"
 #include "paired_info/paired_info.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
@@ -65,7 +66,7 @@ class SplitPathConstructor {
     typedef typename Graph::EdgeId EdgeId;
     typedef PathInfoClass<Graph> PathInfo;
     typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
-
+    static const size_t MAX_DIJKSTRA_DEPTH = 3000;
 public:
     SplitPathConstructor(const Graph &graph) : graph_(graph) { }
 
@@ -75,7 +76,9 @@ public:
         for (auto i : pi.Get(cur_edge))
             for (auto j : i.second)
                 pair_infos.emplace_back(cur_edge, i.first, j);
-
+        std::sort(pair_infos.begin(), pair_infos.end(),[&](const PairInfo p1, const PairInfo p2){
+            return (p1.point.d > p2.point.d || ((p1.point.d == p2.point.d) && (p1.second < p2.second )));
+        });
         vector<PathInfo> result;
         if (pair_infos.empty())
             return result;
@@ -85,12 +88,10 @@ public:
         size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), (size_t) is, is_var);
 
         //FIXME is path_upper_bound enough?
-        PathProcessor<Graph> path_processor(graph_,
-                                            graph_.EdgeEnd(cur_edge),
-                                            path_upper_bound);
 
-        TRACE("Path_processor is done");
 
+        typename omnigraph::DijkstraHelper<Graph>::BoundedDijkstra dijkstra(omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_, path_upper_bound, MAX_DIJKSTRA_DEPTH));
+        dijkstra.Run(graph_.EdgeEnd(cur_edge));
         for (size_t i = pair_infos.size(); i > 0; --i) {
             const PairInfo &cur_info = pair_infos[i - 1];
             if (math::le(cur_info.d(), 0.))
@@ -98,10 +99,11 @@ public:
             if (pair_info_used[i - 1])
                 continue;
             DEBUG("SPC: pi " << cur_info);
+
             vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge, cur_info.second,
                                                            (size_t) (cur_info.d() - cur_info.var()),
                                                            (size_t) (cur_info.d() + cur_info.var()),
-                                                           path_processor);
+                                                           dijkstra);
             DEBUG("Found common part of size " << common_part.size());
             PathInfoClass<Graph> sub_res(cur_edge);
             if (common_part.size() > 0) {
