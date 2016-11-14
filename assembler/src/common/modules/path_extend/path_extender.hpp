@@ -142,20 +142,9 @@ class LoopResolver : public ShortLoopResolver {
     const WeightCounter& wc_;
 
 private:
-    bool CheckLoopPlausible(const BidirectionalPath& path, size_t pre_cycle_path_size, EdgeId loop_exit) const {
-        DEBUG("Checking loop solution, initial size " << pre_cycle_path_size << ", loop exit " << g_.int_id(loop_exit));
-        path.Print();
-
-        if (pre_cycle_path_size < 2)
-            return false;
-
-        EdgeId pre_cycle_edge = path[pre_cycle_path_size - 2];
-        size_t distance_to_exit = path.LengthAt(pre_cycle_path_size - 2);
-        DEBUG("Distance from pre-cycle edge " << g_.int_id(pre_cycle_edge) << " to loop exit = " << distance_to_exit);
-
-        double weight = wc_.get_libptr()->CountPairedInfo(pre_cycle_edge, loop_exit, (int) distance_to_exit, true);
-        DEBUG("PI weight " << weight);
-        return math::gr(weight, 0.0);
+    bool CheckLoopPlausible(EdgeId froward_loop_edge, EdgeId backward_loop_edge) const {
+        size_t single_loop_length = 2 * g_.length(froward_loop_edge) + g_.length(backward_loop_edge);
+        return single_loop_length <= wc_.get_libptr()->GetISMax();
     }
 
 public:
@@ -166,32 +155,35 @@ public:
     //
     void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) const {
         UndoCycles(path, edges.first);
-        BidirectionalPath experiment(path);
-        double max_weight = wc_.CountWeight(experiment, edges.second);
-        double diff = max_weight - wc_.CountWeight(experiment, edges.first);
-        size_t maxIter = 0;
-        for (size_t i = 1; i <= ITER_COUNT; ++i) {
-            double weight = wc_.CountWeight(experiment, edges.first);
-            if (weight > 0) {
-                MakeCycleStep(experiment, edges.first);
-                weight = wc_.CountWeight(experiment, edges.second);
-                double weight2 = wc_.CountWeight(experiment, edges.first);
-                if (weight > max_weight || (weight == max_weight && weight - weight2 > diff)
+        if (!CheckLoopPlausible(path.Back(), edges.first)) {
+            path.PushBack(edges.first);
+            path.PushBack(edges.second, int(g_.k() + 100));
+        }
+        else {
+            BidirectionalPath experiment(path);
+            double max_weight = wc_.CountWeight(experiment, edges.second);
+            double diff = max_weight - wc_.CountWeight(experiment, edges.first);
+            size_t maxIter = 0;
+            for (size_t i = 1; i <= ITER_COUNT; ++i) {
+                double weight = wc_.CountWeight(experiment, edges.first);
+                if (weight > 0) {
+                    MakeCycleStep(experiment, edges.first);
+                    weight = wc_.CountWeight(experiment, edges.second);
+                    double weight2 = wc_.CountWeight(experiment, edges.first);
+                    if (weight > max_weight || (weight == max_weight && weight - weight2 > diff)
                         || (weight == max_weight && weight - weight2 == diff && i == 1)) {
-                    max_weight = weight;
-                    maxIter = i;
-                    diff = weight - weight2;
+                        max_weight = weight;
+                        maxIter = i;
+                        diff = weight - weight2;
+                    }
                 }
             }
-        }
 
-        size_t pre_cycle_path_size = path.Size();
-        for (size_t i = 0; i < maxIter; ++i) {
-            MakeCycleStep(path, edges.first);
+            for (size_t i = 0; i < maxIter; ++i) {
+                MakeCycleStep(path, edges.first);
+            }
+            path.PushBack(edges.second);
         }
-
-        int gap = CheckLoopPlausible(path, pre_cycle_path_size, edges.second) ? 0 : int(g_.k() + 100);
-        path.PushBack(edges.second, gap);
     }
 
     void ResolveShortLoop(BidirectionalPath& path) const override {
