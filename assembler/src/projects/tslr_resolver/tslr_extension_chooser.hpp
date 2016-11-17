@@ -137,6 +137,7 @@ namespace tslr_resolver {
             //barcode threshold depends on gap between edges
             //Public version of this method
             static double GetGapCoefficient(int gap, size_t fragment_len) {
+                VERIFY(gap <= (int)fragment_len)
                 return static_cast<double>(fragment_len - gap) /
                        static_cast<double>(fragment_len);
             }
@@ -166,6 +167,7 @@ namespace tslr_resolver {
 
             //barcode threshold depends on gap between edges
             double GetGapCoefficient(int gap) const {
+                VERIFY(gap <= (int)fragment_len_)
                 return static_cast<double>(fragment_len_ - gap) /
                         static_cast<double>(fragment_len_);
             }

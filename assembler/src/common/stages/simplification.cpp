@@ -390,6 +390,7 @@ shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultGPColorer(
 
 void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
+    OutputContigs(gp.g, cfg::get().output_dir + "before_simplification", false);
 
     //no other handlers here, todo change with DetachAll
     if (gp.index.IsAttached())

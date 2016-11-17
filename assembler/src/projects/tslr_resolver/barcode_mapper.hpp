@@ -29,6 +29,19 @@ namespace tslr_resolver {
     typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
     typedef string BarcodeId;
 
+    enum BarcodeLibraryType {
+        TSLR,
+        TenX,
+        Unknown
+    };
+
+    inline BarcodeLibraryType GetLibType(const string type) {
+        if (type == "tslr")
+            return BarcodeLibraryType::TSLR;
+        if (type == "tenx")
+            return BarcodeLibraryType::TenX;
+        return BarcodeLibraryType::Unknown;
+    }
 
     struct tslr_barcode_library {
         string left_;
@@ -36,9 +49,10 @@ namespace tslr_resolver {
         string barcode_;
     };
 
+
     class BarcodeEncoder {
-        std::unordered_map <BarcodeId, int16_t> codes_;
-        int16_t barcode_encoder_size;
+        std::unordered_map <BarcodeId, int64_t> codes_;
+        int64_t barcode_encoder_size;
     public:
         BarcodeEncoder() :
                 codes_(), barcode_encoder_size (0)
@@ -53,34 +67,36 @@ namespace tslr_resolver {
             //VERIFY(barcode_encoder_size < max_barcodes);
         }
 
-        int16_t GetCode (const string& barcode) const {
+        int64_t GetCode (const string& barcode) const {
             VERIFY(codes_.find(barcode) != codes_.end());
             return codes_.at(barcode);
         }
 
-        int16_t GetSize() const {
+        int64_t GetSize() const {
             return barcode_encoder_size;
         }
     };
 
+    template <class barcode_entry_t>
+    class HeadTailMapperBuilder;
+
 
     /*This structure contains barcodes extracted from reads aligned to the
-     * beginning (first 500 bp) of every edge in assembly graph.
+     * beginning of every edge in assembly graph.
      */
     class BarcodeMapper {
     public:
     protected:
         const Graph& g_;
+        bool is_empty_;
     public:
         BarcodeMapper (const Graph &g) :
-                g_(g) {}
+                g_(g), is_empty_(true) {}
         virtual ~BarcodeMapper() {}
 
         //Number of entries in the barcode map. Currently equals to number of edges.
         virtual size_t size() const = 0;
 
-        //Extract information from reads and insert it to the barcode map.
-        virtual void FillMap (const Index& index, const KmerSubs& kmer_mapper) = 0;
 
         //Get number of shared barcodes between two edges.
         virtual size_t GetIntersectionSize(const EdgeId &edge1, const EdgeId &edge2) const = 0;
@@ -106,22 +122,24 @@ namespace tslr_resolver {
         //Serialize barcode abundancies. Format:
         //abundancy: number of edges.
         virtual void SerializeOverallDistribution(const string& path) const = 0;
+        virtual bool IsEmpty() = 0;
 
     };
 
     template <class barcode_entry_t>
     class HeadTailBarcodeMapper : public BarcodeMapper {
+    friend class HeadTailMapperBuilder<barcode_entry_t>;
     protected:
         typedef std::unordered_map <EdgeId, barcode_entry_t> barcode_map_t;
         using BarcodeMapper::g_;
+        using BarcodeMapper::is_empty_;
         barcode_map_t edge_to_distribution_;
-        size_t tail_threshold_;
-        BarcodeEncoder barcode_codes_;
 
     public:
-        HeadTailBarcodeMapper (const Graph &g, size_t tail_threshold) :
-                BarcodeMapper(g), edge_to_distribution_(),
-                tail_threshold_(tail_threshold),  barcode_codes_() {
+        HeadTailBarcodeMapper (const Graph &g) :
+                BarcodeMapper(g),
+                edge_to_distribution_()
+        {
             InitialFillMap();
         }
 
@@ -183,41 +201,8 @@ namespace tslr_resolver {
             return GetEntryTails(edge).Size();
         }
 
-        void FillMap (const Index& index, const KmerSubs& kmer_mapper) {
-            //fixme need nice pipeline
-            std::string tslr_dataset = cfg::get().ts_res.tslr_barcode_dataset;
-
-            auto lib_vec = GetLibrary(tslr_dataset);
-            auto mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, Index> >
-                    (g_, index, kmer_mapper);
-
-            //Process every barcode from truspades dataset
-            for (size_t i = 0; i < lib_vec.size(); ++i) {
-                std::string barcode = lib_vec[i].barcode_;
-                std::shared_ptr<io::ReadStream<io::PairedRead>> paired_stream =
-                        make_shared<io::SeparatePairedReadStream> (lib_vec[i].left_, lib_vec[i].right_, 1);
-                io::PairedRead read;
-                while (!paired_stream->eof()) {
-                    *paired_stream >> read;
-                    auto path_first = mapper -> MapRead(read.first());
-                    auto path_second = mapper -> MapRead(read.second());
-                    std::vector<omnigraph::MappingPath<EdgeId> > paths = {path_first, path_second};
-                    for (auto path : paths) {
-                        for (size_t i = 0; i < path.size(); i++) {
-                            if (IsAtEdgeHead(path[i].second))
-                                InsertBarcode(barcode, path[i].first);
-                            if (IsAtEdgeTail(path[i].first, path[i].second))
-                                InsertBarcode(barcode, g_.conjugate(path[i].first));
-                        }
-                    }
-                }
-//                VERBOSE_POWER_T2(i, 100,
-//                                 "Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size()
-//                                              << "%)");
-//                if (lib_vec.size() > 10 && i % (lib_vec.size() / 10 + 1) == 0) {
-//                    INFO("Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size() << "%)");
-//                }
-            }
+        bool IsEmpty() override {
+            return is_empty_;
         }
 
         double AverageBarcodeCoverage() const override {
@@ -293,44 +278,13 @@ namespace tslr_resolver {
         barcode_entry_t GetEntryTails(const EdgeId &edge) const {
             return edge_to_distribution_.at(g_.conjugate(edge));
         }
-
-        void InsertBarcode(const BarcodeId& barcode, const EdgeId& edge) {
-            int16_t code = barcode_codes_.GetCode(barcode);
-            edge_to_distribution_.at(edge).InsertBarcode(code);
-        }
-
-        bool IsAtEdgeTail(const EdgeId &edge, const omnigraph::MappingRange &range) {
-            return range.mapped_range.start_pos + tail_threshold_ > g_.length(edge);
-        }
-
-        bool IsAtEdgeHead(const omnigraph::MappingRange &range) {
-            return range.mapped_range.end_pos < tail_threshold_;
-        }
-
-        std::vector <tslr_barcode_library> GetLibrary(const string& reads_filename) {
-            std::vector <tslr_barcode_library> lib_vec;
-            std::ifstream fin;
-            fin.open(reads_filename);
-            string line;
-            while (getline(fin, line)) {
-                if (!line.empty()) {
-                    istringstream tmp_stream(line);
-                    tslr_barcode_library lib;
-                    tmp_stream >> lib.barcode_;
-                    tmp_stream >> lib.left_;
-                    tmp_stream >> lib.right_;
-                    barcode_codes_.AddBarcode(lib.barcode_);
-                    lib_vec.push_back(lib);
-                }
-            }
-            return lib_vec;
-        }
     };
 
 
     //Contains abundancy for each barcode aligned to given edge
     class SimpleBarcodeEntry {
         friend class HeadTailBarcodeMapper<SimpleBarcodeEntry>;
+        friend class HeadTailMapperBuilder<SimpleBarcodeEntry>;
 
         typedef std::unordered_map <int64_t, size_t> barcode_distribution_t;
         EdgeId edge_;
@@ -394,7 +348,7 @@ namespace tslr_resolver {
             size_t distr_size;
             fin >> distr_size;
             for (size_t i = 0; i < distr_size; ++i) {
-                int16_t bid;
+                int64_t bid;
                 size_t abundance;
                 fin >> bid >> abundance;
                 InsertBarcode(bid, abundance);
@@ -410,7 +364,7 @@ namespace tslr_resolver {
         }
 
     private:
-        void InsertBarcode(int16_t code, size_t abundance = 1) {
+        void InsertBarcode(int64_t code, size_t abundance = 1) {
             if (barcode_distribution_.find(code) == barcode_distribution_.end()) {
                 barcode_distribution_.insert({code, abundance});
             }
@@ -421,6 +375,167 @@ namespace tslr_resolver {
 
 
     };
+
+    template <class barcode_entry_t>
+    class HeadTailMapperBuilder {
+        const Graph& g_;
+        shared_ptr<HeadTailBarcodeMapper<barcode_entry_t>> mapper_;
+        size_t tail_threshold_;
+        BarcodeEncoder barcode_codes_;
+
+    public:
+        HeadTailMapperBuilder(const Graph& g, size_t tail_threshold) :
+                g_(g),
+                mapper_(make_shared<HeadTailBarcodeMapper<SimpleBarcodeEntry>>(g)),
+                tail_threshold_(tail_threshold),
+                barcode_codes_() {}
+        ~HeadTailMapperBuilder() {}
+        shared_ptr<HeadTailBarcodeMapper<barcode_entry_t>> GetMapper() {
+            return mapper_;
+        }
+
+        void FillMapTSLR (const Index& index, const KmerSubs& kmer_mapper) {
+            //fixme move to command line
+            std::string tslr_dataset = cfg::get().ts_res.tslr_barcode_dataset;
+
+            auto lib_vec = GetLibrary(tslr_dataset);
+            auto mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, Index> >
+                    (g_, index, kmer_mapper);
+
+            //Process every barcode from truspades dataset
+            for (size_t i = 0; i < lib_vec.size(); ++i) {
+                std::string barcode = lib_vec[i].barcode_;
+                std::shared_ptr<io::ReadStream<io::PairedRead>> paired_stream =
+                        make_shared<io::SeparatePairedReadStream> (lib_vec[i].left_, lib_vec[i].right_, 1);
+                io::PairedRead read;
+                while (!paired_stream->eof()) {
+                    *paired_stream >> read;
+                    auto path_first = mapper -> MapRead(read.first());
+                    auto path_second = mapper -> MapRead(read.second());
+                    InsertMappingPath(barcode, path_first);
+                    InsertMappingPath(barcode, path_second);
+                }
+                VERBOSE_POWER_T2(i, 100,
+                                 "Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size()
+                                              << "%)");
+                if (lib_vec.size() > 10 && i % (lib_vec.size() / 10 + 1) == 0) {
+                    INFO("Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size() << "%)");
+                }
+            }
+            SetNonEmpty();
+        }
+
+        void FillMapTenx(const Index& index, const KmerSubs& kmer_mapper) {
+            INFO("Starting 10X barcode construction")
+            std::string tslr_dataset = cfg::get().ts_res.tslr_barcode_dataset;
+
+            std::ifstream fin;
+            fin.open(tslr_dataset);
+            string left_reads_filename, right_reads_filename;
+            fin >> left_reads_filename >> right_reads_filename;
+            auto mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, Index> >
+                    (g_, index, kmer_mapper);
+
+            //Process every read from 10X dataset
+            std::shared_ptr<io::ReadStream<io::PairedRead>> paired_stream =
+                    make_shared<io::SeparatePairedReadStream> (left_reads_filename, right_reads_filename, 1);
+            io::PairedRead read;
+            size_t counter = 0;
+            while (!paired_stream->eof()) {
+                *paired_stream >> read;
+                auto barcode = GetBarcode(read.first());
+                if (barcode != "") {
+                    barcode_codes_.AddBarcode(barcode);
+                    auto path_first = mapper->MapRead(read.first());
+                    auto path_second = mapper->MapRead(read.second());
+                    //INFO("Inserting")
+                    InsertMappingPath(barcode, path_first);
+                    InsertMappingPath(barcode, path_second);
+                }
+                counter++;
+                VERBOSE_POWER_T2(counter, 100, "Processed " << counter << " reads.");
+            }
+            INFO("FillMap finished")
+            //INFO("Number of barcodes: " + std::to_string(barcode_codes_.GetSize()))
+            SetNonEmpty();
+        }
+
+        void FillMap(BarcodeLibraryType lib_type, const Index& index, const KmerSubs& kmer_mapper) {
+            switch(lib_type) {
+                case TSLR :
+                    FillMapTSLR(index, kmer_mapper);
+                    break;
+                case TenX :
+                    FillMapTenx(index, kmer_mapper);
+                    break;
+                default:
+                    INFO("Unknown library type, failed to fill barcode map!");
+                    return;
+            }
+        }
+
+    protected:
+
+        //Read parser here?
+        std::string GetBarcode(const io::SingleRead& read) {
+            size_t barcode_len = 16;
+            size_t start_pos = read.name().find("BX:Z");
+            if (start_pos != string::npos) {
+                VERIFY(start_pos + 5 + barcode_len <= read.name().length())
+                string barcode = read.name().substr(start_pos + 5, barcode_len);
+                return barcode;
+            }
+            return "";
+        }
+
+
+        void InsertBarcode(const BarcodeId& barcode, const EdgeId& edge) {
+            int64_t code = barcode_codes_.GetCode(barcode);
+            mapper_ -> edge_to_distribution_.at(edge).InsertBarcode(code);
+        }
+
+        bool IsAtEdgeTail(const EdgeId &edge, const omnigraph::MappingRange &range) {
+            return range.mapped_range.start_pos + tail_threshold_ > g_.length(edge);
+        }
+
+        bool IsAtEdgeHead(const omnigraph::MappingRange &range) {
+            return range.mapped_range.end_pos < tail_threshold_;
+        }
+
+        void InsertMappingPath(const BarcodeId& barcode, const MappingPath<EdgeId>& path) {
+            for (size_t j = 0; j < path.size(); j++) {
+                if (IsAtEdgeHead(path[j].second))
+                    InsertBarcode(barcode, path[j].first);
+                if (IsAtEdgeTail(path[j].first, path[j].second))
+                    InsertBarcode(barcode, g_.conjugate(path[j].first));
+            }
+        }
+
+        void SetNonEmpty() {
+            mapper_ -> is_empty_ = false;
+        }
+
+        std::vector <tslr_barcode_library> GetLibrary(const string& reads_filename) {
+            std::vector <tslr_barcode_library> lib_vec;
+            std::ifstream fin;
+            fin.open(reads_filename);
+            string line;
+            while (getline(fin, line)) {
+                if (!line.empty()) {
+                    istringstream tmp_stream(line);
+                    tslr_barcode_library lib;
+                    tmp_stream >> lib.barcode_;
+                    tmp_stream >> lib.left_;
+                    tmp_stream >> lib.right_;
+                    barcode_codes_.AddBarcode(lib.barcode_);
+                    lib_vec.push_back(lib);
+                }
+            }
+            return lib_vec;
+        }
+
+    };
+
 
 
 

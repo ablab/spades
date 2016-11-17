@@ -75,7 +75,7 @@ namespace omnigraph {
                                                              candidates_(candidates) { }
 
         //This method performs simple checks on nearby edges to compose candidate set for further filtering
-        bool Check(VertexId, EdgeId edge, distance_t gap) const {
+        bool Check(VertexId, EdgeId edge, distance_t dist) const {
             DEBUG("Checking edge " << edge.int_id());
             DEBUG("Length " << g_.length(edge)) 
             DEBUG("Decisive edge " << decisive_edge_.int_id())
@@ -84,8 +84,10 @@ namespace omnigraph {
                           << mapper_->GetIntersectionSizeNormalizedByFirst(decisive_edge_, edge))
             DEBUG("Normalized intersection (second) "
                           << mapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge_, edge))
+            size_t gap = dist - g_.length(edge);
             DEBUG("Gap " << gap)
-            DEBUG("Threshold: " << TrivialTSLRExtensionChooser::GetGapCoefficient(gap, 10000)
+            const size_t barcode_len = 10000;
+            DEBUG("Threshold: " << TrivialTSLRExtensionChooser::GetGapCoefficient(static_cast<int> (gap), barcode_len)
                                    * barcode_threshold_)
 
             size_t decisive_barcodes = mapper_ -> GetSizeTails(decisive_edge_);
@@ -102,8 +104,7 @@ namespace omnigraph {
             if (!unique_storage_.IsUnique(edge)) {
                 DEBUG("Long non-unique nearby edge, passed" << endl)
                 return true;
-            }
-            else {
+            } else {
                 //Barcode number should be similar on nearby genome fragments.
                 if (!CheckNumberOfBarcodes(decisive_barcodes, current_barcodes,
                                            cfg::get().ts_res.barcode_number_threshold)) {
