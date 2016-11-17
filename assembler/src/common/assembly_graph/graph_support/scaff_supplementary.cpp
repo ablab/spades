@@ -160,21 +160,22 @@ void ScaffoldingUniqueEdgeAnalyzer::CheckCorrectness(ScaffoldingUniqueEdgeStorag
     }
 }
 
-set<VertexId> ScaffoldingUniqueEdgeAnalyzer::GetChilds(VertexId v) const{
+set<VertexId> ScaffoldingUniqueEdgeAnalyzer::GetChildren(VertexId v, map <VertexId, set<VertexId>> &dijkstra_cash_) const {
     DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
-            DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(gp_.g, max_dijkstra_depth));
+            DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(gp_.g, max_dijkstra_depth_, max_dijkstra_vertices_));
     dijkstra.Run(v);
 
-    if (dijkstra_cash.find(v) == dijkstra_cash.end()) {
-        dijkstra_cash[v] = dijkstra.ReachedVertices();
-        dijkstra_cash[v].push_back(v);
+    if (dijkstra_cash_.find(v) == dijkstra_cash_.end()) {
+        auto tmp = dijkstra.ReachedVertices();
+        tmp.push_back(v);
+        dijkstra_cash_[v] = set<VertexId> (tmp.begin(), tmp.end());
     }
-    return set<VertexId> (dijkstra_cash[v].begin(), dijkstra_cash[v].end());
+    return dijkstra_cash_[v];
 }
 
-bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChilds(EdgeId e1, EdgeId e2) const{
-    auto s1 = GetChilds(gp_.g.EdgeEnd(e1));
-    auto s2 = GetChilds(gp_.g.EdgeEnd(e2));
+bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(EdgeId e1, EdgeId e2, map <VertexId, set<VertexId>> &dijkstra_cash_) const {
+    auto s1 = GetChildren(gp_.g.EdgeEnd(e1), dijkstra_cash_);
+    auto s2 = GetChildren(gp_.g.EdgeEnd(e2), dijkstra_cash_);
     if (s1.find(gp_.g.EdgeStart(e2)) != s1.end()) {
         return true;
     }
@@ -190,45 +191,48 @@ bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChilds(EdgeId e1, EdgeId e2) const
     return false;
 }
 
+bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(vector<pair<EdgeId, double>> &next_weights) const {
+    map <VertexId, set<VertexId>> dijkstra_cash_;
+    for (size_t i = 0; i < next_weights.size(); i ++) {
+        for (size_t j = i + 1; j < next_weights.size(); j++) {
+            if (!FindCommonChildren(next_weights[i].first, next_weights[j].first, dijkstra_cash_)) {
+                DEBUG("multiple paired info on edges " <<next_weights[i].first <<" and "<< next_weights[j].first);
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(EdgeId from, size_t lib_index) const{
+    DEBUG("processing unique edge " << gp_.g.int_id(from));
+    auto next_edges = gp_.clustered_indices[lib_index].Get(from);
+    vector<pair<EdgeId, double>> next_weights;
+    for (auto hist_pair: next_edges) {
+        if (hist_pair.first == from || hist_pair.first == gp_.g.conjugate(from))
+            continue;
+        double total_w = 0;
+        for (auto w: hist_pair.second)
+            total_w += w.weight;
+        if (math::gr(total_w, 1.0))
+            next_weights.push_back(make_pair(hist_pair.first, total_w));
+    }
+    sort(next_weights.begin(), next_weights.end(), [&](pair<EdgeId, double>a, pair<EdgeId, double>b){
+        return math::gr(a.second, b.second);
+    });
+//most popular edges. think whether it can be done faster
+    if (next_weights.size() > max_different_edges_) {
+        DEBUG(next_weights.size() << " continuations");
+        next_weights.resize(max_different_edges_);
+    }
+    return FindCommonChildren(next_weights);
+}
+
+
 void ScaffoldingUniqueEdgeAnalyzer::ClearLongEdgesWithPairedLib(size_t lib_index, ScaffoldingUniqueEdgeStorage &storage_) const {
     set<EdgeId> to_erase;
     for (EdgeId edge: storage_ ) {
-        DEBUG("processing unique edge " << gp_.g.int_id(edge));
-        dijkstra_cash.clear();
-        auto next_edges = gp_.clustered_indices[lib_index].Get(edge);
-        vector<pair< EdgeId, size_t > > next_weights;
-        for (auto hist:next_edges) {
-            if (hist.first == edge || hist.first == gp_.g.conjugate(edge)) 
-                continue;
-            double total_w = 0;
-            for (auto w: hist.second)
-                total_w += w.weight;
-            size_t new_w = lrint(total_w);
-            if (new_w > 1)
-                next_weights.push_back(make_pair(hist.first, new_w));
-        }
-        sort(next_weights.begin(), next_weights.end(), [&](pair<EdgeId ,size_t >a, pair<EdgeId, size_t >b){
-            return a.second > b.second;
-        });
-//most popular edges. think whether it can be done faster
-        if (next_weights.size() > max_different_edges) {
-            DEBUG(next_weights.size() << " continuations");
-            next_weights.resize(max_different_edges);
-        }
-        bool find_common = true;
-        size_t i = 0;
-        size_t j = 0;
-        for (; i < next_weights.size(); i ++) {
-            for (j = i + 1; j < next_weights.size(); j++) {
-                find_common = FindCommonChilds(next_weights[i].first, next_weights[j].first);
-                if (!find_common)
-                    break;
-            }
-            if (!find_common)
-                break;
-        }
-        if (! find_common) {
-            DEBUG("Edge "<< gp_.g.int_id(edge) << " has multiple paired info on edges " <<next_weights[i].first <<" and "<< next_weights[j].first);
+        if (!FindCommonChildren(edge, lib_index)) {
             to_erase.insert(edge);
             to_erase.insert(gp_.g.conjugate(edge));
         }

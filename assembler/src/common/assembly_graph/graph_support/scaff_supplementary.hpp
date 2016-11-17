@@ -69,11 +69,13 @@ class ScaffoldingUniqueEdgeAnalyzer {
     double median_coverage_;
     double relative_coverage_variation_;
 //for uniqueness detection
-    mutable map <VertexId, vector<VertexId> > dijkstra_cash;
-    const size_t max_different_edges = 20;
-    const size_t max_dijkstra_depth = 1000;
-    set<VertexId> GetChilds(VertexId v) const;
-    bool FindCommonChilds(EdgeId e1, EdgeId e2) const;
+    static const size_t max_different_edges_ = 20;
+    static const size_t max_dijkstra_depth_ = 1000;
+    static const size_t max_dijkstra_vertices_ = 1000;
+    set<VertexId> GetChildren(VertexId v, map <VertexId, set<VertexId>> &dijkstra_cash_) const;
+    bool FindCommonChildren(EdgeId e1, EdgeId e2, map <VertexId, set<VertexId>> &dijkstra_cash_) const;
+    bool FindCommonChildren(vector<pair<EdgeId, double>> &next_weights) const;
+    bool FindCommonChildren(EdgeId from, size_t lib_index) const;
     map<EdgeId, size_t> FillNextEdgeVoting(BidirectionalPathMap<size_t>& active_paths, int direction) const;
     bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config) const;
     bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config, int direction) const;
