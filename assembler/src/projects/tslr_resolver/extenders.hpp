@@ -161,9 +161,11 @@ with slightly different usage of coverage map. Huge code duplication need to be 
     class InconsistentTSLRExtender : public LoopDetectingPathExtender { //Traverse forward to find long edges
 
     protected:
+
         shared_ptr<ExtensionChooser> extensionChooser_;
         size_t distance_bound_;
         double barcode_threshold_;
+        size_t barcode_len_;
         size_t edge_threshold_;
         size_t max_barcodes_on_edge_;
         ScaffoldingUniqueEdgeStorage unique_storage_;
@@ -190,18 +192,18 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             }
 
             //Check if there is too much barcodes aligned to the last unique edge
-            if (mapper_-> GetSizeTails(decisive_edge) > max_barcodes_on_edge_) {
+            if (mapper_->GetTailBarcodeNumber(decisive_edge) > max_barcodes_on_edge_) {
                 DEBUG("Too many barcodes mapped to the decisive edge")
                 return;
             }
 
             DEBUG("At edge " << path.Back().int_id());
             DEBUG("Decisive edge " << decisive_edge.int_id());
-            DEBUG("Decisive edge barcodes: " <<  mapper_->GetSizeTails(decisive_edge));
+            DEBUG("Decisive edge barcodes: " << mapper_->GetTailBarcodeNumber(decisive_edge));
 
             //find reliable unique edges further in graph
             vector <EdgeId> candidates;
-            auto put_checker = BarcodePutChecker<Graph>(g_, edge_threshold_, barcode_threshold_,
+            auto put_checker = BarcodePutChecker<Graph>(g_, edge_threshold_, barcode_threshold_, barcode_len_,
                                                         mapper_, decisive_edge, unique_storage_, candidates);
             auto dij = BarcodeDijkstra<Graph>::CreateBarcodeBoundedDijkstra(g_, distance_bound_, put_checker);
             dij.Run(g_.EdgeEnd(path.Back()));
@@ -223,6 +225,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                                  bool use_short_loop_cov_resolver,
                                  size_t distance_bound,
                                  double barcode_threshold,
+                                 size_t barcode_len,
                                  size_t edge_threshold,
                                  size_t max_barcodes_on_edge,
                                  const ScaffoldingUniqueEdgeStorage& unique_storage,
@@ -233,6 +236,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                 extensionChooser_(ec),
                 distance_bound_(distance_bound),
                 barcode_threshold_(barcode_threshold),
+                barcode_len_(barcode_len),
                 edge_threshold_(edge_threshold),
                 max_barcodes_on_edge_(max_barcodes_on_edge),
                 unique_storage_(unique_storage),

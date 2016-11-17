@@ -21,12 +21,15 @@ namespace spades {
 
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
             INFO("Barcode map construction started...");
-            OutputContigs(graph_pack.g, cfg::get().output_dir + "after_gap_closure", false);
-            graph_pack.barcode_mapper = std::make_shared<HeadTailBarcodeMapper<SimpleBarcodeEntry>>
-                    (graph_pack.g, cfg::get().ts_res.edge_tail_len);
             graph_pack.EnsureIndex();
             graph_pack.EnsureBasicMapping();
-            graph_pack.barcode_mapper->FillMap(graph_pack.index, graph_pack.kmer_mapper);
+            INFO(cfg::get().ts_res.library_type)
+            auto lib_type = GetLibType(cfg::get().ts_res.library_type);
+            HeadTailMapperBuilder<SimpleBarcodeEntry> mapper_builder(graph_pack.g,
+                                                                     cfg::get().ts_res.edge_tail_len);
+
+            mapper_builder.FillMap(lib_type, graph_pack.index, graph_pack.kmer_mapper);
+            graph_pack.barcode_mapper = mapper_builder.GetMapper();
             INFO("Barcode map construction finished.");
             INFO("Average barcode coverage: " +
                          std::to_string(graph_pack.barcode_mapper->AverageBarcodeCoverage()));

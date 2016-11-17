@@ -461,6 +461,7 @@ struct debruijn_config {
 
     struct tslr_resolver {
         std::string tslr_barcode_dataset;
+        std::string library_type;
         int reference_cov;
         size_t len_threshold;
         size_t trimming_threshold;
