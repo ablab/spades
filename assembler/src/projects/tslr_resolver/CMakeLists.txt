@@ -4,12 +4,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(tslr_resolver main.cpp
         ../spades/pair_info_count.cpp
-        ../spades/distance_estimation.cpp
-        ../spades/gap_closer.cpp
+        ../spades/mismatch_correction.cpp
         ../spades/second_phase_setup.cpp
+        ../spades/gap_closer.cpp
         ../spades/distance_estimation.cpp
-        ../spades/hybrid_aligning.cpp
-        )
+        ../spades/hybrid_aligning.cpp)
 
 target_include_directories(tslr_resolver PRIVATE ${EXT_DIR}/include/ConsensusCore)
 target_link_libraries(tslr_resolver ConsensusCore common_modules nlopt BamTools ssw ${COMMON_LIBRARIES})

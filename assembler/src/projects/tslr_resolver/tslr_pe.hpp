@@ -43,7 +43,7 @@ namespace tslr_resolver {
         OutputContigs(gp.g, cfg::get().output_dir + "barcodes_before_rr", false);
 
         PathExtendResolver resolver(gp.g);
-        auto min_unique_length = pset.scaffolding2015.min_unique_length;
+        auto min_unique_length = pset.scaffolding2015.unique_length_upper_bound;
         auto unique_variaton = pset.scaffolding2015.unique_coverage_variation;
         auto dataset_info = cfg::get().ds;
 
@@ -65,11 +65,11 @@ namespace tslr_resolver {
                                                                               max_is_right_quantile,
                                                                               pset.extension_options.max_repeat_length,
                                                                               detect_repeats_online);
-        auto seeds = resolver.makeSimpleSeeds();
+        auto seeds = resolver.MakeSimpleSeeds();
         seeds.SortByLength();
-        auto paths = resolver.extendSeeds(seeds, *mainPE);
+        auto paths = resolver.ExtendSeeds(seeds, *mainPE);
         paths.SortByLength();
-        FinalizePaths(params, paths, gp.g, cover_map, min_edge_len, max_is_right_quantile);
+        FinalizePaths(params, paths, gp, cover_map, min_edge_len, max_is_right_quantile);
 
         writer.OutputPaths(paths, params.output_dir + "before_tslr");
 
@@ -82,7 +82,6 @@ namespace tslr_resolver {
         size_t len_threshold = tslr_resolver_params.len_threshold;
         double absolute_barcode_threshold = tslr_resolver_params.diff_threshold;
         size_t distance_bound = tslr_resolver_params.distance_bound;
-        double abs_threshold = tslr_resolver_params.abs_threshold;
         const size_t fragment_length = tslr_resolver_params.fragment_len;
         VERIFY(fragment_length > distance_bound);
         //fixme unhardcode
@@ -106,7 +105,8 @@ namespace tslr_resolver {
                                                              false, /*investigate short loops*/
                                                              false /*use short loop coverage resolver*/,
                                                              distance_bound,
-                                                             abs_threshold,
+                                                             absolute_barcode_threshold,
+                                                             fragment_length,
                                                              len_threshold,
                                                              max_barcodes_on_edge,
                                                              tslr_unique_storage,
@@ -123,9 +123,9 @@ namespace tslr_resolver {
 
         INFO(paths.size() << " paths from previous stage");
 
-        auto final_paths = resolver.extendSeeds(paths, *tslrPE);
+        auto final_paths = resolver.ExtendSeeds(paths, *tslrPE);
 
-        FinalizePaths(params, final_paths, gp.g, cover_map, min_edge_len, max_is_right_quantile);
+        FinalizePaths(params, final_paths, gp, cover_map, min_edge_len, max_is_right_quantile);
 
         debruijn_graph::GenomeConsistenceChecker genome_checker (gp, pe_unique_storage, 1000, 0.2);
         DebugOutputPaths(gp, params, final_paths, "final_tslr_paths");
