@@ -4,12 +4,16 @@ import functools
 import os
 import os.path
 
+import pandas
+from pandas import DataFrame
+
 from scripts.common import detect_reads, gather_refs, dump_dict
 
 #Config parameters
 IN = config["IN"]
-BIN = config["BIN"]
-SCRIPTS = config["SCRIPTS"]
+LOCAL_DIR = config.get("LOCAL_DIR", "")
+BIN = config.get("BIN", os.path.join(LOCAL_DIR, "build/release/bin"))
+SCRIPTS = config.get("SCRIPTS", os.path.join(LOCAL_DIR, "src/projects/mts/scripts"))
 SOFT = config["SOFT"]
 try:
     QUAST_DIR = config["QUAST"]
@@ -206,6 +210,34 @@ rule prop_stats:
 rule prop_stats_all:
     input:   expand("stats/prop_{cag}/{sample}.tsv", sample=SAMPLES, cag=CAGS)
     message: "Calculated propagation statistics"
+
+#---- CheckM stats -------------------------------------------------------------
+rule checkm:
+    input:   expand("reassembly/{cag}.fasta", cag=CAGS)
+    output:  qa="stats/checkm/qa.tsv", tree_qa="stats/checkm/tree_qa.tsv"
+    params:  dir="stats/checkm"
+    threads: THREADS
+    shell:   "set +u; source activate concoct_env; set -u \n"
+             "checkm tree -x fasta reassembly {params.dir} \n"
+             "checkm tree_qa -o 2 --tab_table -f {output.tree_qa} {params.dir}\n"
+             "checkm lineage_set {params.dir} {params.dir}/lineage.ms\n"
+             "checkm analyze -x fasta {params.dir}/lineage.ms reassembly {params.dir}\n"
+             "checkm qa -o 2 --tab_table -f {output.qa} {params.dir}/lineage.ms {params.dir}"
+
+rule parse_checkm:
+    input:   qa=rules.checkm.output.qa, tree_qa=rules.checkm.output.tree_qa
+    output:  "stats/summary/checkm.tsv"
+    #shell:   "{SCRIPTS}/parse_checkm.py {input.qa} {input.tree_qa} > {output}"
+    run:
+        table = pandas.read_table(input.qa, dtype="str")
+        tree_table = pandas.read_table(input.tree_qa, dtype="str", na_filter=False)
+        all_table = pandas.merge(table, tree_table, on="Bin Id")
+        res_table = all_table[["Bin Id", "Taxonomy (contained)", "Taxonomy (sister lineage)", "Genome size (Mbp)", "Completeness", "Contamination"]].copy()
+        def extract_taxon(taxonomy):
+            return str(taxonomy).split(";")[-1]
+        for column in ["Taxonomy (contained)", "Taxonomy (sister lineage)"]:
+            res_table[column] = res_table[column].apply(extract_taxon)
+        res_table.to_csv(output[0], index=False, sep="\t")
 
 #---- PCA ----------------------------------------------------------------------
 rule pca:
