@@ -27,6 +27,7 @@ namespace spades {
             auto lib_type = GetLibType(cfg::get().ts_res.library_type);
             HeadTailMapperBuilder<SimpleBarcodeEntry> mapper_builder(graph_pack.g,
                                                                      cfg::get().ts_res.edge_tail_len);
+
             mapper_builder.FillMap(lib_type, graph_pack.index, graph_pack.kmer_mapper);
             graph_pack.barcode_mapper = mapper_builder.GetMapper();
             INFO("Barcode map construction finished.");

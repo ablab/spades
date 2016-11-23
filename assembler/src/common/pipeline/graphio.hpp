@@ -27,8 +27,7 @@
 #include <algorithm>
 #include <fstream>
 #include <cstdio>
-
-#include "projects/tslr_resolver/barcode_map_io.hpp"
+#include "projects/tslr_resolver/barcode_mapper.hpp"
 
 namespace debruijn_graph {
 
@@ -788,6 +787,25 @@ void PrintSingleLongReads(const string& file_name, const LongReadContainer<Graph
     }
 }
 
+template <class Graph>
+void PrintBarcodeIndex(const string &path,
+                       const shared_ptr<tslr_resolver::BarcodeMapper> &barcodeMapper,
+                       const Graph &g) {
+    ofstream file;
+    const string file_name = path + ".bmap";
+    file.open(file_name);
+    if (!barcodeMapper || barcodeMapper->IsEmpty()) {
+        return;
+    }
+    INFO(barcodeMapper->size())
+    file << barcodeMapper->size() << std::endl;
+    omnigraph::IterationHelper <Graph, typename Graph::EdgeId> helper(g);
+    for (auto it = helper.begin(); it != helper.end(); ++it) {
+        barcodeMapper->WriteEntry(file, *it);
+    }
+}
+
+
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp) {
     ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g, gp.g.begin(), gp.g.end());
@@ -796,7 +814,7 @@ void PrintAll(const string& file_name, const graph_pack& gp) {
     PrintClusteredIndices(file_name, printer, gp.clustered_indices);
     PrintScaffoldingIndices(file_name, printer, gp.scaffolding_indices);
     PrintSingleLongReads(file_name, gp.single_long_reads);
-    SerializeMapper(file_name, gp.barcode_mapper, gp.g);
+    PrintBarcodeIndex(file_name, gp.barcode_mapper, gp.g);
     gp.ginfo.Save(file_name + ".ginfo");
 }
 
@@ -863,10 +881,50 @@ void ScanBasicGraph(const string& file_name, DataScanner<Graph>& scanner) {
     scanner.LoadCoverage(file_name);
 }
 
+template <class Graph>
+std::unordered_map <size_t, typename Graph::EdgeId> MakeEdgeMap(Graph& g) {
+    omnigraph::IterationHelper <Graph, typename Graph::EdgeId> helper(g);
+    std::unordered_map <size_t, typename Graph::EdgeId> edge_id_map;
+    for (auto it = helper.begin(); it != helper.end(); ++it) {
+        edge_id_map[it -> int_id()] = *it;
+    }
+    return edge_id_map;
+};
+
+inline void DeserializeBarcodeMapEntry(ifstream& file, const std::unordered_map <size_t, EdgeId>& edge_map,
+                                shared_ptr<tslr_resolver::BarcodeMapper>& barcodeMapper) {
+    size_t edge_id;
+    file >> edge_id;
+    barcodeMapper->ReadEntry(file, edge_map.find(edge_id) -> second);
+}
+
+template <class Graph>
+void ScanBarcodeIndex(const string &path, const std::unordered_map<size_t, EdgeId> &edge_map,
+                      shared_ptr<tslr_resolver::BarcodeMapper> &barcodeMapper, Graph &g)  {
+    typedef tslr_resolver::HeadTailMapperBuilder<tslr_resolver::SimpleBarcodeEntry> Builder;
+    ifstream file;
+    string file_name = path + ".bmap";
+    file.open(file_name);
+    INFO("Loading barcode information from " << file_name)
+    VERIFY(file != NULL);
+    Builder mapper_builder(g, cfg::get().ts_res.edge_tail_len);
+    barcodeMapper = mapper_builder.GetMapper();
+    if (file.peek() == std::ifstream::traits_type::eof()) {
+        return;
+    }
+    size_t map_size;
+    file >> map_size;
+    for (size_t i = 0; i < map_size; ++i) {
+        DeserializeBarcodeMapEntry(file, edge_map, barcodeMapper);
+    }
+}
+
 template<class graph_pack>
 void ScanGraphPack(const string& file_name,
                    DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp) {
     ScanBasicGraph(file_name, scanner);
+    auto edge_map = MakeEdgeMap<typename graph_pack::graph_t> (gp.g);
+    ScanBarcodeIndex(file_name, edge_map, gp.barcode_mapper, gp.g);
     gp.index.Attach();
     if (LoadEdgeIndex(file_name, gp.index.inner_index())) {
         gp.index.Update();
@@ -885,8 +943,6 @@ void ScanGraphPack(const string& file_name,
         WARN("Cannot load flanking coverage, flanking coverage will be recovered from index");
         gp.flanking_cov.Fill(gp.index.inner_index());
     }
-    auto edge_map = MakeEdgeMap<typename graph_pack::graph_t> (gp.g);
-    DeserializeMapper(file_name, edge_map, gp.barcode_mapper, gp.g);
 }
 
 template<class Graph>
@@ -1026,6 +1082,7 @@ void ScanGraphPack(const string& file_name, graph_pack& gp) {
     ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
     ScanGraphPack(file_name, scanner, gp);
 }
+
 
 template<class graph_pack>
 void ScanAll(const std::string& file_name, graph_pack& gp,

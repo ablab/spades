@@ -2,6 +2,8 @@ ts_res
 {
 	tslr_barcode_dataset  /home/itolstoganov/tslr_project/resolver_test/mock/data/truspades_dataset/dataset.info
 
+	library_type tslr
+
 	;length threshold for reliable edges
 	len_threshold  500
 

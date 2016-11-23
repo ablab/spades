@@ -81,7 +81,7 @@ namespace tslr_resolver {
                     DEBUG("No candidates found")
                     return result;
                 }
-                if (bmapper_ -> GetSizeTails(decisive_edge) < 4) {
+                if (bmapper_->GetTailBarcodeNumber(decisive_edge) < 4) {
                     DEBUG("Not enough barcodes on decisive edge")
                 }
 

@@ -54,9 +54,9 @@ namespace tslr_resolver {
 //            }
             ans += ("Id: " + std::to_string(this->graph().int_id(e)) + ' ' +  "Length: " + 
                 std::to_string(this->graph().length(e)) + ' ' + "Coverage: " + std::to_string(this->graph().coverage(e)) + '\n');
-            ans += ("Barcodes: " + std::to_string(barcode_mapper_ -> GetSizeHeads(e)) + '\n');
+            ans += ("Barcodes: " + std::to_string(barcode_mapper_->GetHeadBarcodeNumber(e)) + '\n');
             //ans += GetLabelFromVector(head_labels, "head");
-            ans += "Barcodes: " + std::to_string(barcode_mapper_ -> GetSizeTails(e)) + '\n';
+            ans += "Barcodes: " + std::to_string(barcode_mapper_->GetTailBarcodeNumber(e)) + '\n';
             //ans += GetLabelFromVector(tail_labels, "tail");
 
             bool is_unique = ConservativeByTopology(e, this->graph()) and

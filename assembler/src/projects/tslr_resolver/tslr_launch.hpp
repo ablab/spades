@@ -64,8 +64,8 @@ namespace spades {
             //No graph modification allowed after HybridLibrariesAligning stage!
 
             barcode_resolver_pipeline.add(new BarcodeMapConstructionStage(cfg::get().K))
-                    .add(new debruijn_graph::PairInfoCount())
-                    .add(new debruijn_graph::DistanceEstimation())
+//                    .add(new debruijn_graph::PairInfoCount())
+//                    .add(new debruijn_graph::DistanceEstimation())
                     .add(new TslrResolverStage(cfg::get().K, cfg::get().output_dir + "resolver_output.fasta"));
 
 

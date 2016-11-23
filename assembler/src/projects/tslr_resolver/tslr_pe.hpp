@@ -106,6 +106,7 @@ namespace tslr_resolver {
                                                              false /*use short loop coverage resolver*/,
                                                              distance_bound,
                                                              absolute_barcode_threshold,
+                                                             fragment_length,
                                                              len_threshold,
                                                              max_barcodes_on_edge,
                                                              tslr_unique_storage,
