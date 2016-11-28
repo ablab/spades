@@ -35,7 +35,7 @@
 <h2>1. About SPAdes</h2>
 <p>
     SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. 
-SPAdes version 3.9.1 was released under GPLv2 on July 23, 2016 and can be downloaded from  <a href="http://bioinf.spbau.ru/en/spades" target="_blank">http://bioinf.spbau.ru/en/spades</a>.
+SPAdes version 3.9.1 was released under GPLv2 on December 4, 2016 and can be downloaded from  <a href="http://cab.spbu.ru/software/spades/" target="_blank">http://cab.spbu.ru/software/spades/</a>.
 
 <a name="sec1.1"></a>
 <h3>1.1 Supported data types</h3>
@@ -157,11 +157,11 @@ SPAdes comes in several separate modules:
 <h3>2.1 Downloading SPAdes Linux binaries</h3>
 
 <p>
-    To download <a href="http://spades.bioinf.spbau.ru/release3.9.1/SPAdes-3.9.1-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
+    To download <a href="http://cab.spbu.ru/files/release3.9.1/SPAdes-3.9.1-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release3.9.1/SPAdes-3.9.1-Linux.tar.gz
+    wget http://cab.spbu.ru/files/release3.9.1/SPAdes-3.9.1-Linux.tar.gz
     tar -xzf SPAdes-3.9.1-Linux.tar.gz
     cd SPAdes-3.9.1-Linux/bin/
 </code>
@@ -192,11 +192,11 @@ SPAdes comes in several separate modules:
 <h3>2.2 Downloading SPAdes binaries for Mac</h3>
 
 <p>
-    To obtain <a href="http://spades.bioinf.spbau.ru/release3.9.1/SPAdes-3.9.1-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
+    To obtain <a href="http://cab.spbu.ru/files/release3.9.1/SPAdes-3.9.1-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    curl http://spades.bioinf.spbau.ru/release3.9.1/SPAdes-3.9.1-Darwin.tar.gz -o SPAdes-3.9.1-Darwin.tar.gz
+    curl http://cab.spbu.ru/files/release3.9.1/SPAdes-3.9.1-Darwin.tar.gz -o SPAdes-3.9.1-Darwin.tar.gz
     tar -zxf SPAdes-3.9.1-Darwin.tar.gz
     cd SPAdes-3.9.1-Darwin/bin/
 </code>
@@ -236,11 +236,11 @@ SPAdes comes in several separate modules:
     </ul>
 
 <p>
-    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release3.9.1/SPAdes-3.9.1.tar.gz">SPAdes source code</a>: 
+    If you meet these requirements, you can download the <a href="http://cab.spbu.ru/files/release3.9.1/SPAdes-3.9.1.tar.gz">SPAdes source code</a>: 
 
 <pre class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release3.9.1/SPAdes-3.9.1.tar.gz
+    wget http://cab.spbu.ru/files/release3.9.1/SPAdes-3.9.1.tar.gz
     tar -xzf SPAdes-3.9.1.tar.gz
     cd SPAdes-3.9.1
 </code>
@@ -1096,8 +1096,8 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
 
     <ul>
         <li><code>&lt;output_dir>/corrected/</code> directory contains reads corrected by BayesHammer in <code>*.fastq.gz</code> files; if compression is disabled, reads are stored in uncompressed  <code>*.fastq</code> files</li>
+        <li><code>&lt;output_dir>/scaffolds.fasta</code> contains resulting scaffolds (recommended for use as resulting sequences)</li>
         <li><code>&lt;output_dir>/contigs.fasta</code> contains resulting contigs</li>
-        <li><code>&lt;output_dir>/scaffolds.fasta</code> contains resulting scaffolds</li>
         <li><code>&lt;output_dir>/assembly_graph.fastg</code> contains SPAdes assembly graph in <a href="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf" target="_blank">FASTG format</a></li>
         <li><code>&lt;output_dir>/contigs.paths</code> contains paths in the assembly graph corresponding to contigs.fasta (see details below)</li>
         <li><code>&lt;output_dir>/scaffolds.paths</code> contains paths in the assembly graph corresponding to scaffolds.fasta (see details below)</li>
@@ -1143,8 +1143,8 @@ states that <code>NODE_3_length_237403_cov_243.207_ID_45</code> corresponds to t
 The full list of <code>&lt;output_dir></code> content is presented below: 
 </p>
 <pre>
+    <code>scaffolds.fasta</code> &ndash; <i>resulting scaffolds (recommended for use as resulting sequences)</i>
     <code>contigs.fasta</code> &ndash; <i>resulting contigs</i>
-    <code>scaffolds.fasta</code> &ndash; <i>resulting scaffolds </i>
     <code>assembly_graph.fastg</code> &ndash; <i>assembly graph</i>
     <code>contigs.paths</code> &ndash; <i>contigs paths in the assembly graph</i>
     <code>scaffolds.paths</code> &ndash; <i>scaffolds paths in the assembly graph</i>
@@ -1159,7 +1159,7 @@ The full list of <code>&lt;output_dir></code> content is presented below:
     <code>spades.log</code> &ndash; <i>SPAdes log</i>
     <code>dataset.info</code> &ndash; <i>internal configuration file</i>
     <code>input_dataset.yaml</code> &ndash; <i>internal YAML data set file</i>
-    <code>K&lt;##>/</code> &ndash; <i>directory containing files from the run with K=&lt;##> </i>
+    <code>K&lt;##>/</code> &ndash; <i>directory containing intermediate files from the run with K=&lt;##>. These files should not be used as assembly results; use resulting contigs/scaffolds in files mentioned above.</i>
 </pre>
 
 <p>
@@ -1176,7 +1176,7 @@ we append suffix <code>_component_X</code>, where <code>X</code> is the id of th
 
 <p>
 
-    <a href="http://bioinf.spbau.ru/en/quast" target="_blank">QUAST</a> may be used to generate summary statistics (N50, maximum contig length, GC %, # genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., SPAdes run with different parameters, or several different assemblers).
+    <a href="http://cab.spbu.ru/software/quast/" target="_blank">QUAST</a> may be used to generate summary statistics (N50, maximum contig length, GC %, # genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., SPAdes run with different parameters, or several different assemblers).
 <br>
 
 
