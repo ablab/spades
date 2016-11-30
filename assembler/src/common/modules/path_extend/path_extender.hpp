@@ -178,12 +178,12 @@ public:
             path.PushBack(edges.first);
             path.PushBack(edges.second, int(g_.k() + 100));
         }
-
-        for (size_t i = 0; i < maxIter; ++i) {
-            MakeCycleStep(path, edges.first);
+        else {
+            for (size_t i = 0; i < maxIter; ++i) {
+                MakeCycleStep(path, edges.first);
+            }
+            path.PushBack(edges.second);
         }
-        path.PushBack(edges.second);
-
 
     }
 
