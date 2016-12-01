@@ -696,6 +696,11 @@ def save_contigs(working_dir, contig_storage_dir, contigs, rewrite_latest):
         shutil.copy(spades_filename, os.path.join(contig_storage_dir, saved_ctg_name))
         log.log(name + " saved to " + os.path.join(contig_storage_dir, saved_ctg_name))
 
+        saved_paths_name = name_prefix + name + ctg_suffix + ".paths"
+        spades_paths_name = os.path.join(output_dir, file_name + ".paths")
+        if os.path.exists(spades_paths_name):
+            shutil.copy(spades_paths_name, os.path.join(contig_storage_dir, saved_paths_name))
+
         if rewrite_latest:
             log.log("Creating latest symlink")
             lc =  os.path.join(contig_storage_dir, "latest_" + name + ".fasta")
