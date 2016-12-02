@@ -141,7 +141,7 @@ boost::optional<AbundanceVector> ContigAbundanceCounter::operator()(
         if (seq.size() < k_)
             continue;
 
-        auto kwh = kmer_mpl_.ConstructKWH(runtime_k::RtSeq(k_, seq));
+        auto kwh = kmer_mpl_.ConstructKWH(RtSeq(k_, seq));
         kwh >>= 'A';
 
         for (size_t j = k_ - 1; j < seq.size(); ++j) {

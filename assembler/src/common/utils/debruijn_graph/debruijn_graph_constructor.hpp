@@ -182,7 +182,7 @@ private:
 class UnbranchingPathFinder {
 private:
     typedef DeBruijnExtensionIndex<> Index;
-    typedef runtime_k::RtSeq Kmer;
+    typedef RtSeq Kmer;
     typedef Index::kmer_iterator kmer_iterator;
     typedef Index::KeyWithHash KeyWithHash;
     typedef Index::DeEdge DeEdge;
@@ -243,7 +243,7 @@ public:
 class UnbranchingPathExtractor {
 private:
     typedef DeBruijnExtensionIndex<> Index;
-    typedef runtime_k::RtSeq Kmer;
+    typedef RtSeq Kmer;
     typedef Index::kmer_iterator kmer_iterator;
     typedef Index::DeEdge DeEdge;
     typedef Index::KeyWithHash KeyWithHash;
@@ -380,7 +380,7 @@ class FastGraphFromSequencesConstructor {
 private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef runtime_k::RtSeq Kmer;
+    typedef RtSeq Kmer;
     typedef DeBruijnExtensionIndex<> Index;
     size_t kmer_size_;
     Index &origin_;
@@ -520,7 +520,7 @@ private:
     typedef typename Graph::EdgeId EdgeId;
     typedef DeBruijnExtensionIndex<> DeBruijn;
     typedef typename Graph::VertexId VertexId;
-    typedef runtime_k::RtSeq Kmer;
+    typedef RtSeq Kmer;
 
     Graph &graph_;
     DeBruijn &origin_;

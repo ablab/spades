@@ -35,7 +35,7 @@
 #include <city/city.h>
 
 #include "utils/verify.hpp"
-#include "basic/sequence/nucl.hpp"
+#include "nucl.hpp"
 #include "utils/log.hpp"
 #include "seq_common.hpp"
 

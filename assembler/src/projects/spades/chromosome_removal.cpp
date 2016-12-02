@@ -149,7 +149,7 @@ void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bo
     DEBUG("Simplifying graph for plasmid project");
     size_t iteration_count = 10;
     for (size_t i = 0; i < iteration_count; i++) {
-        omnigraph::EdgeRemovingAlgorithm<Graph> tc(gp.g, pred::And(DeadEndCondition<Graph>(gp.g), LengthUpperBound<Graph>(gp.g, long_edge_bound)),
+        omnigraph::EdgeRemovingAlgorithm<Graph> tc(gp.g, func::And(DeadEndCondition<Graph>(gp.g), LengthUpperBound<Graph>(gp.g, long_edge_bound)),
                                                    removal_handler, true);
         tc.Run();
     }

@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #pragma once
-#include "common/basic/reads/single_read.hpp"
+#include "single_read.hpp"
 #include "read_stream_vector.hpp"
 #include "delegating_reader_wrapper.hpp"
 

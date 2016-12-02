@@ -19,7 +19,7 @@
 #include "utils/verify.hpp"
 #include <array>
 #include <algorithm>
-#include "basic/sequence/nucl.hpp"
+#include "nucl.hpp"
 #include "utils/log.hpp"
 #include "seq_common.hpp"
 #include "seq.hpp"
@@ -730,7 +730,6 @@ bool operator<(const RuntimeSeq<max_size_, T> &l, const RuntimeSeq<max_size_, T>
     return l.size() < r.size();
 }
 
-
 template<size_t max_size_, typename T>
 std::ostream &operator<<(std::ostream &os, RuntimeSeq<max_size_, T> seq) {
     os << seq.str();
@@ -745,7 +744,8 @@ struct hash<RuntimeSeq<max_size, T>> {
     }
 };
 
-};
+}
 
+typedef RuntimeSeq<UPPER_BOUND> RtSeq;
 
 #endif /* RTSEQ_HPP_ */

@@ -10,7 +10,7 @@
 #include "parallel_unordered_map.hpp"
 #include "utils/openmp_wrapper.h"
 
-#include "basic/sequence/runtime_k.hpp"
+#include "sequence/runtime_k.hpp"
 #include "kmer_map.hpp"
 #include "kmer_hash_vector.hpp"
 
@@ -21,7 +21,7 @@ public:
 
     typedef runtime_k::KmerMap<int> destination_container_t;
 
-    typedef runtime_k::RtSeq Kmer;
+    typedef RtSeq Kmer;
 
 private:
 

@@ -25,10 +25,10 @@
  * according to extension.
  */
 
-#include <common/basic/reads/single_read.hpp>
-#include "io/reads/fasta_fastq_gz_parser.hpp"
-#include "io/reads/parser.hpp"
-#include "io/sam/bam_parser.hpp"
+#include "single_read.hpp"
+#include "fasta_fastq_gz_parser.hpp"
+#include "parser.hpp"
+#include "sam/bam_parser.hpp"
 #include "utils/standard_base.hpp"
 
 

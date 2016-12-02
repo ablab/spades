@@ -11,7 +11,7 @@
 #include <cstring>
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
-#include "basic/sequence/sequence_tools.hpp"
+#include "sequence/sequence_tools.hpp"
 #include "utils/standard_base.hpp"
 
 namespace debruijn_graph {

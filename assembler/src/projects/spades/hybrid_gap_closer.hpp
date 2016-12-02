@@ -551,7 +551,7 @@ class HybridGapCloser {
 public:
     typedef std::function<string (const vector<string>&)> ConsensusF;
 private:
-    typedef runtime_k::RtSeq Kmer;
+    typedef RtSeq Kmer;
     typedef typename GapStorage::gap_info_it gap_info_it;
 
     DECL_LOGGER("HybridGapCloser");

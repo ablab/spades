@@ -115,7 +115,7 @@ class AggressiveClearing: public omnigraph::EdgeProcessingAlgorithm<Graph> {
     const double similarity_threshold_;
     const double norm_ratio_threshold_;
     EdgeRemover<Graph> edge_remover_;
-    pred::TypedPredicate<EdgeId> topological_condition_;
+    func::TypedPredicate<EdgeId> topological_condition_;
 
 protected:
     virtual bool ProcessEdge(EdgeId e) override {
@@ -159,7 +159,7 @@ public:
         similarity_threshold_(similarity_threshold),
         norm_ratio_threshold_(norm_ratio_threshold),
         edge_remover_(g, removal_handler),
-        topological_condition_(pred::Or(AlternativesPresenceCondition<Graph>(g), TipCondition<Graph>(g))) {
+        topological_condition_(func::Or(AlternativesPresenceCondition<Graph>(g), TipCondition<Graph>(g))) {
             DEBUG("Base profile " << PrintVector(base_profile_));
         }
 private:

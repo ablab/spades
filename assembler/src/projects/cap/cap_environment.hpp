@@ -29,8 +29,8 @@ class CapEnvironment : public Environment {
   typedef Graph::VertexId VertexId;
   typedef Graph::EdgeId EdgeId;
 
-  typedef debruijn_graph::KmerStoringEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, debruijn_graph::SimpleStoring> RtSetIndex;
-  typedef debruijn_graph::graph_pack<Graph, runtime_k::RtSeq, RtSetIndex> RtSeqGraphPack;
+  typedef debruijn_graph::KmerStoringEdgeIndex<Graph, RtSeq, kmer_index_traits<RtSeq>, debruijn_graph::SimpleStoring> RtSetIndex;
+  typedef debruijn_graph::graph_pack<Graph, RtSeq, RtSetIndex> RtSeqGraphPack;
   typedef debruijn_graph::KmerStoringEdgeIndex<Graph, cap::LSeq, kmer_index_traits<cap::LSeq>, debruijn_graph::SimpleStoring> LSeqIndex;
   typedef debruijn_graph::graph_pack<Graph, cap::LSeq, LSeqIndex> LSeqGraphPack;
 

@@ -8,10 +8,10 @@
 #pragma once
 
 #include "utils/verify.hpp"
-#include "basic/sequence/quality.hpp"
-#include "basic/sequence/sequence.hpp"
-#include "basic/sequence/nucl.hpp"
-#include "basic/sequence/sequence_tools.hpp"
+#include "sequence/quality.hpp"
+#include "sequence/sequence.hpp"
+#include "sequence/nucl.hpp"
+#include "sequence/sequence_tools.hpp"
 #include "utils/simple_tools.hpp"
 
 #include <string>

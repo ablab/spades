@@ -1,11 +1,11 @@
 #pragma once
-#include "math/pred.hpp"
-#include "utils/func.hpp"
+#include "func/pred.hpp"
+#include "func/func.hpp"
 
 namespace omnigraph {
 
 template<class Graph>
-class VertexCondition : public func::Predicate<typename Graph::VertexId> {
+class VertexCondition : public func::AbstractPredicate<typename Graph::VertexId> {
     typedef typename Graph::VertexId VertexId;
     const Graph &g_;
 protected:

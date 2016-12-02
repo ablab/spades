@@ -4,21 +4,27 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-//
-// Created by lab42 on 8/19/15.
-//
+#pragma once
 
-#include "genome_storage.hpp"
-#include "basic/sequence/nucl.hpp"
-using namespace std;
+#include <string>
+#include "sequence.hpp"
+#include "nucl.hpp"
 
-namespace debruijn_graph {
-//TODO exterminate this where possible
-    Sequence GenomeStorage::GetSequence() const{
+class GenomeStorage {
+    std::string s_;
+public:
+    GenomeStorage() {
+    }
+
+    GenomeStorage(const std::string &s): s_(s) {
+    }
+
+    //TODO exterminate this where possible
+    Sequence GetSequence() const {
         stringstream ss;
         size_t l = 0, r = 0;
         for(size_t i = 0; i < s_.size(); i++) {
-            if (! is_nucl(s_[i]) ) {
+            if (!is_nucl(s_[i]) ) {
                 if (r > l) {
                     ss << s_.substr(l, r - l);
                 }
@@ -33,13 +39,17 @@ namespace debruijn_graph {
         }
         return Sequence(ss.str());
     }
-    void GenomeStorage::SetSequence(const Sequence &s) {
+
+    void SetSequence(const Sequence &s) {
         s_ = s.str();
     }
-    string GenomeStorage::str() const{
+
+    std::string str() const {
         return s_;
     }
-    size_t GenomeStorage::size() const {
+
+    size_t size() const {
         return s_.size();
     }
-}
+};
+

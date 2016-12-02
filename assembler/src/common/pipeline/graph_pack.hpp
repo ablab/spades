@@ -9,7 +9,7 @@
 
 #include "utils/indices/edge_position_index.hpp"
 #include "utils/indices/storing_traits.hpp"
-#include "basic/sequence/genome_storage.hpp"
+#include "sequence/genome_storage.hpp"
 #include "assembly_graph/handlers/id_track_handler.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/core/graph.hpp"
@@ -31,7 +31,7 @@ struct graph_pack: private boost::noncopyable {
     typedef Graph graph_t;
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef runtime_k::RtSeq seq_t;
+    typedef RtSeq seq_t;
     typedef EdgeIndex<graph_t> index_t;
     using PairedInfoIndicesT = omnigraph::de::PairedInfoIndicesT<Graph>;
     //typedef omnigraph::de::PairedInfoIndicesT<Graph> PairedInfoIndicesT;

@@ -13,9 +13,9 @@
 #include <stdexcept>
 #include <iomanip>
 #include <fstream>
-#include "common/basic/reads/read.hpp"
+#include "io/reads/read.hpp"
 #include "io/reads/ireadstream.hpp"
-#include "basic/sequence/seq.hpp"
+#include "sequence/seq.hpp"
 #include "globals.hpp"
 #include "kmer_stat.hpp"
 #include "io/kmers/mmapped_reader.hpp"

@@ -13,8 +13,8 @@
 #include <memory>
 #include <cstring>
 
-#include "basic/sequence/seq.hpp"
-#include "basic/sequence/rtseq.hpp"
+#include "seq.hpp"
+#include "rtseq.hpp"
 
 class Sequence {
     // Type to store Seq in Sequences

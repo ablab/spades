@@ -1,11 +1,8 @@
-#ifndef __ADT_FUNCTION_TRAITS__
-#define __ADT_FUNCTION_TRAITS__
-
 #pragma once
 
 #include <functional>
 
-namespace adt {
+namespace func {
 
 template<class F>
 struct function_traits;
@@ -71,6 +68,4 @@ public:
     };
 };
 
-} // namespace adt
-
-#endif // __ADT_FUNCTION_TRAITS__
+} // namespace func

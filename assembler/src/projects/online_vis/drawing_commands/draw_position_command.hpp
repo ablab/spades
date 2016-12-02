@@ -17,7 +17,7 @@
 namespace online_visualization {
     class DrawPositionCommand : public DrawingCommand {
         private:
-            void DrawPicture(DebruijnEnvironment& curr_env, runtime_k::RtSeq kmer, string label = "") const {
+            void DrawPicture(DebruijnEnvironment& curr_env, RtSeq kmer, string label = "") const {
                 kmer = curr_env.kmer_mapper().Substitute(kmer);
                 if (!curr_env.index().contains(kmer)) {
                     cout << "No corresponding graph location " << endl;
@@ -72,7 +72,7 @@ namespace online_visualization {
                 }
 
                 if (CheckPositionBounds(position, genome.size(), curr_env.k_value())) {
-                    DrawPicture(curr_env, genome.Subseq(position).start<runtime_k::RtSeq>(curr_env.k_value() + 1), args[1]);
+                    DrawPicture(curr_env, genome.Subseq(position).start<RtSeq>(curr_env.k_value() + 1), args[1]);
                 }
 
             }

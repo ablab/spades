@@ -14,7 +14,7 @@
 #include "utils/standard_base.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "math/xmath.h"
-#include "basic/sequence/sequence_tools.hpp"
+#include "sequence/sequence_tools.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 #include "visualization/visualization.hpp"
 #include "dominated_set_finder.hpp"

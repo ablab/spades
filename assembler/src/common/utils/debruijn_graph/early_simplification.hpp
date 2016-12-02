@@ -8,7 +8,6 @@
 #pragma once
 #include "utils/standard_base.hpp"
 #include "utils/indices/perfect_hash_map.hpp"
-#include "basic/sequence/runtime_k.hpp"
 #include "utils/mph_index/kmer_index.hpp"
 
 namespace debruijn_graph {
@@ -47,9 +46,9 @@ public:
 #   pragma omp parallel for schedule(guided)
         for(size_t i = 0; i < iters.size(); i++) {
             for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
-                KeyWithHash kh = index_.ConstructKWH(runtime_k::RtSeq(index_.k(), *it));
+                KeyWithHash kh = index_.ConstructKWH(RtSeq(index_.k(), *it));
                 if (kh.is_minimal()) {
-                    KeyWithHash kh = index_.ConstructKWH(runtime_k::RtSeq(index_.k(), *it));
+                    KeyWithHash kh = index_.ConstructKWH(RtSeq(index_.k(), *it));
                     for (char i = 0; i < 4; i++) {
                         CleanForwardLinks(kh, i);
                         CleanBackwardLinks(kh, i);
@@ -153,7 +152,7 @@ private:
 #   pragma omp parallel for schedule(guided)
         for(size_t i = 0; i < iters.size(); i++) {
             for(Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
-                KeyWithHash kh = index_.ConstructKWH(runtime_k::RtSeq(index_.k(), *it));
+                KeyWithHash kh = index_.ConstructKWH(RtSeq(index_.k(), *it));
                 if(kh.is_minimal()) {
                     if (index_.OutgoingEdgeCount(kh) >= 2) {
                         result[i] += RemoveForward(kh);

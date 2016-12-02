@@ -19,8 +19,8 @@
 
 #include "utils/verify.hpp"
 #include "ireader.hpp"
-#include "common/basic/reads/single_read.hpp"
-#include "common/basic/reads/paired_read.hpp"
+#include "single_read.hpp"
+#include "paired_read.hpp"
 #include "pipeline/library.hpp"
 
 namespace io {

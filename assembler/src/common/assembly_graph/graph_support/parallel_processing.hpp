@@ -47,10 +47,10 @@ template<class Graph, class ElementId>
 class InterestingElementFinder {
 protected:
     typedef std::function<void (ElementId)> HandlerF;
-    const pred::TypedPredicate<ElementId> condition_;
+    const func::TypedPredicate<ElementId> condition_;
 public:
 
-    InterestingElementFinder(pred::TypedPredicate<ElementId> condition):
+    InterestingElementFinder(func::TypedPredicate<ElementId> condition):
             condition_(condition) {
     }
 
@@ -65,7 +65,7 @@ class TrivialInterestingElementFinder :
 public:
 
     TrivialInterestingElementFinder() :
-            InterestingElementFinder<Graph, ElementId>(pred::AlwaysTrue<ElementId>()) {
+            InterestingElementFinder<Graph, ElementId>(func::AlwaysTrue<ElementId>()) {
     }
 
     bool Run(const Graph& /*g*/, std::function<void (ElementId)> /*handler*/) const override {
@@ -79,7 +79,7 @@ class SimpleInterestingElementFinder : public InterestingElementFinder<Graph, El
     typedef typename base::HandlerF HandlerF;
 public:
 
-    SimpleInterestingElementFinder(pred::TypedPredicate<ElementId> condition = pred::AlwaysTrue<ElementId>())
+    SimpleInterestingElementFinder(func::TypedPredicate<ElementId> condition = func::AlwaysTrue<ElementId>())
             :  base(condition) {}
 
     bool Run(const Graph& g, HandlerF handler) const override {
@@ -101,7 +101,7 @@ class ParallelInterestingElementFinder : public InterestingElementFinder<Graph, 
     const size_t chunk_cnt_;
 public:
 
-    ParallelInterestingElementFinder(pred::TypedPredicate<ElementId> condition,
+    ParallelInterestingElementFinder(func::TypedPredicate<ElementId> condition,
                                      size_t chunk_cnt)
             : base(condition), chunk_cnt_(chunk_cnt) {}
 
@@ -278,7 +278,7 @@ class ConditionEdgeRemovingAlgorithm : public PersistentEdgeRemovingAlgorithm<Gr
     typedef typename Graph::EdgeId EdgeId;
     typedef PersistentEdgeRemovingAlgorithm<Graph, Comparator> base;
 
-    pred::TypedPredicate<EdgeId> remove_condition_;
+    func::TypedPredicate<EdgeId> remove_condition_;
 protected:
     typedef typename base::CandidateFinderPtr CandidateFinderPtr;
 
@@ -289,7 +289,7 @@ protected:
 public:
     ConditionEdgeRemovingAlgorithm(Graph& g,
                                    const CandidateFinderPtr& interest_edge_finder,
-                                   pred::TypedPredicate<EdgeId> remove_condition,
+                                   func::TypedPredicate<EdgeId> remove_condition,
                                    std::function<void(EdgeId)> removal_handler = boost::none,
                                    bool canonical_only = false,
                                    const Comparator& comp = Comparator(),
@@ -309,7 +309,7 @@ class ParallelEdgeRemovingAlgorithm : public ConditionEdgeRemovingAlgorithm<Grap
 
 public:
     ParallelEdgeRemovingAlgorithm(Graph& g,
-                                  pred::TypedPredicate<EdgeId> remove_condition,
+                                  func::TypedPredicate<EdgeId> remove_condition,
                                   size_t chunk_cnt,
                                   std::function<void(EdgeId)> removal_handler = boost::none,
                                   bool canonical_only = false,
@@ -328,12 +328,12 @@ class DisconnectionAlgorithm : public PersistentProcessingAlgorithm<Graph,
         Comparator> {
     typedef typename Graph::EdgeId EdgeId;
     typedef PersistentProcessingAlgorithm<Graph, EdgeId, Comparator> base;
-    pred::TypedPredicate<EdgeId> condition_;
+    func::TypedPredicate<EdgeId> condition_;
     EdgeDisconnector<Graph> disconnector_;
 
 public:
     DisconnectionAlgorithm(Graph& g,
-                           pred::TypedPredicate<EdgeId> condition,
+                           func::TypedPredicate<EdgeId> condition,
                            size_t chunk_cnt,
                            EdgeRemovalHandlerF<Graph> removal_handler,
                            const Comparator& comp = Comparator(),

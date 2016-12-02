@@ -38,7 +38,7 @@
 #include <iomanip>
 #include "io/ireadstream.hpp"
 #include "io/read.hpp"
-#include "basic/sequence/seq.hpp"
+#include "sequence/seq.hpp"
 #include "kmer_freq_info.hpp"
 #include "valid_kmer_generator.hpp"
 #define SUPPRESS_UNUSED(X) ((void) (X))

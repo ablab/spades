@@ -7,10 +7,10 @@
 
 #include "kmer_coverage_model.hpp"
 
-#include "xmath.h"
 #include "utils/logger/logger.hpp"
-#include "smooth.hpp"
 #include "utils/verify.hpp"
+#include "math/xmath.h"
+#include "math/smooth.hpp"
 
 #include <boost/math/special_functions/zeta.hpp>
 #include <boost/math/distributions/normal.hpp>
@@ -27,7 +27,9 @@
 #include <cstddef>
 #include <cmath>
 
-namespace cov_model {
+namespace utils {
+namespace coverage_model {
+
 using std::isfinite;
 
 static const size_t MaxCopy = 10;
@@ -42,7 +44,7 @@ static double perr(size_t i, double scale, double shape) {
 }
 
 static double pgood(size_t i, double zp, double u, double sd, double shape,
-                    double *mixprobs = NULL) {
+                    double* mixprobs = NULL) {
     double res = 0;
 
     for (unsigned copy = 0; copy < MaxCopy; ++copy) {
@@ -55,17 +57,17 @@ static double pgood(size_t i, double zp, double u, double sd, double shape,
 }
 
 class CovModelLogLike {
-    const std::vector <size_t> &cov;
+    const std::vector<size_t>& cov;
 
 public:
-    CovModelLogLike(const std::vector <size_t> &cov)
-            : cov(cov) { }
+    CovModelLogLike(const std::vector<size_t>& cov)
+            : cov(cov) {}
 
     int getN() const { return 7; };
 
 private:
 
-    double eval_(const double *x) const {
+    double eval_(const double* x) const {
         double zp = x[0], p = x[1], shape = x[2], u = x[3], sd = x[4], scale = x[5], shape2 = x[6];
 
         if (zp <= 1 || shape <= 0 || sd <= 0 || p < 1e-9 || p > 1 - 1e-9 || u <= 0 || scale <= 0 ||
@@ -73,7 +75,7 @@ private:
             !isfinite(scale) || !isfinite(shape2))
             return +std::numeric_limits<double>::infinity();
 
-        std::vector <double> kmer_probs(cov.size());
+        std::vector<double> kmer_probs(cov.size());
 
         // Error
         for (size_t i = 0; i < kmer_probs.size(); ++i)
@@ -92,11 +94,11 @@ private:
 };
 
 struct CovModelLogLikeEMData {
-    const std::vector <size_t> &cov;
-    const std::vector <double> &z;
+    const std::vector<size_t>& cov;
+    const std::vector<double>& z;
 };
 
-static double CovModelLogLikeEM(unsigned, const double *x, double *, void *data) {
+static double CovModelLogLikeEM(unsigned, const double* x, double*, void* data) {
     double zp = x[0], shape = x[1], u = x[2], sd = x[3], scale = x[4], shape2 = x[5];
 
     // INFO("Entry: " << x[0] << " " << x[1] << " " << x[2] << " " << x[3] << " " << x[4]);
@@ -106,10 +108,10 @@ static double CovModelLogLikeEM(unsigned, const double *x, double *, void *data)
         !isfinite(scale) || !isfinite(shape2))
         return -std::numeric_limits<double>::infinity();
 
-    const std::vector <size_t> &cov = static_cast<CovModelLogLikeEMData *>(data)->cov;
-    const std::vector <double> &z = static_cast<CovModelLogLikeEMData *>(data)->z;
+    const std::vector<size_t>& cov = static_cast<CovModelLogLikeEMData*>(data)->cov;
+    const std::vector<double>& z = static_cast<CovModelLogLikeEMData*>(data)->z;
 
-    std::vector <double> kmer_probs(cov.size(), 0);
+    std::vector<double> kmer_probs(cov.size(), 0);
 
     // Error
     for (size_t i = 0; i < kmer_probs.size(); ++i) {
@@ -121,7 +123,7 @@ static double CovModelLogLikeEM(unsigned, const double *x, double *, void *data)
 
     // Good
     // Pre-compute mixing probabilities
-    std::vector <double> mixprobs(MaxCopy, 0);
+    std::vector<double> mixprobs(MaxCopy, 0);
     for (unsigned copy = 0; copy < MaxCopy; ++copy)
         mixprobs[copy] = dzeta(copy + 1, zp);
 
@@ -145,11 +147,11 @@ static double CovModelLogLikeEM(unsigned, const double *x, double *, void *data)
 }
 
 
-static std::vector <double> EStep(const std::vector <double> &x,
-                                  double p, size_t N) {
+static std::vector<double> EStep(const std::vector<double>& x,
+                                 double p, size_t N) {
     double zp = x[0], shape = x[1], u = x[2], sd = x[3], scale = x[4], shape2 = x[5];
 
-    std::vector <double> res(N);
+    std::vector<double> res(N);
     for (size_t i = 0; i < N; ++i) {
         double pe = p * perr(i + 1, scale, shape);
         res[i] = pe / (pe + (1 - p) * pgood(i + 1, zp, u, sd, shape2));
@@ -164,7 +166,7 @@ static std::vector <double> EStep(const std::vector <double> &x,
 // first valley.
 size_t KMerCoverageModel::EstimateValley() const {
     // Smooth the histogram
-    std::vector <size_t> scov;
+    std::vector<size_t> scov;
     math::Smooth3RS3R(scov, cov_);
 
     size_t Valley = scov[0];
@@ -216,7 +218,7 @@ void KMerCoverageModel::Fit() {
     if (MaxCov_ - Valley_ < 3)
         WARN("Too many erroneous kmers, the estimates might be unreliable");
 
-    std::vector <size_t> mvals(1 + MaxCov_ - Valley_);
+    std::vector<size_t> mvals(1 + MaxCov_ - Valley_);
     mvals[0] = cov_[MaxCov_];
     size_t tmadcov = mvals[0];
     for (size_t i = 1; i < std::min(MaxCov_ - Valley_, cov_.size() - MaxCov_); ++i) {
@@ -251,7 +253,7 @@ void KMerCoverageModel::Fit() {
     TRACE("Total: " << Total << ". Before: " << BeforeValley);
     TRACE("p: " << ErrorProb);
 
-    std::vector <double> x(6), lb(6), ub(6);
+    std::vector<double> x(6), lb(6), ub(6);
 
     x[0] = 3;
     lb[0] = 0;
@@ -282,7 +284,7 @@ void KMerCoverageModel::Fit() {
     unsigned it = 1;
     while (fabs(PrevErrProb - ErrorProb) > ErrProbThr) {
         // Recalculate the vector of posterior error probabilities
-        std::vector <double> z = EStep(x, ErrorProb, GoodCov.size());
+        std::vector<double> z = EStep(x, ErrorProb, GoodCov.size());
 
         // Recalculate the probability of error
         PrevErrProb = ErrorProb;
@@ -305,7 +307,7 @@ void KMerCoverageModel::Fit() {
         nlopt::result Results = nlopt::FAILURE;
         try {
             Results = opt.optimize(x, fMin);
-        } catch (nlopt::roundoff_limited &) {
+        } catch (nlopt::roundoff_limited&) {
         }
 
         VERBOSE_POWER_T2(it, 1, "... iteration " << it);
@@ -314,7 +316,7 @@ void KMerCoverageModel::Fit() {
 
         double zp = x[0], shape = x[1], u = x[2], sd = x[3], scale = x[4], shape2 = x[5];
         TRACE("zp: " << zp << " p: " << ErrorProb << " shape: " << shape << " u: " << u << " sd: " << sd <<
-              " scale: " << scale << " shape2: " << shape2);
+                     " scale: " << scale << " shape2: " << shape2);
 
         it += 1;
     }
@@ -345,7 +347,7 @@ void KMerCoverageModel::Fit() {
 
     // If the model converged, then use it to estimate the thresholds.
     if (converged_) {
-        std::vector <double> z = EStep(x, ErrorProb, GoodCov.size());
+        std::vector<double> z = EStep(x, ErrorProb, GoodCov.size());
 
         INFO("Probability of erroneous kmer at valley: " << z[Valley_]);
         converged_ = false;
@@ -359,13 +361,13 @@ void KMerCoverageModel::Fit() {
             }
 
 #if 0
-for (size_t i = 0; i < z.size(); ++i) {
-    double zp = x[0], shape = x[1], u = x[2], sd = x[3], scale = x[4], shape2 = x[5];
-    double pe = ErrorProb * perr(i + 1, scale, shape);
-    double pg = (1 - ErrorProb) * pgood(i + 1, zp, u, sd, shape2);
+        for (size_t i = 0; i < z.size(); ++i) {
+            double zp = x[0], shape = x[1], u = x[2], sd = x[3], scale = x[4], shape2 = x[5];
+            double pe = ErrorProb * perr(i + 1, scale, shape);
+            double pg = (1 - ErrorProb) * pgood(i + 1, zp, u, sd, shape2);
 
-    fprintf(stderr, "%e %e %e %e\n", pe, pg, z[i], perr(i + 1, scale, shape));
-}
+            fprintf(stderr, "%e %e %e %e\n", pe, pg, z[i], perr(i + 1, scale, shape));
+        }
 #endif
     }
 
@@ -391,4 +393,5 @@ for (size_t i = 0; i < z.size(); ++i) {
     INFO("Estimated genome size (ignoring repeats): " << GenomeSize_);
 }
 
-};
+}
+}

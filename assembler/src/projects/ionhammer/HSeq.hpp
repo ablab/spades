@@ -8,7 +8,7 @@
 #ifndef __HAMMER_HSEQ_HPP__
 #define __HAMMER_HSEQ_HPP__
 
-#include "basic/sequence/nucl.hpp"
+#include "sequence/nucl.hpp"
 #include <city/city.h>
 
 #include <array>

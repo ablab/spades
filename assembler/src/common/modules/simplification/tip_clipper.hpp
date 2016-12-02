@@ -8,10 +8,10 @@
 #pragma once
 
 #include "math/xmath.h"
-#include "utils/func.hpp"
+#include "func/func.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
-#include "basic/sequence/sequence.hpp"
+#include "sequence/sequence.hpp"
 
 #include <set>
 
@@ -195,15 +195,15 @@ private:
 };
 
 template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId> AddTipCondition(const Graph& g,
-                                                            pred::TypedPredicate<typename Graph::EdgeId> condition) {
-    return pred::And(TipCondition<Graph>(g), condition);
+func::TypedPredicate<typename Graph::EdgeId> AddTipCondition(const Graph& g,
+                                                            func::TypedPredicate<typename Graph::EdgeId> condition) {
+    return func::And(TipCondition<Graph>(g), condition);
 }
 
 template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId>
+func::TypedPredicate<typename Graph::EdgeId>
 NecessaryTipCondition(const Graph& g, size_t max_length, double max_coverage) {
-    return AddTipCondition(g, pred::And(LengthUpperBound<Graph>(g, max_length),
+    return AddTipCondition(g, func::And(LengthUpperBound<Graph>(g, max_length),
                                        CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
@@ -247,9 +247,9 @@ public:
 };
 
 template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId>AddDeadEndCondition(const Graph& g,
-                                                                pred::TypedPredicate<typename Graph::EdgeId> condition) {
-    return pred::And(DeadEndCondition<Graph>(g), condition);
+func::TypedPredicate<typename Graph::EdgeId>AddDeadEndCondition(const Graph& g,
+                                                                func::TypedPredicate<typename Graph::EdgeId> condition) {
+    return func::And(DeadEndCondition<Graph>(g), condition);
 }
 
 //template<class Graph>

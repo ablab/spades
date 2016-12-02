@@ -206,17 +206,17 @@ namespace debruijn_graph {
 //};
 
 //template <>
-//class EditableDeBruijnKMerIndexBuilder<kmer_index_traits<runtime_k::RtSeq>> {
+//class EditableDeBruijnKMerIndexBuilder<kmer_index_traits<RtSeq>> {
 // public:
 //  template <class IdType, class Read>
-//  size_t BuildIndexFromStream(EditableDeBruijnKMerIndex<IdType, kmer_index_traits<runtime_k::RtSeq>> &index,
+//  size_t BuildIndexFromStream(EditableDeBruijnKMerIndex<IdType, kmer_index_traits<RtSeq>> &index,
 //                              io::ReadStreamVector<io::IReader<Read> > &streams,
 //                              SingleReadStream* contigs_stream = 0) const {
 //    DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
 //                                            index.K(), 0,
 //                                            streams, contigs_stream);
-//    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-//    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType, kmer_index_traits<runtime_k::RtSeq>>::KMerIndexT> builder(index.workdir(), 16, streams.size());
+//    KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
+//    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType, kmer_index_traits<RtSeq>>::KMerIndexT> builder(index.workdir(), 16, streams.size());
 //    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
 //    index.data_.resize(sz);
 //
@@ -229,11 +229,11 @@ namespace debruijn_graph {
 //  }
 //
 //  template <class IdType, class Graph>
-//  void BuildIndexFromGraph(EditableDeBruijnKMerIndex<IdType, runtime_k::RtSeq> &index,
+//  void BuildIndexFromGraph(EditableDeBruijnKMerIndex<IdType, RtSeq> &index,
 //                           const Graph &g) const {
 //    DeBruijnGraphKMerSplitter<Graph> splitter(index.workdir(), index.K(), g);
-//    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-//    KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId, kmer_index_traits<runtime_k::RtSeq>>::KMerIndexT> builder(index.workdir(), 16, 1);
+//    KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
+//    KMerIndexBuilder<typename DeBruijnKMerIndex<typename Graph::EdgeId, kmer_index_traits<RtSeq>>::KMerIndexT> builder(index.workdir(), 16, 1);
 //    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
 //    index.data_.resize(sz);
 //

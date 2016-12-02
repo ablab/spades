@@ -12,7 +12,6 @@
 #include "utils/logger/logger.hpp"
 
 #include "io/reads/read_stream_vector.hpp"
-#include "basic/sequence/runtime_k.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 
 #include "pipeline/config_struct.hpp"
@@ -82,8 +81,8 @@ private:
         for (auto it = kmer_mapper.begin(); it != kmer_mapper.end(); ++it) {
             // Kmer mapper iterator dereferences to pair (KMer, KMer), not to the reference!
             const auto mentry = *it;
-            const runtime_k::RtSeq &from = mentry.first;
-            const runtime_k::RtSeq &to = mentry.second;
+            const RtSeq &from = mentry.first;
+            const RtSeq &to = mentry.second;
             size_t cnt = 0;
             size_t cnt_arr[4];
             for (size_t i = 0; i < 4; i++)

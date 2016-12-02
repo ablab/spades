@@ -7,14 +7,12 @@
 
 #pragma once
 #include <boost/test/unit_test.hpp>
-#include "basic/sequence/rtseq.hpp"
-#include "basic/sequence/sequence.hpp"
-#include "basic/sequence/nucl.hpp"
+#include "sequence/rtseq.hpp"
+#include "sequence/sequence.hpp"
+#include "sequence/nucl.hpp"
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <string>
-
-typedef RuntimeSeq<64> RtSeq;
 
 typedef unsigned long long ull;
 

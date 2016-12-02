@@ -209,7 +209,7 @@ stream &operator<<(stream &s, const AbstractDeEdge<KWH> de_edge) {
     return s << "DeEdge[" << de_edge.start << ", " << de_edge.end << "]";
 }
 
-template<class traits = slim_kmer_index_traits<runtime_k::RtSeq>, class StoringType = DefaultStoring>
+template<class traits = slim_kmer_index_traits<RtSeq>, class StoringType = DefaultStoring>
 class DeBruijnExtensionIndex : public KeyIteratingMap<typename traits::SeqType, InOutMask, traits, StoringType> {
     typedef KeyIteratingMap<typename traits::SeqType, InOutMask, traits, StoringType> base;
 

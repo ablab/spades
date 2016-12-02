@@ -93,7 +93,7 @@ class GenomeMappingStat: public AbstractStatCounter {
         if (genome_.size() <= k_)
             return;
 
-        runtime_k::RtSeq cur = genome_.start<runtime_k::RtSeq>(k_ + 1);
+        RtSeq cur = genome_.start<RtSeq>(k_ + 1);
         cur >>= 0;
         bool breaked = true;
         pair<EdgeId, size_t> cur_position;
@@ -204,7 +204,7 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
 }
 
 template<class Graph>
-void WriteKmerComponent(conj_graph_pack &gp, runtime_k::RtSeq const& kp1mer, const std::string& file,
+void WriteKmerComponent(conj_graph_pack &gp, RtSeq const& kp1mer, const std::string& file,
                         std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer,
                         const omnigraph::GraphLabeler<Graph>& labeler) {
     if(!gp.index.contains(kp1mer)) {
@@ -219,7 +219,7 @@ void WriteKmerComponent(conj_graph_pack &gp, runtime_k::RtSeq const& kp1mer, con
 }
 
 inline
-optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
+optional<RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
                                            size_t genome_pos, size_t k) {
     VERIFY(gp.genome.size() > 0);
     VERIFY(genome_pos < gp.genome.size());
@@ -227,10 +227,10 @@ optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
     for (size_t diff = 0; diff < magic_const; diff++) {
         for (int dir = -1; dir <= 1; dir += 2) {
             size_t pos = (gp.genome.size() - k + genome_pos + dir * diff) % (gp.genome.size() - k);
-            runtime_k::RtSeq kp1mer = gp.kmer_mapper.Substitute(
-                runtime_k::RtSeq (k + 1, gp.genome.GetSequence(), pos));
+            RtSeq kp1mer = gp.kmer_mapper.Substitute(
+                RtSeq (k + 1, gp.genome.GetSequence(), pos));
             if (gp.index.contains(kp1mer))
-                return optional<runtime_k::RtSeq>(kp1mer);
+                return optional<RtSeq>(kp1mer);
         }
     }
     return boost::none;
@@ -360,7 +360,7 @@ struct detail_info_printer {
         if (!config.components_for_kmer.empty()) {
             string kmer_folder = path::append_path(pics_folder, "kmer_loc/");
             make_dir(kmer_folder);
-            auto kmer = runtime_k::RtSeq(gp_.k_value + 1, config.components_for_kmer.substr(0, gp_.k_value + 1).c_str());
+            auto kmer = RtSeq(gp_.k_value + 1, config.components_for_kmer.substr(0, gp_.k_value + 1).c_str());
             string file_name = path::append_path(kmer_folder, pos_name + ".dot");
             WriteKmerComponent(gp_, kmer, file_name, colorer, labeler_);
         }
@@ -383,7 +383,7 @@ struct detail_info_printer {
             boost::split(positions, config.components_for_genome_pos,
                          boost::is_any_of(" ,"), boost::token_compress_on);
             for (auto it = positions.begin(); it != positions.end(); ++it) {
-                boost::optional<runtime_k::RtSeq> close_kp1mer = FindCloseKP1mer(gp_,
+                boost::optional<RtSeq> close_kp1mer = FindCloseKP1mer(gp_,
                                                                                  std::stoi(*it), gp_.k_value);
                 if (close_kp1mer) {
                     string locality_folder = path::append_path(pos_loc_folder, *it + "/");
@@ -392,7 +392,7 @@ struct detail_info_printer {
                 } else {
                     WARN(
                         "Failed to find genome kp1mer close to the one at position "
-                        << *it << " in the graph. Which is " << runtime_k::RtSeq (gp_.k_value + 1, gp_.genome.GetSequence(), std::stoi(*it)));
+                        << *it << " in the graph. Which is " << RtSeq (gp_.k_value + 1, gp_.genome.GetSequence(), std::stoi(*it)));
                 }
             }
         }

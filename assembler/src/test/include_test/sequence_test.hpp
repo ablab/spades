@@ -7,8 +7,8 @@
 
 #pragma once
 #include <boost/test/unit_test.hpp>
-#include "basic/sequence/sequence.hpp"
-#include "basic/sequence/nucl.hpp"
+#include "sequence/sequence.hpp"
+#include "sequence/nucl.hpp"
 #include <string>
 #include "utils/memory.hpp"
 #include <ctime>

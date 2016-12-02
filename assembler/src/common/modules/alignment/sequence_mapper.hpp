@@ -9,10 +9,9 @@
 
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
-#include "basic/sequence/sequence_tools.hpp"
+#include "sequence/sequence_tools.hpp"
 #include "common/assembly_graph/core/basic_graph_stats.hpp"
 
-#include "basic/sequence/runtime_k.hpp"
 #include "edge_index.hpp"
 #include "kmer_mapper.hpp"
 
@@ -45,7 +44,7 @@ template<class Graph>
 class SequenceMapper {
 public:
     typedef typename Graph::EdgeId EdgeId;
-    typedef runtime_k::RtSeq Kmer;
+    typedef RtSeq Kmer;
 
     virtual ~SequenceMapper() {}
 

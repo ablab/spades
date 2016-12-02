@@ -14,7 +14,7 @@ namespace simplification {
 //deprecated
 template<class Graph>
 bool RemoveErroneousEdgesInCoverageOrder(Graph &g,
-                                         pred::TypedPredicate<typename Graph::EdgeId> removal_condition,
+                                         func::TypedPredicate<typename Graph::EdgeId> removal_condition,
                                          double max_coverage,
                                          std::function<void(typename Graph::EdgeId)> removal_handler) {
     omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
@@ -28,7 +28,7 @@ bool RemoveErroneousEdgesInCoverageOrder(Graph &g,
 //deprecated
 template<class Graph>
 bool RemoveErroneousEdgesInLengthOrder(Graph &g,
-                                       pred::TypedPredicate<typename Graph::EdgeId> removal_condition,
+                                       func::TypedPredicate<typename Graph::EdgeId> removal_condition,
                                        size_t max_length,
                                        std::function<void(typename Graph::EdgeId)> removal_handler) {
     omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
@@ -48,7 +48,7 @@ bool TopologyRemoveErroneousEdges(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
 
-    pred::TypedPredicate<typename Graph::EdgeId>
+    func::TypedPredicate<typename Graph::EdgeId>
             condition(omnigraph::DefaultUniquenessPlausabilityCondition<Graph>(g, tec_config.uniqueness_length, tec_config.plausibility_length));
 
     return RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
@@ -63,7 +63,7 @@ bool MultiplicityCountingRemoveErroneousEdges(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
 
-    pred::TypedPredicate<typename Graph::EdgeId>
+    func::TypedPredicate<typename Graph::EdgeId>
             condition(omnigraph::MultiplicityCountingCondition<Graph>(g, tec_config.uniqueness_length,
                                           /*plausibility*/ MakePathLengthLowerBound(g,
                                           omnigraph::PlausiblePathFinder<Graph>(g, 2 * tec_config.plausibility_length), tec_config.plausibility_length)));
@@ -81,8 +81,8 @@ bool RemoveThorns(
         g.k(), isec_config.max_ec_length_coefficient);
 
     auto condition
-            = pred::And(omnigraph::LengthUpperBound<Graph>(g, max_length),
-                        pred::And(omnigraph::AdditionalMDAThornCondition<Graph>(g, isec_config.uniqueness_length),
+            = func::And(omnigraph::LengthUpperBound<Graph>(g, max_length),
+                        func::And(omnigraph::AdditionalMDAThornCondition<Graph>(g, isec_config.uniqueness_length),
                                   omnigraph::TopologicalThornCondition<Graph>(g, isec_config.span_distance)));
 
     return RemoveErroneousEdgesInCoverageOrder(g, condition, numeric_limits<double>::max(), removal_handler);
@@ -98,10 +98,10 @@ bool TopologyReliabilityRemoveErroneousEdges(
         g.k(), trec_config.max_ec_length_coefficient);
 
     auto condition
-            = pred::And(omnigraph::CoverageUpperBound<Graph>(g, trec_config.unreliable_coverage),
+            = func::And(omnigraph::CoverageUpperBound<Graph>(g, trec_config.unreliable_coverage),
                         omnigraph::PredicateUniquenessPlausabilityCondition<Graph>(g,
                         /*uniqueness*/omnigraph::MakePathLengthLowerBound(g, omnigraph::UniquePathFinder<Graph>(g), trec_config.uniqueness_length),
-                        /*plausibility*/pred::AlwaysTrue<typename Graph::EdgeId>()));
+                        /*plausibility*/func::AlwaysTrue<typename Graph::EdgeId>()));
 
     return RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }

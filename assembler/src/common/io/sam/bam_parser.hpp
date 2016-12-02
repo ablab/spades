@@ -8,10 +8,10 @@
 #ifndef COMMON_IO_BAMPARSER_HPP
 #define COMMON_IO_BAMPARSER_HPP
 
-#include "common/basic/reads/single_read.hpp"
+#include "reads/single_read.hpp"
 #include "io/reads/parser.hpp"
-#include "basic/sequence/quality.hpp"
-#include "basic/sequence/nucl.hpp"
+#include "sequence/quality.hpp"
+#include "sequence/nucl.hpp"
 #include "utils/verify.hpp"
 
 #include "bamtools/api/BamReader.h"

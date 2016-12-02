@@ -16,7 +16,7 @@
 #pragma once
 
 #include "ireader.hpp"
-#include "common/basic/reads/single_read.hpp"
+#include "single_read.hpp"
 #include "parser.hpp"
 #include "utils/path_helper.hpp"
 

@@ -16,7 +16,7 @@
 
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
-#include "utils/func.hpp"
+#include "func/func.hpp"
 #include "math/xmath.h"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/core/coverage.hpp"
@@ -26,9 +26,9 @@
 namespace omnigraph {
 
 template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId>
+func::TypedPredicate<typename Graph::EdgeId>
 NecessaryECCondition(const Graph& g, size_t max_length, double max_coverage) {
-    return AddAlternativesPresenceCondition(g, pred::And(LengthUpperBound<Graph>(g, max_length),
+    return AddAlternativesPresenceCondition(g, func::And(LengthUpperBound<Graph>(g, max_length),
                                                         CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
@@ -110,9 +110,9 @@ public:
 
 //todo move to rnaSPAdes project
 template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId> AddRelativeCoverageECCondition(const Graph &g, double rcec_ratio,
-                                                                            pred::TypedPredicate<typename Graph::EdgeId> condition) {
-    return pred::And(RelativeCoverageECCondition<Graph>(g, rcec_ratio), condition);
+func::TypedPredicate<typename Graph::EdgeId> AddRelativeCoverageECCondition(const Graph &g, double rcec_ratio,
+                                                                            func::TypedPredicate<typename Graph::EdgeId> condition) {
+    return func::And(RelativeCoverageECCondition<Graph>(g, rcec_ratio), condition);
 }
 
 //todo move to rnaSPAdes project
@@ -154,9 +154,9 @@ public:
 
 //todo move to rnaSPAdes project
 template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId> AddNotBulgeECCondition(const Graph &g,
-                                                                    pred::TypedPredicate<typename Graph::EdgeId> condition) {
-    return pred::And(NotBulgeECCondition<Graph>(g), condition);
+func::TypedPredicate<typename Graph::EdgeId> AddNotBulgeECCondition(const Graph &g,
+                                                                    func::TypedPredicate<typename Graph::EdgeId> condition) {
+    return func::And(NotBulgeECCondition<Graph>(g), condition);
 }
 
 template<class Graph>

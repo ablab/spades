@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "basic/sequence/nucl.hpp"
+#include "sequence/nucl.hpp"
 #include "io/reads/modifying_reader_wrapper.hpp"
 #include "common/adt/bag.hpp"
 #include <boost/random/mersenne_twister.hpp>
@@ -132,7 +132,7 @@ public:
 
 class RepeatMasker : public io::SequenceModifier {
 private:
-    typedef runtime_k::RtSeq Kmer;
+    typedef RtSeq Kmer;
     typedef KeyIteratingMap<Kmer, Count, kmer_index_traits<Kmer>, SimpleStoring> KmerCountIndex;
     typedef typename KmerCountIndex::KeyWithHash KeyWithHash;
     typedef KmerCountIndex::KMerIdx KmerIdx;

@@ -30,10 +30,10 @@
 #include <string>
 #include "kseq/kseq.h"
 #include "utils/verify.hpp"
-#include "common/basic/reads/single_read.hpp"
+#include "single_read.hpp"
 #include "io/reads/parser.hpp"
-#include "basic/sequence/quality.hpp"
-#include "basic/sequence/nucl.hpp"
+#include "sequence/quality.hpp"
+#include "sequence/nucl.hpp"
 
 namespace io {
 

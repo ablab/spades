@@ -238,7 +238,7 @@ void CheckIndex(vector<string> reads, size_t k) {
     io::SingleRead read;
     while(!(stream->eof())) {
         (*stream) >> read;
-        runtime_k::RtSeq kmer = read.sequence().start<runtime_k::RtSeq>(k + 1) >> 'A';
+        RtSeq kmer = read.sequence().start<RtSeq>(k + 1) >> 'A';
         for(size_t i = k; i < read.size(); i++) {
             kmer = kmer << read[i];
             BOOST_CHECK(gp.index.contains(kmer));

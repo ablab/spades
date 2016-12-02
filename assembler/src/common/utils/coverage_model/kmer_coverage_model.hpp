@@ -5,26 +5,26 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#ifndef __KMER_COVERAGE_MODEL_HPP__
-#define __KMER_COVERAGE_MODEL_HPP__
+#pragma once
 
 #include <vector>
 #include <cstddef>
 
-namespace cov_model {
+namespace utils {
+namespace coverage_model {
 
 class KMerCoverageModel {
-    const std::vector <size_t> &cov_;
+    const std::vector<size_t>& cov_;
     size_t MaxCov_, Valley_, ErrorThreshold_, LowThreshold_, GenomeSize_;
     double probability_threshold_, strong_probability_threshold_, mean_coverage_, sd_coverage_;
     bool converged_;
 
 public:
-    KMerCoverageModel(const std::vector <size_t> &cov, double probability_threshold,
+    KMerCoverageModel(const std::vector<size_t>& cov, double probability_threshold,
                       double strong_probability_threshold)
             : cov_(cov), LowThreshold_(0), probability_threshold_(probability_threshold),
               strong_probability_threshold_(strong_probability_threshold),
-              mean_coverage_(0.0), sd_coverage_(0.0), converged_(false) { }
+              mean_coverage_(0.0), sd_coverage_(0.0), converged_(false) {}
 
     void Fit();
 
@@ -44,7 +44,5 @@ private:
     size_t EstimateValley() const;
 };
 
-};
-
-
-#endif
+}
+}

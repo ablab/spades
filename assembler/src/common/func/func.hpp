@@ -5,16 +5,21 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * seq_common.hpp
- *
- *  Created on: Jun 25, 2012
- *      Author: andrey
- */
+#pragma once
 
-#ifndef SEQ_COMMON_HPP_
-#define SEQ_COMMON_HPP_
+#include <functional>
 
-typedef u_int64_t seq_element_type;
+namespace func {
 
-#endif /* SEQ_COMMON_HPP_ */
+template<class T>
+std::function<void(T)> CombineCallbacks(const std::function<void(T)>& f1,
+                                        const std::function<void(T)>& f2) {
+    return [=] (T t) {
+        if (f1)
+            f1(t);
+        if (f2)
+            f2(t);
+    };
+}
+
+}

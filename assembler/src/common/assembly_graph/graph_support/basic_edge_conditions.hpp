@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "utils/func.hpp"
-#include "math/pred.hpp"
+#include "func/func.hpp"
+#include "func/pred.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/core/directions.hpp"
 #include "assembly_graph/paths/path_finders.hpp"
@@ -16,10 +16,10 @@
 namespace omnigraph {
 
 template<class Graph>
-using EdgePredicate = pred::TypedPredicate<typename Graph::EdgeId>;
+using EdgePredicate = func::TypedPredicate<typename Graph::EdgeId>;
 
 template<class Graph>
-class EdgeCondition : public func::Predicate<typename Graph::EdgeId> {
+class EdgeCondition : public func::AbstractPredicate<typename Graph::EdgeId> {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &g_;
@@ -82,9 +82,9 @@ public:
 };
 
 template<class Graph>
-pred::TypedPredicate<typename Graph::EdgeId> AddAlternativesPresenceCondition(const Graph &g,
-                                                                              pred::TypedPredicate<typename Graph::EdgeId> condition) {
-    return pred::And(AlternativesPresenceCondition<Graph>(g), condition);
+func::TypedPredicate<typename Graph::EdgeId> AddAlternativesPresenceCondition(const Graph &g,
+                                                                              func::TypedPredicate<typename Graph::EdgeId> condition) {
+    return func::And(AlternativesPresenceCondition<Graph>(g), condition);
 }
 
 

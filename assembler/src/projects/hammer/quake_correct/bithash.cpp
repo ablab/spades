@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "bithash.h"
-#include "basic/sequence/nucl.hpp"
+#include "sequence/nucl.hpp"
 #include <iostream>
 #include <fstream>
 #include <cstdlib>

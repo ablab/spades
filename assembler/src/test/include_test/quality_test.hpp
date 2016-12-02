@@ -7,7 +7,7 @@
 
 #pragma once
 #include <boost/test/unit_test.hpp>
-#include "basic/sequence/quality.hpp"
+#include "sequence/quality.hpp"
 
 BOOST_AUTO_TEST_CASE ( QualityTest ) {
     Quality q("0123456789");

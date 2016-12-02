@@ -61,7 +61,7 @@ inline void CheckDiffs(size_t k, const string& actual_prefix,
 inline void RegenerateEtalon(size_t k, const string& filename,
                              const string& etalon_root,
                              const string& work_dir) {
-    SyntheticTestsRunner<runtime_k::RtSeq> test_runner(filename, k, etalon_root,
+    SyntheticTestsRunner<RtSeq> test_runner(filename, k, etalon_root,
                                                        work_dir);
     test_runner.Run();
 }
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
 //    return;
     utils::TmpFolderFixture _("tmp");
     string input_dir = "./src/test/cap/tests/synthetic/";
-    RunTests<runtime_k::RtSeq>(25, input_dir + "tests.xml", "tmp/",
+    RunTests<RtSeq>(25, input_dir + "tests.xml", "tmp/",
                                input_dir + "etalon/", "tmp", /*true*/false);
 }
 
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
  BOOST_AUTO_TEST_CASE( SyntheticExamplesWithErrorsTests ) {
  utils::TmpFolderFixture _("tmp");
  make_dir("bp_graph_test");
- LoadAndRunBPG<15, 25, runtime_k::RtSeq>("./src/test/cap/tests/synthetic_with_err/tests2.xml",
+ LoadAndRunBPG<15, 25, RtSeq>("./src/test/cap/tests/synthetic_with_err/tests2.xml",
  "bp_graph_test/simulated_common_err/", "./src/test/cap/tests/synthetic_with_err/etalon/", "1_err", false);
  LoadAndRunBPG<15, 25, LSeq>("./src/test/cap/tests/synthetic_with_err_lseq/tests2.xml",
  "bp_graph_test/simulated_common_err/", "./src/test/cap/tests/synthetic_with_err_lseq/etalon/", "1_err_lseq", false);
