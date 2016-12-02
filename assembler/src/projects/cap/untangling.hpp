@@ -242,8 +242,8 @@
 //        Untangle(stream2, 1);
 //
 //        UntangledGraphContigMapper<bp_graph_pack<Graph>> contig_mapper(new_gp_);
-//        FillPos(new_gp_.g, contig_mapper, new_gp_.edge_pos, stream1);
-//        FillPos(new_gp_.g, contig_mapper, new_gp_.edge_pos, stream2);
+//        visualization::position_filler::FillPos(new_gp_.g, contig_mapper, new_gp_.edge_pos, stream1);
+//        visualization::position_filler::FillPos(new_gp_.g, contig_mapper, new_gp_.edge_pos, stream2);
 //    }
 //private:
 //    DECL_LOGGER("UntangledGraphConstructor")

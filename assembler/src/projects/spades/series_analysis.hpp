@@ -35,13 +35,13 @@ template<> struct MappingTraits<debruijn_graph::SeriesAnalysisConfig> {
 namespace debruijn_graph {
 
 template<class graph_pack>
-shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
+shared_ptr<visualization::graph_colorer::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
     const graph_pack& gp) {
     io::SingleRead genome("ref", gp.genome.str());
     auto mapper = MapperInstance(gp);
     auto path1 = mapper->MapRead(genome).path();
     auto path2 = mapper->MapRead(!genome).path();
-    return omnigraph::visualization::DefaultColorer(gp.g, path1, path2);
+    return visualization::graph_colorer::DefaultColorer(gp.g, path1, path2);
 }
 
 inline double l2_norm(const AbundanceVector& v) {
@@ -230,7 +230,7 @@ public:
 
         gp.EnsureBasicMapping();
         gp.FillQuality();
-        omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+        visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
         auto colorer = DefaultGPColorer(gp);
         path::make_dir(cfg::get().output_dir + "pictures/");
         QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,

@@ -389,7 +389,7 @@ void ConstructColoredGraph(gp_t& gp,
 //        for (auto it = streams.begin(); it != streams.end(); ++it) {
 //            ContigStream& stream = **it;
 //            stream.reset();
-//            FillPos(gp, stream);
+//            visualization::position_filler::FillPos(gp, stream);
 //        }
 //    }
 //}

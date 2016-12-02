@@ -10,20 +10,24 @@
 #include "utils/standard_base.hpp"
 #include "printing_parameter_storage.hpp"
 
-namespace omnigraph {
 namespace visualization {
 
+namespace vertex_linker {
+
 template<class Graph>
-class VertexLinker : public virtual ParameterStorage<typename Graph::VertexId, string> {
+class VertexLinker
+        : public virtual printing_parameter_storage::ParameterStorage<typename Graph::VertexId, string> {
 };
 
 template<class Graph>
-class MapVertexLinker : public VertexLinker<Graph>, public MapParameterStorage<typename Graph::VertexId, string> {
+class MapVertexLinker : public VertexLinker<Graph>,
+                        public printing_parameter_storage::MapParameterStorage<typename Graph::VertexId, string> {
 public:
-    MapVertexLinker() : MapParameterStorage<typename Graph::VertexId, string>("") {
+    MapVertexLinker() : printing_parameter_storage::MapParameterStorage<typename Graph::VertexId, string>("") {
     }
 
-    MapVertexLinker(const map<typename Graph::VertexId, string> &link_map) : MapParameterStorage<typename Graph::VertexId, string>(link_map, "") {
+    MapVertexLinker(const map<typename Graph::VertexId, string> &link_map) :
+            printing_parameter_storage::MapParameterStorage<typename Graph::VertexId, string>(link_map, "") {
     }
 
     virtual ~MapVertexLinker() {
@@ -38,4 +42,5 @@ public:
 };
 
 }
+
 }

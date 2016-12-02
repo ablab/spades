@@ -89,8 +89,8 @@ void Launch(size_t K, string saves_path, size_t start_vertex_int_id,
     graphio::ConjugateDataPrinter<Graph> printer(component_to_save);
     graphio::PrintGraphPack(component_out_path, printer, gp);
     gp.edge_pos.Attach();
-    omnigraph::visualization::WriteComponent<Graph>(component_to_save, component_out_path + ".dot", debruijn_graph::stats::DefaultColorer(gp),
-                                                    omnigraph::DefaultLabeler<Graph>(gp.g, gp.edge_pos));
+    visualization::visualization_utils::WriteComponent<Graph>(component_to_save, component_out_path + ".dot", debruijn_graph::stats::DefaultColorer(gp),
+                                                    visualization::graph_labeler::DefaultLabeler<Graph>(gp.g, gp.edge_pos));
 }
 
 }

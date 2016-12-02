@@ -23,8 +23,8 @@ namespace path_extend {
 using namespace debruijn_graph;
 
 template<class Graph>
-class PathGraphLabeler : public AbstractGraphLabeler<Graph> {
-    typedef AbstractGraphLabeler<Graph> base;
+class PathGraphLabeler : public visualization::graph_labeler::AbstractGraphLabeler<Graph> {
+    typedef visualization::graph_labeler::AbstractGraphLabeler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 
@@ -79,21 +79,21 @@ public:
         std::fstream filestr;
         filestr.open(file_name.c_str(), std::fstream::out);
 
-        StrGraphLabeler<Graph> str_labeler(gp.g);
+        visualization::graph_labeler::StrGraphLabeler<Graph> str_labeler(gp.g);
         PathGraphLabeler<Graph> path_labeler(gp.g, paths);
-        CoverageGraphLabeler<Graph> cov_labler(gp.g);
-        EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
+        visualization::graph_labeler::CoverageGraphLabeler<Graph> cov_labler(gp.g);
+        visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
 
-        CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, path_labeler, pos_labeler);
-        shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer;
+        visualization::graph_labeler::CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, path_labeler, pos_labeler);
+        shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer;
         if (gp.index.IsAttached()) {
              colorer = stats::DefaultColorer(gp);
         } else {
-            colorer = omnigraph::visualization::DefaultColorer(gp.g);
+            colorer = visualization::graph_colorer::DefaultColorer(gp.g);
         }
 
-        omnigraph::visualization::ComponentVisualizer<Graph> visualizer(gp.g, false);
-        omnigraph::visualization::EmptyGraphLinker<Graph> linker;
+        visualization::visualizers::ComponentVisualizer<Graph> visualizer(gp.g, false);
+        visualization::vertex_linker::EmptyGraphLinker<Graph> linker;
         visualizer.Visualize(filestr, composite_labeler, *colorer, linker);
         filestr.close();
         INFO("Visualizing graph done");
@@ -104,22 +104,22 @@ public:
         std::fstream filestr;
         filestr.open(file_name.c_str(), std::fstream::out);
 
-        StrGraphLabeler<Graph> str_labeler(gp.g);
-        EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
-        CoverageGraphLabeler<Graph> cov_labler(gp.g);
-        CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, pos_labeler);
+        visualization::graph_labeler::StrGraphLabeler<Graph> str_labeler(gp.g);
+        visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
+        visualization::graph_labeler::CoverageGraphLabeler<Graph> cov_labler(gp.g);
+        visualization::graph_labeler::CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, pos_labeler);
 
-        shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer;
+        shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer;
 
         if (gp.index.IsAttached()) {
              colorer = stats::DefaultColorer(gp);
         } else {
             Path<EdgeId> empty;
-            colorer = omnigraph::visualization::DefaultColorer(gp.g, empty, empty);
+            colorer = visualization::graph_colorer::DefaultColorer(gp.g, empty, empty);
         }
 
-        omnigraph::visualization::ComponentVisualizer<Graph> visualizer(gp.g, false);
-        omnigraph::visualization::EmptyGraphLinker<Graph> linker;
+        visualization::visualizers::ComponentVisualizer<Graph> visualizer(gp.g, false);
+        visualization::vertex_linker::EmptyGraphLinker<Graph> linker;
         visualizer.Visualize(filestr, composite_labeler, *colorer, linker);
         filestr.close();
         INFO("Visualizing graph done");
@@ -130,17 +130,17 @@ public:
         std::fstream filestr;
         filestr.open(file_name.c_str(), std::fstream::out);
 
-        StrGraphLabeler<Graph> str_labeler(g);
-        CoverageGraphLabeler<Graph> cov_labler(g);
-        CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler);
+        visualization::graph_labeler::StrGraphLabeler<Graph> str_labeler(g);
+        visualization::graph_labeler::CoverageGraphLabeler<Graph> cov_labler(g);
+        visualization::graph_labeler::CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler);
 
-        shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer;
+        shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer;
 
         Path<EdgeId> empty;
-        colorer = omnigraph::visualization::DefaultColorer(g, empty, empty);
+        colorer = visualization::graph_colorer::DefaultColorer(g, empty, empty);
 
-        omnigraph::visualization::ComponentVisualizer<Graph> visualizer(g, false);
-        omnigraph::visualization::EmptyGraphLinker<Graph> linker;
+        visualization::visualizers::ComponentVisualizer<Graph> visualizer(g, false);
+        visualization::vertex_linker::EmptyGraphLinker<Graph> linker;
         visualizer.Visualize(filestr, composite_labeler, *colorer, linker);
         filestr.close();
         INFO("Visualizing graph done");

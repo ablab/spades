@@ -10,8 +10,12 @@
 
 #include "utils/standard_base.hpp"
 #include "assembly_graph/components/graph_component.hpp"
-namespace omnigraph {
+
+using namespace omnigraph;
+
 namespace visualization {
+
+namespace printing_parameter_storage {
 
 template<typename ElementId, typename Value>
 class ParameterStorage {
@@ -27,7 +31,7 @@ class MapParameterStorage : public virtual ParameterStorage<ElementId, Value> {
 private:
 private:
     template<class It>
-    static map<ElementId, string> ConstructMap(It begin, It end, const string& color) {
+    static map<ElementId, string> ConstructMap(It begin, It end, const string &color) {
         map<ElementId, string> result;
         for (auto it = begin; it != end; ++it) {
             result.insert(make_pair(*it, color));
@@ -43,14 +47,16 @@ public:
     MapParameterStorage(const string &default_value) : default_value_(default_value) {
     }
 
-    MapParameterStorage(map<ElementId, Value> storage, Value default_value) : storage_(storage), default_value_(default_value) {
+    MapParameterStorage(map<ElementId, Value> storage, Value default_value) : storage_(storage),
+                                                                              default_value_(default_value) {
     }
 
     MapParameterStorage(map<ElementId, Value> storage) : storage_(storage) {
     }
 
     template<class It>
-    MapParameterStorage(It begin, It end, const Value& value, const string& default_value) : storage_(ConstructMap(begin, end, value)), default_value_(default_value) {
+    MapParameterStorage(It begin, It end, const Value &value, const string &default_value) : storage_(
+            ConstructMap(begin, end, value)), default_value_(default_value) {
     }
 
 
@@ -69,7 +75,8 @@ class DecoratorParameterStorage : public virtual ParameterStorage<ElementId, Val
 private:
     ParameterStorage<ElementId, Value> inner_storage_;
 public:
-    DecoratorParameterStorage(ParameterStorage<ElementId, Value> inner_storage) : inner_storage_(inner_storage) {
+    DecoratorParameterStorage(ParameterStorage<ElementId, Value> inner_storage) : inner_storage_(
+            inner_storage) {
     }
 
     Value GetInnerValue(ElementId element) {

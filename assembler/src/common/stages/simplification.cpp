@@ -19,13 +19,13 @@ using namespace debruijn::simplification;
 using namespace config;
 
 template<class graph_pack>
-shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
+shared_ptr<visualization::graph_colorer::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
     const graph_pack& gp) {
     io::SingleRead genome("ref", gp.genome.str());
     auto mapper = MapperInstance(gp);
     auto path1 = mapper->MapRead(genome).path();
     auto path2 = mapper->MapRead(!genome).path();
-    return omnigraph::visualization::DefaultColorer(gp.g, path1, path2);
+    return visualization::graph_colorer::DefaultColorer(gp.g, path1, path2);
 }
 
 class GraphSimplifier {
@@ -164,7 +164,7 @@ class GraphSimplifier {
         AlgoStorageT algos;
 
         //auto colorer = debruijn_graph::DefaultGPColorer(gp_);
-        //omnigraph::DefaultLabeler<Graph> labeler(g_, gp_.edge_pos);
+        //visualization::graph_labeler::DefaultLabeler<Graph> labeler(g_, gp_.edge_pos);
 
         //    gp.ClearQuality();
         //    gp.FillQuality();
@@ -177,7 +177,7 @@ class GraphSimplifier {
         //            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
         //            boost::ref(qual_removal_handler), _1);
         
-        //omnigraph::visualization::LocalityPrintingRH<Graph> drawing_handler(gp_.g, labeler, colorer, "/home/snurk/pics");
+        //visualization::visualization_utils::LocalityPrintingRH<Graph> drawing_handler(gp_.g, labeler, colorer, "/home/snurk/pics");
         //auto printing_handler=[&] (EdgeId e) {
         //    std::cout << "Edge:" << g_.str(e) << "; cov: " << g_.coverage(e) << "; start " << g_.str(g_.EdgeStart(e)) << "; end " << g_.str(g_.EdgeEnd(e)) << std::endl;
         //};
@@ -469,7 +469,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
     gp.index.Detach();
     gp.index.clear();
 
-    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 
@@ -534,7 +534,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
         cov_cleaner.Run();
     }
 
-    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(info_printer_pos::final_simplified);
 

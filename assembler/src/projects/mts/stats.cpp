@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
         auto ref_name = path::basename(genome_path);
         io::SingleRead genome = ReadGenome(genome_path);
 
-        FillPos(gp, genome_path, "", true);
+        visualization::position_filler::FillPos(gp, genome_path, "", true);
 
         io::FileReadStream contigs_stream(contigs_path);
         io::FileReadStream splits_stream(splits_path);

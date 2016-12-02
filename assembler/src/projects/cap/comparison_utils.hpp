@@ -137,7 +137,7 @@ inline void PrintGraphComponentContainingEdge(const string& file_name, const Gra
 }
 
 template<class Graph>
-class EdgeCoordinatesGraphLabeler: public AbstractGraphLabeler<Graph> {
+class EdgeCoordinatesGraphLabeler: public visualization::graph_labeler::AbstractGraphLabeler<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 public:

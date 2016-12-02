@@ -137,7 +137,7 @@ public:
 //
 //    template<class gp_t2>
 //    void UniversalSaveGP(
-//            const gp_t2& gp/*, const omnigraph::visualization::GraphColorer<typename gp_t2::graph_t> coloring*/,
+//            const gp_t2& gp/*, const visualization::graph_colorer::GraphColorer<typename gp_t2::graph_t> coloring*/,
 //            const string& filename) {
 //        typename PrinterTraits<Graph>::Printer printer(gp.g);
 //        INFO("Saving graph to " << filename);
@@ -464,12 +464,12 @@ void ThreadAssemblies(const string& base_saves, ContigStream& base_assembly,
 //        ConstructGraph<gp_t::k_value, Graph>(gp.g, gp.index, base_assembly);
     ScanGraphPack(base_saves, gp);
     base_assembly.reset();
-    FillPos(gp, base_assembly, base_prefix);
-    FillPos(gp, assembly_to_thread, to_thread_prefix);
+    visualization::position_filler::FillPos(gp, base_assembly, base_prefix);
+    visualization::position_filler::FillPos(gp, assembly_to_thread, to_thread_prefix);
 
-    EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
-    StrGraphLabeler<Graph> str_labeler(gp.g);
-    CompositeLabeler<Graph> labeler(pos_labeler, str_labeler);
+    visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
+    visualization::graph_labeler::StrGraphLabeler<Graph> str_labeler(gp.g);
+    visualization::graph_labeler::CompositeLabeler<Graph> labeler(pos_labeler, str_labeler);
 
     auto mapper = MapperInstance(gp);
 

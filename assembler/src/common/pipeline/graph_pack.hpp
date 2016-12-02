@@ -23,6 +23,7 @@
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/components/connected_component.hpp"
 #include "modules/alignment/kmer_mapper.hpp"
+#include "common/visualization/position_filler.hpp"
 
 namespace debruijn_graph {
 
@@ -116,8 +117,8 @@ struct graph_pack: private boost::noncopyable {
             edge_pos.Attach();
         }
         edge_pos.clear();
-        FillPos(*this, genome.GetSequence(), "ref0");
-        FillPos(*this, !genome.GetSequence(), "ref1");
+        visualization::position_filler::FillPos(*this, genome.GetSequence(), "ref0");
+        visualization::position_filler::FillPos(*this, !genome.GetSequence(), "ref1");
     }
     
     void EnsureDebugInfo() {

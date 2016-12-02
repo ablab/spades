@@ -8,6 +8,7 @@
 #pragma once
 
 #include <boost/format/format_fwd.hpp>
+#include <common/visualization/graph_colorer.hpp>
 
 namespace cap {
 
@@ -195,7 +196,7 @@ public:
 };
 
 template<class Graph, class Element>
-class ElementColorHandler: public GraphActionHandler<Graph>, public visualization::ElementColorer<Element> {
+class ElementColorHandler: public GraphActionHandler<Graph>, public visualization::graph_colorer::ElementColorer<Element> {
     typedef GraphActionHandler<Graph> base;
 
     // For each element will store a bitmask of used there colors.
@@ -273,7 +274,7 @@ public:
 };
 
 template<class Graph>
-class ColorHandler: public visualization::GraphColorer<Graph>, public GraphActionHandler<Graph> {
+class ColorHandler: public visualization::graph_colorer::GraphColorer<Graph>, public GraphActionHandler<Graph> {
     typedef GraphActionHandler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
@@ -369,14 +370,14 @@ public:
 
     //This is a bad unsafe code! The right way is to use shared_ptr of this class in all interfaces.
     //Then one can easily draw with this colorer without any delegation
-    shared_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructColorer() const {
-        using namespace omnigraph::visualization;
-        return shared_ptr<GraphColorer<Graph>>(new omnigraph::visualization::DelegatingGraphColorer<Graph>(*this));
+    shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> ConstructColorer() const {
+        using namespace visualization;
+        return shared_ptr<GraphColorer<Graph>>(new visualization::DelegatingGraphColorer<Graph>(*this));
     }
 
-    shared_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructColorer(GraphComponent<Graph> gc) const {
-        shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer = ConstructColorer();
-        return omnigraph::visualization::BorderDecorator<Graph>::GetInstance(gc, colorer);
+    shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> ConstructColorer(GraphComponent<Graph> gc) const {
+        shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer = ConstructColorer();
+        return visualization::BorderDecorator<Graph>::GetInstance(gc, colorer);
     }
 
   size_t max_colors() const {
@@ -430,9 +431,9 @@ void LoadColoring(const Graph& /*g*/
 
 
 template<class Graph>
-std::auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructColorer(
+std::auto_ptr<visualization::graph_colorer::GraphColorer<Graph>> ConstructColorer(
         const ColorHandler<Graph>& coloring) {
-    using namespace omnigraph::visualization;
+    using namespace visualization;
     return std::auto_ptr<GraphColorer<Graph>>(
             new CompositeGraphColorer<Graph>(
                     make_shared<MapColorer<typename Graph::VertexId>>(coloring.VertexColorMap()),
@@ -440,9 +441,9 @@ std::auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructColorer(
 }
 
 template<class Graph>
-std::auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructBorderColorer(const Graph& /*g*/,
+std::auto_ptr<visualization::graph_colorer::GraphColorer<Graph>> ConstructBorderColorer(const Graph& /*g*/,
         const ColorHandler<Graph>& coloring) {
-    using namespace omnigraph::visualization;
+    using namespace visualization;
     return std::auto_ptr<GraphColorer<Graph>>(
             new CompositeGraphColorer<Graph>(
                     make_shared<FixedColorer<Graph>>("white"),

@@ -377,12 +377,12 @@ public:
     }
 
     void CountStats() {
-        EmptyGraphLabeler<Graph> labeler;
+        visualization::graph_labeler::EmptyGraphLabeler<Graph> labeler;
         make_dir("assembly_compare");
         shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(this->graph(), 1000000000);
         WriteComponents(this->graph(), *splitter, *this,
                 "assembly_compare/breakpoint_graph.dot",
-                *ConstructColorer(coloring_), labeler);
+                *visualization::ConstructColorer(coloring_), labeler);
         ready_ = true;
         for (size_t i = 0; i < component_type::size; ++i) {
             INFO("Number of components of type " << ComponentClassifier<Graph>::info_printer_pos_name(i) << " is " << GetComponentNumber(i));
@@ -419,7 +419,7 @@ public:
     }
 
     void PrintComponents(component_type c_type,
-            const GraphLabeler<Graph>& labeler,
+            const visualization::graph_labeler::GraphLabeler<Graph>& labeler,
             bool create_subdir = true) const {
         string filename;
         if (create_subdir) {
@@ -460,7 +460,7 @@ public:
         }
     }
 
-    void CountStats(const GraphLabeler<Graph>& labeler, bool detailed_output =
+    void CountStats(const visualization::graph_labeler::GraphLabeler<Graph>& labeler, bool detailed_output =
             true) const {
         make_dir(output_folder_);
         BreakPointGraphStatistics<Graph> stats(graph_, coloring_);
@@ -524,14 +524,14 @@ class TrivialBreakpointFinder: public AbstractFilter<
     void ReportBreakpoint(VertexId v, const string& folder,
             const string& prefix) {
         TRACE("Vertex " << g_.str(v) << " identified as breakpoint");
-        LengthIdGraphLabeler<Graph> basic_labeler(g_);
-        EdgePosGraphLabeler<Graph> pos_labeler(g_, pos_);
+        visualization::graph_labeler::LengthIdGraphLabeler<Graph> basic_labeler(g_);
+        visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(g_, pos_);
 
-        CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+        visualization::graph_labeler::CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
         VERIFY(g_.OutgoingEdgeCount(v) > 0);
         EdgeId e = g_.OutgoingEdges(v).front();
         GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g_, e);
-        visualization::WriteComponent(
+        visualization::visualization_utils::WriteComponent(
                 component,
                 folder + prefix + ToString(g_.int_id(v)) + "_loc.dot",
                 coloring_.ConstructColorer(component), labeler);
@@ -695,10 +695,10 @@ class SimpleInDelAnalyzer {
     }
 
     void WriteAltPath(EdgeId e, const vector<EdgeId>& genome_path) {
-        LengthIdGraphLabeler<Graph> basic_labeler(g_);
-        EdgePosGraphLabeler<Graph> pos_labeler(g_, edge_pos_);
+        visualization::graph_labeler::LengthIdGraphLabeler<Graph> basic_labeler(g_);
+        visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(g_, edge_pos_);
 
-        CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+        visualization::graph_labeler::CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 
         string alt_path_folder = folder_ + ToString(g_.int_id(e)) + "/";
         make_dir(alt_path_folder);
@@ -843,10 +843,10 @@ private:
         INFO(
                 "Edge " << gp_.g.str(e)
                         << " identified as rearrangement connection");
-        LengthIdGraphLabeler<Graph> basic_labeler(gp_.g);
-        EdgePosGraphLabeler<Graph> pos_labeler(gp_.g, gp_.edge_pos);
+        visualization::graph_labeler::LengthIdGraphLabeler<Graph> basic_labeler(gp_.g);
+        visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(gp_.g, gp_.edge_pos);
 
-        CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+        visualization::graph_labeler::CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 
         INFO(
                 count_ << " example start_ref_pos: " << start_ref_pos
@@ -855,7 +855,7 @@ private:
                 boost::format("%s%d_%d_%d_%d.dot") % folder % count_
                         % gp_.g.int_id(e) % start_ref_pos % end_ref_pos);
         GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(gp_.g, e);
-        omnigraph::visualization::WriteComponent(component, filename, coloring_.ConstructColorer(component), labeler);
+        visualization::visualization_utils::WriteComponent(component, filename, coloring_.ConstructColorer(component), labeler);
         count_++;
     }
 
@@ -1467,10 +1467,10 @@ class MissingGenesAnalyser {
     const string output_dir_;
 
     void ReportLocality(const Sequence& s, const string& out_file) {
-        LengthIdGraphLabeler<Graph> basic_labeler(g_);
-        EdgePosGraphLabeler<Graph> pos_labeler(g_, edge_pos_);
+        visualization::graph_labeler::LengthIdGraphLabeler<Graph> basic_labeler(g_);
+        visualization::graph_labeler::EdgePosGraphLabeler<Graph> pos_labeler(g_, edge_pos_);
 
-        CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+        visualization::graph_labeler::CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 
         WriteComponentsAlongPath(g_, labeler, out_file, /*split_length*/1000, /*vertex_number*/15
                 , mapper_.MapSequence(s), *ConstructBorderColorer(g_, coloring_));

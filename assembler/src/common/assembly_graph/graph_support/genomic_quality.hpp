@@ -15,7 +15,7 @@
 namespace debruijn_graph {
 
 template<class Graph>
-class EdgeQuality: public omnigraph::GraphLabeler<Graph>, public omnigraph::GraphActionHandler<Graph> {
+class EdgeQuality: public visualization::graph_labeler::GraphLabeler<Graph>, public omnigraph::GraphActionHandler<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     map<EdgeId, size_t> quality_;
@@ -175,12 +175,12 @@ class QualityEdgeLocalityPrintingRH : public QualityLoggingRemovalHandler<Graph>
     typedef QualityLoggingRemovalHandler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    omnigraph::visualization::LocalityPrintingRH<Graph> printing_rh_;
+    visualization::visualization_utils::LocalityPrintingRH<Graph> printing_rh_;
 public:
     QualityEdgeLocalityPrintingRH(const Graph& g
             , const EdgeQuality<Graph>& quality_handler
-            , const omnigraph::GraphLabeler<Graph>& labeler
-            , std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer
+            , const visualization::graph_labeler::GraphLabeler<Graph>& labeler
+            , std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer
             , const string& output_folder, bool handle_all = false) :
             base(g, quality_handler, handle_all),
             printing_rh_(g, labeler, colorer, output_folder)
@@ -264,7 +264,7 @@ private:
 //            path::make_dir(folder);
 //            //todo magic constant
 //            map<EdgeId, string> empty_coloring;
-//            omnigraph::visualization::WriteComponent(g_, EdgeNeighborhood<Graph>(g_, edge, 50, 250),
+//            visualization::visualization_utils::WriteComponent(g_, EdgeNeighborhood<Graph>(g_, edge, 50, 250),
 //                  folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
 //  }
 //
@@ -429,15 +429,15 @@ private:
 //    const Graph& g_;
 //    const EdgeQuality<Graph, Index>& quality_handler_;
 //    const omnigraph::GraphLabeler<Graph>& labeler_;
-//    const omnigraph::visualization::GraphColorer<Graph>& colorer_;
+//    const visualization::graph_colorer::GraphColorer<Graph>& colorer_;
 //    const string& output_folder_;
 ////  size_t black_removed_;
 ////  size_t colored_removed_;
 //public:
 //    QualityEdgeLocalityPrintingRH(const Graph& g
 //            , const EdgeQuality<Graph, Index>& quality_handler
-//            , const omnigraph::GraphLabeler<Graph>& labeler
-//            , const omnigraph::visualization::GraphColorer<Graph>& colorer
+//            , const visualization::graph_labeler::GraphLabeler<Graph>& labeler
+//            , const visualization::graph_colorer::GraphColorer<Graph>& colorer
 //            , const string& output_folder) :
 //            g_(g), quality_handler_(quality_handler),
 //            labeler_(labeler), colorer_(colorer), output_folder_(output_folder){
@@ -451,7 +451,7 @@ private:
 //            //todo magic constant
 ////          map<EdgeId, string> empty_coloring;
 //            shared_ptr<GraphSplitter<Graph>> splitter = EdgeNeighborhoodFinder<Graph>(g_, edge, 50, 250);
-//            omnigraph::visualization::WriteComponents(g_, *splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
+//            visualization::visualization_utils::WriteComponents(g_, *splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
 //                    , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
 //                    , colorer_, labeler_);
 //        } else {
@@ -503,7 +503,7 @@ private:
 //            shared_ptr<GraphSplitter<Graph>> splitter = EdgeNeighborhoodFinder<Graph>(g_, edge, 50,
 //                    250);
 //
-//            omnigraph::visualization::WriteComponents(g_, *splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
+//            visualization::visualization_utils::WriteComponents(g_, *splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
 //                    , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
 //                    , empty_coloring, labeler_);
 //        }
@@ -543,7 +543,7 @@ private:
 //            //todo magic constant
 //            map<EdgeId, string> empty_coloring;
 //            shared_ptr<GraphSplitter<Graph>> splitter = EdgeNeighborhoodFinder<Graph>(g_, edge, 50, 250);
-//            omnigraph::visualization::WriteComponents(g_, *splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
+//            visualization::visualization_utils::WriteComponents(g_, *splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
 //                    , folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
 //    }
 //

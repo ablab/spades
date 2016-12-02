@@ -719,20 +719,21 @@ void PrintComponent(const LocalizedComponent<Graph>& component,
         const SkeletonTree<Graph>& tree, const string& file_name) {
     typedef typename Graph::EdgeId EdgeId;
     const set<EdgeId> tree_edges = tree.edges();
-    shared_ptr<omnigraph::visualization::ElementColorer<typename Graph::EdgeId>> edge_colorer = make_shared<omnigraph::visualization::MapColorer<EdgeId>>(
+    shared_ptr<visualization::graph_colorer::ElementColorer<typename Graph::EdgeId>> edge_colorer =
+            make_shared<visualization::graph_colorer::MapColorer<EdgeId>>(
             tree_edges.begin(), tree_edges.end(),"green", ""
         );
-    visualization::WriteComponentSinksSources(component.AsGraphComponent(), file_name,
-            omnigraph::visualization::DefaultColorer(component.g(), edge_colorer),
-            *StrGraphLabelerInstance(component.g()));
+    visualization::visualization_utils::WriteComponentSinksSources(component.AsGraphComponent(), file_name,
+            visualization::graph_colorer::DefaultColorer(component.g(), edge_colorer),
+            *visualization::graph_labeler::StrGraphLabelerInstance(component.g()));
 }
 
 template<class Graph>
 void PrintComponent(const LocalizedComponent<Graph>& component,
         const string& file_name) {
-    visualization::WriteComponent(component.AsGraphComponent(), file_name,
-            omnigraph::visualization::DefaultColorer(component.g()),
-            *StrGraphLabelerInstance(component.g()));
+    visualization::visualization_utils::WriteComponent(component.AsGraphComponent(), file_name,
+            visualization::graph_colorer::DefaultColorer(component.g()),
+            *visualization::graph_labeler::StrGraphLabelerInstance(component.g()));
 }
 
 template<class Graph>

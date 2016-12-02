@@ -959,9 +959,9 @@ void DrawGraph(const vector<StrandRange>& all_ranges,
 
     auto full_mosaic_pos_stream = io::RCWrap(StreamInstance(ExtractSequences(full_mosaic_ranges, block_composition), mosaic_names(full_mosaic_ranges.size())));
     INFO("Threading " << full_mosaic_ranges.size() << " full mosaics");
-    FillPos(gp, *full_mosaic_pos_stream);
+    visualization::position_filler::FillPos(gp, *full_mosaic_pos_stream);
 
-    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
 
     shared_ptr<GraphSplitter<Graph>> splitter = omnigraph::ReliableSplitter(gp.g,
             numeric_limits<size_t>::max(),
@@ -971,8 +971,8 @@ void DrawGraph(const vector<StrandRange>& all_ranges,
     path::remove_if_exists("mosaic_pics");
     path::make_dir("mosaic_pics");
     INFO("Writing components");
-    omnigraph::visualization::WriteComponents(gp.g, "mosaic_pics/", splitter,
-            omnigraph::visualization::DefaultColorer(gp.g), labeler);
+    visualization::visualization_utils::WriteComponents(gp.g, "mosaic_pics/", splitter,
+            visualization::graph_colorer::DefaultColorer(gp.g), labeler);
     INFO("Components written");
 }
 

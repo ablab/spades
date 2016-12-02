@@ -1088,7 +1088,7 @@ inline void PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_gra
 
     auto vcolorer = make_shared<ScaffoldVertexSetColorer>(main_edge_set);
     auto ecolorer = make_shared<ScaffoldEdgeColorer>();
-    CompositeGraphColorer <ScaffoldGraph> colorer(vcolorer, ecolorer);
+    graph_colorer::CompositeGraphColorer <ScaffoldGraph> colorer(vcolorer, ecolorer);
 
     INFO("Visualizing scaffold grpah");
     ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, edge_labels);

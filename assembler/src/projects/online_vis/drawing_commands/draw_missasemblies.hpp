@@ -179,7 +179,7 @@ public:
 
         string file = args[1];
         
-        FillPos(curr_env.graph_pack(), file, "miss", true);
+        visualization::position_filler::FillPos(curr_env.graph_pack(), file, "miss", true);
         cout << "All contigs are mapped" << endl;
 
 

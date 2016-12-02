@@ -15,10 +15,10 @@
 namespace online_visualization {
 
 typedef debruijn_graph::BasicSequenceMapper<debruijn_graph::Graph, Index> MapperClass;
-typedef debruijn_graph::PosFiller<Graph> FillerClass;
+typedef visualization::position_filler::PosFiller<Graph> FillerClass;
 typedef debruijn_graph::KmerMapper<Graph> KmerMapperClass;
 typedef omnigraph::GraphElementFinder<Graph> ElementFinder;
-typedef shared_ptr<omnigraph::visualization::GraphColorer<Graph>> ColoringClass;
+typedef shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> ColoringClass;
 
 class Environment : private boost::noncopyable {
  protected:
