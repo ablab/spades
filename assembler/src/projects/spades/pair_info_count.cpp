@@ -11,9 +11,11 @@
 #include "pair_info_count.hpp"
 #include "modules/alignment/short_read_mapper.hpp"
 #include "modules/alignment/long_read_mapper.hpp"
+#include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "paired_info/pair_info_filler.hpp"
 #include "modules/path_extend/split_graph_pair_info.hpp"
 #include "paired_info/bwa_pair_info_filler.hpp"
+
 #include "adt/bf.hpp"
 #include "adt/hll.hpp"
 
@@ -304,8 +306,22 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
                                                  path::append_path(cfg::get().output_dir, "bwa_count"),
                                                  cfg::get().max_threads, !cfg::get().bwa.debug);
 
+
+    alignment::BWAIndex bi(gp.g);
+
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         auto &lib = cfg::get_writable().ds.reads[i];
+
+        auto paired_streams = debruijn_graph::paired_binary_readers(lib, false);
+        for (auto& stream : paired_streams) {
+            while (!stream.eof()) {
+                io::PairedReadSeq r;
+                stream >> r;
+                bi.AlignSequence(r.first().sequence());
+                bi.AlignSequence(r.second().sequence());
+            }
+        }
+
         if (lib.is_hybrid_lib()) {
             INFO("Library #" << i << " was mapped earlier on hybrid aligning stage, skipping");
             continue;

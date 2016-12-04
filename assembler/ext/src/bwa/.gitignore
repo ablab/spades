@@ -1,0 +1,7 @@
+*.[oa]
+bwa
+test
+test64
+.*.swp
+Makefile.bak
+bwamem-lite
