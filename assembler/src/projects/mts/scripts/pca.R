@@ -1,7 +1,7 @@
 library(stringr)
 
 format_ids <- function(table) {
-  table$contig <- paste0(str_extract(table$contig, "sample\\d+-"), str_replace(str_extract(table$contig, "NODE_\\d+"), "NODE_", ""))
+  table$contig <- paste0(str_extract(table$contig, "\\w+\\d+-"), str_replace(str_extract(table$contig, "NODE_\\d+"), "NODE_", ""))
   unique(table)
 }
 
