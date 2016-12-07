@@ -107,7 +107,7 @@ public:
         support_(dataset_info, params),
         corrector_(gp.g),
         constructor_(gp.g, corrector_),
-        writer_(gp.g, constructor_, gp_.components, params_.mode == config::pipeline_type::plasmid),
+        writer_(gp.g, constructor_, gp_.components, params_.mode),
         unique_data_()
     {
         unique_data_.min_unique_length_ = params.pset.scaffolding2015.unique_length_upper_bound;

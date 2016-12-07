@@ -34,6 +34,10 @@ inline std::string MakeContigId(size_t number, size_t length, double coverage, s
     return MakeContigId(number, length, coverage, prefix) + "_ID_" +  ToString(id);
 }
 
+inline std::string MakeRNAContigId(size_t number, size_t length, double coverage, size_t gene_id, size_t isoform_id, const std::string& prefix = "NODE") {
+    return MakeContigId(number, length, coverage, prefix) + "_gene_" + ToString(gene_id)  + "_isoform_" + ToString(isoform_id);
+}
+
 inline std::string MakeContigComponentId(size_t number, size_t length, double coverage, size_t component_id, const std::string& prefix = "NODE") {
     return MakeContigId(number, length, coverage, prefix)  + "_component_" + ToString(component_id);
 }

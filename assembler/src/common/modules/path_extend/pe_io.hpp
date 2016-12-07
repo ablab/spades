@@ -38,6 +38,94 @@ struct IOContigStorageGreater
     }
 };
 
+//Finds common long edges in paths and joins them into
+class TranscriptToGeneJoiner {
+private:
+    const Graph &g_;
+    size_t min_edge_len_; //minimal length for joining transcripts into a gene
+
+    map<BidirectionalPath *, size_t, PathComparator> path_id_; //path ids
+    std::vector<size_t> parents_; //node parents in
+    std::vector<size_t> ranks_; //tree depth
+
+
+    void MakeSet(size_t x) {
+        parents_[x] = x;
+        ranks_[x] = 0;
+    }
+
+    void UnionTrees(size_t x, size_t y) {
+        x = FindTree(x);
+        y = FindTree(y);
+        if (x != y) {
+            if (ranks_[x] < ranks_[y])
+                parents_[x] = y;
+            else
+                parents_[y] = x;
+            if (ranks_[x] == ranks_[y])
+                ++ranks_[x];
+        }
+    }
+
+    void Init(const PathContainer &paths) {
+        DEBUG("Initializing parents and ranks");
+        parents_.resize(paths.size());
+        ranks_.resize(paths.size());
+
+        size_t path_num = 0;
+        for (auto iter = paths.begin(); iter != paths.end(); ++iter, ++path_num) {
+            path_id_[iter.get()] = path_num;
+            path_id_[iter.getConjugate()] = path_num;
+            MakeSet(path_num);
+        }
+
+        DEBUG("Initialized parents and ranks");
+
+        VERIFY_MSG(path_num == paths.size(), "Path Num " << path_num << " Size " << paths.size())
+    }
+public:
+    TranscriptToGeneJoiner(const Graph &g, size_t min_edge_len): g_(g), min_edge_len_(min_edge_len) {}
+
+    size_t FindTree(size_t x) {
+        size_t parent;
+        if (x == parents_[x]) {
+            parent = x;
+        }
+        else {
+            parents_[x] = FindTree(parents_[x]);
+            parent = parents_[x];
+        }
+        return parent;
+    }
+
+    size_t GetPathId(BidirectionalPath *path) {
+        return path_id_[path];
+    }
+
+    void Construct(const PathContainer &paths) {
+        Init(paths);
+
+        GraphCoverageMap edges_coverage(g_, paths);
+
+        DEBUG("Union trees");
+        for (auto iterator = edges_coverage.begin(); iterator != edges_coverage.end(); ++iterator) {
+            EdgeId edge = iterator->first;
+            GraphCoverageMap::MapDataT *edge_paths = iterator->second;
+
+            if (g_.length(edge) > min_edge_len_ && edge_paths->size() > 1) {
+                DEBUG("Long edge " << edge.int_id() << " Paths " << edge_paths->size());
+                for (auto it_edge = ++edge_paths->begin(); it_edge != edge_paths->end(); ++it_edge) {
+                    size_t first = path_id_[*edge_paths->begin()];
+                    size_t next = path_id_[*it_edge];
+                    DEBUG("Edge " << edge.int_id() << " First " << first << " Next " << next);
+
+                    UnionTrees(first, next);
+                }
+            }
+        }
+    }
+};
+
 class ContigWriter {
 protected:
     DECL_LOGGER("PathExtendIO")
@@ -48,7 +136,7 @@ protected:
     size_t k_;
     map<EdgeId, ExtendedContigIdT> ids_;
     const ConnectedComponentCounter &c_counter_;
-    bool plasmid_contig_naming_;
+    config::pipeline_type pipeline_type_;
 
     //TODO: add constructor
     string ToString(const BidirectionalPath& path) const {
@@ -130,11 +218,10 @@ public:
     ContigWriter(const Graph& g,
                  ContigConstructor<Graph> &constructor,
                  const ConnectedComponentCounter &c_counter,
-                 bool plasmid_contig_naming = false):
-        g_(g), constructor_(constructor), k_(g.k()),
-        ids_(), c_counter_(c_counter),
-        plasmid_contig_naming_(plasmid_contig_naming)
-    {
+                 config::pipeline_type pipeline_type) :
+            g_(g), constructor_(constructor), k_(g.k()),
+            ids_(), c_counter_(c_counter),
+            pipeline_type_(pipeline_type) {
         MakeContigIdMap(g_, ids_, c_counter, "NODE");
     }
 
@@ -226,7 +313,7 @@ public:
 
     void WritePathsToFASTA(const PathContainer &paths,
                            const string &filename_base,
-                           bool write_fastg = true) const {
+                           bool write_fastg = true, size_t long_length = 300) const {
 
         vector<IOContigStorage> storage;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
@@ -246,14 +333,35 @@ public:
         if (write_fastg)
             os_fastg.open((filename_base + ".paths").c_str());
 
-        int i = 0;
+        TranscriptToGeneJoiner transcript_joiner(g_, long_length);
+        if (pipeline_type_ == config::pipeline_type::rna) {
+            transcript_joiner.Construct(paths);
+        }
+
+        size_t gene_num = 0;
+        map<size_t, size_t> isoform_num;
+        map<size_t, size_t> gene_ids;
+        size_t i = 0;
         for (const auto& precontig : storage) {
             ++i;
             std::string contig_id = "";
-            if (plasmid_contig_naming_) {
+
+            if (pipeline_type_ ==  config::pipeline_type::plasmid) {
                 EdgeId e = precontig.path_->At(0);
                 size_t component = c_counter_.GetComponent(e);
                 contig_id = io::MakeContigComponentId(i, precontig.sequence_.length(), precontig.path_->Coverage(), component);
+            }
+            else if (pipeline_type_ == config::pipeline_type::rna) {
+                size_t id = transcript_joiner.GetPathId(precontig.path_);
+                size_t parent_id = transcript_joiner.FindTree(id);
+                DEBUG("Path " << id << " Parent " << parent_id);
+                if (gene_ids.find(parent_id) == gene_ids.end()) {
+                    gene_ids[parent_id] = gene_num;
+                    isoform_num[parent_id] = 0;
+                    gene_num++;
+                }
+                contig_id = io::MakeRNAContigId(i, precontig.sequence_.length(), precontig.path_->Coverage(), gene_ids[parent_id], isoform_num[parent_id]);
+                isoform_num[parent_id]++;
             } else {
                 contig_id = io::MakeContigId(i, precontig.sequence_.length(), precontig.path_->Coverage());
             }
