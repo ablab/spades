@@ -1,15 +1,16 @@
-simp
-{
-    final_br
-    {
-        enabled false
-    }
+; simp
+; {
+;     final_br
+;     {
+;         enabled false
+;     }
+; 
+;     relative_ed
+;     {
+;         enabled false
+;     }
+; }
 
-    relative_ed
-    {
-        enabled false
-    }
-}
 pe {
 params {
     multi_path_extend   false
