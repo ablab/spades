@@ -1,14 +1,20 @@
-include: "Snakecommon"
+configfile: "config.yaml"
 
+import functools
 import os
 import os.path
 
 import pandas
 from pandas import DataFrame
 
-from scripts.common import gather_refs, dump_dict
+from scripts.common import detect_reads, gather_refs, dump_dict
 
-#Additional config parameters
+#Config parameters
+IN = config["IN"]
+LOCAL_DIR = config.get("LOCAL_DIR", "")
+BIN = config.get("BIN", os.path.join(LOCAL_DIR, "build/release/bin"))
+SCRIPTS = config.get("SCRIPTS", os.path.join(LOCAL_DIR, "src/projects/mts/scripts"))
+SOFT = config["SOFT"]
 try:
     QUAST_DIR = config["QUAST"]
     QUAST = os.path.join(QUAST_DIR, "quast.py")
@@ -16,12 +22,23 @@ try:
 except KeyError:
     QUAST = "quast"
     METAQUAST = "metaquast"
+MIN_CONTIG_LENGTH = int(config.get("MIN_CONTIG_LENGTH", 2000))
+THREADS = config.get("THREADS", 16)
+
+#Autodetect samples and their reads
+SAMPLE_DIRS = set(glob_wildcards(IN + "/{sample,sample\d+}")[0])
+SAMPLE_COUNT = len(SAMPLE_DIRS)
+SAMPLES = list()
+for i in range(1, SAMPLE_COUNT + 1):
+    sample_name = "sample" + str(i)
+    if sample_name not in SAMPLE_DIRS:
+        raise WorkflowError("Samples must be consecutive; missing " + sample_name)
+    SAMPLES.append(sample_name)
 
 #Autodetect bins
 CAGS, = glob_wildcards("binning/{cag,CAG\d+}/left.fastq")
 CAGS.sort()
 
-#Detect references
 REFS = dict(gather_refs(config.get("REFS", [])))
 ALL_REFS = ",".join(path for path in REFS.values())
 
@@ -46,7 +63,7 @@ onstart:
 #---- Single alignments for samples per reference -------------------------------
 #TODO: use alignments from meta version instead
 rule quast_all_samples:
-    input:   ref=ref_path, contigs=expand("assembly/{sample}.fasta", sample=GROUPS)
+    input:   ref=ref_path, contigs=expand("assembly/{sample}.fasta", sample=SAMPLES)
     output:  "stats/summary/q_{ref}.tsv"
     params:  "stats/{ref}"
     log:     "stats/{ref}/quast.log"
@@ -57,15 +74,15 @@ rule quast_all_samples:
 #---- Contigs of interest ------------------------------------------------------
 rule filter_all_samples:
     input:   "stats/summary/q_{ref}.tsv"
-    output:  expand("stats/{{ref}}/{sample}.cont", sample=GROUPS)
+    output:  expand("stats/{{ref}}/{sample}.cont", sample=SAMPLES)
     message: "Filtering interesting long contigs from all samples for {wildcards.ref}"
     params:  "stats/{ref}/"
     shell:   "{SCRIPTS}/filter_nucmer.py {params} {MIN_CONTIG_LENGTH} 70"
 
 #---- GF of combined sample ----------------------------------------------------
 rule combine_filtered:
-    input:   contigs=expand("assembly/{sample}.fasta", sample=GROUPS),
-             filters=expand("stats/{{ref}}/{sample}.cont", sample=GROUPS)
+    input:   contigs=expand("assembly/{sample}.fasta", sample=SAMPLES),
+             filters=expand("stats/{{ref}}/{sample}.cont", sample=SAMPLES)
     output:  "stats/{ref}.fasta"
     message: "Gathering all interesting contigs for {wildcards.ref} into a single assembly"
     shell:   "{SCRIPTS}/filter_contigs.py {SAMPLE_COUNT} {output} {input.contigs} {input.filters}"
@@ -93,7 +110,7 @@ rule int_bins:
     shell:   "{SCRIPTS}/filter_bins.py {input} > {output}"
 
 rule int_bins_all_samples:
-    input:   expand("stats/{{ref}}/{sample}.bin", sample=GROUPS)
+    input:   expand("stats/{{ref}}/{sample}.bin", sample=SAMPLES)
     output:  "stats/{ref}/total.bin"
     message: "Gathering interesting bins for {wildcards.ref} from all samples"
     run:
@@ -141,7 +158,7 @@ def stats_input(wildcards):
         return expand("reassembly/{cag}.fasta", cag=CAGS)
     w_bin, w_prop = wildcards.stage.split("_", 2)
     if w_bin == "split":
-        return expand("binning/{prop}/{sample}.log", prop=w_prop, sample=GROUPS)
+        return expand("binning/{prop}/{sample}.log", prop=w_prop, sample=SAMPLES)
     elif w_bin == "bin":
         return expand("binning/{prop}/{cag}.fasta", prop=w_prop, cag=CAGS)
 
@@ -191,7 +208,7 @@ rule prop_stats:
 
 # Run this
 rule prop_stats_all:
-    input:   expand("stats/prop_{cag}/{sample}.tsv", sample=GROUPS, cag=CAGS)
+    input:   expand("stats/prop_{cag}/{sample}.tsv", sample=SAMPLES, cag=CAGS)
     message: "Calculated propagation statistics"
 
 #---- CheckM stats -------------------------------------------------------------
@@ -231,17 +248,17 @@ rule pca:
         "Rscript {SCRIPTS}/pca.R {input} {output}"
 
 rule combine_contigs:
-    input:   expand("stats/{ref}/{sample}.cont", sample=GROUPS, ref=REFS)
+    input:   expand("stats/{ref}/{sample}.cont", sample=SAMPLES, ref=REFS)
     output:  "stats/total.cont"
     message: "Combining interesting contigs for all samples/references"
     run:
         shell("rm -f {output}")
-        for sample in GROUPS:
+        for sample in SAMPLES:
             for ref in REFS:
                 shell("awk '{{print $0 \"\t{ref}\"}}' stats/{ref}/{sample}.cont >> {output}")
 
 # Run this
 rule pca_total:
-    input:   "binning/canopy/profiles.in", "binning/canopy/binning.out", "stats/total.cont"
+    input:   "profile/canopy.in", "profile/canopy.out", "stats/total.cont"
     output:  "stats/summary/pca.png"
     shell:   "Rscript {SCRIPTS}/pca.R {input} {output}"

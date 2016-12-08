@@ -41,7 +41,6 @@ info_printers
 
     before_repeat_resolution
     {
-       save_graph_pack true
     }
 
 }  
