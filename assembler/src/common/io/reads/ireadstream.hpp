@@ -156,9 +156,9 @@ while (!stream.eof() && count++ < 10000) {
     std::string q_str = r.getQualityString();
     for (size_t i = 0; i < q_str.size(); ++i) {
         int q_val = q_str[i];
-        if (q_val < 59)
+        if (q_val < ';')
             return 33;
-        if (q_val > 74)
+        if (q_val > 'K')
             return 64;
     }
 }
