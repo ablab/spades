@@ -12,8 +12,12 @@
 namespace debruijn_graph {
 
 struct SeriesAnalysisConfig {
-    uint k, sample_cnt;
-    std::string kmer_mult, bin, bin_prof;
+    uint k;
+    uint sample_cnt;
+    uint frag_size;
+    uint min_len;
+
+    std::string kmer_mult, bin, bin_prof, edges_mpl, edge_fragments_mpl;
 };
 
 }
@@ -27,6 +31,10 @@ template<> struct MappingTraits<debruijn_graph::SeriesAnalysisConfig> {
         io.mapRequired("kmer_mult", cfg.kmer_mult);
         io.mapRequired("bin", cfg.bin);
         io.mapRequired("bin_prof", cfg.bin_prof);
+        io.mapRequired("min_len", cfg.min_len);
+        io.mapRequired("edges_mpl", cfg.edges_mpl);
+        io.mapRequired("edge_fragments_mpl", cfg.edge_fragments_mpl);
+        io.mapRequired("frag_size", cfg.frag_size);
     }
 };
 
@@ -194,6 +202,36 @@ class SeriesAnalysis : public spades::AssemblyStage {
         return boost::optional<AbundanceVector>(MeanVector(abundances));
     }
 
+    void PrintEdgeFragmentProfiles(const conj_graph_pack &gp, const ContigAbundanceCounter &abundance_counter, 
+                                   size_t split_length, size_t min_len, std::ostream &os) const {
+        for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+            EdgeId e = *it;
+            io::SingleRead full_contig(ToString(gp.g.int_id(e)), gp.g.EdgeNucls(e).str());
+            for (size_t i = 0; i < full_contig.size(); i += split_length) {
+                if (full_contig.size() - i < min_len) {
+                    DEBUG("Fragment shorter than min_length_bound " << min_len);
+                    break;
+                }
+
+                io::SingleRead contig = full_contig.Substr(i, std::min(i + split_length, full_contig.size()));
+
+                DEBUG("Processing fragment # " << (i / split_length) << " with id " << contig.name());
+
+                auto abundance_vec = abundance_counter(contig.GetSequenceString(), contig.name());
+
+                if (abundance_vec) {
+                    size_t len = contig.GetSequenceString().size();
+                    os << contig.name() << " " << len << " " << PrintVector(*abundance_vec) << std::endl;
+                    //copy(abundance_vec->begin(), abundance_vec->begin() + config.sample_cnt,
+                    //     ostream_iterator<Mpl>(ss, " "));
+                    DEBUG("Successfully estimated abundance of " << contig.name());
+                } else {
+                    DEBUG("Failed to estimate abundance of " << contig.name());
+                }
+            }
+        }
+    }
+
 public:
     SeriesAnalysis() : AssemblyStage("Series Analysis", "series_analysis") { }
 
@@ -214,11 +252,25 @@ public:
         yin >> config;
 
         SetSampleCount(config.sample_cnt);
-        ContigAbundanceCounter abundance_counter(config.k,
+
+        ContigAbundanceCounter abundance_counter(config.k, 
                                                  SingleClusterAnalyzer(2., 0.4),
                                                  cfg::get().tmp_dir);
 
+        DEBUG("Initiating abundance counter");
         abundance_counter.Init(config.kmer_mult);
+        DEBUG("Abundance counter ready");
+
+        if (!config.edges_mpl.empty()) {
+            ofstream os(config.edges_mpl);
+            PrintEdgeFragmentProfiles(gp, abundance_counter, -1ul, config.min_len, os);
+        }
+
+        if (!config.edge_fragments_mpl.empty()) {
+            ofstream os(config.edge_fragments_mpl);
+            PrintEdgeFragmentProfiles(gp, abundance_counter, config.frag_size, config.min_len, os);
+        }
+
         boost::optional<AbundanceVector> bin_profile = InferAbundance(config.bin_prof, config.bin);
         if (!bin_profile) {
             ERROR("Couldn't estimate profile of bin");
