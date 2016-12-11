@@ -1,44 +1,12 @@
-configfile: "config.yaml"
+include: "Common.snake"
 
-import functools
 import os
 import os.path
 
-from scripts.common import detect_reads, dump_dict
-
-#Config parameters
-IN = config["IN"]
-SPADES = config.get("SPADES", config["LOCAL_DIR"])
-SPADES_REASSEMBLY = config.get("SPADES_REASSEMBLY", config["LOCAL_DIR"])
-BIN = config.get("BIN", os.path.join(config["LOCAL_DIR"], "build/release/bin"))
-SCRIPTS = config.get("SCRIPTS", os.path.join(config["LOCAL_DIR"], "src/projects/mts/scripts"))
-SOFT = config["SOFT"]
-K = int(config.get("K", 55))
-SMALL_K = int(config.get("SMALL_K", 21))
-MIN_CONTIG_LENGTH = int(config.get("MIN_CONTIG_LENGTH", 2000))
-THREADS = config.get("THREADS", 16)
-BINNER = config.get("BINNER", "canopy")
+from scripts.common import dump_dict
 
 #Path to saves of necessary assembly stage
 SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(K)
-
-#Autodetect samples and their reads
-SAMPLE_DIRS = set(glob_wildcards(os.path.join(IN, "{sample,sample\d+}"))[0])
-SAMPLE_COUNT = len(SAMPLE_DIRS)
-SAMPLES = list()
-for i in range(1, SAMPLE_COUNT + 1):
-    sample_name = "sample" + str(i)
-    if sample_name not in SAMPLE_DIRS:
-        raise WorkflowError("Samples must be consecutive; missing " + sample_name)
-    SAMPLES.append(sample_name)
-
-SAMPLE_READS = dict(map(lambda sample: (sample, detect_reads(os.path.join(IN, sample))), SAMPLES))
-
-def sample_reads(dir, wildcards):
-    return SAMPLE_READS[wildcards.sample][dir]
-
-left_reads  = functools.partial(sample_reads, 0)
-right_reads = functools.partial(sample_reads, 1)
 
 onstart:
     try:
@@ -46,6 +14,7 @@ onstart:
     except:
         pass
     print("Detected", SAMPLE_COUNT, "samples in", IN)
+    print("They form: ", GROUPS)
 
 # ---- Main pipeline -----------------------------------------------------------
 
@@ -55,17 +24,20 @@ rule all:
 
 rule assemble:
     input:   left=left_reads, right=right_reads
-    output:  "assembly/{sample,sample\d+}.fasta"
-    params:  "assembly/{sample}"
+    output:  "assembly/{sample}.fasta"
+    #TODO: remove this boilerplate
+    params:  left=lambda w: " ".join(expand("-1 {r}", r=left_reads(w))),
+             right=lambda w: " ".join(expand("-2 {r}", r=right_reads(w))),
+             dir="assembly/{sample}"
     log:     "assembly/{sample}.log"
     threads: THREADS
     message: "Assembling {wildcards.sample} with SPAdes"
-    shell:   "{SPADES}/spades.py --meta -m 400 -t {threads} -1 {input.left} -2 {input.right}"
-             " -o {params} >{log} 2>&1 && "
-             "cp {params}/scaffolds.fasta {output}"
+    shell:   "{SPADES}/spades.py --meta -m 400 -t {threads} {params.left} {params.right}"
+             " -o {params.dir} >{log} 2>&1 && "
+             "cp {params.dir}/scaffolds.fasta {output}"
 
 rule assemble_all:
-    input:   expand("assembly/{sample}.fasta", sample=SAMPLES)
+    input:   expand("assembly/{sample}.fasta", sample=GROUPS)
     message: "Assembled all samples"
 
 rule descriptions:
@@ -92,7 +64,7 @@ rule kmc:
 
 rule multiplicities:
     input:   expand("tmp/{sample}.kmc_pre", sample=SAMPLES), expand("tmp/{sample}.kmc_suf", sample=SAMPLES)
-    output:  "profile/kmers.mpl"
+    output:  "profile/kmers.kmm"
     params:  kmc_files=" ".join(expand("tmp/{sample}", sample=SAMPLES)), out="profile/kmers"
     log:     "profile/kmers.log"
     message: "Gathering {SMALL_K}-mer multiplicities from all samples"
@@ -101,20 +73,20 @@ rule multiplicities:
              "rm tmp/*.sorted"
 
 rule profile:
-    input:   contigs="assembly/{sample}.fasta", mpl="profile/kmers.mpl"
-    output:  "profile/{sample}.id", "profile/{sample}.mpl", "assembly/{sample}_splits.fasta"
+    input:   contigs="assembly/{sample,\w+\d+}.fasta", mpl="profile/kmers.kmm"
+    output:  id="profile/{sample}.id", mpl="profile/{sample}.mpl", splits= "assembly/{sample}_splits.fasta"
     log:     "profile/{sample}.log"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:   "{BIN}/contig_abundance_counter -k {SMALL_K} -w tmp -c {input.contigs}"
              " -n {SAMPLE_COUNT} -m profile/kmers -o profile/{wildcards.sample}"
-             " -f assembly/{wildcards.sample}_splits.fasta"
-             " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
+             " -f {output.splits} -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
 rule binning_pre:
-    input:   expand("profile/{sample}.id", sample=SAMPLES)
+    input:   expand("profile/{sample}.id", sample=GROUPS)
     output:  "binning/{binner}/profiles.in"
+    params:  " ".join(list(GROUPS.keys()))
     message: "Preparing input for {wildcards.binner}"
-    shell:   "{SCRIPTS}/make_input.py -t {wildcards.binner} -d profile -o {output} {SAMPLES}"
+    shell:   "{SCRIPTS}/make_input.py -t {wildcards.binner} -d profile -o {output} {params}"
 
 rule canopy:
     input:   "binning/canopy/profiles.in"
@@ -124,7 +96,7 @@ rule canopy:
     shell:   "{SOFT}/cc.bin -n {threads} -i {input} -o {output.out} -c {output.prof} >binning/canopy/canopy.log 2>&1"
 
 rule combine_splits:
-    input:   expand("assembly/{sample}_splits.fasta", sample=SAMPLES)
+    input:   expand("assembly/{sample}_splits.fasta", sample=GROUPS)
     output:  "assembly/samples_splits.fasta"
     message: "Combine splitted contigs"
     shell:   "{SCRIPTS}/combine_contigs.py -r {input} > {output}"
@@ -143,7 +115,7 @@ binning_inputs = {"canopy": rules.canopy.output.out, "concoct": rules.concoct.ou
 
 rule binning_post:
     input:   binning_inputs[BINNER]
-    output:  expand("annotation/{sample}.ann", sample=SAMPLES)
+    output:  expand("annotation/{sample}.ann", sample=GROUPS)
     message: "Preparing raw annotations"
     shell:   "{SCRIPTS}/parse_output.py -t {BINNER} -o annotation {input}"
 
@@ -154,17 +126,19 @@ rule read_binning:
     output:  "propagation/{sample}_edges.ann"
     params:  saves=os.path.join("assembly/{sample}/", SAVES),
              splits="assembly/{sample}_splits.fasta",
-             out="propagation/{sample}_edges"
+             out="propagation/{sample}_edges",
+             group=lambda wildcards: GROUPS[wildcards.sample]
+             #left=" ".join(input.left), right=" ".join(input.right)
     log:     "binning/{sample}.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
     shell:
           "{BIN}/prop_binning -k {K} -s {params.saves} -c {input.contigs}"
-          " -n {wildcards.sample} -l {input.left} -r {input.right}"
+          " -n {params.group} -l {input.left} -r {input.right}"
           " -a {input.ann} -f {params.splits} -o binning -d {params.out} >{log} 2>&1"
 
 #TODO: bin profiles for CONCOCT
 rule choose_samples:
-    input:   binned=expand("propagation/{sample}_edges.ann", sample=SAMPLES),
+    input:   binned=expand("propagation/{sample}_edges.ann", sample=GROUPS),
              prof=rules.canopy.output.prof
     output:  dynamic("binning/{cag}/left.fastq"),
              dynamic("binning/{cag}/right.fastq")

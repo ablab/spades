@@ -49,9 +49,9 @@ int main(int argc, char** argv) {
 
     size_t k;
     string saves_path, contigs_path, splits_path, annotation_path;
-    string left_reads, right_reads;
-    string out_root, propagation_dump, sample_name;
-    std::vector<bin_id> bins_of_interest;
+    vector<string> sample_names, left_reads, right_reads;
+    string out_root, propagation_dump;
+    vector<bin_id> bins_of_interest;
     bool no_binning;
     try {
         GetOpt_pp ops(argc, argv);
@@ -61,16 +61,16 @@ int main(int argc, char** argv) {
             >> Option('c', contigs_path)
             >> Option('f', splits_path)
             >> Option('a', annotation_path)
+            >> Option('n', sample_names)
             >> Option('l', left_reads)
             >> Option('r', right_reads)
             >> Option('o', out_root)
-            >> Option('n', sample_name)
             >> Option('d', propagation_dump, "")
             >> Option('b', bins_of_interest, {})
             >> OptionPresent('p', no_binning);
     } catch(GetOptEx &ex) {
         cout << "Usage: prop_binning -k <K> -s <saves path> -c <contigs path> -f <splits path> "
-                "-a <binning annotation> -l <left reads> -r <right reads> -o <output root> -n <sample name> "
+                "-a <binning annotation> -n <sample names> -l <left reads> -r <right reads> -o <output root> "
                 "[-d <propagation info dump>] [-p to disable binning] [-b <bins of interest>*]"  << endl;
         exit(1);
     }
@@ -113,15 +113,16 @@ int main(int argc, char** argv) {
     }
     //Binning stage
 //    contigs_stream.reset();
-    ContigBinner binner(gp, edge_annotation, out_root, sample_name);
-    INFO("Initializing binner");
 //    INFO("Using propagated annotation from " << propagated_path);
 //    AnnotationStream binning_stream(propagated_path);
-
-    auto paired_stream = io::PairedEasyStream(left_reads, right_reads, false, 0);
-    INFO("Running binner on " << left_reads << " and " << right_reads);
-    binner.Run(*paired_stream);
-    binner.close();
+    for (size_t i = 0; i < sample_names.size(); ++i) {
+        ContigBinner binner(gp, edge_annotation, out_root, sample_names[i]);
+        INFO("Initializing binner for " << sample_names[i]);
+        auto paired_stream = io::PairedEasyStream(left_reads[i], right_reads[i], false, 0);
+        INFO("Running binner on " << left_reads[i] << " and " << right_reads[i]);
+        binner.Run(*paired_stream);
+        binner.close();
+    }
 
     return 0;
 }

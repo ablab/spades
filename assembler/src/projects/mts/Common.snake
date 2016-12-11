@@ -1,0 +1,69 @@
+configfile: "config.yaml"
+
+from itertools import chain
+from functools import partial
+import os.path
+
+from scripts.common import detect_reads
+
+#Config parameters
+IN = config["IN"]
+LOCAL_DIR = config["LOCAL_DIR"]
+SPADES = config.get("SPADES", LOCAL_DIR)
+SPADES_REASSEMBLY = config.get("SPADES_REASSEMBLY", LOCAL_DIR)
+BIN = config.get("BIN", os.path.join(LOCAL_DIR, "build/release/bin"))
+SCRIPTS = config.get("SCRIPTS", os.path.join(LOCAL_DIR, "src/projects/mts/scripts"))
+SOFT = config["SOFT"]
+K = int(config.get("K", 55))
+SMALL_K = int(config.get("SMALL_K", 21))
+MIN_CONTIG_LENGTH = int(config.get("MIN_CONTIG_LENGTH", 2000))
+THREADS = config.get("THREADS", 16)
+BINNER = config.get("BINNER", "canopy")
+
+#Autodetect samples and their reads
+SAMPLE_DIRS = set(glob_wildcards(os.path.join(IN, "{sample,sample\d+}"))[0])
+SAMPLE_COUNT = len(SAMPLE_DIRS)
+SAMPLES = list()
+for i in range(1, SAMPLE_COUNT + 1):
+    sample_name = "sample" + str(i)
+    if sample_name not in SAMPLE_DIRS:
+        raise WorkflowError("Samples must be consecutive; missing " + sample_name)
+    SAMPLES.append(sample_name)
+
+SAMPLE_READS = dict(map(lambda sample: (sample, detect_reads(os.path.join(IN, sample))), SAMPLES))
+
+#Group samples
+GROUP_SAMPLES = config.get("GROUPS", [])
+USED_SAMPLES = set(chain(*GROUP_SAMPLES))
+#TODO: double-check
+#Replace the wildcard group with unused samples
+if GROUP_SAMPLES and GROUP_SAMPLES[-1] == "*":
+    GROUP_SAMPLES[-1] = [sample for sample in SAMPLES if sample not in USED_SAMPLES]
+#Otherwise, add a single-sample group from the rest of the samples
+else:
+    for sample in SAMPLES:
+        if sample not in USED_SAMPLES:
+            GROUP_SAMPLES.append([sample])
+
+GROUPS = dict()
+group_id = 1
+for group in GROUP_SAMPLES:
+    if len(group) == 1:
+        key = group[0]
+    else:
+        key = "group" + str(group_id)
+        #SAMPLE_READS[key] = ["reads/{}/{}.fastq".format(key, dir) for dir in ["left", "right"]]
+        SAMPLE_READS[key] = ([SAMPLE_READS[s][0] for s in group], [SAMPLE_READS[s][1] for s in group])
+        group_id += 1
+    GROUPS[key] = group
+
+#Helpers for locating input files
+def sample_reads(dir, wildcards):
+    res = SAMPLE_READS[wildcards.sample][dir]
+    if res is str:
+        return [res]
+    else:
+        return res
+
+left_reads  = partial(sample_reads, 0)
+right_reads = partial(sample_reads, 1)
