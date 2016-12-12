@@ -10,26 +10,25 @@
 #include <map>
 #include <set>
 namespace path_extend {
+
 class ExtensionChooser2015: public ScaffoldingExtensionChooser {
-private:
+    static const int MIN_N_QUANTITY = 10;
     shared_ptr<ConnectionCondition> lib_connection_condition_;
     const ScaffoldingUniqueEdgeStorage& unique_edges_;
 
     // for possible connections e1 and e2 if weight(e1) > relative_weight_threshold_ * weight(e2) then e2 will be ignored
     double relative_weight_threshold_;
     AssemblyGraphConnectionCondition graph_connection_condition_;
-// weight < absolute_weight_threshold_ will be ignored
+    // weight < absolute_weight_threshold_ will be ignored
     size_t absolute_weight_threshold_;
-// multiplicator for the pairs which are connected in graph.
+    // multiplicator for the pairs which are connected in graph.
     double graph_connection_bonus_;
-    static const int MIN_N_QUANTITY = 10;
     bool use_graph_connectivity_;
-protected:
-//If path contains no unique edges return -1
+
+    //If path contains no unique edges return -1
     pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path) const;
-//Find all possible next unique edges confirmed with mate-pair information. (absolute/relative)_weight_threshold_ used for filtering
+    //Find all possible next unique edges confirmed with mate-pair information. (absolute/relative)_weight_threshold_ used for filtering
     EdgeContainer FindNextUniqueEdge(const EdgeId from) const;
-        DECL_LOGGER("ExtensionChooser2015")
 public:
     ExtensionChooser2015(const Graph& g,
                          shared_ptr<WeightCounter> wc,
@@ -51,13 +50,15 @@ public:
             use_graph_connectivity_(use_graph_connectivity) {
         INFO("ExtensionChooser2015 created");
     }
-/* @param edges are really not used and left for compatibility
- * @returns possible next edge if there is unique one, else returns empty container
- *
- */
 
-    EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override;
+    /* @param edges are really not used and left for compatibility
+     * @returns possible next edge if there is unique one, else returns empty container
+     */
+    EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer&) const override;
     void InsertAdditionalGaps(ExtensionChooser::EdgeContainer& result) const;
+
+private:
+    DECL_LOGGER("ExtensionChooser2015");
 };
 
 
