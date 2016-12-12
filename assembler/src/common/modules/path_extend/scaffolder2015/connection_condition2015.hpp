@@ -5,6 +5,7 @@
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "modules/alignment/long_read_storage.hpp"
 #include "modules/path_extend/pe_utils.hpp"
+#include "common/assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include <map>
 #include <set>
 
@@ -13,27 +14,23 @@ namespace path_extend {
 using debruijn_graph::EdgeId;
 using debruijn_graph::Graph;
 
-
 //De Bruijn graph edge condition interface
-class EdgeCondition {
-public:
-    virtual bool IsSuitable(debruijn_graph::EdgeId e) const = 0;
+class LengthLowerBound : public omnigraph::EdgeCondition<Graph> {
+    typedef Graph::EdgeId EdgeId;
+    typedef EdgeCondition<Graph> base;
 
-    virtual ~EdgeCondition() { }
-
-};
-
-//Edge length condition
-class LengthEdgeCondition: public EdgeCondition {
-    const debruijn_graph::Graph &graph_;
-
-    size_t min_length_;
+    const size_t max_length_;
 
 public:
-    LengthEdgeCondition(const debruijn_graph::Graph &graph, size_t min_len) : graph_(graph), min_length_(min_len) {
+
+    LengthLowerBound(const Graph &g, size_t max_length)
+            : base(g),
+              max_length_(max_length) {
     }
 
-    bool IsSuitable(debruijn_graph::EdgeId e) const;
+    bool Check(EdgeId e) const {
+        return this->g().length(e) >= max_length_;
+    }
 };
 
 /* Connection condition are used by both scaffolder's extension chooser and scaffold graph */
@@ -138,7 +135,7 @@ protected:
 public:
     AssemblyGraphConnectionCondition(const Graph &g, size_t max_connection_length,
                                      const ScaffoldingUniqueEdgeStorage& unique_edges);
-    void AddInterestingEdges(const EdgeCondition& edge_condition);
+    void AddInterestingEdges(func::TypedPredicate<typename Graph::EdgeId> edge_condition);
     map<EdgeId, double> ConnectedWith(EdgeId e) const;
     size_t GetLibIndex() const override;
     int GetMedianGap(EdgeId, EdgeId ) const override;

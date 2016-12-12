@@ -37,7 +37,7 @@ protected:
                           vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                           bool use_terminal_vertices_only = false);
 
-    void ConstructFromEdgeConditions(const EdgeCondition& edge_condition,
+    void ConstructFromEdgeConditions(func::TypedPredicate<typename Graph::EdgeId> edge_condition,
                                      vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                                      bool use_terminal_vertices_only = false);
 };
@@ -60,13 +60,13 @@ public:
 
 class DefaultScaffoldGraphConstructor: public SimpleScaffoldGraphConstructor {
 protected:
-    const EdgeCondition& edge_condition_;
+    func::TypedPredicate<typename Graph::EdgeId> edge_condition_;
 
 public:
     DefaultScaffoldGraphConstructor(const debruijn_graph::Graph& assembly_graph,
                                     const set<EdgeId>& edge_set,
                                     vector<shared_ptr<ConnectionCondition>> &connection_conditions,
-                                    const EdgeCondition& edge_condition):
+                                    func::TypedPredicate<typename Graph::EdgeId> edge_condition):
         SimpleScaffoldGraphConstructor(assembly_graph, edge_set, connection_conditions),
         edge_condition_(edge_condition)
     {}

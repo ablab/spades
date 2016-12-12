@@ -32,7 +32,7 @@ using omnigraph::de::Point;
 
 struct PairedInfoLibrary {
     PairedInfoLibrary(size_t k, const Graph& g, size_t readS, size_t is,
-                      size_t is_min, size_t is_max, size_t is_var,
+                      size_t is_min, size_t is_max, double is_var,
                       bool is_mp,
                       const std::map<int, size_t>& is_distribution)
             : g_(g),
@@ -67,7 +67,7 @@ struct PairedInfoLibrary {
     double GetSingleThreshold() const { return single_threshold_; }
     double GetCoverageCoeff() const { return coverage_coeff_; }
     size_t GetISMax() const { return is_max_; }
-    size_t GetIsVar() const { return is_var_; }
+    double GetIsVar() const { return is_var_; }
     size_t GetLeftVar() const { return is_ - is_min_; }
     size_t GetRightVar() const { return is_max_ - is_; }
     size_t GetReadSize() const { return read_size_; }
@@ -79,7 +79,7 @@ struct PairedInfoLibrary {
     size_t is_;
     size_t is_min_;
     size_t is_max_;
-    size_t is_var_;
+    double is_var_;
     bool is_mp_;
     double single_threshold_;
     double coverage_coeff_;
@@ -91,7 +91,7 @@ protected:
 template<class Index>
 struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
 
-    PairedInfoLibraryWithIndex(size_t k, const Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, size_t is_div,
+    PairedInfoLibraryWithIndex(size_t k, const Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, double is_div,
                                const Index& index, bool is_mp,
                                const std::map<int, size_t>& is_distribution)
         : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
@@ -187,7 +187,7 @@ inline shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph& g,
     size_t is = (size_t) lib.data().mean_insert_size;
     int is_min = (int) lib.data().insert_size_left_quantile;
     int is_max = (int) lib.data().insert_size_right_quantile;
-    int var = (int) lib.data().insert_size_deviation;
+    double var = lib.data().insert_size_deviation;
     bool is_mp = lib.type() == io::LibraryType::MatePairs || lib.type() == io::LibraryType::HQMatePairs;
     return make_shared<PairedInfoLibraryWithIndex<decltype(paired_index)> >(g.k(),
                                                                             g,
@@ -195,7 +195,7 @@ inline shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph& g,
                                                                             is,
                                                                             is_min > 0.0 ? size_t(is_min) : 0,
                                                                             is_max > 0.0 ? size_t(is_max) : 0,
-                                                                            size_t(var),
+                                                                            var,
                                                                             paired_index,
                                                                             is_mp,
                                                                             lib.data().insert_size_distribution);

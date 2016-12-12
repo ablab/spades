@@ -15,9 +15,7 @@ namespace path_extend {
 
 using namespace debruijn_graph;
 
-
-inline size_t FindMaxISRightQuantile(const config::dataset& dataset_info,
-                                     bool include_mate_pairs = true) {
+inline size_t FindMaxISRightQuantile(const config::dataset& dataset_info, bool include_mate_pairs = true) {
     size_t res = 0;
     for (const auto& lib : dataset_info.reads) {
         if (lib.is_paired()) {
@@ -37,16 +35,6 @@ inline bool HasLongReads(const config::dataset& dataset_info) {
     }
     return false;
 }
-
-inline bool HasMPReads(const config::dataset& dataset_info) {
-    for (const auto& lib : dataset_info.reads) {
-        if (lib.is_mate_pair()) {
-            return true;
-        }
-    }
-    return false;
-}
-
 
 struct PathExtendParamsContainer {
 
@@ -82,9 +70,9 @@ struct PathExtendParamsContainer {
         if (mode_ == config::pipeline_type::rna)
             traverse_loops = false;
 
-        //TODO: check PE only perfromance
         //Parameters are subject to change
         max_polisher_gap = FindMaxISRightQuantile(dataset_info);
+
         //TODO: params
         if (HasLongReads(dataset_info))
             max_polisher_gap = max(max_polisher_gap, size_t(10000));
@@ -149,6 +137,13 @@ public:
 
     pe_config::LongReads GetLongReadsConfig(const io::LibraryType &type) const;
 
+    size_t FindMaxMPIS() const;
+
+    bool HasLongReads() const;
+
+    bool HasMPReads() const;
+
+    bool SingleReadsMapped() const;
 };
 
 }

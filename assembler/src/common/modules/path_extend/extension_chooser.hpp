@@ -20,7 +20,6 @@
 #include <fstream>
 #include "weight_counter.hpp"
 #include "pe_utils.hpp"
-#include "next_path_searcher.hpp"
 
 //#include "scaff_supplementary.hpp"
 
@@ -553,7 +552,7 @@ protected:
         set<EdgeId> jumping_edges;
         const auto& lib = wc_->lib();
         //todo lib (and FindJumpEdges) knows its var so it can be counted there
-        int is_scatter = int(math::round(double(lib.GetIsVar()) * is_scatter_coeff_));
+        int is_scatter = int(math::round(lib.GetIsVar() * is_scatter_coeff_));
         for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib.GetISMax(); --i) {
             set<EdgeId> jump_edges_i;
             lib.FindJumpEdges(path.At(i), jump_edges_i,
@@ -831,7 +830,8 @@ private:
 
 class LongReadsExtensionChooser : public ExtensionChooser {
 public:
-    LongReadsExtensionChooser(const Graph& g, PathContainer& pc,
+    LongReadsExtensionChooser(const Graph& g,
+                              const GraphCoverageMap& read_paths_cov_map,
                               double filtering_threshold,
                               double weight_priority_threshold,
                               double unique_edge_priority_threshold,
@@ -842,12 +842,12 @@ public:
               filtering_threshold_(filtering_threshold),
               weight_priority_threshold_(weight_priority_threshold),
               min_significant_overlap_(min_significant_overlap),
-              cov_map_(g, pc),
+              cov_map_(read_paths_cov_map),
               unique_edge_analyzer_(g, cov_map_, filtering_threshold,
                                     unique_edge_priority_threshold,
                                     max_repeat_length, uneven_depth),
-              simple_scaffolding_(g) {
-
+              simple_scaffolding_(g)
+    {
     }
 
     /* Choose extension as correct only if we have reads that traverse a unique edge from the path and this extension.
@@ -922,6 +922,7 @@ public:
     }
 
 private:
+
     bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const {
         int int_pos = (int) pos;
         while (int_pos >= 0) {
@@ -941,454 +942,13 @@ private:
     double filtering_threshold_;
     double weight_priority_threshold_;
     size_t min_significant_overlap_;
-    const GraphCoverageMap cov_map_;
+    const GraphCoverageMap& cov_map_;
     LongReadsUniqueEdgeAnalyzer unique_edge_analyzer_;
     SimpleScaffolding simple_scaffolding_;
 
     DECL_LOGGER("LongReadsExtensionChooser");
 };
 
-class MatePairExtensionChooser : public ExtensionChooser {
-public:
-    MatePairExtensionChooser(const Graph& g, shared_ptr<PairedInfoLibrary> lib,
-                             const PathContainer& paths, size_t max_number_of_paths_to_search,
-                             bool uneven_depth)
-            : ExtensionChooser(g),
-              g_(g),
-              lib_(lib),
-              search_dist_(lib->GetISMax()),
-              weight_counter_(g, lib, 10),
-              cov_map_(g_, paths),
-              path_searcher_(g_, cov_map_, lib_->GetISMax(), PathsWeightCounter(g, lib, (size_t) lib->GetSingleThreshold()), max_number_of_paths_to_search),
-              //TODO params
-              unique_edge_analyzer_(g, cov_map_, 0., 1000., 8000., uneven_depth),
-              simple_scaffolder_(g) {
-    }
-
-    //Attention! Uses const_cast to modify path!!!
-    EdgeContainer Filter(const BidirectionalPath& path,
-                         const EdgeContainer& init_edges) const override {
-        DEBUG("mp chooser");
-        path.Print();
-        if (path.Length() < lib_->GetISMin()) {
-            return EdgeContainer();
-        }
-        EdgeContainer edges = TryResolveBulge(path, init_edges);
-        map<EdgeId, BidirectionalPath*> best_paths;
-        for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
-            BidirectionalPathSet following_paths = path_searcher_.FindNextPaths(path, edges[iedge].e_);
-            vector<BidirectionalPath*> max_weighted = MaxWeightedPath(path, following_paths);
-            if (max_weighted.size() == 0) {
-                DEBUG("too much paths or tip");
-                DeleteMapWithPaths(best_paths);
-                DeletePaths(following_paths);
-                best_paths.clear();
-                break;
-            } else {
-                best_paths[edges[iedge].e_] = new BidirectionalPath(*max_weighted[0]);
-            }
-            DeletePaths(following_paths);
-        }
-
-        BidirectionalPathSet next_paths;
-        if (edges.size() == 0) {
-            DEBUG("scaffolding edges size " << edges.size())
-            next_paths = path_searcher_.FindNextPaths(path, path.Back());
-        } else if (best_paths.size() == edges.size()) {
-            for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
-                if (best_paths.count(edges[iedge].e_) > 0){
-                    next_paths.insert(best_paths[edges[iedge].e_]);
-                }
-            }
-        }
-        EdgeContainer result = ChooseBest(path, next_paths);
-        if (result.size() != 1) {
-            DEBUG("scaffold tree");
-            result = ScaffoldTree(const_cast<BidirectionalPath&>(path));
-        }
-        DeletePaths(next_paths);
-        if (result.size() != 1) {
-            DEBUG("nobody can extend " << g_.int_id(path.Back()));
-        }
-        return result;
-    }
-
-private:
-    EdgeContainer ScaffoldTree(BidirectionalPath& path) const {
-        DEBUG("try scaffold tree");
-        vector<BidirectionalPath*> next_paths = path_searcher_.ScaffoldTree(path);
-        VERIFY(next_paths.size() <= 1);
-        EdgeContainer result;
-        if (!next_paths.empty() && next_paths.back()->Size() > 0) {
-            BidirectionalPath* res = next_paths.back();
-            for (size_t i = 0; i < res->Size() - 1; ++i) {
-                path.PushBack(res->At(i), res->GapAt(i), res->TrashPreviousAt(i), res->TrashCurrentAt(i));
-            }
-            result = EdgeContainer(1, EdgeWithDistance(res->Back(), res->GapAt(res->Size() - 1)));
-        }
-        DeletePaths(next_paths);
-        return result;
-    }
-
-    bool IsBulge(const EdgeContainer& edges) const {
-        if (edges.size() == 0)
-            return false;
-        for (EdgeWithDistance e : edges) {
-            if (!InBuble(e.e_, g_))
-                return false;
-        }
-        return true;
-    }
-
-    map<EdgeId, double> FindBulgeWeights(const BidirectionalPath& p, const EdgeContainer& edges) const {
-        map<EdgeId, double> result;
-        for (size_t i = 0; i < edges.size(); ++i) {
-            result[edges[i].e_] = 0.0;
-        }
-        for (size_t i = 0; i < p.Size(); ++i) {
-            bool common = true;
-            bool common_ideal = true;
-            for (EdgeWithDistance e : edges) {
-                common_ideal = common_ideal && weight_counter_.HasIdealPI(p.At(i), e.e_, (int) p.LengthAt(i));
-                common = common && weight_counter_.HasPI(p.At(i), e.e_, (int) p.LengthAt(i));
-            }
-            if (!common_ideal || common) {
-                continue;
-            }
-            for (size_t j = 0; j < edges.size(); ++j) {
-                result[edges[j].e_] += weight_counter_.PI(p.At(i), edges[j].e_, (int) p.LengthAt(i));
-            }
-        }
-        return result;
-    }
-
-    EdgeContainer TryResolveBulge(const BidirectionalPath& p, const EdgeContainer& edges) const {
-        if (!IsBulge(edges))
-            return edges;
-        map<EdgeId, double> weights = FindBulgeWeights(p, edges);
-        double max_w = 0.0;
-        EdgeContainer result;
-        for (EdgeWithDistance e : edges) {
-            double w = weights[e.e_];
-            DEBUG("bulge " << g_.int_id(e.e_) << " w = " << w);
-            if (math::gr(w, max_w)) {
-                max_w = w;
-                result.clear();
-                result.push_back(e);
-            } else if (math::eq(w, max_w)) {
-                result.push_back(e);
-            }
-        }
-        if (result.size() != 1) {
-            result = edges;
-        }
-        return result;
-    }
-
-    EdgeContainer ChooseBest(const BidirectionalPath& path, const BidirectionalPathSet& next_paths) const {
-        DEBUG("Try to choose from best paths...");
-        vector<BidirectionalPath*> best_path = MaxWeightedPath(path, next_paths);
-        EdgeContainer result;
-        if (best_path.size() == 1) {
-            result.push_back(EdgeWithDistance((*best_path.begin())->At(0), (*best_path.begin())->GapAt(0)));
-        } else if (best_path.size() > 1) {
-            result = TryToScaffold(path, best_path);
-        }
-        return result;
-    }
-
-    bool HasPIFromUniqueEdges(const BidirectionalPath& p1, const BidirectionalPath& p2, const set<size_t>& p1_unique_edges) const {
-        for (size_t i1 = 0; i1 < p1.Size(); ++i1) {
-            if (p1_unique_edges.find(i1) == p1_unique_edges.end()) {
-                continue;
-            }
-            for (size_t i2 = 0; i2 < p2.Size(); ++i2) {
-                int gap = (int) p1.LengthAt(i1) + (int) p2.Length() - (int) p2.LengthAt(i2);
-                if (unique_edge_analyzer_.IsUnique(p2.At(i2)) && weight_counter_.HasPI(p1.At(i1), p2.At(i2), gap)) {
-                    DEBUG("has unique edge " << g_.int_id(p1.At(i1)) << " " << g_.int_id(p2.At(i2)));
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    bool SignificallyDifferentEdges(const BidirectionalPath& init_path, const BidirectionalPath& path1, const map<size_t, double>& pi1,
-                                    const BidirectionalPath& path2, const map<size_t, double>& pi2, const set<size_t>& unique_init_edges) const {
-        double not_common_w1 = 0.0;
-        double common_w = 0.0;
-        for (auto iter = pi1.begin(); iter != pi1.end(); ++iter) {
-            auto iter2 = pi2.find(iter->first);
-            double w = 0.0;
-            if (iter2 != pi2.end() && !math::eq(iter2->second, 0.0)) {
-                w = min(iter2->second, iter->second);
-            }
-            not_common_w1 += iter->second - w;
-            common_w += w;
-        }
-        if (common_w < 0.8 * (not_common_w1 + common_w)
-                || (HasPIFromUniqueEdges(init_path, path1, unique_init_edges) && !HasPIFromUniqueEdges(init_path, path2, unique_init_edges))) {
-            DEBUG("common_w " << common_w << " sum * 0.8  = " << 0.8 * (not_common_w1 + common_w))
-            return true;
-        }
-        return false;
-    }
-
-    set<size_t> FindNotCommonEdges(const BidirectionalPath& path, const BidirectionalPathMap< map<size_t, double> >& all_pi) const {
-        set<size_t> res;
-        for (size_t i = 0; i < path.Size(); ++i) {
-            if (!unique_edge_analyzer_.IsUnique(path.At(i))) {
-                continue;
-            }
-            size_t pi_count = 0;
-            for (auto iter = all_pi.begin(); iter != all_pi.end(); ++iter) {
-                const map<size_t, double>& info = iter->second;
-                if (info.count(i) > 0 && math::gr(info.at(i), 0.0)) {
-                    pi_count++;
-                }
-            }
-            if (pi_count == 1)
-                res.insert(i);
-        }
-        return res;
-    }
-
-    void DeleteSmallWeights(const BidirectionalPath& path, BidirectionalPathSet& paths, BidirectionalPathMap< map<size_t, double> >& all_pi) const {
-        double max_weight = 0.0;
-        BidirectionalPath* max_path = NULL;
-        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            if ((*iter)->GetWeight() >= max_weight) {
-                max_weight = max(max_weight, (*iter)->GetWeight());
-                max_path = *iter;
-            }
-        }
-        BidirectionalPathSet to_del;
-        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            if (math::gr(max_weight, (*iter)->GetWeight() * 1.5) //TODO: move 1.5 to config
-                    && SignificallyDifferentEdges(path, *max_path, all_pi.find(max_path)->second, **iter, all_pi.find(*iter)->second,
-                                                  FindNotCommonEdges(path, all_pi)))
-                to_del.insert(*iter);
-        }
-        for (BidirectionalPath* p : to_del) {
-            paths.erase(p);
-            all_pi.erase(p);
-        }
-    }
-
-    void DeleteCommonPi(const BidirectionalPath& p, BidirectionalPathMap< map<size_t, double> >& all_pi) const {
-        weight_counter_.ClearCommonWeight();
-        for (size_t i = 0; i < p.Size(); ++i) {
-            double common = DBL_MAX;
-            for (auto iter = all_pi.begin(); iter != all_pi.end(); ++iter) {
-                common = iter->second.count(i) == 0 ? 0.0 : min(common, iter->second.at(i));
-            }
-            weight_counter_.SetCommonWeightFrom(i, common);
-        }
-    }
-
-    size_t FindCommonBegin(const BidirectionalPathSet& paths) const {
-        if (paths.size() == 0) {
-            return 0;
-        }
-        size_t common_begin = 0;
-        BidirectionalPath* p = *paths.begin();
-        while (common_begin < p->Size()) {
-            EdgeId e = p->At(common_begin);
-            for (BidirectionalPath* next : paths) {
-                if (common_begin >= next->Size() || next->At(common_begin) != e) {
-                    return common_begin;
-                }
-            }
-            common_begin++;
-        }
-        return common_begin;
-    }
-
-    void CountAllPairInfo(const BidirectionalPath& path, const BidirectionalPathSet& next_paths,
-                BidirectionalPathMap<map<size_t, double>>& result) const {
-        result.clear();
-        size_t common_begin = FindCommonBegin(next_paths);
-        DEBUG("common begin " << common_begin);
-        for (BidirectionalPath* next : next_paths) {
-            result[next] = weight_counter_.FindPairInfoFromPath(path, 0, path.Size(), *next, common_begin, next->Size());
-        }
-    }
-
-    void CountWeightsAndFilter(const BidirectionalPath& path, BidirectionalPathSet& next_paths, bool delete_small_w) const {
-        BidirectionalPathMap<map<size_t, double> > all_pi;
-        CountAllPairInfo(path, next_paths, all_pi);
-        DeleteCommonPi(path, all_pi);
-        for (BidirectionalPath* next : next_paths) {
-            next->SetWeight((float) weight_counter_.CountPairInfo(path, 0, path.Size(), *next, 0, next->Size()));
-        }
-        if (delete_small_w) {
-            DeleteSmallWeights(path, next_paths, all_pi);
-        }
-    }
-
-    struct PathWithWeightSort {
-        PathWithWeightSort(const MatePairExtensionChooser& mp_chooser, const BidirectionalPath& path, BidirectionalPathMap< map<size_t, double> >& all_pi)
-                : mp_chooser_(mp_chooser),
-                  path_(path),
-                  not_common_(mp_chooser_.FindNotCommonEdges(path_, all_pi)) {
-        }
-
-        bool operator()(const BidirectionalPath* p1, const BidirectionalPath* p2) {
-            if (mp_chooser_.HasPIFromUniqueEdges(path_, *p1, not_common_) && !mp_chooser_.HasPIFromUniqueEdges(path_, *p2, not_common_)) {
-                return true;
-            }
-            if (mp_chooser_.HasPIFromUniqueEdges(path_, *p2, not_common_) && !mp_chooser_.HasPIFromUniqueEdges(path_, *p1, not_common_)) {
-                return false;
-            }
-            if (!math::eq(p1->GetWeight(), p2->GetWeight())) {
-                return math::gr(p1->GetWeight(), p2->GetWeight());
-            }
-            if (!math::eq(p1->GetWeight(), p2->GetWeight())) {
-                return math::gr(p1->GetWeight(), p2->GetWeight());
-            }
-            if (p1->Length() != p2->Length()) {
-                return p1->Length() > p2->Length();
-            }
-            return p1->Size() > p2->Size();
-        }
-        const MatePairExtensionChooser& mp_chooser_;
-        const BidirectionalPath& path_;
-        const set<size_t> not_common_;
-    };
-
-    vector<BidirectionalPath*> SortResult(const BidirectionalPath& path, BidirectionalPathSet& next_paths) const {
-        BidirectionalPathMap< map<size_t, double> > all_pi;
-        CountAllPairInfo(path, next_paths, all_pi);
-        CountWeightsAndFilter(path, next_paths, false);
-        vector<BidirectionalPath*> to_sort(next_paths.begin(), next_paths.end());
-        PathWithWeightSort comparator(*this, path, all_pi);
-        std::sort(to_sort.begin(), to_sort.end(), comparator);
-        return to_sort;
-    }
-
-    vector<BidirectionalPath*> MaxWeightedPath(const BidirectionalPath& path, const BidirectionalPathSet& following_paths) const {
-        BidirectionalPathSet result(following_paths);
-        BidirectionalPathSet prev_result;
-        while (prev_result.size() != result.size()) {
-            prev_result = result;
-            DEBUG("iteration with paths " << result.size());
-            CountWeightsAndFilter(path, result, true);
-            if (result.size() == 0)
-                result = prev_result;
-            if (result.size() == 1)
-                break;
-        }
-        if (result.size() == 0) {
-            DEBUG("bad case");
-            return vector<BidirectionalPath*>();
-        }
-        return SortResult(path, result);
-    }
-
-    BidirectionalPath ChooseFromEnds(const BidirectionalPath& path, const vector<BidirectionalPath*>& paths, const BidirectionalPath& end) const { //TODO" rewrite
-        DEBUG("choose from ends " << paths.size());
-        end.Print();
-        vector<BidirectionalPath*> new_paths;
-        vector<BidirectionalPath*> paths_to_cover;
-        for (BidirectionalPath* p : paths) {
-            int from = 0;
-            int pos = p->FindFirst(end, from);
-            while (pos > -1) {
-                BidirectionalPath* new_p = new BidirectionalPath(path);
-                BidirectionalPath* new_end = new BidirectionalPath(p->SubPath(0, pos + end.Size()));
-                new_p->PushBack(*new_end);
-                new_paths.push_back(new_p);
-                paths_to_cover.push_back(new_end);
-                from = pos + 1;
-                pos = p->FindFirst(end, from);
-            }
-        }
-        BidirectionalPath max = **new_paths.begin();
-        size_t covered_edges_max = 0;
-        size_t min_size = max.Size();
-        for (BidirectionalPath* p : new_paths) {
-            size_t cov_edges = 0;
-            for (BidirectionalPath* e : paths_to_cover) {
-                vector<size_t> poses = p->FindAll(e->Back());
-                for (size_t pos : poses) {
-                    if (EqualBegins(*p, pos, *e, e->Size() - 1, true)) {
-                        cov_edges++;
-                        break;
-                    }
-                }
-            }
-            if (cov_edges > covered_edges_max || (cov_edges == covered_edges_max && min_size > p->Size())) {
-                DEBUG("cov_e " << cov_edges << " s " << p->Size());
-                max.Clear();
-                max.PushBack(*p);
-                covered_edges_max = cov_edges;
-                min_size = max.Size();
-            }
-        }
-        for (BidirectionalPath* p : new_paths) {
-            delete p;
-        }
-        for (BidirectionalPath* p : paths_to_cover) {
-            delete p;
-        }
-        BidirectionalPath result = max.SubPath(path.Size());
-        DEBUG("res");
-        result.Print();
-        return result;
-    }
-
-    int CheckPairInfo(const BidirectionalPath& path, const BidirectionalPath& result_end, int to_add) const {
-        while (to_add < (int)result_end.Size()) {
-            map<size_t, double> weights = weight_counter_.FindPairInfoFromPath(path, 0, path.Size(), result_end, to_add, to_add + 1);
-            double weight_to_edge = 0.0;
-            for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-                weight_to_edge += iter->second;
-            }
-            if (math::gr(weight_to_edge, 0.0)) {
-                break;
-            }
-            to_add++;
-        }
-        return to_add;
-    }
-
-    EdgeContainer TryToScaffold(const BidirectionalPath& path, const vector<BidirectionalPath*>& paths) const {
-        if (paths.size() == 0) {
-            return EdgeContainer();
-        }
-        DEBUG("Simple Scaffolding")
-        for (BidirectionalPath* p : paths) {
-            p->Print();
-        }
-        BidirectionalPath max_end = simple_scaffolder_.FindMaxCommonPath(paths, search_dist_);
-        if (max_end.Size() == 0) {
-            return EdgeContainer();
-        }
-        BidirectionalPath result_end = ChooseFromEnds(path, paths, max_end);
-        int to_add = result_end.FindFirst(max_end);
-        result_end.Print();
-        EdgeContainer result;
-        to_add = CheckPairInfo(path, result_end, to_add);
-        if (to_add < 0 || to_add >= (int) result_end.Size()) {
-            return EdgeContainer();
-        }
-        size_t gap_length = result_end.Length() - result_end.LengthAt(to_add);
-        DEBUG(" edge to add " << g_.int_id(result_end.At(to_add)) << " with length " << gap_length);
-        result.push_back(EdgeWithDistance(result_end.At(to_add), gap_length));
-        return result;
-    }
-
-    const Graph& g_;
-    shared_ptr<PairedInfoLibrary> lib_;
-    size_t search_dist_;
-    mutable PathsWeightCounter weight_counter_;
-    const GraphCoverageMap cov_map_;
-    NextPathSearcher path_searcher_;
-    LongReadsUniqueEdgeAnalyzer unique_edge_analyzer_;
-    SimpleScaffolding simple_scaffolder_;
-
-    DECL_LOGGER("MatePairExtensionChooser");
-};
 
 class CoordinatedCoverageExtensionChooser: public ExtensionChooser {
 public:

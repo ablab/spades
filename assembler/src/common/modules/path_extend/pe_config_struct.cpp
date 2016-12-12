@@ -147,6 +147,8 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
     load(p.scaffold_graph_params, pt, "scaffold_graph", complete);
     load(p.path_filtration, pt, "path_cleaning", complete);
     load(p.genome_consistency_checker, pt, "genome_consistency_checker", complete);
+    load(p.uniqueness_analyser, pt, "uniqueness_analyser", complete);
+    load(p.loop_traversal, pt, "loop_traversal", complete);
 }
 
 void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,

@@ -77,8 +77,8 @@ class ScaffoldingUniqueEdgeAnalyzer {
     bool FindCommonChildren(vector<pair<EdgeId, double>> &next_weights) const;
     bool FindCommonChildren(EdgeId from, size_t lib_index) const;
     map<EdgeId, size_t> FillNextEdgeVoting(BidirectionalPathMap<size_t>& active_paths, int direction) const;
-    bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config) const;
-    bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config, int direction) const;
+    bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap> long_reads_cov_map, const pe_config::LongReads lr_config) const;
+    bool ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap> long_reads_cov_map, const pe_config::LongReads lr_config, int direction) const;
     bool ConservativeByLength(EdgeId e);
     void CheckCorrectness(ScaffoldingUniqueEdgeStorage& unique_storage_pb);
 protected:
@@ -92,7 +92,7 @@ public:
     }
     void FillUniqueEdgeStorage(ScaffoldingUniqueEdgeStorage &storage_);
     void ClearLongEdgesWithPairedLib(size_t lib_index, ScaffoldingUniqueEdgeStorage &storage_) const;
-    void FillUniqueEdgesWithLongReads(shared_ptr<GraphCoverageMap>& long_reads_cov_map, ScaffoldingUniqueEdgeStorage& unique_storage_pb, const pe_config::LongReads lr_config);
+    void FillUniqueEdgesWithLongReads(shared_ptr<GraphCoverageMap> long_reads_cov_map, ScaffoldingUniqueEdgeStorage& unique_storage_pb, const pe_config::LongReads lr_config);
 };
 }
 

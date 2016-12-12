@@ -181,4 +181,9 @@ std::ostream& operator<< (std::ostream& os, const std::set<T>& set)
 
 }
 
+template<typename Base, typename T>
+inline bool instanceof(const T *ptr) {
+    return dynamic_cast<const Base *>(ptr) != nullptr;
+}
+
 #endif /* SIMPLE_TOOLS_HPP_ */

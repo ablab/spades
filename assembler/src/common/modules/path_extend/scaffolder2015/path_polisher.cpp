@@ -2,29 +2,12 @@
 #include "path_polisher.hpp"
 
 namespace path_extend {
-//Temporary copypaste while path_extend_launch is being blown up
-template<class Index>
-inline shared_ptr<PairedInfoLibrary> MakeNewPolisherLib(const config::dataset::Library& lib,
-                                                const conj_graph_pack::graph_t& g,
-                                                const Index& paired_index) {
-    size_t read_length = lib.data().read_length;
-    size_t is = (size_t) lib.data().mean_insert_size;
-    int is_min = (int) lib.data().insert_size_left_quantile;
-    int is_max = (int) lib.data().insert_size_right_quantile;
-    int var = (int) lib.data().insert_size_deviation;
-    bool is_mp = lib.type() == io::LibraryType::MatePairs ||  lib.type() == io::LibraryType::HQMatePairs ;
-    return make_shared< PairedInfoLibraryWithIndex<decltype(paired_index)> >(g.k(), g, read_length,
-                                                                             is, is_min > 0.0 ? size_t(is_min) : 0, is_max > 0.0 ? size_t(is_max) : 0,
-                                                                             size_t(var),
-                                                                             paired_index, is_mp,
-                                                                             lib.data().insert_size_distribution);
-}
 
-void PathPolisher::InfoAboutGaps(PathContainer & result){
+void PathPolisher::InfoAboutGaps(const PathContainer & result){
     for (const auto& p_iter: result) {
         for (size_t i = 1; i < p_iter.first->Size(); ++i) {
             if (p_iter.first->GapAt(i) > 0) {
-                INFO("Gap "<< p_iter.first->GapAt(i) << "left between " << gp_.g.int_id(p_iter.first->At(i-1)) << " and " << gp_.g.int_id(p_iter.first->At(i)));
+                DEBUG("Gap "<< p_iter.first->GapAt(i) << " left between " << gp_.g.int_id(p_iter.first->At(i-1)) << " and " << gp_.g.int_id(p_iter.first->At(i)));
             }
         }
     }
@@ -35,7 +18,7 @@ PathPolisher::PathPolisher(const conj_graph_pack& gp, const config::dataset& dat
     for (size_t i = 0; i <  dataset_info.reads.lib_count(); i++) {
         auto lib = dataset_info.reads[i];
         if (lib.type() == io::LibraryType::HQMatePairs || lib.type() == io::LibraryType::MatePairs) {
-            shared_ptr<PairedInfoLibrary> paired_lib = MakeNewPolisherLib(lib, gp.g, gp.paired_indices[i]);
+            shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp.g, lib, gp.paired_indices[i]);
             gap_closers.push_back(make_shared<MatePairGapCloser> (gp.g, max_resolvable_len, paired_lib, storage));
         }
     }
@@ -273,6 +256,7 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path, size_t index,
     }
 }
 
+//TODO: make shorter functions
 BidirectionalPath MatePairGapCloser::Polish(const BidirectionalPath& path) {
     BidirectionalPath result(g_);
     DEBUG("Path " << path.GetId() << " len "<< path.Length() << " size " << path.Size());

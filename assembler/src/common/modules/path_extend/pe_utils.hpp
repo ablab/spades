@@ -91,6 +91,17 @@ public:
 
     GraphCoverageMap(const Graph& g, const PathContainer& paths, bool subscribe = false) : g_(g), edgeCoverage_() {
         empty_ = new MapDataT();
+        AddPaths(paths, subscribe);
+    }
+
+    virtual ~GraphCoverageMap() {
+        delete empty_;
+        for (auto iter = edgeCoverage_.begin(); iter != edgeCoverage_.end(); ++iter) {
+            delete iter->second;
+        }
+    }
+
+    void AddPaths(const PathContainer& paths, bool subscribe = false) {
         for (size_t i = 0; i < paths.size(); ++i) {
             if (subscribe)
                 paths.Get(i)->Subscribe(this);
@@ -102,13 +113,6 @@ public:
             for (size_t j = 0; j < paths.GetConjugate(i)->Size(); ++j) {
                 EdgeAdded(paths.GetConjugate(i)->At(j), paths.GetConjugate(i), paths.GetConjugate(i)->GapAt(j));
             }
-        }
-    }
-
-    virtual ~GraphCoverageMap() {
-        delete empty_;
-        for (auto iter = edgeCoverage_.begin(); iter != edgeCoverage_.end(); ++iter) {
-            delete iter->second;
         }
     }
 

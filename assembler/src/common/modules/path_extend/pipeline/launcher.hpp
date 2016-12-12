@@ -34,18 +34,23 @@ private:
     const config::dataset& dataset_info_;
     const PathExtendParamsContainer& params_;
     const conj_graph_pack& gp_;
-
-    ScaffoldingUniqueEdgeStorage main_unique_storage_;
-    vector<ScaffoldingUniqueEdgeStorage*> unique_storages_;
+    PELaunchSupport support_;
 
     DefaultContigCorrector<ConjugateDeBruijnGraph> corrector_;
     DefaultContigConstructor<ConjugateDeBruijnGraph> constructor_;
     ContigWriter writer_;
 
-    size_t min_unique_length_;
-    double unique_variation_;
+    struct {
+        size_t min_unique_length_;
+        double unique_variation_;
 
-    void PrepareForRun() const;
+        ScaffoldingUniqueEdgeStorage main_unique_storage_;
+        vector<shared_ptr<ScaffoldingUniqueEdgeStorage>> unique_storages_;
+
+        ScaffoldingUniqueEdgeStorage unique_pb_storage_;
+        vector<shared_ptr<PathContainer>> long_reads_paths_;
+        vector<shared_ptr<GraphCoverageMap>> long_reads_cov_map_;
+    } unique_data_;
 
     vector<shared_ptr<ConnectionCondition>>
         ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage& edge_storage) const;
@@ -58,11 +63,19 @@ private:
                             const debruijn_graph::GenomeConsistenceChecker& genome_checker,
                             const string& filename) const;
 
-    void ScaffoldGraphConstruction() const;
+    void MakeAndOutputScaffoldGraph() const;
 
     void CountMisassembliesWithReference(const PathContainer& paths) const;
 
+    void EstimateUniqueEdgesParams();
+
     void FillUniqueEdgeStorage();
+
+    void FillPBUniqueEdgeStorages();
+
+    void FillPathContainer(size_t lib_index, size_t size_threshold = 1);
+
+    void FillLongReadsCoverageMaps();
 
     void DebugOutputPaths(const PathContainer& paths, const string& name) const;
 
@@ -74,7 +87,14 @@ private:
 
     void PolishPaths(const PathContainer &paths, PathContainer &result) const;
 
-    vector<shared_ptr<PathExtender>> ConstructExtenders(const GraphCoverageMap& cover_map);
+    Extenders ConstructExtenders(const GraphCoverageMap& cover_map);
+
+    Extenders ConstructMPExtenders(const ExtendersGenerator &generator);
+
+    Extenders ConstructMPExtender(const ExtendersGenerator &generator, size_t uniqe_edge_len);
+
+    Extenders ConstructPBExtenders(const ExtendersGenerator &generator);
+
 
 public:
 
@@ -84,18 +104,17 @@ public:
         dataset_info_(dataset_info),
         params_(params),
         gp_(gp),
-        main_unique_storage_(),
-        unique_storages_(),
+        support_(dataset_info, params),
         corrector_(gp.g),
         constructor_(gp.g, corrector_),
         writer_(gp.g, constructor_, gp_.components, params_.mode == config::pipeline_type::plasmid),
-        min_unique_length_(params.pset.scaffolding2015.unique_length_upper_bound),
-        unique_variation_(params.pset.uniqueness_analyser.unique_coverage_variation)
-    { }
+        unique_data_()
+    {
+        unique_data_.min_unique_length_ = params.pset.scaffolding2015.unique_length_upper_bound;
+        unique_data_.unique_variation_ = params.pset.uniqueness_analyser.unique_coverage_variation;
+    }
 
     ~PathExtendLauncher() {
-        for (auto storage : unique_storages_)
-            delete storage;
     }
 
     void Launch();

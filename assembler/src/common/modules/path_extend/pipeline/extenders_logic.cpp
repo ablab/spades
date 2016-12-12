@@ -9,30 +9,11 @@ namespace path_extend {
 
 using namespace debruijn_graph;
 
-void ExtendersGenerator::AddPathsToContainer(const std::vector<PathInfo<Graph>> &paths,
-                                             size_t size_threshold,
-                                             PathContainer &result) const {
-    for (const auto &path: paths) {
-        const auto &edges = path.getPath();
-        if (edges.size() <= size_threshold)
-            continue;
-
-        BidirectionalPath *new_path = new BidirectionalPath(gp_.g, edges);
-        BidirectionalPath *conj_path = new BidirectionalPath(new_path->Conjugate());
-        new_path->SetWeight((float) path.getWeight());
-        conj_path->SetWeight((float) path.getWeight());
-        result.AddPair(new_path, conj_path);
-    }
-    DEBUG("Long reads paths " << result.size() << " == ");
-}
-
-shared_ptr<ExtensionChooser> ExtendersGenerator::MakeLongReadsExtensionChooser(const config::dataset::Library &lib,
-                                                                               size_t lib_index) const {
-    PathContainer paths;
-    AddPathsToContainer(gp_.single_long_reads[lib_index].GetAllPaths(), 1, paths);
-
-    auto long_reads_config = support_.GetLongReadsConfig(lib.type());
-    return make_shared<LongReadsExtensionChooser>(gp_.g, paths, long_reads_config.filtering,
+shared_ptr<ExtensionChooser> ExtendersGenerator::MakeLongReadsExtensionChooser(size_t lib_index,
+                                                                               const GraphCoverageMap &read_paths_cov_map) const {
+    auto long_reads_config = support_.GetLongReadsConfig(dataset_info_.reads[lib_index].type());
+    return make_shared<LongReadsExtensionChooser>(gp_.g, read_paths_cov_map,
+                                                  long_reads_config.filtering,
                                                   long_reads_config.weight_priority,
                                                   long_reads_config.unique_edge_priority,
                                                   long_reads_config.min_significant_overlap,
@@ -40,18 +21,18 @@ shared_ptr<ExtensionChooser> ExtendersGenerator::MakeLongReadsExtensionChooser(c
                                                   params_.uneven_depth);
 }
 
-shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongReadsExtender(size_t lib_index) const {
+shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongReadsExtender(size_t lib_index,
+                                                                     const GraphCoverageMap &read_paths_cov_map) const {
     const auto &lib = dataset_info_.reads[lib_index];
     //TODO params
-    //FIXME what would you suggest?
     size_t resolvable_repeat_length_bound = 10000ul;
-    if (!lib.is_contig_lib()) {
+    if (!dataset_info_.reads[lib_index].is_contig_lib()) {
         resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().read_length);
     }
     INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
 
 
-    auto long_read_ec = MakeLongReadsExtensionChooser(lib, lib_index);
+    auto long_read_ec = MakeLongReadsExtensionChooser(lib_index, read_paths_cov_map);
     return make_shared<SimpleExtender>(gp_, cover_map_,
                                        long_read_ec,
                                        resolvable_repeat_length_bound,
@@ -114,7 +95,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeMetaExtender(size_t lib_index
 }
 
 
-shared_ptr<GapJoiner> ExtendersGenerator::MakeGapJoiners(shared_ptr<PairedInfoLibrary> paired_lib) const {
+shared_ptr<GapJoiner> ExtendersGenerator::MakeGapJoiners(double is_variation) const {
     const auto &pset = params_.pset;
 
     vector<shared_ptr<GapJoiner>> joiners;
@@ -134,9 +115,9 @@ shared_ptr<GapJoiner> ExtendersGenerator::MakeGapJoiners(shared_ptr<PairedInfoLi
                                                 joiners,
                                                 size_t(pset.scaffolder_options.max_can_overlap
                                                            * (double) gp_.g.k()), /* may overlap threshold */
-                                                int(math::round((double) gp_.g.k()
+                                                int(math::round(double(gp_.g.k())
                                                                     - pset.scaffolder_options.var_coeff
-                                                                        * (double) paired_lib->GetIsVar())),  /* must overlap threshold */
+                                                                        * is_variation)),  /* must overlap threshold */
                                                 pset.scaffolder_options.artificial_gap);
 
 }
@@ -154,7 +135,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldingExtender(size_t lib_
                                                                        pset.scaffolder_options.var_coeff);
 
     return make_shared<ScaffoldingPathExtender>(gp_, cover_map_, scaff_chooser,
-                                                MakeGapJoiners(paired_lib),
+                                                MakeGapJoiners(paired_lib->GetIsVar()),
                                                 paired_lib->GetISMax(),
                                                 pset.loop_removal.max_loops,
                                                 false, /* investigate short loops */
@@ -183,15 +164,14 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeRNAScaffoldingExtender(size_t l
     return make_shared<RNAScaffoldingPathExtender>(gp_, cover_map_,
                                                    scaff_chooser,
                                                    scaff_chooser2,
-                                                   MakeGapJoiners(paired_lib),
+                                                   MakeGapJoiners(paired_lib->GetIsVar()),
                                                    paired_lib->GetISMax(),
                                                    pset.loop_removal.max_loops,
                                                    false  /* investigate short loops */,
                                                    *pset.scaffolder_options.min_overlap_for_rna_scaffolding);
 }
 
-//FIXME rename!
-shared_ptr<PathExtender> ExtendersGenerator::MakeScaffolding2015Extender(
+shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(
     size_t lib_index,
     const ScaffoldingUniqueEdgeStorage &storage) const {
 
@@ -200,9 +180,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeScaffolding2015Extender(
     shared_ptr<PairedInfoLibrary> paired_lib;
     INFO("Creating Scaffolding 2015 extender for lib #" << lib_index);
 
-    //TODO:: temporary solution
-    //weird check!
-    //ANSWER: DimaA heritage, will fix
+    //FIXME: DimaA
     if (gp_.paired_indices[lib_index].size() > gp_.clustered_indices[lib_index].size()) {
         INFO("Paired unclustered indices not empty, using them");
         paired_lib = MakeNewLib(gp_.g, lib, gp_.paired_indices[lib_index]);
@@ -227,15 +205,9 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeScaffolding2015Extender(
                                                                 gp_.g.size()
                                                                     <= params_.pset.scaffolding2015.graph_connectivity_max_edges);
 
-    //TODO: should we switch to normal gap joiner?
-    auto gap_joiner = std::make_shared<HammingGapJoiner>(gp_.g, pset.scaffolder_options.min_gap_score,
-                                                         pset.scaffolder_options.short_overlap,
-                                                         (int) pset.scaffolder_options.basic_overlap_coeff
-                                                             * dataset_info_.RL());
-
     return make_shared<ScaffoldingPathExtender>(gp_, cover_map_,
                                                 scaff_chooser,
-                                                gap_joiner,
+                                                MakeGapJoiners(paired_lib->GetIsVar()),
                                                 paired_lib->GetISMax(),
                                                 pset.loop_removal.max_loops,
                                                 false, /* investigate short loops */
@@ -319,7 +291,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(
 }
 
 
-void ExtendersGenerator::PrintExtenders(Extenders &extenders) const {
+void ExtendersGenerator::PrintExtenders(const Extenders &extenders) const {
     DEBUG("Extenders in vector:");
     for (size_t i = 0; i < extenders.size(); ++i) {
         string type = typeid(*extenders[i]).name();
@@ -337,69 +309,29 @@ void ExtendersGenerator::PrintExtenders(Extenders &extenders) const {
     }
 }
 
-ExtendersGenerator::Extenders ExtendersGenerator::MakeMPExtenders(const ScaffoldingUniqueEdgeStorage &storage) const {
+Extenders ExtendersGenerator::MakeMPExtenders(const ScaffoldingUniqueEdgeStorage &storage) const {
+    ExtenderTriplets result;
 
-    vector<shared_ptr<PathExtender> > result;
-    size_t mp_libs = 0;
+    for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
+        const auto &lib = dataset_info_.reads[lib_index];
 
-    for (io::LibraryType lt : io::LibraryPriotity) {
-        for (size_t i = 0; i < dataset_info_.reads.lib_count(); ++i) {
-            const auto &lib = dataset_info_.reads[i];
-            if (lib.type() != lt)
-                continue;
-
-            if (lib.is_mate_pair()) {
-                ++mp_libs;
-                result.push_back(MakeScaffolding2015Extender(i, storage));
-            }
+        if (lib.is_mate_pair()) {
+            result.emplace_back(lib.type(), lib_index, MakeMatePairScaffoldingExtender(lib_index, storage));
         }
     }
-    PrintExtenders(result);
-    return result;
+    std::sort(result.begin(), result.end());
+
+    return ExtractExtenders(result);
 }
 
-//FIXME why all parameters non const?
-//To DimaA
-ExtendersGenerator::Extenders ExtendersGenerator::MakePBScaffoldingExtenders(ScaffoldingUniqueEdgeStorage &unique_storage_pb,
-                                                                             vector<PathContainer> &long_reads_paths,
-                                                                             vector<shared_ptr<GraphCoverageMap>> &long_reads_cov_map) const {
+Extenders ExtendersGenerator::MakePBScaffoldingExtenders(const ScaffoldingUniqueEdgeStorage &unique_storage_pb,
+                                                         const vector<shared_ptr<GraphCoverageMap>> &long_reads_cov_map) const {
     const auto &pset = params_.pset;
-    //FIXME magic constants
-    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer_pb(gp_, 500, 0.5);
-    Extenders result;
-    for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
-        AddPathsToContainer(gp_.single_long_reads[lib_index].GetAllPaths(), 1, long_reads_paths[lib_index]);
-        auto coverage_map = make_shared<GraphCoverageMap>(gp_.g, long_reads_paths[lib_index]);
-        long_reads_cov_map.push_back(coverage_map);
-    }
-    INFO("Filling backbone edges for long reads scaffolding ...");
-    if (params_.uneven_depth) {
-        INFO("with long reads paths.");
-        //TODO:: muiltiple libraries?
-        for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
-            if (dataset_info_.reads[lib_index].type() == io::LibraryType::TSLReads) {
-
-                unique_edge_analyzer_pb.FillUniqueEdgesWithLongReads(long_reads_cov_map[lib_index],
-                                                                     unique_storage_pb,
-                                                                     support_.GetLongReadsConfig(dataset_info_.reads[lib_index].type()));
-            }
-        }
-        INFO("removing fake unique wuth paired-end libs");
-        for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
-            if (dataset_info_.reads[lib_index].type() == io::LibraryType::PairedEnd) {
-                unique_edge_analyzer_pb.ClearLongEdgesWithPairedLib(lib_index, unique_storage_pb);
-            }
-        }
-
-    } else {
-        INFO("with coverage.")
-        unique_edge_analyzer_pb.FillUniqueEdgeStorage(unique_storage_pb);
-    }
-    INFO(unique_storage_pb.size() << " unique edges");
+    ExtenderTriplets result;
 
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
         if (support_.IsForSingleReadExtender(dataset_info_.reads[lib_index])) {
-            INFO("creating scaffolding extender for lib " << lib_index);
+            INFO("Creating scaffolding extender for lib " << lib_index);
             shared_ptr<ConnectionCondition> condition = make_shared<LongReadsLibConnectionCondition>(gp_.g,
                                                                                                      lib_index, 2,
                                                                                                      *long_reads_cov_map[lib_index]);
@@ -411,31 +343,40 @@ ExtendersGenerator::Extenders ExtendersGenerator::MakePBScaffoldingExtenders(Sca
                                                                         pset.scaffolder_options.var_coeff,
                                                                         pset.scaffolding2015.relative_weight_cutoff);
 
-            auto gap_joiner = std::make_shared<HammingGapJoiner>(gp_.g, pset.scaffolder_options.min_gap_score,
-                                                                 pset.scaffolder_options.short_overlap,
-                                                                 (int) pset.scaffolder_options.basic_overlap_coeff *
-                                                                     dataset_info_.RL());
-
-            result.push_back(make_shared<ScaffoldingPathExtender>(gp_, cover_map_,
-                                                                  scaff_chooser,
-                                                                  gap_joiner,
-                                                                  10000, /* insert size */
-                                                                  pset.loop_removal.max_loops,
-                                                                  false, /* investigate short loops */
-                                                                  params_.avoid_rc_connections,
-                                                                  false /* jump only from tips */));
+            result.emplace_back(dataset_info_.reads[lib_index].type(),
+                                lib_index,
+                                make_shared<ScaffoldingPathExtender>(gp_, cover_map_,
+                                                                     scaff_chooser,
+                                                                     MakeGapJoiners(1000), /* "IS vatiation" */
+                                                                     10000, /* insert size */
+                                                                     pset.loop_removal.max_loops,
+                                                                     false, /* investigate short loops */
+                                                                     params_.avoid_rc_connections,
+                                                                     false /* jump only from tips */));
 
         }
     }
+    INFO("Using " << result.size() << " mate-pair " << support_.LibStr(result.size()));
+    std::sort(result.begin(), result.end());
+
+    return ExtractExtenders(result);
+}
+
+
+Extenders ExtendersGenerator::MakeCoverageExtenders() const {
+    Extenders result;
+
+    INFO("Using additional coordinated coverage extender");
+    result.push_back(MakeCoordCoverageExtender(0 /* lib index */));
+
     return result;
 }
 
-ExtendersGenerator::Extenders ExtendersGenerator::MakeBasicExtenders(const ScaffoldingUniqueEdgeStorage &storage) const {
-    Extenders result;
-    Extenders pes;
-    Extenders pes2015;
-    Extenders pe_loops;
-    Extenders pe_scafs;
+Extenders ExtendersGenerator::MakeBasicExtenders(const ScaffoldingUniqueEdgeStorage &storage,
+                                                 const vector<shared_ptr<GraphCoverageMap>> &long_reads_cov_map) const {
+    ExtenderTriplets basic_extenders;
+    ExtenderTriplets loop_resolving_extenders;
+    ExtenderTriplets scaffolding_extenders;
 
     size_t single_read_libs = 0;
     size_t pe_libs = 0;
@@ -443,99 +384,68 @@ ExtendersGenerator::Extenders ExtendersGenerator::MakeBasicExtenders(const Scaff
 
     const auto &pset = params_.pset;
 
-    for (io::LibraryType lt : io::LibraryPriotity) {
-        for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
-            const auto &lib = dataset_info_.reads[lib_index];
-            if (lib.type() != lt)
-                continue;
+    for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
+        const auto &lib = dataset_info_.reads[lib_index];
 
-            //TODO: scaff2015 does not need any single read libs?
-            if (support_.IsForSingleReadExtender(lib)) {
-                result.push_back(MakeLongReadsExtender(lib_index));
-                ++single_read_libs;
-            }
-            if (support_.IsForPEExtender(lib)) {
-                ++pe_libs;
-                if (IsOldPEEnabled(pset.sm)) {
-                    if (params_.mode == config::pipeline_type::meta)
-                        //TODO proper configuration via config
-                        pes.push_back(MakeMetaExtender(lib_index, false));
-                    else if (params_.mode == config::pipeline_type::moleculo)
-                        pes.push_back(MakeLongEdgePEExtender(lib_index, false));
-                    else if (pset.multi_path_extend) {
-                        pes.push_back(MakePEExtender(lib_index, false));
-                        //TODO: Exclude from polishing stage
-                        pes.push_back(MakeRNAExtender(lib_index, false));
-                    }
-                    else
-                        pes.push_back(MakePEExtender(lib_index, false));
-                }
-                else if (pset.sm == sm_2015) {
-                    pes2015.push_back(MakeScaffolding2015Extender(lib_index, storage));
-                }
-            }
-            //FIXME logic is very cryptic!
-            if (support_.IsForShortLoopExtender(lib) && IsOldPEEnabled(pset.sm)) {
+        //TODO: scaff2015 does not need any single read libs?
+        if (support_.IsForSingleReadExtender(lib)) {
+            basic_extenders.emplace_back(lib.type(), lib_index, MakeLongReadsExtender(lib_index, *long_reads_cov_map[lib_index]));
+            ++single_read_libs;
+        }
+        if (support_.IsForPEExtender(lib)) {
+            ++pe_libs;
+            if (IsOldPEEnabled(pset.sm)) {
                 if (params_.mode == config::pipeline_type::meta)
-                    pes.push_back(MakeMetaExtender(lib_index, true));
+                    //TODO proper configuration via config
+                    basic_extenders.emplace_back(lib.type(), lib_index, MakeMetaExtender(lib_index, false));
+                else if (params_.mode == config::pipeline_type::moleculo)
+                    basic_extenders.emplace_back(lib.type(), lib_index, MakeLongEdgePEExtender(lib_index, false));
+                else if (pset.multi_path_extend) {
+                    basic_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, false));
+                    basic_extenders.emplace_back(lib.type(), lib_index, MakeRNAExtender(lib_index, false));
+                }
                 else
-                    pe_loops.push_back(MakePEExtender(lib_index, true));
-
+                    basic_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, false));
             }
-            if (support_.IsForScaffoldingExtender(lib) && params_.use_scaffolder
-                && pset.scaffolder_options.enabled) {
-                ++scf_pe_libs;
-                if (params_.mode == config::pipeline_type::rna) {
-                    pe_scafs.push_back(MakeRNAScaffoldingExtender(lib_index));
-                }
-                else {
-                    switch (pset.sm) {
-                        case sm_old: {
-                            pe_scafs.push_back(MakeScaffoldingExtender(lib_index));
-                            break;
-                        }
-                        case sm_old_pe_2015: {
-                            pe_scafs.push_back(MakeScaffoldingExtender(lib_index));
-                            break;
-                        }
-                        case sm_combined: {
-                            pe_scafs.push_back(MakeScaffoldingExtender(lib_index));
-                            pe_scafs.push_back(MakeScaffolding2015Extender(lib_index, storage));
-                            break;
-                        }
-                        default:
-                            break;
-                    }
-                }
+            else if (pset.sm == sm_2015) {
+                basic_extenders.emplace_back(lib.type(), lib_index, MakeMatePairScaffoldingExtender(lib_index, storage));
             }
+        }
+        //FIXME logic is very cryptic!
+        if (support_.IsForShortLoopExtender(lib) && IsOldPEEnabled(pset.sm)) {
+            if (params_.mode == config::pipeline_type::meta)
+                loop_resolving_extenders.emplace_back(lib.type(), lib_index, MakeMetaExtender(lib_index, true));
+            else
+                loop_resolving_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, true));
 
         }
-
-        //I added push_back_all method at some point, but not insist on using it
-        result.insert(result.end(), pes.begin(), pes.end());
-        result.insert(result.end(), pes2015.begin(), pes2015.end());
-        result.insert(result.end(), pe_scafs.begin(), pe_scafs.end());
-        //FIXME make scope variables
-        pes.clear();
-        pe_scafs.clear();
-        pes2015.clear();
-        //What about building a vector of triplets: <priority/lib#/extender> and sorting it?
-        //ANSWER: good idea
+        if (support_.IsForScaffoldingExtender(lib) && params_.use_scaffolder
+            && pset.scaffolder_options.enabled) {
+            ++scf_pe_libs;
+            if (params_.mode == config::pipeline_type::rna) {
+                scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeRNAScaffoldingExtender(lib_index));
+            }
+            else {
+                scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeScaffoldingExtender(lib_index));
+                if (pset.sm == sm_combined) {
+                    scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeMatePairScaffoldingExtender(lib_index, storage));
+                }
+            }
+        }
     }
 
-    result.insert(result.end(), pe_loops.begin(), pe_loops.end());
-    pe_loops.clear();
+    std::sort(basic_extenders.begin(), basic_extenders.end());
+    std::sort(scaffolding_extenders.begin(), scaffolding_extenders.end());
+    std::sort(loop_resolving_extenders.begin(), loop_resolving_extenders.end());
+
+    Extenders result;
+    push_back_all(result, ExtractExtenders(basic_extenders));
+    push_back_all(result, ExtractExtenders(scaffolding_extenders));
+    push_back_all(result, ExtractExtenders(loop_resolving_extenders));
 
     INFO("Using " << pe_libs << " paired-end " << support_.LibStr(pe_libs));
     INFO("Using " << scf_pe_libs << " paired-end scaffolding " << support_.LibStr(scf_pe_libs));
     INFO("Using " << single_read_libs << " single read " << support_.LibStr(single_read_libs));
-    INFO("Scaffolder is " << (pset.scaffolder_options.enabled ? "on" : "off"));
-
-
-    if (pset.use_coordinated_coverage) {
-        INFO("Using additional coordinated coverage extender");
-        result.push_back(MakeCoordCoverageExtender(0 /* lib index */));
-    }
 
     PrintExtenders(result);
     return result;

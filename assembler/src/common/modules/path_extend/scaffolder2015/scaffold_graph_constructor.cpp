@@ -8,11 +8,11 @@ namespace path_extend {
 namespace scaffold_graph {
 
 
-void BaseScaffoldGraphConstructor::ConstructFromEdgeConditions(const EdgeCondition &edge_condition,
+void BaseScaffoldGraphConstructor::ConstructFromEdgeConditions(func::TypedPredicate<typename Graph::EdgeId> edge_condition,
                                                            vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                                                            bool use_terminal_vertices_only) {
     for (auto e = graph_->AssemblyGraph().ConstEdgeBegin(); !e.IsEnd(); ++e) {
-        if (edge_condition.IsSuitable(*e)) {
+        if (edge_condition(*e)) {
             graph_->AddVertex(*e);
         }
     }

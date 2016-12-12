@@ -84,7 +84,7 @@ map<EdgeId, size_t> ScaffoldingUniqueEdgeAnalyzer::FillNextEdgeVoting(Bidirectio
     return voting;
 }
 
-bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config, int direction) const {
+bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap> long_reads_cov_map, const pe_config::LongReads lr_config, int direction) const {
     BidirectionalPathSet all_set = long_reads_cov_map->GetCoveringPaths(e);
     BidirectionalPathMap<size_t> active_paths;
     size_t loop_weight = 0;
@@ -139,7 +139,7 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<Gra
     return true;
 }
 
-bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap>& long_reads_cov_map, const pe_config::LongReads lr_config) const{
+bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap> long_reads_cov_map, const pe_config::LongReads lr_config) const{
     return (ConservativeByPaths(e, long_reads_cov_map, lr_config, 1) && ConservativeByPaths(e, long_reads_cov_map, lr_config, -1));
 }
 
@@ -247,7 +247,7 @@ void ScaffoldingUniqueEdgeAnalyzer::ClearLongEdgesWithPairedLib(size_t lib_index
 }
 
 
-void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(shared_ptr<GraphCoverageMap>& long_reads_cov_map, ScaffoldingUniqueEdgeStorage& unique_storage_pb, const pe_config::LongReads lr_config) {
+void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(shared_ptr<GraphCoverageMap> long_reads_cov_map, ScaffoldingUniqueEdgeStorage& unique_storage_pb, const pe_config::LongReads lr_config) {
     for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
         EdgeId e = *iter;
         if (ConservativeByLength(e) && ConservativeByPaths(e, long_reads_cov_map, lr_config)) {

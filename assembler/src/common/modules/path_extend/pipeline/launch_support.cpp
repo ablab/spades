@@ -17,8 +17,6 @@ bool PELaunchSupport::HasOnlyMPLibs() const {
     return true;
 }
 
-//maybe pass lib as const ref? But ok if always used as shared_ptr<> always
-//ANSWER: it is always shared_ptr
 pe_config::ParamSetT::ExtensionOptionsT PELaunchSupport::GetExtensionOpts(shared_ptr<PairedInfoLibrary> lib,
                                                                           const pe_config::ParamSetT& pset) const {
     return lib->IsMp() ? pset.mate_pair_options : pset.extension_options;
@@ -46,8 +44,7 @@ bool PELaunchSupport::IsForScaffoldingExtender(const io::SequencingLibrary<confi
     return (lib.type() == io::LibraryType::PairedEnd && lib.data().mean_insert_size > 0.0);
 }
 
-//What is it by the way?
-//ANSWER: used coverage loop resolver for nextera pipeline, will review it
+//TODO: review usage
 bool PELaunchSupport::UseCoverageResolverForSingleReads(const io::LibraryType& type) const {
     return HasOnlyMPLibs() && (type == io::LibraryType::HQMatePairs);
 }
@@ -65,5 +62,34 @@ pe_config::LongReads PELaunchSupport::GetLongReadsConfig(const io::LibraryType &
         return params_.pe_cfg.long_reads.contigs;
     }
     return params_.pe_cfg.long_reads.single_reads;
+}
+
+size_t PELaunchSupport::FindMaxMPIS() const {
+    size_t max_is = 0;
+    for (size_t i = 0; i < dataset_info_.reads.lib_count(); ++i) {
+        if (dataset_info_.reads[i].is_mate_pair()) {
+            max_is = max(max_is, (size_t) dataset_info_.reads[i].data().mean_insert_size);
+        }
+    }
+    return max_is;
+}
+bool PELaunchSupport::HasLongReads() const {
+    return path_extend::HasLongReads(dataset_info_);
+}
+bool PELaunchSupport::HasMPReads() const {
+    for (const auto& lib : dataset_info_.reads) {
+        if (lib.is_mate_pair()) {
+            return true;
+        }
+    }
+    return false;
+}
+bool PELaunchSupport::SingleReadsMapped() const {
+    for (const auto& lib : dataset_info_.reads) {
+        if (lib.data().single_reads_mapped) {
+            return true;
+        }
+    }
+    return false;
 }
 }

@@ -47,13 +47,16 @@ protected:
     bool FillWithMultiplePaths(const BidirectionalPath& path, size_t index,
                                        const omnigraph::PathStorageCallback<Graph>& path_storage,
                                        BidirectionalPath& result) const;
+
     bool FillWithBridge(const BidirectionalPath& path, size_t index,
                                                                   const omnigraph::PathStorageCallback<Graph>& path_storage,
                                                                   BidirectionalPath& result) const;
-    size_t MinPathSize(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
-    vector<EdgeId> LCP(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
-    std::map<EdgeId, size_t> CountEdgesQuantity(const omnigraph::PathStorageCallback<Graph>& path_storage, size_t length_limit) const;
 
+    size_t MinPathSize(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
+
+    vector<EdgeId> LCP(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
+
+    std::map<EdgeId, size_t> CountEdgesQuantity(const omnigraph::PathStorageCallback<Graph>& path_storage, size_t length_limit) const;
 
 public:
     DijkstraGapCloser(const Graph& g, size_t max_path_len):
@@ -62,13 +65,14 @@ public:
 
 };
 
-class PathPolisher{
+class PathPolisher {
 
-protected:
-
+private:
     const conj_graph_pack& gp_;
-    void InfoAboutGaps(PathContainer & result);
     vector<shared_ptr<PathGapCloser>> gap_closers;
+
+private:
+    void InfoAboutGaps(const PathContainer & result);
     BidirectionalPath Polish(const BidirectionalPath& path);
 
 public:
