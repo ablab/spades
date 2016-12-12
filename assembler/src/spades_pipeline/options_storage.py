@@ -339,7 +339,7 @@ def usage(spades_version, show_hidden=False, mode=None):
 
 def auto_K_allowed():
     return not k_mers and not single_cell and not iontorrent
-    # kmers were set by default, not SC, and not IonTorrent data, and not metagenomic
+    # kmers were set by default, not SC, and not IonTorrent data
 
 
 def set_default_values():
