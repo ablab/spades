@@ -445,6 +445,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         cfg["error_correction"].__dict__["iontorrent"] = options_storage.iontorrent
         if options_storage.meta or options_storage.large_genome:
             cfg["error_correction"].__dict__["count_filter_singletons"] = 1
+        if options_storage.read_buffer_size:
+            cfg["error_correction"].__dict__["read_buffer_size"] = options_storage.read_buffer_size
 
     # assembly
     if not options_storage.only_error_correction:

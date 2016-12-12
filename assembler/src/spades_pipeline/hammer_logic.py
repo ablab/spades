@@ -75,6 +75,8 @@ def prepare_config_bh(filename, cfg, log):
         subst_dict["input_qvoffset"] = cfg.qvoffset
     if "count_filter_singletons" in cfg.__dict__:
         subst_dict["count_filter_singletons"] = cfg.count_filter_singletons
+    if "read_buffer_size" in cfg.__dict__:
+        subst_dict["count_split_buffer"] = cfg.read_buffer_size
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
