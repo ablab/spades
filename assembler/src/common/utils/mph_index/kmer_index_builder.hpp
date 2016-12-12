@@ -349,7 +349,7 @@ private:
       }
 
       // Write it down!
-      KMerVector<Seq> buf(K, 32*1024*1024);
+      KMerVector<Seq> buf(K, 1024*1024);
       auto pval = tree.pop();
       size_t total = 0;
       while (!tree.empty()) {
