@@ -32,8 +32,10 @@ inline bool MetaCompatibleLibraries() {
         return false;
     if (libs.lib_count() > 2)
         return false;
-    if (libs.lib_count() == 2 && libs[1].type() != io::LibraryType::TSLReads)
-        return false;
+    if (libs.lib_count() == 2 &&
+        libs[1].type() != io::LibraryType::TSLReads &&
+        libs[1].type() != io::LibraryType::PacBioReads && libs[1].type() != io::LibraryType::NanoporeReads)
+            return false;
     return true;
 }
 

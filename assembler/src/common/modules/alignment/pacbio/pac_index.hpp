@@ -14,8 +14,10 @@
 // FIXME: Layering violation, get rid of this
 #include "pipeline/config_struct.hpp"
 #include "pacbio_read_structures.hpp"
+#include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 
 #include <algorithm>
+
 
 namespace pacbio {
 enum {
@@ -388,9 +390,13 @@ public:
     }
 
     bool TopologyGap(EdgeId first, EdgeId second, bool oriented) const {
-        bool res = (g_.IsDeadStart(g_.EdgeStart(first)) && g_.IsDeadEnd(g_.EdgeEnd(second)));
+        omnigraph::TerminalVertexCondition<Graph> condition(g_);
+//Todo:: suspicious order!
+        //bool res = (g_.IsDeadStart(g_.EdgeStart(first)) && g_.IsDeadEnd(g_.EdgeEnd(second)));
+        bool res = condition.Check(g_.EdgeStart(first)) && condition.Check(g_.EdgeEnd(second));
         if (!oriented)
-            res |= g_.IsDeadEnd(g_.EdgeEnd(first)) && g_.IsDeadStart(g_.EdgeStart(second));
+            res |= condition.Check(g_.EdgeEnd(first)) && condition.Check(g_.EdgeStart(second));
+        //    res |= g_.IsDeadEnd(g_.EdgeEnd(first)) && g_.IsDeadStart(g_.EdgeStart(second));
         return res;
     }
 
@@ -493,7 +499,7 @@ public:
         size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + pacbio_k;
         size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
         if (seq_start > seq_end) {
-            WARN("Overlapping flanks not supported yet");
+            INFO("Overlapping flanks not supported yet");
             return GapDescription();
         }
         return GapDescription(a.edgeId,

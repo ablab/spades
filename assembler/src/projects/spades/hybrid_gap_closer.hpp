@@ -564,7 +564,7 @@ private:
     const size_t max_flanking_region_length_;
 
     const GapDescription INVALID_GAP;
-
+    static const size_t MAX_CONSENSUS_READS = 20;
     string PrintLengths(const vector<string>& gap_seqs) const {
         stringstream ss;
         for (const auto& gap_v : gap_seqs)
@@ -578,7 +578,10 @@ private:
                                       size_t edge_gap_end_position,
                                       const vector<string>& gap_variants) const {
         DEBUG(gap_variants.size() << " gap closing variants, lengths: " << PrintLengths(gap_variants));
-        auto s = consensus_(gap_variants);
+        DEBUG("var size original " << gap_variants.size());
+        vector<string> new_gap_variants(gap_variants.begin(), gap_variants.end());
+        new_gap_variants.resize(std::min(MAX_CONSENSUS_READS, gap_variants.size()));
+        auto s = consensus_(new_gap_variants);
         DEBUG("consenus for " << g_.int_id(start)
                               << " and " << g_.int_id(end)
                               << " found: '" << s << "'");
