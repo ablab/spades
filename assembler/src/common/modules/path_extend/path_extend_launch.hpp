@@ -865,6 +865,7 @@ inline vector<shared_ptr<PathExtender>> MakePBScaffoldingExtenders( ScaffoldingU
                                                                         pset.scaffolder_options.var_coeff,
                                                                         pset.scaffolding2015.relative_weight_cutoff);
 
+            //FIXME is it ok to have a basic gap joiner here?
             auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
                                                                  pset.scaffolder_options.short_overlap,
                                                                  (int) pset.scaffolder_options.basic_overlap_coeff *
