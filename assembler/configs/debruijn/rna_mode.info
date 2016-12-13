@@ -33,17 +33,18 @@ simp
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
        ; to_ec_lb: max_ec_length = 2*tip_length(to_ec_lb) - 1
-       ; condition               "{ ec_lb 9, icb 40.0 }"
+       ; nbr: use not bulge erroneous connections remover 
+       ; condition               "{ ec_lb 9, icb 40.0, nbr }"
        condition               "{ ec_lb 30, icb 50 }"
     }
 
     ; relative coverage erroneous connections remover:
     rcec
-        {
+    {
             enabled true
             rcec_lb 30
             rcec_cb 0.5
-        }
+    }
 
     rcc
     {

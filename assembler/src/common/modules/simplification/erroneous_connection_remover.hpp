@@ -25,13 +25,6 @@
 
 namespace omnigraph {
 
-template<class Graph>
-func::TypedPredicate<typename Graph::EdgeId>
-NecessaryECCondition(const Graph& g, size_t max_length, double max_coverage) {
-    return AddAlternativesPresenceCondition(g, func::And(LengthUpperBound<Graph>(g, max_length),
-                                                        CoverageUpperBound<Graph>(g, max_coverage)));
-}
-
 //todo move to rnaSPAdes project
 template<class Graph>
 class RelativeCoverageECCondition: public EdgeCondition<Graph> {
@@ -125,6 +118,82 @@ inline bool IsSimpleBulge(const Graph &g, typename Graph::EdgeId e){
            edge_count >= 2;
 }
 
+template<class Graph>
+inline bool IsAlternativePathExist(const Graph &g, typename Graph::EdgeId e){
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(g, e);
+
+    VertexId start = g.EdgeStart(e);
+    TRACE("Start " << g.str(start));
+    VertexId end = g.EdgeEnd(e);
+    TRACE("End " << g.str(end));
+
+    ProcessPaths(g, 0, std::numeric_limits<std::size_t>::max(), start, end, path_chooser, std::numeric_limits<std::size_t>::max());
+
+    const vector<EdgeId>& path = path_chooser.most_covered_path();
+    double path_coverage = path_chooser.max_coverage();
+    if (!path.empty() && math::gr(path_coverage, 0.)) {
+        VERIFY(g.EdgeStart(path[0]) == start);
+        VERIFY(g.EdgeEnd(path.back()) == end);
+
+        return true;
+    }
+    else
+        return false;
+}
+
+template<class Graph>
+inline bool IsAlternativeInclusivePathExist(const Graph &g, typename Graph::EdgeId forbidden_edge, typename Graph::EdgeId compulsory_edge){
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(g, forbidden_edge);
+
+    VertexId start = g.EdgeStart(forbidden_edge);
+    TRACE("Start " << g.str(start));
+    VertexId end = g.EdgeEnd(forbidden_edge);
+    TRACE("End " << g.str(end));
+
+    ProcessPaths(g, 0, std::numeric_limits<std::size_t>::max(), start, end, path_chooser, std::numeric_limits<std::size_t>::max());
+
+    const vector<EdgeId>& path = path_chooser.most_covered_path();
+    double path_coverage = path_chooser.max_coverage();
+    if (!path.empty() && math::gr(path_coverage, 0.)) {
+        VERIFY(g.EdgeStart(path[0]) == start);
+        VERIFY(g.EdgeEnd(path.back()) == end);
+
+        if(std::find(path.begin(), path.end(), compulsory_edge) != path.end()){
+            return true;
+        }
+    }
+    return false;
+}
+
+template<class Graph>
+inline bool IsReachableBulge(const Graph &g, typename Graph::EdgeId e){
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    bool res = IsAlternativePathExist(g, e);
+    if(res)
+        return res;
+    else{
+        VertexId start = g.EdgeStart(e), end = g.EdgeEnd(e);
+        vector<EdgeId> incident;
+        push_back_all(incident, g.IncomingEdges(end));
+        push_back_all(incident, g.OutgoingEdges(start));
+        for (auto it = incident.begin(); it != incident.end(); ++it){
+            res = IsAlternativeInclusivePathExist(g, *it, e);
+            if(res){
+                return res;
+            }
+        }
+    }
+    return false;
+}
+
 //todo move to rnaSPAdes project
 template<class Graph>
 class NotBulgeECCondition : public EdgeCondition<Graph> {
@@ -147,8 +216,12 @@ public:
                  << " outgoing s = " << this->g().OutgoingEdgeCount(this->g().EdgeStart(e))
                  << " incoming e = " << this->g().IncomingEdgeCount(this->g().EdgeEnd(e)));
         }
-        return !IsSimpleBulge(this->g(), e);
+//        return !IsSimpleBulge(this->g(), e);
+        return !IsReachableBulge(this->g(), e);
     }
+
+private:
+    DECL_LOGGER("NotBulgeECCondition");
 
 };
 

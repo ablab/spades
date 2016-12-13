@@ -178,6 +178,8 @@ private:
             DEBUG("Creating iterative coverage upper bound " << cov_bound);
             RelaxMin(min_coverage_bound, cov_bound);
             return CoverageUpperBound<Graph>(g_, cov_bound);
+        } else if (next_token_ == "nbr") {
+            return NotBulgeECCondition<Graph>(g_);
         } else if (next_token_ == "rctc") {
             ReadNext();
             DEBUG("Creating relative cov tip cond " << next_token_);
@@ -533,35 +535,6 @@ func::TypedPredicate<typename Graph::EdgeId> NecessaryTipCondition(const Graph &
 }
 
 template<class Graph>
-func::TypedPredicate<typename Graph::EdgeId> NecessaryECCondition(const Graph &g,
-                                                                 const config::debruijn_config::simplification::erroneous_connections_remover &ec_config,
-                                                                 const SimplifInfoContainer &info,
-                                                                 size_t current_iteration = 0,
-                                                                 size_t iteration_cnt = 1) {
-    ConditionParser<Graph> parser(g, ec_config.condition, info, current_iteration, iteration_cnt);
-    auto condition = parser();
-    return omnigraph::NecessaryECCondition(g, parser.max_length_bound(),
-                                           parser.max_coverage_bound());
-}
-
-template<class Graph>
-AlgoPtr<Graph> ECRemoverInstance(Graph &g,
-                                 const config::debruijn_config::simplification::erroneous_connections_remover &ec_config,
-                                 const SimplifInfoContainer &info,
-                                 EdgeRemovalHandlerF<Graph> removal_handler = nullptr,
-                                 size_t iteration_cnt = 1) {
-    if (ec_config.condition.empty())
-        return nullptr;
-
-    auto candidate_finder = std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(
-                                          NecessaryECCondition(g, ec_config, info, iteration_cnt - 1, iteration_cnt),
-                                          info.chunk_cnt());
-    return std::make_shared<LowCoverageEdgeRemovingAlgorithm<Graph>>(
-            g, candidate_finder, info, ec_config.condition, removal_handler,
-            /*canonical only*/ true, /*track changes*/ true, iteration_cnt);
-}
-
-template<class Graph>
 AlgoPtr<Graph> RelativeECRemoverInstance(Graph &g,
                                          const config::debruijn_config::simplification::relative_coverage_ec_remover &rcec_config,
                                          const SimplifInfoContainer &info,
@@ -578,23 +551,18 @@ AlgoPtr<Graph> RelativeECRemoverInstance(Graph &g,
 }
 
 template<class Graph>
-AlgoPtr<Graph> NotBulgeECRemoverInstance(Graph &g,
-                                         const config::debruijn_config::simplification::erroneous_connections_remover &ec_config,
-                                         const SimplifInfoContainer &info, EdgeRemovalHandlerF<Graph> removal_handler,
-                                         size_t iteration_cnt = 1) {
+AlgoPtr<Graph> ECRemoverInstance(Graph &g,
+                                 const config::debruijn_config::simplification::erroneous_connections_remover &ec_config,
+                                 const SimplifInfoContainer &info,
+                                 EdgeRemovalHandlerF<Graph> removal_handler,
+                                 size_t iteration_cnt = 1) {
     if (ec_config.condition.empty())
         return nullptr;
 
-    std::string curr_condition = ec_config.condition;
-    ConditionParser<Graph> parser(g, curr_condition, info, iteration_cnt - 1, iteration_cnt);
+    ConditionParser<Graph> parser(g, ec_config.condition, info, iteration_cnt - 1, iteration_cnt);
     auto condition = parser();
 
-    auto interesting_finder =
-            std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(g,
-                                                  AddNotBulgeECCondition(g, AddAlternativesPresenceCondition(g, func::And(
-                                                  LengthUpperBound<Graph>(g, parser.max_length_bound()),
-                                                  CoverageUpperBound<Graph>(g, parser.max_coverage_bound())))),
-                                          info.chunk_cnt());
+    auto interesting_finder = std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(AddAlternativesPresenceCondition(g, condition), info.chunk_cnt());
     return std::make_shared<LowCoverageEdgeRemovingAlgorithm<Graph>>(
             g, interesting_finder, info, ec_config.condition, removal_handler,
             /*canonical only*/ true, /*track changes*/ true, iteration_cnt);
