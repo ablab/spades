@@ -175,7 +175,6 @@ public:
         }
 
         if (!CheckLoopPlausible(path.Back(), edges.first) && maxIter > 0) {
-            path.PushBack(edges.first);
             path.PushBack(edges.second, int(g_.k() + 100));
         }
         else {
