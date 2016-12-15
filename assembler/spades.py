@@ -236,16 +236,12 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         elif opt == "--sc":
             options_storage.single_cell = True
         elif opt == "--meta":
-            #FIXME temporary solution
-            options_storage.single_cell = True
             options_storage.meta = True
         elif opt == "--large-genome":
             options_storage.large_genome = True
         elif opt == "--plasmid":
             options_storage.plasmid = True
         elif opt == "--rna":
-            #FIXME temporary solution
-            options_storage.single_cell = True
             options_storage.rna = True
         elif opt == "--iontorrent":
             options_storage.iontorrent = True
