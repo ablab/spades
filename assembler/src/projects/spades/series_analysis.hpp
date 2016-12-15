@@ -5,6 +5,7 @@
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "modules/simplification/tip_clipper.hpp"
 #include "projects/mts/contig_abundance.hpp"
+#include "io/reads/osequencestream.hpp"
 
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"
@@ -17,7 +18,7 @@ struct SeriesAnalysisConfig {
     uint frag_size;
     uint min_len;
 
-    std::string kmer_mult, bin, bin_prof, edges_mpl, edge_fragments_mpl;
+    std::string kmer_mult, bin, bin_prof, edges_sqn, edges_mpl, edge_fragments_mpl;
 };
 
 }
@@ -32,6 +33,7 @@ template<> struct MappingTraits<debruijn_graph::SeriesAnalysisConfig> {
         io.mapRequired("bin", cfg.bin);
         io.mapRequired("bin_prof", cfg.bin_prof);
         io.mapRequired("min_len", cfg.min_len);
+        io.mapRequired("edges_sqn", cfg.edges_sqn);
         io.mapRequired("edges_mpl", cfg.edges_mpl);
         io.mapRequired("edge_fragments_mpl", cfg.edge_fragments_mpl);
         io.mapRequired("frag_size", cfg.frag_size);
@@ -244,8 +246,7 @@ public:
         INFO("Series analysis enabled with config " << cfg);
 
         auto Buf = llvm::MemoryBuffer::getFile(cfg);
-        if (!Buf)
-            throw std::string("Failed to load config file " + cfg);
+        VERIFY_MSG(Buf, "Failed to load config file " + cfg);
 
         llvm::yaml::Input yin(*Buf.get());
         SeriesAnalysisConfig config;
@@ -260,6 +261,15 @@ public:
         DEBUG("Initiating abundance counter");
         abundance_counter.Init(config.kmer_mult);
         DEBUG("Abundance counter ready");
+
+        if (!config.edges_sqn.empty()) {
+            io::osequencestream oss(config.edges_sqn);
+            for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+                EdgeId e = *it;
+                string s = gp.g.EdgeNucls(e).str();
+                oss << io::SingleRead(io::MakeContigId(gp.g.int_id(e), s.size()), s);
+            }
+        }
 
         if (!config.edges_mpl.empty()) {
             ofstream os(config.edges_mpl);

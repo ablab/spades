@@ -21,9 +21,14 @@ except KeyError:
 CAGS, = glob_wildcards("binning/{cag,CAG\d+}/left.fastq")
 CAGS.sort()
 
+CAG_EDGES = [c + "_edges" for c in CAGS]
+
 #Detect references
 REFS = dict(gather_refs(config.get("REFS", [])))
 ALL_REFS = ",".join(path for path in REFS.values())
+
+FRAGMENT_NAMES_BY_TYPE = {"reassembly": CAG_EDGES,
+                          "initial_assembly": list(GROUPS.keys())}
 
 def ref_path(wildcards):
     return REFS[wildcards.ref]
@@ -46,29 +51,39 @@ onstart:
 #---- Single alignments for samples per reference -------------------------------
 #TODO: use alignments from meta version instead
 rule quast_all_samples:
-    input:   ref=ref_path, contigs=expand("assembly/{sample}.fasta", sample=GROUPS)
-    output:  "stats/summary/q_{ref}.tsv"
-    params:  "stats/{ref}"
-    log:     "stats/{ref}/quast.log"
+    input:   ref_fn=ref_path, contigs=expand("assembly/{sample}.fasta", sample=GROUPS)
+    output:  summary_tsv="stats/summary/q_{ref}.tsv", report="stats/initial_assembly/{ref}/report.txt"
+    params:  "stats/initial_assembly/{ref}"
+    log:     "stats/initial_assembly/{ref}/quast.log"
+    threads: THREADS
     message: "Aligning all samples on {wildcards.ref}"
-    shell:   "{QUAST} -R {input.ref} {input.contigs} -o {params} >/dev/null 2>&1 && "
+    shell:   "{QUAST} -t {threads} -R {input.ref_fn} {input.contigs} -o {params} >/dev/null 2>&1 && "
+             "cp {params}/report.tsv {output.summary_tsv}"
+
+rule quast_all_reassemblies:
+    input:   ref=ref_path, fragments=expand("profile/{cag_edges}.fasta", cag_edges=CAG_EDGES)
+    output:  "stats/reassembly/{ref}/report.txt"
+    params:  "stats/reassembly/{ref}"
+    log:     "stats/reassembly/{ref}/quast.log"
+    threads: THREADS
+    message: "Aligning all samples on {wildcards.ref}"
+    shell:   "{QUAST} -t {threads} -R {input.ref} {input.fragments} -o {params} >/dev/null 2>&1 && "
              "cp {params}/report.tsv {output}"
 
 #---- Contigs of interest ------------------------------------------------------
-rule filter_all_samples:
-    input:   "stats/summary/q_{ref}.tsv"
-    output:  expand("stats/{{ref}}/{sample}.cont", sample=GROUPS)
-    message: "Filtering interesting long contigs from all samples for {wildcards.ref}"
-    params:  "stats/{ref}/"
-    shell:   "{SCRIPTS}/filter_nucmer.py {params} {MIN_CONTIG_LENGTH} 70"
+rule filter_ref_alignments:
+    input:   "{path}/report.txt"
+    output:  "{path}/{fragments}.info"
+    params:  "{path}/contigs_reports/nucmer_output/{fragments}.coords.filtered"
+    shell:   "if [ -f {params} ] ; then {SCRIPTS}/filter_nucmer.py {params} {output} {MIN_CONTIG_LENGTH} 70 ; else touch {output} ; fi"
 
 #---- GF of combined sample ----------------------------------------------------
-rule combine_filtered:
-    input:   contigs=expand("assembly/{sample}.fasta", sample=GROUPS),
-             filters=expand("stats/{{ref}}/{sample}.cont", sample=GROUPS)
-    output:  "stats/{ref}.fasta"
-    message: "Gathering all interesting contigs for {wildcards.ref} into a single assembly"
-    shell:   "{SCRIPTS}/filter_contigs.py {SAMPLE_COUNT} {output} {input.contigs} {input.filters}"
+#rule combine_filtered:
+#    input:   contigs=expand("assembly/{sample}.fasta", sample=GROUPS),
+#             filters=expand("stats/{{ref}}/{sample}.cont", sample=GROUPS)
+#    output:  "stats/{ref}.fasta"
+#    message: "Gathering all interesting contigs for {wildcards.ref} into a single assembly"
+#    shell:   "{SCRIPTS}/filter_contigs.py {SAMPLE_COUNT} {output} {input.contigs} {input.filters}"
 
 rule quast_combined:
     input:   ref=ref_path, contigs="stats/{ref}.fasta"
@@ -84,10 +99,9 @@ rule quast_combined_all:
     input:   expand("stats/q_{ref}_all/report.tsv", ref=REFS)
     message: "Calculated QUAST metrics on all combined samples"
 
-
 #---- Bins of interest ---------------------------------------------------------
 rule int_bins:
-    input:   "annotation/{sample}.ann", "stats/{ref}/{sample}.cont"
+    input:   "annotation/{sample}.ann", "stats/{ref}/{sample}.info"
     output:  "stats/{ref}/{sample}.bin"
     message: "Filtering interesting bins for {wildcards.sample} aligned to {wildcards.ref}"
     shell:   "{SCRIPTS}/filter_bins.py {input} > {output}"
@@ -164,14 +178,16 @@ rule quast_stats:
 
 # Run this AFTER 'all'
 rule stats_all:
-    input:   expand("stats/summary/gf_{bin}_{prop}.tsv", bin=["bin"], prop=["prelim", "prop"])
+    input:   expand("stats/summary/gf_{bin}_{prop}.tsv", bin=["bin"], prop=["prelim", "prop"]), 
+             "stats/initial_assembly/total.cont"
     message: "Gathered some numbers, deal with them."
 
 #---- Reassembly statistics ----------------------------------------------------
 
 # Run this AFTER 'reassembly_all'
 rule stats_reassembly:
-    input:   "stats/summary/gf_reassembly.tsv"
+    input:   "stats/summary/gf_reassembly.tsv",
+             "stats/reassembly/total.cont"
     output:  "stats/summary/reassembly.tsv"
     params:  "stats/q_reassembly"
     message: "Gathered bins stats"
@@ -230,15 +246,22 @@ rule pca:
     shell:
         "Rscript {SCRIPTS}/pca.R {input} {output}"
 
-rule combine_contigs:
-    input:   expand("stats/{ref}/{sample}.cont", sample=GROUPS, ref=REFS)
-    output:  "stats/total.cont"
-    message: "Combining interesting contigs for all samples/references"
+def fragments_info_by_assembly_type(wildcards):
+    frags=FRAGMENT_NAMES_BY_TYPE[wildcards.assembly_type]
+    return expand("stats/{assembly_type}/{ref}/{fragments}.info", assembly_type=wildcards.assembly_type, ref=wildcards.ref, fragments=frags)
+
+rule combine_fragments_info:
+    input:  fragments_info_by_assembly_type 
+    output: "stats/{assembly_type}/{ref}/ref.cont"
+    shell: "rm -rf {output}; for f in {input}; do name=$(basename $f .info); cat $f | sed 's/^/'$name'-/g' >> {output} ; done"
+
+rule combine_refs_info:
+    input:  expand("stats/{{assembly_type}}/{ref}/ref.cont", ref=list(REFS.keys()))
+    output:  "stats/{assembly_type}/total.cont"
     run:
-        shell("rm -f {output}")
-        for sample in GROUPS:
-            for ref in REFS:
-                shell("awk '{{print $0 \"\t{ref}\"}}' stats/{ref}/{sample}.cont >> {output}")
+        shell("rm -rf {output}")
+        for ref in REFS.keys():
+            shell("awk '{{print $0 \"\t{ref}\"}}' stats/{wildcards.assembly_type}/{ref}/ref.cont >> {output}")
 
 # Run this
 rule pca_total:

@@ -70,3 +70,4 @@ with cd(exec_dir):
     
         print("Step #2b - Reassembly statistics")
         call_snake(["--snakefile", "Stats.snake", "stats_reassembly"])
+

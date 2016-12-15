@@ -155,6 +155,7 @@ rule reassembly_config:
             conf = {"k": SMALL_K, "sample_cnt": SAMPLE_COUNT,
                     "kmer_mult": str(rules.multiplicities.params.out),
                     "bin": wildcards.cag, "bin_prof": str(rules.canopy.output.prof),
+                    "edges_sqn": "profile/{}_edges.fasta".format(wildcards.cag),
                     "edges_mpl": "profile/{}_edges.mpl".format(wildcards.cag),
                     "edge_fragments_mpl": "profile/{}_edges_frag.mpl".format(wildcards.cag),
                     "frag_size": 10000, "min_len": 100}
