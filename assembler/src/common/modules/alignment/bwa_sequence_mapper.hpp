@@ -8,6 +8,7 @@
 
 #include "sequence_mapper.hpp"
 #include "bwa_index.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
 
 namespace alignment {
   
@@ -20,11 +21,13 @@ public:
             : debruijn_graph::AbstractSequenceMapper<Graph>(g),
             index_(g) {}
 
-    MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
+    omnigraph::MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
         return index_.AlignSequence(sequence);
     }
 
-    ~BWAReadMapper() {}
+    ~BWAReadMapper() {
+        INFO("bwa mapper closing");
+    }
 
     BWAIndex index_;
 };

@@ -34,7 +34,7 @@ MappingPath<typename Graph::EdgeId> ConjugateMapping(const Graph& g,
         auto e = p.first;
         MappingRange mr = p.second;
         answer.push_back(g.conjugate(e), 
-                        MappingRange(mr.initial_range.Invert(sequence_length - g.k()), 
+                        MappingRange(mr.initial_range.Invert(sequence_length - g.k()),
                         mr.mapped_range.Invert(g.length(e))));
     }
     return answer;

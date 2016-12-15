@@ -266,25 +266,29 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
     for (size_t i = 0; i < ar.n; ++i) {
         const mem_alnreg_t &a = ar.a[i];
         if (a.secondary >= 0) continue; // skip secondary alignments
-        if (a.qe - a.qb + 1 < g_.k()) continue; // skip short alignments
-
+        if (a.qe - a.qb < g_.k()) continue; // skip short alignments
+        if (a.re - a.rb < g_.k()) continue;
         int is_rev = 0;
         size_t pos = bns_depos(idx_->bns, a.rb < idx_->bns->l_pac? a.rb : a.re - 1, &is_rev) - idx_->bns->anns[a.rid].offset;
-        fprintf(stderr, "%zu: [%lld, %lld]\t[%d, %d] %c %d %s %ld %zu\n",
+/*        fprintf(stderr, "%zu: [%lld, %lld]\t[%d, %d] %c %d %s %ld %zu\n",
                 i,
                 a.rb, a.re, a.qb, a.qe,
                 "+-"[is_rev], a.rid,
                 idx_->bns->anns[a.rid].name, g_.int_id(ids_[a.rid]), pos);
-
+*/
         // FIXME: Check this!
         if (!is_rev) {
             res.push_back(ids_[a.rid],
                           { { (size_t)a.qb, a.qe - g_.k() },
-                            { pos, pos + (a.re - a.rb + 1)}});
+                            { pos, pos + (a.re - a.rb - g_.k())}});
         } else {
+//            fprintf (stderr,"%d %d %d\n", a.qb, a.qe  - g_.k(), seq.length() - g_.k());
+
+//            fprintf (stderr,"%d %d %d\n", pos, pos + a.re - a.rb , g_.length(ids_[a.rid]) );
+
             res.push_back(g_.conjugate(ids_[a.rid]),
-                          { omnigraph::Range(a.qb, a.qe - g_.k()).Invert(seq.length() - g_.k()),
-                            omnigraph::Range(pos, pos + (a.re - a.rb + 1)).Invert(g_.length(ids_[a.rid])) });
+                          { omnigraph::Range(a.qb, a.qe  - g_.k()).Invert(seq.length() - g_.k()),
+                            omnigraph::Range(pos, pos + (a.re - a.rb - g_.k()) ).Invert(g_.length(ids_[a.rid])) });
 
         }
 
