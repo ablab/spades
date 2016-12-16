@@ -48,8 +48,8 @@ namespace debruijn_graph {
             EdgeId prev_edge(0);
             bool found = false;
             for (auto edge: g.IncomingEdges(cur_vertex)) {
-                if (dijkstra.DistanceCounted(g.EdgeStart(edge))) if (
-                        suffix_len + g.length(edge) + dijkstra.GetDistance(g.EdgeStart(edge)) <= dist) {
+                if ((dijkstra.DistanceCounted(g.EdgeStart(edge))) && (
+                        suffix_len + g.length(edge) + dijkstra.GetDistance(g.EdgeStart(edge)) <= dist)) {
                     if (found == true) {
                         std::reverse(res.begin(), res.end());
                         return res;
@@ -82,7 +82,7 @@ namespace debruijn_graph {
         omnigraph::PathStorageCallback<Graph> callback(g);
         ProcessPaths(g,
                      min_dist,
-                     max_dist, //0, *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var),
+                     max_dist,
                      g.EdgeEnd(e1), g.EdgeStart(e2),
                      callback);
         auto paths = callback.paths();
@@ -113,9 +113,7 @@ namespace debruijn_graph {
         vector<Sequence> path_sequences;
         path_sequences.push_back(g.EdgeNucls(continuous_path[0]));
         for (size_t i = 1; i < continuous_path.size(); ++i) {
-            VERIFY(
-                    g.EdgeEnd(continuous_path[i - 1])
-                    == g.EdgeStart(continuous_path[i]));
+            VERIFY(g.EdgeEnd(continuous_path[i - 1]) == g.EdgeStart(continuous_path[i]));
             path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
         }
         return MergeOverlappingSequences(path_sequences, g.k());
@@ -125,8 +123,7 @@ namespace debruijn_graph {
     Sequence PathSequence(const Graph &g, const omnigraph::Path<typename Graph::EdgeId> &path) {
         Sequence path_sequence = MergeSequences(g, path.sequence());
         size_t start = path.start_pos();
-        size_t end = path_sequence.size()
-                     - g.length(path[path.size() - 1]) + path.end_pos();
+        size_t end = path_sequence.size() - g.length(path[path.size() - 1]) + path.end_pos();
         return path_sequence.Subseq(start, end);
     }
 
