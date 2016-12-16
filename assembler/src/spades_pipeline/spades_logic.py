@@ -133,7 +133,7 @@ def add_configs(command, configs_dir):
     for (mode, config) in mode_config_mapping:
         if options_storage.__dict__[mode]:
             if mode == "rna" or mode == "meta":
-                command.append(os.path.join(configs_dir, "mda_mode" + ".info"))
+                command.append(os.path.join(configs_dir, "mda_mode.info"))
             command.append(os.path.join(configs_dir, config + ".info"))
     
 
