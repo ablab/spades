@@ -23,14 +23,17 @@ using namespace debruijn_graph;
 
 struct IOContigStorage {
     std::string sequence_;
-    double coverage_;
-    IOContigStorage(const std::string& sequence, double coverage) :
-    sequence_(sequence), coverage_(coverage) { }
+    BidirectionalPath* path_;
+
+    IOContigStorage(const std::string& sequence, BidirectionalPath* path) :
+    sequence_(sequence), path_(path) { }
 };
 
 struct IOContigStorageGreater
 {
-    bool operator()(IOContigStorage const &a, IOContigStorage const &b) const {
+    bool operator()(const IOContigStorage &a, const IOContigStorage &b) const {
+        if (a.sequence_.length() ==  b.sequence_.length())
+            return math::gr(a.path_->Coverage(), b.path_->Coverage());
         return a.sequence_.length() > b.sequence_.length();
     }
 };
@@ -225,72 +228,55 @@ public:
                            const string &filename_base,
                            bool write_fastg = true) const {
 
+        vector<IOContigStorage> storage;
+        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+            BidirectionalPath* path = iter.get();
+            if (path->Length() <= 0)
+                continue;
+            string path_string = ToString(*path);
+            if (path_string.length() >= g_.k()) {
+                storage.emplace_back(path_string, path);
+            }
+        }
+        std::sort(storage.begin(), storage.end(), IOContigStorageGreater());
+
         INFO("Writing contigs to " << filename_base);
         io::osequencestream_simple oss(filename_base + ".fasta");
-
         std::ofstream os_fastg;
         if (write_fastg)
             os_fastg.open((filename_base + ".paths").c_str());
-        vector<IOContigStorage> storage;
+
         int i = 0;
-        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            if (iter.get()->Length() <= 0)
-                continue;
-            i++;
-            DEBUG("NODE " << i);
-            BidirectionalPath* path = iter.get();
-            path->Print();
-            string contig_id;
-            string path_string = ToString(*path);
-            if (plasmid_contig_naming_) {
-                EdgeId e = path->At(0);
-                size_t component = c_counter_.GetComponent(e);
-                contig_id = io::MakeContigComponentId(i, path_string.length(), path->Coverage(), component);
-                oss.set_header(contig_id);
-                oss << path_string;
-            } else {
-                if (path_string.length() >= g_.k()) {
-                    IOContigStorage precontig(path_string, path->Coverage());
-                    storage.push_back(precontig);
-                }
-            }
-
-            if (write_fastg) {
-                os_fastg << contig_id<< endl;
-                os_fastg << ToFASTGString(*iter.get()) << endl;
-                os_fastg << contig_id << "'" << endl;
-                os_fastg << ToFASTGString(*iter.getConjugate()) << endl;
-            }
-
-        }
-        std::sort(storage.begin(), storage.end(), IOContigStorageGreater());
-        i = 0;
-        for (auto precontig : storage) {
+        for (const auto& precontig : storage) {
             ++i;
-            std::string contig_id = io::MakeContigId(i, precontig.sequence_.length(), precontig.coverage_);
+            std::string contig_id = "";
+            if (plasmid_contig_naming_) {
+                EdgeId e = precontig.path_->At(0);
+                size_t component = c_counter_.GetComponent(e);
+                contig_id = io::MakeContigComponentId(i, precontig.sequence_.length(), precontig.path_->Coverage(), component);
+            } else {
+                contig_id = io::MakeContigId(i, precontig.sequence_.length(), precontig.path_->Coverage());
+            }
             oss.set_header(contig_id);
             oss << precontig.sequence_;
+
+            if (write_fastg) {
+                os_fastg << contig_id << endl;
+                os_fastg << ToFASTGString(*precontig.path_) << endl;
+                os_fastg << contig_id << "'" << endl;
+                os_fastg << ToFASTGString(*precontig.path_->GetConjPath()) << endl;
+            }
         }
+
         if (write_fastg)
             os_fastg.close();
         DEBUG("Contigs written");
     }
 
-    void WriteFASTGPaths(const PathContainer& paths, const string& filename) const {
-        INFO("Writing FASTG paths to " << filename);
-        std::ofstream oss(filename.c_str());
-        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            if (iter.get()->Length() <= 0)
-                continue;
-            oss << ToFASTGString(*iter.get()) << endl;
-            oss << ToFASTGString(*iter.getConjugate()) << endl;
-        }
-        oss.close();
-    }
-
     void OutputPaths(const PathContainer& paths, const string& filename_base) const {
         WritePathsToFASTA(paths, filename_base);
     }
+
 
 };
 
