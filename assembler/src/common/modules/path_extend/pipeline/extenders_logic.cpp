@@ -271,10 +271,13 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
     support_.SetSingleThresholdForLib(paired_lib, params_.pset, lib.data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
-    double lib_cov = support_.EstimateLibCoverage(lib_index);
-    INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
+    shared_ptr<GlobalCoverageAwareIdealInfoProvider> iip = nullptr;
+    if (params_.pset.extension_options.use_default_single_threshold) {
+        double lib_cov = support_.EstimateLibCoverage(lib_index);
+        INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
 
-    auto iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), lib_cov);
+        iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), lib_cov);
+    }
     shared_ptr<WeightCounter> wc =
         make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight, -1, iip);
 
