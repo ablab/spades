@@ -9,7 +9,7 @@ namespace path_extend {
 using namespace debruijn_graph;
 
 bool PELaunchSupport::HasOnlyMPLibs() const {
-    for (const auto& lib : dataset_info_.reads)  {
+    for (const auto &lib : dataset_info_.reads) {
         if (!(lib.is_mate_pair() && lib.data().mean_insert_size > 0.0)) {
             return false;
         }
@@ -18,11 +18,13 @@ bool PELaunchSupport::HasOnlyMPLibs() const {
 }
 
 pe_config::ParamSetT::ExtensionOptionsT PELaunchSupport::GetExtensionOpts(shared_ptr<PairedInfoLibrary> lib,
-                                                                          const pe_config::ParamSetT& pset) const {
+                                                                          const pe_config::ParamSetT &pset) const {
     return lib->IsMp() ? pset.mate_pair_options : pset.extension_options;
 }
 
-void PELaunchSupport::SetSingleThresholdForLib(shared_ptr<PairedInfoLibrary> lib, const pe_config::ParamSetT &pset, double threshold) const {
+void PELaunchSupport::SetSingleThresholdForLib(shared_ptr<PairedInfoLibrary> lib,
+                                               const pe_config::ParamSetT &pset,
+                                               double threshold) const {
     double t = pset.extension_options.use_default_single_threshold || math::le(threshold, 0.0) ?
                pset.extension_options.single_threshold : threshold;
     lib->SetSingleThreshold(t);
@@ -45,7 +47,7 @@ bool PELaunchSupport::IsForScaffoldingExtender(const io::SequencingLibrary<confi
 }
 
 //TODO: review usage
-bool PELaunchSupport::UseCoverageResolverForSingleReads(const io::LibraryType& type) const {
+bool PELaunchSupport::UseCoverageResolverForSingleReads(const io::LibraryType &type) const {
     return HasOnlyMPLibs() && (type == io::LibraryType::HQMatePairs);
 }
 
@@ -77,7 +79,7 @@ bool PELaunchSupport::HasLongReads() const {
     return path_extend::HasLongReads(dataset_info_);
 }
 bool PELaunchSupport::HasMPReads() const {
-    for (const auto& lib : dataset_info_.reads) {
+    for (const auto &lib : dataset_info_.reads) {
         if (lib.is_mate_pair()) {
             return true;
         }
@@ -85,11 +87,31 @@ bool PELaunchSupport::HasMPReads() const {
     return false;
 }
 bool PELaunchSupport::SingleReadsMapped() const {
-    for (const auto& lib : dataset_info_.reads) {
+    for (const auto &lib : dataset_info_.reads) {
         if (lib.data().single_reads_mapped) {
             return true;
         }
     }
     return false;
+}
+
+double PELaunchSupport::EstimateLibCoverage(size_t lib_index) const {
+    double cov_fraction = double(dataset_info_.reads[lib_index].data().total_nucls) / TotalNuclsInGraph();
+    return cov_fraction * dataset_info_.avg_coverage();
+}
+
+size_t PELaunchSupport::TotalNuclsInGraph() const {
+    size_t total_nc_count = 0.0;
+    for (const auto &lib: dataset_info_.reads) {
+        if (lib.is_graph_contructable())
+            total_nc_count += lib.data().total_nucls;
+    }
+    return total_nc_count;
+}
+
+
+bool PELaunchSupport::NeedsUniqueEdgeStorage() const {
+    return !(params_.pset.sm == sm_old ||
+        (params_.pset.sm == sm_old_pe_2015 && !HasLongReads() && !HasMPReads()));
 }
 }

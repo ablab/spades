@@ -144,6 +144,13 @@ public:
     bool HasMPReads() const;
 
     bool SingleReadsMapped() const;
+
+    double EstimateLibCoverage(size_t lib_index) const;
+
+    size_t TotalNuclsInGraph() const;
+
+    bool NeedsUniqueEdgeStorage() const;
+
 };
 
 }

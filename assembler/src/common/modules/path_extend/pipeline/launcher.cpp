@@ -178,11 +178,8 @@ void PathExtendLauncher::EstimateUniqueEdgesParams() {
     }
 }
 
-void PathExtendLauncher::FillUniqueEdgeStorage() {
-    if (params_.pset.sm == sm_old ||
-       (params_.pset.sm == sm_old_pe_2015 && !support_.HasLongReads() && !support_.HasMPReads()))
-        return;
 
+void PathExtendLauncher::FillUniqueEdgeStorage() {
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, unique_data_.min_unique_length_, unique_data_.unique_variation_);
     unique_edge_analyzer.FillUniqueEdgeStorage(unique_data_.main_unique_storage_);
 }
@@ -395,9 +392,11 @@ void PathExtendLauncher::Launch() {
     make_dir(params_.output_dir);
     make_dir(params_.etc_dir);
 
-    EstimateUniqueEdgesParams();
-    //Fill the storage to enable unique edge check
-    FillUniqueEdgeStorage();
+    if (support_.NeedsUniqueEdgeStorage()) {
+        //Fill the storage to enable unique edge check
+        EstimateUniqueEdgesParams();
+        FillUniqueEdgeStorage();
+    }
 
     MakeAndOutputScaffoldGraph();
 

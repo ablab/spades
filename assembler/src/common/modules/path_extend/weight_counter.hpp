@@ -279,7 +279,7 @@ class CoverageAwareIdealInfoProvider : public BasicIdealInfoProvider {
 
 public:
     //works for single lib only!!!
-    double EstimatePathCoverage(const BidirectionalPath& path) const  {
+    virtual double EstimatePathCoverage(const BidirectionalPath& path) const  {
         double answer = -1.0;
         for (int i = (int) path.Size() - 1; i >= 0; --i) {
             EdgeId e = path.At(i);
@@ -313,6 +313,25 @@ public:
         return answer;
     }
 };
+
+class GlobalCoverageAwareIdealInfoProvider : public CoverageAwareIdealInfoProvider {
+    double lib_coverage_;
+
+public:
+
+    GlobalCoverageAwareIdealInfoProvider(const Graph& g,
+                                         const shared_ptr<PairedInfoLibrary>& lib,
+                                         size_t read_length,
+                                         double lib_coverage):
+        CoverageAwareIdealInfoProvider(g, lib, read_length, 0),
+        lib_coverage_(lib_coverage) {
+    }
+
+    double EstimatePathCoverage(const BidirectionalPath&) const override {
+        return lib_coverage_;
+    }
+};
+
 
 //FIXME optimize number of calls of EstimatePathCoverage(path)
 class MetagenomicWeightCounter: public WeightCounter {

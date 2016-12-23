@@ -45,7 +45,6 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongEdgePEExtender(size_t lib
                                                                       bool investigate_loops) const {
     const auto &lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
-    VERIFY_MSG(math::ge(lib.data().pi_threshold, 0.0), "PI threshold should be set");
     support_.SetSingleThresholdForLib(paired_lib, params_.pset, lib.data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
@@ -69,10 +68,11 @@ shared_ptr<SimpleExtensionChooser> ExtendersGenerator::MakeMetaExtensionChooser(
                                                                                 size_t read_length) const {
     VERIFY(params_.mode == config::pipeline_type::meta);
     VERIFY(!lib->IsMp());
+    //FIXME params to config
     shared_ptr<WeightCounter> wc = make_shared<MetagenomicWeightCounter>(gp_.g,
                                                                          lib,
                                                                          read_length, //read_length
-                                                                         0.3, //normalized_threshold
+                                                                         params_.pset.extension_options.single_threshold, //normalized_threshold
                                                                          3, //raw_threshold
                                                                          0 /*estimation_edge_length*/ );
     return make_shared<SimpleExtensionChooser>(gp_.g, wc,
@@ -265,18 +265,19 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
                                       false /*use short loop coverage resolver*/);
 }
 
-shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(
-    size_t lib_index,
-    bool investigate_loops) const {
-
+shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, bool investigate_loops) const {
     const auto &lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
-    VERIFY_MSG(math::ge(lib.data().pi_threshold, 0.0), "PI threshold should be set");
     support_.SetSingleThresholdForLib(paired_lib, params_.pset, lib.data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
-    shared_ptr<WeightCounter>
-        wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight);
+    double lib_cov = support_.EstimateLibCoverage(lib_index);
+    INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
+
+    auto iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), lib_cov);
+    shared_ptr<WeightCounter> wc =
+        make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight, -1, iip);
+
     auto opts = support_.GetExtensionOpts(paired_lib, params_.pset);
     auto extension = make_shared<SimpleExtensionChooser>(gp_.g, wc,
                                                          opts.weight_threshold,

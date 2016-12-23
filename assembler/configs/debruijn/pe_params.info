@@ -26,13 +26,13 @@ params {
     cut_all_overlaps  false
 
     split_edge_length    99
-    normalize_weight     false
+    normalize_weight     true
     
     ; extension selection
     extension_options
     {
-        use_default_single_threshold false
-        single_threshold           1.75676
+        use_default_single_threshold true
+        single_threshold           0.1
         weight_threshold           0.5
         priority_coeff             1.5
         ;TODO remove from here

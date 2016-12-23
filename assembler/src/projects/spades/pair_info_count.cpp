@@ -188,8 +188,8 @@ static void ProcessPairedReads(conj_graph_pack &gp,
     SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
     const auto &data = reads.data();
 
-    bool calculate_threshold = (cfg::get().mode != config::pipeline_type::meta &&
-                                reads.type() == io::LibraryType::PairedEnd);
+    bool calculate_threshold = (reads.type() == io::LibraryType::PairedEnd &&
+        !cfg::get().pe_params.param_set.extension_options.use_default_single_threshold);
     unsigned round_thr = 0;
     // Do not round if filtering is disabled
     if (filter)

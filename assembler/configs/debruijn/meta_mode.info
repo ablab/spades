@@ -179,8 +179,8 @@ params {
     ;normalize_weight        NA
     extension_options
     {
-        ;use_default_single_threshold NA
-        ;single_threshold           NA 
+        use_default_single_threshold true
+        single_threshold           0.3
         weight_threshold           0.6
         max_repeat_length          1000000 
    }
@@ -196,7 +196,7 @@ params {
     use_coordinated_coverage false
     remove_overlaps     false
     scaffolding2015 {
-    min_unique_length 100000000
-}
+        min_unique_length 100000000
+    }
 }
 }
