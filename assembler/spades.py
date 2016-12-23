@@ -195,7 +195,6 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     # for parsing options from "previous run command"
     options_storage.continue_mode = False
     options_storage.k_mers = None
-
     for opt, arg in options:
         if opt == '-o':
             if not skip_output_dir:
@@ -339,9 +338,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             show_usage(0, show_hidden=True)
 
         elif opt == "--test":
-            options_storage.set_test_options()
-            support.add_to_dataset('-1', os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"), dataset_data)
-            support.add_to_dataset('-2', os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz"), dataset_data)
+            options_storage.set_test_options()            
             #break
         elif opt == "--diploid":
             options_storage.diploid_mode = True
@@ -349,6 +346,14 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.enable_truseq_mode()
         else:
             raise ValueError
+
+    if options_storage.test_mode:
+        if options_storage.plasmid:
+            support.add_to_dataset('-1', os.path.join(spades_home, "test_dataset_plasmid/pl1.fq.gz"), dataset_data)
+            support.add_to_dataset('-2', os.path.join(spades_home, "test_dataset_plasmid/pl2.fq.gz"), dataset_data)
+        else:
+            support.add_to_dataset('-1', os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"), dataset_data)
+            support.add_to_dataset('-2', os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz"), dataset_data)
 
     if not options_storage.output_dir:
         support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
@@ -948,7 +953,10 @@ def main(args):
                         result_fasta = list(support.read_fasta(result_filename))
                         # correctness check: should be one contig of length 1000 bp
                         correct_number = 1
-                        correct_length = 1000
+                        if options_storage.plasmid:
+                            correct_length = 9667
+                        else:
+                            correct_length = 1000
                         if not len(result_fasta):
                             support.error("TEST FAILED: %s does not contain contigs!" % result_filename)
                         elif len(result_fasta) > correct_number:
