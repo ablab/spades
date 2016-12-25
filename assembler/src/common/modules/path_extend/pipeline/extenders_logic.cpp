@@ -360,7 +360,7 @@ Extenders ExtendersGenerator::MakePBScaffoldingExtenders(const ScaffoldingUnique
 
         }
     }
-    INFO("Using " << result.size() << " mate-pair " << support_.LibStr(result.size()));
+    INFO("Using " << result.size() << " long reads scaffolding " << support_.LibStr(result.size()));
     std::sort(result.begin(), result.end());
 
     return ExtractExtenders(result);

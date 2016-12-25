@@ -173,6 +173,8 @@ params {
     remove_overlaps     true
     cut_all_overlaps  true
 
+    scaffolding_mode old
+
     ;TODO proper configuration of different extenders is not supported 
     ;TODO most settings ard hardcoded for now 
 

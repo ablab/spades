@@ -109,6 +109,8 @@ pe {
 params {
     normalize_weight        true
 
+    scaffolding_mode old
+
     ; extension selection
     extension_options
     {
