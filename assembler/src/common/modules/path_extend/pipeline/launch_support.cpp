@@ -96,12 +96,12 @@ bool PELaunchSupport::SingleReadsMapped() const {
 }
 
 double PELaunchSupport::EstimateLibCoverage(size_t lib_index) const {
-    double cov_fraction = double(dataset_info_.reads[lib_index].data().total_nucls) / TotalNuclsInGraph();
+    double cov_fraction = double(dataset_info_.reads[lib_index].data().total_nucls) / double(TotalNuclsInGraph());
     return cov_fraction * dataset_info_.avg_coverage();
 }
 
 size_t PELaunchSupport::TotalNuclsInGraph() const {
-    size_t total_nc_count = 0.0;
+    size_t total_nc_count = 0;
     for (const auto &lib: dataset_info_.reads) {
         if (lib.is_graph_contructable())
             total_nc_count += lib.data().total_nucls;

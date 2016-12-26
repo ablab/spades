@@ -365,11 +365,23 @@ Extenders  PathExtendLauncher::ConstructExtenders(const GraphCoverageMap& cover_
                                                        unique_data_.long_reads_cov_map_);
 
     //long reads scaffolding extenders.
-    if (support_.HasLongReads())
-        push_back_all(extenders, ConstructPBExtenders(generator));
+    if (support_.HasLongReads()) {
+        if (params_.pset.sm == sm_old) {
+            INFO("Will not use new long read scaffolding algorithm is this mode");
+        }
+        else {
+            push_back_all(extenders, ConstructPBExtenders(generator));
+        }
+    }
 
-    if (support_.HasMPReads())
-        push_back_all(extenders, ConstructMPExtenders(generator));
+    if (support_.HasMPReads()) {
+        if (params_.pset.sm == sm_old) {
+            INFO("Will not use mate-pairs is this mode");
+        }
+        else {
+            push_back_all(extenders, ConstructMPExtenders(generator));
+        }
+    }
 
     if (params_.pset.use_coordinated_coverage)
         push_back_all(extenders, generator.MakeCoverageExtenders());
