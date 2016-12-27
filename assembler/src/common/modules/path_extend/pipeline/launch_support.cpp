@@ -33,6 +33,9 @@ void PELaunchSupport::SetSingleThresholdForLib(shared_ptr<PairedInfoLibrary> lib
 bool PELaunchSupport::IsForSingleReadExtender(const io::SequencingLibrary<config::DataSetData> &lib) const {
     return (lib.data().single_reads_mapped || lib.is_long_read_lib() || lib.is_contig_lib());
 }
+bool PELaunchSupport::IsForSingleReadScaffolder(const io::SequencingLibrary<config::DataSetData> &lib) const {
+    return (lib.is_long_read_lib() || (lib.is_contig_lib() && lib.type() != io::LibraryType::PathExtendContigs));
+}
 
 bool PELaunchSupport::IsForPEExtender(const io::SequencingLibrary<config::DataSetData> &lib) const {
     return (lib.type() == io::LibraryType::PairedEnd && lib.data().mean_insert_size > 0.0);

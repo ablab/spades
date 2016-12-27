@@ -392,7 +392,7 @@ Extenders ExtendersGenerator::MakeBasicExtenders(const ScaffoldingUniqueEdgeStor
         const auto &lib = dataset_info_.reads[lib_index];
 
         //TODO: scaff2015 does not need any single read libs?
-        if (support_.IsForSingleReadExtender(lib)) {
+        if (support_.IsForSingleReadScaffolder(lib)) {
             basic_extenders.emplace_back(lib.type(), lib_index, MakeLongReadsExtender(lib_index, *long_reads_cov_map[lib_index]));
             ++single_read_libs;
         }

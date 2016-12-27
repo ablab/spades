@@ -124,6 +124,8 @@ public:
 
     bool IsForSingleReadExtender(const io::SequencingLibrary<config::DataSetData> &lib) const;
 
+    bool IsForSingleReadScaffolder(const io::SequencingLibrary<config::DataSetData> &lib) const;
+
     bool IsForPEExtender(const io::SequencingLibrary<config::DataSetData> &lib) const;
 
     bool IsForShortLoopExtender(const io::SequencingLibrary<config::DataSetData> &lib) const;
