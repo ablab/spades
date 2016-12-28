@@ -564,7 +564,7 @@ private:
     const size_t max_flanking_region_length_;
 
     const GapDescription INVALID_GAP;
-    static const size_t MAX_CONSENSUS_READS = 20;
+    const size_t max_consensus_reads_;
     string PrintLengths(const vector<string>& gap_seqs) const {
         stringstream ss;
         for (const auto& gap_v : gap_seqs)
@@ -580,7 +580,7 @@ private:
         DEBUG(gap_variants.size() << " gap closing variants, lengths: " << PrintLengths(gap_variants));
         DEBUG("var size original " << gap_variants.size());
         vector<string> new_gap_variants(gap_variants.begin(), gap_variants.end());
-        new_gap_variants.resize(std::min(MAX_CONSENSUS_READS, gap_variants.size()));
+        new_gap_variants.resize(std::min(max_consensus_reads_, gap_variants.size()));
         auto s = consensus_(new_gap_variants);
         DEBUG("consenus for " << g_.int_id(start)
                               << " and " << g_.int_id(end)
@@ -716,12 +716,12 @@ public:
     HybridGapCloser(Graph& g, const GapStorage& storage,
                     size_t min_weight, ConsensusF consensus,
                     size_t long_seq_limit,
-                    size_t max_flanking_region_length = 500)
+                    size_t max_flanking_region_length = 500, size_t max_consensus_reads = 20)
             : g_(g), storage_(storage),
               min_weight_(min_weight),
               consensus_(consensus),
               long_seq_limit_(long_seq_limit),
-              max_flanking_region_length_(max_flanking_region_length) {
+              max_flanking_region_length_(max_flanking_region_length), max_consensus_reads_(max_consensus_reads) {
     }
 
     map<EdgeId, EdgeId> operator()() {
