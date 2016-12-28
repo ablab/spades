@@ -278,13 +278,17 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
 */
         size_t initial_range_end = a.qe;
         size_t mapping_range_end = pos + a.re - a.rb;
+        size_t read_length = seq.length() ;
         //we had to reduce the range to kmer-based
-        if (pos + (a.re - a.rb) >= g_.length(ids_[a.rid]) || a.qe + g_.k() >= seq.length() ){
+        if (pos + (a.re - a.rb) >= g_.length(ids_[a.rid]) ){
             if (a.qe > g_.k() + a.qb)
                 initial_range_end -= g_.k();
             else continue;
             if (a.re > g_.k() + a.rb)
                 mapping_range_end -= g_.k();
+            else continue;
+            if (read_length >= g_.k())
+                read_length -= g_.k();
             else continue;
         }
         // FIXME: Check this!
@@ -298,7 +302,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
 //            fprintf (stderr,"%d %d %d\n", pos, pos + a.re - a.rb , g_.length(ids_[a.rid]) );
 
             res.push_back(g_.conjugate(ids_[a.rid]),
-                          { omnigraph::Range(a.qb, initial_range_end).Invert(seq.length() - g_.k()),
+                          { omnigraph::Range(a.qb, initial_range_end).Invert(read_length),
                             omnigraph::Range(pos, mapping_range_end ).Invert(g_.length(ids_[a.rid])) });
 
         }
