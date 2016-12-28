@@ -334,7 +334,7 @@ Extenders ExtendersGenerator::MakePBScaffoldingExtenders(const ScaffoldingUnique
     ExtenderTriplets result;
 
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
-        if (support_.IsForSingleReadExtender(dataset_info_.reads[lib_index])) {
+        if (support_.IsForSingleReadScaffolder(dataset_info_.reads[lib_index])) {
             INFO("Creating scaffolding extender for lib " << lib_index);
             shared_ptr<ConnectionCondition> condition = make_shared<LongReadsLibConnectionCondition>(gp_.g,
                                                                                                      lib_index, 2,
@@ -392,7 +392,7 @@ Extenders ExtendersGenerator::MakeBasicExtenders(const ScaffoldingUniqueEdgeStor
         const auto &lib = dataset_info_.reads[lib_index];
 
         //TODO: scaff2015 does not need any single read libs?
-        if (support_.IsForSingleReadScaffolder(lib)) {
+        if (support_.IsForSingleReadExtender(lib)) {
             basic_extenders.emplace_back(lib.type(), lib_index, MakeLongReadsExtender(lib_index, *long_reads_cov_map[lib_index]));
             ++single_read_libs;
         }
