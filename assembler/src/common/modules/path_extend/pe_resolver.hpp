@@ -508,6 +508,8 @@ public:
         remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, false, true, false, false, false);
 
         remover.RemoveOverlaps(paths);
+
+        remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, true, false, false, false, false);
     }
 
     void RemoveOverlaps(PathContainer &paths, GraphCoverageMap &coverage_map,

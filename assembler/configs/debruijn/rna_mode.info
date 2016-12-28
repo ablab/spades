@@ -101,8 +101,8 @@ params {
 
     extension_options
     {
-        use_default_single_threshold false
-        single_threshold           0.001
+        use_default_single_threshold true
+        single_threshold           0.05
     }
 
     scaffolder {

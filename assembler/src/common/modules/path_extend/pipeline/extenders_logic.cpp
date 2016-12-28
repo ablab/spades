@@ -249,8 +249,10 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
     support_.SetSingleThresholdForLib(paired_lib, params_.pset, lib.data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
-    shared_ptr<WeightCounter>
-        wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight);
+    auto cip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), 0);
+    shared_ptr<WeightCounter> wc =
+        make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight, paired_lib->GetSingleThreshold(), cip);
+
     auto opts = support_.GetExtensionOpts(paired_lib, params_.pset);
     shared_ptr<RNAExtensionChooser> extension =
         make_shared<RNAExtensionChooser>(gp_.g, wc,
@@ -271,12 +273,16 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
     support_.SetSingleThresholdForLib(paired_lib, params_.pset, lib.data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
-    shared_ptr<GlobalCoverageAwareIdealInfoProvider> iip = nullptr;
+    shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
     if (params_.pset.extension_options.use_default_single_threshold) {
-        double lib_cov = support_.EstimateLibCoverage(lib_index);
-        INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
-
-        iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), lib_cov);
+        if (params_.uneven_depth) {
+            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), 0);
+        }
+        else {
+            double lib_cov = support_.EstimateLibCoverage(lib_index);
+            INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
+            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), lib_cov);
+        }
     }
     shared_ptr<WeightCounter> wc =
         make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight, -1, iip);
