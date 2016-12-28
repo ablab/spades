@@ -65,8 +65,8 @@ BidirectionalPath PathPolisher::Polish(const BidirectionalPath &path) {
         }
         count++;
         if (count > 5) {
-            WARN("Unexpected cycle while polishing path, stopping polisher " );
-            path.PrintInfo();
+            INFO("Unexpected cycle while polishing path, stopping polishing " );
+            path.Print();
             break;
         }
     }
@@ -289,7 +289,7 @@ BidirectionalPath MatePairGapCloser::Polish(const BidirectionalPath& path) {
                     total += g_.length(last);
                 }
                 if (total > max_path_len_){
-                    INFO("gap between edges " << g_.int_id(path[i-1]) << " and " << g_.int_id(path[i]) << " was: " << path.GapAt(i) << ", closing path length too long: " << total);
+                    DEBUG("gap between edges " << g_.int_id(path[i-1]) << " and " << g_.int_id(path[i]) << " was: " << path.GapAt(i) << ", closing path length too long: " << total);
                     break;
                 }
             }
@@ -302,7 +302,7 @@ BidirectionalPath MatePairGapCloser::Polish(const BidirectionalPath& path) {
             if (new_gap < min_gap_ && addition.size() > 0) {
                 if (path.GapAt(i) * 3 < len * 2 ) {
 //inserted path significantly longer than estimated gap
-                    INFO("Gap size estimation problem: gap between edges " << g_.int_id(path[i - 1]) << " and " << g_.int_id(path[i]) << " was " <<
+                    DEBUG("Gap size estimation problem: gap between edges " << g_.int_id(path[i - 1]) << " and " << g_.int_id(path[i]) << " was " <<
                          path.GapAt(i) << "filled len" << len);
                 }
                 if (g_.EdgeEnd(addition.back()) != g_.EdgeStart(path[i]))
