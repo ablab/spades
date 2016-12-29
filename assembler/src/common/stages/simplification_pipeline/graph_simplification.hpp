@@ -554,7 +554,7 @@ template<class Graph>
 AlgoPtr<Graph> ECRemoverInstance(Graph &g,
                                  const config::debruijn_config::simplification::erroneous_connections_remover &ec_config,
                                  const SimplifInfoContainer &info,
-                                 EdgeRemovalHandlerF<Graph> removal_handler,
+                                 EdgeRemovalHandlerF<Graph> removal_handler = nullptr,
                                  size_t iteration_cnt = 1) {
     if (ec_config.condition.empty())
         return nullptr;
