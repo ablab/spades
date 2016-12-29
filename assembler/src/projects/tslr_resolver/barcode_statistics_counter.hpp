@@ -7,7 +7,7 @@
 namespace tslr_resolver {
 
     struct EdgeStat {
-        // 0 - no possible extensions, 1 - multiple possible extensions, 2 - single possible extension.
+        size_t simplesingle = 0;
         size_t nonextendable = 0;
         size_t multiple = 0;
         size_t single = 0;
@@ -15,18 +15,23 @@ namespace tslr_resolver {
     };
 
     class BarcodeStatisticsCollector {
-        typedef HeadTailBarcodeMapper<SimpleBarcodeEntry> BMapper;
+        typedef HeadTailBarcodeMapper<SimpleEdgeEntry> BMapper;
+
+        const debruijn_graph::conj_graph_pack& gp_;
+        const Graph& g_;
+        shared_ptr<BMapper> mapper_;
+
         EdgeStat edge_statistics_;
         unordered_map <int64_t, size_t> barcode_statistics_;
         vector <double> trimming_to_coverage_;
         unordered_map <EdgeId, size_t> edge_to_reads;
-        const Graph& g_;
-        shared_ptr<BMapper> mapper_;
+        vector <std::pair<double, int64_t>> scores_with_gaps_;
+        vector <double> random_scores_;
     public:
-        BarcodeStatisticsCollector(const Graph& g,
-                                   shared_ptr <BarcodeMapper> mapper) :
-                                edge_statistics_(), barcode_statistics_(), g_(g),
-                                mapper_(std::dynamic_pointer_cast<BMapper>(mapper)) {}
+        BarcodeStatisticsCollector(const debruijn_graph::conj_graph_pack& gp) :
+                                gp_(gp),
+                                g_(gp_.g),
+                                mapper_(std::dynamic_pointer_cast<BMapper>(gp.barcode_mapper)) {}
 
         void FillReadStatistics(size_t edge_tail_len) {
             INFO("Filling read statistics")
@@ -50,7 +55,6 @@ namespace tslr_resolver {
             std::unordered_map <EdgeId, std::vector <size_t>> edge_to_distribution;
             edge_it_helper helper(g_);
             for (auto it = helper.begin(); it != helper.end(); ++it) {
-                //fixme pass as parameter
                 if (g_.length(*it) > cfg::get().ts_res.len_threshold) {
                     EdgeId current_edge = *it;
                     std::vector<size_t> coverage_distr(distribution_size);
@@ -77,9 +81,9 @@ namespace tslr_resolver {
             size_t edge_counter = 0;
             for (auto it = helper.begin(); it != helper.end(); ++it) {
                 if (g_.length(*it) <= 150000) {
-                    const SimpleBarcodeEntry& head_distribution =
+                    const SimpleEdgeEntry& head_distribution =
                             mapper_->GetEntryHeads(*it);
-                    const SimpleBarcodeEntry& tail_distribution =
+                    const SimpleEdgeEntry& tail_distribution =
                             mapper_->GetEntryTails(*it);
                     //ExtractBarcodeStatsFromDistribution(head_distribution, *it);
                     ExtractBarcodeStatsFromDistribution(tail_distribution, *it);
@@ -93,18 +97,21 @@ namespace tslr_resolver {
             edge_it_helper helper(g_);
             size_t edge_counter = 0;
             for (auto it = helper.begin(); it != helper.end(); ++it) {
-                if (g_.length(*it) > 7000) {
+                if (g_.length(*it) > length_bound) {
                     EdgeId current_edge = *it;
                     const auto& candidates = GetCandidates(*it, length_bound, distance_bound);
                     std::vector <EdgeId> best_candidates;
                     std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(best_candidates),
                                  [this, &current_edge](const EdgeId& edge) {
                                      return this->mapper_->
-                                             GetIntersectionSizeNormalizedBySecond(current_edge, edge) > 0.3;
+                                             GetIntersectionSizeNormalizedByUnion(current_edge, edge) > 0.25;
                                  });
                     if (candidates.size() == 0) {
                         edge_statistics_.no_candidates++;
                     } else {
+                        if (candidates.size() == 1) {
+                            edge_statistics_.simplesingle++;
+                        }
                         if (best_candidates.size() == 0) {
                             edge_statistics_.nonextendable++;
                         } else if (best_candidates.size() > 1) {
@@ -119,7 +126,72 @@ namespace tslr_resolver {
             }
         }
 
-        //fixme move to Printer
+        void FillSharedDistributionAlongPath(const string& genome_file, size_t length_threshold) {
+            const Index &index = gp_.index;
+            const KmerSubs &kmer_mapper = gp_.kmer_mapper;
+            io::FileReadStream genome_stream(genome_file);
+            vector<io::SingleRead> references;
+            while(!genome_stream.eof()) {
+                io::SingleRead scaffold;
+                genome_stream >> scaffold;
+                references.push_back(scaffold);
+            }
+            auto seq_mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, Index> >
+                    (g_, index, kmer_mapper);
+            for (const auto& reference: references) {
+                const auto& path = seq_mapper->MapRead(reference);
+                INFO(path.size());
+                std::vector<EdgeId> long_edges_in_path;
+                std::vector<Range> initial_ranges;
+                for (size_t i = 0; i < path.size(); ++i) {
+                    if (g_.length(path[i].first) > length_threshold and
+                            (long_edges_in_path.empty() or path[i].first != long_edges_in_path.back())) {
+                        long_edges_in_path.push_back(path[i].first);
+                        initial_ranges.push_back(path[i].second.initial_range);
+                        INFO(path[i].second)
+                    }
+                }
+                std::vector<std::pair<double, int64_t>> scores_with_gaps;
+                for (size_t i = 0; i < long_edges_in_path.size() - 1; ++i) {
+                    double score = mapper_->GetIntersectionSizeNormalizedByUnion(long_edges_in_path[i],
+                                                                                 long_edges_in_path[i + 1]);
+                    INFO(score);
+                    INFO(initial_ranges[i + 1].start_pos - initial_ranges[i].end_pos);
+                    auto score_with_gap = std::make_pair(score, initial_ranges[i + 1].start_pos - initial_ranges[i].end_pos);
+                    scores_with_gaps.push_back(score_with_gap);
+                }
+//                double sum = std::accumulate(scores_with_gaps.begin(), scores_with_gaps.end(), 0);
+//                INFO(long_edges_in_path.size());
+                //INFO(sum / (double) scores_with_gaps.size());
+                scores_with_gaps_ = scores_with_gaps;
+                std::random_device rd; // obtain a random number from hardware
+                std::mt19937 eng(rd()); // seed the generator
+                std::uniform_int_distribution<> distr(0, (int) long_edges_in_path.size()); // define the range
+                size_t sample_size = 10000;
+                double sum_random = 0;
+                for (size_t i = 0; i < sample_size; ++i) {
+                    int index1 = distr(eng);
+                    int index2 = distr(eng);
+                    EdgeId edge1 = long_edges_in_path[index1];
+                    EdgeId edge2 = long_edges_in_path[index2];
+                    random_scores_.push_back(mapper_->GetIntersectionSizeNormalizedByUnion(edge1, edge2));
+                    sum_random += mapper_->GetIntersectionSizeNormalizedByUnion(edge1, edge2);
+                }
+                INFO(sum_random / (double) sample_size);
+            }
+        }
+
+        void SerializeDistributionAlongPath(const string& filename) {
+            ofstream fout;
+            fout.open(filename);
+            for (auto pair: scores_with_gaps_) {
+                fout << pair.first << " " << pair.second << std::endl;
+            }
+//            for (auto score: random_scores_) {
+//                fout << score << std::endl;
+//            }
+        }
+
         void SerializeBarcodeStatistics(const string& filename) {
             ofstream fout;
             fout.open(filename);
@@ -134,7 +206,8 @@ namespace tslr_resolver {
             fout << "Nonextendable: " << edge_statistics_.nonextendable << std::endl <<
                  "Single: " << edge_statistics_.single << std::endl <<
                  "Multiple: " << edge_statistics_.multiple << std::endl <<
-                 "No candidates: " << edge_statistics_.no_candidates << std::endl;
+                 "No candidates: " << edge_statistics_.no_candidates << std::endl <<
+                 "Simple single: " << edge_statistics_.simplesingle << std::endl;
         }
 
         void SerializeTrimmingStatistics(const string& filename) {
@@ -197,7 +270,7 @@ namespace tslr_resolver {
             }
         }
 
-        void ExtractBarcodeStatsFromDistribution(const SimpleBarcodeEntry& distribution, const EdgeId& edge) {
+        void ExtractBarcodeStatsFromDistribution(const SimpleEdgeEntry& distribution, const EdgeId& edge) {
             const auto& whole_distribution_map = distribution;
             for (auto it = whole_distribution_map.cbegin(); it != whole_distribution_map.cend(); ++it){
                 int64_t barcode = it->first;

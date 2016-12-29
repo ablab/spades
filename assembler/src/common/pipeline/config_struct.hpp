@@ -514,7 +514,7 @@ struct debruijn_config {
     contig_output co;
 
     struct tslr_resolver {
-        std::string tslr_barcode_dataset;
+        std::string read_cloud_dataset;
         std::string library_type;
         int reference_cov;
         size_t len_threshold;
@@ -529,6 +529,7 @@ struct debruijn_config {
         bool join_paths;
         bool ideal_reads;
         size_t edge_tail_len;
+        std::string genome_path;
     };
 
     boost::optional<scaffold_correction> sc_cor;

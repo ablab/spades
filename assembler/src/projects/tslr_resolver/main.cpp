@@ -28,7 +28,7 @@ void create_console_logger(string cfg_filename) {
     string log_props_file = cfg::get().log_filename;
 
     if (!path::FileExists(log_props_file))
-        log_props_file = path::append_path(path::parent_path(cfg_filename), cfg::get().log_filename);
+        log_props_file = path::append_path(cfg_filename, cfg::get().log_filename);
 
     logger *lg = create_logger(path::FileExists(log_props_file) ? log_props_file : "");
     lg->add_writer(std::make_shared<console_writer>());

@@ -20,6 +20,7 @@
 #include "overlap_analysis_test.hpp"
 //#include "detail_coverage_test.hpp"
 #include "paired_info_test.hpp"
+#include "barcode_index.hpp"
 //fixme why is it disabled
 //#include "pair_info_test.hpp"
 
