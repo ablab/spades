@@ -34,30 +34,12 @@ namespace tslr_resolver {
 
         std::string label(EdgeId e) const {
             std::string ans;
-//            std::vector <std::string> head_labels;
-//            std::vector <std::string> tail_labels;
-//            size_t max_vertices = 100;
-//            size_t edge_length_bound = 10000;
-//            auto component = omnigraph::EdgeNeighborhood(graph(), e, max_vertices, edge_length_bound);
-//            auto edge_set = component.edges();
-//            for (auto edge : edge_set) {
-//                if (barcode_mapper_->GetIntersectionSize(e, edge) >= barcode_threshold) {
-//                    std::string str = ToString(this->graph().int_id(edge)) + ": " +
-//                                      std::to_string(barcode_mapper_->GetIntersectionSizeNormalizedByFirst(e, edge)) + ", ";
-//                    head_labels.push_back(str);
-//                }
-//                if (barcode_mapper_->GetIntersectionSize(edge, e) >= barcode_threshold) {
-//                    std::string str = ToString(this->graph().int_id(edge)) + ": " +
-//                                      std::to_string(barcode_mapper_->GetIntersectionSizeNormalizedByFirst(edge, e)) + ", ";
-//                    tail_labels.push_back(str);
-//                }
-//            }
-            ans += ("Id: " + std::to_string(this->graph().int_id(e)) + ' ' +  "Length: " + 
-                std::to_string(this->graph().length(e)) + ' ' + "Coverage: " + std::to_string(this->graph().coverage(e)) + '\n');
-            ans += ("Barcodes: " + std::to_string(barcode_mapper_->GetHeadBarcodeNumber(e)) + '\n');
-            //ans += GetLabelFromVector(head_labels, "head");
-            ans += "Barcodes: " + std::to_string(barcode_mapper_->GetTailBarcodeNumber(e)) + '\n';
-            //ans += GetLabelFromVector(tail_labels, "tail");
+            ans += ("Id: " + std::to_string(this->graph().int_id(e)) + ' '
+                    +  "Length: " + std::to_string(this->graph().length(e)) + ' '
+                    + "Coverage: " + std::to_string(this->graph().coverage(e)) + '\n');
+
+            ans += ("Barcodes at head: " + std::to_string(barcode_mapper_->GetHeadBarcodeNumber(e)) + '\n');
+            ans += "Barcodes at tail: " + std::to_string(barcode_mapper_->GetTailBarcodeNumber(e)) + '\n';
 
             bool is_unique = ConservativeByTopology(e, this->graph()) and
                     ConservativeByLength(e, this->graph(), 500);
@@ -66,24 +48,6 @@ namespace tslr_resolver {
             }
             else
                 ans += "Non-unique\n";
-            return ans;
-        }
-
-        string GetLabelFromVector(const vector<string> &labels, const string &prefix) const {
-            std::string ans;
-            ans += prefix + ":\n";
-            int buffer_len = 0;
-            for (auto label : labels) {
-                if (buffer_len < 6) {
-                    ans += label;
-                    buffer_len++;
-                }
-                else {
-                    ans += '\n';
-                    buffer_len = 0;
-                }
-            }
-            ans += '\n';
             return ans;
         }
     };
