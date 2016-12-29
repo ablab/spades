@@ -4,8 +4,7 @@ rm -rf $TARGET_DIR
 SRC_DIR=$TARGET_DIR/src
 mkdir -p $SRC_DIR
 
-cp -r assembler/src/modules $SRC_DIR/
-cp -r assembler/src/utils $SRC_DIR/
+cp -r assembler/src/common $SRC_DIR/
 cp -r assembler/src/projects $SRC_DIR/
 cp -r assembler/src/include $SRC_DIR/
 cp -r assembler/src/cmake $SRC_DIR/
