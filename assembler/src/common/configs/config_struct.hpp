@@ -460,13 +460,14 @@ struct debruijn_config {
 
     std::filesystem::path load_from;
     struct tslr_resolver {
-        std::string tslr_barcode_dataset;
+        std::string read_cloud_dataset;
         std::string library_type;
         int reference_cov;
         size_t len_threshold;
         size_t trimming_threshold;
         size_t distance_bound;
         size_t fragment_len;
+        size_t gap_threshold;
         double diff_threshold;
         double abs_threshold;
         double barcode_number_threshold;
@@ -475,6 +476,7 @@ struct debruijn_config {
         bool join_paths;
         bool ideal_reads;
         size_t edge_tail_len;
+        std::string genome_path;
     };
 
     tslr_resolver ts_res;
