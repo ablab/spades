@@ -66,7 +66,6 @@ properties::properties(std::filesystem::path filename, level default_level)
         auto it = remap.find(entry[1]);
         if (it == remap.end())
             throw std::runtime_error("invalid log file level description: " + entry[1]);
-
         levels[entry[0]] = it->second;
     }
 
