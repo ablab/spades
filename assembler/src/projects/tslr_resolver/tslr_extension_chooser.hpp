@@ -13,7 +13,7 @@ using namespace path_extend;
 
 namespace tslr_resolver {
 
-        class TrivialTSLRExtensionChooser : public ExtensionChooser {
+        class ReadCloudExtensionChooser : public ExtensionChooser {
 
             shared_ptr<BarcodeMapper> bmapper_;
             size_t len_threshold_;
@@ -22,7 +22,7 @@ namespace tslr_resolver {
             ScaffoldingUniqueEdgeStorage unique_storage_;
 
         public:
-            TrivialTSLRExtensionChooser(const conj_graph_pack& gp,
+            ReadCloudExtensionChooser(const conj_graph_pack& gp,
                                         size_t len_threshold,
                                         double absolute_barcode_threshold,
                                         size_t fragment_len,

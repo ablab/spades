@@ -5,8 +5,9 @@
 using namespace path_extend;
 
 namespace tslr_resolver {
-/*todo this class is similar to CompositeExtender, but
-with slightly different usage of coverage map. Huge code duplication need to be removed /*/
+/*This class is similar to CompositeExtender, but
+  with slightly different usage of coverage map.
+  Huge code duplication need to be removed */
 
     class PathJoiner : public ContigsMaker {
     public:
@@ -117,22 +118,21 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                 DEBUG("path length " << path->Length());
                 path->Print();
             }
-            INFO("overall path length before " << sum_length)
+            DEBUG("overall path length before " << sum_length);
             sum_length = 0;
             for (size_t i = 0; i < result.size(); i++) {
                 if (result.Get(i)->Size() > 0) {
-                    DEBUG(i)
-                    DEBUG("path id " << paths.Get(i) -> GetId())
+                    DEBUG(i);
+                    DEBUG("path id " << paths.Get(i) -> GetId());
                     VERBOSE_POWER_T2(i, 100,
                                      "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size()
                                                   << "%)");
                     if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
                         INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
                     }
-                    TRACE("i / size " << i << " " << result.size());
                     BidirectionalPath *path = result.Get(i);
                     BidirectionalPath *conjugatePath = result.GetConjugate(i);
-                    DEBUG ("readding ids " << path->GetId() << " " << conjugatePath->GetId() << " "
+                    DEBUG ("Reading ids " << path->GetId() << " " << conjugatePath->GetId() << " "
                                            << id_to_index_.size());
                     size_t count_trying = 0;
                     size_t current_path_len = 0;
@@ -152,13 +152,12 @@ with slightly different usage of coverage map. Huge code duplication need to be 
                     DEBUG("Ignoring empty path")
                 }
             }
-            INFO("overall path length after " << sum_length)
             result.FilterEmptyPaths();
         }
         DECL_LOGGER("PathJoiner")
     };
 
-    class InconsistentTSLRExtender : public LoopDetectingPathExtender { //Traverse forward to find long edges
+    class ReadCloudMergingExtender : public LoopDetectingPathExtender { //Traverse forward to find long edges
 
     protected:
 
@@ -178,7 +177,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
 
             //find long unique edge earlier in path
             pair<EdgeId, int> last_unique =
-                    TrivialTSLRExtensionChooser::FindLastUniqueInPath(path, unique_storage_);
+                    ReadCloudExtensionChooser::FindLastUniqueInPath(path, unique_storage_);
             bool long_single_edge_exists = false;
             EdgeId decisive_edge;
             if (last_unique.second != -1) {
@@ -192,10 +191,11 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             }
 
             //Check if there is too much barcodes aligned to the last unique edge
-            if (mapper_->GetTailBarcodeNumber(decisive_edge) > max_barcodes_on_edge_) {
-                DEBUG("Too many barcodes mapped to the decisive edge")
-                return;
-            }
+//            if (mapper_->GetTailBarcodeNumber(decisive_edge) >
+//                    GetMaximalBarcodeNumber(cfg::get().ts_res.read_cloud_dataset)) {
+//                DEBUG("Too many barcodes mapped to the decisive edge")
+//                return;
+//            }
 
             DEBUG("At edge " << path.Back().int_id());
             DEBUG("Decisive edge " << decisive_edge.int_id());
@@ -213,10 +213,22 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             }
         }
 
+        //todo should be precounted at barcode map construction stage
+        size_t GetMaximalBarcodeNumber (const std::string& path_to_tslr_dataset) const {
+            size_t result = 0;
+            std::ifstream fin;
+            fin.open(path_to_tslr_dataset);
+            string line;
+            while (getline(fin, line)) {
+                ++result;
+            }
+            return result / 2;
+        }
+
 
     public:
 
-        InconsistentTSLRExtender(const conj_graph_pack &gp,
+        ReadCloudMergingExtender(const conj_graph_pack &gp,
                                  const GraphCoverageMap &cov_map,
                                  shared_ptr<ExtensionChooser> ec,
                                  size_t is,
@@ -279,8 +291,8 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             return true;
         }
 
-        virtual bool AddCandidates(BidirectionalPath &path, PathContainer *paths_storage,
-                                   ExtensionChooser::EdgeContainer &candidates) {
+        virtual bool AddCandidates(BidirectionalPath& path, PathContainer* paths_storage,
+                                   ExtensionChooser::EdgeContainer& candidates) {
             if (candidates.size() != 1) {
                 if (candidates.size() > 1) {
                     DEBUG("Too many candidates, false");
@@ -316,7 +328,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             }
                 
             DEBUG("Trying to add next path")
-            return AddPathFromPreviousStage(path, covering_paths.back(), paths_storage);
+            return MergePathsFromPreviousStage(path, covering_paths.back(), paths_storage);
 
         }
 
@@ -339,9 +351,9 @@ with slightly different usage of coverage map. Huge code duplication need to be 
             return result;
         }
 
-        bool AddPathFromPreviousStage(BidirectionalPath &current_path,
-                                      BidirectionalPath* additive_path,
-                                      PathContainer* paths_storage) {
+        bool MergePathsFromPreviousStage(BidirectionalPath& current_path,
+                                         BidirectionalPath* additive_path,
+                                         PathContainer* paths_storage) {
             //Count distance between paths
             size_t path_len_bound = cfg::get().ts_res.topsort_bound;
             size_t overlap_size = current_path.OverlapEndSize(additive_path);
@@ -356,7 +368,7 @@ with slightly different usage of coverage map. Huge code duplication need to be 
 
             if (start_vertex != g_.EdgeStart(suffix.Front()) &&
                     !dijkstra.DistanceCounted(g_.EdgeStart(suffix.Front()))) {
-                DEBUG("Couldn't reach next path")
+                DEBUG("Couldn't reach the beginning of the next path");
                 return false;
             }
             else {

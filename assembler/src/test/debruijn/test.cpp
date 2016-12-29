@@ -39,6 +39,6 @@ GTEST_API_ int main(int argc, char **argv) {
       // See http://confluence.jetbrains.net/display/TCD6/Build+Script+Interaction+with+TeamCity#BuildScriptInteractionwithTeamCity-MessageFlowId
       listeners.Append(new jetbrains::teamcity::TeamcityGoogleTestEventListener());
   }
-      
+
   return RUN_ALL_TESTS();
 }
