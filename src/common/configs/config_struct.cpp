@@ -460,7 +460,7 @@ void load(debruijn_config::truseq_analysis& tsa,
 void load(debruijn_config::tslr_resolver& ts_res,
       boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
-    load(ts_res.tslr_barcode_dataset, pt, "tslr_barcode_dataset");
+    load(ts_res.read_cloud_dataset, pt, "read_cloud_dataset");
     load(ts_res.library_type, pt, "library_type");
     load(ts_res.reference_cov, pt, "reference_cov");
     load(ts_res.len_threshold, pt, "len_threshold");
@@ -468,6 +468,7 @@ void load(debruijn_config::tslr_resolver& ts_res,
     load(ts_res.distance_bound, pt, "distance_bound");
     load(ts_res.diff_threshold, pt, "diff_threshold");
     load(ts_res.abs_threshold, pt, "abs_threshold");
+    load(ts_res.gap_threshold, pt, "gap_threshold");
     load(ts_res.barcode_number_threshold, pt, "barcode_number_threshold");
     load(ts_res.topsort_bound, pt, "topsort_bound");
     load(ts_res.debug_construction, pt, "debug_construction");
@@ -475,6 +476,7 @@ void load(debruijn_config::tslr_resolver& ts_res,
     load(ts_res.ideal_reads, pt, "ideal_reads");
     load(ts_res.edge_tail_len, pt, "edge_tail_len");
     load(ts_res.fragment_len, pt, "fragment_len");
+    load(ts_res.genome_path, pt, "genome_path");
 }
 
 void load(bwa_aligner& bwa,

@@ -84,21 +84,21 @@ namespace tslr_resolver {
         size_t distance_bound = tslr_resolver_params.distance_bound;
         const size_t fragment_length = tslr_resolver_params.fragment_len;
         VERIFY(fragment_length > distance_bound);
-        //fixme unhardcode
+
         ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, 500, 0.5);
         ScaffoldingUniqueEdgeStorage tslr_unique_storage;
         unique_edge_analyzer.FillUniqueEdgesWithTopology(tslr_unique_storage);
 
         std::unordered_map <size_t, size_t> id_to_index;
-        max_is_right_quantile = gp.g.k() + 10000;                   //huh?
+        max_is_right_quantile = gp.g.k() + 10000;
 
-        auto extension = make_shared<TrivialTSLRExtensionChooser>(gp,
+        auto extension = make_shared<ReadCloudExtensionChooser>(gp,
                                                                   len_threshold,
                                                                   absolute_barcode_threshold,
                                                                   fragment_length,
                                                                   tslr_unique_storage);
-        size_t max_barcodes_on_edge = GetMaximalBarcodeNumber(cfg::get().ts_res.tslr_barcode_dataset);
-        auto tslr_extender = make_shared<InconsistentTSLRExtender>(gp, cover_map,
+        size_t max_barcodes_on_edge = gp.barcode_mapper->GetNumberOfBarcodes();
+        auto tslr_extender = make_shared<ReadCloudMergingExtender>(gp, cover_map,
                                                              extension,
                                                              2500 /*insert size*/,
                                                              0 /*max loops*/,

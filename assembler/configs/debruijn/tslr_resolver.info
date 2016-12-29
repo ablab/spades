@@ -1,39 +1,54 @@
 ts_res
 {
-	tslr_barcode_dataset  /home/itolstoganov/tslr_project/resolver_test/mock/data/truspades_dataset/dataset.info
+	;Dataset configs
 
-	library_type tslr
+		read_cloud_dataset  /Nancy/itolstoganov/tenx_metagenome/easy_test/data/dataset.info
 
-	;length threshold for reliable edges
-	len_threshold  500
+		library_type tenx
 
-	;Average length of TSLR fragment
-	fragment_len 10000
+		;genome file for tenx stats
+		genome_path /Nancy/itolstoganov/tenx_metagenome/easy_test/data/alignments/Klebsiella/Klebsiella_pneumoniae_342.fasta
 
-	;edges with less than trimming threshold barcodes will be deleted
-	trimming_threshold 3
 
-	;threshold on (intersection) / (number of barcodes on second edge)
-	;edge should pass this threshold to become candidate
-	diff_threshold 0.75
+	;Barcode index construction configs
 
-	;threshold on barcode coverage difference
-	;first_barcodes / second_barcodes > barcode_number_threshold and
-	;second_barcodes / first_barcodes > barcode_number_threshold
-	barcode_number_threshold 0.2
+		;Barcodes are counted on the last edge_tail_len nucleotides of the edge
+		edge_tail_len 8000
 
-	;Any candidate edge should be no further in graph. 
-	;In other words, that is the maximum size of resolvable repeat.
-	distance_bound 7000
+		;threshold on (intersection) / (number of barcodes on second edge)
+		;edge should pass this threshold to become candidate
+		diff_threshold 0.75
 
-	;Barcodes are counted on the last edge_tail_len nucleotides of the edge
-	edge_tail_len 500
+		;threshold on barcode coverage difference
+		;first_barcodes / second_barcodes > barcode_number_threshold and
+		;second_barcodes / first_barcodes > barcode_number_threshold
+		barcode_number_threshold 0.2
 
-	topsort_bound 5000
-	debug_construction false
-	join_paths true
-	ideal_reads false
+	Filtering configs
 
-	abs_threshold 0.1  ;deprecated
-	reference_cov  38  ;deprecated
+		;edges with less than trimming_threshold barcodes will be deleted
+		trimming_threshold 10
+
+		;clouds further than gap_threshold from the end\beginning of the edge will be deleted
+		gap_threshold 2000
+
+	;Repeat resolution configs
+
+		;Any candidate edge should be no further in graph. 
+		;In other words, that is the maximum size of resolvable repeat.
+		distance_bound  20000
+
+		;length threshold for reliable edges
+		len_threshold  500
+
+		;Average length of read cloud fragment
+		fragment_len 10000
+
+		topsort_bound 5000
+
+		join_paths true ;deprecated
+		ideal_reads false ;deprecated
+		debug_construction false ;deprecated
+		abs_threshold 0.1  ;deprecated
+		reference_cov  38  ;deprecated
 }

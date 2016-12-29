@@ -39,7 +39,7 @@ namespace spades {
         if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
             barcode_resolver_pipeline.add(new debruijn_graph::GapClosing("early_gapcloser"));
 
-        barcode_resolver_pipeline.add(new debruijn_graph::Simplification(true /*preliminary*/));
+        barcode_resolver_pipeline.add(new debruijn_graph::Simplification(false /*preliminary*/));
 
         if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
             barcode_resolver_pipeline.add(new debruijn_graph::GapClosing("late_gapcloser"));
@@ -64,8 +64,8 @@ namespace spades {
             //No graph modification allowed after HybridLibrariesAligning stage!
 
             barcode_resolver_pipeline.add(new BarcodeMapConstructionStage(cfg::get().K))
-//                    .add(new debruijn_graph::PairInfoCount())
-//                    .add(new debruijn_graph::DistanceEstimation())
+                    .add(new debruijn_graph::PairInfoCount())
+                    .add(new debruijn_graph::DistanceEstimation())
                     .add(new TslrResolverStage(cfg::get().K, cfg::get().output_dir + "resolver_output.fasta"));
 
 

@@ -98,7 +98,7 @@ namespace omnigraph {
             DEBUG("Gap " << gap)
             //fixme move somewhere
             const size_t barcode_len = 10000;
-            DEBUG("Threshold: " << tslr_resolver::TrivialTSLRExtensionChooser::GetGapCoefficient(static_cast<int> (gap),
+            DEBUG("Threshold: " << tslr_resolver::ReadCloudExtensionChooser::GetGapCoefficient(static_cast<int> (gap),
                                                                                                  barcode_len)
                                    * barcode_threshold_)
 
@@ -120,8 +120,8 @@ namespace omnigraph {
                 //Barcode number should be similar on nearby genome fragments.
                 if (!CheckNumberOfBarcodes(decisive_barcodes, current_barcodes,
                                            cfg::get().ts_res.barcode_number_threshold)) {
-                        DEBUG("Barcode numbers significantly differ, don't put to candidates list");
-                        return false;
+                    DEBUG("Barcode numbers significantly differ, don't put to candidates list");
+                    return false;
                 }
                 candidates_.push_back(edge);
                 DEBUG("Long unique nearby edge, put to candidates list and stop" << endl)

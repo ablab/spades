@@ -3,7 +3,8 @@
 #include <tslr_pe.hpp>
 #include <barcode_mapper.hpp>
 #include "common/pipeline/stage.hpp"
-#include "extension_chooser_statisticts.hpp"
+#include "barcode_statistics_counter.hpp"
+
 
 namespace spades {
     class TslrResolverStage : public AssemblyStage {
@@ -12,19 +13,20 @@ namespace spades {
         std::string output_file_;
         std::string path_to_reference_;
 
-        void LaunchStatisticsCounter(const debruijn_graph::conj_graph_pack& graph_pack) {
+        void LaunchStatisticsCounter(debruijn_graph::conj_graph_pack& graph_pack) {
+            graph_pack.EnsureIndex();
+            graph_pack.EnsureBasicMapping();
             std::string statistics_directory = cfg::get().output_dir + "/stats";
-            auto stat_collector = BarcodeStatisticsCollector(graph_pack.g, graph_pack.barcode_mapper);
-            size_t length_bound = 1000;
+            path::make_dir(statistics_directory);
+            auto stat_collector = BarcodeStatisticsCollector(graph_pack);
+            size_t length_bound = 8000;
             size_t distance_bound = cfg::get().ts_res.distance_bound;
-            stat_collector.FillEdgeStatistics(length_bound, distance_bound);
-            stat_collector.SerializeEdgeStatistics(statistics_directory + "/edge_statistics");
-            stat_collector.FillTrimmingStatistics();
-            stat_collector.SerializeTrimmingStatistics(statistics_directory + "/trimming_statistics");
-            stat_collector.FillReadStatistics(cfg::get().ts_res.edge_tail_len);
-            stat_collector.SerializeReadStatistics(statistics_directory + "/read_statistics");
-            stat_collector.FillBarcodeStatistics();
-            stat_collector.SerializeBarcodeStatistics(statistics_directory + "/barcode_statistics");
+            stat_collector.SerializeBarcodeLists(statistics_directory + "/barcode_lists");
+            stat_collector.FillSharedDistributionAlongPath(cfg::get().ts_res.genome_path, 8000);
+            //stat_collector.FillEdgeStatistics(length_bound, distance_bound);
+//            stat_collector.FillBarcodeStatistics();
+//            stat_collector.FillTrimmingStatistics();
+            stat_collector.SerializeAllStats(statistics_directory);
         }
 
     public:
@@ -43,8 +45,9 @@ namespace spades {
 
             //todo get trimming threshold from distribution
             size_t trimming_threshold = cfg::get().ts_res.trimming_threshold;
-            INFO("Trimming threshold: " << trimming_threshold)
-            graph_pack.barcode_mapper->FilterByAbundance(trimming_threshold);
+            INFO("Trimming read count threshold: " << trimming_threshold)
+            size_t gap_threshold = cfg::get().ts_res.gap_threshold;
+            graph_pack.barcode_mapper->Filter(5, 10000);
             graph_pack.barcode_mapper->
                     SerializeOverallDistribution(cfg::get().output_dir + "barcode_distribution_after_trimming");
             INFO("Average barcode coverage after trimming: " +
