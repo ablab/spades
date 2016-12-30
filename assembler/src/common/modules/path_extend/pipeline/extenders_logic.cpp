@@ -281,7 +281,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
         else {
             double lib_cov = support_.EstimateLibCoverage(lib_index);
             INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
-            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), lib_cov);
+            iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), lib_cov);
         }
     }
     shared_ptr<WeightCounter> wc =
