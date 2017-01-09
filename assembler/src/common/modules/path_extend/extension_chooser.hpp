@@ -18,6 +18,7 @@
 #include <cfloat>
 #include <iostream>
 #include <fstream>
+#include <map>
 #include "weight_counter.hpp"
 #include "pe_utils.hpp"
 
@@ -26,7 +27,6 @@
 namespace path_extend {
 
 typedef std::multimap<double, EdgeWithDistance> AlternativeContainer;
-
 
 class PathAnalyzer {
 protected:
@@ -245,21 +245,25 @@ private:
 
 
 class JointExtensionChooser: public ExtensionChooser {
-
-protected:
     shared_ptr<ExtensionChooser> first_;
-
     shared_ptr<ExtensionChooser> second_;
+    bool trust_first_unambiguous_;
 
 public:
-    JointExtensionChooser(const Graph& g, shared_ptr<ExtensionChooser> first, shared_ptr<ExtensionChooser> second): ExtensionChooser(g),
-        first_(first), second_(second)
+    JointExtensionChooser(const Graph& g,
+                          shared_ptr<ExtensionChooser> first,
+                          shared_ptr<ExtensionChooser> second,
+                          bool trust_first_unambiguous): ExtensionChooser(g),
+        first_(first), second_(second), trust_first_unambiguous_(trust_first_unambiguous)
     {
     }
 
     EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
-        EdgeContainer e1 = first_->Filter(path, edges);
-        return second_->Filter(path, e1);
+        EdgeContainer filtered = first_->Filter(path, edges);
+        if (filtered.size() == 1 && !trust_first_unambiguous_) {
+            return EdgeContainer();
+        }
+        return second_->Filter(path, filtered);
     }
 };
 
@@ -278,31 +282,7 @@ public:
     }
 };
 
-
-class TrivialExtensionChooserWithPI: public ExtensionChooser {
-
-public:
-    TrivialExtensionChooserWithPI(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold):
-            ExtensionChooser(g, wc, weight_threshold) {
-    }
-
-    EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
-        EdgeContainer result;
-        for(auto iter = edges.begin(); iter != edges.end(); ++iter) {
-            double weight = wc_->CountWeight(path, iter->e_, std::set<size_t>());
-            NotifyAll(weight);
-
-            if (CheckThreshold(weight)) {
-                result.push_back(*iter);
-            }
-        }
-        return result;
-    }
-};
-
 class ExcludingExtensionChooser: public ExtensionChooser {
-    //FIXME what is the logic behind it?
-protected:
     PathAnalyzer analyzer_;
     double prior_coeff_;
 
@@ -333,6 +313,7 @@ protected:
         auto max_weight = (--weights.end())->first;
         EdgeContainer top = FindPossibleEdges(weights, max_weight);
         EdgeContainer result;
+        //FIXME why checking top.size() here?
         if (top.size() >= 1 && CheckThreshold(max_weight)) {
             result = top;
         }
@@ -341,7 +322,12 @@ protected:
 
 protected:
 
-    virtual void ExcludeEdges(const BidirectionalPath& path, const EdgeContainer& edges, std::set<size_t>& to_exclude) const = 0;
+    virtual void ExcludeEdges(const BidirectionalPath& path,
+                              const EdgeContainer& /*edges*/,
+                              std::set<size_t>& to_exclude) const {
+        analyzer_.RemoveTrivial(path, to_exclude);
+    }
+
 
 public:
     ExcludingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, PathAnalyzer analyzer, double weight_threshold, double priority) :
@@ -356,7 +342,6 @@ public:
             return edges;
         }
         std::set<size_t> to_exclude;
-        analyzer_.RemoveTrivial(path, to_exclude);
         path.Print();
         EdgeContainer result = edges;
         ExcludeEdges(path, result, to_exclude);
@@ -375,10 +360,12 @@ private:
 class SimpleExtensionChooser: public ExcludingExtensionChooser {
 protected:
     void ExcludeEdges(const BidirectionalPath& path, const EdgeContainer& edges, std::set<size_t>& to_exclude) const override {
+        ExcludingExtensionChooser::ExcludeEdges(path, edges, to_exclude);
+
         if (edges.size() < 2) {
             return;
         }
-        //excluding based on absense of ideal info
+        //excluding based on absence of ideal info
         int index = (int) path.Size() - 1;
         while (index >= 0) {
             if (to_exclude.count(index)) {
@@ -423,10 +410,48 @@ private:
     DECL_LOGGER("SimpleExtensionChooser");
 };
 
+//TODO this class should not exist with better configuration of excluding conditions
+class IdealBasedExtensionChooser : public ExcludingExtensionChooser {
+protected:
+    void ExcludeEdges(const BidirectionalPath &path, const EdgeContainer &edges,
+                      std::set<size_t> &to_exclude) const override {
+        //commented for a reason
+        //ExcludingExtensionChooser::ExcludeEdges(path, edges, to_exclude);
+        //if (edges.size() < 2) {
+        //    return;
+        //}
+        VERIFY(to_exclude.empty());
+        //excluding based on absence of ideal info
+        for (int index = (int) path.Size() - 1; index >= 0; index--) {
+            EdgeId path_edge = path[index];
+
+            for (size_t i = 0; i < edges.size(); ++i) {
+                if (!HasIdealInfo(path_edge,
+                                  edges.at(i).e_,
+                                  path.LengthAt(index))) {
+                    to_exclude.insert(size_t(index));
+                }
+            }
+        }
+    }
+
+public:
+
+    IdealBasedExtensionChooser(const Graph &g,
+                               shared_ptr<WeightCounter> wc,
+                               double weight_threshold,
+                               double priority) :
+        ExcludingExtensionChooser(g, wc, PathAnalyzer(g), weight_threshold, priority) {
+    }
+
+private:
+    DECL_LOGGER("IdealBasedExtensionChooser");
+};
 
 class RNAExtensionChooser: public ExcludingExtensionChooser {
 protected:
     void ExcludeEdges(const BidirectionalPath& path, const EdgeContainer& edges, std::set<size_t>& to_exclude) const override {
+        ExcludingExtensionChooser::ExcludeEdges(path, edges, to_exclude);
         if (edges.size() < 2) {
             return;
         }
@@ -456,6 +481,7 @@ private:
 class LongEdgeExtensionChooser: public ExcludingExtensionChooser {
 protected:
     virtual void ExcludeEdges(const BidirectionalPath& path, const EdgeContainer& edges, std::set<size_t>& to_exclude) const {
+        ExcludingExtensionChooser::ExcludeEdges(path, edges, to_exclude);
         if (edges.size() < 2) {
             return;
         }

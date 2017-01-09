@@ -17,9 +17,9 @@
 
 #include "assembly_graph/paths/bidirectional_path.hpp"
 
-using namespace debruijn_graph;
-
 namespace path_extend {
+
+using namespace debruijn_graph;
 
 //Checks whether we are in a cycle of length 2, used only for seed selection.
 inline bool InTwoEdgeCycle(EdgeId e, const Graph &g) {

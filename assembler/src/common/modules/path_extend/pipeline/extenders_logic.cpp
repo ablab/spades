@@ -64,18 +64,22 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongEdgePEExtender(size_t lib
                                        false /*use short loop coverage resolver*/);
 }
 
-shared_ptr<SimpleExtensionChooser> ExtendersGenerator::MakeMetaExtensionChooser(shared_ptr<PairedInfoLibrary> lib,
-                                                                                size_t read_length) const {
+shared_ptr<WeightCounter> ExtendersGenerator::MakeMetaWeightCounter(shared_ptr<PairedInfoLibrary> lib,
+                                                                   size_t read_length) const {
     VERIFY(params_.mode == config::pipeline_type::meta);
     VERIFY(!lib->IsMp());
     //FIXME params to config
-    shared_ptr<WeightCounter> wc = make_shared<MetagenomicWeightCounter>(gp_.g,
-                                                                         lib,
-                                                                         read_length, //read_length
-                                                                         params_.pset.extension_options.single_threshold, //normalized_threshold
-                                                                         3, //raw_threshold
-                                                                         0 /*estimation_edge_length*/ );
-    return make_shared<SimpleExtensionChooser>(gp_.g, wc,
+    return make_shared<MetagenomicWeightCounter>(gp_.g,
+                                                 lib,
+                                                 read_length, //read_length
+                                                 0.3, //normalized_threshold
+                                                 3, //raw_threshold
+                                                 0 /*estimation_edge_length*/ );
+}
+
+inline shared_ptr<SimpleExtensionChooser> ExtendersGenerator::MakeMetaExtensionChooser(shared_ptr<PairedInfoLibrary> lib,
+                                                                                       size_t read_length) const {
+    return make_shared<SimpleExtensionChooser>(gp_.g, MakeMetaWeightCounter(lib, read_length),
                                                params_.pset.extension_options.weight_threshold,
                                                params_.pset.extension_options.priority_coeff);
 }
@@ -215,31 +219,33 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(
                                                 false /* jump only from tips */);
 }
 
-//FIXME to DimaM: magic constants and -1ul need comments
 shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t lib_index) const {
-
-    const auto &lib = dataset_info_.reads[lib_index];
+    const auto& lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
 
-    CoverageAwareIdealInfoProvider provider(gp_.g, paired_lib, -1ul, 0);
-    auto coord_chooser = make_shared<CoordinatedCoverageExtensionChooser>(gp_.g, provider,
-                                                                          params_.pset.coordinated_coverage.max_edge_length_in_repeat,
-                                                                          params_.pset.coordinated_coverage.delta,
-                                                                          params_.pset.coordinated_coverage.min_path_len);
-    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp_.g, paired_lib, false);
-    auto chooser = make_shared<JointExtensionChooser>(gp_.g,
-                                                      make_shared<TrivialExtensionChooserWithPI>(gp_.g,
-                                                                                                 counter,
-                                                                                                 1.5),
-                                                      coord_chooser);
-    return make_shared<SimpleExtender>(gp_,
-                                       cover_map_,
-                                       chooser,
-                                       -1ul,
+    CoverageAwareIdealInfoProvider provider(gp_.g, paired_lib, dataset_info_.RL(), /*edge length lowerbound*/0);
+
+    auto permissive_pi_chooser = make_shared<IdealBasedExtensionChooser>(gp_.g,
+                                                                         MakeMetaWeightCounter(paired_lib, dataset_info_.RL()),
+                                                                         params_.pset.extension_options.weight_threshold,
+                                                                         params_.pset.extension_options.priority_coeff);
+
+    auto coord_cov_chooser = make_shared<CoordinatedCoverageExtensionChooser>(gp_.g, provider,
+                                                                              params_.pset.coordinated_coverage.max_edge_length_in_repeat,
+                                                                              params_.pset.coordinated_coverage.delta,
+                                                                              params_.pset.coordinated_coverage.min_path_len);
+
+    auto chooser = make_shared<JointExtensionChooser>(gp_.g, permissive_pi_chooser, coord_cov_chooser, /*trust first unambiguous*/false);
+
+    //FIXME Andrew, should we use some other extender here?
+    return make_shared<SimpleExtender>(gp_, cover_map_, chooser,
+                                       -1ul /* insert size */,
+                                       //fixme what is this setting?
                                        params_.pset.loop_removal.mp_max_loops,
-                                       false,
-                                       false);
+                                       false, /* investigate short loops */
+                                       false /*use short loop coverage resolver*/);
 }
+
 
 shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index, bool investigate_loops) const {
 

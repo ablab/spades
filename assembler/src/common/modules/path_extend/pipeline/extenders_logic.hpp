@@ -84,6 +84,9 @@ private:
     shared_ptr<SimpleExtender> MakeLongEdgePEExtender(size_t lib_index,
                                                       bool investigate_loops) const;
 
+    shared_ptr<WeightCounter> MakeMetaWeightCounter(shared_ptr<PairedInfoLibrary> lib,
+                                                    size_t read_length) const;
+
     shared_ptr<SimpleExtensionChooser> MakeMetaExtensionChooser(shared_ptr<PairedInfoLibrary> lib,
                                                                 size_t read_length) const;
 
