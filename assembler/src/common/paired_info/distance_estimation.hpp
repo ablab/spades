@@ -44,39 +44,30 @@ public:
 
     // finds all distances from a current edge to a set of edges
     void FillGraphDistancesLengths(EdgeId e1, LengthMap &second_edges) const {
-        vector<VertexId> end_points;
         vector<size_t> path_lower_bounds;
-        for (const auto &entry : second_edges) {
-            EdgeId second_edge = entry.first;
-            end_points.push_back(graph_.EdgeStart(second_edge));
-            path_lower_bounds.push_back(PairInfoPathLengthLowerBound(graph_.k(), graph_.length(e1),
-                                                                     graph_.length(second_edge), gap_, delta_));
-            TRACE("Bounds for paths are " << path_lower_bounds.back());
-        }
 
         size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), insert_size_, delta_);
 
-        DistancesLengthsCallback<Graph> callback(graph_);
-
         PathProcessor<Graph> paths_proc(graph_, graph_.EdgeEnd(e1), path_upper_bound);
 
-        for (size_t i = 0; i < end_points.size(); ++i) {
-            //FIXME should max dist also depend on the point?
-            paths_proc.Process(end_points[i], path_lower_bounds[i], path_upper_bound, callback);
-        }
-
-        vector<GraphLengths> result;
-
-        size_t i = 0;
         for (auto &entry : second_edges) {
-            GraphLengths lengths = callback.distances(i++);
+            EdgeId e2 = entry.first;
+            size_t path_lower_bound = PairInfoPathLengthLowerBound(graph_.k(), graph_.length(e1),
+                                                                   graph_.length(e2), gap_, delta_);
+
+            TRACE("Bounds for paths are " << path_lower_bound << " " << path_upper_bound);
+
+            DistancesLengthsCallback<Graph> callback(graph_);
+            paths_proc.Process(graph_.EdgeStart(e2), path_lower_bound, path_upper_bound, callback);
+            GraphLengths lengths = callback.distances();
             for (size_t j = 0; j < lengths.size(); ++j) {
                 lengths[j] += graph_.length(e1);
-                TRACE("Resulting distance set # " << i <<
-                      " edge " << graph_.int_id(entry.first) << " #" << j << " length " << lengths[j]);
+                TRACE("Resulting distance set for " <<
+                          " edge " << graph_.int_id(e2) <<
+                          " #" << j << " length " << lengths[j]);
             }
 
-            if (e1 == entry.first)
+            if (e1 == e2)
                 lengths.push_back(0);
 
             std::sort(lengths.begin(), lengths.end());
@@ -139,7 +130,7 @@ protected:
                 weight += estimated[i].second;
             }
             double center = (estimated[left].first + estimated[i].first) * 0.5;
-            double var = (estimated[i].first - estimated[left].first) * 0.5;
+            float var = (estimated[i].first - estimated[left].first) * 0.5;
             result.insert(Point(center, weight, var));
         }
         return result;

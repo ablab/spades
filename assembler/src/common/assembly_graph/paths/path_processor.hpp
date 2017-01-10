@@ -39,17 +39,14 @@ public:
         virtual ~Callback() {
         }
 
-        virtual void Flush() {
-        }
-
         virtual void HandleReversedPath(const vector<EdgeId>& reversed_path) = 0;
 
 
     protected:
         Path ReversePath(const Path& path) const {
             Path result;
-            for (auto I = path.rbegin(), E = path.rend(); I != E; ++I)
-                result.push_back(*I);
+            for (auto it = path.rbegin(), end = path.rend(); it != end; ++it)
+                result.push_back(*it);
             return result;
         }
     };
@@ -203,7 +200,6 @@ public:
         Traversal traversal(*this, end, min_len, max_len, callback, edge_depth_bound);
         error_code |= int(traversal.Go());
 
-        callback.Flush();
         TRACE("Process finished with error code " << error_code);
         return error_code;
     }
@@ -227,32 +223,6 @@ int ProcessPaths(const Graph& g, size_t min_len, size_t max_len,
     PathProcessor<Graph> processor(g, start, max_len);
     return processor.Process(end, min_len, max_len, callback, max_edge_cnt);
 }
-
-template<class Graph>
-class CompositeCallback: public PathProcessor<Graph>::Callback {
-    typedef typename Graph::EdgeId EdgeId;
-    typedef vector<EdgeId> Path;
-
-public:
-    void AddProcessor(typename PathProcessor<Graph>::Callback& processor) {
-        processors_.push_back(&processor);
-    }
-
-    void Flush() override {
-        for (auto it = processors_.begin(); it != processors_.end(); ++it) {
-            (*it)->Flush();
-        }
-    }
-
-    void HandleReversedPath(const Path& path) override {
-        for (auto it = processors_.begin(); it != processors_.end(); ++it) {
-            (*it)->HandleReversedPath(path);
-        }
-    }
-
-private:
-    vector<typename PathProcessor<Graph>::Callback*> processors_;
-};
 
 template<class Graph>
 class AdapterCallback: public PathProcessor<Graph>::Callback {
@@ -305,27 +275,21 @@ public:
             g_(g) {
     }
 
-    void Flush() override {
-        all_paths_.push_back(cur_paths_);
-        cur_paths_.clear();
-    }
-
     void HandleReversedPath(const vector<EdgeId>& path) override {
-        cur_paths_.push_back(this->ReversePath(path));
+        paths_.push_back(this->ReversePath(path));
     }
 
-    size_t size(size_t k = 0) const {
-        return all_paths_[k].size();
+    size_t size() const {
+        return paths_.size();
     }
 
-    const vector<Path>& paths(size_t k = 0) const {
-        return all_paths_[k];
+    const vector<Path>& paths() const {
+        return paths_;
     }
 
 private:
     const Graph& g_;
-    vector<vector<Path>> all_paths_;
-    vector<Path> cur_paths_;
+    vector<Path> paths_;
 };
 
 template<class Graph>
@@ -338,33 +302,25 @@ public:
             g_(g), count_(0) {
     }
 
-    void Flush() override {
-        all_paths_.push_back(cur_paths_);
-        counts_.push_back(count_);
-        cur_paths_.clear();
-    }
-
     void HandleReversedPath(const Path& path) override {
         if (path.size() > 0) {
             ++count_;
-            cur_paths_.push_back(this->ReversePath(path));
+            paths_.push_back(this->ReversePath(path));
         }
     }
 
-    size_t count(size_t k = 0) const {
-        return counts_[k];
+    size_t count() const {
+        return count_;
     }
 
-    const vector<Path>& paths(size_t k = 0) const {
-        return all_paths_[k];
+    const vector<Path>& paths() const {
+        return paths_;
     }
 
 private:
     const Graph& g_;
-    vector<size_t> counts_;
     size_t count_;
-    vector<vector<Path>> all_paths_;
-    vector<Path> cur_paths_;
+    vector<Path> paths_;
 };
 
 template<class Graph>
@@ -378,34 +334,26 @@ public:
             g_(g), count_(0) {
     }
 
-    void Flush() override {
-        all_vertices_.push_back(vertices_);
-        vertices_.clear();
-        counts_.push_back(count_);
-    }
-
     void HandleReversedPath(const Path& path) override {
-        for (auto it = path.rbegin(); it != path.rend(); ++it) {
+        for (EdgeId e : path) {
             if (path.size() > 0) {
-                vertices_.insert(g_.EdgeStart(*it));
-                vertices_.insert(g_.EdgeEnd(*it));
+                vertices_.insert(g_.EdgeStart(e));
+                vertices_.insert(g_.EdgeEnd(e));
                 ++count_;
             }
         }
     }
 
-    const set<VertexId>& vertices(size_t k = 0) const {
-        return all_vertices_[k];
+    const set<VertexId>& vertices() const {
+        return vertices_;
     }
 
-    size_t count(size_t k = 0) const {
-        return counts_[k];
+    size_t count() const {
+        return count_;
     }
 
 private:
     Graph& g_;
-    vector<size_t> counts_;
-    vector<set<VertexId>> all_vertices_;
     size_t count_;
     set<VertexId> vertices_;
 };
@@ -420,33 +368,17 @@ public:
             g_(g) {
     }
 
-    void Flush() override {
-        all_distances_.push_back(distances_);
-        distances_.clear();
-    }
-
     void HandleReversedPath(const Path& path) override {
-        size_t path_length = PathLength(path);
-        distances_.insert(path_length);
+        distances_.insert(CumulativeLength(g_, path));
     }
 
-    vector<size_t> distances(size_t k = 0) const {
-        VERIFY(k < all_distances_.size());
-        const set<size_t>& tmp = all_distances_[k];
-        return vector<size_t>(tmp.begin(), tmp.end());
+    vector<size_t> distances() const {
+        return vector<size_t>(distances_.begin(), distances_.end());
     }
 
 private:
-    size_t PathLength(const Path& path) const {
-        size_t res = 0;
-        for (auto I = path.begin(); I != path.end(); ++I)
-            res += g_.length(*I);
-        return res;
-    }
-
     const Graph& g_;
     set<size_t> distances_;
-    vector<set<size_t>> all_distances_;
 
     DECL_LOGGER("DistancesLengthsCallback");
 };
