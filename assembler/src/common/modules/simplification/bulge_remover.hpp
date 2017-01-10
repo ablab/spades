@@ -307,15 +307,6 @@ NecessaryBulgeCondition(const Graph& g, size_t max_length, double max_coverage) 
                                                      CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
-template<class Graph>
-inline double AbsoluteMaxCoverage(const std::vector<AlternativesAnalyzer<Graph>>& alternatives_analyzers) {
-    double ans = -1.;
-    for (const auto& analyzer : alternatives_analyzers) {
-        ans = std::max(ans, analyzer.max_coverage());
-    }
-    return ans;
-}
-
 /**
  * This class removes simple bulges from given graph with the following algorithm: it iterates through all edges of
  * the graph and for each edge checks if this edge is likely to be a simple bulge

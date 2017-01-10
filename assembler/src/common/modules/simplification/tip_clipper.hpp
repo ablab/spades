@@ -201,13 +201,6 @@ func::TypedPredicate<typename Graph::EdgeId> AddTipCondition(const Graph& g,
 }
 
 template<class Graph>
-func::TypedPredicate<typename Graph::EdgeId>
-NecessaryTipCondition(const Graph& g, size_t max_length, double max_coverage) {
-    return AddTipCondition(g, func::And(LengthUpperBound<Graph>(g, max_length),
-                                       CoverageUpperBound<Graph>(g, max_coverage)));
-}
-
-template<class Graph>
 class DeadEndCondition : public EdgeCondition<Graph> {
     typedef EdgeCondition<Graph> base;
 
@@ -251,21 +244,5 @@ func::TypedPredicate<typename Graph::EdgeId>AddDeadEndCondition(const Graph& g,
                                                                 func::TypedPredicate<typename Graph::EdgeId> condition) {
     return func::And(DeadEndCondition<Graph>(g), condition);
 }
-
-//template<class Graph>
-//bool ClipTips(
-//        Graph& g,
-//        size_t max_length,
-//        shared_ptr<Predicate<typename Graph::EdgeId>> condition
-//            = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
-//        std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-//
-//    omnigraph::EdgeRemovingAlgorithm<Graph> tc(g,
-//                                               AddTipCondition(g, condition),
-//                                               removal_handler);
-//
-//    return tc.Run(LengthComparator<Graph>(g),
-//                      make_shared<LengthUpperBound<Graph>>(g, max_length));
-//}
 
 } // namespace omnigraph

@@ -11,6 +11,8 @@
 #include "test_utils.hpp"
 #include "modules/simplification/parallel_simplification_algorithms.hpp"
 #include "stages/simplification_pipeline/graph_simplification.hpp"
+#include "stages/simplification_pipeline/single_cell_simplification.hpp"
+#include "stages/simplification_pipeline/rna_simplification.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 //#include "repeat_resolving_routine.hpp"
 
@@ -313,8 +315,9 @@ void TestRelativeCoverageRemover(std::string path, size_t graph_size) {
         FillKmerCoverageWithAvg(gp.g, gp.index.inner_index());
         gp.flanking_cov.Fill(gp.index.inner_index());
     }
-    auto algo = debruijn::simplification::RelativelyLowCoverageComponentRemoverInstance(gp.g, gp.flanking_cov,
-                                                                    standard_rcc_config(), standard_simplif_relevant_info());
+    auto algo = debruijn::simplification::RelativeCoverageComponentRemoverInstance(gp.g, gp.flanking_cov,
+                                                                                   standard_rcc_config(),
+                                                                                   standard_simplif_relevant_info());
     algo->Run();
     BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
 }

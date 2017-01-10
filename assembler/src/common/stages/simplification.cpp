@@ -9,6 +9,8 @@
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "stages/simplification_pipeline/simplification_settings.hpp"
 #include "stages/simplification_pipeline/graph_simplification.hpp"
+#include "stages/simplification_pipeline/single_cell_simplification.hpp"
+#include "stages/simplification_pipeline/rna_simplification.hpp"
 #include "modules/simplification/parallel_simplification_algorithms.hpp"
 
 #include "simplification.hpp"
@@ -192,8 +194,14 @@ class GraphSimplifier {
         }
 
         PushValid(
-                RelativelyLowCoverageComponentRemoverInstance(gp_.g, gp_.flanking_cov,
-                                                              simplif_cfg_.rcc, info_container_, set_removal_handler_f),
+                RelativeECRemoverInstance(gp_.g,
+                                          simplif_cfg_.rcec, info_container_, removal_handler_),
+                "Relative coverage component remover",
+                algos);
+
+        PushValid(
+                RelativeCoverageComponentRemoverInstance(gp_.g, gp_.flanking_cov,
+                                                         simplif_cfg_.rcc, info_container_, set_removal_handler_f),
                 "Relative coverage component remover",
                 algos);
 
@@ -462,6 +470,13 @@ public:
     }
 };
 
+shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultGPColorer(
+        const conj_graph_pack &gp) {
+    auto mapper = MapperInstance(gp);
+    auto path1 = mapper->MapSequence(gp.genome.GetSequence()).path();
+    auto path2 = mapper->MapSequence(!gp.genome.GetSequence()).path();
+    return visualization::graph_colorer::DefaultColorer(gp.g, path1, path2);
+}
 
 void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;

@@ -295,11 +295,6 @@ private:
     boost::optional<Path> best_path_;
 };
 
-template<class Graph, class Comparator>
-BestPathStorage<Graph, Comparator> BestPathStorageInstance(const Graph& g, Comparator c) {
-    return BestPathStorage<Graph, Comparator>(g, c);
-};
-
 template<class Graph>
 class PathStorageCallback: public PathProcessor<Graph>::Callback {
     typedef typename Graph::EdgeId EdgeId;

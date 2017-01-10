@@ -25,7 +25,6 @@
 #include "modules/simplification/mf_ec_remover.hpp"
 #include "modules/simplification/parallel_simplification_algorithms.hpp"
 #include "stages/simplification_pipeline/simplification_settings.hpp"
-#include "stages/simplification_pipeline/single_cell_simplification.hpp"
 
 #include "modules/graph_read_correction.hpp"
 
@@ -260,16 +259,6 @@ private:
     DECL_LOGGER("ConditionParser");
 };
 
-//todo move to visualization
-template<class graph_pack>
-shared_ptr<visualization::graph_colorer::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
-        const graph_pack &gp) {
-    auto mapper = MapperInstance(gp);
-    auto path1 = mapper->MapSequence(gp.genome.GetSequence()).path();
-    auto path2 = mapper->MapSequence(!gp.genome.GetSequence()).path();
-    return visualization::graph_colorer::DefaultColorer(gp.g, path1, path2);
-}
-
 template<class Graph>
 class EditDistanceTrackingCallback {
     typedef typename Graph::EdgeId EdgeId;
@@ -296,7 +285,7 @@ private:
     DECL_LOGGER("EditDistanceTrackingCallback");
 };
 
-//enabling tip projection, todo optimize if hotspot
+//enabling tip projection
 template<class gp_t>
 EdgeRemovalHandlerF<typename gp_t::graph_t> WrapWithProjectionCallback(
     gp_t &gp,
@@ -312,13 +301,16 @@ EdgeRemovalHandlerF<typename gp_t::graph_t> WrapWithProjectionCallback(
 }
 
 template<class Graph>
-class LowCoverageEdgeRemovingAlgorithm : public PersistentEdgeRemovingAlgorithm<Graph,
-                                                                                omnigraph::CoverageComparator<Graph>> {
+class LowCoverageEdgeRemovingAlgorithm : public PersistentProcessingAlgorithm<Graph,
+                                                                              typename Graph::EdgeId,
+                                                                              omnigraph::CoverageComparator<Graph>> {
     typedef typename Graph::EdgeId EdgeId;
-    typedef PersistentEdgeRemovingAlgorithm<Graph, omnigraph::CoverageComparator<Graph>> base;
+    typedef PersistentProcessingAlgorithm<Graph, EdgeId, omnigraph::CoverageComparator<Graph>> base;
 
-    SimplifInfoContainer simplif_info_;
-    std::string condition_str_;
+    const SimplifInfoContainer simplif_info_;
+    const std::string condition_str_;
+    EdgeRemover<Graph> edge_remover_;
+
     func::TypedPredicate<EdgeId> remove_condition_;
     func::TypedPredicate<EdgeId> proceed_condition_;
 
@@ -338,30 +330,43 @@ protected:
         return proceed_condition_(e);
     }
 
-    bool ShouldRemove(EdgeId e) const override {
-        return remove_condition_(e);
+    bool Process(EdgeId e) override {
+        TRACE("Checking edge " << this->g().str(e) << " for the removal condition");
+        if (remove_condition_(e)) {
+            TRACE("Check passed, removing");
+            edge_remover_.DeleteEdge(e);
+            return true;
+        }
+        TRACE("Check not passed");
+        return false;
     }
 
 public:
-    typedef typename base::CandidateFinderPtr CandidateFinderPtr;
     LowCoverageEdgeRemovingAlgorithm(Graph &g,
-                                    const CandidateFinderPtr& interest_edge_finder,
-                                    const SimplifInfoContainer& simplif_info,
-                                    const std::string &condition_str,
-                                    std::function<void(EdgeId)> removal_handler = nullptr,
-                                    bool canonical_only = false,
-                                    bool track_changes = true,
-                                    size_t total_iteration_estimate = -1ul)
-            : base(g, interest_edge_finder,
-                   removal_handler,
+                                     const std::string &condition_str,
+                                     const SimplifInfoContainer &simplif_info,
+                                     std::function<void(EdgeId)> removal_handler = nullptr,
+                                     bool canonical_only = true,
+                                     bool track_changes = true,
+                                     size_t total_iteration_estimate = -1ul)
+            : base(g, nullptr,
                    canonical_only,
                    omnigraph::CoverageComparator<Graph>(g),
                    track_changes,
                    total_iteration_estimate),
-            simplif_info_(simplif_info),
-            condition_str_(condition_str),
-            remove_condition_(func::AlwaysFalse<EdgeId>()),
-            proceed_condition_(func::AlwaysTrue<EdgeId>()) {}
+              simplif_info_(simplif_info),
+              condition_str_(condition_str),
+              edge_remover_(g, removal_handler),
+              remove_condition_(func::AlwaysFalse<EdgeId>()),
+              proceed_condition_(func::AlwaysTrue<EdgeId>()) {
+
+        ConditionParser<Graph> parser(g, condition_str, simplif_info,
+                                      total_iteration_estimate - 1, total_iteration_estimate);
+        this->interest_el_finder_ =
+                std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(
+                        AddAlternativesPresenceCondition(g, parser()),
+                        simplif_info.chunk_cnt());
+    }
 
 private:
     DECL_LOGGER("LowCoverageEdgeRemovingAlgorithm");
@@ -399,11 +404,11 @@ AlgoPtr<Graph> SelfConjugateEdgeRemoverInstance(Graph &g, const string &conditio
 }
 
 template<class Graph>
-AlgoPtr<Graph> RelativelyLowCoverageComponentRemoverInstance(
-        Graph& g,
-        const FlankingCoverage<Graph>& flanking_cov,
-        const config::debruijn_config::simplification::relative_coverage_comp_remover& rcc_config,
-        const SimplifInfoContainer& info,
+AlgoPtr<Graph> RelativeCoverageComponentRemoverInstance (
+        Graph &g,
+        const FlankingCoverage<Graph> &flanking_cov,
+        const config::debruijn_config::simplification::relative_coverage_comp_remover &rcc_config,
+        const SimplifInfoContainer &info,
         typename ComponentRemover<Graph>::HandlerF removal_handler = nullptr) {
     if (!rcc_config.enabled) {
         return nullptr;
@@ -483,18 +488,6 @@ AlgoPtr<Graph> ComplexTipClipperInstance(Graph &g,
 }
 
 template<class Graph>
-AlgoPtr<Graph> ShortPolyATEdgesRemoverInstance(Graph &g, size_t max_length, EdgeRemovalHandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
-    auto condition = func::And(ATCondition<Graph>(g, 0.8, max_length, false), LengthUpperBound<Graph>(g, 1));
-    return std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>(g, condition, chunk_cnt, removal_handler, true);
-}
-
-template<class Graph>
-AlgoPtr<Graph> ATTipClipperInstance(Graph &g, EdgeRemovalHandlerF<Graph> removal_handler = 0, size_t chunk_cnt = 1) {
-//TODO: review params 0.8, 200?
-    return std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>(g, ATCondition<Graph>(g, 0.8, 200, true), chunk_cnt, removal_handler, true);
-}
-
-template<class Graph>
 AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
                                            config::debruijn_config::simplification::isolated_edges_remover ier,
                                            const SimplifInfoContainer &info,
@@ -517,29 +510,11 @@ AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
 }
 
 template<class Graph>
-func::TypedPredicate<typename Graph::EdgeId> NecessaryBulgeCondition(const Graph &g,
-                                                                    const config::debruijn_config::simplification::bulge_remover &br_config,
-                                                                    const SimplifInfoContainer&) {
-    auto analyzer = ParseBRConfig(g, br_config);
-    return omnigraph::NecessaryBulgeCondition(g, analyzer.max_length(), analyzer.max_coverage());
-}
-
-template<class Graph>
-func::TypedPredicate<typename Graph::EdgeId> NecessaryTipCondition(const Graph &g,
-                                                                  const config::debruijn_config::simplification::tip_clipper &tc_config,
-                                                                  const SimplifInfoContainer &info) {
-    ConditionParser<Graph> parser(g, tc_config.condition, info);
-    auto condition = parser();
-    return omnigraph::NecessaryTipCondition(g, parser.max_length_bound(),
-                                            parser.max_coverage_bound());
-}
-
-template<class Graph>
 AlgoPtr<Graph> RelativeECRemoverInstance(Graph &g,
                                          const config::debruijn_config::simplification::relative_coverage_ec_remover &rcec_config,
                                          const SimplifInfoContainer &info,
                                          EdgeRemovalHandlerF<Graph> removal_handler,
-                                         size_t iteration_cnt = 1) {
+                                         size_t /*iteration_cnt*/ = 1) {
     if (!rcec_config.enabled)
         return nullptr;
 
@@ -559,12 +534,8 @@ AlgoPtr<Graph> ECRemoverInstance(Graph &g,
     if (ec_config.condition.empty())
         return nullptr;
 
-    ConditionParser<Graph> parser(g, ec_config.condition, info, iteration_cnt - 1, iteration_cnt);
-    auto condition = parser();
-
-    auto interesting_finder = std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(AddAlternativesPresenceCondition(g, condition), info.chunk_cnt());
     return std::make_shared<LowCoverageEdgeRemovingAlgorithm<Graph>>(
-            g, interesting_finder, info, ec_config.condition, removal_handler,
+            g, ec_config.condition, info, removal_handler,
             /*canonical only*/ true, /*track changes*/ true, iteration_cnt);
 }
 
@@ -643,7 +614,6 @@ AlgoPtr<Graph> BRInstance(Graph &g,
 
     auto alternatives_analyzer = ParseBRConfig(g, br_config);
 
-
     auto candidate_finder = std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(
                                                           omnigraph::NecessaryBulgeCondition(g,
                                                                               alternatives_analyzer.max_length(),
@@ -671,30 +641,6 @@ AlgoPtr<Graph> BRInstance(Graph &g,
     }
 }
 
-//todo make this all work for end of the edges also? switch to canonical iteration?
-//todo rename, since checking topology also
-template<class Graph>
-class FlankingCovBound : public EdgeCondition<Graph> {
-    typedef EdgeCondition<Graph> base;
-    typedef typename Graph::EdgeId EdgeId;
-    const FlankingCoverage<Graph> &flanking_cov_;
-    double max_coverage_;
-public:
-    FlankingCovBound(const Graph &g,
-                     const FlankingCoverage<Graph> &flanking_cov,
-                     double max_coverage)
-        : base(g),
-          flanking_cov_(flanking_cov),
-          max_coverage_(max_coverage) {
-    }
-
-    bool Check(EdgeId e) const override {
-        return this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) > 1
-               && math::le(flanking_cov_.CoverageOfStart(e), max_coverage_);
-    }
-
-};
-
 template<class Graph>
 AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph &g,
                                            const FlankingCoverage<Graph> &flanking_cov,
@@ -706,10 +652,14 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph &g,
         return nullptr;
     }
 
-    return make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g,
-                                                      FlankingCovBound<Graph>(g, flanking_cov, cov_bound),
-                                                      info.chunk_cnt(),
-                                                      removal_handler);
+    auto condition = [&,cov_bound] (EdgeId e) {
+        return g.OutgoingEdgeCount(g.EdgeStart(e)) > 1
+               && math::le(flanking_cov.CoverageOfStart(e), cov_bound);
+    };
+
+    return make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g, condition,
+                                                                 info.chunk_cnt(),
+                                                                 removal_handler);
 }
 
 template<class Graph>

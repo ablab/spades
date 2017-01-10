@@ -278,7 +278,7 @@ public:
 
         auto comparator = [](const Path& a, const Path& b) {return a.size() >= b.size();};
 
-        auto callback = BestPathStorageInstance(g, comparator);
+        BestPathStorage<Graph, decltype(comparator)> callback(g, comparator);
         ProcessPaths(g, 0, max_jump_distance_, g.EdgeStart(e), g.conjugate(g.EdgeEnd(e)), callback, max_edge_cnt_);
         return (bool) callback.best_path();
     }

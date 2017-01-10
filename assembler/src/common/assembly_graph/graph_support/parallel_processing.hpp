@@ -156,11 +156,9 @@ private:
     //todo remove
     bool tracking_;
     size_t total_iteration_estimate_;
-
     size_t curr_iteration_;
 
 protected:
-
     void ReturnForConsideration(ElementId el) {
         it_.push(el);
     }
@@ -230,37 +228,21 @@ private:
 };
 
 template<class Graph,
-         class Comparator = std::less<typename Graph::EdgeId>>
-class PersistentEdgeRemovingAlgorithm : public PersistentProcessingAlgorithm<Graph,
-                                                                            typename Graph::EdgeId,
-                                                                            Comparator> {
+        class Comparator = std::less<typename Graph::EdgeId>>
+class ParallelEdgeRemovingAlgorithm : public PersistentProcessingAlgorithm<Graph,
+        typename Graph::EdgeId,
+        Comparator> {
     typedef typename Graph::EdgeId EdgeId;
     typedef PersistentProcessingAlgorithm<Graph, EdgeId, Comparator> base;
 
+    const func::TypedPredicate<EdgeId> remove_condition_;
     EdgeRemover<Graph> edge_remover_;
-public:
-    typedef typename base::CandidateFinderPtr CandidateFinderPtr;
-    PersistentEdgeRemovingAlgorithm(Graph& g,
-                                    const CandidateFinderPtr& interest_edge_finder,
-                                    std::function<void(EdgeId)> removal_handler = boost::none,
-                                    bool canonical_only = false,
-                                    const Comparator& comp = Comparator(),
-                                    bool track_changes = true,
-                                    size_t total_iteration_estimate = -1ul)
-            : base(g, interest_edge_finder,
-                   canonical_only, comp, track_changes,
-                   total_iteration_estimate),
-                   edge_remover_(g, removal_handler) {
-
-    }
 
 protected:
 
-    virtual bool ShouldRemove(EdgeId e) const = 0;
-
     bool Process(EdgeId e) override {
         TRACE("Checking edge " << this->g().str(e) << " for the removal condition");
-        if (ShouldRemove(e)) {
+        if (remove_condition_(e)) {
             TRACE("Check passed, removing");
             edge_remover_.DeleteEdge(e);
             return true;
@@ -268,44 +250,6 @@ protected:
         TRACE("Check not passed");
         return false;
     }
-
-};
-
-template<class Graph,
-         class Comparator = std::less<typename Graph::EdgeId>>
-class ConditionEdgeRemovingAlgorithm : public PersistentEdgeRemovingAlgorithm<Graph,
-                                                                              Comparator> {
-    typedef typename Graph::EdgeId EdgeId;
-    typedef PersistentEdgeRemovingAlgorithm<Graph, Comparator> base;
-
-    func::TypedPredicate<EdgeId> remove_condition_;
-protected:
-    typedef typename base::CandidateFinderPtr CandidateFinderPtr;
-
-    bool ShouldRemove(EdgeId e) const override {
-        return remove_condition_(e);
-    }
-
-public:
-    ConditionEdgeRemovingAlgorithm(Graph& g,
-                                   const CandidateFinderPtr& interest_edge_finder,
-                                   func::TypedPredicate<EdgeId> remove_condition,
-                                   std::function<void(EdgeId)> removal_handler = boost::none,
-                                   bool canonical_only = false,
-                                   const Comparator& comp = Comparator(),
-                                   bool track_changes = true)
-            : base(g, interest_edge_finder,
-                   removal_handler,
-                   canonical_only, comp, track_changes),
-                   remove_condition_(remove_condition) {
-
-    }
-};
-
-template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
-class ParallelEdgeRemovingAlgorithm : public ConditionEdgeRemovingAlgorithm<Graph, Comparator> {
-    typedef ConditionEdgeRemovingAlgorithm<Graph, Comparator> base;
-    typedef typename Graph::EdgeId EdgeId;
 
 public:
     ParallelEdgeRemovingAlgorithm(Graph& g,
@@ -317,9 +261,13 @@ public:
                                   bool track_changes = true)
             : base(g,
                    std::make_shared<ParallelInterestingElementFinder<Graph>>(remove_condition, chunk_cnt),
-                   remove_condition, removal_handler,
-                   canonical_only, comp, track_changes) {
+                   canonical_only, comp, track_changes),
+                   remove_condition_(remove_condition),
+                   edge_remover_(g, removal_handler) {
     }
+
+private:
+    DECL_LOGGER("ParallelEdgeRemovingAlgorithm");
 };
 
 template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
