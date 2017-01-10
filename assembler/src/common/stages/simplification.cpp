@@ -11,7 +11,6 @@
 #include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "stages/simplification_pipeline/single_cell_simplification.hpp"
 #include "stages/simplification_pipeline/rna_simplification.hpp"
-#include "modules/simplification/parallel_simplification_algorithms.hpp"
 
 #include "simplification.hpp"
 
@@ -161,7 +160,6 @@ class GraphSimplifier {
         using namespace omnigraph;
         using namespace func;
         INFO("PROCEDURE == Post simplification");
-        size_t iteration = 0;
 
         AlgoStorageT algos;
 
@@ -218,7 +216,7 @@ class GraphSimplifier {
                 algos);
 
         PushValid(
-                ComplexBRInstance(gp_.g, simplif_cfg_.cbr, info_container_, iteration),
+                ComplexBRInstance(gp_.g, simplif_cfg_.cbr, info_container_),
                 "Complex bulge remover",
                 algos);
 
@@ -288,6 +286,7 @@ class GraphSimplifier {
             PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
         }
 
+        size_t iteration = 0;
         bool enable_flag = true;
         while (enable_flag) {
             enable_flag = false;
@@ -346,14 +345,18 @@ class GraphSimplifier {
         }
     }
 
+    bool RunAlgo(const AlgoPtr<Graph>& algo, const string &comment, bool force_primary_launch = false) {
+        INFO("Running " << comment);
+        size_t triggered = algo->Run(force_primary_launch);
+        INFO("Triggered " << triggered << " times");
+        cnt_callback_.Report();
+        return (triggered > 0);
+    }
+
     bool RunAlgos(AlgoStorageT& algos, bool force_primary_launch = false) {
         bool changed = false;
         for (auto algo_comment : algos) {
-             INFO("Running " << algo_comment.second);
-             size_t triggered = algo_comment.first->Run(force_primary_launch);
-             INFO("Triggered " << triggered << " times");
-             changed |= (triggered > 0);
-             cnt_callback_.Report();
+             changed |= RunAlgo(algo_comment.first, algo_comment.second, force_primary_launch);
          }
         return changed;
     }
@@ -381,11 +384,11 @@ public:
         AlgoStorageT algos;
 
         PushValid(
-                TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_, simplif_cfg_.cycle_iter_count),
+                TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_),
                 "Tip clipper",
                 algos);
         PushValid(
-                BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_, simplif_cfg_.cycle_iter_count),
+                BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_),
                 "Bulge remover",
                 algos);
         PushValid(
@@ -395,7 +398,7 @@ public:
 
         size_t iteration = 0;
         bool graph_changed = true;
-        //cannot stop simply if nothing changed, since threshold change on every iteration
+        //cannot stop simply if nothing changed, since threshold changes on every iteration
         while (iteration < simplif_cfg_.cycle_iter_count || graph_changed) {
             INFO("PROCEDURE == Simplification cycle, iteration " << iteration + 1);
             graph_changed = RunAlgos(algos);
@@ -411,7 +414,7 @@ public:
         }
     }
 
-    //FIXME reduce code duplication
+    //TODO reduce code duplication
     void SimplifyRNAGraph() {
         printer_(info_printer_pos::before_simplification);
         INFO("Graph simplification started");
@@ -422,41 +425,40 @@ public:
             DEBUG("Reference genome length = " + std::to_string(gp_.genome.GetSequence().size()));
         }
 
-        AlgoStorageT ec_algo;
-
-        PushValid(ECRemoverInstance(g_, simplif_cfg_.ec, info_container_, removal_handler_,
-                                            simplif_cfg_.cycle_iter_count), "Low coverage edge remover", ec_algo);
+        auto ec_algo = ECRemoverInstance(g_, simplif_cfg_.ec, info_container_, removal_handler_,
+                                            simplif_cfg_.cycle_iter_count);
 
         size_t iteration = 0;
         bool graph_changed_ec = true;
-        //TODO: config. Or just graph_changed?
-        VERIFY(simplif_cfg_.inner_cycle_iter_count.is_initialized());
-        size_t tc_max_iteration = *simplif_cfg_.inner_cycle_iter_count;
-        //cannot stop simply if nothing changed, since threshold change on every iteration
+
+        //cannot stop simply if nothing changed, since threshold changes on every iteration
         while (iteration < simplif_cfg_.cycle_iter_count || graph_changed_ec) {
+            //FIXME either algos creation can be moved out of the cycle,
+            // or checking graph_changed_ec is not enough for correct behaviour
             AlgoStorageT algos;
             PushValid(
-                    TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_, tc_max_iteration),
+                    TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_),
                     "Tip clipper",
                     algos);
             PushValid(
-                    DeadEndInstance(g_, simplif_cfg_.dead_end, info_container_, removal_handler_, tc_max_iteration),
+                    DeadEndInstance(g_, simplif_cfg_.dead_end, info_container_, removal_handler_),
                     "Dead end clipper",
                     algos);
             PushValid(
-                    BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_, tc_max_iteration),
+                    BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_),
                     "Bulge remover",
                     algos);
-            bool graph_changed = true;
-            size_t tc_iteration = 0;
 
-            while (tc_iteration < tc_max_iteration || graph_changed) {
-                INFO("PROCEDURE == Tip clipper and bulge removal cycle, iteration " << iteration + 1 << "." << tc_iteration);
+            bool graph_changed = true;
+            size_t inner_iteration = 0;
+            while (graph_changed) {
+                INFO("PROCEDURE == Tip clipper and bulge removal cycle, iteration "
+                             << iteration + 1 << "." << inner_iteration);
                 graph_changed = RunAlgos(algos);
-                ++tc_iteration;
+                ++inner_iteration;
             }
             INFO("PROCEDURE == Erroneous connection, iteration " << iteration + 1);
-            graph_changed_ec = RunAlgos(ec_algo);
+            graph_changed_ec = RunAlgo(ec_algo, "Low coverage edge remover");
             ++iteration;
         }
 

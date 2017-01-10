@@ -143,7 +143,7 @@ inline size_t LoopedRun(Algo& algo) {
     return total_triggered;
 }
 
-//todo use add_condition in it_
+//todo only potentially relevant edges should be stored at any point
 template<class Graph, class ElementId,
          class Comparator = std::less<ElementId>>
 class PersistentProcessingAlgorithm : public PersistentAlgorithmBase<Graph> {
@@ -153,7 +153,6 @@ protected:
 
 private:
     SmartSetIterator<Graph, ElementId, Comparator> it_;
-    //todo remove
     bool tracking_;
     size_t total_iteration_estimate_;
     size_t curr_iteration_;
@@ -193,11 +192,11 @@ public:
         if (primary_launch) {
             it_.clear();
             TRACE("Primary launch.");
-            TRACE("Start preprocessing");
+            TRACE("Start searching for relevant elements");
             interest_el_finder_->Run(this->g(), [&](ElementId el) {it_.push(el);});
-            TRACE(it_.size() << " edges to process after preprocessing");
+            TRACE(it_.size() << " elements to consider");
         } else {
-            TRACE(it_.size() << " edges to process");
+            TRACE(it_.size() << " elements to consider");
             VERIFY(tracking_);
         }
 

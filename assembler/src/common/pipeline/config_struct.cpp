@@ -539,7 +539,6 @@ void load(debruijn_config::simplification& simp,
   using config_common::load;
 
   load(simp.cycle_iter_count, pt, "cycle_iter_count", complete);
-  simp.inner_cycle_iter_count = pt.get_optional<size_t>("inner_cycle_iter_count");
 
   load(simp.post_simplif_enabled, pt, "post_simplif_enabled", complete);
   load(simp.topology_simplif_enabled, pt, "topology_simplif_enabled", complete);

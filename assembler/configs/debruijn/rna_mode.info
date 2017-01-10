@@ -4,8 +4,6 @@ preserve_raw_paired_index true
 
 simp
 {
-    inner_cycle_iter_count 2
-
     ; enable advanced ec removal algo
     topology_simplif_enabled false
     tc

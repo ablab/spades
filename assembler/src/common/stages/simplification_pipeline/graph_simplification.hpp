@@ -458,8 +458,7 @@ template<class Graph>
 AlgoPtr<Graph> ComplexBRInstance(
     Graph &g,
     config::debruijn_config::simplification::complex_bulge_remover cbr_config,
-    const SimplifInfoContainer &info,
-    size_t /*iteration*/ = 0) {
+    const SimplifInfoContainer &info) {
     if (!cbr_config.enabled)
         return nullptr;
     size_t max_length = (size_t) ((double) g.k() * cbr_config.max_relative_length);
@@ -513,8 +512,7 @@ template<class Graph>
 AlgoPtr<Graph> RelativeECRemoverInstance(Graph &g,
                                          const config::debruijn_config::simplification::relative_coverage_ec_remover &rcec_config,
                                          const SimplifInfoContainer &info,
-                                         EdgeRemovalHandlerF<Graph> removal_handler,
-                                         size_t /*iteration_cnt*/ = 1) {
+                                         EdgeRemovalHandlerF<Graph> removal_handler) {
     if (!rcec_config.enabled)
         return nullptr;
 
@@ -544,8 +542,7 @@ AlgoPtr<Graph> TipClipperInstance(Graph &g,
                                   const EdgeConditionT<Graph> &condition,
                                   const SimplifInfoContainer &info,
                                   EdgeRemovalHandlerF<Graph> removal_handler = nullptr,
-                                  bool track_changes = true,
-                                  size_t /*iteration_cnt*/ = 1) {
+                                  bool track_changes = true) {
     return make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph, omnigraph::LengthComparator<Graph>>>(g,
                                                                         AddTipCondition(g, condition),
                                                                         info.chunk_cnt(),
@@ -559,22 +556,20 @@ template<class Graph>
 AlgoPtr<Graph> TipClipperInstance(Graph &g,
                                   const config::debruijn_config::simplification::tip_clipper &tc_config,
                                   const SimplifInfoContainer &info,
-                                  EdgeRemovalHandlerF<Graph> removal_handler = nullptr,
-                                  size_t iteration_cnt = 1) {
+                                  EdgeRemovalHandlerF<Graph> removal_handler = nullptr) {
     if (tc_config.condition.empty())
         return nullptr;
 
     ConditionParser<Graph> parser(g, tc_config.condition, info);
     auto condition = parser();
-    return TipClipperInstance(g, condition, info, removal_handler, /*track changes*/true, iteration_cnt);
+    return TipClipperInstance(g, condition, info, removal_handler, /*track changes*/true);
 }
 
 template<class Graph>
 AlgoPtr<Graph> DeadEndInstance(Graph &g,
                                const config::debruijn_config::simplification::dead_end_clipper &dead_end_config,
                                const SimplifInfoContainer &info,
-                               EdgeRemovalHandlerF<Graph> removal_handler,
-                               size_t /*iteration_cnt*/ = 1) {
+                               EdgeRemovalHandlerF<Graph> removal_handler) {
     if (!dead_end_config.enabled || dead_end_config.condition.empty())
         return nullptr;
 
@@ -606,8 +601,7 @@ template<class Graph>
 AlgoPtr<Graph> BRInstance(Graph &g,
                           const config::debruijn_config::simplification::bulge_remover &br_config,
                           const SimplifInfoContainer &info,
-                          EdgeRemovalHandlerF<Graph> removal_handler = nullptr,
-                          size_t /*iteration_cnt*/ = 1) {
+                          EdgeRemovalHandlerF<Graph> removal_handler = nullptr) {
     if (!br_config.enabled || (br_config.main_iteration_only && !info.main_iteration())) {
         return nullptr;
     }
