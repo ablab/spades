@@ -92,7 +92,7 @@ private:
     shared_ptr<SimpleExtender> MakePEExtender(size_t lib_index, bool investigate_loops) const;
 
 
-    shared_ptr<GapJoiner> MakeGapJoiners(double is_variation) const;
+    shared_ptr<GapAnalyzer> MakeGapJoiners(double is_variation) const;
 
 
     shared_ptr<PathExtender> MakeScaffoldingExtender(size_t lib_index) const;

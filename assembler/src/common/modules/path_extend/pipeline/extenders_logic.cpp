@@ -64,23 +64,23 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongEdgePEExtender(size_t lib
                                        false /*use short loop coverage resolver*/);
 }
 
-shared_ptr<GapJoiner> ExtendersGenerator::MakeGapJoiners(double is_variation) const {
+shared_ptr<GapAnalyzer> ExtendersGenerator::MakeGapJoiners(double is_variation) const {
     const auto &pset = params_.pset;
 
-    vector<shared_ptr<GapJoiner>> joiners;
+    vector<shared_ptr<GapAnalyzer>> joiners;
     if (params_.pset.scaffolder_options.use_la_gap_joiner)
-        joiners.push_back(std::make_shared<LAGapJoiner>(gp_.g, pset.scaffolder_options.min_overlap_length,
+        joiners.push_back(std::make_shared<LAGapAnalyzer>(gp_.g, pset.scaffolder_options.min_overlap_length,
                                                         pset.scaffolder_options.flank_multiplication_coefficient,
                                                         pset.scaffolder_options.flank_addition_coefficient));
 
 
-    joiners.push_back(std::make_shared<HammingGapJoiner>(gp_.g,
+    joiners.push_back(std::make_shared<HammingGapAnalyzer>(gp_.g,
                                                          pset.scaffolder_options.min_gap_score,
                                                          pset.scaffolder_options.short_overlap,
                                                          (int) pset.scaffolder_options.basic_overlap_coeff
                                                              * dataset_info_.RL()));
 
-    return std::make_shared<CompositeGapJoiner>(gp_.g,
+    return std::make_shared<CompositeGapAnalyzer>(gp_.g,
                                                 joiners,
                                                 size_t(pset.scaffolder_options.max_can_overlap
                                                            * (double) gp_.g.k()), /* may overlap threshold */
