@@ -24,17 +24,17 @@ class PairedIndex : public PairedBuffer<G, Traits, Container> {
     typedef PairedIndex<G, Traits, Container> self;
     typedef PairedBuffer<G, Traits, Container> base;
 
-    using typename base::InnerHistogram;
-    using typename base::InnerHistPtr;
-    using typename base::InnerPoint;
+    typedef typename base::InnerHistogram InnerHistogram;
+    typedef typename base::InnerHistPtr InnerHistPtr;
+    typedef typename base::InnerPoint InnerPoint;
 
     using typename base::EdgePair;
 
 public:
     using typename base::Graph;
     using typename base::EdgeId;
-    using typename base::InnerMap;
-    using typename base::StorageMap;
+    typedef typename base::InnerMap InnerMap;
+    typedef typename base::StorageMap StorageMap;
     using typename base::Point;
 
     typedef omnigraph::de::Histogram<Point> Histogram;
