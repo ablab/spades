@@ -7,9 +7,14 @@
 
 project(utils CXX)
 
-add_library(utils STATIC
-            copy_file.cpp
-            path_helper.cpp
-            logger/logger_impl.cpp
-            autocompletion.cpp)
+set(utils_src
+    copy_file.cpp
+    path_helper.cpp
+    logger/logger_impl.cpp)
 
+if (READLINE_FOUND)
+  set(utils_src ${utils_src} autocompletion.cpp)
+endif()
+
+add_library(utils STATIC
+            ${utils_src})
