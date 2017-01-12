@@ -2,14 +2,12 @@
 
 # Script for compiling SPAdes using holy build box
 # To compile spades run
-# docker run -u $(id -u):$(id -g) -t -i -v <path to spades_compile.sh>:/spades/ --rm phusion/holy-build-box-64:latest  bash /spades/src/tools/spades_holybox_compile.sh
+# docker run -u $(id -u):$(id -g) -t -i -v <path to spades_compile.sh>:/spades/ --rm cab/spades-buildbox  bash /spades/src/tools/spades_holybox_compile.sh
 
 set -e
 source /hbb_exe/activate
 
 set -x
-
-yum install bzip2-devel
 
 cd /spades
 ./spades_compile.sh -DSPADES_STATIC_BUILD=1
