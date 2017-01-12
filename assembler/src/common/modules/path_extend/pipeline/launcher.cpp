@@ -328,7 +328,7 @@ void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
         INFO(" with long reads paths");
         //TODO:: muiltiple libraries?
         for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
-            if (dataset_info_.reads[lib_index].type() == io::LibraryType::TSLReads) {
+            if (support_.IsForSingleReadScaffolder(dataset_info_.reads[lib_index])) {
                 unique_edge_analyzer_pb.FillUniqueEdgesWithLongReads(unique_data_.long_reads_cov_map_[lib_index],
                                                                      unique_data_.unique_pb_storage_,
                                                                      support_.GetLongReadsConfig(dataset_info_.reads[lib_index].type()));
