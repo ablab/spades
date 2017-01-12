@@ -22,6 +22,10 @@ add_executable(kmer_multiplicity_counter
 
 target_link_libraries(kmer_multiplicity_counter common_modules utils input getopt_pp ${COMMON_LIBRARIES})
 
+if (SPADES_STATIC_BUILD)
+  set_target_properties(kmer_multiplicity_counter PROPERTIES LINK_SEARCH_END_STATIC 1)
+endif()
+
 add_executable(prop_binning
                propagate.cpp
                read_binning.cpp
@@ -29,13 +33,25 @@ add_executable(prop_binning
 
 target_link_libraries(prop_binning common_modules nlopt BamTools ssw getopt_pp ${COMMON_LIBRARIES})
 
+if (SPADES_STATIC_BUILD)
+  set_target_properties(prop_binning PROPERTIES LINK_SEARCH_END_STATIC 1)
+endif()
+
 add_executable(stats
                stats.cpp)
 
 target_link_libraries(stats common_modules nlopt BamTools ssw getopt_pp ${COMMON_LIBRARIES})
+
+if (SPADES_STATIC_BUILD)
+  set_target_properties(stats PROPERTIES LINK_SEARCH_END_STATIC 1)
+endif()
 
 add_executable(contig_abundance_counter
                contig_abundance_counter.cpp
                contig_abundance.cpp)
 
 target_link_libraries(contig_abundance_counter common_modules nlopt BamTools ssw getopt_pp ${COMMON_LIBRARIES})
+
+if (SPADES_STATIC_BUILD)
+  set_target_properties(contig_abundance_counter PROPERTIES LINK_SEARCH_END_STATIC 1)
+endif()
