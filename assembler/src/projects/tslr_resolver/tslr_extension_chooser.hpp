@@ -4,10 +4,9 @@
 #include <common/modules/path_extend/path_filter.hpp>
 #include <common/modules/path_extend/path_extender.hpp>
 #include <common/modules/path_extend/pe_resolver.hpp>
-#include <common/modules/path_extend/path_extend_launch.hpp>
 #include <assembly_graph/graph_support/scaff_supplementary.hpp>
 #include <cmath>
-#include "barcode_mapper.hpp"
+#include "common/barcode_index/barcode_mapper.hpp"
 
 using namespace path_extend;
 
@@ -87,32 +86,32 @@ namespace tslr_resolver {
 
 
                 //Check the difference between two best scores (currently inactive)
-                DEBUG("Several candidates found. Further filtering.");
-                auto best_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
-                                                     [this, & decisive_edge](const EdgeWithDistance& edge1,
-                                                                             const EdgeWithDistance& edge2) {
-                                                         return this->bmapper_->GetIntersectionSizeNormalizedBySecond(
-                                                                 decisive_edge, edge1.e_) <
-                                                                 this->bmapper_->GetIntersectionSizeNormalizedBySecond(
-                                                                         decisive_edge, edge2.e_);
-                                                     }));
-                double best_score = bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, best_edge.e_);
-                DEBUG("fittest edge " << best_edge.e_.int_id());
-                DEBUG("score " << best_score);
-                std::nth_element(edges_copy.begin(), edges_copy.begin() + 1, edges_copy.end(),
-                                 [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                                     return this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
-                                                                                                  edge1.e_) >
-                                             this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
-                                                                                                   edge2.e_);
-                                 });
-                auto second_best_edge = edges_copy.at(1);
-                double second_best_score = bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
-                                                                                           second_best_edge.e_);
-                DEBUG("Second best edge " << second_best_edge.e_.int_id());
-                DEBUG("second best score " << second_best_score);
-                DEBUG(best_candidates.size() << " best candidates");
-                VERIFY(best_score >= second_best_score)
+//                DEBUG("Several candidates found. Further filtering.");
+//                auto best_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
+//                                                     [this, & decisive_edge](const EdgeWithDistance& edge1,
+//                                                                             const EdgeWithDistance& edge2) {
+//                                                         return this->bmapper_->GetIntersectionSizeNormalizedBySecond(
+//                                                                 decisive_edge, edge1.e_) <
+//                                                                 this->bmapper_->GetIntersectionSizeNormalizedBySecond(
+//                                                                         decisive_edge, edge2.e_);
+//                                                     }));
+//                double best_score = bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, best_edge.e_);
+//                DEBUG("fittest edge " << best_edge.e_.int_id());
+//                DEBUG("score " << best_score);
+//                std::nth_element(edges_copy.begin(), edges_copy.begin() + 1, edges_copy.end(),
+//                                 [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
+//                                     return this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
+//                                                                                                  edge1.e_) >
+//                                             this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
+//                                                                                                   edge2.e_);
+//                                 });
+//                auto second_best_edge = edges_copy.at(1);
+//                double second_best_score = bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
+//                                                                                           second_best_edge.e_);
+//                DEBUG("Second best edge " << second_best_edge.e_.int_id());
+//                DEBUG("second best score " << second_best_score);
+//                DEBUG(best_candidates.size() << " best candidates");
+//                VERIFY(best_score >= second_best_score)
 //                if (best_score - second_best_score < 0.03) {
 //                    DEBUG("Scores are too close, failed to select the best candidate.");
 //                    return result;
@@ -120,7 +119,7 @@ namespace tslr_resolver {
 
                 //Try to find topologically closest edge to resolve loops
                 //fixme This have nothing to do with barcodes. Need to be moved elsewhere.
-                auto closest_edges = FindClosestEdge(best_candidates);
+                auto closest_edges =  FindClosestEdge(best_candidates);
                 if (closest_edges.size() != 1) {
                     DEBUG("Unable to find single topologically minimal edge.");
                     for (auto edge : best_candidates) {
@@ -132,14 +131,6 @@ namespace tslr_resolver {
                     result.push_back(closest_edges.back());
                 }
                 return result;
-            }
-
-            //barcode threshold depends on gap between edges
-            //Public version of this method
-            static double GetGapCoefficient(int gap, size_t fragment_len) {
-                VERIFY(gap <= (int)fragment_len)
-                return static_cast<double>(fragment_len - gap) /
-                       static_cast<double>(fragment_len);
             }
 
             //todo Does it really belong here?

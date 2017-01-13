@@ -1,0 +1,396 @@
+{
+	"archive" : {},
+	"artifacts" : 
+	[
+		{
+			"path" : "ext/nlopt/libnlopt.a"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"add_compile_options",
+			"include",
+			"add_definitions",
+			"include_directories"
+		],
+		"files" : 
+		[
+			"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/CMakeLists.txt",
+			"cmake/flags.cmake",
+			"CMakeLists.txt",
+			"cmake/includes.cmake"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 0
+			},
+			{
+				"file" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 2,
+				"line" : 58,
+				"parent" : 2
+			},
+			{
+				"file" : 1,
+				"parent" : 3
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 20,
+				"parent" : 4
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 34,
+				"parent" : 4
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 10,
+				"parent" : 4
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 35,
+				"parent" : 4
+			},
+			{
+				"command" : 2,
+				"file" : 2,
+				"line" : 61,
+				"parent" : 2
+			},
+			{
+				"file" : 3,
+				"parent" : 9
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 5,
+				"parent" : 10
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 3,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 6,
+				"parent" : 10
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : " -fopenmp -g -fdiagnostics-color=always"
+				},
+				{
+					"backtrace" : 5,
+					"fragment" : "-Wno-deprecated"
+				},
+				{
+					"backtrace" : 6,
+					"fragment" : "-g3"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 7,
+					"define" : "USE_GLIBCXX_PARALLEL=1"
+				},
+				{
+					"backtrace" : 8,
+					"define" : "_GLIBCXX_DEBUG"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 11,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/include"
+				},
+				{
+					"backtrace" : 11,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/cmake-build-debug/include"
+				},
+				{
+					"backtrace" : 11,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src"
+				},
+				{
+					"backtrace" : 11,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/common"
+				},
+				{
+					"backtrace" : 12,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt"
+				},
+				{
+					"backtrace" : 13,
+					"isSystem" : true,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/../ext/include"
+				}
+			],
+			"language" : "C",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16,
+				17,
+				18,
+				19,
+				20,
+				21,
+				22,
+				23,
+				24,
+				25
+			]
+		}
+	],
+	"id" : "nlopt::@0b336acf2c1743ccd613",
+	"name" : "nlopt",
+	"nameOnDisk" : "libnlopt.a",
+	"paths" : 
+	{
+		"build" : "ext/nlopt",
+		"source" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16,
+				17,
+				18,
+				19,
+				20,
+				21,
+				22,
+				23,
+				24,
+				25
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/api/general.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/api/optimize.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/api/options.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/api/deprecated.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/auglag/auglag.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/bobyqa/bobyqa.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/cdirect/cdirect.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/cdirect/hybrid.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/cobyla/cobyla.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/crs/crs.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/esch/esch.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/isres/isres.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/mma/mma.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/mma/ccsa_quadratic.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/mlsl/mlsl.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/neldermead/nldrmd.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/neldermead/sbplx.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/newuoa/newuoa.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/praxis/praxis.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/util/redblack.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/util/rescale.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/util/stop.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/util/timer.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/util/qsort_r.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/util/sobolseq.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt/util/mt19937ar.c",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "STATIC_LIBRARY"
+}

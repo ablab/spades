@@ -1,0 +1,64 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"projects/corrector/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 28,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 31,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "spades",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"bin/spades-corrector-core"
+			],
+			"targetId" : "spades-corrector-core::@8dc05edf72002f474d91",
+			"targetIndex" : 54,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "spades",
+			"destination" : "share/spades/configs/corrector",
+			"paths" : 
+			[
+				{
+					"from" : "projects/corrector/configs",
+					"to" : "."
+				}
+			],
+			"type" : "directory"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "projects/corrector",
+		"source" : "projects/corrector"
+	}
+}

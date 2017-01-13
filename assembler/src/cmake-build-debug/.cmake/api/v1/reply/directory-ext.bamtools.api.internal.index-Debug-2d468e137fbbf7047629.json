@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "ext/bamtools/api/internal/index",
+		"source" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/bamtools/api/internal/index"
+	}
+}

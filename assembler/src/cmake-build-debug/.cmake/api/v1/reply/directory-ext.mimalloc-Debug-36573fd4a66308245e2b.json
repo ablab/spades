@@ -1,0 +1,126 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/mimalloc/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 351,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 352,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 353,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 354,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 355,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 374,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "include/mimalloc-2.0",
+			"paths" : 
+			[
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/mimalloc/include/mimalloc.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "include/mimalloc-2.0",
+			"paths" : 
+			[
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/mimalloc/include/mimalloc-override.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "include/mimalloc-2.0",
+			"paths" : 
+			[
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/mimalloc/include/mimalloc-new-delete.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "Unspecified",
+			"destination" : "lib/cmake/mimalloc-2.0",
+			"paths" : 
+			[
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/mimalloc/cmake/mimalloc-config.cmake"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "lib/cmake/mimalloc-2.0",
+			"paths" : 
+			[
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/mimalloc/cmake/mimalloc-config-version.cmake"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "Unspecified",
+			"destination" : "lib/mimalloc-2.0",
+			"paths" : 
+			[
+				{
+					"from" : "cmake-build-debug/ext/mimalloc/CMakeFiles/mimalloc-obj.dir/src/static.c.o",
+					"to" : "mimalloc-debug.o"
+				}
+			],
+			"type" : "file"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "ext/mimalloc",
+		"source" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/mimalloc"
+	}
+}

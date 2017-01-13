@@ -1,0 +1,61 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"projects/spaligner/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 19,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 23,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "spaligner",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"bin/spaligner"
+			],
+			"targetId" : "spaligner::@2e94532667fcd750e672",
+			"targetIndex" : 64,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "spaligner",
+			"destination" : "share/spaligner",
+			"paths" : 
+			[
+				"projects/spaligner/spaligner_config.yaml"
+			],
+			"type" : "file"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "projects/spaligner",
+		"source" : "projects/spaligner"
+	}
+}

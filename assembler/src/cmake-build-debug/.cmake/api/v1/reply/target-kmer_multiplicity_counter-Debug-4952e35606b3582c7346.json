@@ -1,0 +1,701 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "bin/kmer_multiplicity_counter"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_executable",
+			"target_link_libraries",
+			"add_compile_options",
+			"include",
+			"add_definitions",
+			"include_directories"
+		],
+		"files" : 
+		[
+			"projects/mts/CMakeLists.txt",
+			"common/CMakeLists.txt",
+			"common/modules/path_extend/CMakeLists.txt",
+			"common/modules/coverage_model/CMakeLists.txt",
+			"common/stages/CMakeLists.txt",
+			"common/io/CMakeLists.txt",
+			"common/library/CMakeLists.txt",
+			"common/sequence/CMakeLists.txt",
+			"common/modules/CMakeLists.txt",
+			"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/bwa/CMakeLists.txt",
+			"cmake/flags.cmake",
+			"CMakeLists.txt",
+			"cmake/includes.cmake"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 17,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 23,
+				"parent" : 0
+			},
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 31,
+				"parent" : 3
+			},
+			{
+				"file" : 2
+			},
+			{
+				"command" : 1,
+				"file" : 2,
+				"line" : 30,
+				"parent" : 5
+			},
+			{
+				"file" : 3
+			},
+			{
+				"command" : 1,
+				"file" : 3,
+				"line" : 13,
+				"parent" : 7
+			},
+			{
+				"file" : 4
+			},
+			{
+				"command" : 1,
+				"file" : 4,
+				"line" : 12,
+				"parent" : 9
+			},
+			{
+				"file" : 5
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 24,
+				"parent" : 11
+			},
+			{
+				"file" : 6
+			},
+			{
+				"command" : 1,
+				"file" : 6,
+				"line" : 14,
+				"parent" : 13
+			},
+			{
+				"file" : 7
+			},
+			{
+				"command" : 1,
+				"file" : 7,
+				"line" : 13,
+				"parent" : 15
+			},
+			{
+				"file" : 8
+			},
+			{
+				"command" : 1,
+				"file" : 8,
+				"line" : 15,
+				"parent" : 17
+			},
+			{
+				"file" : 9
+			},
+			{
+				"command" : 1,
+				"file" : 9,
+				"line" : 28,
+				"parent" : 19
+			},
+			{
+				"file" : 11
+			},
+			{
+				"command" : 3,
+				"file" : 11,
+				"line" : 58,
+				"parent" : 21
+			},
+			{
+				"file" : 10,
+				"parent" : 22
+			},
+			{
+				"command" : 2,
+				"file" : 10,
+				"line" : 20,
+				"parent" : 23
+			},
+			{
+				"command" : 2,
+				"file" : 10,
+				"line" : 34,
+				"parent" : 23
+			},
+			{
+				"command" : 2,
+				"file" : 11,
+				"line" : 89,
+				"parent" : 21
+			},
+			{
+				"command" : 4,
+				"file" : 10,
+				"line" : 10,
+				"parent" : 23
+			},
+			{
+				"command" : 4,
+				"file" : 10,
+				"line" : 35,
+				"parent" : 23
+			},
+			{
+				"command" : 3,
+				"file" : 11,
+				"line" : 61,
+				"parent" : 21
+			},
+			{
+				"file" : 12,
+				"parent" : 29
+			},
+			{
+				"command" : 5,
+				"file" : 12,
+				"line" : 5,
+				"parent" : 30
+			},
+			{
+				"command" : 5,
+				"file" : 0,
+				"line" : 12,
+				"parent" : 0
+			},
+			{
+				"command" : 5,
+				"file" : 0,
+				"line" : 15,
+				"parent" : 0
+			},
+			{
+				"command" : 5,
+				"file" : 12,
+				"line" : 6,
+				"parent" : 30
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : " -fopenmp -g -std=gnu++17 -fdiagnostics-color=always"
+				},
+				{
+					"backtrace" : 24,
+					"fragment" : "-Wno-deprecated"
+				},
+				{
+					"backtrace" : 25,
+					"fragment" : "-g3"
+				},
+				{
+					"backtrace" : 26,
+					"fragment" : "-Wall"
+				},
+				{
+					"backtrace" : 26,
+					"fragment" : "-Wextra"
+				},
+				{
+					"backtrace" : 26,
+					"fragment" : "-Wconversion"
+				},
+				{
+					"backtrace" : 26,
+					"fragment" : "-Wno-sign-conversion"
+				},
+				{
+					"backtrace" : 26,
+					"fragment" : "-Wno-long-long"
+				},
+				{
+					"backtrace" : 26,
+					"fragment" : "-Wwrite-strings"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 27,
+					"define" : "USE_GLIBCXX_PARALLEL=1"
+				},
+				{
+					"backtrace" : 28,
+					"define" : "_GLIBCXX_DEBUG"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 31,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/include"
+				},
+				{
+					"backtrace" : 31,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/cmake-build-debug/include"
+				},
+				{
+					"backtrace" : 31,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src"
+				},
+				{
+					"backtrace" : 31,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/common"
+				},
+				{
+					"backtrace" : 32,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/projects/mts/kmc_api"
+				},
+				{
+					"backtrace" : 33,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/debruijn"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/mimalloc/include"
+				},
+				{
+					"backtrace" : 34,
+					"isSystem" : true,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/../ext/include"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					1
+				],
+				"standard" : "17"
+			},
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3
+			]
+		}
+	],
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "mimalloc-obj::@f3992f9527deeadc6c2b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "nlopt::@0b336acf2c1743ccd613"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "BamTools::@e29c9fd3b45d86137ec6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "samtools::@9bced0d6f2d33cdda4eb"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "format::@f8a8da279098f79a9ec6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "ssw::@13afb99889cf7a11996f"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "getopt_pp::@0a6258d7ee5c16356dd2"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "llvm-support::@18369c32c48243d8b6bd"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "bwa::@18949cd428773b4449d8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "gqf::@ca9947ee42a5355f6430"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "edlib::@d46c3a9e1d351d75ff2d"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "common_modules::@bfc844598bd03e848b3c"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "configs::@9b76b4d58701e307b39e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "library::@4d1a7994d68dde68080e"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "pipeline::@81b640031e2ffec06986"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "sequence::@1b6916cfd4fa3448ce63"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "assembly_graph::@6efaba1563ecac4d679b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "alignment::@9ef5b1d2c748732d5ff9"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "auxiliary_graphs::@9acac0d155cf7f1b709b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "path_extend::@6598d75b6778934b7b95"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "modules::@e3ec9d1b476a92570a2b"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "paired_info::@5f94c675154cfff893b1"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "stages::@b9c83bb5076b6e0bc6d6"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "utils::@431da9e308b4a6ddefb8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "version::@431da9e308b4a6ddefb8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "input::@714bdc32ecb777b6c805"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "binary_io::@3f4eec442b38e0ee50da"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "mph_index::@b68192b5698e007d1851"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "coverage_model::@548078d1e589d8b6b8f1"
+		}
+	],
+	"id" : "kmer_multiplicity_counter::@7fd1400e8d53b59b1ca1",
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "-fopenmp -g",
+				"role" : "flags"
+			},
+			{
+				"fragment" : "-rdynamic",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "common/libcommon_modules.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "common/utils/libutils.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "common/io/libinput.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "ext/getopt_pp/libgetopt_pp.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "common/utils/libversion.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "ext/cppformat/libformat.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/paired_info/libpaired_info.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/stages/libstages.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/pipeline/libpipeline.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/modules/path_extend/libpath_extend.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/auxiliary_graphs/libauxiliary_graphs.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 6,
+				"fragment" : "ext/ssw/libssw.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/modules/coverage_model/libcoverage_model.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 8,
+				"fragment" : "ext/nlopt/libnlopt.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 10,
+				"fragment" : "ext/gqf/libgqf.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/kmer_index/libmph_index.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/modules/libmodules.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/configs/libconfigs.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/library/liblibrary.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "common/io/libinput.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 12,
+				"fragment" : "common/io/binary/libbinary_io.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 12,
+				"fragment" : "ext/samtools/libsamtools.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 12,
+				"fragment" : "ext/bamtools/api/libBamTools.a",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-lz",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/alignment/libalignment.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/assembly_graph/libassembly_graph.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "common/utils/libutils.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "common/utils/libversion.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "ext/cppformat/libformat.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 14,
+				"fragment" : "ext/llvm/libllvm-support.a",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-Wl,-Bstatic",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-ldl",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "common/sequence/libsequence.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 16,
+				"fragment" : "ext/edlib/libedlib.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 18,
+				"fragment" : "ext/bwa/libbwa.a",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-Wl,-Bdynamic",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 20,
+				"fragment" : "-lz",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 20,
+				"fragment" : "-lm",
+				"role" : "libraries"
+			}
+		],
+		"language" : "CXX"
+	},
+	"name" : "kmer_multiplicity_counter",
+	"nameOnDisk" : "kmer_multiplicity_counter",
+	"paths" : 
+	{
+		"build" : "projects/mts",
+		"source" : "projects/mts"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3
+			]
+		},
+		{
+			"name" : "Object Libraries",
+			"sourceIndexes" : 
+			[
+				4
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "projects/mts/kmc_api/kmc_file.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "projects/mts/kmc_api/kmer_api.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "projects/mts/kmc_api/mmer.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "projects/mts/kmer_multiplicity_counter.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"isGenerated" : true,
+			"path" : "cmake-build-debug/ext/mimalloc/CMakeFiles/mimalloc-obj.dir/src/static.c.o",
+			"sourceGroupIndex" : 1
+		}
+	],
+	"type" : "EXECUTABLE"
+}

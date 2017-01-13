@@ -1,0 +1,123 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 109,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 113,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 116,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 119,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 122,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 125,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "common",
+			"destination" : "share/spades",
+			"paths" : 
+			[
+				"../VERSION"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "spades-docs",
+			"destination" : "share/spades",
+			"paths" : 
+			[
+				"../manual.html"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 3,
+			"component" : "spades-docs",
+			"destination" : "share/spades",
+			"paths" : 
+			[
+				"../../README.md"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "spades-docs",
+			"destination" : "share/spades",
+			"paths" : 
+			[
+				"../rnaspades_manual.html"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "common",
+			"destination" : "share/spades",
+			"paths" : 
+			[
+				"../LICENSE"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "common",
+			"destination" : "share/spades",
+			"paths" : 
+			[
+				"../GPLv2.txt"
+			],
+			"type" : "file"
+		}
+	],
+	"paths" : 
+	{
+		"build" : ".",
+		"source" : "."
+	}
+}

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <tslr_pe.hpp>
-#include <barcode_mapper.hpp>
+#include <common/barcode_index/barcode_mapper.hpp>
 #include "common/pipeline/stage.hpp"
 #include "barcode_statistics_counter.hpp"
 
