@@ -1,0 +1,45 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"projects/gmapper/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 20,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "runtime",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"bin/spades-gmapper"
+			],
+			"targetId" : "spades-gmapper::@288d6c5d8ddc21bea05b",
+			"targetIndex" : 56,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "projects/gmapper",
+		"source" : "projects/gmapper"
+	}
+}

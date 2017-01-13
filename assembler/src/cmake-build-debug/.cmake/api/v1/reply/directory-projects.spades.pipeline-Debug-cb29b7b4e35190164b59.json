@@ -1,0 +1,187 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"projects/spades/pipeline/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 7,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 13,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 19,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 22,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 25,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 28,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 32,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 37,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "spades",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"projects/spades/pipeline/spades.py"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "spades",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"projects/spades/pipeline/metaspades.py"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 3,
+			"component" : "spades",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"projects/spades/pipeline/plasmidspades.py"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "spades",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"projects/spades/pipeline/rnaspades.py"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "spades",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"projects/spades/pipeline/metaviralspades.py"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "spades",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"projects/spades/pipeline/metaplasmidspades.py"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "spades",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"projects/spades/pipeline/rnaviralspades.py"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "spades",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"projects/spades/pipeline/coronaspades.py"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "spades",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"projects/spades/pipeline/spades_init.py"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "runtime",
+			"destination" : "share/spades",
+			"paths" : 
+			[
+				"projects/spades/pipeline/spades_pipeline"
+			],
+			"type" : "directory"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "projects/spades/pipeline",
+		"source" : "projects/spades/pipeline"
+	}
+}

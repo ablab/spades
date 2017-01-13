@@ -1,0 +1,57 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "runtime",
+			"destination" : "share/spades/joblib3",
+			"paths" : 
+			[
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/__init__.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/disk.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/format_stack.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/func_inspect.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/_compat.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/hashing.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/logger.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/memory.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/my_exceptions.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/numpy_pickle.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/parallel.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/testing.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/_memory_helpers.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/_multiprocessing_helpers.py",
+				"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3/pool.py"
+			],
+			"type" : "file"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "ext/python_libs/joblib3",
+		"source" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/python_libs/joblib3"
+	}
+}

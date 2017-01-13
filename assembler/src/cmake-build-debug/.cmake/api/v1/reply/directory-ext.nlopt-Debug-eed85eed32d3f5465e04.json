@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "ext/nlopt",
+		"source" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/nlopt"
+	}
+}

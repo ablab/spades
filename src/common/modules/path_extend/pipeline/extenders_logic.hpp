@@ -108,6 +108,8 @@ public:
 
     Extenders MakeMPExtenders() const;
 
+    Extenders MakeReadCloudExtender(const ScaffoldingUniqueEdgeStorage& storage) const;
+
     Extenders MakeCoverageExtenders() const;
 
     Extenders MakePEExtenders() const;

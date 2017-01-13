@@ -352,6 +352,10 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
     return generator.MakeMPExtenders();
 }
 
+Extenders PathExtendLauncher::ConstructReadCloudExtender(const ExtendersGenerator& generator) {
+    return generator.MakeReadCloudExtender(unique_data_.main_unique_storage_);
+}
+
 void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_threshold) {
     TIME_TRACE_SCOPE("PathExtend::FillPathContainer");
 
@@ -453,6 +457,21 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
         } else {
             utils::push_back_all(extenders, ConstructPBExtenders(generator));
         }
+    }
+
+    if (support_.HasReadClouds()) {
+        //fixme move filtering elsewhere (to barcode index construction?)
+        INFO("Filtering barcode mapper");
+        const size_t abundancy_threshold = cfg::get().ts_res.trimming_threshold;
+        const size_t gap_threshold = cfg::get().ts_res.gap_threshold;
+        INFO("Abundancy threshold: " << abundancy_threshold);
+        INFO("Gap threshold: " << gap_threshold);
+        INFO("Average barcode coverage before filtering: " << gp_.barcode_mapper->AverageBarcodeCoverage());
+        gp_.barcode_mapper->Filter(abundancy_threshold, gap_threshold);
+        INFO("Average barcode coverage after filtering: " << gp_.barcode_mapper->AverageBarcodeCoverage());
+
+        INFO("Creating read cloud extenders");
+        push_back_all(extenders, ConstructReadCloudExtender(generator));
     }
 
     if (support_.HasMPReads()) {

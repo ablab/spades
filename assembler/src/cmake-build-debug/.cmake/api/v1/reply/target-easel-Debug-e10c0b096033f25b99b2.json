@@ -1,0 +1,859 @@
+{
+	"archive" : {},
+	"artifacts" : 
+	[
+		{
+			"path" : "ext/easel/libeasel.a"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"add_compile_options",
+			"include",
+			"add_definitions",
+			"include_directories",
+			"target_include_directories"
+		],
+		"files" : 
+		[
+			"/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/CMakeLists.txt",
+			"cmake/flags.cmake",
+			"CMakeLists.txt",
+			"cmake/includes.cmake"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 157,
+				"parent" : 0
+			},
+			{
+				"file" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 2,
+				"line" : 58,
+				"parent" : 2
+			},
+			{
+				"file" : 1,
+				"parent" : 3
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 20,
+				"parent" : 4
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 34,
+				"parent" : 4
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 10,
+				"parent" : 4
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 35,
+				"parent" : 4
+			},
+			{
+				"command" : 2,
+				"file" : 2,
+				"line" : 61,
+				"parent" : 2
+			},
+			{
+				"file" : 3,
+				"parent" : 9
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 5,
+				"parent" : 10
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 6,
+				"parent" : 10
+			},
+			{
+				"command" : 5,
+				"file" : 0,
+				"line" : 159,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : " -fopenmp -g -fdiagnostics-color=always"
+				},
+				{
+					"backtrace" : 5,
+					"fragment" : "-Wno-deprecated"
+				},
+				{
+					"backtrace" : 6,
+					"fragment" : "-g3"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 7,
+					"define" : "USE_GLIBCXX_PARALLEL=1"
+				},
+				{
+					"backtrace" : 8,
+					"define" : "_GLIBCXX_DEBUG"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 11,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/include"
+				},
+				{
+					"backtrace" : 11,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/cmake-build-debug/include"
+				},
+				{
+					"backtrace" : 11,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src"
+				},
+				{
+					"backtrace" : 11,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/common"
+				},
+				{
+					"backtrace" : 12,
+					"isSystem" : true,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/../ext/include"
+				},
+				{
+					"backtrace" : 13,
+					"isSystem" : true,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/src/cmake-build-debug/ext/easel/include"
+				},
+				{
+					"backtrace" : 13,
+					"isSystem" : true,
+					"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel"
+				}
+			],
+			"language" : "C",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16,
+				17,
+				18,
+				19,
+				20,
+				21,
+				22,
+				23,
+				24,
+				25,
+				26,
+				27,
+				28,
+				29,
+				30,
+				31,
+				32,
+				33,
+				34,
+				35,
+				36,
+				37,
+				38,
+				39,
+				40,
+				41,
+				42,
+				43,
+				44,
+				45,
+				46,
+				47,
+				48,
+				49,
+				50,
+				51,
+				52,
+				53,
+				54,
+				55,
+				56,
+				57,
+				58,
+				59,
+				60,
+				61,
+				62,
+				63,
+				64,
+				65,
+				66,
+				67,
+				68,
+				69,
+				70,
+				71,
+				72,
+				73,
+				74,
+				75,
+				76,
+				77,
+				78,
+				79,
+				80,
+				81,
+				82
+			]
+		}
+	],
+	"id" : "easel::@d00722bdf9b7a786e16c",
+	"name" : "easel",
+	"nameOnDisk" : "libeasel.a",
+	"paths" : 
+	{
+		"build" : "ext/easel",
+		"source" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16,
+				17,
+				18,
+				19,
+				20,
+				21,
+				22,
+				23,
+				24,
+				25,
+				26,
+				27,
+				28,
+				29,
+				30,
+				31,
+				32,
+				33,
+				34,
+				35,
+				36,
+				37,
+				38,
+				39,
+				40,
+				41,
+				42,
+				43,
+				44,
+				45,
+				46,
+				47,
+				48,
+				49,
+				50,
+				51,
+				52,
+				53,
+				54,
+				55,
+				56,
+				57,
+				58,
+				59,
+				60,
+				61,
+				62,
+				63,
+				64,
+				65,
+				66,
+				67,
+				68,
+				69,
+				70,
+				71,
+				72,
+				73,
+				74,
+				75,
+				76,
+				77,
+				78,
+				79,
+				80,
+				81,
+				82
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/easel.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_alloc.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_alphabet.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_arr2.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_arr3.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_bitfield.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_buffer.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_cluster.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_composition.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_cpu.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_dirichlet.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_distance.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_dmatrix.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_dsqdata.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_exponential.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_fileparser.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_gamma.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_gencode.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_getopts.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_gev.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_graph.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_gumbel.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_heap.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_histogram.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_hmm.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_huffman.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_hyperexp.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_iset.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_json.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_keyhash.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_lognormal.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_matrixops.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_mem.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_minimizer.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_mixdchlet.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_mixgev.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_mpi.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msa.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msacluster.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msafile.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msafile2.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msafile_a2m.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msafile_afa.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msafile_clustal.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msafile_phylip.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msafile_psiblast.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msafile_selex.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msafile_stockholm.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msashuffle.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_msaweight.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_normal.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_paml.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_quicksort.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_random.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_rand64.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_randomseq.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_ratematrix.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_recorder.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_red_black.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_regexp.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_rootfinder.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_scorematrix.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_sq.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_sqio.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_sqio_ascii.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_sqio_ncbi.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_ssi.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_stack.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_stats.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_stopwatch.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_stretchexp.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_subcmd.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_threads.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_tree.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_varint.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_vectorops.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_weibull.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_workqueue.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_wuss.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_sse.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_avx.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_avx512.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "/home/yopican/Downloads/bi/git/splitter/assembler/ext/src/easel/esl_neon.c",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "STATIC_LIBRARY"
+}

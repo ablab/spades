@@ -1,12 +1,12 @@
 #pragma once
 
-#include "barcode_mapper.hpp"
+#include "common/barcode_index/barcode_mapper.hpp"
 
 namespace tslr_resolver {
 
     template<class G>
-    class BarcodeDistGraphLabeler : public omnigraph::StrGraphLabeler<Graph> {
-        typedef omnigraph::StrGraphLabeler <Graph> base;
+    class BarcodeDistGraphLabeler : public visualization::graph_labeler::StrGraphLabeler<Graph> {
+        typedef visualization::graph_labeler::StrGraphLabeler <Graph> base;
         typedef typename G::EdgeId EdgeId;
         typedef typename G::VertexId VertexId;
         typedef BarcodeMapper b_mapper;
@@ -69,11 +69,11 @@ namespace tslr_resolver {
             size_t edge_length_bound = 10000;
             auto component = omnigraph::EdgeNeighborhood(gp_.g, edge, max_vertices, edge_length_bound);
             auto edge_set = component.edges();
-            omnigraph::EdgePosGraphLabeler <Graph> pos_labeler(gp_.g, gp_.edge_pos);
+            visualization::graph_labeler::EdgePosGraphLabeler <Graph> pos_labeler(gp_.g, gp_.edge_pos);
             BarcodeDistGraphLabeler<Graph> barcode_labeler(gp_.g, barcode_mapper_);
-            omnigraph::CompositeLabeler <Graph> composite_labeler(pos_labeler, barcode_labeler);
-            auto colorer = omnigraph::visualization::DefaultColorer(gp_.g);
-            omnigraph::visualization::WriteComponent(component,
+            visualization::graph_labeler::CompositeLabeler <Graph> composite_labeler(pos_labeler, barcode_labeler);
+            auto colorer = visualization::graph_colorer::DefaultColorer(gp_.g);
+            visualization::visualization_utils::WriteComponent(component,
                                                      pics_folder + "/edge_component_" + std::to_string(num) + "_.dot",
                                                      colorer, composite_labeler);
         }
