@@ -35,7 +35,7 @@ class DebruijnEnvironment : public Environment {
         FillerClass filler_;
         visualization::graph_labeler::DefaultLabeler<Graph> pos_labeler_;
         tslr_resolver::BarcodeDistGraphLabeler <Graph> barcode_labeler_;
-        omnigraph::CompositeLabeler <Graph> labeler_;
+        visualization::graph_labeler::CompositeLabeler <Graph> labeler_;
         debruijn_graph::ReadPathFinder<Graph> path_finder_;
         ColoringClass coloring_;
         //CompositeLabeler<Graph> labeler_;

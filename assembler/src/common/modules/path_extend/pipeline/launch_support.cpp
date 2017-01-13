@@ -104,6 +104,10 @@ bool PELaunchSupport::HasMPReads() const {
     }
     return false;
 }
+//fixme return smth
+bool PELaunchSupport::HasReadClouds() const {
+    return true;
+}
 bool PELaunchSupport::SingleReadsMapped() const {
     for (const auto &lib : dataset_info_.reads) {
         if (lib.data().single_reads_mapped) {
@@ -130,6 +134,7 @@ size_t PELaunchSupport::TotalNuclsInGraph() const {
 
 bool PELaunchSupport::NeedsUniqueEdgeStorage() const {
     return !(params_.pset.sm == scaffolding_mode::sm_old ||
-             (params_.pset.sm == scaffolding_mode::sm_old_pe_2015 && !HasLongReadsScaffolding() && !HasMPReads()));
+             (params_.pset.sm == scaffolding_mode::sm_old_pe_2015 &&
+             !HasLongReadsScaffolding() && !HasMPReads() && !HasReadClouds()));
 }
 }

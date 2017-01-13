@@ -13,6 +13,9 @@
 
 #include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/components/graph_component.hpp"
+#include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "barcode_index/barcode_mapper.hpp"
+#include "modules/alignment/rna/ss_coverage.hpp"
 
 #include <cfloat>
 #include <fstream>
@@ -1518,6 +1521,195 @@ private:
     const double delta_;
     const size_t min_path_len_;
     DECL_LOGGER("CoordCoverageExtensionChooser");
+};
+
+class ReadCloudExtensionChooser : public ExtensionChooser {
+protected:
+    shared_ptr<tslr_resolver::BarcodeMapper> bmapper_;
+    size_t len_threshold_;
+    size_t fragment_len_;
+    ScaffoldingUniqueEdgeStorage unique_storage_;
+
+public:
+    ReadCloudExtensionChooser(const conj_graph_pack& gp,
+                              size_t len_threshold,
+                              size_t fragment_len,
+                              const ScaffoldingUniqueEdgeStorage& unique_storage) :
+            ExtensionChooser(gp.g),
+            bmapper_(gp.barcode_mapper),
+            len_threshold_(len_threshold),
+            fragment_len_(fragment_len),
+            unique_storage_(unique_storage) {
+    }
+
+    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
+        auto result = EdgeContainer();
+        if (edges.size() == 0) {
+            return result;
+        }
+        //We might get a single short edge as an input
+        if (edges.size() == 1 && g_.length(edges.back().e_) < len_threshold_) {
+            result.push_back(edges.back());
+            return result;
+        }
+
+        //Find last unique edge earlier in the path
+        pair<EdgeId, int> last_unique = FindLastUniqueInPath(path, unique_storage_);
+        bool long_single_edge_exists = false;
+        EdgeId decisive_edge;
+        if (last_unique.second != -1) {
+            long_single_edge_exists = true;
+            decisive_edge = last_unique.first;
+        }
+
+        if (!long_single_edge_exists) {
+            return result;
+        }
+
+        vector <EdgeWithDistance> best_candidates = GetBestCandidates(edges, decisive_edge);
+
+        if (best_candidates.size() == 1) {
+            result.push_back(best_candidates[0]);
+        }
+
+        //Try to find topologically closest edge to resolve loops
+        //fixme This have nothing to do with barcodes. Need to be moved elsewhere.
+//        if (best_candidates.size() > 1) {
+//            FilterByTopSort(best_candidates, result);
+//        }
+
+        return result;
+    }
+
+    //barcode threshold depends on gap between edges
+    //Public version of this method
+    static double GetGapCoefficient(int gap, size_t fragment_len) {
+        VERIFY(gap <= (int)fragment_len)
+        return static_cast<double>(fragment_len - gap) /
+               static_cast<double>(fragment_len);
+    }
+
+    //todo Does it really belong here?
+    static std::pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path,
+                                                       const ScaffoldingUniqueEdgeStorage& storage) {
+        for (int i =  (int)path.Size() - 1; i >= 0; --i) {
+            if (storage.IsUnique(path.At(i))) {
+                return std::make_pair(path.At(i), i);
+            }
+        }
+        return std::make_pair(EdgeId(0), -1);
+    }
+
+private:
+    virtual vector <EdgeWithDistance> GetBestCandidates(const EdgeContainer& edges, const EdgeId& decisive_edge) const = 0;
+
+    //fixme very ineffective
+    vector<EdgeWithDistance> FindClosestEdge(const vector<EdgeWithDistance>& edges) const {
+        vector <EdgeWithDistance> closest_edges;
+        auto edges_iter = edges.begin();
+        size_t path_len_bound = cfg::get().ts_res.topsort_bound;
+        do {
+            auto edge = *edges_iter;
+            VertexId start_vertex = g_.EdgeEnd(edge.e_);
+            auto dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, path_len_bound);
+            dijkstra.Run(start_vertex);
+            bool can_reach_everyone = true;
+            for (auto other_edge: edges) {
+                if (other_edge.e_ == edge.e_)
+                    continue;
+                auto other_start = g_.EdgeStart(other_edge.e_);
+                if (!dijkstra.DistanceCounted(other_start)) {
+                    can_reach_everyone = false;
+                    break;
+                }
+            }
+            if (can_reach_everyone) {
+                closest_edges.push_back(*edges_iter);
+            }
+            ++edges_iter;
+        } while (edges_iter != edges.end());
+        return closest_edges;
+    }
+
+    void FilterByTopSort(const vector<EdgeWithDistance> &best_candidates, EdgeContainer &result) const {
+        auto closest_edges =  FindClosestEdge(best_candidates);
+        if (closest_edges.size() != 1) {
+            DEBUG("Unable to find single topmin edge.");
+            for (auto edge : best_candidates) {
+                result.push_back(edge);
+            }
+        }
+        else {
+            DEBUG("Found topmin edge");
+            result.push_back(closest_edges.back());
+        }
+    }
+
+    DECL_LOGGER("TslrExtensionChooser")
+};
+
+class TSLRExtensionChooser : public ReadCloudExtensionChooser {
+    using ReadCloudExtensionChooser::bmapper_;
+    using ReadCloudExtensionChooser::unique_storage_;
+    using ReadCloudExtensionChooser::fragment_len_;
+    double absolute_barcode_threshold_;
+
+public:
+    TSLRExtensionChooser(const conj_graph_pack& gp,
+                         size_t len_threshold,
+                         size_t fragment_len,
+                         const ScaffoldingUniqueEdgeStorage& unique_storage,
+                         double absolute_barcode_threshold) :
+            ReadCloudExtensionChooser(gp, len_threshold, fragment_len, unique_storage),
+            absolute_barcode_threshold_(absolute_barcode_threshold) {}
+
+private:
+    double GetGapCoefficient(int gap) const {
+        VERIFY(gap <= (int)fragment_len_)
+        return static_cast<double>(fragment_len_ - gap) /
+               static_cast<double>(fragment_len_);
+    }
+
+    vector <EdgeWithDistance> GetBestCandidates(const EdgeContainer& edges, const EdgeId& decisive_edge) const {
+        //Find edges with barcode score greater than some threshold
+        std::vector <EdgeWithDistance> best_candidates;
+        std::copy_if(edges.begin(), edges.end(), std::back_inserter(best_candidates),
+                     [this, &decisive_edge](const EdgeWithDistance& edge) {
+                         return edge.e_ != decisive_edge and
+                                this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
+                                absolute_barcode_threshold_ * GetGapCoefficient(edge.d_);
+                     });
+        return best_candidates;
+    }
+};
+
+class TenXExtensionChooser : public ReadCloudExtensionChooser {
+    using ReadCloudExtensionChooser::bmapper_;
+    using ReadCloudExtensionChooser::unique_storage_;
+    using ReadCloudExtensionChooser::fragment_len_;
+    double absolute_barcode_threshold_;
+
+public:
+    TenXExtensionChooser(const conj_graph_pack& gp,
+                         size_t len_threshold,
+                         size_t fragment_len,
+                         const ScaffoldingUniqueEdgeStorage& unique_storage,
+                         double absolute_barcode_threshold) :
+            ReadCloudExtensionChooser(gp, len_threshold, fragment_len, unique_storage),
+            absolute_barcode_threshold_(absolute_barcode_threshold) {}
+
+private:
+    vector <EdgeWithDistance> GetBestCandidates(const EdgeContainer& edges, const EdgeId& decisive_edge) const {
+        //Find edges with barcode score greater than some threshold
+        std::vector <EdgeWithDistance> best_candidates;
+        std::copy_if(edges.begin(), edges.end(), std::back_inserter(best_candidates),
+                     [this, &decisive_edge](const EdgeWithDistance& edge) {
+                         return edge.e_ != decisive_edge and
+                                this->bmapper_->GetIntersectionSize(decisive_edge, edge.e_) >
+                                        absolute_barcode_threshold_;
+                     });
+        return best_candidates;
+    }
 };
 
 }
