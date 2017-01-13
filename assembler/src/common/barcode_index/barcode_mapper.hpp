@@ -32,10 +32,9 @@ namespace tslr_resolver {
     typedef omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
     typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
     typedef string BarcodeId;
-    typedef runtime_k::RtSeq Kmer;
+    typedef RtSeq Kmer;
     typedef typename debruijn_graph::KmerFreeEdgeIndex<Graph, debruijn_graph::DefaultStoring> InnerIndex;
     typedef typename InnerIndex::KeyWithHash KeyWithHash;
-    typedef typename runtime_k::RtSeq Kmer;
     typedef typename debruijn_graph::EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
 
     enum BarcodeLibraryType {

@@ -1,6 +1,5 @@
 #pragma once
 #include "common/barcode_index/barcode_mapper.hpp"
-#include "tslr_extension_chooser.hpp"
 
 namespace omnigraph {
 
@@ -55,7 +54,6 @@ namespace omnigraph {
         const Graph& g_;
         const distance_t length_bound_;
         const double barcode_threshold_;
-        const distance_t barcode_len_;
         Bmapper mapper_;
         EdgeId decisive_edge_;;
         const ScaffoldingUniqueEdgeStorage& unique_storage_;
@@ -70,7 +68,6 @@ namespace omnigraph {
         BarcodePutChecker(const Graph& g, 
             const distance_t& length_bound, 
             const double& barcode_threshold,
-            const distance_t& barcode_len,
             const Bmapper& mapper,
             const EdgeId& decisive_edge,
             const ScaffoldingUniqueEdgeStorage& unique_storage,
@@ -78,7 +75,6 @@ namespace omnigraph {
                                                              g_(g), 
                                                              length_bound_(length_bound),
                                                              barcode_threshold_(barcode_threshold),
-                                                             barcode_len_(barcode_len),
                                                              mapper_(mapper), 
                                                              decisive_edge_(decisive_edge),
                                                              unique_storage_(unique_storage),
@@ -96,11 +92,6 @@ namespace omnigraph {
                           << mapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge_, edge))
             size_t gap = dist - g_.length(edge);
             DEBUG("Gap " << gap)
-            //fixme move somewhere
-            const size_t barcode_len = 10000;
-            DEBUG("Threshold: " << tslr_resolver::ReadCloudExtensionChooser::GetGapCoefficient(static_cast<int> (gap),
-                                                                                                 barcode_len)
-                                   * barcode_threshold_)
 
             size_t decisive_barcodes = mapper_->GetTailBarcodeNumber(decisive_edge_);
             size_t current_barcodes = mapper_->GetHeadBarcodeNumber(edge);

@@ -351,6 +351,35 @@ Extenders ExtendersGenerator::MakeMPExtenders(const ScaffoldingUniqueEdgeStorage
     return ExtractExtenders(result);
 }
 
+Extenders ExtendersGenerator::MakeReadCloudExtender(const ScaffoldingUniqueEdgeStorage &storage) const {
+    Extenders result;
+    auto tslr_resolver_params = cfg::get().ts_res;
+    size_t len_threshold = tslr_resolver_params.len_threshold;
+    double absolute_barcode_threshold = tslr_resolver_params.diff_threshold;
+    size_t distance_bound = tslr_resolver_params.distance_bound;
+    const size_t fragment_length = tslr_resolver_params.fragment_len;
+    VERIFY(fragment_length > distance_bound);
+
+    auto extension = make_shared<ReadCloudExtensionChooser>(gp_,
+                                                            len_threshold,
+                                                            absolute_barcode_threshold,
+                                                            fragment_length,
+                                                            storage);
+    shared_ptr<ReadCloudMergingExtender> extender =  make_shared<ReadCloudMergingExtender>(gp_, cover_map_,
+                                                                                           extension,
+                                                                                           2500 /*insert size*/,
+                                                                                           0 /*max loops*/,
+                                                                                           false, /*investigate short loops*/
+                                                                                           false /*use short loop coverage resolver*/,
+                                                                                           distance_bound,
+                                                                                           absolute_barcode_threshold,
+                                                                                           fragment_length,
+                                                                                           len_threshold,
+                                                                                           storage);
+    result.push_back(extender);
+    return result;
+}
+
 Extenders ExtendersGenerator::MakePBScaffoldingExtenders() const {
     const auto &pset = params_.pset;
     ExtenderTriplets result;

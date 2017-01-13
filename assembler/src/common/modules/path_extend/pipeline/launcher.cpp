@@ -322,6 +322,10 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
     return generator.MakeMPExtenders();
 }
 
+Extenders PathExtendLauncher::ConstructReadCloudExtender(const ExtendersGenerator& generator) {
+    return generator.MakeReadCloudExtender(unique_data_.main_unique_storage_);
+}
+
 void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_threshold) {
     std::vector<PathInfo<Graph>> paths;
     gp_.single_long_reads[lib_index].SaveAllPaths(paths);

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <common/modules/path_extend/path_extend_launch.hpp>
+#include <common/modules/path_extend/pipeline/launch_support.hpp>
 #include "tslr_extension_chooser.hpp"
 #include "tslr_visualizer.hpp"
-#include "bounded_dijkstra.hpp"
+#include "common/modules/path_extend/bounded_dijkstra.hpp"
 #include "common/assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "extenders.hpp"
 
@@ -23,15 +23,19 @@ namespace tslr_resolver {
     }
 
     void LaunchBarcodePE (conj_graph_pack &gp) {
-        path_extend::PathExtendParamsContainer params(cfg::get().pe_params,
+        std::string scaffolds_name = cfg::get().mode == config::pipeline_type::rna ? "transcripts" : "scaffolds";
+        bool output_broken_scaffolds = cfg::get().mode != config::pipeline_type::rna;
+
+        path_extend::PathExtendParamsContainer params(cfg::get().ds,
+                                                      cfg::get().pe_params,
                                                       cfg::get().output_dir,
-                                                      "final_contigs_tslr",
-                                                      "scaffolds_tslr",
+                                                      "final_contigs",
+                                                      scaffolds_name,
                                                       cfg::get().mode,
                                                       cfg::get().uneven_depth,
                                                       cfg::get().avoid_rc_connections,
-                                                      cfg::get().use_scaffolder);
-
+                                                      cfg::get().use_scaffolder,
+                                                      output_broken_scaffolds);
         DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(gp.g);
         DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(gp.g, corrector);
         ContigWriter writer(gp.g, constructor, gp.components, params.mode == config::pipeline_type::plasmid);
@@ -44,8 +48,16 @@ namespace tslr_resolver {
 
         PathExtendResolver resolver(gp.g);
         auto min_unique_length = pset.scaffolding2015.unique_length_upper_bound;
-        auto unique_variaton = pset.scaffolding2015.unique_coverage_variation;
+        auto unique_variaton = pset.uniqueness_analyser.unique_coverage_variation;
         auto dataset_info = cfg::get().ds;
+
+        PELaunchSupport support(dataset_info, params);
+
+        if (support.NeedsUniqueEdgeStorage()) {
+            //Fill the storage to enable unique edge check
+            EstimateUniqueEdgesParams();
+            FillUniqueEdgeStorage();
+        }
 
         ScaffoldingUniqueEdgeStorage pe_unique_storage = FillUniqueEdgeStorage(gp, dataset_info,
                                                     min_unique_length,

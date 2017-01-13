@@ -2,7 +2,7 @@
 
 #include "tslr_extension_chooser.hpp"
 #include "common/barcode_index/barcode_mapper.hpp"
-#include "bounded_dijkstra.hpp"
+#include "common/modules/path_extend/bounded_dijkstra.hpp"
 
 namespace tslr_resolver {
 
