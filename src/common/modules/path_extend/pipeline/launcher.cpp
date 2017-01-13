@@ -131,7 +131,7 @@ void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
 void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &paths) const {
     if (!gp_.get<GenomeStorage>().size())
         return;
-    
+
     bool use_main_storage = params_.pset.genome_consistency_checker.use_main_storage;
     size_t unresolvable_gap = unique_data_.main_unique_storage_.min_length();
     ScaffoldingUniqueEdgeStorage tmp_storage;
@@ -172,7 +172,7 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
 void PathExtendLauncher::CheckCoverageUniformity() {
     if (params_.mode != config::pipeline_type::base)
         return;
-    
+
     CoverageUniformityAnalyzer coverage_analyzer(graph_, std::min(size_t(1000), stats::Nx(graph_, 50) - 1));
     double median_coverage = coverage_analyzer.CountMedianCoverage();
     double uniformity_fraction = coverage_analyzer.UniformityFraction(unique_data_.unique_variation_, median_coverage);
@@ -340,6 +340,10 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
     return generator.MakeMPExtenders();
 }
 
+Extenders PathExtendLauncher::ConstructReadCloudExtender(const ExtendersGenerator& generator) {
+    return generator.MakeReadCloudExtender(unique_data_.main_unique_storage_);
+}
+
 void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_threshold) {
     INFO("filling path container");
     if (dataset_info_.reads[lib_index].type() == io::LibraryType::TrustedContigs) {
@@ -433,6 +437,21 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
         } else {
             utils::push_back_all(extenders, ConstructPBExtenders(generator));
         }
+    }
+
+    if (support_.HasReadClouds()) {
+        //fixme move filtering elsewhere (to barcode index construction?)
+        INFO("Filtering barcode mapper");
+        const size_t abundancy_threshold = cfg::get().ts_res.trimming_threshold;
+        const size_t gap_threshold = cfg::get().ts_res.gap_threshold;
+        INFO("Abundancy threshold: " << abundancy_threshold);
+        INFO("Gap threshold: " << gap_threshold);
+        INFO("Average barcode coverage before filtering: " << gp_.barcode_mapper->AverageBarcodeCoverage());
+        gp_.barcode_mapper->Filter(abundancy_threshold, gap_threshold);
+        INFO("Average barcode coverage after filtering: " << gp_.barcode_mapper->AverageBarcodeCoverage());
+
+        INFO("Creating read cloud extenders");
+        push_back_all(extenders, ConstructReadCloudExtender(generator));
     }
 
     if (support_.HasMPReads()) {
@@ -646,7 +665,7 @@ void PathExtendLauncher::Launch() {
         //TODO does path polishing correctly work with coverage map
         PolishPaths(paths, contig_paths, cover_map);
     }
-    
+
     GraphCoverageMap polished_map(graph_, contig_paths, true);
     DebugOutputPaths(contig_paths, "polished_paths");
     TraverseLoops(contig_paths, polished_map);

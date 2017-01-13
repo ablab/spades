@@ -1,0 +1,45 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"projects/splitter/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "runtime",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"bin/splitter"
+			],
+			"targetId" : "splitter::@8249cd068b9f37349b66",
+			"targetIndex" : 65,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "projects/splitter",
+		"source" : "projects/splitter"
+	}
+}
