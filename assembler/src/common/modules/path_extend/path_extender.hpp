@@ -1025,13 +1025,12 @@ private:
     }
 
     void GrowAllPaths(PathContainer& paths, PathContainer& result) {
-        cover_map_.Clear();
         for (size_t i = 0; i < paths.size(); ++i) {
             VERBOSE_POWER_T2(i, 100, "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
                 INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             }
-//In 2015 modes do not use a seed already used in paths.
+            //In 2015 modes do not use a seed already used in paths.
             if (used_storage_->UniqueCheckEnabled()) {
                 bool was_used = false;
                 for (size_t ind =0; ind < paths.Get(i)->Size(); ind++) {
@@ -1049,7 +1048,7 @@ private:
                     continue;
                 }
             }
-//TODO: coverage_map should be exterminated
+
             if (!cover_map_.IsCovered(*paths.Get(i))) {
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
                 BidirectionalPath * conjugatePath = new BidirectionalPath(*paths.GetConjugate(i));
@@ -1073,8 +1072,7 @@ private:
 
 };
 
-//All Path-Extenders inherits this one.
-
+//All Path-Extenders inherit this one
 class LoopDetectingPathExtender : public PathExtender {
 
 protected:

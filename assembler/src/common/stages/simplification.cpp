@@ -422,7 +422,8 @@ public:
         size_t iteration = 0;
         bool graph_changed_ec = true;
         //TODO: config. Or just graph_changed?
-        size_t tc_max_iteration = 2;
+        VERIFY(simplif_cfg_.inner_cycle_iter_count.is_initialized());
+        size_t tc_max_iteration = *simplif_cfg_.inner_cycle_iter_count;
         //cannot stop simply if nothing changed, since threshold change on every iteration
         while (iteration < simplif_cfg_.cycle_iter_count || graph_changed_ec) {
             AlgoStorageT algos;

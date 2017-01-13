@@ -49,8 +49,6 @@ inline bool InBuble(EdgeId e, const Graph& g) {
 
 // Handles all paths in PathContainer.
 // For each edge output all paths  that _traverse_ this path. If path contains multiple instances - count them. Position of the edge is not reported.
-//TODO: Inside is some WTF, should be rewritten.
-//TODO: Memory leaks, inefficient data structure.
 class GraphCoverageMap: public PathListener {
 
 public:
@@ -116,18 +114,6 @@ public:
         }
     }
 
-    void Clear() {
-        for (auto iter = edgeCoverage_.begin(); iter != edgeCoverage_.end(); ++iter) {
-            MapDataT* cover_paths = iter->second;
-            for (auto ipath = cover_paths->begin(); ipath != cover_paths->end(); ++ipath) {
-                BidirectionalPath* p = *ipath;
-                p->Unsubscribe(this);
-            }
-            delete cover_paths;
-        }
-        edgeCoverage_.clear();
-    }
-
     void Subscribe(BidirectionalPath * path) {
         path->Subscribe(this);
         for (size_t i = 0; i < path->Size(); ++i) {
@@ -135,19 +121,23 @@ public:
         }
     }
 
-    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) {
+    //Inherited from PathListener
+    void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) override {
         EdgeAdded(e, path, gap);
     }
 
-    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) {
+    //Inherited from PathListener
+    void BackEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) override {
         EdgeAdded(e, path, gap);
     }
 
-    virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) {
+    //Inherited from PathListener
+    void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) override {
         EdgeRemoved(e, path);
     }
 
-    virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) {
+    //Inherited from PathListener
+    void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) override {
         EdgeRemoved(e, path);
     }
 
@@ -176,29 +166,9 @@ public:
         return true;
     }
 
-    int GetCoverage(const BidirectionalPath& path) const {
-        if (path.Empty()) {
-            return 0;
-        }
-
-        int cov = GetCoverage(path[0]);
-        for (size_t i = 1; i < path.Size(); ++i) {
-            int currentCov = GetCoverage(path[i]);
-            if (cov > currentCov) {
-                cov = currentCov;
-            }
-        }
-
-        return cov;
-    }
-
     BidirectionalPathSet GetCoveringPaths(EdgeId e) const {
         auto mapData = GetEdgePaths(e);
         return BidirectionalPathSet(mapData->begin(), mapData->end());
-    }
-
-    int GetUniqueCoverage(EdgeId e) const {
-        return (int) GetCoveringPaths(e).size();
     }
 
     std::map <EdgeId, MapDataT * >::const_iterator begin() const {
@@ -209,8 +179,7 @@ public:
         return edgeCoverage_.end();
     }
 
-    // DEBUG
-
+    // DEBUG output
     void PrintUncovered() const {
         DEBUG("Uncovered edges");
         int s = 0;

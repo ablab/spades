@@ -318,6 +318,8 @@ struct debruijn_config {
         };
 
         size_t cycle_iter_count;
+        boost::optional<size_t> inner_cycle_iter_count;
+
         bool post_simplif_enabled;
         bool topology_simplif_enabled;
         tip_clipper tc;
