@@ -139,6 +139,8 @@ public:
 
     bool HasMPReads() const;
 
+    bool HasReadClouds() const;
+
     bool SingleReadsMapped() const;
 
     double EstimateLibCoverage(size_t lib_index) const;

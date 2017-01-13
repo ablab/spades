@@ -1,6 +1,7 @@
 #pragma once
-#include "barcode_mapper.hpp"
-#include "tslr_extension_chooser.hpp"
+
+#include "common/barcode_index/barcode_mapper.hpp"
+#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 
 namespace omnigraph {
 
@@ -11,6 +12,7 @@ namespace omnigraph {
         const Graph& g_;
         const distance_t bound_;
         vector <EdgeId>& candidates_;
+
     public:
         LengthPutChecker(distance_t bound, const Graph& g, vector <EdgeId>& candidates) : VertexPutChecker<Graph, distance_t>(),
                                                              g_(g), bound_(bound), candidates_(candidates) { }
@@ -54,31 +56,21 @@ namespace omnigraph {
         typedef shared_ptr<tslr_resolver::BarcodeMapper> Bmapper;
         const Graph& g_;
         const distance_t length_bound_;
-        const double barcode_threshold_;
-        const distance_t barcode_len_;
         Bmapper mapper_;
-        EdgeId decisive_edge_;;
-        const ScaffoldingUniqueEdgeStorage& unique_storage_;
+        EdgeId decisive_edge_;
+        const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         vector <EdgeId>& candidates_;
-    private:
-        bool CheckNumberOfBarcodes(size_t first_barcodes, size_t second_barcodes, double threshold) const {
-            return (first_barcodes > threshold * (double)second_barcodes and
-                    second_barcodes > threshold * (double)first_barcodes);
-        }
+
 
     public:
         BarcodePutChecker(const Graph& g, 
-            const distance_t& length_bound, 
-            const double& barcode_threshold,
-            const distance_t& barcode_len,
+            const distance_t& length_bound,
             const Bmapper& mapper,
             const EdgeId& decisive_edge,
-            const ScaffoldingUniqueEdgeStorage& unique_storage,
+            const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
             vector<EdgeId>& candidates) : VertexPutChecker<Graph, distance_t> (),
                                                              g_(g), 
                                                              length_bound_(length_bound),
-                                                             barcode_threshold_(barcode_threshold),
-                                                             barcode_len_(barcode_len),
                                                              mapper_(mapper), 
                                                              decisive_edge_(decisive_edge),
                                                              unique_storage_(unique_storage),
@@ -96,11 +88,6 @@ namespace omnigraph {
                           << mapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge_, edge))
             size_t gap = dist - g_.length(edge);
             DEBUG("Gap " << gap)
-            //fixme move somewhere
-            const size_t barcode_len = 10000;
-            DEBUG("Threshold: " << tslr_resolver::ReadCloudExtensionChooser::GetGapCoefficient(static_cast<int> (gap),
-                                                                                                 barcode_len)
-                                   * barcode_threshold_)
 
             size_t decisive_barcodes = mapper_->GetTailBarcodeNumber(decisive_edge_);
             size_t current_barcodes = mapper_->GetHeadBarcodeNumber(edge);
@@ -117,12 +104,6 @@ namespace omnigraph {
                 DEBUG("Long non-unique nearby edge, passed" << endl)
                 return true;
             } else {
-                //Barcode number should be similar on nearby genome fragments.
-                if (!CheckNumberOfBarcodes(decisive_barcodes, current_barcodes,
-                                           cfg::get().ts_res.barcode_number_threshold)) {
-                    DEBUG("Barcode numbers significantly differ, don't put to candidates list");
-                    return false;
-                }
                 candidates_.push_back(edge);
                 DEBUG("Long unique nearby edge, put to candidates list and stop" << endl)
                 return false;

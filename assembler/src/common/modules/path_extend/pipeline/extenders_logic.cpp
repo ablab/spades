@@ -411,6 +411,66 @@ Extenders ExtendersGenerator::MakeMPExtenders(const ScaffoldingUniqueEdgeStorage
     return ExtractExtenders(result);
 }
 
+Extenders ExtendersGenerator::MakeReadCloudExtender(const ScaffoldingUniqueEdgeStorage &storage) const {
+    Extenders result;
+
+    //fixme move to params_
+    auto tslr_resolver_params = cfg::get().ts_res;
+    size_t len_threshold = tslr_resolver_params.len_threshold;
+    size_t distance_bound = tslr_resolver_params.distance_bound;
+    const size_t fragment_length = tslr_resolver_params.fragment_len;
+    tslr_resolver::BarcodeLibraryType barcode_lib = tslr_resolver::GetLibType(tslr_resolver_params.library_type);
+    shared_ptr<ExtensionChooser> extension_chooser;
+    VERIFY(fragment_length > distance_bound);
+    VERIFY_MSG(barcode_lib == tslr_resolver::BarcodeLibraryType::TSLR or tslr_resolver::BarcodeLibraryType::TenX,
+        "Unknown library type.")
+
+    INFO(storage.size() << " unique edges.");
+
+    if (barcode_lib == tslr_resolver::BarcodeLibraryType::TSLR) {
+        INFO("Library type: TSLR")
+        const double absolute_barcode_threshold = tslr_resolver_params.diff_threshold;
+        extension_chooser = make_shared<TSLRExtensionChooser>(gp_,
+                                                              len_threshold,
+                                                              fragment_length,
+                                                              storage,
+                                                              absolute_barcode_threshold);
+    }
+    else {
+        INFO("Library type: 10X")
+        const int absolute_barcode_threshold = 2;
+        extension_chooser = make_shared<TenXExtensionChooser>(gp_,
+                                                              len_threshold,
+                                                              fragment_length,
+                                                              storage,
+                                                              absolute_barcode_threshold);
+    }
+
+
+    shared_ptr<ReadCloudMergingExtender> extender =  make_shared<ReadCloudMergingExtender>(gp_, cover_map_,
+                                                                                           extension,
+                                                                                           2500 /*insert size*/,
+                                                                                           0 /*max loops*/,
+                                                                                           false, /*investigate short loops*/
+                                                                                           false /*use short loop coverage resolver*/,
+                                                                                           distance_bound,
+                                                                                           absolute_barcode_threshold,
+                                                                                           fragment_length,
+                                                                                           len_threshold,
+                                                                                           storage);
+                                                 extension_chooser,
+                                                 2500 /*insert size*/,
+                                                 0 /*max loops*/,
+                                                 false, /*investigate short loops*/
+                                                 false /*use short loop coverage resolver*/,
+                                                 distance_bound,
+                                                 fragment_length,
+                                                 len_threshold,
+                                                 storage);
+    result.push_back(extender);
+    return result;
+}
+
 Extenders ExtendersGenerator::MakePBScaffoldingExtenders() const {
     const auto &pset = params_.pset;
     ExtenderTriplets result;

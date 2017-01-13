@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "bounded_dijkstra.hpp"
 #include "extension_chooser.hpp"
 #include "overlap_analysis.hpp"
 #include "path_filter.hpp"
@@ -560,7 +561,7 @@ protected:
     virtual bool FilterCandidates(BidirectionalPath& path, ExtensionChooser::EdgeContainer& candidates);
     virtual bool AddCandidates(BidirectionalPath& path, PathContainer* /*paths_storage*/, ExtensionChooser::EdgeContainer& candidates);
 
-private:    
+private:
     DECL_LOGGER("SimpleExtender")
 };
 
@@ -651,7 +652,7 @@ private:
 class RNAScaffoldingPathExtender: public ScaffoldingPathExtender {
     std::shared_ptr<ExtensionChooser> strict_extension_chooser_;
     int min_overlap_;
-    
+
 protected:
     bool CheckGap(const Gap &gap) const override {
         return gap.OverlapAfterTrim(g_.k()) >= min_overlap_;
@@ -677,5 +678,152 @@ private:
     DECL_LOGGER("RNAScaffoldingPathExtender");
 };
 
+
+class ReadCloudMergingExtender : public LoopDetectingPathExtender { //Traverse forward to find long edges
+
+protected:
+
+    shared_ptr<ExtensionChooser> extensionChooser_;
+    size_t distance_bound_;
+    size_t barcode_len_;
+    size_t edge_threshold_;
+    ScaffoldingUniqueEdgeStorage unique_storage_;
+    shared_ptr<tslr_resolver::BarcodeMapper> mapper_;
+
+
+    void FindFollowingEdges(BidirectionalPath &path, ExtensionChooser::EdgeContainer *result) {
+        result->clear();
+
+        //find long unique edge earlier in path
+        pair<EdgeId, int> last_unique =
+                ReadCloudExtensionChooser::FindLastUniqueInPath(path, unique_storage_);
+        bool long_unique_edge_exists = false;
+        EdgeId decisive_edge;
+        if (last_unique.second != -1) {
+            long_unique_edge_exists = true;
+            decisive_edge = last_unique.first;
+        }
+
+        if (!long_unique_edge_exists) {
+            return;
+        }
+
+
+        DEBUG("At edge " << path.Back().int_id());
+        DEBUG("Decisive edge " << decisive_edge.int_id());
+        DEBUG("Decisive edge barcodes: " << mapper_->GetTailBarcodeNumber(decisive_edge));
+
+        //find reliable unique edges further in graph
+        vector <EdgeId> candidates;
+        auto put_checker = BarcodePutChecker<Graph>(g_, edge_threshold_, mapper_,
+                                                    decisive_edge, unique_storage_, candidates);
+        auto dij = BarcodeDijkstra<Graph>::CreateBarcodeBoundedDijkstra(g_, distance_bound_, put_checker);
+        dij.Run(g_.EdgeEnd(path.Back()));
+        result->reserve(candidates.size());
+        for (auto edge : candidates) {
+            result->push_back(EdgeWithDistance(edge, dij.GetDistance(g_.EdgeStart(edge))));
+        }
+    }
+
+    //todo should be precounted at barcode map construction stage
+    size_t GetMaximalBarcodeNumber (const std::string& path_to_tslr_dataset) const {
+        size_t result = 0;
+        std::ifstream fin;
+        fin.open(path_to_tslr_dataset);
+        string line;
+        while (getline(fin, line)) {
+            ++result;
+        }
+        return result / 2;
+    }
+
+
+public:
+
+    ReadCloudMergingExtender(const conj_graph_pack &gp,
+                             const GraphCoverageMap &cov_map,
+                             shared_ptr<ExtensionChooser> ec,
+                             size_t is,
+                             size_t max_loops,
+                             bool investigate_short_loops,
+                             bool use_short_loop_cov_resolver,
+                             size_t distance_bound,
+                             size_t barcode_len,
+                             size_t edge_threshold,
+                             const ScaffoldingUniqueEdgeStorage& unique_storage)
+            :
+            LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, use_short_loop_cov_resolver,
+                                      is),
+            extensionChooser_(ec),
+            distance_bound_(distance_bound),
+            barcode_len_(barcode_len),
+            edge_threshold_(edge_threshold),
+            unique_storage_(unique_storage),
+            mapper_(gp.barcode_mapper) {
+    }
+
+    std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
+        return extensionChooser_;
+    }
+
+    bool CanInvestigateShortLoop() const override {
+        return extensionChooser_->WeightCounterBased();
+    }
+
+    bool ResolveShortLoopByCov(BidirectionalPath &path) override {
+        return path.Size() < 1;
+    }
+
+    bool ResolveShortLoopByPI(BidirectionalPath &path) override {
+        return path.Size() < 1;
+    }
+
+    bool MakeSimpleGrowStep(BidirectionalPath &path, PathContainer *paths_storage) override {
+        ExtensionChooser::EdgeContainer candidates;
+        return FilterCandidates(path, candidates) and AddCandidates(path, paths_storage, candidates);
+    }
+
+protected:
+    virtual bool FilterCandidates(BidirectionalPath &path, ExtensionChooser::EdgeContainer &candidates) {
+        DEBUG("Simple grow step");
+        path.Print();
+        DEBUG("Path size " << path.Size())
+        DEBUG("Starting at vertex " << g_.EdgeEnd(path.Back()));
+        FindFollowingEdges(path, &candidates);
+        candidates = extensionChooser_->Filter(path, candidates);
+        DEBUG(candidates.size() << " candidates passed");
+        return true;
+    }
+
+    virtual bool AddCandidates(BidirectionalPath& path, PathContainer* /*paths_storage*/,
+                               ExtensionChooser::EdgeContainer& candidates) {
+        if (candidates.size() != 1) {
+            if (candidates.size() > 1) {
+                DEBUG("Too many candidates, false");
+            }
+            if (candidates.size() == 0) {
+                DEBUG("No candidates found, false");
+            }
+            DEBUG("Final(?) path length: " << path.Length());
+            return false;
+        }
+
+        EdgeId eid = candidates.back().e_;
+//In 2015 modes when trying to use already used unique edge, it is not added and path growing stops.
+//That allows us to avoid overlap removal hacks used earlier.
+        if (used_storage_->UniqueCheckEnabled()) {
+            if (used_storage_->IsUsedAndUnique(eid)) {
+                return false;
+            } else {
+                used_storage_->insert(eid);
+            }
+        }
+        path.PushBack(eid, candidates.back().d_);
+        DEBUG("push done");
+        return true;
+    }
+    DECL_LOGGER("InconsistentExtender")
+
+};
 
 }
