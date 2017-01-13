@@ -334,7 +334,7 @@ void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
                                                                      support_.GetLongReadsConfig(dataset_info_.reads[lib_index].type()));
             }
         }
-        INFO("removing fake unique wuth paired-end libs");
+        INFO("Removing fake unique with paired-end libs");
         for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
             if (dataset_info_.reads[lib_index].type() == io::LibraryType::PairedEnd) {
                 unique_edge_analyzer_pb.ClearLongEdgesWithPairedLib(lib_index, unique_data_.unique_pb_storage_);
@@ -355,8 +355,8 @@ Extenders PathExtendLauncher::ConstructPBExtenders(const ExtendersGenerator &gen
 }
 
 
-Extenders  PathExtendLauncher::ConstructExtenders(const GraphCoverageMap& cover_map) {
-    INFO("Creating main exteders, unique edge length = " << unique_data_.min_unique_length_);
+Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap& cover_map) {
+    INFO("Creating main extenders, unique edge length = " << unique_data_.min_unique_length_);
     if (support_.SingleReadsMapped() || support_.HasLongReads())
         FillLongReadsCoverageMaps();
 
@@ -367,9 +367,8 @@ Extenders  PathExtendLauncher::ConstructExtenders(const GraphCoverageMap& cover_
     //long reads scaffolding extenders.
     if (support_.HasLongReads()) {
         if (params_.pset.sm == sm_old) {
-            INFO("Will not use new long read scaffolding algorithm is this mode");
-        }
-        else {
+            INFO("Will not use new long read scaffolding algorithm in this mode");
+        } else {
             push_back_all(extenders, ConstructPBExtenders(generator));
         }
     }
@@ -377,8 +376,7 @@ Extenders  PathExtendLauncher::ConstructExtenders(const GraphCoverageMap& cover_
     if (support_.HasMPReads()) {
         if (params_.pset.sm == sm_old) {
             INFO("Will not use mate-pairs is this mode");
-        }
-        else {
+        } else {
             push_back_all(extenders, ConstructMPExtenders(generator));
         }
     }
@@ -455,6 +453,5 @@ void PathExtendLauncher::Launch() {
 
     INFO("ExSPAnder repeat resolving tool finished");
 }
-
 
 }

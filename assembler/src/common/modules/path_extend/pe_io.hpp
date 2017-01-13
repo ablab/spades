@@ -88,7 +88,7 @@ protected:
 
                     overlapLen = overlapLen + (int) k_ - path.GapAt(i);
                     if(overlapLen < 0) {
-                        for (size_t j = 0; j < abs(overlapLen); ++j) {
+                        for (int j = 0; j < abs(overlapLen); ++j) {
                             ss << "N";
                         }
                         overlapLen = 0;

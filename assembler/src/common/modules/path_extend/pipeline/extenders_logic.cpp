@@ -64,40 +64,41 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongEdgePEExtender(size_t lib
                                        false /*use short loop coverage resolver*/);
 }
 
-shared_ptr<WeightCounter> ExtendersGenerator::MakeMetaWeightCounter(shared_ptr<PairedInfoLibrary> lib,
-                                                                   size_t read_length) const {
-    VERIFY(params_.mode == config::pipeline_type::meta);
-    VERIFY(!lib->IsMp());
-    //FIXME params to config
-    return make_shared<MetagenomicWeightCounter>(gp_.g,
-                                                 lib,
-                                                 read_length, //read_length
-                                                 0.3, //normalized_threshold
-                                                 3, //raw_threshold
-                                                 0 /*estimation_edge_length*/ );
-}
-
-inline shared_ptr<SimpleExtensionChooser> ExtendersGenerator::MakeMetaExtensionChooser(shared_ptr<PairedInfoLibrary> lib,
-                                                                                       size_t read_length) const {
-    return make_shared<SimpleExtensionChooser>(gp_.g, MakeMetaWeightCounter(lib, read_length),
-                                               params_.pset.extension_options.weight_threshold,
-                                               params_.pset.extension_options.priority_coeff);
-}
-
-shared_ptr<SimpleExtender> ExtendersGenerator::MakeMetaExtender(size_t lib_index,
-                                                                bool investigate_loops) const {
-
-    const auto &lib = dataset_info_.reads[lib_index];
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
-
-    return make_shared<SimpleExtender>(gp_, cover_map_,
-                                       MakeMetaExtensionChooser(paired_lib, dataset_info_.RL()),
-                                       paired_lib->GetISMax(),
-                                       params_.pset.loop_removal.max_loops,
-                                       investigate_loops,
-                                       false /*use short loop coverage resolver*/);
-}
-
+//shared_ptr<WeightCounter> ExtendersGenerator::MakeMetaWeightCounter(shared_ptr<PairedInfoLibrary> lib,
+//                                                                   size_t read_length) const {
+//    VERIFY(params_.mode == config::pipeline_type::meta &&
+//                   !lib->IsMp() &&
+//                   params_.pset.extension_options.use_default_single_threshold &&
+//                   params_.pset.normalize_weight);
+//
+//    //FIXME remove
+//    VERIFY(math::eq(0.3, params_.pset.extension_options.single_threshold));
+//
+//    return make_shared<PathCoverWeightCounter>(gp_.g, lib,
+//                /*normalize weight*/true, params_.pset.extension_options.single_threshold /*threshold*/,
+//                                               make_shared<CoverageAwareIdealInfoProvider>(gp_.g, lib, read_length));
+//}
+//
+//inline shared_ptr<SimpleExtensionChooser> ExtendersGenerator::MakeMetaExtensionChooser(shared_ptr<PairedInfoLibrary> lib,
+//                                                                                       size_t read_length) const {
+//    return make_shared<SimpleExtensionChooser>(gp_.g, MakeMetaWeightCounter(lib, read_length),
+//                                               params_.pset.extension_options.weight_threshold,
+//                                               params_.pset.extension_options.priority_coeff);
+//}
+//
+//shared_ptr<SimpleExtender> ExtendersGenerator::MakeMetaExtender(size_t lib_index,
+//                                                                bool investigate_loops) const {
+//
+//    const auto &lib = dataset_info_.reads[lib_index];
+//    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+//
+//    return make_shared<SimpleExtender>(gp_, cover_map_,
+//                                       MakeMetaExtensionChooser(paired_lib, dataset_info_.RL()),
+//                                       paired_lib->GetISMax(),
+//                                       params_.pset.loop_removal.max_loops,
+//                                       investigate_loops,
+//                                       false /*use short loop coverage resolver*/);
+//}
 
 shared_ptr<GapJoiner> ExtendersGenerator::MakeGapJoiners(double is_variation) const {
     const auto &pset = params_.pset;
@@ -222,11 +223,23 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(
 shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t lib_index) const {
     const auto& lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+    support_.SetSingleThresholdForLib(paired_lib, params_.pset, lib.data().pi_threshold);
 
-    CoverageAwareIdealInfoProvider provider(gp_.g, paired_lib, dataset_info_.RL(), /*edge length lowerbound*/0);
+    CoverageAwareIdealInfoProvider provider(gp_.g, paired_lib, dataset_info_.RL());
+
+    auto meta_wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib,
+                                                       params_.pset.normalize_weight,
+                                                       make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib,
+                                                                                                   dataset_info_.RL()));
+    //FIXME remove
+    VERIFY(params_.pset.extension_options.use_default_single_threshold &&
+               params_.pset.normalize_weight &&
+               math::eq(paired_lib->GetSingleThreshold(), 0.3) &&
+               math::eq(params_.pset.extension_options.weight_threshold, 0.6) &&
+               math::eq(params_.pset.extension_options.priority_coeff, 1.5));
 
     auto permissive_pi_chooser = make_shared<IdealBasedExtensionChooser>(gp_.g,
-                                                                         MakeMetaWeightCounter(paired_lib, dataset_info_.RL()),
+                                                                         meta_wc,
                                                                          params_.pset.extension_options.weight_threshold,
                                                                          params_.pset.extension_options.priority_coeff);
 
@@ -235,17 +248,16 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t 
                                                                               params_.pset.coordinated_coverage.delta,
                                                                               params_.pset.coordinated_coverage.min_path_len);
 
-    auto chooser = make_shared<JointExtensionChooser>(gp_.g, permissive_pi_chooser, coord_cov_chooser, /*trust first unambiguous*/false);
+    auto chooser = make_shared<JointExtensionChooser>(gp_.g, permissive_pi_chooser, coord_cov_chooser);
 
     //FIXME Andrew, should we use some other extender here?
     return make_shared<SimpleExtender>(gp_, cover_map_, chooser,
                                        -1ul /* insert size */,
-                                       //fixme what is this setting?
+                                       //FIXME what is this setting?
                                        params_.pset.loop_removal.mp_max_loops,
                                        false, /* investigate short loops */
                                        false /*use short loop coverage resolver*/);
 }
-
 
 shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index, bool investigate_loops) const {
 
@@ -255,9 +267,9 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
     support_.SetSingleThresholdForLib(paired_lib, params_.pset, lib.data().pi_threshold);
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
-    auto cip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), 0);
+    auto cip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL());
     shared_ptr<WeightCounter> wc =
-        make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight, paired_lib->GetSingleThreshold(), cip);
+        make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight, cip);
 
     auto opts = support_.GetExtensionOpts(paired_lib, params_.pset);
     shared_ptr<RNAExtensionChooser> extension =
@@ -280,26 +292,36 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
     INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
     shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
+    //FIXME WHY NOT VALUE FROM "opts" USED HERE? MP bug?
     if (params_.pset.extension_options.use_default_single_threshold) {
         if (params_.uneven_depth) {
-            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), 0);
-        }
-        else {
+            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL());
+        } else {
             double lib_cov = support_.EstimateLibCoverage(lib_index);
             INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
             iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), lib_cov);
         }
     }
-    shared_ptr<WeightCounter> wc =
-        make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight, -1, iip);
+    auto wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight, iip);
 
     auto opts = support_.GetExtensionOpts(paired_lib, params_.pset);
-    auto extension = make_shared<SimpleExtensionChooser>(gp_.g, wc,
+    auto extension_chooser = make_shared<SimpleExtensionChooser>(gp_.g, wc,
                                                          opts.weight_threshold,
                                                          opts.priority_coeff);
 
+    //FIXME remove
+    VERIFY(params_.mode != config::pipeline_type::meta ||
+           (params_.pset.extension_options.use_default_single_threshold &&
+                   params_.uneven_depth &&
+                   !paired_lib->IsMp() &&
+                   opts.use_default_single_threshold &&
+                   params_.pset.normalize_weight &&
+                   math::eq(0.3, opts.single_threshold)));
+
+    VERIFY(params_.mode == config::pipeline_type::meta);
+
     return make_shared<SimpleExtender>(gp_, cover_map_,
-                                       extension,
+                                       extension_chooser,
                                        paired_lib->GetISMax(),
                                        params_.pset.loop_removal.max_loops,
                                        investigate_loops,
@@ -411,37 +433,29 @@ Extenders ExtendersGenerator::MakeBasicExtenders(const ScaffoldingUniqueEdgeStor
         if (support_.IsForPEExtender(lib)) {
             ++pe_libs;
             if (IsOldPEEnabled(pset.sm)) {
-                if (params_.mode == config::pipeline_type::meta)
-                    //TODO proper configuration via config
-                    basic_extenders.emplace_back(lib.type(), lib_index, MakeMetaExtender(lib_index, false));
-                else if (params_.mode == config::pipeline_type::moleculo)
+                if (params_.mode == config::pipeline_type::moleculo) {
                     basic_extenders.emplace_back(lib.type(), lib_index, MakeLongEdgePEExtender(lib_index, false));
-                else if (pset.multi_path_extend) {
+                } else if (pset.multi_path_extend) {
                     basic_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, false));
                     basic_extenders.emplace_back(lib.type(), lib_index, MakeRNAExtender(lib_index, false));
-                }
-                else
+                } else {
                     basic_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, false));
-            }
-            else if (pset.sm == sm_2015) {
+                }
+            } else if (pset.sm == sm_2015) {
                 basic_extenders.emplace_back(lib.type(), lib_index, MakeMatePairScaffoldingExtender(lib_index, storage));
             }
         }
         //FIXME logic is very cryptic!
         if (support_.IsForShortLoopExtender(lib) && IsOldPEEnabled(pset.sm)) {
-            if (params_.mode == config::pipeline_type::meta)
-                loop_resolving_extenders.emplace_back(lib.type(), lib_index, MakeMetaExtender(lib_index, true));
-            else
-                loop_resolving_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, true));
-
+            loop_resolving_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, true));
+            //FIXME where is moleculo and rna here?
         }
         if (support_.IsForScaffoldingExtender(lib) && params_.use_scaffolder
             && pset.scaffolder_options.enabled) {
             ++scf_pe_libs;
             if (params_.mode == config::pipeline_type::rna) {
                 scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeRNAScaffoldingExtender(lib_index));
-            }
-            else {
+            } else {
                 scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeScaffoldingExtender(lib_index));
                 if (pset.sm == sm_combined) {
                     scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeMatePairScaffoldingExtender(lib_index, storage));

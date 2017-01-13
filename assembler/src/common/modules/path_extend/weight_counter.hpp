@@ -236,12 +236,10 @@ public:
 
     PathCoverWeightCounter(const Graph& g, const shared_ptr<PairedInfoLibrary>& lib,
                             bool normalize_weight = true, 
-                            double single_threshold = -1.,
                             shared_ptr<IdealInfoProvider> ideal_provider = nullptr) :
-            WeightCounter(g, lib, normalize_weight, ideal_provider), single_threshold_(single_threshold) {
-        if (math::ls(single_threshold_, 0.)) {
-            single_threshold_ = lib_->GetSingleThreshold();
-        }
+            WeightCounter(g, lib, normalize_weight, ideal_provider),
+            single_threshold_(lib_->GetSingleThreshold()) {
+        VERIFY_MSG(math::gr(single_threshold_, 0.), "Threshold value not initialized");
     }
 
     double CountWeight(const BidirectionalPath& path, EdgeId e,
@@ -275,32 +273,27 @@ class CoverageAwareIdealInfoProvider : public BasicIdealInfoProvider {
     static constexpr double MAGIC_COEFF = 2.;
     const Graph& g_;
     size_t read_length_; 
-    size_t estimation_edge_length_;
 
 public:
     //works for single lib only!!!
     virtual double EstimatePathCoverage(const BidirectionalPath& path) const  {
-        double answer = -1.0;
-        for (int i = (int) path.Size() - 1; i >= 0; --i) {
-            EdgeId e = path.At(i);
-            if (g_.length(e) > estimation_edge_length_) {
-                if (answer < 0 || g_.coverage(e) < answer) {
-                    answer = g_.coverage(e);
-                }
-            }
+        VERIFY(path.Length() > 0);
+        double answer = std::numeric_limits<double>::max();
+        for (size_t i = 0; i < path.Size(); ++i) {
+            answer = std::min(g_.coverage(path.At(i)), answer);
         }
         return answer;
     }
 
     CoverageAwareIdealInfoProvider(const Graph& g, const shared_ptr<PairedInfoLibrary>& lib,
-                                    size_t read_length, size_t estimation_edge_length) : 
-                BasicIdealInfoProvider(lib), g_(g), read_length_(read_length), 
-                estimation_edge_length_(estimation_edge_length) {
+                                    size_t read_length) :
+                BasicIdealInfoProvider(lib), g_(g), read_length_(read_length) {
         VERIFY(read_length_ > g_.k());
     }
 
     std::vector<EdgeWithPairedInfo> FindCoveredEdges(const BidirectionalPath& path, EdgeId candidate) const override {
         VERIFY(read_length_ != -1ul);
+        //bypassing problems with ultra-low coverage estimates
         double estimated_coverage = max(EstimatePathCoverage(path), 1.0);
         double correction_coeff = estimated_coverage / ((double(read_length_) - double(g_.k())) * MAGIC_COEFF);
 
@@ -321,7 +314,7 @@ public:
                                          const shared_ptr<PairedInfoLibrary>& lib,
                                          size_t read_length,
                                          double lib_coverage):
-        CoverageAwareIdealInfoProvider(g, lib, read_length, 0),
+        CoverageAwareIdealInfoProvider(g, lib, read_length),
         lib_coverage_(lib_coverage) {
     }
 
@@ -330,51 +323,33 @@ public:
     }
 };
 
-
-//FIXME optimize number of calls of EstimatePathCoverage(path)
-class MetagenomicWeightCounter: public WeightCounter {
-    static const size_t LENGTH_BOUND = 500;
-    shared_ptr<CoverageAwareIdealInfoProvider> cov_info_provider_;
-    shared_ptr<WeightCounter> normalizing_wc_;
-    shared_ptr<WeightCounter> raw_wc_;
-
-public:
-
-    //negative raw_threshold leads to the halt if no sufficiently long edges are in the path
-    MetagenomicWeightCounter(const Graph& g, const shared_ptr<PairedInfoLibrary>& lib,
-                             size_t read_length, double normalized_threshold, double raw_threshold,
-                             size_t estimation_edge_length = LENGTH_BOUND) :
-            WeightCounter(g, lib) {
-        cov_info_provider_ = make_shared<CoverageAwareIdealInfoProvider>(g, lib, read_length, estimation_edge_length);
-        normalizing_wc_ = make_shared<PathCoverWeightCounter>(g, lib, true, normalized_threshold, cov_info_provider_);
-        if (math::ge(raw_threshold, 0.)) {
-            raw_wc_ = make_shared<PathCoverWeightCounter>(g, lib, false, raw_threshold);
-        }
-    }
-
-    double CountWeight(const BidirectionalPath& path, EdgeId e,
-            const std::set<size_t>& excluded_edges, int gap = 0) const override {
-        if (math::gr(cov_info_provider_->EstimatePathCoverage(path), 0.)) {
-            return normalizing_wc_->CountWeight(path, e, excluded_edges, gap);
-        } else if (raw_wc_) {
-            return raw_wc_->CountWeight(path, e, excluded_edges, gap);
-        } else {
-            return 0.;
-        }
-    }
-
-    std::set<size_t> PairInfoExist(const BidirectionalPath& path, EdgeId e, 
-                                    int gap = 0) const override {
-        static std::set<size_t> empty;
-        if (math::gr(cov_info_provider_->EstimatePathCoverage(path), 0.)) {
-            return normalizing_wc_->PairInfoExist(path, e, gap);
-        } else if (raw_wc_) {
-            return raw_wc_->PairInfoExist(path, e, gap);
-        } else {
-            return empty;
-        }
-    }
-};
+//TODO optimize number of calls of EstimatePathCoverage(path)
+//class MetagenomicWeightCounter: public WeightCounter {
+//    shared_ptr<CoverageAwareIdealInfoProvider> cov_info_provider_;
+//    shared_ptr<WeightCounter> normalizing_wc_;
+//
+//public:
+//
+//    //negative raw_threshold leads to the halt if no sufficiently long edges are in the path
+//    MetagenomicWeightCounter(const Graph& g, const shared_ptr<PairedInfoLibrary>& lib,
+//                             size_t read_length, double weight_threshold) :
+//            WeightCounter(g, lib) {
+//        cov_info_provider_ = make_shared<CoverageAwareIdealInfoProvider>(g, lib, read_length);
+//        normalizing_wc_ = make_shared<PathCoverWeightCounter>(g, lib,
+//                /*normalize weight*/true, weight_threshold, cov_info_provider_);
+//    }
+//
+//    double CountWeight(const BidirectionalPath& path, EdgeId e,
+//            const std::set<size_t>& excluded_edges, int gap = 0) const override {
+//        VERIFY(path.Length() > 0);
+//        return normalizing_wc_->CountWeight(path, e, excluded_edges, gap);
+//    }
+//
+//    std::set<size_t> PairInfoExist(const BidirectionalPath& path, EdgeId e,
+//                                    int gap = 0) const override {
+//        return normalizing_wc_->PairInfoExist(path, e, gap);
+//    }
+//};
 
 class PathsWeightCounter {
 public:
@@ -415,11 +390,13 @@ private:
     DECL_LOGGER("WeightCounter");
 };
 
-inline PathsWeightCounter::PathsWeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary>lib, size_t min_read_count):g_(g), lib_(lib), min_read_count_(min_read_count){
+inline PathsWeightCounter::PathsWeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary>lib, size_t min_read_count):
+        g_(g), lib_(lib), min_read_count_(min_read_count){
 
 }
 
-inline PathsWeightCounter::PathsWeightCounter(const PathsWeightCounter& w): g_(w.g_), lib_(w.lib_), min_read_count_(w.min_read_count_) {
+inline PathsWeightCounter::PathsWeightCounter(const PathsWeightCounter& w):
+        g_(w.g_), lib_(w.lib_), min_read_count_(w.min_read_count_) {
 
 }
 

@@ -247,23 +247,16 @@ private:
 class JointExtensionChooser: public ExtensionChooser {
     shared_ptr<ExtensionChooser> first_;
     shared_ptr<ExtensionChooser> second_;
-    bool trust_first_unambiguous_;
 
 public:
     JointExtensionChooser(const Graph& g,
                           shared_ptr<ExtensionChooser> first,
-                          shared_ptr<ExtensionChooser> second,
-                          bool trust_first_unambiguous): ExtensionChooser(g),
-        first_(first), second_(second), trust_first_unambiguous_(trust_first_unambiguous)
-    {
+                          shared_ptr<ExtensionChooser> second): ExtensionChooser(g),
+        first_(first), second_(second) {
     }
 
     EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
-        EdgeContainer filtered = first_->Filter(path, edges);
-        if (filtered.size() == 1 && !trust_first_unambiguous_) {
-            return EdgeContainer();
-        }
-        return second_->Filter(path, filtered);
+        return second_->Filter(path, first_->Filter(path, edges));
     }
 };
 
@@ -310,11 +303,11 @@ class ExcludingExtensionChooser: public ExtensionChooser {
     EdgeContainer FindFilteredEdges(const BidirectionalPath& path,
             const EdgeContainer& edges, const std::set<size_t>& to_exclude) const {
         AlternativeContainer weights = FindWeights(path, edges, to_exclude);
+        VERIFY(!weights.empty());
         auto max_weight = (--weights.end())->first;
         EdgeContainer top = FindPossibleEdges(weights, max_weight);
         EdgeContainer result;
-        //FIXME why checking top.size() here?
-        if (top.size() >= 1 && CheckThreshold(max_weight)) {
+        if (CheckThreshold(max_weight)) {
             result = top;
         }
         return result;
@@ -988,7 +981,12 @@ public:
     EdgeContainer Filter(const BidirectionalPath& path,
             const EdgeContainer& edges) const override {
 
-        if(path.Length() < min_path_len_) {
+        if (edges.size() < 2) {
+            DEBUG("If unique candidate has not been accepted by previous choosers better not to touch it");
+            return EdgeContainer();
+        }
+
+        if (path.Length() < min_path_len_) {
             DEBUG("Path is too short");
             return EdgeContainer();
         }
