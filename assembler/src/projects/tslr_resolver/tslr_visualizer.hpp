@@ -38,8 +38,8 @@ namespace tslr_resolver {
                     +  "Length: " + std::to_string(this->graph().length(e)) + ' '
                     + "Coverage: " + std::to_string(this->graph().coverage(e)) + '\n');
 
-            ans += ("Barcodes: " + std::to_string(barcode_mapper_->GetHeadBarcodeNumber(e)) + '\n');
-            ans += "Barcodes: " + std::to_string(barcode_mapper_->GetTailBarcodeNumber(e)) + '\n';
+            ans += ("Barcodes at head: " + std::to_string(barcode_mapper_->GetHeadBarcodeNumber(e)) + '\n');
+            ans += "Barcodes at tail: " + std::to_string(barcode_mapper_->GetTailBarcodeNumber(e)) + '\n';
 
             bool is_unique = ConservativeByTopology(e, this->graph()) and
                     ConservativeByLength(e, this->graph(), 500);

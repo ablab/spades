@@ -9,13 +9,19 @@ namespace tslr_resolver {
     struct EdgeStat {
         size_t simplesingle = 0;
         size_t nonextendable = 0;
+        size_t low_covered = 0;
         size_t multiple = 0;
+        size_t rc = 0;
         size_t single = 0;
         size_t no_candidates = 0;
+        size_t has_closest_edge = 0;
+        std::unordered_map<EdgeId, vector<EdgeId>> ambigious_edges_;
+        std::unordered_map<EdgeId, EdgeId> edge_to_closest_;
+        std::vector<EdgeId> tips_;
     };
 
     class BarcodeStatisticsCollector {
-        typedef HeadTailBarcodeMapper<SimpleEdgeEntry> BMapper;
+        typedef HeadTailBarcodeMapper<EdgeEntry> BMapper;
 
         const debruijn_graph::conj_graph_pack& gp_;
         const Graph& g_;
@@ -24,7 +30,6 @@ namespace tslr_resolver {
         EdgeStat edge_statistics_;
         unordered_map <int64_t, size_t> barcode_statistics_;
         vector <double> trimming_to_coverage_;
-        unordered_map <EdgeId, size_t> edge_to_reads;
         vector <std::pair<double, int64_t>> scores_with_gaps_;
         vector <double> random_scores_;
     public:
@@ -32,23 +37,6 @@ namespace tslr_resolver {
                                 gp_(gp),
                                 g_(gp_.g),
                                 mapper_(std::dynamic_pointer_cast<BMapper>(gp.barcode_mapper)) {}
-
-        void FillReadStatistics(size_t edge_tail_len) {
-            INFO("Filling read statistics")
-            edge_it_helper helper(g_);
-            for (auto it = helper.begin(); it != helper.end(); ++it){
-                EdgeId current_edge = *it;
-                const auto& barcode_distribution = mapper_->GetEntryTails(current_edge);
-                size_t sum = 0;
-                for (auto jt = barcode_distribution.cbegin(); jt != barcode_distribution.cend(); ++jt) {
-                    sum += jt -> second;
-                }
-                if (sum > edge_tail_len) {
-                    sum *= (g_.length(current_edge) / edge_tail_len);
-                }
-                edge_to_reads[current_edge] = sum;
-            }
-        }
 
         void FillTrimmingStatistics(size_t distribution_size = 1000) {
             INFO("Filling trimming statistics...")
@@ -81,9 +69,9 @@ namespace tslr_resolver {
             size_t edge_counter = 0;
             for (auto it = helper.begin(); it != helper.end(); ++it) {
                 if (g_.length(*it) <= 150000) {
-                    const SimpleEdgeEntry& head_distribution =
+                    const EdgeEntry& head_distribution =
                             mapper_->GetEntryHeads(*it);
-                    const SimpleEdgeEntry& tail_distribution =
+                    const EdgeEntry& tail_distribution =
                             mapper_->GetEntryTails(*it);
                     //ExtractBarcodeStatsFromDistribution(head_distribution, *it);
                     ExtractBarcodeStatsFromDistribution(tail_distribution, *it);
@@ -95,35 +83,25 @@ namespace tslr_resolver {
 
         void FillEdgeStatistics(size_t length_bound, size_t distance_bound) {
             edge_it_helper helper(g_);
-            size_t edge_counter = 0;
+            size_t global_edge_counter = 0;
+            size_t long_edge_counter = 0;
             for (auto it = helper.begin(); it != helper.end(); ++it) {
                 if (g_.length(*it) > length_bound) {
                     EdgeId current_edge = *it;
-                    const auto& candidates = GetCandidates(*it, length_bound, distance_bound);
-                    std::vector <EdgeId> best_candidates;
+                    vector<EdgeId> candidates = GetCandidates(*it, length_bound, distance_bound);
+                    std::vector<EdgeId> best_candidates;
                     std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(best_candidates),
-                                 [this, &current_edge](const EdgeId& edge) {
+                                 [this, &current_edge](const EdgeId &edge) {
                                      return this->mapper_->
-                                             GetIntersectionSizeNormalizedByUnion(current_edge, edge) > 0.25;
+                                             GetIntersectionSize(current_edge, edge) > 1;
                                  });
-                    if (candidates.size() == 0) {
-                        edge_statistics_.no_candidates++;
-                    } else {
-                        if (candidates.size() == 1) {
-                            edge_statistics_.simplesingle++;
-                        }
-                        if (best_candidates.size() == 0) {
-                            edge_statistics_.nonextendable++;
-                        } else if (best_candidates.size() > 1) {
-                            edge_statistics_.multiple++;
-                        } else {
-                            edge_statistics_.single++;
-                        }
-                    }
+                    FillStatsForEdge(current_edge, candidates, best_candidates, distance_bound);
+                    ++long_edge_counter;
                 }
-                ++edge_counter;
-                VERBOSE_POWER_T2(edge_counter, 100, "Processed " << edge_counter << " edges.");
+                ++global_edge_counter;
+                VERBOSE_POWER_T2(global_edge_counter, 100, "Processed " << global_edge_counter << " edges.");
             }
+            INFO(long_edge_counter << " edges.")
         }
 
         void FillSharedDistributionAlongPath(const string& genome_file, size_t length_threshold) {
@@ -131,6 +109,8 @@ namespace tslr_resolver {
             const KmerSubs &kmer_mapper = gp_.kmer_mapper;
             io::FileReadStream genome_stream(genome_file);
             vector<io::SingleRead> references;
+            size_t last_edges = 0;
+            size_t all_edges = 0;
             while(!genome_stream.eof()) {
                 io::SingleRead scaffold;
                 genome_stream >> scaffold;
@@ -138,47 +118,41 @@ namespace tslr_resolver {
             }
             auto seq_mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, Index> >
                     (g_, index, kmer_mapper);
+            std::vector<std::pair<double, int64_t>> scores_with_gaps;
             for (const auto& reference: references) {
-                const auto& path = seq_mapper->MapRead(reference);
+                const auto &path = seq_mapper->MapRead(reference);
                 INFO(path.size());
                 std::vector<EdgeId> long_edges_in_path;
                 std::vector<Range> initial_ranges;
+                INFO("Reading mappings");
                 for (size_t i = 0; i < path.size(); ++i) {
                     if (g_.length(path[i].first) > length_threshold and
-                            (long_edges_in_path.empty() or path[i].first != long_edges_in_path.back())) {
+                        (long_edges_in_path.empty() or path[i].first != long_edges_in_path.back())) {
                         long_edges_in_path.push_back(path[i].first);
                         initial_ranges.push_back(path[i].second.initial_range);
-                        INFO(path[i].second)
+                        //                        INFO(path[i].second)
                     }
                 }
-                std::vector<std::pair<double, int64_t>> scores_with_gaps;
-                for (size_t i = 0; i < long_edges_in_path.size() - 1; ++i) {
-                    double score = mapper_->GetIntersectionSizeNormalizedByUnion(long_edges_in_path[i],
-                                                                                 long_edges_in_path[i + 1]);
-                    INFO(score);
-                    INFO(initial_ranges[i + 1].start_pos - initial_ranges[i].end_pos);
-                    auto score_with_gap = std::make_pair(score, initial_ranges[i + 1].start_pos - initial_ranges[i].end_pos);
-                    scores_with_gaps.push_back(score_with_gap);
+                if (long_edges_in_path.size() > 0) {
+                    ++last_edges;
+                    all_edges += long_edges_in_path.size();
+                    INFO(long_edges_in_path.size())
+                    INFO("Getting scores");
+                    for (size_t i = 0; i < long_edges_in_path.size() - 1; ++i) {
+                        double score = mapper_->GetIntersectionSizeNormalizedByUnion(long_edges_in_path[i],
+                                                                                     long_edges_in_path[i + 1]);
+                        INFO(score);
+                        INFO(initial_ranges[i + 1].start_pos - initial_ranges[i].end_pos);
+                        auto score_with_gap = std::make_pair(score, initial_ranges[i + 1].start_pos -
+                                                                    initial_ranges[i].end_pos);
+                        scores_with_gaps.push_back(score_with_gap);
+                    }
+                    scores_with_gaps_ = scores_with_gaps;
                 }
-//                double sum = std::accumulate(scores_with_gaps.begin(), scores_with_gaps.end(), 0);
-//                INFO(long_edges_in_path.size());
-                //INFO(sum / (double) scores_with_gaps.size());
-                scores_with_gaps_ = scores_with_gaps;
-                std::random_device rd; // obtain a random number from hardware
-                std::mt19937 eng(rd()); // seed the generator
-                std::uniform_int_distribution<> distr(0, (int) long_edges_in_path.size()); // define the range
-                size_t sample_size = 10000;
-                double sum_random = 0;
-                for (size_t i = 0; i < sample_size; ++i) {
-                    int index1 = distr(eng);
-                    int index2 = distr(eng);
-                    EdgeId edge1 = long_edges_in_path[index1];
-                    EdgeId edge2 = long_edges_in_path[index2];
-                    random_scores_.push_back(mapper_->GetIntersectionSizeNormalizedByUnion(edge1, edge2));
-                    sum_random += mapper_->GetIntersectionSizeNormalizedByUnion(edge1, edge2);
-                }
-                INFO(sum_random / (double) sample_size);
             }
+            INFO("Last edges: " << last_edges);
+            INFO("All edges: " << all_edges);
+            INFO("References: " << references.size());
         }
 
         void SerializeDistributionAlongPath(const string& filename) {
@@ -200,14 +174,48 @@ namespace tslr_resolver {
             }
         }
 
+        void SerializeBarcodeLists(const string& filename) {
+            ofstream fout(filename);
+            edge_it_helper helper(g_);
+            for (auto it = helper.begin(); it != helper.end(); ++it) {
+                EdgeId edge = *it;
+                if (g_.length(edge) > 8000) {
+                    fout << edge.int_id() << ":" << endl;
+                    auto barcodes_heads = GetBarcodesOnHead(edge);
+                    auto barcodes_tails = GetBarcodesOnTail(edge);
+                    std::sort(barcodes_heads.begin(), barcodes_heads.end());
+                    std::sort(barcodes_tails.begin(), barcodes_tails.end());
+                    fout << "Barcodes(heads): " << endl;
+                    fout << "[";
+                    for (auto barcode : barcodes_heads) {
+                        fout << barcode << ", ";
+                    }
+                    fout << "]";
+                    fout << endl;
+                    fout << "Barcodes(tails): " << endl;
+                    fout << "[";
+                    for (auto barcode: barcodes_tails) {
+                        fout << barcode << ", ";
+                    }
+                    fout << "]";
+                    fout << endl;
+                    fout << endl;
+                }
+            }
+        }
+
         void SerializeEdgeStatistics(const string& filename) {
-            ofstream fout;
-            fout.open(filename);
+            ofstream fout(filename);
             fout << "Nonextendable: " << edge_statistics_.nonextendable << std::endl <<
+                 "Not covered: " << edge_statistics_.low_covered << std::endl <<
                  "Single: " << edge_statistics_.single << std::endl <<
                  "Multiple: " << edge_statistics_.multiple << std::endl <<
+                 "RC: " << edge_statistics_.rc << std::endl <<
+                 "HasClosestEdge: " << edge_statistics_.has_closest_edge << std::endl <<
                  "No candidates: " << edge_statistics_.no_candidates << std::endl <<
                  "Simple single: " << edge_statistics_.simplesingle << std::endl;
+            SerializeAmbigiousEdges(filename);
+            SerializeTips(filename);
         }
 
         void SerializeTrimmingStatistics(const string& filename) {
@@ -219,13 +227,12 @@ namespace tslr_resolver {
             }
         }
 
-        void SerializeReadStatistics(const string& filename) {
-            INFO("Serializing read statistics")
-            ofstream fout;
-            fout.open(filename);
-            for (auto it = edge_to_reads.begin(); it != edge_to_reads.end(); ++it) {
-                fout << it -> second << " ";
-            }
+        void SerializeAllStats(const string& filename) {
+            SerializeDistributionAlongPath(filename + "/genome_path_statistics");
+            SerializeBarcodeLists(filename + "/barcode_lists");
+            SerializeEdgeStatistics(filename + "/edge_statistics");
+            SerializeBarcodeStatistics(filename + "/barcode_statistics");
+            SerializeTrimmingStatistics(filename + "/trimming_statistics");
         }
 
     private:
@@ -233,14 +240,19 @@ namespace tslr_resolver {
             vector<EdgeId> candidates;
             auto dij = LengthDijkstra<Graph>::CreateLengthBoundedDijkstra(g_, distance_bound, length_bound, candidates);
             dij.Run(g_.EdgeEnd(edge));
-            return candidates;
+            vector<EdgeId> filtered_candidates;
+            std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(filtered_candidates),
+            [this, &edge](const EdgeId& candidate) {
+                return edge != candidate and g_.conjugate(edge) != candidate;
+            });
+            return filtered_candidates;
         }
 
         vector <size_t> GetSortedAbundancies(const EdgeId& edge) {
             const auto& barcode_distribution = mapper_->GetEntryTails(edge);
             vector <size_t> result;
             for (auto it = barcode_distribution.cbegin(); it != barcode_distribution.cend(); ++it) {
-                result.push_back(it -> second);
+                result.push_back(it -> second.GetCount());
             }
             std::sort(result.begin(), result.end());
             return result;
@@ -250,6 +262,49 @@ namespace tslr_resolver {
             VERIFY(vec.size() >= prefix)
             for (size_t i = 0; i < prefix; ++i) {
                 vec[i] += additive;
+            }
+        }
+
+        void FillStatsForEdge(const EdgeId &current_edge,
+                              const vector<EdgeId> &candidates,
+                              const vector<EdgeId> &best_candidates,
+                              size_t distance_bound) {
+            if (candidates.size() == 0) {
+                edge_statistics_.no_candidates++;
+            } else if (candidates.size() == 1) {
+                edge_statistics_.simplesingle++;
+            }
+            else {
+                if (best_candidates.size() == 0) {
+                    if (mapper_->GetTailBarcodeNumber(current_edge) < 10) {
+                        edge_statistics_.low_covered++;
+                    } else {
+                        edge_statistics_.nonextendable++;
+                    }
+                    edge_statistics_.tips_.push_back(current_edge);
+                } else if (best_candidates.size() > 1) {
+                    bool has_rc_pair = false;
+                    for (size_t i = 0; i < best_candidates.size(); ++i) {
+                        for (size_t j = i + 1; j < best_candidates.size(); ++j) {
+                            if (g_.conjugate(best_candidates[i]) == best_candidates[j]) {
+                                has_rc_pair = true;
+                            }
+                        }
+                    }
+                    EdgeId closest_edge = GetClosestEdge(best_candidates, distance_bound);
+                    edge_statistics_.edge_to_closest_.insert({current_edge, closest_edge});
+                    if (closest_edge.int_id() != 0) {
+                        edge_statistics_.has_closest_edge++;
+                    }
+                    if (has_rc_pair) {
+                        edge_statistics_.rc++;
+                    } else {
+                        edge_statistics_.multiple++;
+                    }
+                    edge_statistics_.ambigious_edges_.insert({current_edge, best_candidates});
+                } else {
+                    edge_statistics_.single++;
+                }
             }
         }
 
@@ -269,8 +324,38 @@ namespace tslr_resolver {
                 trimming_to_coverage_[i] = (double) overall_coverages[i] / (double) long_edges_num;
             }
         }
+//fixme ineffective
+        EdgeId GetClosestEdge(const vector<EdgeId>& edges, size_t distance_bound) const {
+            vector <EdgeId> closest_edges;
+            auto edges_iter = edges.begin();
+            size_t path_len_bound = distance_bound;
+            do {
+                auto edge = *edges_iter;
+                VertexId start_vertex = g_.EdgeEnd(edge);
+                auto dijkstra = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, path_len_bound);
+                dijkstra.Run(start_vertex);
+                bool can_reach_everyone = true;
+                for (auto other_edge: edges) {
+                    if (other_edge == edge)
+                        continue;
+                    auto other_start = g_.EdgeStart(other_edge);
+                    if (!dijkstra.DistanceCounted(other_start)) {
+                        can_reach_everyone = false;
+                        break;
+                    }
+                }
+                if (can_reach_everyone) {
+                    closest_edges.push_back(*edges_iter);
+                }
+                ++edges_iter;
+            } while (edges_iter != edges.end());
+            if (closest_edges.size() == 1) {
+                return closest_edges[0];
+            }
+            return EdgeId(0);
+        }
 
-        void ExtractBarcodeStatsFromDistribution(const SimpleEdgeEntry& distribution, const EdgeId& edge) {
+        void ExtractBarcodeStatsFromDistribution(const EdgeEntry& distribution, const EdgeId& edge) {
             const auto& whole_distribution_map = distribution;
             for (auto it = whole_distribution_map.cbegin(); it != whole_distribution_map.cend(); ++it){
                 int64_t barcode = it->first;
@@ -280,6 +365,58 @@ namespace tslr_resolver {
                 else {
                     barcode_statistics_[barcode] = g_.length(edge);
                 }
+            }
+        }
+
+        void SerializeAmbigiousEdges(const string& filename) {
+            ofstream fout(filename + "_ambigious_edges");
+            for (auto it = edge_statistics_.ambigious_edges_.begin();
+                      it != edge_statistics_.ambigious_edges_.end();
+                      ++it) {
+                fout << it->first.int_id() << ":" << endl;
+                fout << mapper_->GetTailBarcodeNumber(it->first) << " barcodes." << endl;
+                fout << it->second.size() << " candidates." << endl;
+                fout << "Closest edge: " << edge_statistics_.edge_to_closest_[it->first].int_id() << std::endl;
+                fout << "Candidates:" << endl;
+                for (const auto& edge : it->second) {
+                    fout << edge.int_id() << "; (" <<
+                         g_.EdgeStart(edge).int_id() << ", " <<
+                         g_.EdgeEnd(edge).int_id() << ") "
+                         << mapper_->GetIntersectionSizeNormalizedByUnion(it->first, edge) << endl;
+                    fout << "Shared barcodes:" << endl;
+                    vector<int64_t> shared_barcodes = mapper_->GetIntersection(it->first, edge);
+                    std::sort(shared_barcodes.begin(), shared_barcodes.end());
+                    for (int64_t barcode_id: shared_barcodes) {
+                        fout << barcode_id << " ";
+                    }
+                    fout << endl;
+                }
+                fout << endl;
+            }
+        }
+
+        vector <int64_t> GetBarcodesOnHead(const EdgeId& edge) {
+            EdgeEntry entry = mapper_->GetEntryHeads(edge);
+            vector <int64_t> barcodes_heads;
+            for (auto item = entry.cbegin(); item != entry.cend(); ++item) {
+                barcodes_heads.push_back(item->first);
+            }
+            return barcodes_heads;
+        }
+        vector <int64_t> GetBarcodesOnTail(const EdgeId& edge) {
+            EdgeEntry entry = mapper_->GetEntryTails(edge);
+            vector <int64_t> barcodes_tails;
+            for (auto item = entry.cbegin(); item != entry.cend(); ++item) {
+                barcodes_tails.push_back(item->first);
+            }
+            return barcodes_tails;
+        }
+
+
+        void SerializeTips(const string& filename) {
+            ofstream fout(filename + "_tips");
+            for (const auto& edge: edge_statistics_.tips_) {
+                fout << edge.int_id() << mapper_->GetTailBarcodeNumber(edge) << endl;
             }
         }
     };

@@ -900,7 +900,7 @@ inline void DeserializeBarcodeMapEntry(ifstream& file, const std::unordered_map 
 template <class Graph>
 void ScanBarcodeIndex(const string &path, const std::unordered_map<size_t, EdgeId> &edge_map,
                       shared_ptr<tslr_resolver::BarcodeMapper> &barcodeMapper, Graph &g)  {
-    typedef tslr_resolver::HeadTailMapperBuilder<tslr_resolver::SimpleEdgeEntry> Builder;
+    typedef tslr_resolver::HeadTailMapperBuilder<tslr_resolver::EdgeEntry> Builder;
     string file_name = path + ".bmap";
     ifstream index_file(file_name);
     INFO("Loading barcode information from " << file_name)
@@ -917,9 +917,7 @@ void ScanBarcodeIndex(const string &path, const std::unordered_map<size_t, EdgeI
         DeserializeBarcodeMapEntry(index_file, edge_map, barcodeMapper);
     }
     //todo remove this
-    if (barcodeMapper->AverageBarcodeCoverage() > 0.5) {
-        barcodeMapper->SetNonEmpty();
-    }
+    INFO("Average barcode coverage " << barcodeMapper->AverageBarcodeCoverage())
 }
 
 template<class graph_pack>
