@@ -1,6 +1,6 @@
 #pragma once
 
-#include "barcode_mapper.hpp"
+#include "common/barcode_index/barcode_mapper.hpp"
 
 namespace tslr_resolver {
 

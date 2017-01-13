@@ -27,7 +27,7 @@
 #include <algorithm>
 #include <fstream>
 #include <cstdio>
-#include "projects/tslr_resolver/barcode_mapper.hpp"
+#include "common/barcode_index/barcode_mapper.hpp"
 
 namespace debruijn_graph {
 

@@ -22,6 +22,7 @@
 #include "hybrid_aligning.hpp"
 #include "chromosome_removal.hpp"
 #include "series_analysis.hpp"
+#include "barcode_index_construction.hpp"
 #include "pipeline/stage.hpp"
 #include "contig_output_stage.hpp"
 
@@ -118,6 +119,7 @@ void assemble_genome() {
         //No graph modification allowed after HybridLibrariesAligning stage!
 
         SPAdes.add<debruijn_graph::ContigOutput>(false, "intermediate_contigs")
+            .add(new debruijn_graph::BarcodeMapConstructionStage())
                .add<debruijn_graph::PairInfoCount>()
                .add<debruijn_graph::DistanceEstimation>()
                .add<debruijn_graph::RepeatResolution>();

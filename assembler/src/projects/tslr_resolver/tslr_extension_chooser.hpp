@@ -7,7 +7,7 @@
 #include <common/modules/path_extend/path_extend_launch.hpp>
 #include <assembly_graph/graph_support/scaff_supplementary.hpp>
 #include <cmath>
-#include "barcode_mapper.hpp"
+#include "common/barcode_index/barcode_mapper.hpp"
 
 using namespace path_extend;
 

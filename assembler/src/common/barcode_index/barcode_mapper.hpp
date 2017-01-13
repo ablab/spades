@@ -16,9 +16,11 @@
 #include "common/modules/alignment/sequence_mapper.hpp"
 #include "common/pipeline/config_struct.hpp"
 #include "common/utils/indices/edge_index_builders.hpp"
+#include "common/utils/range.hpp"
 
 using std::string;
 using std::istringstream;
+using namespace omnigraph;
 
 namespace tslr_resolver {
     //constexpr int16_t max_barcodes = 384;
@@ -155,7 +157,7 @@ namespace tslr_resolver {
         virtual void WriteEntry(ofstream& fin, const EdgeId& edge) = 0;
 
         //Remove low abundant barcodes
-        virtual void Filter(size_t threshold, size_t gap_threshold) = 0;
+        virtual void Filter(size_t abundancy_threshold, size_t gap_threshold) = 0;
 
         //Serialize barcode abundancies. Format:
         //abundancy: number of edges.
