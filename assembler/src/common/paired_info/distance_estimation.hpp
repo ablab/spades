@@ -130,8 +130,8 @@ protected:
                 weight += estimated[i].second;
             }
             double center = (estimated[left].first + estimated[i].first) * 0.5;
-            float var = (estimated[i].first - estimated[left].first) * 0.5;
-            result.insert(Point(center, weight, var));
+            double var = (estimated[i].first - estimated[left].first) * 0.5;
+            result.insert(Point(center, weight, float(var)));
         }
         return result;
     }

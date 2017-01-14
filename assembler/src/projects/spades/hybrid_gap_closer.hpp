@@ -47,6 +47,7 @@ public:
     typedef std::pair<gap_info_it, gap_info_it> info_it_pair;
 private:
     typedef std::function<bool (gap_info_it, gap_info_it)> FilterF;
+    typedef std::set<EdgePair> ConnectionSet;
 
     const Graph& g_;
 
@@ -106,20 +107,60 @@ private:
         return jump_edges;
     };
 
-    vector<EdgePair> DetectTransitive(EdgeId e,
-                                   const vector<EdgeId>& jumps,
-                                   const set<EdgePair>& connections) const {
-        VERIFY(!jumps.empty());
-        vector<EdgePair> answer;
-        for (size_t i = 0; i < jumps.size(); ++i) {
-            for (size_t j = 0; j < jumps.size(); ++j) {
-                if (i == j)
-                    continue;
-                if (connections.count(EdgePair(jumps[i], jumps[j]))) {
-                    answer.push_back(EdgePair(e, jumps[j]));
-                    DEBUG("pair " << g_.int_id(e) << "," << g_.int_id(jumps[j])
-                                  << " is ignored because of edge between "
-                                  << g_.int_id(jumps[i]));
+    ConnectionSet GetAllConnections() const {
+        ConnectionSet answer;
+        for (const auto& e_gaps : inner_index_) {
+            EdgeId e1 = e_gaps.first;
+            for (EdgeId e2: SecondEdges(e_gaps.second)) {
+                EdgePair ep(e1, e2);
+                answer.insert(ep);
+                answer.insert(Conjugate(g_, ep));
+            }
+        }
+        return answer;
+    };
+
+    //outputs set of transitively-redundant CANONICAL connections
+    ConnectionSet DetectTransitive() const {
+        auto all_connections = GetAllConnections();
+        ConnectionSet answer;
+        for (auto it = all_connections.begin(), end_it = all_connections.end(); it != end_it; ) {
+            EdgeId left = it->first;
+            vector<EdgeId> right_options;
+            auto inner_it = it;
+            for (; inner_it != end_it && inner_it->first == left; ++inner_it) {
+                right_options.push_back(inner_it->second);
+            }
+
+            for (size_t i = 0; i < right_options.size(); ++i) {
+                for (size_t j = 0; j < right_options.size(); ++j) {
+                    if (i == j)
+                        continue;
+                    if (all_connections.count(EdgePair(right_options[i], right_options[j]))) {
+                        //FIXME should we add sanity checks that other edges of the triangle are not there?
+                        answer.insert(GetCanonical(g_, EdgePair(left, right_options[j])));
+                        DEBUG("pair " << g_.int_id(left) << "," << g_.int_id(right_options[j])
+                                      << " is ignored because of edge between "
+                                      << g_.int_id(right_options[i]));
+                    }
+                }
+            }
+            it = inner_it;
+        }
+        return answer;
+    }
+
+    std::set<EdgeId> AmbiguouslyExtending() const {
+        std::set<EdgeId> answer;
+        std::set<EdgeId> left_edges;
+        for (const auto& e_gaps : inner_index_) {
+            EdgeId e1 = e_gaps.first;
+            for (EdgeId e2: SecondEdges(e_gaps.second)) {
+                if (!left_edges.insert(e1).second) {
+                    answer.insert(e1);
+                }
+                if (!left_edges.insert(g_.conjugate(e2)).second) {
+                    answer.insert(g_.conjugate(e2));
                 }
             }
         }
@@ -135,25 +176,22 @@ private:
             return size_t(cnt) < min_weight;
         });
 
-        set<EdgePair> connections;
-        for (const auto& e_gaps : inner_index_) {
-            EdgeId e1 = e_gaps.first;
-            for (EdgeId e2: SecondEdges(e_gaps.second)) {
-                EdgePair ep(e1, e2);
-                connections.insert(ep);
-                connections.insert(Conjugate(g_, ep));
-            }
-        }
-    
-        set<EdgePair> transitive_ignore;
-        for (const auto& e_gaps : inner_index_) {
-            insert_all(transitive_ignore, DetectTransitive(e_gaps.first, SecondEdges(e_gaps.second), connections));
-        }
+        ConnectionSet transitive_ignore = DetectTransitive();
 
         DEBUG("Filtering transitive gaps");
         FilterIndexByCondition([&](gap_info_it info_start, gap_info_it /*info_end*/) {
-            return transitive_ignore.count(EdgePair(info_start->start, info_start->end));
+            EdgePair ep(info_start->start, info_start->end);
+            VERIFY(IsCanonical(g_, ep));
+            return transitive_ignore.count(ep);
         });
+
+        DEBUG("Filtering ambiguous situations");
+        std::set<EdgeId> ambiguously_extending = AmbiguouslyExtending();
+        FilterIndexByCondition([&](gap_info_it info_start, gap_info_it /*info_end*/) {
+            return ambiguously_extending.count(info_start->start) ||
+                    ambiguously_extending.count(g_.conjugate(info_start->end));
+        });
+
     }
 
 public:
@@ -201,7 +239,7 @@ public:
             auto gaps = e_gaps.second;
             DEBUG(g_.int_id(e) << " " << gaps.size());
             filestr << g_.int_id(e) << " " << gaps.size() << endl;
-            sort(gaps.begin(), gaps.end());
+            std::sort(gaps.begin(), gaps.end());
             for (const auto& gap : gaps) {
                 filestr << gap.str(g_);
             }
@@ -252,7 +290,7 @@ public:
     void PrepareGapsForClosure(size_t min_weight) {
         for (auto& e_gaps : inner_index_) {
             auto& gaps = e_gaps.second;
-            sort(gaps.begin(), gaps.end());
+            std::sort(gaps.begin(), gaps.end());
         }
         DEBUG("Raw extensions available for " << inner_index_.size() << " edges");
 
@@ -337,70 +375,17 @@ public:
 
 };
 
-class AmbiguousGapsFilter {
-    const Graph& g_;
-
-    //TODO code duplication
-    bool Check(EdgeId e, set<EdgeId>& primary, set<EdgeId>& secondary) const {
-        set<EdgeId>* storage = &primary;
-        if (!IsCanonical(g_, e)) {
-            e = g_.conjugate(e);
-            storage = &secondary;
-        }
-        return !(storage->count(e));
-    }
-
-    bool Add(EdgeId e, set<EdgeId>& primary, set<EdgeId>& secondary) const {
-        set<EdgeId>* storage = &primary;
-        if (!IsCanonical(g_, e)) {
-            e = g_.conjugate(e);
-            storage = &secondary;
-        }
-        return storage->insert(e).second;
-    }
-
-public:
-    AmbiguousGapsFilter(const Graph& g) : 
-                        g_(g) {
-    }
-
-    vector<GapDescription> operator()(const vector<GapDescription>& gaps) const {
-        set<EdgeId> left_join_requested;
-        set<EdgeId> right_join_requested;
-
-        set<EdgeId> left_join_forbidden;
-        set<EdgeId> right_join_forbidden;
-
-        for (const auto& gap : gaps) {
-            if (!Add(gap.start, right_join_requested, left_join_requested)) {
-                Add(gap.start, right_join_forbidden, left_join_forbidden);
-            }
-            if (!Add(gap.end, left_join_requested, right_join_requested)) {
-                Add(gap.end, left_join_forbidden, right_join_forbidden);
-            }
-        }
-        
-        vector<GapDescription> filtered;
-        std::copy_if(gaps.begin(), gaps.end(), std::back_inserter(filtered), [&](const GapDescription& gap) {
-            return Check(gap.start, right_join_forbidden, left_join_forbidden) &&
-                   Check(gap.end, left_join_forbidden, right_join_forbidden);
-        });
-        return filtered;
-    }
-};
-
 class MultiGapJoiner {
     typedef map<EdgeId, pair<size_t, size_t>> SplitInfo;
 
     Graph& g_;
     GapJoiner inner_joiner_;
 
-    vector<GapDescription> FilterCanonical(const vector<GapDescription>& gaps) const {
+    bool CheckGapsValidity(const vector<GapDescription>& gaps) const {
         vector<GapDescription> answer;
-        std::copy_if(gaps.begin(), gaps.end(), std::back_inserter(answer), [&](const GapDescription& gap) {
+        return std::all_of(gaps.begin(), gaps.end(), [&](const GapDescription &gap) {
             return IsCanonical(g_, gap.start, gap.end) && gap.start != gap.end && gap.start != g_.conjugate(gap.end);
         });
-        return answer;
     }
 
     void Add(size_t idx, EdgeId e, size_t pos, SplitInfo& primary, SplitInfo& secondary) const {
@@ -536,8 +521,8 @@ public:
     //Resulting graph should be condensed
     void operator()(const vector<GapDescription>& gaps) {
         size_t closed_gaps = 0;
-        //TODO verify canonical/non-canonical symmetry
-        for (const auto& gap : ArtificialSplitAndGapUpdate(FilterCanonical(gaps))) {
+        VERIFY_MSG(CheckGapsValidity(gaps), "Gap check failed");
+        for (const auto& gap : ArtificialSplitAndGapUpdate(gaps)) {
             inner_joiner_(gap, /*condense*/false);
             ++closed_gaps;
         }
@@ -562,9 +547,10 @@ private:
     ConsensusF consensus_;
     const size_t long_seq_limit_;
     const size_t max_flanking_region_length_;
+    const size_t max_consensus_reads_;
 
     const GapDescription INVALID_GAP;
-    const size_t max_consensus_reads_;
+
     string PrintLengths(const vector<string>& gap_seqs) const {
         stringstream ss;
         for (const auto& gap_v : gap_seqs)
@@ -644,7 +630,6 @@ private:
 
         auto padded_gaps = PadGaps(start_it, end_it);
         //all start and end positions are equal here
-        //FIXME check that it is desired behavior
         if (padded_gaps.size() < min_weight_) {
             DEBUG("Connection weight too low after padding");
             return INVALID_GAP;
@@ -716,20 +701,21 @@ public:
     HybridGapCloser(Graph& g, const GapStorage& storage,
                     size_t min_weight, ConsensusF consensus,
                     size_t long_seq_limit,
-                    size_t max_flanking_region_length = 500, size_t max_consensus_reads = 20)
+                    size_t max_flanking_region_length = 500,
+                    size_t max_consensus_reads = 20)
             : g_(g), storage_(storage),
               min_weight_(min_weight),
               consensus_(consensus),
               long_seq_limit_(long_seq_limit),
-              max_flanking_region_length_(max_flanking_region_length), max_consensus_reads_(max_consensus_reads) {
+              max_flanking_region_length_(max_flanking_region_length),
+              max_consensus_reads_(max_consensus_reads) {
     }
 
     map<EdgeId, EdgeId> operator()() {
         EdgeFateTracker fate_tracker(g_);
-        AmbiguousGapsFilter filter(g_);
         MultiGapJoiner gap_joiner(g_);
 
-        gap_joiner(filter(ConstructConsensus()));
+        gap_joiner(ConstructConsensus());
 
         CompressAllVertices(g_, true, /*chunk_cnt*/100);
         return fate_tracker.Old2NewMapping();
