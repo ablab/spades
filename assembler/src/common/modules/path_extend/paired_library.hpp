@@ -12,8 +12,7 @@
  *      Author: andrey
  */
 
-#ifndef PAIRED_LIBRARY_HPP_
-#define PAIRED_LIBRARY_HPP_
+#pragma once
 
 #include "pipeline/graph_pack.hpp"
 #include "paired_info/paired_info.hpp"
@@ -27,52 +26,44 @@ using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;
 
 using omnigraph::de::PairedInfoIndexT;
-typedef omnigraph::de::PairInfo<EdgeId> DePairInfo;
 using omnigraph::de::Point;
 
-struct PairedInfoLibrary {
-    PairedInfoLibrary(size_t k, const Graph& g, size_t readS, size_t is,
+class PairedInfoLibrary {
+public:
+    PairedInfoLibrary(size_t k, const Graph& g, size_t read_size, size_t is,
                       size_t is_min, size_t is_max, double is_var,
                       bool is_mp,
                       const std::map<int, size_t>& is_distribution)
             : g_(g),
               k_(k),
-              read_size_(readS),
+              read_size_(read_size),
               is_(is),
               is_min_(is_min),
               is_max_(is_max),
               is_var_(is_var),
               is_mp_(is_mp),
-              single_threshold_(-1.0),
-              coverage_coeff_(1.0),
-              ideal_pi_counter_(g, (int) is_min, (int) is_max, readS, is_distribution) {
+              ideal_pi_counter_(g, (int) is_min, (int) is_max,
+                                read_size, is_distribution) {
     }
 
     virtual ~PairedInfoLibrary() {}
-
-    void SetCoverage(double cov) { coverage_coeff_ = cov; }
-    void SetSingleThreshold(double threshold) { single_threshold_ = threshold; }
 
     virtual size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist, int max_dist, size_t min_len = 0) const = 0;
     virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const = 0;
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int distance, bool from_interval = false) const = 0;
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int dist_min, int dist_max) const = 0;
-    virtual size_t GetIndexSize() const = 0;
 
     double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance, bool additive = false) const {
         return ideal_pi_counter_.IdealPairedInfo(e1, e2, distance, additive);
     }
 
+    size_t GetIS() const { return is_; }
     size_t GetISMin() const { return is_min_; }
-    double GetSingleThreshold() const { return single_threshold_; }
-    double GetCoverageCoeff() const { return coverage_coeff_; }
     size_t GetISMax() const { return is_max_; }
     double GetIsVar() const { return is_var_; }
-    size_t GetLeftVar() const { return is_ - is_min_; }
-    size_t GetRightVar() const { return is_max_ - is_; }
-    size_t GetReadSize() const { return read_size_; }
     bool IsMp() const { return is_mp_; }
 
+protected:
     const Graph& g_;
     size_t k_;
     size_t read_size_;
@@ -81,16 +72,15 @@ struct PairedInfoLibrary {
     size_t is_max_;
     double is_var_;
     bool is_mp_;
-    double single_threshold_;
-    double coverage_coeff_;
     IdealPairInfoCounter ideal_pi_counter_;
-protected:
     DECL_LOGGER("PathExtendPI");
 };
 
 template<class Index>
-struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
+class PairedInfoLibraryWithIndex : public PairedInfoLibrary {
+    const Index& index_;
 
+public:
     PairedInfoLibraryWithIndex(size_t k, const Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, double is_div,
                                const Index& index, bool is_mp,
                                const std::map<int, size_t>& is_distribution)
@@ -167,21 +157,13 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         }
         return weight;
     }
-    size_t GetIndexSize() const override {
-        DEBUG("index size" << index_.size());
-        return index_.size();
-    }
-    const Index& index_;
-protected:
-    DECL_LOGGER("PathExtendPI");
+
 };
 
-typedef std::vector<shared_ptr<PairedInfoLibrary> > PairedInfoLibraries;
-
 template<class Index>
-inline shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph& g,
-                                                const debruijn_graph::config::dataset::Library &lib,
-                                                const Index &paired_index) {
+shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph& g,
+                                         const debruijn_graph::config::dataset::Library &lib,
+                                         const Index &paired_index) {
     //why all those local variables? :)
     size_t read_length = lib.data().read_length;
     size_t is = (size_t) lib.data().mean_insert_size;
@@ -189,18 +171,16 @@ inline shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph& g,
     int is_max = (int) lib.data().insert_size_right_quantile;
     double var = lib.data().insert_size_deviation;
     bool is_mp = lib.type() == io::LibraryType::MatePairs || lib.type() == io::LibraryType::HQMatePairs;
-    return make_shared<PairedInfoLibraryWithIndex<decltype(paired_index)> >(g.k(),
-                                                                            g,
-                                                                            read_length,
-                                                                            is,
-                                                                            is_min > 0.0 ? size_t(is_min) : 0,
-                                                                            is_max > 0.0 ? size_t(is_max) : 0,
-                                                                            var,
-                                                                            paired_index,
-                                                                            is_mp,
-                                                                            lib.data().insert_size_distribution);
+    return make_shared<PairedInfoLibraryWithIndex<decltype(paired_index)>>(g.k(),
+                                                                           g,
+                                                                           read_length,
+                                                                           is,
+                                                                           is_min > 0 ? size_t(is_min) : 0,
+                                                                           is_max > 0 ? size_t(is_max) : 0,
+                                                                           var,
+                                                                           paired_index,
+                                                                           is_mp,
+                                                                           lib.data().insert_size_distribution);
 }
 
 }  // path extend
-
-#endif /* PAIRED_LIBRARY_HPP_ */

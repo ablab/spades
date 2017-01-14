@@ -21,9 +21,9 @@ PairedLibConnectionCondition::PairedLibConnectionCondition(const debruijn_graph:
         lib_(lib),
         lib_index_(lib_index),
         min_read_count_(min_read_count),
-//TODO reconsider condition
+        //FIXME reconsider condition; config!
         left_dist_delta_(5 * (int) lib_->GetISMax()),
-        right_dist_delta_(max(5 * (int) lib_->GetIsVar(), int(lib_->is_))) {
+        right_dist_delta_(max(5 * (int) lib_->GetIsVar(), int(lib_->GetIS()))) {
 }
 
 size_t PairedLibConnectionCondition::GetLibIndex() const {

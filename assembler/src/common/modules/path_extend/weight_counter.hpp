@@ -235,10 +235,11 @@ class PathCoverWeightCounter: public WeightCounter {
 public:
 
     PathCoverWeightCounter(const Graph& g, const shared_ptr<PairedInfoLibrary>& lib,
-                            bool normalize_weight = true, 
-                            shared_ptr<IdealInfoProvider> ideal_provider = nullptr) :
+                           bool normalize_weight,
+                           double single_threshold,
+                           shared_ptr<IdealInfoProvider> ideal_provider = nullptr) :
             WeightCounter(g, lib, normalize_weight, ideal_provider),
-            single_threshold_(lib_->GetSingleThreshold()) {
+            single_threshold_(single_threshold) {
         VERIFY_MSG(math::gr(single_threshold_, 0.), "Threshold value not initialized");
     }
 

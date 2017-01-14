@@ -22,12 +22,10 @@ pe_config::ParamSetT::ExtensionOptionsT PELaunchSupport::GetExtensionOpts(shared
     return lib->IsMp() ? pset.mate_pair_options : pset.extension_options;
 }
 
-void PELaunchSupport::SetSingleThresholdForLib(shared_ptr<PairedInfoLibrary> lib,
-                                               const pe_config::ParamSetT &pset,
+double PELaunchSupport::SingleThresholdForLib(const pe_config::ParamSetT &pset,
                                                double threshold) const {
-    double t = pset.extension_options.use_default_single_threshold || math::le(threshold, 0.0) ?
+    return pset.extension_options.use_default_single_threshold || math::le(threshold, 0.0) ?
                pset.extension_options.single_threshold : threshold;
-    lib->SetSingleThreshold(t);
 }
 
 bool PELaunchSupport::IsForSingleReadExtender(const io::SequencingLibrary<config::DataSetData> &lib) const {

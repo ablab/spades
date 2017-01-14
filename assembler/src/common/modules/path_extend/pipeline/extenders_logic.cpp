@@ -45,11 +45,12 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongEdgePEExtender(size_t lib
                                                                       bool investigate_loops) const {
     const auto &lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
-    support_.SetSingleThresholdForLib(paired_lib, params_.pset, lib.data().pi_threshold);
-    INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
+    //INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
     shared_ptr<WeightCounter> wc =
-        make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight);
+        make_shared<PathCoverWeightCounter>(gp_.g, paired_lib,
+                                            params_.pset.normalize_weight,
+                                            support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold));
     auto opts = support_.GetExtensionOpts(paired_lib, params_.pset);
     shared_ptr<ExtensionChooser> extension =
         make_shared<LongEdgeExtensionChooser>(gp_.g, wc,
@@ -223,18 +224,18 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(
 shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t lib_index) const {
     const auto& lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
-    support_.SetSingleThresholdForLib(paired_lib, params_.pset, lib.data().pi_threshold);
 
     CoverageAwareIdealInfoProvider provider(gp_.g, paired_lib, dataset_info_.RL());
 
     auto meta_wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib,
                                                        params_.pset.normalize_weight,
+                                                       support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold),
                                                        make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib,
                                                                                                    dataset_info_.RL()));
     //FIXME remove
     VERIFY(params_.pset.extension_options.use_default_single_threshold &&
                params_.pset.normalize_weight &&
-               math::eq(paired_lib->GetSingleThreshold(), 0.3) &&
+               math::eq(support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold), 0.3) &&
                math::eq(params_.pset.extension_options.weight_threshold, 0.6) &&
                math::eq(params_.pset.extension_options.priority_coeff, 1.5));
 
@@ -263,13 +264,13 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
 
     const auto &lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
-
-    support_.SetSingleThresholdForLib(paired_lib, params_.pset, lib.data().pi_threshold);
-    INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
+//    INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
     auto cip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL());
     shared_ptr<WeightCounter> wc =
-        make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight, cip);
+        make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight,
+                                            support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold),
+                                            cip);
 
     auto opts = support_.GetExtensionOpts(paired_lib, params_.pset);
     shared_ptr<RNAExtensionChooser> extension =
@@ -288,8 +289,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
 shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, bool investigate_loops) const {
     const auto &lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
-    support_.SetSingleThresholdForLib(paired_lib, params_.pset, lib.data().pi_threshold);
-    INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
+//    INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
     shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
     //FIXME WHY NOT VALUE FROM "opts" USED HERE? MP bug?
@@ -302,7 +302,9 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
             iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), lib_cov);
         }
     }
-    auto wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight, iip);
+    auto wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight,
+                                                  support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold),
+                                                  iip);
 
     auto opts = support_.GetExtensionOpts(paired_lib, params_.pset);
     auto extension_chooser = make_shared<SimpleExtensionChooser>(gp_.g, wc,
@@ -317,8 +319,6 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
                    opts.use_default_single_threshold &&
                    params_.pset.normalize_weight &&
                    math::eq(0.3, opts.single_threshold)));
-
-    VERIFY(params_.mode == config::pipeline_type::meta);
 
     return make_shared<SimpleExtender>(gp_, cover_map_,
                                        extension_chooser,
