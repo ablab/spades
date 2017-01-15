@@ -309,8 +309,12 @@ class DataPrinter {
   protected:
 
     //todo optimize component copy
-    DataPrinter(const GraphComponent<Graph>& component) :
-            component_(component) {
+//    DataPrinter(const GraphComponent<Graph>& component) :
+//            component_(component) {
+//    }
+
+    DataPrinter(GraphComponent<Graph>&& component) :
+            component_(std::move(component)) {
     }
 
     const GraphComponent<Graph>& component() const {
@@ -329,7 +333,7 @@ class ConjugateDataPrinter: public DataPrinter<Graph> {
     typedef typename Graph::VertexId VertexId;
   public:
     ConjugateDataPrinter(Graph const& g) :
-            base(g) {
+            base(GraphComponent<Graph>::WholeGraph(g)) {
     }
 
     ConjugateDataPrinter(const GraphComponent<Graph>& graph_component) :
@@ -338,7 +342,7 @@ class ConjugateDataPrinter: public DataPrinter<Graph> {
 
     template<class VertexIt>
     ConjugateDataPrinter(const Graph& g, VertexIt begin, VertexIt end) :
-            base(GraphComponent<Graph>(g, begin, end, true)) {
+            base(GraphComponent<Graph>::FromVertices(g, begin, end, true)) {
     }
 
     std::string ToPrint(VertexId v) const {

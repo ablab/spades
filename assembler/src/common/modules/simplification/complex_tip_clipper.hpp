@@ -83,31 +83,36 @@ public:
               edge_length_treshold_(max_edge_length), max_path_length_(max_path_length)
     { }
 
-    boost::optional<GraphComponent<Graph>> operator()(VertexId v) const {
+    GraphComponent<Graph> operator()(VertexId v) const {
+        GraphComponent<Graph> empty(g_);
+        VERIFY(empty.empty());
         if (g_.IncomingEdgeCount(v) != 0) {
-            return boost::none;
+            return empty;
         }
 
         DominatedSetFinder<Graph> finder(g_, v, max_path_length_);
         if (finder.FillDominated()) {
             auto ranges = finder.dominated();
             auto dom_component = finder.AsGraphComponent();
-            GraphComponent<Graph> extended_component(dom_component);
-            set<EdgeId> edges_to_add;
-            for (auto v : dom_component.sinks()) {
+            std::set<EdgeId> component_edges(dom_component.edges());
+            for (auto v : dom_component.exits()) {
                 size_t current_path_length = ranges[v].end_pos;
                 for (auto e : g_.OutgoingEdges(v)) {
                     if (current_path_length + g_.length(e) > max_path_length_) {
                         DEBUG("Component contains too long paths");
-                        return boost::none;
+                        return empty;
                     }
-                    extended_component.AddEdge(e);
+                    component_edges.insert(e);
                 }
             }
-            return ComponentCheck(extended_component) ? make_optional(extended_component) : boost::none;
+            auto extended_component = GraphComponent<Graph>::FromEdges(g_, component_edges);
+            if (ComponentCheck(extended_component))
+                return extended_component;
+            else
+                return empty;
         } else {
             DEBUG("Failed to find dominated component");
-            return boost::none;
+            return empty;
         }
     }
 
@@ -141,27 +146,27 @@ public:
             make_dir(pics_folder_);
         }
         this->interest_el_finder_ = std::make_shared<ParallelInterestingElementFinder<Graph, VertexId>>(
-                [&](VertexId v) {return finder_(v);}, chunk_cnt);
+                [&](VertexId v) {return !finder_(v).empty();}, chunk_cnt);
     }
 
     bool Process(VertexId v) override {
         DEBUG("Processing vertex " << this->g().str(v));
-        auto opt_component = finder_(v);
-        if (!opt_component) {
+        auto component = finder_(v);
+        if (component.empty()) {
             DEBUG("Failed to detect complex tip starting with vertex " << this->g().str(v));
             return false;
         }
 
         if (!pics_folder_.empty()) {
-            visualization::visualization_utils::WriteComponentSinksSources(*opt_component,
+            visualization::visualization_utils::WriteComponentSinksSources(component,
                                                       pics_folder_
                                                       + ToString(this->g().int_id(v)) //+ "_" + ToString(candidate_cnt)
                                                       + ".dot");
         }
 
-        VERIFY(opt_component->e_size() && opt_component->v_size());
-        DEBUG("Detected tip component edge cnt: " << opt_component->e_size());
-        component_remover_.DeleteComponent(opt_component->e_begin(), opt_component->e_end());
+        VERIFY(component.e_size() && component.v_size());
+        DEBUG("Detected tip component edge cnt: " << component.e_size());
+        component_remover_.DeleteComponent(component.e_begin(), component.e_end());
         DEBUG("Complex tip removed");
         return true;
     }

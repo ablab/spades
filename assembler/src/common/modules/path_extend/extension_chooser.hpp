@@ -1008,16 +1008,14 @@ private:
             can_be_processed.pop();
             if (vertices_of_component.count(v) != 0) {
                 DEBUG("Component is too complex");
-                return GraphComponent<Graph>(g_, false);
+                return GraphComponent<Graph>::Empty(g_);
             }
             DEBUG("Adding vertex " << g_.str(v) << " to component set");
             vertices_of_component.insert(v);
             UpdateCanBeProcessed(v, can_be_processed, path_coverage);
         }
 
-        GraphComponent<Graph> gc(g_, vertices_of_component.begin(),
-                vertices_of_component.end());
-        return gc;
+        return GraphComponent<Graph>::FromVertices(g_, vertices_of_component);
     }
 
     EdgeContainer FinalFilter(const EdgeContainer& edges,
@@ -1066,7 +1064,7 @@ private:
         }
 
         DEBUG("Checking long sinks");
-        for (auto v : gc.sinks()) {
+        for (auto v : gc.exits()) {
             for (auto e : g_.OutgoingEdges(v)) {
                 if (g_.length(e) > max_edge_length_in_repeat_ && 
                         CompatibleEdge(e, path_coverage) &&

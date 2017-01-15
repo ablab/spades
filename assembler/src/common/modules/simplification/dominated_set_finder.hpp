@@ -115,8 +115,7 @@ public:
     }
 
     GraphComponent<Graph> AsGraphComponent() const {
-        set<VertexId> vertices = key_set(dominated_);
-        return GraphComponent<Graph>(g_, vertices.begin(), vertices.end());
+        return GraphComponent<Graph>::FromVertices(g_, key_set(dominated_));
     }
 
     //little meaning if FillDominated returned false

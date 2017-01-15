@@ -42,9 +42,9 @@ public:
     }
 
     void Visualize(const GraphComponent<Graph> &component, ostream &os,
-                   const graph_labeler::GraphLabeler <Graph> &labeler,
-                   const graph_colorer::GraphColorer <Graph> &colorer,
-                   const vertex_linker::VertexLinker <Graph> &linker) {
+                   const graph_labeler::GraphLabeler<Graph> &labeler,
+                   const graph_colorer::GraphColorer<Graph> &colorer,
+                   const vertex_linker::VertexLinker<Graph> &linker) {
         if (paired_) {
             graph_printer::PairedGraphPrinter<Graph> printer(graph_, os, labeler, colorer, linker);
             Visualize(component, printer);
@@ -55,11 +55,10 @@ public:
     }
 
     void Visualize(ostream &os,
-                   const graph_labeler::GraphLabeler <Graph> &labeler,
-                   const graph_colorer::GraphColorer <Graph> &colorer,
-                   const vertex_linker::VertexLinker <Graph> &linker) {
-        GraphComponent<Graph> component(graph_, graph_.begin(), graph_.end(), false);
-        Visualize(component, os, labeler, colorer, linker);
+                   const graph_labeler::GraphLabeler<Graph> &labeler,
+                   const graph_colorer::GraphColorer<Graph> &colorer,
+                   const vertex_linker::VertexLinker<Graph> &linker) {
+        Visualize(GraphComponent<Graph>::WholeGraph(graph_), os, labeler, colorer, linker);
     }
 };
 

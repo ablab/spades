@@ -134,7 +134,7 @@ void WriteErrorLoc(const Graph &g,
                    std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> genome_colorer,
                    const visualization::graph_labeler::GraphLabeler<Graph>& labeler) {
     INFO("Writing error localities for graph to folder " << folder_name);
-    GraphComponent<Graph> all(g, g.begin(), g.end());
+    auto all = GraphComponent<Graph>::WholeGraph(g);
     set<typename Graph::EdgeId> edges = genome_colorer->ColoredWith(all.edges().begin(),
                                                     all.edges().end(), "black");
     set<typename Graph::VertexId> to_draw;
@@ -339,7 +339,7 @@ struct detail_info_printer {
         PrepareForDrawing(gp_);
     
         auto path1 = FindGenomeMappingPath(gp_.genome.GetSequence(), gp_.g, gp_.index,
-                                          gp_.kmer_mapper).path();
+                                           gp_.kmer_mapper).path();
     
         auto colorer = DefaultColorer(gp_);
     
@@ -349,12 +349,12 @@ struct detail_info_printer {
         }
     
         if (config.write_full_graph) {
-            visualization_utils::WriteComponent(GraphComponent<Graph>(gp_.g, gp_.g.begin(), gp_.g.end()),
+            visualization_utils::WriteComponent(GraphComponent<Graph>::WholeGraph(gp_.g),
                                                 pics_folder + "full_graph.dot", colorer, labeler_);
         }
     
         if (config.write_full_nc_graph) {
-            visualization_utils::WriteSimpleComponent(GraphComponent<Graph>(gp_.g, gp_.g.begin(), gp_.g.end()),
+            visualization_utils::WriteSimpleComponent(GraphComponent<Graph>::WholeGraph(gp_.g),
                                                       pics_folder + "nc_full_graph.dot", colorer, labeler_);
         }
     

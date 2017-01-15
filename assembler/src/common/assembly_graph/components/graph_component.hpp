@@ -10,7 +10,7 @@
 #include "utils/standard_base.hpp"
 
 namespace omnigraph {
-//todo make handler!!!
+
 template<class Graph>
 class GraphComponent {
     typedef typename Graph::VertexId VertexId;
@@ -20,20 +20,12 @@ class GraphComponent {
     const Graph& graph_;
     std::set<VertexId> vertices_;
     std::set<EdgeId> edges_;
-    std::set<VertexId> sinks_;
-    std::set<VertexId> sources_;
+    std::set<VertexId> exits_;
+    std::set<VertexId> entrances_;
     std::string name_;
 
-
     template<class VertexIt>
-    void FillVertices(VertexIt begin, VertexIt end) {
-        for (auto it = begin; it != end; ++it) {
-            vertices_.insert(*it);
-        }
-    }
-
-    template<class VertexIt>
-    void FillVertices(VertexIt begin, VertexIt end, bool add_conjugate) {
+    void FillVertices(VertexIt begin, VertexIt end, bool add_conjugate = false) {
         for (auto it = begin; it != end; ++it) {
             vertices_.insert(*it);
             if (add_conjugate)
@@ -41,86 +33,127 @@ class GraphComponent {
         }
     }
 
-    void FillEdges() {
-        for (auto v_it = vertices_.begin(); v_it != vertices_.end(); ++v_it) {
-            TRACE("working with vertex " << graph_.str(*v_it));
-            for (EdgeId e : graph_.OutgoingEdges(*v_it)) {
-                VertexId edge_end = graph_.EdgeEnd(e);
-                TRACE(graph_.coverage(e) << " " << graph_.length(e));
-                if (vertices_.count(edge_end) > 0) {
+    template<class EdgeIt>
+    void FillEdges(EdgeIt begin, EdgeIt end, bool add_conjugate = false) {
+        for (auto it = begin; it != end; ++it) {
+            edges_.insert(*it);
+            if (add_conjugate)
+                edges_.insert(graph_.conjugate(*it));
+        }
+    }
+
+    void FillInducedEdges() {
+        for (VertexId v : vertices_) {
+            for (EdgeId e : graph_.OutgoingEdges(v)) {
+                if (vertices_.count(graph_.EdgeEnd(e)) > 0) {
                     edges_.insert(e);
-                    TRACE("Edge added");
                 }
             }
         }
     }
 
-    template<class VertexIt>
-    void Fill(VertexIt begin, VertexIt end) {
-        FillVertices(begin, end);
-        FillEdges();
-        FindSinksAndSources();
+    void FillRelevantVertices() {
+        for (EdgeId e : edges_) {
+            vertices_.insert(graph_.EdgeStart(e));
+            vertices_.insert(graph_.EdgeEnd(e));
+        }
     }
 
-    template<class VertexIt>
-    void Fill(VertexIt begin, VertexIt end, bool add_conjugate) {
-        FillVertices(begin, end, add_conjugate);
-        FillEdges();
-        FindSinksAndSources();
-    }
-
-    void FindSinksAndSources() {
-        for(auto v : vertices_) {
-            for(auto e : graph_.IncomingEdges(v)) {
-                if(!contains(e) && !(contains(graph_.EdgeStart(e)))) {
-                    sources_.insert(v);
+    void FindEntrancesAndExits() {
+        for (auto v : vertices_) {
+            for (auto e : graph_.IncomingEdges(v)) {
+                if (!contains(e)) {
+                    entrances_.insert(v);
                     break;
                 }
             }
 
-            for(auto e : graph_.OutgoingEdges(v)) {
-                if(!contains(e) && !(contains(graph_.EdgeEnd(e)))) {
-                    sinks_.insert(v);
+            for (auto e : graph_.OutgoingEdges(v)) {
+                if (!contains(e)) {
+                    exits_.insert(v);
                     break;
                 }
             }
         }
     }
+
+    void Swap(GraphComponent<Graph> &that) {
+        VERIFY(&this->graph_ == &that.graph_);
+        std::swap(this->name_, that.name_);
+        std::swap(this->vertices_, that.vertices_);
+        std::swap(this->edges_, that.edges_);
+        std::swap(this->exits_, that.exits_);
+        std::swap(this->entrances_, that.entrances_);
+    }
+
+    template<class EdgeIt>
+    void FillFromEdges(EdgeIt begin, EdgeIt end,
+                       bool add_conjugate) {
+        FillEdges(begin, end, add_conjugate);
+        FillRelevantVertices();
+        FindEntrancesAndExits();
+    }
+
+    GraphComponent<Graph> &operator=(const GraphComponent<Graph> &);
+    GraphComponent(const GraphComponent<Graph> &);
 
 public:
+
     template<class VertexIt>
-    GraphComponent(const Graph &g, VertexIt begin, VertexIt end, const string &name = "") :
-        graph_(g), name_(name) {
-        Fill(begin, end);
+    static GraphComponent FromVertices(const Graph &g, VertexIt begin, VertexIt end,
+                                       bool add_conjugate = false, const string &name = "") {
+        GraphComponent answer(g, name);
+        answer.FillVertices(begin, end, add_conjugate);
+        answer.FillInducedEdges();
+        answer.FindEntrancesAndExits();
+        return answer;
     }
 
-    //todo refactor and get rid of hack
-    template<class VertexIt>
-    GraphComponent(const Graph &g, VertexIt begin, VertexIt end,
-            bool add_conjugate, const string &name = "") : graph_(g), name_(name) {
-        Fill(begin, end, add_conjugate);
+    template<class EdgeIt>
+    static GraphComponent FromEdges(const Graph &g, EdgeIt begin, EdgeIt end,
+                                    bool add_conjugate = false, const string &name = "") {
+        GraphComponent answer(g, name);
+        answer.FillFromEdges(begin, end, add_conjugate);
+        return answer;
     }
 
-    //Full graph component
-    GraphComponent(const Graph &g, bool fill = true, const string &name = "") : graph_(g), name_(name) {
-        if(fill) {
-            Fill(g.begin(), g.end());
-        }
+    template<class Container>
+    static GraphComponent FromVertices(const Graph &g, const Container &c,
+                                       bool add_conjugate = false, const string &name = "") {
+        return FromVertices(g, c.begin(), c.end(), add_conjugate, name);
+    }
+
+    template<class Container>
+    static GraphComponent FromEdges(const Graph &g, const Container &c,
+                                    bool add_conjugate = false, const string &name = "") {
+        return FromEdges(g, c.begin(), c.end(), add_conjugate, name);
+    }
+
+    static GraphComponent WholeGraph(const Graph &g, const string &name = "") {
+        return FromVertices(g, g.begin(), g.end(), false, name);
+    }
+
+    static GraphComponent Empty(const Graph &g, const string &name = "") {
+        return GraphComponent(g, name);
+    }
+
+    GraphComponent(const Graph &g, const string &name = "") :
+            graph_(g), name_(name) {
     }
 
     //may be used for conjugate closure
-    GraphComponent(const GraphComponent& component, bool add_conjugate, const string &name = "") : graph_(component.graph_), name_(name)
-//        vertices_(component.vertices_.begin(), component.vertices_.end()),
-//        edges_(component.edges_.begin(), component.edges_.end())
-    {
-        Fill(component.v_begin(), component.v_end(), add_conjugate);
+    GraphComponent(const GraphComponent& component,
+                   bool add_conjugate,
+                   const string &name = "") : graph_(component.graph_), name_(name) {
+        FillFromEdges(component.e_begin(), component.e_end(), add_conjugate);
     }
 
-    GraphComponent<Graph> &operator=(const GraphComponent<Graph> &that) {
-        VERIFY(&this->graph_ == &that.graph_);
-        this->vertices_ = that.vertices_;
-        this->edges_ = that.edges_;
-        this->name_ = that.name_;
+    GraphComponent(GraphComponent&& that) : graph_(that.graph_) {
+        Swap(that);
+    }
+
+    GraphComponent<Graph> &operator=(GraphComponent<Graph> &&that) {
+        Swap(that);
         return *this;
     }
 
@@ -151,6 +184,7 @@ public:
     edge_iterator e_begin() const {
         return edges_.begin();
     }
+
     edge_iterator e_end() const {
         return edges_.end();
     }
@@ -166,36 +200,21 @@ public:
     vertex_iterator v_begin() const {
         return vertices_.begin();
     }
+
     vertex_iterator v_end() const {
         return vertices_.end();
     }
 
-    const std::set<VertexId>& sinks() const {
-        return sinks_;
+    const std::set<VertexId>& exits() const {
+        return exits_;
     }
 
-    const std::set<VertexId>& sources() const {
-        return sources_;
+    const std::set<VertexId>& entrances() const {
+        return entrances_;
     }
 
     bool IsBorder(VertexId v) const {
-        if(vertices_.count(v) == 0)
-            return false;
-        for (EdgeId e : graph_.IncidentEdges(v)) {
-            if (vertices_.count(graph_.EdgeStart(e)) == 0
-                    || vertices_.count(graph_.EdgeEnd(e)) == 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void AddEdge(EdgeId e) {
-        VertexId v = graph_.EdgeStart(e);
-        VertexId v2 = graph_.EdgeEnd(e);
-        edges_.insert(e);
-        vertices_.insert(v);
-        vertices_.insert(v2);
+        return exits_.count(v) || entrances_.count(v);
     }
 
     bool empty() const {

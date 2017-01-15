@@ -268,13 +268,13 @@ public:
     }
 
     string GetValue(VertexId v) const {
-        if (component_.sinks().count(v) && !component_.sources().count(v)) {
+        if (component_.exits().count(v) && !component_.entrances().count(v)) {
             return sink_color_;
         }
-        if (component_.sources().count(v) && !component_.sinks().count(v)) {
+        if (component_.entrances().count(v) && !component_.exits().count(v)) {
             return source_color_;
         }
-        if (component_.sources().count(v) && component_.sinks().count(v)) {
+        if (component_.entrances().count(v) && component_.exits().count(v)) {
             return sinksource_color_;
         }
 

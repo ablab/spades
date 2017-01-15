@@ -47,15 +47,15 @@ void DrawComponentsOfShortEdges(const Graph &g, const string &output_dir, size_t
     shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g, min_length);
     while (splitter->HasNext()) {
         GraphComponent<Graph> component = splitter->Next();
-        if (component.v_size() > 3 && component.sinks().size() == sinks &&
-            component.sources().size() == sources) {
+        if (component.v_size() > 3 && component.exits().size() == sinks &&
+                component.entrances().size() == sources) {
             bool fail = false;
-            for (auto v : component.sources()) {
+            for (auto v : component.entrances()) {
                 if (component.g().IncomingEdgeCount(v) != 1) {
                     fail = true;
                 }
             }
-            for (auto v : component.sinks()) {
+            for (auto v : component.exits()) {
                 if (component.g().OutgoingEdgeCount(v) != 1) {
                     fail = true;
                 }

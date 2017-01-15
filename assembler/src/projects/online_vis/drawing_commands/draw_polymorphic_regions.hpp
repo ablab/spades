@@ -32,8 +32,7 @@ class DrawPolymorphicRegions : public DrawingCommand {
                 verticesToAdd.push_back(curr_env.graph().EdgeEnd(edge));
             }
         }
-        GraphComponent<Graph> polymorphicComponent(curr_env.graph(), verticesToAdd.begin(), verticesToAdd.end());
-        return polymorphicComponent;
+        return GraphComponent<Graph>::FromVertices(curr_env.graph(), verticesToAdd);
     }
 
     void DrawPicture(DebruijnEnvironment& curr_env, Sequence& genome) const {

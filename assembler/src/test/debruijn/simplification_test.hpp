@@ -399,7 +399,7 @@ BOOST_AUTO_TEST_CASE( ParallelECRemover1 ) {
     BOOST_CHECK_EQUAL(gp.g.size(), 20u);
     debruijn::simplification::ParallelEC(gp.g, parser.max_length_bound(), parser.max_coverage_bound(), standard_simplif_relevant_info().chunk_cnt());
     BOOST_CHECK_EQUAL(gp.g.size(), 4u);
-    BOOST_CHECK_EQUAL(GraphComponent<Graph>(gp.g).e_size(), 2u);
+    BOOST_CHECK_EQUAL(GraphComponent<Graph>::WholeGraph(gp.g).e_size(), 2u);
 }
 
 BOOST_AUTO_TEST_CASE( ParallelECRemover2 ) {

@@ -39,6 +39,19 @@ public:
     const Graph& graph() const {
         return graph_;
     }
+protected:
+    //todo remove after returning to optional
+    std::unique_ptr<GraphComponent<Graph>> MakeUniquePtr(GraphComponent<Graph>&& component) const {
+        return std::unique_ptr<GraphComponent<Graph>>(new GraphComponent<Graph>(std::move(component)));
+    }
+
+    //todo remove after returning to optional
+    GraphComponent<Graph> GetValueAndReset(std::unique_ptr<GraphComponent<Graph>>& component_ptr) const {
+        VERIFY(component_ptr);
+        auto answer = std::move(*component_ptr);
+        component_ptr = nullptr;
+        return answer;
+    }
 };
 
 template<class Graph>
@@ -105,9 +118,6 @@ public:
             : current_(collection.begin()), end_(collection.end()) {
     }
 
-//  virtual bool CheckPutVertex(VertexId vertex, EdgeId /*edge*/, size_t /*length*/) const {
-//    return subgraph_.count(vertex) != 0;
-//  }
     CollectionIterator(shared_ptr<Collection> collection)
             : storage_(collection), current_(collection->begin()), end_(collection->end()) {
     }
@@ -126,87 +136,6 @@ public:
         return next;
     }
 
-//public:
-//  ErrorComponentSplitter(const Graph &graph, const set<EdgeId> &black_edges) :
-//      base(graph), black_edges_(black_edges), iterator_(
-//          graph.SmartEdgeBegin()) {
-//    TRACE("ErrorComponentSplitter created and SmartIterator initialized");
-//  }
-//
-//  virtual ~ErrorComponentSplitter() {
-//  }
-//
-//  vector<VertexId> FindComponent(VertexId start_vertex) {
-//    ComponentFinder<Graph> cf(this->graph(), black_edges_);
-//    cf.run(start_vertex);
-//    return cf.ReachedVertices();
-//  }
-//
-//  vector<VertexId> FindNeighbourhood(VertexId start, size_t bound) {
-//    NeighbourhoodFinder<Graph> nf(this->graph(), black_edges_, bound);
-//    nf.run(start);
-//    return nf.ReachedVertices();
-//  }
-//
-//  size_t FindDiameter(const vector<VertexId> &component) {
-//    set < VertexId > component_set(component.begin(), component.end());
-//    size_t result = 0;
-//    VertexId current = *(component.begin());
-//    for (size_t i = 0; i < 4; i++) {
-//      pair<VertexId, size_t> next = GetFarthest(current, component_set);
-//      current = next.first;
-//      result = next.second;
-//    }
-//    return result;
-//  }
-//
-//  pair<VertexId, size_t> GetFarthest(VertexId v,
-//      const set<VertexId> &component) {
-//    SubgraphDijkstra<Graph> sd(this->graph(), component);
-//    sd.run(v);
-//    pair<VertexId, size_t> result(v, 0);
-//    auto bounds = sd.GetDistances();
-//    for (auto it = bounds.first; it != bounds.second; ++it) {
-//      if (it->second > result.second) {
-//        result = *it;
-//      }
-//    }
-//    return result;
-//  }
-//
-//  virtual vector<VertexId> NextComponent() {
-//    TRACE("Construction of next component started");
-//    if (Finished()) {
-//      VERIFY(false);
-//      return vector<VertexId>();
-//    }
-//    EdgeId next = *iterator_;
-//    ++iterator_;
-//    vector < VertexId > component = FindComponent(
-//        this->graph().EdgeEnd(next));
-//    TRACE("Error edges component constructed. It contains "
-//            << component.size() << " vertices");
-//    size_t component_size = FindDiameter(component);
-//    TRACE("Diameter of component is " << component_size);
-//    vector < VertexId > neighbourhood = FindNeighbourhood(
-//        this->graph().EdgeEnd(next), (size_t) math::round(1.5 * (double) component_size));
-//    TRACE("Error edges component neighborhood constructed. It contains "
-//            << neighbourhood.size() << " vertices");
-//    visited_.insert(component.begin(), component.end());
-//    return neighbourhood;
-//  }
-//
-//  virtual bool Finished() {
-//    while (!iterator_.IsEnd()) {
-//      if (black_edges_.find(*iterator_) != black_edges_.end()
-//          && visited_.find(this->graph().EdgeEnd(*iterator_))
-//              == visited_.end()) {
-//        return false;
-//      }
-//      ++iterator_;
-//    }
-//    return true;
-//  }
     bool HasNext() {
         while(current_ != end_ && relaxed_.count(*current_) == 1) {
             ++current_;
@@ -218,31 +147,6 @@ public:
         relaxed_.insert(e);
     }
 
-//template<class Graph>
-//class ShortEdgeComponentNeighbourhoodFinder: public UnorientedDijkstra<Graph> {
-//private:
-//  typedef UnorientedDijkstra<Graph> base;
-//protected:
-//  typedef typename base::VertexId VertexId;
-//  typedef typename base::EdgeId EdgeId;
-//  typedef typename base::DistanceType distance_t;
-//private:
-//  distance_t bound_;
-//public:
-//  ShortEdgeComponentNeighbourhoodFinder(const Graph &graph, distance_t bound) :
-//      UnorientedDijkstra<Graph>(graph), bound_(bound) {
-//  }
-//
-//  virtual bool CheckProcessVertexVertexId (VertexId /*vertex*/, distance_t distance) {
-//    return distance == 0;
-//  }
-//
-//  virtual distance_t GetLength(EdgeId edge) const {
-//    if (this->graph().length(edge) <= bound_)
-//      return 0;
-//    else
-//      return 1;
-//  }
     void Relax(const vector<Element> &v) {
         for (auto it = v.begin(); it != v.end(); ++it)
             Relax(*it);
@@ -296,40 +200,6 @@ public:
             current_++;
     }
 
-//public:
-//  CountingDijkstra(const Graph &graph, size_t max_size,
-//      size_t edge_length_bound) :
-//      base(graph), max_size_(max_size), edge_length_bound_(
-//          edge_length_bound), current_(0) {
-//  }
-//
-//  virtual bool CheckPutVertex(VertexId /*vertex*/, EdgeId edge,
-//      distance_t /*length*/) const {
-//    if (current_ < max_size_) {
-//      ++current_;
-//    }
-//    if (current_ < max_size_ && GetLength(edge) < inf) {
-//      return true;
-//    }
-//    return false;
-//  }
-//
-//  virtual bool CheckProcessVertex(VertexId /*vertex*/, distance_t /*distance*/) {
-//    return current_ < max_size_;
-//  }
-//
-//  virtual void init(VertexId /*start*/) {
-//    current_ = 0;
-//  }
-//
-//  virtual size_t GetLength(EdgeId edge) const {
-//    if (this->graph().length(edge) <= edge_length_bound_)
-//      //todo change back
-////            return 1;
-//      return this->graph().length(edge);
-//    else
-//      return inf;
-//  }
     void Relax(VertexId e) {
         Relax(vector<VertexId>({e}));
     }
@@ -391,7 +261,7 @@ public:
     GraphComponent<Graph> CloseComponent(const GraphComponent<Graph>& component) const {
         set<VertexId> vertices(component.v_begin(), component.v_end());
         CloseComponent(vertices);
-        return GraphComponent<Graph>(graph_, vertices.begin(), vertices.end());
+        return GraphComponent<Graph>::FromVertices(graph_, vertices);
     }
 };
 
@@ -423,13 +293,10 @@ private:
         return result;
     }
 
-    set<VertexId> FindBorder(const GraphComponent<Graph> component) {
+    set<VertexId> FindBorder(const GraphComponent<Graph>& component) {
         set<VertexId> result;
-        for(auto it = component.vertices().begin(); it != component.vertices().end(); ++it) {
-            if(component.IsBorder(*it)) {
-                result.insert(*it);
-            }
-        }
+        insert_all(result, component.entrances());
+        insert_all(result, component.exits());
         return result;
     }
 
@@ -448,7 +315,7 @@ public:
               max_size_(max_size) {
     }
 
-    GraphComponent<Graph> Find(typename Graph::VertexId v) {
+    GraphComponent<Graph> Find(VertexId v) {
         auto cd = DijkstraHelper<Graph>::CreateCountingDijkstra(this->graph(), max_size_,
                 edge_length_bound_);
         cd.Run(v);
@@ -456,15 +323,16 @@ public:
         set<VertexId> result(result_vector.begin(), result_vector.end());
         ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
         cc.CloseComponent(result);
-        return GraphComponent<Graph>(this->graph(), result.begin(),
-                                     result.end());
+        return GraphComponent<Graph>::FromVertices(this->graph(), result);
     }
 
     vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) {
         set<VertexId> border = FindNeighbours(FindBorder(component), 2);
         std::vector<VertexId> result;
-        std::set_difference(component.vertices().begin(), component.vertices().end(), border.begin(), border.end(), std::inserter(result, result.end()));
-        return vector<VertexId>(result.begin(), result.end());
+        std::set_difference(component.vertices().begin(), component.vertices().end(),
+                            border.begin(), border.end(),
+                            std::inserter(result, result.end()));
+        return result;
     }
 };
 
@@ -564,7 +432,7 @@ public:
         last_inner_ = black;
         last_inner_.insert(v);
         ComponentCloser<Graph>(this->graph(), 0).CloseComponent(grey);
-        return GraphComponent<Graph>(this->graph(), grey.begin(), grey.end());
+        return GraphComponent<Graph>::FromVertices(this->graph(), grey);
     }
 
     vector<VertexId> InnerVertices(const GraphComponent<Graph> &/*component*/) {
@@ -593,9 +461,7 @@ public:
     GraphComponent<Graph> Find(VertexId v) {
         auto cd = DijkstraHelper<Graph>::CreateShortEdgeDijkstra(this->graph(), edge_length_bound_);
         cd.Run(v);
-        set<VertexId> result = cd.ProcessedVertices();
-        return GraphComponent<Graph>(this->graph(), result.begin(),
-                                     result.end());
+        return GraphComponent<Graph>::FromVertices(this->graph(), cd.ProcessedVertices());
     }
 
     vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) {
@@ -611,12 +477,13 @@ private:
 
     shared_ptr<GraphSplitter<Graph>> inner_splitter_;
     shared_ptr<GraphComponentFilter<Graph>> checker_;
-    boost::optional<GraphComponent<Graph>> next_;
+    shared_ptr<GraphComponent<Graph>> next_;
 public:
     FilteringSplitterWrapper(
             shared_ptr<GraphSplitter<Graph>> inner_splitter,
             shared_ptr<GraphComponentFilter<Graph>> checker)
-            : GraphSplitter<Graph>(inner_splitter->graph()), inner_splitter_(inner_splitter),
+            : GraphSplitter<Graph>(inner_splitter->graph()),
+              inner_splitter_(inner_splitter),
               checker_(checker) {
     }
 
@@ -625,20 +492,21 @@ public:
             VERIFY(false);
             return omnigraph::GraphComponent<Graph>(this->graph());
         }
-        GraphComponent<Graph> result = next_.get();
-        next_ = boost::optional<GraphComponent<Graph>>();
-        return result;
+        auto result = next_;
+        next_ = nullptr;
+        return *result;
     }
 
     bool HasNext() {
         while (!next_ && inner_splitter_->HasNext()) {
-            GraphComponent<Graph> ne = inner_splitter_->Next();
-            if (checker_->Check(ne)) {
-                next_ = ne;
+            next_ = std::make_shared(inner_splitter_->Next());
+            if (!checker_->Check(*next_)) {
+                next_ = nullptr;
             }
         }
         return next_;
     }
+
 private:
     DECL_LOGGER("FilteringSplitterWrapper");
 };
@@ -652,7 +520,7 @@ private:
 
     shared_ptr<GraphSplitter<Graph>> inner_splitter_;
     shared_ptr<GraphComponentFilter<Graph>> checker_;
-    boost::optional<GraphComponent<Graph>> next_;
+    std::unique_ptr<GraphComponent<Graph>> next_;
     set<VertexId> filtered_;
 public:
     CollectingSplitterWrapper(
@@ -664,28 +532,27 @@ public:
 
     GraphComponent<Graph> Next() {
         if (!HasNext()) {
-               VERIFY(false);
-               return omnigraph::GraphComponent<Graph>(this->graph());
+           VERIFY(false);
+           return omnigraph::GraphComponent<Graph>::Empty(this->graph());
         } else {
-            if(next_) {
-                GraphComponent<Graph> result = next_.get();
-                next_ = boost::optional<GraphComponent<Graph>>();
-                return result;
+            if (next_) {
+                return this->GetValueAndReset(next_);
             } else {
-                   GraphComponent<Graph> result(this->graph(), filtered_.begin(), filtered_.end(), false, "filtered");
-                   filtered_.clear();
-                   return result;
+                auto result = GraphComponent<Graph>::FromVertices(this->graph(),
+                                                                  filtered_,
+                                                                  false, "filtered");
+                filtered_.clear();
+                return result;
             }
         }
     }
 
     bool HasNext() {
         while (!next_ && inner_splitter_->HasNext()) {
-            GraphComponent<Graph> ne = inner_splitter_->Next();
-            if (checker_->Check(ne)) {
-                next_ = ne;
-            } else {
-                filtered_.insert(ne.v_begin(), ne.v_end());
+            next_ = this->MakeUniquePtr(inner_splitter_->Next());
+            if (!checker_->Check(*next_)) {
+                filtered_.insert(next_->v_begin(), next_->v_end());
+                next_ = nullptr;
             }
         }
         return next_ || !filtered_.empty();
@@ -702,7 +569,7 @@ private:
 
     shared_ptr<GraphSplitter<Graph>> inner_splitter_;
     shared_ptr<GraphComponentFilter<Graph>> checker_;
-    boost::optional<GraphComponent<Graph>> next_;
+    std::unique_ptr<GraphComponent<Graph>> next_;
 
     string CutName(const string &name, size_t max_length) {
         VERIFY(max_length >= 7);
@@ -724,7 +591,8 @@ private:
         for(size_t i = 0; i < 10 && inner_splitter_->HasNext(); i++) {
             next = inner_splitter_->Next();
             if (checker_->Check(next)) {
-                next_ = next;
+                VERIFY(!next_);
+                next_ = this->MakeUniquePtr(std::move(next));
                 break;
             } else {
                 vertices.insert(next.v_begin(), next.v_end());
@@ -734,8 +602,9 @@ private:
                 }
             }
         }
-        return GraphComponent<Graph>(this->graph(), vertices.begin(), vertices.end(), CutName(name, 60));
+        return GraphComponent<Graph>::FromVertices(this->graph(), vertices, false, CutName(name, 60));
     }
+
 
 public:
     CondensingSplitterWrapper(
@@ -748,21 +617,20 @@ public:
     GraphComponent<Graph> Next() {
         if (!HasNext()) {
             VERIFY(false);
-            return omnigraph::GraphComponent<Graph>(this->graph());
+            return GraphComponent<Graph>(this->graph());
         }
-        if(next_) {
-            GraphComponent<Graph> result = next_.get();
-            next_ = boost::optional<GraphComponent<Graph>>();
-            return result;
+
+        if (next_) {
+            return this->GetValueAndReset(next_);
         } else {
             return ConstructComponent();
         }
     }
 
     bool HasNext() {
-        if(next_)
+        if (next_)
             return true;
-        if(!inner_splitter_->HasNext())
+        if (!inner_splitter_->HasNext())
             return false;
         return true;
     }

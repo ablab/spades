@@ -62,7 +62,7 @@ public:
     GraphComponent<Graph> Find(typename Graph::VertexId v) {
         set<VertexId> result;
         Go(v, result);
-        return GraphComponent<Graph>(this->graph(), result.begin(), result.end());
+        return GraphComponent<Graph>::FromVertices(this->graph(), result);
     }
 
     vector<VertexId> InnerVertices(const GraphComponent<Graph>& /*component*/) {

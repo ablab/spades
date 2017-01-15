@@ -534,7 +534,8 @@ class RelativeCovComponentFinder {
 
             auto filename = success ? vis_dir_ + "/success/" + ToString(succ_cnt_++) : vis_dir_ + "/fail/" + ToString(fail_cnt_++);
             visualization::visualization_utils::WriteComponent(
-                    ComponentCloser<Graph>(g_, 0).CloseComponent(GraphComponent<Graph>(g_, vertices.begin(), vertices.end())),
+                    ComponentCloser<Graph>(g_, 0).CloseComponent(
+                            GraphComponent<Graph>::FromVertices(g_, vertices)),
                     filename + ".dot", colorer, labeler);
         }
     }

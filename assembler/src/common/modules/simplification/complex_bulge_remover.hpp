@@ -194,8 +194,7 @@ public:
     }
 
     GraphComponent<Graph> AsGraphComponent() const {
-        set<VertexId> vertices = key_set(vertex_depth_);
-        return GraphComponent<Graph>(g_, vertices.begin(), vertices.end());
+        return GraphComponent<Graph>::FromVertices(g_, key_set(vertex_depth_));
     }
 
     bool ContainsConjugateVertices() const {
