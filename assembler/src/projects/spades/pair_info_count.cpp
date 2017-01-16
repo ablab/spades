@@ -126,7 +126,7 @@ static bool CollectLibInformation(const conj_graph_pack &gp,
     auto &data = reads.data();
     auto paired_streams = paired_binary_readers(reads, false);
 
-    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
+    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable));
     //Check read length after lib processing since mate pairs a not used until this step
     VERIFY(reads.data().read_length != 0);
 
@@ -172,7 +172,7 @@ void ProcessSingleReads(conj_graph_pack &gp,
 
     notifier.Subscribe(ilib, &read_mapper);
 
-    auto mapper_ptr = ChooseProperMapper(gp, reads);
+    auto mapper_ptr = ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable);
     if (use_binary) {
         auto single_streams = single_binary_readers(reads, false, map_paired);
         notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
@@ -234,7 +234,7 @@ static void ProcessPairedReads(conj_graph_pack &gp,
     notifier.Subscribe(ilib, &pif);
 
     auto paired_streams = paired_binary_readers(reads, false, (size_t) data.mean_insert_size);
-    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
+    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable));
     cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
 }
 
@@ -313,9 +313,6 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
         } else if (lib.is_contig_lib()) {
             INFO("Mapping contigs library #" << i);
             ProcessSingleReads(gp, i, false);
-        } else if (cfg::get().bwa.bwa_enable && lib.is_bwa_alignable()) {
-            bwa_counter.ProcessLib(i, cfg::get_writable().ds.reads[i], gp.paired_indices[i],
-                                   edge_length_threshold, cfg::get().bwa.min_contig_len);
         } else {
             if (lib.is_paired()) {
                 INFO("Estimating insert size for library #" << i);
@@ -366,7 +363,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
 
                         auto reads = paired_binary_readers(lib, false);
                         VERIFY(lib.data().read_length != 0);
-                        notifier.ProcessLibrary(reads, i, *ChooseProperMapper(gp, lib));
+                        notifier.ProcessLibrary(reads, i, *ChooseProperMapper(gp, lib, cfg::get().bwa.bwa_enable));
                     }
                 }
 

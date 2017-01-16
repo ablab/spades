@@ -26,7 +26,6 @@ public:
     }
 
     ~BWAReadMapper() {
-        INFO("bwa mapper closing");
     }
 
     BWAIndex index_;
