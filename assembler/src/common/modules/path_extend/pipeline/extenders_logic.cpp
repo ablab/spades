@@ -232,12 +232,6 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t 
                                                        support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold),
                                                        make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib,
                                                                                                    dataset_info_.RL()));
-    //FIXME remove
-    VERIFY(params_.pset.extension_options.use_default_single_threshold &&
-               params_.pset.normalize_weight &&
-               math::eq(support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold), 0.3) &&
-               math::eq(params_.pset.extension_options.weight_threshold, 0.6) &&
-               math::eq(params_.pset.extension_options.priority_coeff, 1.5));
 
     auto permissive_pi_chooser = make_shared<IdealBasedExtensionChooser>(gp_.g,
                                                                          meta_wc,
@@ -289,11 +283,12 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
 shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, bool investigate_loops) const {
     const auto &lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+    VERIFY_MSG(!paired_lib->IsMp(), "Tried to create PE extender for MP library");
+    auto opts = params_.pset.extension_options;
 //    INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
     shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
-    //FIXME WHY NOT VALUE FROM "opts" USED HERE? MP bug?
-    if (params_.pset.extension_options.use_default_single_threshold) {
+    if (opts.use_default_single_threshold) {
         if (params_.uneven_depth) {
             iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL());
         } else {
@@ -306,19 +301,9 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
                                                   support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold),
                                                   iip);
 
-    auto opts = support_.GetExtensionOpts(paired_lib, params_.pset);
     auto extension_chooser = make_shared<SimpleExtensionChooser>(gp_.g, wc,
                                                          opts.weight_threshold,
                                                          opts.priority_coeff);
-
-    //FIXME remove
-    VERIFY(params_.mode != config::pipeline_type::meta ||
-           (params_.pset.extension_options.use_default_single_threshold &&
-                   params_.uneven_depth &&
-                   !paired_lib->IsMp() &&
-                   opts.use_default_single_threshold &&
-                   params_.pset.normalize_weight &&
-                   math::eq(0.3, opts.single_threshold)));
 
     return make_shared<SimpleExtender>(gp_, cover_map_,
                                        extension_chooser,
