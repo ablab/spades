@@ -14,7 +14,6 @@
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "paired_info/pair_info_filler.hpp"
 #include "modules/path_extend/split_graph_pair_info.hpp"
-#include "paired_info/bwa_pair_info_filler.hpp"
 
 #include "adt/bf.hpp"
 #include "adt/hll.hpp"
@@ -299,12 +298,6 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
     //fixme implement better universal logic
     size_t edge_length_threshold = cfg::get().mode == config::pipeline_type::meta ? 1000 : stats::Nx(gp.g, 50);
     INFO("Min edge length for estimation: " << edge_length_threshold);
-
-    bwa_pair_info::BWAPairInfoFiller bwa_counter(gp.g,
-                                                 cfg::get().bwa.path_to_bwa,
-                                                 path::append_path(cfg::get().output_dir, "bwa_count"),
-                                                 cfg::get().max_threads, !cfg::get().bwa.debug);
-
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         auto &lib = cfg::get_writable().ds.reads[i];
         if (lib.is_hybrid_lib()) {
