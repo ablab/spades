@@ -46,7 +46,9 @@ public:
     typedef typename GapInfos::const_iterator gap_info_it;
     typedef std::pair<gap_info_it, gap_info_it> info_it_pair;
 private:
-    typedef std::function<bool (gap_info_it, gap_info_it)> FilterF;
+    typedef std::function<bool (gap_info_it, gap_info_it)> CandidatesPred;
+    typedef std::function<bool (const EdgePair&)> EdgePairPred;
+    typedef std::function<bool (const GapDescription&)> DescriptionPred;
     typedef std::set<EdgePair> ConnectionSet;
 
     const Graph& g_;
@@ -70,30 +72,54 @@ private:
         return index_.size();
     }
 
-    //work around gcc (pre-4.9) bug
     typename std::vector<GapDescription>::iterator
-    const_iterator_cast(std::vector<GapDescription>& v, typename std::vector<GapDescription>::const_iterator iter) const
-    {
+    const_iterator_cast(std::vector<GapDescription> &v,
+                        typename std::vector<GapDescription>::const_iterator iter) const {
         return v.begin() + (iter - v.cbegin());
     }
 
     //Function should return true if corresponding part of the index should be removed
-    void FilterIndexByCondition(FilterF filter_f) {
+    void FilterByCandidates(const CandidatesPred &filter_f) {
         for (auto it = inner_index_.begin(); it != inner_index_.end(); ) {
             vector<GapDescription>& gaps = it->second;
             auto ep_ranges = EdgePairGaps(gaps);
-            for (int i = int(ep_ranges.size()) - 1; i >= 0; i--) {
-                info_it_pair ep_gaps = ep_ranges[i];
+
+            auto copy_dest = gaps.begin();
+            for (const info_it_pair& ep_gaps : ep_ranges) {
                 if (filter_f(ep_gaps.first, ep_gaps.second)) {
-                    DEBUG("Erasing connection between " << g_.int_id(ep_gaps.first->start) << " and "
+                    DEBUG("Erasing candidates between " << g_.int_id(ep_gaps.first->start) << " and "
                                                         << g_.int_id(ep_gaps.first->end));
-                    gaps.erase(const_iterator_cast(gaps, ep_gaps.first),
-                               const_iterator_cast(gaps, ep_gaps.second));
+                } else {
+                    if (copy_dest == const_iterator_cast(gaps, ep_gaps.first)) {
+                        copy_dest = const_iterator_cast(gaps, ep_gaps.second);
+                    } else {
+                        copy_dest = std::move(ep_gaps.first, ep_gaps.second, copy_dest);
+                    }
                 }
             }
-            if (gaps.empty()) {
+            if (copy_dest == gaps.begin()) {
                 inner_index_.erase(it++);
             } else {
+                gaps.erase(copy_dest, gaps.end());
+                ++it;
+            }
+        }
+    }
+
+    void FilterByEdgePair(const EdgePairPred &filter_f) {
+        FilterByCandidates([=](gap_info_it info_start, gap_info_it /*info_end*/) {
+            return filter_f(EdgePair(info_start->start, info_start->end));
+        });
+    }
+
+    void FilterByDescription(const DescriptionPred &filter_f) {
+        for (auto it = inner_index_.begin(); it != inner_index_.end(); ) {
+            vector<GapDescription>& gaps = it->second;
+            auto res_it = std::remove_if(gaps.begin(), gaps.end(), filter_f);
+            if (res_it == gaps.begin()) {
+                inner_index_.erase(it++);
+            } else {
+                gaps.erase(res_it, gaps.end());
                 ++it;
             }
         }
@@ -137,7 +163,7 @@ private:
                     if (i == j)
                         continue;
                     if (all_connections.count(EdgePair(right_options[i], right_options[j]))) {
-                        //FIXME should we add sanity checks that other edges of the triangle are not there?
+                        //TODO should we add sanity checks that other edges of the triangle are not there?
                         answer.insert(GetCanonical(g_, EdgePair(left, right_options[j])));
                         DEBUG("pair " << g_.int_id(left) << "," << g_.int_id(right_options[j])
                                       << " is ignored because of edge between "
@@ -167,31 +193,35 @@ private:
         return answer;
     }
 
-    void FilterIndex(size_t min_weight) {
-        DEBUG("Filtering by weight " << min_weight);
+    void FilterIndex(size_t min_weight, size_t max_flank) {
+        DEBUG("Filtering by maximal allowed flanking length " << max_flank);
+        FilterByDescription([=](const GapDescription &gap) {
+            return gap.edge_gap_start_position + max_flank < g_.length(gap.start)
+                   || gap.edge_gap_end_position > max_flank;
+        });
 
-        FilterIndexByCondition([=](gap_info_it info_start, gap_info_it info_end) {
+        DEBUG("Filtering by weight " << min_weight);
+        FilterByCandidates([=](gap_info_it info_start, gap_info_it info_end) {
             auto cnt = std::distance(info_start, info_end);
             VERIFY(cnt > 0);
             return size_t(cnt) < min_weight;
         });
 
-        ConnectionSet transitive_ignore = DetectTransitive();
 
         DEBUG("Filtering transitive gaps");
-        FilterIndexByCondition([&](gap_info_it info_start, gap_info_it /*info_end*/) {
-            EdgePair ep(info_start->start, info_start->end);
+        ConnectionSet transitive_ignore = DetectTransitive();
+
+        FilterByEdgePair([&](const EdgePair &ep) {
             VERIFY(IsCanonical(g_, ep));
             return transitive_ignore.count(ep);
         });
 
         DEBUG("Filtering ambiguous situations");
         std::set<EdgeId> ambiguously_extending = AmbiguouslyExtending();
-        FilterIndexByCondition([&](gap_info_it info_start, gap_info_it /*info_end*/) {
-            return ambiguously_extending.count(info_start->start) ||
-                    ambiguously_extending.count(g_.conjugate(info_start->end));
+        FilterByEdgePair([&](const EdgePair &ep) {
+            return ambiguously_extending.count(ep.first) ||
+                    ambiguously_extending.count(g_.conjugate(ep.second));
         });
-
     }
 
 public:
@@ -287,14 +317,14 @@ public:
         return answer;
     };
 
-    void PrepareGapsForClosure(size_t min_weight) {
+    void PrepareGapsForClosure(size_t min_weight, size_t max_flank) {
         for (auto& e_gaps : inner_index_) {
             auto& gaps = e_gaps.second;
             std::sort(gaps.begin(), gaps.end());
         }
         DEBUG("Raw extensions available for " << inner_index_.size() << " edges");
 
-        FilterIndex(min_weight);
+        FilterIndex(min_weight, max_flank);
         DEBUG("Filtered extensions available for " << inner_index_.size() << " edges");
         FillIndex();
     }
@@ -546,7 +576,6 @@ private:
     const size_t min_weight_;
     ConsensusF consensus_;
     const size_t long_seq_limit_;
-    const size_t max_flanking_region_length_;
     const size_t max_consensus_reads_;
 
     const GapDescription INVALID_GAP;
@@ -576,11 +605,6 @@ private:
                               edge_gap_start_position, edge_gap_end_position);
     }
 
-    bool CheckGap(const GapDescription& gap) const {
-        return gap.edge_gap_start_position + max_flanking_region_length_ > g_.length(gap.start)
-               && gap.edge_gap_end_position < max_flanking_region_length_;
-    }
-
     //all gaps guaranteed to correspond to a single edge pair
     GapInfos PadGaps(gap_info_it start, gap_info_it end) const {
         size_t start_min = std::numeric_limits<size_t>::max();
@@ -589,17 +613,13 @@ private:
         size_t short_seqs = 0;
         for (auto it = start; it != end; ++it) {
             const auto& gap = *it;
-            if (CheckGap(gap)) {
-                if (gap.gap_seq.size() > long_seq_limit_)
-                    long_seqs++;
-                else
-                    short_seqs++;
+            if (gap.gap_seq.size() > long_seq_limit_)
+                long_seqs++;
+            else
+                short_seqs++;
 
-                start_min = std::min(start_min, gap.edge_gap_start_position);
-                end_max = std::max(end_max, gap.edge_gap_end_position);
-            } else {
-                DEBUG("ignoring alingment to the middle of edge");
-            }
+            start_min = std::min(start_min, gap.edge_gap_start_position);
+            end_max = std::max(end_max, gap.edge_gap_end_position);
         }
 
         const bool exclude_long_seqs = (short_seqs >= min_weight_ && short_seqs > long_seqs);
@@ -607,8 +627,6 @@ private:
         GapInfos answer;
         for (auto it = start; it != end; ++it) {
             const auto& gap = *it;
-            if (!CheckGap(gap))
-                continue;
 
             if (exclude_long_seqs && gap.gap_seq.size() > long_seq_limit_)
                 continue;
@@ -701,13 +719,11 @@ public:
     HybridGapCloser(Graph& g, const GapStorage& storage,
                     size_t min_weight, ConsensusF consensus,
                     size_t long_seq_limit,
-                    size_t max_flanking_region_length = 500,
                     size_t max_consensus_reads = 20)
             : g_(g), storage_(storage),
               min_weight_(min_weight),
               consensus_(consensus),
               long_seq_limit_(long_seq_limit),
-              max_flanking_region_length_(max_flanking_region_length),
               max_consensus_reads_(max_consensus_reads) {
     }
 

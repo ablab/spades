@@ -448,7 +448,7 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
                                             : cfg::get().pb.contigs_min_gap_quantity;
 
             INFO("Min gap weight set to " << min_gap_quantity);
-            gap_storage.PrepareGapsForClosure(min_gap_quantity);
+            gap_storage.PrepareGapsForClosure(min_gap_quantity, /*max flank length*/500);
 
             gap_closing::CloseGaps(gp, rtype, gap_storage, min_gap_quantity);
         }
