@@ -449,7 +449,7 @@ AlgoPtr<Graph> RelativelyLowCoverageDisconnectorInstance(Graph &g,
 
     return std::make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g,
             omnigraph::simplification::relative_coverage::
-            RelativeCovDisconnectionCondition<Graph>(g, flanking_cov, rced_config.diff_mult),
+            RelativeCovDisconnectionCondition<Graph>(g, flanking_cov, rced_config.diff_mult, rced_config.edge_sum),
             info.chunk_cnt(),
             nullptr);
 }

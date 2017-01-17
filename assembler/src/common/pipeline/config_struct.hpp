@@ -294,6 +294,7 @@ struct debruijn_config {
         struct relative_coverage_edge_disconnector {
             bool enabled;
             double diff_mult;
+            size_t edge_sum;
         };
 
         struct relative_coverage_comp_remover {

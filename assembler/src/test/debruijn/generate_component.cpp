@@ -30,14 +30,14 @@ private:
     set<VertexId> blocking_vertices_;
     const size_t edge_length_bound_;
 
-    VertexId OtherEnd(EdgeId e, VertexId v) {
+    VertexId OtherEnd(EdgeId e, VertexId v) const {
         if (this->graph().EdgeStart(e) == v)
             return this->graph().EdgeEnd(e);
         else
             return this->graph().EdgeStart(e);
     }
 
-    void Go(VertexId v, set<VertexId>& entered) {
+    void Go(VertexId v, set<VertexId>& entered) const {
         if (blocking_vertices_.count(v) || entered.count(v))
             return;
 
@@ -59,13 +59,13 @@ public:
               edge_length_bound_(edge_length_bound) {
     }
 
-    GraphComponent<Graph> Find(typename Graph::VertexId v) {
+    GraphComponent<Graph> Find(typename Graph::VertexId v) const {
         set<VertexId> result;
         Go(v, result);
         return GraphComponent<Graph>::FromVertices(this->graph(), result);
     }
 
-    vector<VertexId> InnerVertices(const GraphComponent<Graph>& /*component*/) {
+    vector<VertexId> InnerVertices(const GraphComponent<Graph>& /*component*/) const {
         VERIFY(false);
         return vector<VertexId>();
     }

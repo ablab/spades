@@ -73,6 +73,7 @@ simp
     {
         enabled false
         diff_mult  20.
+        edge_sum   10000
     }
 
     ; final tip clipper:

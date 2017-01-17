@@ -217,9 +217,9 @@ public:
         return graph_;
     }
 
-    virtual GraphComponent<Graph> Find(typename Graph::VertexId v) = 0;
+    virtual GraphComponent<Graph> Find(typename Graph::VertexId v) const = 0;
 
-    virtual vector<typename Graph::VertexId> InnerVertices(const GraphComponent<Graph> &component) = 0;
+    virtual vector<typename Graph::VertexId> InnerVertices(const GraphComponent<Graph> &component) const = 0;
 
     virtual ~AbstractNeighbourhoodFinder() {
     }
@@ -265,6 +265,99 @@ public:
     }
 };
 
+template<class Graph>
+class HighCoverageComponentFinder : public AbstractNeighbourhoodFinder<Graph> {
+private:
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+
+    class CoverageBoundedDFS {
+    private:
+        const Graph &graph_;
+        const double coverage_bound_;
+        const size_t edge_limit_;
+        mutable size_t edge_summary_length_;
+
+        void Find(EdgeId edge, std::set<EdgeId> &result) const {
+            if (result.size() > edge_limit_) {
+                return;
+            }
+
+            if (math::ls(graph_.coverage(edge), coverage_bound_)) {
+                return;
+            }
+
+            if (result.count(edge) || result.count(graph_.conjugate(edge))) {
+                return;
+            }
+
+            edge_summary_length_ += graph_.length(edge);
+            result.insert(edge);
+            result.insert(graph_.conjugate(edge));
+
+            VertexId v = graph_.EdgeEnd(edge);
+            for (auto e : graph_.IncidentEdges(v)) {
+                Find(e, result);
+            }
+
+            v = graph_.EdgeStart(edge);
+            for (auto e : graph_.IncidentEdges(v)) {
+                Find(e, result);
+            }
+        }
+
+    public:
+        CoverageBoundedDFS(const Graph &graph, double coverage_bound,
+                           size_t edge_limit = 10000)
+                : graph_(graph),
+                  coverage_bound_(coverage_bound),
+                  edge_limit_(edge_limit),
+                  edge_summary_length_(0) {
+        }
+
+        std::set<EdgeId> Find(VertexId v) const {
+            edge_summary_length_ = 0;
+            std::set<EdgeId> result;
+            for (auto e : graph_.OutgoingEdges(v)) {
+                Find(e, result);
+            }
+            for (auto e : graph_.IncomingEdges(v)) {
+                Find(e, result);
+            }
+            return result;
+        }
+
+        size_t EdgeSummaryLength() const {
+            return edge_summary_length_;
+        }
+    };
+
+
+    const double coverage_bound_;
+    CoverageBoundedDFS dfs_helper;
+
+public:
+    HighCoverageComponentFinder(const Graph &graph, double max_coverage)
+    : AbstractNeighbourhoodFinder<Graph>(graph), coverage_bound_(max_coverage), dfs_helper(graph, max_coverage) {
+    }
+
+    GraphComponent<Graph> Find(typename Graph::VertexId v) const {
+        std::set<EdgeId> result = dfs_helper.Find(v);
+        return GraphComponent<Graph>::FromEdges(this->graph(), result, false);
+    }
+
+    size_t EdgeSummaryLength(VertexId v) const {
+        GraphComponent<Graph> component = Find(v);
+        DEBUG("Summary edge length for vertex " << v.int_id() << " is " << dfs_helper.EdgeSummaryLength());
+        return dfs_helper.EdgeSummaryLength();
+    }
+
+    vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) const {
+        return vector<VertexId>(component.v_begin(), component.v_end());
+    }
+};
+
+
 //This method finds a neighbourhood of a set of vertices. Vertices that are connected by an edge of length more than 600 are not considered as adjacent.
 template<class Graph>
 class ReliableNeighbourhoodFinder : public AbstractNeighbourhoodFinder<Graph> {
@@ -272,7 +365,7 @@ private:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
-    set<VertexId> FindNeighbours(const set<VertexId> &s) {
+    set<VertexId> FindNeighbours(const set<VertexId> &s) const {
         set<VertexId> result(s.begin(), s.end());
         for (VertexId v : result) {
             for (EdgeId e : this->graph().IncidentEdges(v)) {
@@ -285,7 +378,7 @@ private:
         return result;
     }
 
-    set<VertexId> FindNeighbours(const set<VertexId> &s, size_t eps) {
+    set<VertexId> FindNeighbours(const set<VertexId> &s, size_t eps) const {
         set<VertexId> result = s;
         for(size_t i = 0; i < eps; i++) {
             result = FindNeighbours(result);
@@ -293,7 +386,7 @@ private:
         return result;
     }
 
-    set<VertexId> FindBorder(const GraphComponent<Graph>& component) {
+    set<VertexId> FindBorder(const GraphComponent<Graph>& component) const {
         set<VertexId> result;
         insert_all(result, component.entrances());
         insert_all(result, component.exits());
@@ -315,7 +408,7 @@ public:
               max_size_(max_size) {
     }
 
-    GraphComponent<Graph> Find(VertexId v) {
+    GraphComponent<Graph> Find(typename Graph::VertexId v) const {
         auto cd = DijkstraHelper<Graph>::CreateCountingDijkstra(this->graph(), max_size_,
                 edge_length_bound_);
         cd.Run(v);
@@ -326,7 +419,7 @@ public:
         return GraphComponent<Graph>::FromVertices(this->graph(), result);
     }
 
-    vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) {
+    vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) const {
         set<VertexId> border = FindNeighbours(FindBorder(component), 2);
         std::vector<VertexId> result;
         std::set_difference(component.vertices().begin(), component.vertices().end(),
@@ -411,7 +504,7 @@ public:
     const size_t max_size_;
     const size_t max_depth_;
 
-    set<VertexId> last_inner_;
+    mutable set<VertexId> last_inner_;
 
     PathNeighbourhoodFinder(const Graph &graph, const vector<EdgeId>& path, size_t edge_length_bound = DEFAULT_EDGE_LENGTH_BOUND,
                             size_t max_size = DEFAULT_MAX_SIZE, size_t max_depth = DEFAULT_MAX_DEPTH)
@@ -423,7 +516,7 @@ public:
     }
 
 
-    GraphComponent<Graph> Find(VertexId v) {
+    GraphComponent<Graph> Find(VertexId v) const {
         TRACE("Starting from vertex " << this->graph().str(v));
         last_inner_.clear();
         set<VertexId> grey;
@@ -435,7 +528,7 @@ public:
         return GraphComponent<Graph>::FromVertices(this->graph(), grey);
     }
 
-    vector<VertexId> InnerVertices(const GraphComponent<Graph> &/*component*/) {
+    vector<VertexId> InnerVertices(const GraphComponent<Graph> &/*component*/) const {
         return vector<VertexId>(last_inner_.begin(), last_inner_.end());
     }
 private:
@@ -458,13 +551,13 @@ public:
               edge_length_bound_(edge_length_bound) {
     }
 
-    GraphComponent<Graph> Find(VertexId v) {
+    GraphComponent<Graph> Find(VertexId v) const {
         auto cd = DijkstraHelper<Graph>::CreateShortEdgeDijkstra(this->graph(), edge_length_bound_);
         cd.Run(v);
         return GraphComponent<Graph>::FromVertices(this->graph(), cd.ProcessedVertices());
     }
 
-    vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) {
+    vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) const {
         return vector<VertexId>(component.v_begin(), component.v_end());
     }
 };

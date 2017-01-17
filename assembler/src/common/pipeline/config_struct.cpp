@@ -259,6 +259,7 @@ void load(debruijn_config::simplification::relative_coverage_edge_disconnector& 
   using config_common::load;
   load(relative_ed.enabled, pt, "enabled", complete);
   load(relative_ed.diff_mult, pt, "diff_mult", complete);
+  load(relative_ed.edge_sum, pt, "edge_sum", complete);
 }
 
 void load(debruijn_config::simplification::relative_coverage_comp_remover& rcc,

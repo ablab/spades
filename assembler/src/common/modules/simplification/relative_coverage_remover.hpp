@@ -12,6 +12,10 @@
 #include "visualization/graph_colorer.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
+#include "assembly_graph/graph_support/comparators.hpp"
+#include "assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "assembly_graph/graph_support/parallel_processing.hpp"
+#include "assembly_graph/components/splitters.hpp"
 
 namespace omnigraph {
 
@@ -226,12 +230,20 @@ class RelativeCovDisconnectionCondition : public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     const RelativeCoverageHelper<Graph> rel_helper_;
+    const double diff_mult_;
+
+    //Total length of highly-covered neighbourhood
+    // We believe that if high-covered component is small it is likely to be repeat or loop
+    const size_t min_neighbourhood_size_;
 public:
     RelativeCovDisconnectionCondition(const Graph& g,
                                       const FlankingCoverage<Graph>& flanking_cov,
-                                      double diff_mult) :
+                                      double diff_mult,
+                                      size_t min_neighbourhood_size) :
             base(g),
-            rel_helper_(g, flanking_cov, diff_mult) {
+            rel_helper_(g, flanking_cov, diff_mult),
+            diff_mult_(diff_mult),
+            min_neighbourhood_size_(min_neighbourhood_size) {
     }
 
     bool Check(EdgeId e) const override {
@@ -240,7 +252,9 @@ public:
         DEBUG("Local flanking coverage - " << coverage_edge_around_v);
         DEBUG("Max local coverage incoming  - " << rel_helper_.MaxLocalCoverage(this->g().IncomingEdges(v), v));
         DEBUG("Max local coverage outgoing  - " << rel_helper_.MaxLocalCoverage(this->g().OutgoingEdges(v), v));
-        return rel_helper_.AnyHighlyCoveredOnBothSides(v, coverage_edge_around_v);
+        return rel_helper_.AnyHighlyCoveredOnBothSides(v, coverage_edge_around_v) &&
+                HighCoverageComponentFinder<Graph>(this->g(), this->g().coverage(e) * diff_mult_)
+                       .EdgeSummaryLength(v) >= min_neighbourhood_size_;
     }
 
 private:
@@ -673,5 +687,4 @@ private:
 
 }
 }
-
 }
