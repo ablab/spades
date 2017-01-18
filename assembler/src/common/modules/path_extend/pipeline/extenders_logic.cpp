@@ -3,6 +3,7 @@
 //
 
 #include "extenders_logic.hpp"
+#include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
 
 
 namespace path_extend {

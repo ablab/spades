@@ -14,6 +14,7 @@ add_executable(spades main.cpp
             second_phase_setup.cpp
             distance_estimation.cpp
             repeat_resolving.cpp
+            contig_output_stage.cpp
             hybrid_aligning.cpp
             chromosome_removal.cpp
             ../mts/contig_abundance.cpp)

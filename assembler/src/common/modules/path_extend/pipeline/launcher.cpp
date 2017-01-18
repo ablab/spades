@@ -4,6 +4,17 @@
 
 #include "launcher.hpp"
 
+#include "modules/path_extend/path_visualizer.hpp"
+#include "modules/path_extend/loop_traverser.hpp"
+#include "modules/alignment/long_read_storage.hpp"
+#include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
+#include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
+#include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
+#include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
+#include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "modules/path_extend/scaffolder2015/path_polisher.hpp"
+
+
 namespace path_extend {
 
 using namespace debruijn_graph;
@@ -198,19 +209,6 @@ void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const stri
     if (params_.pe_cfg.viz.print_paths) {
         visualizer.writeGraphWithPathsSimple(gp_, params_.etc_dir + name + ".dot", name, paths);
     }
-}
-
-void PathExtendLauncher::OutputBrokenScaffolds(const PathContainer &paths, const std::string &filename) const {
-    if (!params_.pset.scaffolder_options.enabled ||
-        !params_.use_scaffolder || params_.pe_cfg.obs == obs_none) {
-        return;
-    }
-
-    int min_gap = int(params_.pe_cfg.obs == obs_break_all ? gp_.g.k() / 2 : gp_.g.k());
-
-    ScaffoldBreaker breaker(min_gap, paths);
-    breaker.container().SortByLength();
-    writer_.OutputPaths(breaker.container(), filename);
 }
 
 void PathExtendLauncher::FinalizePaths(PathContainer &paths,
@@ -435,21 +433,14 @@ void PathExtendLauncher::Launch() {
     TraverseLoops(paths, cover_map);
     DebugOutputPaths(paths, "loop_traveresed");
 
-    PathContainer polished_paths;
-    PolishPaths(paths, polished_paths);
-    DebugOutputPaths(polished_paths, "polished_paths");
+    PolishPaths(paths, gp_.contig_paths);
+    DebugOutputPaths(gp_.contig_paths, "polished_paths");
     
-    GraphCoverageMap polished_map(gp_.g, polished_paths, true);
-    FinalizePaths(polished_paths, polished_map, resolver);
+    GraphCoverageMap polished_map(gp_.g, gp_.contig_paths, true);
+    FinalizePaths(gp_.contig_paths, polished_map, resolver);
+    DebugOutputPaths(gp_.contig_paths, "final_paths");
 
-    if (params_.output_broken_scaffolds) {
-        OutputBrokenScaffolds(polished_paths, params_.output_dir + params_.broken_contigs);
-    }
-
-    DebugOutputPaths(polished_paths, "final_paths");
-    writer_.OutputPaths(polished_paths, params_.output_dir + params_.contigs_name);
-
-    CountMisassembliesWithReference(polished_paths);
+    CountMisassembliesWithReference(gp_.contig_paths);
 
     INFO("ExSPAnder repeat resolving tool finished");
 }

@@ -27,12 +27,6 @@
 
 namespace path_extend {
 
-enum output_broken_scaffolds {
-    obs_none,
-    obs_break_gaps,
-    obs_break_all
-};
-
 enum scaffolding_mode {
     sm_old,
     sm_2015,
@@ -52,40 +46,6 @@ inline bool IsOldPEEnabled(const scaffolding_mode mode) {
 
 // struct for path extend subproject's configuration file
 struct pe_config {
-
-    typedef boost::bimap<std::string, output_broken_scaffolds> output_broken_scaffolds_id_mapping;
-
-    static const output_broken_scaffolds_id_mapping FillOBSInfo() {
-        output_broken_scaffolds_id_mapping::value_type info[] = {
-            output_broken_scaffolds_id_mapping::value_type("none", obs_none),
-            output_broken_scaffolds_id_mapping::value_type("break_gaps", obs_break_gaps),
-            output_broken_scaffolds_id_mapping::value_type("break_all", obs_break_all)
-        };
-
-        return output_broken_scaffolds_id_mapping(info, utils::array_end(info));
-    }
-
-    static const output_broken_scaffolds_id_mapping &output_broken_scaffolds_info() {
-        static output_broken_scaffolds_id_mapping output_broken_scaffolds_info = FillOBSInfo();
-        return output_broken_scaffolds_info;
-    }
-
-    static const std::string &output_broken_scaffolds_name(output_broken_scaffolds obs) {
-        auto it = output_broken_scaffolds_info().right.find(obs);
-        VERIFY_MSG(it != output_broken_scaffolds_info().right.end(),
-                   "No name for output broken scaffolds mode id = " << obs);
-
-        return it->second;
-    }
-
-    static output_broken_scaffolds output_broken_scaffolds_id(std::string name) {
-        auto it = output_broken_scaffolds_info().left.find(name);
-        VERIFY_MSG(it != output_broken_scaffolds_info().left.end(),
-                   "There is no output broken scaffolds mode with name = " << name);
-
-        return it->second;
-    }
-
     typedef boost::bimap<std::string, scaffolding_mode> scaffolding_mode_id_mapping;
 
     static const scaffolding_mode_id_mapping FillSMInfo() {
@@ -265,9 +225,6 @@ struct pe_config {
 
 
     struct MainPEParamsT {
-        output_broken_scaffolds obs;
-
-        bool finalize_paths;
         bool debug_output;
         std::string etc_dir;
 
@@ -281,7 +238,6 @@ struct pe_config {
 
 void load(pe_config::ParamSetT &p, boost::property_tree::ptree const &pt, bool complete = true);
 void load(pe_config::MainPEParamsT &p, boost::property_tree::ptree const &pt, bool complete = true);
-//void load(pe_config& pe_cfg, boost::property_tree::ptree const& pt, bool complete);
 
 }
 

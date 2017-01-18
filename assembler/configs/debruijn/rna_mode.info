@@ -2,6 +2,12 @@ mode rna
 
 preserve_raw_paired_index true
 
+contig_output {
+    scaffolds_name  transcripts
+    ; none  --- do not output broken scaffolds | break_gaps --- break only by N steches | break_all --- break all with overlap < k
+    output_broken_scaffolds     none
+}
+
 simp
 {
     ; enable advanced ec removal algo

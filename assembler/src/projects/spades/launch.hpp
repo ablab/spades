@@ -23,6 +23,7 @@
 #include "chromosome_removal.hpp"
 #include "series_analysis.hpp"
 #include "pipeline/stage.hpp"
+#include "contig_output_stage.hpp"
 
 namespace spades {
 
@@ -99,6 +100,7 @@ void assemble_genome() {
                 SPAdes.add(new debruijn_graph::PairInfoCount(true))
                       .add(new debruijn_graph::DistanceEstimation(true))
                       .add(new debruijn_graph::RepeatResolution(true))
+                      .add(new debruijn_graph::ContigOutput())
                       .add(new debruijn_graph::SecondPhaseSetup());
 
             SPAdes.add(new debruijn_graph::Simplification());
@@ -117,14 +119,15 @@ void assemble_genome() {
 
         //No graph modification allowed after HybridLibrariesAligning stage!
 
-        SPAdes.add(new debruijn_graph::PairInfoCount())
+        SPAdes.add(new debruijn_graph::AssemblyGraphOutput())
+              .add(new debruijn_graph::PairInfoCount())
               .add(new debruijn_graph::DistanceEstimation())
               .add(new debruijn_graph::RepeatResolution());
-
-
     } else {
-        SPAdes.add(new debruijn_graph::ContigOutput());
+        SPAdes.add(new debruijn_graph::AssemblyGraphOutput());
     }
+
+    SPAdes.add(new debruijn_graph::ContigOutput());
 
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 

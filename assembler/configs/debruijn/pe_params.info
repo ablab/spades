@@ -14,9 +14,6 @@ visualize {
     print_paths             true
 }
 
-; none | break_gaps | break_all
-output_broken_scaffolds     break_gaps
-
 params {
     multi_path_extend   false
     ; old | 2015 | combined | old_pe_2015

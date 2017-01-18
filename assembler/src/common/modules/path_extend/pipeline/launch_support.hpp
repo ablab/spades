@@ -4,9 +4,7 @@
 
 #pragma once
 
-//#include "path_extend_launch.hpp"
 
-#include <common/assembly_graph/paths/bidirectional_path.hpp>
 #include "modules/path_extend/paired_library.hpp"
 #include "pipeline/config_struct.hpp"
 #include "modules/path_extend/pe_config_struct.hpp"
@@ -41,31 +39,23 @@ struct PathExtendParamsContainer {
     PathExtendParamsContainer(const config::dataset& dataset_info,
                               const pe_config::MainPEParamsT& pe_cfg_,
                               const std::string& output_dir_,
-                              const std::string& contigs_name_,
-                              const std::string& scf_name_,
                               config::pipeline_type mode_,
                               bool uneven_depth_,
                               bool avoid_rc_connections_,
-                              bool use_scaffolder_,
-                              bool output_broken_scaffolds_ = true):
+                              bool use_scaffolder_):
         pe_cfg(pe_cfg_),
         pset(pe_cfg_.param_set),
         output_dir(output_dir_),
         etc_dir(output_dir + pe_cfg_.etc_dir + "/"),
-        contigs_name(scf_name_),
-        broken_contigs(contigs_name_),
         mode(mode_),
         uneven_depth(uneven_depth_),
         avoid_rc_connections(avoid_rc_connections_),
         use_scaffolder(use_scaffolder_),
         traverse_loops(true),
-        output_broken_scaffolds(output_broken_scaffolds_),
         detect_repeats_online(mode_ != config::pipeline_type::meta && mode_ != config::pipeline_type::rna)
     {
         if (!(use_scaffolder && pset.scaffolder_options.enabled)) {
-            contigs_name = contigs_name_;
             traverse_loops = false;
-            output_broken_scaffolds = false;
         }
         if (mode_ == config::pipeline_type::rna)
             traverse_loops = false;
@@ -86,16 +76,12 @@ struct PathExtendParamsContainer {
     std::string output_dir;
     std::string etc_dir;
 
-    std::string contigs_name;
-    std::string broken_contigs;
-
     config::pipeline_type mode;
     bool uneven_depth;
 
     bool avoid_rc_connections;
     bool use_scaffolder;
     bool traverse_loops;
-    bool output_broken_scaffolds;
     bool detect_repeats_online;
 
     size_t min_edge_len;

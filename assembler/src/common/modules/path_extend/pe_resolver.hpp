@@ -16,7 +16,6 @@
 #define PE_RESOLVER_HPP_
 
 #include "path_extender.hpp"
-#include "pe_io.hpp"
 
 namespace path_extend {
 

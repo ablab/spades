@@ -125,6 +125,14 @@ vector<string> SingleReadResolveModeNames() {
                     {"all", single_read_resolving_mode::all}}, single_read_resolving_mode::total);
 }
 
+vector<string> BrokenScaffoldsModeNames() {
+    return CheckedNames<output_broken_scaffolds>({
+                                             {"none", output_broken_scaffolds::none},
+                                             {"break_gaps", output_broken_scaffolds::break_gaps},
+                                             {"break_all", output_broken_scaffolds::break_all}}, output_broken_scaffolds::total);
+}
+
+
 void load_lib_data(const std::string& prefix) {
   // First, load the data into separate libs
   cfg::get_writable().ds.reads.load(prefix + ".lib_data");
@@ -178,6 +186,13 @@ void load(single_read_resolving_mode &rm, boost::property_tree::ptree const &pt,
     if (complete || pt.find(key) != pt.not_found()) {
         std::string ep = pt.get<std::string>(key);
         rm = ModeByName<single_read_resolving_mode>(ep, SingleReadResolveModeNames());
+    }
+}
+
+void load(output_broken_scaffolds &obs, boost::property_tree::ptree const &pt,
+          std::string const &key, bool complete) {
+    if (complete || pt.find(key) != pt.not_found()) {
+        obs = ModeByName<output_broken_scaffolds>(pt.get<std::string>(key), BrokenScaffoldsModeNames());
     }
 }
 
@@ -486,6 +501,14 @@ void load(debruijn_config::gap_closer& gc,
   load(gc.weight_threshold, pt, "weight_threshold");
 }
 
+void load(debruijn_config::contig_output& co,
+          boost::property_tree::ptree const& pt, bool complete) {
+    using config_common::load;
+    load(co.contigs_name, pt, "contigs_name", complete);
+    load(co.scaffolds_name, pt, "scaffolds_name", complete);
+    load(co.obs_mode, pt, "output_broken_scaffolds", complete);
+}
+
 void load(debruijn_config::graph_read_corr_cfg& graph_read_corr,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
@@ -699,6 +722,8 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
 
     //FIXME
     load(cfg.tsa, pt, "tsa", complete);
+
+    load(cfg.co, pt, "contig_output", complete);
 
     load(cfg.use_unipaths, pt, "use_unipaths", complete);
 

@@ -95,6 +95,13 @@ use_scaffolder  true
 
 avoid_rc_connections true
 
+contig_output {
+    contigs_name    final_contigs
+    scaffolds_name  scaffolds
+    ; none  --- do not output broken scaffolds | break_gaps --- break only by N steches | break_all --- break all with overlap < k
+    output_broken_scaffolds     break_gaps
+}
+
 ;position handling
 
 pos

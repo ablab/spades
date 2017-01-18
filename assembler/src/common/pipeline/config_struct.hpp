@@ -82,6 +82,14 @@ enum class single_read_resolving_mode : char {
     total
 };
 
+enum class output_broken_scaffolds: char {
+    none = 0,
+    break_gaps,
+    break_all,
+
+    total
+};
+
 std::vector<std::string> SingleReadResolveModeNames();
 
 template<typename mode_t>
@@ -513,6 +521,14 @@ struct debruijn_config {
         std::string scaffolds_file;
         std::string genome_file;
     };
+
+    struct contig_output {
+        std::string contigs_name;
+        std::string scaffolds_name;
+        output_broken_scaffolds obs_mode;
+    };
+
+    contig_output co;
 
     boost::optional<scaffold_correction> sc_cor;
     truseq_analysis tsa;

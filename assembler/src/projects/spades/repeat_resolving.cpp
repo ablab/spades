@@ -7,8 +7,6 @@
 
 #include "utils/logger/logger.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
-#include "paired_info/distance_estimation.hpp"
-#include "paired_info/smoothing_distance_estimation.hpp"
 #include "modules/path_extend/pipeline/launcher.hpp"
 
 #include "repeat_resolving.hpp"
@@ -16,20 +14,13 @@
 namespace debruijn_graph {
 
 static void PEResolving(conj_graph_pack& gp) {
-    //this definitely should be configured and overloaded in rna config!
-    std::string scaffolds_name = cfg::get().mode == config::pipeline_type::rna ? "transcripts" : "scaffolds";
-    bool output_broken_scaffolds = cfg::get().mode != config::pipeline_type::rna;
-
     path_extend::PathExtendParamsContainer params(cfg::get().ds,
                                                   cfg::get().pe_params,
                                                   cfg::get().output_dir,
-                                                  "final_contigs",
-                                                  scaffolds_name,
                                                   cfg::get().mode,
                                                   cfg::get().uneven_depth,
                                                   cfg::get().avoid_rc_connections,
-                                                  cfg::get().use_scaffolder,
-                                                  output_broken_scaffolds);
+                                                  cfg::get().use_scaffolder);
 
     path_extend::PathExtendLauncher exspander(cfg::get().ds, params, gp);
     exspander.Launch();
@@ -64,17 +55,13 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         INFO("Setting up preliminary path extend settings")
         cfg::get_writable().pe_params = *cfg::get().prelim_pe_params;
     }
-    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", false);
-    OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph", gp.components);
 
     bool no_valid_libs = !HasValidLibs();
-
     bool use_single_reads = cfg::get().use_single_reads;
     if (cfg::get().rr_enable && no_valid_libs && !use_single_reads)
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
 
     if ((no_valid_libs || cfg::get().rm == config::resolving_mode::none) && !use_single_reads) {
-        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", false);
         return;
     }
     if (cfg::get().rm == config::resolving_mode::path_extend) {
@@ -82,7 +69,6 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         PEResolving(gp);
     } else {
         INFO("Unsupported repeat resolver");
-        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", false);
     }
     if (preliminary_) {
         INFO("Restoring initial path extend settings")
@@ -90,12 +76,6 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     }
 }
 
-void ContigOutput::run(conj_graph_pack &gp, const char*) {
-    OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs", cfg::get().use_unipaths);
-    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", false);
-    OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph", gp.components);
-    OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", false);
 
-}
 
 } // debruijn_graph

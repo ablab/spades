@@ -4,11 +4,7 @@
 
 #pragma once
 
-#include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
-#include "pipeline/config_struct.hpp"
-#include "modules/path_extend/pe_config_struct.hpp"
 #include "modules/path_extend/path_extender.hpp"
-#include "modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 #include "launch_support.hpp"
 
 namespace path_extend {

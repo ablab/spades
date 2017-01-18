@@ -24,6 +24,7 @@
 #include "assembly_graph/components/connected_component.hpp"
 #include "modules/alignment/kmer_mapper.hpp"
 #include "common/visualization/position_filler.hpp"
+#include "common/assembly_graph/paths/bidirectional_path.hpp"
 
 namespace debruijn_graph {
 
@@ -55,6 +56,8 @@ struct graph_pack: private boost::noncopyable {
     EdgeQuality<Graph> edge_qual;
     mutable EdgesPositionHandler<graph_t> edge_pos;
     ConnectedComponentCounter components;
+    path_extend::PathContainer contig_paths;
+
     graph_pack(size_t k, const std::string &workdir, size_t lib_count,
                         const std::string &genome = "",
                         size_t flanking_range = 50,
@@ -71,7 +74,8 @@ struct graph_pack: private boost::noncopyable {
               genome(genome),
               edge_qual(g),
               edge_pos(g, max_mapping_gap + k, max_gap_diff),
-              components(g)
+              components(g),
+              contig_paths()
     { 
         if (detach_indices) {
             DetachAll();

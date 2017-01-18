@@ -10,12 +10,6 @@
 
 namespace path_extend {
 
-void load(output_broken_scaffolds& obs, boost::property_tree::ptree const& pt, std::string const& key, bool complete) {
-  if (complete || pt.find(key) != pt.not_found()) {
-    std::string ep = pt.get<std::string>(key);
-    obs = pe_config::output_broken_scaffolds_id(ep);
-  }
-}
 
 void load(scaffolding_mode &sm, boost::property_tree::ptree const& pt, std::string const& key, bool complete) {
     if (complete || pt.find(key) != pt.not_found()) {
@@ -196,7 +190,6 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,
     load(p.debug_output, pt, "debug_output", complete);
     load(p.output, pt, "output", complete);
     load(p.viz, pt, "visualize", complete);
-    load(p.obs, pt, "output_broken_scaffolds", complete);
     load(p.param_set, pt, "params", complete);
     load(p.long_reads, pt, "long_reads", complete);
     if (!p.debug_output) {

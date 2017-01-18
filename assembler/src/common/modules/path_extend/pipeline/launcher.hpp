@@ -8,21 +8,10 @@
 #include "launch_support.hpp"
 #include "extenders_logic.hpp"
 
-#include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "modules/path_extend/pe_resolver.hpp"
-#include "modules/path_extend/pe_io.hpp"
-#include "modules/path_extend/path_visualizer.hpp"
-#include "modules/path_extend/loop_traverser.hpp"
-#include "modules/alignment/long_read_storage.hpp"
-#include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
 #include "modules/genome_consistance_checker.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
-#include "modules/path_extend/scaffolder2015/path_polisher.hpp"
-#include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
-
-
+#include "assembly_graph/paths/bidirectional_path_output.hpp"
 
 namespace path_extend {
 
@@ -33,7 +22,7 @@ class PathExtendLauncher {
 private:
     const config::dataset& dataset_info_;
     const PathExtendParamsContainer& params_;
-    const conj_graph_pack& gp_;
+    conj_graph_pack& gp_;
     PELaunchSupport support_;
 
     DefaultContigCorrector<ConjugateDeBruijnGraph> corrector_;
@@ -79,8 +68,6 @@ private:
 
     void DebugOutputPaths(const PathContainer& paths, const string& name) const;
 
-    void OutputBrokenScaffolds(const PathContainer& paths, const std::string& filename) const;
-
     void FinalizePaths(PathContainer& paths, GraphCoverageMap &cover_map, const PathExtendResolver&resolver) const;
 
     void TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map) const;
@@ -100,7 +87,7 @@ public:
 
     PathExtendLauncher(const config::dataset& dataset_info,
                        const PathExtendParamsContainer& params,
-                       const conj_graph_pack& gp):
+                       conj_graph_pack& gp):
         dataset_info_(dataset_info),
         params_(params),
         gp_(gp),
