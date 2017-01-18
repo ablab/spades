@@ -169,7 +169,7 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
         return "";
     }
     string nthreads_str = to_string(nthreads_);
-    string last_line = bwa_string + " mem "+ " -v 1 -t " + nthreads_str + " " + genome_screened + " "  + single  + "  > " + path::screen_whitespaces(tmp_sam_filename);
+    string last_line = bwa_string + " mem "+ " -v 1 -t " + nthreads_str + " " + genome_screened + " "  + path::screen_whitespaces(single)  + "  > " + path::screen_whitespaces(tmp_sam_filename);
     INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
     if (run_res != 0) {
