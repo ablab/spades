@@ -83,12 +83,6 @@ params {
         enabled false
     }
     
-    loop_removal
-    {
-        max_loops       10
-        mp_max_loops    10
-    }
-
     use_coordinated_coverage false
     coordinated_coverage
     {

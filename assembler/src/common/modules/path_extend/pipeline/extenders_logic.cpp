@@ -36,7 +36,6 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongReadsExtender(size_t lib_
     return make_shared<SimpleExtender>(gp_, cover_map_,
                                        long_read_ec,
                                        resolvable_repeat_length_bound,
-                                       params_.pset.loop_removal.max_loops,
                                        true, /* investigate short loops */
                                        support_.UseCoverageResolverForSingleReads(lib.type()));
 }
@@ -60,7 +59,6 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongEdgePEExtender(size_t lib
     return make_shared<SimpleExtender>(gp_, cover_map_,
                                        extension,
                                        paired_lib->GetISMax(),
-                                       params_.pset.loop_removal.max_loops,
                                        investigate_loops,
                                        false /*use short loop coverage resolver*/);
 }
@@ -96,7 +94,6 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongEdgePEExtender(size_t lib
 //    return make_shared<SimpleExtender>(gp_, cover_map_,
 //                                       MakeMetaExtensionChooser(paired_lib, dataset_info_.RL()),
 //                                       paired_lib->GetISMax(),
-//                                       params_.pset.loop_removal.max_loops,
 //                                       investigate_loops,
 //                                       false /*use short loop coverage resolver*/);
 //}
@@ -143,7 +140,6 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldingExtender(size_t lib_
     return make_shared<ScaffoldingPathExtender>(gp_, cover_map_, scaff_chooser,
                                                 MakeGapJoiners(paired_lib->GetIsVar()),
                                                 paired_lib->GetISMax(),
-                                                pset.loop_removal.max_loops,
                                                 false, /* investigate short loops */
                                                 params_.avoid_rc_connections);
 }
@@ -172,7 +168,6 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeRNAScaffoldingExtender(size_t l
                                                    scaff_chooser2,
                                                    MakeGapJoiners(paired_lib->GetIsVar()),
                                                    paired_lib->GetISMax(),
-                                                   pset.loop_removal.max_loops,
                                                    false  /* investigate short loops */,
                                                    *pset.scaffolder_options.min_overlap_for_rna_scaffolding);
 }
@@ -215,7 +210,6 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(
                                                 scaff_chooser,
                                                 MakeGapJoiners(paired_lib->GetIsVar()),
                                                 paired_lib->GetISMax(),
-                                                pset.loop_removal.max_loops,
                                                 false, /* investigate short loops */
                                                 params_.avoid_rc_connections,
                                                 false /* jump only from tips */);
@@ -245,11 +239,8 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t 
 
     auto chooser = make_shared<JointExtensionChooser>(gp_.g, permissive_pi_chooser, coord_cov_chooser);
 
-    //FIXME Andrew, should we use some other extender here?
     return make_shared<SimpleExtender>(gp_, cover_map_, chooser,
-                                       -1ul /* insert size */,
-                                       //FIXME what is this setting?
-                                       params_.pset.loop_removal.mp_max_loops,
+                                       -1ul /* insert size is needed only for loop detection, which is not needed in this case */,
                                        false, /* investigate short loops */
                                        false /*use short loop coverage resolver*/);
 }
@@ -275,7 +266,6 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
     return make_shared<MultiExtender>(gp_, cover_map_,
                                       extension,
                                       paired_lib->GetISMax(),
-                                      params_.pset.loop_removal.max_loops,
                                       investigate_loops,
                                       false /*use short loop coverage resolver*/);
 }
@@ -308,7 +298,6 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
     return make_shared<SimpleExtender>(gp_, cover_map_,
                                        extension_chooser,
                                        paired_lib->GetISMax(),
-                                       params_.pset.loop_removal.max_loops,
                                        investigate_loops,
                                        false /*use short loop coverage resolver*/);
 }
@@ -372,7 +361,6 @@ Extenders ExtendersGenerator::MakePBScaffoldingExtenders(const ScaffoldingUnique
                                                                      scaff_chooser,
                                                                      MakeGapJoiners(1000), /* "IS vatiation" */
                                                                      10000, /* insert size */
-                                                                     pset.loop_removal.max_loops,
                                                                      false, /* investigate short loops */
                                                                      params_.avoid_rc_connections,
                                                                      false /* jump only from tips */));

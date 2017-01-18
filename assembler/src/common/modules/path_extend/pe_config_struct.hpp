@@ -191,12 +191,6 @@ struct pe_config {
             boost::optional<int> min_overlap_for_rna_scaffolding;
         } scaffolder_options;
 
-
-        struct LoopRemovalT {
-            size_t max_loops;
-            size_t mp_max_loops;
-        } loop_removal;
-
         struct PathFiltrationT {
             bool enabled;
             size_t min_length;

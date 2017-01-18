@@ -1076,7 +1076,6 @@ private:
 class LoopDetectingPathExtender : public PathExtender {
 
 protected:
-    size_t maxLoops_;
     bool investigate_short_loops_;
     bool use_short_loop_cov_resolver_;
     CovShortLoopResolver cov_loop_resolver_;
@@ -1085,11 +1084,12 @@ protected:
     const GraphCoverageMap& cov_map_;
 
 public:
-    LoopDetectingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t max_loops,
-                              bool investigate_short_loops,
-                              bool use_short_loop_cov_resolver, size_t is)
+    LoopDetectingPathExtender(const conj_graph_pack &gp,
+                                  const GraphCoverageMap &cov_map,
+                                  bool investigate_short_loops,
+                                  bool use_short_loop_cov_resolver,
+                                  size_t is)
             : PathExtender(gp.g),
-              maxLoops_(max_loops),
               investigate_short_loops_(investigate_short_loops),
               use_short_loop_cov_resolver_(use_short_loop_cov_resolver),
               cov_loop_resolver_(gp),
@@ -1098,22 +1098,12 @@ public:
 
     }
 
-    size_t getMaxLoops() const {
-        return maxLoops_;
-    }
-
     bool isInvestigateShortLoops() const {
         return investigate_short_loops_;
     }
 
     void setInvestigateShortLoops(bool investigateShortLoops) {
         this->investigate_short_loops_ = investigateShortLoops;
-    }
-
-    void setMaxLoops(size_t maxLoops) {
-        if (maxLoops != 0) {
-            this->maxLoops_ = maxLoops;
-        }
     }
 
     bool DetectCycle(BidirectionalPath& path) {
@@ -1217,9 +1207,13 @@ protected:
 
 public:
 
-    SimpleExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, shared_ptr<ExtensionChooser> ec, 
-                    size_t is, size_t max_loops, bool investigate_short_loops, bool use_short_loop_cov_resolver):
-        LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, use_short_loop_cov_resolver, is),
+    SimpleExtender(const conj_graph_pack &gp,
+                       const GraphCoverageMap &cov_map,
+                       shared_ptr<ExtensionChooser> ec,
+                       size_t is,
+                       bool investigate_short_loops,
+                       bool use_short_loop_cov_resolver) :
+        LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, use_short_loop_cov_resolver, is),
         extensionChooser_(ec) {
     }
 
@@ -1336,10 +1330,14 @@ protected:
 
 public:
 
-    MultiExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, shared_ptr<ExtensionChooser> ec,
-                  size_t is, size_t max_loops, bool investigate_short_loops, bool use_short_loop_cov_resolver,
-                  size_t max_candidates = 0):
-        SimpleExtender(gp, cov_map, ec, is, max_loops, investigate_short_loops, use_short_loop_cov_resolver),
+    MultiExtender(const conj_graph_pack &gp,
+                      const GraphCoverageMap &cov_map,
+                      shared_ptr<ExtensionChooser> ec,
+                      size_t is,
+                      bool investigate_short_loops,
+                      bool use_short_loop_cov_resolver,
+                      size_t max_candidates = 0) :
+        SimpleExtender(gp, cov_map, ec, is, investigate_short_loops, use_short_loop_cov_resolver),
         max_candidates_(max_candidates) {
     }
 
@@ -1506,16 +1504,15 @@ protected:
 
 public:
 
-    ScaffoldingPathExtender(const conj_graph_pack& gp,
-                            const GraphCoverageMap& cov_map,
+    ScaffoldingPathExtender(const conj_graph_pack &gp,
+                            const GraphCoverageMap &cov_map,
                             std::shared_ptr<ExtensionChooser> extension_chooser,
                             std::shared_ptr<GapJoiner> gap_joiner,
                             size_t is,
-                            size_t max_loops,
                             bool investigate_short_loops,
                             bool avoid_rc_connections,
                             bool check_sink = true):
-        LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, false, is),
+        LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, false, is),
         extension_chooser_(extension_chooser),
         gap_joiner_(gap_joiner),
         avoid_rc_connections_(avoid_rc_connections),
@@ -1557,14 +1554,15 @@ protected:
 
 public:
 
-    RNAScaffoldingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, std::shared_ptr<ExtensionChooser> extension_chooser,
+    RNAScaffoldingPathExtender(const conj_graph_pack &gp,
+                               const GraphCoverageMap &cov_map,
+                               std::shared_ptr<ExtensionChooser> extension_chooser,
                                std::shared_ptr<ExtensionChooser> strict_extension_chooser,
                                std::shared_ptr<GapJoiner> gap_joiner,
                                size_t is,
-                               size_t max_loops,
                                bool investigate_short_loops,
                                int min_overlap = 0):
-        ScaffoldingPathExtender(gp, cov_map, extension_chooser, gap_joiner, is, max_loops, investigate_short_loops, true),
+        ScaffoldingPathExtender(gp, cov_map, extension_chooser, gap_joiner, is, investigate_short_loops, true),
         strict_extension_chooser_(strict_extension_chooser), min_overlap_(min_overlap) {}
 
 

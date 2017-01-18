@@ -58,12 +58,6 @@ void load(pe_config::ParamSetT::ExtensionOptionsT& es,
     load(es.max_repeat_length, pt, "max_repeat_length", complete);
 }
 
-void load(pe_config::ParamSetT::LoopRemovalT& lr,
-          boost::property_tree::ptree const& pt, bool complete) {
-    using config_common::load;
-    load(lr.max_loops, pt, "max_loops", complete);
-    load(lr.mp_max_loops, pt, "mp_max_loops", complete);
-}
 
 void load(pe_config::ParamSetT::CoordinatedCoverageT& coord_cov,
           boost::property_tree::ptree const& pt, bool complete) {
@@ -140,7 +134,6 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
     load(p.extension_options, pt, "extension_options", complete);
     load(p.mate_pair_options, pt, "mate_pair_options", complete);
     load(p.scaffolder_options, pt, "scaffolder", complete);
-    load(p.loop_removal, pt, "loop_removal", complete);
     load(p.coordinated_coverage, pt, "coordinated_coverage", complete);
     load(p.use_coordinated_coverage, pt, "use_coordinated_coverage", complete);
     load(p.scaffolding2015, pt, "scaffolding2015", complete);
