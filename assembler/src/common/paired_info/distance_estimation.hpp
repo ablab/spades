@@ -123,15 +123,15 @@ protected:
         OutHistogram result;
         for (size_t i = 0; i < estimated.size(); ++i) {
             size_t left = i;
-            double weight = estimated[i].second;
+            DEWeight weight = DEWeight(estimated[i].second);
             while (i + 1 < estimated.size() &&
                    (estimated[i + 1].first - estimated[i].first) <= (int) linkage_distance_) {
                 ++i;
                 weight += estimated[i].second;
             }
-            double center = (estimated[left].first + estimated[i].first) * 0.5;
-            double var = (estimated[i].first - estimated[left].first) * 0.5;
-            result.insert(Point(center, weight, float(var)));
+            DEDistance center = DEDistance((estimated[left].first + estimated[i].first) * 0.5);
+            DEVariance var = DEVariance((estimated[i].first - estimated[left].first) * 0.5);
+            result.insert(Point(center, weight, var));
         }
         return result;
     }

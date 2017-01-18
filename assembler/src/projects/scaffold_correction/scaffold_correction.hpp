@@ -229,14 +229,13 @@ namespace spades {
     public:
         typedef debruijn_graph::config::debruijn_config::scaffold_correction Config;
     private:
-        size_t k_;
         std::string output_file_;
         const Config &config_;
     public:
-        ScaffoldCorrectionStage(size_t k, string output_file,
+        ScaffoldCorrectionStage(string output_file,
                 const Config &config) :
                 AssemblyStage("ScaffoldCorrection", "scaffold_correction"),
-                k_(k), output_file_(output_file), config_(config) {
+                output_file_(output_file), config_(config) {
         }
 
         vector<Sequence> CollectScaffoldParts(const io::SingleRead &scaffold) const {
@@ -324,7 +323,7 @@ namespace spades {
                               cfg::get().load_from,
                               cfg::get().output_saves});
         manager.add(new debruijn_graph::Construction())
-               .add(new ScaffoldCorrectionStage(cfg::get().K, cfg::get().output_dir + "corrected_scaffolds.fasta", *cfg::get().sc_cor));
+               .add(new ScaffoldCorrectionStage(cfg::get().output_dir + "corrected_scaffolds.fasta", *cfg::get().sc_cor));
         INFO("Output directory: " << cfg::get().output_dir);
         conj_gp.kmer_mapper.Attach();
         manager.run(conj_gp, cfg::get().entry_point.c_str());

@@ -269,18 +269,19 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
 
 void ExtendersGenerator::PrintExtenders(const Extenders &extenders) const {
     DEBUG("Extenders in vector:");
-    for (size_t i = 0; i < extenders.size(); ++i) {
-        string type = typeid(*extenders[i]).name();
-        DEBUG("Extender #i" << type);
-        if (instanceof<SimpleExtender>(extenders[i].get())) {
-            auto ec = ((SimpleExtender *) extenders[i].get())->GetExtensionChooser();
-            string chooser_type = typeid(*ec).name();
-            DEBUG("    Extender #i" << chooser_type);
+    for (const auto& extender : extenders) {
+        //TODO: use polymorphism instead of RTTI
+        auto ext_ptr = extender.get();
+        DEBUG("Extender #i" << typeid(*ext_ptr).name());
+        if (instanceof<SimpleExtender>(ext_ptr)) {
+            auto ec = ((SimpleExtender *) ext_ptr)->GetExtensionChooser();
+            auto ec_ptr = ec.get();
+            DEBUG("    Extender #i" << typeid(*ec_ptr).name());
         }
-        else if (instanceof<ScaffoldingPathExtender>(extenders[i].get())) {
-            auto ec = ((ScaffoldingPathExtender *) extenders[i].get())->GetExtensionChooser();
-            string chooser_type = typeid(*ec).name();
-            DEBUG("    Extender #i" << chooser_type);
+        else if (instanceof<ScaffoldingPathExtender>(ext_ptr)) {
+            auto ec = ((ScaffoldingPathExtender *) ext_ptr)->GetExtensionChooser();
+            auto ec_ptr = ec.get();
+            DEBUG("    Extender #i" << typeid(*ec_ptr).name());
         }
     }
 }

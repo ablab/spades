@@ -189,8 +189,6 @@ private:
 
     Index &origin_;
     size_t kmer_size_;
-    bool clean_condensed_;
-
 
 public:
     UnbranchingPathFinder(Index &origin, size_t kmer_size) : origin_(origin), kmer_size_(kmer_size) {

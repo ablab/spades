@@ -32,7 +32,6 @@ class GenomeConsistenceChecker {
 
 private:
     const conj_graph_pack &gp_;
-    const Graph &graph_;
     //EdgesPositionHandler<Graph> &position_handler_;
     Sequence genome_;
     const ScaffoldingUniqueEdgeStorage &storage_;
@@ -57,7 +56,7 @@ DECL_LOGGER("GenomeConsistenceChecker");
 
 public:
     GenomeConsistenceChecker(const conj_graph_pack &gp, const ScaffoldingUniqueEdgeStorage &storage, size_t max_gap, double relative_max_gap /*= 0.2*/) : gp_(gp),
-            graph_(gp.g), /*position_handler_(gp.edge_pos),*/ genome_(gp.genome.GetSequence()), storage_(storage),
+            genome_(gp.genome.GetSequence()), storage_(storage),
         absolute_max_gap_(max_gap), relative_max_gap_(relative_max_gap), excluded_unique_(), circular_edge_() {
         if (!gp.edge_pos.IsAttached()) {
             gp.edge_pos.Attach();

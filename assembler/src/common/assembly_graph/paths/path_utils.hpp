@@ -37,7 +37,6 @@ namespace debruijn_graph {
         VERIFY (max_dist >= g.length(e1));
         size_t dist = max_dist - g.length(e1);
         VertexId cur_vertex = g.EdgeStart(e2);
-        VertexId start = g.EdgeEnd(e1);
         if (!dijkstra.DistanceCounted(cur_vertex))
             return res;
         size_t cur_dist;

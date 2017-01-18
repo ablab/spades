@@ -136,7 +136,7 @@ public:
     AssemblyGraphConnectionCondition(const Graph &g, size_t max_connection_length,
                                      const ScaffoldingUniqueEdgeStorage& unique_edges);
     void AddInterestingEdges(func::TypedPredicate<typename Graph::EdgeId> edge_condition);
-    map<EdgeId, double> ConnectedWith(EdgeId e) const;
+    map<EdgeId, double> ConnectedWith(EdgeId e) const override;
     size_t GetLibIndex() const override;
     int GetMedianGap(EdgeId, EdgeId ) const override;
 };
