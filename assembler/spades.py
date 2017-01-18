@@ -714,6 +714,7 @@ def main(args):
         result_contigs_filename = os.path.join(cfg["common"].output_dir, options_storage.contigs_name)
         result_scaffolds_filename = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_name)
         result_assembly_graph_filename = os.path.join(cfg["common"].output_dir, options_storage.assembly_graph_name)
+        result_assembly_graph_filename_gfa = os.path.join(cfg["common"].output_dir, options_storage.assembly_graph_name_gfa)
         result_contigs_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.contigs_paths)
         result_scaffolds_paths_filename = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_paths)
         result_transcripts_filename = os.path.join(cfg["common"].output_dir, options_storage.transcripts_name)
@@ -730,6 +731,7 @@ def main(args):
             spades_cfg.__dict__["result_contigs"] = result_contigs_filename
             spades_cfg.__dict__["result_scaffolds"] = result_scaffolds_filename
             spades_cfg.__dict__["result_graph"] = result_assembly_graph_filename
+            spades_cfg.__dict__["result_graph_gfa"] = result_assembly_graph_filename_gfa
             spades_cfg.__dict__["result_contigs_paths"] = result_contigs_paths_filename
             spades_cfg.__dict__["result_scaffolds_paths"] = result_scaffolds_paths_filename
             spades_cfg.__dict__["result_transcripts"] = result_transcripts_filename
@@ -908,6 +910,9 @@ def main(args):
                     log.info(message)
                 if "assembly" in cfg and os.path.isfile(result_assembly_graph_filename):
                     message = " * Assembly graph is in " + support.process_spaces(result_assembly_graph_filename)
+                    log.info(message)
+                if "assembly" in cfg and os.path.isfile(result_assembly_graph_filename_gfa):
+                    message = " * Assembly graph in GFA format is in " + support.process_spaces(result_assembly_graph_filename_gfa)
                     log.info(message)
                 if "assembly" in cfg and os.path.isfile(result_contigs_paths_filename):
                     message = " * Paths in the assembly graph corresponding to the contigs are in " + \

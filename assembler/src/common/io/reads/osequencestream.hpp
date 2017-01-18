@@ -46,7 +46,7 @@ class osequencestream {
 protected:
     std::ofstream ofstream_;
 
-    int id_;
+    size_t id_;
 
     void write_str(const std::string& s) {
         size_t cur = 0;
@@ -63,8 +63,9 @@ protected:
 
 public:
     osequencestream(const std::string& filename): id_(1) {
-        ofstream_.open(filename.c_str());
+            ofstream_.open(filename.c_str());
     }
+
 
     virtual ~osequencestream() {
         ofstream_.close();
@@ -96,6 +97,11 @@ public:
         return *this;
     }
 };
+
+
+
+
+
 
 class PairedOutputSequenceStream {
 protected:

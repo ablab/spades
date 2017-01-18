@@ -50,6 +50,170 @@ public:
     }
 };
 
+
+class GFASegmentWriter {
+private:
+    std::ostream &ostream_;
+
+
+public:
+
+    GFASegmentWriter(std::ostream &stream) : ostream_(stream)  {
+    }
+
+    void Write(size_t edge_id, const Sequence &seq, double cov) {
+        ostream_ << "S\t" << edge_id << "\t";
+        ostream_ << seq.str() << "\t";
+        ostream_ << "RC:i:" << int(cov) << std::endl;
+    }
+};
+
+class GFALinkWriter {
+private:
+    std::ostream &ostream_;
+    size_t overlap_size_;
+
+public:
+
+    GFALinkWriter(std::ostream &stream, size_t overlap_size) : ostream_(stream), overlap_size_(overlap_size)  {
+    }
+
+    void Write(size_t first_segment, std::string &first_orientation, size_t second_segment, std::string &second_orientation) {
+        ostream_ << "L\t" << first_segment << "\t" << first_orientation << "\t" ;
+        ostream_ << second_segment << "\t" << second_orientation << "\t" << overlap_size_ << "M";
+        ostream_ << std::endl;
+
+    }
+};
+
+
+struct PathSegmentSequence {
+    size_t path_id_;
+    size_t segment_number_;
+    std::vector<std::string> segment_sequence_;
+    PathSegmentSequence(size_t path_id, std::vector<std::string> &segment_sequence)
+    : path_id_(path_id), segment_number_(1), segment_sequence_(segment_sequence) {
+    }
+
+    PathSegmentSequence()
+    : path_id_(0), segment_number_(1), segment_sequence_(){
+    }
+    void Reset() {
+        segment_sequence_.clear();
+    }
+};
+
+class GFAPathWriter {
+private:
+    std::ostream &ostream_;
+
+public:
+
+    GFAPathWriter(std::ostream &stream)
+    : ostream_(stream)  {
+    }
+
+    void Write(const PathSegmentSequence &path_segment_sequence) {
+        ostream_ << "P" << "\t" ;
+        ostream_ << path_segment_sequence.path_id_ << "_" << path_segment_sequence.segment_number_ << "\t";
+        for (size_t i = 0; i < path_segment_sequence.segment_sequence_.size() - 1; ++i) {
+            ostream_ << path_segment_sequence.segment_sequence_[i] << ",";
+        }
+        ostream_ << path_segment_sequence.segment_sequence_[path_segment_sequence.segment_sequence_.size() - 1] << "\t";
+        std::string delimeter = "";
+        for (size_t i = 0; i < path_segment_sequence.segment_sequence_.size() - 1; ++i) {
+                ostream_ << delimeter << "*";
+                delimeter = ",";
+        }
+        ostream_ << std::endl;
+    }
+
+};
+
+template<class Graph>
+class GFAWriter {
+private:
+    typedef typename Graph::EdgeId EdgeId;
+    const Graph &graph_;
+    const path_extend::PathContainer &paths_;
+    const string filename_;
+    std::set<EdgeId> set_of_authentic_edges_;
+
+    bool IsCanonical(EdgeId e) const {
+        if (e <= graph_.conjugate(e)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    std::string GetOrientation(EdgeId e) const {
+        return IsCanonical(e) ? "+" : "-";
+    }
+
+    void WriteSegments(std::ofstream &stream) {
+        GFASegmentWriter segment_writer(stream);
+        for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+            segment_writer.Write((*it).int_id(), graph_.EdgeNucls(*it), graph_.coverage(*it) * graph_.length(*it));
+        }
+    }
+
+    void WriteLinks(std::ofstream &stream) {
+        GFALinkWriter link_writer(stream, graph_.k());
+        for (auto it = graph_.SmartVertexBegin(); !it.IsEnd(); ++it) {
+            for (auto inc_edge : graph_.IncomingEdges(*it)) {
+                std::string orientation_first = GetOrientation(inc_edge);
+                size_t segment_first = IsCanonical(inc_edge) ? inc_edge.int_id() : graph_.conjugate(inc_edge).int_id();
+                for (auto out_edge : graph_.OutgoingEdges(*it)) {
+                    size_t segment_second = IsCanonical(out_edge) ? out_edge.int_id() : graph_.conjugate(out_edge).int_id();
+                    std::string orientation_second = GetOrientation(out_edge);
+                    link_writer.Write(segment_first, orientation_first, segment_second, orientation_second);
+                }
+            }
+        }
+    }
+
+    void UpdateSegmentedPath(PathSegmentSequence &segmented_path, EdgeId e) {
+        std::string segment_id = IsCanonical(e) ? ToString(e.int_id()) : ToString(graph_.conjugate(e).int_id());
+        std::string orientation = GetOrientation(e);
+        segmented_path.segment_sequence_.push_back(segment_id + orientation);
+    }
+
+    void WritePaths(std::ofstream &stream) {
+        GFAPathWriter path_writer(stream);
+        for (const auto &path_pair : paths_) {
+            const path_extend::BidirectionalPath &p = (*path_pair.first);
+            PathSegmentSequence segmented_path;
+            segmented_path.path_id_ = p.GetId();
+            for (size_t i = 0; i < p.Size() - 1; ++i) {
+                EdgeId e = p[i];
+                UpdateSegmentedPath(segmented_path, e);
+                if (graph_.EdgeEnd(e) != graph_.EdgeStart(p[i+1])) {
+                    path_writer.Write(segmented_path);
+                    segmented_path.segment_number_++;
+                    segmented_path.Reset();
+                }
+            }
+            UpdateSegmentedPath(segmented_path, p.Back());
+            path_writer.Write(segmented_path);
+
+        }
+    }
+
+public:
+    GFAWriter(const Graph &graph, const path_extend::PathContainer &paths, const string &filename)
+    : graph_(graph), paths_(paths), filename_(filename) {
+    }
+
+    void Write() {
+        std::ofstream stream;
+        stream.open(filename_);
+        WriteSegments(stream);
+        WriteLinks(stream);
+        WritePaths(stream);
+    }
+};
+
 //This class uses corrected sequences to construct contig (just return as is, find unipath, trim contig)
 template<class Graph>
 class ContigConstructor {
@@ -336,6 +500,13 @@ inline void OutputContigs(ConjugateDeBruijnGraph &g, const string &contigs_outpu
 //    }
 }
 
+inline void OutputContigsToGFA(ConjugateDeBruijnGraph &g, path_extend::PathContainer &paths, const string &contigs_output_filename) {
+    INFO("Outputting graph to " << contigs_output_filename << ".gfa");
+    GFAWriter<ConjugateDeBruijnGraph> writer(g, paths, contigs_output_filename + ".gfa");
+    writer.Write();
+}
+
+
 inline void OutputContigsToFASTG(ConjugateDeBruijnGraph& g,
                    const string& contigs_output_filename, const ConnectedComponentCounter & cc_counter) {
 
@@ -419,7 +590,8 @@ inline void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
             oss << g.EdgeNucls(*it);
             n++;
         }
-    }DEBUG("SingleFileContigs(Conjugate) written");
+    }
+    DEBUG("SingleFileContigs(Conjugate) written");
 }
 
 }

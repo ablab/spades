@@ -48,7 +48,9 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
         }
 
         writer.OutputPaths(gp.contig_paths, output_dir + cfg::get().co.scaffolds_name);
+
     }
+    OutputContigsToGFA(gp.g, gp.contig_paths, cfg::get().output_dir + "assembly_graph");
 }
 
 }
