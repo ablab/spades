@@ -43,6 +43,9 @@ void SequencingLibrary<debruijn_graph::config::DataSetData>::yamlize(llvm::yaml:
   io.mapOptional("pi threshold"               , data_.pi_threshold);
   io.mapOptional("binary converted"           , data_.binary_reads_info.binary_coverted);
   io.mapOptional("single reads mapped"        , data_.single_reads_mapped);
+  io.mapOptional("library index"              , data_.lib_index);
+  io.mapOptional("number of reads"            , data_.read_count);
+  io.mapOptional("total nucleotides"          , data_.total_nucls);
 }
 
 template<>
