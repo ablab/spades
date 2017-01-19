@@ -329,7 +329,7 @@ Extenders ExtendersGenerator::MakeMPExtenders(const ScaffoldingUniqueEdgeStorage
             result.emplace_back(lib.type(), lib_index, MakeMatePairScaffoldingExtender(lib_index, storage));
         }
     }
-    std::sort(result.begin(), result.end());
+    std::stable_sort(result.begin(), result.end());
 
     return ExtractExtenders(result);
 }
@@ -367,7 +367,7 @@ Extenders ExtendersGenerator::MakePBScaffoldingExtenders(const ScaffoldingUnique
         }
     }
     INFO("Using " << result.size() << " long reads scaffolding " << support_.LibStr(result.size()));
-    std::sort(result.begin(), result.end());
+    std::stable_sort(result.begin(), result.end());
 
     return ExtractExtenders(result);
 }
@@ -444,9 +444,9 @@ Extenders ExtendersGenerator::MakeBasicExtenders(const ScaffoldingUniqueEdgeStor
         }
     }
 
-    std::sort(basic_extenders.begin(), basic_extenders.end());
-    std::sort(scaffolding_extenders.begin(), scaffolding_extenders.end());
-    std::sort(loop_resolving_extenders.begin(), loop_resolving_extenders.end());
+    std::stable_sort(basic_extenders.begin(), basic_extenders.end());
+    std::stable_sort(scaffolding_extenders.begin(), scaffolding_extenders.end());
+    std::stable_sort(loop_resolving_extenders.begin(), loop_resolving_extenders.end());
 
     Extenders result;
     push_back_all(result, ExtractExtenders(basic_extenders));
