@@ -78,9 +78,19 @@ size_t PELaunchSupport::FindMaxMPIS() const {
     }
     return max_is;
 }
+
 bool PELaunchSupport::HasLongReads() const {
     return path_extend::HasLongReads(dataset_info_);
 }
+
+bool PELaunchSupport::HasLongReadsScaffolding() const {
+    for (const auto &lib : dataset_info_.reads) {
+        if (IsForSingleReadScaffolder(lib))
+            return true;
+    }
+    return false;
+}
+
 bool PELaunchSupport::HasMPReads() const {
     for (const auto &lib : dataset_info_.reads) {
         if (lib.is_mate_pair()) {
@@ -115,6 +125,6 @@ size_t PELaunchSupport::TotalNuclsInGraph() const {
 
 bool PELaunchSupport::NeedsUniqueEdgeStorage() const {
     return !(params_.pset.sm == sm_old ||
-        (params_.pset.sm == sm_old_pe_2015 && !HasLongReads() && !HasMPReads()));
+        (params_.pset.sm == sm_old_pe_2015 && !HasLongReadsScaffolding() && !HasMPReads()));
 }
 }

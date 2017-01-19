@@ -142,6 +142,8 @@ public:
 
     bool HasLongReads() const;
 
+    bool HasLongReadsScaffolding() const;
+
     bool HasMPReads() const;
 
     bool SingleReadsMapped() const;
