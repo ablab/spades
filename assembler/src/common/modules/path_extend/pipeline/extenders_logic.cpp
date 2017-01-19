@@ -63,41 +63,6 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongEdgePEExtender(size_t lib
                                        false /*use short loop coverage resolver*/);
 }
 
-//shared_ptr<WeightCounter> ExtendersGenerator::MakeMetaWeightCounter(shared_ptr<PairedInfoLibrary> lib,
-//                                                                   size_t read_length) const {
-//    VERIFY(params_.mode == config::pipeline_type::meta &&
-//                   !lib->IsMp() &&
-//                   params_.pset.extension_options.use_default_single_threshold &&
-//                   params_.pset.normalize_weight);
-//
-//    //FIXME remove
-//    VERIFY(math::eq(0.3, params_.pset.extension_options.single_threshold));
-//
-//    return make_shared<PathCoverWeightCounter>(gp_.g, lib,
-//                /*normalize weight*/true, params_.pset.extension_options.single_threshold /*threshold*/,
-//                                               make_shared<CoverageAwareIdealInfoProvider>(gp_.g, lib, read_length));
-//}
-//
-//inline shared_ptr<SimpleExtensionChooser> ExtendersGenerator::MakeMetaExtensionChooser(shared_ptr<PairedInfoLibrary> lib,
-//                                                                                       size_t read_length) const {
-//    return make_shared<SimpleExtensionChooser>(gp_.g, MakeMetaWeightCounter(lib, read_length),
-//                                               params_.pset.extension_options.weight_threshold,
-//                                               params_.pset.extension_options.priority_coeff);
-//}
-//
-//shared_ptr<SimpleExtender> ExtendersGenerator::MakeMetaExtender(size_t lib_index,
-//                                                                bool investigate_loops) const {
-//
-//    const auto &lib = dataset_info_.reads[lib_index];
-//    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
-//
-//    return make_shared<SimpleExtender>(gp_, cover_map_,
-//                                       MakeMetaExtensionChooser(paired_lib, dataset_info_.RL()),
-//                                       paired_lib->GetISMax(),
-//                                       investigate_loops,
-//                                       false /*use short loop coverage resolver*/);
-//}
-
 shared_ptr<GapJoiner> ExtendersGenerator::MakeGapJoiners(double is_variation) const {
     const auto &pset = params_.pset;
 
@@ -219,20 +184,19 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t 
     const auto& lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
 
-    CoverageAwareIdealInfoProvider provider(gp_.g, paired_lib, dataset_info_.RL());
+    auto provider = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL());
 
     auto meta_wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib,
                                                        params_.pset.normalize_weight,
                                                        support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold),
-                                                       make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib,
-                                                                                                   dataset_info_.RL()));
+                                                       provider);
 
     auto permissive_pi_chooser = make_shared<IdealBasedExtensionChooser>(gp_.g,
                                                                          meta_wc,
                                                                          params_.pset.extension_options.weight_threshold,
                                                                          params_.pset.extension_options.priority_coeff);
 
-    auto coord_cov_chooser = make_shared<CoordinatedCoverageExtensionChooser>(gp_.g, provider,
+    auto coord_cov_chooser = make_shared<CoordinatedCoverageExtensionChooser>(gp_.g, *provider,
                                                                               params_.pset.coordinated_coverage.max_edge_length_in_repeat,
                                                                               params_.pset.coordinated_coverage.delta,
                                                                               params_.pset.coordinated_coverage.min_path_len);
@@ -418,10 +382,10 @@ Extenders ExtendersGenerator::MakeBasicExtenders(const ScaffoldingUniqueEdgeStor
                 basic_extenders.emplace_back(lib.type(), lib_index, MakeMatePairScaffoldingExtender(lib_index, storage));
             }
         }
-        //FIXME logic is very cryptic!
+        //TODO logic is very cryptic!
         if (support_.IsForShortLoopExtender(lib) && IsOldPEEnabled(pset.sm)) {
             loop_resolving_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, true));
-            //FIXME where is moleculo and rna here?
+            //TODO what about moleculo and rna here?
         }
         if (support_.IsForScaffoldingExtender(lib) && params_.use_scaffolder
             && pset.scaffolder_options.enabled) {

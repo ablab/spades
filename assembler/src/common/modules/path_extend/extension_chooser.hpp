@@ -256,7 +256,18 @@ public:
     }
 
     EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
-        return second_->Filter(path, first_->Filter(path, edges));
+        EdgeContainer answer;
+        auto r1 = first_->Filter(path, edges);
+        auto r2 = second_->Filter(path, edges);
+        for (auto ewd1 : r1) {
+            for (auto ewd2 : r2) {
+                if (ewd1.e_ == ewd2.e_) {
+                    VERIFY(ewd1.d_ == ewd2.d_);
+                    answer.push_back(ewd1);
+                }
+            }
+        }
+        return answer;
     }
 };
 
