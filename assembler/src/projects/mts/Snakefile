@@ -88,12 +88,18 @@ rule binning_pre:
     message: "Preparing input for {wildcards.binner}"
     shell:   "{SCRIPTS}/make_input.py -t {wildcards.binner} -d profile -o {output} {params}"
 
-rule canopy:
+#rule canopy:
+#    input:   "binning/canopy/profiles.in"
+#    output:  out="binning/canopy/binning.out", prof="binning/canopy/bins.prof"
+#    threads: THREADS
+#    message: "Running canopy clustering"
+#    shell:   "{SOFT}/cc.bin -n {threads} -i {input} -o {output.out} -c {output.prof} >binning/canopy/canopy.log 2>&1"
+
+rule trivial_clustering:
     input:   "binning/canopy/profiles.in"
     output:  out="binning/canopy/binning.out", prof="binning/canopy/bins.prof"
-    threads: THREADS
-    message: "Running canopy clustering"
-    shell:   "{SOFT}/cc.bin -n {threads} -i {input} -o {output.out} -c {output.prof} >binning/canopy/canopy.log 2>&1"
+    message: "Running trivial clustering"
+    shell:   "Rscript {SCRIPTS}/trivial_binning.R {input} {output.out} {output.prof}"
 
 rule combine_splits:
     input:   expand("assembly/{sample}_splits.fasta", sample=GROUPS)
