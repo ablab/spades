@@ -17,7 +17,7 @@
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 
 #include <algorithm>
-
+#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 
 namespace pacbio {
 enum {
@@ -68,7 +68,7 @@ private:
 
     set<Sequence> banned_kmers;
     debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> tmp_index;
-    mutable map<pair<VertexId, VertexId>, vector<size_t>> distance_cashed;
+    mutable map<pair<VertexId, VertexId>, size_t> distance_cashed;
     size_t read_count;
     bool ignore_map_to_middle;
     debruijn_graph::config::debruijn_config::pacbio_processor pb_config_;
@@ -120,6 +120,19 @@ public:
                 ((b.edge_position + shift - a.edge_position) * pb_config_.compression_cutoff <= (b.read_position - a.read_position)));
         }
     }
+
+
+    bool similar_in_graph(const MappingInstance &a, const MappingInstance &b,
+                 int shift = 0) const {
+        if (b.read_position + shift < a.read_position) {
+            return similar_in_graph(b, a, -shift);
+        } else if (b.read_position == a.read_position) {
+            return (abs(int(b.edge_position) + shift - int(a.edge_position)) < 2);
+        } else {
+            return ((b.edge_position + shift - a.edge_position) * pb_config_.compression_cutoff <= (b.read_position - a.read_position));
+        }
+    }
+
 
     void dfs_cluster(vector<int> &used, vector<MappingInstance> &to_add,
                      const int cur_ind,
@@ -437,7 +450,7 @@ public:
                     j_iter != mapping_descr.end(); ++j_iter, ++j) {
                 if (i_iter == j_iter)
                     continue;
-                cons_table[i][j] = IsConsistent(s, *i_iter, *j_iter);
+                cons_table[i][j] = IsConsistent(*i_iter, *j_iter);
             }
         }
         i = 0;
@@ -499,7 +512,7 @@ public:
         size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + pacbio_k;
         size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
         if (seq_start > seq_end) {
-            INFO("Overlapping flanks not supported yet");
+            DEBUG("Overlapping flanks not supported yet");
             return GapDescription();
         }
         return GapDescription(a.edgeId,
@@ -558,7 +571,7 @@ public:
                         ++iter) {
                     auto next_iter = iter + 1;
                     if (next_iter == cur_cluster.end()
-                            || !IsConsistent(s, *(iter->second),
+                            || !IsConsistent(*(iter->second),
                                              *(next_iter->second))) {
                         if (next_iter != cur_cluster.end()) {
                             DEBUG("clusters splitted:");
@@ -631,64 +644,73 @@ public:
     }
 
 //0 - No, 1 - Yes
-    int IsConsistent(const Sequence &s, const KmerCluster<Graph> &a,
+    int IsConsistent(const KmerCluster<Graph> &a,
                      const KmerCluster<Graph> &b) const {
         EdgeId a_edge = a.edgeId;
         EdgeId b_edge = b.edgeId;
         size_t a_id =  g_.int_id(a_edge);
         size_t b_id =  g_.int_id(b_edge);
         DEBUG("clusters on " << a_id << " and " << b_id );
-        if (abs(a.sorted_positions[a.last_trustable_index].read_position - b.sorted_positions[b.first_trustable_index].read_position) > 5000) {
-            DEBUG("...to far5000");
-            return 0;
-        }
         VertexId start_v = g_.EdgeEnd(a_edge);
         size_t addition = g_.length(a_edge);
         VertexId end_v = g_.EdgeStart(b_edge);
         pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
-        vector<size_t> result;
-        DEBUG("seq dist:" << s.size()/3);
-        auto distance_it = distance_cashed.find(vertex_pair);
-        if (distance_it == distance_cashed.end()) {
-            omnigraph::DistancesLengthsCallback<Graph> callback(g_);
-            ProcessPaths(g_, 0, s.size() / 3, start_v,
-                             end_v, callback);
-            result = callback.distances();
+
+        size_t result = -1;
+        bool not_found = true;
+        auto distance_it = distance_cashed.begin();
+#pragma omp critical(pac_index)
+        {
+            distance_it = distance_cashed.find(vertex_pair);
+            not_found = (distance_it == distance_cashed.end());
+        }
+        if (not_found) {
+//TODO: constants
+            omnigraph::DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
+                    omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, pb_config_.max_path_in_dijkstra, pb_config_.max_vertex_in_dijkstra));
+            dijkstra.Run(start_v);
+            if (dijkstra.DistanceCounted(end_v)) {
+                result = dijkstra.GetDistance(end_v);
+            }
+#pragma omp critical(pac_index)
+        {
             distance_it = distance_cashed.insert({vertex_pair, result}).first;
+        }
         } else {
             DEBUG("taking from cashed");
         }
 
-        DEBUG("addition: " << addition << " found " << result.size() << " lengths:" );
-        for (size_t i = 0; i < result.size(); i++) {
-            DEBUG(result[i]);
-        }
+
         result = distance_it->second;
+        DEBUG (result);
+        if (result == -1) {
+            return 0;
+        }
         //TODO: Serious optimization possible
-        for (size_t i = 0; i < result.size(); i++) {
-            for (auto a_iter = a.sorted_positions.begin();
-                    a_iter != a.sorted_positions.end(); ++a_iter) {
-                if (a_iter - a.sorted_positions.begin() > 500 &&  a.sorted_positions.end() - a_iter >500) continue;
-                int cnt = 0;
-                for (auto b_iter = b.sorted_positions.begin();
-                        b_iter != b.sorted_positions.end() && cnt <500; ++b_iter, cnt ++) {
-                    if (similar(*a_iter, *b_iter,
-                                (int) (result[i] + addition))) {
-                        return 1;
-                    }
+
+        for (auto a_iter = a.sorted_positions.begin();
+                a_iter != a.sorted_positions.end(); ++a_iter) {
+            if (a_iter - a.sorted_positions.begin() > 500 &&  a.sorted_positions.end() - a_iter >500) continue;
+            int cnt = 0;
+            for (auto b_iter = b.sorted_positions.begin();
+                    b_iter != b.sorted_positions.end() && cnt <500; ++b_iter, cnt ++) {
+                if (similar_in_graph(*a_iter, *b_iter,
+                            (int) (result + addition))) {
+                    return 1;
                 }
-                cnt = 0;
-                if (b.sorted_positions.size() > 500) {
-                    for (auto b_iter = b.sorted_positions.end() - 1;
-                                            b_iter != b.sorted_positions.begin() && cnt < 500; --b_iter, cnt ++) {
-                        if (similar(*a_iter, *b_iter,
-                                    (int) (result[i] + addition))) {
-                            return 1;
-                        }
+            }
+            cnt = 0;
+            if (b.sorted_positions.size() > 500) {
+                for (auto b_iter = b.sorted_positions.end() - 1;
+                                        b_iter != b.sorted_positions.begin() && cnt < 500; --b_iter, cnt ++) {
+                    if (similar_in_graph(*a_iter, *b_iter,
+                                (int) (result + addition))) {
+                        return 1;
                     }
                 }
             }
         }
+
         return 0;
 
     }

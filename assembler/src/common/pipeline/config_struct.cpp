@@ -440,6 +440,8 @@ void load(debruijn_config::pacbio_processor& pb,
   load(pb.domination_cutoff, pt, "domination_cutoff");
   load(pb.path_limit_stretching, pt, "path_limit_stretching");
   load(pb.path_limit_pressing, pt, "path_limit_pressing");
+  load(pb.max_path_in_dijkstra, pt, "max_path_in_dijkstra");
+  load(pb.max_vertex_in_dijkstra, pt, "max_vertex_in_dijkstra");
   load(pb.ignore_middle_alignment, pt, "ignore_middle_alignment");
   load(pb.long_seq_limit, pt, "long_seq_limit");
   load(pb.pacbio_min_gap_quantity, pt, "pacbio_min_gap_quantity");

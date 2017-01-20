@@ -417,6 +417,8 @@ struct debruijn_config {
       double path_limit_stretching; //1.3
       double path_limit_pressing;//0.7
       bool ignore_middle_alignment; //true; false for stats and mate_pairs;
+      size_t max_path_in_dijkstra; //15000
+      size_t max_vertex_in_dijkstra; //2000
   //gap_closer
       size_t long_seq_limit; //400
       size_t pacbio_min_gap_quantity; //2
