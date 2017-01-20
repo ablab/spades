@@ -30,27 +30,26 @@ with open(PROF) as input:
         profile = map(float, params[1:])
 
         print("Profile of", CAG, ":", profile)
-        samples = range(1, len(profile)+1)
 
-#        weighted_profile = list((i, ab)
-#            for i, ab in enumerate(profile) if ab >= MIN_ABUNDANCE and path.exists("{}/{}/sample{}_1.fastq".format(DIR, CAG, i + 1)))
-#        weighted_profile.sort(key = itemgetter(1))
-#
-#        sum = 0
-#        samples = []
-#        #If we have overabundant samples, use the least.
-#        try:
-#            i = next(x for x, _ in weighted_profile if profile[x] >= DESIRED_ABUNDANCE)
-#            sum = profile[i]
-#            samples = [i + 1]
-#        except StopIteration:
-#            #If there isn't any, collect from samples, starting from the largest
-#            for i, _ in reversed(weighted_profile):
-#                sum += profile[i]
-#                samples.append(i + 1)
-#                if sum >= DESIRED_ABUNDANCE:
-#                    break
-#
+        weighted_profile = list((i, ab)
+            for i, ab in enumerate(profile) if ab >= MIN_ABUNDANCE and path.exists("{}/{}/sample{}_1.fastq".format(DIR, CAG, i + 1)))
+        weighted_profile.sort(key = itemgetter(1))
+
+        sum = 0
+        samples = []
+        #If we have overabundant samples, use the least.
+        try:
+            i = next(x for x, _ in weighted_profile if profile[x] >= DESIRED_ABUNDANCE)
+            sum = profile[i]
+            samples = [i + 1]
+        except StopIteration:
+            #If there isn't any, collect from samples, starting from the largest
+            for i, _ in reversed(weighted_profile):
+                sum += profile[i]
+                samples.append(i + 1)
+                if sum >= DESIRED_ABUNDANCE:
+                    break
+
         print("Chosen samples are", samples, "with total mean abundance", sum)
         if sum < MIN_TOTAL_ABUNDANCE:
             print(CAG, "is too scarce; skipping")
