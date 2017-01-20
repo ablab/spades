@@ -29,7 +29,7 @@ void construct_graph(io::ReadStreamList<Read>& streams,
     if (!cfg::get().ds.RL()) {
         INFO("Figured out: read length = " << rl);
         cfg::get_writable().ds.set_RL(rl);
-        cfg::get_writable().ds.set_aRL(1.0 * stats.bases_ / stats.reads_);
+        cfg::get_writable().ds.set_aRL((double) stats.bases_ / (double) stats.reads_);
     } else if (cfg::get().ds.RL() != rl)
         WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL() << ", not " << rl);
 }

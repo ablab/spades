@@ -66,31 +66,30 @@ protected:
             return result;
 
         DEDistance max_dist = this->max_distance_;
-        size_t cur_dist = 0;
+        size_t i = 0;
         vector<double> weights(forward.size());
         for (auto point : histogram) {
-            if (ls(2. * point.d + (double) second_len, (double) first_len))
+            DEDistance cur_dist(forward[i]), next_dist(forward[i + 1]);
+            if (le(2 * point.d + DEDistance(second_len), DEDistance(first_len)))
                 continue;
-            while (cur_dist + 1 < forward.size() && (double) forward[cur_dist + 1] < point.d) {
-                ++cur_dist;
+            while (i + 1 < forward.size() && next_dist < point.d) {
+                ++i;
             }
-            if (cur_dist + 1 < forward.size() && ls((double) forward[cur_dist + 1] - point.d,
-                                                    point.d - (double) forward[cur_dist])) {
-                ++cur_dist;
-                if (le(abs(forward[cur_dist] - point.d), max_dist))
-                    weights[cur_dist] += point.weight * weight_f_(forward[cur_dist] - rounded_d(point));
+            if (i + 1 < forward.size() && ls(DEDistance(next_dist) - point.d, point.d - DEDistance(cur_dist))) {
+                ++i;
+                if (le(abs(cur_dist - point.d), max_dist))
+                    weights[i] += point.weight * weight_f_(forward[i] - rounded_d(point));
             }
-            else if (cur_dist + 1 < forward.size() && eq(forward[cur_dist + 1] - point.d,
-                                                         point.d - forward[cur_dist])) {
-                if (le(abs(forward[cur_dist] - point.d), max_dist))
-                    weights[cur_dist] += point.weight * 0.5 * weight_f_(forward[cur_dist] - rounded_d(point));
+            else if (i + 1 < forward.size() && eq(next_dist - point.d, point.d - cur_dist)) {
+                if (le(abs(cur_dist - point.d), max_dist))
+                    weights[i] += point.weight * 0.5 * weight_f_(forward[i] - rounded_d(point));
 
-                ++cur_dist;
+                ++i;
 
-                if (le(abs(forward[cur_dist] - point.d), max_dist))
-                    weights[cur_dist] += point.weight * 0.5 * weight_f_(forward[cur_dist] - rounded_d(point));
-            } else if (le(abs(forward[cur_dist] - point.d), max_dist))
-                weights[cur_dist] += point.weight * weight_f_(forward[cur_dist] - rounded_d(point));
+                if (le(abs(cur_dist - point.d), max_dist))
+                    weights[i] += point.weight * 0.5 * weight_f_(forward[i] - rounded_d(point));
+            } else if (le(abs(cur_dist - point.d), max_dist))
+                weights[i] += point.weight * weight_f_(forward[i] - rounded_d(point));
         }
 
         for (size_t i = 0; i < forward.size(); ++i)

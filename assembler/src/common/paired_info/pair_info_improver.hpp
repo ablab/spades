@@ -140,7 +140,7 @@ class PairInfoImprover {
                 auto paths = GetAllPathsBetweenEdges(graph_, e1, e2, 0, (size_t) ceil(pi_dist - first_length + var));
                 return (paths.size() > 0);
             } else {
-                if (math::gr(p2.d, p1.d + first_length)) {
+                if (math::gr(p2.d, p1.d + omnigraph::de::DEDistance(first_length))) {
                     auto paths = GetAllPathsBetweenEdges(graph_, e1, e2,
                                                          (size_t) floor(pi_dist - first_length - var),
                                                          (size_t)  ceil(pi_dist - first_length + var));

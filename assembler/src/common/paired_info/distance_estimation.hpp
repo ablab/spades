@@ -213,12 +213,12 @@ protected:
 
         TRACE("Bounds are " << minD << " " << maxD);
         EstimHist result;
-        vector<int> forward;
+        vector<DEDistance> forward;
         forward.reserve(raw_forward.size());
         for (auto raw_length : raw_forward) {
             int length = int(raw_length);
             if (minD - int(max_distance_) <= length && length <= maxD + int(max_distance_))
-                forward.push_back(length);
+                forward.push_back(DEDistance(length));
         }
         if (forward.size() == 0)
             return result;
@@ -226,7 +226,7 @@ protected:
         size_t cur_dist = 0;
         vector<DEWeight> weights(forward.size(), 0);
         for (auto point : histogram) {
-            if (ls(2 * point.d + second_len, DEDistance(first_len)))
+            if (ls(2 * point.d + DEDistance(second_len), DEDistance(first_len)))
                 continue;
             while (cur_dist + 1 < forward.size() && forward[cur_dist + 1] < point.d)
                 ++cur_dist;

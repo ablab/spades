@@ -226,10 +226,10 @@ void KMerCoverageModel::Fit() {
         tmadcov += mvals[i];
     }
     size_t madcov = 0;
-    double CovSd = sqrt(5.0 * (double) MaxCov_);
+    double CovSd = sqrt((double) (5 * MaxCov_));
     for (size_t i = 0; i < MaxCov_ - Valley_; ++i) {
         if (madcov > tmadcov / 2) {
-            CovSd = i;
+            CovSd = (double) i;
             break;
         }
         madcov += mvals[i];
@@ -253,26 +253,9 @@ void KMerCoverageModel::Fit() {
     TRACE("Total: " << Total << ". Before: " << BeforeValley);
     TRACE("p: " << ErrorProb);
 
-    std::vector<double> x(6), lb(6), ub(6);
-
-    x[0] = 3;
-    lb[0] = 0;
-    ub[0] = 2000;
-    x[1] = 3;
-    lb[1] = 0;
-    ub[1] = 2000;
-    x[2] = MaxCov_;
-    lb[2] = 0;
-    ub[2] = 2 * MaxCov_;
-    x[3] = CovSd;
-    lb[3] = MaxCov_ - Valley_;
-    ub[3] = SecondValley;
-    x[4] = 1;
-    lb[4] = 0;
-    ub[4] = 2000;
-    x[5] = 0;
-    lb[5] = -6;
-    ub[5] = 6;
+    std::vector<double> x = {3.0, 3.0, (double) MaxCov_, CovSd, 1.0, 0.0},
+        lb = {0.0, 0.0, 0.0, (double) (MaxCov_ - Valley_), 0.0, -6.0},
+        ub = {2000.0, 2000.0, (double) (2 * MaxCov_), (double) SecondValley, 2000.0, 6.0};
 
     INFO("Fitting coverage model");
     // Ensure that there will be at least 2 iterations.
@@ -375,7 +358,7 @@ void KMerCoverageModel::Fit() {
     if (converged_) {
         INFO("Preliminary threshold calculated as: " << ErrorThreshold_);
         ErrorThreshold_ = (Valley_ < mean_coverage_ ?
-                           std::min(Valley_ + (size_t) (mean_coverage_ - Valley_) / 2, ErrorThreshold_) :
+                           std::min(Valley_ + (size_t) (mean_coverage_ - (double) Valley_) / 2, ErrorThreshold_) :
                            Valley_);
         INFO("Threshold adjusted to: " << ErrorThreshold_);
     } else {
