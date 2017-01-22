@@ -26,6 +26,9 @@ if (SPADES_STATIC_BUILD)
   set(CMAKE_FIND_LIBRARY_SUFFIXES .a) 
   set(LINK_SEARCH_START_STATIC TRUE)
   set(LINK_SEARCH_END_STATIC TRUE)
+  # This is dirty hack to get rid of -Wl,-Bdynamic
+  set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS "-Wl,-Bstatic")
+  set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS "-Wl,-Bstatic")
 
   if (APPLE)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc")
