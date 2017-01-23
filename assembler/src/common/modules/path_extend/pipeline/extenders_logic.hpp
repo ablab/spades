@@ -27,7 +27,7 @@ struct ExtenderTriplet {
 
     bool operator<(const ExtenderTriplet& that) const {
         if (this->lib_type_ == that.lib_type_)
-            return this->lib_index_ < this->lib_index_;
+            return this->lib_index_ < that.lib_index_;
         return this->lib_type_ < that.lib_type_;
     }
 };

@@ -413,7 +413,7 @@ public:
         return res;
     }
 
-    vector<int> GetWeightedColors(const ClustersSet &mapping_descr, const Sequence &s) const {
+    vector<int> GetWeightedColors(const ClustersSet &mapping_descr) const {
         int len = (int) mapping_descr.size();
         DEBUG("getting colors, table size "<< len);
         vector<vector<int> > cons_table(len);
@@ -529,7 +529,7 @@ public:
         int len = (int) mapping_descr.size();
         vector<size_t> real_length;
 
-        vector<int> colors = GetWeightedColors(mapping_descr, s);
+        vector<int> colors = GetWeightedColors(mapping_descr);
         vector<vector<EdgeId> > sortedEdges;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
         vector<GapDescription> illumina_gaps;
@@ -656,7 +656,7 @@ public:
         VertexId end_v = g_.EdgeStart(b_edge);
         pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
 
-        size_t result = -1;
+        size_t result = size_t(-1);
         bool not_found = true;
         auto distance_it = distance_cashed.begin();
 #pragma omp critical(pac_index)
@@ -683,7 +683,7 @@ public:
 
         result = distance_it->second;
         DEBUG (result);
-        if (result == -1) {
+        if (result == size_t(-1)) {
             return 0;
         }
         //TODO: Serious optimization possible

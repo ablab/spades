@@ -500,7 +500,7 @@ public:
         DEBUG("Max flank length - " << max_flank_length);
 
         if ((double) max_flank_length * flank_multiplication_coefficient_
-                + flank_addition_coefficient_ > overlap_info.size()) {
+                + flank_addition_coefficient_ > (double) overlap_info.size()) {
             DEBUG("Too long flanks for such alignment");
             return Gap(INVALID_GAP);
         }
