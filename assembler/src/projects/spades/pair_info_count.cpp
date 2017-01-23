@@ -295,8 +295,8 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
     gp.InitRRIndices();
     gp.EnsureBasicMapping();
 
-    //fixme implement better universal logic
-    size_t edge_length_threshold = cfg::get().mode == config::pipeline_type::meta ? 1000 : stats::Nx(gp.g, 50);
+    //TODO implement better universal logic
+    size_t edge_length_threshold = cfg::get().mode == config::pipeline_type::meta ? 900 : stats::Nx(gp.g, 50);
     INFO("Min edge length for estimation: " << edge_length_threshold);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         auto &lib = cfg::get_writable().ds.reads[i];
