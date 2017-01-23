@@ -11,23 +11,13 @@
 
 namespace debruijn_graph {
 
-class AssemblyGraphOutput : public spades::AssemblyStage {
-public:
-    AssemblyGraphOutput()
-        : AssemblyStage("Assembly Graph Output", "assembly_graph_output") { }
-
-    void load(conj_graph_pack &, const std::string &, const char *) { }
-
-    void save(const conj_graph_pack &, const std::string &, const char *) const { }
-
-    void run(conj_graph_pack &gp, const char *);
-};
-
 
 class ContigOutput : public spades::AssemblyStage {
+private:
+    bool output_paths_;
 public:
-    ContigOutput()
-        : AssemblyStage("Contig Output", "contig_output") { }
+    ContigOutput(bool output_paths = true)
+        : AssemblyStage("Contig Output", "contig_output"), output_paths_(output_paths) { }
 
     void load(conj_graph_pack &, const std::string &, const char *) { }
 

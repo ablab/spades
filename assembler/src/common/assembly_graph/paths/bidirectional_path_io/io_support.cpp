@@ -1,11 +1,11 @@
 //
-// Created by andrey on 20.01.17.
+// Created by andrey on 23.01.17.
 //
 
-#include "bidirectional_path_output.hpp"
+#include "io_support.hpp"
 #include "modules/path_extend/pe_utils.hpp"
-#include "io/reads/osequencestream.hpp"
 
+namespace path_extend {
 
 void path_extend::TranscriptToGeneJoiner::MakeSet(size_t x) {
     parents_[x] = x;
@@ -84,7 +84,7 @@ void path_extend::TranscriptToGeneJoiner::Construct(const PathContainer &paths) 
     }
 }
 
-string path_extend::ContigWriter::ToString(const BidirectionalPath& path) const {
+string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) const {
     stringstream ss;
     if (path.IsInterstrandBulge() && path.Size() == 1) {
         ss << constructor_.construct(path.Back()).first.substr(k_, g_.length(path.Back()) - k_);
@@ -120,6 +120,7 @@ string path_extend::ContigWriter::ToString(const BidirectionalPath& path) const 
                 }
 
                 overlapLen = overlapLen + (int) k_ - path.GapAt(i);
+
                 if(overlapLen < 0) {
                     for (int j = 0; j < abs(overlapLen); ++j) {
                         ss << "N";
@@ -128,10 +129,10 @@ string path_extend::ContigWriter::ToString(const BidirectionalPath& path) const 
                 }
             }
             auto temp_str = g_.EdgeNucls(path[i]).Subseq(overlapLen).str();
-            if(i != path.Size() - 1) {
-                for(size_t j = 0 ; j < path.TrashPreviousAt(i + 1); ++j) {
+            if (i != path.Size() - 1) {
+                for (size_t j = 0; j < path.TrashPreviousAt(i + 1); ++j) {
                     temp_str.pop_back();
-                    if(temp_str.size() == 0) {
+                    if (temp_str.size() == 0) {
                         break;
                     }
                 }
@@ -143,110 +144,11 @@ string path_extend::ContigWriter::ToString(const BidirectionalPath& path) const 
     return ss.str();
 }
 
-string path_extend::ContigWriter::ToFASTGString(const BidirectionalPath& path) const {
-    if (path.Empty())
-        return "";
-    string res = ids_.at(path.Front()).short_id_;
-    for (size_t i = 1; i < path.Size(); ++i) {
-        if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i])) {
-            res += ";\n" + ids_.at(path[i]).short_id_;
-        }
-        else {
-            res += "," + ids_.at(path[i]).short_id_;
-        }
-    }
-    return res;
-}
-
-void path_extend::ContigWriter::WritePathsToFASTA(const PathContainer &paths,
-                                                  const string &filename_base,
-                                                  bool write_fastg, size_t long_edge_threshold) const {
-
-    vector<IOContigStorage> storage;
-    for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-        BidirectionalPath* path = iter.get();
-        if (path->Length() <= 0)
-            continue;
-        string path_string = ToString(*path);
-        if (path_string.length() >= g_.k()) {
-            storage.emplace_back(path_string, path);
-        }
-    }
-    std::sort(storage.begin(), storage.end(), IOContigStorageGreater());
-
-    INFO("Writing contigs to " << filename_base);
-    io::osequencestream_simple oss(filename_base + ".fasta");
-    std::ofstream os_fastg;
-    if (write_fastg)
-        os_fastg.open((filename_base + ".paths").c_str());
-
-    TranscriptToGeneJoiner transcript_joiner(g_, long_edge_threshold);
-    if (pipeline_type_ == config::pipeline_type::rna) {
-        transcript_joiner.Construct(paths);
-    }
-
-    size_t gene_num = 0;
-    map<size_t, size_t> isoform_num;
-    map<size_t, size_t> gene_ids;
-    size_t i = 0;
-    for (const auto& precontig : storage) {
-        ++i;
-        std::string contig_id = "";
-
-        if (pipeline_type_ ==  config::pipeline_type::plasmid) {
-            EdgeId e = precontig.path_->At(0);
-            size_t component = c_counter_.GetComponent(e);
-            contig_id = io::MakeContigComponentId(i, precontig.sequence_.length(), precontig.path_->Coverage(), component);
-        }
-        else if (pipeline_type_ == config::pipeline_type::rna) {
-            size_t id = transcript_joiner.GetPathId(precontig.path_);
-            size_t parent_id = transcript_joiner.FindTree(id);
-            DEBUG("Path " << id << " Parent " << parent_id);
-            if (gene_ids.find(parent_id) == gene_ids.end()) {
-                gene_ids[parent_id] = gene_num;
-                isoform_num[parent_id] = 0;
-                gene_num++;
-            }
-            contig_id = io::MakeRNAContigId(i, precontig.sequence_.length(), precontig.path_->Coverage(), gene_ids[parent_id], isoform_num[parent_id]);
-            isoform_num[parent_id]++;
-        } else {
-            contig_id = io::MakeContigId(i, precontig.sequence_.length(), precontig.path_->Coverage());
-        }
-        oss.set_header(contig_id);
-        oss << precontig.sequence_;
-
-        if (write_fastg) {
-            os_fastg << contig_id << endl;
-            os_fastg << ToFASTGString(*precontig.path_) << endl;
-            os_fastg << contig_id << "'" << endl;
-            os_fastg << ToFASTGString(*precontig.path_->GetConjPath()) << endl;
-        }
-    }
-
-    if (write_fastg)
-        os_fastg.close();
-    DEBUG("Contigs written");
-}
-
-void path_extend::ContigWriter::OutputPaths(const PathContainer& paths, const string& filename_base) const {
-    WritePathsToFASTA(paths, filename_base);
-}
-
-void path_extend::PathInfoWriter::WritePaths(const PathContainer &paths, const string &filename) const {
-    std::ofstream oss(filename.c_str());
-
-    for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-        iter.get()->Print(oss);
-    }
-
-    oss.close();
-}
-
-void path_extend::ScaffoldBreaker::SplitPath(const BidirectionalPath& path, PathContainer &result) const {
+void path_extend::ScaffoldBreaker::SplitPath(const BidirectionalPath &path, PathContainer &result) const {
     size_t i = 0;
 
     while (i < path.Size()) {
-        BidirectionalPath * p = new BidirectionalPath(path.graph(), path[i]);
+        BidirectionalPath *p = new BidirectionalPath(path.graph(), path[i]);
         ++i;
 
         while (i < path.Size() and path.GapAt(i) <= min_gap_) {
@@ -259,7 +161,7 @@ void path_extend::ScaffoldBreaker::SplitPath(const BidirectionalPath& path, Path
             p->Print();
         }
 
-        BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
+        BidirectionalPath *cp = new BidirectionalPath(p->Conjugate());
         result.AddPair(p, cp);
     }
 }
@@ -270,3 +172,6 @@ void path_extend::ScaffoldBreaker::Break(const PathContainer &paths, PathContain
     }
     result.SortByLength();
 }
+
+}
+

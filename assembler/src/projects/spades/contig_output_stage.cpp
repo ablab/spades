@@ -6,26 +6,22 @@
 //***************************************************************************
 
 #include "contig_output_stage.hpp"
-#include "assembly_graph/paths/bidirectional_path_output.hpp"
+#include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
 namespace debruijn_graph {
-
-void AssemblyGraphOutput::run(conj_graph_pack &gp, const char*) {
-    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", false);
-    OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph", gp.components);
-}
-
 
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
     auto output_dir = cfg::get().output_dir;
 
-    if (gp.contig_paths.size() == 0) {
-        OutputContigs(gp.g, output_dir + "simplified_contigs", cfg::get().use_unipaths);
-        OutputContigs(gp.g, output_dir + cfg::get().co.contigs_name, false);
-    } else {
+    OutputContigs(gp.g, output_dir + "before_rr", false);
+    OutputContigsToFASTG(gp.g, output_dir + "assembly_graph", gp.components);
+
+    if (output_paths_ && gp.contig_paths.size() != 0) {
         DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(gp.g);
         DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(gp.g, corrector);
-        path_extend::ContigWriter writer(gp.g, constructor, gp.components, cfg::get().mode);
+
+        auto name_generator = path_extend::MakeContigNameGenerator(cfg::get().mode, gp);
+        path_extend::ContigWriter writer(gp.g, constructor, gp.components, name_generator);
 
         bool output_broken_scaffolds = cfg::get().pe_params.param_set.scaffolder_options.enabled &&
             cfg::get().use_scaffolder &&
@@ -48,8 +44,11 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
         }
 
         writer.OutputPaths(gp.contig_paths, output_dir + cfg::get().co.scaffolds_name);
-
+    } else {
+        OutputContigs(gp.g, output_dir + "simplified_contigs", cfg::get().use_unipaths);
+        OutputContigs(gp.g, output_dir + cfg::get().co.contigs_name, false);
     }
+
     OutputContigsToGFA(gp.g, gp.contig_paths, cfg::get().output_dir + "assembly_graph");
 }
 

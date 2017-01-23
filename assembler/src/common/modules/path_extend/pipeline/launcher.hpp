@@ -11,7 +11,7 @@
 #include "modules/path_extend/pe_resolver.hpp"
 #include "modules/genome_consistance_checker.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "assembly_graph/paths/bidirectional_path_output.hpp"
+#include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
 namespace path_extend {
 
@@ -27,6 +27,7 @@ private:
 
     DefaultContigCorrector<ConjugateDeBruijnGraph> corrector_;
     DefaultContigConstructor<ConjugateDeBruijnGraph> constructor_;
+    shared_ptr<ContigNameGenerator> contig_name_generator_;
     ContigWriter writer_;
 
     struct {
@@ -94,7 +95,8 @@ public:
         support_(dataset_info, params),
         corrector_(gp.g),
         constructor_(gp.g, corrector_),
-        writer_(gp.g, constructor_, gp_.components, params_.mode),
+        contig_name_generator_(MakeContigNameGenerator(params_.mode, gp)),
+        writer_(gp.g, constructor_, gp_.components, contig_name_generator_),
         unique_data_()
     {
         unique_data_.min_unique_length_ = params.pset.scaffolding2015.unique_length_upper_bound;
