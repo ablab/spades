@@ -19,6 +19,7 @@ namespace debruijn_graph {
 void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
     INFO("Preparing second phase");
     gp.ClearRRIndices();
+    gp.ClearPaths();
 
     std::string old_pe_contigs_filename = cfg::get().output_dir + "final_contigs.fasta";
     std::string new_pe_contigs_filename = cfg::get().output_dir + "first_pe_contigs.fasta";
