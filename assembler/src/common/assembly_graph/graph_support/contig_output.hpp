@@ -64,7 +64,7 @@ public:
     void Write(size_t edge_id, const Sequence &seq, double cov) {
         ostream_ << "S\t" << edge_id << "\t";
         ostream_ << seq.str() << "\t";
-        ostream_ << "RC:i:" << int(cov) << std::endl;
+        ostream_ << "KC:i:" << int(cov) << std::endl;
     }
 };
 
