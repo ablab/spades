@@ -145,6 +145,10 @@ struct graph_pack: private boost::noncopyable {
         single_long_reads.Clear();
     }
 
+    void ClearPaths() {
+        contig_paths.DeleteAllPaths();
+    }
+
     void DetachAll() {
         index.Detach();
         kmer_mapper.Detach();
