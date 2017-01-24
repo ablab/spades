@@ -238,13 +238,14 @@ bool PathAdjacentRelatedEdges(Graph &g, vector<EdgeId> path, bool check_start = 
     for(auto e = path.begin(); e != path.end() - 1; e++)
         if(VertexAdjacentRelatedEdges(g, g.EdgeEnd(*e)))
             return true;
-    if(path.size() != 0)
+    if(path.size() != 0) {
         if(check_start)
             if(VertexAdjacentRelatedEdges(g, g.EdgeStart(path[0])))
                 return true;
         if(check_end)
             if(VertexAdjacentRelatedEdges(g, g.EdgeEnd(path[path.size() - 1])))
                 return true;
+    }
     return false;
 }
 
