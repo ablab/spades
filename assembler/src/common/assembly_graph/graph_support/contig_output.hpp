@@ -116,14 +116,16 @@ public:
     void Write(const PathSegmentSequence &path_segment_sequence) {
         ostream_ << "P" << "\t" ;
         ostream_ << path_segment_sequence.path_id_ << "_" << path_segment_sequence.segment_number_ << "\t";
-        for (size_t i = 0; i < path_segment_sequence.segment_sequence_.size() - 1; ++i) {
-            ostream_ << path_segment_sequence.segment_sequence_[i] << ",";
-        }
-        ostream_ << path_segment_sequence.segment_sequence_[path_segment_sequence.segment_sequence_.size() - 1] << "\t";
         std::string delimeter = "";
         for (size_t i = 0; i < path_segment_sequence.segment_sequence_.size() - 1; ++i) {
-                ostream_ << delimeter << "*";
-                delimeter = ",";
+            ostream_ << delimeter << path_segment_sequence.segment_sequence_[i];
+            delimeter = ",";
+        }
+        ostream_ << "\t";
+        std::string delimeter2 = "";
+        for (size_t i = 0; i < path_segment_sequence.segment_sequence_.size() - 1; ++i) {
+                ostream_ << delimeter2 << "*";
+                delimeter2 = ",";
         }
         ostream_ << std::endl;
     }
@@ -183,6 +185,9 @@ private:
         GFAPathWriter path_writer(stream);
         for (const auto &path_pair : paths_) {
             const path_extend::BidirectionalPath &p = (*path_pair.first);
+            if (p.Size() == 0) {
+                continue;
+            }
             PathSegmentSequence segmented_path;
             segmented_path.path_id_ = p.GetId();
             for (size_t i = 0; i < p.Size() - 1; ++i) {
