@@ -57,17 +57,16 @@ if args.config:
 with cd(exec_dir):
     def call_snake(extra_params=[]):
         subprocess.check_call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)
-    
+
     print("Step #1 - Assembly")
     if args.reuse_assemblies:
         call_snake(["assemble_all", "--touch"])
 
     call_snake()
-    
+
     if args.stats:
         print("Step #2a - Assembly statistics")
         call_snake(["--snakefile", "Stats.snake", "stats_all"])
-    
+
         print("Step #2b - Reassembly statistics")
         call_snake(["--snakefile", "Stats.snake", "stats_reassembly"])
-

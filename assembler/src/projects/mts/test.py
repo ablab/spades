@@ -4,12 +4,12 @@ from __future__ import print_function
 import argparse
 import os
 import os.path
+import pwd
 import re
 import shutil
 import sys
 import subprocess
 from traceback import print_exc
-import yaml
 
 from scripts.common import Table
 
@@ -18,8 +18,10 @@ class Log:
     text = ""
 
     def log(self, s):
-        self.text += s + "\n"
-        print(s)
+        msg = s + "\n"
+        self.text += msg
+        sys.stdout.write(msg)
+        sys.stdout.flush()
 
     def warn(self, s):
         msg = "WARNING: " + s
@@ -90,27 +92,19 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def prepare_config(args, workdir):
-    with open(os.path.join(args.config)) as template:
-        params = yaml.load(template)
-        params["BIN"] = os.path.join(workdir, "build/release/bin")
-        params["SCRIPTS"] = os.path.join(workdir, "src/projects/mts/scripts")
-        with open(os.path.join(args.dir, "config.yaml"), "w") as config:
-            config.write(yaml.dump(params))
-
 def run_mts(args, workdir):
+    mts_args = ["./mts.py"]
     if not args.no_clean:
         shutil.rmtree(args.dir, True)
+        mts_args.extend(["--config", args.config])
+    mts_args.extend(["--stats", args.dir])
     if not os.path.exists(args.dir):
         os.mkdir(args.dir)
-        prepare_config(args, workdir)
-    mts_args = ["./mts.py", "--stats", args.dir]
     if args.saves:
         log.log("Copying saves from" + args.saves)
         for saves_dir in ["assembly", "reassembly"]:
             full_dir = os.path.join(args.saves, saves_dir)
             if os.path.isdir(full_dir):
-                #shutil.copytree(os.path.join(args.saves, saves_dir), os.path.join(args.dir, saves_dir))
                 os.symlink(full_dir, os.path.join(args.dir, saves_dir))
             else:
                 log.warn("No " + saves_dir + " dir provided; skipping")
@@ -190,6 +184,7 @@ if __name__ == "__main__":
         ecode = run_mts(args, workdir)
         if ecode != 0:
             log.err("Error while running MTS: " + str(ecode))
+            sys.exit(ecode)
 
         if args.etalons:
             ecode = check_etalons(args, workdir)

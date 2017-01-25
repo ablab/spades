@@ -75,6 +75,7 @@ rule filter_ref_alignments:
     input:   "{path}/report.txt"
     output:  "{path}/{fragments}.info"
     params:  "{path}/contigs_reports/nucmer_output/{fragments}.coords.filtered"
+    message: "Filtering alignemnts of {wildcards.fragments} onto {wildcards.path}"
     shell:   "if [ -f {params} ] ; then {SCRIPTS}/filter_nucmer.py {params} {output} {MIN_CONTIG_LENGTH} 70 ; else touch {output} ; fi"
 
 #---- GF of combined sample ----------------------------------------------------
@@ -178,7 +179,7 @@ rule quast_stats:
 
 # Run this AFTER 'all'
 rule stats_all:
-    input:   expand("stats/summary/gf_{bin}_{prop}.tsv", bin=["bin"], prop=["prelim", "prop"]), 
+    input:   expand("stats/summary/gf_{bin}_{prop}.tsv", bin=["bin"], prop=["prelim", "prop"]),
              "stats/initial_assembly/total.cont"
     message: "Gathered some numbers, deal with them."
 
@@ -251,7 +252,7 @@ def fragments_info_by_assembly_type(wildcards):
     return expand("stats/{assembly_type}/{ref}/{fragments}.info", assembly_type=wildcards.assembly_type, ref=wildcards.ref, fragments=frags)
 
 rule combine_fragments_info:
-    input:  fragments_info_by_assembly_type 
+    input:  fragments_info_by_assembly_type
     output: "stats/{assembly_type}/{ref}/ref.cont"
     shell: "rm -rf {output}; for f in {input}; do name=$(basename $f .info); cat $f | sed 's/^/'$name'-/g' >> {output} ; done"
 

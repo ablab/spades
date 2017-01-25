@@ -127,7 +127,7 @@ rule read_binning:
     params:  saves=os.path.join("assembly/{sample}/", SAVES),
              splits="assembly/{sample}_splits.fasta",
              out="propagation/{sample}_edges",
-             group=lambda wildcards: GROUPS[wildcards.sample]
+             group=lambda wildcards: " ".join(GROUPS[wildcards.sample])
              #left=" ".join(input.left), right=" ".join(input.right)
     log:     "binning/{sample}.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
