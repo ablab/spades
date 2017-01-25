@@ -323,9 +323,10 @@ public:
         }
     }
 
-    vector<EdgeId> FillGapsInCluster(const vector<pair<size_t, typename ClustersSet::iterator> > &cur_cluster,
+    vector<vector<EdgeId>> FillGapsInCluster(const vector<pair<size_t, typename ClustersSet::iterator> > &cur_cluster,
                                      const Sequence &s) const {
         vector<EdgeId> cur_sorted;
+        vector<vector<EdgeId>> res;
         EdgeId prev_edge = EdgeId(0);
 
         for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();
@@ -363,8 +364,12 @@ public:
                                                           *(iter->second),
                                                           (int) s_add.length(),
                                                           (int) e_add.length());
-                    if (limits.first == -1)
-                        return vector<EdgeId>(0);
+                    if (limits.first == -1) {
+                        res.push_back(cur_sorted);
+                        cur_sorted.clear();
+                        prev_edge = EdgeId(0);
+                        continue;
+                    }
 
                     vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
                     if (intermediate_path.size() == 0) {
@@ -389,7 +394,10 @@ public:
                             }
                             DEBUG(s_buf.str());
                         }
-                        return intermediate_path;
+                        res.push_back(cur_sorted);
+                        cur_sorted.clear();
+                        prev_edge = EdgeId(0);
+                        continue;
                     }
                     for (auto j_iter = intermediate_path.begin(); j_iter != intermediate_path.end(); j_iter++) {
                         cur_sorted.push_back(*j_iter);
@@ -399,17 +407,16 @@ public:
             cur_sorted.push_back(cur_edge);
             prev_edge = cur_edge;
         }
-        return cur_sorted;
+        if (cur_sorted.size() > 0)
+            res.push_back(cur_sorted);
+        return res;
     }
 
     bool TopologyGap(EdgeId first, EdgeId second, bool oriented) const {
         omnigraph::TerminalVertexCondition<Graph> condition(g_);
-//Todo:: suspicious order!
-        //bool res = (g_.IsDeadStart(g_.EdgeStart(first)) && g_.IsDeadEnd(g_.EdgeEnd(second)));
-        bool res = condition.Check(g_.EdgeStart(first)) && condition.Check(g_.EdgeEnd(second));
+        bool res = condition.Check(g_.EdgeEnd(first)) && condition.Check(g_.EdgeStart(second));
         if (!oriented)
-            res |= condition.Check(g_.EdgeEnd(first)) && condition.Check(g_.EdgeStart(second));
-        //    res |= g_.IsDeadEnd(g_.EdgeEnd(first)) && g_.IsDeadStart(g_.EdgeStart(second));
+            res |= condition.Check(g_.EdgeStart(first)) && condition.Check(g_.EdgeEnd(second));
         return res;
     }
 
@@ -485,6 +492,7 @@ public:
             if (maxi == -1) {
                 break;
             }
+            cur_color = maxi;
             colors[maxi] = cur_color;
             int real_maxi = maxi, min_i = maxi;
 
@@ -499,8 +507,6 @@ public:
                 }
                 real_maxi --;
             }
-            cur_color ++;
-
         }
         return colors;
     }
@@ -531,6 +537,7 @@ public:
 
         vector<int> colors = GetWeightedColors(mapping_descr);
         vector<vector<EdgeId> > sortedEdges;
+        vector<bool> block_gap_closer;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
         vector<GapDescription> illumina_gaps;
         vector<int> used(len);
@@ -580,30 +587,40 @@ public:
                         }
                         vector<pair<size_t, typename ClustersSet::iterator> > splitted_cluster(
                                 cur_cluster_start, next_iter);
-                        vector<EdgeId> cur_sorted = FillGapsInCluster(
+                        auto res = FillGapsInCluster(
                                 splitted_cluster, s);
-                        if (cur_sorted.size() > 0) {
-                            start_clusters.push_back(cur_cluster_start->second);
-                            end_clusters.push_back(iter->second);
-                            sortedEdges.push_back(cur_sorted);
+                        for (auto &cur_sorted:res) {
+                            DEBUG("Adding " <<res.size() << " subreads, cur alignments " << cur_sorted.size());
+                            if (cur_sorted.size() > 0) {
+                                for(EdgeId eee: cur_sorted) {
+                                    DEBUG (g_.int_id(eee));
+                                }
+                                start_clusters.push_back(cur_cluster_start->second);
+                                end_clusters.push_back(iter->second);
+                                sortedEdges.push_back(cur_sorted);
+                                //Blocking gap closing inside clusters;
+                                block_gap_closer.push_back(true);
+                            }
                         }
+                        if (block_gap_closer.size() > 0)
+                            block_gap_closer[block_gap_closer.size() - 1] = false;
                         cur_cluster_start = next_iter;
                     } else {
-              DEBUG("connected consequtive clusters:");
-                          DEBUG("on "<< iter->second->str(g_));
-                          DEBUG("and " << next_iter->second->str(g_));
-
+                        DEBUG("connected consecutive clusters:");
+                        DEBUG("on "<< iter->second->str(g_));
+                        DEBUG("and " << next_iter->second->str(g_));
                     }
-
                 }
             }
         }
         DEBUG("adding gaps between subreads");
-        int alignments = int(sortedEdges.size());
-        for (int i = 0; i < alignments; i++) {
-            for (int j = 0; j < alignments; j++) {
-                EdgeId before_gap = sortedEdges[j][sortedEdges[j].size() - 1];
-                EdgeId after_gap = sortedEdges[i][0];
+
+        for (size_t i = 0; i + 1 < sortedEdges.size() ; i++) {
+                if (block_gap_closer[i])
+                    continue;
+                size_t j = i + 1;
+                EdgeId before_gap = sortedEdges[i][sortedEdges[i].size() - 1];
+                EdgeId after_gap = sortedEdges[j][0];
 //do not add "gap" for rc-jumping
                 if (before_gap != after_gap
                         && before_gap != g_.conjugate(after_gap)) {
@@ -614,12 +631,13 @@ public:
                                                             s);
                             if (gap != GapDescription()) {
                                 illumina_gaps.push_back(gap);
+                                DEBUG("adding gap between alignments number " << i<< " and " << j);
                             }
                         }
 
                     }
                 }
-            }
+
         }
         return OneReadMapping(sortedEdges, illumina_gaps, real_length, used_seed_count);
     }
@@ -651,6 +669,11 @@ public:
         size_t a_id =  g_.int_id(a_edge);
         size_t b_id =  g_.int_id(b_edge);
         DEBUG("clusters on " << a_id << " and " << b_id );
+        if (a.sorted_positions[a.last_trustable_index].read_position + (int) pb_config_.max_path_in_dijkstra <
+            b.sorted_positions[b.first_trustable_index].read_position) {
+            DEBUG ("Clusters are too far in read");
+            return 0;
+        }
         VertexId start_v = g_.EdgeEnd(a_edge);
         size_t addition = g_.length(a_edge);
         VertexId end_v = g_.EdgeStart(b_edge);
@@ -742,10 +765,17 @@ public:
         size_t best_path_ind = paths.size();
         size_t best_score = 1000000000;
         DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
-        if (paths.size() == 0)
+        if (paths.size() == 0) {
+            DEBUG ("no paths");
             return vector<EdgeId>(0);
+        }
+        if (seq_string.length() > pb_config_.max_contigs_gap_length) {
+            DEBUG("Gap is too large");
+            return vector<EdgeId>(0);
+        }
         for (size_t i = 0; i < paths.size(); i++) {
             string cur_string = s_add + PathToString(paths[i]) + e_add;
+            DEBUG("cur_string: " << cur_string <<"\n seq_string " << seq_string);
             if (paths.size() > 1 && paths.size() < 10) {
                 TRACE("candidate path number "<< i << " , len " << cur_string.length());
                 TRACE("graph candidate: " << cur_string);
@@ -764,6 +794,7 @@ public:
                 best_path_ind = i;
             }
         }
+        DEBUG(best_score);
         if (best_score == 1000000000)
             return vector<EdgeId>(0);
         if (paths.size() > 1 && paths.size() < 10) {
