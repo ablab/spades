@@ -24,6 +24,7 @@ rm -f $TARGET_DIR/ext/include/python_libs/joblib/*.pyo
 
 cp -r assembler/test_dataset $TARGET_DIR/test_dataset
 cp -r assembler/test_dataset_truspades $TARGET_DIR/test_dataset_truspades
+cp -r assembler/test_dataset_plasmid $TARGET_DIR/test_dataset_plasmid
 cp assembler/LICENSE $TARGET_DIR/
 cp assembler/README $TARGET_DIR/
 cp assembler/VERSION $TARGET_DIR/
