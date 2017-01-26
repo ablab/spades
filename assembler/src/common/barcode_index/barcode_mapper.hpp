@@ -123,11 +123,10 @@ namespace tslr_resolver {
     public:
     protected:
         const Graph& g_;
-        bool is_empty_;
         size_t barcodes_number_ = 0;
     public:
         BarcodeMapper (const Graph &g) :
-                g_(g), is_empty_(true), barcodes_number_(0) {}
+                g_(g), barcodes_number_(0) {}
         virtual ~BarcodeMapper() {}
 
         virtual size_t GetNumberOfBarcodes() const = 0;
@@ -173,7 +172,6 @@ namespace tslr_resolver {
     protected:
         typedef std::unordered_map <EdgeId, barcode_entry_t> barcode_map_t;
         using BarcodeMapper::g_;
-        using BarcodeMapper::is_empty_;
         using BarcodeMapper::barcodes_number_;
         barcode_map_t edge_to_distribution_;
 
@@ -559,7 +557,6 @@ namespace tslr_resolver {
                 }
                 ++mapper_->barcodes_number_;
             }
-            SetNonEmpty();
         }
 
         void FillMapUsingKmerMultisetParallel(const Index& index, const KmerSubs& kmer_mapper, size_t n_threads) {
@@ -593,7 +590,6 @@ namespace tslr_resolver {
                             }
                         }
                     }
-                    SetNonEmpty();
                 }
                 INFO((i + 1) * n_threads << " barcodes processed.");
             }
@@ -640,7 +636,6 @@ namespace tslr_resolver {
                 }
                 ++mapper_->barcodes_number_;
             }
-            SetNonEmpty();
         }
 
         void FillMapFrom10XReads(const Index &index, const KmerSubs &kmer_mapper) {
@@ -670,7 +665,6 @@ namespace tslr_resolver {
             }
             INFO("FillMap finished")
             //INFO("Number of barcodes: " + std::to_string(barcode_codes_.GetSize()))
-            SetNonEmpty();
         }
 
         void FillMap(BarcodeLibraryType lib_type, const Index& index, const KmerSubs& kmer_mapper, size_t nthreads) {
@@ -683,18 +677,17 @@ namespace tslr_resolver {
                     FillMapFrom10XReads(index, kmer_mapper);
                     break;
                 default:
-                    INFO("Unknown library type, failed to fill barcode map.");
+                    WARN("Unknown library type, failed to fill barcode map.");
                     return;
             }
-            SetNonEmpty();
         }
 
     protected:
 
         //todo works with a certain format of 10x only
         std::string GetBarcodeFromRead(const io::SingleRead &read) {
-            size_t barcode_len = 16;
-            string prefix_string = "BC:Z";
+            const size_t barcode_len = 16;
+            const string prefix_string = "BC:Z";
             size_t prefix_len = prefix_string.size();
             size_t start_pos = read.name().find(prefix_string);
             if (start_pos != string::npos) {
@@ -761,9 +754,6 @@ namespace tslr_resolver {
                 InsertBarcode(barcode, g_.conjugate(edge), info);
         }
 
-        void SetNonEmpty() {
-            mapper_ -> is_empty_ = false;
-        }
 
         std::vector <tslr_barcode_library> GetLibrary(const string& tslr_dataset_name) {
             std::vector <tslr_barcode_library> lib_vec;

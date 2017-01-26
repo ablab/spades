@@ -905,7 +905,6 @@ void ScanBarcodeIndex(const string &path, const std::unordered_map<size_t, EdgeI
     ifstream index_file(file_name);
     INFO("Loading barcode information from " << file_name)
     if (index_file == NULL or index_file.peek() == std::ifstream::traits_type::eof()) {
-        INFO("OEU")
         return;
     }
     Builder mapper_builder(g, cfg::get().ts_res.edge_tail_len);
@@ -916,7 +915,7 @@ void ScanBarcodeIndex(const string &path, const std::unordered_map<size_t, EdgeI
     for (size_t i = 0; i < map_size; ++i) {
         DeserializeBarcodeMapEntry(index_file, edge_map, barcodeMapper);
     }
-    //todo remove this
+    //todo remove this?
     INFO("Average barcode coverage " << barcodeMapper->AverageBarcodeCoverage())
 }
 

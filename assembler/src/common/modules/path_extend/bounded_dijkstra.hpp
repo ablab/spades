@@ -1,5 +1,7 @@
 #pragma once
+
 #include "common/barcode_index/barcode_mapper.hpp"
+#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 
 namespace omnigraph {
 
@@ -10,6 +12,7 @@ namespace omnigraph {
         const Graph& g_;
         const distance_t bound_;
         vector <EdgeId>& candidates_;
+
     public:
         LengthPutChecker(distance_t bound, const Graph& g, vector <EdgeId>& candidates) : VertexPutChecker<Graph, distance_t>(),
                                                              g_(g), bound_(bound), candidates_(candidates) { }
@@ -55,9 +58,10 @@ namespace omnigraph {
         const distance_t length_bound_;
         const double barcode_threshold_;
         Bmapper mapper_;
-        EdgeId decisive_edge_;;
-        const ScaffoldingUniqueEdgeStorage& unique_storage_;
+        EdgeId decisive_edge_;
+        const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         vector <EdgeId>& candidates_;
+
     private:
         bool CheckNumberOfBarcodes(size_t first_barcodes, size_t second_barcodes, double threshold) const {
             return (first_barcodes > threshold * (double)second_barcodes and
@@ -70,7 +74,7 @@ namespace omnigraph {
             const double& barcode_threshold,
             const Bmapper& mapper,
             const EdgeId& decisive_edge,
-            const ScaffoldingUniqueEdgeStorage& unique_storage,
+            const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
             vector<EdgeId>& candidates) : VertexPutChecker<Graph, distance_t> (),
                                                              g_(g), 
                                                              length_bound_(length_bound),

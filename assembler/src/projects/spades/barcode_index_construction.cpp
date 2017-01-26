@@ -26,7 +26,7 @@ namespace debruijn_graph {
         INFO("Barcode map construction started...");
         graph_pack.EnsureIndex();
         graph_pack.EnsureBasicMapping();
-        INFO(cfg::get().ts_res.library_type);
+        INFO("Library type: " << cfg::get().ts_res.library_type);
         auto lib_type = GetLibType(cfg::get().ts_res.library_type);
         HeadTailMapperBuilder<EdgeEntry> mapper_builder(graph_pack.g,
                                                         cfg::get().ts_res.edge_tail_len);

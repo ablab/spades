@@ -15,16 +15,7 @@ ts_res
 		;Barcodes are counted on the last edge_tail_len nucleotides of the edge
 		edge_tail_len 8000
 
-		;threshold on (intersection) / (number of barcodes on second edge)
-		;edge should pass this threshold to become candidate
-		diff_threshold 0.75
-
-		;threshold on barcode coverage difference
-		;first_barcodes / second_barcodes > barcode_number_threshold and
-		;second_barcodes / first_barcodes > barcode_number_threshold
-		barcode_number_threshold 0.2
-
-	Filtering configs
+	;Filtering configs
 
 		;edges with less than trimming_threshold barcodes will be deleted
 		trimming_threshold 10
@@ -34,6 +25,15 @@ ts_res
 
 	;Repeat resolution configs
 
+		;threshold on (intersection) / (number of barcodes on second edge)
+		;edge should pass this threshold to become candidate
+		diff_threshold 0.75
+
+		;threshold on barcode coverage difference
+		;first_barcodes / second_barcodes > barcode_number_threshold and
+		;second_barcodes / first_barcodes > barcode_number_threshold
+		barcode_number_threshold 0.2
+
 		;Any candidate edge should be no further in graph. 
 		;In other words, that is the maximum size of resolvable repeat.
 		distance_bound  20000
@@ -42,7 +42,7 @@ ts_res
 		len_threshold  500
 
 		;Average length of read cloud fragment
-		fragment_len 10000
+		fragment_len 50000
 
 		topsort_bound 5000
 
