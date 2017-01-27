@@ -59,7 +59,7 @@ private:
     DECL_LOGGER("GapStorage");
 
     void HiddenAddGap(const GapDescription& p) {
-        inner_index_[p.start].push_back(p);
+        inner_index_[p.left()].push_back(p);
     }
 
     size_t FillIndex() {
@@ -87,8 +87,8 @@ private:
             auto copy_dest = gaps.begin();
             for (const info_it_pair& ep_gaps : ep_ranges) {
                 if (filter_f(ep_gaps.first, ep_gaps.second)) {
-                    DEBUG("Erasing candidates between " << g_.int_id(ep_gaps.first->start) << " and "
-                                                        << g_.int_id(ep_gaps.first->end));
+                    DEBUG("Erasing candidates between " << g_.int_id(ep_gaps.first->left()) << " and "
+                                                        << g_.int_id(ep_gaps.first->right()));
                 } else {
                     if (copy_dest == const_iterator_cast(gaps, ep_gaps.first)) {
                         copy_dest = const_iterator_cast(gaps, ep_gaps.second);
@@ -108,7 +108,7 @@ private:
 
     void FilterByEdgePair(const EdgePairPred &filter_f) {
         FilterByCandidates([=](gap_info_it info_start, gap_info_it /*info_end*/) {
-            return filter_f(EdgePair(info_start->start, info_start->end));
+            return filter_f(EdgePair(info_start->left(), info_start->right()));
         });
     }
 
@@ -128,7 +128,7 @@ private:
     vector<EdgeId> SecondEdges(const GapInfos& edge_gaps) const {
         vector<EdgeId> jump_edges;
         for (auto it_pair : EdgePairGaps(edge_gaps)) {
-            jump_edges.push_back(it_pair.first->end);
+            jump_edges.push_back(it_pair.first->right());
         }
         return jump_edges;
     };
@@ -196,8 +196,8 @@ private:
     void FilterIndex(size_t min_weight, size_t max_flank) {
         DEBUG("Filtering by maximal allowed flanking length " << max_flank);
         FilterByDescription([=](const GapDescription &gap) {
-            return gap.edge_gap_start_position + max_flank < g_.length(gap.start)
-                   || gap.edge_gap_end_position > max_flank;
+            return gap.left_trim() > max_flank
+                   || gap.right_trim() > max_flank;
         });
 
         DEBUG("Filtering by weight " << min_weight);
@@ -243,7 +243,7 @@ public:
     }
 
     void AddGap(const GapDescription& p) {
-        if (IsCanonical(g_, p.start, p.end)) {
+        if (IsCanonical(g_, p.left(), p.right())) {
             HiddenAddGap(p);
         } else {
             HiddenAddGap(p.conjugate(g_));
@@ -277,38 +277,12 @@ public:
         }
     }
 
-//    void LoadFromFile(const string s) {
-//        FILE* file = fopen((s).c_str(), "r");
-//        int res;
-//        char ss[5000];
-//        map<int, EdgeId> tmp_map;
-//        for (auto iter = g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-//            tmp_map[g.int_id(*iter)] = *iter;
-//        }
-//        while (!feof(file)) {
-//            int first_id, second_id, first_ind, second_ind;
-//            int size;
-//            res = fscanf(file, "%d %d\n", &first_id, &size);
-//            VERIFY(res == 2);
-//            for (int i = 0; i < size; i++) {
-//                res = fscanf(file, "%d %d\n", &first_id, &first_ind);
-//                VERIFY(res == 2);
-//                res = fscanf(file, "%d %d\n", &second_id, &second_ind);
-//                VERIFY(res == 2);
-//                res = fscanf(file, "%s\n", ss);
-//                VERIFY(res == 1);
-//                GapDescription<Graph> gap(tmp_map[first_id], tmp_map[second_id], Sequence(ss), first_ind, second_ind);
-//                this->AddGap(gap);
-//            }
-//        }
-//    }
-
     //edge_gaps must be sorted
     vector<info_it_pair> EdgePairGaps(const GapInfos& edge_gaps) const {
         vector<info_it_pair> answer;
         auto ep_start = edge_gaps.begin();
         for (auto it = ep_start; it != edge_gaps.end(); ++it) {
-            if (it->end != ep_start->end) {
+            if (it->right() != ep_start->right()) {
                 answer.push_back({ep_start, it});
                 ep_start = it;
             }
@@ -414,7 +388,8 @@ class MultiGapJoiner {
     bool CheckGapsValidity(const vector<GapDescription>& gaps) const {
         vector<GapDescription> answer;
         return std::all_of(gaps.begin(), gaps.end(), [&](const GapDescription &gap) {
-            return IsCanonical(g_, gap.start, gap.end) && gap.start != gap.end && gap.start != g_.conjugate(gap.end);
+            return IsCanonical(g_, gap.left(), gap.right()) &&
+                    gap.left() != gap.right() && gap.left() != g_.conjugate(gap.right());
         });
     }
 
@@ -445,63 +420,63 @@ class MultiGapJoiner {
         return (left_split + right_split) / 2;
     }
 
-    bool Update(EdgeId& e, size_t& gap_pos, EdgePair split_orig_ep, EdgePair split_res, bool gap_start) const {
+    bool UpdateLeft(GapDescription &gap, EdgePair split_orig_ep, EdgePair split_res) const {
+        EdgeId e = gap.left();
+
         EdgeId split_orig = split_orig_ep.first;
         if (e == split_orig_ep.second) {
             split_orig = split_orig_ep.second;
             split_res = Conjugate(g_, split_res);
         }
+
         if (e == split_orig) {
-            if (gap_start) {
-                e = split_res.second;
-                gap_pos = gap_pos - g_.length(split_res.first);
-            } else {
-                e = split_res.first;
-            }
+            VERIFY(gap.left_trim() < g_.length(split_res.second));
+            gap.set_left(split_res.second);
             return true;
         }
+
+        return false;
+    }
+
+    bool UpdateRight(GapDescription &gap, EdgePair split_orig_ep, EdgePair split_res) const {
+        EdgeId e = gap.right();
+
+        EdgeId split_orig = split_orig_ep.first;
+        if (e == split_orig_ep.second) {
+            split_orig = split_orig_ep.second;
+            split_res = Conjugate(g_, split_res);
+        }
+
+        if (e == split_orig) {
+            VERIFY(gap.right_trim() < g_.length(split_res.first));
+            gap.set_right(split_res.first);
+            return true;
+        }
+
         return false;
     }
 
     void UpdateGap(GapDescription& gap, EdgePair split_orig, EdgePair split_res) const {
-        bool u1 = Update(gap.start, gap.edge_gap_start_position, split_orig, split_res, true);
-        bool u2 = Update(gap.end, gap.edge_gap_end_position, split_orig, split_res, false);
+        bool u1 = UpdateLeft(gap, split_orig, split_res);
+        bool u2 = UpdateRight(gap, split_orig, split_res);
         VERIFY(u1 != u2);
-    }
-
-    bool CheckInsert(EdgeId e, set<EdgeId>& used_edges) const {
-        return used_edges.insert(e).second;
-    }
-
-    bool CheckInsert(const vector<EdgeId> edges, set<EdgeId>& used_edges) const {
-        for (EdgeId e : edges) {
-            if (!CheckInsert(e, used_edges)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     std::set<EdgeId> RelevantEdges(const GapDescription& gap) const {
         std::set<EdgeId> answer;
-        answer.insert(gap.start);
-        answer.insert(g_.conjugate(gap.start));
-        answer.insert(gap.end);
-        answer.insert(g_.conjugate(gap.end));
+        answer.insert(gap.left());
+        answer.insert(g_.conjugate(gap.left()));
+        answer.insert(gap.right());
+        answer.insert(g_.conjugate(gap.right()));
         return answer;
     }
 
     bool CheckGaps(const vector<GapDescription>& gaps) const {
         set<EdgeId> used_edges;
-        for (const auto& gap : gaps) {
-            const auto relevant = RelevantEdges(gap);
-            //TODO check the semantics of all_of
-            if (!std::all_of(relevant.begin(), relevant.end(), [&](const EdgeId& e) {
-                return used_edges.insert(e).second;
-            })) {
-                return false;
-            }
-        }
+        for (const auto& gap : gaps)
+            for (EdgeId e : RelevantEdges(gap))
+                if (!used_edges.insert(e).second)
+                    return false;
         return true;
     }
 
@@ -511,8 +486,8 @@ class MultiGapJoiner {
         for (size_t i = 0; i < canonical_gaps.size(); ++i) {
             const auto& gap = canonical_gaps[i];
             DEBUG("Processing gap " << gap.str(g_));
-            Add(i, gap.start, gap.edge_gap_start_position, right_split_pos, left_split_pos);
-            Add(i, gap.end, gap.edge_gap_end_position, left_split_pos, right_split_pos);
+            Add(i, gap.left(), g_.length(gap.left()) - gap.left_trim(), right_split_pos, left_split_pos);
+            Add(i, gap.right(), gap.right_trim(), left_split_pos, right_split_pos);
         }
 
         set<size_t> to_ignore;
@@ -545,7 +520,7 @@ class MultiGapJoiner {
     };
 
 public:
-    MultiGapJoiner(Graph& g) : g_(g), inner_joiner_(g, true) {
+    MultiGapJoiner(Graph& g) : g_(g), inner_joiner_(g) {
     }
 
     //Resulting graph should be condensed
@@ -587,39 +562,39 @@ private:
         return ss.str();
     }
 
-    GapDescription ConstructConsensus(EdgeId start,
-                                      EdgeId end,
-                                      size_t edge_gap_start_position,
-                                      size_t edge_gap_end_position,
+    GapDescription ConstructConsensus(EdgeId left,
+                                      EdgeId right,
+                                      size_t left_trim,
+                                      size_t right_trim,
                                       const vector<string>& gap_variants) const {
         DEBUG(gap_variants.size() << " gap closing variants, lengths: " << PrintLengths(gap_variants));
         DEBUG("var size original " << gap_variants.size());
         vector<string> new_gap_variants(gap_variants.begin(), gap_variants.end());
         new_gap_variants.resize(std::min(max_consensus_reads_, gap_variants.size()));
         auto s = consensus_(new_gap_variants);
-        DEBUG("consenus for " << g_.int_id(start)
-                              << " and " << g_.int_id(end)
+        DEBUG("consenus for " << g_.int_id(left)
+                              << " and " << g_.int_id(right)
                               << " found: '" << s << "'");
-        return GapDescription(start, end,
+        return GapDescription(left, right,
                               Sequence(s),
-                              edge_gap_start_position, edge_gap_end_position);
+                              left_trim, right_trim);
     }
 
     //all gaps guaranteed to correspond to a single edge pair
     GapInfos PadGaps(gap_info_it start, gap_info_it end) const {
-        size_t start_min = std::numeric_limits<size_t>::max();
-        size_t end_max = 0;
+        size_t start_trim = 0;
+        size_t end_trim = 0;
         size_t long_seqs = 0;
         size_t short_seqs = 0;
         for (auto it = start; it != end; ++it) {
             const auto& gap = *it;
-            if (gap.gap_seq.size() > long_seq_limit_)
+            if (gap.filling_seq().size() > long_seq_limit_)
                 long_seqs++;
             else
                 short_seqs++;
 
-            start_min = std::min(start_min, gap.edge_gap_start_position);
-            end_max = std::max(end_max, gap.edge_gap_end_position);
+            start_trim = std::max(start_trim, gap.left_trim());
+            end_trim = std::max(end_trim, gap.right_trim());
         }
 
         const bool exclude_long_seqs = (short_seqs >= min_weight_ && short_seqs > long_seqs);
@@ -628,19 +603,20 @@ private:
         for (auto it = start; it != end; ++it) {
             const auto& gap = *it;
 
-            if (exclude_long_seqs && gap.gap_seq.size() > long_seq_limit_)
+            if (exclude_long_seqs && gap.filling_seq().size() > long_seq_limit_)
                 continue;
 
-            string s = g_.EdgeNucls(gap.start).Subseq(start_min + g_.k(), gap.edge_gap_start_position + g_.k()).str();
-            s += gap.gap_seq.str();
-            s += g_.EdgeNucls(gap.end).Subseq(gap.edge_gap_end_position, end_max).str();
-            answer.push_back(GapDescription(gap.start, gap.end, Sequence(s), start_min, end_max));
+            size_t start_nucl_size = g_.length(gap.left()) + g_.k();
+            string s = g_.EdgeNucls(gap.left()).Subseq(start_nucl_size - start_trim, start_nucl_size - gap.left_trim()).str();
+            s += gap.filling_seq().str();
+            s += g_.EdgeNucls(gap.right()).Subseq(gap.right_trim(), end_trim).str();
+            answer.push_back(GapDescription(gap.left(), gap.right(), Sequence(s), start_trim, end_trim));
         }
         return answer;
     }
 
     GapDescription ConstructConsensus(gap_info_it start_it, gap_info_it end_it) const {
-        DEBUG("Considering extension " << g_.str(start_it->end));
+        DEBUG("Considering extension " << g_.str(start_it->right()));
         size_t cur_len = end_it - start_it;
 
         //low weight connections filtered earlier
@@ -656,7 +632,7 @@ private:
         vector<string> gap_variants;
         std::transform(padded_gaps.begin(), padded_gaps.end(), std::back_inserter(gap_variants), 
                        [](const GapDescription& gap) {
-            return gap.gap_seq.str();
+            return gap.filling_seq().str();
         });
 
         //for (auto it = start_it; it != end_it; ++it) {
@@ -667,9 +643,9 @@ private:
         //}
         auto padded_gap = padded_gaps.front();
 
-        return ConstructConsensus(padded_gap.start, padded_gap.end,
-                                  padded_gap.edge_gap_start_position,
-                                  padded_gap.edge_gap_end_position,
+        return ConstructConsensus(padded_gap.left(), padded_gap.right(),
+                                  padded_gap.left_trim(),
+                                  padded_gap.right_trim(),
                                   gap_variants);
     }
 

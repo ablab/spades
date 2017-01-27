@@ -240,62 +240,149 @@ inline std::ostream& operator<<(std::ostream& os, const MappingPath<ElementId>& 
 }
 
 template<class Graph>
-struct GapDescription {
+class GapDescription {
     typedef typename Graph::EdgeId EdgeId;
-    EdgeId start, end;
-    Sequence gap_seq;
-    //FIXME discuss using size_t
-    size_t edge_gap_start_position, edge_gap_end_position;
 
-    GapDescription() :
-            start(0),
-            end(0),
-            edge_gap_start_position(0),
-            edge_gap_end_position(0) {
+    //Edges on the left and on the right of the gap
+    EdgeId left_;
+    EdgeId right_;
+
+    //Estimated nucleotide gap/overlap between the edges !after trimming! (see further).
+    // Negative values indicate the overlap between edges.
+    // Should be non-negative for proper final joinings.
+    int estimated_dist_;
+
+    //Number of nucleotides to trim from the (end of the left)/(beginning of the right) edge
+    size_t left_trim_;
+    size_t right_trim_;
+
+    //Optional "filling" sequence, giving "additional" nucleotides which
+    // should be added while closing the gap.
+    // Length guaranteed to be equal to estimated_gap (if present).
+    boost::optional<Sequence> filling_seq_;
+
+    GapDescription(EdgeId left, EdgeId right,
+                   int estimated_dist,
+                   size_t left_trim, size_t right_trim,
+                   boost::optional<Sequence> filling_seq) :
+            left_(left),
+            right_(right),
+            estimated_dist_(estimated_dist),
+            left_trim_(left_trim),
+            right_trim_(right_trim),
+            filling_seq_(filling_seq) {
     }
 
-    GapDescription(EdgeId start_e, EdgeId end_e,
-                   const Sequence &gap,
-                   size_t gap_start, size_t gap_end) :
-            start(start_e),
-            end(end_e),
-            gap_seq(gap.str()),
-            edge_gap_start_position(gap_start),
-            edge_gap_end_position(gap_end) {
+    auto AsTuple() const ->
+    decltype(std::make_tuple(left_, right_, left_trim_, right_trim_, estimated_dist_, filling_seq_)) {
+        return std::make_tuple(left_, right_, left_trim_, right_trim_, estimated_dist_, filling_seq_);
+    }
+
+public:
+    static const int INVALID_GAP = std::numeric_limits<int>::min();
+
+    GapDescription(EdgeId left, EdgeId right,
+                   int estimated_dist,
+                   size_t left_trim = 0, size_t right_trim = 0) :
+            GapDescription(left, right,
+                           estimated_dist,
+                           left_trim, right_trim,
+                           boost::none) {
+    }
+
+    GapDescription() : GapDescription(EdgeId(0), EdgeId(0), INVALID_GAP) {
+    }
+
+    GapDescription(EdgeId left, EdgeId right,
+                   const Sequence &filling_seq,
+                   size_t left_trim = 0, size_t right_trim = 0) :
+            left_(left),
+            right_(right),
+            estimated_dist_(int(filling_seq.size())),
+            left_trim_(left_trim),
+            right_trim_(right_trim),
+            filling_seq_(filling_seq) {
+    }
+
+    EdgeId left() const {
+        return left_;
+    }
+
+    EdgeId right() const {
+        return right_;
+    }
+
+    size_t left_trim() const {
+        return left_trim_;
+    }
+
+    size_t right_trim() const {
+        return right_trim_;
+    }
+
+    int estimated_dist() const {
+        return estimated_dist_;
+    }
+
+    bool has_filling() const {
+        return filling_seq_;
+    }
+
+    Sequence filling_seq() const {
+        return *filling_seq_;
+    }
+
+    void set_left(EdgeId e) {
+        left_ = e;
+    }
+
+    void set_right(EdgeId e) {
+        right_ = e;
+    }
+
+    void set_left_trim(size_t trim) {
+        left_trim_ = trim;
+    }
+
+    void set_estimated_gap(int dist) {
+        VERIFY_MSG(!filling_seq_, "Filling sequence specified");
+        estimated_dist_ = dist;
+    }
+
+    void set_filling_seq(Sequence fill_seq) {
+        estimated_dist_ = fill_seq.size();
+        filling_seq_ = boost::make_optional(fill_seq);
     }
 
     GapDescription<Graph> conjugate(const Graph &g) const {
-        GapDescription<Graph> res(
-                g.conjugate(end), g.conjugate(start), !gap_seq,
-                g.length(end) - edge_gap_end_position,
-                g.length(start) - edge_gap_start_position);
+        GapDescription<Graph> res(g.conjugate(right_),
+                                  g.conjugate(left_),
+                                  estimated_dist_,
+                                  right_trim_,
+                                  left_trim_,
+                                  filling_seq_ ? boost::make_optional(!*filling_seq_) : boost::none);
         return res;
     }
 
     string str(const Graph &g) const {
         stringstream s;
-        s << g.int_id(start) << " " << edge_gap_start_position << endl
-          << g.int_id(end) << " " << edge_gap_end_position << endl
-          << gap_seq.str() << endl;
+        s << "left: " << g.int_id(left_)
+          << "; right: " << g.int_id(right_)
+          << "; estimated distance : " << estimated_dist_
+          << "; left trim: " << left_trim_
+          << "; right trim: " << right_trim_
+          << "; sequence " << (filling_seq_ ? filling_seq_->str() : "no_sequence") << endl;
         return s.str();
     }
 
-    bool operator<(const GapDescription &b) const {
-        return start < b.start ||
-               (start == b.start && end < b.end) ||
-               (start == b.start && end == b.end &&
-                edge_gap_start_position < b.edge_gap_start_position);
+    bool operator<(const GapDescription &rhs) const {
+        return AsTuple() < rhs.AsTuple();
     }
 
     bool operator!=(const GapDescription rhs) const {
-        return start != rhs.start
-               || end != rhs.end
-               || gap_seq != rhs.gap_seq
-               || edge_gap_start_position != rhs.edge_gap_start_position
-               || edge_gap_end_position != rhs.edge_gap_end_position;
+        return AsTuple() != rhs.AsTuple();
     }
 
 };
-
 
 }

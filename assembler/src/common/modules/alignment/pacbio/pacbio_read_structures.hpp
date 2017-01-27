@@ -149,55 +149,6 @@ private:
     ;
 };
 
-//template<class Graph>
-//struct GapDescription {
-//    typedef typename Graph::EdgeId EdgeId;
-//    EdgeId start, end;
-//    Sequence gap_seq;
-//    int edge_gap_start_position, edge_gap_end_position;
-//
-//
-//    GapDescription(EdgeId start_e, EdgeId end_e, const Sequence &gap, int gap_start, int gap_end) :
-//            start(start_e), end(end_e), gap_seq(gap.str()), edge_gap_start_position(gap_start), edge_gap_end_position(gap_end) {
-//    }
-//
-//    GapDescription(const KmerCluster<Graph> &a, const KmerCluster<Graph> & b, Sequence read, int pacbio_k) {
-//        edge_gap_start_position = a.sorted_positions[a.last_trustable_index].edge_position;
-//        edge_gap_end_position = b.sorted_positions[b.first_trustable_index].edge_position + pacbio_k - 1;
-//        start = a.edgeId;
-//        end = b.edgeId;
-//        DEBUG(read.str());
-//        gap_seq = read.Subseq(a.sorted_positions[a.last_trustable_index].read_position,
-//                              b.sorted_positions[b.first_trustable_index].read_position + pacbio_k - 1);
-//        DEBUG(gap_seq.str());
-//        DEBUG("gap added");
-//    }
-//
-//    GapDescription<Graph> conjugate(Graph &g, int shift) const {
-//        GapDescription<Graph> res(
-//                g.conjugate(end), g.conjugate(start), (!gap_seq),
-//                (int) g.length(end) + shift - edge_gap_end_position,
-//                (int) g.length(start) + shift - edge_gap_start_position);
-//         DEBUG("conjugate created" << res.str(g));
-//         return res;
-//    }
-//
-//    string str(Graph &g) const {
-//        stringstream s;
-//        s << g.int_id(start) << " " << edge_gap_start_position <<endl << g.int_id(end) << " " << edge_gap_end_position << endl << gap_seq.str()<< endl;
-//        return s.str();
-//    }
-//
-//    bool operator <(const GapDescription& b) const {
-//        return (start < b.start || (start == b.start &&  end < b.end) ||
-//                (start == b.start &&  end == b.end && edge_gap_start_position < b.edge_gap_start_position));
-//    }
-//
-//private:
-//    DECL_LOGGER("PacIndex")
-//    ;
-//}
-
 struct StatsCounter{
     map<size_t,size_t> path_len_in_edges;
     vector<size_t> subreads_length;

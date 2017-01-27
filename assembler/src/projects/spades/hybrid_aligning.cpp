@@ -86,7 +86,7 @@ class GapTrackingListener : public SequenceMapperListener {
                 DEBUG("Gap info successfully created");
                 return GapDescription(left, right,
                                       *gap_seq,
-                                      left_offset,
+                                      g_.length(left) - left_offset,
                                       right_offset);
             } else {
                 DEBUG("Something wrong with read subsequence");

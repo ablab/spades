@@ -511,23 +511,21 @@ public:
         return colors;
     }
 
-
     GapDescription CreateGapDescription(const KmerCluster<debruijn_graph::Graph>& a,
                                         const KmerCluster<debruijn_graph::Graph>& b,
                                         const Sequence& read) const {
         size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + pacbio_k;
         size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
         if (seq_start > seq_end) {
-            DEBUG("Overlapping flanks not supported yet");
+            INFO("Overlapping flanks not supported yet");
             return GapDescription();
         }
         return GapDescription(a.edgeId,
                               b.edgeId,
                               read.Subseq(seq_start, seq_end),
-                              a.sorted_positions[a.last_trustable_index].edge_position + pacbio_k - debruijn_k,
+                              g_.length(a.edgeId) - a.sorted_positions[a.last_trustable_index].edge_position - pacbio_k + debruijn_k,
                               b.sorted_positions[b.first_trustable_index].edge_position);
     }
-
 
     OneReadMapping GetReadAlignment(Sequence &s) const {
         ClustersSet mapping_descr = GetOrderClusters(s);
