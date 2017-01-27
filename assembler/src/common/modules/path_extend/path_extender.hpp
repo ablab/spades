@@ -200,14 +200,16 @@ public:
 
 };
 
+//FIXME move to gap_closing.hpp
+typedef omnigraph::GapDescription<Graph> GapDescription;
 class GapAnalyzer {
 
 public:
-    static const int INVALID_GAP = -1000000;
+    static const int INVALID_GAP = GapDescription::INVALID_GAP;
     GapAnalyzer(const Graph& g)
             : g_(g) { }
 
-    virtual Gap FixGap( EdgeId source, EdgeId sink, int initial_gap) const = 0;
+    virtual GapDescription FixGap(const GapDescription &gap) const = 0;
 
     virtual ~GapAnalyzer() { }
 protected:
@@ -252,16 +254,18 @@ public:
               "\n basic_overlap_length " << basic_overlap_length_);
     }
 
-    //estimated_gap is in k-mers
-    Gap FixGap(EdgeId source, EdgeId sink, int estimated_gap) const override {
+    GapDescription FixGap(const GapDescription &gap) const override {
+        VERIFY_MSG(gap.right_trim() == 0 && gap.left_trim() == 0, "Trims not supported yet");
+        //FIXME get rid of it
+        int kp1mer_gap = gap.estimated_dist() + int(g_.k());
 
         size_t corrected_start_overlap = basic_overlap_length_;
-        if (estimated_gap < 0) {
-            corrected_start_overlap -= estimated_gap;
+        if (kp1mer_gap < 0) {
+            corrected_start_overlap -= kp1mer_gap;
         }
 
         corrected_start_overlap = min(corrected_start_overlap,
-                                      g_.k() + min(g_.length(source), g_.length(sink)));
+                                      g_.k() + min(g_.length(gap.left()), g_.length(gap.right())));
 
         DEBUG("Corrected max overlap " << corrected_start_overlap);
 
@@ -269,10 +273,10 @@ public:
         int fixed_gap = INVALID_GAP;
 
         double overlap_coeff = 0.3;
-        size_t min_overlap = 1ul;
-        if (estimated_gap < 0) {
-            size_t estimated_overlap = g_.k() - estimated_gap;
-            min_overlap = max(size_t(math::round(overlap_coeff * double(estimated_overlap))), 1ul);
+        size_t min_overlap = 1;
+        //FIXME weird if
+        if (kp1mer_gap < 0) {
+            min_overlap = max(min_overlap, size_t(math::round(overlap_coeff * double(-gap.estimated_dist()))));
         }
         //todo better usage of estimated overlap
         DEBUG("Min overlap " << min_overlap);
@@ -281,13 +285,13 @@ public:
             //TRACE("Sink: " << g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l).str());
             //TRACE("Source: " << g_.EdgeNucls(source).Subseq(0, l));
             double score = 0;
-            score = ScoreGap(g_.EdgeNucls(source).Subseq(g_.length(source) + g_.k() - l),
-                                    g_.EdgeNucls(sink).Subseq(0, l));
+            score = ScoreGap(g_.EdgeNucls(gap.left()).Subseq(g_.length(gap.left()) + g_.k() - l),
+                                    g_.EdgeNucls(gap.right()).Subseq(0, l));
             if (math::gr(score, best_score)) {
                 TRACE("Curr overlap " << l);
                 TRACE("Score: " << score);
                 best_score = score;
-                fixed_gap = int(g_.k() - l);
+                fixed_gap = -int(l);
             }
 
             if (l == short_overlap_threshold_ && fixed_gap != INVALID_GAP) {
@@ -299,10 +303,13 @@ public:
 
         if (fixed_gap != INVALID_GAP) {
             DEBUG("Found candidate gap length with score " << best_score);
-            DEBUG("Estimated gap: " << estimated_gap <<
-                  ", fixed gap: " << fixed_gap << " (overlap " << g_.k() - fixed_gap<< ")");
+            DEBUG("Estimated gap: " << gap.estimated_dist() <<
+                  ", fixed gap: " << fixed_gap << " (overlap " << (-fixed_gap) << ")");
         }
-        return Gap(fixed_gap);
+
+        auto answer = gap;
+        answer.set_estimated_gap(fixed_gap);
+        return gap;
     }
 
 private:
@@ -315,60 +322,57 @@ public:
     LAGapAnalyzer(const Graph& g, size_t min_la_length,
             double flank_multiplication_coefficient,
             double flank_addition_coefficient) :
-            GapAnalyzer(g), min_la_length_(min_la_length), flank_addition_coefficient_(
-                    flank_addition_coefficient), flank_multiplication_coefficient_(
-                    flank_multiplication_coefficient) {
+            GapAnalyzer(g),
+            min_la_length_(min_la_length),
+            flank_addition_coefficient_(flank_addition_coefficient),
+            flank_multiplication_coefficient_(flank_multiplication_coefficient) {
         DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_); 
-        DEBUG("flank_addition_coefficient_  - " << flank_addition_coefficient_ );
+        DEBUG("flank_addition_coefficient  - " << flank_addition_coefficient_ );
     }
 
-    Gap FixGap(EdgeId source, EdgeId sink, int initial_gap) const override {
+    GapDescription FixGap(const GapDescription &gap) const override {
+        VERIFY_MSG(gap.right_trim() == 0 && gap.left_trim() == 0, "Not supported yet");
+        //estimated_gap is in k-mers
+        //FIXME think about proper meaning for this method
+        int initial_gap = gap.estimated_dist() + int(g_.k());
 
         DEBUG("Overlap doesn't exceed " << size_t(abs(initial_gap) * ESTIMATED_GAP_MULTIPLIER) + GAP_ADDITIONAL_COEFFICIENT);
-        SWOverlapAnalyzer overlap_analyzer(
-                size_t(abs(initial_gap) * ESTIMATED_GAP_MULTIPLIER) + GAP_ADDITIONAL_COEFFICIENT);
+        SWOverlapAnalyzer overlap_analyzer(size_t(abs(initial_gap) * ESTIMATED_GAP_MULTIPLIER) + GAP_ADDITIONAL_COEFFICIENT);
 
-        auto overlap_info = overlap_analyzer.AnalyzeOverlap(g_, source,
-                sink);
+        auto overlap_info = overlap_analyzer.AnalyzeOverlap(g_, gap.left(), gap.right());
 
         DEBUG(overlap_info);
 
         if (overlap_info.size() < min_la_length_) {
             DEBUG("Low alignment size");
-            return Gap(INVALID_GAP);
+            return GapDescription();
         }
 
         size_t max_flank_length = max(overlap_info.r2.start_pos,
-                g_.length(source) + g_.k() - overlap_info.r1.end_pos);
+                g_.length(gap.left()) + g_.k() - overlap_info.r1.end_pos);
         DEBUG("Max flank length - " << max_flank_length);
 
         if ((double) max_flank_length * flank_multiplication_coefficient_
                 + flank_addition_coefficient_ > (double) overlap_info.size()) {
             DEBUG("Too long flanks for such alignment");
-            return Gap(INVALID_GAP);
+            return GapDescription();
         }
 
         if (math::ls(overlap_info.identity(), IDENTITY_RATIO)) {
             DEBUG("Low identity score");
-            return Gap(INVALID_GAP);
+            return GapDescription();
         }
 
-        if (g_.k() + 1 > overlap_info.r1.end_pos) {
-            DEBUG("Save kmers. Don't want to have edges shorter than k");
-            return Gap(INVALID_GAP);
+        if (overlap_info.r1.end_pos <= g_.k() || overlap_info.r2.start_pos >= g_.length(gap.right())) {
+            DEBUG("Check that at least k+1 nucleotides will be left");
+            return GapDescription();
         }
 
-        if (overlap_info.r2.start_pos > g_.length(sink)) {
-            DEBUG("Save kmers. Don't want to have edges shorter than k");
-            return Gap(INVALID_GAP);
-        }
-
-        return Gap(
-                (int) (-overlap_info.r1.size() - overlap_info.r2.start_pos
-                        + g_.k()),
-                (uint32_t) (g_.length(source) + g_.k()
-                        - overlap_info.r1.end_pos),
-                (uint32_t) overlap_info.r2.start_pos);
+        //FIXME Think if it is ok to have a non-symmetric overlap gap description
+        return GapDescription(gap.left(), gap.right(),
+                              -int(overlap_info.r1.size()),
+                              g_.length(gap.left()) + g_.k() - overlap_info.r1.end_pos,
+                              overlap_info.r2.start_pos);
     }
 
 private:
@@ -387,39 +391,43 @@ public:
 
     CompositeGapAnalyzer(const Graph& g,
                        const vector<shared_ptr<GapAnalyzer>>& joiners,
-                       size_t may_overlap_threhold, 
-                       int must_overlap_threhold, 
-                       size_t artificail_gap) :
+                       size_t may_overlap_threshold,
+                       int must_overlap_threshold,
+                       size_t artificial_gap) :
             GapAnalyzer(g),
-            joiners_(joiners), 
-            may_overlap_threshold_(may_overlap_threhold), 
-            must_overlap_threshold_(must_overlap_threhold), 
-            artificial_gap_(artificail_gap)
-            {  }
+            joiners_(joiners),
+            may_overlap_threshold_(may_overlap_threshold),
+            //FIXME CHANGE IN THE CALLS!
+            must_overlap_threshold_(must_overlap_threshold - int(g_.k())),
+            artificial_gap_(artificial_gap)
+    {  }
 
-    Gap FixGap(EdgeId source, EdgeId sink, int estimated_gap) const override {
-        DEBUG("Trying to fix estimated gap " << estimated_gap <<
-                " between " << g_.str(source) << " and " << g_.str(sink));
+    GapDescription FixGap(const GapDescription &gap) const override {
+        VERIFY_MSG(gap.right_trim() == 0 && gap.left_trim() == 0, "Not supported yet");
+        DEBUG("Trying to fix estimated gap " << gap.estimated_dist() <<
+              " between " << g_.str(gap.left()) << " and " << g_.str(gap.right()));
 
-        if (estimated_gap > int(g_.k() + may_overlap_threshold_)) {
+        if (gap.estimated_dist() > int(may_overlap_threshold_)) {
             DEBUG("Edges are supposed to be too far to check overlaps");
-            return Gap(estimated_gap);
+            return gap;
         }
 
         for (auto joiner : joiners_) {
-            Gap gap = joiner->FixGap(source, sink, estimated_gap);
-            if (gap.gap_ != GapAnalyzer::INVALID_GAP) {
-                return gap;
+            GapDescription fixed_gap = joiner->FixGap(gap);
+            if (fixed_gap != GapDescription()) {
+                return fixed_gap;
             }
         }
 
         //couldn't find decent overlap
-        if (estimated_gap < must_overlap_threshold_) {
+        if (gap.estimated_dist() < must_overlap_threshold_) {
             DEBUG("Estimated gap looks unreliable");
-            return Gap(INVALID_GAP);
+            return GapDescription();
         } else {
             DEBUG("Overlap was not found");
-            return Gap(max(estimated_gap, int(g_.k() + artificial_gap_)));
+            auto answer = gap;
+            answer.set_estimated_gap(max(gap.estimated_dist(), int(artificial_gap_)));
+            return answer;
         }
     }
 
@@ -1241,6 +1249,7 @@ private:
     }
 
 protected:
+    //FIXME WAT?!
     virtual bool GapSatisfies(int /*gap*/) const {
         return true;
     }
@@ -1269,13 +1278,17 @@ protected:
             }
 
             EdgeId eid = candidates.back().e_;
+            //FIXME is it ok that we either force joining or ignore its possibility
             if (check_sink_) {
-                Gap gap = gap_joiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_);
-                DEBUG("Gap after fixing " << gap.gap_ << " (was " << candidates.back().d_ << ")");
-                if (gap.gap_ != GapAnalyzer::INVALID_GAP) {
+                //FIXME what is d_? and should it be converted into nucleotide distance?
+                GapDescription gap = gap_joiner_->FixGap(GapDescription(path.Back(), candidates.back().e_,
+                                                                        candidates.back().d_ - int(g_.k())));
+
+                DEBUG("Gap after fixing " << gap.estimated_dist() << " (was " << candidates.back().d_ << ")");
+                if (gap != GapDescription()) {
                     DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() <<
-                        ", fixed gap length: " << gap.gap_ << ", trash length: " << gap.trash_previous_ << "-" <<
-                        gap.trash_current_);
+                          ", fixed gap length: " << gap.estimated_dist() << ", trash length: " << gap.left_trim() << "-" <<
+                          gap.right_trim());
 
                     if (used_storage_->UniqueCheckEnabled()) {
                         if (used_storage_->IsUsedAndUnique(eid)) {
@@ -1285,17 +1298,20 @@ protected:
                         }
                     }
 
-                    if (must_overlap && GapSatisfies(gap.gap_)) {
-                        DEBUG("Overlap is not large enogh")
+                    //FIXME check what should be passed to GapSatisfies
+                    if (must_overlap && GapSatisfies(gap.estimated_dist() + int(g_.k()))) {
+                        DEBUG("Overlap is not large enough")
                         return false;
                     }
                     DEBUG("Overlap is good, success")
-                    path.PushBack(eid, gap);
+                    //FIXME change usage of Gap and get rid of k
+                    path.PushBack(eid, Gap(gap.estimated_dist() + int(g_.k()),
+                                           uint32_t(gap.left_trim()), uint32_t(gap.right_trim())));
                     return true;
                 }
                 else {
                     DEBUG("Looks like wrong scaffolding. PathId: " << path.GetId() << " path length: " <<
-                        path.Length() << ", fixed gap length: " << candidates.back().d_ << ", fixed = " << gap.gap_);
+                        path.Length() << ", estimated gap length: " << candidates.back().d_);
                     return false;
                 }
             }
