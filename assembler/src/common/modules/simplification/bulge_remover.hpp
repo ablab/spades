@@ -123,12 +123,12 @@ class BulgeGluer {
 
         EnsureEndsPositionAligner aligner(CumulativeLength(g_, path),
                 g_.length(edge));
-        double prefix_length = 0.;
+        size_t prefix_length = 0.;
         vector<size_t> bulge_prefix_lengths;
 
         for (EdgeId e : path) {
-            prefix_length += (double) g_.length(e);
-            bulge_prefix_lengths.push_back(aligner.GetPosition((size_t) prefix_length));
+            prefix_length += g_.length(e);
+            bulge_prefix_lengths.push_back(aligner.GetPosition(prefix_length));
         }
 
         EdgeId edge_to_split = edge;
