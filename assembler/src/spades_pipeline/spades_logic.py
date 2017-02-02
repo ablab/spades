@@ -147,7 +147,8 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
             (options_storage.restart_from == ("k%d" % K) or options_storage.restart_from.startswith("k%d:" % K))):
             log.info("\n== Skipping assembler: " + ("K%d" % K) + " (already processed)")
             return
-        if options_storage.restart_from and options_storage.restart_from.find(":") != -1:
+        if options_storage.restart_from and options_storage.restart_from.find(":") != -1 \
+                and options_storage.restart_from.startswith("k%d:" % K):
             stage = options_storage.restart_from[options_storage.restart_from.find(":") + 1:]
         support.continue_from_here(log)
 
@@ -241,7 +242,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
     used_K = []
 
     # checking and removing conflicting K-mer directories
-    if options_storage.restart_from:
+    if options_storage.restart_from and (options_storage.restart_k_mers != options_storage.original_k_mers):
         processed_K = []
         for k in range(options_storage.MIN_K, options_storage.MAX_K, 2):
             cur_K_dir = os.path.join(cfg.output_dir, "K%d" % k)
