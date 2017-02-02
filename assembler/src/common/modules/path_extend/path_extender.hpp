@@ -510,7 +510,7 @@ public:
             return Gap(INVALID_GAP);
         }
 
-        if ((g_.length(source) + g_.k())  - overlap_info.r1.end_pos > g_.length(source)) {
+        if ((int)g_.k()  - (int)overlap_info.r1.end_pos + 1 > 0) {
             DEBUG("Save kmers. Don't want to have edges shorter than k");
             return Gap(INVALID_GAP);
         }
