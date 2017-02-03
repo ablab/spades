@@ -346,7 +346,6 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
 
 
 void PathExtendLauncher::FillLongReadsCoverageMaps() {
-    INFO(dataset_info_.reads.lib_count() << "!")
     VERIFY(dataset_info_.reads.lib_count() == gp_.single_long_reads.size());
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
         unique_data_.long_reads_paths_.push_back(PathContainer());

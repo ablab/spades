@@ -1420,7 +1420,6 @@ protected:
 
     shared_ptr<ExtensionChooser> extensionChooser_;
     size_t distance_bound_;
-    double barcode_threshold_;
     size_t barcode_len_;
     size_t edge_threshold_;
     ScaffoldingUniqueEdgeStorage unique_storage_;
@@ -1433,15 +1432,14 @@ protected:
         //find long unique edge earlier in path
         pair<EdgeId, int> last_unique =
                 ReadCloudExtensionChooser::FindLastUniqueInPath(path, unique_storage_);
-        bool long_single_edge_exists = false;
+        bool long_unique_edge_exists = false;
         EdgeId decisive_edge;
         if (last_unique.second != -1) {
-            long_single_edge_exists = true;
+            long_unique_edge_exists = true;
             decisive_edge = last_unique.first;
         }
 
-        if (!long_single_edge_exists) {
-            DEBUG("Couldn't find single long edge");
+        if (!long_unique_edge_exists) {
             return;
         }
 
@@ -1452,8 +1450,8 @@ protected:
 
         //find reliable unique edges further in graph
         vector <EdgeId> candidates;
-        auto put_checker = BarcodePutChecker<Graph>(g_, edge_threshold_, barcode_threshold_,
-                                                    mapper_, decisive_edge, unique_storage_, candidates);
+        auto put_checker = BarcodePutChecker<Graph>(g_, edge_threshold_, mapper_,
+                                                    decisive_edge, unique_storage_, candidates);
         auto dij = BarcodeDijkstra<Graph>::CreateBarcodeBoundedDijkstra(g_, distance_bound_, put_checker);
         dij.Run(g_.EdgeEnd(path.Back()));
         result->reserve(candidates.size());
@@ -1485,7 +1483,6 @@ public:
                              bool investigate_short_loops,
                              bool use_short_loop_cov_resolver,
                              size_t distance_bound,
-                             double barcode_threshold,
                              size_t barcode_len,
                              size_t edge_threshold,
                              const ScaffoldingUniqueEdgeStorage& unique_storage)
@@ -1494,7 +1491,6 @@ public:
                                       is),
             extensionChooser_(ec),
             distance_bound_(distance_bound),
-            barcode_threshold_(barcode_threshold),
             barcode_len_(barcode_len),
             edge_threshold_(edge_threshold),
             unique_storage_(unique_storage),
@@ -1529,8 +1525,6 @@ protected:
         DEBUG("Path size " << path.Size())
         DEBUG("Starting at vertex " << g_.EdgeEnd(path.Back()));
         FindFollowingEdges(path, &candidates);
-        DEBUG("Found " << candidates.size() << " candidates");
-        DEBUG("Filtering");
         candidates = extensionChooser_->Filter(path, candidates);
         DEBUG(candidates.size() << " candidates passed");
         return true;

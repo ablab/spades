@@ -1306,23 +1306,20 @@ private:
 };
 
 class ReadCloudExtensionChooser : public ExtensionChooser {
-
+protected:
     shared_ptr<tslr_resolver::BarcodeMapper> bmapper_;
     size_t len_threshold_;
-    double absolute_barcode_threshold_;
     size_t fragment_len_;
     ScaffoldingUniqueEdgeStorage unique_storage_;
 
 public:
     ReadCloudExtensionChooser(const conj_graph_pack& gp,
                               size_t len_threshold,
-                              double absolute_barcode_threshold,
                               size_t fragment_len,
                               const ScaffoldingUniqueEdgeStorage& unique_storage) :
             ExtensionChooser(gp.g),
             bmapper_(gp.barcode_mapper),
             len_threshold_(len_threshold),
-            absolute_barcode_threshold_(absolute_barcode_threshold),
             fragment_len_(fragment_len),
             unique_storage_(unique_storage) {
     }
@@ -1337,6 +1334,7 @@ public:
             result.push_back(edges.back());
             return result;
         }
+
         //Find last unique edge earlier in the path
         pair<EdgeId, int> last_unique = FindLastUniqueInPath(path, unique_storage_);
         bool long_single_edge_exists = false;
@@ -1346,83 +1344,22 @@ public:
             decisive_edge = last_unique.first;
         }
 
-        //Exclude this edge from the candidates
-        auto edges_copy = edges;
-        EraseEdge(edges_copy, decisive_edge);
-
-        if (!long_single_edge_exists || edges_copy.size() == 0) {
-            if (edges_copy.size() == 0) {
-                DEBUG("Only decisive edge was found");
-            }
+        if (!long_single_edge_exists) {
             return result;
         }
 
-        //Find edges with barcode score greater than some threshold
-        std::vector <EdgeWithDistance> best_candidates;
-        std::copy_if(edges_copy.begin(), edges_copy.end(), std::back_inserter(best_candidates),
-                     [this, &decisive_edge](const EdgeWithDistance& edge) {
-                         return this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
-                                absolute_barcode_threshold_ * GetGapCoefficient(edge.d_);
-                     });
+        vector <EdgeWithDistance> best_candidates = GetBestCandidates(edges, decisive_edge);
+
         if (best_candidates.size() == 1) {
             result.push_back(best_candidates[0]);
-            DEBUG("Only one candidate passed threshold")
-            return result;
         }
-        if (best_candidates.size() == 0) {
-            DEBUG("No candidates found")
-            return result;
-        }
-        if (bmapper_->GetTailBarcodeNumber(decisive_edge) < 4) {
-            DEBUG("Not enough barcodes on decisive edge")
-        }
-
-
-        //Check the difference between two best scores (currently inactive)
-        DEBUG("Several candidates found. Further filtering.");
-        auto best_edge = *(std::max_element(edges_copy.begin(), edges_copy.end(),
-                                            [this, & decisive_edge](const EdgeWithDistance& edge1,
-                                                                    const EdgeWithDistance& edge2) {
-                                                return this->bmapper_->GetIntersectionSizeNormalizedBySecond(
-                                                        decisive_edge, edge1.e_) <
-                                                       this->bmapper_->GetIntersectionSizeNormalizedBySecond(
-                                                               decisive_edge, edge2.e_);
-                                            }));
-        double best_score = bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, best_edge.e_);
-        DEBUG("fittest edge " << best_edge.e_.int_id());
-        DEBUG("score " << best_score);
-        std::nth_element(edges_copy.begin(), edges_copy.begin() + 1, edges_copy.end(),
-                         [this, & decisive_edge](const EdgeWithDistance& edge1, const EdgeWithDistance& edge2) {
-                             return this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
-                                                                                          edge1.e_) >
-                                    this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
-                                                                                          edge2.e_);
-                         });
-        auto second_best_edge = edges_copy.at(1);
-        double second_best_score = bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge,
-                                                                                   second_best_edge.e_);
-        DEBUG("Second best edge " << second_best_edge.e_.int_id());
-        DEBUG("second best score " << second_best_score);
-        DEBUG(best_candidates.size() << " best candidates");
-        VERIFY(best_score >= second_best_score)
-//                if (best_score - second_best_score < 0.03) {
-//                    DEBUG("Scores are too close, failed to select the best candidate.");
-//                    return result;
-//                }
 
         //Try to find topologically closest edge to resolve loops
         //fixme This have nothing to do with barcodes. Need to be moved elsewhere.
-        auto closest_edges =  FindClosestEdge(best_candidates);
-        if (closest_edges.size() != 1) {
-            DEBUG("Unable to find single topologically minimal edge.");
-            for (auto edge : best_candidates) {
-                result.push_back(edge);
-            }
-        }
-        else {
-            DEBUG("Found topologically minimal edge");
-            result.push_back(closest_edges.back());
-        }
+//        if (best_candidates.size() > 1) {
+//            FilterByTopSort(best_candidates, result);
+//        }
+        
         return result;
     }
 
@@ -1445,36 +1382,8 @@ public:
         return std::make_pair(EdgeId(0), -1);
     }
 
-    static std::pair<EdgeId, int> FindFirstUniqueInPath(const BidirectionalPath& path,
-                                                        const ScaffoldingUniqueEdgeStorage& storage) {
-        for (int i = 0; i < (int)path.Size(); ++i) {
-            if (storage.IsUnique(path.At(i))) {
-                return std::make_pair(path.At(i), i);
-            }
-        }
-        return std::make_pair(EdgeId(0), -1);
-    }
-
 private:
-
-    //barcode threshold depends on gap between edges
-    double GetGapCoefficient(int gap) const {
-        VERIFY(gap <= (int)fragment_len_)
-        return static_cast<double>(fragment_len_ - gap) /
-               static_cast<double>(fragment_len_);
-    }
-
-    void EraseEdge (EdgeContainer& edges, const EdgeId& edge_to_be_erased) const {
-        size_t ind = edges.size() + 1;
-        for (size_t i = 0; i < edges.size(); ++i) {
-            if (edges[i].e_ == edge_to_be_erased) {
-                ind = i;
-                break;
-            }
-        }
-        if (ind != edges.size() + 1)
-            edges.erase(edges.begin() + ind);
-    }
+    virtual vector <EdgeWithDistance> GetBestCandidates(const EdgeContainer& edges, const EdgeId& decisive_edge) const = 0;
 
     //fixme very ineffective
     vector<EdgeWithDistance> FindClosestEdge(const vector<EdgeWithDistance>& edges) const {
@@ -1503,7 +1412,86 @@ private:
         } while (edges_iter != edges.end());
         return closest_edges;
     }
+
+    void FilterByTopSort(const vector<EdgeWithDistance> &best_candidates, EdgeContainer &result) const {
+        auto closest_edges =  FindClosestEdge(best_candidates);
+        if (closest_edges.size() != 1) {
+            DEBUG("Unable to find single topmin edge.");
+            for (auto edge : best_candidates) {
+                result.push_back(edge);
+            }
+        }
+        else {
+            DEBUG("Found topmin edge");
+            result.push_back(closest_edges.back());
+        }
+    }
+
     DECL_LOGGER("TslrExtensionChooser")
+};
+
+class TSLRExtensionChooser : public ReadCloudExtensionChooser {
+    using ReadCloudExtensionChooser::bmapper_;
+    using ReadCloudExtensionChooser::unique_storage_;
+    using ReadCloudExtensionChooser::fragment_len_;
+    double absolute_barcode_threshold_;
+
+public:
+    TSLRExtensionChooser(const conj_graph_pack& gp,
+                         size_t len_threshold,
+                         size_t fragment_len,
+                         const ScaffoldingUniqueEdgeStorage& unique_storage,
+                         double absolute_barcode_threshold) :
+            ReadCloudExtensionChooser(gp, len_threshold, fragment_len, unique_storage),
+            absolute_barcode_threshold_(absolute_barcode_threshold) {}
+
+private:
+    double GetGapCoefficient(int gap) const {
+        VERIFY(gap <= (int)fragment_len_)
+        return static_cast<double>(fragment_len_ - gap) /
+               static_cast<double>(fragment_len_);
+    }
+
+    vector <EdgeWithDistance> GetBestCandidates(const EdgeContainer& edges, const EdgeId& decisive_edge) const {
+        //Find edges with barcode score greater than some threshold
+        std::vector <EdgeWithDistance> best_candidates;
+        std::copy_if(edges.begin(), edges.end(), std::back_inserter(best_candidates),
+                     [this, &decisive_edge](const EdgeWithDistance& edge) {
+                         return edge.e_ != decisive_edge and
+                                this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
+                                absolute_barcode_threshold_ * GetGapCoefficient(edge.d_);
+                     });
+        return best_candidates;
+    }
+};
+
+class TenXExtensionChooser : public ReadCloudExtensionChooser {
+    using ReadCloudExtensionChooser::bmapper_;
+    using ReadCloudExtensionChooser::unique_storage_;
+    using ReadCloudExtensionChooser::fragment_len_;
+    double absolute_barcode_threshold_;
+
+public:
+    TenXExtensionChooser(const conj_graph_pack& gp,
+                         size_t len_threshold,
+                         size_t fragment_len,
+                         const ScaffoldingUniqueEdgeStorage& unique_storage,
+                         double absolute_barcode_threshold) :
+            ReadCloudExtensionChooser(gp, len_threshold, fragment_len, unique_storage),
+            absolute_barcode_threshold_(absolute_barcode_threshold) {}
+
+private:
+    vector <EdgeWithDistance> GetBestCandidates(const EdgeContainer& edges, const EdgeId& decisive_edge) const {
+        //Find edges with barcode score greater than some threshold
+        std::vector <EdgeWithDistance> best_candidates;
+        std::copy_if(edges.begin(), edges.end(), std::back_inserter(best_candidates),
+                     [this, &decisive_edge](const EdgeWithDistance& edge) {
+                         return edge.e_ != decisive_edge and
+                                this->bmapper_->GetIntersectionSize(decisive_edge, edge.e_) >
+                                        absolute_barcode_threshold_;
+                     });
+        return best_candidates;
+    }
 };
 
 }

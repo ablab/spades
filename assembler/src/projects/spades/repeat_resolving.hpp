@@ -21,7 +21,8 @@ public:
 
     void load(conj_graph_pack &, const std::string &, const char *) { }
 
-    void save(const conj_graph_pack &, const std::string &, const char *) const { }
+//todo uncomment
+//    void save(const conj_graph_pack &, const std::string &, const char *) const { }
 
     void run(conj_graph_pack &gp, const char *);
 };

@@ -56,29 +56,21 @@ namespace omnigraph {
         typedef shared_ptr<tslr_resolver::BarcodeMapper> Bmapper;
         const Graph& g_;
         const distance_t length_bound_;
-        const double barcode_threshold_;
         Bmapper mapper_;
         EdgeId decisive_edge_;
         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         vector <EdgeId>& candidates_;
 
-    private:
-        bool CheckNumberOfBarcodes(size_t first_barcodes, size_t second_barcodes, double threshold) const {
-            return (first_barcodes > threshold * (double)second_barcodes and
-                    second_barcodes > threshold * (double)first_barcodes);
-        }
 
     public:
         BarcodePutChecker(const Graph& g, 
-            const distance_t& length_bound, 
-            const double& barcode_threshold,
+            const distance_t& length_bound,
             const Bmapper& mapper,
             const EdgeId& decisive_edge,
             const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
             vector<EdgeId>& candidates) : VertexPutChecker<Graph, distance_t> (),
                                                              g_(g), 
                                                              length_bound_(length_bound),
-                                                             barcode_threshold_(barcode_threshold),
                                                              mapper_(mapper), 
                                                              decisive_edge_(decisive_edge),
                                                              unique_storage_(unique_storage),
@@ -112,12 +104,6 @@ namespace omnigraph {
                 DEBUG("Long non-unique nearby edge, passed" << endl)
                 return true;
             } else {
-                //Barcode number should be similar on nearby genome fragments.
-                if (!CheckNumberOfBarcodes(decisive_barcodes, current_barcodes,
-                                           cfg::get().ts_res.barcode_number_threshold)) {
-                    DEBUG("Barcode numbers significantly differ, don't put to candidates list");
-                    return false;
-                }
                 candidates_.push_back(edge);
                 DEBUG("Long unique nearby edge, put to candidates list and stop" << endl)
                 return false;
