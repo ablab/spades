@@ -679,51 +679,14 @@ private:
 };
 
 
-class ReadCloudMergingExtender : public LoopDetectingPathExtender { //Traverse forward to find long edges
+class ReadCloudExtender : public LoopDetectingPathExtender { //Traverse forward to find long edges
 
 protected:
 
     shared_ptr<ExtensionChooser> extensionChooser_;
-    size_t distance_bound_;
-    size_t barcode_len_;
-    size_t edge_threshold_;
     ScaffoldingUniqueEdgeStorage unique_storage_;
     shared_ptr<tslr_resolver::BarcodeMapper> mapper_;
 
-
-    void FindFollowingEdges(BidirectionalPath &path, ExtensionChooser::EdgeContainer *result) {
-        result->clear();
-
-        //find long unique edge earlier in path
-        pair<EdgeId, int> last_unique =
-                ReadCloudExtensionChooser::FindLastUniqueInPath(path, unique_storage_);
-        bool long_unique_edge_exists = false;
-        EdgeId decisive_edge;
-        if (last_unique.second != -1) {
-            long_unique_edge_exists = true;
-            decisive_edge = last_unique.first;
-        }
-
-        if (!long_unique_edge_exists) {
-            return;
-        }
-
-
-        DEBUG("At edge " << path.Back().int_id());
-        DEBUG("Decisive edge " << decisive_edge.int_id());
-        DEBUG("Decisive edge barcodes: " << mapper_->GetTailBarcodeNumber(decisive_edge));
-
-        //find reliable unique edges further in graph
-        vector <EdgeId> candidates;
-        auto put_checker = BarcodePutChecker<Graph>(g_, edge_threshold_, mapper_,
-                                                    decisive_edge, unique_storage_, candidates);
-        auto dij = BarcodeDijkstra<Graph>::CreateBarcodeBoundedDijkstra(g_, distance_bound_, put_checker);
-        dij.Run(g_.EdgeEnd(path.Back()));
-        result->reserve(candidates.size());
-        for (auto edge : candidates) {
-            result->push_back(EdgeWithDistance(edge, dij.GetDistance(g_.EdgeStart(edge))));
-        }
-    }
 
     //todo should be precounted at barcode map construction stage
     size_t GetMaximalBarcodeNumber (const std::string& path_to_tslr_dataset) const {
@@ -740,24 +703,17 @@ protected:
 
 public:
 
-    ReadCloudMergingExtender(const conj_graph_pack &gp,
+    ReadCloudExtender(const conj_graph_pack &gp,
                              const GraphCoverageMap &cov_map,
                              shared_ptr<ExtensionChooser> ec,
                              size_t is,
-                             size_t max_loops,
                              bool investigate_short_loops,
                              bool use_short_loop_cov_resolver,
-                             size_t distance_bound,
-                             size_t barcode_len,
-                             size_t edge_threshold,
                              const ScaffoldingUniqueEdgeStorage& unique_storage)
             :
-            LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, use_short_loop_cov_resolver,
+            LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, use_short_loop_cov_resolver,
                                       is),
             extensionChooser_(ec),
-            distance_bound_(distance_bound),
-            barcode_len_(barcode_len),
-            edge_threshold_(edge_threshold),
             unique_storage_(unique_storage),
             mapper_(gp.barcode_mapper) {
     }
@@ -789,7 +745,6 @@ protected:
         path.Print();
         DEBUG("Path size " << path.Size())
         DEBUG("Starting at vertex " << g_.EdgeEnd(path.Back()));
-        FindFollowingEdges(path, &candidates);
         candidates = extensionChooser_->Filter(path, candidates);
         DEBUG(candidates.size() << " candidates passed");
         return true;
@@ -822,7 +777,7 @@ protected:
         DEBUG("push done");
         return true;
     }
-    DECL_LOGGER("InconsistentExtender")
+    DECL_LOGGER("ReadCloudExtender")
 
 };
 
