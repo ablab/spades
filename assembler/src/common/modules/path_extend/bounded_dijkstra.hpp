@@ -55,7 +55,6 @@ namespace omnigraph {
         typedef typename Graph::EdgeId EdgeId;
         typedef shared_ptr<tslr_resolver::BarcodeMapper> Bmapper;
         const Graph& g_;
-        const distance_t length_bound_;
         Bmapper mapper_;
         EdgeId decisive_edge_;
         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
@@ -63,14 +62,12 @@ namespace omnigraph {
 
 
     public:
-        BarcodePutChecker(const Graph& g, 
-            const distance_t& length_bound,
+        BarcodePutChecker(const Graph& g,
             const Bmapper& mapper,
             const EdgeId& decisive_edge,
             const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
             vector<EdgeId>& candidates) : VertexPutChecker<Graph, distance_t> (),
-                                                             g_(g), 
-                                                             length_bound_(length_bound),
+                                                             g_(g),
                                                              mapper_(mapper), 
                                                              decisive_edge_(decisive_edge),
                                                              unique_storage_(unique_storage),
@@ -96,7 +93,7 @@ namespace omnigraph {
             DEBUG("Decisive edge barcodes " << decisive_barcodes);
             DEBUG("Is unique " << unique_storage_.IsUnique(edge));
 
-            if (g_.length(edge) < length_bound_) {
+            if (g_.length(edge) < unique_storage_.GetMinLength()) {
                 DEBUG("Short edge, passed" << endl)  //todo use short edges to reduce number of candidates
                 return true;
             }

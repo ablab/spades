@@ -11,6 +11,7 @@
 #include "io/reads/paired_readers.hpp"
 #include <common/assembly_graph/paths/mapping_path.hpp>
 #include <cassert>
+#include <common/modules/alignment/bwa_sequence_mapper.hpp>
 #include "common/modules/alignment/edge_index.hpp"
 #include "common/modules/alignment/kmer_mapper.hpp"
 #include "common/modules/alignment/sequence_mapper.hpp"
@@ -638,11 +639,12 @@ namespace tslr_resolver {
             }
         }
 
-        void FillMapFrom10XReads(const Index &index, const KmerSubs &kmer_mapper) {
+        void FillMapFrom10XReads() {
             INFO("Starting barcode index construction from 10X reads")
             std::string read_cloud_dataset = cfg::get().ts_res.read_cloud_dataset;
-            auto mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, Index> >
-                    (g_, index, kmer_mapper);
+            INFO(read_cloud_dataset);
+            auto mapper = std::make_shared<alignment::BWAReadMapper<Graph> >
+                    (g_);
 
             auto streams = GetStreamsFromFile(read_cloud_dataset);
             //Process every read from 10X dataset
@@ -655,8 +657,6 @@ namespace tslr_resolver {
                     if (barcode != "") {
                         barcode_codes_.AddBarcode(barcode);
                         const auto& path = mapper->MapRead(read);
-                        //INFO("Inserting")
-//                        INFO(path.size())
                         InsertMappingPath(barcode, path);
                     }
                     counter++;
@@ -674,7 +674,7 @@ namespace tslr_resolver {
                     FillMapFromDemultiplexedDataset(index, kmer_mapper);
                     break;
                 case TenX :
-                    FillMapFrom10XReads(index, kmer_mapper);
+                    FillMapFrom10XReads();
                     break;
                 default:
                     WARN("Unknown library type, failed to fill barcode map.");
