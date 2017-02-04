@@ -439,18 +439,22 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
     }
 
     if (support_.HasReadClouds()) {
-        //fixme move filtering elsewhere (to barcode index construction?)
-        INFO("Filtering barcode mapper");
-        const size_t abundancy_threshold = cfg::get().ts_res.trimming_threshold;
-        const size_t gap_threshold = cfg::get().ts_res.gap_threshold;
-        INFO("Abundancy threshold: " << abundancy_threshold);
-        INFO("Gap threshold: " << gap_threshold);
-        INFO("Average barcode coverage before filtering: " << gp_.barcode_mapper->AverageBarcodeCoverage());
-        gp_.barcode_mapper->Filter(abundancy_threshold, gap_threshold);
-        INFO("Average barcode coverage after filtering: " << gp_.barcode_mapper->AverageBarcodeCoverage());
+        if (params_.pset.sm == sm_old) {
+            INFO("Will not use read cloud path extend in this mode");
+        } else {
+            //fixme move filtering elsewhere (to barcode index construction?)
+            INFO("Filtering barcode mapper");
+            const size_t abundancy_threshold = cfg::get().ts_res.trimming_threshold;
+            const size_t gap_threshold = cfg::get().ts_res.gap_threshold;
+            INFO("Abundancy threshold: " << abundancy_threshold);
+            INFO("Gap threshold: " << gap_threshold);
+            INFO("Average barcode coverage before filtering: " << gp_.barcode_mapper->AverageBarcodeCoverage());
+            gp_.barcode_mapper->Filter(abundancy_threshold, gap_threshold);
+            INFO("Average barcode coverage after filtering: " << gp_.barcode_mapper->AverageBarcodeCoverage());
 
-        INFO("Creating read cloud extenders");
-        push_back_all(extenders, ConstructReadCloudExtender(generator));
+            INFO("Creating read cloud extenders");
+            push_back_all(extenders, ConstructReadCloudExtender(generator));
+        }
     }
 
     if (support_.HasMPReads()) {
