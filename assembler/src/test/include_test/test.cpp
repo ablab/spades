@@ -16,7 +16,27 @@
 #include "quality_test.hpp"
 #include "nucl_test.hpp"
 
-::boost::unit_test::test_suite*    init_unit_test_suite( int, char* [] )
+#define BOOST_TEST_SOURCE
+#include <boost/test/impl/unit_test_main.ipp>
+#include <boost/test/impl/results_collector.ipp>
+#include <boost/test/impl/unit_test_log.ipp>
+#include <boost/test/impl/framework.ipp>
+#include <boost/test/impl/progress_monitor.ipp>
+#include <boost/test/impl/execution_monitor.ipp>
+#include <boost/test/impl/unit_test_parameters.ipp>
+#include <boost/test/impl/unit_test_monitor.ipp>
+#include <boost/test/impl/xml_log_formatter.ipp>
+#include <boost/test/impl/xml_report_formatter.ipp>
+#include <boost/test/impl/plain_report_formatter.ipp>
+#include <boost/test/impl/junit_log_formatter.ipp>
+#include <boost/test/impl/debug.ipp>
+#include <boost/test/impl/test_tree.ipp>
+#include <boost/test/impl/test_tools.ipp>
+#include <boost/test/impl/compiler_log_formatter.ipp>
+#include <boost/test/impl/results_reporter.ipp>
+#include <boost/test/impl/decorator.ipp>
+
+::boost::unit_test::test_suite* init_unit_test_suite( int, char* [] )
 {
     logging::logger *log = logging::create_logger("", logging::L_DEBUG);
     log->add_writer(std::make_shared<logging::console_writer>());

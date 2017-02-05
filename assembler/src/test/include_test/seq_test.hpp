@@ -10,8 +10,6 @@
 #include "sequence/seq.hpp"
 #include "sequence/sequence.hpp"
 #include "sequence/nucl.hpp"
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
 #include <string>
 
 typedef unsigned long long ull;
