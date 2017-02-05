@@ -9,7 +9,7 @@
 #ifndef BOOST_PROTO_TRANSFORM_CALL_HPP_EAN_11_02_2007
 #define BOOST_PROTO_TRANSFORM_CALL_HPP_EAN_11_02_2007
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1020)
+#if defined(_MSC_VER)
 # pragma warning(push)
 # pragma warning(disable: 4714) // function 'xxx' marked as __forceinline not inlined
 #endif
@@ -29,6 +29,7 @@
 #include <boost/proto/transform/impl.hpp>
 #include <boost/proto/detail/as_lvalue.hpp>
 #include <boost/proto/detail/poly_function.hpp>
+#include <boost/proto/transform/detail/pack.hpp>
 
 namespace boost { namespace proto
 {
@@ -82,6 +83,29 @@ namespace boost { namespace proto
     template<typename PrimitiveTransform>
     struct call
       : PrimitiveTransform
+    {};
+
+    /// \brief A specialization that treats function pointer Transforms as
+    /// if they were function type Transforms.
+    ///
+    /// This specialization requires that \c Fun is actually a function type.
+    ///
+    /// This specialization is required for nested transforms such as
+    /// <tt>call\<T0(T1(_))\></tt>. In C++, functions that are used as
+    /// parameters to other functions automatically decay to funtion
+    /// pointer types. In other words, the type <tt>T0(T1(_))</tt> is
+    /// indistinguishable from <tt>T0(T1(*)(_))</tt>. This specialization
+    /// is required to handle these nested function pointer type transforms
+    /// properly.
+    template<typename Fun>
+    struct call<Fun *>
+      : call<Fun>
+    {};
+
+    /// INTERNAL ONLY
+    template<typename Fun>
+    struct call<detail::msvc_fun_workaround<Fun> >
+      : call<Fun>
     {};
 
     /// \brief Either call the PolymorphicFunctionObject with 0
@@ -370,7 +394,7 @@ namespace boost { namespace proto
 
 }} // namespace boost::proto
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1020)
+#if defined(_MSC_VER)
 # pragma warning(pop)
 #endif
 

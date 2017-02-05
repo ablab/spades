@@ -7,8 +7,8 @@
 #if !defined(FUSION_INSERT_RANGE_009172005_1147)
 #define FUSION_INSERT_RANGE_009172005_1147
 
+#include <boost/fusion/support/config.hpp>
 #include <boost/fusion/iterator/mpl/convert_iterator.hpp>
-#include <boost/fusion/container/vector/vector10.hpp>
 #include <boost/fusion/view/joint_view/joint_view.hpp>
 #include <boost/fusion/view/iterator_range/iterator_range.hpp>
 #include <boost/fusion/support/detail/as_fusion_element.hpp>
@@ -35,6 +35,7 @@ namespace boost { namespace fusion
     }
 
     template <typename Sequence, typename Position, typename Range>
+    BOOST_CXX14_CONSTEXPR BOOST_FUSION_GPU_ENABLED
     inline typename result_of::insert_range<Sequence const, Position, Range const>::type
     insert_range(Sequence const& seq, Position const& pos, Range const& range)
     {

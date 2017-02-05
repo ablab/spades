@@ -173,6 +173,30 @@
         };
     };
 
+    #if N > 0
+    /// \brief A PrimitiveTransform which computes a type by evaluating any
+    /// nested transforms and then constructs an object of that type with the
+    /// current expression, state and data, transformed according
+    /// to \c A0 through \c AN.
+    template<typename Object BOOST_PP_ENUM_TRAILING_PARAMS(N, typename A)>
+    struct make<Object(BOOST_PP_ENUM_PARAMS(N, A)...)>
+      : transform<make<Object(BOOST_PP_ENUM_PARAMS(N, A)...)> >
+    {
+        template<typename Expr, typename State, typename Data>
+        struct impl
+          : make<
+                typename detail::expand_pattern<
+                    proto::arity_of<Expr>::value
+                  , BOOST_PP_CAT(A, BOOST_PP_DEC(N))
+                  , detail::BOOST_PP_CAT(expand_pattern_rest_, BOOST_PP_DEC(N))<
+                        Object
+                        BOOST_PP_ENUM_TRAILING_PARAMS(BOOST_PP_DEC(N), A)
+                    >
+                >::type
+            >::template impl<Expr, State, Data>
+        {};
+    };
+    #endif
     #undef N
 
 #endif

@@ -8,7 +8,8 @@
 #if !defined(BOOST_FUSION_NVIEW_NEXT_IMPL_SEP_24_2009_0116PM)
 #define BOOST_FUSION_NVIEW_NEXT_IMPL_SEP_24_2009_0116PM
 
-#include <boost/mpl/next.hpp>
+#include <boost/fusion/support/config.hpp>
+#include <boost/fusion/iterator/next.hpp>
 
 namespace boost { namespace fusion
 {
@@ -26,14 +27,15 @@ namespace boost { namespace fusion
         struct next_impl<nview_iterator_tag>
         {
             template <typename Iterator>
-            struct apply 
+            struct apply
             {
-                typedef typename Iterator::first_type::iterator_type first_type;
+                typedef typename Iterator::first_type first_type;
                 typedef typename Iterator::sequence_type sequence_type;
 
                 typedef nview_iterator<sequence_type,
-                    typename mpl::next<first_type>::type> type;
+                    typename result_of::next<first_type>::type> type;
 
+                BOOST_CONSTEXPR BOOST_FUSION_GPU_ENABLED
                 static type
                 call(Iterator const& i)
                 {

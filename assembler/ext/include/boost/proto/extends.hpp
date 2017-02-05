@@ -34,7 +34,7 @@
 #include <boost/proto/generate.hpp>
 #include <boost/proto/detail/remove_typename.hpp>
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1020)
+#if defined(_MSC_VER)
 # pragma warning(push)
 # pragma warning(disable : 4714) // function 'xxx' marked as __forceinline not inlined
 #endif
@@ -172,7 +172,7 @@ namespace boost { namespace proto
         typedef typename proto_base_expr::address_of_hack_type_ proto_address_of_hack_type_;        \
         typedef void proto_is_expr_; /**< INTERNAL ONLY */                                          \
         static const long proto_arity_c = proto_base_expr::proto_arity_c;                           \
-        typedef boost::proto::tag::proto_expr fusion_tag;                                           \
+        typedef boost::proto::tag::proto_expr<proto_tag, proto_domain> fusion_tag;                  \
         BOOST_PP_REPEAT(BOOST_PROTO_MAX_ARITY, BOOST_PROTO_EXTENDS_CHILD, ~)                        \
                                                                                                     \
         BOOST_PROTO_DISABLE_MSVC_C4714 BOOST_FORCEINLINE                                            \
@@ -393,7 +393,7 @@ namespace boost { namespace proto
         };                                                                                          \
         /**/
 
-    #ifndef BOOST_NO_VARIADIC_TEMPLATES
+    #ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
         #define BOOST_PROTO_EXTENDS_FUNCTION_CONST()                                                \
             BOOST_PROTO_EXTENDS_FUNCTION_()                                                         \
             BOOST_PROTO_DEFINE_FUN_OP_VARIADIC_IMPL_(BOOST_PROTO_CONST)                             \
@@ -571,7 +571,7 @@ namespace boost { namespace proto
             typedef detail::not_a_valid_type proto_address_of_hack_type_;
             typedef void proto_is_expr_; /**< INTERNAL ONLY */
             static const long proto_arity_c = 2;
-            typedef boost::proto::tag::proto_expr fusion_tag;
+            typedef boost::proto::tag::proto_expr<proto_tag, Domain> fusion_tag;
             typedef This &proto_child0;
             typedef expr<tag::terminal, term<Fun> > const &proto_child1;
             typedef expr<proto_tag, proto_args, proto_arity_c> proto_base_expr;
@@ -640,7 +640,7 @@ namespace boost { namespace proto
 
 }}
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1020)
+#if defined(_MSC_VER)
 # pragma warning(pop)
 #endif
 

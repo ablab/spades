@@ -6,6 +6,11 @@
 #ifndef BOOST_UNORDERED_DETAIL_EXTRACT_KEY_HPP_INCLUDED
 #define BOOST_UNORDERED_DETAIL_EXTRACT_KEY_HPP_INCLUDED
 
+#include <boost/config.hpp>
+#if defined(BOOST_HAS_PRAGMA_ONCE)
+#pragma once
+#endif
+
 #include <boost/unordered/detail/table.hpp>
 
 namespace boost {
@@ -46,7 +51,7 @@ namespace detail {
         typedef ValueType value_type;
         typedef ValueType key_type;
 
-        static key_type const& extract(key_type const& v)
+        static key_type const& extract(value_type const& v)
         {
             return v;
         }
@@ -56,30 +61,25 @@ namespace detail {
             return no_key();
         }
         
-#if defined(BOOST_UNORDERED_VARIADIC_MOVE)
-        template <class... Args>
-        static no_key extract(Args const&...)
-        {
-            return no_key();
-        }
-#else
         template <class Arg>
         static no_key extract(Arg const&)
         {
             return no_key();
         }
 
+#if !defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES)
+        template <class Arg1, class Arg2, class... Args>
+        static no_key extract(Arg1 const&, Arg2 const&, Args const&...)
+        {
+            return no_key();
+        }
+#else
         template <class Arg1, class Arg2>
         static no_key extract(Arg1 const&, Arg2 const&)
         {
             return no_key();
         }
 #endif
-
-        static bool compare_mapped(value_type const&, value_type const&)
-        {
-            return true;
-        }
     };
 
     template <class Key, class ValueType>
@@ -93,11 +93,6 @@ namespace detail {
             return v.first;
         }
             
-        static key_type const& extract(key_type const& v)
-        {
-            return v;
-        }
-
         template <class Second>
         static key_type const& extract(std::pair<key_type, Second> const& v)
         {
@@ -110,21 +105,6 @@ namespace detail {
         {
             return v.first;
         }
-
-#if defined(BOOST_UNORDERED_VARIADIC_MOVE)
-        template <class Arg1, class... Args>
-        static key_type const& extract(key_type const& k,
-            Arg1 const&, Args const&...)
-        {
-            return k;
-        }
-
-        template <class... Args>
-        static no_key extract(Args const&...)
-        {
-            return no_key();
-        }
-#else
 
         template <class Arg1>
         static key_type const& extract(key_type const& k, Arg1 const&)
@@ -143,19 +123,27 @@ namespace detail {
             return no_key();
         }
 
-        template <class Arg, class Arg1>
-        static no_key extract(Arg const&, Arg1 const&)
+        template <class Arg1, class Arg2>
+        static no_key extract(Arg1 const&, Arg2 const&)
+        {
+            return no_key();
+        }
+
+#if !defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES)
+        template <class Arg1, class Arg2, class Arg3, class... Args>
+        static no_key extract(Arg1 const&, Arg2 const&, Arg3 const&,
+                Args const&...)
         {
             return no_key();
         }
 #endif
 
-#if defined(BOOST_UNORDERED_VARIADIC_MOVE)
+#if !defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES)
 
 #define BOOST_UNORDERED_KEY_FROM_TUPLE(namespace_)                          \
         template <typename T2>                                              \
         static no_key extract(boost::unordered::piecewise_construct_t,      \
-                namespace_::tuple<> const&, T2&&)                           \
+                namespace_ tuple<> const&, T2 const&)                       \
         {                                                                   \
             return no_key();                                                \
         }                                                                   \
@@ -163,17 +151,17 @@ namespace detail {
         template <typename T, typename T2>                                  \
         static typename is_key<key_type, T>::type                           \
             extract(boost::unordered::piecewise_construct_t,                \
-                namespace_::tuple<T> const& k, T2&&)                        \
+                namespace_ tuple<T> const& k, T2 const&)                    \
         {                                                                   \
             return typename is_key<key_type, T>::type(                      \
-                namespace_::get<0>(k));                                     \
+                namespace_ get<0>(k));                                      \
         }
 
 #else
 
 #define BOOST_UNORDERED_KEY_FROM_TUPLE(namespace_)                          \
         static no_key extract(boost::unordered::piecewise_construct_t,      \
-                namespace_::tuple<> const&)                                 \
+                namespace_ tuple<> const&)                                  \
         {                                                                   \
             return no_key();                                                \
         }                                                                   \
@@ -181,25 +169,19 @@ namespace detail {
         template <typename T>                                               \
         static typename is_key<key_type, T>::type                           \
             extract(boost::unordered::piecewise_construct_t,                \
-                namespace_::tuple<T> const& k)                              \
+                namespace_ tuple<T> const& k)                               \
         {                                                                   \
             return typename is_key<key_type, T>::type(                      \
-                namespace_::get<0>(k));                                     \
+                namespace_ get<0>(k));                                      \
         }
 
 #endif
 
-BOOST_UNORDERED_KEY_FROM_TUPLE(boost)
+BOOST_UNORDERED_KEY_FROM_TUPLE(boost::)
 
-#if !defined(BOOST_NO_0X_HDR_TUPLE)
-BOOST_UNORDERED_KEY_FROM_TUPLE(std)
+#if !defined(BOOST_NO_CXX11_HDR_TUPLE)
+BOOST_UNORDERED_KEY_FROM_TUPLE(std::)
 #endif
-
-
-        static bool compare_mapped(value_type const& x, value_type const& y)
-        {
-            return x.second == y.second;
-        }
     };
 }}}
 

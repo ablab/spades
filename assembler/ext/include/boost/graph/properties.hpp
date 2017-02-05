@@ -21,17 +21,11 @@
 #include <boost/graph/property_maps/null_property_map.hpp>
 
 #include <boost/graph/graph_traits.hpp>
-#include <boost/type_traits/is_convertible.hpp>
+#include <boost/type_traits.hpp>
 #include <boost/limits.hpp>
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/not.hpp>
 #include <boost/mpl/if.hpp>
-
-#if BOOST_WORKAROUND(BOOST_MSVC, < 1300)
-// Stay out of the way of the concept checking class
-# define Graph Graph_
-# define RandomAccessContainer RandomAccessContainer_
-#endif
 
 namespace boost {
 
@@ -53,16 +47,6 @@ namespace boost {
   inline default_color_type red(default_color_type) { return red_color; }
   inline default_color_type black(default_color_type) { return black_color; }
 
-#ifdef BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION
-  template <>
-  struct property_traits<default_color_type*> {
-    typedef default_color_type value_type;
-    typedef std::ptrdiff_t key_type;
-    typedef default_color_type& reference;
-    typedef lvalue_property_map_tag category;
-  };
-  // get/put already defined for T*
-#endif
 
   struct graph_property_tag { };
   struct vertex_property_tag { };
@@ -149,13 +133,13 @@ namespace boost {
     template <typename G, typename R, typename T>
     struct property_kind_from_graph<G, R T::*> {
       typedef typename boost::mpl::if_<
-                boost::is_same<T, typename vertex_bundle_type<G>::type>,
+                boost::is_base_of<T, typename vertex_bundle_type<G>::type>,
                 vertex_property_tag,
                 typename boost::mpl::if_<
-                  boost::is_same<T, typename edge_bundle_type<G>::type>,
+                  boost::is_base_of<T, typename edge_bundle_type<G>::type>,
                   edge_property_tag,
                   typename boost::mpl::if_<
-                    boost::is_same<T, typename graph_bundle_type<G>::type>,
+                    boost::is_base_of<T, typename graph_bundle_type<G>::type>,
                     graph_property_tag,
                     void>::type>::type>::type type;
     };
@@ -224,7 +208,7 @@ namespace boost {
       {};
   } // namespace detail
 
-  template <class Graph, class Property>
+  template <class Graph, class Property, class Enable = void>
   struct property_map:
     mpl::if_<
       is_same<typename detail::property_kind_from_graph<Graph, Property>::type, edge_property_tag>,
@@ -248,8 +232,8 @@ namespace boost {
     >::type type;
   };
 
-  template <class Graph> class vertex_property: vertex_property_type<Graph> {};
-  template <class Graph> class edge_property: edge_property_type<Graph> {};
+  template <typename Graph> struct vertex_property: vertex_property_type<Graph> {};
+  template <typename Graph> struct edge_property: edge_property_type<Graph> {};
 
   template <typename Graph>
   class degree_property_map
@@ -339,16 +323,6 @@ namespace boost {
     return make_iterator_vertex_map(c.begin());
   }
 
-#if defined (BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
-#  define BOOST_GRAPH_NO_BUNDLED_PROPERTIES
-#endif
-
-#if BOOST_WORKAROUND(__SUNPRO_CC, BOOST_TESTED_AT(0x590)) && !defined (BOOST_GRAPH_NO_BUNDLED_PROPERTIES)
-// This compiler cannot define a partial specialization based on a
-// pointer-to-member type, as seen in boost/graph/subgraph.hpp line 985 (as of
-// trunk r53912)
-#  define BOOST_GRAPH_NO_BUNDLED_PROPERTIES
-#endif
 
 // NOTE: These functions are declared, but never defined since they need to
 // be overloaded by graph implementations. However, we need them to be

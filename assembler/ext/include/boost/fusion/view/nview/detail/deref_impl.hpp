@@ -8,8 +8,9 @@
 #if !defined(BOOST_FUSION_NVIEW_DEREF_IMPL_SEP_24_2009_0818AM)
 #define BOOST_FUSION_NVIEW_DEREF_IMPL_SEP_24_2009_0818AM
 
-#include <boost/fusion/iterator/deref.hpp>
-#include <boost/fusion/container/vector.hpp>
+#include <boost/fusion/support/config.hpp>
+#include <boost/fusion/iterator/value_of.hpp>
+#include <boost/fusion/sequence/intrinsic/at.hpp>
 
 namespace boost { namespace fusion
 {
@@ -29,10 +30,11 @@ namespace boost { namespace fusion
                 typedef typename Iterator::first_type first_type;
                 typedef typename Iterator::sequence_type sequence_type;
 
-                typedef typename result_of::deref<first_type>::type index;
+                typedef typename result_of::value_of<first_type>::type index;
                 typedef typename result_of::at<
                     typename sequence_type::sequence_type, index>::type type;
 
+                BOOST_CONSTEXPR BOOST_FUSION_GPU_ENABLED
                 static type call(Iterator const& i)
                 {
                     return at<index>(i.seq.seq);

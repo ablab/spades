@@ -85,6 +85,7 @@ template <class T>  // sqrt(2/pi)
 template <int N>
 inline T constant_root_two_div_pi<T>::compute(BOOST_MATH_EXPLICIT_TEMPLATE_TYPE_SPEC(mpl::int_<N>))
 {
+   BOOST_MATH_STD_USING
    return sqrt((2 / pi<T, policies::policy<policies::digits2<N> > >()));
 }
 
@@ -117,6 +118,14 @@ inline T constant_root_two_pi<T>::compute(BOOST_MATH_EXPLICIT_TEMPLATE_TYPE_SPEC
 {
    BOOST_MATH_STD_USING
    return sqrt(two_pi<T, policies::policy<policies::digits2<N> > >());
+}
+
+template <class T>
+template<int N>
+inline T constant_log_root_two_pi<T>::compute(BOOST_MATH_EXPLICIT_TEMPLATE_TYPE_SPEC(mpl::int_<N>))
+{
+   BOOST_MATH_STD_USING
+   return log(root_two_pi<T, policies::policy<policies::digits2<N> > >());
 }
 
 template <class T>
@@ -156,11 +165,11 @@ inline T constant_euler<T>::compute(BOOST_MATH_EXPLICIT_TEMPLATE_TYPE_SPEC(mpl::
    // This is the method described in:
    // "Some New Algorithms for High-Precision Computation of Euler's Constant"
    // Richard P Brent and Edwin M McMillan.
-   // Mathematics of Comnputation, Volume 34, Number 149, Jan 1980, pages 305-312.
+   // Mathematics of Computation, Volume 34, Number 149, Jan 1980, pages 305-312.
    // See equation 17 with p = 2.
    //
    T n = 3 + (M ? (std::min)(M, tools::digits<T>()) : tools::digits<T>()) / 4;
-   T lim = M ? ldexp(T(1), (std::min)(M, tools::digits<T>())) : tools::epsilon<T>();
+   T lim = M ? ldexp(T(1), 1 - (std::min)(M, tools::digits<T>())) : tools::epsilon<T>();
    T lnn = log(n);
    T term = 1;
    T N = -lnn;
@@ -301,13 +310,13 @@ inline T constant_four_minus_pi<T>::compute(BOOST_MATH_EXPLICIT_TEMPLATE_TYPE_SP
    return static_cast<T>(4) - pi<T, policies::policy<policies::digits2<N> > >();
 }
 
-template <class T>
-template<int N>
-inline T constant_pow23_four_minus_pi<T>::compute(BOOST_MATH_EXPLICIT_TEMPLATE_TYPE_SPEC(mpl::int_<N>))
-{
-   BOOST_MATH_STD_USING
-   return pow(four_minus_pi<T, policies::policy<policies::digits2<N> > >(), static_cast<T>(1.5));
-}
+//template <class T>
+//template<int N>
+//inline T constant_pow23_four_minus_pi<T>::compute(BOOST_MATH_EXPLICIT_TEMPLATE_TYPE_SPEC(mpl::int_<N>))
+//{
+//   BOOST_MATH_STD_USING
+//   return pow(four_minus_pi<T, policies::policy<policies::digits2<N> > >(), static_cast<T>(1.5));
+//}
 
 template <class T>
 template<int N>
@@ -595,7 +604,7 @@ inline T constant_zeta_three<T>::compute(BOOST_MATH_EXPLICIT_TEMPLATE_TYPE_SPEC(
   //"1.202056903159594285399738161511449990, 76498629234049888179227155534183820578631309018645587360933525814619915"  A002117
   // 1.202056903159594285399738161511449990, 76498629234049888179227155534183820578631309018645587360933525814619915780, +00);
   //"1.2020569031595942 double
-  // http://www.spaennare.se/SSPROG/ssnum.pdf  // section 11, Algorithmfor Apery’s constant zeta(3).
+  // http://www.spaennare.se/SSPROG/ssnum.pdf  // section 11, Algorithm for Apery's constant zeta(3).
   // Programs to Calculate some Mathematical Constants to Large Precision, Document Version 1.50
 
   // by Stefan Spannare  September 19, 2007
@@ -928,7 +937,7 @@ template <class T>
 template<int N>
 inline T constant_rayleigh_kurtosis_excess<T>::compute(BOOST_MATH_EXPLICIT_TEMPLATE_TYPE_SPEC(mpl::int_<N>))
 { // - (6 Pi^2 - 24 Pi + 16)/((Pi - 4)^2)
-    // Might provide provide and calculate this using pi_minus_four.
+    // Might provide and calculate this using pi_minus_four.
    BOOST_MATH_STD_USING
    return - (((static_cast<T>(6) * pi<T, policies::policy<policies::digits2<N> > >()
         * pi<T, policies::policy<policies::digits2<N> > >())
@@ -943,7 +952,7 @@ template <class T>
 template<int N>
 inline T constant_rayleigh_kurtosis<T>::compute(BOOST_MATH_EXPLICIT_TEMPLATE_TYPE_SPEC(mpl::int_<N>))
 { // 3 - (6 Pi^2 - 24 Pi + 16)/((Pi - 4)^2)
-  // Might provide provide and calculate this using pi_minus_four.
+  // Might provide and calculate this using pi_minus_four.
    BOOST_MATH_STD_USING
    return static_cast<T>(3) - (((static_cast<T>(6) * pi<T, policies::policy<policies::digits2<N> > >()
         * pi<T, policies::policy<policies::digits2<N> > >())

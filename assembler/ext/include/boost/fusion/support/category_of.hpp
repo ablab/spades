@@ -7,6 +7,7 @@
 #if !defined(FUSION_CATEGORY_OF_07202005_0308)
 #define FUSION_CATEGORY_OF_07202005_0308
 
+#include <boost/fusion/support/config.hpp>
 #include <boost/fusion/support/detail/category_of.hpp>
 #include <boost/fusion/support/tag_of.hpp>
 #include <boost/type_traits/is_base_of.hpp>
@@ -34,6 +35,8 @@ namespace boost { namespace fusion
         : bidirectional_traversal_tag {};
 
     struct associative_tag {};
+
+    struct unbounded_tag {};
 
     namespace extension
     {
@@ -104,6 +107,13 @@ namespace boost { namespace fusion
         struct is_random_access
             : is_base_of<
                 random_access_traversal_tag
+              , typename category_of<T>::type>
+        {};
+
+        template <typename T>
+        struct is_unbounded
+            : is_base_of<
+                unbounded_tag
               , typename category_of<T>::type>
         {};
     }

@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 // Copyright (C) 2002-2006 Marcin Kalicinski
+// Copyright (C) 2013 Sebastian Redl
 //
 // Distributed under the Boost Software License, Version 1.0. 
 // (See accompanying file LICENSE_1_0.txt or copy at 
@@ -18,24 +19,24 @@
 
 namespace boost { namespace property_tree { namespace xml_parser
 {
-    template<class Ch>
-    void write_xml_indent(std::basic_ostream<Ch> &stream,
+    template<class Str>
+    void write_xml_indent(std::basic_ostream<typename Str::value_type> &stream,
           int indent,
-          const xml_writer_settings<Ch> & settings
+          const xml_writer_settings<Str> & settings
           )
     {
-        stream << std::basic_string<Ch>(indent * settings.indent_count, settings.indent_char);
+        stream << std::basic_string<typename Str::value_type>(indent * settings.indent_count, settings.indent_char);
     }
 
-    template<class Ch>
-    void write_xml_comment(std::basic_ostream<Ch> &stream,
-                           const std::basic_string<Ch> &s, 
+    template<class Str>
+    void write_xml_comment(std::basic_ostream<typename Str::value_type> &stream,
+                           const Str &s,
                            int indent,
                            bool separate_line,
-                           const xml_writer_settings<Ch> & settings
+                           const xml_writer_settings<Str> & settings
                            )
     {
-        typedef typename std::basic_string<Ch> Str;
+        typedef typename Str::value_type Ch;
         if (separate_line)
             write_xml_indent(stream,indent,settings);
         stream << Ch('<') << Ch('!') << Ch('-') << Ch('-');
@@ -44,16 +45,17 @@ namespace boost { namespace property_tree { namespace xml_parser
         if (separate_line)
             stream << Ch('\n');
     }
-    
-    template<class Ch>
-    void write_xml_text(std::basic_ostream<Ch> &stream,
-                        const std::basic_string<Ch> &s, 
+
+    template<class Str>
+    void write_xml_text(std::basic_ostream<typename Str::value_type> &stream,
+                        const Str &s,
                         int indent, 
                         bool separate_line,
-                        const xml_writer_settings<Ch> & settings
+                        const xml_writer_settings<Str> & settings
                         )
     {
-        if (separate_line)    
+        typedef typename Str::value_type Ch;
+        if (separate_line)
             write_xml_indent(stream,indent,settings);
         stream << encode_char_entities(s);
         if (separate_line)
@@ -61,15 +63,14 @@ namespace boost { namespace property_tree { namespace xml_parser
     }
 
     template<class Ptree>
-    void write_xml_element(std::basic_ostream<typename Ptree::key_type::value_type> &stream, 
-                           const std::basic_string<typename Ptree::key_type::value_type> &key,
-                           const Ptree &pt, 
+    void write_xml_element(std::basic_ostream<typename Ptree::key_type::value_type> &stream,
+                           const typename Ptree::key_type &key,
+                           const Ptree &pt,
                            int indent,
-                           const xml_writer_settings<typename Ptree::key_type::value_type> & settings)
+                           const xml_writer_settings<typename Ptree::key_type> & settings)
     {
-
         typedef typename Ptree::key_type::value_type Ch;
-        typedef typename std::basic_string<Ch> Str;
+        typedef typename Ptree::key_type Str;
         typedef typename Ptree::const_iterator It;
 
         bool want_pretty = settings.indent_count > 0;
@@ -78,17 +79,17 @@ namespace boost { namespace property_tree { namespace xml_parser
         bool has_attrs_only = pt.data().empty();
         for (It it = pt.begin(), end = pt.end(); it != end; ++it)
         {
-            if (it->first != xmlattr<Ch>() )
+            if (it->first != xmlattr<Str>() )
             {
                 has_attrs_only = false;
-                if (it->first != xmltext<Ch>())
+                if (it->first != xmltext<Str>())
                 {
                     has_elements = true;
                     break;
                 }
             }
         }
-        
+
         // Write element
         if (pt.data().empty() && pt.empty())    // Empty key
         {
@@ -103,22 +104,20 @@ namespace boost { namespace property_tree { namespace xml_parser
         }
         else    // Nonempty key
         {
-        
             // Write opening tag, attributes and data
             if (indent >= 0)
             {
-            
                 // Write opening brace and key
                 write_xml_indent(stream,indent,settings);
                 stream << Ch('<') << key;
 
                 // Write attributes
-                if (optional<const Ptree &> attribs = pt.get_child_optional(xmlattr<Ch>()))
+                if (optional<const Ptree &> attribs = pt.get_child_optional(xmlattr<Str>()))
                     for (It it = attribs.get().begin(); it != attribs.get().end(); ++it)
                         stream << Ch(' ') << it->first << Ch('=')
                                << Ch('"')
                                << encode_char_entities(
-                                    it->second.template get_value<std::basic_string<Ch> >())
+                                    it->second.template get_value<Str>())
                                << Ch('"');
 
                 if ( has_attrs_only )
@@ -142,27 +141,27 @@ namespace boost { namespace property_tree { namespace xml_parser
             // Write data text, if present
             if (!pt.data().empty())
                 write_xml_text(stream,
-                    pt.template get_value<std::basic_string<Ch> >(),
+                    pt.template get_value<Str>(),
                     indent + 1, has_elements && want_pretty, settings);
 
             // Write elements, comments and texts
             for (It it = pt.begin(); it != pt.end(); ++it)
             {
-                if (it->first == xmlattr<Ch>())
+                if (it->first == xmlattr<Str>())
                     continue;
-                else if (it->first == xmlcomment<Ch>())
+                else if (it->first == xmlcomment<Str>())
                     write_xml_comment(stream,
-                        it->second.template get_value<std::basic_string<Ch> >(),
+                        it->second.template get_value<Str>(),
                         indent + 1, want_pretty, settings);
-                else if (it->first == xmltext<Ch>())
+                else if (it->first == xmltext<Str>())
                     write_xml_text(stream,
-                        it->second.template get_value<std::basic_string<Ch> >(),
+                        it->second.template get_value<Str>(),
                         indent + 1, has_elements && want_pretty, settings);
                 else
                     write_xml_element(stream, it->first, it->second,
                         indent + 1, settings);
             }
-            
+
             // Write closing tag
             if (indent >= 0 && !has_attrs_only)
             {
@@ -180,13 +179,12 @@ namespace boost { namespace property_tree { namespace xml_parser
     void write_xml_internal(std::basic_ostream<typename Ptree::key_type::value_type> &stream, 
                             const Ptree &pt,
                             const std::string &filename,
-                            const xml_writer_settings<typename Ptree::key_type::value_type> & settings)
+                            const xml_writer_settings<typename Ptree::key_type> & settings)
     {
-        typedef typename Ptree::key_type::value_type Ch;
-        typedef typename std::basic_string<Ch> Str;
-        stream  << detail::widen<Ch>("<?xml version=\"1.0\" encoding=\"")
+        typedef typename Ptree::key_type Str;
+        stream  << detail::widen<Str>("<?xml version=\"1.0\" encoding=\"")
                 << settings.encoding
-                << detail::widen<Ch>("\"?>\n");
+                << detail::widen<Str>("\"?>\n");
         write_xml_element(stream, Str(), pt, -1, settings);
         if (!stream)
             BOOST_PROPERTY_TREE_THROW(xml_parser_error("write error", filename, 0));

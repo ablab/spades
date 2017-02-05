@@ -440,7 +440,11 @@ namespace boost { namespace spirit { namespace repository { namespace qi
 
             // create Defs map with only one entry: (ID -> def)
             typedef typename
+#ifndef BOOST_FUSION_HAS_VARIADIC_MAP
                 fusion::result_of::make_map<id_type, def_type>::type
+#else
+                fusion::result_of::make_map<id_type>::template apply<def_type>::type
+#endif
             defs_type;
 
             typedef subrule_group<defs_type> type;
@@ -529,7 +533,7 @@ namespace boost { namespace spirit { namespace repository { namespace qi
         {
             // If you are seeing a compilation error here, you are trying
             // to use a subrule as a parser outside of a subrule group.
-            BOOST_SPIRIT_ASSERT_MSG(false
+            BOOST_SPIRIT_ASSERT_FAIL(Iterator
               , subrule_used_outside_subrule_group, (id_type));
 
             return false;
@@ -558,7 +562,7 @@ namespace boost { namespace spirit { namespace repository { namespace qi
         {
             // If you are seeing a compilation error here, you are trying
             // to use a subrule as a parser outside of a subrule group.
-            BOOST_SPIRIT_ASSERT_MSG(false
+            BOOST_SPIRIT_ASSERT_FAIL(Iterator
               , subrule_used_outside_subrule_group, (id_type));
 
             return false;

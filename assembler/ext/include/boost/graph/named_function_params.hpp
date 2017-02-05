@@ -12,6 +12,7 @@
 
 #include <functional>
 #include <vector>
+#include <boost/limits.hpp>
 #include <boost/ref.hpp>
 #include <boost/utility/result_of.hpp>
 #include <boost/preprocessor.hpp>
@@ -63,6 +64,7 @@ namespace boost {
     BOOST_BGL_ONE_PARAM_CREF(weight_map, edge_weight) \
     BOOST_BGL_ONE_PARAM_CREF(weight_map2, edge_weight2) \
     BOOST_BGL_ONE_PARAM_CREF(distance_map, vertex_distance) \
+    BOOST_BGL_ONE_PARAM_CREF(distance_map2, vertex_distance2) \
     BOOST_BGL_ONE_PARAM_CREF(predecessor_map, vertex_predecessor) \
     BOOST_BGL_ONE_PARAM_CREF(rank_map, vertex_rank) \
     BOOST_BGL_ONE_PARAM_CREF(root_map, vertex_root) \
@@ -278,13 +280,13 @@ BOOST_BGL_DECLARE_NAMED_PARAMS
 
     template <> struct choose_impl_helper<false> {
       template <typename Param, typename Graph, typename PropertyTag>
-      static typename property_map<Graph, PropertyTag>::const_type
+      static typename property_map<typename boost::remove_const<Graph>::type, PropertyTag>::const_type
       f(boost::mpl::true_, const Graph& g, const Param&, PropertyTag tag) {
         return get(tag, g);
       }
 
       template <typename Param, typename Graph, typename PropertyTag>
-      static typename property_map<Graph, PropertyTag>::type
+      static typename property_map<typename boost::remove_const<Graph>::type, PropertyTag>::type
       f(boost::mpl::false_, Graph& g, const Param&, PropertyTag tag) {
         return get(tag, g);
       }
@@ -321,8 +323,16 @@ BOOST_BGL_DECLARE_NAMED_PARAMS
     struct edge_capacity_value
     {
       typedef bgl_named_params<P, T, R> Params;
-      typedef typename detail::choose_impl_result<boost::mpl::true_, Graph, typename get_param_type<Params, edge_capacity_t>::type, edge_capacity_t>::type CapacityEdgeMap;
+      typedef typename detail::choose_impl_result<boost::mpl::true_, Graph, typename get_param_type<edge_capacity_t, Params>::type, edge_capacity_t>::type CapacityEdgeMap;
       typedef typename property_traits<CapacityEdgeMap>::value_type type;
+    };
+    // used in the max-flow algorithms
+    template <class Graph, class P, class T, class R>
+    struct edge_weight_value
+    {
+      typedef bgl_named_params<P, T, R> Params;
+      typedef typename detail::choose_impl_result<boost::mpl::true_, Graph, typename get_param_type<edge_weight_t, Params>::type, edge_weight_t>::type WeightMap;
+      typedef typename property_traits<WeightMap>::value_type type;
     };
 
   }
@@ -432,13 +442,13 @@ BOOST_BGL_DECLARE_NAMED_PARAMS
     template <typename ArgType, typename Prop, typename Graph, bool Exists>
     struct override_property_t {
       typedef ArgType result_type;
-      result_type operator()(const Graph& g, const typename boost::add_reference<ArgType>::type a) const {return a;}
+      result_type operator()(const Graph&, const typename boost::add_reference<ArgType>::type a) const {return a;}
     };
 
     template <typename ArgType, typename Prop, typename Graph>
     struct override_property_t<ArgType, Prop, Graph, false> {
       typedef typename boost::property_map<Graph, Prop>::type result_type;
-      result_type operator()(const Graph& g, const ArgType& a) const {return get(Prop(), g);}
+      result_type operator()(const Graph& g, const ArgType&) const {return get(Prop(), g);}
     };
 
     template <typename ArgPack, typename Tag, typename Prop, typename Graph>
@@ -455,7 +465,7 @@ BOOST_BGL_DECLARE_NAMED_PARAMS
 
     template <typename ArgPack, typename Tag, typename Prop, typename Graph>
     typename override_property_result<ArgPack, Tag, Prop, Graph>::type
-    override_property(const ArgPack& ap, const boost::parameter::keyword<Tag>& t, const Graph& g, Prop prop) {
+    override_property(const ArgPack& ap, const boost::parameter::keyword<Tag>& t, const Graph& g, Prop) {
     return override_property_t<
              typename boost::parameter::value_type<ArgPack, Tag, int>::type,
              Prop,
@@ -633,7 +643,7 @@ BOOST_BGL_DECLARE_NAMED_PARAMS
       typedef Q priority_queue_type;
 
       static priority_queue_type
-      make_queue(const Graph& g, const ArgPack& ap, KeyT defaultKey, const Q& q) {
+      make_queue(const Graph&, const ArgPack&, KeyT, const Q& q) {
         return q;
       }
     };
@@ -645,7 +655,7 @@ BOOST_BGL_DECLARE_NAMED_PARAMS
       typedef boost::d_ary_heap_indirect<ValueT, 4, index_in_heap_map, typename map_maker<Graph, ArgPack, KeyMapTag, KeyT>::helper::map_type, Compare> priority_queue_type;
 
       static priority_queue_type
-      make_queue(const Graph& g, const ArgPack& ap, KeyT defaultKey, const Q& q) {
+      make_queue(const Graph& g, const ArgPack& ap, KeyT defaultKey, const Q&) {
         return priority_queue_type(
             map_maker<Graph, ArgPack, KeyMapTag, KeyT>::make_map(g, ap, defaultKey),
             map_maker<Graph, ArgPack, IndexInHeapMapTag, default_index_in_heap_type>::make_map(g, ap, typename boost::property_traits<index_in_heap_map>::value_type(-1))
@@ -716,6 +726,15 @@ BOOST_BGL_DECLARE_NAMED_PARAMS
       const G& g;
       get_default_starting_vertex_t(const G& g): g(g) {}
       result_type operator()() const {return get_default_starting_vertex(g);}
+    };
+
+    // Wrapper to avoid instantiating numeric_limits when users provide distance_inf value manually
+    template <typename T>
+    struct get_max {
+      T operator()() const {
+        return (std::numeric_limits<T>::max)();
+      }
+      typedef T result_type;
     };
 
   } // namespace detail

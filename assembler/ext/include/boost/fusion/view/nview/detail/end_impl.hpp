@@ -8,7 +8,7 @@
 #if !defined(BOOST_FUSION_NVIEW_END_IMPL_SEP_24_2009_0140PM)
 #define BOOST_FUSION_NVIEW_END_IMPL_SEP_24_2009_0140PM
 
-#include <boost/mpl/end.hpp>
+#include <boost/fusion/support/config.hpp>
 #include <boost/fusion/sequence/intrinsic/end.hpp>
 
 namespace boost { namespace fusion
@@ -32,9 +32,10 @@ namespace boost { namespace fusion
             {
                 typedef typename Sequence::index_type index_type;
 
-                typedef nview_iterator<Sequence, 
-                    typename mpl::end<index_type>::type> type;
+                typedef nview_iterator<Sequence,
+                    typename result_of::end<index_type>::type> type;
 
+                BOOST_CONSTEXPR BOOST_FUSION_GPU_ENABLED
                 static type call(Sequence& s)
                 {
                     return type(s);

@@ -1,6 +1,6 @@
 #if !defined(BOOST_PROTO_DONT_USE_PREPROCESSED_FILES)
 
-    #ifndef BOOST_NO_VARIADIC_TEMPLATES
+    #ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
         #include <boost/proto/detail/preprocessed/expr_variadic.hpp>
     #else
         #include <boost/proto/detail/preprocessed/expr.hpp>
@@ -51,7 +51,7 @@
 
     // Generate non-variadic versions of expr
     #if defined(__WAVE__) && defined(BOOST_PROTO_CREATE_PREPROCESSED_FILES)
-        #define BOOST_NO_VARIADIC_TEMPLATES
+        #define BOOST_NO_CXX11_VARIADIC_TEMPLATES
         #pragma wave option(preserve: 2, line: 0, output: "preprocessed/expr.hpp")
 
         ///////////////////////////////////////////////////////////////////////////////
@@ -74,7 +74,7 @@
         #include BOOST_PP_ITERATE()
 
         #pragma wave option(output: null)
-        #undef BOOST_NO_VARIADIC_TEMPLATES
+        #undef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     #endif
 
     #undef BOOST_PROTO_CHILD
@@ -131,7 +131,7 @@
         typedef basic_expr<Tag, proto_args, BOOST_PP_ITERATION() > proto_grammar;
         typedef default_domain proto_domain;
         typedef default_generator proto_generator;
-        typedef proto::tag::proto_expr fusion_tag;
+        typedef proto::tag::proto_expr<Tag, proto_domain> fusion_tag;
         typedef expr proto_derived_expr;
         typedef void proto_is_expr_; /**< INTERNAL ONLY */
 
@@ -398,7 +398,7 @@
             typedef typename result_of::funop<Sig, expr, default_domain>::type const type;
         };
 
-    #ifndef BOOST_NO_VARIADIC_TEMPLATES
+    #ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
         /// \overload
         ///
         template<typename ...A>
@@ -437,7 +437,7 @@
         }
     #endif
 
-    #else // BOOST_NO_VARIADIC_TEMPLATES
+    #else // BOOST_NO_CXX11_VARIADIC_TEMPLATES
 
         /// Function call
         ///

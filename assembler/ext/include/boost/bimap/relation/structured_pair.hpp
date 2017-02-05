@@ -12,7 +12,7 @@
 #ifndef BOOST_BIMAP_RELATION_STRUCTURED_PAIR_HPP
 #define BOOST_BIMAP_RELATION_STRUCTURED_PAIR_HPP
 
-#if defined(_MSC_VER) && (_MSC_VER>=1200)
+#if defined(_MSC_VER)
 #pragma once
 #endif
 
@@ -337,7 +337,7 @@ class structured_pair :
     template< class Tag >
     const BOOST_DEDUCED_TYPENAME ::boost::bimaps::relation::support::
         result_of::get<Tag,const structured_pair>::type
-    get(BOOST_EXPLICIT_TEMPLATE_TYPE(Tag)) const
+    get() const
     {
         return ::boost::bimaps::relation::support::get<Tag>(*this);
     }
@@ -345,7 +345,7 @@ class structured_pair :
     template< class Tag >
     BOOST_DEDUCED_TYPENAME ::boost::bimaps::relation::support::
         result_of::get<Tag,structured_pair>::type
-    get(BOOST_EXPLICIT_TEMPLATE_TYPE(Tag))
+    get()
     {
         return ::boost::bimaps::relation::support::get<Tag>(*this);
     }
@@ -498,6 +498,50 @@ bool operator>=(const std::pair<F,S> & a,
              (( a.first == b.first ) && ( a.second >= b.second )));
 }
 
+
+namespace detail {
+
+template< class FirstType, class SecondType, class Info, class Layout>
+structured_pair<FirstType,SecondType,Info,Layout> 
+    copy_with_first_replaced(structured_pair<FirstType,SecondType,Info,Layout> const& p,
+        BOOST_DEDUCED_TYPENAME ::boost::call_traits< BOOST_DEDUCED_TYPENAME 
+            structured_pair<FirstType,SecondType,Info,Layout>::first_type>
+                ::param_type f)
+{
+    return structured_pair<FirstType,SecondType,Info,Layout>(f,p.second,p.info);
+}
+    
+template< class FirstType, class SecondType, class Layout>
+structured_pair<FirstType,SecondType,::boost::mpl::na,Layout> 
+    copy_with_first_replaced(structured_pair<FirstType,SecondType,::boost::mpl::na,Layout> const& p,
+        BOOST_DEDUCED_TYPENAME ::boost::call_traits< BOOST_DEDUCED_TYPENAME 
+            structured_pair<FirstType,SecondType,::boost::mpl::na,Layout>::first_type>
+                ::param_type f)
+{
+    return structured_pair<FirstType,SecondType,::boost::mpl::na,Layout>(f,p.second);
+}
+    
+template< class FirstType, class SecondType, class Info, class Layout>
+structured_pair<FirstType,SecondType,Info,Layout> 
+    copy_with_second_replaced(structured_pair<FirstType,SecondType,Info,Layout> const& p,
+        BOOST_DEDUCED_TYPENAME ::boost::call_traits< BOOST_DEDUCED_TYPENAME 
+            structured_pair<FirstType,SecondType,Info,Layout>::second_type>
+                ::param_type s)
+{
+    return structured_pair<FirstType,SecondType,Info,Layout>(p.first,s,p.info);
+}
+    
+template< class FirstType, class SecondType, class Layout>
+structured_pair<FirstType,SecondType,::boost::mpl::na,Layout> 
+    copy_with_second_replaced(structured_pair<FirstType,SecondType,::boost::mpl::na,Layout> const& p,
+        BOOST_DEDUCED_TYPENAME ::boost::call_traits< BOOST_DEDUCED_TYPENAME 
+            structured_pair<FirstType,SecondType,::boost::mpl::na,Layout>::second_type>
+                ::param_type s)
+{
+    return structured_pair<FirstType,SecondType,::boost::mpl::na,Layout>(p.first,s);
+}
+
+} // namespace detail
 
 
 } // namespace relation

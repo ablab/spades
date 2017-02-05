@@ -8,6 +8,8 @@
 
 #ifdef _MSC_VER
 #pragma once
+#pragma warning(push)
+#pragma warning(disable:4702) // Unreachable code (release mode only warning)
 #endif
 
 #include <boost/config/no_tr1/cmath.hpp>
@@ -195,7 +197,7 @@ T log1p_imp(T const& x, const Policy& pol, const mpl::int_<64>&)
       BOOST_MATH_BIG_CONSTANT(T, 64, 0.00441709903782239229447)
    };
    static const T Q[] = {    
-      BOOST_MATH_BIG_CONSTANT(T, 64, 1),
+      BOOST_MATH_BIG_CONSTANT(T, 64, 1.0),
       BOOST_MATH_BIG_CONSTANT(T, 64, 4.26423872346263928361),
       BOOST_MATH_BIG_CONSTANT(T, 64, 7.48189472704477708962),
       BOOST_MATH_BIG_CONSTANT(T, 64, 6.94757016732904280913),
@@ -496,6 +498,10 @@ inline typename tools::promote_args<T>::type log1pmx(T x)
 
 } // namespace math
 } // namespace boost
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #endif // BOOST_MATH_LOG1P_INCLUDED
 

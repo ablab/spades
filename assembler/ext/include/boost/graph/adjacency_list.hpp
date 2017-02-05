@@ -20,14 +20,6 @@
 
 #include <boost/unordered_set.hpp>
 
-#if !defined BOOST_NO_SLIST
-#  ifdef BOOST_SLIST_HEADER
-#    include BOOST_SLIST_HEADER
-#  else
-#    include <slist>
-#  endif
-#endif
-
 #include <boost/scoped_ptr.hpp>
 
 #include <boost/graph/graph_traits.hpp>
@@ -52,10 +44,6 @@ namespace boost {
   // to map the selectors to the container type used to implement the
   // graph.
 
-#if !defined BOOST_NO_SLIST
-  struct slistS {};
-#endif
-
   struct vecS  { };
   struct listS { };
   struct setS { };
@@ -74,12 +62,7 @@ namespace boost {
   struct container_gen<listS, ValueType> {
     typedef std::list<ValueType> type;
   };
-#if !defined BOOST_NO_SLIST
-  template <class ValueType>
-  struct container_gen<slistS, ValueType> {
-    typedef BOOST_STD_EXTENSION_NAMESPACE::slist<ValueType> type;
-  };
-#endif
+
   template <class ValueType>
   struct container_gen<vecS, ValueType> {
     typedef std::vector<ValueType> type;
@@ -136,12 +119,6 @@ namespace boost {
   struct parallel_edge_traits<listS> {
     typedef allow_parallel_edge_tag type; };
 
-#if !defined BOOST_NO_SLIST
-  template <>
-  struct parallel_edge_traits<slistS> {
-    typedef allow_parallel_edge_tag type; };
-#endif
-
   template <>
   struct parallel_edge_traits<setS> {
     typedef disallow_parallel_edge_tag type; };
@@ -188,6 +165,7 @@ namespace boost {
 
   } // namespace detail
 
+  template <typename Selector> struct is_distributed_selector: mpl::false_ {};
 
 
   //===========================================================================
@@ -328,7 +306,6 @@ namespace boost {
       : Base(num_vertices), m_property(new graph_property_type(p))
     { }
 
-#if !defined(BOOST_MSVC) || BOOST_MSVC >= 1300
     // Required by Iterator Constructible Graph
     template <class EdgeIterator>
     adjacency_list(EdgeIterator first, EdgeIterator last,
@@ -346,7 +323,6 @@ namespace boost {
                           const GraphProperty& p = GraphProperty())
       : Base(n, first, last, ep_iter), m_property(new graph_property_type(p))
     { }
-#endif
 
     void swap(adjacency_list& x) {
       // Is there a more efficient way to do this?

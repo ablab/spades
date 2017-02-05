@@ -7,8 +7,9 @@
 #ifndef BOOST_UNORDERED_DETAIL_UTIL_HPP_INCLUDED
 #define BOOST_UNORDERED_DETAIL_UTIL_HPP_INCLUDED
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1020)
-# pragma once
+#include <boost/config.hpp>
+#if defined(BOOST_HAS_PRAGMA_ONCE)
+#pragma once
 #endif
 
 #include <boost/type_traits/is_convertible.hpp>
@@ -27,6 +28,11 @@ namespace boost { namespace unordered { namespace detail {
     static const std::size_t default_bucket_count = 11;
     struct move_tag {};
     struct empty_emplace {};
+
+    namespace func {
+        template <class T>
+        inline void ignore_unused_variable_warning(T const&) {}
+    }
 
     ////////////////////////////////////////////////////////////////////////////
     // iterator SFINAE
@@ -118,33 +124,16 @@ namespace boost { namespace unordered { namespace detail {
     ////////////////////////////////////////////////////////////////////////////
     // insert_size/initial_size
 
-#if !defined(BOOST_NO_STD_DISTANCE)
-
-    using ::std::distance;
-
-#else
-
-    template <class ForwardIterator>
-    inline std::size_t distance(ForwardIterator i, ForwardIterator j) {
-        std::size_t x;
-        std::distance(i, j, x);
-        return x;
-    }
-
-#endif
-
     template <class I>
-    inline typename
-        boost::unordered::detail::enable_if_forward<I, std::size_t>::type
-        insert_size(I i, I j)
+    inline std::size_t insert_size(I i, I j, typename
+        boost::unordered::detail::enable_if_forward<I, void*>::type = 0)
     {
-        return std::distance(i, j);
+        return static_cast<std::size_t>(std::distance(i, j));
     }
 
     template <class I>
-    inline typename
-        boost::unordered::detail::disable_if_forward<I, std::size_t>::type
-        insert_size(I, I)
+    inline std::size_t insert_size(I, I, typename
+        boost::unordered::detail::disable_if_forward<I, void*>::type = 0)
     {
         return 1;
     }

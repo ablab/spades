@@ -13,23 +13,32 @@
 #if !defined(BOOST_FUNCTIONAL_HASH_EXTENSIONS_HPP)
 #define BOOST_FUNCTIONAL_HASH_EXTENSIONS_HPP
 
+#include <boost/config.hpp>
+#if defined(BOOST_HAS_PRAGMA_ONCE)
+#pragma once
+#endif
+
 #include <boost/functional/hash/hash.hpp>
-#include <boost/functional/hash/detail/container_fwd_0x.hpp>
+#include <boost/detail/container_fwd.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/preprocessor/repetition/repeat_from_to.hpp>
 #include <boost/preprocessor/repetition/enum_params.hpp>
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1020)
-# pragma once
+#if !defined(BOOST_NO_CXX11_HDR_ARRAY)
+#   include <array>
+#endif
+
+#if !defined(BOOST_NO_CXX11_HDR_TUPLE)
+#   include <tuple>
+#endif
+
+#if !defined(BOOST_NO_CXX11_HDR_MEMORY)
+#   include <memory>
 #endif
 
 #if defined(BOOST_NO_FUNCTION_TEMPLATE_ORDERING)
 #include <boost/type_traits/is_array.hpp>
-#endif
-
-#if BOOST_WORKAROUND(BOOST_MSVC, < 1300)
-#include <boost/type_traits/is_const.hpp>
 #endif
 
 namespace boost
@@ -149,7 +158,7 @@ namespace boost
         }
     }
 
-#if !defined(BOOST_NO_VARIADIC_TEMPLATES)
+#if !defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES)
     template <typename... T>
     inline std::size_t hash_value(std::tuple<T...> const& v)
     {
@@ -220,11 +229,7 @@ namespace boost
             template <class Array>
             struct inner
             {
-#if !BOOST_WORKAROUND(BOOST_MSVC, < 1300)
                 static std::size_t call(Array const& v)
-#else
-                static std::size_t call(Array& v)
-#endif
                 {
                     const int size = sizeof(v) / sizeof(*v);
                     return boost::hash_range(v, v + size);
@@ -286,8 +291,6 @@ namespace boost
         template <bool IsPointer>
         struct hash_impl;
 
-#if !BOOST_WORKAROUND(BOOST_MSVC, < 1300)
-
         template <>
         struct hash_impl<false>
         {
@@ -308,58 +311,6 @@ namespace boost
 #endif
             };
         };
-
-#else // Visual C++ 6.5
-
-        // Visual C++ 6.5 has problems with nested member functions and
-        // applying const to const types in templates. So we get this:
-
-        template <bool IsConst>
-        struct hash_impl_msvc
-        {
-            template <class T>
-            struct inner
-                : public std::unary_function<T, std::size_t>
-            {
-                std::size_t operator()(T const& val) const
-                {
-                    return hash_detail::call_hash<T const>::call(val);
-                }
-
-                std::size_t operator()(T& val) const
-                {
-                    return hash_detail::call_hash<T>::call(val);
-                }
-            };
-        };
-
-        template <>
-        struct hash_impl_msvc<true>
-        {
-            template <class T>
-            struct inner
-                : public std::unary_function<T, std::size_t>
-            {
-                std::size_t operator()(T& val) const
-                {
-                    return hash_detail::call_hash<T>::call(val);
-                }
-            };
-        };
-        
-        template <class T>
-        struct hash_impl_msvc2
-            : public hash_impl_msvc<boost::is_const<T>::value>
-                    ::BOOST_NESTED_TEMPLATE inner<T> {};
-        
-        template <>
-        struct hash_impl<false>
-        {
-            template <class T>
-            struct inner : public hash_impl_msvc2<T> {};
-        };
-
-#endif // Visual C++ 6.5
     }
 #endif  // BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION
 }
