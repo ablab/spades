@@ -171,11 +171,6 @@ class DataPrinter {
         }
     }
 
-//    template<class C>
-//    void SaveEdgeAssociatedInfo(const C& c, ostream& out) const {
-//        SaveEdgeAssociatedInfo<decltype(C::operator[])>(boost::bind(&C::operator[], c, _1), out);
-//    }
-
     template<class C>
     void SaveEdgeAssociatedInfo(const C& c, ostream& out) const {
         out << component_.e_size() << endl;
@@ -220,7 +215,6 @@ class DataPrinter {
     void SaveEdgeSequences(const string& file_name) const {
         ofstream out(file_name + ".sqn");
         //todo switch to general function after its switching to fasta
-        //SaveEdgeAssociatedInfo<Sequence>(boost::bind(&Graph::EdgeNucls, component_.g(), _1), out);
         DEBUG("Saving sequences, " << file_name <<" created");
         for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
             EdgeId e = *iter;
@@ -410,11 +404,6 @@ class DataScanner {
             VERIFY(delim == ".");
         }
     }
-
-//    template<class C>
-//    void LoadEdgeAssociatedInfo(const C& c, ostream& out) const {
-//        SaveEdgeAssociatedInfo<decltype(C::operator[])>(boost::bind(&C::operator[], c, _1), out);
-//    }
 
   public:
     virtual void LoadGraph(const string& file_name) = 0;
