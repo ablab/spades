@@ -662,7 +662,7 @@ public:
                       max_coverage, vertex_count_limit, vis_dir),
               component_remover_(g, handler_function) {
         this->interest_el_finder_ = std::make_shared<ParallelInterestingElementFinder<Graph, EdgeId>>(
-                [&](EdgeId e) { return finder_(e); }, chunk_cnt);
+            [&](EdgeId e) { return static_cast<bool>(finder_(e)); }, chunk_cnt);
     }
 
 protected:

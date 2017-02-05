@@ -7,7 +7,6 @@
 
 #pragma once
 #include "utils/stacktrace.hpp"
-#include "boost/current_function.hpp"
 #include <sstream>
 #include <iostream>
 #include <cassert>
@@ -23,7 +22,7 @@
     if (!(expr)) {                                                      \
         std::stringstream ss;                                           \
         print_stacktrace();\
-        ss << "Verification of expression '" << #expr << "' failed in function '" <<  BOOST_CURRENT_FUNCTION << \
+        ss << "Verification of expression '" << #expr << "' failed in function '" <<  __PRETTY_FUNCTION__ << \
                 "'. In file '" << __FILE__ << "' on line " << __LINE__ << ". Message '" << msg << "'." ; \
         std::cout << ss.str() << std::endl;                             \
         std::cerr << ss.str() << std::endl;                             \
