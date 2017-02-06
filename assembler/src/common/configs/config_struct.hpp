@@ -458,21 +458,32 @@ struct debruijn_config {
     struct tslr_resolver {
         std::string read_cloud_dataset;
         std::string library_type;
-        int reference_cov;
-        size_t len_threshold;
-        size_t trimming_threshold;
-        size_t distance_bound;
-        size_t fragment_len;
-        size_t gap_threshold;
-        double diff_threshold;
-        double abs_threshold;
-        double barcode_number_threshold;
-        size_t topsort_bound;
-        bool debug_construction;
-        bool join_paths;
-        bool ideal_reads;
-        size_t edge_tail_len;
         std::string genome_path;
+
+        size_t edge_tail_len;
+        size_t frame_size;
+
+        size_t gap_threshold;
+        size_t trimming_threshold;
+
+        double diff_threshold;
+        double barcode_number_threshold;
+        size_t distance_bound;
+        size_t edge_length_threshold;
+        size_t fragment_len;
+        size_t topsort_bound;
+
+        struct tenx_resolver {
+            size_t tail_threshold;
+            size_t max_initial_candidates;
+            size_t internal_gap_threshold;
+            size_t absolute_barcode_threshold;
+            size_t initial_abundancy_threshold;
+            size_t middle_abundancy_threshold;
+        };
+
+        tenx_resolver tenx;
+
     };
 
     tslr_resolver ts_res;
