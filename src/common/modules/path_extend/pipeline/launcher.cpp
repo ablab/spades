@@ -7,18 +7,19 @@
 
 #include "launcher.hpp"
 
-#include "modules/path_extend/loop_traverser.hpp"
-#include "modules/path_extend/path_extender.hpp"
-#include "modules/path_extend/path_visualizer.hpp"
-#include "modules/path_extend/scaff_supplementary.hpp"
-#include "modules/path_extend/scaffolder2015/path_polisher.hpp"
-#include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
-#include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
-
 #include "alignment/long_read_storage.hpp"
 #include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
+
+#include "modules/path_extend/loop_traverser.hpp"
+#include "modules/path_extend/path_extender.hpp"
+#include "modules/path_extend/path_visualizer.hpp"
+#include "modules/path_extend/read_cloud_path_extend/extension_chooser_checker.hpp"
+#include "modules/path_extend/scaff_supplementary.hpp"
+#include "modules/path_extend/scaffolder2015/path_polisher.hpp"
+#include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
+#include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
 
 #include <unordered_set>
 
@@ -469,9 +470,10 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             const size_t gap_threshold = cfg::get().ts_res.gap_threshold;
             INFO("Abundancy threshold: " << abundancy_threshold);
             INFO("Gap threshold: " << gap_threshold);
-            INFO("Average barcode coverage before filtering: " << gp_.barcode_mapper->AverageBarcodeCoverage());
-            gp_.barcode_mapper->Filter(abundancy_threshold, gap_threshold);
-            INFO("Average barcode coverage after filtering: " << gp_.barcode_mapper->AverageBarcodeCoverage());
+            INFO("Average barcode coverage before filtering: " << gp_.barcode_mapper_ptr->AverageBarcodeCoverage());
+            gp_.barcode_mapper_ptr->Filter(abundancy_threshold, gap_threshold);
+            INFO("Finished filtering")
+            INFO("Average barcode coverage after filtering: " << gp_.barcode_mapper_ptr->AverageBarcodeCoverage());
 
             INFO("Creating read cloud extenders");
             push_back_all(extenders, ConstructReadCloudExtender(generator));
@@ -530,6 +532,8 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     result.SortByLength();
     INFO("Gap closing completed")
 }
+
+TenXExtensionChooserStatistics TenXExtensionChooser::stats_ = TenXExtensionChooserStatistics();
 
 void PathExtendLauncher::FilterPaths(PathContainer &contig_paths) {
     TIME_TRACE_SCOPE("PathExtend::FilterPaths");
@@ -716,6 +720,8 @@ void PathExtendLauncher::Launch() {
     FilterPaths(contig_paths);
 
     CountMisassembliesWithReference(contig_paths);
+
+    TenXExtensionChooser::PrintStats(cfg::get().output_dir + "10x_extender_stats");
 
     INFO("ExSPAnder repeat resolving tool finished");
 }

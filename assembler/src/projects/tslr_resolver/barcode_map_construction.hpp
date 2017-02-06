@@ -5,7 +5,7 @@
 #include "common/barcode_index/barcode_mapper.hpp"
 #include "common/pipeline/stage.hpp"
 
-using namespace tslr_resolver;
+using namespace barcode_index;
 
 namespace spades {
     class BarcodeMapConstructionStage : public AssemblyStage {

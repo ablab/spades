@@ -54,7 +54,7 @@ namespace spades {
                  std::to_string(graph_pack.barcode_mapper->AverageBarcodeCoverage()));
 
             if (cfg::get().ts_res.library_type == "tslr")
-                tslr_resolver::LaunchBarcodePE(graph_pack);
+                barcode_index::LaunchBarcodePE(graph_pack);
             else {
                 LaunchStatisticsCounter(graph_pack);
             }
