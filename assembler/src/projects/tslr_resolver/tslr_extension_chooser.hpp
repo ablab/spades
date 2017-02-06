@@ -10,7 +10,7 @@
 
 using namespace path_extend;
 
-namespace tslr_resolver {
+namespace barcode_index {
 
         class ReadCloudExtensionChooser : public ExtensionChooser {
 
@@ -204,4 +204,4 @@ namespace tslr_resolver {
             }
             DECL_LOGGER("TslrExtensionChooser")
         };
-} //tslr_resolver
+} //barcode_index

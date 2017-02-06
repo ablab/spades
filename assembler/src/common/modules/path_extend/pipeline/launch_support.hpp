@@ -71,7 +71,7 @@ struct PathExtendParamsContainer {
             traverse_loops = false;
 
         //Parameters are subject to change
-        max_polisher_gap = FindMaxISRightQuantile(dataset_info);
+        max_polisher_gap = 10000;
         //TODO: params
         if (HasLongReads(dataset_info))
             max_polisher_gap = std::max(max_polisher_gap, size_t(10000));

@@ -1,21 +1,19 @@
 #pragma once
 
-#include "common/barcode_index/barcode_mapper.hpp"
+#include "common/barcode_index/barcode_info_extractor.hpp"
 
-namespace tslr_resolver {
+namespace barcode_index {
 
     template<class G>
     class BarcodeDistGraphLabeler : public visualization::graph_labeler::StrGraphLabeler<Graph> {
         typedef visualization::graph_labeler::StrGraphLabeler <Graph> base;
         typedef typename G::EdgeId EdgeId;
         typedef typename G::VertexId VertexId;
-        typedef BarcodeMapper b_mapper;
+        typedef AbstractBarcodeIndex b_mapper;
         typedef std::set <EdgeId> edge_set_t;
     private:
-        const shared_ptr <b_mapper>& barcode_mapper_;
-        /* Code duplication to avoid passing unique edge storage to Labeler.
-        That might be even more horrible
-        Could have helped if conservative checks there were static. */
+        const shared_ptr <b_mapper> barcode_mapper_;
+        //Code duplication to avoid passing unique edge storage to Labeler.
 
         bool ConservativeByTopology(EdgeId e, const Graph& g ) const {
             size_t incoming = g.IncomingEdgeCount(g.EdgeStart(e));
@@ -54,7 +52,7 @@ namespace tslr_resolver {
 
     template <class Graph>
     class TslrVisualizer {
-        typedef BarcodeMapper b_mapper;
+        typedef AbstractBarcodeIndex b_mapper;
     private:
         const debruijn_graph::conj_graph_pack &gp_;
         shared_ptr<b_mapper> barcode_mapper_;

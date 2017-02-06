@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/barcode_index/barcode_mapper.hpp"
+#include "common/barcode_index/barcode_info_extractor.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 
 namespace omnigraph {
@@ -53,9 +53,9 @@ namespace omnigraph {
     class BarcodePutChecker : public VertexPutChecker<Graph, distance_t> {
         typedef typename Graph::VertexId VertexId;
         typedef typename Graph::EdgeId EdgeId;
-        typedef shared_ptr<tslr_resolver::BarcodeMapper> Bmapper;
+//        typedef shared_ptr<barcode_index::AbstractBarcodeIndexInfoExtractor> barcode_extractor_ptr;
+
         const Graph& g_;
-        Bmapper mapper_;
         EdgeId decisive_edge_;
         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         vector <EdgeId>& candidates_;
@@ -63,12 +63,10 @@ namespace omnigraph {
 
     public:
         BarcodePutChecker(const Graph& g,
-            const Bmapper& mapper,
             const EdgeId& decisive_edge,
             const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
             vector<EdgeId>& candidates) : VertexPutChecker<Graph, distance_t> (),
                                                              g_(g),
-                                                             mapper_(mapper), 
                                                              decisive_edge_(decisive_edge),
                                                              unique_storage_(unique_storage),
                                                              candidates_(candidates) { }
@@ -78,19 +76,19 @@ namespace omnigraph {
             DEBUG("Checking edge " << edge.int_id());
             DEBUG("Length " << g_.length(edge)) 
             DEBUG("Decisive edge " << decisive_edge_.int_id())
-            DEBUG("Intersection " << mapper_->GetIntersectionSize(decisive_edge_, edge))
-            DEBUG("Normalized intersection (first) "
-                          << mapper_->GetIntersectionSizeNormalizedByFirst(decisive_edge_, edge))
-            DEBUG("Normalized intersection (second) "
-                          << mapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge_, edge))
+//            DEBUG("Intersection " << barcode_extractor_->AreEnoughSharedBarcodes(decisive_edge_, edge))
+//            DEBUG("Normalized intersection (first) "
+//                          << barcode_extractor_->GetIntersectionSizeNormalizedByFirst(decisive_edge_, edge))
+//            DEBUG("Normalized intersection (second) "
+//                          << barcode_extractor_->GetIntersectionSizeNormalizedBySecond(decisive_edge_, edge))
             size_t gap = dist - g_.length(edge);
             DEBUG("Gap " << gap)
 
-            size_t decisive_barcodes = mapper_->GetTailBarcodeNumber(decisive_edge_);
-            size_t current_barcodes = mapper_->GetHeadBarcodeNumber(edge);
+//            size_t decisive_barcodes = barcode_extractor_->GetTailBarcodeNumber(decisive_edge_);
+//            size_t current_barcodes = barcode_extractor_->GetHeadBarcodeNumber(edge);
 
-            DEBUG("Barcodes " << current_barcodes);
-            DEBUG("Decisive edge barcodes " << decisive_barcodes);
+//            DEBUG("Barcodes " << current_barcodes);
+//            DEBUG("Decisive edge barcodes " << decisive_barcodes);
             DEBUG("Is unique " << unique_storage_.IsUnique(edge));
 
             if (g_.length(edge) < unique_storage_.GetMinLength()) {

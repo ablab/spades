@@ -9,8 +9,8 @@
 
 using namespace path_extend;
 
-namespace tslr_resolver {
-    //fixme move this to FillMap at BarcodeMapper
+namespace barcode_index {
+    //fixme move this to FillMap at AbstractBarcodeIndex
     size_t GetMaximalBarcodeNumber (const std::string& path_to_tslr_dataset) {
         size_t result = 0;
         std::ifstream fin;
@@ -149,4 +149,4 @@ namespace tslr_resolver {
             CountMisassembliesWithReference(genome_checker, final_paths);
     };
 
-} //tslr_resolver
+} //barcode_index

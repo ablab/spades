@@ -455,26 +455,34 @@ void load(debruijn_config::truseq_analysis& tsa,
   load(tsa.genome_file, pt, "genome_file");
 }
 
+void load(debruijn_config::tslr_resolver::tenx_resolver& tenx,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(tenx.internal_gap_threshold, pt, "internal_gap_threshold");
+    load(tenx.tail_threshold, pt, "tail_threshold");
+    load(tenx.max_initial_candidates, pt, "max_initial_candidates");
+    load(tenx.absolute_barcode_threshold, pt, "absolute_barcode_threshold");
+    load(tenx.initial_abundancy_threshold, pt, "initial_abundancy_threshold");
+    load(tenx.middle_abundancy_threshold, pt, "middle_abundancy_threshold");
+}
+
 void load(debruijn_config::tslr_resolver& ts_res,
-      boost::property_tree::ptree const& pt, bool /*complete*/) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
     load(ts_res.read_cloud_dataset, pt, "read_cloud_dataset");
     load(ts_res.library_type, pt, "library_type");
-    load(ts_res.reference_cov, pt, "reference_cov");
-    load(ts_res.len_threshold, pt, "len_threshold");
+    load(ts_res.edge_length_threshold, pt, "edge_length_threshold");
     load(ts_res.trimming_threshold, pt, "trimming_threshold");
     load(ts_res.distance_bound, pt, "distance_bound");
     load(ts_res.diff_threshold, pt, "diff_threshold");
-    load(ts_res.abs_threshold, pt, "abs_threshold");
     load(ts_res.gap_threshold, pt, "gap_threshold");
     load(ts_res.barcode_number_threshold, pt, "barcode_number_threshold");
     load(ts_res.topsort_bound, pt, "topsort_bound");
-    load(ts_res.debug_construction, pt, "debug_construction");
-    load(ts_res.join_paths, pt, "join_paths");
-    load(ts_res.ideal_reads, pt, "ideal_reads");
     load(ts_res.edge_tail_len, pt, "edge_tail_len");
+    load(ts_res.frame_size, pt, "frame_size");
     load(ts_res.fragment_len, pt, "fragment_len");
     load(ts_res.genome_path, pt, "genome_path");
+    load(ts_res.tenx, pt, "tenx_resolver");
 }
 
 void load(bwa_aligner& bwa,
