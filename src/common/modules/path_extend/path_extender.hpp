@@ -16,6 +16,8 @@
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
+#include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "read_cloud_path_extend/bounded_dijkstra.hpp"
 
 #include <cmath>
 
@@ -685,7 +687,8 @@ protected:
 
     shared_ptr<ExtensionChooser> extensionChooser_;
     ScaffoldingUniqueEdgeStorage unique_storage_;
-    shared_ptr<tslr_resolver::BarcodeMapper> mapper_;
+    shared_ptr<barcode_index::AbstractBarcodeIndex> mapper_;
+    size_t distance_bound_;
 
 
     //todo should be precounted at barcode map construction stage
@@ -709,13 +712,15 @@ public:
                              size_t is,
                              bool investigate_short_loops,
                              bool use_short_loop_cov_resolver,
-                             const ScaffoldingUniqueEdgeStorage& unique_storage)
+                             const ScaffoldingUniqueEdgeStorage& unique_storage,
+                             const size_t distance_bound)
             :
             LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, use_short_loop_cov_resolver,
                                       is),
             extensionChooser_(ec),
             unique_storage_(unique_storage),
-            mapper_(gp.barcode_mapper) {
+            mapper_(gp.barcode_mapper_ptr),
+            distance_bound_(distance_bound){
     }
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
@@ -740,11 +745,11 @@ public:
     }
 
 protected:
+
     virtual bool FilterCandidates(BidirectionalPath &path, ExtensionChooser::EdgeContainer &candidates) {
         DEBUG("Simple grow step");
         path.Print();
         DEBUG("Path size " << path.Size())
-        DEBUG("Starting at vertex " << g_.EdgeEnd(path.Back()));
         candidates = extensionChooser_->Filter(path, candidates);
         DEBUG(candidates.size() << " candidates passed");
         return true;
@@ -768,6 +773,7 @@ protected:
 //That allows us to avoid overlap removal hacks used earlier.
         if (used_storage_->UniqueCheckEnabled()) {
             if (used_storage_->IsUsedAndUnique(eid)) {
+                DEBUG("Tried to add already used edge")
                 return false;
             } else {
                 used_storage_->insert(eid);

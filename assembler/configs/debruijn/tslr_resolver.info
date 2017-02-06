@@ -7,13 +7,15 @@ ts_res
 		library_type tenx
 
 		;genome file for tenx stats
-		genome_path /Nancy/itolstoganov/tenx_metagenome/easy_test/data/alignments/Klebsiella/Klebsiella_pneumoniae_342.fasta
+		genome_path /Nancy/itolstoganov/tenx_metagenome/easy_test/data/references/contig_refs/combined.fasta
 
 
 	;Barcode index construction configs
 
 		;Barcodes are counted on the last edge_tail_len nucleotides of the edge
-		edge_tail_len 8000
+		edge_tail_len 100000000
+		;Edge will be split up to segments of length frame_size
+		frame_size 500
 
 	;Filtering configs
 
@@ -21,7 +23,7 @@ ts_res
 		trimming_threshold 10
 
 		;clouds further than gap_threshold from the end\beginning of the edge will be deleted
-		gap_threshold 2000
+		gap_threshold 100000000
 
 	;Repeat resolution configs
 
@@ -36,19 +38,23 @@ ts_res
 
 		;Any candidate edge should be no further in graph. 
 		;In other words, that is the maximum size of resolvable repeat.
-		distance_bound  20000
+		distance_bound  30000
 
 		;length threshold for reliable edges
-		len_threshold  500
+		edge_length_threshold  2000
 
 		;Average length of read cloud fragment
 		fragment_len 50000
 
 		topsort_bound 5000
 
-		join_paths true ;deprecated
-		ideal_reads false ;deprecated
-		debug_construction false ;deprecated
-		abs_threshold 0.1  ;deprecated
-		reference_cov  38  ;deprecated
+	tenx_resolver
+	{
+		tail_threshold 40000
+		max_initial_candidates 10
+		internal_gap_threshold 6000
+		absolute_barcode_threshold 2
+		initial_abundancy_threshold 15
+		middle_abundancy_threshold 10
+	}
 }

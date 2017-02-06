@@ -4,7 +4,7 @@
 
 using namespace path_extend;
 
-namespace tslr_resolver {
+namespace barcode_index {
 /*This class is similar to CompositeExtender, but
   with slightly different usage of coverage map.
   Huge code duplication need to be removed */
@@ -168,7 +168,7 @@ namespace tslr_resolver {
         size_t edge_threshold_;
         size_t max_barcodes_on_edge_;
         ScaffoldingUniqueEdgeStorage unique_storage_;
-        shared_ptr<tslr_resolver::BarcodeMapper> mapper_;
+        shared_ptr<barcode_index::BarcodeMapper> mapper_;
         std::unordered_map <size_t, size_t>& id_to_index_;
 
 
@@ -395,4 +395,4 @@ namespace tslr_resolver {
         DECL_LOGGER("InconsistentExtender")
 
     };
-} //tslr_resolver
+} //barcode_index
