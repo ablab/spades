@@ -358,18 +358,26 @@ Extenders ExtendersGenerator::MakeReadCloudExtender(const ScaffoldingUniqueEdgeS
     auto tslr_resolver_params = cfg::get().ts_res;
     size_t distance_bound = tslr_resolver_params.distance_bound;
     const size_t fragment_length = tslr_resolver_params.fragment_len;
-    tslr_resolver::BarcodeLibraryType barcode_lib = tslr_resolver::GetLibType(tslr_resolver_params.library_type);
+    barcode_index::BarcodeLibraryType barcode_lib = barcode_index::GetLibType(tslr_resolver_params.library_type);
     shared_ptr<ExtensionChooser> extension_chooser;
     VERIFY(fragment_length > distance_bound);
-    VERIFY_MSG(barcode_lib == tslr_resolver::BarcodeLibraryType::TSLR or tslr_resolver::BarcodeLibraryType::TenX,
+    VERIFY_MSG(barcode_lib == barcode_index::BarcodeLibraryType::TSLR or barcode_index::BarcodeLibraryType::TenX,
         "Unknown library type.")
 
     INFO(storage.size() << " unique edges.");
+    typedef barcode_index::AbstractBarcodeIndexInfoExtractor abstract_extractor_t;
 
-    if (barcode_lib == tslr_resolver::BarcodeLibraryType::TSLR) {
+    if (barcode_lib == barcode_index::BarcodeLibraryType::TSLR) {
         INFO("Library type: TSLR")
         const double absolute_barcode_threshold = tslr_resolver_params.diff_threshold;
+
+        typedef barcode_index::BarcodeIndexInfoExtractor<barcode_index::SimpleBarcodeEntry> tslr_extractor_t;
+
+        auto extractor_ptr = make_shared<tslr_extractor_t>(gp_.barcode_mapper_ptr);
+        shared_ptr<abstract_extractor_t> abstract_extractor_ptr = std::static_pointer_cast<abstract_extractor_t>(extractor_ptr);
+
         extension_chooser = make_shared<TSLRExtensionChooser>(gp_,
+                                                              abstract_extractor_ptr,
                                                               fragment_length,
                                                               distance_bound,
                                                               storage,
@@ -378,7 +386,14 @@ Extenders ExtendersGenerator::MakeReadCloudExtender(const ScaffoldingUniqueEdgeS
     else {
         INFO("Library type: 10X")
         const int absolute_barcode_threshold = 2;
+
+        typedef barcode_index::BarcodeIndexInfoExtractor<barcode_index::SimpleBarcodeEntry> tenx_extractor_t;
+
+        auto extractor_ptr = make_shared<tenx_extractor_t>(gp_.barcode_mapper_ptr);
+        shared_ptr<abstract_extractor_t>  abstract_extractor_ptr = std::static_pointer_cast<abstract_extractor_t>(extractor_ptr);
+
         extension_chooser = make_shared<TenXExtensionChooser>(gp_,
+                                                              abstract_extractor_ptr,
                                                               fragment_length,
                                                               distance_bound,
                                                               storage,

@@ -4,7 +4,7 @@
 #include "utils/logger/logger.hpp"
 #include "common/pipeline/stage.hpp"
 
-using namespace tslr_resolver;
+using namespace barcode_index;
 
 namespace debruijn_graph {
     class BarcodeMapConstructionStage : public spades::AssemblyStage {

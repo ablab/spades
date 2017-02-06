@@ -1420,7 +1420,7 @@ protected:
 
     shared_ptr<ExtensionChooser> extensionChooser_;
     ScaffoldingUniqueEdgeStorage unique_storage_;
-    shared_ptr<tslr_resolver::BarcodeMapper> mapper_;
+    shared_ptr<barcode_index::AbstractBarcodeIndex> mapper_;
 
 
     //todo should be precounted at barcode map construction stage
@@ -1450,7 +1450,7 @@ public:
                                       is),
             extensionChooser_(ec),
             unique_storage_(unique_storage),
-            mapper_(gp.barcode_mapper) {
+            mapper_(gp.barcode_mapper_ptr) {
     }
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {

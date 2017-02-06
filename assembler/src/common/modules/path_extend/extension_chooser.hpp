@@ -1308,18 +1308,20 @@ private:
 
 class ReadCloudExtensionChooser : public ExtensionChooser {
 protected:
-    shared_ptr<tslr_resolver::BarcodeMapper> bmapper_;
+    typedef shared_ptr<barcode_index::AbstractBarcodeIndexInfoExtractor> barcode_extractor_ptr_t;
+    barcode_extractor_ptr_t barcode_extractor_ptr_;
     size_t fragment_len_;
     size_t distance_bound_;
     ScaffoldingUniqueEdgeStorage unique_storage_;
 
 public:
     ReadCloudExtensionChooser(const conj_graph_pack& gp,
+                              barcode_extractor_ptr_t extractor,
                               size_t fragment_len,
                               size_t distance_bound,
                               const ScaffoldingUniqueEdgeStorage& unique_storage) :
             ExtensionChooser(gp.g),
-            bmapper_(gp.barcode_mapper),
+            barcode_extractor_ptr_(extractor),
             fragment_len_(fragment_len),
             distance_bound_(distance_bound),
             unique_storage_(unique_storage) {
@@ -1337,7 +1339,7 @@ public:
 
         DEBUG("At edge " << path.Back().int_id());
         DEBUG("Decisive edge " << last_unique.first.int_id());
-        DEBUG("Decisive edge barcodes: " << bmapper_->GetTailBarcodeNumber(last_unique.first));
+        DEBUG("Decisive edge barcodes: " << barcode_extractor_ptr_->GetTailBarcodeNumber(last_unique.first));
 
         result = FindNextUniqueEdge(last_unique.first);
 
@@ -1360,7 +1362,7 @@ public:
         //find unique edges further in graph
         vector<EdgeId> initial_candidates;
         EdgeContainer candidates;
-        auto put_checker = BarcodePutChecker<Graph>(g_, bmapper_, decisive_edge, unique_storage_, initial_candidates);
+        auto put_checker = BarcodePutChecker<Graph>(g_, barcode_extractor_ptr_, decisive_edge, unique_storage_, initial_candidates);
         auto dij = BarcodeDijkstra<Graph>::CreateBarcodeBoundedDijkstra(g_, distance_bound_, put_checker);
         dij.Run(g_.EdgeEnd(decisive_edge));
 
@@ -1445,18 +1447,20 @@ private:
 };
 
 class TSLRExtensionChooser : public ReadCloudExtensionChooser {
-    using ReadCloudExtensionChooser::bmapper_;
+    using ReadCloudExtensionChooser::barcode_extractor_ptr_t;
+    using ReadCloudExtensionChooser::barcode_extractor_ptr_;
     using ReadCloudExtensionChooser::unique_storage_;
     using ReadCloudExtensionChooser::fragment_len_;
     double absolute_barcode_threshold_;
 
 public:
     TSLRExtensionChooser(const conj_graph_pack& gp,
+                         barcode_extractor_ptr_t extractor,
                          size_t fragment_len,
                          size_t distance_bound,
                          const ScaffoldingUniqueEdgeStorage& unique_storage,
                          double absolute_barcode_threshold) :
-            ReadCloudExtensionChooser(gp, fragment_len, distance_bound, unique_storage),
+            ReadCloudExtensionChooser(gp, extractor, fragment_len, distance_bound, unique_storage),
             absolute_barcode_threshold_(absolute_barcode_threshold) {}
 
 private:
@@ -1472,7 +1476,7 @@ private:
         std::copy_if(edges.begin(), edges.end(), std::back_inserter(best_candidates),
                      [this, &decisive_edge](const EdgeWithDistance& edge) {
                          return edge.e_ != decisive_edge and
-                                this->bmapper_->GetIntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
+                                this->barcode_extractor_ptr_->GetIntersectionSizeNormalizedBySecond(decisive_edge, edge.e_) >
                                 absolute_barcode_threshold_ * GetGapCoefficient(edge.d_);
                      });
         return best_candidates;
@@ -1481,18 +1485,20 @@ private:
 };
 
 class TenXExtensionChooser : public ReadCloudExtensionChooser {
-    using ReadCloudExtensionChooser::bmapper_;
+    using ReadCloudExtensionChooser::barcode_extractor_ptr_t;
+    using ReadCloudExtensionChooser::barcode_extractor_ptr_;
     using ReadCloudExtensionChooser::unique_storage_;
     using ReadCloudExtensionChooser::fragment_len_;
     double absolute_barcode_threshold_;
 
 public:
     TenXExtensionChooser(const conj_graph_pack& gp,
+                         barcode_extractor_ptr_t extractor,
                          size_t fragment_len,
                          size_t distance_bound,
                          const ScaffoldingUniqueEdgeStorage& unique_storage,
                          double absolute_barcode_threshold) :
-            ReadCloudExtensionChooser(gp, fragment_len, distance_bound, unique_storage),
+            ReadCloudExtensionChooser(gp, extractor, fragment_len, distance_bound, unique_storage),
             absolute_barcode_threshold_(absolute_barcode_threshold) {}
 
 private:
@@ -1502,7 +1508,7 @@ private:
         std::copy_if(edges.begin(), edges.end(), std::back_inserter(best_candidates),
                      [this, &decisive_edge](const EdgeWithDistance& edge) {
                          return edge.e_ != decisive_edge and
-                                this->bmapper_->GetIntersectionSize(decisive_edge, edge.e_) >
+                                this->barcode_extractor_ptr_->GetIntersectionSize(decisive_edge, edge.e_) >
                                         absolute_barcode_threshold_;
                      });
         return best_candidates;

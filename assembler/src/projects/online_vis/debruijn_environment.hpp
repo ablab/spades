@@ -28,7 +28,7 @@ class DebruijnEnvironment : public Environment {
         std::shared_ptr<MapperClass> mapper_;
         FillerClass filler_;
     visualization::graph_labeler::DefaultLabeler<Graph> pos_labeler_;
-        tslr_resolver::BarcodeDistGraphLabeler <Graph> barcode_labeler_;
+        barcode_index::BarcodeDistGraphLabeler <Graph> barcode_labeler_;
         visualization::graph_labeler::CompositeLabeler <Graph> labeler_;
         debruijn_graph::ReadPathFinder<Graph> path_finder_;
         ColoringClass coloring_;
@@ -54,7 +54,7 @@ class DebruijnEnvironment : public Environment {
               mapper_(new MapperClass(gp_.g, gp_.index, gp_.kmer_mapper)),
               filler_(gp_.g, mapper_, gp_.edge_pos),
               pos_labeler_(gp_.g, gp_.edge_pos),
-              barcode_labeler_(gp_.g, gp_.barcode_mapper),
+              barcode_labeler_(gp_.g, gp_.barcode_mapper_ptr),
               labeler_(pos_labeler_, barcode_labeler_),
               path_finder_(gp_.g) {
             DEBUG("Environment constructor");

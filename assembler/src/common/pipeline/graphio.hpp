@@ -789,7 +789,7 @@ void PrintSingleLongReads(const string& file_name, const LongReadContainer<Graph
 
 template <class Graph>
 void PrintBarcodeIndex(const string &path,
-                       const shared_ptr<tslr_resolver::BarcodeMapper> &barcodeMapper,
+                       const shared_ptr<barcode_index::AbstractBarcodeIndex> &barcodeMapper,
                        const Graph &g) {
     const string file_name = path + ".bmap";
     ofstream index_file(file_name);
@@ -813,7 +813,7 @@ void PrintAll(const string& file_name, const graph_pack& gp) {
     PrintClusteredIndices(file_name, printer, gp.clustered_indices);
     PrintScaffoldingIndices(file_name, printer, gp.scaffolding_indices);
     PrintSingleLongReads(file_name, gp.single_long_reads);
-    PrintBarcodeIndex(file_name, gp.barcode_mapper, gp.g);
+    PrintBarcodeIndex(file_name, gp.barcode_mapper_ptr, gp.g);
     gp.ginfo.Save(file_name + ".ginfo");
 }
 
@@ -891,7 +891,7 @@ std::unordered_map <size_t, typename Graph::EdgeId> MakeEdgeMap(Graph& g) {
 };
 
 inline void DeserializeBarcodeMapEntry(ifstream& file, const std::unordered_map <size_t, EdgeId>& edge_map,
-                                shared_ptr<tslr_resolver::BarcodeMapper>& barcodeMapper) {
+                                shared_ptr<barcode_index::AbstractBarcodeIndex>& barcodeMapper) {
     size_t edge_id;
     file >> edge_id;
     barcodeMapper->ReadEntry(file, edge_map.find(edge_id) -> second);
@@ -899,8 +899,8 @@ inline void DeserializeBarcodeMapEntry(ifstream& file, const std::unordered_map 
 
 template <class Graph>
 void ScanBarcodeIndex(const string &path, const std::unordered_map<size_t, EdgeId> &edge_map,
-                      shared_ptr<tslr_resolver::BarcodeMapper> &barcodeMapper, Graph &g)  {
-    typedef tslr_resolver::HeadTailMapperBuilder<tslr_resolver::EdgeEntry> Builder;
+                      shared_ptr<barcode_index::AbstractBarcodeIndex> &barcodeMapper, Graph &g)  {
+    typedef barcode_index::HeadTailMapperBuilder<barcode_index::SimpleBarcodeEntry> Builder;
     string file_name = path + ".bmap";
     ifstream index_file(file_name);
     INFO("Loading barcode information from " << file_name)
@@ -924,7 +924,7 @@ void ScanGraphPack(const string& file_name,
                    DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp) {
     ScanBasicGraph(file_name, scanner);
     auto edge_map = MakeEdgeMap<typename graph_pack::graph_t> (gp.g);
-    ScanBarcodeIndex(file_name, edge_map, gp.barcode_mapper, gp.g);
+    ScanBarcodeIndex(file_name, edge_map, gp.barcode_mapper_ptr, gp.g);
     gp.index.Attach();
     if (LoadEdgeIndex(file_name, gp.index.inner_index())) {
         gp.index.Update();

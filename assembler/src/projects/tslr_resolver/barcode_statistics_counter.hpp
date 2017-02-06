@@ -4,7 +4,7 @@
 #include "common/barcode_index/barcode_mapper.hpp"
 #include "common/modules/path_extend/bounded_dijkstra.hpp"
 
-namespace tslr_resolver {
+namespace barcode_index {
 
     struct EdgeStat {
         size_t simplesingle = 0;
