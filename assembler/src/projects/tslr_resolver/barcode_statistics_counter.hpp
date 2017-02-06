@@ -4,7 +4,7 @@
 #include "common/barcode_index/barcode_mapper.hpp"
 #include "common/modules/path_extend/bounded_dijkstra.hpp"
 
-namespace tslr_resolver {
+namespace barcode_index {
 
     struct EdgeStat {
         size_t simplesingle = 0;
@@ -154,6 +154,75 @@ namespace tslr_resolver {
             INFO("All edges: " << all_edges);
             INFO("References: " << references.size());
         }
+
+        //check stuff
+        const Index &index = gp_.index;
+        const debruijn_graph::KmerMapper<Graph>& kmer_mapper = gp_.kmer_mapper;
+        io::FileReadStream genome_stream(tslr_resolver_params.genome_path);
+        vector<io::SingleRead> references;
+        while(!genome_stream.eof()) {
+            io::SingleRead scaffold;
+            genome_stream >> scaffold;
+            references.push_back(scaffold);
+        }
+        auto seq_mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, Index> >
+        (gp_.g, index, kmer_mapper);
+        size_t false_positive = 0;
+        size_t false_negative = 0;
+        size_t overall = 0;
+
+        for (const auto& reference: references) {
+            std::set<EdgeId> long_edges_in_path;
+            std::set<EdgeId> long_edges_in_prefix;
+            const auto &path = seq_mapper->MapRead(reference);
+            size_t path_length = path.back().second.initial_range.end_pos;
+            INFO(path_length)
+            if (path_length > 100000) {
+                INFO("Reading mappings");
+                for (size_t i = 0; i < path.size(); ++i) {
+                    INFO(path[i].second.initial_range);
+                    if (storage.IsUnique(path[i].first)) {
+                        long_edges_in_path.insert(path[i].first);
+                        if (path[i].second.initial_range.end_pos + 50000 < path_length) {
+                            long_edges_in_prefix.insert(path[i].first);
+                        }
+                    }
+                }
+
+                for (const auto &long_edge: long_edges_in_prefix) {
+                    ++overall;
+                    vector<EdgeId> initial_candidates;
+                    auto put_checker = BarcodePutChecker<Graph>(gp_.g, long_edge, storage, initial_candidates);
+                    auto dij = BarcodeDijkstra<Graph>::CreateBarcodeBoundedDijkstra(gp_.g,
+                                                                                    tslr_resolver_params.distance_bound,
+                                                                                    put_checker);
+                    dij.Run(gp_.g.EdgeEnd(long_edge));
+                    vector<EdgeId> reachable;
+                    std::copy_if(initial_candidates.begin(), initial_candidates.end(), std::back_inserter(reachable),
+                                 [this, &long_edge, &tenx_extractor_ptr](const EdgeId &edge) {
+                                     return edge != long_edge and
+                                            tenx_extractor_ptr->GetIntersectionSize(long_edge, edge, 40000) >
+                                            absolute_barcode_threshold;
+                                 });
+                    bool next_found = false;
+                    for (const auto &edge: reachable) {
+                        if (long_edges_in_path.find(edge) == long_edges_in_path.end()) {
+                            false_positive++;
+                        }
+                        else {
+                            next_found = true;
+                        }
+                    }
+                    if (not next_found) {
+                        false_negative++;
+                    }
+                }
+            }
+        }
+        INFO("Overall: " << overall);
+        INFO("False negative: " << false_negative);
+        INFO("False positive: " << false_positive);
+    }
 
         void SerializeDistributionAlongPath(const string& filename) {
             ofstream fout;
