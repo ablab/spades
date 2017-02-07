@@ -290,6 +290,7 @@ class GapCloser {
 
     bool HandleSimpleCase(EdgeId first, EdgeId second, int overlap) {
         DEBUG("Match was perfect. No correction needed");
+        DEBUG("Overlap " << overlap);
         //strange info guard
         VERIFY(overlap <= k_);
         if (overlap == k_) {
@@ -314,14 +315,11 @@ class GapCloser {
             DEBUG("Trying to join conjugate edges " << g_.int_id(first));
             return false;
         }
-        //may be negative!
-        int gap = max(init_gap_val_,
-                      -1 * (int) (min(g_.length(first), g_.length(second)) - 1));
 
         Sequence seq1 = g_.EdgeNucls(first);
         Sequence seq2 = g_.EdgeNucls(second);
-        TRACE("Checking possible gaps from " << gap << " to " << k_ - min_intersection_);
-        for (; gap <= k_ - (int) min_intersection_; ++gap) {
+        TRACE("Checking possible gaps from 1 to " << k_ - min_intersection_);
+        for (int gap = 1; gap <= k_ - (int) min_intersection_; ++gap) {
             int overlap = k_ - gap;
             size_t hamming_distance = HammingDistance(g_.EdgeNucls(first).Last(overlap),
                                                       g_.EdgeNucls(second).First(overlap));
