@@ -423,6 +423,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             INFO("Gap threshold: " << gap_threshold);
             INFO("Average barcode coverage before filtering: " << gp_.barcode_mapper_ptr->AverageBarcodeCoverage());
             gp_.barcode_mapper_ptr->Filter(abundancy_threshold, gap_threshold);
+            INFO("Finished filtering")
             INFO("Average barcode coverage after filtering: " << gp_.barcode_mapper_ptr->AverageBarcodeCoverage());
 
             INFO("Creating read cloud extenders");

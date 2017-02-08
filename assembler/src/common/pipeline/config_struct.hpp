@@ -530,6 +530,7 @@ struct debruijn_config {
         bool join_paths;
         bool ideal_reads;
         size_t edge_tail_len;
+        size_t frame_size;
         std::string genome_path;
     };
 

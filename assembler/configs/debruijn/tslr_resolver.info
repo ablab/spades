@@ -14,6 +14,8 @@ ts_res
 
 		;Barcodes are counted on the last edge_tail_len nucleotides of the edge
 		edge_tail_len 8000
+		;Edge will be split up to segments of length frame_size
+		frame_size 200
 
 	;Filtering configs
 

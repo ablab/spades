@@ -900,14 +900,14 @@ inline void DeserializeBarcodeMapEntry(ifstream& file, const std::unordered_map 
 template <class Graph>
 void ScanBarcodeIndex(const string &path, const std::unordered_map<size_t, EdgeId> &edge_map,
                       shared_ptr<barcode_index::AbstractBarcodeIndex> &barcodeMapper, Graph &g)  {
-    typedef barcode_index::HeadTailMapperBuilder<barcode_index::SimpleBarcodeEntry> Builder;
     string file_name = path + ".bmap";
     ifstream index_file(file_name);
     INFO("Loading barcode information from " << file_name)
     if (index_file == NULL or index_file.peek() == std::ifstream::traits_type::eof()) {
         return;
     }
-    Builder mapper_builder(g, cfg::get().ts_res.edge_tail_len);
+    barcode_index::FrameMapperBuilder mapper_builder(g, cfg::get().ts_res.edge_tail_len, cfg::get().ts_res.frame_size);
+    mapper_builder.InitialFillMap();
     barcodeMapper = mapper_builder.GetMapper();
 
     size_t map_size;

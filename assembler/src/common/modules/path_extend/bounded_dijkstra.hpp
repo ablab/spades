@@ -53,7 +53,6 @@ namespace omnigraph {
     class BarcodePutChecker : public VertexPutChecker<Graph, distance_t> {
         typedef typename Graph::VertexId VertexId;
         typedef typename Graph::EdgeId EdgeId;
-        typedef shared_ptr<barcode_index::AbstractBarcodeIndex> barcode_mapper_;
         typedef shared_ptr<barcode_index::AbstractBarcodeIndexInfoExtractor> barcode_extractor_ptr;
 
         const Graph& g_;
@@ -88,11 +87,11 @@ namespace omnigraph {
             size_t gap = dist - g_.length(edge);
             DEBUG("Gap " << gap)
 
-            size_t decisive_barcodes = barcode_extractor_->GetTailBarcodeNumber(decisive_edge_);
-            size_t current_barcodes = barcode_extractor_->GetHeadBarcodeNumber(edge);
+//            size_t decisive_barcodes = barcode_extractor_->GetTailBarcodeNumber(decisive_edge_);
+//            size_t current_barcodes = barcode_extractor_->GetHeadBarcodeNumber(edge);
 
-            DEBUG("Barcodes " << current_barcodes);
-            DEBUG("Decisive edge barcodes " << decisive_barcodes);
+//            DEBUG("Barcodes " << current_barcodes);
+//            DEBUG("Decisive edge barcodes " << decisive_barcodes);
             DEBUG("Is unique " << unique_storage_.IsUnique(edge));
 
             if (g_.length(edge) < unique_storage_.GetMinLength()) {

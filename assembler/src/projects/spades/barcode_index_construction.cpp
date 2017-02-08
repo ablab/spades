@@ -4,9 +4,9 @@ namespace debruijn_graph {
     //todo remove from here!
     void TestTSLRBarcodeConstruction(debruijn_graph::conj_graph_pack &graph_pack) {
         INFO("Starting construction test...");
-        vector <HeadTailMapperBuilder<SimpleBarcodeEntry>> mapper_builders;
+        vector <SimpleMapperBuilder> mapper_builders;
         for (int i = 0; i < 2; ++i) {
-            HeadTailMapperBuilder<SimpleBarcodeEntry> mapper_builder(graph_pack.g,
+            SimpleMapperBuilder mapper_builder(graph_pack.g,
                                                             cfg::get().ts_res.edge_tail_len);
             mapper_builders.push_back(mapper_builder);
         }
@@ -28,8 +28,9 @@ namespace debruijn_graph {
         graph_pack.EnsureBasicMapping();
         INFO("Library type: " << cfg::get().ts_res.library_type);
         auto lib_type = GetLibType(cfg::get().ts_res.library_type);
-        HeadTailMapperBuilder<SimpleBarcodeEntry> mapper_builder(graph_pack.g,
-                                                        cfg::get().ts_res.edge_tail_len);
+        FrameMapperBuilder mapper_builder(graph_pack.g,
+                                          cfg::get().ts_res.edge_tail_len,
+                                          cfg::get().ts_res.frame_size);
 
         size_t nthreads = cfg::get().max_threads;
         mapper_builder.FillMap(lib_type, graph_pack.index, graph_pack.kmer_mapper, nthreads);
