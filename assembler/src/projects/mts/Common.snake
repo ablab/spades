@@ -8,7 +8,7 @@ from scripts.common import detect_reads
 
 #Config parameters
 IN = config["IN"]
-LOCAL_DIR = config["LOCAL_DIR"]
+LOCAL_DIR = config.get("LOCAL_DIR", "")
 SPADES = config.get("SPADES", LOCAL_DIR)
 SPADES_REASSEMBLY = config.get("SPADES_REASSEMBLY", LOCAL_DIR)
 BIN = config.get("BIN", os.path.join(LOCAL_DIR, "build/release/bin"))

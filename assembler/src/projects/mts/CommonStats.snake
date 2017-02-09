@@ -1,0 +1,72 @@
+from scripts.common import gather_refs
+
+#Additional config parameters
+try:
+    QUAST_DIR = config["QUAST"]
+    QUAST = os.path.join(QUAST_DIR, "quast.py")
+    METAQUAST = os.path.join(QUAST_DIR, "metaquast.py")
+except KeyError:
+    QUAST = "quast"
+    METAQUAST = "metaquast"
+
+#Detect references
+REFS = dict(gather_refs(config.get("REFS", [])))
+ALL_REFS = ",".join(path for path in REFS.values())
+
+frags_dict = dict()
+input_dict = dict()
+
+def register_input(stage, fasta_template, fragments):
+    global input_dict
+    frags_dict[stage] = fragments
+    input_dict[stage] = expand(fasta_template, frag=fragments)
+
+def stats_input(wildcards):
+    print("Getting input of", wildcards.stage)
+    print("Registered:", input_dict)
+    return input_dict[wildcards.stage]
+
+def all_input(wildcards):
+    return input_dict.values()
+
+rule genome_fraction:
+    input:   stats_input
+    output:  "stats/summary/gf_{stage}.tsv"
+    params:  out="stats/q_{stage}"
+    log:     "stats/q_{stage}/.log"
+    threads: THREADS
+    message: "Aligning all of {wildcards.stage} on all references"
+    shell:   "{METAQUAST} -t {threads} -R {ALL_REFS} {input} -o {params.out} >/dev/null 2>&1 && "
+             "cp '{params.out}/summary/TSV/Genome_fraction_(%).tsv' {output}"
+
+rule gf_all:
+    input:   all_input
+    output:  touch("stats/gf_all.done")
+    message: "Gathered GF on all stages"
+
+#---- Contigs of interest ------------------------------------------------------
+rule filter_ref_alignments:
+    input:   "stats/summary/gf_{stage}.tsv"
+    output:  "stats/q_{stage}/runs_per_reference/{ref}/{fragments}.info"
+    params:  "stats/q_{stage}/runs_per_reference/{ref}/contigs_reports/nucmer_output/{fragments}.coords.filtered"
+    message: "Filtering alignments of {wildcards.fragments} from {wildcards.stage} onto {wildcards.ref}"
+    shell:   "if [ -f {params} ] ; then {SCRIPTS}/filter_nucmer.py {params} {output} {MIN_CONTIG_LENGTH} 70 ; else touch {output} ; fi"
+
+def alignment_input(wildcards):
+    template = "stats/q_{}/runs_per_reference/{{ref}}/{{fragments}}.info".format(wildcards.stage)
+    return expand(template, ref = wildcards.ref, fragments=frags_dict[wildcards.stage])
+
+rule combine_alignment_info:
+    input:   alignment_input
+    output:  "stats/q_{stage}/g_{ref}.info"
+    message: "Combining good contigs of {wildcards.stage} for {wildcards.ref}"
+    shell:   "rm -rf {output}; for f in {input}; do name=$(basename $f .info); cat $f | sed 's/^/'$name'-/g' >> {output} ; done"
+
+rule combine_refs_info:
+    input:   expand("stats/q_{{stage}}/g_{ref}.info", ref=list(REFS.keys()))
+    output:  "stats/q_{stage}/total.info"
+    message: "Combining good contigs of {wildcards.stage} for all references"
+    run:
+        shell("rm -f {output}")
+        for ref in REFS.keys():
+            shell("awk '{{print $0 \"\t{ref}\"}}' stats/q_{wildcards.stage}/g_{ref}.info >> {output}")

@@ -66,7 +66,7 @@ with cd(exec_dir):
 
     if args.stats:
         print("Step #2a - Assembly statistics")
-        call_snake(["--snakefile", "Stats.snake", "stats_all"])
+        call_snake(["--snakefile", "Stats.snake", "stats_assembly"])
 
         print("Step #2b - Reassembly statistics")
         call_snake(["--snakefile", "Stats.snake", "stats_reassembly"])
