@@ -305,11 +305,13 @@ public:
             DEBUG("Found candidate gap length with score " << best_score);
             DEBUG("Estimated gap: " << gap.estimated_dist() <<
                   ", fixed gap: " << fixed_gap << " (overlap " << (-fixed_gap) << ")");
-        }
 
-        auto answer = gap;
-        answer.set_estimated_gap(fixed_gap);
-        return gap;
+            auto answer = gap;
+            answer.set_estimated_gap(fixed_gap);
+            return answer;
+        } else {
+            return GapDescription();
+        }
     }
 
 private:
@@ -370,7 +372,9 @@ public:
 
         //FIXME Think if it is ok to have a non-symmetric overlap gap description
         return GapDescription(gap.left(), gap.right(),
-                              -int(overlap_info.r1.size()),
+                              //-int(overlap_info.r1.size()),
+                              //FIXME WTF?!!! weird to have overlap_info.r2.start_pos twice... also why not r2.size()?
+                              -int(overlap_info.r1.size()) - int(overlap_info.r2.start_pos),
                               g_.length(gap.left()) + g_.k() - overlap_info.r1.end_pos,
                               overlap_info.r2.start_pos);
     }
