@@ -390,7 +390,7 @@ Extenders ExtendersGenerator::MakeReadCloudExtender(const ScaffoldingUniqueEdgeS
         typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
 
         auto tenx_extractor_ptr = make_shared<tenx_extractor_t>(gp_.barcode_mapper_ptr, gp_.g);
-        shared_ptr<abstract_extractor_t>  abstract_extractor_ptr =
+        shared_ptr<abstract_extractor_t> abstract_extractor_ptr =
                 std::static_pointer_cast<abstract_extractor_t>(tenx_extractor_ptr);
 
         extension_chooser = make_shared<TenXExtensionChooser>(gp_,
@@ -399,16 +399,17 @@ Extenders ExtendersGenerator::MakeReadCloudExtender(const ScaffoldingUniqueEdgeS
                                                               distance_bound,
                                                               storage,
                                                               absolute_barcode_threshold);
+
+
+        shared_ptr<ReadCloudExtender> extender = make_shared<ReadCloudExtender>(gp_, cover_map_,
+                                                                                extension_chooser,
+                                                                                2500 /*insert size*/,
+                                                                                false, /*investigate short loops*/
+                                                                                false /*use short loop coverage resolver*/,
+                                                                                storage,
+                                                                                distance_bound);
+        result.push_back(extender);
     }
-
-
-    shared_ptr<ReadCloudExtender> extender =  make_shared<ReadCloudExtender>(gp_, cover_map_,
-                                                 extension_chooser,
-                                                 2500 /*insert size*/,
-                                                 false, /*investigate short loops*/
-                                                 false /*use short loop coverage resolver*/,
-                                                 storage);
-    result.push_back(extender);
     return result;
 }
 

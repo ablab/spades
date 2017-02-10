@@ -1421,6 +1421,7 @@ protected:
     shared_ptr<ExtensionChooser> extensionChooser_;
     ScaffoldingUniqueEdgeStorage unique_storage_;
     shared_ptr<barcode_index::AbstractBarcodeIndex> mapper_;
+    size_t distance_bound_;
 
 
     //todo should be precounted at barcode map construction stage
@@ -1444,13 +1445,15 @@ public:
                              size_t is,
                              bool investigate_short_loops,
                              bool use_short_loop_cov_resolver,
-                             const ScaffoldingUniqueEdgeStorage& unique_storage)
+                             const ScaffoldingUniqueEdgeStorage& unique_storage,
+                             const size_t distance_bound)
             :
             LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, use_short_loop_cov_resolver,
                                       is),
             extensionChooser_(ec),
             unique_storage_(unique_storage),
-            mapper_(gp.barcode_mapper_ptr) {
+            mapper_(gp.barcode_mapper_ptr),
+            distance_bound_(distance_bound){
     }
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
@@ -1470,16 +1473,47 @@ public:
     }
 
     bool MakeSimpleGrowStep(BidirectionalPath &path, PathContainer *paths_storage) override {
+        pair<EdgeId, int> last_unique = FindLastUniqueInPath(path, unique_storage_);
+
+        if (last_unique.second == -1) {
+            return false;
+        }
+
+        EdgeId decisive_edge = last_unique.first;
+
+        vector<EdgeId> initial_candidates;
         ExtensionChooser::EdgeContainer candidates;
+        auto put_checker = BarcodePutChecker<Graph>(g_, decisive_edge, unique_storage_, initial_candidates);
+        auto dij = BarcodeDijkstra<Graph>::CreateBarcodeBoundedDijkstra(g_, distance_bound_, put_checker);
+        dij.Run(g_.EdgeEnd(decisive_edge));
+        DEBUG("Dijkstra finished")
+        DEBUG("Initial candidates: " << initial_candidates.size())
+
+        candidates.reserve(initial_candidates.size());
+        for (const auto& edge : initial_candidates) {
+            VERIFY(unique_storage_.IsUnique(edge));
+            if (edge != decisive_edge and edge != g_.conjugate(decisive_edge))
+                candidates.push_back(EdgeWithDistance(edge, dij.GetDistance(g_.EdgeStart(edge))));
+        }
         return FilterCandidates(path, candidates) and AddCandidates(path, paths_storage, candidates);
     }
 
 protected:
+    //fixme code duplication
+    std::pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path,
+                                                const ScaffoldingUniqueEdgeStorage& storage) const {
+        for (int i =  (int)path.Size() - 1; i >= 0; --i) {
+            if (storage.IsUnique(path.At(i))) {
+                return std::make_pair(path.At(i), i);
+            }
+        }
+        return std::make_pair(EdgeId(0), -1);
+    }
+
     virtual bool FilterCandidates(BidirectionalPath &path, ExtensionChooser::EdgeContainer &candidates) {
         DEBUG("Simple grow step");
         path.Print();
         DEBUG("Path size " << path.Size())
-        DEBUG("Starting at vertex " << g_.EdgeEnd(path.Back()));
         candidates = extensionChooser_->Filter(path, candidates);
         DEBUG(candidates.size() << " candidates passed");
         return true;
@@ -1503,6 +1537,7 @@ protected:
 //That allows us to avoid overlap removal hacks used earlier.
         if (used_storage_->UniqueCheckEnabled()) {
             if (used_storage_->IsUsedAndUnique(eid)) {
+                DEBUG("Tried to add already used edge")
                 return false;
             } else {
                 used_storage_->insert(eid);

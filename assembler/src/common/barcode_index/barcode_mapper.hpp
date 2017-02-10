@@ -1111,6 +1111,22 @@ namespace barcode_index {
         FrameBarcodeIndexInfoExtractor(shared_ptr <AbstractBarcodeIndex> abstract_mapper_ptr, const Graph& g) :
             BarcodeIndexInfoExtractor(abstract_mapper_ptr, g) {}
 
+        size_t GetIntersectionSize(const EdgeId& first, const EdgeId& second, size_t gap_threshold) {
+            //fixme implement intersection iterator
+            auto barcodes = GetIntersection(first, second);
+            size_t result = 0;
+            for (auto barcode: barcodes) {
+                if (g_.length(first) <= gap_threshold or
+                        get_max_pos(first, barcode) > g_.length(first) - gap_threshold) {
+                    if (g_.length(second) <= gap_threshold or
+                            get_min_pos(second, barcode) < gap_threshold) {
+                        ++result;
+                    }
+                }
+            }
+            return result;
+        }
+
         //barcode should be present on the edge
         size_t get_min_pos(const EdgeId& edge, int64_t barcode) {
             VERIFY(has_barcode(edge, barcode));
@@ -1122,7 +1138,7 @@ namespace barcode_index {
 
         size_t get_max_pos(const EdgeId& edge, int64_t barcode) {
             VERIFY(has_barcode(edge, barcode));
-            auto entry_it = mapper_->GetEntryHeadsIterator(edge);
+            auto entry_it = mapper_->GetEntryTailsIterator(edge);
             auto info_it = entry_it->second.get_barcode(barcode);
             size_t frame_size = entry_it->second.GetFrameSize();
             return info_it->second.GetRightMost() * frame_size;

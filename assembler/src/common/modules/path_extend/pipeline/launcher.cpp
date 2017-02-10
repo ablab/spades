@@ -480,6 +480,8 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     INFO("Gap closing completed")
 }
 
+    TenXExtensionChooserStatistics TenXExtensionChooser::stats_ = TenXExtensionChooserStatistics();
+
 void PathExtendLauncher::FilterPaths() {
     PathContainer contig_paths_copy(gp_.contig_paths.begin(), gp_.contig_paths.end());
     for (const auto& it: params_.pset.path_filtration) {
@@ -550,6 +552,10 @@ void PathExtendLauncher::Launch() {
     FilterPaths();
 
     CountMisassembliesWithReference(gp_.contig_paths);
+
+    TenXExtensionChooser::PrintStats(cfg::get().output_dir + "10x_extender_stats");
+
+
 
     INFO("ExSPAnder repeat resolving tool finished");
 }
