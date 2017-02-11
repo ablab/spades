@@ -80,10 +80,11 @@ public:
         for (auto I = count_index.value_cbegin(), E = count_index.value_cend();
                 I != E; ++I) {
             const auto& edge_info = *I;
+            if (!edge_info.valid())
+                continue;
             EdgeId e = edge_info.edge_id;
             unsigned offset = edge_info.offset;
             unsigned count = edge_info.count;
-            VERIFY(edge_info.valid());
             VERIFY(e.get() != NULL);
             if (offset < averaging_range_) {
                 IncRawCoverage(e, count);
