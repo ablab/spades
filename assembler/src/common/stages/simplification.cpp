@@ -293,10 +293,10 @@ class GraphSimplifier {
                 "Removing edges with low coverage",
                 algos);
 
-
+        const size_t primary_launch_cnt = 2;
         size_t iteration = 0;
         bool enable_flag = true;
-        while (enable_flag) {
+        while (iteration < primary_launch_cnt || enable_flag) {
             enable_flag = false;
 
             INFO("Iteration " << iteration);
@@ -304,7 +304,7 @@ class GraphSimplifier {
             enable_flag |= FinalRemoveErroneousEdges();
             cnt_callback_.Report();
 
-            enable_flag |= RunAlgos(algos);
+            enable_flag |= RunAlgos(algos, iteration < primary_launch_cnt);
 
             iteration++;
 
@@ -409,7 +409,7 @@ public:
         //cannot stop simply if nothing changed, since threshold changes on every iteration
         while (iteration < simplif_cfg_.cycle_iter_count || graph_changed) {
             INFO("PROCEDURE == Simplification cycle, iteration " << iteration + 1);
-            graph_changed = RunAlgos(algos);
+            graph_changed = RunAlgos(algos, iteration == simplif_cfg_.cycle_iter_count - 1);
             ++iteration;
         }
 
