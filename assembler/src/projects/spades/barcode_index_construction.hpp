@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/barcode_index/barcode_mapper.hpp"
+#include "common/barcode_index/barcode_index_builder.hpp"
 #include "utils/logger/logger.hpp"
 #include "common/pipeline/stage.hpp"
 

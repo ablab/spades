@@ -2,7 +2,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include "test_utils.hpp"
-#include "common/barcode_index/barcode_mapper.hpp"
+#include "common/barcode_index/barcode_index.hpp"
 
 namespace debruijn_graph {
     BOOST_AUTO_TEST_SUITE(barcode_index_tests)

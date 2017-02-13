@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/barcode_index/barcode_mapper.hpp"
+#include "common/barcode_index/barcode_info_extractor.hpp"
 
 namespace barcode_index {
 

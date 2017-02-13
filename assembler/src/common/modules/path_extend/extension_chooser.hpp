@@ -22,7 +22,7 @@
 #include "weight_counter.hpp"
 #include "pe_utils.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "common/barcode_index/barcode_mapper.hpp"
+#include "common/barcode_index/barcode_info_extractor.hpp"
 #include "bounded_dijkstra.hpp"
 
 //#include "scaff_supplementary.hpp"

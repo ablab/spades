@@ -22,7 +22,7 @@
 #include "modules/alignment/long_read_storage.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/components/connected_component.hpp"
-#include "common/barcode_index/barcode_mapper.hpp"
+#include "common/barcode_index/barcode_index.hpp"
 #include "modules/alignment/kmer_mapper.hpp"
 #include "visualization/position_filler.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"

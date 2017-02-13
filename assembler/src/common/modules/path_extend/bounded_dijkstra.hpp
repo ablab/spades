@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/barcode_index/barcode_mapper.hpp"
+#include "common/barcode_index/barcode_info_extractor.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 
 namespace omnigraph {
