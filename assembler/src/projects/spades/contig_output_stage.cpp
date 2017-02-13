@@ -13,15 +13,12 @@ namespace debruijn_graph {
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
     auto output_dir = cfg::get().output_dir;
 
-    OutputContigs(gp.g, output_dir + "before_rr", false);
+    OutputContigs(gp.g, output_dir + "before_rr");
     OutputContigsToFASTG(gp.g, output_dir + "assembly_graph", gp.components);
 
     if (output_paths_ && gp.contig_paths.size() != 0) {
-        DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(gp.g);
-        DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(gp.g, corrector);
-
         auto name_generator = path_extend::MakeContigNameGenerator(cfg::get().mode, gp);
-        path_extend::ContigWriter writer(gp.g, constructor, gp.components, name_generator);
+        path_extend::ContigWriter writer(gp.g, gp.components, name_generator);
 
         bool output_broken_scaffolds = cfg::get().pe_params.param_set.scaffolder_options.enabled &&
             cfg::get().use_scaffolder &&
@@ -48,7 +45,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
         OutputContigsToGFA(gp.g, gp.contig_paths, cfg::get().output_dir + "assembly_graph");
     } else {
         OutputContigs(gp.g, output_dir + "simplified_contigs", cfg::get().use_unipaths);
-        OutputContigs(gp.g, output_dir + cfg::get().co.contigs_name, false);
+        OutputContigs(gp.g, output_dir + cfg::get().co.contigs_name);
     }
 }
 

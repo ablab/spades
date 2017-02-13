@@ -509,8 +509,6 @@ public:
 };
 
 class ScaffoldingExtensionChooser : public ExtensionChooser {
-
-protected:
     typedef ExtensionChooser base;
     double raw_weight_threshold_;
     double cl_weight_threshold_;
@@ -630,7 +628,6 @@ inline bool EdgeWithWeightCompareReverse(const pair<EdgeId, double>& p1,
 }
 
 class LongReadsUniqueEdgeAnalyzer {
-private:
     DECL_LOGGER("LongReadsUniqueEdgeAnalyzer")
 public:
     LongReadsUniqueEdgeAnalyzer(const Graph& g, const GraphCoverageMap& cov_map,

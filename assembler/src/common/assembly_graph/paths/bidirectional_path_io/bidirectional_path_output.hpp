@@ -22,7 +22,6 @@ protected:
 
 protected:
     const Graph& g_;
-    ContigConstructor<Graph> &constructor_;
     map<EdgeId, ExtendedContigIdT> ids_;
     shared_ptr<ContigNameGenerator> name_generator_;
 
@@ -31,11 +30,9 @@ protected:
 
 public:
     ContigWriter(const Graph& g,
-                 ContigConstructor<Graph> &constructor,
                  const ConnectedComponentCounter &c_counter,
                  shared_ptr<ContigNameGenerator> name_generator) :
             g_(g),
-            constructor_(constructor),
             ids_(),
             name_generator_(name_generator) {
         MakeContigIdMap(g_, ids_, c_counter, "NODE");

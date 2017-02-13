@@ -32,15 +32,13 @@ struct IOContigGreater
 class IOContigStorage {
 private:
     const Graph &g_;
-    ContigConstructor<Graph> &constructor_;
     size_t k_;
     vector<IOContig> storage_;
 
     string ToString(const BidirectionalPath& path) const;
 public:
-    IOContigStorage(const Graph &g, ContigConstructor<Graph> &constructor, const PathContainer &paths):
+    IOContigStorage(const Graph &g, const PathContainer &paths):
         g_(g),
-        constructor_(constructor),
         k_(g.k()),
         storage_() {
 

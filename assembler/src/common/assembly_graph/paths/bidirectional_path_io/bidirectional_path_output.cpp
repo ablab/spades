@@ -26,7 +26,7 @@ void path_extend::ContigWriter::OutputPaths(const PathContainer &paths,
                                                   const string &filename_base,
                                                   bool write_fastg) const {
     name_generator_->Preprocess(paths);
-    IOContigStorage storage(g_, constructor_, paths);
+    IOContigStorage storage(g_, paths);
 
     INFO("Writing contigs to " << filename_base);
     io::osequencestream_simple oss(filename_base + ".fasta");

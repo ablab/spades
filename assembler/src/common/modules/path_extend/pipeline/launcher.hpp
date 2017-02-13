@@ -18,15 +18,11 @@ namespace path_extend {
 using namespace debruijn_graph;
 
 class PathExtendLauncher {
-
-private:
     const config::dataset& dataset_info_;
     const PathExtendParamsContainer& params_;
     conj_graph_pack& gp_;
     PELaunchSupport support_;
 
-    DefaultContigCorrector<ConjugateDeBruijnGraph> corrector_;
-    DefaultContigConstructor<ConjugateDeBruijnGraph> constructor_;
     shared_ptr<ContigNameGenerator> contig_name_generator_;
     ContigWriter writer_;
 
@@ -93,17 +89,12 @@ public:
         params_(params),
         gp_(gp),
         support_(dataset_info, params),
-        corrector_(gp.g),
-        constructor_(gp.g, corrector_),
         contig_name_generator_(MakeContigNameGenerator(params_.mode, gp)),
-        writer_(gp.g, constructor_, gp_.components, contig_name_generator_),
+        writer_(gp.g, gp_.components, contig_name_generator_),
         unique_data_()
     {
         unique_data_.min_unique_length_ = params.pset.scaffolding2015.unique_length_upper_bound;
         unique_data_.unique_variation_ = params.pset.uniqueness_analyser.unique_coverage_variation;
-    }
-
-    ~PathExtendLauncher() {
     }
 
     void Launch();

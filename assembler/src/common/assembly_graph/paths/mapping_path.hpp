@@ -344,7 +344,7 @@ public:
         left_trim_ = trim;
     }
 
-    void set_estimated_gap(int dist) {
+    void set_estimated_dist(int dist) {
         VERIFY_MSG(!filling_seq_, "Filling sequence specified");
         estimated_dist_ = dist;
     }

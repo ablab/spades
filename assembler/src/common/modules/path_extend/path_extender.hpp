@@ -307,7 +307,7 @@ public:
                   ", fixed gap: " << fixed_gap << " (overlap " << (-fixed_gap) << ")");
 
             auto answer = gap;
-            answer.set_estimated_gap(fixed_gap);
+            answer.set_estimated_dist(fixed_gap);
             return answer;
         } else {
             return GapDescription();
@@ -430,7 +430,7 @@ public:
         } else {
             DEBUG("Overlap was not found");
             auto answer = gap;
-            answer.set_estimated_gap(max(gap.estimated_dist(), int(artificial_gap_)));
+            answer.set_estimated_dist(max(gap.estimated_dist(), int(artificial_gap_)));
             return answer;
         }
     }
@@ -1229,10 +1229,9 @@ protected:
 
 
 class ScaffoldingPathExtender: public LoopDetectingPathExtender {
-private:
     std::shared_ptr<ExtensionChooser> extension_chooser_;
     ExtensionChooser::EdgeContainer sources_;
-    std::shared_ptr<GapAnalyzer> gap_joiner_;
+    std::shared_ptr<GapAnalyzer> gap_analyzer_;
     bool avoid_rc_connections_;
 
 //When check_sink_ set to false we can scaffold not only tips
@@ -1285,7 +1284,7 @@ protected:
             //FIXME is it ok that we either force joining or ignore its possibility
             if (check_sink_) {
                 //FIXME what is d_? and should it be converted into nucleotide distance?
-                GapDescription gap = gap_joiner_->FixGap(GapDescription(path.Back(), candidates.back().e_,
+                GapDescription gap = gap_analyzer_->FixGap(GapDescription(path.Back(), candidates.back().e_,
                                                                         candidates.back().d_ - int(g_.k())));
 
                 DEBUG("Gap after fixing " << gap.estimated_dist() << " (was " << candidates.back().d_ << ")");
@@ -1344,14 +1343,14 @@ public:
     ScaffoldingPathExtender(const conj_graph_pack &gp,
                             const GraphCoverageMap &cov_map,
                             std::shared_ptr<ExtensionChooser> extension_chooser,
-                            std::shared_ptr<GapAnalyzer> gap_joiner,
+                            std::shared_ptr<GapAnalyzer> gap_analyzer,
                             size_t is,
                             bool investigate_short_loops,
                             bool avoid_rc_connections,
                             bool check_sink = true):
         LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, false, is),
         extension_chooser_(extension_chooser),
-        gap_joiner_(gap_joiner),
+        gap_analyzer_(gap_analyzer),
         avoid_rc_connections_(avoid_rc_connections),
         check_sink_(check_sink)
     {
