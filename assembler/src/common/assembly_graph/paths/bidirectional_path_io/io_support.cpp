@@ -97,46 +97,36 @@ string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) con
 
     size_t i = 0;
     while (i < path.Size()) {
-        int gap = i == 0 ? 0 : path.GapAt(i);
-        if (gap > (int) k_) {
-            for (size_t j = 0; j < gap - k_; ++j) {
+        //FIXME shouldn't we consider future right end trimming here
+        int offset = 0;
+        while (i < path.Size() && offset >= (int) g_.length(path[i]) + path.GapAt(i)) {
+            offset -= (int) g_.length(path[i]) + path.GapAt(i);
+            ++i;
+        }
+        if (i == path.Size()) {
+            break;
+        }
+
+        int overlap_size = offset + (int) k_ - path.GapAt(i);
+
+        if (overlap_size < 0) {
+            for (size_t j = 0; j < abs(overlap_size); ++j) {
                 ss << "N";
             }
-            ss << g_.EdgeNucls(path[i]);
-        } else {
-            int overlapLen = (int) k_ - gap;
-            if (overlapLen >= (int) g_.length(path[i]) + (int) k_) {
-                overlapLen -= (int) g_.length(path[i]) + (int) k_;
-                ++i;
-                //skipping overlapping edges
-                while (i < path.Size() && overlapLen >= (int) g_.length(path[i]) + path.GapAt(i)) {
-                    overlapLen -= (int) g_.length(path[i]) + path.GapAt(i);
-                    ++i;
-                }
-                if (i == path.Size()) {
-                    break;
-                }
-
-                overlapLen = overlapLen + (int) k_ - path.GapAt(i);
-
-                if(overlapLen < 0) {
-                    for (int j = 0; j < abs(overlapLen); ++j) {
-                        ss << "N";
-                    }
-                    overlapLen = 0;
-                }
-            }
-            auto temp_str = g_.EdgeNucls(path[i]).Subseq(overlapLen).str();
-            if (i != path.Size() - 1) {
-                for (size_t j = 0; j < path.TrashPreviousAt(i + 1); ++j) {
-                    temp_str.pop_back();
-                    if (temp_str.size() == 0) {
-                        break;
-                    }
-                }
-            }
-            ss << temp_str;
+            overlap_size = 0;
         }
+
+        size_t right_end = g_.length(path[i]) + g_.k();
+        if (i != path.Size() - 1) {
+            VERIFY(right_end > path.TrashPreviousAt(i + 1));
+            right_end -= path.TrashPreviousAt(i + 1);
+        }
+
+        if (int(right_end) < overlap_size) {
+            //FIXME this might be a weird case resulting in wrong offsets
+            break;
+        }
+        ss << g_.EdgeNucls(path[i]).Subseq(overlap_size, right_end);
         ++i;
     }
     return ss.str();
