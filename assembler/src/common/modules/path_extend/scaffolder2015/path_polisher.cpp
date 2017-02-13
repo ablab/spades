@@ -6,8 +6,10 @@ namespace path_extend {
 void PathPolisher::InfoAboutGaps(const PathContainer & result){
     for (const auto& p_iter: result) {
         for (size_t i = 1; i < p_iter.first->Size(); ++i) {
-            if (p_iter.first->GapAt(i) > 0) {
-                DEBUG("Gap "<< p_iter.first->GapAt(i) << " left between " << gp_.g.int_id(p_iter.first->At(i-1)) << " and " << gp_.g.int_id(p_iter.first->At(i)));
+            if (p_iter.first->GapAt(i).gap > 0) {
+                DEBUG("Gap "<< p_iter.first->GapAt(i).gap
+                            << " left between " << gp_.g.int_id(p_iter.first->At(i-1))
+                            << " and " << gp_.g.int_id(p_iter.first->At(i)));
             }
         }
     }
@@ -125,8 +127,8 @@ bool DijkstraGapCloser::FillWithBridge(const BidirectionalPath& path, size_t ind
         std::sort(bridges.begin(), bridges.end(), [&] (EdgeId e1, EdgeId e2) {
             return g_.length(e1) > g_.length(e2); });
         EdgeId bridge = bridges[0];
-        int min_gap_before = path.GapAt(index);
-        int min_gap_after = path.GapAt(index);
+        int min_gap_before = path.GapAt(index).gap;
+        int min_gap_after = path.GapAt(index).gap;
         for (const auto& path:path_storage.paths()) {
             int current_before = 0;
             for(size_t i = 0; i< path.size(); i++) {
@@ -262,10 +264,11 @@ BidirectionalPath MatePairGapCloser::Polish(const BidirectionalPath& path) {
     DEBUG("Path " << path.GetId() << " len "<< path.Length() << " size " << path.Size());
     result.PushBack(path[0], path.GapAt(0));
     for (size_t i = 1; i < path.Size(); ++i) {
-        if (g_.EdgeEnd(path[i - 1]) == g_.EdgeStart(path[i]) || path.GapAt(i) <= min_gap_) {
+        if (g_.EdgeEnd(path[i - 1]) == g_.EdgeStart(path[i]) || path.GapAt(i).gap <= min_gap_) {
             result.PushBack(path[i], path.GapAt(i));
         } else {
-            DEBUG("position "<< i <<" gap between edges " << g_.int_id(path[i-1]) << " and " << g_.int_id(path[i]) << " was " << path.GapAt(i));
+            DEBUG("position "<< i <<" gap between edges " << g_.int_id(path[i-1])
+                             << " and " << g_.int_id(path[i]) << " was " << path.GapAt(i).gap);
 
             vector<EdgeId> addition;
             VertexId v = g_.EdgeEnd(path[i - 1]);
@@ -289,7 +292,8 @@ BidirectionalPath MatePairGapCloser::Polish(const BidirectionalPath& path) {
                     total += g_.length(last);
                 }
                 if (total > max_path_len_){
-                    DEBUG("gap between edges " << g_.int_id(path[i-1]) << " and " << g_.int_id(path[i]) << " was: " << path.GapAt(i) << ", closing path length too long: " << total);
+                    DEBUG("gap between edges " << g_.int_id(path[i-1]) << " and " << g_.int_id(path[i])
+                                               << " was: " << path.GapAt(i).gap << ", closing path length too long: " << total);
                     break;
                 }
             }
@@ -298,12 +302,13 @@ BidirectionalPath MatePairGapCloser::Polish(const BidirectionalPath& path) {
                 continue;                
             }
             int len = int(CumulativeLength(g_, addition));
-            int new_gap = path.GapAt(i) - len;
+            int new_gap = path.GapAt(i).gap - len;
             if (new_gap < min_gap_ && addition.size() > 0) {
-                if (path.GapAt(i) * 3 < len * 2 ) {
+                if (path.GapAt(i).gap * 3 < len * 2 ) {
 //inserted path significantly longer than estimated gap
-                    DEBUG("Gap size estimation problem: gap between edges " << g_.int_id(path[i - 1]) << " and " << g_.int_id(path[i]) << " was " <<
-                         path.GapAt(i) << "filled len" << len);
+                    DEBUG("Gap size estimation problem: gap between edges " << g_.int_id(path[i - 1])
+                                                                            << " and " << g_.int_id(path[i]) << " was "
+                                                                            << path.GapAt(i).gap << "filled len" << len);
                 }
                 if (g_.EdgeEnd(addition.back()) != g_.EdgeStart(path[i]))
                     new_gap = min_gap_;

@@ -798,7 +798,7 @@ public:
                 begin1.Print();
                 BidirectionalPath begin2 = repeat_path->SubPath(0, begin_repeat);
                 begin2.Print();
-                int gpa_in_repeat_path = repeat_path->GapAt(begin_repeat);
+                int gpa_in_repeat_path = repeat_path->GapAt(begin_repeat).gap;
                 BidirectionalPath end2 = repeat_path->SubPath(end_repeat);
                 BidirectionalPath begin1_conj = path.SubPath(0, path.Size() - repeat_size + 1).Conjugate();
                 BidirectionalPath begin2_conj = repeat_path->SubPath(0, begin_repeat + 1).Conjugate();
@@ -806,7 +806,9 @@ public:
                 DEBUG("last " << last.first << " last2 " << last.second);
                 path.Clear();
                 repeat_path->Clear();
-                int gap_len = repeat.GapAt(0);
+                //FIXME weird assignment
+                int gap_len = repeat.GapAt(0).gap;
+                VERIFY(gap_len == 0);
 
                 if (begin2.Size() == 0 || last.second != 0) { //TODO: incorrect: common edges, but then different ends
                     path.PushBack(begin1);

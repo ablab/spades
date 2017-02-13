@@ -22,7 +22,7 @@ inline const std::string Reverse(const std::string &s) {
 
 inline const std::string Complement(const std::string &s) {
     std::string res(s.size(), 0);
-    transform(s.begin(), s.end(), res.begin(), nucl_complement);
+    std::transform(s.begin(), s.end(), res.begin(), nucl_complement);
     return res;
 }
 

@@ -99,15 +99,15 @@ string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) con
     while (i < path.Size()) {
         //FIXME shouldn't we consider future right end trimming here
         int offset = 0;
-        while (i < path.Size() && offset >= (int) g_.length(path[i]) + path.GapAt(i)) {
-            offset -= (int) g_.length(path[i]) + path.GapAt(i);
+        while (i < path.Size() && offset >= (int) g_.length(path[i]) + path.GapAt(i).gap) {
+            offset -= (int) g_.length(path[i]) + path.GapAt(i).gap;
             ++i;
         }
         if (i == path.Size()) {
             break;
         }
 
-        int overlap_size = offset + (int) k_ - path.GapAt(i);
+        int overlap_size = offset + (int) k_ - path.GapAt(i).gap;
 
         if (overlap_size < 0) {
             for (size_t j = 0; j < abs(overlap_size); ++j) {
@@ -118,8 +118,8 @@ string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) con
 
         size_t right_end = g_.length(path[i]) + g_.k();
         if (i != path.Size() - 1) {
-            VERIFY(right_end > path.TrashPreviousAt(i + 1));
-            right_end -= path.TrashPreviousAt(i + 1);
+            VERIFY(right_end > path.GapAt(i + 1).trash_previous);
+            right_end -= path.GapAt(i + 1).trash_previous;
         }
 
         if (int(right_end) < overlap_size) {
@@ -139,13 +139,13 @@ void path_extend::ScaffoldBreaker::SplitPath(const BidirectionalPath &path, Path
         BidirectionalPath *p = new BidirectionalPath(path.graph(), path[i]);
         ++i;
 
-        while (i < path.Size() and path.GapAt(i) <= min_gap_) {
-            p->PushBack(path[i], path.GapAt(i), path.TrashPreviousAt(i), path.TrashCurrentAt(i));
+        while (i < path.Size() && path.GapAt(i).gap <= min_gap_) {
+            p->PushBack(path[i], path.GapAt(i));
             ++i;
         }
 
         if (i < path.Size()) {
-            DEBUG("split path " << i << " gap " << path.GapAt(i));
+            DEBUG("split path " << i << " gap " << path.GapAt(i).gap);
             p->Print();
         }
 
