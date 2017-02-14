@@ -19,7 +19,7 @@
 #include "path_filter.hpp"
 #include "overlap_analysis.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "bounded_dijkstra.hpp"
+#include "read_cloud_path_extend/bounded_dijkstra.hpp"
 #include <cmath>
 
 namespace path_extend {
@@ -1473,42 +1473,11 @@ public:
     }
 
     bool MakeSimpleGrowStep(BidirectionalPath &path, PathContainer *paths_storage) override {
-        pair<EdgeId, int> last_unique = FindLastUniqueInPath(path, unique_storage_);
-
-        if (last_unique.second == -1) {
-            return false;
-        }
-
-        EdgeId decisive_edge = last_unique.first;
-
-        vector<EdgeId> initial_candidates;
         ExtensionChooser::EdgeContainer candidates;
-        auto put_checker = BarcodePutChecker<Graph>(g_, decisive_edge, unique_storage_, initial_candidates);
-        auto dij = BarcodeDijkstra<Graph>::CreateBarcodeBoundedDijkstra(g_, distance_bound_, put_checker);
-        dij.Run(g_.EdgeEnd(decisive_edge));
-        DEBUG("Dijkstra finished")
-        DEBUG("Initial candidates: " << initial_candidates.size())
-
-        candidates.reserve(initial_candidates.size());
-        for (const auto& edge : initial_candidates) {
-            VERIFY(unique_storage_.IsUnique(edge));
-            if (edge != decisive_edge and edge != g_.conjugate(decisive_edge))
-                candidates.push_back(EdgeWithDistance(edge, dij.GetDistance(g_.EdgeStart(edge))));
-        }
         return FilterCandidates(path, candidates) and AddCandidates(path, paths_storage, candidates);
     }
 
 protected:
-    //fixme code duplication
-    std::pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path,
-                                                const ScaffoldingUniqueEdgeStorage& storage) const {
-        for (int i =  (int)path.Size() - 1; i >= 0; --i) {
-            if (storage.IsUnique(path.At(i))) {
-                return std::make_pair(path.At(i), i);
-            }
-        }
-        return std::make_pair(EdgeId(0), -1);
-    }
 
     virtual bool FilterCandidates(BidirectionalPath &path, ExtensionChooser::EdgeContainer &candidates) {
         DEBUG("Simple grow step");

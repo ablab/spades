@@ -385,7 +385,11 @@ Extenders ExtendersGenerator::MakeReadCloudExtender(const ScaffoldingUniqueEdgeS
     }
     else {
         INFO("Library type: 10X")
-        const int absolute_barcode_threshold = 2;
+        auto tenx_resolver_stats = cfg::get().ts_res.tenx;
+        const size_t absolute_barcode_threshold = tenx_resolver_stats.absolute_barcode_threshold;
+        const size_t tail_threshold = tenx_resolver_stats.tail_threshold;
+        const size_t max_initial_candidates = tenx_resolver_stats.max_initial_candidates;
+        const size_t internal_gap_threshold = tenx_resolver_stats.internal_gap_threshold;
 
         typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
 
@@ -398,7 +402,10 @@ Extenders ExtendersGenerator::MakeReadCloudExtender(const ScaffoldingUniqueEdgeS
                                                               fragment_length,
                                                               distance_bound,
                                                               storage,
-                                                              absolute_barcode_threshold);
+                                                              absolute_barcode_threshold,
+                                                              tail_threshold,
+                                                              max_initial_candidates,
+                                                              internal_gap_threshold);
 
 
         shared_ptr<ReadCloudExtender> extender = make_shared<ReadCloudExtender>(gp_, cover_map_,

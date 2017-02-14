@@ -23,7 +23,7 @@
 #include "pe_utils.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "common/barcode_index/barcode_info_extractor.hpp"
-#include "bounded_dijkstra.hpp"
+#include "read_cloud_path_extend/bounded_dijkstra.hpp"
 
 //#include "scaff_supplementary.hpp"
 
@@ -1328,13 +1328,30 @@ public:
     }
 
     //todo remove code duplication with ExtensionChooser2015
-    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer& edges) const override {
+    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer&) const override {
         EdgeContainer result;
-        pair<EdgeId, int> last_unique =
-                ReadCloudExtensionChooser::FindLastUniqueInPath(path, unique_storage_);
+
+        pair<EdgeId, int> last_unique = FindLastUniqueInPath(path, unique_storage_);
 
         if (last_unique.second == -1) {
             return result;
+        }
+
+        EdgeId decisive_edge = last_unique.first;
+
+        vector<EdgeId> initial_candidates;
+        ExtensionChooser::EdgeContainer candidates;
+        auto put_checker = BarcodePutChecker<Graph>(g_, decisive_edge, unique_storage_, initial_candidates);
+        auto dij = BarcodeDijkstra<Graph>::CreateBarcodeBoundedDijkstra(g_, distance_bound_, put_checker);
+        dij.Run(g_.EdgeEnd(decisive_edge));
+        DEBUG("Dijkstra finished")
+        DEBUG("Initial candidates: " << initial_candidates.size())
+
+        candidates.reserve(initial_candidates.size());
+        for (const auto& edge : initial_candidates) {
+            VERIFY(unique_storage_.IsUnique(edge));
+            if (edge != decisive_edge and edge != g_.conjugate(decisive_edge))
+                candidates.push_back(EdgeWithDistance(edge, dij.GetDistance(g_.EdgeStart(edge))));
         }
 
         DEBUG("At edge " << path.Back().int_id());
@@ -1342,7 +1359,7 @@ public:
         DEBUG("Decisive edge barcodes: " << barcode_extractor_ptr_->GetTailBarcodeNumber(last_unique.first));
 
         DEBUG("Searching for next unique edge.")
-        result = FindNextUniqueEdge(last_unique.first, edges);
+        result = FindNextUniqueEdge(last_unique.first, candidates);
         DEBUG("Searching finished.")
 
         DEBUG("next unique edges found, there are " << result.size() << " of them");
@@ -1528,6 +1545,9 @@ class TenXExtensionChooser : public ReadCloudExtensionChooser {
     using ReadCloudExtensionChooser::unique_storage_;
     using ReadCloudExtensionChooser::fragment_len_;
     double absolute_barcode_threshold_;
+    size_t tail_threshold_;
+    size_t max_initial_candidates_;
+    size_t internal_gap_threshold_;
     shared_ptr<frame_extractor_t> barcode_extractor_ptr_;
 public:
     static TenXExtensionChooserStatistics stats_;
@@ -1539,9 +1559,15 @@ public:
                          size_t fragment_len,
                          size_t distance_bound,
                          const ScaffoldingUniqueEdgeStorage& unique_storage,
-                         double absolute_barcode_threshold) :
+                         double absolute_barcode_threshold,
+                         size_t tail_threshold,
+                         size_t max_initial_candidates,
+                         size_t internal_gap_threshold) :
             ReadCloudExtensionChooser(gp, extractor, fragment_len, distance_bound, unique_storage),
             absolute_barcode_threshold_(absolute_barcode_threshold),
+            tail_threshold_(tail_threshold),
+            max_initial_candidates_(max_initial_candidates),
+            internal_gap_threshold_(internal_gap_threshold),
             barcode_extractor_ptr_(std::static_pointer_cast<frame_extractor_t>(extractor)) {}
 
 
@@ -1564,12 +1590,8 @@ private:
             stats_.no_barcodes_on_last_edge_++;
             return edges;
         }
-        size_t gap_threshold = 40000;
         //Find edges with barcode score greater than some threshold
-        EdgeContainer initial_candidates = InitialFilter(edges, decisive_edge, gap_threshold);
-
-        size_t max_candidates = 10; // temporary speedup
-        size_t len_threshold = 6000; //fixme magic constant
+        EdgeContainer initial_candidates = InitialFilter(edges, decisive_edge, tail_threshold_);
 
         if (initial_candidates.size() == 0 ) {
             stats_.no_candidates_after_initial_filter_++;
@@ -1579,12 +1601,12 @@ private:
             stats_.initial_filter_helped_++;
             return initial_candidates;
         }
-        if (initial_candidates.size() > max_candidates) {
+        if (initial_candidates.size() > max_initial_candidates_) {
             stats_.too_much_candidates_after_initial_++;
             return initial_candidates;
         }
         DEBUG("After initial check: " << initial_candidates.size());
-        EdgeContainer next_candidates = MiddleFilter(initial_candidates, decisive_edge, len_threshold);
+        EdgeContainer next_candidates = MiddleFilter(initial_candidates, decisive_edge, internal_gap_threshold_);
         DEBUG("After middle check: " << next_candidates.size());
         if (next_candidates.size() == 0) {
             stats_.no_candidates_after_middle_filter_++;
@@ -1596,9 +1618,9 @@ private:
         }
 
         EdgeContainer result = next_candidates;
-        size_t left_gap_threshold = 500;
-        size_t right_gap_threshold = 1000;
-        double fraction_threshold = 0.2;
+//        size_t min_conjugate_gap = 500;
+//        size_t max_conjugate_gap = 1000;
+//        double fraction_threshold = 0.2;
 
         stats_.multiple_candidates_after_both_++;
         if (next_candidates.size() == 2) {
@@ -1606,11 +1628,11 @@ private:
             EdgeId other = next_candidates[1].e_;
             if (edge == g_.conjugate(other)) {
                 stats_.pair_of_conjugates_left_++;
-                result = ConjugateFilter(decisive_edge, next_candidates[0], next_candidates[1],
-                                         left_gap_threshold, right_gap_threshold, fraction_threshold);
-                if (result.size() == 1) {
-                    stats_.conjugate_resolved_++;
-                }
+//                result = ConjugateFilter(decisive_edge, next_candidates[0], next_candidates[1],
+//                                         min_conjugate_gap, max_conjugate_gap, fraction_threshold);
+//                if (result.size() == 1) {
+//                    stats_.conjugate_resolved_++;
+//                }
             }
         }
         return result;

@@ -215,7 +215,7 @@ namespace barcode_index {
             edge_it_helper helper(g_);
             int64_t barcodes_overall = 0;
             int64_t long_edges = 0;
-            size_t len_threshold = cfg::get().ts_res.len_threshold;
+            size_t len_threshold = cfg::get().ts_res.edge_length_threshold;
             for (auto it = helper.begin(); it != helper.end(); ++it) {
                 if (g_.length(*it) > len_threshold) {
                     long_edges++;
