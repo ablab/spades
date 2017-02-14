@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE( LargeTest ) {
     BOOST_CHECK_EQUAL(overlap.r2, Range(8, 24));
 }
 
-inline path_extend::Gap MimicLAGapJoiner(size_t k, Sequence& s1, Sequence& s2) {
+inline path_extend::Gap MimicLAGapAnalyzer(size_t k, Sequence &s1, Sequence &s2) {
     const int INVALID_GAP = -1000000;
     constexpr static double IDENTITY_RATIO = 0.9;
 
@@ -149,11 +149,12 @@ inline path_extend::Gap MimicLAGapJoiner(size_t k, Sequence& s1, Sequence& s2) {
             (uint32_t) overlap_info.r2.start_pos);
 }
 
+//FIXME what does it test?! Why is it not a test of SWOverlapAnalyzer?
 BOOST_AUTO_TEST_CASE( SimpleGapTest ) {
     Sequence s1("AAAAAAAACGCGCTTTCGCTTTAA");
     Sequence s2("GGGGCGCGCTTTCGCTAAAAAAAAAA");
     size_t k = 5;
-    path_extend::Gap g = MimicLAGapJoiner(k, s1, s2);
+    path_extend::Gap g = MimicLAGapAnalyzer(k, s1, s2);
     BOOST_CHECK_EQUAL(14, 14);
     BOOST_CHECK_EQUAL(g.trash_current, 4);
     BOOST_CHECK_EQUAL(g.trash_previous, 4);
