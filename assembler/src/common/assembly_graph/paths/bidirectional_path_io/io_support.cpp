@@ -95,39 +95,26 @@ string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) con
         ss << g_.EdgeNucls(path[0]).Subseq(0, k_);
     }
 
-    size_t i = 0;
-    while (i < path.Size()) {
-        //FIXME shouldn't we consider future right end trimming here
-        int offset = 0;
-        while (i < path.Size() && offset >= (int) g_.length(path[i]) + path.GapAt(i).gap) {
-            offset -= (int) g_.length(path[i]) + path.GapAt(i).gap;
-            ++i;
-        }
-        if (i == path.Size()) {
-            break;
-        }
+    VERIFY(path.GapAt(0) == Gap());
+    for (size_t i = 0; i < path.Size(); ++i) {
+        int overlap_after_trim = path.GapAt(i).overlap_after_trim(k_);
 
-        int overlap_size = offset + (int) k_ - path.GapAt(i).gap;
-
-        if (overlap_size < 0) {
-            for (size_t j = 0; j < abs(overlap_size); ++j) {
+        Sequence s = g_.EdgeNucls(path[i]).Subseq(path.GapAt(i).trash_current);
+        if (overlap_after_trim < 0) {
+            for (size_t j = 0; j < abs(overlap_after_trim); ++j) {
                 ss << "N";
             }
-            overlap_size = 0;
+            overlap_after_trim = 0;
         }
 
-        size_t right_end = g_.length(path[i]) + g_.k();
+        size_t right_end = s.size();
         if (i != path.Size() - 1) {
             VERIFY(right_end > path.GapAt(i + 1).trash_previous);
             right_end -= path.GapAt(i + 1).trash_previous;
         }
+        VERIFY(overlap_after_trim < int(right_end));
 
-        if (int(right_end) < overlap_size) {
-            //FIXME this might be a weird case resulting in wrong offsets
-            break;
-        }
-        ss << g_.EdgeNucls(path[i]).Subseq(overlap_size, right_end);
-        ++i;
+        ss << g_.EdgeNucls(path[i]).Subseq(overlap_after_trim, right_end);
     }
     return ss.str();
 }

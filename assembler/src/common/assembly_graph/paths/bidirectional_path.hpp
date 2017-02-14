@@ -30,16 +30,36 @@ struct Gap {
     uint32_t trash_previous;
     uint32_t trash_current;
 
+    static const int INVALID_GAP = std::numeric_limits<int>::min();
+
+    static const Gap& INVALID() {
+        static Gap gap = Gap(INVALID_GAP);
+        return gap;
+    }
+
+    //gap is in k+1-mers and does not know about "trash" regions
     explicit Gap(int gap_ = 0, uint32_t trash_previous_ = 0, uint32_t trash_current_ = 0)
      : gap(gap_), trash_previous(trash_previous_), trash_current(trash_current_)
      { }
 
     Gap conjugate() const {
-        return Gap(gap + trash_current - trash_previous, trash_current, trash_previous);
+        return Gap(gap, trash_current, trash_previous);
     }
 
     bool operator==(const Gap &that) const {
         return gap == that.gap && trash_previous == that.trash_previous && trash_current == that.trash_current;
+    }
+
+    bool operator!=(const Gap &that) const {
+        return !(*this == that);
+    }
+
+    int overlap(size_t k) const {
+        return int(k) - gap;
+    }
+
+    int overlap_after_trim(size_t k) const {
+        return overlap(k) - trash_current - trash_previous;
     }
 };
 
@@ -189,7 +209,7 @@ public:
     void PushBack(EdgeId e, Gap gap = Gap()) {
         data_.push_back(e);
         gap_len_.push_back(gap);
-        IncreaseLengths(g_.length(e), gap);
+        IncreaseLengths(g_.length(e), gap.gap);
         NotifyBackEdgeAdded(e, gap);
     }
 
@@ -621,15 +641,15 @@ private:
         }
     }
 
-    void IncreaseLengths(size_t length, Gap gap_struct) {
+    void IncreaseLengths(size_t length, int gap) {
         for (auto iter = cumulative_len_.begin(); iter != cumulative_len_.end(); ++iter) {
-            *iter += length + gap_struct.gap - gap_struct.trash_previous;
+            *iter += length + gap;
         }
         cumulative_len_.push_back(length);
     }
 
     void DecreaseLengths() {
-        size_t length = g_.length(data_.back()) + gap_len_.back().gap - gap_len_.back().trash_previous;
+        size_t length = g_.length(data_.back()) + gap_len_.back().gap;
 
         for (auto iter = cumulative_len_.begin(); iter != cumulative_len_.end(); ++iter) {
             *iter -= length;
@@ -673,7 +693,7 @@ private:
         if (cumulative_len_.empty()) {
             cumulative_len_.push_front(length);
         } else {
-            cumulative_len_.push_front(length + cumulative_len_.front() + gap.gap - gap.trash_previous);
+            cumulative_len_.push_front(cumulative_len_.front() + length + gap.gap);
         }
         NotifyFrontEdgeAdded(e, gap);
     }

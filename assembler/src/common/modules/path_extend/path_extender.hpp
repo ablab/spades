@@ -372,9 +372,7 @@ public:
 
         //FIXME Think if it is ok to have a non-symmetric overlap gap description
         return GapDescription(gap.left(), gap.right(),
-                              //-int(overlap_info.r1.size()),
-                              //FIXME WTF?!!! weird to have overlap_info.r2.start_pos twice... also why not r2.size()?
-                              -int(overlap_info.r1.size()) - int(overlap_info.r2.start_pos),
+                              -int(overlap_info.r1.size()),
                               g_.length(gap.left()) + g_.k() - overlap_info.r1.end_pos,
                               overlap_info.r2.start_pos);
     }
@@ -951,8 +949,10 @@ public:
         return false;
     }
 
-    bool DetectCycleScaffolding(BidirectionalPath& path) {
-          return is_detector_.CheckCycledNonIS(path);
+    bool DetectCycleScaffolding(BidirectionalPath& path, EdgeId e) {
+        BidirectionalPath temp_path(path);
+        temp_path.PushBack(e);
+        return is_detector_.CheckCycledNonIS(temp_path);
     }
 
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* paths_storage = nullptr) = 0;
@@ -1249,8 +1249,17 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
         }
     }
 
-    bool IsSink(EdgeId e) const    {
+    bool IsSink(EdgeId e) const {
         return g_.OutgoingEdgeCount(g_.EdgeEnd(e)) == 0;
+    }
+
+    Gap ConvertGapDescription(const GapDescription &gap) const {
+        if (gap == GapDescription()) {
+            return Gap::INVALID();
+        }
+        return Gap(gap.estimated_dist() + int(g_.k())
+                   - int(gap.left_trim()) - int(gap.right_trim()),
+                   uint32_t(gap.left_trim()), uint32_t(gap.right_trim()));
     }
 
 protected:
@@ -1259,85 +1268,72 @@ protected:
         return true;
     }
 
-    bool MakeSimpleGrowStepForChooser(BidirectionalPath& path, std::shared_ptr<ExtensionChooser> ec, bool must_overlap = false) {
+    bool MakeSimpleGrowStepForChooser(BidirectionalPath& path, std::shared_ptr<ExtensionChooser> ec,
+                                      bool must_overlap = false) {
         if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back()))) {
             return false;
         }
-        DEBUG("scaffolding:");
+
         DEBUG("Simple grow step, growing path");
         path.Print();
         ExtensionChooser::EdgeContainer candidates = ec->Filter(path, sources_);
         DEBUG("scaffolding candidates " << candidates.size() << " from sources " << sources_.size());
 
-        //DEBUG("Extension chooser threshold = " << ec->GetThreshold())
         DEBUG("Candidate size = " << candidates.size())
-        if (candidates.size() == 1) {
-            if (candidates[0].e_ == path.Back()
-                || (avoid_rc_connections_ && candidates[0].e_ == g_.conjugate(path.Back()))) {
+        if (candidates.size() != 1) {
+            DEBUG("scaffolding end");
+            return false;
+        }
+
+        EdgeId e = candidates.back().e_;
+        if (e == path.Back()
+            || (avoid_rc_connections_ && e == g_.conjugate(path.Back()))) {
+            return false;
+        }
+
+        if (this->DetectCycleScaffolding(path, e)) {
+            return false;
+        }
+
+        Gap gap;
+        //FIXME is it ok that we either force joining or ignore its possibility
+        if (check_sink_) {
+            //FIXME what is d_? and should it be converted into nucleotide distance?
+            gap = ConvertGapDescription(gap_analyzer_->FixGap(GapDescription(path.Back(), e,
+                                                                             candidates.back().d_ -
+                                                                             int(g_.k()))));
+
+            if (gap == Gap::INVALID()) {
+                DEBUG("Looks like wrong scaffolding. PathId: "
+                              << path.GetId() << " path length: " << path.Length()
+                              << ", estimated gap length: " << candidates.back().d_);
                 return false;
             }
-            BidirectionalPath temp_path(path);
-            temp_path.PushBack(candidates[0].e_);
-            if (this->DetectCycleScaffolding(temp_path)) {
+
+            DEBUG("Gap after fixing " << gap.gap << " (was " << candidates.back().d_ << ")");
+
+            //FIXME check what should be passed to GapSatisfies
+            if (must_overlap && GapSatisfies(gap.gap)) {
+                DEBUG("Overlap is not large enough")
                 return false;
             }
+        } else {
+            DEBUG("Gap joiners off");
+            VERIFY(candidates.back().d_ > int(g_.k()));
+            gap = Gap(candidates.back().d_);
+        }
 
-            EdgeId eid = candidates.back().e_;
-            //FIXME is it ok that we either force joining or ignore its possibility
-            if (check_sink_) {
-                //FIXME what is d_? and should it be converted into nucleotide distance?
-                GapDescription gap = gap_analyzer_->FixGap(GapDescription(path.Back(), candidates.back().e_,
-                                                                        candidates.back().d_ - int(g_.k())));
-
-                DEBUG("Gap after fixing " << gap.estimated_dist() << " (was " << candidates.back().d_ << ")");
-                if (gap != GapDescription()) {
-                    DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() <<
-                          ", fixed gap length: " << gap.estimated_dist() << ", trash length: " << gap.left_trim() << "-" <<
-                          gap.right_trim());
-
-                    if (used_storage_->UniqueCheckEnabled()) {
-                        if (used_storage_->IsUsedAndUnique(eid)) {
-                            return false;
-                        } else {
-                            used_storage_->insert(eid);
-                        }
-                    }
-
-                    //FIXME check what should be passed to GapSatisfies
-                    if (must_overlap && GapSatisfies(gap.estimated_dist() + int(g_.k()))) {
-                        DEBUG("Overlap is not large enough")
-                        return false;
-                    }
-                    DEBUG("Overlap is good, success")
-                    //FIXME change usage of Gap and get rid of k
-                    path.PushBack(eid, Gap(gap.estimated_dist() + int(g_.k()),
-                                           uint32_t(gap.left_trim()), uint32_t(gap.right_trim())));
-                    return true;
-                }
-                else {
-                    DEBUG("Looks like wrong scaffolding. PathId: " << path.GetId() << " path length: " <<
-                        path.Length() << ", estimated gap length: " << candidates.back().d_);
-                    return false;
-                }
-            }
-            else {
-                DEBUG("Gap joiners off");
-                DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length()
-                          << ", fixed gap length: " << candidates.back().d_);
-
-                if (used_storage_->UniqueCheckEnabled()) {
-                    if (used_storage_->IsUsedAndUnique(eid)) {
-                        return false;
-                    } else {
-                        used_storage_->insert(eid);
-                    }
-                }
-                path.PushBack(candidates.back().e_, candidates.back().d_);
-                return true;
+        if (used_storage_->UniqueCheckEnabled()) {
+            if (used_storage_->IsUsedAndUnique(e)) {
+                return false;
+            } else {
+                used_storage_->insert(e);
             }
         }
-        DEBUG("scaffolding end");
-        return false;
+        DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap : "
+                                      << gap.gap << ", trash length: " << gap.trash_previous << "-" << gap.trash_current);
+        path.PushBack(e, gap);
+        return true;
     }
 
 public:

@@ -394,6 +394,10 @@ public:
                || right_trim_ != rhs.right_trim_;
     }
 
+    bool operator==(const GapDescription rhs) const {
+        return !(*this != rhs);
+    }
+
     //bool operator<(const GapDescription &rhs) const {
     //    return AsTuple() < rhs.AsTuple();
     //}

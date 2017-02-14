@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE( LargeTest ) {
     BOOST_CHECK_EQUAL(overlap.r2, Range(8, 24));
 }
 
-inline path_extend::Gap MimicLAGapJoiner(Sequence& s1, Sequence& s2) {
+inline path_extend::Gap MimicLAGapJoiner(size_t k, Sequence& s1, Sequence& s2) {
     const int INVALID_GAP = -1000000;
     constexpr static double IDENTITY_RATIO = 0.9;
 
@@ -144,7 +144,7 @@ inline path_extend::Gap MimicLAGapJoiner(Sequence& s1, Sequence& s2) {
     std::cout << overlap_info;
 
     return path_extend::Gap(
-            (int) (-overlap_info.r1.size() - overlap_info.r2.start_pos),
+            (int) (k - overlap_info.r1.size() - s1.size() + overlap_info.r1.end_pos - overlap_info.r2.start_pos),
             (uint32_t) (s1.size() - overlap_info.r1.end_pos),
             (uint32_t) overlap_info.r2.start_pos);
 }
@@ -152,11 +152,12 @@ inline path_extend::Gap MimicLAGapJoiner(Sequence& s1, Sequence& s2) {
 BOOST_AUTO_TEST_CASE( SimpleGapTest ) {
     Sequence s1("AAAAAAAACGCGCTTTCGCTTTAA");
     Sequence s2("GGGGCGCGCTTTCGCTAAAAAAAAAA");
-    path_extend::Gap g = MimicLAGapJoiner(s1, s2);
+    size_t k = 5;
+    path_extend::Gap g = MimicLAGapJoiner(k, s1, s2);
     BOOST_CHECK_EQUAL(14, 14);
-    BOOST_CHECK_EQUAL(g.trash_current_, 4);
-    BOOST_CHECK_EQUAL(g.trash_previous_, 4);
-    BOOST_CHECK_EQUAL(g.gap_, -16);
+    BOOST_CHECK_EQUAL(g.trash_current, 4);
+    BOOST_CHECK_EQUAL(g.trash_previous, 4);
+    BOOST_CHECK_EQUAL(g.gap, -15);
 }
 
 BOOST_AUTO_TEST_CASE( UndefinedBehavior ) {
