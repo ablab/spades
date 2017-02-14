@@ -1263,11 +1263,11 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
     }
 
 protected:
-    //FIXME WAT?!
-    virtual bool GapSatisfies(int /*gap*/) const {
+    virtual bool CheckGap(const Gap &/*gap*/) const {
         return true;
     }
 
+    //TODO fix awful design with virtual CheckGap and must_overlap flag!
     bool MakeSimpleGrowStepForChooser(BidirectionalPath& path, std::shared_ptr<ExtensionChooser> ec,
                                       bool must_overlap = false) {
         if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back()))) {
@@ -1313,7 +1313,7 @@ protected:
             DEBUG("Gap after fixing " << gap.gap << " (was " << candidates.back().d_ << ")");
 
             //FIXME check what should be passed to GapSatisfies
-            if (must_overlap && GapSatisfies(gap.gap)) {
+            if (must_overlap && !CheckGap(gap)) {
                 DEBUG("Overlap is not large enough")
                 return false;
             }
@@ -1382,8 +1382,8 @@ class RNAScaffoldingPathExtender: public ScaffoldingPathExtender {
     int min_overlap_;
 
 protected:
-    bool GapSatisfies(int gap) const override {
-        return gap > (int) g_.k() - min_overlap_;
+    bool CheckGap(const Gap &gap) const override {
+        return gap.overlap_after_trim(g_.k()) >= min_overlap_;
     }
 
 public:
