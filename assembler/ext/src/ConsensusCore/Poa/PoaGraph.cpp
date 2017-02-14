@@ -825,7 +825,7 @@ namespace ConsensusCore
             }
         }
 
-        return { ss.str(), 0.0f, variants };  // TODO(dalexander): where do we get scores?
+        return std::tuple<string, float, vector< pair<Mutation*, float> >* >{ ss.str(), 0.0f, variants };  // TODO(dalexander): where do we get scores?
     }
 
     inline int

@@ -39,6 +39,7 @@
 #include "Matrix/DenseMatrix.hpp"
 
 #include <algorithm>
+#include <tuple>
 #include <cassert>
 
 #include "LFloat.hpp"

@@ -38,6 +38,7 @@
 #include "Matrix/SparseMatrix.hpp"
 
 #include <algorithm>
+#include <tuple>
 
 namespace ConsensusCore {
     // Performance insensitive routines are not inlined
