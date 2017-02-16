@@ -72,6 +72,7 @@ class ScaffoldingUniqueEdgeAnalyzer {
     static const size_t max_different_edges_ = 20;
     static const size_t max_dijkstra_depth_ = 1000;
     static const size_t max_dijkstra_vertices_ = 1000;
+    static const size_t overwhelming_majority_ = 10;
     set<VertexId> GetChildren(VertexId v, map <VertexId, set<VertexId>> &dijkstra_cash_) const;
     bool FindCommonChildren(EdgeId e1, EdgeId e2, map <VertexId, set<VertexId>> &dijkstra_cash_) const;
     bool FindCommonChildren(vector<pair<EdgeId, double>> &next_weights) const;

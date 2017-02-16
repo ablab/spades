@@ -24,16 +24,17 @@ namespace io {
 
 enum class LibraryType {
     SingleReads,
-    PairedEnd,
-    MatePairs,
-    HQMatePairs,
-    PacBioReads,
     SangerReads,
+    PacBioReads,
     NanoporeReads,
-    TSLReads,
+    PairedEnd,
+    HQMatePairs,
+    MatePairs,
     TrustedContigs,
-    UntrustedContigs,
-    PathExtendContigs
+    TSLReads,
+    PathExtendContigs,
+    UntrustedContigs
+
 };
 
 static std::vector<LibraryType> LibraryPriotity = {
