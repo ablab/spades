@@ -88,17 +88,24 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<Gra
     BidirectionalPathSet all_set = long_reads_cov_map->GetCoveringPaths(e);
     BidirectionalPathMap<size_t> active_paths;
     size_t loop_weight = 0;
+    size_t nonloop_weight = 0;
+    DEBUG ("Checking " << gp_.g.int_id(e) <<" dir "<< direction );
     for (auto path_iter: all_set) {
         auto pos = path_iter->FindAll(e);
         if (pos.size() > 1)
 //TODO:: path weight should be size_t?
             loop_weight += size_t(round(path_iter->GetWeight()));
-        else
+        else {
+            if (path_iter->Size() > 1) nonloop_weight += size_t(round(path_iter->GetWeight()));
             active_paths[path_iter] = pos[0];
+        }
     }
 //TODO: small plasmid, paths a-b-a, b-a-b ?
-    if (loop_weight > 1)
-        return false;
+    if (loop_weight > 1) 
+            return false;
+        else
+            DEBUG (gp_.g.int_id(e) << " loop/nonloop weight " << loop_weight << " " << nonloop_weight);
+            
     EdgeId prev_unique = e;
     while (active_paths.size() > 0) {
         size_t alt = 0;
@@ -195,7 +202,9 @@ bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(vector<pair<EdgeId, doubl
     map <VertexId, set<VertexId>> dijkstra_cash_;
     for (size_t i = 0; i < next_weights.size(); i ++) {
         for (size_t j = i + 1; j < next_weights.size(); j++) {
-            if (!FindCommonChildren(next_weights[i].first, next_weights[j].first, dijkstra_cash_)) {
+            if (next_weights[i].second * overwhelming_majority_ > next_weights[j].second
+            && next_weights[j].second * overwhelming_majority_ > next_weights[i].second &&
+                !FindCommonChildren(next_weights[i].first, next_weights[j].first, dijkstra_cash_)) {
                 DEBUG("multiple paired info on edges " <<next_weights[i].first <<" and "<< next_weights[j].first);
                 return false;
             }
