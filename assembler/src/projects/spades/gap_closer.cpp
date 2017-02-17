@@ -173,7 +173,6 @@ class GapCloser {
     omnigraph::de::PairedInfoIndexT<Graph> &tips_paired_idx_;
     const size_t min_intersection_;
     const size_t hamming_dist_bound_;
-    const int init_gap_val_;
     const omnigraph::de::DEWeight weight_threshold_;
 
     std::vector<size_t> DiffPos(const Sequence &s1, const Sequence &s2) const {
@@ -390,7 +389,6 @@ public:
               tips_paired_idx_(tips_paired_idx),
               min_intersection_(min_intersection),
               hamming_dist_bound_(hamming_dist_bound),
-              init_gap_val_(-10),
               weight_threshold_(weight_threshold)  {
         VERIFY(min_intersection_ < g_.k());
         DEBUG("weight_threshold=" << weight_threshold_);
