@@ -37,7 +37,6 @@
 #include "assembly_graph/core/graph.hpp"
 
 #include "visualization/graph_colorer.hpp"
-#include "utils/standard_base.hpp"
 
 namespace debruijn {
 

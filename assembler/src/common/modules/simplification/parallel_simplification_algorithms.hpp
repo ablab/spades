@@ -9,7 +9,6 @@
 
 #include "cleaner.hpp"
 #include "bulge_remover.hpp"
-#include "utils/standard_base.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/graph_support/parallel_processing.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"

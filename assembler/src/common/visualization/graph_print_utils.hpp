@@ -8,8 +8,6 @@
 #ifndef GRAPH_PRINTER_HPP_
 #define GRAPH_PRINTER_HPP_
 
-#include "utils/standard_base.hpp"
-
 namespace visualization {
 
 template<class VertexId>

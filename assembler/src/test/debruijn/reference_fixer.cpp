@@ -5,7 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/standard_base.hpp"
 #include "utils/simple_tools.hpp"
 #include "utils/logger/log_writers.hpp"
 

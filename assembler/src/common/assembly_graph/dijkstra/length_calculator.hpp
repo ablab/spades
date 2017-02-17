@@ -6,7 +6,8 @@
 //***************************************************************************
 
 #pragma once
-#include "utils/standard_base.hpp"
+
+#include <vector>
 
 namespace omnigraph {
 
@@ -74,7 +75,7 @@ class AlongPathLengthCalculator : public LengthCalculator<Graph, distance_t> {
     }
 
 public:
-    AlongPathLengthCalculator(const Graph &graph, vector<EdgeId> &edge_path, distance_t bound) :
+    AlongPathLengthCalculator(const Graph &graph, std::vector<EdgeId> &edge_path, distance_t bound) :
         LengthCalculator<Graph, distance_t>(graph),
         vertex_path_(CollectVertices(edge_path)),
         bound_(bound) { }
@@ -96,7 +97,7 @@ class PathIgnoringLengthCalculator : public LengthCalculator<Graph, distance_t> 
     distance_t bound_;
 
 public:
-    PathIgnoringLengthCalculator(const Graph &graph, const vector<EdgeId> &edge_path) :
+    PathIgnoringLengthCalculator(const Graph &graph, const std::vector<EdgeId> &edge_path) :
             LengthCalculator<Graph, distance_t>(graph), path_(edge_path.begin(), edge_path.end())
             { }
 

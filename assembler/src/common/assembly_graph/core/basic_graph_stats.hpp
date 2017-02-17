@@ -1,6 +1,7 @@
 #pragma once
 
-#include "utils/standard_base.hpp"
+#include <vector>
+
 namespace omnigraph {
 
 template<class Graph>

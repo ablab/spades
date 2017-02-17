@@ -9,7 +9,6 @@
 // Created by anton on 5/15/15.
 //
 
-#include "utils/standard_base.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "AlignmentAnalyserNew.hpp"
 
