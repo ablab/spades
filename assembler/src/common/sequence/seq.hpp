@@ -36,7 +36,7 @@
 
 #include "utils/verify.hpp"
 #include "nucl.hpp"
-#include "utils/log.hpp"
+#include "math/log.hpp"
 #include "seq_common.hpp"
 
 

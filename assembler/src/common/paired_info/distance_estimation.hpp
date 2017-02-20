@@ -9,7 +9,7 @@
 #define DISTANCE_ESTIMATION_HPP_
 
 #include "math/xmath.h"
-#include "utils/openmp_wrapper.h"
+#include "utils/parallel/openmp_wrapper.h"
 
 #include "paired_info.hpp"
 #include "assembly_graph/paths/path_processor.hpp"

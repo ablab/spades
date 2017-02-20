@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "common/adt/queue_iterator.hpp"
+#include "adt/queue_iterator.hpp"
 #include "func/pred.hpp"
 #include "action_handlers.hpp"
 #include "utils/simple_tools.hpp"

@@ -15,7 +15,7 @@
 
 #include "values.hpp"
 
-namespace debruijn_graph {
+namespace utils {
 
 
 struct SimpleStoring {

@@ -10,7 +10,7 @@
 
 #include "io/reads/mpmc_bounded.hpp"
 
-#include "utils/openmp_wrapper.h"
+#include "utils/parallel/openmp_wrapper.h"
 
 #pragma GCC diagnostic push
 #ifdef __clang__

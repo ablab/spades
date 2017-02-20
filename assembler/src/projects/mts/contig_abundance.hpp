@@ -103,12 +103,12 @@ private:
 };
 
 class ContigAbundanceCounter {
-    typedef typename InvertableStoring::trivial_inverter<Offset> InverterT;
+    typedef typename utils::InvertableStoring::trivial_inverter<Offset> InverterT;
 
-    typedef KeyStoringMap<conj_graph_pack::seq_t,
+    typedef utils::KeyStoringMap<conj_graph_pack::seq_t,
                           Offset,
-                          kmer_index_traits<conj_graph_pack::seq_t>,
-                          InvertableStoring> IndexT;
+                          utils::kmer_index_traits<conj_graph_pack::seq_t>,
+                          utils::InvertableStoring> IndexT;
 
     unsigned k_;
     SingleClusterAnalyzer cluster_analyzer_;

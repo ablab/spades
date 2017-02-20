@@ -11,7 +11,7 @@
 #include "cap_environment_manager.hpp"
 #include "mosaic.hpp"
 #include "io/reads/sequence_reader.hpp"
-#include "utils/path_helper.hpp"
+#include "utils/path/path_helper.hpp"
 
 namespace online_visualization {
 

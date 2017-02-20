@@ -10,19 +10,18 @@
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 #include "sequence/sequence_tools.hpp"
-#include "common/assembly_graph/core/basic_graph_stats.hpp"
+#include "assembly_graph/core/basic_graph_stats.hpp"
 
 #include "edge_index.hpp"
 #include "kmer_mapper.hpp"
 
 #include <cstdlib>
-#include "common/assembly_graph/core/basic_graph_stats.hpp"
+#include "assembly_graph/core/basic_graph_stats.hpp"
 
 namespace debruijn_graph {
 using omnigraph::MappingPath;
 using omnigraph::Path;
 using omnigraph::MappingRange;
-using omnigraph::Range;
 
 template<class Graph>
 MappingPath<typename Graph::EdgeId> ConjugateMapping(const Graph& g, 

@@ -1,11 +1,10 @@
 #pragma once
 
 #include "utils/logger/logger.hpp"
-#include "utils/range.hpp"
+#include "sequence/range.hpp"
 #include "ssw/ssw_cpp.h"
 
 namespace debruijn_graph {
-using omnigraph::Range;
 
 struct OverlapInfo {
     Range r1;

@@ -22,7 +22,7 @@ void construct_graph(io::ReadStreamList<Read>& streams,
     config::debruijn_config::construction params = cfg::get().con;
     params.early_tc.enable &= !cfg::get().gap_closer_enable;
 
-    ReadStatistics stats = ConstructGraphWithCoverage(params, streams, gp.g,
+    utils::ReadStatistics stats = ConstructGraphWithCoverage(params, streams, gp.g,
                                                       gp.index, gp.flanking_cov, contigs_stream);
     size_t rl = stats.max_read_length_;
 

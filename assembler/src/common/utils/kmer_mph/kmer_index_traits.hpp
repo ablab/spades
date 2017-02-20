@@ -8,6 +8,8 @@
 #include "io/kmers/mmapped_reader.hpp"
 #include "mphf.hpp"
 
+namespace utils {
+
 template<class Seq>
 struct kmer_index_traits {
   typedef Seq SeqType;
@@ -90,3 +92,4 @@ struct kmer_index_traits {
   }
 
 };
+}

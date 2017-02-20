@@ -8,8 +8,8 @@
 #ifndef __IO_LIBRARY_HPP__
 #define __IO_LIBRARY_HPP__
 
-#include "common/adt/chained_iterator.hpp"
-#include "common/adt/iterator_range.hpp"
+#include "adt/chained_iterator.hpp"
+#include "adt/iterator_range.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
 

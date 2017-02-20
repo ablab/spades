@@ -10,8 +10,8 @@
 #include "compare_standard.hpp"
 #include "longseq.hpp"
 #include "polynomial_hash.hpp"
-#include "common/adt/kmer_map.hpp"
-#include "utils/indices/edge_position_index.hpp"
+#include "adt/kmer_map.hpp"
+#include "assembly_graph/index/edge_position_index.hpp"
 
 #include "io/reads/sequence_reader.hpp"
 #include "utils/mph_index/base_hash.hpp"

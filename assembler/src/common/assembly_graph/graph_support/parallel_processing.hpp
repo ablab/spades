@@ -10,7 +10,7 @@
 #include "utils/logger/logger.hpp"
 #include "assembly_graph/core/graph_iterators.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
-#include "utils/openmp_wrapper.h"
+#include "utils/parallel/openmp_wrapper.h"
 
 namespace omnigraph {
 

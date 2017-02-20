@@ -8,10 +8,10 @@
 #pragma once
 
 #include "utils/standard_base.hpp"
-#include "utils/openmp_wrapper.h"
+#include "utils/parallel/openmp_wrapper.h"
 #include "sequence/sequence.hpp"
 #include "assembly_graph/core/graph_iterators.hpp"
-#include "utils/indices/edge_position_index.hpp"
+#include "edge_position_index.hpp"
 
 namespace debruijn_graph {
 

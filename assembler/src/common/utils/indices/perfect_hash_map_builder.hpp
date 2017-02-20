@@ -5,12 +5,12 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/mph_index/kmer_index_builder.hpp"
+#include "utils/kmer_mph/kmer_index_builder.hpp"
 
 #include "perfect_hash_map.hpp"
 #include "kmer_splitters.hpp"
 
-namespace debruijn_graph {
+namespace utils {
 
 struct PerfectHashMapBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
@@ -88,15 +88,6 @@ size_t BuildIndexFromStream(Index &index,
     KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
     BuildIndex(index, counter, 16, streams.size());
     return 0;
-}
-
-template<class Index, class Graph>
-void BuildIndexFromGraph(Index &index, const Graph &g, size_t read_buffer_size = 0) {
-    DeBruijnGraphKMerSplitter<Graph,
-                              StoringTypeFilter<typename Index::storing_type>>
-            splitter(index.workdir(), index.k(), g, read_buffer_size);
-    KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
-    BuildIndex(index, counter, 16, 1);
 }
 
 }

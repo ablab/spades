@@ -16,16 +16,17 @@
 #include <execinfo.h>
 #include <iostream>
 
-inline void print_stacktrace()
-{
+namespace utils {
+
+inline void print_stacktrace() {
     std::cout << "=== Stack Trace ===" << std::endl;
 
     const size_t max_stack_size = 1000;
 
-    void* stack_pointers[max_stack_size];
+    void *stack_pointers[max_stack_size];
     int count = backtrace(stack_pointers, max_stack_size);
 
-    char** func_names = backtrace_symbols(stack_pointers, count);
+    char **func_names = backtrace_symbols(stack_pointers, count);
 
     // Print the stack trace
     for (int i = 0; i < count; ++i)
@@ -33,4 +34,6 @@ inline void print_stacktrace()
 
     // Free the string pointers
     free(func_names);
+}
+
 }

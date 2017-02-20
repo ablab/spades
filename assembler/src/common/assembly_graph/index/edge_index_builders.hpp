@@ -8,9 +8,76 @@
 #pragma once
 
 #include "edge_info_updater.hpp"
-#include "perfect_hash_map_builder.hpp"
+#include "utils/indices/perfect_hash_map_builder.hpp"
 
 namespace debruijn_graph {
+
+template<class Graph, class KmerFilter>
+class DeBruijnGraphKMerSplitter : public utils::DeBruijnKMerSplitter<KmerFilter> {
+    typedef typename Graph::ConstEdgeIt EdgeIt;
+    typedef typename Graph::EdgeId EdgeId;
+
+    const Graph &g_;
+
+    size_t FillBufferFromEdges(EdgeIt &edge, unsigned thread_id);
+
+public:
+    DeBruijnGraphKMerSplitter(const std::string &work_dir,
+                              unsigned K, const Graph &g, size_t read_buffer_size = 0)
+            : utils::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size), g_(g) {}
+
+    path::files_t Split(size_t num_files) override;
+};
+
+template<class Graph, class KmerFilter>
+size_t
+DeBruijnGraphKMerSplitter<Graph, KmerFilter>::FillBufferFromEdges(EdgeIt &edge,
+                                                                  unsigned thread_id) {
+    size_t seqs = 0;
+    for (; !edge.IsEnd(); ++edge) {
+        const Sequence &nucls = g_.EdgeNucls(*edge);
+
+        seqs += 1;
+        if (this->FillBufferFromSequence(nucls, thread_id))
+            break;
+    }
+
+    return seqs;
+}
+
+template<class Graph, class KmerFilter>
+path::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files) {
+    INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
+
+    path::files_t out = this->PrepareBuffers(num_files, 1, this->read_buffer_size_);
+
+    size_t counter = 0, n = 10;
+    for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ) {
+        counter += FillBufferFromEdges(it, 0);
+
+        this->DumpBuffers(out);
+
+        if (counter >> n) {
+            INFO("Processed " << counter << " edges");
+            n += 1;
+        }
+    }
+
+    INFO("Used " << counter << " sequences.");
+
+    this->ClearBuffers();
+
+    return out;
+}
+
+template<class Index, class Graph>
+void BuildIndexFromGraph(Index &index, const Graph &g, size_t read_buffer_size = 0) {
+    DeBruijnGraphKMerSplitter<Graph,
+            utils::StoringTypeFilter<typename Index::storing_type>>
+            splitter(index.workdir(), index.k(), g, read_buffer_size);
+    utils::KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
+    BuildIndex(index, counter, 16, 1);
+}
 
 template<class Index>
 class GraphPositionFillingIndexBuilder {
@@ -21,7 +88,7 @@ public:
     template<class Graph>
     void BuildIndexFromGraph(Index &index,
                              const Graph/*T*/ &g, size_t read_buffer_size = 0) const {
-        debruijn_graph::BuildIndexFromGraph(index, g, read_buffer_size);
+        BuildIndexFromGraph(index, g, read_buffer_size);
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Collecting k-mer coverage information from graph, this takes a while.");
@@ -145,7 +212,7 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
     size_t BuildIndexFromStream(IndexT &index,
                                 Streams &streams,
                                 io::SingleStream* contigs_stream = 0) const {
-        debruijn_graph::BuildIndexFromStream(index, streams, contigs_stream);
+        utils::BuildIndexFromStream(index, streams, contigs_stream);
 
         return ParallelFillCoverage(index, streams, false);
     }

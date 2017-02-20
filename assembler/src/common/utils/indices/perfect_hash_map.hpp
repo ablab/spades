@@ -6,11 +6,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/openmp_wrapper.h"
-#include "utils/path_helper.hpp"
+#include "utils/parallel/openmp_wrapper.h"
+#include "utils/filesystem/path_helper.hpp"
 #include "io/kmers/kmer_iterator.hpp"
 
-#include "utils/mph_index/kmer_index.hpp"
+#include "utils/kmer_mph/kmer_index.hpp"
 
 #include "key_with_hash.hpp"
 #include "values.hpp"
@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include <cstdint>
 
-namespace debruijn_graph {
+namespace utils {
 
 template<class K, class traits>
 class IndexWrapper {

@@ -14,7 +14,6 @@
 #include "AlignmentAnalyserNew.hpp"
 
 namespace alignment_analysis {
-    using omnigraph::Range;
 
     size_t AlignmentAnalyserNew::StepBack(const vector<ConsistentMapping> &path) const {
         size_t cur_step = 0;

@@ -1,11 +1,10 @@
 #pragma once
 
+namespace debruijn_graph {
 using omnigraph::Path;
 using omnigraph::MappingPath;
-using omnigraph::Range;
 using omnigraph::MappingRange;
 
-namespace debruijn_graph {
 inline double PairedReadCountWeight(const std::pair<EdgeId, EdgeId>&,
                                     const MappingRange&, const MappingRange&) {
     return 1.;

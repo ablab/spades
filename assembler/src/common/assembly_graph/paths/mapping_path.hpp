@@ -8,7 +8,7 @@
 #pragma once
 
 #include "sequence/sequence.hpp"
-#include "utils/range.hpp"
+#include "sequence/range.hpp"
 
 namespace omnigraph {
 

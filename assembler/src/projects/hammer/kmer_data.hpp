@@ -9,16 +9,16 @@
 #define __HAMMER_KMER_DATA_HPP__
 
 #include "kmer_stat.hpp"
-#include "common/adt/array_vector.hpp"
-#include "utils/mph_index/kmer_index.hpp"
+#include "adt/array_vector.hpp"
+#include "utils/kmer_mph/kmer_index.hpp"
 #include <vector>
 
-typedef KMerIndex<kmer_index_traits<hammer::KMer> > HammerKMerIndex;
+typedef utils::KMerIndex<utils::kmer_index_traits<hammer::KMer> > HammerKMerIndex;
 
 class KMerData {
   typedef std::vector<KMerStat> KMerDataStorageType;
   typedef std::vector<hammer::KMer> KMerStorageType;
-  typedef kmer_index_traits<hammer::KMer> traits;
+  typedef utils::kmer_index_traits<hammer::KMer> traits;
 
  public:
   KMerData()

@@ -11,9 +11,9 @@
 
 #include "utils/segfault_handler.hpp"
 #include "utils/stacktrace.hpp"
-#include "utils/memory_limit.hpp"
-#include "utils/copy_file.hpp"
-#include "utils/perfcounter.hpp"
+#include "utils/perf/memory_limit.hpp"
+#include "utils/filesystem/copy_file.hpp"
+#include "utils/perf/perfcounter.hpp"
 #include "scaffold_correction.hpp"
 
 #include "pipeline/config_struct.hpp"
@@ -58,7 +58,7 @@ void create_console_logger(string cfg_filename) {
 }
 
 int main(int argc, char** argv) {
-    perf_counter pc;
+    utils::perf_counter pc;
 
     const size_t GB = 1 << 30;
 
@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
 
         // read configuration file (dataset path etc.)
 
-        limit_memory(cfg::get().max_memory * GB);
+        utils::limit_memory(cfg::get().max_memory * GB);
 
         // assemble it!
         INFO("Assembling dataset (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);

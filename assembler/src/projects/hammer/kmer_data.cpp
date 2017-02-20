@@ -12,11 +12,11 @@
 #include "io/reads/ireadstream.hpp"
 #include "config_struct_hammer.hpp"
 
-#include "utils/mph_index/kmer_index_builder.hpp"
+#include "utils/kmer_mph/kmer_index_builder.hpp"
 
 #include "io/kmers/kmer_iterator.hpp"
-#include "common/adt/bf.hpp"
-#include "common/adt/hll.hpp"
+#include "adt/bf.hpp"
+#include "adt/hll.hpp"
 
 using namespace hammer;
 
@@ -35,7 +35,7 @@ struct KMerComparator {
 };
 
 
-class HammerFilteringKMerSplitter : public KMerSortingSplitter<hammer::KMer> {
+class HammerFilteringKMerSplitter : public utils::KMerSortingSplitter<hammer::KMer> {
  public:
   typedef std::function<bool(const KMer&)> KMerFilter;
 
@@ -335,22 +335,22 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
       // FIXME: Reduce code duplication
       HammerFilteringKMerSplitter splitter(workdir,
                                            [&] (const KMer &k) { return mcounter.count(k) > 1; });
-      KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
+      utils::KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
 
-      kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
+      kmers = utils::KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
       final_kmers = counter.GetFinalKMersFname();
   } else {
       HammerFilteringKMerSplitter splitter(workdir);
-      KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
+      utils::KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
 
-      kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
+      kmers = utils::KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
       final_kmers = counter.GetFinalKMersFname();
   }
 
 
   // Check, whether we'll ever have enough memory for running BH and bail out earlier
   double needed = 1.25 * (double)kmers * (sizeof(KMerStat) + sizeof(hammer::KMer));
-  if (needed > (double) get_memory_limit())
+  if (needed > (double) utils::get_memory_limit())
       FATAL_ERROR("The reads contain too many k-mers to fit into available memory. You need approx. "
                   << needed / 1024.0 / 1024.0 / 1024.0
                   << "GB of free RAM to assemble your dataset");

@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "io/reads/ireadstream.hpp"
-#include "utils/openmp_wrapper.h"
+#include "utils/parallel/openmp_wrapper.h"
 
 #include "hammer_tools.hpp"
 #include "hamcluster.hpp"

@@ -9,9 +9,9 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/construction_helper.hpp"
 #include "utils/standard_base.hpp"
-#include "utils/indices/kmer_extension_index.hpp"
-#include "utils/openmp_wrapper.h"
-#include "utils/parallel_wrapper.hpp"
+#include "utils/extension_index/kmer_extension_index.hpp"
+#include "utils/parallel/openmp_wrapper.h"
+#include "utils/parallel/parallel_wrapper.hpp"
 
 namespace debruijn_graph {
 
@@ -181,7 +181,7 @@ private:
 
 class UnbranchingPathFinder {
 private:
-    typedef DeBruijnExtensionIndex<> Index;
+    typedef utils::DeBruijnExtensionIndex<> Index;
     typedef RtSeq Kmer;
     typedef Index::kmer_iterator kmer_iterator;
     typedef Index::KeyWithHash KeyWithHash;
@@ -240,7 +240,7 @@ public:
 
 class UnbranchingPathExtractor {
 private:
-    typedef DeBruijnExtensionIndex<> Index;
+    typedef utils::DeBruijnExtensionIndex<> Index;
     typedef RtSeq Kmer;
     typedef Index::kmer_iterator kmer_iterator;
     typedef Index::DeEdge DeEdge;
@@ -370,6 +370,7 @@ private:
     DECL_LOGGER("UnbranchingPathExtractor")
 };
 
+//FIXME is it dead?
 /*
  * Only works for Conjugate dbg
  */
@@ -379,7 +380,7 @@ private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef RtSeq Kmer;
-    typedef DeBruijnExtensionIndex<> Index;
+    typedef utils::DeBruijnExtensionIndex<> Index;
     size_t kmer_size_;
     Index &origin_;
 
@@ -516,7 +517,7 @@ template<class Graph>
 class DeBruijnGraphExtentionConstructor {
 private:
     typedef typename Graph::EdgeId EdgeId;
-    typedef DeBruijnExtensionIndex<> DeBruijn;
+    typedef utils::DeBruijnExtensionIndex<> DeBruijn;
     typedef typename Graph::VertexId VertexId;
     typedef RtSeq Kmer;
 

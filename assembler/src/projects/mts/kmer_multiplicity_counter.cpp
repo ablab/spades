@@ -12,7 +12,7 @@
 #include "kmc_api/kmc_file.h"
 //#include "omp.h"
 #include "io/kmers/mmapped_reader.hpp"
-#include "utils/path_helper.hpp"
+#include "utils/filesystem/path_helper.hpp"
 #include "utils/simple_tools.hpp"
 #include "utils/indices/perfect_hash_map_builder.hpp"
 #include "utils/indices/kmer_splitters.hpp"
@@ -137,7 +137,7 @@ class KmerMultiplicityCounter {
         //TODO: extract into a common header
         typedef size_t Offset;
         typedef uint16_t Mpl;
-        using namespace debruijn_graph;
+        using namespace utils;
 
         KeyStoringMap<RtSeq, Offset, kmer_index_traits<RtSeq>, InvertableStoring>
             kmer_mpl(k_, workdir);

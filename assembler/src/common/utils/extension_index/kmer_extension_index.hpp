@@ -7,12 +7,12 @@
 
 #pragma once
 
-#include "perfect_hash_map.hpp"
+#include "utils/indices/perfect_hash_map.hpp"
 #include "utils/simple_tools.hpp"
-#include "storing_traits.hpp"
+#include "utils/indices/storing_traits.hpp"
 #include <bitset>
 
-namespace debruijn_graph {
+namespace utils {
 
 inline uint8_t invert_byte_slow(uint8_t a) {
     size_t res = 0;
@@ -163,8 +163,8 @@ Stream &operator<<(Stream& stream, const InOutMask &mask) {
 }
 
 template<class Seq>
-struct slim_kmer_index_traits : public kmer_index_traits<Seq> {
-    typedef kmer_index_traits<Seq> __super;
+struct slim_kmer_index_traits : public utils::kmer_index_traits<Seq> {
+    typedef utils::kmer_index_traits<Seq> __super;
 
     typedef MMappedRecordReader<typename Seq::DataType> FinalKMerStorage;
 

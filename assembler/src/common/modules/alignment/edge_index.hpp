@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "common/assembly_graph/core/graph.hpp"
-#include "common/assembly_graph/core/action_handlers.hpp"
-#include "utils/indices/edge_info_updater.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/core/action_handlers.hpp"
+#include "assembly_graph/index/edge_info_updater.hpp"
 #include "edge_index_refiller.hpp"
     
 namespace debruijn_graph {
@@ -24,7 +24,7 @@ class EdgeIndex: public omnigraph::GraphActionHandler<Graph> {
 
 public:
     typedef typename Graph::EdgeId EdgeId;
-    using InnerIndex = KmerFreeEdgeIndex<Graph, DefaultStoring>;
+    using InnerIndex = KmerFreeEdgeIndex<Graph>;
     typedef Graph GraphT;
     typedef typename InnerIndex::KMer KMer;
     typedef typename InnerIndex::KMerIdx KMerIdx;

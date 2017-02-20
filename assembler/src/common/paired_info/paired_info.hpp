@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "common/adt/iterator_range.hpp"
+#include "adt/iterator_range.hpp"
 #include <boost/iterator/iterator_facade.hpp>
 #include <btree/safe_btree_map.h>
 

@@ -12,7 +12,7 @@
 #include <vector>
 #include <map>
 #include <common/visualization/graph_labeler.hpp>
-#include "common/adt/bag.hpp"
+#include "adt/bag.hpp"
 
 namespace cap {
 

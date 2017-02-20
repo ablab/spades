@@ -11,9 +11,9 @@
 #include "config_struct.hpp"
 
 #include "io/reads/file_reader.hpp"
-#include "utils/path_helper.hpp"
+#include "utils/filesystem/path_helper.hpp"
 #include "io/reads/osequencestream.hpp"
-#include "utils/openmp_wrapper.h"
+#include "utils/parallel/openmp_wrapper.h"
 
 #include <boost/algorithm/string.hpp>
 

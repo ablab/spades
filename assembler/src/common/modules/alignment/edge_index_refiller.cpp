@@ -4,8 +4,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/indices/edge_index_builders.hpp"
-#include "utils/indices/edge_multi_index.hpp"
+#include "index/edge_index_builders.hpp"
+#include "index/edge_multi_index.hpp"
 #include "core/graph.hpp"
 
 #include "edge_index_refiller.hpp"

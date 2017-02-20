@@ -17,7 +17,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "utils/memory_limit.hpp"
+#include "utils/perf/memory_limit.hpp"
 #include "io/dataset_support/read_converter.hpp"
 
 #include "debruijn_online_visualizer.hpp"
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
         create_console_logger(cfg_filename);
         cout << "\nGAF (Graph Analysis Framework) started" << endl;
         cout << "Print help to see readme file" << endl;
-        limit_memory(cfg::get().max_memory * GB);
+        utils::limit_memory(cfg::get().max_memory * GB);
 
         DebruijnOnlineVisualizer online_vis;
         online_vis.init();

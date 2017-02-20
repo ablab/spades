@@ -8,7 +8,7 @@
 #pragma once
 
 #include "parallel_unordered_map.hpp"
-#include "utils/openmp_wrapper.h"
+#include "utils/parallel/openmp_wrapper.h"
 
 #include "sequence/runtime_k.hpp"
 #include "kmer_map.hpp"

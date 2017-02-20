@@ -20,7 +20,7 @@
 #include <array>
 #include <algorithm>
 #include "nucl.hpp"
-#include "utils/log.hpp"
+#include "math/log.hpp"
 #include "seq_common.hpp"
 #include "seq.hpp"
 #include "simple_seq.hpp"

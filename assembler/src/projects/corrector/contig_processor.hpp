@@ -15,7 +15,7 @@
 #pragma once
 #include "interesting_pos_processor.hpp"
 #include "positional_read.hpp"
-#include "utils/openmp_wrapper.h"
+#include "utils/parallel/openmp_wrapper.h"
 
 #include <io/sam/sam_reader.hpp>
 #include <io/sam/read.hpp>

@@ -9,7 +9,7 @@
 
 
 #include "sequence_mapper.hpp"
-#include "common/modules/alignment/pacbio/pac_index.hpp"
+#include "modules/alignment/pacbio/pac_index.hpp"
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 
 namespace debruijn_graph {

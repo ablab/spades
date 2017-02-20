@@ -66,7 +66,7 @@ class OnlineVisualizer {
     AddSpecificCommands();
     DEBUG("Commands added");
     DEBUG("Adding auto-completion option");
-    InitAutocompletion(command_mapping_.GetCommandNamesList());
+    utils::InitAutocompletion(command_mapping_.GetCommandNamesList());
     //stringstream ss("load default " + p);
     //const Command<Env>& load_command = command_mapping_.GetCommand("load");
     //DEBUG("Loading current environment");

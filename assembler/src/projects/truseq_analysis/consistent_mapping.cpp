@@ -10,7 +10,6 @@
 #include "consistent_mapping.h"
 
 namespace alignment_analysis {
-    using omnigraph::Range;
     using omnigraph::MappingRange;
 
     bool ConsistentMapping::CheckConnect(EdgeId e, Range r) const {

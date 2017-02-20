@@ -9,7 +9,7 @@
 #include "config_struct.hpp"
 #include "valid_hkmer_generator.hpp"
 
-#include "utils/mph_index/kmer_index_builder.hpp"
+#include "utils/kmer_mph/kmer_index_builder.hpp"
 
 #include "io/kmers/mmapped_writer.hpp"
 #include "io/reads/file_reader.hpp"
@@ -19,7 +19,7 @@ using namespace hammer;
 
 class BufferFiller;
 
-class HammerKMerSplitter : public KMerSortingSplitter<HKMer> {
+class HammerKMerSplitter : public utils::KMerSortingSplitter<HKMer> {
  public:
   HammerKMerSplitter(const std::string &work_dir)
       : KMerSortingSplitter<HKMer>(work_dir, hammer::K) {}
@@ -142,8 +142,8 @@ class KMerDataFiller {
 
 void KMerDataCounter::FillKMerData(KMerData &data) {
   HammerKMerSplitter splitter(cfg::get().working_dir);
-  KMerDiskCounter<hammer::HKMer> counter(cfg::get().working_dir, splitter);
-  size_t sz = KMerIndexBuilder<HammerKMerIndex>(cfg::get().working_dir, num_files_, cfg::get().max_nthreads).BuildIndex(data.index_, counter);
+  utils::KMerDiskCounter<hammer::HKMer> counter(cfg::get().working_dir, splitter);
+  size_t sz = utils::KMerIndexBuilder<HammerKMerIndex>(cfg::get().working_dir, num_files_, cfg::get().max_nthreads).BuildIndex(data.index_, counter);
 
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");

@@ -13,9 +13,9 @@ namespace alignment_analysis {
     typedef Graph::EdgeId EdgeId;
 
     struct EdgeRange {
-        EdgeRange(const EdgeId &first, const omnigraph::Range &second) : first(first), second(second) { }
+        EdgeRange(const EdgeId &first, const Range &second) : first(first), second(second) { }
         EdgeId first;
-        omnigraph::Range second;
+        Range second;
     };
 
     ostream & operator<<(ostream& os, const EdgeRange& er);
@@ -27,9 +27,9 @@ namespace alignment_analysis {
 
         ConsistentMapping(const Graph &graph, const omnigraph::MappingPath<EdgeId> &path);
 
-        ConsistentMapping(Graph const &graph, omnigraph::Range r, const vector<EdgeRange> &path);
+        ConsistentMapping(Graph const &graph, Range r, const vector<EdgeRange> &path);
 
-        bool CheckConnect(EdgeId e, omnigraph::Range r) const;
+        bool CheckConnect(EdgeId e, Range r) const;
 
         bool CheckConnect(const EdgeRange &er) const;
 
@@ -45,7 +45,7 @@ namespace alignment_analysis {
 
         void ForceJoin(const ConsistentMapping &other, const vector <EdgeId> &path);
 
-        omnigraph::Range const &GetInitialRange() const;
+        Range const &GetInitialRange() const;
 
         const vector <EdgeRange> &GetMappedPath() const;
 
@@ -81,7 +81,7 @@ namespace alignment_analysis {
         vector<EdgeRange> GenerateMappingPath(const vector<EdgeId> &path) const;
 
         const Graph &graph_;
-        omnigraph::Range initial_range;
+        Range initial_range;
         vector <EdgeRange> mapped_path;
         DECL_LOGGER("ConsistentMapping");
     };

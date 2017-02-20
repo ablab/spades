@@ -13,13 +13,13 @@
 #include "common/adt/pointer_iterator.hpp"
 #include "common/adt/kmer_vector.hpp"
 
-#include "utils/openmp_wrapper.h"
+#include "utils/parallel/openmp_wrapper.h"
 
 #include "utils/logger/logger.hpp"
-#include "utils/path_helper.hpp"
+#include "utils/filesystem/path_helper.hpp"
 
-#include "utils/memory_limit.hpp"
-#include "utils/file_limit.hpp"
+#include "utils/perf/memory_limit.hpp"
+#include "utils/filesystem/file_limit.hpp"
 
 #include "adt/iterator_range.hpp"
 #include "adt/loser_tree.hpp"
@@ -45,6 +45,8 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
+
+namespace utils {
 
 template<class Seq>
 class KMerSplitter {
@@ -104,7 +106,7 @@ class KMerSortingSplitter : public KMerSplitter<Seq> {
 
     if (reads_buffer_size == 0) {
       reads_buffer_size = 536870912ull;
-      size_t mem_limit =  (size_t)((double)(get_free_memory()) / (nthreads * 3));
+      size_t mem_limit =  (size_t)((double)(utils::get_free_memory()) / (nthreads * 3));
       INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
       reads_buffer_size = std::min(reads_buffer_size, mem_limit);
     }
@@ -444,7 +446,7 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
 
   je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
   size_t bucket_size = (36 * kmers + kmers * counter.kmer_size()) / num_buckets_;
-  num_threads = std::min<unsigned>((unsigned) ((get_memory_limit() - *cmem) / bucket_size), num_threads);
+  num_threads = std::min<unsigned>((unsigned) ((utils::get_memory_limit() - *cmem) / bucket_size), num_threads);
   if (num_threads < 1)
     num_threads = 1;
   if (num_threads < num_threads_)
@@ -483,4 +485,5 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
   INFO("Index built. Total " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
   index.count_size();
   return kmers;
+}
 }

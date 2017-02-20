@@ -7,7 +7,7 @@
 #include "pipeline/config_struct.hpp"
 
 #include "pipeline/config_common.hpp"
-#include "utils/openmp_wrapper.h"
+#include "utils/parallel/openmp_wrapper.h"
 
 #include "utils/logger/logger.hpp"
 #include "utils/verify.hpp"

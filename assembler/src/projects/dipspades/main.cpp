@@ -11,8 +11,8 @@
 #include "utils/logger/log_writers.hpp"
 
 #include "utils/segfault_handler.hpp"
-#include "utils/memory_limit.hpp"
-#include "utils/copy_file.hpp"
+#include "utils/perf/memory_limit.hpp"
+#include "utils/filesystem/copy_file.hpp"
 
 #include "pipeline/graph_pack.hpp"
 #include "stages/construction.hpp"
@@ -60,13 +60,13 @@ void create_console_logger(string cfg_filename) {
 }
 
 int main(int /*argc*/, char** argv) {
-  perf_counter pc;
+  utils::perf_counter pc;
   const size_t GB = 1 << 30;
 
   srand(42);
   srandom(42);
 
-  segfault_handler sh;
+  utils::segfault_handler sh;
 
   try {
     using namespace debruijn_graph;
@@ -82,7 +82,7 @@ int main(int /*argc*/, char** argv) {
     VERIFY(dsp_cfg::get().bp.K >= runtime_k::MIN_K && dsp_cfg::get().bp.K < runtime_k::MAX_K);
     VERIFY(dsp_cfg::get().bp.K % 2 != 0);
 
-    limit_memory(dsp_cfg::get().bp.max_memory * GB);
+    utils::limit_memory(dsp_cfg::get().bp.max_memory * GB);
 
     INFO("Starting dipSPAdes, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
     INFO("Assembling dataset (" << dsp_cfg::get().io.dataset_name << ") with K=" << dsp_cfg::get().bp.K);

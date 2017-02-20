@@ -8,13 +8,13 @@
 #pragma once
 #include "utils/standard_base.hpp"
 #include "utils/indices/perfect_hash_map.hpp"
-#include "utils/mph_index/kmer_index.hpp"
+#include "utils/kmer_mph/kmer_index.hpp"
 
 namespace debruijn_graph {
 
 class LinkCleaner {
 private:
-    typedef DeBruijnExtensionIndex<> Index;
+    typedef utils::DeBruijnExtensionIndex<> Index;
     typedef Index::KMer Kmer;
     typedef Index::KeyWithHash KeyWithHash;
     Index &index_;
@@ -61,7 +61,7 @@ public:
 
 class AlternativeEarlyTipClipper {
 private:
-    typedef DeBruijnExtensionIndex<> Index;
+    typedef utils::DeBruijnExtensionIndex<> Index;
     typedef Index::KMer Kmer;
     typedef Index::KeyWithHash KeyWithHash;
     Index &index_;

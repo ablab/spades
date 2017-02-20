@@ -13,10 +13,10 @@
 #include "io/reads/osequencestream.hpp"
 #include "io/reads/read_processor.hpp"
 
-#include "common/adt/concurrent_dsu.hpp"
+#include "adt/concurrent_dsu.hpp"
 
 #include "utils/segfault_handler.hpp"
-#include "utils/memory_limit.hpp"
+#include "utils/perf/memory_limit.hpp"
 
 #include "HSeq.hpp"
 #include "kmer_data.hpp"
@@ -27,7 +27,7 @@
 #include "expander.hpp"
 #include "config_struct.hpp"
 
-#include "utils/openmp_wrapper.h"
+#include "utils/parallel/openmp_wrapper.h"
 
 #include "version.hpp"
 
@@ -69,7 +69,7 @@ static bool stage(hammer_config::HammerStage start, hammer_config::HammerStage c
 }
 
 int main(int argc, char** argv) {
-  segfault_handler sh;
+  utils::segfault_handler sh;
 
   srand(42);
   srandom(42);
@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
 
     // hard memory limit
     const size_t GB = 1 << 30;
-    limit_memory(cfg::get().hard_memory_limit * GB);
+    utils::limit_memory(cfg::get().hard_memory_limit * GB);
 
     KMerData kmer_data;
     if (stage(cfg::get().start_stage, hammer_config::HammerStage::KMerCounting)) {

@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "utils/indices/edge_multi_index.hpp"
-#include "common/modules/alignment/edge_index_refiller.hpp"
+#include "assembly_graph/index/edge_multi_index.hpp"
+#include "modules/alignment/edge_index_refiller.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 // FIXME: Layering violation, get rid of this
@@ -835,8 +835,8 @@ public:
         for (auto iter = largest_clusters.begin(); iter != largest_clusters.end(); ++iter) {
             auto first_cluster = iter->second.sorted_positions[iter->second.first_trustable_index];
             auto last_cluster = iter->second.sorted_positions[iter->second.last_trustable_index];
-            omnigraph::MappingRange range(omnigraph::Range(first_cluster.read_position, last_cluster.read_position),
-                                          omnigraph::Range(first_cluster.edge_position, last_cluster.edge_position));
+            omnigraph::MappingRange range(Range(first_cluster.read_position, last_cluster.read_position),
+                                          Range(first_cluster.edge_position, last_cluster.edge_position));
             result.join({iter->second.edgeId, range});
         }
 

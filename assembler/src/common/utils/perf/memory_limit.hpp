@@ -27,6 +27,8 @@
 
 #endif
 
+namespace utils {
+
 inline void limit_memory(size_t limit) {
     rlimit rl;
     if (sizeof(rlim_t) < 8) {
@@ -91,7 +93,8 @@ inline size_t get_used_memory() {
 #endif
 }
 
-
 inline size_t get_free_memory() {
     return get_memory_limit() - get_used_memory();
+}
+
 }

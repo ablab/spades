@@ -7,7 +7,9 @@
 #pragma once
 
 #include "kmer_extension_index.hpp"
-#include "kmer_splitters.hpp"
+#include "utils/indices/kmer_splitters.hpp"
+
+namespace utils {
 
 class DeBruijnExtensionIndexBuilder {
 public:
@@ -59,13 +61,13 @@ public:
 
 public:
     template<class Index, class Streams>
-    ReadStatistics BuildExtensionIndexFromStream(Index &index, Streams &streams, io::SingleStream* contigs_stream = 0,
+    ReadStatistics BuildExtensionIndexFromStream(Index &index, Streams &streams, io::SingleStream *contigs_stream = 0,
                                                  size_t read_buffer_size = 0) const {
         unsigned nthreads = (unsigned) streams.size();
 
         // First, build a k+1-mer index
         DeBruijnReadKMerSplitter<typename Streams::ReadT,
-                                 StoringTypeFilter<typename Index::storing_type>>
+                StoringTypeFilter<typename Index::storing_type>>
                 splitter(index.workdir(), index.k() + 1, 0xDEADBEEF, streams,
                          contigs_stream, read_buffer_size);
         KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
@@ -104,3 +106,4 @@ struct ExtensionIndexHelper {
     using DeBruijnExtensionIndexBuilderT = DeBruijnExtensionIndexBuilder;
 };
 
+}

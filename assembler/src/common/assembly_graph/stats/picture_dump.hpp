@@ -26,7 +26,7 @@
 #include "io/reads/wrapper_collection.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
-#include "utils/copy_file.hpp"
+#include "utils/filesystem/copy_file.hpp"
 
 #include <boost/algorithm/string.hpp>
 

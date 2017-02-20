@@ -9,7 +9,7 @@
 #include "connection_condition2015.hpp"
 
 #include "utils/standard_base.hpp"
-#include "common/adt/iterator_range.hpp"
+#include "adt/iterator_range.hpp"
 
 namespace path_extend {
 namespace scaffold_graph {

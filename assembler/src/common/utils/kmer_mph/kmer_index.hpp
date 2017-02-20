@@ -14,6 +14,8 @@
 #include <vector>
 #include <cmath>
 
+namespace utils {
+
 template<class Index>
 class KMerIndexBuilder;
 
@@ -127,3 +129,4 @@ class KMerIndex {
 
   friend class KMerIndexBuilder<__self>;
 };
+}

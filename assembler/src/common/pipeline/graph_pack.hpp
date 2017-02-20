@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "utils/indices/edge_position_index.hpp"
+#include "assembly_graph/index/edge_position_index.hpp"
 #include "utils/indices/storing_traits.hpp"
 #include "sequence/genome_storage.hpp"
 #include "assembly_graph/handlers/id_track_handler.hpp"
@@ -23,8 +23,8 @@
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/components/connected_component.hpp"
 #include "modules/alignment/kmer_mapper.hpp"
-#include "common/visualization/position_filler.hpp"
-#include "common/assembly_graph/paths/bidirectional_path.hpp"
+#include "visualization/position_filler.hpp"
+#include "assembly_graph/paths/bidirectional_path.hpp"
 
 namespace debruijn_graph {
 

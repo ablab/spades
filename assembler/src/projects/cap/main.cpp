@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "utils/memory_limit.hpp"
+#include "utils/mem/memory_limit.hpp"
 #include "io/dataset_support/read_converter.hpp"
 
 #include "cap_online_visualizer.hpp"

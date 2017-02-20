@@ -87,7 +87,7 @@ using boost::noncopyable;
 #include "utils/stacktrace.hpp"
 
 // path manipulation instead of boost filesystem
-#include "utils/path_helper.hpp"
+#include "filesystem/path_helper.hpp"
 using path::make_dir;
 using path::remove_dir;
 
@@ -96,7 +96,7 @@ namespace boost {
 inline void assertion_failed(char const * expr, char const * function,
                              char const * file, long line) {
   std::cerr << "Aborted by assert: " << std::endl;
-  print_stacktrace();
+  utils::print_stacktrace();
 #if __DARWIN_UNIX03
   __assert_rtn (expr, file, (int)line, function);
 #elif __DARWIN
@@ -110,7 +110,7 @@ inline void assertion_failed_msg(char const * expr, char const * msg,
                                  char const * function, char const * file,
                                  long line) {
   std::cerr << "Aborted by assert: " << msg << std::endl;
-  print_stacktrace();
+  utils::print_stacktrace();
 #if __DARWIN_UNIX03
   __assert_rtn (expr, file, (int)line, function);
 #elif __DARWIN

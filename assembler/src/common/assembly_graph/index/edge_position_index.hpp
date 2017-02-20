@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "perfect_hash_map.hpp"
+#include "utils/indices/perfect_hash_map.hpp"
 #include "io/reads/single_read.hpp"
 
 namespace debruijn_graph {
@@ -62,11 +62,11 @@ stream &operator<<(stream &s, const EdgeInfo<IdType> &info) {
     return s << "EdgeInfo[" << info.edge_id.int_id() << ", " << info.offset << ", " << info.count << "]";
 }
 
-template<class Graph, class StoringType = DefaultStoring>
-class KmerFreeEdgeIndex : public KeyIteratingMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
-        kmer_index_traits<RtSeq>, StoringType> {
-    typedef KeyIteratingMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
-            kmer_index_traits<RtSeq>, StoringType> base;
+template<class Graph, class StoringType = utils::DefaultStoring>
+class KmerFreeEdgeIndex : public utils::KeyIteratingMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
+        utils::kmer_index_traits<RtSeq>, StoringType> {
+    typedef utils::KeyIteratingMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
+            utils::kmer_index_traits<RtSeq>, StoringType> base;
     const Graph &graph_;
 
 public:
@@ -143,11 +143,11 @@ public:
     }
 };
 
-template<class Graph, class StoringType = DefaultStoring>
-class KmerStoringEdgeIndex : public KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
-        kmer_index_traits<RtSeq>, StoringType> {
-  typedef KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
-          kmer_index_traits<RtSeq>, StoringType> base;
+template<class Graph, class StoringType = utils::DefaultStoring>
+class KmerStoringEdgeIndex : public utils::KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
+        utils::kmer_index_traits<RtSeq>, StoringType> {
+  typedef utils::KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
+          utils::kmer_index_traits<RtSeq>, StoringType> base;
 
 public:
   typedef typename base::traits_t traits_t;

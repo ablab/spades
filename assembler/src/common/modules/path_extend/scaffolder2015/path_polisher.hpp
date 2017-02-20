@@ -6,7 +6,7 @@
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "modules/path_extend/paired_library.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "common/pipeline/graph_pack.hpp"
+#include "pipeline/graph_pack.hpp"
 
 namespace path_extend {
 

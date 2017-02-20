@@ -8,7 +8,7 @@
 #ifndef SEQUENCE_MAPPER_NOTIFIER_HPP_
 #define SEQUENCE_MAPPER_NOTIFIER_HPP_
 
-#include "utils/memory_limit.hpp"
+#include "utils/perf/memory_limit.hpp"
 #include "sequence_mapper.hpp"
 #include "short_read_mapper.hpp"
 #include "io/reads/paired_read.hpp"
@@ -63,7 +63,7 @@ public:
         streams.reset();
         NotifyStartProcessLibrary(lib_index, threads_count);
         size_t counter = 0, n = 15;
-        size_t fmem = get_free_memory();
+        size_t fmem = utils::get_free_memory();
 
         #pragma omp parallel for num_threads(threads_count) shared(counter)
         for (size_t i = 0; i < streams.size(); ++i) {
@@ -74,7 +74,7 @@ public:
                 if (size == BUFFER_SIZE || 
                     // Stop filling buffer if the amount of available is smaller
                     // than half of free memory.
-                    (10 * get_free_memory() / 4 < fmem && size > 10000)) {
+                    (10 * utils::get_free_memory() / 4 < fmem && size > 10000)) {
                     #pragma omp critical
                     {
                         counter += size;

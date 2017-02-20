@@ -9,7 +9,7 @@
 #include <vector>
 #include <string>
 
-namespace online_visualization {
+namespace utils {
 
 void InitAutocompletion(const std::vector<std::string>& commands);
 

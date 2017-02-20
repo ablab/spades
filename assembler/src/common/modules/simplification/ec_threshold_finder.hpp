@@ -10,7 +10,7 @@
 
 #include "utils/simple_tools.hpp"
 
-#include "utils/path_helper.hpp"
+#include "utils/filesystem/path_helper.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/parallel_processing.hpp"
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"

@@ -5,15 +5,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * simple_tools.hpp
- *
- *  Created on: 27.05.2011
- *      Author: vyahhi
- */
-
-#ifndef SIMPLE_TOOLS_HPP_
-#define SIMPLE_TOOLS_HPP_
+//FIXME merge with cpp_utils and add namespace utils
+#pragma once
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -21,7 +14,7 @@
 
 #include "utils/verify.hpp"
 #include "io/reads/ireader.hpp"
-#include "utils/path_helper.hpp"
+#include "filesystem/path_helper.hpp"
 #include <memory>
 #include <string>
 #include <set>
@@ -185,5 +178,3 @@ template<typename Base, typename T>
 inline bool instanceof(const T *ptr) {
     return dynamic_cast<const Base *>(ptr) != nullptr;
 }
-
-#endif /* SIMPLE_TOOLS_HPP_ */

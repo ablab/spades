@@ -11,7 +11,7 @@
 #include <cstring>
 #include <readline/readline.h>
 
-namespace online_visualization {
+namespace utils {
 
 std::vector<std::string> commands;
 

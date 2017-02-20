@@ -8,8 +8,8 @@
 #pragma once
 
 #include "utils/indices/perfect_hash_map.hpp"
-#include "common/modules/alignment/sequence_mapper.hpp"
-#include "common/assembly_graph/core/graph.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include <algorithm>
 #include <map>
 #include <set>

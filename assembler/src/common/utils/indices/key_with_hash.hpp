@@ -9,7 +9,7 @@
 
 #include "storing_traits.hpp"
 
-namespace debruijn_graph {
+namespace utils {
 
 template<typename Key, class HashFunction>
 class SimpleKeyWithHash {

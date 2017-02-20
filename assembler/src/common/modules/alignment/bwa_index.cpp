@@ -302,8 +302,8 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
 //            fprintf (stderr,"%d %d %d\n", pos, pos + a.re - a.rb , g_.length(ids_[a.rid]) );
 
             res.push_back(g_.conjugate(ids_[a.rid]),
-                          { omnigraph::Range(a.qb, initial_range_end).Invert(read_length),
-                            omnigraph::Range(pos, mapping_range_end ).Invert(g_.length(ids_[a.rid])) });
+                          { Range(a.qb, initial_range_end).Invert(read_length),
+                            Range(pos, mapping_range_end ).Invert(g_.length(ids_[a.rid])) });
 
         }
 

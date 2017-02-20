@@ -20,12 +20,12 @@
 #include "kmer_data.hpp"
 #include "expander.hpp"
 
-#include "common/adt/concurrent_dsu.hpp"
+#include "adt/concurrent_dsu.hpp"
 #include "utils/segfault_handler.hpp"
 #include "io/reads/read_processor.hpp"
 #include "io/reads/ireadstream.hpp"
 
-#include "utils/memory_limit.hpp"
+#include "utils/perf/memory_limit.hpp"
 
 #include "utils/logger/logger.hpp"
 #include "utils/logger/log_writers.hpp"
@@ -70,7 +70,7 @@ void create_console_logger() {
 }
 
 int main(int argc, char * argv[]) {
-  segfault_handler sh;
+  utils::segfault_handler sh;
 
   srand(42);
   srandom(42);
@@ -86,7 +86,7 @@ int main(int argc, char * argv[]) {
 
     // hard memory limit
     const size_t GB = 1 << 30;
-    limit_memory(cfg::get().general_hard_memory_limit * GB);
+    utils::limit_memory(cfg::get().general_hard_memory_limit * GB);
 
     // determine quality offset if not specified
     if (!cfg::get().input_qvoffset_opt) {

@@ -10,7 +10,7 @@
 #include <cmath>
 #include <stack>
 #include <queue>
-#include "common/adt/concurrent_dsu.hpp"
+#include "adt/concurrent_dsu.hpp"
 #include "utils/standard_base.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "math/xmath.h"

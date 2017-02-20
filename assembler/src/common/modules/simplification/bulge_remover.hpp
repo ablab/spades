@@ -466,7 +466,7 @@ private:
     bool FillEdgeBuffer(vector<EdgeId>& buffer, func::TypedPredicate<EdgeId> proceed_condition) {
         VERIFY(buffer.empty());
         DEBUG("Filling edge buffer of size " << buff_size_);
-        perf_counter perf;
+        utils::perf_counter perf;
         double low_cov = 0.;
         double cov_diff = 0.;
         while (!it_.IsEnd() && buffer.size() < buff_size_) {
@@ -507,7 +507,7 @@ private:
 
     std::vector<std::vector<BulgeInfo>> FindBulges(const std::vector<EdgeId>& edge_buffer) const {
         DEBUG("Looking for bulges (in parallel). Edge buffer size " << edge_buffer.size());
-        perf_counter perf;
+        utils::perf_counter perf;
         std::vector<std::vector<BulgeInfo>> bulge_buffers(omp_get_max_threads());
         size_t n = edge_buffer.size();
         //order is in agreement with coverage
@@ -525,7 +525,7 @@ private:
 
     std::vector<BulgeInfo> MergeBuffers(std::vector<std::vector<BulgeInfo>>&& buffers) const {
         DEBUG("Merging bulge buffers");
-        perf_counter perf;
+        utils::perf_counter perf;
 
         std::vector<BulgeInfo> merged_bulges;
         for (auto& bulge_buffer : buffers) {
@@ -545,7 +545,7 @@ private:
     SmartEdgeSet RetainIndependentBulges(std::vector<BulgeInfo>& bulges) const {
         DEBUG("Looking for independent bulges");
         size_t total_cnt = bulges.size();
-        perf_counter perf;
+        utils::perf_counter perf;
 
         std::vector<BulgeInfo> filtered;
         filtered.reserve(bulges.size());
@@ -576,7 +576,7 @@ private:
 
     size_t ProcessBulges(const std::vector<BulgeInfo>& independent_bulges, SmartEdgeSet&& interacting_edges) {
         DEBUG("Processing bulges");
-        perf_counter perf;
+        utils::perf_counter perf;
 
         size_t triggered = 0;
 

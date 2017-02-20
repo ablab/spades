@@ -8,7 +8,7 @@
 #pragma once
 
 #include "utils/simple_tools.hpp"
-#include "utils/path_helper.hpp"
+#include "utils/filesystem/path_helper.hpp"
 #include "utils/verify.hpp"
 
 // todo: undo dirty fix

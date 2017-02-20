@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/path_helper.hpp"
+#include "path_helper.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -13,7 +13,7 @@
  *      Author: anton
  */
 
-namespace debruijn_graph {
+namespace utils {
 
 template<class V>
 class ValueArray {

@@ -13,7 +13,7 @@
 #include "io/reads/osequencestream.hpp"
 #include "io/reads/file_reader.hpp"
 #include "io/reads/single_read.hpp"
-#include "utils/path_helper.hpp"
+#include "utils/filesystem/path_helper.hpp"
 
 #include <boost/algorithm/string.hpp>
 

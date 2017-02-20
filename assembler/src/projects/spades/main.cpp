@@ -10,10 +10,10 @@
  */
 #include "utils/logger/log_writers.hpp"
 
-#include "utils/memory_limit.hpp"
+#include "utils/perf/memory_limit.hpp"
 #include "utils/segfault_handler.hpp"
 #include "launch.hpp"
-#include "utils/copy_file.hpp"
+#include "utils/filesystem/copy_file.hpp"
 #include "version.hpp"
 
 void load_config(const vector<string>& cfg_fns) {
@@ -50,7 +50,7 @@ void create_console_logger(const string& dir) {
 }
 
 int main(int argc, char **argv) {
-    perf_counter pc;
+    utils::perf_counter pc;
 
     const size_t GB = 1 << 30;
 
@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
 
         // read configuration file (dataset path etc.)
 
-        limit_memory(cfg::get().max_memory * GB);
+        utils::limit_memory(cfg::get().max_memory * GB);
 
         // assemble it!
         INFO("Starting SPAdes, built from "

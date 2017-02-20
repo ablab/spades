@@ -8,7 +8,7 @@
 #ifndef __HAMMER_KMER_DATA_HPP__
 #define __HAMMER_KMER_DATA_HPP__
 
-#include "utils/mph_index/kmer_index.hpp"
+#include "utils/kmer_mph/kmer_index.hpp"
 #include "hkmer.hpp"
 
 #include <vector>
@@ -39,7 +39,7 @@ struct KMerStat {
   
 };
 
-typedef KMerIndex<kmer_index_traits<hammer::HKMer> > HammerKMerIndex;
+typedef utils::KMerIndex<utils::kmer_index_traits<hammer::HKMer> > HammerKMerIndex;
 
 class KMerData {
   typedef std::vector<hammer::KMerStat> KMerDataStorageType;

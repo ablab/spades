@@ -9,7 +9,7 @@
 #include "utils/simple_tools.hpp"
 #include "utils/logger/log_writers.hpp"
 
-#include "utils/path_helper.hpp"
+#include "utils/filesystem/path_helper.hpp"
 #include "io/reads/file_reader.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "io/reads/osequencestream.hpp"

@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #pragma once
-#include "utils/perfcounter.hpp"
+#include "utils/perf/perfcounter.hpp"
 
 #include <vector>
 #include <unordered_map>
@@ -97,7 +97,7 @@ struct logger
 private:
     properties                 props_  ;
     std::vector<writer_ptr>    writers_;
-    perf_counter            timer_  ;
+    utils::perf_counter            timer_  ;
 };
 
 std::shared_ptr<logger>& __logger();

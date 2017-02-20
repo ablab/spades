@@ -15,7 +15,7 @@
 #include "utils/stacktrace.hpp"
 #include <algorithm>
 #include <map>
-#include "utils/openmp_wrapper.h"
+#include "utils/parallel/openmp_wrapper.h"
 #include "folly/PackedSyncPtr.h"
 
 

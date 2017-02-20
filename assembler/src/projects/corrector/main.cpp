@@ -28,7 +28,7 @@ void create_console_logger() {
 }
 
 int main(int argc, char** argv) {
-    perf_counter pc;
+    utils::perf_counter pc;
 
     srand(42);
     srandom(42);

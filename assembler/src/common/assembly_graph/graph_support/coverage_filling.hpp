@@ -10,7 +10,7 @@ struct SimultaneousCoverageCollector {
 };
 
 template<>
-struct SimultaneousCoverageCollector<SimpleStoring> {
+struct SimultaneousCoverageCollector<utils::SimpleStoring> {
     template<class SimultaneousCoverageFiller, class Info>
     static void CollectCoverage(SimultaneousCoverageFiller& filler, const Info &edge_info) {
         filler.inc_coverage(edge_info);
@@ -18,7 +18,7 @@ struct SimultaneousCoverageCollector<SimpleStoring> {
 };
 
 template<>
-struct SimultaneousCoverageCollector<InvertableStoring> {
+struct SimultaneousCoverageCollector<utils::InvertableStoring> {
     template<class SimultaneousCoverageFiller, class Info>
     static void CollectCoverage(SimultaneousCoverageFiller& filler, const Info &edge_info) {
         filler.inc_coverage(edge_info);

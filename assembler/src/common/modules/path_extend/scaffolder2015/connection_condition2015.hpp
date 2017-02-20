@@ -5,7 +5,7 @@
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "modules/alignment/long_read_storage.hpp"
 #include "modules/path_extend/pe_utils.hpp"
-#include "common/assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include <map>
 #include <set>
 

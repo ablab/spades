@@ -10,10 +10,10 @@
 #include "io/reads/io_helper.hpp"
 #include "storing_traits.hpp"
 
-#include "utils/file_limit.hpp"
-#include "utils/mph_index/kmer_index_builder.hpp"
+#include "utils/filesystem/file_limit.hpp"
+#include "utils/kmer_mph/kmer_index_builder.hpp"
 
-namespace debruijn_graph {
+namespace utils {
 
 template<class StoringType>
 struct StoringTypeFilter {
@@ -35,7 +35,7 @@ struct StoringTypeFilter<InvertableStoring> {
     }
 };
 
-using RtSeqKMerSplitter = ::KMerSortingSplitter<RtSeq>;
+using RtSeqKMerSplitter = KMerSortingSplitter<RtSeq>;
 
 template<class KmerFilter>
 class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
@@ -175,65 +175,6 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
 
   return out;
 }
-
-template<class Graph, class KmerFilter>
-class DeBruijnGraphKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
-  typedef typename Graph::ConstEdgeIt EdgeIt;
-  typedef typename Graph::EdgeId EdgeId;
-
-  const Graph &g_;
-
-  size_t FillBufferFromEdges(EdgeIt &edge, unsigned thread_id);
-
- public:
-  DeBruijnGraphKMerSplitter(const std::string &work_dir,
-                            unsigned K, const Graph &g, size_t read_buffer_size = 0)
-      : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size), g_(g) {}
-
-  path::files_t Split(size_t num_files) override;
-};
-
-template<class Graph, class KmerFilter>
-size_t
-DeBruijnGraphKMerSplitter<Graph, KmerFilter>::FillBufferFromEdges(EdgeIt &edge,
-                                                                  unsigned thread_id) {
-  size_t seqs = 0;
-  for (; !edge.IsEnd(); ++edge) {
-    const Sequence &nucls = g_.EdgeNucls(*edge);
-
-    seqs += 1;
-    if (this->FillBufferFromSequence(nucls, thread_id))
-      break;
-  }
-
-  return seqs;
-}
-
-template<class Graph, class KmerFilter>
-path::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files) {
-  INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
-
-  path::files_t out = this->PrepareBuffers(num_files, 1, this->read_buffer_size_);
-
-  size_t counter = 0, n = 10;
-  for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ) {
-    counter += FillBufferFromEdges(it, 0);
-
-    this->DumpBuffers(out);
-
-    if (counter >> n) {
-      INFO("Processed " << counter << " edges");
-      n += 1;
-    }
-  }
-
-  INFO("Used " << counter << " sequences.");
-
-  this->ClearBuffers();
-  
-  return out;
-}
-
 
 template<class KmerFilter>
 class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {

@@ -13,6 +13,8 @@
 
 #include <signal.h>
 
+namespace utils {
+
 struct segfault_handler : boost::noncopyable {
     typedef std::function<void()> callback_t;
 
@@ -56,3 +58,5 @@ private:
 private:
     seg_handler_t old_func_;
 };
+
+}

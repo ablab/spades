@@ -2,8 +2,6 @@
 
 #include "utils/verify.hpp"
 
-namespace omnigraph {
-
 struct Range {
 private:
     bool inside(size_t left, size_t right, size_t point) const {
@@ -87,6 +85,4 @@ public:
 inline std::ostream& operator<<(std::ostream& os, const Range& range) {
     os << "[" << (range.start_pos + 1) << " - " << range.end_pos << "]";
     return os;
-}
-
 }
