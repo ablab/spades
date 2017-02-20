@@ -67,6 +67,9 @@ def run_corrector(configs_dir, execution_home, cfg,
     support.sys_call(command, log)
     if not os.path.isfile(result):
         support.error("Mismatch correction finished abnormally: " + result + " not found!")
+    if os.path.isdir(cfg.tmp_dir):
+        shutil.rmtree(cfg.tmp_dir)
+
 
 
 
