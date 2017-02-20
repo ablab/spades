@@ -25,6 +25,7 @@
 #include "barcode_index_construction.hpp"
 #include "pipeline/stage.hpp"
 #include "contig_output_stage.hpp"
+#include "read_cloud_resolver_statistics_counter.hpp"
 
 namespace spades {
 

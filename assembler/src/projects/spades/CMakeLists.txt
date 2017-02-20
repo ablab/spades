@@ -18,6 +18,7 @@ add_executable(spades-core main.cpp
             hybrid_aligning.cpp
             chromosome_removal.cpp
             barcode_index_construction.cpp
+            read_cloud_resolver_statistics_counter.cpp
             series_analysis.cpp
             ../mts/contig_abundance.cpp)
 

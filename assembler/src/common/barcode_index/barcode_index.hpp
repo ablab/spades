@@ -25,8 +25,6 @@ using std::istringstream;
 using namespace omnigraph;
 
 namespace barcode_index {
-    //constexpr int16_t max_barcodes = 384;
-
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
     typedef debruijn_graph::EdgeIndex<Graph> Index;
     typedef Graph::EdgeId EdgeId;
@@ -130,7 +128,7 @@ namespace barcode_index {
 
         virtual size_t GetNumberOfBarcodes() const = 0;
 
-        //Number of entries in the barcode map. Currently equals to number of edges.
+        //Number of entries in the barcode map. Currently equals to the number of edges.
         virtual size_t size() const = 0;
 
         //Average barcode coverage of long edges
@@ -140,8 +138,9 @@ namespace barcode_index {
         virtual size_t GetHeadBarcodeNumber(const EdgeId& edge) const = 0;
         virtual size_t GetTailBarcodeNumber(const EdgeId& edge) const = 0;
 
-        //fixme these methods should be moved to DataScanner
+        //fixme this method should be moved to DataScanner
         virtual void ReadEntry(ifstream& fin, const EdgeId& edge) = 0;
+
         virtual void WriteEntry(ofstream& fin, const EdgeId& edge) = 0;
 
         //Remove low abundant barcodes
@@ -253,11 +252,11 @@ namespace barcode_index {
             return edge_to_entry_.find(edge);
         }
 
-        barcode_entry_t GetEntryHeads(const EdgeId& edge) const {
+        const barcode_entry_t& GetEntryHeads(const EdgeId& edge) const {
             return edge_to_entry_.at(edge);
         }
 
-        barcode_entry_t GetEntryTails(const EdgeId& edge) const {
+        const barcode_entry_t& GetEntryTails(const EdgeId& edge) const {
             return edge_to_entry_.at(g_.conjugate(edge));
         }
     };
@@ -353,6 +352,10 @@ namespace barcode_index {
             return is_on_frame_[frame];
         }
 
+        size_t GetSize() const {
+            return is_on_frame_.size();
+        }
+
         friend ostream& operator <<(ostream& os, const FrameBarcodeInfo& info);
         friend istream& operator >>(istream& is, FrameBarcodeInfo& info);
     };
@@ -438,7 +441,7 @@ namespace barcode_index {
             return barcode_distribution_.size();
         }
 
-        virtual void Serialize(ofstream& fout) {
+        virtual void Serialize(ofstream& fout) const {
             SerializeDistribution(fout);
         }
 
@@ -447,11 +450,11 @@ namespace barcode_index {
         }
 
         typename barcode_distribution_t::const_iterator begin() const {
-            return barcode_distribution_.cbegin();
+            return barcode_distribution_.begin();
         }
 
         typename barcode_distribution_t::const_iterator end() const {
-            return barcode_distribution_.cend();
+            return barcode_distribution_.end();
         }
 
         typename barcode_distribution_t::const_iterator cbegin() const {
@@ -471,8 +474,7 @@ namespace barcode_index {
         }
 
     protected:
-        void SerializeDistribution(ofstream &fout) {
-            //INFO("Serializing entry")
+        void SerializeDistribution(ofstream &fout) const {
             fout << barcode_distribution_.size() << endl;
             for (auto entry : barcode_distribution_) {
                 fout << entry.first << ' ' << entry.second << endl;
@@ -480,10 +482,8 @@ namespace barcode_index {
         }
 
         void DeserializeDistribution(ifstream &fin) {
-            //INFO("Deserializing entry")
             size_t distr_size;
             fin >> distr_size;
-            //INFO(distr_size)
             for (size_t i = 0; i < distr_size; ++i) {
                 int64_t bid;
                 barcode_info_t info;

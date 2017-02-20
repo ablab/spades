@@ -1313,6 +1313,7 @@ protected:
     size_t fragment_len_;
     size_t distance_bound_;
     ScaffoldingUniqueEdgeStorage unique_storage_;
+    friend class TenXExtensionChecker;
 
 public:
     ReadCloudExtensionChooser(const conj_graph_pack& gp,
@@ -1336,23 +1337,7 @@ public:
         if (last_unique.second == -1) {
             return result;
         }
-
-        EdgeId decisive_edge = last_unique.first;
-
-        vector<EdgeId> initial_candidates;
-        ExtensionChooser::EdgeContainer candidates;
-        auto put_checker = BarcodePutChecker<Graph>(g_, decisive_edge, unique_storage_, initial_candidates);
-        auto dij = BarcodeDijkstra<Graph>::CreateBarcodeBoundedDijkstra(g_, distance_bound_, put_checker);
-        dij.Run(g_.EdgeEnd(decisive_edge));
-        DEBUG("Dijkstra finished")
-        DEBUG("Initial candidates: " << initial_candidates.size())
-
-        candidates.reserve(initial_candidates.size());
-        for (const auto& edge : initial_candidates) {
-            VERIFY(unique_storage_.IsUnique(edge));
-            if (edge != decisive_edge and edge != g_.conjugate(decisive_edge))
-                candidates.push_back(EdgeWithDistance(edge, dij.GetDistance(g_.EdgeStart(edge))));
-        }
+        EdgeContainer candidates = GetInitialCandidates(last_unique.first, path);
 
         DEBUG("At edge " << path.Back().int_id());
         DEBUG("Decisive edge " << last_unique.first.int_id());
@@ -1377,12 +1362,12 @@ public:
         return result;
     }
 
-    EdgeContainer FindNextUniqueEdge(const EdgeId& decisive_edge, const EdgeContainer& initial_candidates) const {
-        VERIFY(unique_storage_.IsUnique(decisive_edge));
+    EdgeContainer FindNextUniqueEdge(const EdgeId& last_unique, const EdgeContainer& initial_candidates) const {
+        VERIFY(unique_storage_.IsUnique(last_unique));
         //find unique edges further in graph
 
         DEBUG("Searching for best")
-        EdgeContainer best_candidates = GetBestCandidates(initial_candidates, decisive_edge);
+        EdgeContainer best_candidates = GetBestCandidates(initial_candidates, last_unique);
         DEBUG("Finished searching")
         DEBUG("Best candidates: " << best_candidates.size());
 
@@ -1405,7 +1390,26 @@ public:
         return std::make_pair(EdgeId(0), -1);
     }
 
-private:
+protected:
+    virtual EdgeContainer GetInitialCandidates(EdgeId last_edge, const BidirectionalPath& path) const {
+        ExtensionChooser::EdgeContainer candidates;
+        vector<EdgeId> initial_candidates;
+        auto put_checker = BarcodePutChecker<Graph>(g_, last_edge, unique_storage_, initial_candidates);
+        auto dij = BarcodeDijkstra<Graph>::CreateBarcodeBoundedDijkstra(g_, distance_bound_, put_checker);
+        dij.Run(g_.EdgeEnd(last_edge));
+        DEBUG("Initial candidates: " << initial_candidates.size());
+        DEBUG("Dijkstra finished");
+        candidates.reserve(initial_candidates.size());
+        for (const auto& edge : initial_candidates) {
+            VERIFY(unique_storage_.IsUnique(last_edge));
+            if (edge != last_edge and edge != g_.conjugate(last_edge) and
+                path.FindFirst(edge) == -1 and path.FindFirst(g_.conjugate(edge)) == -1) {
+                candidates.push_back(EdgeWithDistance(edge, dij.GetDistance(g_.EdgeStart(edge))));
+            }
+        }
+        return candidates;
+    }
+
     virtual EdgeContainer GetBestCandidates(const EdgeContainer& edges,
                                                         const EdgeId& decisive_edge) const = 0;
 
@@ -1544,11 +1548,12 @@ class TenXExtensionChooser : public ReadCloudExtensionChooser {
     typedef barcode_index::FrameBarcodeIndexInfoExtractor frame_extractor_t;
     using ReadCloudExtensionChooser::unique_storage_;
     using ReadCloudExtensionChooser::fragment_len_;
-    double absolute_barcode_threshold_;
+    size_t absolute_barcode_threshold_;
     size_t tail_threshold_;
     size_t max_initial_candidates_;
     size_t internal_gap_threshold_;
     shared_ptr<frame_extractor_t> barcode_extractor_ptr_;
+    friend class TenXExtensionChecker;
 public:
     static TenXExtensionChooserStatistics stats_;
 
@@ -1559,7 +1564,7 @@ public:
                          size_t fragment_len,
                          size_t distance_bound,
                          const ScaffoldingUniqueEdgeStorage& unique_storage,
-                         double absolute_barcode_threshold,
+                         size_t absolute_barcode_threshold,
                          size_t tail_threshold,
                          size_t max_initial_candidates,
                          size_t internal_gap_threshold) :
@@ -1605,45 +1610,45 @@ private:
             stats_.too_much_candidates_after_initial_++;
             return initial_candidates;
         }
-        DEBUG("After initial check: " << initial_candidates.size());
-        EdgeContainer next_candidates = MiddleFilter(initial_candidates, decisive_edge, internal_gap_threshold_);
-        DEBUG("After middle check: " << next_candidates.size());
-        if (next_candidates.size() == 0) {
-            stats_.no_candidates_after_middle_filter_++;
-            return next_candidates;
-        }
-        if (next_candidates.size() == 1) {
-            stats_.middle_filter_helped_++;
-            return next_candidates;
-        }
-
-        EdgeContainer result = next_candidates;
-//        size_t min_conjugate_gap = 500;
-//        size_t max_conjugate_gap = 1000;
-//        double fraction_threshold = 0.2;
-
-        stats_.multiple_candidates_after_both_++;
-        if (next_candidates.size() == 2) {
-            EdgeId edge = next_candidates[0].e_;
-            EdgeId other = next_candidates[1].e_;
-            if (edge == g_.conjugate(other)) {
-                stats_.pair_of_conjugates_left_++;
+//        DEBUG("After initial check: " << initial_candidates.size());
+//        EdgeContainer next_candidates = MiddleFilter(initial_candidates, decisive_edge, internal_gap_threshold_);
+//        DEBUG("After middle check: " << next_candidates.size());
+//        if (next_candidates.size() == 0) {
+//            stats_.no_candidates_after_middle_filter_++;
+//            return next_candidates;
+//        }
+//        if (next_candidates.size() == 1) {
+//            stats_.middle_filter_helped_++;
+//            return next_candidates;
+//        }
+//
+//        EdgeContainer result = next_candidates;
+//
+//        stats_.multiple_candidates_after_both_++;
+//        if (next_candidates.size() == 2) {
+//            EdgeId edge = next_candidates[0].e_;
+//            EdgeId other = next_candidates[1].e_;
+//            if (edge == g_.conjugate(other)) {
+//                stats_.pair_of_conjugates_left_++;
+//                //fixme magic constants
 //                result = ConjugateFilter(decisive_edge, next_candidates[0], next_candidates[1],
-//                                         min_conjugate_gap, max_conjugate_gap, fraction_threshold);
+//                                         1000, 2000, 0.2);
 //                if (result.size() == 1) {
 //                    stats_.conjugate_resolved_++;
 //                }
-            }
-        }
-        return result;
+//            }
+//        }
+//        return result;
+        return initial_candidates;
     }
 
-    EdgeContainer InitialFilter(const EdgeContainer& candidates, const EdgeId& decisive_edge, size_t gap_threshold) const {
+    EdgeContainer InitialFilter(const EdgeContainer& candidates, const EdgeId& decisive_edge, size_t tail_threshold) const {
         EdgeContainer result;
         std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(result),
-                     [this, &decisive_edge, gap_threshold](const EdgeWithDistance& edge) {
+                     [this, &decisive_edge, tail_threshold](const EdgeWithDistance& edge) {
                          return edge.e_ != decisive_edge and
-                                this->barcode_extractor_ptr_->GetIntersectionSize(decisive_edge, edge.e_, gap_threshold) >
+                                 this->barcode_extractor_ptr_->GetNumberOfSharedWithFilter(decisive_edge, edge.e_,
+                                                                                           tail_threshold) >
                                 absolute_barcode_threshold_;
                      });
         return result;
@@ -1682,8 +1687,8 @@ private:
         size_t conj_voters = 0;
         auto common_barcodes = barcode_extractor_ptr_->GetIntersection(decisive_edge, edge);
         for (const auto barcode: common_barcodes) {
-            size_t gap = barcode_extractor_ptr_->get_min_pos(edge, barcode);
-            size_t conj_gap = barcode_extractor_ptr_->get_min_pos(conjugate, barcode);
+            size_t gap = barcode_extractor_ptr_->GetMinPos(edge, barcode);
+            size_t conj_gap = barcode_extractor_ptr_->GetMinPos(conjugate, barcode);
             if (gap < gap_threshold_left and conj_gap > gap_threshold_right) {
                 edge_voters++;
             }
@@ -1708,13 +1713,15 @@ private:
         size_t middle_length = g_.length(middle);
         size_t sum_length_threshold = len_threshold * side_barcodes.size();
         size_t current_length = 0;
+        DEBUG("Side barcodes: " << side_barcodes.size());
         for (const auto barcode: side_barcodes) {
             if (!(barcode_extractor_ptr_->has_barcode(middle, barcode))) {
-                size_t right_length = barcode_extractor_ptr_->get_min_pos(right, barcode);
-                size_t left_length = g_.length(left) - barcode_extractor_ptr_->get_max_pos(left, barcode);
+                size_t right_length = barcode_extractor_ptr_->GetMinPos(right, barcode);
+                size_t left_length = g_.length(left) - barcode_extractor_ptr_->GetMaxPos(left, barcode);
                 current_length += (left_length + right_length + middle_length);
             }
         }
+        DEBUG("Current length: " << current_length);
         return current_length < sum_length_threshold;
     }
 

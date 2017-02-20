@@ -33,6 +33,7 @@ namespace barcode_index {
     template<class barcode_entry_t>
     class BarcodeIndexInfoExtractor : public AbstractBarcodeIndexInfoExtractor {
     protected:
+        typedef typename barcode_entry_t::barcode_distribution_t distribution_t;
         shared_ptr<BarcodeIndex<barcode_entry_t>> mapper_;
         const Graph &g_;
     public:
@@ -113,15 +114,35 @@ namespace barcode_index {
             return mapper_->GetEntryHeads(edge).has_barcode(barcode);
         }
 
-        typename barcode_entry_t::barcode_distribution_t::const_iterator barcode_iterator_begin(const EdgeId &edge) {
+        typename barcode_entry_t::barcode_distribution_t::const_iterator barcode_iterator_begin(const EdgeId &edge) const {
             auto entry_it = mapper_->GetEntryHeadsIterator(edge);
             return entry_it->second.begin();
         }
 
-        typename barcode_entry_t::barcode_distribution_t::const_iterator barcode_iterator_end(const EdgeId &edge) {
+        typename barcode_entry_t::barcode_distribution_t::const_iterator barcode_iterator_end(const EdgeId &edge) const {
             auto entry_it = mapper_->GetEntryHeadsIterator(edge);
             return entry_it->second.end();
         }
+
+        const barcode_entry_t& GetEntry(const EdgeId& edge) const {
+            return mapper_->GetEntryHeads(edge);
+        }
+//
+//        class const_intersection_iterator : public std::iterator<std::input_iterator_tag, distribution_t::value_type> {
+//        public:
+//            const_intersection_iterator(distribution_t::const_iterator first, distribution_t::const_iterator second) :
+//                    first_(first), second_(second) {}
+//
+//            const_intersection_iterator operator++() {
+//
+//            }
+//
+//        private:
+//            distribution_t::const_iterator first_;
+//            distribution_t::const_iterator second_;
+//        };
+
+
     };
 
     class FrameBarcodeIndexInfoExtractor : public BarcodeIndexInfoExtractor<FrameEdgeEntry> {
@@ -129,15 +150,15 @@ namespace barcode_index {
         FrameBarcodeIndexInfoExtractor(shared_ptr<AbstractBarcodeIndex> abstract_mapper_ptr, const Graph &g) :
                 BarcodeIndexInfoExtractor(abstract_mapper_ptr, g) {}
 
-        size_t GetIntersectionSize(const EdgeId &first, const EdgeId &second, size_t gap_threshold) {
+        size_t GetNumberOfSharedWithFilter(const EdgeId &first, const EdgeId &second, size_t gap_threshold) const {
             //fixme implement intersection iterator
             auto barcodes = GetIntersection(first, second);
             size_t result = 0;
             for (auto barcode: barcodes) {
                 if (g_.length(first) <= gap_threshold or
-                    get_max_pos(first, barcode) > g_.length(first) - gap_threshold) {
+                        GetMaxPos(first, barcode) > g_.length(first) - gap_threshold) {
                     if (g_.length(second) <= gap_threshold or
-                        get_min_pos(second, barcode) < gap_threshold) {
+                            GetMinPos(second, barcode) < gap_threshold) {
                         ++result;
                     }
                 }
@@ -146,20 +167,55 @@ namespace barcode_index {
         }
 
         //barcode should be present on the edge
-        size_t get_min_pos(const EdgeId &edge, int64_t barcode) {
-            VERIFY(has_barcode(edge, barcode));
-            auto entry_it = mapper_->GetEntryHeadsIterator(edge);
-            auto info_it = entry_it->second.get_barcode(barcode);
-            size_t frame_size = entry_it->second.GetFrameSize();
-            return info_it->second.GetLeftMost() * frame_size;
+        size_t GetMinPos(const EdgeId &edge, int64_t barcode) const {
+            const FrameEdgeEntry& entry = GetEntry(edge);
+            const FrameBarcodeInfo& info = GetInfo(edge, barcode);
+            size_t frame_size = entry.GetFrameSize();
+            return info.GetLeftMost() * frame_size;
         }
 
-        size_t get_max_pos(const EdgeId &edge, int64_t barcode) {
-            VERIFY(has_barcode(edge, barcode));
-            auto entry_it = mapper_->GetEntryTailsIterator(edge);
-            auto info_it = entry_it->second.get_barcode(barcode);
-            size_t frame_size = entry_it->second.GetFrameSize();
-            return info_it->second.GetRightMost() * frame_size;
+        size_t GetMaxPos(const EdgeId &edge, int64_t barcode) const {
+            const FrameEdgeEntry& entry = GetEntry(edge);
+            const FrameBarcodeInfo& info = GetInfo(edge, barcode);
+            size_t frame_size = entry.GetFrameSize();
+            return info.GetRightMost() * frame_size;
         }
+
+        const FrameBarcodeInfo& GetInfo(const EdgeId& edge, int64_t barcode) const {
+            VERIFY(has_barcode(edge, barcode));
+            const FrameEdgeEntry& entry = GetEntry(edge);
+            return entry.get_barcode(barcode)->second;
+        }
+
+        size_t GetBarcodeLength(const EdgeId& edge, int64_t barcode) const {
+            size_t max_pos = GetMaxPos(edge, barcode);
+            size_t min_pos = GetMinPos(edge, barcode);
+            VERIFY(max_pos >= min_pos);
+            return max_pos - min_pos;
+        }
+
+        vector <size_t> GetGapDistribution(const EdgeId& edge, int64_t barcode) const {
+            const FrameEdgeEntry& entry = GetEntry(edge);
+            const FrameBarcodeInfo& info = GetInfo(edge, barcode);
+            size_t number_of_frames = info.GetSize();
+            size_t current_gap_length = 0;
+            vector <size_t> result;
+            for (size_t i = 0; i < number_of_frames; ++i) {
+                if (not info.GetFrame(i)) {
+                    ++current_gap_length;
+                }
+                else {
+                    result.push_back(current_gap_length * entry.GetFrameSize());
+                    current_gap_length = 0;
+                }
+            }
+            std::sort(result.begin(), result.end());
+            return result;
+        }
+
+//        size_t GetMedianGap(const EdgeId& edge, int64_t barcode) {
+//
+//
+//        }
     };
 }

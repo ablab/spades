@@ -14,6 +14,7 @@
 #include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
+#include "modules/path_extend/read_cloud_path_extend/extension_chooser_checker.hpp"
 
 
 namespace path_extend {
@@ -480,7 +481,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     INFO("Gap closing completed")
 }
 
-    TenXExtensionChooserStatistics TenXExtensionChooser::stats_ = TenXExtensionChooserStatistics();
+TenXExtensionChooserStatistics TenXExtensionChooser::stats_ = TenXExtensionChooserStatistics();
 
 void PathExtendLauncher::FilterPaths() {
     PathContainer contig_paths_copy(gp_.contig_paths.begin(), gp_.contig_paths.end());

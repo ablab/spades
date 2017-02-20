@@ -19,7 +19,7 @@ public:
                             preliminary ? "repeat_resolving_preliminary" : "repeat_resolving"),
               preliminary_(preliminary) { }
 
-    void load(conj_graph_pack &, const std::string &, const char *) { }
+//    void load(conj_graph_pack &, const std::string &, const char *) { }
 
 //todo uncomment
 //    void save(const conj_graph_pack &, const std::string &, const char *) const { }
