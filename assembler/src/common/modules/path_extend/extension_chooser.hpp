@@ -809,51 +809,51 @@ private:
     bool uneven_depth_;
 };
 
-class SimpleScaffolding {
-public:
-    SimpleScaffolding(const Graph& g) : g_(g) {}
-
-    BidirectionalPath FindMaxCommonPath(const vector<BidirectionalPath*>& paths,
-                                        size_t max_diff_len) const {
-        BidirectionalPath max_end(g_);
-        for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
-            BidirectionalPath* p1 = *it1;
-            for (size_t i = 0; i < p1->Size(); ++i) {
-                if (p1->Length() - p1->LengthAt(i) > max_diff_len) {
-                    break;
-                }
-                bool contain_all = true;
-                for (size_t i1 = i + 1; i1 <= p1->Size() && contain_all; ++i1) {
-                    BidirectionalPath subpath = p1->SubPath(i, i1);
-                    for (auto it2 = paths.begin();  it2 != paths.end() && contain_all; ++it2) {
-                        BidirectionalPath* p2 = *it2;
-                        vector<size_t> positions2 = p2->FindAll(subpath.At(0));
-                        bool contain = false;
-                        for (size_t ipos2 = 0; ipos2 < positions2.size(); ++ipos2) {
-                            size_t pos2 = positions2[ipos2];
-                            if (p2->Length() - p2->LengthAt(pos2) <= max_diff_len
-                                    && EqualEnds(subpath, 0, *p2, pos2, false)) {
-                                contain = true;
-                                break;
-                            }
-                        }
-                        if (!contain) {
-                            contain_all = false;
-                        }
-                    }
-                    if (contain_all && (i1 - i) >= max_end.Size()) {
-                        max_end.Clear();
-                        max_end.PushBack(subpath);
-                    }
-                }
-            }
-        }
-        return max_end;
-    }
-
-private:
-    const Graph& g_;
-};
+//class SimpleScaffolding {
+//public:
+//    SimpleScaffolding(const Graph& g) : g_(g) {}
+//
+//    BidirectionalPath FindMaxCommonPath(const vector<BidirectionalPath*>& paths,
+//                                        size_t max_diff_len) const {
+//        BidirectionalPath max_end(g_);
+//        for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
+//            BidirectionalPath* p1 = *it1;
+//            for (size_t i = 0; i < p1->Size(); ++i) {
+//                if (p1->Length() - p1->LengthAt(i) > max_diff_len) {
+//                    break;
+//                }
+//                bool contain_all = true;
+//                for (size_t i1 = i + 1; i1 <= p1->Size() && contain_all; ++i1) {
+//                    BidirectionalPath subpath = p1->SubPath(i, i1);
+//                    for (auto it2 = paths.begin();  it2 != paths.end() && contain_all; ++it2) {
+//                        BidirectionalPath* p2 = *it2;
+//                        vector<size_t> positions2 = p2->FindAll(subpath.At(0));
+//                        bool contain = false;
+//                        for (size_t ipos2 = 0; ipos2 < positions2.size(); ++ipos2) {
+//                            size_t pos2 = positions2[ipos2];
+//                            if (p2->Length() - p2->LengthAt(pos2) <= max_diff_len
+//                                    && EqualEnds(subpath, 0, *p2, pos2, false)) {
+//                                contain = true;
+//                                break;
+//                            }
+//                        }
+//                        if (!contain) {
+//                            contain_all = false;
+//                        }
+//                    }
+//                    if (contain_all && (i1 - i) >= max_end.Size()) {
+//                        max_end.Clear();
+//                        max_end.PushBack(subpath);
+//                    }
+//                }
+//            }
+//        }
+//        return max_end;
+//    }
+//
+//private:
+//    const Graph& g_;
+//};
 
 class LongReadsExtensionChooser : public ExtensionChooser {
 public:
@@ -872,8 +872,7 @@ public:
               cov_map_(read_paths_cov_map),
               unique_edge_analyzer_(g, cov_map_, filtering_threshold,
                                     unique_edge_priority_threshold,
-                                    max_repeat_length, uneven_depth),
-              simple_scaffolding_(g)
+                                    max_repeat_length, uneven_depth)
     {
     }
 
@@ -971,7 +970,6 @@ private:
     size_t min_significant_overlap_;
     const GraphCoverageMap& cov_map_;
     LongReadsUniqueEdgeAnalyzer unique_edge_analyzer_;
-    SimpleScaffolding simple_scaffolding_;
 
     DECL_LOGGER("LongReadsExtensionChooser");
 };

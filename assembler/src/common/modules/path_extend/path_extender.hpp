@@ -178,7 +178,7 @@ public:
 
         if (!CheckLoopPlausible(path.Back(), edges.first) && maxIter > 0) {
             MakeCycleStep(path, edges.first);
-            path.PushBack(edges.second, int(g_.k() + 100));
+            path.PushBack(edges.second, Gap(int(g_.k() + 100)));
         }
         else {
             for (size_t i = 0; i < maxIter; ++i) {
@@ -802,23 +802,20 @@ public:
                 BidirectionalPath begin2_conj = repeat_path->SubPath(0, begin_repeat + 1).Conjugate();
                 pair<size_t, size_t> last = ComparePaths(0, 0, begin1_conj, begin2_conj, max_diff_len_);
                 DEBUG("last " << last.first << " last2 " << last.second);
+                Gap gap = path.GapAt(path.Size() - repeat_size);
                 path.Clear();
                 repeat_path->Clear();
-                //FIXME weird assignment
-                int gap_len = repeat.GapAt(0).gap;
-                VERIFY(gap_len == 0);
 
                 if (begin2.Size() == 0 || last.second != 0) { //TODO: incorrect: common edges, but then different ends
                     path.PushBack(begin1);
                     repeat_path->PushBack(begin2);
                 } else {
-                    gap_len = gpa_in_repeat_path;
+                    gap = Gap(gpa_in_repeat_path);
                     path.PushBack(begin2);
                     repeat_path->PushBack(begin1);
                 }
 
-                path.PushBack(repeat.At(0), gap_len);
-                path.PushBack(repeat.SubPath(1));
+                path.PushBack(repeat, gap);
                 path.PushBack(end2);
                 DEBUG("new path");
                 path.Print();
@@ -1094,7 +1091,7 @@ public:
 
     bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override {
         ExtensionChooser::EdgeContainer candidates;
-        return FilterCandidates(path, candidates) and AddCandidates(path, paths_storage, candidates);
+        return FilterCandidates(path, candidates) && AddCandidates(path, paths_storage, candidates);
     }
 
 protected:
@@ -1143,24 +1140,20 @@ protected:
                 used_storage_->insert(eid);
             }
         }
-        path.PushBack(eid, candidates.back().d_);
+        path.PushBack(eid, Gap(candidates.back().d_));
         DEBUG("push done");
         return true;
     }
 
-protected:
     DECL_LOGGER("SimpleExtender")
 
 };
 
 
 class MultiExtender: public SimpleExtender {
-
-protected:
     size_t max_candidates_;
 
 public:
-
     MultiExtender(const conj_graph_pack &gp,
                       const GraphCoverageMap &cov_map,
                       shared_ptr<ExtensionChooser> ec,
@@ -1173,7 +1166,7 @@ public:
     }
 
 protected:
-    virtual bool AddCandidates(BidirectionalPath& path, PathContainer* paths_storage, ExtensionChooser::EdgeContainer& candidates) override {
+    bool AddCandidates(BidirectionalPath& path, PathContainer* paths_storage, ExtensionChooser::EdgeContainer& candidates) override {
         if (candidates.size() == 0)
             return false;
 
@@ -1189,7 +1182,7 @@ protected:
         if (candidates.size() == 1) {
             DEBUG("push");
             EdgeId eid = candidates.back().e_;
-            path.PushBack(eid, candidates.back().d_);
+            path.PushBack(eid, Gap(candidates.back().d_));
             DEBUG("push done");
             return true;
         }
@@ -1206,13 +1199,13 @@ protected:
             for (size_t i = 1; i < candidates.size(); ++i) {
                 DEBUG("push other candidates " << i);
                 BidirectionalPath *p = new BidirectionalPath(path);
-                p->PushBack(candidates[i].e_, candidates[i].d_);
+                p->PushBack(candidates[i].e_, Gap(candidates[i].d_));
                 BidirectionalPath *cp = new BidirectionalPath(p->Conjugate());
                 paths_storage->AddPair(p, cp);
             }
 
             DEBUG("push");
-            path.PushBack(candidates.front().e_, candidates.front().d_);
+            path.PushBack(candidates.front().e_, Gap(candidates.front().d_));
             DEBUG("push done");
             res = true;
 

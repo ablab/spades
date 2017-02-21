@@ -18,7 +18,10 @@ protected:
 public:
     virtual BidirectionalPath Polish(const BidirectionalPath& path) = 0;
 //TODO:: config
-    PathGapCloser(const Graph& g, size_t max_path_len): g_(g), max_path_len_(max_path_len), min_gap_(int(g.k() + 10)) {}
+    PathGapCloser(const Graph& g, size_t max_path_len):
+            g_(g),
+            max_path_len_(max_path_len),
+            min_gap_(int(g.k() + 10)) {}
 
 };
 

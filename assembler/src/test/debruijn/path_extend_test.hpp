@@ -201,13 +201,13 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemove ) {
     BOOST_CHECK_EQUAL(path2.Length(), 0);
     BOOST_CHECK_EQUAL(path2.Empty(), true);
 
-    path2.PushBack(e3, 0);
+    path2.PushBack(e3, Gap(0));
     BOOST_CHECK_EQUAL(path2.Empty(), false);
     BOOST_CHECK_EQUAL(path2.Size(), 1);
     BOOST_CHECK_EQUAL(path2.Length(), 579);
     BOOST_CHECK_EQUAL(path2.LengthAt(0), 579);
 
-    path2.PushBack(e4, 0);
+    path2.PushBack(e4, Gap(0));
     BOOST_CHECK_EQUAL(path2.Empty(), false);
     BOOST_CHECK_EQUAL(path2.Size(), 2);
     BOOST_CHECK_EQUAL(path2.Length(), 635);
@@ -238,7 +238,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemoveGaps ) {
     BOOST_CHECK_EQUAL(path1.Length(), 426);
     BOOST_CHECK_EQUAL(path1.LengthAt(0), 426);
 
-    path1.PushBack(e2, 10);
+    path1.PushBack(e2, Gap(10));
     BOOST_CHECK_EQUAL(path1.Size(), 2);
     BOOST_CHECK_EQUAL(path1.Length(), 437);
     BOOST_CHECK_EQUAL(path1.LengthAt(0), 437);
@@ -247,7 +247,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemoveGaps ) {
     BOOST_CHECK_EQUAL(path1[0], e1);
     BOOST_CHECK_EQUAL(path1.At(1), e2);
 
-    path1.PushBack(e3, 10);
+    path1.PushBack(e3, Gap(10));
     BOOST_CHECK_EQUAL(path1.Size(), 3);
     BOOST_CHECK_EQUAL(path1.Length(), 1026);
     BOOST_CHECK_EQUAL(path1.LengthAt(0), 1026);
@@ -270,12 +270,12 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemoveGaps ) {
 
     BidirectionalPath path2(g);
     //FRONT GAP SHOULD BE IGNORED
-    path2.PushBack(e3, 10);
+    path2.PushBack(e3, Gap(10));
     BOOST_CHECK_EQUAL(path2.Size(), 1);
     BOOST_CHECK_EQUAL(path2.Length(), 589);
     BOOST_CHECK_EQUAL(path2.LengthAt(0), 579);
 
-    path2.PushBack(e4, 100);
+    path2.PushBack(e4, Gap(100));
     BOOST_CHECK_EQUAL(path2.Empty(), false);
     BOOST_CHECK_EQUAL(path2.Size(), 2);
     BOOST_CHECK_EQUAL(path2.Length(), 745);
@@ -318,12 +318,12 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemoveGaps ) {
     BOOST_CHECK_EQUAL(path1.Length(), 0);
     BOOST_CHECK_EQUAL(path1.Empty(), true);
 
-    path1.PushBack(e1, 1000);
+    path1.PushBack(e1, Gap(1000));
     BOOST_CHECK_EQUAL(path1.Size(), 1);
     BOOST_CHECK_EQUAL(path1.Length(), 1426);
     BOOST_CHECK_EQUAL(path1.LengthAt(0), 426);
 
-    path1.PushBack(e2, -10);
+    path1.PushBack(e2, Gap(-10));
     BOOST_CHECK_EQUAL(path1.Size(), 2);
     BOOST_CHECK_EQUAL(path1.Length(), 1417);
     BOOST_CHECK_EQUAL(path1.LengthAt(0), 417);
@@ -360,7 +360,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemoveGaps ) {
     BOOST_CHECK_EQUAL(path2.Length(), 579);
     BOOST_CHECK_EQUAL(path2.LengthAt(0), 579);
 
-    path2.PushBack(e4, -1);
+    path2.PushBack(e4, Gap(-1));
     BOOST_CHECK_EQUAL(path2.Empty(), false);
     BOOST_CHECK_EQUAL(path2.Size(), 2);
     BOOST_CHECK_EQUAL(path2.Length(), 634);
@@ -373,8 +373,8 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemoveGaps ) {
 
     path1.Clear();
     BOOST_CHECK_EQUAL(path1.Empty(), true);
-    path1.PushBack(e1, 0);
-    path1.PushBack(e2, 9);
+    path1.PushBack(e1, Gap(0));
+    path1.PushBack(e2, Gap(9));
     path1.PushBack(path2);
     BOOST_CHECK_EQUAL(path1.Size(), 4);
     BOOST_CHECK_EQUAL(path1.Length(), 1070);
@@ -497,8 +497,8 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathSubpaths ) {
 
     path1.Clear();
     path1.PushBack(e1);
-    path1.PushBack(e2, 10);
-    path1.PushBack(e3, 10);
+    path1.PushBack(e2, Gap(10));
+    path1.PushBack(e3, Gap(10));
     BidirectionalPath path3(path1.SubPath(1));
     BOOST_CHECK_EQUAL(path3.Size(), 2);
     BOOST_CHECK_EQUAL(path3.Length(), 600);
@@ -529,16 +529,16 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemoveConjugate ) {
     BOOST_CHECK_EQUAL(p.Conjugate().Empty(), true);
     BOOST_CHECK_EQUAL(cp.Conjugate().Empty(), true);
 
-    p.PushBack(e1, 10);
+    p.PushBack(e1, Gap(10));
     BOOST_CHECK_EQUAL(cp.Conjugate() == p, true);
 
-    p.PushBack(e2, 100);
+    p.PushBack(e2, Gap(100));
     BOOST_CHECK_EQUAL(cp.Conjugate() == p, true);
 
-    p.PushBack(e3, 10);
+    p.PushBack(e3, Gap(10));
     BOOST_CHECK_EQUAL(cp.Conjugate() == p, true);
 
-    p.PushBack(e4, 10);
+    p.PushBack(e4, Gap(10));
     BOOST_CHECK_EQUAL(cp.Conjugate() == p, true);
     BOOST_CHECK_EQUAL(cp.Front(), g.conjugate(e4));
     BOOST_CHECK_EQUAL(cp[1], g.conjugate(e3));
@@ -563,17 +563,17 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemoveConjugate ) {
     BOOST_CHECK_EQUAL(cp.Back(), g.conjugate(e1));
     BOOST_CHECK_EQUAL(cp.Front(), g.conjugate(e1));
 
-    p.PushBack(e2, 100);
+    p.PushBack(e2, Gap(100));
     BOOST_CHECK_EQUAL(cp.Conjugate() == p, true);
     BOOST_CHECK_EQUAL(cp.Back(), g.conjugate(e1));
     BOOST_CHECK_EQUAL(cp.Front(), g.conjugate(e2));
 
-    p.PushBack(e3, 10);
+    p.PushBack(e3, Gap(10));
     BOOST_CHECK_EQUAL(cp.Conjugate() == p, true);
     BOOST_CHECK_EQUAL(cp.Back(), g.conjugate(e1));
     BOOST_CHECK_EQUAL(cp.Front(), g.conjugate(e3));
 
-    p.PushBack(e4, 10);
+    p.PushBack(e4, Gap(10));
     BOOST_CHECK_EQUAL(cp.Conjugate() == p, true);
     BOOST_CHECK_EQUAL(cp.Front(), g.conjugate(e4));
     BOOST_CHECK_EQUAL(cp[1], g.conjugate(e3));

@@ -61,6 +61,10 @@ struct Gap {
     int overlap_after_trim(size_t k) const {
         return overlap(k) - trash_current - trash_previous;
     }
+
+    bool NoTrash() const {
+        return trash_current == 0 && trash_previous == 0;
+    }
 };
 
 inline std::ostream& operator<<(std::ostream& os, Gap gap) {
@@ -206,19 +210,18 @@ public:
         return data_.front();
     }
 
-    void PushBack(EdgeId e, Gap gap = Gap()) {
+    void PushBack(EdgeId e, const Gap& gap = Gap()) {
+        VERIFY(!data_.empty() || gap == Gap());
         data_.push_back(e);
         gap_len_.push_back(gap);
         IncreaseLengths(g_.length(e), gap.gap);
         NotifyBackEdgeAdded(e, gap);
     }
 
-    void PushBack(EdgeId e, int gap_dist) {
-        PushBack(e, Gap(gap_dist));
-    }
-
-    void PushBack(const BidirectionalPath& path) {
-        for (size_t i = 0; i < path.Size(); ++i) {
+    void PushBack(const BidirectionalPath& path, const Gap& gap = Gap()) {
+        VERIFY(path.GapAt(0) == Gap());
+        PushBack(path.At(0), gap);
+        for (size_t i = 1; i < path.Size(); ++i) {
             PushBack(path.At(i), path.GapAt(i));
         }
     }
@@ -301,6 +304,7 @@ public:
         return result;
     }
 
+    //TODO is it ok not to compare gaps here?
     bool CompareFrom(size_t from, const BidirectionalPath& sample) const {
         if (from + sample.Size() > Size()) {
             return false;
@@ -475,7 +479,7 @@ public:
     BidirectionalPath SubPath(size_t from, size_t to) const {
         BidirectionalPath result(g_);
         for (size_t i = from; i < min(to, Size()); ++i) {
-            result.PushBack(data_[i], gap_len_[i]);
+            result.PushBack(data_[i], i == from ? Gap() : gap_len_[i]);
         }
         return result;
     }
@@ -490,6 +494,7 @@ public:
         for (size_t i = 0; i < Size(); ++i) {
             cov += g_.coverage(data_[i]) * (double) g_.length(data_[i]);
         }
+        //FIXME should we account for gaps here?
         return cov / (double) Length();
     }
 

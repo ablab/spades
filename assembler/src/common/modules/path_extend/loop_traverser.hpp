@@ -139,16 +139,14 @@ private:
         }
 
         size_t commonSize = startPath->CommonEndSize(*endPath);
-        size_t nLen = 0;
+        size_t gap = 0;
         DEBUG("Str " << startPath->Size() << ", end" << endPath->Size());
         if (commonSize == 0 && !startPath->Empty() > 0 && !endPath->Empty()) {
             DEBUG("Estimating gap size");
             VertexId lastVertex = g_.EdgeEnd(startPath->Back());
             VertexId firstVertex = g_.EdgeStart(endPath->Front());
 
-            if (firstVertex == lastVertex) {
-                nLen = 0;
-            } else {
+            if (firstVertex != lastVertex) {
                 DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, shortest_path_limit_,
                                                                                                              DIJKSTRA_LIMIT));
                 dijkstra.Run(lastVertex);
@@ -161,12 +159,12 @@ private:
                     DEBUG("Closing path is outside the component");
                     return false;
                 } else {
-                    nLen = CumulativeLength(g_, shortest_path);
+                    gap = CumulativeLength(g_, shortest_path);
                 }
             }
         }
         if (commonSize < endPath->Size()){
-            startPath->PushBack(endPath->At(commonSize), (int) nLen);
+            startPath->PushBack(endPath->At(commonSize), Gap(int(gap)));
         }
         for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
             startPath->PushBack(endPath->At(i), endPath->GapAt(i));
