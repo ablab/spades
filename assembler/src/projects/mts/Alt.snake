@@ -1,0 +1,151 @@
+configfile: "config.yaml"
+
+import functools
+import itertools
+
+from scripts.common import detect_reads, gather_refs
+
+IN = config["IN"]
+SCRIPTS = config["SCRIPTS"]
+SOFT = config["SOFT"]
+THREADS = config.get("THREADS", 16)
+ASSEMBLER = config.get("ASSEMBLER")
+ASSEMBLER_PATH = config.get("ASSEMBLER_PATH")
+BINNER = config.get("BINNER")
+
+#Autodetect samples and their reads
+MIN_CONTIG_LENGTH = 2000
+SAMPLE_DIRS = set(glob_wildcards(IN + "/{sample,sample\d+}")[0])
+SAMPLE_COUNT = len(SAMPLE_DIRS)
+SAMPLES = list()
+for i in range(1, SAMPLE_COUNT + 1):
+    sample_name = "sample" + str(i)
+    if sample_name not in SAMPLE_DIRS:
+        raise WorkflowError("Samples must be consecutive; missing " + sample_name)
+    SAMPLES.append(sample_name)
+
+SAMPLE_READS = dict(map(lambda sample: (sample, detect_reads(os.path.join(IN, sample))), SAMPLES))
+LEFT_READS = [reads[0] for reads in SAMPLE_READS.values()]
+RIGHT_READS = [reads[1] for reads in SAMPLE_READS.values()]
+
+def sample_reads(dir, wildcards):
+    return SAMPLE_READS[wildcards.sample][dir]
+
+left_reads  = functools.partial(sample_reads, 0)
+right_reads = functools.partial(sample_reads, 1)
+
+REFS = dict(gather_refs(config.get("REFS", [])))
+ALL_REFS = ",".join(path for path in REFS.values())
+
+#register_assembler()
+
+class Assembler:
+    def __init__(self, name, run_path, left, right, result, add_params=""):
+        self.run_path = run_path
+        self.left = left
+        self.right = right
+        self.result = result
+        self.add_params = add_params
+    def shell(left, right, output):
+        return "{} {} {} {} {} -o {output}".format(self.run_path, self.left(left),
+            self.right(right), self.add_params, output)
+
+assemblers_dict = dict()
+def register_assembler(*args, **kwargs):
+    assemblers_dict = Assebler(*args, **kwargs)
+
+register_assembler("MegaHIT", os.path.join(SOFT, "megahit", "megahit"),
+    lamdba reads: "-1 " + ",".join(reads), lamdba reads: "-2 " + ",".join(reads),
+    "final_contigs.fa")
+
+register_assembler("metaSPAdes", os.path.join(SPADES, "spades.py"),
+    "scaffolds.fasta", add_params="--meta -m 400")
+
+rule coassemble:
+    input:   LEFT_READS, RIGHT_READS
+    output:  "assembly/samples.fasta"
+    params:  dir="assembly/{assembler}/samples", left=, right=
+    threads: THREADS
+    message: "Assembling all samples with {wildcards.assembler}"
+    run:
+        shell("rm -rf {params.dir}")
+        assembler = assemblers_dict[wildcards.assembler]
+        shell(assembler.shell(LEFT_READS, RIGHT_READS, threads, params.dir))
+        #shell("{assembler.call} {left} {right} -t {threads} -o {params.dir}")
+        shell("cp {params.dir}/{assembler.result}")
+
+
+rule metabat_coassemble:
+    input:   LEFT_READS, RIGHT_READS
+    output:  "assembly/samples.fasta"
+    params:  dir="assembly/megahit/samples", left=",".join(LEFT_READS), right=",".join(RIGHT_READS)
+    threads: THREADS
+    message: "Assembling all samples with MegaHIT"
+    shell:   "rm -rf {params.dir} &&"
+             " {SOFT}/megahit/megahit -1 {params.left} -2 {params.right} -t {threads} -o {params.dir} &&"
+             " cp {params.dir}/final.contigs.fa {output}"
+
+rule spades_coassemble:
+    input:   LEFT_READS, RIGHT_READS
+    output:  "assembly/samples.fasta"
+    params:  dir="assembly/spades/samples", left=",".join(LEFT_READS), right=",".join(RIGHT_READS)
+    threads: THREADS
+    message: "Assembling all samples with metaSPAdes"
+    shell:   "{SPADES}/spades.py --meta -m 400 -t {threads} {params.left} {params.right}"
+             " -o {params.dir} >{log} 2>&1 && "
+             "cp {params.dir}/scaffolds.fasta {output}"
+
+rule bowtie_index:
+    input:   rules.coassemble.output[0]
+    output:  "align/index.done"
+    message: "Building bowtie index"
+    shell:   "bowtie2-build {input} align/index && touch {output}"
+
+
+
+rule align:
+    input:   left=left_reads, right=right_reads,
+             index=rules.bowtie_index.output[0]
+    output:  temp("align/{sample}.sam")
+    threads: THREADS
+    message: "Aligning {wildcards.sample} with bowtie"
+    shell:   "bowtie2 -x align/index -p {threads} -1 {input.left} -2 {input.right} -S {output}"
+
+rule convert:
+    input:   "align/{sample}.sam"
+    output:  "align/{sample}.bam"
+    message: "Converting {input} to {output}"
+    shell:   "samtools view -bS {input} > {output}"
+
+rule depth:
+    input:   expand("align/{sample}.bam", sample=SAMPLES)
+    output:  "profile/depth_metabat.txt"
+    message: "Calculating contig depths"
+    shell:   "{SOFT}/metabat/jgi_summarize_bam_contig_depths --outputDepth {output} {input}"
+
+rule metabat:
+    input:   assembly=rules.coassemble.output[0], depth=rules.depth.output[0]
+    #output:  dynamic("binning/metabat/{cluster}.fa")
+    log:     "binning/metabat.log"
+    message: "Binning stuff with MetaBAT"
+    run:
+        shell("{SOFT}/metabat/metabat -i {input.assembly} -a {input.depth} -o binning/metabat/cluster > {log}")
+        #for cag in glob_wildcards("binning/metabat/{CAG}.fa")[0]:
+        #    os.link("binning/metabat/{}.fa".format(cag), "reassembly/CAG{}.fasta".format(cag))
+
+# rule metabat_post:
+#     input:   dynamic("binning/metabat/{cluster}.fa")
+#     output:  dynamic("reassembly/{cluster}.fa")
+#     message: "Postprocessing MetaBAT output"
+#     run:
+#         for in_file in input:
+#             os.mknod(in_file,
+
+rule concoct_depth:
+    input:   rules.depth.output[0]
+    output:  "profile/depth_concoct.txt"
+    shell:   "awk 'NR > 1 {for(x=1;x<=NF;x++) if(x == 1 || (x >= 4 && x % 2 == 0)) printf \"%s\", $x (x == NF || x == (NF-1) ? \"\\n\":\"\\t\")}' {input} > {output}"
+
+#rule concoct:
+#    input:   assembly=rules.coassembly.output[0], depth=rules.concoct_depth.output[0]
+#    shell:   "{SOFT}/concoct/concoct "

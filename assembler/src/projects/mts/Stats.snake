@@ -68,7 +68,7 @@ rule split_bins:
     shell:   "{SCRIPTS}/split_bins.py {input} {params} >{log}"
 
 rule cat_binned_contigs:
-    input:   expand("binning/{{prop}}/{sample}.log", sample=SAMPLES)
+    input:   expand("binning/{{prop}}/{sample}.log", sample=GROUPS)
     output:  "binning/{prop}/{cag,CAG\d+}.fasta"
     params:  "`ls binning/{prop}/*-{cag}.fasta`"
     message: "Combine binned contigs ({wildcards.prop}) for {wildcards.cag}"
@@ -90,7 +90,7 @@ register_input("reassembly", "reassembly/{frag}.fasta", CAGS)
 #Run this
 rule stats_reassembly:
     input:   "stats/summary/gf_reassembly.tsv",
-             "stats/q_reassembly/total.cont"
+             "stats/q_reassembly/total.info"
     output:  "stats/summary/reassembly.tsv"
     params:  "stats/q_reassembly"
     message: "Gathered bins stats"
