@@ -891,7 +891,6 @@ public:
             weights_cands.insert(make_pair(it->e_, 0.0));
         }
         set<EdgeId> filtered_cands;
-        map<EdgeId, BidirectionalPathSet > support_paths_ends;
         auto support_paths = cov_map_.GetCoveringPaths(path.Back());
         DEBUG("Found " << support_paths.size() << " covering paths!!!");
         for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
@@ -908,10 +907,6 @@ public:
                         EdgeId next = (*it)->At(positions[i] + 1);
                         weights_cands[next] += (*it)->GetWeight();
                         filtered_cands.insert(next);
-                        if (support_paths_ends.count(next) == 0){
-                            support_paths_ends[next] = BidirectionalPathSet();
-                        }
-                        support_paths_ends[next].insert(new BidirectionalPath((*it)->SubPath(positions[i] + 1)));
                     }
                 }
             }
