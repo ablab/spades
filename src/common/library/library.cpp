@@ -48,6 +48,7 @@ struct ScalarEnumerationTraits<LibraryType> {
         io.enumCase(value, "path-extend-contigs", LibraryType::PathExtendContigs);
         io.enumCase(value, "fl-rna",              LibraryType::FLRNAReads);
         io.enumCase(value, "assembly-graph",      LibraryType::AssemblyGraph);
+        io.enumCase(value, "clouds10x",           LibraryType::Clouds10x);
     }
 };
 }}
@@ -81,6 +82,7 @@ void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
     case LibraryType::MatePairs:
     case LibraryType::HQMatePairs:
     case LibraryType::TellSeqReads:
+    case LibraryType::Clouds10x:
         if (left_paired_reads_.size() != right_paired_reads_.size()) {
             res = "Left and right reads lists should have equal length";
             return;

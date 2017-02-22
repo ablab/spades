@@ -76,7 +76,7 @@ namespace omnigraph {
             DEBUG("Checking edge " << edge.int_id());
             DEBUG("Length " << g_.length(edge)) 
             DEBUG("Decisive edge " << decisive_edge_.int_id())
-//            DEBUG("Intersection " << barcode_extractor_->AreEnoughSharedBarcodes(decisive_edge_, edge))
+//            DEBUG("Intersection " << barcode_extractor_->AreEnoughSharedBarcodesWithFilter(decisive_edge_, edge))
 //            DEBUG("Normalized intersection (first) "
 //                          << barcode_extractor_->GetIntersectionSizeNormalizedByFirst(decisive_edge_, edge))
 //            DEBUG("Normalized intersection (second) "
@@ -85,7 +85,7 @@ namespace omnigraph {
             DEBUG("Gap " << gap)
 
 //            size_t decisive_barcodes = barcode_extractor_->GetTailBarcodeNumber(decisive_edge_);
-//            size_t current_barcodes = barcode_extractor_->GetHeadBarcodeNumber(edge);
+//            size_t current_barcodes = barcode_extractor_->GetNumberOfBarcodes(edge);
 
 //            DEBUG("Barcodes " << current_barcodes);
 //            DEBUG("Decisive edge barcodes " << decisive_barcodes);
