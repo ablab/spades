@@ -47,15 +47,15 @@ bool PELaunchSupport::IsForSingleReadScaffolder(const io::SequencingLibrary<conf
 }
 
 bool PELaunchSupport::IsForPEExtender(const io::SequencingLibrary<config::LibraryData> &lib) const {
-    return (lib.type() == io::LibraryType::PairedEnd && lib.data().mean_insert_size > 0.0);
+    return (lib.is_paired() && !lib.is_mate_pair() && lib.data().mean_insert_size > 0.0);
 }
 
 bool PELaunchSupport::IsForShortLoopExtender(const io::SequencingLibrary<config::LibraryData> &lib) const {
-    return (lib.type() == io::LibraryType::PairedEnd && lib.data().mean_insert_size > 0.0);
+    return (lib.is_paired() && !lib.is_mate_pair() && lib.data().mean_insert_size > 0.0);
 }
 
 bool PELaunchSupport::IsForScaffoldingExtender(const io::SequencingLibrary<config::LibraryData> &lib) const {
-    return (lib.type() == io::LibraryType::PairedEnd && lib.data().mean_insert_size > 0.0);
+    return (lib.is_paired() && !lib.is_mate_pair() && lib.data().mean_insert_size > 0.0);
 }
 
 //TODO: review usage

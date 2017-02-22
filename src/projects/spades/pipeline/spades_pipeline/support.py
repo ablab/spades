@@ -140,7 +140,7 @@ def check_file_not_empty(input_filename, message="", log=None):
     file_type = get_read_file_type(input_filename, log)
     if (file_type == 'bam' or file_type == 'sra'):
         return
-    
+
     try:
         reads_iterator = SeqIO.parse(SeqIO.Open(filename, "r"), file_type)
         if next(reads_iterator, None) is None:
@@ -216,7 +216,7 @@ def check_reads_file_format(filename, message, only_assembler, iontorrent, libra
     if library_type.endswith("graph") and ext.lower() not in options_storage.GRAPH_ALLOWED_READS_EXTENSIONS:
         error("file with %s should be in GFA format  (%s are supported): %s (%s)" %
               (library_type, ", ".join(options_storage.GRAPH_ALLOWED_READS_EXTENSIONS), filename, message), log)
-        
+
 
 # http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 def which(program):
@@ -623,7 +623,7 @@ def correct_dataset(dataset_data):
             if "orientation" in reads_library:
                 del reads_library["orientation"]
         if "orientation" not in reads_library:
-            if reads_library["type"] == "paired-end" or reads_library["type"] == "hq-mate-pairs":
+            if reads_library["type"] == "paired-end" or reads_library["type"] == "hq-mate-pairs" or reads_library["type"] == "clouds10x":
                 reads_library["orientation"] = "fr"
             elif reads_library["type"] == "mate-pairs":
                 reads_library["orientation"] = "rf"

@@ -1560,7 +1560,7 @@ public:
 
         DEBUG("At edge " << path.Back().int_id());
         DEBUG("Decisive edge " << last_unique.first.int_id());
-        DEBUG("Decisive edge barcodes: " << barcode_extractor_ptr_->GetTailBarcodeNumber(last_unique.first));
+        DEBUG("Decisive edge barcodes: " << barcode_extractor_ptr_->GetNumberOfBarcodes(last_unique.first));
 
         DEBUG("Searching for next unique edge.")
         result = FindNextUniqueEdge(last_unique.first, candidates);
@@ -1801,7 +1801,8 @@ public:
 
 private:
     EdgeContainer GetBestCandidates(const EdgeContainer& edges, const EdgeId& decisive_edge) const {
-        DEBUG(decisive_edge.int_id());
+        DEBUG("Last unique: " << decisive_edge.int_id());
+        DEBUG("Input candidates: " << edges.size());
         stats_.overall_++;
         if (edges.size() == 0) {
             stats_.no_candidates_++;
@@ -1810,7 +1811,7 @@ private:
             stats_.single_candidate_++;
             return edges;
         }
-        size_t barcodes = barcode_extractor_ptr_->GetTailBarcodeNumber(decisive_edge);
+        size_t barcodes = barcode_extractor_ptr_->GetNumberOfBarcodes(decisive_edge);
         if (barcodes == 0) {
             stats_.no_barcodes_on_last_edge_++;
             return edges;
@@ -1821,6 +1822,10 @@ private:
         DEBUG("Initial candidates: ");
         for(const auto& candidate: initial_candidates) {
             DEBUG(candidate.e_.int_id());
+            DEBUG("Shared barcodes: " << barcode_extractor_ptr_->CountSharedBarcodesWithFilter(decisive_edge,
+                                                                                               candidate.e_,
+                                                                                               initial_abundancy_threshold_,
+                                                                                               tail_threshold_));
         }
         if (initial_candidates.size() == 0 ) {
             stats_.no_candidates_after_initial_filter_++;
@@ -1881,10 +1886,10 @@ private:
                      [this, &decisive_edge, shared_threshold,
                              abundancy_threshold, tail_threshold](const EdgeWithDistance& edge) {
                          return edge.e_ != decisive_edge and
-                                 this->barcode_extractor_ptr_->AreEnoughSharedBarcodes(decisive_edge, edge.e_,
-                                                                                       shared_threshold,
-                                                                                       abundancy_threshold,
-                                                                                       tail_threshold);
+                                 this->barcode_extractor_ptr_->AreEnoughSharedBarcodesWithFilter(decisive_edge, edge.e_,
+                                                                                                 shared_threshold,
+                                                                                                 abundancy_threshold,
+                                                                                                 tail_threshold);
                      });
         return result;
     }
@@ -1902,6 +1907,7 @@ private:
     bool MiddleCheck(const EdgeId& decisive_edge, const EdgeId& candidate,
                      const EdgeContainer& other_candidates, size_t len_threshold, size_t abundancy_threshold) const {
         bool result = true;
+        DEBUG("Middle check for: " << candidate.int_id());
         for (const auto& other : other_candidates) {
             EdgeId other_edge = other.e_;
             if (other_edge != candidate and !IsBetween(candidate, decisive_edge, other_edge,
@@ -1922,8 +1928,8 @@ private:
         EdgeContainer result;
         size_t edge_voters = 0;
         size_t conj_voters = 0;
-        auto common_barcodes = barcode_extractor_ptr_->GetIntersection(decisive_edge, edge);
-        for (const auto barcode: common_barcodes) {
+        auto common_barcodes = barcode_extractor_ptr_->GetSharedBarcodes(decisive_edge, edge);
+        for (const auto& barcode: common_barcodes) {
             size_t gap = barcode_extractor_ptr_->GetMinPos(edge, barcode);
             size_t conj_gap = barcode_extractor_ptr_->GetMinPos(conjugate, barcode);
             if (gap < gap_threshold_left and conj_gap > gap_threshold_right) {
@@ -1947,12 +1953,12 @@ private:
 
     bool IsBetween(const EdgeId& middle, const EdgeId& left, const EdgeId& right,
                    size_t len_threshold, size_t abundancy_threshold) const {
-        auto side_barcodes = barcode_extractor_ptr_->GetIntersection(left, right);
+        DEBUG("Checking against: " << right.int_id())
+        auto side_barcodes = barcode_extractor_ptr_->GetSharedBarcodes(left, right);
         size_t middle_length = g_.length(middle);
-        size_t sum_length_threshold = len_threshold * side_barcodes.size();
         size_t current_length = 0;
-        DEBUG("Side barcodes: " << side_barcodes.size());
-        VERIFY(side_barcodes.size() > absolute_barcode_threshold_);
+        DEBUG("Side barcodes before filter: " << side_barcodes.size());
+        size_t side_barcodes_after_filter = 0;
         for (const auto& barcode: side_barcodes) {
             //todo optimize after custom filter implementation
             size_t left_count = barcode_extractor_ptr_->GetInfo(left, barcode).GetCount();
@@ -1960,11 +1966,14 @@ private:
             if (!(barcode_extractor_ptr_->has_barcode(middle, barcode))
                 and left_count >= abundancy_threshold
                 and right_count >= abundancy_threshold) {
+                ++side_barcodes_after_filter;
                 size_t right_length = barcode_extractor_ptr_->GetMinPos(right, barcode);
                 size_t left_length = g_.length(left) - barcode_extractor_ptr_->GetMaxPos(left, barcode);
                 current_length += (left_length + right_length + middle_length);
             }
         }
+        DEBUG("Side barcodes after filter: " << side_barcodes_after_filter);
+        size_t sum_length_threshold = len_threshold * side_barcodes_after_filter;
         DEBUG("Current length: " << current_length);
         return current_length <= sum_length_threshold;
     }
