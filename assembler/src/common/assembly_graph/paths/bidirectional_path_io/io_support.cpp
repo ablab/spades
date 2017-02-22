@@ -87,7 +87,7 @@ void path_extend::TranscriptToGeneJoiner::Construct(const PathContainer &paths) 
 string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) const {
     stringstream ss;
     if (path.IsInterstrandBulge() && path.Size() == 1) {
-        ss << g_.EdgeNucls(path.Back()).Subseq(k_);
+        ss << g_.EdgeNucls(path.Back()).Subseq(k_, g_.length(path.Back()));
         return ss.str();
     }
 
@@ -114,7 +114,7 @@ string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) con
         }
         VERIFY(overlap_after_trim < int(right_end));
 
-        ss << g_.EdgeNucls(path[i]).Subseq(overlap_after_trim, right_end);
+        ss << s.Subseq(overlap_after_trim, right_end);
     }
     return ss.str();
 }
