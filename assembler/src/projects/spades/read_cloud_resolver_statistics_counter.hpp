@@ -16,6 +16,8 @@ namespace debruijn_graph {
                 AssemblyStage("Read cloud statistics counter", "read_cloud_statistics_counter") {
         }
 
+        void save(const conj_graph_pack &, const std::string &, const char *) const { }
+
         void run(debruijn_graph::conj_graph_pack &graph_pack, const char *);
         DECL_LOGGER("ReadCloudStatisticsStage")
     };

@@ -449,12 +449,13 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             const size_t gap_threshold = cfg::get().ts_res.gap_threshold;
             INFO("Abundancy threshold: " << abundancy_threshold);
             INFO("Gap threshold: " << gap_threshold);
-            INFO("Average barcode coverage before filtering: " << gp_.barcode_mapper_ptr->AverageBarcodeCoverage());
+            barcode_index::FrameBarcodeIndexInfoExtractor extractor(gp_.barcode_mapper_ptr, gp_.g);
+            INFO("Average barcode coverage before filtering: " << extractor.AverageBarcodeCoverage());
             gp_.barcode_mapper_ptr->Filter(abundancy_threshold, gap_threshold);
             INFO("Finished filtering")
-            INFO("Average barcode coverage after filtering: " << gp_.barcode_mapper_ptr->AverageBarcodeCoverage());
-
+            INFO("Average barcode coverage after filtering: " << extractor.AverageBarcodeCoverage());
             INFO("Creating read cloud extenders");
+//            ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp_, 5000, 0.5);
             push_back_all(extenders, ConstructReadCloudExtender(generator));
         }
     }
