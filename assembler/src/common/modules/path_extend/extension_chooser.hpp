@@ -1548,32 +1548,32 @@ class TenXExtensionChooser : public ReadCloudExtensionChooser {
     typedef barcode_index::FrameBarcodeIndexInfoExtractor frame_extractor_t;
     using ReadCloudExtensionChooser::unique_storage_;
     using ReadCloudExtensionChooser::fragment_len_;
+    shared_ptr<frame_extractor_t> barcode_extractor_ptr_;
     size_t absolute_barcode_threshold_;
     size_t tail_threshold_;
     size_t max_initial_candidates_;
     size_t internal_gap_threshold_;
-    shared_ptr<frame_extractor_t> barcode_extractor_ptr_;
+    size_t initial_abundancy_threshold_;
+    size_t middle_abundancy_threshold_;
     friend class TenXExtensionChecker;
 public:
     static TenXExtensionChooserStatistics stats_;
 
 
 public:
-    TenXExtensionChooser(const conj_graph_pack& gp,
-                         abstract_barcode_extractor_ptr_t extractor,
-                         size_t fragment_len,
-                         size_t distance_bound,
-                         const ScaffoldingUniqueEdgeStorage& unique_storage,
-                         size_t absolute_barcode_threshold,
-                         size_t tail_threshold,
-                         size_t max_initial_candidates,
-                         size_t internal_gap_threshold) :
+    TenXExtensionChooser(const conj_graph_pack &gp, abstract_barcode_extractor_ptr_t extractor, size_t fragment_len,
+                             size_t distance_bound, const ScaffoldingUniqueEdgeStorage &unique_storage,
+                             size_t absolute_barcode_threshold, size_t tail_threshold, size_t max_initial_candidates,
+                             size_t internal_gap_threshold, size_t initial_abundancy_threshold_,
+                             size_t middle_abundancy_threshold_) :
             ReadCloudExtensionChooser(gp, extractor, fragment_len, distance_bound, unique_storage),
+            barcode_extractor_ptr_(std::static_pointer_cast<frame_extractor_t>(extractor)),
             absolute_barcode_threshold_(absolute_barcode_threshold),
             tail_threshold_(tail_threshold),
             max_initial_candidates_(max_initial_candidates),
             internal_gap_threshold_(internal_gap_threshold),
-            barcode_extractor_ptr_(std::static_pointer_cast<frame_extractor_t>(extractor)) {}
+            initial_abundancy_threshold_(initial_abundancy_threshold_),
+            middle_abundancy_threshold_(middle_abundancy_threshold_) {}
 
 
     static void PrintStats(const string& filename) {
@@ -1582,6 +1582,7 @@ public:
 
 private:
     EdgeContainer GetBestCandidates(const EdgeContainer& edges, const EdgeId& decisive_edge) const {
+        DEBUG(decisive_edge.int_id());
         stats_.overall_++;
         if (edges.size() == 0) {
             stats_.no_candidates_++;
@@ -1596,8 +1597,12 @@ private:
             return edges;
         }
         //Find edges with barcode score greater than some threshold
-        EdgeContainer initial_candidates = InitialFilter(edges, decisive_edge, tail_threshold_);
-
+        EdgeContainer initial_candidates = InitialFilter(edges, decisive_edge, absolute_barcode_threshold_,
+                                                         initial_abundancy_threshold_, tail_threshold_);
+        DEBUG("Initial candidates: ");
+        for(const auto& candidate: initial_candidates) {
+            DEBUG(candidate.e_.int_id());
+        }
         if (initial_candidates.size() == 0 ) {
             stats_.no_candidates_after_initial_filter_++;
             return initial_candidates;
@@ -1610,65 +1615,78 @@ private:
             stats_.too_much_candidates_after_initial_++;
             return initial_candidates;
         }
-//        DEBUG("After initial check: " << initial_candidates.size());
-//        EdgeContainer next_candidates = MiddleFilter(initial_candidates, decisive_edge, internal_gap_threshold_);
-//        DEBUG("After middle check: " << next_candidates.size());
-//        if (next_candidates.size() == 0) {
-//            stats_.no_candidates_after_middle_filter_++;
-//            return next_candidates;
-//        }
-//        if (next_candidates.size() == 1) {
-//            stats_.middle_filter_helped_++;
-//            return next_candidates;
-//        }
-//
-//        EdgeContainer result = next_candidates;
-//
-//        stats_.multiple_candidates_after_both_++;
-//        if (next_candidates.size() == 2) {
-//            EdgeId edge = next_candidates[0].e_;
-//            EdgeId other = next_candidates[1].e_;
-//            if (edge == g_.conjugate(other)) {
-//                stats_.pair_of_conjugates_left_++;
-//                //fixme magic constants
-//                result = ConjugateFilter(decisive_edge, next_candidates[0], next_candidates[1],
-//                                         1000, 2000, 0.2);
-//                if (result.size() == 1) {
-//                    stats_.conjugate_resolved_++;
-//                }
-//            }
-//        }
-//        return result;
-        return initial_candidates;
+        DEBUG("After initial check: " << initial_candidates.size());
+        EdgeContainer next_candidates = MiddleFilter(initial_candidates, decisive_edge,
+                                                     internal_gap_threshold_, middle_abundancy_threshold_);
+        DEBUG("After middle check: " << next_candidates.size());
+        DEBUG("Middle candidates: ");
+        for(const auto& candidate: next_candidates) {
+            DEBUG(candidate.e_.int_id());
+        }
+        if (next_candidates.size() == 0) {
+            stats_.no_candidates_after_middle_filter_++;
+            DEBUG("No candidates after middle");
+            return next_candidates;
+        }
+        if (next_candidates.size() == 1) {
+            stats_.middle_filter_helped_++;
+            DEBUG("Middle helped");
+            return next_candidates;
+        }
+
+        EdgeContainer result = next_candidates;
+
+        stats_.multiple_candidates_after_both_++;
+        DEBUG("Multiple after middle");
+        if (next_candidates.size() == 2) {
+            EdgeId edge = next_candidates[0].e_;
+            EdgeId other = next_candidates[1].e_;
+            if (edge == g_.conjugate(other)) {
+                stats_.pair_of_conjugates_left_++;
+                //fixme magic constants
+                result = ConjugateFilter(decisive_edge, next_candidates[0], next_candidates[1],
+                                         1000, 2000, 0.2);
+                if (result.size() == 1) {
+                    stats_.conjugate_resolved_++;
+                }
+            }
+        }
+        return result;
     }
 
-    EdgeContainer InitialFilter(const EdgeContainer& candidates, const EdgeId& decisive_edge, size_t tail_threshold) const {
+    EdgeContainer InitialFilter(const EdgeContainer& candidates, const EdgeId& decisive_edge,
+                                size_t shared_threshold, size_t abundancy_threshold,
+                                size_t tail_threshold) const {
         EdgeContainer result;
         std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(result),
-                     [this, &decisive_edge, tail_threshold](const EdgeWithDistance& edge) {
+                     [this, &decisive_edge, shared_threshold,
+                             abundancy_threshold, tail_threshold](const EdgeWithDistance& edge) {
                          return edge.e_ != decisive_edge and
-                                 this->barcode_extractor_ptr_->GetNumberOfSharedWithFilter(decisive_edge, edge.e_,
-                                                                                           tail_threshold) >
-                                absolute_barcode_threshold_;
+                                 this->barcode_extractor_ptr_->AreEnoughSharedBarcodes(decisive_edge, edge.e_,
+                                                                                       shared_threshold,
+                                                                                       abundancy_threshold,
+                                                                                       tail_threshold);
                      });
         return result;
     }
 
-    EdgeContainer MiddleFilter(const EdgeContainer& candidates, const EdgeId& decisive_edge, size_t len_threshold) const {
+    EdgeContainer MiddleFilter(const EdgeContainer& candidates, const EdgeId& decisive_edge,
+                               size_t len_threshold, size_t abundancy_threshold) const {
         EdgeContainer result;
         std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(result),
-                     [this, &decisive_edge, &candidates, len_threshold](const EdgeWithDistance& edge) {
-                         return MiddleCheck(decisive_edge, edge.e_, candidates, len_threshold);
+                     [this, &decisive_edge, &candidates, len_threshold, abundancy_threshold](const EdgeWithDistance& edge) {
+                         return MiddleCheck(decisive_edge, edge.e_, candidates, len_threshold, abundancy_threshold);
                      });
         return result;
     }
 
     bool MiddleCheck(const EdgeId& decisive_edge, const EdgeId& candidate,
-                     const EdgeContainer& other_candidates, size_t len_threshold) const {
+                     const EdgeContainer& other_candidates, size_t len_threshold, size_t abundancy_threshold) const {
         bool result = true;
         for (const auto& other : other_candidates) {
             EdgeId other_edge = other.e_;
-            if (other_edge != candidate and !IsBetween(candidate, decisive_edge, other_edge, len_threshold)) {
+            if (other_edge != candidate and !IsBetween(candidate, decisive_edge, other_edge,
+                                                       len_threshold, abundancy_threshold)) {
                 result = false;
                 break;
             }
@@ -1708,21 +1726,28 @@ private:
         return result;
     }
 
-    bool IsBetween(const EdgeId& middle, const EdgeId& left, const EdgeId& right, size_t len_threshold) const {
+    bool IsBetween(const EdgeId& middle, const EdgeId& left, const EdgeId& right,
+                   size_t len_threshold, size_t abundancy_threshold) const {
         auto side_barcodes = barcode_extractor_ptr_->GetIntersection(left, right);
         size_t middle_length = g_.length(middle);
         size_t sum_length_threshold = len_threshold * side_barcodes.size();
         size_t current_length = 0;
         DEBUG("Side barcodes: " << side_barcodes.size());
-        for (const auto barcode: side_barcodes) {
-            if (!(barcode_extractor_ptr_->has_barcode(middle, barcode))) {
+        VERIFY(side_barcodes.size() > absolute_barcode_threshold_);
+        for (const auto& barcode: side_barcodes) {
+            //todo optimize after custom filter implementation
+            size_t left_count = barcode_extractor_ptr_->GetInfo(left, barcode).GetCount();
+            size_t right_count = barcode_extractor_ptr_->GetInfo(right, barcode).GetCount();
+            if (!(barcode_extractor_ptr_->has_barcode(middle, barcode))
+                and left_count >= abundancy_threshold
+                and right_count >= abundancy_threshold) {
                 size_t right_length = barcode_extractor_ptr_->GetMinPos(right, barcode);
                 size_t left_length = g_.length(left) - barcode_extractor_ptr_->GetMaxPos(left, barcode);
                 current_length += (left_length + right_length + middle_length);
             }
         }
         DEBUG("Current length: " << current_length);
-        return current_length < sum_length_threshold;
+        return current_length <= sum_length_threshold;
     }
 
     DECL_LOGGER("10XExtensionChooser")

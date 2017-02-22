@@ -33,7 +33,8 @@ namespace debruijn_graph {
                                           cfg::get().ts_res.frame_size);
 
         size_t nthreads = cfg::get().max_threads;
-        mapper_builder.FillMap(lib_type, graph_pack.index, graph_pack.kmer_mapper, nthreads);
+        string read_cloud_dataset_path = cfg::get().ts_res.read_cloud_dataset;
+        mapper_builder.FillMap(lib_type, read_cloud_dataset_path, graph_pack.index, graph_pack.kmer_mapper, nthreads);
         graph_pack.barcode_mapper_ptr = mapper_builder.GetMapper();
         INFO("Barcode map construction finished.");
         INFO("Average barcode coverage: " +

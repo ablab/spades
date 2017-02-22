@@ -385,7 +385,7 @@ namespace barcode_index {
     template <class barcode_info_t>
     class EdgeEntry {
     protected:
-        typedef std::unordered_map <int64_t, barcode_info_t> barcode_distribution_t;
+        typedef std::map <int64_t, barcode_info_t> barcode_distribution_t;
         EdgeId edge_;
         barcode_distribution_t barcode_distribution_;
 
@@ -398,7 +398,7 @@ namespace barcode_index {
         virtual ~EdgeEntry() {}
 
 
-        barcode_distribution_t GetDistribution() const {
+        const barcode_distribution_t& GetDistribution() const {
             return barcode_distribution_;
         }
 
@@ -410,7 +410,7 @@ namespace barcode_index {
         vector <int64_t> GetIntersection(const EdgeEntry& other) const {
             vector <int64_t> result;
             for (auto it = barcode_distribution_.begin(); it != barcode_distribution_.end(); ++it) {
-                if (other.GetDistribution().find(it-> first) != other.GetDistribution().end()) {
+                if (other.GetDistribution().find(it->first) != other.GetDistribution().end()) {
                     result.push_back(it->first);
                 }
             }

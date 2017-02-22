@@ -138,21 +138,20 @@ namespace barcode_index {
             }
         }
 
-        void FillMapFrom10XReads() {
+        void FillMapFrom10XReads(const string& read_cloud_dataset_path) {
             INFO("Starting barcode index construction from 10X reads")
-            std::string read_cloud_dataset = cfg::get().ts_res.read_cloud_dataset;
-            INFO(read_cloud_dataset);
+            INFO(read_cloud_dataset_path);
             auto mapper = std::make_shared < alignment::BWAReadMapper < Graph > >
                           (g_);
 
-            auto streams = GetStreamsFromFile(read_cloud_dataset);
+            auto streams = GetStreamsFromFile(read_cloud_dataset_path);
             //Process every read from 10X dataset
             io::SingleRead read;
             size_t counter = 0;
             for (auto stream: streams) {
                 while (!stream->eof()) {
                     *stream >> read;
-                    auto barcode = GetBarcodeFromRead(read);
+                    auto barcode = GetTenXBarcodeFromRead(read);
                     if (barcode != "") {
                         barcode_codes_.AddBarcode(barcode);
                         const auto &path = mapper->MapRead(read);
@@ -166,7 +165,8 @@ namespace barcode_index {
             //INFO("Number of barcodes: " + std::to_string(barcode_codes_.GetSize()))
         }
 
-        void FillMap(BarcodeLibraryType lib_type, const Index &index, const KmerSubs &kmer_mapper, size_t nthreads) {
+        void FillMap(BarcodeLibraryType lib_type, const string& read_cloud_dataset_path,
+                     const Index &index, const KmerSubs &kmer_mapper, size_t nthreads) {
             InitialFillMap();
             switch (lib_type) {
                 case TSLR :
@@ -174,7 +174,7 @@ namespace barcode_index {
                     FillMapFromDemultiplexedDataset(index, kmer_mapper);
                     break;
                 case TenX :
-                    FillMapFrom10XReads();
+                    FillMapFrom10XReads(read_cloud_dataset_path);
                     break;
                 default:
                     WARN("Unknown library type, failed to fill barcode map.");
@@ -193,7 +193,7 @@ namespace barcode_index {
 
 
         //todo works with a certain format of 10x only
-        std::string GetBarcodeFromRead(const io::SingleRead &read) {
+        string GetTenXBarcodeFromRead(const io::SingleRead &read) {
             const size_t barcode_len = 16;
             const string prefix_string = "BC:Z";
             size_t prefix_len = prefix_string.size();

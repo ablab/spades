@@ -88,7 +88,10 @@ namespace path_extend {
                         if (not next_reachable) {
                             ++nonreachable;
                         }
-                        ExtensionChooser::EdgeContainer after_filter = chooser_.InitialFilter(candidates, long_edge, chooser_.tail_threshold_);
+                        ExtensionChooser::EdgeContainer after_filter = chooser_.InitialFilter(candidates, long_edge,
+                                                                                              chooser_.absolute_barcode_threshold_,
+                                                                                              chooser_.initial_abundancy_threshold_,
+                                                                                              chooser_.tail_threshold_);
                         DEBUG("Size after filter: " << after_filter.size());
                         bool next_found = false;
                         for (const auto& edge: after_filter) {
@@ -135,7 +138,8 @@ namespace path_extend {
                         EdgeId right = long_edges_in_path[i + 2];
                         ExtensionChooser::EdgeContainer simple;
                         simple.push_back(EdgeWithDistance(right, 0));
-                        if (!chooser_.IsBetween(middle, left, right, chooser_.internal_gap_threshold_)) {
+                        if (!chooser_.IsBetween(middle, left, right,
+                                                chooser_.internal_gap_threshold_, chooser_.middle_abundancy_threshold_)) {
                             failure_on_simple++;
                         }
                     }

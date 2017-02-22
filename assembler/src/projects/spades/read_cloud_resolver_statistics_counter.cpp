@@ -22,6 +22,8 @@ namespace debruijn_graph {
         const size_t tail_threshold = tenx_resolver_stats.tail_threshold;
         const size_t max_initial_candidates = tenx_resolver_stats.max_initial_candidates;
         const size_t internal_gap_threshold = tenx_resolver_stats.internal_gap_threshold;
+        const size_t initial_abundancy_threshold = tenx_resolver_stats.initial_abundancy_threshold;
+        const size_t middle_abundancy_threshold = tenx_resolver_stats.middle_abundancy_threshold;
 
         typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
 
@@ -29,15 +31,12 @@ namespace debruijn_graph {
         shared_ptr<abstract_extractor_t> abstract_extractor_ptr =
                 std::static_pointer_cast<abstract_extractor_t>(tenx_extractor_ptr);
 
-        TenXExtensionChooser extension_chooser = TenXExtensionChooser(gp,
-                                                              abstract_extractor_ptr,
-                                                              fragment_length,
-                                                              distance_bound,
-                                                              storage,
-                                                              absolute_barcode_threshold,
-                                                              tail_threshold,
-                                                              max_initial_candidates,
-                                                              internal_gap_threshold);
+        TenXExtensionChooser extension_chooser = TenXExtensionChooser(gp, abstract_extractor_ptr, fragment_length,
+                                                                      distance_bound,
+                                                                      storage, absolute_barcode_threshold,
+                                                                      tail_threshold, max_initial_candidates,
+                                                                      internal_gap_threshold, initial_abundancy_threshold,
+                                                                      middle_abundancy_threshold);
         TenXExtensionChecker checker = TenXExtensionChecker(extension_chooser, gp, storage);
         return checker;
     }

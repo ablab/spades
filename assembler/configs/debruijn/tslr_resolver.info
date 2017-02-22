@@ -54,5 +54,7 @@ ts_res
 		max_initial_candidates 10
 		internal_gap_threshold 6000
 		absolute_barcode_threshold 2
+		initial_abundancy_threshold 15
+		middle_abundancy_threshold 10
 	}
 }
