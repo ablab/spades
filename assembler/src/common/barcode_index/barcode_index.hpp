@@ -31,7 +31,6 @@ namespace barcode_index {
     typedef Graph::VertexId VertexId;
     typedef omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
     typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
-    typedef string BarcodeId;
     typedef RtSeq Kmer;
     typedef typename debruijn_graph::KmerFreeEdgeIndex<Graph, debruijn_graph::DefaultStoring> InnerIndex;
     typedef typename InnerIndex::KeyWithHash KeyWithHash;
@@ -59,28 +58,27 @@ namespace barcode_index {
 
 
     class BarcodeEncoder {
-        std::unordered_map <BarcodeId, int64_t> codes_;
-        int64_t barcode_encoder_size;
+        std::unordered_map <string, uint64_t> codes_;
     public:
-        BarcodeEncoder() :
-                codes_(), barcode_encoder_size (0)
+        BarcodeEncoder():
+                codes_()
         { }
 
         void AddBarcode(const string &barcode) {
             auto it = codes_.find(barcode);
             if (it == codes_.end()) {
-                codes_[barcode] = barcode_encoder_size;
-                barcode_encoder_size++;
+                size_t encoder_size = codes_.size();
+                codes_[barcode] = encoder_size;
             }
         }
 
-        int64_t GetCode (const string& barcode) const {
+        uint64_t GetCode (const string& barcode) const {
             VERIFY(codes_.find(barcode) != codes_.end());
             return codes_.at(barcode);
         }
 
-        int64_t GetSize() const {
-            return barcode_encoder_size;
+        size_t GetSize() const {
+            return codes_.size();
         }
     };
 
@@ -114,6 +112,46 @@ namespace barcode_index {
         }
     };
 
+    class BarcodeId {
+        uint64_t int_id_;
+        
+    public:
+        BarcodeId(uint64_t int_id) : int_id_(int_id) {}
+        uint64_t int_id() const {
+            return int_id_;
+        }
+        friend bool operator ==(const BarcodeId& left, const BarcodeId& right);
+        friend bool operator !=(const BarcodeId& left, const BarcodeId& right);
+        friend bool operator <(const BarcodeId& left, const BarcodeId& right);
+        friend bool operator >(const BarcodeId& left, const BarcodeId& right);
+        friend bool operator <=(const BarcodeId& left, const BarcodeId& right);
+        friend bool operator >=(const BarcodeId& left, const BarcodeId& right);
+        friend std::ostream& operator<< (std::ostream& stream, const BarcodeId& bid);
+    };
+
+    inline bool operator ==(const BarcodeId& left, const BarcodeId& right) {
+        return left.int_id() == right.int_id();
+    }
+    inline bool operator !=(const BarcodeId& left, const BarcodeId& right) {
+        return left.int_id() != right.int_id();
+    }
+    inline bool operator <(const BarcodeId& left, const BarcodeId& right) {
+        return left.int_id() < right.int_id();
+    }
+    inline bool operator >(const BarcodeId& left, const BarcodeId& right) {
+        return left.int_id() > right.int_id();
+    }
+    inline bool operator <=(const BarcodeId& left, const BarcodeId& right) {
+        return left.int_id() <= right.int_id();
+    }
+    inline bool operator >=(const BarcodeId& left, const BarcodeId& right) {
+        return left.int_id() >= right.int_id();
+    }
+    inline std::ostream& operator<< (std::ostream& stream, const BarcodeId& bid) {
+        stream << bid.int_id();
+        return stream;
+    }
+
     /*This structure contains barcode multiset extracted from reads aligned to the
      * beginning of edges in the assembly graph. */
     class AbstractBarcodeIndex {
@@ -131,14 +169,11 @@ namespace barcode_index {
         //Number of entries in the barcode map. Currently equals to the number of edges.
         virtual size_t size() const = 0;
 
-        //Average barcode coverage of long edges
-        virtual double AverageBarcodeCoverage () const = 0;
-
         //Number of barcodes on the beginning/end of the edge
         virtual size_t GetHeadBarcodeNumber(const EdgeId& edge) const = 0;
         virtual size_t GetTailBarcodeNumber(const EdgeId& edge) const = 0;
 
-        //fixme this method should be moved to DataScanner
+        //fixme this should be moved to DataScanner
         virtual void ReadEntry(ifstream& fin, const EdgeId& edge) = 0;
 
         virtual void WriteEntry(ofstream& fin, const EdgeId& edge) = 0;
@@ -208,23 +243,6 @@ namespace barcode_index {
 
         bool IsEmpty() override {
             return size() == 0;
-        }
-
-        double AverageBarcodeCoverage() const override {
-            edge_it_helper helper(g_);
-            int64_t barcodes_overall = 0;
-            int64_t long_edges = 0;
-            size_t len_threshold = cfg::get().ts_res.edge_length_threshold;
-            for (auto it = helper.begin(); it != helper.end(); ++it) {
-                if (g_.length(*it) > len_threshold) {
-                    long_edges++;
-                    barcodes_overall += GetTailBarcodeNumber(*it);
-                }
-            }
-            DEBUG("tails: " + std::to_string(barcodes_overall));
-            DEBUG("Long edges" + long_edges);
-            INFO("Barcodes: " << barcodes_overall);
-            return static_cast <double> (barcodes_overall) / static_cast <double> (long_edges);
         }
 
         //Delete low abundant barcodes from every edge
@@ -332,7 +350,7 @@ namespace barcode_index {
         void Update(const FrameBarcodeInfo& other) {
             is_on_frame_ |= other.is_on_frame_;
             leftmost_index_ = std::min(leftmost_index_, other.leftmost_index_);
-            rightmost_index_ = std::max(leftmost_index_, other.rightmost_index_);
+            rightmost_index_ = std::max(rightmost_index_, other.rightmost_index_);
             count_ += other.count_;
         }
 
@@ -354,6 +372,10 @@ namespace barcode_index {
 
         size_t GetSize() const {
             return is_on_frame_.size();
+        }
+
+        size_t GetCovered() const {
+            return is_on_frame_.count();
         }
 
         friend ostream& operator <<(ostream& os, const FrameBarcodeInfo& info);
@@ -382,10 +404,15 @@ namespace barcode_index {
         return os;
     }
 
-    template <class barcode_info_t>
+
+
+    template <class entry_info_t>
     class EdgeEntry {
+    public:
+        typedef std::map <BarcodeId, entry_info_t> barcode_distribution_t;
+        typedef entry_info_t barcode_info_t;
+
     protected:
-        typedef std::map <int64_t, barcode_info_t> barcode_distribution_t;
         EdgeId edge_;
         barcode_distribution_t barcode_distribution_;
 
@@ -397,7 +424,6 @@ namespace barcode_index {
 
         virtual ~EdgeEntry() {}
 
-
         const barcode_distribution_t& GetDistribution() const {
             return barcode_distribution_;
         }
@@ -406,17 +432,7 @@ namespace barcode_index {
             return edge_;
         }
 
-        //fixme move to info extractor
-        vector <int64_t> GetIntersection(const EdgeEntry& other) const {
-            vector <int64_t> result;
-            for (auto it = barcode_distribution_.begin(); it != barcode_distribution_.end(); ++it) {
-                if (other.GetDistribution().find(it->first) != other.GetDistribution().end()) {
-                    result.push_back(it->first);
-                }
-            }
-            return result;
-        }
-
+        //fixme move to extractor
         size_t GetIntersectionSize(const EdgeEntry &other) const {
             size_t result = 0;
             for (auto it = barcode_distribution_.begin(); it != barcode_distribution_.end(); ++it) {
@@ -431,10 +447,6 @@ namespace barcode_index {
             auto distr_this = barcode_distribution_;
             auto distr_other = other.GetDistribution();
             return Size() + other.Size() - GetIntersectionSize(other);
-        }
-
-        void InsertSet (const barcode_distribution_t& set) {
-            barcode_distribution_ = set;
         }
 
         size_t Size() const {
@@ -465,11 +477,11 @@ namespace barcode_index {
             return barcode_distribution_.cend();
         }
 
-        bool has_barcode(int64_t barcode) const {
+        bool has_barcode(const BarcodeId& barcode) const {
             return barcode_distribution_.find(barcode) != barcode_distribution_.end();
         }
 
-        typename barcode_distribution_t::const_iterator get_barcode(int64_t barcode) const {
+        typename barcode_distribution_t::const_iterator get_barcode(const BarcodeId& barcode) const {
             return barcode_distribution_.find(barcode);
         }
 
@@ -477,7 +489,7 @@ namespace barcode_index {
         void SerializeDistribution(ofstream &fout) const {
             fout << barcode_distribution_.size() << endl;
             for (auto entry : barcode_distribution_) {
-                fout << entry.first << ' ' << entry.second << endl;
+                fout << entry.first.int_id() << ' ' << entry.second << endl;
             }
         }
 
@@ -485,15 +497,16 @@ namespace barcode_index {
             size_t distr_size;
             fin >> distr_size;
             for (size_t i = 0; i < distr_size; ++i) {
-                int64_t bid;
-                barcode_info_t info;
-                fin >> bid >> info;
+                uint64_t int_id;
+                entry_info_t info;
+                fin >> int_id >> info;
+                BarcodeId bid(int_id);
                 InsertInfo(bid, info);
             }
         }
 
-        virtual void InsertInfo(int64_t code, const barcode_info_t& info) = 0;
-        virtual void InsertBarcode(int64_t code, const size_t count, const Range& range) = 0;
+        virtual void InsertInfo(const BarcodeId& code, const barcode_info_t& info) = 0;
+        virtual void InsertBarcode(const BarcodeId& code, const size_t count, const Range& range) = 0;
     };
 
     //Contains abundancy for each barcode aligned to given edge
@@ -527,22 +540,22 @@ namespace barcode_index {
         }
 
     protected:
-        void InsertInfo(int64_t code, const SimpleBarcodeInfo &info) {
-            if (barcode_distribution_.find(code) == barcode_distribution_.end()) {
-                barcode_distribution_.insert({code, info});
+        void InsertInfo(const BarcodeId& barcode, const SimpleBarcodeInfo &info) {
+            if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
+                barcode_distribution_.insert({barcode, info});
             }
             else {
-                barcode_distribution_.at(code).Update(info);
+                barcode_distribution_.at(barcode).Update(info);
             }
         }
 
-        void InsertBarcode(int64_t code, const size_t count, const Range& range) {
-            if (barcode_distribution_.find(code) == barcode_distribution_.end()) {
+        void InsertBarcode(const BarcodeId& barcode, const size_t count, const Range& range) {
+            if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
                 SimpleBarcodeInfo info(count, range);
-                barcode_distribution_.insert({code, info});
+                barcode_distribution_.insert({barcode, info});
             }
             else {
-                barcode_distribution_.at(code).Update(count, range);
+                barcode_distribution_.at(barcode).Update(count, range);
             }
         }
 
@@ -599,26 +612,26 @@ namespace barcode_index {
         }
 
     protected:
-        void InsertInfo(int64_t code, const FrameBarcodeInfo &info) {
-            if (barcode_distribution_.find(code) == barcode_distribution_.end()) {
-                barcode_distribution_.insert({code, info});
+        void InsertInfo(const BarcodeId& barcode, const FrameBarcodeInfo &info) {
+            if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
+                barcode_distribution_.insert({barcode, info});
             }
             else {
-                barcode_distribution_.at(code).Update(info);
+                barcode_distribution_.at(barcode).Update(info);
             }
         }
 
-        void InsertBarcode(int64_t code, const size_t count, const Range& range) {
-            if (barcode_distribution_.find(code) == barcode_distribution_.end()) {
+        void InsertBarcode(const BarcodeId& barcode, const size_t count, const Range& range) {
+            if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
                 FrameBarcodeInfo info(number_of_frames_) ;
-                barcode_distribution_.insert({code, info});
+                barcode_distribution_.insert({barcode, info});
             }
             else {
                 size_t left_frame = GetFrameFromPos(range.start_pos);
                 size_t right_frame = GetFrameFromPos(range.end_pos);
                 DEBUG("Range: " << range);
                 DEBUG("Frames: " << left_frame << " " << right_frame);
-                barcode_distribution_.at(code).Update(count, left_frame, right_frame);
+                barcode_distribution_.at(barcode).Update(count, left_frame, right_frame);
             }
         }
 
