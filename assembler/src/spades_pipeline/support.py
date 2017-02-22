@@ -578,7 +578,7 @@ def correct_dataset(dataset_data):
             if 'orientation' in reads_library:
                 del reads_library['orientation']
         if 'orientation' not in reads_library:
-            if reads_library['type'] == 'paired-end' or reads_library['type'] == 'hq-mate-pairs':
+            if reads_library['type'] == 'paired-end' or reads_library['type'] == 'hq-mate-pairs' or reads_library['type'] == 'clouds10x':
                 reads_library['orientation'] = 'fr'
             elif reads_library['type'] == 'mate-pairs':
                 reads_library['orientation'] = 'rf'
@@ -685,6 +685,7 @@ def get_lib_ids_by_type(dataset_data, types):
         types = [types]
     lib_ids = []
     for id, reads_library in enumerate(dataset_data):
+        print reads_library['type']
         if reads_library['type'] in types:
             lib_ids.append(id)
     return lib_ids

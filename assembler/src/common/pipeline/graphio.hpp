@@ -903,7 +903,7 @@ void ScanBarcodeIndex(const string &path, const std::unordered_map<size_t, EdgeI
     string file_name = path + ".bmap";
     ifstream index_file(file_name);
     INFO("Loading barcode information from " << file_name)
-    if (index_file == NULL or index_file.peek() == std::ifstream::traits_type::eof()) {
+    if (index_file.peek() == std::ifstream::traits_type::eof()) {
         return;
     }
     barcode_index::FrameMapperBuilder mapper_builder(g, cfg::get().ts_res.edge_tail_len, cfg::get().ts_res.frame_size);
