@@ -771,14 +771,14 @@ protected:
         EdgeId eid = candidates.back().e_;
 //In 2015 modes when trying to use already used unique edge, it is not added and path growing stops.
 //That allows us to avoid overlap removal hacks used earlier.
-        if (used_storage_->UniqueCheckEnabled()) {
-            if (used_storage_->IsUsedAndUnique(eid)) {
-                DEBUG("Tried to add already used edge")
-                return false;
-            } else {
-                used_storage_->insert(eid);
-            }
-        }
+//        if (used_storage_->UniqueCheckEnabled()) {
+//            if (used_storage_->IsUsedAndUnique(eid)) {
+//                DEBUG("Tried to add already used edge")
+//                return false;
+//            } else {
+//                used_storage_->insert(eid);
+//            }
+//        }
         path.PushBack(eid, candidates.back().d_);
         DEBUG("push done");
         return true;
