@@ -1009,8 +1009,7 @@ protected:
 
 };
 
-inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, const BidirectionalPath& path1, const BidirectionalPath& path2,
-                                         size_t max_diff) {
+inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, const BidirectionalPath& path1, const BidirectionalPath& path2, size_t max_diff) {
     path1.Print();
     path2.Print();
     if (start_pos1 >= path1.Size() || start_pos2 >= path2.Size()) {
@@ -1031,7 +1030,10 @@ inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, c
         bool found = false;
         for (size_t pos2 = 0; pos2 < poses2.size(); ++pos2) {
             if (poses2[pos2] > last2) {
-                if (path2.LengthAt(last2) - path2.LengthAt(poses2[pos2]) - g.length(path2.At(last2)) - path2.GapAt(poses2[pos2]).gap > max_diff) {
+                int diff = int(path2.LengthAt(last2)) - int(path2.LengthAt(poses2[pos2])) - 
+                                int(g.length(path2.At(last2))) - path2.GapAt(poses2[pos2]).gap;
+                VERIFY(diff >= 0);
+                if (size_t(diff) > max_diff) {
                     break;
                 }
                 last2 = poses2[pos2];
