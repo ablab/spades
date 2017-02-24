@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "utils/standard_base.hpp"
+
 #include "assembly_graph/handlers/id_track_handler.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/components/graph_component.hpp"

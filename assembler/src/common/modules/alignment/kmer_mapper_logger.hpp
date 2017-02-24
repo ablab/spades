@@ -17,6 +17,7 @@
 
 #include "sequence/sequence.hpp"
 #include "common/assembly_graph/core/action_handlers.hpp"
+#include "utils/standard_base.hpp"
 
 namespace debruijn {
 

@@ -8,6 +8,7 @@
 #pragma once
 
 #include "pipeline/graph_pack.hpp"
+#include "utils/standard_base.hpp"
 
 #include <readline/readline.h>
 #include <readline/history.h>

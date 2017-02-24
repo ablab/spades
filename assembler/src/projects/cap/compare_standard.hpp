@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "utils/standard_base.hpp"
+
 // log
 #include "utils/logger/logger.hpp"
 

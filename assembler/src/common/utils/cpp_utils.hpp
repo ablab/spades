@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include <cstddef>
-
 namespace utils {
 
 // arrays

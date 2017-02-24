@@ -6,6 +6,7 @@
 //***************************************************************************
 
 #pragma once
+#include "utils/standard_base.hpp"
 #include "utils/indices/perfect_hash_map.hpp"
 #include "utils/mph_index/kmer_index.hpp"
 

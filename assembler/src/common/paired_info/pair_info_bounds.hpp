@@ -8,9 +8,10 @@
 #ifndef OMNI_UTILS_HPP_
 #define OMNI_UTILS_HPP_
 
-#include "math/xmath.h"
+#include "utils/standard_base.hpp"
 
 namespace omnigraph {
+
 
 inline size_t PairInfoPathLengthUpperBound(size_t k, size_t insert_size,
                                            double delta) {

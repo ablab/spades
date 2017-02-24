@@ -12,6 +12,7 @@
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
 #include "sequence/sequence_tools.hpp"
+#include "utils/standard_base.hpp"
 
 namespace debruijn_graph {
 class DeBruijnMaster;

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "utils/standard_base.hpp"
 #include "utils/simple_tools.hpp"
 #include "comparison_utils.hpp"
 #include "boost/tokenizer.hpp"

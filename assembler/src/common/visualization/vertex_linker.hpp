@@ -7,6 +7,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "utils/standard_base.hpp"
 #include "printing_parameter_storage.hpp"
 
 namespace visualization {

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "utils/standard_base.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "consistent_mapping.h"
 

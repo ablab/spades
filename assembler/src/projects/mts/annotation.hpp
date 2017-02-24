@@ -6,6 +6,7 @@
 //***************************************************************************
 #pragma once
 
+#include "utils/standard_base.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "io/reads/io_helper.hpp"

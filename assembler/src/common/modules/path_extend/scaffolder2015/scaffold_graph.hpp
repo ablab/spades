@@ -7,6 +7,8 @@
 #include "assembly_graph/core/graph.hpp"
 #include "modules/path_extend/paired_library.hpp"
 #include "connection_condition2015.hpp"
+
+#include "utils/standard_base.hpp"
 #include "common/adt/iterator_range.hpp"
 
 namespace path_extend {

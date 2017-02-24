@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #pragma once
-
+#include "utils/standard_base.hpp"
 #include "io/reads/delegating_reader_wrapper.hpp"
 
 namespace cap {

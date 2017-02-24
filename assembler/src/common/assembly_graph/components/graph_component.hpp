@@ -7,8 +7,7 @@
 
 #pragma once
 
-#include <set>
-#include <string>
+#include "utils/standard_base.hpp"
 
 namespace omnigraph {
 

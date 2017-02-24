@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "utils/standard_base.hpp"
 #include <pipeline/stage.hpp>
 #include "alignment_analyser.hpp"
 #include "AlignmentAnalyserNew.hpp"

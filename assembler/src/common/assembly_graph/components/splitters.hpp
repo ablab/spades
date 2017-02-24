@@ -7,11 +7,13 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "utils/standard_base.hpp"
 #include "graph_component.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "component_filters.hpp"
 
 namespace omnigraph {
+
 
 template<typename Element>
 class JSIterator {

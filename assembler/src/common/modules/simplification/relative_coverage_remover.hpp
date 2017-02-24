@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "utils/standard_base.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "visualization/graph_colorer.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"

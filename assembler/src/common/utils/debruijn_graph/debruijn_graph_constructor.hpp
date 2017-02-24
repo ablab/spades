@@ -8,6 +8,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/construction_helper.hpp"
+#include "utils/standard_base.hpp"
 #include "utils/indices/kmer_extension_index.hpp"
 #include "utils/openmp_wrapper.h"
 #include "utils/parallel_wrapper.hpp"

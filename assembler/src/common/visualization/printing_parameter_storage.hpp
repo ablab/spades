@@ -7,6 +7,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+
+#include "utils/standard_base.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 
 using namespace omnigraph;

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "utils/standard_base.hpp"
 #include "graph_print_utils.hpp"
 #include "graph_labeler.hpp"
 #include "graph_colorer.hpp"
