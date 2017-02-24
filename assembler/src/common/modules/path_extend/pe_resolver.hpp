@@ -472,7 +472,7 @@ public:
         std::set<EdgeId> included;
         PathContainer edges;
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            if (g_.int_id(*iter) <= 0 or InTwoEdgeCycle(*iter, g_))
+            if (g_.int_id(*iter) <= 0 || InTwoEdgeCycle(*iter, g_))
                 continue;
             if (included.count(*iter) == 0) {
                 BidirectionalPath * first = new BidirectionalPath(g_, *iter);
@@ -546,16 +546,17 @@ public:
     void AddUncoveredEdges(PathContainer &paths, GraphCoverageMap &coverageMap) const {
         std::set<EdgeId> included;
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            if (included.count(*iter) == 0 && !coverageMap.IsCovered(*iter)) {
-                BidirectionalPath* path = new BidirectionalPath(g_, *iter);
-                BidirectionalPath* conj = new BidirectionalPath(g_, g_.conjugate(*iter));
+            EdgeId e = *iter;
+            if (included.count(e) == 0 && !coverageMap.IsCovered(e)) {
+                BidirectionalPath* path = new BidirectionalPath(g_, e);
+                BidirectionalPath* conj = new BidirectionalPath(g_, g_.conjugate(e));
                 path->Subscribe(&coverageMap);
                 conj->Subscribe(&coverageMap);
-                coverageMap.BackEdgeAdded(path->At(0), path, path->GapAt(0));
-                coverageMap.BackEdgeAdded(conj->At(0), conj, conj->GapAt(0));
+                coverageMap.BackEdgeAdded(path->At(0), path, Gap());
+                coverageMap.BackEdgeAdded(conj->At(0), conj, Gap());
                 paths.AddPair(path, conj);
-                included.insert(*iter);
-                included.insert(g_.conjugate(*iter));
+                included.insert(e);
+                included.insert(g_.conjugate(e));
             }
         }
     }

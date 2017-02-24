@@ -73,10 +73,10 @@ inline std::ostream& operator<<(std::ostream& os, Gap gap) {
 
 class PathListener {
 public:
-    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) = 0;
-    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) = 0;
-    virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
-    virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
+    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath *path, const Gap &gap) = 0;
+    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath *path, const Gap &gap) = 0;
+    virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath *path) = 0;
+    virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath *path) = 0;
     virtual ~PathListener() {
     }
 };
@@ -249,10 +249,11 @@ public:
         }
     }
 
-    void FrontEdgeAdded(EdgeId, BidirectionalPath*, Gap) override {
+    void FrontEdgeAdded(EdgeId, BidirectionalPath*, const Gap&) override {
+        //FIXME is it ok to be empty?
     }
 
-    void BackEdgeAdded(EdgeId e, BidirectionalPath*, Gap gap) override {
+    void BackEdgeAdded(EdgeId e, BidirectionalPath*, const Gap& gap) override {
         PushFront(g_.conjugate(e), gap.conjugate());
     }
 
@@ -1020,6 +1021,7 @@ inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, c
     size_t last2 = start_pos2;
     size_t last1 = cur_pos;
     cur_pos++;
+    //FIXME review logic
     size_t diff_len = 0;
     while (cur_pos < path1.Size()) {
         if (diff_len > max_diff) {
@@ -1030,6 +1032,7 @@ inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, c
         bool found = false;
         for (size_t pos2 = 0; pos2 < poses2.size(); ++pos2) {
             if (poses2[pos2] > last2) {
+                //FIXME check that it makes sense
                 int diff = int(path2.LengthAt(last2)) - int(path2.LengthAt(poses2[pos2])) - 
                                 int(g.length(path2.At(last2))) - path2.GapAt(poses2[pos2]).gap;
                 VERIFY(diff >= 0);

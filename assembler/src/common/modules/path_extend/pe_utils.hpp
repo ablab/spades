@@ -35,25 +35,11 @@ inline bool InTwoEdgeCycle(EdgeId e, const Graph &g) {
     return false;
 }
 
-inline bool InBuble(EdgeId e, const Graph& g) {
-    auto edges = g.OutgoingEdges(g.EdgeStart(e));
-    auto endVertex = g.EdgeEnd(e);
-    for (auto it = edges.begin(); it != edges.end(); ++it) {
-        if ((g.EdgeEnd(*it) == endVertex) and (*it != e)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-
 // Handles all paths in PathContainer.
 // For each edge output all paths  that _traverse_ this path. If path contains multiple instances - count them. Position of the edge is not reported.
 class GraphCoverageMap: public PathListener {
-
 public:
     typedef BidirectionalPathMultiset MapDataT;
-
 
 private:
     const Graph& g_;
@@ -62,7 +48,7 @@ private:
 
     MapDataT * empty_;
 
-    virtual void EdgeAdded(EdgeId e, BidirectionalPath * path, Gap /*gap*/) {
+    void EdgeAdded(EdgeId e, BidirectionalPath * path) {
         auto iter = edge_coverage_.find(e);
         if (iter == edge_coverage_.end()) {
             edge_coverage_.insert(std::make_pair(e, new MapDataT()));
@@ -70,7 +56,7 @@ private:
         edge_coverage_[e]->insert(path);
     }
 
-    virtual void EdgeRemoved(EdgeId e, BidirectionalPath * path) {
+    void EdgeRemoved(EdgeId e, BidirectionalPath * path) {
         auto iter = edge_coverage_.find(e);
         if (iter != edge_coverage_.end()) {
             if (iter->second->count(path) == 0) {
@@ -79,6 +65,14 @@ private:
                 auto entry = iter->second->find(path);
                 iter->second->erase(entry);
             }
+        }
+    }
+
+    void ProcessPath(BidirectionalPath * path, bool subscribe) {
+        if (subscribe)
+            path->Subscribe(this);
+        for (size_t i = 0; i < path->Size(); ++i) {
+            EdgeAdded(path->At(i), path);
         }
     }
 
@@ -110,35 +104,24 @@ public:
     }
 
     void AddPaths(const PathContainer& paths, bool subscribe = false) {
-        for (size_t i = 0; i < paths.size(); ++i) {
-            if (subscribe)
-                paths.Get(i)->Subscribe(this);
-            for (size_t j = 0; j < paths.Get(i)->Size(); ++j) {
-                EdgeAdded(paths.Get(i)->At(j), paths.Get(i), paths.Get(i)->GapAt(j));
-            }
-            if (subscribe)
-                paths.GetConjugate(i)->Subscribe(this);
-            for (size_t j = 0; j < paths.GetConjugate(i)->Size(); ++j) {
-                EdgeAdded(paths.GetConjugate(i)->At(j), paths.GetConjugate(i), paths.GetConjugate(i)->GapAt(j));
-            }
+        for (auto path_pair : paths) {
+            ProcessPath(path_pair.first, subscribe);
+            ProcessPath(path_pair.second, subscribe);
         }
     }
 
     void Subscribe(BidirectionalPath * path) {
-        path->Subscribe(this);
-        for (size_t i = 0; i < path->Size(); ++i) {
-            BackEdgeAdded(path->At(i), path, path->GapAt(i));
-        }
+        ProcessPath(path, true);
     }
 
     //Inherited from PathListener
-    void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) override {
-        EdgeAdded(e, path, gap);
+    void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, const Gap& gap) override {
+        EdgeAdded(e, path);
     }
 
     //Inherited from PathListener
-    void BackEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) override {
-        EdgeAdded(e, path, gap);
+    void BackEdgeAdded(EdgeId e, BidirectionalPath * path, const Gap& gap) override {
+        EdgeAdded(e, path);
     }
 
     //Inherited from PathListener
@@ -187,33 +170,6 @@ public:
 
     std::unordered_map <EdgeId, MapDataT * >::const_iterator end() const {
         return edge_coverage_.end();
-    }
-
-    // DEBUG output
-    void PrintUncovered() const {
-        DEBUG("Uncovered edges");
-        int s = 0;
-        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            if (!IsCovered(*iter)) {
-                DEBUG(g_.int_id(*iter) << " (" << g_.length(*iter) << ") ~ " << g_.int_id(g_.conjugate(*iter)) << " (" << g_.length(g_.conjugate(*iter)) << ")");
-                s += 1;
-            }
-        }
-        DEBUG("Uncovered edges " << s / 2);
-    }
-
-    void PrintMulticovered() const {
-        DEBUG("Multicovered edges");
-        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            auto paths = GetCoveringPaths(*iter);
-            if (paths.size() > 1 && g_.length(*iter) > 1000) {
-                DEBUG(g_.int_id(*iter) << " (" << g_.length(*iter) << "). " << " Covered: " << paths.size());
-                for (auto path = paths.begin(); path != paths.end(); ++path) {
-                    (*path)->Print();
-                }
-                DEBUG("=====");
-            }
-        }
     }
 
     size_t size() const {
