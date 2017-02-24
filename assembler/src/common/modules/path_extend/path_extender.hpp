@@ -1020,7 +1020,7 @@ private:
     void SubscribeCoverageMap(BidirectionalPath * path) {
         path->Subscribe(&cover_map_);
         for (size_t i = 0; i < path->Size(); ++i) {
-            cover_map_.BackEdgeAdded(path->At(i), path, path->GapAt(i));
+            cover_map_.BackEdgeAdded(path->At(i), path, path->GapInfoAt(i));
         }
     }
 

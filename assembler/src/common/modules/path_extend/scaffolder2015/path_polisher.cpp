@@ -77,10 +77,10 @@ BidirectionalPath DijkstraGapCloser::Polish(const BidirectionalPath &path) {
     BidirectionalPath result(g_);
     if (path.Empty())
         return result;
-    result.PushBack(path[0], path.GapAt(0));
+    result.PushBack(path[0], path.GapInfoAt(0));
     for (size_t i = 1; i < path.Size(); ++i) {
         if (g_.EdgeEnd(path[i - 1]) == g_.EdgeStart(path[i])) {
-            result.PushBack(path[i], path.GapAt(i));
+            result.PushBack(path[i], path.GapInfoAt(i));
         } else {
             //Connect edges using Dijkstra
             omnigraph::PathStorageCallback<Graph> path_storage(g_);
@@ -92,7 +92,7 @@ BidirectionalPath DijkstraGapCloser::Polish(const BidirectionalPath &path) {
 
             if (path_storage.size() == 0) {
                 //No paths found, keeping the gap
-                result.PushBack(path[i], path.GapAt(i));
+                result.PushBack(path[i], path.GapInfoAt(i));
             } else if (path_storage.size() > 1) {
                 //More than one path, using shortest path for gap length estimation
                 //We cannot use both common paths and bridges in one attempt;
@@ -260,10 +260,10 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path, size_t index,
 BidirectionalPath MatePairGapCloser::Polish(const BidirectionalPath& path) {
     BidirectionalPath result(g_);
     DEBUG("Path " << path.GetId() << " len "<< path.Length() << " size " << path.Size());
-    result.PushBack(path[0], path.GapAt(0));
+    result.PushBack(path[0], path.GapInfoAt(0));
     for (size_t i = 1; i < path.Size(); ++i) {
         if (g_.EdgeEnd(path[i - 1]) == g_.EdgeStart(path[i]) || path.GapAt(i) <= min_gap_) {
-            result.PushBack(path[i], path.GapAt(i));
+            result.PushBack(path[i], path.GapInfoAt(i));
         } else {
             DEBUG("position "<< i <<" gap between edges " << g_.int_id(path[i-1]) << " and " << g_.int_id(path[i]) << " was " << path.GapAt(i));
 
@@ -294,7 +294,7 @@ BidirectionalPath MatePairGapCloser::Polish(const BidirectionalPath& path) {
                 }
             }
             if (total > max_path_len_) {
-                result.PushBack(path[i], path.GapAt(i));
+                result.PushBack(path[i], path.GapInfoAt(i));
                 continue;                
             }
             int len = int(CumulativeLength(g_, addition));

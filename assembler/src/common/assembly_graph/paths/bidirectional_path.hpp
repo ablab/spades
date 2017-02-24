@@ -173,6 +173,10 @@ public:
         return gap_len_[index].gap_;
     }
 
+    const Gap& GapInfoAt(size_t index) const {
+        return gap_len_[index];
+    }
+
     uint32_t TrashCurrentAt(size_t index) const {
         return gap_len_[index].trash_current_;
     }
@@ -667,25 +671,13 @@ private:
         cumulative_len_.pop_back();
     }
 
-    void NotifyFrontEdgeAdded(EdgeId e, int gap) {
+    void NotifyFrontEdgeAdded(EdgeId e, const Gap& gap) {
         for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
             (*i)->FrontEdgeAdded(e, this, gap);
         }
     }
 
-    void NotifyFrontEdgeAdded(EdgeId e, Gap gap) {
-        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
-            (*i)->FrontEdgeAdded(e, this, gap);
-        }
-    }
-
-    void NotifyBackEdgeAdded(EdgeId e, int gap) {
-        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
-            (*i)->BackEdgeAdded(e, this, gap);
-        }
-    }
-
-    void NotifyBackEdgeAdded(EdgeId e, Gap gap) {
+    void NotifyBackEdgeAdded(EdgeId e, const Gap& gap) {
         for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
             (*i)->BackEdgeAdded(e, this, gap);
         }
@@ -703,7 +695,7 @@ private:
         }
     }
 
-    void PushFront(EdgeId e, Gap gap) {
+    void PushFront(EdgeId e, const Gap& gap) {
         PushFront(e, gap.gap_ + gap.trash_current_ - gap.trash_previous_, gap.trash_current_, gap.trash_previous_);
     }
 
@@ -722,7 +714,7 @@ private:
         } else {
             cumulative_len_.push_front(length + cumulative_len_.front() + gap - trash_previous );
         }
-        NotifyFrontEdgeAdded(e, gap);
+        NotifyFrontEdgeAdded(e, Gap(gap, trash_previous, trash_current));
     }
 
     void PopFront() {
@@ -1055,7 +1047,8 @@ inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, c
         bool found = false;
         for (size_t pos2 = 0; pos2 < poses2.size(); ++pos2) {
             if (poses2[pos2] > last2) {
-                if (path2.LengthAt(last2) - path2.LengthAt(poses2[pos2]) - g.length(path2.At(last2)) - path2.GapAt(poses2[pos2]) > max_diff) {
+                int diff = int(path2.LengthAt(last2)) - int(path2.LengthAt(poses2[pos2])) - int(g.length(path2.At(last2))) - path2.GapAt(poses2[pos2]);
+                if (std::abs(diff) > max_diff) {
                     break;
                 }
                 last2 = poses2[pos2];

@@ -103,7 +103,16 @@ string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) con
             for (size_t j = 0; j < gap - k_; ++j) {
                 ss << "N";
             }
-            ss << constructor_.construct(path[i]).first;
+            auto temp_str = constructor_.construct(path[i]).first;
+            if (i != path.Size() - 1) {
+                for (size_t j = 0; j < path.TrashPreviousAt(i + 1); ++j) {
+                    temp_str.pop_back();
+                    if (temp_str.size() == 0) {
+                        break;
+                    }
+                }
+            }
+            ss << temp_str;
         }
         else {
             int overlapLen = (int) k_ - gap;
