@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <queue>
+#include <cstring>
 #include <readline/readline.h>
 
 namespace online_visualization {
