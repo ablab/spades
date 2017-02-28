@@ -21,7 +21,7 @@ void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
     gp.ClearRRIndices();
     gp.ClearPaths();
 
-    std::string old_pe_contigs_filename = cfg::get().output_dir + "final_contigs.fasta";
+    std::string old_pe_contigs_filename = cfg::get().output_dir + contig_name_prefix_ + "final_contigs.fasta";
     std::string new_pe_contigs_filename = cfg::get().output_dir + "first_pe_contigs.fasta";
 
     VERIFY(path::check_existence(old_pe_contigs_filename));

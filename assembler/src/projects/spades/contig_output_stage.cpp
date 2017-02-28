@@ -11,7 +11,7 @@
 namespace debruijn_graph {
 
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
-    auto output_dir = cfg::get().output_dir;
+    auto output_dir = cfg::get().output_dir + contig_name_prefix_;
 
     OutputContigs(gp.g, output_dir + "before_rr", false);
     OutputContigsToFASTG(gp.g, output_dir + "assembly_graph", gp.components);
@@ -45,7 +45,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
         writer.OutputPaths(gp.contig_paths, output_dir + cfg::get().co.scaffolds_name);
 
-        OutputContigsToGFA(gp.g, gp.contig_paths, cfg::get().output_dir + "assembly_graph");
+        OutputContigsToGFA(gp.g, gp.contig_paths, output_dir + "assembly_graph");
     } else {
         OutputContigs(gp.g, output_dir + "simplified_contigs", cfg::get().use_unipaths);
         OutputContigs(gp.g, output_dir + cfg::get().co.contigs_name, false);

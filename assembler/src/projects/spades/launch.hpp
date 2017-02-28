@@ -96,12 +96,13 @@ void assemble_genome() {
         SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().rr_enable) {
         if (two_step_rr) {
+            string prelim_prefix = "preliminary_";
             if (cfg::get().use_intermediate_contigs)
                 SPAdes.add(new debruijn_graph::PairInfoCount(true))
                       .add(new debruijn_graph::DistanceEstimation(true))
                       .add(new debruijn_graph::RepeatResolution(true))
-                      .add(new debruijn_graph::ContigOutput())
-                      .add(new debruijn_graph::SecondPhaseSetup());
+                      .add(new debruijn_graph::ContigOutput(true, true, prelim_prefix))
+                      .add(new debruijn_graph::SecondPhaseSetup(prelim_prefix));
 
             SPAdes.add(new debruijn_graph::Simplification());
         }
@@ -119,12 +120,10 @@ void assemble_genome() {
 
         //No graph modification allowed after HybridLibrariesAligning stage!
 
-        SPAdes.add(new debruijn_graph::ContigOutput(false))
+        SPAdes.add(new debruijn_graph::ContigOutput(false, false, "pre_pe_"))
               .add(new debruijn_graph::PairInfoCount())
               .add(new debruijn_graph::DistanceEstimation())
               .add(new debruijn_graph::RepeatResolution());
-    } else {
-        SPAdes.add(new debruijn_graph::ContigOutput(false));
     }
 
     SPAdes.add(new debruijn_graph::ContigOutput());
