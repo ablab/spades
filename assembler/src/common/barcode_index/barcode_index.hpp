@@ -332,7 +332,7 @@ namespace barcode_index {
         void Update(const FrameBarcodeInfo& other) {
             is_on_frame_ |= other.is_on_frame_;
             leftmost_index_ = std::min(leftmost_index_, other.leftmost_index_);
-            rightmost_index_ = std::max(leftmost_index_, other.rightmost_index_);
+            rightmost_index_ = std::max(rightmost_index_, other.rightmost_index_);
             count_ += other.count_;
         }
 
@@ -354,6 +354,10 @@ namespace barcode_index {
 
         size_t GetSize() const {
             return is_on_frame_.size();
+        }
+
+        size_t GetCovered() const {
+            return is_on_frame_.count();
         }
 
         friend ostream& operator <<(ostream& os, const FrameBarcodeInfo& info);

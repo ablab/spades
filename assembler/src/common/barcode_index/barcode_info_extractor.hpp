@@ -157,46 +157,42 @@ namespace barcode_index {
                                         entry_iterator first_end, entry_iterator second_end) :
                     first_(first), second_(second), first_end_(first_end), second_end_(second_end) {}
 
-            //todo optimize this with lower bounds?
+            //todo optimize with lower bounds
             const_intersection_iterator operator++() {
-//                INFO(first_->first);
-//                INFO(second_->first);
-//                INFO(first_end_ -> first);
-//                INFO(second_end_->first);
                 if (first_ == first_end_ and second_ == second_end_) {
                     ++first_;
                     ++second_;
                     return *this;
                 }
-                if (first_->first == second_->first) {
+                if (get_first_key() == get_second_key()) {
                     if (second_ != second_end_) {
                         ++second_;
                     } else {
                         ++first_;
                     }
                 }
-                while (first_->first != second_->first and (first_ != first_end_ or second_ != second_end_)) {
-//                    INFO("first: " << first_->first << " and");
-//                    INFO("second: " << second_->first);
-                    while (first_->first < second_->first and first_ != first_end_) {
+                while (get_first_key() != get_second_key() and (first_ != first_end_ or second_ != second_end_)) {
+                    DEBUG("first: " << get_first_key() << " and");
+                    DEBUG("second: " << get_second_key());
+                    while (get_first_key() < get_second_key() and first_ != first_end_) {
                         ++first_;
-//                        INFO("first: " << first_->first);
+                        DEBUG("first: " << get_first_key());
                     }
-                    while (second_->first < first_->first and second_ != second_end_) {
+                    while (get_second_key() < get_first_key() and second_ != second_end_) {
                         ++second_;
-//                        INFO("second: " << second_->first);
+                        DEBUG("second: " << get_second_key());
                     }
-                    if ((first_ == first_end_ and second_->first > first_->first) or
-                            (second_ == second_end_ and first_->first > second_->first)) {
+                    if ((first_ == first_end_ and get_second_key() > get_first_key()) or
+                            (second_ == second_end_ and get_first_key() > get_second_key())) {
                         first_ = first_end_;
                         second_ = second_end_;
                     }
                 }
-                if (first_->first == second_->first) {
+                if (get_first_key() == get_second_key()) {
                     return *this;
                 }
                 VERIFY(first_ == first_end_ and second_ == second_end_);
-                if (first_->first != second_->first) {
+                if (get_first_key() != get_second_key()) {
                     ++first_;
                     ++second_;
                 }
@@ -229,15 +225,15 @@ namespace barcode_index {
             entry_iterator first_end_;
             entry_iterator second_end_;
 
-            barcode_info_key_t get_first_key() {
+            inline barcode_info_key_t get_first_key() {
                 return first_->first;
             }
-            barcode_info_key_t get_second_key() {
+            inline barcode_info_key_t get_second_key() {
                 return second_->first;
             }
         };
 
-        //fixme remove end decrement
+        //todo remove end decrement?
         const_intersection_iterator intersection_iterator_begin(const EdgeId& first, const EdgeId& second) const {
 //            INFO(GetHeadBarcodeNumber(first));
 //            INFO(GetHeadBarcodeNumber(second));
@@ -301,6 +297,27 @@ namespace barcode_index {
             return false;
         }
 
+        size_t GetNumberOfSharedBarcodes(const EdgeId &first,
+                                         const EdgeId &second,
+                                         size_t count_threshold,
+                                         size_t gap_threshold) const {
+            size_t current = 0;
+            for (auto it = intersection_iterator_begin(first, second); it != intersection_iterator_end(first, second); ++it) {
+                auto barcode = (*it).key_;
+                //todo make lazy and address to info directly
+                bool is_in_the_end_of_first = g_.length(first) <= gap_threshold or
+                                              GetMaxPos(first, barcode) > g_.length(first) - gap_threshold;
+                bool is_in_the_beginning_of_second = g_.length(second) <= gap_threshold or
+                                                     GetMinPos(second, barcode) < gap_threshold;
+                bool enough_count = (*it).info_first_.GetCount() >= count_threshold and
+                                    (*it).info_second_.GetCount() >= count_threshold;
+                if (is_in_the_end_of_first and is_in_the_beginning_of_second and enough_count) {
+                    ++current;
+                }
+            }
+            return current;
+        }
+
         //barcode should be present on the edge
         size_t GetMinPos(const EdgeId &edge, int64_t barcode) const {
             const FrameEdgeEntry& entry = GetEntry(edge);
@@ -329,6 +346,27 @@ namespace barcode_index {
             return max_pos - min_pos;
         }
 
+        double GetBarcodeCoverage(const EdgeId& edge, int64_t barcode) const {
+            const FrameEdgeEntry& entry = GetEntry(edge);
+            const FrameBarcodeInfo& info = GetInfo(edge, barcode);
+            size_t frame_size = entry.GetFrameSize();
+            size_t read_count = info.GetCount();
+            size_t length = GetMaxPos(edge, barcode) - GetMinPos(edge, barcode) + frame_size;
+            VERIFY(length > 0)
+            return static_cast<double>(read_count) / static_cast<double>(length);
+        }
+
+        double GetBarcodeCoverageWithoutGaps(const EdgeId& edge, int64_t barcode) const {
+            const FrameEdgeEntry& entry = GetEntry(edge);
+            const FrameBarcodeInfo& info = GetInfo(edge, barcode);
+            size_t frame_size = entry.GetFrameSize();
+            size_t covered_frames = info.GetCovered();
+            size_t read_count = info.GetCount();
+            size_t covered_length = frame_size * covered_frames;
+            VERIFY(covered_length != 0);
+            return static_cast<double>(read_count) / static_cast<double>(covered_length);
+        }
+
         vector <size_t> GetGapDistribution(const EdgeId& edge, int64_t barcode) const {
             const FrameEdgeEntry& entry = GetEntry(edge);
             const FrameBarcodeInfo& info = GetInfo(edge, barcode);
@@ -340,7 +378,9 @@ namespace barcode_index {
                     ++current_gap_length;
                 }
                 else {
-                    result.push_back(current_gap_length * entry.GetFrameSize());
+                    if (current_gap_length > 0) {
+                        result.push_back(current_gap_length * entry.GetFrameSize());
+                    }
                     current_gap_length = 0;
                 }
             }

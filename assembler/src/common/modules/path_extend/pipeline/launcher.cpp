@@ -428,6 +428,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             INFO("Average barcode coverage after filtering: " << gp_.barcode_mapper_ptr->AverageBarcodeCoverage());
 
             INFO("Creating read cloud extenders");
+//            ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp_, 5000, 0.5);
             push_back_all(extenders, ConstructReadCloudExtender(generator));
         }
     }
