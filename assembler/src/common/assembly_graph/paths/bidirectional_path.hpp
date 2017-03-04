@@ -495,7 +495,6 @@ public:
         for (size_t i = 0; i < Size(); ++i) {
             cov += g_.coverage(data_[i]) * (double) g_.length(data_[i]);
         }
-        //FIXME should we account for gaps here?
         return cov / (double) Length();
     }
 
@@ -1021,7 +1020,7 @@ inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, c
     size_t last2 = start_pos2;
     size_t last1 = cur_pos;
     cur_pos++;
-    //FIXME review logic
+    //todo review logic
     size_t diff_len = 0;
     while (cur_pos < path1.Size()) {
         if (diff_len > max_diff) {
@@ -1032,7 +1031,7 @@ inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, c
         bool found = false;
         for (size_t pos2 = 0; pos2 < poses2.size(); ++pos2) {
             if (poses2[pos2] > last2) {
-                //FIXME check that it makes sense
+                //todo check that formula makes sense
                 int diff = int(path2.LengthAt(last2)) - int(path2.LengthAt(poses2[pos2])) - 
                                 int(g.length(path2.At(last2))) - path2.GapAt(poses2[pos2]).gap;
                 VERIFY(diff >= 0);

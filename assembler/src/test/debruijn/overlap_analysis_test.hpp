@@ -149,7 +149,7 @@ inline path_extend::Gap MimicLAGapAnalyzer(size_t k, Sequence &s1, Sequence &s2)
             (uint32_t) overlap_info.r2.start_pos);
 }
 
-//FIXME what does it test?! Why is it not a test of SWOverlapAnalyzer?
+//TODO what does it test?! Why is it not a test of SWOverlapAnalyzer?
 BOOST_AUTO_TEST_CASE( SimpleGapTest ) {
     Sequence s1("AAAAAAAACGCGCTTTCGCTTTAA");
     Sequence s2("GGGGCGCGCTTTCGCTAAAAAAAAAA");

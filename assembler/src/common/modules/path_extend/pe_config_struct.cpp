@@ -76,14 +76,12 @@ void load(pe_config::ParamSetT::ScaffolderOptionsT& so,
 
     load(so.use_la_gap_joiner      , pt, "use_la_gap_joiner", complete);
     load(so.min_gap_score      , pt, "min_gap_score", complete);
-    load(so.max_must_overlap      , pt, "max_must_overlap", complete);
     load(so.max_can_overlap      , pt, "max_can_overlap", complete);
     load(so.short_overlap      , pt, "short_overlap", complete);
     load(so.artificial_gap      , pt, "artificial_gap", complete);
-    load(so.use_old_score      , pt, "use_old_score", complete);
     load(so.min_overlap_length, pt, "min_overlap_length", complete);
-    load(so.flank_addition_coefficient, pt, "flank_addition_coefficient", complete);
     load(so.flank_multiplication_coefficient, pt, "flank_multiplication_coefficient", complete);
+    load(so.flank_addition_coefficient, pt, "flank_addition_coefficient", complete);
 
     load(so.var_coeff          , pt, "var_coeff", complete);
     load(so.basic_overlap_coeff, pt, "basic_overlap_coeff", complete);

@@ -115,12 +115,12 @@ public:
     }
 
     //Inherited from PathListener
-    void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, const Gap& gap) override {
+    void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, const Gap&) override {
         EdgeAdded(e, path);
     }
 
     //Inherited from PathListener
-    void BackEdgeAdded(EdgeId e, BidirectionalPath * path, const Gap& gap) override {
+    void BackEdgeAdded(EdgeId e, BidirectionalPath * path, const Gap&) override {
         EdgeAdded(e, path);
     }
 

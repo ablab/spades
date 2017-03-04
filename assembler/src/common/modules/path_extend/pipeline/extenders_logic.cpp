@@ -64,7 +64,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongEdgePEExtender(size_t lib
                                        false /*use short loop coverage resolver*/);
 }
 
-shared_ptr<GapAnalyzer> ExtendersGenerator::MakeGapJoiners(double is_variation) const {
+shared_ptr<GapAnalyzer> ExtendersGenerator::MakeGapAnalyzer(double is_variation) const {
     const auto &pset = params_.pset;
 
     vector<shared_ptr<GapAnalyzer>> joiners;
@@ -80,13 +80,12 @@ shared_ptr<GapAnalyzer> ExtendersGenerator::MakeGapJoiners(double is_variation) 
                                                          (int) pset.scaffolder_options.basic_overlap_coeff
                                                              * dataset_info_.RL()));
 
+    //todo introduce explicit must_overlap_coeff and rename max_can_overlap -> can_overlap_coeff
     return std::make_shared<CompositeGapAnalyzer>(gp_.g,
                                                 joiners,
-                                                size_t(pset.scaffolder_options.max_can_overlap
-                                                           * (double) gp_.g.k()), /* may overlap threshold */
-                                                int(math::round(double(gp_.g.k())
-                                                                    - pset.scaffolder_options.var_coeff
-                                                                        * is_variation)),  /* must overlap threshold */
+                                                size_t(math::round(pset.scaffolder_options.max_can_overlap
+                                                           * is_variation)), /* may overlap threshold */
+                                                int(math::round(-pset.scaffolder_options.var_coeff * is_variation)), /* must overlap threshold */
                                                 pset.scaffolder_options.artificial_gap);
 
 }
@@ -104,7 +103,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldingExtender(size_t lib_
                                                                        pset.scaffolder_options.var_coeff);
 
     return make_shared<ScaffoldingPathExtender>(gp_, cover_map_, scaff_chooser,
-                                                MakeGapJoiners(paired_lib->GetIsVar()),
+                                                MakeGapAnalyzer(paired_lib->GetIsVar()),
                                                 paired_lib->GetISMax(),
                                                 false, /* investigate short loops */
                                                 params_.avoid_rc_connections);
@@ -132,7 +131,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeRNAScaffoldingExtender(size_t l
     return make_shared<RNAScaffoldingPathExtender>(gp_, cover_map_,
                                                    scaff_chooser,
                                                    scaff_chooser2,
-                                                   MakeGapJoiners(paired_lib->GetIsVar()),
+                                                   MakeGapAnalyzer(paired_lib->GetIsVar()),
                                                    paired_lib->GetISMax(),
                                                    false  /* investigate short loops */,
                                                    *pset.scaffolder_options.min_overlap_for_rna_scaffolding);
@@ -174,7 +173,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(
 
     return make_shared<ScaffoldingPathExtender>(gp_, cover_map_,
                                                 scaff_chooser,
-                                                MakeGapJoiners(paired_lib->GetIsVar()),
+                                                MakeGapAnalyzer(paired_lib->GetIsVar()),
                                                 paired_lib->GetISMax(),
                                                 false, /* investigate short loops */
                                                 params_.avoid_rc_connections,
@@ -323,9 +322,10 @@ Extenders ExtendersGenerator::MakePBScaffoldingExtenders(const ScaffoldingUnique
 
             result.emplace_back(dataset_info_.reads[lib_index].type(),
                                 lib_index,
+                                //FIXME are utilized constants reasonable?
                                 make_shared<ScaffoldingPathExtender>(gp_, cover_map_,
                                                                      scaff_chooser,
-                                                                     MakeGapJoiners(1000), /* "IS vatiation" */
+                                                                     MakeGapAnalyzer(1000), /* "IS variation" */
                                                                      10000, /* insert size */
                                                                      false, /* investigate short loops */
                                                                      params_.avoid_rc_connections,

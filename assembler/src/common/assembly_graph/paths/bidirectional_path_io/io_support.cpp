@@ -101,7 +101,7 @@ string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) con
 
         Sequence s = g_.EdgeNucls(path[i]).Subseq(path.GapAt(i).trash_current);
         if (overlap_after_trim < 0) {
-            for (size_t j = 0; j < abs(overlap_after_trim); ++j) {
+            for (size_t j = 0; j < size_t(abs(overlap_after_trim)); ++j) {
                 ss << "N";
             }
             overlap_after_trim = 0;

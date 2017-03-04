@@ -82,8 +82,8 @@ BidirectionalPath DijkstraGapCloser::Polish(const BidirectionalPath &path) {
     if (path.Empty())
         return result;
 
-    //FIXME why GapAt(0) can be nonzero?
-    result.PushBack(path[0], path.GapAt(0));
+    VERIFY(path.GapAt(0) == Gap());
+    result.PushBack(path[0]);
     for (size_t i = 1; i < path.Size(); ++i) {
         if (g_.EdgeEnd(path[i - 1]) == g_.EdgeStart(path[i])) {
             result.PushBack(path[i], path.GapAt(i));
@@ -270,8 +270,9 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path, size_t index,
 BidirectionalPath MatePairGapCloser::Polish(const BidirectionalPath& path) {
     BidirectionalPath result(g_);
     DEBUG("Path " << path.GetId() << " len "<< path.Length() << " size " << path.Size());
-    //FIXME why GapAt(0) can be nonzero?
-    result.PushBack(path[0], path.GapAt(0));
+
+    VERIFY(path.GapAt(0) == Gap());
+    result.PushBack(path[0]);
     for (size_t i = 1; i < path.Size(); ++i) {
         if (g_.EdgeEnd(path[i - 1]) == g_.EdgeStart(path[i]) || path.GapAt(i).gap <= min_gap_) {
             result.PushBack(path[i], path.GapAt(i));

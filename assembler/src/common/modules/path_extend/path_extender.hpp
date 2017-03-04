@@ -221,6 +221,8 @@ class HammingGapAnalyzer: public GapAnalyzer {
     const size_t short_overlap_threshold_;
     const size_t basic_overlap_length_;
 
+    static constexpr double MIN_OVERLAP_COEFF = 0.3;
+
     size_t HammingDistance(const Sequence& s1, const Sequence& s2) const {
         VERIFY(s1.size() == s2.size());
         size_t dist = 0;
@@ -255,33 +257,29 @@ public:
     }
 
     GapDescription FixGap(const GapDescription &gap) const override {
-        VERIFY_MSG(gap.right_trim() == 0 && gap.left_trim() == 0, "Trims not supported yet");
-        //FIXME get rid of it
-        int kp1mer_gap = gap.estimated_dist() + int(g_.k());
+        VERIFY_MSG(gap.no_trim(), "Trims not supported yet");
 
-        size_t corrected_start_overlap = basic_overlap_length_;
-        if (kp1mer_gap < 0) {
-            corrected_start_overlap -= kp1mer_gap;
+        size_t max_overlap = basic_overlap_length_;
+        if (gap.estimated_dist() < 0) {
+            max_overlap -= gap.estimated_dist();
         }
 
-        corrected_start_overlap = min(corrected_start_overlap,
+        max_overlap = min(max_overlap,
                                       g_.k() + min(g_.length(gap.left()), g_.length(gap.right())));
 
-        DEBUG("Corrected max overlap " << corrected_start_overlap);
+        DEBUG("Corrected max overlap " << max_overlap);
 
         double best_score = min_gap_score_;
-        int fixed_gap = INVALID_GAP;
+        int fixed_gap = GapDescription::INVALID_GAP;
 
-        double overlap_coeff = 0.3;
         size_t min_overlap = 1;
-        //FIXME weird if
-        if (kp1mer_gap < 0) {
-            min_overlap = max(min_overlap, size_t(math::round(overlap_coeff * double(-gap.estimated_dist()))));
+        if (gap.estimated_dist() < 0) {
+            min_overlap = max(min_overlap, size_t(math::round(MIN_OVERLAP_COEFF * double(-gap.estimated_dist()))));
         }
         //todo better usage of estimated overlap
         DEBUG("Min overlap " << min_overlap);
 
-        for (size_t l = corrected_start_overlap; l >= min_overlap; --l) {
+        for (size_t l = max_overlap; l >= min_overlap; --l) {
             //TRACE("Sink: " << g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l).str());
             //TRACE("Source: " << g_.EdgeNucls(source).Subseq(0, l));
             double score = 0;
@@ -294,7 +292,7 @@ public:
                 fixed_gap = -int(l);
             }
 
-            if (l == short_overlap_threshold_ && fixed_gap != INVALID_GAP) {
+            if (l == short_overlap_threshold_ && fixed_gap != GapDescription::INVALID_GAP) {
                 //look at "short" overlaps only if long overlaps couldn't be found
                 DEBUG("Not looking at short overlaps");
                 break;
@@ -318,31 +316,30 @@ private:
     DECL_LOGGER("HammingGapAnalyzer");
 };
 
-//if I was in LA
+//LA stands for Local Alignment
+//TODO if current setting will work -- get rid of flank_*_coefficient params
 class LAGapAnalyzer: public GapAnalyzer {
 public:
     LAGapAnalyzer(const Graph& g, size_t min_la_length,
             double flank_multiplication_coefficient,
-            double flank_addition_coefficient) :
+            int flank_addition_coefficient) :
             GapAnalyzer(g),
             min_la_length_(min_la_length),
-            flank_addition_coefficient_(flank_addition_coefficient),
-            flank_multiplication_coefficient_(flank_multiplication_coefficient) {
-        DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_); 
+            flank_multiplication_coefficient_(flank_multiplication_coefficient),
+            flank_addition_coefficient_(flank_addition_coefficient) {
+        DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_);
         DEBUG("flank_addition_coefficient  - " << flank_addition_coefficient_ );
     }
 
     GapDescription FixGap(const GapDescription &gap) const override {
-        VERIFY_MSG(gap.right_trim() == 0 && gap.left_trim() == 0, "Not supported yet");
+        VERIFY_MSG(gap.no_trim(), "Trims not supported yet");
         //estimated_gap is in k-mers
-        //FIXME think about proper meaning for this method
-        int initial_gap = gap.estimated_dist() + int(g_.k());
 
-        DEBUG("Overlap doesn't exceed " << size_t(abs(initial_gap) * ESTIMATED_GAP_MULTIPLIER) + GAP_ADDITIONAL_COEFFICIENT);
-        SWOverlapAnalyzer overlap_analyzer(size_t(abs(initial_gap) * ESTIMATED_GAP_MULTIPLIER) + GAP_ADDITIONAL_COEFFICIENT);
+        size_t estimated_overlap = gap.estimated_dist() < 0 ? size_t(abs(gap.estimated_dist())) : 0;
+        SWOverlapAnalyzer overlap_analyzer(size_t(math::round(double(estimated_overlap) * ESTIMATED_GAP_MULTIPLIER))
+                                           + GAP_ADDITIONAL_COEFFICIENT);
 
         auto overlap_info = overlap_analyzer.AnalyzeOverlap(g_, gap.left(), gap.right());
-
         DEBUG(overlap_info);
 
         if (overlap_info.size() < min_la_length_) {
@@ -354,8 +351,8 @@ public:
                 g_.length(gap.left()) + g_.k() - overlap_info.r1.end_pos);
         DEBUG("Max flank length - " << max_flank_length);
 
-        if ((double) max_flank_length * flank_multiplication_coefficient_
-                + flank_addition_coefficient_ > (double) overlap_info.size()) {
+        if (int(math::round(double(max_flank_length) * flank_multiplication_coefficient_))
+                + flank_addition_coefficient_ > int(overlap_info.size())) {
             DEBUG("Too long flanks for such alignment");
             return GapDescription();
         }
@@ -366,11 +363,11 @@ public:
         }
 
         if (overlap_info.r1.end_pos <= g_.k() || overlap_info.r2.start_pos >= g_.length(gap.right())) {
-            DEBUG("Check that at least k+1 nucleotides will be left");
+            DEBUG("Less than k+1 nucleotides were left of one of the edges");
             return GapDescription();
         }
 
-        //FIXME Think if it is ok to have a non-symmetric overlap gap description
+        //TODO Is it ok to have a non-symmetric overlap gap description
         return GapDescription(gap.left(), gap.right(),
                               -int(overlap_info.r1.size()),
                               g_.length(gap.left()) + g_.k() - overlap_info.r1.end_pos,
@@ -380,11 +377,12 @@ public:
 private:
     DECL_LOGGER("LAGapAnalyzer");
     const size_t min_la_length_;
-    const double flank_addition_coefficient_;
     const double flank_multiplication_coefficient_;
-    constexpr static double IDENTITY_RATIO = 0.9;
-    constexpr static double ESTIMATED_GAP_MULTIPLIER = 2.0;
-    const size_t GAP_ADDITIONAL_COEFFICIENT = 30;
+    const int flank_addition_coefficient_;
+
+    static constexpr double IDENTITY_RATIO = 0.9;
+    static constexpr double ESTIMATED_GAP_MULTIPLIER = 2.0;
+    static constexpr size_t GAP_ADDITIONAL_COEFFICIENT = 30;
 };
 
 
@@ -399,8 +397,7 @@ public:
             GapAnalyzer(g),
             joiners_(joiners),
             may_overlap_threshold_(may_overlap_threshold),
-            //FIXME CHANGE IN THE CALLS!
-            must_overlap_threshold_(must_overlap_threshold - int(g_.k())),
+            must_overlap_threshold_(must_overlap_threshold),
             artificial_gap_(artificial_gap)
     {  }
 
@@ -1289,9 +1286,8 @@ protected:
         }
 
         Gap gap;
-        //FIXME is it ok that we either force joining or ignore its possibility
+        //TODO is it ok that we either force joining or ignore its possibility
         if (check_sink_) {
-            //FIXME what is d_? and should it be converted into nucleotide distance?
             gap = ConvertGapDescription(gap_analyzer_->FixGap(GapDescription(path.Back(), e,
                                                                              candidates.back().d_ -
                                                                              int(g_.k()))));
@@ -1305,7 +1301,6 @@ protected:
 
             DEBUG("Gap after fixing " << gap.gap << " (was " << candidates.back().d_ << ")");
 
-            //FIXME check what should be passed to GapSatisfies
             if (must_overlap && !CheckGap(gap)) {
                 DEBUG("Overlap is not large enough")
                 return false;

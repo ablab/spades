@@ -134,19 +134,16 @@ struct pe_config {
 
             bool use_la_gap_joiner;
             double min_gap_score;
-            double max_must_overlap;
             double max_can_overlap;
             int short_overlap;
             size_t artificial_gap;
-
-            bool use_old_score;
 
             double var_coeff;
             double basic_overlap_coeff;
 
             size_t min_overlap_length;
-            double flank_addition_coefficient;
             double flank_multiplication_coefficient;
+            int flank_addition_coefficient;
 
             boost::optional<int> min_overlap_for_rna_scaffolding;
         } scaffolder_options;

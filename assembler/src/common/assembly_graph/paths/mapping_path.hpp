@@ -320,6 +320,10 @@ public:
         return right_trim_;
     }
 
+    bool no_trim() const {
+        return left_trim_ == 0 && right_trim() == 0;
+    }
+
     int estimated_dist() const {
         return estimated_dist_;
     }
@@ -375,36 +379,17 @@ public:
         return s.str();
     }
 
-    //FIXME use tuple-based versions
-    bool operator<(const GapDescription &b) const {
-        return left_ < b.left_ ||
-               (left_ == b.left_ && right_ < b.right_) ||
-               (left_ == b.left_ && right_ == b.right_ &&
-               -int(left_trim_) < -int(b.left_trim_));
+    bool operator<(const GapDescription &rhs) const {
+        return AsTuple() < rhs.AsTuple();
     }
 
     bool operator!=(const GapDescription rhs) const {
-        if (filling_seq_) {
-            if (!rhs.filling_seq_ || *filling_seq_ != *(rhs.filling_seq_)) 
-                return true;
-        }
-        return left_ != rhs.left_
-               || right_ != rhs.right_
-               || left_trim_ != rhs.left_trim_
-               || right_trim_ != rhs.right_trim_;
+        return AsTuple() != rhs.AsTuple();
     }
 
     bool operator==(const GapDescription rhs) const {
         return !(*this != rhs);
     }
-
-    //bool operator<(const GapDescription &rhs) const {
-    //    return AsTuple() < rhs.AsTuple();
-    //}
-
-    //bool operator!=(const GapDescription rhs) const {
-    //    return AsTuple() != rhs.AsTuple();
-    //}
 
 };
 

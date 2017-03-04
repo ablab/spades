@@ -89,6 +89,7 @@ public:
               /*mismatch_penalty*/3,
                        /*gap_opening_penalty*/4,
                        /*gap_extending_penalty*/3) {
+        DEBUG("Considered max overlap " << flank_length);
     }
 
 
