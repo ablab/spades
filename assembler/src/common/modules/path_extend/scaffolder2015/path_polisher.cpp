@@ -67,8 +67,7 @@ BidirectionalPath PathPolisher::Polish(const BidirectionalPath &init_path) {
             }
         }
         count++;
-        //FIXME why 5?
-        if (count > 5) {
+        if (count > max_polish_attempts) {
             INFO("Unexpected cycle while polishing path, stopping polishing " );
             path->Print();
             break;

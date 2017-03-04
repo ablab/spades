@@ -77,7 +77,7 @@ private:
 private:
     void InfoAboutGaps(const PathContainer & result);
     BidirectionalPath Polish(const BidirectionalPath& path);
-
+    static const size_t max_polish_attempts = 5;
 public:
     PathPolisher(const conj_graph_pack& gp, const config::dataset& dataset_info, const ScaffoldingUniqueEdgeStorage& storage, size_t max_resolvable_len);
 
