@@ -299,7 +299,7 @@ class GraphSimplifier {
         while (iteration < primary_launch_cnt || enable_flag) {
             enable_flag = false;
 
-            INFO("Iteration " << iteration);
+            INFO("Iteration " << iteration + 1);
 
             enable_flag |= FinalRemoveErroneousEdges();
             cnt_callback_.Report();
