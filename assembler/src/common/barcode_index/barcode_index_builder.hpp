@@ -280,7 +280,6 @@ namespace barcode_index {
                     result.push_back(stream);
                 }
             }
-            INFO(result.size() << " streams.");
             return result;
         }
 
