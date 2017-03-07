@@ -1,6 +1,7 @@
 #pragma once
 
 #include "barcode_index.hpp"
+#include "common/pipeline/library.hpp"
 
 namespace barcode_index {
     template<class barcode_entry_t>
@@ -10,6 +11,7 @@ namespace barcode_index {
         shared_ptr <BarcodeIndex<barcode_entry_t>> mapper_;
         size_t tail_threshold_;
         BarcodeEncoder barcode_codes_;
+        typedef vector<io::SequencingLibrary<debruijn_graph::config::DataSetData>> lib_vector_t;
 
     public:
         BarcodeIndexBuilder(const Graph &g, size_t tail_threshold) :
@@ -138,13 +140,12 @@ namespace barcode_index {
             }
         }
 
-        void FillMapFrom10XReads(const string& read_cloud_dataset_path) {
+        void FillMapFrom10XReads(const lib_vector_t& libs_10x) {
             INFO("Starting barcode index construction from 10X reads")
-            INFO(read_cloud_dataset_path);
             auto mapper = std::make_shared < alignment::BWAReadMapper < Graph > >
                           (g_);
 
-            auto streams = GetStreamsFromFile(read_cloud_dataset_path);
+            auto streams = GetStreamsFromLibs(libs_10x);
             //Process every read from 10X dataset
             io::SingleRead read;
             size_t counter = 0;
@@ -165,21 +166,10 @@ namespace barcode_index {
             //INFO("Number of barcodes: " + std::to_string(barcode_codes_.GetSize()))
         }
 
-        void FillMap(BarcodeLibraryType lib_type, const string& read_cloud_dataset_path,
-                     const Index &index, const KmerSubs &kmer_mapper, size_t nthreads) {
+        void FillMap(const lib_vector_t& libs_10x) {
             InitialFillMap();
-            switch (lib_type) {
-                case TSLR :
-                    //FillMapUsingKmerMultisetParallel(index, kmer_mapper, nthreads);
-                    FillMapFromDemultiplexedDataset(index, kmer_mapper);
-                    break;
-                case TenX :
-                    FillMapFrom10XReads(read_cloud_dataset_path);
-                    break;
-                default:
-                    WARN("Unknown library type, failed to fill barcode map.");
-                    return;
-            }
+            FillMapFrom10XReads(libs_10x);
+            return;
         }
 
         virtual void InitialFillMap() = 0;
@@ -281,15 +271,16 @@ namespace barcode_index {
             return lib_vec;
         }
 
-        vector <io::SingleStreamPtr> GetStreamsFromFile(const string &filename) {
-            std::ifstream fin;
-            fin.open(filename);
-            string read_filename;
+        vector <io::SingleStreamPtr> GetStreamsFromLibs(const lib_vector_t& libs_10x) { ;
             vector <io::SingleStreamPtr> result;
-            while (getline(fin, read_filename)) {
-                auto stream = io::EasyStream(read_filename, false);
-                result.push_back(stream);
+            for (const auto& lib: libs_10x) {
+                VERIFY(lib.type() == io::LibraryType::Clouds10x);
+                for (auto it = lib.reads_begin(); it != lib.reads_end(); ++it) {
+                    auto stream = io::EasyStream(*it, false);
+                    result.push_back(stream);
+                }
             }
+            INFO(result.size() << " streams.");
             return result;
         }
 

@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
 
     srand(42);
     srandom(42);
+    INFO("haahaa");
 
     try {
         using namespace debruijn_graph;
@@ -65,6 +66,8 @@ int main(int argc, char **argv) {
         for (int i = 1; i < argc; ++i) {
            cfg_fns.push_back(argv[i]);
         }
+
+        INFO(cfg_fns[0]);
 
         load_config(cfg_fns);
 
@@ -86,7 +89,7 @@ int main(int argc, char **argv) {
                      ", git revision "
                      SPADES_GIT_SHA1);
         INFO("Maximum k-mer length: " << runtime_k::MAX_K);
-        INFO("Assembling dataset (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);
+        INFO("Assembling dataseoeuoeut (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);
 
         spades::assemble_genome();
 
