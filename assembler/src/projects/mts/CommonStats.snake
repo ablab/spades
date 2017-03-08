@@ -13,18 +13,19 @@ except KeyError:
 REFS = dict(gather_refs(config.get("REFS", [])))
 ALL_REFS = ",".join(path for path in REFS.values())
 
-frags_dict = dict()
+class Input:
+    def __init__(self, stage, fasta_template, fragments):
+        self.fragments = fragments
+        self.input = expand(fasta_template, frag=fragments)
+
 input_dict = dict()
 
-def register_input(stage, fasta_template, fragments):
+def register_input(*args):
     global input_dict
-    frags_dict[stage] = fragments
-    input_dict[stage] = expand(fasta_template, frag=fragments)
+    input_dict[stage] = Input(*args)
 
 def stats_input(wildcards):
-    print("Getting input of", wildcards.stage)
-    print("Registered:", input_dict)
-    return input_dict[wildcards.stage]
+    return input_dict[wildcards.stage].input
 
 def all_input(wildcards):
     return input_dict.values()
@@ -54,7 +55,7 @@ rule filter_ref_alignments:
 
 def alignment_input(wildcards):
     template = "stats/q_{}/runs_per_reference/{{ref}}/{{fragments}}.info".format(wildcards.stage)
-    return expand(template, ref = wildcards.ref, fragments=frags_dict[wildcards.stage])
+    return expand(template, ref = wildcards.ref, fragments=input_dict[wildcards.stage].fragments)
 
 rule combine_alignment_info:
     input:   alignment_input
@@ -70,3 +71,44 @@ rule combine_refs_info:
         shell("rm -f {output}")
         for ref in REFS.keys():
             shell("awk '{{print $0 \"\t{ref}\"}}' stats/q_{wildcards.stage}/g_{ref}.info >> {output}")
+
+#---- Summary table ------------------------------------------------------------
+rule gather_stats:
+    input:   "stats/summary/gf_{stage}.tsv",
+             "stats/q_{stage}/total.info"
+    output:  "stats/summary/full_{stage}.tsv"
+    params:  "stats/q_{stage}"
+    message: "Gathered bins stats"
+    shell:   "{SCRIPTS}/gather_stats.py {params} > {output}"
+
+#---- CheckM stats -------------------------------------------------------------
+rule checkm:
+    input:   stats_input
+    output:  qa="stats/checkm_{stage}/qa.tsv", tree_qa="stats/checkm_{stage}/tree_qa.tsv"
+    params:  out="stats/checkm_{stage}",
+    threads: THREADS
+    run:
+        dir = os.path.dirname(input_dir[wildcards.stage])
+        _, ext = os.path.splitext(input_dir[wildcards.stage])
+        ext = ext[1:]
+        shell("set +u; source activate concoct_env; set -u \n"
+             "checkm tree -x {ext} {dir} {out} \n"
+             "checkm tree_qa -o 2 --tab_table -f {output.tree_qa} {params.out}\n"
+             "checkm lineage_set {params.out} {params.out}/lineage.ms\n"
+             "checkm analyze -x fasta {params.out}/lineage.ms reassembly {params.out}\n"
+             "checkm qa -o 2 --tab_table -f {output.qa} {params.out}/lineage.ms {params.out}")
+
+rule parse_checkm:
+    input:   qa=rules.checkm.output.qa, tree_qa=rules.checkm.output.tree_qa
+    output:  "stats/summary/checkm_{stage}.tsv"
+    #shell:   "{SCRIPTS}/parse_checkm.py {input.qa} {input.tree_qa} > {output}"
+    run:
+        table = pandas.read_table(input.qa, dtype="str")
+        tree_table = pandas.read_table(input.tree_qa, dtype="str", na_filter=False)
+        all_table = pandas.merge(table, tree_table, on="Bin Id")
+        res_table = all_table[["Bin Id", "Taxonomy (contained)", "Taxonomy (sister lineage)", "Genome size (Mbp)", "Completeness", "Contamination"]].copy()
+        def extract_taxon(taxonomy):
+            return str(taxonomy).split(";")[-1]
+        for column in ["Taxonomy (contained)", "Taxonomy (sister lineage)"]:
+            res_table[column] = res_table[column].apply(extract_taxon)
+        res_table.to_csv(output[0], index=False, sep="\t")
