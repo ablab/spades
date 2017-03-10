@@ -113,6 +113,10 @@ void load(pe_config::ParamSetT::GenomeConsistencyCheckerParamsT& gcc,
     using config_common::load;
     load(gcc.max_gap      , pt, "max_gap"      , complete);
     load(gcc.relative_max_gap      , pt, "relative_max_gap"      , complete);
+    load(gcc.use_main_storage      , pt, "use_main_storage"      , complete);
+    load(gcc.unresolvable_jump      , pt, "unresolvable_jump"      , complete);
+    load(gcc.unique_length      , pt, "unique_length"      , complete);
+
 }
 
 void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool complete) {

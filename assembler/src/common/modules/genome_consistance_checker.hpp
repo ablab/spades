@@ -28,6 +28,7 @@ struct PathScore{
     size_t mapped_length;
     PathScore(size_t m, size_t w, size_t ml): misassemblies(m), wrong_gap_size(w), mapped_length(ml) {}
 };
+
 class GenomeConsistenceChecker {
 
 private:
@@ -38,9 +39,11 @@ private:
     size_t absolute_max_gap_;
     double relative_max_gap_;
     set<EdgeId> excluded_unique_;
-    EdgeId circular_edge_;
+    set<EdgeId> circular_edges_;
+    size_t unresolvable_len_;
+    const std::string fixed_prefix_ = "boxwood";
 //map from unique edges to their order in genome spelling;
-    mutable map<EdgeId, size_t> genome_spelled_;
+    mutable map<EdgeId, pair<std::string, size_t>> genome_spelled_;
     bool consequent(const Range &mr1, const Range &mr2) const;
     bool consequent(const MappingRange &mr1, const MappingRange &mr2) const ;
 
@@ -55,19 +58,25 @@ DECL_LOGGER("GenomeConsistenceChecker");
 
 
 public:
-    GenomeConsistenceChecker(const conj_graph_pack &gp, const ScaffoldingUniqueEdgeStorage &storage, size_t max_gap, double relative_max_gap /*= 0.2*/) : gp_(gp),
-            genome_(gp.genome.GetSequence()), storage_(storage),
-        absolute_max_gap_(max_gap), relative_max_gap_(relative_max_gap), excluded_unique_(), circular_edge_() {
+    GenomeConsistenceChecker(const conj_graph_pack &gp, const ScaffoldingUniqueEdgeStorage &storage, size_t max_gap,
+                             double relative_max_gap /*= 0.2*/, size_t unresolvable_len) : gp_(gp),
+           genome_(gp.genome.GetSequence()), storage_(storage),absolute_max_gap_(max_gap),
+           relative_max_gap_(relative_max_gap), excluded_unique_(), circular_edges_(), unresolvable_len_(unresolvable_len) {
         if (!gp.edge_pos.IsAttached()) {
             gp.edge_pos.Attach();
         }
         gp.edge_pos.clear();
-        visualization::position_filler::FillPos(gp_, gp_.genome.GetSequence(), "0");
-        visualization::position_filler::FillPos(gp_, !gp_.genome.GetSequence(), "1");
+        auto chromosomes = gp_.genome.GetChromosomes();
+        for (auto chr: chromosomes) {
+            auto seq = Sequence(chr.sequence);
+            visualization::position_filler::FillPos(gp_, seq, "0" + chr.name);
+            visualization::position_filler::FillPos(gp_, !seq, "1" + chr.name);
+        }
         RefillPos();
     }
     PathScore CountMisassemblies(const BidirectionalPath &path) const;
-    vector<pair<EdgeId, MappingRange> > ConstructEdgeOrder() const;
+    map<std::string, vector<pair<EdgeId, MappingRange>>> ConstructEdgeOrder() const;
+    vector<pair<EdgeId, MappingRange> > ConstructEdgeOrder(const std::string chr_name) const;
 
 //spells genome in language of long unique edges from storage;
     void SpellGenome();

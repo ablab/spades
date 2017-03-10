@@ -558,16 +558,20 @@ void load_reads(dataset &ds,
 void load_reference_genome(dataset &ds,
                            std::string input_dir) {
     if (ds.reference_genome_filename == "") {
-        ds.reference_genome = "";
+        ds.reference_genome = vector<std::string>(0);
         return;
     }
     if (ds.reference_genome_filename[0] != '/')
         ds.reference_genome_filename = input_dir + ds.reference_genome_filename;
     fs::CheckFileExistenceFATAL(ds.reference_genome_filename);
     io::FileReadStream genome_stream(ds.reference_genome_filename);
-    io::SingleRead genome;
-    genome_stream >> genome;
-    ds.reference_genome = genome.GetSequenceString();
+    while (!genome_stream.eof()) {
+        io::SingleRead genome;
+        genome_stream >> genome;
+        ds.reference_genome.push_back(genome.GetSequenceString());
+    }
+
+
 }
 
 void load(debruijn_config::simplification& simp,

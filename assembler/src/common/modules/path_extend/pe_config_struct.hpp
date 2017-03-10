@@ -188,6 +188,9 @@ struct pe_config {
         struct GenomeConsistencyCheckerParamsT {
             size_t max_gap;
             double relative_max_gap;
+            bool use_main_storage;
+            size_t unresolvable_jump;
+            size_t unique_length;
         } genome_consistency_checker;
 
         struct LoopTraversalParamsT {

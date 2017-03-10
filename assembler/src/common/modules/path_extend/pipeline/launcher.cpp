@@ -88,18 +88,21 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
     INFO("Constructing reference labels");
     map<debruijn_graph::EdgeId, string> edge_labels;
     size_t count = 0;
-    for (const auto &edge_coord_pair: genome_checker.ConstructEdgeOrder()) {
-        if (edge_labels.find(edge_coord_pair.first) == edge_labels.end()) {
-            edge_labels[edge_coord_pair.first] = "";
+    for (const auto &chr_info: genome_checker.ConstructEdgeOrder()) {
+        for (const auto &edge_coord_pair: chr_info.second) {
+            if (edge_labels.find(edge_coord_pair.first) == edge_labels.end()) {
+                edge_labels[edge_coord_pair.first] = chr_info.first;
+            }
+            edge_labels[edge_coord_pair.first] += "order: " + ToString(count) +
+                                                  "\n mapped range: " +
+                                                  ToString(edge_coord_pair.second.mapped_range.start_pos) + " : "
+                                                  + ToString(edge_coord_pair.second.mapped_range.end_pos) +
+                                                  "\n init range: " +
+                                                  ToString(edge_coord_pair.second.initial_range.start_pos) + " : "
+                                                  + ToString(edge_coord_pair.second.initial_range.end_pos) + "\n";
+            ++count;
         }
-        edge_labels[edge_coord_pair.first] += "order: " + std::to_string(count) +
-            "\n mapped range: " + std::to_string(edge_coord_pair.second.mapped_range.start_pos) + " : "
-            + std::to_string(edge_coord_pair.second.mapped_range.end_pos) +
-            "\n init range: " + std::to_string(edge_coord_pair.second.initial_range.start_pos) + " : "
-            + std::to_string(edge_coord_pair.second.initial_range.end_pos) + "\n";
-        ++count;
     }
-
     auto vertex_colorer = make_shared<ScaffoldVertexSetColorer>(main_edge_set);
     auto edge_colorer = make_shared<ScaffoldEdgeColorer>();
     graph_colorer::CompositeGraphColorer<ScaffoldGraph> colorer(vertex_colorer, edge_colorer);
@@ -125,7 +128,8 @@ void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
     if (params_.pset.scaffold_graph_params.construct) {
         debruijn_graph::GenomeConsistenceChecker genome_checker(gp_, unique_data_.main_unique_storage_,
                                                                 params_.pset.genome_consistency_checker.max_gap,
-                                                                params_.pset.genome_consistency_checker.relative_max_gap);
+                                                                params_.pset.genome_consistency_checker.relative_max_gap,
+                                                                unique_data_.main_unique_storage_.GetMinLength());
         scaffold_graph = ConstructScaffoldGraph(unique_data_.main_unique_storage_);
         if (params_.pset.scaffold_graph_params.output) {
             PrintScaffoldGraph(*scaffold_graph,
@@ -139,10 +143,19 @@ void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
 void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &paths) const {
     if (gp_.genome.size() == 0)
         return;
-
-    debruijn_graph::GenomeConsistenceChecker genome_checker(gp_, unique_data_.main_unique_storage_,
+    bool use_main_storage = params_.pset.genome_consistency_checker.use_main_storage;
+    size_t unresolvable_gap = unique_data_.main_unique_storage_.GetMinLength();
+    ScaffoldingUniqueEdgeStorage tmp_storage;
+    if (!use_main_storage) {
+        unresolvable_gap = params_.pset.genome_consistency_checker.unresolvable_jump;
+        ScaffoldingUniqueEdgeAnalyzer tmp_analyzer(gp_, params_.pset.genome_consistency_checker.unique_length, unique_data_.unique_variation_);
+        tmp_analyzer.FillUniqueEdgeStorage(tmp_storage);
+    }
+    debruijn_graph::GenomeConsistenceChecker genome_checker(gp_,
+                                                            use_main_storage ? unique_data_.main_unique_storage_:tmp_storage,
                                                             params_.pset.genome_consistency_checker.max_gap,
-                                                            params_.pset.genome_consistency_checker.relative_max_gap);
+                                                            params_.pset.genome_consistency_checker.relative_max_gap,
+                                                            unresolvable_gap);
 
     size_t total_mis = 0, gap_mis = 0;
     genome_checker.SpellGenome();

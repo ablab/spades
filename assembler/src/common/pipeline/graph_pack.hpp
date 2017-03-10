@@ -59,7 +59,7 @@ struct graph_pack: private boost::noncopyable {
     path_extend::PathContainer contig_paths;
 
     graph_pack(size_t k, const std::string &workdir, size_t lib_count,
-                        const std::string &genome = "",
+                        const std::vector<std::string> &genome = std::vector<std::string>(0),
                         size_t flanking_range = 50,
                         size_t max_mapping_gap = 0,
                         size_t max_gap_diff = 0,

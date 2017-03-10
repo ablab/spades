@@ -185,7 +185,7 @@ struct dataset {
     std::string reference_genome_filename;
     std::string reads_filename;
 
-    std::string reference_genome;
+    std::vector<std::string> reference_genome;
 
     dataset(): max_read_length(0), average_coverage(0.0) {
     }

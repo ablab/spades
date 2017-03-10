@@ -110,6 +110,9 @@ params {
     genome_consistency_checker {
         max_gap 1000
         relative_max_gap 0.2
+        use_main_storage true ; if set to true, next two parameters are set to min_unique_length
+        unresolvable_jump 1000 ; length of unresolvable repeats
+        unique_length 500  ; spelling genome in the alphabet of edges longer than this          
     }
 
     uniqueness_analyser {
