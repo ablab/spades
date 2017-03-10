@@ -27,7 +27,7 @@ namespace barcode_index {
 
         virtual size_t GetUnionSize(const EdgeId &edge1, const EdgeId &edge2) const = 0;
 
-        virtual bool has_barcode(const EdgeId &edge, int64_t barcode) const = 0;
+        virtual bool HasBarcode(const EdgeId &edge, int64_t barcode) const = 0;
     };
 
     template<class barcode_entry_t>
@@ -115,7 +115,7 @@ namespace barcode_index {
             return (it_tail->second).GetUnionSize(it_head->second);
         }
 
-        bool has_barcode(const EdgeId &edge, int64_t barcode) const override {
+        bool HasBarcode(const EdgeId &edge, int64_t barcode) const override {
             return mapper_->GetEntryHeads(edge).has_barcode(barcode);
         }
 
@@ -334,7 +334,7 @@ namespace barcode_index {
         }
 
         const FrameBarcodeInfo& GetInfo(const EdgeId& edge, int64_t barcode) const {
-            VERIFY(has_barcode(edge, barcode));
+            VERIFY(HasBarcode(edge, barcode));
             const FrameEdgeEntry& entry = GetEntry(edge);
             return entry.get_barcode(barcode)->second;
         }

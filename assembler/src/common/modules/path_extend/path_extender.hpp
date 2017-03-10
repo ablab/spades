@@ -925,7 +925,7 @@ private:
             }
         }
     }
-
+    DECL_LOGGER("CompositeExtender")
 };
 
 //All Path-Extenders inherit this one
@@ -1030,6 +1030,8 @@ public:
             result = ResolveShortLoop(path);
         } else {
             DEBUG("Making step");
+            DEBUG("Last edge in the path: " << path.Back().int_id());
+            DEBUG("Conjugate: " << g_.conjugate(path.Back()).int_id());
             result = MakeSimpleGrowStep(path, paths_storage);
             DEBUG("Made step");
             if (DetectCycle(path)) {

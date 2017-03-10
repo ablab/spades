@@ -20,7 +20,7 @@ ts_res
 	;Filtering configs
 
 		;edges with less than trimming_threshold barcodes will be deleted
-		trimming_threshold 10
+		trimming_threshold 1
 
 		;clouds further than gap_threshold from the end\beginning of the edge will be deleted
 		gap_threshold 100000000

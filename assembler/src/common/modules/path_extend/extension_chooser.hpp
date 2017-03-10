@@ -1340,8 +1340,10 @@ public:
         EdgeContainer candidates = GetInitialCandidates(last_unique.first, path);
 
         DEBUG("At edge " << path.Back().int_id());
-        DEBUG("Decisive edge " << last_unique.first.int_id());
-        DEBUG("Decisive edge barcodes: " << barcode_extractor_ptr_->GetTailBarcodeNumber(last_unique.first));
+        DEBUG("Conjugate: " << g_.conjugate(path.Back()).int_id());
+        DEBUG("Last unique: " << last_unique.first.int_id());
+        DEBUG("Length: " << g_.length(last_unique.first));
+        DEBUG("Barcodes: " << barcode_extractor_ptr_->GetTailBarcodeNumber(last_unique.first));
 
         DEBUG("Searching for next unique edge.")
         result = FindNextUniqueEdge(last_unique.first, candidates);
@@ -1370,6 +1372,10 @@ public:
         EdgeContainer best_candidates = GetBestCandidates(initial_candidates, last_unique);
         DEBUG("Finished searching")
         DEBUG("Best candidates: " << best_candidates.size());
+        for (const auto& candidate: best_candidates) {
+            DEBUG(candidate.e_.int_id());
+            DEBUG("Conj: " << g_.conjugate(candidate.e_).int_id());
+        }
 
         //Try to find topologically closest edge to resolve loops
 //        if (best_candidates.size() > 1) {
@@ -1582,7 +1588,6 @@ public:
 
 private:
     EdgeContainer GetBestCandidates(const EdgeContainer& edges, const EdgeId& decisive_edge) const {
-        DEBUG("Last unique: " << decisive_edge.int_id());
         DEBUG("Input candidates: " << edges.size());
         stats_.overall_++;
         if (edges.size() == 0) {
@@ -1743,7 +1748,7 @@ private:
             //todo optimize after custom filter implementation
             size_t left_count = barcode_extractor_ptr_->GetInfo(left, barcode).GetCount();
             size_t right_count = barcode_extractor_ptr_->GetInfo(right, barcode).GetCount();
-            if (!(barcode_extractor_ptr_->has_barcode(middle, barcode))
+            if (!(barcode_extractor_ptr_->HasBarcode(middle, barcode))
                 and left_count >= abundancy_threshold
                 and right_count >= abundancy_threshold) {
                 ++side_barcodes_after_filter;
