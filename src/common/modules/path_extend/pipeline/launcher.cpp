@@ -40,7 +40,7 @@ PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueE
             std::shared_ptr<PairedInfoLibrary> paired_lib;
             if (lib.is_mate_pair())
                 paired_lib = MakeNewLib(graph_, lib, gp_.get<UnclusteredPairedInfoIndicesT<Graph>>()[lib_index]);
-            else if (lib.type() == io::LibraryType::PairedEnd)
+            else if (lib.is_paired())
                 paired_lib = MakeNewLib(graph_, lib, gp_.get<PairedInfoIndicesT<Graph>>("clustered_indices")[lib_index]);
             else {
                 INFO("Unusable for scaffold graph paired lib #" << lib_index);
@@ -402,7 +402,8 @@ void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
         }
         INFO("Removing fake unique with paired-end libs");
         for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
-            if (dataset_info_.reads[lib_index].type() == io::LibraryType::PairedEnd) {
+            auto lib = cfg::get().ds.reads[lib_index];
+            if (lib.is_paired() and not lib.is_mate_pair()) {
                 unique_edge_analyzer_pb.ClearLongEdgesWithPairedLib(lib_index, unique_data_.unique_pb_storage_);
             }
         }
@@ -453,7 +454,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             barcode_index::FrameBarcodeIndexInfoExtractor extractor(gp_.barcode_mapper_ptr, gp_.g);
             INFO("Average barcode coverage before filtering: " << extractor.AverageBarcodeCoverage());
             gp_.barcode_mapper_ptr->Filter(abundancy_threshold, gap_threshold);
-            INFO("Finished filtering")
+            INFO("Finished filtering");
             INFO("Average barcode coverage after filtering: " << extractor.AverageBarcodeCoverage());
             INFO("Creating read cloud extenders");
 //            ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp_, 5000, 0.5);
