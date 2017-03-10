@@ -21,13 +21,13 @@ namespace barcode_index {
 
         virtual double AverageBarcodeCoverage() const = 0;
 
-        virtual vector<int64_t> GetIntersection(const EdgeId &edge1, const EdgeId &edge2) const = 0;
+        virtual vector<BarcodeId> GetIntersection(const EdgeId &edge1, const EdgeId &edge2) const = 0;
 
         virtual size_t GetIntersectionSize(const EdgeId &edge1, const EdgeId &edge2) const = 0;
 
         virtual size_t GetUnionSize(const EdgeId &edge1, const EdgeId &edge2) const = 0;
 
-        virtual bool HasBarcode(const EdgeId &edge, int64_t barcode) const = 0;
+        virtual bool HasBarcode(const EdgeId &edge, const BarcodeId& barcode) const = 0;
     };
 
     template<class barcode_entry_t>
@@ -95,8 +95,8 @@ namespace barcode_index {
             return static_cast <double> (barcodes_overall) / static_cast <double> (long_edges);
         }
 
-        vector<int64_t> GetIntersection(const EdgeId &edge1, const EdgeId &edge2) const override {
-            vector<int64_t> lazy_intersection;
+        vector<BarcodeId> GetIntersection(const EdgeId &edge1, const EdgeId &edge2) const override {
+            vector<BarcodeId> lazy_intersection;
             for (auto it = intersection_iterator_begin(edge1, edge2); it != intersection_iterator_end(edge1, edge2); ++it) {
                 lazy_intersection.push_back((*it).key_);
             }
@@ -115,7 +115,7 @@ namespace barcode_index {
             return (it_tail->second).GetUnionSize(it_head->second);
         }
 
-        bool HasBarcode(const EdgeId &edge, int64_t barcode) const override {
+        bool HasBarcode(const EdgeId &edge, const BarcodeId& barcode) const override {
             return mapper_->GetEntryHeads(edge).has_barcode(barcode);
         }
 
@@ -279,7 +279,7 @@ namespace barcode_index {
                                      size_t gap_threshold) const {
             size_t current = 0;
             for (auto it = intersection_iterator_begin(first, second); it != intersection_iterator_end(first, second); ++it) {
-                auto barcode = (*it).key_;
+                BarcodeId barcode = (*it).key_;
                 //todo make lazy and address to info directly
                 bool is_in_the_end_of_first = g_.length(first) <= gap_threshold or
                                               GetMaxPos(first, barcode) > g_.length(first) - gap_threshold;
@@ -319,34 +319,34 @@ namespace barcode_index {
         }
 
         //barcode should be present on the edge
-        size_t GetMinPos(const EdgeId &edge, int64_t barcode) const {
+        size_t GetMinPos(const EdgeId &edge, const BarcodeId& barcode) const {
             const FrameEdgeEntry& entry = GetEntry(edge);
             const FrameBarcodeInfo& info = GetInfo(edge, barcode);
             size_t frame_size = entry.GetFrameSize();
             return info.GetLeftMost() * frame_size;
         }
 
-        size_t GetMaxPos(const EdgeId &edge, int64_t barcode) const {
+        size_t GetMaxPos(const EdgeId &edge, const BarcodeId& barcode) const {
             const FrameEdgeEntry& entry = GetEntry(edge);
             const FrameBarcodeInfo& info = GetInfo(edge, barcode);
             size_t frame_size = entry.GetFrameSize();
             return info.GetRightMost() * frame_size;
         }
 
-        const FrameBarcodeInfo& GetInfo(const EdgeId& edge, int64_t barcode) const {
+        const FrameBarcodeInfo& GetInfo(const EdgeId& edge, const BarcodeId& barcode) const {
             VERIFY(HasBarcode(edge, barcode));
             const FrameEdgeEntry& entry = GetEntry(edge);
             return entry.get_barcode(barcode)->second;
         }
 
-        size_t GetBarcodeLength(const EdgeId& edge, int64_t barcode) const {
+        size_t GetBarcodeLength(const EdgeId& edge, const BarcodeId& barcode) const {
             size_t max_pos = GetMaxPos(edge, barcode);
             size_t min_pos = GetMinPos(edge, barcode);
             VERIFY(max_pos >= min_pos);
             return max_pos - min_pos;
         }
 
-        double GetBarcodeCoverage(const EdgeId& edge, int64_t barcode) const {
+        double GetBarcodeCoverage(const EdgeId& edge, const BarcodeId& barcode) const {
             const FrameEdgeEntry& entry = GetEntry(edge);
             const FrameBarcodeInfo& info = GetInfo(edge, barcode);
             size_t frame_size = entry.GetFrameSize();
@@ -356,7 +356,7 @@ namespace barcode_index {
             return static_cast<double>(read_count) / static_cast<double>(length);
         }
 
-        double GetBarcodeCoverageWithoutGaps(const EdgeId& edge, int64_t barcode) const {
+        double GetBarcodeCoverageWithoutGaps(const EdgeId& edge, const BarcodeId& barcode) const {
             const FrameEdgeEntry& entry = GetEntry(edge);
             const FrameBarcodeInfo& info = GetInfo(edge, barcode);
             size_t frame_size = entry.GetFrameSize();
@@ -367,7 +367,7 @@ namespace barcode_index {
             return static_cast<double>(read_count) / static_cast<double>(covered_length);
         }
 
-        vector <size_t> GetGapDistribution(const EdgeId& edge, int64_t barcode) const {
+        vector <size_t> GetGapDistribution(const EdgeId& edge, const BarcodeId& barcode) const {
             const FrameEdgeEntry& entry = GetEntry(edge);
             const FrameBarcodeInfo& info = GetInfo(edge, barcode);
             size_t number_of_frames = info.GetSize();
@@ -388,9 +388,5 @@ namespace barcode_index {
             return result;
         }
 
-//        size_t GetMedianGap(const EdgeId& edge, int64_t barcode) {
-//
-//
-//        }
     };
 }

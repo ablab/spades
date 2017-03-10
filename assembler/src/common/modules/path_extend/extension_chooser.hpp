@@ -1714,7 +1714,7 @@ private:
         size_t edge_voters = 0;
         size_t conj_voters = 0;
         auto common_barcodes = barcode_extractor_ptr_->GetIntersection(decisive_edge, edge);
-        for (const auto barcode: common_barcodes) {
+        for (const auto& barcode: common_barcodes) {
             size_t gap = barcode_extractor_ptr_->GetMinPos(edge, barcode);
             size_t conj_gap = barcode_extractor_ptr_->GetMinPos(conjugate, barcode);
             if (gap < gap_threshold_left and conj_gap > gap_threshold_right) {

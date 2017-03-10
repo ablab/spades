@@ -38,7 +38,10 @@ namespace barcode_index {
 
             //Process every barcode from truspades dataset
             for (size_t i = 0; i < lib_vec.size(); ++i) {
-                std::string barcode = lib_vec[i].barcode_;
+                std::string barcode_string = lib_vec[i].barcode_;
+                uint64_t barcode_int = barcode_codes_.GetCode(barcode_string);
+                BarcodeId barcode(barcode_int);
+
                 std::shared_ptr <io::ReadStream<io::PairedRead>> paired_stream =
                         make_shared<io::SeparatePairedReadStream>(lib_vec[i].left_, lib_vec[i].right_, 1);
                 io::PairedRead read;
@@ -74,7 +77,9 @@ namespace barcode_index {
 #pragma omp parallel for num_threads(n_threads)
                 for (size_t j = 0; j < bucket_vec[i].size(); ++j) {
                     const auto &lib = bucket_vec[i][j];
-                    std::string barcode = lib.barcode_;
+                    std::string barcode_string = lib.barcode_;
+                    uint64_t barcode_int = barcode_codes_.GetCode(barcode_string);
+                    BarcodeId barcode(barcode_int);
 
                     std::shared_ptr <io::ReadStream<io::PairedRead>> paired_stream =
                             make_shared<io::SeparatePairedReadStream>(lib.left_, lib.right_, 1);
@@ -109,7 +114,10 @@ namespace barcode_index {
 
             //Process every barcode from truspades dataset
             for (size_t i = 0; i < lib_vec.size(); ++i) {
-                std::string barcode = lib_vec[i].barcode_;
+                std::string barcode_string = lib_vec[i].barcode_;
+                uint64_t barcode_int = barcode_codes_.GetCode(barcode_string);
+                BarcodeId barcode(barcode_int);
+
                 Index barcode_subindex(g_, cfg::get().tmp_dir);
                 InnerIndex subindex = InnerIndex(g_, cfg::get().tmp_dir);
 
@@ -152,9 +160,13 @@ namespace barcode_index {
             for (auto stream: streams) {
                 while (!stream->eof()) {
                     *stream >> read;
-                    auto barcode = GetTenXBarcodeFromRead(read);
-                    if (barcode != "") {
-                        barcode_codes_.AddBarcode(barcode);
+                    string barcode_string = GetTenXBarcodeFromRead(read);
+
+                    if (barcode_string != "") {
+                        barcode_codes_.AddBarcode(barcode_string);
+                        uint64_t barcode_int = barcode_codes_.GetCode(barcode_string);
+                        BarcodeId barcode(barcode_int);
+
                         const auto &path = mapper->MapRead(read);
                         InsertMappingPath(barcode, path);
                     }
@@ -225,8 +237,8 @@ namespace barcode_index {
 
 
         void InsertBarcode(const BarcodeId &barcode, const EdgeId &edge, size_t count, const Range &range) {
-            int64_t code = barcode_codes_.GetCode(barcode);
-            mapper_->edge_to_entry_.at(edge).InsertBarcode(code, count, range);
+
+            mapper_->edge_to_entry_.at(edge).InsertBarcode(barcode, count, range);
         }
 
         bool IsAtEdgeTail(const EdgeId &edge, const omnigraph::Range &range) {

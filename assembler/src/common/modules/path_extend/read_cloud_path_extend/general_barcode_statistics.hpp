@@ -2,6 +2,8 @@
 
 #include "common/barcode_index/barcode_info_extractor.hpp"
 
+using namespace barcode_index;
+
 class double_comparator {
 public:
     bool operator() (const double& lhs, const double& rhs) {
@@ -111,7 +113,7 @@ private:
                 auto barcode_begin = extractor_->barcode_iterator_begin(edge);
                 auto barcode_end = extractor_->barcode_iterator_end(edge);
                 for (auto entry_it = barcode_begin; entry_it != barcode_end; ++entry_it) {
-                    int64_t barcode = entry_it->first;
+                    BarcodeId barcode = entry_it->first;
 //                    INFO("Min pos: " << extractor_->GetMinPos(edge, barcode));
 //                    INFO("Max pos: " << extractor_->GetMaxPos(edge, barcode));
                     if (extractor_->GetMinPos(edge, barcode) < side_threshold or
