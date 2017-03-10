@@ -169,14 +169,11 @@ namespace barcode_index {
         //Number of entries in the barcode map. Currently equals to the number of edges.
         virtual size_t size() const = 0;
 
-        //Average barcode coverage of long edges
-        virtual double AverageBarcodeCoverage () const = 0;
-
         //Number of barcodes on the beginning/end of the edge
         virtual size_t GetHeadBarcodeNumber(const EdgeId& edge) const = 0;
         virtual size_t GetTailBarcodeNumber(const EdgeId& edge) const = 0;
 
-        //fixme this method should be moved to DataScanner
+        //fixme this should be moved to DataScanner
         virtual void ReadEntry(ifstream& fin, const EdgeId& edge) = 0;
 
         virtual void WriteEntry(ofstream& fin, const EdgeId& edge) = 0;
@@ -246,23 +243,6 @@ namespace barcode_index {
 
         bool IsEmpty() override {
             return size() == 0;
-        }
-
-        double AverageBarcodeCoverage() const override {
-            edge_it_helper helper(g_);
-            int64_t barcodes_overall = 0;
-            int64_t long_edges = 0;
-            size_t len_threshold = cfg::get().ts_res.edge_length_threshold;
-            for (auto it = helper.begin(); it != helper.end(); ++it) {
-                if (g_.length(*it) > len_threshold) {
-                    long_edges++;
-                    barcodes_overall += GetTailBarcodeNumber(*it);
-                }
-            }
-            DEBUG("tails: " + std::to_string(barcodes_overall));
-            DEBUG("Long edges" + long_edges);
-            INFO("Barcodes: " << barcodes_overall);
-            return static_cast <double> (barcodes_overall) / static_cast <double> (long_edges);
         }
 
         //Delete low abundant barcodes from every edge
@@ -426,10 +406,13 @@ namespace barcode_index {
 
 
 
-    template <class barcode_info_t>
+    template <class entry_info_t>
     class EdgeEntry {
+    public:
+        typedef std::map <BarcodeId, entry_info_t> barcode_distribution_t;
+        typedef entry_info_t barcode_info_t;
+
     protected:
-        typedef std::map <BarcodeId, barcode_info_t> barcode_distribution_t;
         EdgeId edge_;
         barcode_distribution_t barcode_distribution_;
 
@@ -441,7 +424,6 @@ namespace barcode_index {
 
         virtual ~EdgeEntry() {}
 
-
         const barcode_distribution_t& GetDistribution() const {
             return barcode_distribution_;
         }
@@ -450,17 +432,7 @@ namespace barcode_index {
             return edge_;
         }
 
-        //fixme move to info extractor
-        vector <BarcodeId> GetIntersection(const EdgeEntry& other) const {
-            vector <BarcodeId> result;
-            for (auto it = barcode_distribution_.begin(); it != barcode_distribution_.end(); ++it) {
-                if (other.GetDistribution().find(it->first) != other.GetDistribution().end()) {
-                    result.push_back(it->first);
-                }
-            }
-            return result;
-        }
-
+        //fixme move to extractor
         size_t GetIntersectionSize(const EdgeEntry &other) const {
             size_t result = 0;
             for (auto it = barcode_distribution_.begin(); it != barcode_distribution_.end(); ++it) {
@@ -475,10 +447,6 @@ namespace barcode_index {
             auto distr_this = barcode_distribution_;
             auto distr_other = other.GetDistribution();
             return Size() + other.Size() - GetIntersectionSize(other);
-        }
-
-        void InsertSet (const barcode_distribution_t& set) {
-            barcode_distribution_ = set;
         }
 
         size_t Size() const {
@@ -530,7 +498,7 @@ namespace barcode_index {
             fin >> distr_size;
             for (size_t i = 0; i < distr_size; ++i) {
                 uint64_t int_id;
-                barcode_info_t info;
+                entry_info_t info;
                 fin >> int_id >> info;
                 BarcodeId bid(int_id);
                 InsertInfo(bid, info);

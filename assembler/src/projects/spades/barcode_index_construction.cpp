@@ -1,5 +1,6 @@
 #include "barcode_index_construction.hpp"
 #include <vector>
+#include <common/barcode_index/barcode_info_extractor.hpp>
 
 namespace debruijn_graph {
     //todo remove from here!
@@ -19,7 +20,6 @@ namespace debruijn_graph {
         for (int i = 0; i < 2; ++i) {
             auto mapper = mapper_builders[i].GetMapper();
             INFO(std::to_string(i) + ":");
-            INFO(mapper -> AverageBarcodeCoverage());
         }
     }
 
@@ -55,8 +55,8 @@ namespace debruijn_graph {
 //        size_t nthreads = cfg::get().max_threads;
         mapper_builder.FillMap(libs_10x);
         graph_pack.barcode_mapper_ptr = mapper_builder.GetMapper();
-        INFO("Barcode map construction finished.");
-        INFO("Average barcode coverage: " +
-             std::to_string(graph_pack.barcode_mapper_ptr->AverageBarcodeCoverage()));
+        INFO("Barcode index construction finished.");
+        FrameBarcodeIndexInfoExtractor extractor(graph_pack.barcode_mapper_ptr, graph_pack.g);
+        INFO("Average barcode coverage: " + std::to_string(extractor.AverageBarcodeCoverage()));
     }
 }

@@ -237,7 +237,6 @@ namespace barcode_index {
 
 
         void InsertBarcode(const BarcodeId &barcode, const EdgeId &edge, size_t count, const Range &range) {
-
             mapper_->edge_to_entry_.at(edge).InsertBarcode(barcode, count, range);
         }
 

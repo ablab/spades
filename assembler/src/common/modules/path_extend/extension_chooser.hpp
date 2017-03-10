@@ -1343,7 +1343,7 @@ public:
         DEBUG("Conjugate: " << g_.conjugate(path.Back()).int_id());
         DEBUG("Last unique: " << last_unique.first.int_id());
         DEBUG("Length: " << g_.length(last_unique.first));
-        DEBUG("Barcodes: " << barcode_extractor_ptr_->GetTailBarcodeNumber(last_unique.first));
+        DEBUG("Barcodes: " << barcode_extractor_ptr_->GetNumberOfBarcodes(last_unique.first));
 
         DEBUG("Searching for next unique edge.")
         result = FindNextUniqueEdge(last_unique.first, candidates);
@@ -1597,7 +1597,7 @@ private:
             stats_.single_candidate_++;
             return edges;
         }
-        size_t barcodes = barcode_extractor_ptr_->GetTailBarcodeNumber(decisive_edge);
+        size_t barcodes = barcode_extractor_ptr_->GetNumberOfBarcodes(decisive_edge);
         if (barcodes == 0) {
             stats_.no_barcodes_on_last_edge_++;
             return edges;
@@ -1608,9 +1608,10 @@ private:
         DEBUG("Initial candidates: ");
         for(const auto& candidate: initial_candidates) {
             DEBUG(candidate.e_.int_id());
-            DEBUG("Shared barcodes: " << barcode_extractor_ptr_->GetNumberOfSharedBarcodes(decisive_edge, candidate.e_,
-                                                                                           initial_abundancy_threshold_,
-                                                                                           tail_threshold_));
+            DEBUG("Shared barcodes: " << barcode_extractor_ptr_->CountSharedBarcodesWithFilter(decisive_edge,
+                                                                                               candidate.e_,
+                                                                                               initial_abundancy_threshold_,
+                                                                                               tail_threshold_));
         }
         if (initial_candidates.size() == 0 ) {
             stats_.no_candidates_after_initial_filter_++;
@@ -1671,10 +1672,10 @@ private:
                      [this, &decisive_edge, shared_threshold,
                              abundancy_threshold, tail_threshold](const EdgeWithDistance& edge) {
                          return edge.e_ != decisive_edge and
-                                 this->barcode_extractor_ptr_->AreEnoughSharedBarcodes(decisive_edge, edge.e_,
-                                                                                       shared_threshold,
-                                                                                       abundancy_threshold,
-                                                                                       tail_threshold);
+                                 this->barcode_extractor_ptr_->AreEnoughSharedBarcodesWithFilter(decisive_edge, edge.e_,
+                                                                                                 shared_threshold,
+                                                                                                 abundancy_threshold,
+                                                                                                 tail_threshold);
                      });
         return result;
     }
@@ -1713,7 +1714,7 @@ private:
         EdgeContainer result;
         size_t edge_voters = 0;
         size_t conj_voters = 0;
-        auto common_barcodes = barcode_extractor_ptr_->GetIntersection(decisive_edge, edge);
+        auto common_barcodes = barcode_extractor_ptr_->GetSharedBarcodes(decisive_edge, edge);
         for (const auto& barcode: common_barcodes) {
             size_t gap = barcode_extractor_ptr_->GetMinPos(edge, barcode);
             size_t conj_gap = barcode_extractor_ptr_->GetMinPos(conjugate, barcode);
@@ -1739,7 +1740,7 @@ private:
     bool IsBetween(const EdgeId& middle, const EdgeId& left, const EdgeId& right,
                    size_t len_threshold, size_t abundancy_threshold) const {
         DEBUG("Checking against: " << right.int_id())
-        auto side_barcodes = barcode_extractor_ptr_->GetIntersection(left, right);
+        auto side_barcodes = barcode_extractor_ptr_->GetSharedBarcodes(left, right);
         size_t middle_length = g_.length(middle);
         size_t current_length = 0;
         DEBUG("Side barcodes before filter: " << side_barcodes.size());

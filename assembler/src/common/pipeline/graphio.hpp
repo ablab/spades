@@ -915,8 +915,6 @@ void ScanBarcodeIndex(const string &path, const std::unordered_map<size_t, EdgeI
     for (size_t i = 0; i < map_size; ++i) {
         DeserializeBarcodeMapEntry(index_file, edge_map, barcodeMapper);
     }
-    //todo remove this?
-    INFO("Average barcode coverage " << barcodeMapper->AverageBarcodeCoverage())
 }
 
 template<class graph_pack>
