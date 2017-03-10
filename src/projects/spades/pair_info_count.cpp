@@ -207,7 +207,8 @@ void PairInfoCountBase::execute(graph_pack::GraphPack &gp, const char *,
                 unsigned filter_threshold = cfg::get().de.raw_filter_threshold;
 
                 // Only filter paired-end libraries
-                if (filter_threshold && lib.type() == io::LibraryType::PairedEnd) {
+                if (filter_threshold && (lib.type() == io::LibraryType::PairedEnd or
+                                         lib.type() == io::LibraryType::Clouds10x)) {
                     INFO("Filtering data for library #" << i);
                     filter = paired_info::FillEdgePairFilter(graph, *ChooseProperMapper(gp, lib), lib, edgepairs,
                                                              map_lib_func, num_readers);
