@@ -112,6 +112,9 @@ namespace barcode_index {
         }
     };
 
+    /**
+     * uint64_t wrapper
+     */
     class BarcodeId {
         uint64_t int_id_;
         
@@ -152,8 +155,9 @@ namespace barcode_index {
         return stream;
     }
 
-    /*This structure contains barcode multiset extracted from reads aligned to the
-     * beginning of edges in the assembly graph. */
+    /**
+     This class provides partial interface to BarcodeIndex.
+    */
     class AbstractBarcodeIndex {
     public:
     protected:
@@ -187,6 +191,13 @@ namespace barcode_index {
 
     };
 
+    /**
+     * BarcodeIndex stores information provided by barcoded reads alignment to graph (read clouds).
+     * For every edge we store read clouds which are contained on the edge along with additional info.
+     * Read cloud is represented by it's barcode
+     * The edge contains the cloud if there is a read barcoded by cloud's barcode which is aligned to the edge.
+     * Info example: FrameBarcodeInfo
+     */
     template <class barcode_entry_t>
     class BarcodeIndex : public AbstractBarcodeIndex {
     friend class BarcodeIndexBuilder<barcode_entry_t>;
@@ -327,13 +338,37 @@ namespace barcode_index {
         return os;
     }
 
+    /**
+     * FrameBarcodeInfo approximates the read cloud defined by the barcode and the edge.
+     * The edge is split into several bins.
+     * Bin is barcoded iff there is at least one barcoded read which aligns to the bin.
+     *
+     * We store the set of barcoded bins and the number of reads aligned to the edge.
+     */
     class FrameBarcodeInfo {
+        /**
+         * Number of reads aligned to the edge
+         */
         size_t count_;
+        /**
+         * `is_on_frame[i]` is true iff ith bin is barcoded
+         */
         boost::dynamic_bitset<> is_on_frame_;
+        /**
+         * Leftmost barcoded bin
+         */
         size_t leftmost_index_;
+        /**
+         * Rightmost barcoded bin
+         */
         size_t rightmost_index_;
     public:
 
+        /**
+         *
+         * @param frames Number of bin in the edge
+         * @return empty info
+         */
         FrameBarcodeInfo(size_t frames = 0): count_(0), is_on_frame_(), leftmost_index_(frames), rightmost_index_(0) {
             is_on_frame_.resize(frames, false);
         }
@@ -354,26 +389,51 @@ namespace barcode_index {
             count_ += other.count_;
         }
 
+        /**
+         * @return number of barcoded reads aligned to the edge
+         */
         size_t GetCount() const {
             return count_;
         }
 
+        /**
+         * @return Leftmost barcoded bin
+         */
         size_t GetLeftMost() const {
             return leftmost_index_;
         }
 
+        /**
+        * @return Rightmost barcoded bin
+        */
         size_t GetRightMost() const {
             return rightmost_index_;
         }
 
+        const boost::dynamic_bitset<>& GetBitSet() const {
+            return is_on_frame_;
+        }
+
+        /**
+         * @param frame index of bin
+         * @return true if bin is barcoded, false otherwise
+         */
         bool GetFrame(size_t frame) const {
             return is_on_frame_[frame];
         }
 
+        /**
+         *
+         * @return number of frames
+         */
         size_t GetSize() const {
             return is_on_frame_.size();
         }
 
+        /**
+         *
+         * @return number of barcoded bins
+         */
         size_t GetCovered() const {
             return is_on_frame_.count();
         }

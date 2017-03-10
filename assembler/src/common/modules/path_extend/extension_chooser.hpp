@@ -1747,8 +1747,8 @@ private:
         size_t side_barcodes_after_filter = 0;
         for (const auto& barcode: side_barcodes) {
             //todo optimize after custom filter implementation
-            size_t left_count = barcode_extractor_ptr_->GetInfo(left, barcode).GetCount();
-            size_t right_count = barcode_extractor_ptr_->GetInfo(right, barcode).GetCount();
+            size_t left_count = barcode_extractor_ptr_->GetCount(left, barcode);
+            size_t right_count = barcode_extractor_ptr_->GetCount(right, barcode);
             if (!(barcode_extractor_ptr_->HasBarcode(middle, barcode))
                 and left_count >= abundancy_threshold
                 and right_count >= abundancy_threshold) {
