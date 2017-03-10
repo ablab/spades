@@ -460,7 +460,8 @@ void GapClosing::run(graph_pack::GraphPack &gp, const char *) {
 
     size_t cnt_pe = 0;
     for (const auto& lib : cfg::get().ds.reads.libraries()) {
-        if (lib.type() != io::LibraryType::PairedEnd)
+        if (lib.type() != io::LibraryType::PairedEnd or
+            lib.type() != io::LibraryType::Clouds10x)
             continue;
 
         cnt_pe += 1;
@@ -480,7 +481,8 @@ void GapClosing::run(graph_pack::GraphPack &gp, const char *) {
 
     auto& dataset = cfg::get_writable().ds;
     for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
-        if (dataset.reads[i].type() != io::LibraryType::PairedEnd)
+        if (dataset.reads[i].type() != io::LibraryType::PairedEnd or
+            dataset.reads[i].type() != io::LibraryType::Clouds10x)
             continue;
 
         SequenceMapperNotifier notifier;
