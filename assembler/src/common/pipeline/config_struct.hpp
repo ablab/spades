@@ -279,7 +279,12 @@ struct debruijn_config {
             size_t plausibility_length;
         };
 
-        struct isolated_edges_remover {
+        struct low_covered_edge_remover {
+            bool enabled;
+            double coverage_threshold;
+        };
+
+        struct isolated_edge_remover {
             bool enabled;
             size_t max_length;
             double max_coverage;
@@ -320,7 +325,8 @@ struct debruijn_config {
 
             bool early_it_only;
             double activation_cov;
-            isolated_edges_remover ier;
+            isolated_edge_remover ier;
+            low_covered_edge_remover lcer;
             std::string tip_condition;
             std::string ec_condition;
             double disconnect_flank_cov;
@@ -343,7 +349,7 @@ struct debruijn_config {
         tr_based_ec_remover trec;
         interstrand_ec_remover isec;
         max_flow_ec_remover mfec;
-        isolated_edges_remover ier;
+        isolated_edge_remover ier;
         complex_bulge_remover cbr;
         hidden_ec_remover her;
 

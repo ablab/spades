@@ -197,6 +197,13 @@ simp
             max_coverage                0
             max_length_any_cov          0 ; will be taken max with read_length 
         }
+        
+        ; low covered edges initial remover
+        lcer
+        {
+            enabled                     false
+            coverage_threshold          0.0
+        }
 
         tip_condition   "{ tc_lb 3.5, cb auto }"
         ec_condition    "{ ec_lb 10, cb 2.0 }"

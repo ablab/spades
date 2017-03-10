@@ -292,13 +292,20 @@ void load(debruijn_config::simplification::relative_coverage_comp_remover& rcc,
   load(rcc.max_coverage_coeff, pt, "max_coverage_coeff", complete);
 }
 
-void load(debruijn_config::simplification::isolated_edges_remover& ier,
+void load(debruijn_config::simplification::isolated_edge_remover& ier,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
   load(ier.enabled, pt, "enabled", complete);
   load(ier.max_length, pt, "max_length", complete);
   load(ier.max_coverage, pt, "max_coverage", complete);
   load(ier.max_length_any_cov, pt, "max_length_any_cov", complete);
+}
+
+void load(debruijn_config::simplification::low_covered_edge_remover& ier,
+          boost::property_tree::ptree const& pt, bool complete) {
+  using config_common::load;
+  load(ier.enabled, pt, "enabled", complete);
+  load(ier.coverage_threshold, pt, "coverage_threshold", complete);
 }
 
 void load(debruijn_config::simplification::init_cleaning& init_clean,
@@ -308,6 +315,7 @@ void load(debruijn_config::simplification::init_cleaning& init_clean,
   load(init_clean.early_it_only, pt, "early_it_only", complete);
   load(init_clean.activation_cov, pt, "activation_cov", complete);
   load(init_clean.ier, pt, "ier", complete);
+  load(init_clean.lcer, pt, "lcer", complete);
   load(init_clean.tip_condition, pt, "tip_condition", complete);
   load(init_clean.ec_condition, pt, "ec_condition", complete);
   load(init_clean.disconnect_flank_cov, pt, "disconnect_flank_cov", complete);

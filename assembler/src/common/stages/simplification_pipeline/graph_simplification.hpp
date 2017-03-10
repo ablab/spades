@@ -488,7 +488,7 @@ AlgoPtr<Graph> ComplexTipClipperInstance(Graph &g,
 
 template<class Graph>
 AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
-                                           config::debruijn_config::simplification::isolated_edges_remover ier,
+                                           config::debruijn_config::simplification::isolated_edge_remover ier,
                                            const SimplifInfoContainer &info,
                                            EdgeRemovalHandlerF<Graph> removal_handler = 0) {
     if (!ier.enabled) {
@@ -654,6 +654,22 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph &g,
     return make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g, condition,
                                                                  info.chunk_cnt(),
                                                                  removal_handler);
+}
+
+template<class Graph>
+AlgoPtr<Graph> LowCoverageEdgeRemoverInstance(Graph &g,
+                                              const config::debruijn_config::simplification::low_covered_edge_remover &lcer_config,
+                                              const SimplifInfoContainer &info) {
+    if (!lcer_config.enabled) {
+        return nullptr;
+    }
+    return make_shared<ParallelEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>>>
+                        (g,
+                        CoverageUpperBound<Graph>(g, lcer_config.coverage_threshold),
+                        info.chunk_cnt(),
+                        (EdgeRemovalHandlerF<Graph>)nullptr,
+                        /*canonical_only*/true,
+                        CoverageComparator<Graph>(g));
 }
 
 template<class Graph>

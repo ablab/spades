@@ -113,7 +113,7 @@ class GraphSimplifier {
                               removal_handler_),
                     "Initial ec remover",
                     algos);
-
+            
             PushValid(
                     LowFlankDisconnectorInstance(g_, gp_.flanking_cov,
                                                  simplif_cfg_.init_clean.disconnect_flank_cov, info_container_,
@@ -285,6 +285,14 @@ class GraphSimplifier {
         if (info_container_.mode() == config::pipeline_type::rna) {
             PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
         }
+
+        PushValid(
+                LowCoverageEdgeRemoverInstance(g_,
+                                               simplif_cfg_.init_clean.lcer,
+                                               info_container_),
+                "Removing edges with low coverage",
+                algos);
+
 
         size_t iteration = 0;
         bool enable_flag = true;
