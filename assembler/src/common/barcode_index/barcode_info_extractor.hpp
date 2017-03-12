@@ -367,12 +367,13 @@ namespace barcode_index {
         }
 
         /**
-         * @param first First edge
-         * @param second Second edge
+         * @param first first edge
+         * @param second second edge
          * @param shared_threshold minimal number of barcodes shared by first and second
          * @param count_threshold edge contains barcode iff there are at least count_threshold reads aligned to the edge
-         * @param gap_threshold we keep only reads which are aligned at the last gap_threshold nucleotides of the first edge.
-         * @return True if there are at least shared_threshold barcodes which pass requirements determined by count_threshold and gap_threshold.
+         * @param gap_threshold clouds located at the beginning of the first or at the end of the second edge are discarded.
+         *      Cloud is located in the beginning of the edge if it is not aligned to the last gap_threshold nucleotides of the edge.
+         * @return true if there are at least shared_threshold barcodes which pass requirements determined by count_threshold and gap_threshold.
          */
         bool AreEnoughSharedBarcodesWithFilter (const EdgeId &first,
                                                 const EdgeId &second,
@@ -384,7 +385,7 @@ namespace barcode_index {
                 BarcodeId barcode = (*it).key_;
                 //todo make lazy and address to info directly
                 bool is_in_the_end_of_first = g_.length(first) <= gap_threshold or
-                                              GetMaxPos(first, barcode) > g_.length(first) - gap_threshold;
+                                                     GetMaxPos(first, barcode) + gap_threshold > g_.length(first);
                 bool is_in_the_beginning_of_second = g_.length(second) <= gap_threshold or
                                                      GetMinPos(second, barcode) < gap_threshold;
                 bool enough_count = (*it).info_first_.GetCount() >= count_threshold and
@@ -399,6 +400,14 @@ namespace barcode_index {
             return false;
         }
 
+        /**
+         * @param first first edge
+         * @param second second edge
+         * @param count_threshold edge contains barcode iff there are at least count_threshold reads aligned to the edge
+         * @param gap_threshold clouds located at the beginning of the first or at the end of the second edge are discarded.
+         *      Cloud is located in the beginning of the edge if it is not aligned to the last gap_threshold nucleotides of the edge.
+         * @return number of barcodes which pass requirements determined by count_threshold and gap_threshold.
+         */
         size_t CountSharedBarcodesWithFilter (const EdgeId &first,
                                              const EdgeId &second,
                                              size_t count_threshold,
@@ -406,9 +415,8 @@ namespace barcode_index {
             size_t current = 0;
             for (auto it = intersection_iterator_begin(first, second); it != intersection_iterator_end(first, second); ++it) {
                 auto barcode = (*it).key_;
-                //todo make lazy and address to info directly
                 bool is_in_the_end_of_first = g_.length(first) <= gap_threshold or
-                                              GetMaxPos(first, barcode) > g_.length(first) - gap_threshold;
+                                                     GetMaxPos(first, barcode) + gap_threshold > g_.length(first);
                 bool is_in_the_beginning_of_second = g_.length(second) <= gap_threshold or
                                                      GetMinPos(second, barcode) < gap_threshold;
                 bool enough_count = (*it).info_first_.GetCount() >= count_threshold and
@@ -418,6 +426,34 @@ namespace barcode_index {
                 }
             }
             return current;
+        }
+
+        /**
+         * @param first first edge
+         * @param second second edge
+         * @param count_threshold edge contains barcode iff there are at least count_threshold reads aligned to the edge
+         * @param gap_threshold clouds located at the beginning of the first or at the end of the second edge are discarded.
+         *      Cloud is located in the beginning of the edge if it is not aligned to the last gap_threshold nucleotides of the edge.
+         * @return list of barcodes which pass requirements determined by count_threshold and gap_threshold.
+         */
+        vector<BarcodeId> GetSharedBarcodesWithFilter (const EdgeId &first,
+                                              const EdgeId &second,
+                                              size_t count_threshold,
+                                              size_t gap_threshold) const {
+            vector<BarcodeId> result;
+            for (auto it = intersection_iterator_begin(first, second); it != intersection_iterator_end(first, second); ++it) {
+                auto barcode = (*it).key_;
+                bool is_in_the_end_of_first = g_.length(first) <= gap_threshold or
+                                                     GetMaxPos(first, barcode) + gap_threshold > g_.length(first);
+                bool is_in_the_beginning_of_second = g_.length(second) <= gap_threshold or
+                                                     GetMinPos(second, barcode) < gap_threshold;
+                bool enough_count = (*it).info_first_.GetCount() >= count_threshold and
+                                    (*it).info_second_.GetCount() >= count_threshold;
+                if (is_in_the_end_of_first and is_in_the_beginning_of_second and enough_count) {
+                    result.push_back(barcode);
+                }
+            }
+            return result;
         }
 
         /**
