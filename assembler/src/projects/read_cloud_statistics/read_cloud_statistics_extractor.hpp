@@ -1,7 +1,5 @@
 #pragma once
 
-#pragma once
-
 #include "modules/path_extend/read_cloud_path_extend/extension_chooser_checker.hpp"
 #include "utils/logger/logger.hpp"
 #include "common/pipeline/stage.hpp"
@@ -13,7 +11,7 @@ namespace debruijn_graph {
     public:
 
         ReadCloudStatisticsStage() :
-                AssemblyStage("Read cloud statistics counter", "read_cloud_statistics_counter") {
+                AssemblyStage("Read cloud statistics extractor", "read_cloud_statistics_extractor") {
         }
 
         void save(const conj_graph_pack &, const std::string &, const char *) const { }
