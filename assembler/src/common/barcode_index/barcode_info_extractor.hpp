@@ -324,7 +324,7 @@ namespace barcode_index {
          * @param barcode
          * @return number of barcoded reads aligned to the edge
          */
-        size_t GetCount(const EdgeId& edge, const BarcodeId& barcode) const {
+        size_t GetNumberOfReads(const EdgeId &edge, const BarcodeId &barcode) const {
             return GetInfo(edge, barcode).GetCount();
         }
 
@@ -360,10 +360,19 @@ namespace barcode_index {
 
         /**
          * @param edge
-         * @return number of bins in the edge
+         * @return length of the bin
          */
-        size_t GetSize(const EdgeId& edge) {
+        size_t GetBinLength(const EdgeId &edge) {
             return GetEntry(edge).GetFrameSize();
+        }
+
+        /**
+         *
+         * @param edge
+         * @return number of bins on the edge
+         */
+        size_t GetNumberOfBins(const EdgeId& edge) {
+            return GetEntry(edge).GetNumberOfFrames();
         }
 
         /**
