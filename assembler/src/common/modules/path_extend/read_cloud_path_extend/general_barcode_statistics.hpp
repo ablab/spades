@@ -69,15 +69,35 @@ public:
     }
 };
 
+class ReliableBarcodeStorage {
+    std::map<size_t, double> gap_to_covered_fraction_;
+public:
+    ReliableBarcodeStorage() : gap_to_covered_fraction_() {}
+
+    void InsertCoveredFraction(const size_t gap, const double covered_fraction) {
+        gap_to_covered_fraction_.insert({gap, covered_fraction});
+    }
+
+    void Serialize(const string& path) const {
+        ofstream fout(path);
+        for (const auto& entry: gap_to_covered_fraction_) {
+            fout << entry.first << " " << entry.second << endl;
+        }
+    }
+};
+
 struct BarcodeStats {
     CoverageToGapDistribution coverage_to_gap_;
     OverallGapDistribution overall_gap_distribution;
+    ReliableBarcodeStorage reliable_storage_;
 
+    BarcodeStats() : coverage_to_gap_(), overall_gap_distribution(), reliable_storage_() {}
 
 
     void PrintStats(const string& stats_path) const {
         coverage_to_gap_.Serialize(stats_path + "/length_based_gap_distribution");
         overall_gap_distribution.Serialize(stats_path + "/overall_gap_distribution");
+        reliable_storage_.Serialize(stats_path + "/reliable_barcodes");
     }
 };
 
@@ -91,37 +111,40 @@ public:
             extractor_(extractor), gp_(gp), stats_() {}
 
     void FillStats() {
-        const size_t edge_length_threshold = 100000;
-        const size_t side_threshold = 10000;
-        FillGapDistributionOnLongEdges(edge_length_threshold, side_threshold);
+        const size_t length_lower_bound = 50000;
+//        const size_t length_upper_bound = 200000;
+//        const size_t side_threshold = 5000;
+//        FillGapDistributionOnLongEdges(length_lower_bound, length_upper_bound, side_threshold);
+        TestReliableBarcodes(length_lower_bound);
     }
     void PrintStats(const string& stats_path) const {
         stats_.PrintStats(stats_path);
     }
 
 private:
-    void FillGapDistributionOnLongEdges(const size_t edge_length_threshold, const size_t side_threshold) {
+    void FillGapDistributionOnLongEdges(const size_t length_lower_bound,
+                                        const size_t length_upper_bound,
+                                        const size_t side_threshold) {
         INFO("Filling gap distribution")
-        barcode_index::edge_it_helper helper(gp_.g);
+        omnigraph::IterationHelper<Graph, EdgeId> helper(gp_.g);
         size_t edges = 0;
         for (auto it = helper.begin(); it != helper.end(); ++it) {
             const EdgeId& edge = *it;
-            if (gp_.g.length(edge) > edge_length_threshold and gp_.g.length(edge) < 200000) {
+            if (gp_.g.length(edge) > length_lower_bound and gp_.g.length(edge) < length_upper_bound) {
                 ++edges;
-//                INFO("Id: " << edge.int_id());
-//                INFO("Length: " << gp_.g.length(edge));
+                DEBUG("Id: " << edge.int_id());
+                DEBUG("Length: " << gp_.g.length(edge));
                 auto barcode_begin = extractor_->barcode_iterator_begin(edge);
                 auto barcode_end = extractor_->barcode_iterator_end(edge);
                 for (auto entry_it = barcode_begin; entry_it != barcode_end; ++entry_it) {
                     BarcodeId barcode = entry_it->first;
-//                    INFO("Min pos: " << extractor_->GetMinPos(edge, barcode));
-//                    INFO("Max pos: " << extractor_->GetMaxPos(edge, barcode));
-                    if (extractor_->GetMinPos(edge, barcode) < side_threshold or
-                            extractor_->GetMaxPos(edge, barcode) + side_threshold > gp_.g.length(edge)) continue;
+                    DEBUG("Min pos: " << extractor_->GetMinPos(edge, barcode));
+                    DEBUG("Max pos: " << extractor_->GetMaxPos(edge, barcode));
+                    if (IsBarcodeOnTheEnd(edge, barcode, side_threshold)) continue;
 //                    double barcode_coverage = extractor_->GetBarcodeCoverage(edge, barcode);
                     double barcode_coverage = extractor_->GetBarcodeCoverageWithoutGaps(edge, barcode);
-//                    INFO(barcode);
-//                    INFO(barcode_coverage);
+                    DEBUG(barcode);
+                    DEBUG(barcode_coverage);
                     vector <size_t> gap_distribution = extractor_->GetGapDistribution(edge, barcode);
                     stats_.coverage_to_gap_.AddGapDistribution(barcode_coverage, gap_distribution);
                     for (const auto gap: gap_distribution) {
@@ -134,5 +157,151 @@ private:
 
 
         INFO(edges << " edges.");
+        INFO("Gap distribution filled");
     }
+
+    void TestReliableBarcodes(const size_t length_lower_bound) {
+        INFO("Filling reliable barcode distribution");
+        const size_t gap_step = 500;
+        const size_t start_gap = 2000;
+        const size_t final_gap = 15000;
+        for (size_t gap = start_gap; gap < final_gap; gap+=gap_step) {
+            TestReliableBarcodesForGap(length_lower_bound, gap);
+        }
+        INFO("Reliable barcode distribution filled");
+    }
+
+    void TestReliableBarcodesForGap(const size_t length_lower_bound,
+                                    const size_t gap_threshold) {
+        INFO("Gap: " << gap_threshold);
+        VERIFY(gap_threshold * 3 < length_lower_bound);
+        omnigraph::IterationHelper<Graph, EdgeId> helper(gp_.g);
+        size_t edges = 0;
+        size_t overall_length = 0;
+        size_t overall_covered_length = 0;
+        for (auto it = helper.begin(); it != helper.end(); ++it) {
+            const EdgeId& edge = *it;
+            if (gp_.g.length(edge) > length_lower_bound) {
+                boost::dynamic_bitset<> barcoded_bins_storage;
+                size_t number_of_bins = extractor_->GetNumberOfBins(edge);
+                barcoded_bins_storage.resize(number_of_bins);
+                size_t bin_length = extractor_->GetBinLength(edge);
+                ++edges;
+//                DEBUG("Id: " << edge.int_id());
+//                DEBUG("Length: " << gp_.g.length(edge));
+                auto barcode_begin = extractor_->barcode_iterator_begin(edge);
+                auto barcode_end = extractor_->barcode_iterator_end(edge);
+                for (auto entry_it = barcode_begin; entry_it != barcode_end; ++entry_it) {
+                    BarcodeId barcode = entry_it->first;
+//                    DEBUG("Min pos: " << extractor_->GetMinPos(edge, barcode));
+//                    DEBUG("Max pos: " << extractor_->GetMaxPos(edge, barcode));
+                    if (IsBarcodeOnTheEnd(edge, barcode, gap_threshold) or
+                            extractor_->GetNumberOfReads(edge, barcode) < 10) continue;
+//                    double barcode_coverage = extractor_->GetBarcodeCoverage(edge, barcode);
+                    boost::dynamic_bitset<> current_barcoded_bins = extractor_->GetBitSet(edge, barcode);
+                    UpdateReliableEdgeStorage(barcoded_bins_storage,
+                                              current_barcoded_bins,
+                                              gap_threshold,
+                                              bin_length);
+                }
+                size_t covered_length = barcoded_bins_storage.count() * bin_length;
+                size_t central_length = gp_.g.length(edge) - 2 * gap_threshold;
+                DEBUG("Length: " << gp_.g.length(edge));
+                DEBUG("Central length: " << central_length);
+                DEBUG("Covered length: " << covered_length);
+                overall_length += central_length;
+                VERIFY(covered_length <= central_length);
+                overall_covered_length += covered_length;
+            }
+        }
+        double covered_fraction = static_cast<double>(overall_covered_length) /
+                static_cast<double>(overall_length);
+        stats_.reliable_storage_.InsertCoveredFraction(gap_threshold, covered_fraction);
+        INFO("Overall length: " << overall_length);
+        INFO("Overall covered length: " << overall_covered_length);
+        INFO(covered_fraction);
+    }
+
+private:
+    void UpdateReliableEdgeStorage(boost::dynamic_bitset<>& general_bitset,
+                          const boost::dynamic_bitset<>& barcode_bitset,
+                          const size_t gap_threshold,
+                          const size_t bin_length) {
+        VERIFY(general_bitset.size() == barcode_bitset.size());
+        vector <std::pair<size_t, size_t>> chunk_positions = GetChunkPositions(barcode_bitset);
+        size_t gap_length = gap_threshold / bin_length;
+        const size_t chunk_length_threshold = 3;
+        bool prev_chunk_is_candidate = false;
+        for (auto curr_it = chunk_positions.begin(), prev_it = chunk_positions.end();
+             curr_it != chunk_positions.end(); prev_it = curr_it, ++curr_it) {
+            if (curr_it->second < curr_it->first + chunk_length_threshold) {
+                prev_chunk_is_candidate = false;
+                continue;
+            }
+
+            if (prev_it == chunk_positions.end()) {
+                size_t first_pos = curr_it->first;
+                if (first_pos > gap_length) prev_chunk_is_candidate = true;
+            } else {
+                const size_t previous_left = prev_it->first;
+                const size_t previous_right = prev_it->second;
+                const size_t current_left = curr_it->first;
+                if (previous_right + gap_length < current_left) {
+                    if (prev_chunk_is_candidate) {
+                        DEBUG("Updating");
+                        VERIFY(previous_left + chunk_length_threshold <= previous_right);
+                        SetBitsInReliableEdgeStorage(general_bitset, previous_left, previous_right + 1);
+                    }
+                    prev_chunk_is_candidate = true;
+                }
+                else {
+                    prev_chunk_is_candidate = false;
+                }
+            }
+        }
+    }
+
+    void SetBitsInReliableEdgeStorage(boost::dynamic_bitset<>& general_bitset, const size_t left, const size_t right) {
+        for (size_t i = left; i < right; ++i) {
+            general_bitset.set(i);
+        }
+    }
+
+    vector <std::pair<size_t, size_t>> GetChunkPositions(const boost::dynamic_bitset<>& barcode_bitset) {
+        bool is_at_chunk = false;
+        size_t current_left = 0;
+        size_t current_right = 0;
+        vector <std::pair<size_t, size_t>> chunk_positions;
+        for (size_t i = 0; i < barcode_bitset.size(); ++i) {
+            if (not is_at_chunk) {
+                if (barcode_bitset.test(i)) {
+                    is_at_chunk = true;
+                    current_left = i;
+                    current_right = i;
+                }
+            }
+            else if (barcode_bitset.test(i)) {
+                current_right = i;
+            }
+            else {
+                auto chunk = std::make_pair(current_left, current_right);
+                chunk_positions.push_back(chunk);
+                is_at_chunk = false;
+            }
+        }
+        string chunk_string;
+        for (const auto& pos_pair: chunk_positions) {
+            chunk_string += "(" + std::to_string(pos_pair.first) + ", " +
+                    std::to_string(pos_pair.second) + "), ";
+        }
+        DEBUG(chunk_string);
+        return chunk_positions;
+    }
+
+    bool IsBarcodeOnTheEnd(const EdgeId &edge, const BarcodeId &barcode, const size_t side_threshold) const {
+        return extractor_->GetMinPos(edge, barcode) < side_threshold or
+               extractor_->GetMaxPos(edge, barcode) + side_threshold > gp_.g.length(edge);
+    }
+
+    DECL_LOGGER("BarcodeStatisticsExtractor");
 };
