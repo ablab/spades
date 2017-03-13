@@ -361,7 +361,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
                 unsigned filter_threshold = cfg::get().de.raw_filter_threshold;
 
                 // Only filter paired-end libraries
-                if (filter_threshold && lib.type() == io::LibraryType::PairedEnd) {
+                if (filter_threshold && lib.is_paired() && !lib.is_mate_pair()) {
                     filter.reset(new PairedInfoFilter([](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
                                 uint64_t h1 = e.first.hash();
                                 return CityHash64WithSeeds((const char*)&h1, sizeof(h1), e.second.hash(), seed);

@@ -418,7 +418,8 @@ void GapClosing::run(conj_graph_pack &gp, const char *) {
 
     bool pe_exist = false;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
+        auto lib = cfg::get().ds.reads[i];
+        if (lib.is_paired() and not lib.is_mate_pair()) {
             pe_exist = true;
             break;
         }
@@ -431,7 +432,8 @@ void GapClosing::run(conj_graph_pack &gp, const char *) {
 
     auto& dataset = cfg::get_writable().ds;
     for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
-        if (dataset.reads[i].type() == io::LibraryType::PairedEnd) {
+        auto lib = cfg::get().ds.reads[i];
+        if (lib.is_paired() and not lib.is_mate_pair()) {
             auto streams = paired_binary_readers(dataset.reads[i], false, 0, false);
             CloseGaps(gp, streams);
         }

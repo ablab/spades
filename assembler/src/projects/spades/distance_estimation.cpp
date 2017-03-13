@@ -218,17 +218,20 @@ void estimate_distance(conj_graph_pack& gp,
 }
 
 void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
-            if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        auto lib = cfg::get().ds.reads[i];
+        if (lib.is_paired() and not lib.is_mate_pair()) {
+            if (lib.data().mean_insert_size != 0.0) {
                 INFO("Processing library #" << i);
-                estimate_distance(gp, cfg::get().ds.reads[i], gp.paired_indices[i], gp.clustered_indices[i], gp.scaffolding_indices[i]);
+                estimate_distance(gp, lib, gp.paired_indices[i], gp.clustered_indices[i],
+                                  gp.scaffolding_indices[i]);
             }
             if (!cfg::get().preserve_raw_paired_index) {
                 INFO("Clearing raw paired index");
                 gp.paired_indices[i].clear();
             }
         }
+    }
 }
 
 }

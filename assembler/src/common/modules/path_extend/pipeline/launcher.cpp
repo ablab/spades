@@ -34,7 +34,7 @@ vector<shared_ptr<ConnectionCondition>>
             shared_ptr<PairedInfoLibrary> paired_lib;
             if (lib.is_mate_pair())
                 paired_lib = MakeNewLib(gp_.g, lib, gp_.paired_indices[lib_index]);
-            else if (lib.type() == io::LibraryType::PairedEnd)
+            else if (lib.is_paired())
                 paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
             else {
                 INFO("Unusable for scaffold graph paired lib #" << lib_index);
@@ -375,7 +375,8 @@ void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
         }
         INFO("Removing fake unique with paired-end libs");
         for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
-            if (dataset_info_.reads[lib_index].type() == io::LibraryType::PairedEnd) {
+            auto lib = cfg::get().ds.reads[lib_index];
+            if (lib.is_paired() and not lib.is_mate_pair()) {
                 unique_edge_analyzer_pb.ClearLongEdgesWithPairedLib(lib_index, unique_data_.unique_pb_storage_);
             }
         }

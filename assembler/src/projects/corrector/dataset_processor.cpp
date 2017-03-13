@@ -198,7 +198,8 @@ void DatasetProcessor::ProcessDataset() {
     for (size_t i = 0; i < corr_cfg::get().dataset.lib_count(); ++i) {
         const auto& dataset = corr_cfg::get().dataset[i];
         auto lib_type = dataset.type();
-        if (lib_type == io::LibraryType::PairedEnd || lib_type == io::LibraryType::HQMatePairs || lib_type == io::LibraryType::SingleReads) {
+        if (lib_type == io::LibraryType ::Clouds10x || lib_type == io::LibraryType::PairedEnd ||
+                lib_type == io::LibraryType::HQMatePairs || lib_type == io::LibraryType::SingleReads) {
             for (auto iter = dataset.paired_begin(); iter != dataset.paired_end(); iter++) {
                 INFO("Processing paired sublib of number " << lib_num);
                 string left = iter->first;
