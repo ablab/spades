@@ -175,7 +175,7 @@ namespace barcode_index {
                 }
             }
             INFO("FillMap finished")
-            //INFO("Number of barcodes: " + std::to_string(barcode_codes_.GetSize()))
+            //INFO("Number of barcodes: " + std::to_string(barcode_codes_.GetBinLength()))
         }
 
         void FillMap(const lib_vector_t& libs_10x) {
