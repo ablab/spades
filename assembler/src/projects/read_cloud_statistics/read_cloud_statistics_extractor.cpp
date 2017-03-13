@@ -1,6 +1,6 @@
 #include <common/assembly_graph/graph_support/scaff_supplementary.hpp>
 #include <common/modules/path_extend/pipeline/launch_support.hpp>
-#include "read_cloud_resolver_statistics_counter.hpp"
+#include "projects/read_cloud_statistics/read_cloud_statistics_extractor.hpp"
 
 using namespace path_extend;
 
