@@ -426,7 +426,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             barcode_index::FrameBarcodeIndexInfoExtractor extractor(gp_.barcode_mapper_ptr, gp_.g);
             INFO("Average barcode coverage before filtering: " << extractor.AverageBarcodeCoverage());
             gp_.barcode_mapper_ptr->Filter(abundancy_threshold, gap_threshold);
-            INFO("Finished filtering")
+            INFO("Finished filtering");
             INFO("Average barcode coverage after filtering: " << extractor.AverageBarcodeCoverage());
             INFO("Creating read cloud extenders");
 //            ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp_, 5000, 0.5);
