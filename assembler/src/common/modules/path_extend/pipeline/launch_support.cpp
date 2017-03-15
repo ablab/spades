@@ -104,9 +104,14 @@ bool PELaunchSupport::HasMPReads() const {
     }
     return false;
 }
-//fixme return smth
+
 bool PELaunchSupport::HasReadClouds() const {
-    return true;
+    for (const auto& lib: dataset_info_.reads) {
+        if (lib.type() == io::LibraryType::Clouds10x) {
+            return true;
+        }
+    }
+    return false;
 }
 bool PELaunchSupport::SingleReadsMapped() const {
     for (const auto &lib : dataset_info_.reads) {

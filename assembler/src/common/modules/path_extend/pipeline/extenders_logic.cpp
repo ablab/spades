@@ -428,7 +428,7 @@ Extenders ExtendersGenerator::MakeReadCloudExtender(const ScaffoldingUniqueEdgeS
     typedef barcode_index::AbstractBarcodeIndexInfoExtractor abstract_extractor_t;
 
     if (barcode_lib == barcode_index::BarcodeLibraryType::TSLR) {
-        INFO("Library type: TSLR")
+        INFO("Read cloud library type: TSLR")
         const double absolute_barcode_threshold = tslr_resolver_params.diff_threshold;
 
         typedef barcode_index::BarcodeIndexInfoExtractor<barcode_index::SimpleEdgeEntry> tslr_extractor_t;
@@ -444,7 +444,7 @@ Extenders ExtendersGenerator::MakeReadCloudExtender(const ScaffoldingUniqueEdgeS
                                                               absolute_barcode_threshold);
     }
     else {
-        INFO("Library type: 10X")
+        INFO("Read cloud library type: 10X")
         auto tenx_resolver_stats = cfg::get().ts_res.tenx;
         const size_t absolute_barcode_threshold = tenx_resolver_stats.absolute_barcode_threshold;
         const size_t tail_threshold = tenx_resolver_stats.tail_threshold;
