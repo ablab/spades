@@ -14,6 +14,7 @@ namespace spades {
                                                 cfg::get().flanking_range,
                                                 cfg::get().pos.max_mapping_gap,
                                                 cfg::get().pos.max_gap_diff);
+        conj_gp.kmer_mapper.Attach();
         StageManager statistics_extractor({cfg::get().developer_mode,
                               cfg::get().load_from,
                               cfg::get().output_saves});

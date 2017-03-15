@@ -671,6 +671,10 @@ namespace barcode_index {
             return frame_size_;
         }
 
+        size_t GetNumberOfFrames() const {
+            return number_of_frames_;
+        }
+
     protected:
         void InsertInfo(const BarcodeId& barcode, const FrameBarcodeInfo &info) {
             if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
