@@ -8,7 +8,7 @@ namespace barcode_index {
     class BarcodeIndexBuilder {
     protected:
         const Graph &g_;
-        shared_ptr <BarcodeIndex<barcode_entry_t>> mapper_;
+        shared_ptr <barcode_index::BarcodeIndex<barcode_entry_t>> mapper_;
         size_t tail_threshold_;
         BarcodeEncoder barcode_codes_;
         typedef vector<io::SequencingLibrary<debruijn_graph::config::DataSetData>> lib_vector_t;
@@ -16,7 +16,7 @@ namespace barcode_index {
     public:
         BarcodeIndexBuilder(const Graph &g, size_t tail_threshold) :
                 g_(g),
-                mapper_(make_shared<BarcodeIndex<barcode_entry_t>>(g)),
+                mapper_(make_shared<barcode_index::BarcodeIndex<barcode_entry_t>>(g)),
                 tail_threshold_(tail_threshold),
                 barcode_codes_() {}
 
@@ -24,7 +24,7 @@ namespace barcode_index {
 
         DECL_LOGGER("BarcodeMapperBuilder")
 
-        shared_ptr <BarcodeIndex<barcode_entry_t>> GetMapper() {
+        shared_ptr <barcode_index::BarcodeIndex<barcode_entry_t>> GetMapper() {
             return mapper_;
         }
 

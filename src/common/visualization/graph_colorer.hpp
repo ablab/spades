@@ -327,6 +327,39 @@ public:
 
 };
 
+template<class Graph>
+class BarcodeCollectionColorer: public ElementColorer<typename Graph::EdgeId> {
+    typedef typename Graph::EdgeId EdgeId;
+
+    const vector<barcode_index::BarcodeId> barcode_collection_;
+    const barcode_index::FrameBarcodeIndexInfoExtractor& extractor_;
+    const size_t barcode_threshold_;
+    const string color_;
+    const string default_color_;
+public:
+    BarcodeCollectionColorer(const vector<barcode_index::BarcodeId>& barcode_collection,
+                             const barcode_index::FrameBarcodeIndexInfoExtractor& extractor,
+                             const size_t barcode_threshold,
+                             const string& color,
+                             const string& default_color = "black") :
+            barcode_collection_(barcode_collection), extractor_(extractor),
+            barcode_threshold_(barcode_threshold), color_(color), default_color_(default_color) {}
+
+    string GetValue(EdgeId e) const {
+        if (CheckBarcodes(e)) return color_;
+        return default_color_;
+    }
+private:
+    bool CheckBarcodes(const EdgeId& e) const {
+        vector <barcode_index::BarcodeId> edge_barcodes = extractor_.GetBarcodes(e);
+        vector <barcode_index::BarcodeId> intersection;
+        if (edge_barcodes.size() < barcode_threshold_) return false;
+        std::set_intersection(edge_barcodes.begin(), edge_barcodes.end(),
+                              barcode_collection_.begin(), barcode_collection_.end(), std::back_inserter(intersection));
+        return intersection.size() >= barcode_threshold_;
+    }
+};
+
 
 // edge_colorer management is passed here
 //TODO check all usages

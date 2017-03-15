@@ -34,12 +34,11 @@ class DebruijnEnvironment : public Environment {
         GraphElementFinder<Graph> element_finder_;
         std::shared_ptr<MapperClass> mapper_;
         FillerClass filler_;
-        visualization::graph_labeler::DefaultLabeler<Graph> pos_labeler_;
-        barcode_index::BarcodeDistGraphLabeler <Graph> barcode_labeler_;
+        visualization::graph_labeler::DefaultLabeler<Graph> default_labeler_;
+        visualization::graph_labeler::ReadCloudLabeler <Graph> barcode_labeler_;
         visualization::graph_labeler::CompositeLabeler <Graph> labeler_;
         debruijn_graph::ReadPathFinder<Graph> path_finder_;
         ColoringClass coloring_;
-        //CompositeLabeler<Graph> labeler_;
 
     public :
 
