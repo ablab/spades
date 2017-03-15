@@ -354,7 +354,7 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
 }
 
 Extenders PathExtendLauncher::ConstructReadCloudExtender(const ExtendersGenerator& generator) {
-    return generator.MakeReadCloudExtender(unique_data_.main_unique_storage_);
+    return generator.MakeReadCloudExtender(unique_data_.unique_read_cloud_storage_);
 }
 
 void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_threshold) {
@@ -467,17 +467,22 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
         } else {
             //fixme move filtering elsewhere (to barcode index construction?)
             INFO("Filtering barcode mapper");
-            const size_t abundancy_threshold = cfg::get().ts_res.trimming_threshold;
-            const size_t gap_threshold = cfg::get().ts_res.gap_threshold;
-            INFO("Abundancy threshold: " << abundancy_threshold);
-            INFO("Gap threshold: " << gap_threshold);
+            const size_t initial_abundancy_threshold = cfg::get().ts_res.trimming_threshold;
+            const size_t initial_gap_threshold = cfg::get().ts_res.gap_threshold;
+            const size_t unique_edge_length = cfg::get().ts_res.edge_length_threshold;
+            //Filtering
+            INFO("Abundancy threshold: " << initial_abundancy_threshold);
+            INFO("Gap threshold: " << initial_gap_threshold);
             barcode_index::FrameBarcodeIndexInfoExtractor extractor(gp_.barcode_mapper_ptr, gp_.g);
             INFO("Average barcode coverage before filtering: " << extractor.AverageBarcodeCoverage());
-            gp_.barcode_mapper_ptr->Filter(abundancy_threshold, gap_threshold);
+            gp_.barcode_mapper_ptr->Filter(initial_abundancy_threshold, initial_gap_threshold);
             INFO("Finished filtering");
             INFO("Average barcode coverage after filtering: " << extractor.AverageBarcodeCoverage());
+            INFO("Unique edge length: " << unique_edge_length);
+            ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp_, unique_edge_length, unique_data_.unique_variation_);
+            read_cloud_unique_edge_analyzer.FillUniqueEdgeStorage(unique_data_.unique_read_cloud_storage_);
+
             INFO("Creating read cloud extenders");
-//            ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp_, 5000, 0.5);
             push_back_all(extenders, ConstructReadCloudExtender(generator));
         }
     }
