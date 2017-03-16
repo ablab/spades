@@ -273,12 +273,12 @@ void ExtendersGenerator::PrintExtenders(const Extenders &extenders) const {
         //TODO: use polymorphism instead of RTTI
         auto ext_ptr = extender.get();
         DEBUG("Extender #i" << typeid(*ext_ptr).name());
-        if (instanceof<SimpleExtender>(ext_ptr)) {
+        if (utils::instanceof<SimpleExtender>(ext_ptr)) {
             auto ec = ((SimpleExtender *) ext_ptr)->GetExtensionChooser();
             auto ec_ptr = ec.get();
             DEBUG("    Extender #i" << typeid(*ec_ptr).name());
         }
-        else if (instanceof<ScaffoldingPathExtender>(ext_ptr)) {
+        else if (utils::instanceof<ScaffoldingPathExtender>(ext_ptr)) {
             auto ec = ((ScaffoldingPathExtender *) ext_ptr)->GetExtensionChooser();
             auto ec_ptr = ec.get();
             DEBUG("    Extender #i" << typeid(*ec_ptr).name());
@@ -408,9 +408,9 @@ Extenders ExtendersGenerator::MakeBasicExtenders(const ScaffoldingUniqueEdgeStor
     std::stable_sort(loop_resolving_extenders.begin(), loop_resolving_extenders.end());
 
     Extenders result;
-    push_back_all(result, ExtractExtenders(basic_extenders));
-    push_back_all(result, ExtractExtenders(scaffolding_extenders));
-    push_back_all(result, ExtractExtenders(loop_resolving_extenders));
+    utils::push_back_all(result, ExtractExtenders(basic_extenders));
+    utils::push_back_all(result, ExtractExtenders(scaffolding_extenders));
+    utils::push_back_all(result, ExtractExtenders(loop_resolving_extenders));
 
     INFO("Using " << pe_libs << " paired-end " << support_.LibStr(pe_libs));
     INFO("Using " << scf_pe_libs << " paired-end scaffolding " << support_.LibStr(scf_pe_libs));

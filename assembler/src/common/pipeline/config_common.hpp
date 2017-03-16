@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/verify.hpp"
 
@@ -82,12 +82,12 @@ void load(std::vector <T> &vec, boost::property_tree::ptree const &pt, std::stri
         return;
     }
     for (size_t i = 1; ; i++) {
-        value = pt.get_optional<std::string>(key + "#" + ToString(i));
+        value = pt.get_optional<std::string>(key + "#" + std::to_string(i));
         if (value) {
             vec.push_back(*value);
             continue;
         }
-        value = pt.get_optional<std::string>(key + "." + ToString(i));
+        value = pt.get_optional<std::string>(key + "." + std::to_string(i));
         if (value) {
             vec.push_back(*value);
             continue;

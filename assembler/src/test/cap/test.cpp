@@ -74,7 +74,7 @@ void RunTests(size_t k, const string& filename, const string& output_dir,
     SyntheticTestsRunner<Seq> test_runner(filename, k, output_dir, work_dir);
     vector<size_t> launched = test_runner.Run();
     for (size_t id: launched) {
-        CheckDiffs(k, output_dir + ToString(id), etalon_root + ToString(id),
+        CheckDiffs(k, output_dir + std::to_string(id), etalon_root + std::to_string(id),
                    work_dir, exact_match);
     }
 }

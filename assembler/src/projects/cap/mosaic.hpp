@@ -911,7 +911,7 @@ const vector<io::SingleRead> MakeReads(const vector<string>& reads, const vector
 vector<string> mosaic_names(size_t n) {
     vector<string> ans;
     for (size_t i = 0; i < n; ++i) {
-        ans.push_back("mosaic_" + ToString(i));
+        ans.push_back("mosaic_" + std::to_string(i));
     }
     return ans;
 }

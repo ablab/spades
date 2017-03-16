@@ -23,7 +23,7 @@
 #include "sequence/sequence.hpp"
 #include "sequence/nucl.hpp"
 #include "sequence/sequence_tools.hpp"
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 
 //fixme deprecated!!! used in hammer!
 class Read {

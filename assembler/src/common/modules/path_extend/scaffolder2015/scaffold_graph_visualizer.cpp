@@ -18,17 +18,17 @@ const map<size_t, string> ScaffoldEdgeColorer::color_map =
 const string ScaffoldEdgeColorer::default_color = "black";
 
 string ScaffoldGraphLabeler::label(EdgeId e) const {
-    return "ID: " + ToString(e.getId()) +
-        "\\n Weight: " + ToString(e.getWeight()) +
-        "\\n Lib#: " + ToString(e.getColor());
+    return "ID: " + std::to_string(e.getId()) +
+        "\\n Weight: " + std::to_string(e.getWeight()) +
+        "\\n Lib#: " + std::to_string(e.getColor());
 }
 
 string ScaffoldGraphLabeler::label(VertexId v) const {
     auto it = additional_vertex_labels_.find(v);
     string additional_label = it == additional_vertex_labels_.end() ? "" : it->second + "\n";
-    return "ID: " + ToString(graph_.int_id(v)) +
-        "\\n Len: " + ToString(graph_.AssemblyGraph().length(v)) +
-        "\\n Cov: " + ToString(graph_.AssemblyGraph().coverage(v)) + "\n" +
+    return "ID: " + std::to_string(graph_.int_id(v)) +
+        "\\n Len: " + std::to_string(graph_.AssemblyGraph().length(v)) +
+        "\\n Cov: " + std::to_string(graph_.AssemblyGraph().coverage(v)) + "\n" +
         additional_label;
 }
 

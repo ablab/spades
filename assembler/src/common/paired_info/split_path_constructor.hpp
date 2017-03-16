@@ -111,7 +111,7 @@ public:
                 for (size_t j = 0; j < common_part.size(); ++j)
                     total_length += graph_.length(common_part[j]);
 
-                DEBUG("Common part " << ToString(common_part));
+                DEBUG("Common part " << std::to_string(total_length));
                 for (size_t j = 0; j < common_part.size(); ++j) {
                     PairInfo cur_pi(cur_edge, common_part[j],
                                     cur_info.d() - (double) total_length,

@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
 
 #include "pipeline/graphio.hpp"
@@ -19,7 +19,7 @@ set<bin_id> ContigBinner::RelevantBins(const io::SingleRead& r) const {
 }
 
 void ContigBinner::Init(bin_id bin) {
-    string out_dir = out_root_ + "/" + ToString(bin) + "/";
+    string out_dir = out_root_ + "/" + std::to_string(bin) + "/";
     path::make_dirs(out_dir);
     out_streams_.insert(make_pair(bin, make_shared<io::OPairedReadStream>(out_dir + sample_name_ + "_1.fastq",
                                                                           out_dir + sample_name_ + "_2.fastq")));

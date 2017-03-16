@@ -24,7 +24,7 @@ public:
     /* virtual */
     IdSettingReaderWrapper& operator>>(SingleRead& read) {
         this->reader() >> read;
-        read.ChangeName(ToString(next_id_++));
+        read.ChangeName(std::to_string(next_id_++));
         return *this;
     }
 };

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 #include "utils/standard_base.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 
@@ -163,7 +163,7 @@ public:
     LengthGraphLabeler(const Graph &g) : base(g) {}
 
     /*virtual*/ std::string label(EdgeId e) const {
-        return ToString(this->graph().length(e));
+        return std::to_string(this->graph().length(e));
     }
 
 };
@@ -178,7 +178,7 @@ public:
 
     std::string label(EdgeId e) const {
         double coverage = this->graph().coverage(e);
-        return " {Cov:" + ToString(coverage) + "}";
+        return " {Cov:" + std::to_string(coverage) + "}";
     }
 };
 
@@ -287,7 +287,7 @@ public:
     }
 
     virtual std::string label(VertexId vertexId) const {
-        return ToString(vertexId.int_id());
+        return std::to_string(vertexId.int_id());
     }
 
     virtual std::string label(EdgeId edgeId) const {
@@ -296,7 +296,7 @@ public:
         ret_label += "Positions:\\n" + edges_positions_.str(edgeId);
         size_t len = g_.length(edgeId);
         double cov = g_.coverage(edgeId);
-        ret_label += "Len(cov): " + ToString(len) + "(" + ToString(cov) + ")";
+        ret_label += "Len(cov): " + std::to_string(len) + "(" + std::to_string(cov) + ")";
         return ret_label;
     }
 

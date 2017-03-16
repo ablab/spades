@@ -208,7 +208,7 @@ class SeriesAnalysis : public spades::AssemblyStage {
                                    size_t split_length, size_t min_len, std::ostream &os) const {
         for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
             EdgeId e = *it;
-            io::SingleRead full_contig(ToString(gp.g.int_id(e)), gp.g.EdgeNucls(e).str());
+            io::SingleRead full_contig(std::to_string(gp.g.int_id(e)), gp.g.EdgeNucls(e).str());
             for (size_t i = 0; i < full_contig.size(); i += split_length) {
                 if (full_contig.size() - i < min_len) {
                     DEBUG("Fragment shorter than min_length_bound " << min_len);

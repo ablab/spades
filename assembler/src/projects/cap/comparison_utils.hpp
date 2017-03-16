@@ -8,7 +8,7 @@
 #pragma once
 
 #include "pipeline/graphio.hpp"
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "coordinates_handler.hpp"
 #include "math/xmath.h"
@@ -84,7 +84,7 @@ void WriteGenome(const Sequence& genome, const string& filename) {
 inline vector<io::SingleRead> MakeReads(const vector<Sequence>& ss) {
     vector<io::SingleRead> ans;
     for (size_t i = 0; i < ss.size(); ++i) {
-        ans.push_back(io::SingleRead("read_" + ToString(i), ss[i].str()));
+        ans.push_back(io::SingleRead("read_" + std::to_string(i), ss[i].str()));
     }
     return ans;
 }

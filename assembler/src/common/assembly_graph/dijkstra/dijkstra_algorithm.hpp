@@ -6,7 +6,7 @@
 //***************************************************************************
 #pragma once
 
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 #include "dijkstra_settings.hpp"
 
 #include <queue>
@@ -203,8 +203,8 @@ public:
             return path;
 
         VertexId curr_vertex = vertex;
-        VertexId prev_vertex = get(prev_vert_map_, vertex).first;
-        EdgeId edge = get(prev_vert_map_, curr_vertex).second;
+        VertexId prev_vertex = utils::get(prev_vert_map_, vertex).first;
+        EdgeId edge = utils::get(prev_vert_map_, curr_vertex).second;
 
         while (prev_vertex != VertexId(0)) {
             if (graph_.EdgeStart(edge) == prev_vertex)
@@ -212,7 +212,7 @@ public:
             else
                 path.push_back(edge);
             curr_vertex = prev_vertex;
-            const auto& prev_v_e = get(prev_vert_map_, curr_vertex);
+            const auto& prev_v_e = utils::get(prev_vert_map_, curr_vertex);
             prev_vertex = prev_v_e.first;
             edge = prev_v_e.second;
         }

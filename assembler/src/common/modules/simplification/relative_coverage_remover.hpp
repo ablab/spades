@@ -332,7 +332,7 @@ public:
             if (cycle_detected_)
                 return -1u;
             VERIFY(max_distance_.count(v) > 0);
-            answer = std::max(answer, get(max_distance_, v));
+            answer = std::max(answer, utils::get(max_distance_, v));
         }
         VERIFY(answer >= 0);
         if (answer == 0)
@@ -546,7 +546,7 @@ class RelativeCovComponentFinder {
                 vertices.insert(g_.EdgeEnd(e));
             }
 
-            auto filename = success ? vis_dir_ + "/success/" + ToString(succ_cnt_++) : vis_dir_ + "/fail/" + ToString(fail_cnt_++);
+            auto filename = success ? vis_dir_ + "/success/" + std::to_string(succ_cnt_++) : vis_dir_ + "/fail/" + std::to_string(fail_cnt_++);
             visualization::visualization_utils::WriteComponent(
                     ComponentCloser<Graph>(g_, 0).CloseComponent(
                             GraphComponent<Graph>::FromVertices(g_, vertices)),

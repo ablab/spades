@@ -280,7 +280,7 @@ inline bool MaskRepeatsIteration(size_t k, const string& input_dir, const vector
 //    size_t iter = 0;
 //    bool no_repeats = false;
 //    while (iter <= max_iter_count) {
-//        string out_dir = input_dir + ToString(iter) + "/";
+//        string out_dir = input_dir + std::to_string(iter) + "/";
 //        make_dir(out_dir);
 //        no_repeats = MaskRepeatsIteration(input_dir, suffixes, out_dir);
 //        if (no_repeats) {
@@ -292,7 +292,7 @@ inline bool MaskRepeatsIteration(size_t k, const string& input_dir, const vector
 //        string out_dir = input_dir + "masked/";
 //        make_dir(out_dir);
 //        ModifyAndSave(make_shared<io::TrivialModifier>(),
-//                      OpenStreams(input_dir + "/" + ToString(iter) + "/", suffixes,
+//                      OpenStreams(input_dir + "/" + std::to_string(iter) + "/", suffixes,
 //                                  out_dir));
 //    } else {
 //        WARN("Failed to mask repeats in " << max_iter_count << " iterations");
@@ -310,7 +310,7 @@ inline bool MaskRepeats(size_t k, ContigStreams input_streams, const vector<stri
     while (iter <= max_iter_count) {
         INFO("------------------------");
         INFO("Iteration " << iter);
-        string out_dir = work_dir + ToString(iter) + "/";
+        string out_dir = work_dir + std::to_string(iter) + "/";
         make_dir(out_dir);
         no_repeats = MaskRepeatsIteration(k, input_dir, suffixes, out_dir, rand_nucl);
         if (no_repeats) {

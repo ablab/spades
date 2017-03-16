@@ -75,7 +75,7 @@ class CloseGapsCorrector : public AbstractContigCorrector{
             if(cur_process_perc > processed_perc) {
                 while(processed_perc + step <= cur_process_perc)
                     processed_perc += step;
-                INFO(ToString(processed_perc * 100.0) << "% contigs were processed");
+                INFO(std::to_string(processed_perc * 100.0) << "% contigs were processed");
                 processed_perc += step;
             }
         }
@@ -92,15 +92,15 @@ public:
     virtual ContigStoragePtr Correct(ContigStoragePtr storage){
 
         INFO(ToString(CountContigsWithGaps(storage)) << " contigs from " <<
-                ToString(storage->Size()) << " have gaps before correction");
+                std::to_string(storage->Size()) << " have gaps before correction");
 
         ProcessContigs(storage);
 
-        INFO(ToString(num_corr) << " contigs from " <<
-                ToString(storage->Size()) << " with total length " << ToString(connected_length_) + " are correct");
-        INFO(ToString(storage->Size() - num_corr) << " contigs from "
-                << ToString(storage->Size()) << " with total length " <<
-                ToString(disconnected_length_) + " have gaps after correction");
+        INFO(std::to_string(num_corr) << " contigs from " <<
+                std::to_string(storage->Size()) << " with total length " << std::to_string(connected_length_) + " are correct");
+        INFO(std::to_string(storage->Size() - num_corr) << " contigs from "
+                << std::to_string(storage->Size()) << " with total length " <<
+                std::to_string(disconnected_length_) + " have gaps after correction");
 
         storage->DeleteByIDs(incorr_contigs);
         return storage;

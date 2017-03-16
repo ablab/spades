@@ -52,7 +52,7 @@
 
 //     string ref = "/home/snurk/Dropbox/lab/mrsa/USA300_FPR3757.fasta";
 // //    string ref = "assembly_comp/gingi_diff_mask/tdc60.fasta";
-//     string output_folder = "assembly_comp/s60_usa300_" + ToString(K) + "/";
+//     string output_folder = "assembly_comp/s60_usa300_" + std::to_string(K) + "/";
 //     remove_dir(output_folder);
 //     make_dir(output_folder);
 

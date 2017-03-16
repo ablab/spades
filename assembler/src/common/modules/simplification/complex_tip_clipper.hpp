@@ -160,7 +160,7 @@ public:
         if (!pics_folder_.empty()) {
             visualization::visualization_utils::WriteComponentSinksSources(component,
                                                       pics_folder_
-                                                      + ToString(this->g().int_id(v)) //+ "_" + ToString(candidate_cnt)
+                                                      + std::to_string(this->g().int_id(v)) //+ "_" + std::to_string(candidate_cnt)
                                                       + ".dot");
         }
 

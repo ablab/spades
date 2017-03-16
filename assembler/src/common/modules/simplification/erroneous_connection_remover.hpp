@@ -182,8 +182,8 @@ inline bool IsReachableBulge(const Graph &g, typename Graph::EdgeId e){
     else{
         VertexId start = g.EdgeStart(e), end = g.EdgeEnd(e);
         vector<EdgeId> incident;
-        push_back_all(incident, g.IncomingEdges(end));
-        push_back_all(incident, g.OutgoingEdges(start));
+        utils::push_back_all(incident, g.IncomingEdges(end));
+        utils::push_back_all(incident, g.OutgoingEdges(start));
         for (auto it = incident.begin(); it != incident.end(); ++it){
             res = IsAlternativeInclusivePathExist(g, *it, e);
             if(res){
@@ -490,7 +490,7 @@ class MetaHiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename 
             return false;
         }
         vector<EdgeId> edges;
-        push_back_all(edges, this->g().OutgoingEdges(v));
+        utils::push_back_all(edges, this->g().OutgoingEdges(v));
         VERIFY(edges.size() == 2);
         if (this->g().conjugate(edges[0]) != edges[1]) {
             return false;
@@ -554,7 +554,7 @@ class HiddenECRemover: public PersistentProcessingAlgorithm<Graph, typename Grap
         omnigraph::MultiplicityCounter<Graph> mult_counter(this->g(), uniqueness_length_, 8);
 
         vector<EdgeId> edges;
-        push_back_all(edges, this->g().OutgoingEdges(this->g().EdgeEnd(e)));
+        utils::push_back_all(edges, this->g().OutgoingEdges(this->g().EdgeEnd(e)));
         VERIFY(edges.size() == 2);
         return (this->g().conjugate(edges[0]) == edges[1] && mult_counter.count(e, this->g().EdgeStart(e)) <= 1) ||
                 this->g().length(e) >= uniqueness_length_;

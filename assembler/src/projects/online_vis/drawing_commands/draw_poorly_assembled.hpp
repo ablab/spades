@@ -130,8 +130,8 @@ public:
         make_dir(curr_env.folder());
         string pics_folder = curr_env.folder() + "/" + curr_env.GetFormattedPictureCounter()  + "_" + repeat_info.seq_name + "/";
         make_dir(pics_folder);
-        string pic_name = ToString(repeat_info.local_cnt) + "_" +  ToString(repeat_info.genomic_gap) +
-                "_" + ToString(curr_env.graph().int_id(repeat_info.e1)) + "_" + ToString(curr_env.graph().int_id(repeat_info.e2)) + "_";
+        string pic_name = std::to_string(repeat_info.local_cnt) + "_" +  std::to_string(repeat_info.genomic_gap) +
+                "_" + std::to_string(curr_env.graph().int_id(repeat_info.e1)) + "_" + std::to_string(curr_env.graph().int_id(repeat_info.e2)) + "_";
 
         DrawGap(curr_env, repeat_info.ref_path, pics_folder + pic_name);
     }
@@ -153,7 +153,7 @@ public:
         const Graph& g = curr_env.graph();
         vector<EdgeId> edges;
         edges.push_back(repeat_info.e1);
-        push_back_all(edges, repeat_info.ref_path);
+        utils::push_back_all(edges, repeat_info.ref_path);
         edges.push_back(repeat_info.e2);
         for (EdgeId e : edges) {
             if (!CheckInfo(clustered_pi_idx, repeat_info.e1, e)) {

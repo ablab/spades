@@ -378,14 +378,14 @@ class SimpleInDelCorrector {
     void GenPicAlongPath(const vector<EdgeId> path, size_t cnt) {
     utils::MakeDirPath("ref_correction");
         WriteComponentsAlongPath(g_, visualization::graph_labeler::StrGraphLabeler<Graph>(g_),
-                "ref_correction/" + ToString(cnt) + ".dot", 100000, 10,
+                "ref_correction/" + std::to_string(cnt) + ".dot", 100000, 10,
                 TrivialMappingPath(g_, path), *ConstructColorer(coloring_));
     }
 
     void GenPicAroundEdge(EdgeId e, size_t cnt) {
         utils::MakeDirPath("ref_correction");
         GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g_, e, 10, 100000);
-        visualization::visualization_utils::WriteComponent(g_, "ref_correction/" + ToString(cnt) + ".dot", component, coloring_.GetInstance(),
+        visualization::visualization_utils::WriteComponent(g_, "ref_correction/" + std::to_string(cnt) + ".dot", component, coloring_.GetInstance(),
                                       visualization::graph_labeler::StrGraphLabeler<Graph>(g_));
     }
 
@@ -428,7 +428,7 @@ class SimpleInDelCorrector {
 //
 //        CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 //
-//        string alt_path_folder = folder_ + ToString(g_.int_id(e)) + "/";
+//        string alt_path_folder = folder_ + std::to_string(g_.int_id(e)) + "/";
 //        make_dir(alt_path_folder);
 //        WriteComponentsAlongPath(g_, labeler, alt_path_folder + "path.dot", /*split_length*/
 //        1000, /*vertex_number*/15, TrivialMappingPath(g_, genome_path),

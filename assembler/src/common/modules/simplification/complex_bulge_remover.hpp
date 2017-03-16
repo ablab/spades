@@ -114,7 +114,7 @@ public:
 //    }
 
     bool CheckCompleteness() const {
-        for (VertexId v : key_set(vertex_depth_)) {
+        for (VertexId v : utils::key_set(vertex_depth_)) {
             if (v == start_vertex_)
                 continue;
             if (!AllEdgeIn(v) && !AllEdgeOut(v))
@@ -125,7 +125,7 @@ public:
 
     bool NeedsProjection() const {
         DEBUG("Checking if component needs projection");
-        for (VertexId v : key_set(vertex_depth_)) {
+        for (VertexId v : utils::key_set(vertex_depth_)) {
             if (v == start_vertex_)
                 continue;
             vector<EdgeId> filtered_incoming;
@@ -161,7 +161,7 @@ public:
 
     set<size_t> avg_distances() const {
         set<size_t> distances;
-        for (VertexId v : key_set(vertex_depth_)) {
+        for (VertexId v : utils::key_set(vertex_depth_)) {
             distances.insert(avg_distance(v));
         }
         return distances;
@@ -194,12 +194,12 @@ public:
     }
 
     GraphComponent<Graph> AsGraphComponent() const {
-        return GraphComponent<Graph>::FromVertices(g_, key_set(vertex_depth_));
+        return GraphComponent<Graph>::FromVertices(g_, utils::key_set(vertex_depth_));
     }
 
     bool ContainsConjugateVertices() const {
         set<VertexId> conjugate_vertices;
-        for (VertexId v : key_set(vertex_depth_)) {
+        for (VertexId v : utils::key_set(vertex_depth_)) {
             if (conjugate_vertices.count(v) == 0) {
                 conjugate_vertices.insert(g_.conjugate(v));
             } else {
@@ -256,7 +256,7 @@ public:
                     "Inserting vertex " << g_.str(new_vertex) << " to component during split");
             vertex_depth_.insert(make_pair(new_vertex, new_vertex_depth));
             height_2_vertices_.insert(
-                    make_pair(Average(new_vertex_depth), new_vertex));
+                    std::make_pair(Average(new_vertex_depth), new_vertex));
         }
     }
 
@@ -308,25 +308,25 @@ public:
         return vertices_.count(v) > 0;
     }
 
-    virtual void HandleDelete(VertexId v) {
+    void HandleDelete(VertexId v) override {
         //verify v not in the tree
         VERIFY(!Contains(v));
     }
 
-    virtual void HandleDelete(EdgeId e) {
+    void HandleDelete(EdgeId e) override {
         //verify e not in the tree
         DEBUG("Trying to delete " << br_comp_.g().str(e));
         VERIFY(!Contains(e));
     }
 
-    virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId /*new_edge*/) {
+    void HandleMerge(const vector<EdgeId>& old_edges, EdgeId /*new_edge*/) override {
         //verify false
         for (EdgeId e : old_edges) {
             VERIFY(!Contains(e));
         }
     }
 
-    virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+    void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) override {
 //         verify edge2 in tree
 //         put new_edge instead of edge2
         DEBUG("Glueing " << br_comp_.g().str(new_edge) << " " << br_comp_.g().str(edge1) << " " << br_comp_.g().str(edge2));
@@ -338,8 +338,8 @@ public:
         }
     }
 
-    virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
-            EdgeId new_edge_2) {
+    void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
+            EdgeId new_edge_2) override {
         VERIFY(old_edge != br_comp_.g().conjugate(old_edge));
         if (Contains(old_edge)) {
             edges_.erase(old_edge);
@@ -554,7 +554,7 @@ class SkeletonTreeFinder {
         vector<EdgeId> answer;
         for (VertexId v : vertices) {
             if (component_.end_vertices().count(v) == 0) {
-                push_back_all(answer, GoodOutgoingEdges(v));
+                utils::push_back_all(answer, GoodOutgoingEdges(v));
             }
         }
         return answer;
@@ -627,10 +627,10 @@ class SkeletonTreeFinder {
             }
         }
         size_t coverage = 0;
-        for (size_t cov : value_set(best_subtrees_coverage)) {
+        for (size_t cov : utils::value_set(best_subtrees_coverage)) {
             coverage += cov;
         }
-        next_edges_[v] = SetAsVector<EdgeId>(value_set(best_alternatives));
+        next_edges_[v] = SetAsVector<EdgeId>(utils::value_set(best_alternatives));
         subtree_coverage_[v] = coverage;
     }
 
@@ -677,7 +677,7 @@ public:
             VERIFY(!level_vertices.empty());
 
             //looking for good edges
-            insert_all(good_edges_,
+            utils::insert_all(good_edges_,
                     GoodOutgoingEdges(
                             vector<VertexId>(level_vertices.begin(),
                                     level_vertices.end())));
@@ -751,7 +751,7 @@ class ComponentProjector {
     bool SplitComponent() {
         DEBUG("Splitting component");
         set<size_t> level_heights(component_.avg_distances());
-        DEBUG("Level heights " << ToString<size_t>(level_heights));
+        DEBUG("Level heights " << utils::ContainerToString(level_heights));
 
         GraphComponent<Graph> gc = component_.AsGraphComponent();
 
@@ -763,7 +763,7 @@ class ComponentProjector {
             DEBUG("Processing edge " << g_.str(*it) << " avg_start " << start_dist << " avg_end " << end_dist);
             set<size_t> dist_to_split(level_heights.lower_bound(start_dist),
                     level_heights.upper_bound(end_dist));
-            DEBUG("Distances to split " << ToString<size_t>(dist_to_split));
+            DEBUG("Distances to split " << utils::ContainerToString(dist_to_split));
 
             size_t offset = start_dist;
             EdgeId e = *it;
@@ -1108,8 +1108,8 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
             if (!pics_folder_.empty()) {
                 PrintComponent(component, tree,
                         pics_folder_ + "success/"
-                                + ToString(this->g().int_id(component.start_vertex()))
-                                + "_" + ToString(candidate_cnt) + ".dot");
+                                + std::to_string(this->g().int_id(component.start_vertex()))
+                                + "_" + std::to_string(candidate_cnt) + ".dot");
             }
 
             ComponentProjector<Graph> projector(this->g(), component, coloring, tree);
@@ -1126,7 +1126,7 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
                 //todo check if we rewrite all of the previous pics!
                 PrintComponent(component,
                         pics_folder_ + "fail/"
-                                + ToString(this->g().int_id(component.start_vertex())) //+ "_" + ToString(candidate_cnt)
+                                + std::to_string(this->g().int_id(component.start_vertex())) //+ "_" + std::to_string(candidate_cnt)
                                 + ".dot");
             }
             return false;

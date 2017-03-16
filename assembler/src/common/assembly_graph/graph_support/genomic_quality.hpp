@@ -109,7 +109,7 @@ public:
 
     virtual std::string label(EdgeId edge) const {
         double q = quality(edge);
-        return (q == 0) ? "" : "quality: " + ToString(q);
+        return (q == 0) ? "" : "quality: " + std::to_string(q);
     }
 
     void clear() {
@@ -187,7 +187,7 @@ public:
     {}
 
     virtual void HandlePositiveQuality(EdgeId e) {
-        printing_rh_.HandleDelete(e, "_" + ToString(this->quality_handler().quality(e)));
+        printing_rh_.HandleDelete(e, "_" + std::to_string(this->quality_handler().quality(e)));
     }
 
 private:
@@ -265,7 +265,7 @@ private:
 //            //todo magic constant
 //            map<EdgeId, string> empty_coloring;
 //            visualization::visualization_utils::WriteComponent(g_, EdgeNeighborhood<Graph>(g_, edge, 50, 250),
-//                  folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
+//                  folder + "edge_" +  std::to_string(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
 //  }
 //
 //private:
@@ -356,7 +356,7 @@ private:
 //
 //    virtual std::string label(EdgeId edge) const {
 //        double q = quality(edge);
-//        return (q == 0) ? "" : "quality: " + ToString(q);
+//        return (q == 0) ? "" : "quality: " + std::to_string(q);
 //    }
 //
 //};
@@ -451,8 +451,8 @@ private:
 //            //todo magic constant
 ////          map<EdgeId, string> empty_coloring;
 //            shared_ptr<GraphSplitter<Graph>> splitter = EdgeNeighborhoodFinder<Graph>(g_, edge, 50, 250);
-//            visualization::visualization_utils::WriteComponents(g_, *splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
-//                    , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
+//            visualization::visualization_utils::WriteComponents(g_, *splitter/*, "locality_of_edge_" + std::to_string(g_.int_id(edge))*/
+//                    , folder + "edge_" +  std::to_string(g_.int_id(edge)) + "_" + std::to_string(quality_handler_.quality(edge)) + ".dot"
 //                    , colorer_, labeler_);
 //        } else {
 //            TRACE("Deleting edge " << g_.str(edge) << " with zero quality");
@@ -503,8 +503,8 @@ private:
 //            shared_ptr<GraphSplitter<Graph>> splitter = EdgeNeighborhoodFinder<Graph>(g_, edge, 50,
 //                    250);
 //
-//            visualization::visualization_utils::WriteComponents(g_, *splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
-//                    , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
+//            visualization::visualization_utils::WriteComponents(g_, *splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + std::to_string(g_.int_id(edge))
+//                    , folder + "edge_" +  std::to_string(g_.int_id(edge)) + "_" + std::to_string(quality_handler_.quality(edge)) + ".dot"
 //                    , empty_coloring, labeler_);
 //        }
 //    }
@@ -543,8 +543,8 @@ private:
 //            //todo magic constant
 //            map<EdgeId, string> empty_coloring;
 //            shared_ptr<GraphSplitter<Graph>> splitter = EdgeNeighborhoodFinder<Graph>(g_, edge, 50, 250);
-//            visualization::visualization_utils::WriteComponents(g_, *splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
-//                    , folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
+//            visualization::visualization_utils::WriteComponents(g_, *splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + std::to_string(g_.int_id(edge))
+//                    , folder + "edge_" +  std::to_string(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
 //    }
 //
 //private:

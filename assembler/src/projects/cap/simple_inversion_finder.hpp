@@ -145,9 +145,9 @@ class SimpleInversionFinder {
     DEBUG("cycle found: " << v_list_str.str());
 
     const std::string edge_pic_name = base_pic_file_name_ + "_" +
-        ToString(num_cycles_found_) + ".dot";
+        std::to_string(num_cycles_found_) + ".dot";
     const std::string path_pic_name = base_pic_file_name_ + "_path_" +
-        ToString(num_cycles_found_) + ".dot";
+        std::to_string(num_cycles_found_) + ".dot";
 
     /*
     PrintColoredGraphAroundEdge(g_, coloring_, edge, gp_.edge_pos,

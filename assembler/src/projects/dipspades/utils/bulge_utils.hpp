@@ -105,7 +105,7 @@ class Bulge : public BaseBulge{
     string GetPathStr(vector<EdgeId> path) {
         string s1 = "";
         for(auto edge = path.begin(); edge != path.end(); edge++)
-            s1 = ToString(graph_.int_id(*edge)) + "-";
+            s1 = std::to_string(graph_.int_id(*edge)) + "-";
         return s1.substr(0, s1.size() - 1);
     }
 

@@ -45,7 +45,7 @@ void ReadTestData(const std::string &filename, std::string &s1, std::string &s2,
 void ConductInversionTest(size_t testn) {
   typedef std::pair<int, int> pii;
 
-  const std::string &test_filename = "tests/" + ToString(testn);
+  const std::string &test_filename = "tests/" + std::to_string(testn);
   std::string s1, s2;
   std::vector<pii> inversions;
 

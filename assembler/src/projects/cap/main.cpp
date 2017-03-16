@@ -12,7 +12,7 @@
 #include "utils/segfault_handler.hpp"
 #include "utils/stacktrace.hpp"
 #include "pipeline/config_struct.hpp"
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>

@@ -345,14 +345,14 @@ public:
 
     KmerHashVector GetHashVector(size_t k, size_t nthreads) {
         VERIFY_MSG(k >= MIN_K && k <= MAX_K, "K value " + ToString(k) + " is not supported, should be >= " +
-                ToString(MIN_K) + " and <= " + ToString(MAX_K));
+                std::to_string(MIN_K) + " and <= " + std::to_string(MAX_K));
 
         return KmerHashVector(single_factories_[GET_T_ELEMENTS_NUMBER(k)]->GetHashVector(k, nthreads));
     }
 
     IKmerHashVector * GetRawHashVector(size_t k, size_t nthreads) {
-        VERIFY_MSG(k >= MIN_K && k <= MAX_K, "K value " + ToString(k) + " is not supported, should be >= " +
-                ToString(MIN_K) + " and <= " + ToString(MAX_K));
+        VERIFY_MSG(k >= MIN_K && k <= MAX_K, "K value " + std::to_string(k) + " is not supported, should be >= " +
+                std::to_string(MIN_K) + " and <= " + std::to_string(MAX_K));
 
         return single_factories_[GET_T_ELEMENTS_NUMBER(k)]->GetHashVector(k, nthreads);
     }

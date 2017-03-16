@@ -29,7 +29,7 @@ public:
 
     BinaryFileSingleStream(const std::string& file_name_prefix, size_t file_num) {
         std::string fname;
-        fname = file_name_prefix + "_" + ToString(file_num) + ".seq";
+        fname = file_name_prefix + "_" + std::to_string(file_num) + ".seq";
         stream_.open(fname.c_str(), std::ios_base::binary | std::ios_base::in);
 
         reset();
@@ -90,7 +90,7 @@ public:
 
     BinaryFilePairedStream(const std::string& file_name_prefix, size_t file_num, size_t insert_szie): stream_(), insert_size_ (insert_szie) {
         std::string fname;
-        fname = file_name_prefix + "_" + ToString(file_num) + ".seq";
+        fname = file_name_prefix + "_" + std::to_string(file_num) + ".seq";
         stream_.open(fname.c_str(), std::ios_base::binary | std::ios_base::in);
 
         reset();

@@ -247,9 +247,9 @@ private:
     string constructTableEntry(SingleVertex v/*, const string &label, const string &href*/) {
         stringstream ss;
         ss << "<TR>";
-        ss << constructPortCell(ToString(v.id_) + "_in", v.href_, v.fill_color_);
+        ss << constructPortCell(std::to_string(v.id_) + "_in", v.href_, v.fill_color_);
         ss << constructLabelCell(v.label_, v.href_, v.fill_color_);
-        ss << constructPortCell(ToString(v.id_) + "_out", v.href_, v.fill_color_);
+        ss << constructPortCell(std::to_string(v.id_) + "_out", v.href_, v.fill_color_);
         ss << "</TR>\n";
         return ss.str();
     }
@@ -257,9 +257,9 @@ private:
     string constructReverceTableEntry(SingleVertex v/*, const string &label, const string &href*/) {
         stringstream ss;
         ss << "<TR>";
-        ss << constructPortCell(ToString(v.id_) + "_out", v.href_, v.fill_color_);
+        ss << constructPortCell(std::to_string(v.id_) + "_out", v.href_, v.fill_color_);
         ss << constructLabelCell(v.label_, v.href_, v.fill_color_);
-        ss << constructPortCell(ToString(v.id_) + "_in", v.href_, v.fill_color_);
+        ss << constructPortCell(std::to_string(v.id_) + "_in", v.href_, v.fill_color_);
         ss << "</TR>\n";
         return ss.str();
     }

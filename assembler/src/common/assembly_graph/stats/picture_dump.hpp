@@ -263,6 +263,17 @@ struct detail_info_printer {
 
   private:
 
+    template<typename T>
+    std::string ToString(const T& t, size_t length) {
+        std::ostringstream ss;
+        ss << t;
+        std::string result = ss.str();
+        while (result.size() < length)
+            result = "0" + result;
+        return result;
+    }
+
+
     void ProduceDetailedInfo(const string &pos_name,
                              config::info_printer_pos pos) {
         using namespace visualization;

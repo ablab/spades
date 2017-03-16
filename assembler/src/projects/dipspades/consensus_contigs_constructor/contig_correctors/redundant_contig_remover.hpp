@@ -856,7 +856,7 @@ public:
             if(cur_process_perc > processed_perc) {
                 while(processed_perc + processed_step<= cur_process_perc)
                     processed_perc += processed_step;
-                INFO(ToString(processed_perc * 100.0) << "% contigs were processed");
+                INFO(std::to_string(processed_perc * 100.0) << "% contigs were processed");
                 processed_perc += processed_step;
             }
         }
@@ -865,7 +865,7 @@ public:
         RedundancyMapCondenser<size_t> condenser;
         condenser.Condense(res.redundancy_map);
 
-        INFO(ToString(redundant_contigs.size()) + " contigs from " + ToString(contigs->Size()) + " are redundant");
+        INFO(std::to_string(redundant_contigs.size()) + " contigs from " + std::to_string(contigs->Size()) + " are redundant");
 
         contigs->DeleteByIDs(redundant_contigs);
 

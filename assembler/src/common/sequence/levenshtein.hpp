@@ -9,7 +9,7 @@
 
 #include <string>
 #include <vector>
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 
 /*
  * Little modified copy-paste from http://www.merriampark.com/ldcpp.htm
@@ -206,7 +206,7 @@ inline std::pair<std::pair<int, int>, std::string> best_edit_distance_cigar(cons
 
 //  if (min > 0) {
 //      for (int i = 0; i <= n; i++) {
-//        INFO(ToString(matrix[i]));
+//        INFO(std::to_string(matrix[i]));
 //      }
 //  }
 
@@ -228,7 +228,7 @@ inline std::pair<std::pair<int, int>, std::string> best_edit_distance_cigar(cons
         }
         if (cur_operation != last_operation) {
             if (last_operation != 0)
-                res = ToString(cnt_last_operation) + last_operation + res;
+                res = std::to_string(cnt_last_operation) + last_operation + res;
             last_operation = cur_operation;
             cnt_last_operation = 1;
         }
@@ -236,6 +236,6 @@ inline std::pair<std::pair<int, int>, std::string> best_edit_distance_cigar(cons
             cnt_last_operation++;
         }
     }
-    res = ToString(cnt_last_operation) + last_operation + res;
+    res = std::to_string(cnt_last_operation) + last_operation + res;
     return std::make_pair(std::make_pair(cur_pos_j, min_m), res);
 }

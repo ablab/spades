@@ -15,7 +15,7 @@
 #include "io/reads/vector_reader.hpp"
 #include "io/reads/converting_reader_wrapper.hpp"
 #include "io/reads/read_stream_vector.hpp"
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 #include "paired_info/paired_info_helpers.hpp"
 #include "paired_info/weights.hpp"
 

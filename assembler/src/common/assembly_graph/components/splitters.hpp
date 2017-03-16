@@ -388,8 +388,8 @@ private:
 
     set<VertexId> FindBorder(const GraphComponent<Graph>& component) const {
         set<VertexId> result;
-        insert_all(result, component.entrances());
-        insert_all(result, component.exits());
+        utils::insert_all(result, component.entrances());
+        utils::insert_all(result, component.exits());
         return result;
     }
 

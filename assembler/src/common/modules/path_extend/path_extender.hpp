@@ -1020,7 +1020,7 @@ protected:
         result->clear();
         vector<EdgeId> edges;
         DEBUG("Pushing back")
-        push_back_all(edges, g_.OutgoingEdges(g_.EdgeEnd(path.Back())));
+        utils::push_back_all(edges, g_.OutgoingEdges(g_.EdgeEnd(path.Back())));
         result->reserve(edges.size());
         for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
             DEBUG("Adding edge w distance " << g_.int_id(*iter));

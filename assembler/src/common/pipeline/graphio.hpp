@@ -648,7 +648,7 @@ private:
 
 inline std::string MakeSingleReadsFileName(const std::string& file_name,
                                     size_t index) {
-    return file_name + "_paths_" + ToString(index) + ".mpr";
+    return file_name + "_paths_" + std::to_string(index) + ".mpr";
 }
 
 //helper methods
@@ -717,21 +717,21 @@ template<class Graph>
 void PrintUnclusteredIndices(const string& file_name, DataPrinter<Graph>& printer,
                              const UnclusteredPairedInfoIndicesT<Graph>& paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
-        PrintUnclusteredIndex(file_name + "_" + ToString(i), printer, paired_indices[i]);
+        PrintUnclusteredIndex(file_name + "_" + std::to_string(i), printer, paired_indices[i]);
 }
 
 template<class Graph>
 void PrintClusteredIndices(const string& file_name, DataPrinter<Graph>& printer,
                            const PairedInfoIndicesT<Graph>& paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
-        PrintClusteredIndex(file_name  + "_" + ToString(i), printer, paired_indices[i]);
+        PrintClusteredIndex(file_name  + "_" + std::to_string(i), printer, paired_indices[i]);
 }
 
 template<class Graph>
 void PrintScaffoldingIndices(const string& file_name, DataPrinter<Graph>& printer,
                            const PairedInfoIndicesT<Graph>& paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
-        PrintScaffoldingIndex(file_name  + "_" + ToString(i), printer, paired_indices[i]);
+        PrintScaffoldingIndex(file_name  + "_" + std::to_string(i), printer, paired_indices[i]);
 }
 
 template<class graph_pack>
@@ -909,7 +909,7 @@ void ScanPairedIndices(const std::string& file_name, DataScanner<Graph>& scanner
                        UnclusteredPairedInfoIndicesT<Graph>& paired_indices,
                        bool force_exists = true) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
-        ScanPairedIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i], force_exists);
+        ScanPairedIndex(file_name  + "_" + std::to_string(i), scanner, paired_indices[i], force_exists);
 }
 
 template<class Graph>
@@ -917,7 +917,7 @@ void ScanClusteredIndices(const std:: string& file_name, DataScanner<Graph>& sca
                           PairedInfoIndicesT<Graph>& paired_indices,
                           bool force_exists = true) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
-        ScanClusteredIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i], force_exists);
+        ScanClusteredIndex(file_name  + "_" + std::to_string(i), scanner, paired_indices[i], force_exists);
 }
 
 template<class Graph>
@@ -925,7 +925,7 @@ void ScanScaffoldingIndices(const std:: string& file_name, DataScanner<Graph>& s
                             PairedInfoIndicesT<Graph>& paired_indices,
                             bool force_exists = true) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
-        ScanScaffoldingIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i], force_exists);
+        ScanScaffoldingIndex(file_name  + "_" + std::to_string(i), scanner, paired_indices[i], force_exists);
 }
 
 template<class Graph>
@@ -933,7 +933,7 @@ void ScanScaffoldIndices(const string& file_name, DataScanner<Graph>& scanner,
         PairedInfoIndicesT<Graph>& scaffold_indices) {
 
     for (size_t i = 0; i < scaffold_indices.size(); ++i) {
-        ScanScaffoldIndex(file_name  + "_" + ToString(i), scanner, scaffold_indices[i]);
+        ScanScaffoldIndex(file_name  + "_" + std::to_string(i), scanner, scaffold_indices[i]);
     }
 }
 

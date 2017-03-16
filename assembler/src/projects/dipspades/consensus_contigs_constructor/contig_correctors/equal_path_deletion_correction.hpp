@@ -62,7 +62,7 @@ public:
         }
         RedundancyMapCondenser<size_t> condenser;
         res_.redundancy_map = condenser.Condense(res_.redundancy_map);
-        INFO(ToString(ids_for_deletion.size()) + " contigs from " << contigs->Size() << " are redundant");
+        INFO(std::to_string(ids_for_deletion.size()) + " contigs from " << contigs->Size() << " are redundant");
         contigs->DeleteByIDs(ids_for_deletion);
 
         INFO("Computing redundant equal contigs ends");

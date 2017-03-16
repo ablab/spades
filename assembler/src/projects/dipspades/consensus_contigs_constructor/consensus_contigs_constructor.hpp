@@ -82,7 +82,7 @@ class ConsensusContigsConstructor {
             }
         }
         if(zero_paths != 0)
-            INFO(ToString(zero_paths) + " contigs with total length " << total_length_unmapped <<
+            INFO(std::to_string(zero_paths) + " contigs with total length " << total_length_unmapped <<
                     " have mapped path with zero length");
         return map_paths;
     }

@@ -78,7 +78,7 @@ private:
         vector<EdgeId> genome_edges = curr_env.path_finder().FindReadPath(genome_path);
         vector<EdgeId> rc_genome_edges = curr_env.path_finder().FindReadPath(reverse_genome_path);
         vector<EdgeId> rc_and_usual_genome_edges(genome_edges);
-        push_back_all(rc_and_usual_genome_edges, rc_genome_edges);
+        utils::push_back_all(rc_and_usual_genome_edges, rc_genome_edges);
         vector<EdgeId> edges = path.simple_path();
         auto filtered_edges = FilterNonUnique(curr_env.graph(), edges, rc_and_usual_genome_edges);
         if(filtered_edges.size() < 2)
@@ -132,7 +132,7 @@ private:
                 }
 
 
-                DrawPicturesAlongPath(curr_env, path_to_draw, name + "_" + ToString(curr_env.graph().int_id(filtered_edges[i])));
+                DrawPicturesAlongPath(curr_env, path_to_draw, name + "_" + std::to_string(curr_env.graph().int_id(filtered_edges[i])));
                 real_difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
                 INFO("Diff is set to " << real_difference);
                 continue;
@@ -143,7 +143,7 @@ private:
                 real_difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
                 vector<EdgeId> path_to_draw;
                 path_to_draw.push_back(genome_path[index_genome].first);
-                DrawPicturesAlongPath(curr_env, path_to_draw, name + "_" + ToString(curr_env.graph().int_id(filtered_edges[i])));
+                DrawPicturesAlongPath(curr_env, path_to_draw, name + "_" + std::to_string(curr_env.graph().int_id(filtered_edges[i])));
                 INFO("Diff is set to " << real_difference);
             }
             ++i;

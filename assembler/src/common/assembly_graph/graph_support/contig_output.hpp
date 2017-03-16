@@ -144,7 +144,7 @@ private:
     }
 
     void UpdateSegmentedPath(PathSegmentSequence &segmented_path, EdgeId e) {
-        std::string segment_id = ToString(Canonical(e).int_id());
+        std::string segment_id = std::to_string(Canonical(e).int_id());
         std::string orientation = GetOrientation(e);
         segmented_path.segment_sequence_.push_back(segment_id + orientation);
     }
@@ -286,9 +286,9 @@ void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids, co
             }
             else
                 id = io::MakeContigId(++counter, graph.length(e) + graph.k(), graph.coverage(e), prefix);
-            ids[e] = ExtendedContigIdT(id, ToString(counter) + "+");
+            ids[e] = ExtendedContigIdT(id, std::to_string(counter) + "+");
             if (e != graph.conjugate(e))
-                ids[graph.conjugate(e)] =  ExtendedContigIdT(id + "'", ToString(counter) + "-");
+                ids[graph.conjugate(e)] =  ExtendedContigIdT(id + "'", std::to_string(counter) + "-");
         }
     }
 }
@@ -411,7 +411,7 @@ inline void OutputContigsToFASTG(ConjugateDeBruijnGraph& g,
 
 inline bool ShouldCut(ConjugateDeBruijnGraph& g, VertexId v) {
     vector<EdgeId> edges;
-    push_back_all(edges, g.OutgoingEdges(v));
+    utils::push_back_all(edges, g.OutgoingEdges(v));
 
     if(edges.size() == 0)
         return false;
@@ -420,7 +420,7 @@ inline bool ShouldCut(ConjugateDeBruijnGraph& g, VertexId v) {
             return false;
     }
     edges.clear();
-    push_back_all(edges, g.IncomingEdges(v));
+    utils::push_back_all(edges, g.IncomingEdges(v));
     for(size_t i = 0; i < edges.size(); i++)
         for(size_t j = i + 1; j < edges.size(); j++) {
             if(g.EdgeNucls(edges[i])[g.length(edges[i]) - 1] != g.EdgeNucls(edges[j])[g.length(edges[j]) - 1])

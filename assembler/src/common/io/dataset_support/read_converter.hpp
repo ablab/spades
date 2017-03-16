@@ -17,7 +17,7 @@
 #include "io/reads/binary_converter.hpp"
 #include "io/reads/io_helper.hpp"
 #include "dataset_readers.hpp"
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 
 #include <fstream>
 

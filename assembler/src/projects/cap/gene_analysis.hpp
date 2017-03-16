@@ -8,7 +8,7 @@
 #pragma once
 
 #include "utils/standard_base.hpp"
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 #include "comparison_utils.hpp"
 #include "boost/tokenizer.hpp"
 #include "coloring.hpp"
@@ -334,7 +334,7 @@ DECL_LOGGER("GeneCollection")
 //                       const ColorHandler<typename gp_t::graph_t>& coloring) {
 //  for (auto it = gene_collection.genes.begin();
 //      it != gene_collection.genes.end(); ++it) {
-////        make_dir(folder + ToString(it->first));
+////        make_dir(folder + std::to_string(it->first));
 //    const GenePositions& gene_poss = it->second.gene_positions;
 //
 //    //todo improve later
@@ -345,7 +345,7 @@ DECL_LOGGER("GeneCollection")
 //        total_gene_sequence = total_gene_sequence + genome.Subseq(pos.first.start_pos, pos.first.end_pos);
 //      }
 //    }
-//    WriteComponentsAlongSequence(gp, folder + ToString(it->first) + "/",
+//    WriteComponentsAlongSequence(gp, folder + std::to_string(it->first) + "/",
 //                                 100000, 50, total_gene_sequence, coloring);
 //  }
 //}

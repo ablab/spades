@@ -12,7 +12,7 @@
 #include "utils/logger/logger.hpp"
 #include "order_and_law.hpp"
 #include <boost/iterator/iterator_facade.hpp>
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 
 namespace omnigraph {
 
@@ -518,8 +518,8 @@ public:
 
     std::vector<EdgeId> IncidentEdges(VertexId v) const {
         vector<EdgeId> answer;
-        push_back_all(answer, IncomingEdges(v));
-        push_back_all(answer, OutgoingEdges(v));
+        utils::push_back_all(answer, IncomingEdges(v));
+        utils::push_back_all(answer, OutgoingEdges(v));
         return answer;
     }
 
@@ -574,7 +574,7 @@ public:
 
     std::string str(const VertexId v) const {
 //      return master_.str(data(v));
-        return ToString(int_id(v));
+        return std::to_string(int_id(v));
     }
 
     std::string detailed_str(const VertexId v) const {

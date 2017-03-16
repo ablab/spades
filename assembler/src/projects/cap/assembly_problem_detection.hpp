@@ -189,8 +189,8 @@
 //
 //    vector<EdgeId> IncidentEdges(VertexId v) {
 //        vector<EdgeId> ans;
-//        push_back_all(ans, gp_.g.IncomingEdges(v));
-//        push_back_all(ans, gp_.g.OutgoingEdges(v));
+//        utils::push_back_all(ans, gp_.g.IncomingEdges(v));
+//        utils::push_back_all(ans, gp_.g.OutgoingEdges(v));
 //        return ans;
 //    }
 //
@@ -407,7 +407,7 @@
 //        CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 //        GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g_, e);
 //        auto colorer = coloring_.ConstructColorer(component);
-//        visualization::visualization_utils::WriteComponent(component, folder + ToString(g_.int_id(e)) + "_loc.dot", colorer, labeler);
+//        visualization::visualization_utils::WriteComponent(component, folder + std::to_string(g_.int_id(e)) + "_loc.dot", colorer, labeler);
 //    }
 //
 ////    bool CheckEdges(const vector<EdgeId>& edges) {

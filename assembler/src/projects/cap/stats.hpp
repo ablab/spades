@@ -11,7 +11,7 @@
 #include "assembly_graph/components/graph_component.hpp"
 #include "assembly_graph/components/splitters.hpp"
 #include "utils.hpp"
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 #include "comparison_utils.hpp"
 #include "assembly_graph/graph_support/basic_graph_stats.hpp"
 #include "coloring.hpp"
@@ -493,8 +493,8 @@ class TrivialBreakpointFinder: public AbstractFilter<
 
         size_t MaxRedBlueIncLength(VertexId v) {
             vector<EdgeId> edges;
-            push_back_all(edges, g_.IncomingEdges(v));
-            push_back_all(edges, g_.OutgoingEdges(v));
+            utils::push_back_all(edges, g_.IncomingEdges(v));
+            utils::push_back_all(edges, g_.OutgoingEdges(v));
             return MaxRedBlueLength(edges);
         }
 
@@ -533,7 +533,7 @@ class TrivialBreakpointFinder: public AbstractFilter<
         GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g_, e);
         visualization::visualization_utils::WriteComponent(
                 component,
-                folder + prefix + ToString(g_.int_id(v)) + "_loc.dot",
+                folder + prefix + std::to_string(g_.int_id(v)) + "_loc.dot",
                 coloring_.ConstructColorer(component), labeler);
     }
 
@@ -586,8 +586,8 @@ public:
             ReportBreakpoint(
                     breakpoints[i],
                     folder,
-                    ToString(i) + "_"
-                            + ToString(comp.MaxRedBlueIncLength(breakpoints[i]))
+                    std::to_string(i) + "_"
+                            + std::to_string(comp.MaxRedBlueIncLength(breakpoints[i]))
                             + "_");
         }
     }
@@ -700,7 +700,7 @@ class SimpleInDelAnalyzer {
 
         visualization::graph_labeler::CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 
-        string alt_path_folder = folder_ + ToString(g_.int_id(e)) + "/";
+        string alt_path_folder = folder_ + std::to_string(g_.int_id(e)) + "/";
         make_dir(alt_path_folder);
         WriteComponentsAlongPath(g_, labeler, alt_path_folder + "path.dot", /*split_length*/
                 1000, /*vertex_number*/15, TrivialMappingPath(g_, genome_path),
@@ -984,16 +984,16 @@ public:
 //        for (auto it = genome_path_.begin(); it != genome_path_.end(); ++it) {
 //            if (answer.find(*it) == answer.end()) {
 //                curr++;
-//                answer[*it] = ToString(curr);
-//                answer[g_.conjugate(*it)] = ToString(-curr);
+//                answer[*it] = std::to_string(curr);
+//                answer[g_.conjugate(*it)] = std::to_string(-curr);
 //            }
 //        }
 //        curr = 1000000;
 //        for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 //            if (answer.find(*it) == answer.end()) {
 //                curr++;
-//                answer[*it] = ToString(curr);
-//                answer[g_.conjugate(*it)] = ToString(-curr);
+//                answer[*it] = std::to_string(curr);
+//                answer[g_.conjugate(*it)] = std::to_string(-curr);
 //            }
 //        }
 //        return answer;
@@ -1496,7 +1496,7 @@ public:
             if (location.first) {
                 locality = !locality;
             }
-            ReportLocality(locality, output_dir_ + ToString(i) + ".dot");
+            ReportLocality(locality, output_dir_ + std::to_string(i) + ".dot");
         }
     }
 };}

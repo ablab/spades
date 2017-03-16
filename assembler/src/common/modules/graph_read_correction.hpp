@@ -29,9 +29,9 @@ class TipsProjector {
     optional<EdgeId> UniqueAlternativeEdge(EdgeId tip, bool outgoing_tip) {
         vector<EdgeId> edges;
         if (outgoing_tip) {
-            push_back_all(edges, gp_.g.OutgoingEdges(gp_.g.EdgeStart(tip)));
+            utils::push_back_all(edges, gp_.g.OutgoingEdges(gp_.g.EdgeStart(tip)));
         } else {
-            push_back_all(edges, gp_.g.IncomingEdges(gp_.g.EdgeEnd(tip)));
+            utils::push_back_all(edges, gp_.g.IncomingEdges(gp_.g.EdgeEnd(tip)));
         }
         restricted::set<EdgeId> edges_set(edges.begin(), edges.end());
         edges_set.erase(tip);

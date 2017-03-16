@@ -28,7 +28,7 @@ public:
                 contigs_for_deletion.insert((*storage)[i]->id());
             }
         }
-        INFO(ToString(contigs_for_deletion.size()) +  " contigs from " <<
+        INFO(std::to_string(contigs_for_deletion.size()) +  " contigs from " <<
                 storage->Size() << " were deleted");
         storage->DeleteByIDs(contigs_for_deletion);
         return storage;

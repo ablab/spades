@@ -40,14 +40,14 @@ public:
             contigs = equal_path_remover.Correct(contigs);
             res.redundancy_map = equal_path_remover.Result().redundancy_map;
             index_.Clear();
-            INFO(ToString(contigs->Size()) + " contigs will be used further");
+            INFO(std::to_string(contigs->Size()) + " contigs will be used further");
         }
 
         INFO("Iterative loop corrector starts");
         {
             INFO("Only exact match iteration with parameters:");
-            INFO("\tMaximal loop length - " + ToString(max_loop_len_));
-            INFO("\tMinimal lcs length - " + ToString(min_lcs_length_));
+            INFO("\tMaximal loop length - " + std::to_string(max_loop_len_));
+            INFO("\tMinimal lcs length - " + std::to_string(min_lcs_length_));
             INFO("\tMaximal tail length - 0");
 
             index_.Initialize(contigs);
@@ -59,14 +59,14 @@ public:
             RedundancyMapMerger<size_t> map_merger;
             res.redundancy_map = map_merger.MergeTwoMaps(old_map, new_map);
             index_.Clear();
-            INFO(ToString(contigs->Size()) + " contigs will be used further");
+            INFO(std::to_string(contigs->Size()) + " contigs will be used further");
         }
 
         {
             INFO("Tails allowing match iteration with parameters:");
-            INFO("\tMaximal loop length - " + ToString(max_loop_len_));
-            INFO("\tMinimal lcs length - " + ToString(min_lcs_length_));
-            INFO("\tMaximal tail length - " + ToString(max_tail_length_));
+            INFO("\tMaximal loop length - " + std::to_string(max_loop_len_));
+            INFO("\tMinimal lcs length - " + std::to_string(min_lcs_length_));
+            INFO("\tMaximal tail length - " + std::to_string(max_tail_length_));
             index_.Initialize(contigs);
             LoopBulgeDeletionCorrector loop_corr(g_, k_value_,
                     max_loop_len_, max_tail_length_, min_lcs_length_, index_);
@@ -76,7 +76,7 @@ public:
             RedundancyMapMerger<size_t> map_merger;
             res.redundancy_map = map_merger.MergeTwoMaps(old_map, new_map);
             index_.Clear();
-            INFO(ToString(contigs->Size()) + " contigs will be used further");
+            INFO(std::to_string(contigs->Size()) + " contigs will be used further");
         }
         INFO("Iterative loop corrector ends");
         return contigs;

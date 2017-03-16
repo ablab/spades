@@ -30,7 +30,7 @@ void DumpEdgesAndAnnotation(const Graph& g,
     AnnotationOutStream annotation_out(out_annotation);
     for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
         EdgeId e = *it;
-        io::SingleRead edge_read("NODE_" + ToString(g.int_id(e)),
+        io::SingleRead edge_read("NODE_" + std::to_string(g.int_id(e)),
                                  g.EdgeNucls(e).str());
         oss << edge_read;
         auto relevant_bins = edge_annotation.Annotation(e);

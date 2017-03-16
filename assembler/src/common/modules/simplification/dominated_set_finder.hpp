@@ -15,10 +15,10 @@ class DominatedSetFinder {
     std::map<VertexId, Range> dominated_;
 
     bool CheckCanBeProcessed(VertexId v) const {
-        DEBUG( "Check if vertex " << g_.str(v) << " is dominated close neighbour");
+        DEBUG("Check if vertex " << g_.str(v) << " is dominated close neighbour");
         for (EdgeId e : g_.IncomingEdges(v)) {
             if (dominated_.count(g_.EdgeStart(e)) == 0) {
-                DEBUG( "Blocked by external vertex " << g_.int_id(g_.EdgeStart(e)) << " that starts edge " << g_.int_id(e));
+                DEBUG("Blocked by external vertex " << g_.int_id(g_.EdgeStart(e)) << " that starts edge " << g_.int_id(e));
                 DEBUG("Check fail");
                 return false;
             }
@@ -31,7 +31,7 @@ class DominatedSetFinder {
                               std::queue<VertexId>& can_be_processed) const {
         DEBUG("Updating can be processed");
         for (EdgeId e : g_.OutgoingEdges(v)) {
-            DEBUG("Considering edge " << ToString(e));
+            DEBUG("Considering edge " << g_.str(e));
             VertexId neighbour_v = g_.EdgeEnd(e);
             if (CheckCanBeProcessed(neighbour_v)) {
                 can_be_processed.push(neighbour_v);
@@ -115,13 +115,13 @@ public:
     }
 
     GraphComponent<Graph> AsGraphComponent() const {
-        return GraphComponent<Graph>::FromVertices(g_, key_set(dominated_));
+        return GraphComponent<Graph>::FromVertices(g_, utils::key_set(dominated_));
     }
 
     //little meaning if FillDominated returned false
     const map<VertexId, Range> CountBorder() const {
         map<VertexId, Range> border;
-        for (VertexId v : key_set(border)) {
+        for (VertexId v : utils::key_set(border)) {
             for (EdgeId e : g_.OutgoingEdges(v)) {
                 VertexId e_end = g_.EdgeEnd(e);
                 if (dominated_.count(e_end) == 0) {

@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 
 //#include "pipeline/graphio.hpp"
 #include "pipeline/graph_pack.hpp"
@@ -133,7 +133,7 @@ class ConnectingPathPropagator : public EdgeAnnotationPropagator {
                     //if (BadPath(path, bin)) {
                     //    auto to_draw = path;
                     //    to_draw.insert(to_draw.begin(), e);
-                    //    PrintAnnotatedAlongPath(gp(), to_draw, debug_annotation_, "/home/snurk/tmp/pics/pic_" + ToString(++pic_cnt) + "_");
+                    //    PrintAnnotatedAlongPath(gp(), to_draw, debug_annotation_, "/home/snurk/tmp/pics/pic_" + std::to_string(++pic_cnt) + "_");
                     //}
                     //}
                     insert_all(answer, path);

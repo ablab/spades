@@ -13,6 +13,8 @@
 
 #include "utils/verify.hpp"
 
+namespace utils {
+
 inline rlim_t limit_file(size_t limit) {
   struct rlimit rl;
 
@@ -30,4 +32,6 @@ inline rlim_t limit_file(size_t limit) {
   INFO("Open file limit set to " << rl.rlim_cur);
 
   return rl.rlim_cur;
+}
+
 }

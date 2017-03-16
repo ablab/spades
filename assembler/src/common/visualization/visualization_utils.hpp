@@ -40,7 +40,7 @@ void DrawComponentsOfShortEdges(const Graph &g, const string &output_dir, size_t
                                 size_t sources) {
     vector<typename Graph::EdgeId> short_edges;
     std::string pics_folder_ =
-            output_dir + ToString(min_length) + "_" + ToString(sinks) + "_" + ToString(sources) + "_" +
+            output_dir + std::to_string(min_length) + "_" + std::to_string(sinks) + "_" + std::to_string(sources) + "_" +
             "pics_polymorphic/";
     make_dir(pics_folder_);
     INFO("Writing pics with components consisting of short edges to " + pics_folder_);
@@ -69,14 +69,14 @@ void DrawComponentsOfShortEdges(const Graph &g, const string &output_dir, size_t
             graph_labeler::CoverageGraphLabeler<Graph> labeler2(component.g());
             graph_labeler::CompositeLabeler<Graph> compositeLabeler(labeler, labeler2);
             WriteComponentSinksSources(component,
-                                       pics_folder_ + ToString(g.int_id(*component.vertices().begin()))
+                                       pics_folder_ + std::to_string(g.int_id(*component.vertices().begin()))
                                        + ".dot", visualization::graph_colorer::DefaultColorer(g),
                                        compositeLabeler);
-            INFO("Component is written to " + ToString(g.int_id(*component.vertices().begin())) + ".dot");
+            INFO("Component is written to " + std::to_string(g.int_id(*component.vertices().begin())) + ".dot");
 
             //            PrintComponent(component,
 //                                pics_folder_ + "ShortComponents/"
-//                                        + ToString(gp.g.int_id(component.vertices_[0]))
+//                                        + std::to_string(gp.g.int_id(component.vertices_[0]))
 //                                         + ".dot");
         }
     }
@@ -197,7 +197,7 @@ public:
         shared_ptr<graph_colorer::GraphColorer<Graph>> resulting_colorer = make_shared<graph_colorer::CompositeGraphColorer<Graph>>(
                 colorer_, edge_colorer);
 
-        string fn = output_folder_ + "/edge_" + ToString(g_.int_id(e)) + add_label + ".dot";
+        string fn = output_folder_ + "/edge_" + std::to_string(g_.int_id(e)) + add_label + ".dot";
         visualization::visualization_utils::WriteComponent(omnigraph::EdgeNeighborhood<Graph>(g_, e, 50, 250), fn, resulting_colorer,
                                       labeler_);
     }

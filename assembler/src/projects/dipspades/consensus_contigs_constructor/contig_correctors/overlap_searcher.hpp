@@ -473,7 +473,7 @@ public:
             }
         }
 
-        TRACE("Overlapped contigs map. Size - " << ToString(overlap_map.Size()) << endl <<
+        TRACE("Overlapped contigs map. Size - " << std::to_string(overlap_map.Size()) << endl <<
                 overlap_map);
 
         FillOverlapGraphByMap(overlap_map, og);
@@ -481,16 +481,16 @@ public:
         string fname = dsp_cfg::get().io.output_dir + "default_overlap_graph.dot";
         OverlapgraphToDot(fname, og, contigs);
 
-        INFO("Overlap graph with " + ToString(og.Vertices().size()) + " vertices and " +
-                ToString(og.Edges().size()) + " edges constructed");
+        INFO("Overlap graph with " + std::to_string(og.Vertices().size()) + " vertices and " +
+                std::to_string(og.Edges().size()) + " edges constructed");
 
         auto og_vertices = og.Vertices();
         auto edges = og.Edges();
 
         SimplifyOverlapGraph(og, 10, 5);
 
-        INFO("Simplified overlap graph contains " + ToString(og.Vertices().size()) + " vertices and " +
-                ToString(og.Edges().size()) + " edges");
+        INFO("Simplified overlap graph contains " + std::to_string(og.Vertices().size()) + " vertices and " +
+                std::to_string(og.Edges().size()) + " edges");
 
         fname = dsp_cfg::get().io.output_dir + "simplified_overlap_graph.dot";
         OverlapgraphToDot(fname, og, contigs);

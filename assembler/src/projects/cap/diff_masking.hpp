@@ -273,7 +273,7 @@ inline void PerformIterativeRefinement(ContigStreams& streams,
     size_t current_k = k_values.back();
     k_values.pop_back();
 
-    string root = out_root + ToString(current_k) + "/";
+    string root = out_root + std::to_string(current_k) + "/";
 
     if (utils::NeedToUseLongSeq(current_k)) {
         omp_set_num_threads(1);

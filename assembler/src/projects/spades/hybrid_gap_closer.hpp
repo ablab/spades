@@ -406,7 +406,7 @@ class MultiGapJoiner {
 
     vector<EdgeId> EdgesNeedingSplit(const SplitInfo& left_split_info, const SplitInfo& right_split_info) const {
         vector<EdgeId> answer;
-        for (EdgeId e : key_set(left_split_info))
+        for (EdgeId e : utils::key_set(left_split_info))
             if (right_split_info.count(e))
                 answer.push_back(e);
         return answer;
@@ -652,7 +652,7 @@ private:
     GapDescription ConstructConsensus(EdgeId e) const {
         DEBUG("Constructing consensus for edge " << g_.str(e));
         vector<GapDescription> closures;
-        for (const auto& edge_pair_gaps : storage_.EdgePairGaps(get(storage_.inner_index(), e))) {
+        for (const auto& edge_pair_gaps : storage_.EdgePairGaps(utils::get(storage_.inner_index(), e))) {
             auto consensus = ConstructConsensus(edge_pair_gaps.first, edge_pair_gaps.second);
             if (consensus != INVALID_GAP) {
                 closures.push_back(consensus);

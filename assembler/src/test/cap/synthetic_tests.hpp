@@ -84,7 +84,7 @@ class SyntheticTestsRunner {
 
         ConstructColoredGraph(gp, coloring, coordinates_handler, streams);
         coordinates_handler.FindGenomeFirstEdge(3);
-        Save(gp, coloring, coordinates_handler, streams, output_dir_ + ToString(id));
+        Save(gp, coloring, coordinates_handler, streams, output_dir_ + std::to_string(id));
     }
 
     void Save(const GraphPackT& gp, const ColorHandler<GraphT>& coloring,
@@ -123,7 +123,7 @@ class SyntheticTestsRunner {
         size_t contig_cnt = 0;
         for (const XmlNodeT& contig : genome_node) {
             contigs.push_back(
-                    io::SingleRead("contig_" + ToString(contig_cnt++),
+                    io::SingleRead("contig_" + std::to_string(contig_cnt++),
                             contig.second.data()));
         }
         return contigs;

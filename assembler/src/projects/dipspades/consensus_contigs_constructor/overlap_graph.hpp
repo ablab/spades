@@ -919,7 +919,7 @@ public:
         map<size_t, vector<size_t> > sh_paths = dijkstra.Paths();
 
         if(sh_paths.find(v2) == sh_paths.end()){
-//            INFO("Path from " + ToString(v1) + " to " + ToString(v2) + " isn't found");
+//            INFO("Path from " + ToString(v1) + " to " + ContainerToString(v2) + " isn't found");
             return paths;
         }
         else{
@@ -1104,7 +1104,7 @@ void SimplifyOverlapGraph(OverlapGraph &overlap_graph, size_t tc_num_iter, size_
         TransitiveReductionCorrector tr_corr;
         tr_res = tr_corr.Correct(overlap_graph);
 
-        INFO(ToString(tc_res) + " tips and " + ToString(tr_res) + " transitive edges were deleted in overlap graph");
+        INFO(std::to_string(tc_res) + " tips and " + std::to_string(tr_res) + " transitive edges were deleted in overlap graph");
     }
 
     INFO("Bulge remover starts");
@@ -1112,7 +1112,7 @@ void SimplifyOverlapGraph(OverlapGraph &overlap_graph, size_t tc_num_iter, size_
     size_t num_bulges  = 1;
     for(size_t i = 0; (i < br_num_iter && num_bulges > 0); i++){
         num_bulges = br_corr.Correct(overlap_graph);
-        INFO(ToString(num_bulges) + " bulges were deleted in overlap graph");
+        INFO(std::to_string(num_bulges) + " bulges were deleted in overlap graph");
     }
 }
 

@@ -13,7 +13,7 @@
 //#include "omp.h"
 #include "io/kmers/mmapped_reader.hpp"
 #include "utils/filesystem/path_helper.hpp"
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 #include "utils/ph_map/perfect_hash_map_builder.hpp"
 #include "utils/kmer_mph/kmer_splitters.hpp"
 #include "logger.hpp"
@@ -247,7 +247,7 @@ int main(int argc, char *argv[]) {
 
     std::vector<string> input_files;
     for (size_t i = 1; i <= sample_cnt; ++i) {
-        input_files.push_back(work_dir + "/sample" + ToString(i));
+        input_files.push_back(work_dir + "/sample" + std::to_string(i));
     }
 
     KmerMultiplicityCounter kmcounter(k, output);

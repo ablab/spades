@@ -8,7 +8,7 @@
 #ifndef OMNI_TOOLS_HPP_
 #define OMNI_TOOLS_HPP_
 
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 
 #include "utils/filesystem/path_helper.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
@@ -39,9 +39,9 @@ private:
             return false;
 
         std::vector<EdgeId> v1;
-        push_back_all(v1, graph_.OutgoingEdges(graph_.EdgeStart(e)));
+        utils::push_back_all(v1, graph_.OutgoingEdges(graph_.EdgeStart(e)));
         std::vector<EdgeId> v2;
-        push_back_all(v2, graph_.IncomingEdges(graph_.EdgeEnd(e)));
+        utils::push_back_all(v2, graph_.IncomingEdges(graph_.EdgeEnd(e)));
         bool eq = (v1.size() == 2 && v2.size() == 2) && ((v1[0] == v2[0] && v1[1] == v2[1])    || (v1[0] == v2[1] && v1[0] == v2[1]));
         return !eq;
     }

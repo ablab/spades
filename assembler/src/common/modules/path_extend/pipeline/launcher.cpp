@@ -91,11 +91,11 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
         if (edge_labels.find(edge_coord_pair.first) == edge_labels.end()) {
             edge_labels[edge_coord_pair.first] = "";
         }
-        edge_labels[edge_coord_pair.first] += "order: " + ToString(count) +
-            "\n mapped range: " + ToString(edge_coord_pair.second.mapped_range.start_pos) + " : "
-            + ToString(edge_coord_pair.second.mapped_range.end_pos) +
-            "\n init range: " + ToString(edge_coord_pair.second.initial_range.start_pos) + " : "
-            + ToString(edge_coord_pair.second.initial_range.end_pos) + "\n";
+        edge_labels[edge_coord_pair.first] += "order: " + std::to_string(count) +
+            "\n mapped range: " + std::to_string(edge_coord_pair.second.mapped_range.start_pos) + " : "
+            + std::to_string(edge_coord_pair.second.mapped_range.end_pos) +
+            "\n init range: " + std::to_string(edge_coord_pair.second.initial_range.start_pos) + " : "
+            + std::to_string(edge_coord_pair.second.initial_range.end_pos) + "\n";
         ++count;
     }
 
@@ -277,12 +277,12 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
 
     while (cur_length > lower_bound) {
         INFO("Adding extender with length " << cur_length);
-        push_back_all(extenders, ConstructMPExtender(generator, cur_length));
+        utils::push_back_all(extenders, ConstructMPExtender(generator, cur_length));
         cur_length -= pset.scaffolding2015.unique_length_step;
     }
     if (unique_data_.min_unique_length_ > lower_bound) {
         INFO("Adding final extender with length " << lower_bound);
-        push_back_all(extenders, ConstructMPExtender(generator, lower_bound));
+        utils::push_back_all(extenders, ConstructMPExtender(generator, lower_bound));
     }
 
     return extenders;
@@ -367,7 +367,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap& cover_m
         if (params_.pset.sm == sm_old) {
             INFO("Will not use new long read scaffolding algorithm in this mode");
         } else {
-            push_back_all(extenders, ConstructPBExtenders(generator));
+            utils::push_back_all(extenders, ConstructPBExtenders(generator));
         }
     }
 
@@ -375,12 +375,12 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap& cover_m
         if (params_.pset.sm == sm_old) {
             INFO("Will not use mate-pairs is this mode");
         } else {
-            push_back_all(extenders, ConstructMPExtenders(generator));
+            utils::push_back_all(extenders, ConstructMPExtenders(generator));
         }
     }
 
     if (params_.pset.use_coordinated_coverage)
-        push_back_all(extenders, generator.MakeCoverageExtenders());
+        utils::push_back_all(extenders, generator.MakeCoverageExtenders());
 
     INFO("Total number of extenders is " << extenders.size());
     return extenders;

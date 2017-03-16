@@ -10,7 +10,7 @@
 #include "adt/queue_iterator.hpp"
 #include "func/pred.hpp"
 #include "action_handlers.hpp"
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 #include <boost/iterator/iterator_facade.hpp>
 
 namespace omnigraph {
@@ -120,7 +120,7 @@ public:
                      const Comparator& comparator = Comparator(),
                      bool canonical_only = false,
                      func::TypedPredicate<ElementId> add_condition = func::AlwaysTrue<ElementId>())
-            : base(g, "SmartSet " + ToString(this), add_new, comparator, canonical_only, add_condition) {
+            : base(g, "SmartSet", add_new, comparator, canonical_only, add_condition) {
     }
 
     template<class Iterator>
@@ -169,7 +169,7 @@ class SmartVertexIterator : public SmartIterator<Graph,
     SmartVertexIterator(const Graph &g, const Comparator& comparator =
                         Comparator(), bool canonical_only = false)
             : SmartIterator<Graph, VertexId, Comparator>(
-                g, "SmartVertexIterator " + ToString(get_id()), true,
+                g, "SmartVertexIterator " + std::to_string(get_id()), true,
                 comparator, canonical_only) {
         this->insert(g.begin(), g.end());
     }
@@ -297,7 +297,7 @@ class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId, Co
     SmartEdgeIterator(const Graph &g, Comparator comparator = Comparator(),
                       bool canonical_only = false)
             : SmartIterator<Graph, EdgeId, Comparator>(
-                g, "SmartEdgeIterator " + ToString(get_id()), true,
+                g, "SmartEdgeIterator " + std::to_string(get_id()), true,
                 comparator, canonical_only) {
         this->insert(EdgeIt(g, g.begin()), EdgeIt(g, g.end()));
 

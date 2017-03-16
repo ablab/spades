@@ -12,7 +12,7 @@
 #include "sequence/sequence.hpp"
 #include "sequence/nucl.hpp"
 #include "sequence/sequence_tools.hpp"
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 
 #include <string>
 
@@ -237,10 +237,10 @@ private:
         //        TODO remove naming?
         std::string new_name;
         if (name_.length() >= 3 && name_.substr(name_.length() - 3) == "_RC") {
-            new_name = name_.substr(0, name_.length() - 3) + "_SUBSTR(" + ToString(size() - to) + "," +
-                       ToString(size() - from) + ")" + "_RC";
+            new_name = name_.substr(0, name_.length() - 3) + "_SUBSTR(" + std::to_string(size() - to) + "," +
+                       std::to_string(size() - from) + ")" + "_RC";
         } else {
-            new_name = name_ + "_SUBSTR(" + ToString(from) + "," + ToString(to) + ")";
+            new_name = name_ + "_SUBSTR(" + std::to_string(from) + "," + std::to_string(to) + ")";
         }
         return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len),
                           SequenceOffsetT(from + (size_t) left_offset_),

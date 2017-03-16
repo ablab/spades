@@ -10,9 +10,9 @@
 
 namespace path {
 
-path::files_t files_by_prefix(std::string const& path);
-void copy_files_by_prefix(path::files_t const& files, std::string const& to_folder);
-void link_files_by_prefix(path::files_t const& files, std::string const& to_folder);
+files_t files_by_prefix(std::string const& path);
+void copy_files_by_prefix(files_t const& files, std::string const& to_folder);
+void link_files_by_prefix(files_t const& files, std::string const& to_folder);
 void copy_files_by_ext(std::string const& from_folder, std::string const& to_folder, std::string const& ext, bool recursive);
 
 }

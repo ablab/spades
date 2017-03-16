@@ -9,7 +9,7 @@
 
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/graphio.hpp"
-#include "utils/simple_tools.hpp"
+#include "utils/stl_utils.hpp"
 #include "modules/simplification/cleaner.hpp"
 #include "io/reads/splitting_wrapper.hpp"
 #include "io/reads/multifile_reader.hpp"
