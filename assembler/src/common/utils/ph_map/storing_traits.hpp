@@ -17,7 +17,6 @@
 
 namespace utils {
 
-
 struct SimpleStoring {
     template<class K, class V>
     static V get_value(const ValueArray<V> &values, const K& key) {
@@ -77,5 +76,25 @@ struct InvertableStoring {
 };
 
 typedef InvertableStoring DefaultStoring;
+
+template<class StoringType>
+struct StoringTypeFilter {
+};
+
+template<>
+struct StoringTypeFilter<SimpleStoring> {
+    template<class Kmer>
+    bool filter(const Kmer &/*kmer*/) const {
+        return true;
+    }
+};
+
+template<>
+struct StoringTypeFilter<InvertableStoring> {
+    template<class Kmer>
+    bool filter(const Kmer &kmer) const {
+        return kmer.IsMinimal();
+    }
+};
 
 }

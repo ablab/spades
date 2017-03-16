@@ -7,7 +7,7 @@
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
-#include "utils/indices/perfect_hash_map.hpp"
+#include "utils/ph_map/perfect_hash_map.hpp"
 #include "utils/kmer_mph/kmer_index_builder.hpp"
 
 #include "io/reads/read_processor.hpp"

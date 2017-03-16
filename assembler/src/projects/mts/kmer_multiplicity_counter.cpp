@@ -14,8 +14,8 @@
 #include "io/kmers/mmapped_reader.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/simple_tools.hpp"
-#include "utils/indices/perfect_hash_map_builder.hpp"
-#include "utils/indices/kmer_splitters.hpp"
+#include "utils/ph_map/perfect_hash_map_builder.hpp"
+#include "utils/kmer_mph/kmer_splitters.hpp"
 #include "logger.hpp"
 
 using std::string;

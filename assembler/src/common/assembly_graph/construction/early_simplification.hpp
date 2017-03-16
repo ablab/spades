@@ -7,7 +7,7 @@
 
 #pragma once
 #include "utils/standard_base.hpp"
-#include "utils/indices/perfect_hash_map.hpp"
+#include "utils/ph_map/perfect_hash_map.hpp"
 #include "utils/kmer_mph/kmer_index.hpp"
 
 namespace debruijn_graph {

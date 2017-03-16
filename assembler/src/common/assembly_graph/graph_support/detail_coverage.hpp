@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "utils/indices/perfect_hash_map.hpp"
+#include "utils/ph_map/perfect_hash_map.hpp"
 #include "assembly_graph/core/coverage.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
 #include "utils/verify.hpp"

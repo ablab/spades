@@ -26,7 +26,7 @@
 
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/graph_support/coverage_filling.hpp"
-#include "utils/indices/storing_traits.hpp"
+#include "utils/ph_map/storing_traits.hpp"
 #include "assembly_graph/index/edge_index_builders.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/extension_index/kmer_extension_index_builder.hpp"

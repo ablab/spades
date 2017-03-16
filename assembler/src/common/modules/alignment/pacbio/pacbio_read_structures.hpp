@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "utils/indices/perfect_hash_map.hpp"
+#include "utils/ph_map/perfect_hash_map.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include <algorithm>

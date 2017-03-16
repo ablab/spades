@@ -8,7 +8,7 @@
 #pragma once
 
 #include "assembly_graph/index/edge_position_index.hpp"
-#include "utils/indices/storing_traits.hpp"
+#include "utils/ph_map/storing_traits.hpp"
 #include "sequence/genome_storage.hpp"
 #include "assembly_graph/handlers/id_track_handler.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"

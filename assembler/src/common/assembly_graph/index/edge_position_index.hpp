@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "utils/indices/perfect_hash_map.hpp"
+#include "utils/ph_map/perfect_hash_map.hpp"
 #include "io/reads/single_read.hpp"
 
 namespace debruijn_graph {

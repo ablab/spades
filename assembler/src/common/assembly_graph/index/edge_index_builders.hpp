@@ -8,7 +8,7 @@
 #pragma once
 
 #include "edge_info_updater.hpp"
-#include "utils/indices/perfect_hash_map_builder.hpp"
+#include "utils/ph_map/perfect_hash_map_builder.hpp"
 
 namespace debruijn_graph {
 

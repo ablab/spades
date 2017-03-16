@@ -6,9 +6,9 @@
 //***************************************************************************
 
 #include "utils/kmer_mph/kmer_index_builder.hpp"
+#include "utils/kmer_mph/kmer_splitters.hpp"
 
 #include "perfect_hash_map.hpp"
-#include "kmer_splitters.hpp"
 
 namespace utils {
 

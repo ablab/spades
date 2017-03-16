@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "utils/indices/perfect_hash_map.hpp"
+#include "utils/ph_map/perfect_hash_map.hpp"
 #include "utils/simple_tools.hpp"
-#include "utils/indices/storing_traits.hpp"
+#include "utils/ph_map/storing_traits.hpp"
 #include <bitset>
 
 namespace utils {
