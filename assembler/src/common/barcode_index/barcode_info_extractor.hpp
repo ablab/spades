@@ -40,12 +40,13 @@ namespace barcode_index {
         typedef typename barcode_entry_t::barcode_info_t barcode_info_t;
         typedef typename distribution_t::key_type barcode_info_key_t;
         typedef typename distribution_t::mapped_type barcode_info_value_t;
+        typedef typename distribution_t::value_type barcode_info_pair_t;
     protected:
-        shared_ptr<BarcodeIndex<barcode_entry_t>> mapper_;
+        shared_ptr<barcode_index::BarcodeIndex<barcode_entry_t>> mapper_;
         const Graph &g_;
     public:
         BarcodeIndexInfoExtractor(shared_ptr<AbstractBarcodeIndex> abstract_mapper, const Graph &g) :
-                mapper_(std::dynamic_pointer_cast<BarcodeIndex<barcode_entry_t>>(abstract_mapper)),
+                mapper_(std::dynamic_pointer_cast<barcode_index::BarcodeIndex<barcode_entry_t>>(abstract_mapper)),
                 g_(g) {}
 
         /**
@@ -132,6 +133,14 @@ namespace barcode_index {
             auto it_tail = mapper_->GetEntryTailsIterator(edge1);
             auto it_head = mapper_->GetEntryHeadsIterator(edge2);
             return (it_tail->second).GetUnionSize(it_head->second);
+        }
+
+        vector<BarcodeId> GetBarcodes(const EdgeId& edge) const {
+            vector <BarcodeId> result;
+            auto copy_barcode_id = [&result](const barcode_info_pair_t& entry)
+                        {result.push_back(entry.first); };
+            std::for_each(barcode_iterator_begin(edge), barcode_iterator_end(edge), copy_barcode_id);
+            return result;
         }
 
 

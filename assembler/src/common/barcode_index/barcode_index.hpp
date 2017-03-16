@@ -192,8 +192,8 @@ namespace barcode_index {
     };
 
     /**
-     * BarcodeIndex stores information provided by barcoded reads alignment to graph (read clouds).
-     * For every edge we store read clouds which are contained on the edge along with additional info.
+     * BarcodeIndex stores information provided by alignment of read clouds to the graph.
+     * For every edge we store barcoded reads which are contained on the edge along with additional info.
      * Read cloud is represented by it's barcode
      * The edge contains the cloud if there is a read barcoded by cloud's barcode which is aligned to the edge.
      * Info example: FrameBarcodeInfo

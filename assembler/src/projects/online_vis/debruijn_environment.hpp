@@ -26,12 +26,11 @@ class DebruijnEnvironment : public Environment {
         GraphElementFinder<Graph> element_finder_;
         std::shared_ptr<MapperClass> mapper_;
         FillerClass filler_;
-    visualization::graph_labeler::DefaultLabeler<Graph> labeler_;
-//        barcode_index::BarcodeDistGraphLabeler <Graph> barcode_labeler_;
-//        visualization::graph_labeler::CompositeLabeler <Graph> labeler_;
+        visualization::graph_labeler::DefaultLabeler<Graph> default_labeler_;
+        visualization::graph_labeler::ReadCloudLabeler <Graph> barcode_labeler_;
+        visualization::graph_labeler::CompositeLabeler <Graph> labeler_;
         debruijn_graph::ReadPathFinder<Graph> path_finder_;
         ColoringClass coloring_;
-        //CompositeLabeler<Graph> labeler_;
 
     public :
 
@@ -52,16 +51,16 @@ class DebruijnEnvironment : public Environment {
               element_finder_(gp_.g),
               mapper_(new MapperClass(gp_.g, gp_.index, gp_.kmer_mapper)),
               filler_(gp_.g, mapper_, gp_.edge_pos),
-              labeler_(gp_.g, gp_.edge_pos),
-//              barcode_labeler_(gp_.g, gp_.barcode_mapper_ptr),
-//              labeler_(pos_labeler_, barcode_labeler_),
-//              labeler_(pos_labeler),
+              default_labeler_(gp_.g, gp_.edge_pos),
+              barcode_labeler_(gp_.g),
+              labeler_(default_labeler_, barcode_labeler_),
               path_finder_(gp_.g) {
             DEBUG("Environment constructor");
             gp_.kmer_mapper.Attach();
             debruijn_graph::graphio::ScanGraphPack(path_, gp_);
-//            debruijn_graph::graphio::ScanGraphPack(path_, gp_);
-            DEBUG("Graph pack created")
+            DEBUG("Graph pack created");
+            //fixme refactor barcode extractor to avoid that
+            barcode_labeler_.UpdateExtractor(gp_.barcode_mapper_ptr, gp_.g);
             LoadFromGP();
         }
 
@@ -206,7 +205,7 @@ class DebruijnEnvironment : public Environment {
         ColoringClass& coloring() {
             return coloring_;
         }
-
+        DECL_LOGGER("DebruijnEnvionment");
 };
 
 }
