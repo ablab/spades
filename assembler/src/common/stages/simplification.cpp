@@ -288,7 +288,7 @@ class GraphSimplifier {
 
         PushValid(
                 LowCoverageEdgeRemoverInstance(g_,
-                                               simplif_cfg_.init_clean.lcer,
+                                               simplif_cfg_.lcer,
                                                info_container_),
                 "Removing edges with low coverage",
                 algos);

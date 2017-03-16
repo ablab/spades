@@ -315,7 +315,6 @@ void load(debruijn_config::simplification::init_cleaning& init_clean,
   load(init_clean.early_it_only, pt, "early_it_only", complete);
   load(init_clean.activation_cov, pt, "activation_cov", complete);
   load(init_clean.ier, pt, "ier", complete);
-  load(init_clean.lcer, pt, "lcer", complete);
   load(init_clean.tip_condition, pt, "tip_condition", complete);
   load(init_clean.ec_condition, pt, "ec_condition", complete);
   load(init_clean.disconnect_flank_cov, pt, "disconnect_flank_cov", complete);
@@ -596,6 +595,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.ier, pt, "ier", complete); // isolated edges remover
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
+  load(simp.lcer, pt, "lcer", complete); //low coverage edge remover
   load(simp.init_clean, pt, "init_clean", complete); // presimplification
   load(simp.final_tc, pt, "final_tc", complete);
   load(simp.final_br, pt, "final_br", complete);

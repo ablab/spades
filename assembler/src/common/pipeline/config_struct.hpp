@@ -326,7 +326,6 @@ struct debruijn_config {
             bool early_it_only;
             double activation_cov;
             isolated_edge_remover ier;
-            low_covered_edge_remover lcer;
             std::string tip_condition;
             std::string ec_condition;
             double disconnect_flank_cov;
@@ -352,7 +351,7 @@ struct debruijn_config {
         isolated_edge_remover ier;
         complex_bulge_remover cbr;
         hidden_ec_remover her;
-
+        low_covered_edge_remover lcer;
         tip_clipper final_tc;
         bulge_remover final_br;
         bulge_remover second_final_br;
