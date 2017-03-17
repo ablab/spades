@@ -30,7 +30,7 @@ namespace spades {
 
 inline bool MetaCompatibleLibraries() {
     const auto& libs = cfg::get().ds.reads;
-    if (libs[0].type() != io::LibraryType::PairedEnd)
+    if (not (libs[0].is_paired()) or libs[0].is_mate_pair())
         return false;
     if (libs.lib_count() > 2)
         return false;

@@ -159,8 +159,8 @@ void WriteComponentsAlongPath(const Graph &g, const vector<typename Graph::EdgeI
     if (color_path) {
         edge_colorer->AddColorer(make_shared<graph_colorer::SetColorer<Graph>>(g, path, "green"));
     }
-    shared_ptr<graph_colorer::GraphColorer<Graph>> resulting_colorer = make_shared<graph_colorer::CompositeGraphColorer<Graph>>(
-            colorer, edge_colorer);
+    shared_ptr<graph_colorer::GraphColorer<Graph>> resulting_colorer =
+            make_shared<graph_colorer::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
     shared_ptr<GraphSplitter<Graph>> rs = ReliableSplitterAlongPath<Graph>(g, path);
     auto filter = make_shared<omnigraph::SmallComponentFilter<Graph>>(g, 3);
     shared_ptr<GraphSplitter<Graph>> splitter = make_shared<omnigraph::CondensingSplitterWrapper<Graph>>(rs,
