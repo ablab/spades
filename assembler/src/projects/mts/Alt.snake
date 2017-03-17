@@ -91,33 +91,6 @@ rule bowtie_index:
 
 #---- Generating profiles/depths -----------------------------------------------
 
-# CONCOCT way
-rule bowtie_duplicates:
-    input:   contigs=rules.cut_fragments.output[0], index="align/index_samples_frags.done"
-    output:
-    run:
-        for sample in SAMPLES:
-            shell("mkdir -p map/{sample}\n"
-                  "{SOFT}/CONCOCT/scripts/map-map-bowtie2-markduplicates.sh -ct 1 -p '-f' {input.left} {input.right} pair {input.contigs} asm bowtie2")
-
-rule gen_coverage:
-    input:
-    output:  "profile/concoct/inputtable.tsv"
-    params:  temp="profile/concoct/inputtable_temp.tsv"
-    message: "Generating CONCOCT coverage table"
-    shell:   "python2 {SOFT}/CONCOCT/scripts/gen_input_table.py --isbedfiles"
-             " --samplenames {}"
-             " {input.contigs} > {params.temp}\n"
-             "cut -f1,3- {params.temp} > {output}"
-
-rule gen_linkage:
-    input:
-    output:  "profile/concoct/linkage.tsv"
-    threads: THREADS
-    output:  "python2 {SOFT}/CONCOCT/scripts/bam_to_linkage.py -m {threads}"
-             " --regionlength 500 --fullsearch --samplenames {}"
-             " {input.contigs} {input.alignments} > {output}"
-
 # MetaBAT way
 
 rule align:
