@@ -18,7 +18,7 @@ if len(sys.argv) == 4:
     CAGS = set(sys.argv[3:])
 DESIRED_ABUNDANCE = 50
 MIN_ABUNDANCE = 4
-MIN_TOTAL_ABUNDANCE = 20
+MIN_TOTAL_ABUNDANCE = 15
 
 #Assuming that samples are enumerated consecutively from 1 to N
 with open(PROF) as input:

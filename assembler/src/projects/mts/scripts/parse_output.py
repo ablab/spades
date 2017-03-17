@@ -16,8 +16,12 @@ class Parser:
     def add(self, line):
         sample_contig, bin_id = self.parse(line)
         sample_contig = sample_contig.split('-', 1)
-        sample = sample_contig[0]
-        contig = sample_contig[1]
+        if len(sample_contig) > 1:
+            sample = sample_contig[0]
+            contig = sample_contig[1]
+        else:
+            sample = "all"
+            contig = sample_contig[0]
         if sample not in self.samples_annotation:
             self.samples_annotation[sample] = dict()
 
@@ -26,6 +30,11 @@ class Parser:
             annotation[contig] = list()
 
         annotation[contig].append(bin_id)
+
+    def parse_file(self, file):
+        with open(file, "r") as input_file:
+            for line in input_file:
+                self.add(line)
 
 class CanopyParser(Parser):
     def parse(self, line):
@@ -43,16 +52,15 @@ class ConcoctParser(Parser):
 
 parsers = {"canopy": CanopyParser(), "concoct": ConcoctParser()}
 
-args = argparser.parse_args()
-parser = parsers[args.type]
+if __name__ == "__main__":
+    args = argparser.parse_args()
+    parser = parsers[args.type]
 
-with open(args.input, "r") as input_file:
-    for line in input_file:
-        parser.add(line)
+    parser.parse_file(args.input)
 
-for sample, annotation in parser.samples_annotation.items():
-    with open(os.path.join(args.output, sample + ".ann"), "w") as sample_out:
-        annotation = parser.samples_annotation[sample]
+    for sample, annotation in parser.samples_annotation.items():
+        with open(os.path.join(args.output, sample + ".ann"), "w") as sample_out:
+            annotation = parser.samples_annotation[sample]
 
-        for contig in annotation:
-            print(contig, ":", " ".join(annotation[contig]), file=sample_out)
+            for contig in annotation:
+                print(contig, ":", " ".join(annotation[contig]), file=sample_out)

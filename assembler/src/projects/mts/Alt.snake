@@ -3,15 +3,19 @@ configfile: "config.yaml"
 import functools
 import itertools
 
+from Bio import SeqIO
+
+from scripts.parse_output import ConcoctParser
 from scripts.common import detect_reads, gather_refs
 
 IN = config["IN"]
+SPADES = config.get("SPADES")
 SCRIPTS = config["SCRIPTS"]
 SOFT = config["SOFT"]
 THREADS = config.get("THREADS", 16)
-ASSEMBLER = config.get("ASSEMBLER")
+ASSEMBLER = config.get("ASSEMBLER", "megahit")
 ASSEMBLER_PATH = config.get("ASSEMBLER_PATH")
-BINNER = config.get("BINNER")
+BINNER = config.get("BINNER", "metabat")
 
 #Autodetect samples and their reads
 MIN_CONTIG_LENGTH = 2000
@@ -37,115 +41,191 @@ right_reads = functools.partial(sample_reads, 1)
 REFS = dict(gather_refs(config.get("REFS", [])))
 ALL_REFS = ",".join(path for path in REFS.values())
 
-#register_assembler()
+rule all:
+    input:   "binning/{}/binning.done".format(BINNER)
 
-class Assembler:
-    def __init__(self, name, run_path, left, right, result, add_params=""):
-        self.run_path = run_path
-        self.left = left
-        self.right = right
-        self.result = result
-        self.add_params = add_params
-    def shell(left, right, output):
-        return "{} {} {} {} {} -o {output}".format(self.run_path, self.left(left),
-            self.right(right), self.add_params, output)
-
-assemblers_dict = dict()
-def register_assembler(*args, **kwargs):
-    assemblers_dict = Assebler(*args, **kwargs)
-
-register_assembler("MegaHIT", os.path.join(SOFT, "megahit", "megahit"),
-    lamdba reads: "-1 " + ",".join(reads), lamdba reads: "-2 " + ",".join(reads),
-    "final_contigs.fa")
-
-register_assembler("metaSPAdes", os.path.join(SPADES, "spades.py"),
-    "scaffolds.fasta", add_params="--meta -m 400")
-
-rule coassemble:
+# Assemble with MegaHIT
+rule megahit:
     input:   LEFT_READS, RIGHT_READS
-    output:  "assembly/samples.fasta"
-    params:  dir="assembly/{assembler}/samples", left=, right=
+    output:  "assembly/megahit/samples.fasta"
+    params:  dir="assembly/megahit", left=",".join(LEFT_READS), right=",".join(RIGHT_READS)
     threads: THREADS
-    message: "Assembling all samples with {wildcards.assembler}"
-    run:
-        shell("rm -rf {params.dir}")
-        assembler = assemblers_dict[wildcards.assembler]
-        shell(assembler.shell(LEFT_READS, RIGHT_READS, threads, params.dir))
-        #shell("{assembler.call} {left} {right} -t {threads} -o {params.dir}")
-        shell("cp {params.dir}/{assembler.result}")
-
-
-rule metabat_coassemble:
-    input:   LEFT_READS, RIGHT_READS
-    output:  "assembly/samples.fasta"
-    params:  dir="assembly/megahit/samples", left=",".join(LEFT_READS), right=",".join(RIGHT_READS)
-    threads: THREADS
+    log:     "assembly/megahit.log"
     message: "Assembling all samples with MegaHIT"
     shell:   "rm -rf {params.dir} &&"
-             " {SOFT}/megahit/megahit -1 {params.left} -2 {params.right} -t {threads} -o {params.dir} &&"
+             " {SOFT}/megahit/megahit -1 {params.left} -2 {params.right} -t {threads} -o {params.dir} >{log} 2>&1 &&"
              " cp {params.dir}/final.contigs.fa {output}"
 
-rule spades_coassemble:
+# Assemble with SPAdes
+rule spades:
     input:   LEFT_READS, RIGHT_READS
-    output:  "assembly/samples.fasta"
-    params:  dir="assembly/spades/samples", left=",".join(LEFT_READS), right=",".join(RIGHT_READS)
+    output:  "assembly/spades/samples.fasta"
+    params:  left=" ".join(["-1 {}".format(SAMPLE_READS[s][0]) for s in SAMPLES]),
+             right=" ".join(["-2 {}".format(SAMPLE_READS[s][1]) for s in SAMPLES]),
+             dir="assembly/spades"
     threads: THREADS
+    log:     "assembly/spades.log"
     message: "Assembling all samples with metaSPAdes"
     shell:   "{SPADES}/spades.py --meta -m 400 -t {threads} {params.left} {params.right}"
              " -o {params.dir} >{log} 2>&1 && "
              "cp {params.dir}/scaffolds.fasta {output}"
 
-rule bowtie_index:
+rule coassemble:
+    input:   "assembly/{}/samples.fasta".format(ASSEMBLER)
+    output:  "assembly/samples.fasta"
+    shell:   "cd assembly && ln -fs {ASSEMBLER}/samples.fasta samples.fasta"
+
+# Common stuff
+rule cut_fragments:
     input:   rules.coassemble.output[0]
-    output:  "align/index.done"
+    output:  "assembly/samples_frags.fasta"
+    params:  split=10000
+    shell:   "python2 {SOFT}/CONCOCT/scripts/cut_up_fasta.py -c {params.split} -o 0 -m {input} > {output}"
+
+rule bowtie_index:
+    input:   "assembly/{frags}.fasta" #rules.cut_fragments.output[0]
+    output:  "align/index_{frags}.done"
+    log:     "align/bowtie_{frags}.log"
     message: "Building bowtie index"
-    shell:   "bowtie2-build {input} align/index && touch {output}"
+    shell:   "bowtie2-build {input} align/index_{wildcards.frags} >{log} 2>&1 && touch {output}"
 
+#---- Generating profiles/depths -----------------------------------------------
 
+# CONCOCT way
+rule bowtie_duplicates:
+    input:   contigs=rules.cut_fragments.output[0], index="align/index_samples_frags.done"
+    output:
+    run:
+        for sample in SAMPLES:
+            shell("mkdir -p map/{sample}\n"
+                  "{SOFT}/CONCOCT/scripts/map-map-bowtie2-markduplicates.sh -ct 1 -p '-f' {input.left} {input.right} pair {input.contigs} asm bowtie2")
+
+rule gen_coverage:
+    input:
+    output:  "profile/concoct/inputtable.tsv"
+    params:  temp="profile/concoct/inputtable_temp.tsv"
+    message: "Generating CONCOCT coverage table"
+    shell:   "python2 {SOFT}/CONCOCT/scripts/gen_input_table.py --isbedfiles"
+             " --samplenames {}"
+             " {input.contigs} > {params.temp}\n"
+             "cut -f1,3- {params.temp} > {output}"
+
+rule gen_linkage:
+    input:
+    output:  "profile/concoct/linkage.tsv"
+    threads: THREADS
+    output:  "python2 {SOFT}/CONCOCT/scripts/bam_to_linkage.py -m {threads}"
+             " --regionlength 500 --fullsearch --samplenames {}"
+             " {input.contigs} {input.alignments} > {output}"
+
+# MetaBAT way
 
 rule align:
     input:   left=left_reads, right=right_reads,
-             index=rules.bowtie_index.output[0]
-    output:  temp("align/{sample}.sam")
+             index="align/index_{frags}.done"
+    output:  "align/{frags}/{sample}.bam"
     threads: THREADS
     message: "Aligning {wildcards.sample} with bowtie"
-    shell:   "bowtie2 -x align/index -p {threads} -1 {input.left} -2 {input.right} -S {output}"
-
-rule convert:
-    input:   "align/{sample}.sam"
-    output:  "align/{sample}.bam"
-    message: "Converting {input} to {output}"
-    shell:   "samtools view -bS {input} > {output}"
+    shell:   "bowtie2 -x align/index_{wildcards.frags} -p {threads} -1 {input.left} -2 {input.right} |"
+             " samtools view -bS - > {output}"
 
 rule depth:
-    input:   expand("align/{sample}.bam", sample=SAMPLES)
-    output:  "profile/depth_metabat.txt"
+    input:   expand("align/{{frags}}/{sample}.bam", sample=SAMPLES)
+    output:  "profile/{frags}/depth_metabat.txt"
     message: "Calculating contig depths"
     shell:   "{SOFT}/metabat/jgi_summarize_bam_contig_depths --outputDepth {output} {input}"
 
-rule metabat:
-    input:   assembly=rules.coassemble.output[0], depth=rules.depth.output[0]
-    #output:  dynamic("binning/metabat/{cluster}.fa")
-    log:     "binning/metabat.log"
-    message: "Binning stuff with MetaBAT"
+rule concoct_depth:
+    input:   "profile/samples_frags/depth_metabat.txt"
+    output:  "profile/depth_concoct.txt"
+    message: "Converting depth file into CONCOCT format"
+    shell:   "awk 'NR > 1 {{for(x=1;x<=NF;x++) if(x == 1 || (x >= 4 && x % 2 == 0)) printf \"%s\", $x (x == NF || x == (NF-1) ? \"\\n\":\"\\t\")}}' {input} > {output}"
+
+#---- Binning with CONCOCT -----------------------------------------------------
+
+rule concoct:
+    input:   contigs=rules.cut_fragments.output[0], profiles=rules.concoct_depth.output[0]
+    output:  "binning/concoct/tables/clustering_gt{}.csv".format(MIN_CONTIG_LENGTH)
+    params:  max_clusters=40, out="binning/concoct/tables"
+    threads: THREADS
+    log:     "binning/concoct.log"
+    message: "Running CONCOCT clustering"
+    shell:   "mkdir -p {params} && "
+             "set +u; source activate concoct_env; set -u && "
+             "concoct -c {params.max_clusters} --composition_file {input.contigs} --coverage_file {input.profiles} --length_threshold {MIN_CONTIG_LENGTH} -b {params.out} > {log}"
+
+rule concoct_post:
+    input:   contigs=rules.cut_fragments.output[0], binning=rules.concoct.output[0]
+    output:  touch("binning/concoct/binning.done")
+    params:  out="binning/concoct"
+    message: "Extracting CONCOCT bins"
     run:
-        shell("{SOFT}/metabat/metabat -i {input.assembly} -a {input.depth} -o binning/metabat/cluster > {log}")
+        shell("rm -f {}/cluster*.fa".format(params.out))
+        parser = ConcoctParser()
+        parser.parse_file(input.binning)
+        ann = parser.samples_annotation["all"]
+        print(list(ann.items())[:10])
+        for seq in SeqIO.parse(input.contigs, "fasta"):
+            seq_id = ann.get(seq.id)
+            if not seq_id:
+                continue
+            with open("{}/cluster.{}.fa".format(params.out, seq_id[0]), "a") as output:
+                SeqIO.write(seq, output, "fasta")
+
+#---- Binning with MetaBAT -----------------------------------------------------
+
+rule metabat:
+    input:   contigs=rules.coassemble.output[0], profiles="profile/samples/depth_metabat.txt"
+    output:  flag=touch("binning/metabat/binning.done"),
+             ann=("annotation/metabat/samples.ann")
+             #dynamic("binning/metabat/{cluster}.fa")
+    threads: THREADS
+    params:  out="binning/metabat/cluster"
+    log:     "binning/metabat.log"
+    message: "Running MetaBAT clustering"
+    shell:   "{SOFT}/metabat/metabat -t {threads} -m {MIN_CONTIG_LENGTH} "
+             " --minContigByCorr {MIN_CONTIG_LENGTH} --saveCls"
+             " -i {input.contigs} -a {input.profiles}"
+             " -o {params.out} > {log} &&"
+             "sed 's/\t/ : /g' {params} > {output.ann}"
+        # with open(output.ann, "w") as out_file:
+        #     with open(params.out, "r") as in_file:
+        #         for line in in_file:
+
         #for cag in glob_wildcards("binning/metabat/{CAG}.fa")[0]:
         #    os.link("binning/metabat/{}.fa".format(cag), "reassembly/CAG{}.fasta".format(cag))
 
-# rule metabat_post:
-#     input:   dynamic("binning/metabat/{cluster}.fa")
-#     output:  dynamic("reassembly/{cluster}.fa")
-#     message: "Postprocessing MetaBAT output"
-#     run:
-#         for in_file in input:
-#             os.mknod(in_file,
+rule binning:
+    input:   "binning/{}/binning.done".format(BINNER)
+    message: "Finished the pipeline"
 
-rule concoct_depth:
-    input:   rules.depth.output[0]
-    output:  "profile/depth_concoct.txt"
-    shell:   "awk 'NR > 1 {for(x=1;x<=NF;x++) if(x == 1 || (x >= 4 && x % 2 == 0)) printf \"%s\", $x (x == NF || x == (NF-1) ? \"\\n\":\"\\t\")}' {input} > {output}"
+#---- Binning with DBScan ------------------------------------------------------
 
-#rule concoct:
-#    input:   assembly=rules.coassembly.output[0], depth=rules.concoct_depth.output[0]
-#    shell:   "{SOFT}/concoct/concoct "
+# TODO
+
+#---- Binning with Canopy ------------------------------------------------------
+
+# TODO
+
+#---- Optional propagator for SPAdes assembly ----------------------------------
+
+#Path to saves of necessary assembly stage
+K = 55
+SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(K)
+BIN = "~/Projects/mts/assembler/build/release/bin"
+
+rule prop_binning:
+    input:   contigs="assembly/spades/samples.fasta", ann="annotation/{binner}/samples.ann",
+    output:  "annotation/{binner}/samples_prop_edges.ann"
+    params:  saves=os.path.join("assembly/spades/", SAVES),
+             splits="assembly/samples_frags.fasta", out="assembly/samples_edges",
+             left=" ".join(LEFT_READS), right=" ".join(RIGHT_READS)
+    log:     "annotation/{binner}/propagator.log"
+    message: "Propagating annotation & binning reads"
+    shell:
+          "{BIN}/prop_binning -k {K} -s {params.saves} -c {input.contigs}"
+          " -n samples -l {params.left} -r {params.right}"
+          " -a {input.ann} -f {params.splits} -o binning -d {params.out} >{log} 2>&1"
+
+rule propagate:
+    input:   "annotation/{}/samples_prop_edges.ann".format(BINNER)

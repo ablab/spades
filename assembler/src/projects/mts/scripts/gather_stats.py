@@ -8,6 +8,10 @@ import os.path
 import sys
 
 quast_dir = sys.argv[1]
+table_file = sys.argv[2]
+heatmap_file = None
+if len(sys.argv) > 3:
+    heatmap_file = sys.argv[3]
 
 res_table = DataFrame(columns=["bin", "ref", "GF", "purity", "NGA50", "misassemblies"])
 gf_table = pandas.read_table(os.path.join(quast_dir, "summary", "TSV", "Genome_fraction_(%).tsv"), dtype=str).set_index("Assemblies")
@@ -25,4 +29,16 @@ for bin, ref in best_ref.iteritems():
                "NGA50": col["NGA50"], "misassemblies": col["# misassemblies"]}
     res_table = res_table.append(row, ignore_index=True)
 
-res_table.to_csv(sys.stdout, index=False, sep="\t")
+with open(table_file, "w") as out_file:
+    res_table.to_csv(out_file, index=False, sep="\t")
+
+if heatmap_file:
+    import matplotlib
+    # Force matplotlib to not use any Xwindows backend.
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    #gfs = gfs.pivot("reference", "cluster", "GF (%)")
+    plot = sns.heatmap(gfs, square=True)
+    fig = plot.get_figure()
+    fig.savefig(heatmap_file, bbox_inches="tight")

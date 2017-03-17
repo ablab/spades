@@ -2,18 +2,14 @@ include: "Alt.snake"
 include: "CommonStats.snake"
 
 #Autodetect bins
-CAGS, = glob_wildcards("binning/metabat/cluster.{cag,\d+}.fa")
+#TODO: refactor
+CAGS, = glob_wildcards("binning/{}/cluster.{{cag,\d+}}.fa".format(BINNER))
 CAGS.sort()
 
 register_input("metabat", "binning/metabat/cluster.{frag}.fa", CAGS)
+register_input("concoct", "binning/concoct/cluster.{frag}.fa", CAGS)
 
 # Run this AFTER 'all'
 rule stats_all:
-    input:   "stats/summary/full_metabat.tsv"
+    input:   "stats/summary/full_{}.tsv".format(BINNER)
     message: "Gathered some numbers, deal with them."
-
-rule pca_metabat:
-    input:   "profile/depth_metabat.txt", "binning/metabat/binning.out", "stats/q_metabat/total.info"
-    output:  "stats/summary/pca.png"
-    run:
-        shell("Rscript {SCRIPTS}/pca.R {input} {output}")

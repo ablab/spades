@@ -14,13 +14,13 @@ REFS = dict(gather_refs(config.get("REFS", [])))
 ALL_REFS = ",".join(path for path in REFS.values())
 
 class Input:
-    def __init__(self, stage, fasta_template, fragments):
+    def __init__(self, fasta_template, fragments):
         self.fragments = fragments
         self.input = expand(fasta_template, frag=fragments)
 
 input_dict = dict()
 
-def register_input(*args):
+def register_input(stage, *args):
     global input_dict
     input_dict[stage] = Input(*args)
 
@@ -79,7 +79,7 @@ rule gather_stats:
     output:  "stats/summary/full_{stage}.tsv"
     params:  "stats/q_{stage}"
     message: "Gathered bins stats"
-    shell:   "{SCRIPTS}/gather_stats.py {params} > {output}"
+    shell:   "{SCRIPTS}/gather_stats.py {params} {output}"
 
 #---- CheckM stats -------------------------------------------------------------
 rule checkm:

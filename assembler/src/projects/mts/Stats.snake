@@ -93,7 +93,7 @@ rule stats_reassembly:
     output:  "stats/summary/reassembly.tsv"
     params:  "stats/q_reassembly"
     message: "Gathered bins stats"
-    shell:   "{SCRIPTS}/gather_stats.py {params} > {output}"
+    shell:   "{SCRIPTS}/gather_stats.py {params} {output}"
 
 #---- Propagator statistics ----------------------------------------------------
 rule prop_stats:
