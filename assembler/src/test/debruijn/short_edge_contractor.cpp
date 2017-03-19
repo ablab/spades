@@ -47,7 +47,7 @@ std::string NeighboursString(const Graph& g, const EdgeContainer& edges) {
 
 void Launch(size_t K, string saves_path, size_t edge_length_bound,
             const string& fastg_output) {
-    TmpFolderFixture tmp_dir("tmp");
+    path::TmpFolderFixture tmp_dir("tmp");
     //TODO no need for whole graph pack; change to Graph
     conj_graph_pack gp(K, "tmp", 0);
     graphio::ScanGraphPack(saves_path, gp);

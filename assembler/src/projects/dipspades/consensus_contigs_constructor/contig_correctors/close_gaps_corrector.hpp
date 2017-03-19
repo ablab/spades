@@ -91,7 +91,7 @@ public:
 
     virtual ContigStoragePtr Correct(ContigStoragePtr storage){
 
-        INFO(ToString(CountContigsWithGaps(storage)) << " contigs from " <<
+        INFO(std::to_string(CountContigsWithGaps(storage)) << " contigs from " <<
                 std::to_string(storage->Size()) << " have gaps before correction");
 
         ProcessContigs(storage);

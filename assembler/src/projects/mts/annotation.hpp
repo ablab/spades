@@ -121,14 +121,14 @@ public:
         if (!edge_annotation_.count(e)) {
             return {};
         }
-        const auto& annotation = get(edge_annotation_, e);
+        const auto& annotation = utils::get(edge_annotation_, e);
         return vector<bin_id>(annotation.begin(), annotation.end());
     }
 
     set<bin_id> RelevantBins(const vector<EdgeId>& path) const {
         set<bin_id> answer;
         for (EdgeId e : path) {
-            insert_all(answer, Annotation(e));
+            utils::insert_all(answer, Annotation(e));
         }
         return answer;
     }
@@ -186,7 +186,7 @@ class AnnotationFiller {
             splits_annotation_stream >> contig_annotation;
             auto bins = FilterInteresting(contig_annotation.second);
             if (!bins.empty()) {
-                insert_all(annotation_map[contig_annotation.first], bins);
+                utils::insert_all(annotation_map[contig_annotation.first], bins);
             }
             ++cnt;
         }

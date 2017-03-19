@@ -136,7 +136,7 @@ class ConnectingPathPropagator : public EdgeAnnotationPropagator {
                     //    PrintAnnotatedAlongPath(gp(), to_draw, debug_annotation_, "/home/snurk/tmp/pics/pic_" + std::to_string(++pic_cnt) + "_");
                     //}
                     //}
-                    insert_all(answer, path);
+                    utils::insert_all(answer, path);
                 }, true);
                 TRACE("Launching path search between edge " << g().str(e) << " and vertex "
                         << g().str(v) << " with length bound " << path_length_threshold_);
@@ -204,7 +204,7 @@ protected:
                 if (edges.count(e)) {
                     DEBUG("Edge " << gp().g.str(e) << " belongs to the contig #" << 
                             contig.name() << " of " << edges_of_contig.size() << " edges");
-                    insert_all(answer, edges_of_contig);
+                    utils::insert_all(answer, edges_of_contig);
                     break;
                 }
             }

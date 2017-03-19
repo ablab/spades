@@ -46,7 +46,7 @@ class PolymorphicBulgeRemover {
         for(size_t num_iter = 1; num_glued_bulges > 0; num_iter++){
             num_glued_bulges = spath_br.Run();
             CompressAllVertices(graph_pack_.g, false);
-            INFO(ToString(num_iter) + " iteration: " + std::to_string(num_glued_bulges) + " simple bulges were glued");
+            INFO(std::to_string(num_iter) + " iteration: " + std::to_string(num_glued_bulges) + " simple bulges were glued");
         }
         INFO("Simple polymorphic bulge remover ends");
     }

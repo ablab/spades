@@ -19,7 +19,7 @@ set<bin_id> ContigBinner::RelevantBins(const io::SingleRead& r) const {
 }
 
 void ContigBinner::Init(bin_id bin) {
-    string out_dir = out_root_ + "/" + std::to_string(bin) + "/";
+    string out_dir = out_root_ + "/" + bin + "/";
     path::make_dirs(out_dir);
     out_streams_.insert(make_pair(bin, make_shared<io::OPairedReadStream>(out_dir + sample_name_ + "_1.fastq",
                                                                           out_dir + sample_name_ + "_2.fastq")));
@@ -30,8 +30,8 @@ void ContigBinner::Run(io::PairedStream& paired_reads) {
     while (!paired_reads.eof()) {
         paired_reads >> paired_read;
         set<bin_id> bins;
-        insert_all(bins, RelevantBins(paired_read.first()));
-        insert_all(bins, RelevantBins(paired_read.second()));
+        utils::insert_all(bins, RelevantBins(paired_read.first()));
+        utils::insert_all(bins, RelevantBins(paired_read.second()));
         for (auto bin : bins) {
             if (out_streams_.find(bin) == out_streams_.end()) {
                 Init(bin);

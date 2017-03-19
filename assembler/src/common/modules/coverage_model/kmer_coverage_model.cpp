@@ -27,7 +27,6 @@
 #include <cstddef>
 #include <cmath>
 
-namespace utils {
 namespace coverage_model {
 
 using std::isfinite;
@@ -376,5 +375,4 @@ void KMerCoverageModel::Fit() {
     INFO("Estimated genome size (ignoring repeats): " << GenomeSize_);
 }
 
-}
 }

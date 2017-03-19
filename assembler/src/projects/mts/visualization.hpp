@@ -34,7 +34,7 @@ public:
         auto ann = annotation_.Annotation(edge);
         std::ostringstream ss;
         std::transform(ann.begin(), ann.end(), ostream_iterator<string>(ss, ":"), [&](bin_id b){
-            return get(color_map_, b);
+            return utils::get(color_map_, b);
         });
         return ss.str();
     }

@@ -10,7 +10,6 @@
 #include <vector>
 #include <cstddef>
 
-namespace utils {
 namespace coverage_model {
 
 class KMerCoverageModel {
@@ -44,5 +43,4 @@ private:
     size_t EstimateValley() const;
 };
 
-}
 }

@@ -22,7 +22,7 @@
 #include "modules/path_extend/pe_utils.hpp"
 namespace path_extend {
 
-BOOST_FIXTURE_TEST_SUITE(path_extend_basic, TmpFolderFixture)
+BOOST_FIXTURE_TEST_SUITE(path_extend_basic, path::TmpFolderFixture)
 
 BOOST_AUTO_TEST_CASE( BidirectionalPathConstructor ) {
     Graph g(13);

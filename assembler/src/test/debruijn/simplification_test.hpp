@@ -19,7 +19,7 @@
 namespace debruijn_graph {
 using namespace config;
 
-BOOST_FIXTURE_TEST_SUITE(graph_simplification_tests, TmpFolderFixture)
+BOOST_FIXTURE_TEST_SUITE(graph_simplification_tests, path::TmpFolderFixture)
 
 debruijn_config::simplification::bulge_remover standard_br_config_generation() {
     debruijn_config::simplification::bulge_remover br_config;

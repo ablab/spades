@@ -124,7 +124,7 @@ public:
     }
 };
 
-BOOST_FIXTURE_TEST_SUITE(robust_order_tests, TmpFolderFixture)
+BOOST_FIXTURE_TEST_SUITE(robust_order_tests, path::TmpFolderFixture)
 
 BOOST_AUTO_TEST_CASE( OrderTest ) {
     string file_name = "src/test/debruijn/graph_fragments/saves/test_save";

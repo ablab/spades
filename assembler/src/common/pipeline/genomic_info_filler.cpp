@@ -6,18 +6,12 @@
 //***************************************************************************
 
 #include "genomic_info_filler.hpp"
-
-#include "utils/coverage_model/kmer_coverage_model.hpp"
+#include "modules/coverage_model/kmer_coverage_model.hpp"
 #include "modules/simplification/ec_threshold_finder.hpp"
 
 #include "llvm/Support/YAMLTraits.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
-
-#include <string>
-
-#include <map>
-#include <vector>
 
 using namespace llvm;
 using namespace debruijn_graph;
@@ -123,7 +117,7 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
         gp.ginfo.set_cov_histogram(extract(tmp));
 
         // Fit the coverage model and get the threshold
-        utils::coverage_model::KMerCoverageModel CovModel(gp.ginfo.cov_histogram(), cfg::get().kcm.probability_threshold, cfg::get().kcm.strong_probability_threshold);
+        coverage_model::KMerCoverageModel CovModel(gp.ginfo.cov_histogram(), cfg::get().kcm.probability_threshold, cfg::get().kcm.strong_probability_threshold);
         CovModel.Fit();
 
         gp.ginfo.set_genome_size(CovModel.GetGenomeSize());

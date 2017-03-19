@@ -15,7 +15,7 @@ add_subdirectory(stages)
 add_subdirectory(utils)
 add_subdirectory(io)
 add_subdirectory(utils/kmer_mph)
-add_subdirectory(utils/coverage_model)
+add_subdirectory(modules/coverage_model)
 
 add_library(common_modules STATIC empty.cpp)
 
