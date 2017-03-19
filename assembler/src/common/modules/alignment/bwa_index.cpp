@@ -262,7 +262,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
 
     std::string seq = sequence.str();
     mem_alnreg_v ar = mem_align1(memopt_.get(), idx_->bwt, idx_->bns, idx_->pac,
-                                 seq.length(), seq.data());
+                                 int(seq.length()), seq.data());
     for (size_t i = 0; i < ar.n; ++i) {
         const mem_alnreg_t &a = ar.a[i];
         if (a.secondary >= 0) continue; // skip secondary alignments
@@ -281,10 +281,10 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
         size_t read_length = seq.length() ;
         //we had to reduce the range to kmer-based
         if (pos + (a.re - a.rb) >= g_.length(ids_[a.rid]) ){
-            if (a.qe > g_.k() + a.qb)
+            if (a.qe > int(g_.k()) + a.qb)
                 initial_range_end -= g_.k();
             else continue;
-            if (a.re > g_.k() + a.rb)
+            if (a.re > int(g_.k()) + a.rb)
                 mapping_range_end -= g_.k();
             else continue;
             if (read_length >= g_.k())
