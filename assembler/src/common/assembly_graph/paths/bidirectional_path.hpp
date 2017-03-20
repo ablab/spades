@@ -219,10 +219,12 @@ public:
     }
 
     void PushBack(const BidirectionalPath& path, const Gap& gap = Gap()) {
-        VERIFY(path.GapAt(0) == Gap());
-        PushBack(path.At(0), gap);
-        for (size_t i = 1; i < path.Size(); ++i) {
-            PushBack(path.At(i), path.GapAt(i));
+        if (path.Size() > 0) {
+            VERIFY(path.GapAt(0) == Gap());
+            PushBack(path.At(0), gap);
+            for (size_t i = 1; i < path.Size(); ++i) {
+                PushBack(path.At(i), path.GapAt(i));
+            }
         }
     }
 
