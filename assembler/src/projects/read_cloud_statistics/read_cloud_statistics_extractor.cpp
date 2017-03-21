@@ -71,9 +71,13 @@ namespace debruijn_graph {
         TenXExtensionChecker checker = ConstructTenXChecker(storage, graph_pack);
         INFO("10X checker constructed.");
         BarcodeStatisticsCounter counter = ConstructStatisticsCounter(graph_pack);
-        INFO("Counter constructed.");
-        counter.FillStats();
-        counter.PrintStats(cfg::get().output_dir + "barcode_stats");
+        INFO("Statistics counter constructed.");
+
+//        INFO("Basic stats: ");
+//        counter.FillStats();
+//        counter.PrintStats(cfg::get().output_dir + "barcode_stats");
+
+        INFO("Resolver stats: ");
         checker.CheckChooser(cfg::get().ts_res.genome_path);
         INFO("Statistics counter finished.");
     }
