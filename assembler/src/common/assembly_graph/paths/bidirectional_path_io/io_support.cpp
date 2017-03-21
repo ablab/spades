@@ -86,6 +86,9 @@ void path_extend::TranscriptToGeneJoiner::Construct(const PathContainer &paths) 
 
 string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) const {
     stringstream ss;
+    const int safety_Ns_count = 10;
+
+    //TODO what is it and why is it here?
     if (path.IsInterstrandBulge() && path.Size() == 1) {
         ss << g_.EdgeNucls(path.Back()).Subseq(k_, g_.length(path.Back()));
         return ss.str();
@@ -95,11 +98,12 @@ string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) con
         ss << g_.EdgeNucls(path[0]).Subseq(0, k_);
     }
 
-    VERIFY(path.GapAt(0) == Gap());
+    Gap gap = path.GapAt(0);
+    VERIFY(gap == Gap());
     for (size_t i = 0; i < path.Size(); ++i) {
-        int overlap_after_trim = path.GapAt(i).overlap_after_trim(k_);
+        int overlap_after_trim = gap.overlap_after_trim(k_);
 
-        Sequence s = g_.EdgeNucls(path[i]).Subseq(path.GapAt(i).trash_current);
+        Sequence s = g_.EdgeNucls(path[i]).Subseq(gap.trash_current);
         if (overlap_after_trim < 0) {
             for (size_t j = 0; j < size_t(abs(overlap_after_trim)); ++j) {
                 ss << "N";
@@ -107,13 +111,29 @@ string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) con
             overlap_after_trim = 0;
         }
 
+        VERIFY(overlap_after_trim >= 0);
+
         size_t right_end = s.size();
         if (i != path.Size() - 1) {
-            VERIFY(right_end > path.GapAt(i + 1).trash_previous);
-            right_end -= path.GapAt(i + 1).trash_previous;
+            Gap next_gap = path.GapAt(i + 1);
+            if (right_end <= size_t(overlap_after_trim) + next_gap.trash_previous) {
+                WARN("Edge was too short to satisfy all trim/overlaps conditions");
+                int shift = int(size_t(overlap_after_trim) + next_gap.trash_previous - right_end + 1);
+                VERIFY(shift > 0 && shift <= int(next_gap.trash_previous) 
+                            && right_end > (next_gap.trash_previous - shift));
+                right_end -= next_gap.trash_previous - shift;
+                //putting "+shift" would make code more correct, but could lead to problems further
+                next_gap.trash_current += next_gap.overlap_after_trim(k_); //+ shift;
+                //force insertion of Ns
+                next_gap.gap += safety_Ns_count;
+                VERIFY(next_gap.overlap_after_trim(k_) < 0);
+            } else {
+                right_end -= next_gap.trash_previous;
+            }
+            gap = next_gap;
         }
-        VERIFY(overlap_after_trim < int(right_end));
 
+        VERIFY(overlap_after_trim < int(right_end));
         ss << s.Subseq(overlap_after_trim, right_end);
     }
     return ss.str();
