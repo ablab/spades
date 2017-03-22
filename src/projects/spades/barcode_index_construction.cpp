@@ -53,7 +53,7 @@ namespace debruijn_graph {
                                           cfg::get().ts_res.frame_size);
 
 //        size_t nthreads = cfg::get().max_threads;
-        mapper_builder.FillMap(libs_10x);
+        mapper_builder.FillMap(libs_10x, graph_pack.index, graph_pack.kmer_mapper);
         graph_pack.barcode_mapper_ptr = mapper_builder.GetMapper();
         INFO("Barcode index construction finished.");
         FrameBarcodeIndexInfoExtractor extractor(graph_pack.barcode_mapper_ptr, graph_pack.g);

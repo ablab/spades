@@ -4,6 +4,7 @@
 
 namespace path_extend {
     class TenXExtensionChecker {
+        TenXExtensionChooser chooser_;
         const conj_graph_pack& gp_;
         const ScaffoldingUniqueEdgeStorage storage_;
         vector<omnigraph::MappingPath<EdgeId>> reference_paths_;
@@ -141,10 +142,10 @@ namespace path_extend {
             if (not next_reachable) {
                 ++stats.nonreachable_;
             }
-            ExtensionChooser::EdgeContainer after_filter = chooser_.InitialFilter(candidates, edge,
-                                                                                  chooser_.absolute_barcode_threshold_,
-                                                                                  chooser_.initial_abundancy_threshold_,
-                                                                                  chooser_.tail_threshold_);
+            ExtensionChooser::EdgeContainer after_filter = chooser_.InitialSharedBarcodesFilter(candidates, edge,
+                                                                                                chooser_.absolute_barcode_threshold_,
+                                                                                                chooser_.initial_abundancy_threshold_,
+                                                                                                chooser_.tail_threshold_);
             DEBUG("Size after filter: " << after_filter.size());
             bool next_found = false;
             for (const auto& candidate: after_filter) {

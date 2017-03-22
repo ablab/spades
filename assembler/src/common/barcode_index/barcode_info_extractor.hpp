@@ -177,7 +177,7 @@ namespace barcode_index {
         };
 
         /**
-         * Class which allows to iterate over shared barcodes of two edges.
+         * Iterator over shared barcodes of two edges.
          * Dereferencing returns proxy object of type IntersectionData
          * @note Since it is not an iterator over container there is no -> operator.
          */

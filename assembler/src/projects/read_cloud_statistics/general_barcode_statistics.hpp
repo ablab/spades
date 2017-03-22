@@ -70,17 +70,17 @@ public:
 };
 
 class ReliableBarcodeStorage {
-    std::map<size_t, double> gap_to_covered_fraction_;
+    std::map<size_t, double> length_to_covered_fraction;
 public:
-    ReliableBarcodeStorage() : gap_to_covered_fraction_() {}
+    ReliableBarcodeStorage() : length_to_covered_fraction() {}
 
-    void InsertCoveredFraction(const size_t gap, const double covered_fraction) {
-        gap_to_covered_fraction_.insert({gap, covered_fraction});
+    void InsertCoveredFraction(const size_t length, const double covered_fraction) {
+        length_to_covered_fraction.insert({length, covered_fraction});
     }
 
     void Serialize(const string& path) const {
         ofstream fout(path);
-        for (const auto& entry: gap_to_covered_fraction_) {
+        for (const auto& entry: length_to_covered_fraction) {
             fout << entry.first << " " << entry.second << endl;
         }
     }
@@ -162,18 +162,20 @@ private:
 
     void TestReliableBarcodes(const size_t length_lower_bound) {
         INFO("Filling reliable barcode distribution");
-        const size_t gap_step = 500;
-        const size_t start_gap = 2000;
-        const size_t final_gap = 15000;
-        for (size_t gap = start_gap; gap < final_gap; gap+=gap_step) {
-            TestReliableBarcodesForGap(length_lower_bound, gap);
+        const size_t length_step = 500;
+        const size_t length_start = 2000;
+        const size_t length_end = 15000;
+        const size_t gap = 5000;
+        for (size_t length = length_start; length != length_end; length += length_step) {
+            TestReliableBarcodesForGap(length_lower_bound, gap, length);
         }
         INFO("Reliable barcode distribution filled");
     }
 
     void TestReliableBarcodesForGap(const size_t length_lower_bound,
-                                    const size_t gap_threshold) {
-        INFO("Gap: " << gap_threshold);
+                                    const size_t gap_threshold,
+                                    const size_t chunk_length_threshold) {
+        INFO("Length: " << chunk_length_threshold);
         VERIFY(gap_threshold * 3 < length_lower_bound);
         omnigraph::IterationHelper<Graph, EdgeId> helper(gp_.g);
         size_t edges = 0;
@@ -202,7 +204,8 @@ private:
                     UpdateReliableEdgeStorage(barcoded_bins_storage,
                                               current_barcoded_bins,
                                               gap_threshold,
-                                              bin_length);
+                                              bin_length,
+                                              chunk_length_threshold);
                 }
                 size_t covered_length = barcoded_bins_storage.count() * bin_length;
                 size_t central_length = gp_.g.length(edge) - 2 * gap_threshold;
@@ -216,7 +219,7 @@ private:
         }
         double covered_fraction = static_cast<double>(overall_covered_length) /
                 static_cast<double>(overall_length);
-        stats_.reliable_storage_.InsertCoveredFraction(gap_threshold, covered_fraction);
+        stats_.reliable_storage_.InsertCoveredFraction(chunk_length_threshold, covered_fraction);
         INFO("Overall length: " << overall_length);
         INFO("Overall covered length: " << overall_covered_length);
         INFO(covered_fraction);
@@ -226,15 +229,16 @@ private:
     void UpdateReliableEdgeStorage(boost::dynamic_bitset<>& general_bitset,
                           const boost::dynamic_bitset<>& barcode_bitset,
                           const size_t gap_threshold,
-                          const size_t bin_length) {
+                          const size_t bin_length,
+                          const size_t chunk_length_threshold) {
         VERIFY(general_bitset.size() == barcode_bitset.size());
         vector <std::pair<size_t, size_t>> chunk_positions = GetChunkPositions(barcode_bitset);
         size_t gap_length = gap_threshold / bin_length;
-        const size_t chunk_length_threshold = 3;
+        size_t chunk_size = chunk_length_threshold / bin_length;
         bool prev_chunk_is_candidate = false;
         for (auto curr_it = chunk_positions.begin(), prev_it = chunk_positions.end();
              curr_it != chunk_positions.end(); prev_it = curr_it, ++curr_it) {
-            if (curr_it->second < curr_it->first + chunk_length_threshold) {
+            if (curr_it->second < curr_it->first + chunk_size) {
                 prev_chunk_is_candidate = false;
                 continue;
             }
@@ -249,7 +253,7 @@ private:
                 if (previous_right + gap_length < current_left) {
                     if (prev_chunk_is_candidate) {
                         DEBUG("Updating");
-                        VERIFY(previous_left + chunk_length_threshold <= previous_right);
+                        VERIFY(previous_left + chunk_size<= previous_right);
                         SetBitsInReliableEdgeStorage(general_bitset, previous_left, previous_right + 1);
                     }
                     prev_chunk_is_candidate = true;
