@@ -23,31 +23,28 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-namespace path {
+namespace fs {
 
 namespace details {
-
-using namespace path;
 
 void copy_file(std::string from_path, std::string to_path) {
     using namespace std;
 
-    make_full_path(from_path);
-    make_full_path(to_path  );
+    from_path = make_full_path(from_path);
+    to_path = make_full_path(to_path);
 
     if (from_path == to_path)
         return;
 
     std::ifstream source(from_path, ios::binary);
-    std::ofstream dest  (to_path.c_str()  , ios::binary);
+    std::ofstream dest(to_path.c_str(), ios::binary);
 
     dest << source.rdbuf();
 }
 
-
 void hard_link(std::string from_path, std::string to_path) {
-    make_full_path(from_path);
-    make_full_path(to_path  );
+    from_path = make_full_path(from_path);
+    to_path = make_full_path(to_path);
 
     if (from_path == to_path)
         return;
@@ -96,7 +93,7 @@ files_t folders_in_folder(std::string const& path) {
 
 } // details
 
-path::files_t files_by_prefix(std::string const& path) {
+fs::files_t files_by_prefix(std::string const& path) {
     using namespace details;
     files_t files;
 
@@ -113,7 +110,7 @@ path::files_t files_by_prefix(std::string const& path) {
     return out_files;
 }
 
-void copy_files_by_prefix(path::files_t const& files, std::string const& to_folder) {
+void copy_files_by_prefix(fs::files_t const& files, std::string const& to_folder) {
     using namespace details;
 
     for (auto it = files.begin(); it != files.end(); ++it) {
@@ -124,7 +121,7 @@ void copy_files_by_prefix(path::files_t const& files, std::string const& to_fold
     }
 }
 
-void link_files_by_prefix(path::files_t const& files, std::string const& to_folder) {
+void link_files_by_prefix(fs::files_t const& files, std::string const& to_folder) {
     using namespace details;
 
     for (auto it = files.begin(); it != files.end(); ++it) {
@@ -149,7 +146,7 @@ void copy_files_by_ext(std::string const& from_folder, std::string const& to_fol
 
         for (auto it = folders.begin(); it != folders.end(); ++it) {
             std::string subdir = append_path(to_folder, filename(*it));
-            path:: make_dir(subdir);
+            fs:: make_dir(subdir);
             copy_files_by_ext(*it, subdir, ext, recursive);
         }
     }

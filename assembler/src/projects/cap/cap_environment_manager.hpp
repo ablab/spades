@@ -119,7 +119,7 @@ class CapEnvironmentManager {
   template <class gp_t>
   void SaveCurrentStreams(const gp_t &/* gp */, const std::string &dir) const {
         for (size_t i = 0; i < env_->genomes_.size(); ++i) {
-      std::string output_filename = dir + path::filename(env_->init_genomes_paths_[i]);
+      std::string output_filename = dir + fs::filename(env_->init_genomes_paths_[i]);
             if (!output_filename.empty()) {
                 Contig contig;
                 io::osequencestream out_stream(output_filename);

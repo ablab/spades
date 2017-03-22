@@ -551,7 +551,7 @@ void load_reads(dataset &ds,
                 std::string input_dir) {
     if (ds.reads_filename[0] != '/')
         ds.reads_filename = input_dir + ds.reads_filename;
-    path::CheckFileExistenceFATAL(ds.reads_filename);
+    fs::CheckFileExistenceFATAL(ds.reads_filename);
     ds.reads.load(ds.reads_filename);
 }
 
@@ -563,7 +563,7 @@ void load_reference_genome(dataset &ds,
     }
     if (ds.reference_genome_filename[0] != '/')
         ds.reference_genome_filename = input_dir + ds.reference_genome_filename;
-    path::CheckFileExistenceFATAL(ds.reference_genome_filename);
+    fs::CheckFileExistenceFATAL(ds.reference_genome_filename);
     io::FileReadStream genome_stream(ds.reference_genome_filename);
     io::SingleRead genome;
     genome_stream >> genome;
@@ -658,7 +658,7 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
     // input options:
     load(cfg.dataset_file, pt, "dataset");
     // input dir is based on dataset file location (all paths in datasets are relative to its location)
-    cfg.input_dir = path::parent_path(cfg.dataset_file);
+    cfg.input_dir = fs::parent_path(cfg.dataset_file);
     if (cfg.input_dir[cfg.input_dir.length() - 1] != '/')
         cfg.input_dir += '/';
 
@@ -710,7 +710,7 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
 
     load(cfg.max_memory, pt, "max_memory");
 
-    path::CheckFileExistenceFATAL(cfg.dataset_file);
+    fs::CheckFileExistenceFATAL(cfg.dataset_file);
     boost::property_tree::ptree ds_pt;
     boost::property_tree::read_info(cfg.dataset_file, ds_pt);
     load(cfg.ds, ds_pt, true);

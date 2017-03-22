@@ -58,7 +58,7 @@ void edit_io_params(bool developer_mode, dipspades_config::io_params &io){
         io.dataset_name = io.output_dir.substr(0, io.output_dir.length() - 1);
         io.output_dir = io.output_base + io.output_dir + "/";
         io.output_root = io.output_dir;
-        io.output_suffix = path::MakeLaunchTimeDirName() + "/";
+        io.output_suffix = fs::MakeLaunchTimeDirName() + "/";
         io.output_dir = io.output_root + io.output_suffix;
         io.output_saves = io.output_dir + "saves/";
 //        io.load_from = io.output_root + io.load_from;

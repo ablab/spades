@@ -34,7 +34,7 @@ io::SingleRead ReadSequence(io::SingleStream& reader) {
 }
 
 io::SingleRead ReadGenome(const string& genome_path) {
-    path::CheckFileExistenceFATAL(genome_path);
+    fs::CheckFileExistenceFATAL(genome_path);
     auto genome_stream_ptr = std::make_shared<io::FileReadStream>(genome_path);
     return ReadSequence(*genome_stream_ptr);
 }
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
            << "Propagated edges\tPropagated length" << endl;
 
     for (const auto genome_path : genomes_path) {
-        auto ref_name = path::basename(genome_path);
+        auto ref_name = fs::basename(genome_path);
         io::SingleRead genome = ReadGenome(genome_path);
 
         visualization::position_filler::FillPos(gp, genome_path, "", true);

@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     }
     create_console_logger();
     string fn = argv[1];
-    path::CheckFileExistenceFATAL(fn);
+    fs::CheckFileExistenceFATAL(fn);
     string out_fn = argv[2];
     auto reader = make_shared<io::NonNuclCollapsingWrapper>(make_shared<io::FileReadStream>(fn));
     io::SingleRead read;

@@ -8,7 +8,7 @@
 #include "path_helper.hpp"
 #include <string>
 
-namespace path {
+namespace fs {
 
 files_t files_by_prefix(std::string const& path);
 void copy_files_by_prefix(files_t const& files, std::string const& to_folder);

@@ -578,9 +578,9 @@ public:
         VERIFY(tip_allowing_length_bound >= length_bound);
         TRACE("Coverage gap " << min_coverage_gap);
         if (!vis_dir_.empty()) {
-            path::make_dirs(vis_dir_);
-            path::make_dirs(vis_dir_ + "/success/");
-            path::make_dirs(vis_dir_ + "/fail/");
+            fs::make_dirs(vis_dir_);
+            fs::make_dirs(vis_dir_ + "/success/");
+            fs::make_dirs(vis_dir_ + "/fail/");
         }
     }
 

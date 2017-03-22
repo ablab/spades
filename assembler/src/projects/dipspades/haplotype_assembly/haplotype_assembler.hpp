@@ -42,7 +42,7 @@ public:
         INFO("Consensus contigs number: " << composite_storage_->Size());
         separator.SeparateContigs();
         SignedLabels signed_labels = separator.GetSignedLabels();
-        string hapl_output(path::append_path(dsp_cfg::get().io.output_dir, "haplotype_assembly.out").c_str());
+        string hapl_output(fs::append_path(dsp_cfg::get().io.output_dir, "haplotype_assembly.out").c_str());
         signed_labels.WriteToFile(hapl_output, default_storage_);
         INFO("Result of haplotype assembly written in file " << hapl_output);
         INFO("Contigs separation ends");

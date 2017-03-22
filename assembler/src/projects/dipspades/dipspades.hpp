@@ -84,7 +84,7 @@ public:
     void load(debruijn_graph::conj_graph_pack& gp,
             const std::string &load_from,
             const char* prefix) {
-        std::string p = path::append_path(load_from, prefix == NULL ? id() : prefix);
+        std::string p = fs::append_path(load_from, prefix == NULL ? id() : prefix);
         INFO("Loading current state from " << p);
         debruijn_graph::graphio::ScanAll(p, gp, false);
 
@@ -93,7 +93,7 @@ public:
     void save(const debruijn_graph::conj_graph_pack& gp,
             const std::string & save_to,
             const char* prefix) const {
-        std::string p = path::append_path(save_to, prefix == NULL ? id() : prefix);
+        std::string p = fs::append_path(save_to, prefix == NULL ? id() : prefix);
         INFO("Saving current state to " << p);
         debruijn_graph::graphio::PrintAll(p, gp);
     }
@@ -116,7 +116,7 @@ public:
     void load(debruijn_graph::conj_graph_pack& gp,
             const std::string &load_from,
             const char* prefix) {
-        std::string p = path::append_path(load_from, prefix == NULL ? id() : prefix);
+        std::string p = fs::append_path(load_from, prefix == NULL ? id() : prefix);
         INFO("Loading current state from " << p);
         debruijn_graph::graphio::ScanAll(p, gp, false);
         INFO("Loading histogram of bulge length");
@@ -127,7 +127,7 @@ public:
     void save(const debruijn_graph::conj_graph_pack& gp,
             const std::string & save_to,
             const char* prefix) const {
-        std::string p = path::append_path(save_to, prefix == NULL ? id() : prefix);
+        std::string p = fs::append_path(save_to, prefix == NULL ? id() : prefix);
         INFO("Saving current state to " << p);
         debruijn_graph::graphio::PrintAll(p, gp);
         storage().bulge_len_histogram.SaveToFile(p + ".hist");
@@ -150,7 +150,7 @@ public:
     void load(debruijn_graph::conj_graph_pack& gp,
               const std::string &load_from,
               const char* prefix) {
-        std::string p = path::append_path(load_from, prefix == NULL ? id() : prefix);
+        std::string p = fs::append_path(load_from, prefix == NULL ? id() : prefix);
         INFO("Loading current state from " << p);
         debruijn_graph::graphio::ScanAll(p, gp, false);
         INFO("Loading histogram of bulge length");
@@ -161,7 +161,7 @@ public:
     void save(const debruijn_graph::conj_graph_pack& gp,
               const std::string & save_to,
               const char* prefix) const {
-        std::string p = path::append_path(save_to, prefix == NULL ? id() : prefix);
+        std::string p = fs::append_path(save_to, prefix == NULL ? id() : prefix);
         INFO("Saving current state to " << p);
         debruijn_graph::graphio::PrintAll(p, gp);
         storage().bulge_len_histogram.SaveToFile(p + ".hist");
@@ -188,7 +188,7 @@ public:
     void load(debruijn_graph::conj_graph_pack& gp,
             const std::string &load_from,
             const char* prefix) {
-        std::string p = path::append_path(load_from, prefix == NULL ? id() : prefix);
+        std::string p = fs::append_path(load_from, prefix == NULL ? id() : prefix);
         INFO("Loading current state from " << p);
         debruijn_graph::graphio::ScanAll(p, gp, false);
     }
@@ -196,7 +196,7 @@ public:
     void save(const debruijn_graph::conj_graph_pack& gp,
             const std::string & save_to,
             const char* prefix) const {
-        std::string p = path::append_path(save_to, prefix == NULL ? id() : prefix);
+        std::string p = fs::append_path(save_to, prefix == NULL ? id() : prefix);
         INFO("Saving current state to " << p);
         debruijn_graph::graphio::PrintAll(p, gp);
         storage().bulge_len_histogram.SaveToFile(p + ".hist");

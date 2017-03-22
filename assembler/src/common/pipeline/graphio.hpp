@@ -415,7 +415,7 @@ class DataScanner {
     }
 
     bool LoadFlankingCoverage(const string& file_name, FlankingCoverage<Graph>& flanking_cov) {
-        if (!path::FileExists(file_name + ".flcvr")) {
+        if (!fs::FileExists(file_name + ".flcvr")) {
             INFO("Flanking coverage saves are absent");
             return false;
         }

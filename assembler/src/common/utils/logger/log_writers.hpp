@@ -26,7 +26,7 @@ struct console_writer : public writer {
         std::cout << fmt::format("{:14s} {:>5s} / {:<5s} {:6.6s} {:24.24s} ({:26.26s}:{:4d})   {:s}",
                                  utils::human_readable_time(time), utils::human_readable_memory(cmem),
                                  utils::human_readable_memory(max_rss), logging::level_name(l),
-                                 source, path::filename(file), int(line_num), msg)
+                                 source, fs::filename(file), int(line_num), msg)
         << std::endl;
     }
 

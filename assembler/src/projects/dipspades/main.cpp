@@ -35,11 +35,11 @@ void copy_configs(string cfg_filename, string to) {
   if (!make_dir(to)) {
     WARN("Could not create files use in /tmp directory");
   }
-  path::copy_files_by_ext(path::parent_path(cfg_filename), to, ".info", true);
+  fs::copy_files_by_ext(fs::parent_path(cfg_filename), to, ".info", true);
 }
 
 void load_config(string cfg_filename) {
-  path::CheckFileExistenceFATAL(cfg_filename);
+  fs::CheckFileExistenceFATAL(cfg_filename);
   dsp_cfg::create_instance(cfg_filename);
 //  string path_to_copy = path::append_path(dsp_cfg::get().io.output_dir, "configs");
 //  copy_configs(cfg_filename, path_to_copy);
@@ -50,11 +50,11 @@ void create_console_logger(string cfg_filename) {
 
   string log_props_file = dsp_cfg::get().io.log_filename;
 
-  if (!path::FileExists(log_props_file)){
-    log_props_file = path::append_path(path::parent_path(cfg_filename), dsp_cfg::get().io.log_filename);
+  if (!fs::FileExists(log_props_file)){
+    log_props_file = fs::append_path(fs::parent_path(cfg_filename), dsp_cfg::get().io.log_filename);
   }
 
-  logger *lg = create_logger(path::FileExists(log_props_file) ? log_props_file : "");
+  logger *lg = create_logger(fs::FileExists(log_props_file) ? log_props_file : "");
   lg->add_writer(std::make_shared<console_writer>());
   attach_logger(lg);
 }
@@ -74,7 +74,7 @@ int main(int /*argc*/, char** argv) {
     load_config          (cfg_filename);
     make_dirs();
     if(dsp_cfg::get().rp.developer_mode)
-        copy_configs(cfg_filename, path::append_path(dsp_cfg::get().io.output_dir, "configs"));
+        copy_configs(cfg_filename, fs::append_path(dsp_cfg::get().io.output_dir, "configs"));
     create_console_logger(cfg_filename);
 
     INFO("Loaded config from " << cfg_filename);

@@ -26,7 +26,7 @@ public:
                               unsigned K, const Graph &g, size_t read_buffer_size = 0)
             : utils::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size), g_(g) {}
 
-    path::files_t Split(size_t num_files) override;
+    fs::files_t Split(size_t num_files) override;
 };
 
 template<class Graph, class KmerFilter>
@@ -46,10 +46,10 @@ DeBruijnGraphKMerSplitter<Graph, KmerFilter>::FillBufferFromEdges(EdgeIt &edge,
 }
 
 template<class Graph, class KmerFilter>
-path::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files) {
+fs::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files) {
     INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
-    path::files_t out = this->PrepareBuffers(num_files, 1, this->read_buffer_size_);
+    fs::files_t out = this->PrepareBuffers(num_files, 1, this->read_buffer_size_);
 
     size_t counter = 0, n = 10;
     for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ) {

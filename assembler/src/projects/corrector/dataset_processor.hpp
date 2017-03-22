@@ -48,7 +48,7 @@ class DatasetProcessor {
 public:
     DatasetProcessor(const std::string &genome_file, const std::string &work_dir, const std::string &output_dir, const size_t &thread_num)
             : genome_file_(genome_file), work_dir_(work_dir), nthreads_(thread_num) {
-        output_contig_file_ = path::append_path(output_dir, "corrected_contigs.fasta");
+        output_contig_file_ = fs::append_path(output_dir, "corrected_contigs.fasta");
         buffered_count_ = 0;
     }
 

@@ -88,8 +88,8 @@ using boost::noncopyable;
 
 // path manipulation instead of boost filesystem
 #include "filesystem/path_helper.hpp"
-using path::make_dir;
-using path::remove_dir;
+using fs::make_dir;
+using fs::remove_dir;
 
 #ifndef NDEBUG
 namespace boost {

@@ -33,7 +33,7 @@ private:
     const static size_t current_binary_format_version = 11;
 
     static bool CheckBinaryReadsExist(SequencingLibraryT& lib) {
-        return path::FileExists(lib.data().binary_reads_info.bin_reads_info_file);
+        return fs::FileExists(lib.data().binary_reads_info.bin_reads_info_file);
     }
 
     static bool LoadLibIfExists(SequencingLibraryT& lib) {

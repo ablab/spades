@@ -183,7 +183,7 @@ struct GeneCollection {
     size_t id = 0;
     for (string name : genome_names) {
     string filename = genomes_folder + name;
-    path::CheckFileExistenceFATAL(filename);
+    fs::CheckFileExistenceFATAL(filename);
     genomes.insert(
         make_pair(
             id,
@@ -199,7 +199,7 @@ GenomeId genome_id(const string& name) const {
 
 void LoadGenomes(const string& file_with_genomes,
     const string& genomes_folder) {
-  path::CheckFileExistenceFATAL(file_with_genomes);
+  fs::CheckFileExistenceFATAL(file_with_genomes);
   ifstream stream(file_with_genomes);
   set<string> genome_names;
   string name;
@@ -230,7 +230,7 @@ void SaveGeneInfo(const string& filename) const {
 }
 
 set<int> LoadGeneIDs(const string& file_with_ids) {
-  path::CheckFileExistenceFATAL(file_with_ids);
+  fs::CheckFileExistenceFATAL(file_with_ids);
   ifstream stream(file_with_ids);
   set<int> gene_ids;
   int id;
@@ -252,7 +252,7 @@ void AddGeneInfo(const GeneId& gene_id, const GenomeId& genome_id, const Range& 
 void LoadGeneInfo(const string& filename, set<int> gene_ids) {
   using boost::tokenizer;
   using boost::escaped_list_separator;
-  path::CheckFileExistenceFATAL(filename);
+  fs::CheckFileExistenceFATAL(filename);
   ifstream stream(filename);
   string line;
   while (!stream.eof()) {

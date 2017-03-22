@@ -180,7 +180,7 @@ class SeriesAnalysis : public spades::AssemblyStage {
 
     boost::optional<AbundanceVector> InferAbundance(const std::string& bin_mult_fn,
                                                     const std::string& b_id) const {
-        path::CheckFileExistenceFATAL(bin_mult_fn);
+        fs::CheckFileExistenceFATAL(bin_mult_fn);
 
         ifstream is(bin_mult_fn);
         vector<AbundanceVector> abundances;
@@ -294,7 +294,7 @@ public:
         gp.FillQuality();
         visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
         auto colorer = DefaultGPColorer(gp);
-        path::make_dir(cfg::get().output_dir + "pictures/");
+        fs::make_dir(cfg::get().output_dir + "pictures/");
         QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
                                        cfg::get().output_dir + "pictures/");
 
@@ -307,7 +307,7 @@ public:
         INFO("Graph clearing finished");
 
         INFO("Drawing edges with failed abundance estimate")
-        path::make_dir(cfg::get().output_dir + "pictures_no_ab/");
+        fs::make_dir(cfg::get().output_dir + "pictures_no_ab/");
         QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler2(gp.g, gp.edge_qual, labeler, colorer,
                                        cfg::get().output_dir + "pictures_no_ab/");
 

@@ -52,7 +52,7 @@ string getReadsFilename(const std::string & dirprefix, const std::string &fname,
   ostringstream tmp;
   tmp.str("");
 
-  tmp << dirprefix.data() << "/" << path::basename(fname) << '.' << std::setfill('0') << std::setw(2) << iter_no << "." << suffix.data();
+  tmp << dirprefix.data() << "/" << fs::basename(fname) << '.' << std::setfill('0') << std::setw(2) << iter_no << "." << suffix.data();
   return tmp.str();
 }
 

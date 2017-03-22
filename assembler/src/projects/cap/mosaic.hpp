@@ -968,8 +968,8 @@ void DrawGraph(const vector<StrandRange>& all_ranges,
             50
             /*numeric_limits<size_t>::max()*/);
 
-    path::remove_if_exists("mosaic_pics");
-    path::make_dir("mosaic_pics");
+    fs::remove_if_exists("mosaic_pics");
+    fs::make_dir("mosaic_pics");
     INFO("Writing components");
     visualization::visualization_utils::WriteComponents(gp.g, "mosaic_pics/", splitter,
             visualization::graph_colorer::DefaultColorer(gp.g), labeler);

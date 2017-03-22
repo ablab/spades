@@ -148,7 +148,7 @@ public:
         size_t cons_regions_length = ComputeSummaryLengthOfRegionInStorage(cons_reg_storage_.cons_regions_begin(),
                 cons_reg_storage_.cons_regions_end());
         if(cons_regions_length > 0){
-            string cons_regions_fname(path::append_path(dsp_cfg::get().io.output_dir,
+            string cons_regions_fname(fs::append_path(dsp_cfg::get().io.output_dir,
                     "conservative_regions.fasta").c_str());
             WriteConservativeRegionsStorageToFile(cons_regions_fname, cons_reg_storage_.cons_regions_begin(),
                 cons_reg_storage_.cons_regions_end());
@@ -159,7 +159,7 @@ public:
         size_t poss_cons_regions_length = ComputeSummaryLengthOfRegionInStorage(cons_reg_storage_.poss_cons_regions_begin(),
                 cons_reg_storage_.poss_cons_regions_end());
         if(poss_cons_regions_length > 0){
-            string poss_cons_regions_fname(path::append_path(dsp_cfg::get().io.output_dir,
+            string poss_cons_regions_fname(fs::append_path(dsp_cfg::get().io.output_dir,
                 "possibly_conservative_regions.fasta").c_str());
 //            INFO("Possibly conservative regions written in file " << poss_cons_regions_fname);
             WriteConservativeRegionsStorageToFile(poss_cons_regions_fname, cons_reg_storage_.poss_cons_regions_begin(),

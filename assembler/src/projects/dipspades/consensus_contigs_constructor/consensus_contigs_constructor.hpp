@@ -213,13 +213,13 @@ class ConsensusContigsConstructor {
                 double_contigs->Add(contig);
         }
         WriteContigsToFile(double_contigs,
-                path::append_path(dsp_cfg::get().io.output_dir, "paired_consensus_contigs.fasta").c_str());
+                fs::append_path(dsp_cfg::get().io.output_dir, "paired_consensus_contigs.fasta").c_str());
         WriteContigsToFile(single_contigs,
-                path::append_path(dsp_cfg::get().io.output_dir, "unpaired_consensus_contigs.fasta").c_str());
+                fs::append_path(dsp_cfg::get().io.output_dir, "unpaired_consensus_contigs.fasta").c_str());
     }
 
     void WriteAlignedHaplocontigs(){
-        string fname = path::append_path(dsp_cfg::get().io.output_dir, "haplocontigs_alignment");
+        string fname = fs::append_path(dsp_cfg::get().io.output_dir, "haplocontigs_alignment");
         ofstream out(fname.c_str());
         INFO("Writing haplocontigs alignment to " << fname);
 
@@ -310,7 +310,7 @@ public:
 
         composite_storage_ = DefineOverlappingContigs(processed_storage);
 
-        string consensus_fname(path::append_path(dsp_cfg::get().io.output_dir, "consensus_contigs.fasta").c_str());
+        string consensus_fname(fs::append_path(dsp_cfg::get().io.output_dir, "consensus_contigs.fasta").c_str());
         WriteContigsToFile(composite_storage_, consensus_fname);
         WritePairedAndUnpairedContigs(composite_storage_);
 

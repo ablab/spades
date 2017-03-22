@@ -93,12 +93,12 @@ int main(int argc, char** argv) {
       KMerDataCounter(32).FillKMerData(kmer_data);
       if (cfg::get().debug_mode) {
         INFO("Debug mode on. Saving K-mer index.");
-        std::ofstream ofs(path::append_path(cfg::get().working_dir, "count.kmdata"), std::ios::binary);
+        std::ofstream ofs(fs::append_path(cfg::get().working_dir, "count.kmdata"), std::ios::binary);
         kmer_data.binary_write(ofs);
       }
     } else {
       INFO("Loading K-mer index.");
-      std::ifstream ifs(path::append_path(cfg::get().working_dir, "count.kmdata"), std::ios::binary);
+      std::ifstream ifs(fs::append_path(cfg::get().working_dir, "count.kmdata"), std::ios::binary);
       VERIFY(ifs.good());
       kmer_data.binary_read(ifs);
       INFO("Total " << kmer_data.size() << " entries were loader");
@@ -109,14 +109,14 @@ int main(int argc, char** argv) {
       ConcurrentDSU uf(kmer_data.size());
       KMerHamClusterer clusterer(cfg::get().tau);
       INFO("Clustering Hamming graph.");
-      clusterer.cluster(path::append_path(cfg::get().working_dir, "kmers.hamcls"), kmer_data, uf);
+      clusterer.cluster(fs::append_path(cfg::get().working_dir, "kmers.hamcls"), kmer_data, uf);
       uf.get_sets(classes);
       size_t num_classes = classes.size();
       INFO("Clustering done. Total clusters: " << num_classes);
 
       if (cfg::get().debug_mode) {
         INFO("Debug mode on. Writing down clusters.");
-        std::ofstream ofs(path::append_path(cfg::get().working_dir, "hamming.cls"), std::ios::binary);
+        std::ofstream ofs(fs::append_path(cfg::get().working_dir, "hamming.cls"), std::ios::binary);
 
         ofs.write((char*)&num_classes, sizeof(num_classes));
         for (size_t i=0; i < classes.size(); ++i) {
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
       }
     } else {
       INFO("Loading clusters.");
-      std::ifstream ifs(path::append_path(cfg::get().working_dir, "hamming.cls"), std::ios::binary);
+      std::ifstream ifs(fs::append_path(cfg::get().working_dir, "hamming.cls"), std::ios::binary);
       VERIFY(ifs.good());
 
       size_t num_classes = 0;
@@ -172,12 +172,12 @@ int main(int argc, char** argv) {
 
       if (cfg::get().debug_mode) {
         INFO("Debug mode on. Saving K-mer index.");
-        std::ofstream ofs(path::append_path(cfg::get().working_dir, "cluster.kmdata"), std::ios::binary);
+        std::ofstream ofs(fs::append_path(cfg::get().working_dir, "cluster.kmdata"), std::ios::binary);
         kmer_data.binary_write(ofs);
       }
     } else {
       INFO("Loading K-mer index.");
-      std::ifstream ifs(path::append_path(cfg::get().working_dir, "cluster.kmdata"), std::ios::binary);
+      std::ifstream ifs(fs::append_path(cfg::get().working_dir, "cluster.kmdata"), std::ios::binary);
       VERIFY(ifs.good());
       kmer_data.binary_read(ifs);
       INFO("Total " << kmer_data.size() << " entries were loader");
@@ -236,7 +236,7 @@ int main(int argc, char** argv) {
       size_t iread = 0;
       // First, correct all the paired FASTQ files
       for (auto I = lib.paired_begin(), E = lib.paired_end(); I != E; ++I, ++iread) {
-          if (path::extension(I->first) == ".bam" || path::extension(I->second) == ".bam")
+          if (fs::extension(I->first) == ".bam" || fs::extension(I->second) == ".bam")
               continue;
 
           INFO("Correcting pair of reads: " << I->first << " and " << I->second);
@@ -244,8 +244,8 @@ int main(int argc, char** argv) {
           std::string usuffix = std::to_string(ilib) + "_" +
                                 std::to_string(iread) + ".cor.fasta";
 
-          std::string outcorl = path::append_path(cfg::get().output_dir, path::basename(I->first) + usuffix);
-          std::string outcorr = path::append_path(cfg::get().output_dir, path::basename(I->second) + usuffix);
+          std::string outcorl = fs::append_path(cfg::get().output_dir, fs::basename(I->first) + usuffix);
+          std::string outcorr = fs::append_path(cfg::get().output_dir, fs::basename(I->second) + usuffix);
 
           io::PairedOutputSequenceStream ors(outcorl, outcorr);
 
@@ -258,7 +258,7 @@ int main(int argc, char** argv) {
 
       // Second, correct all the single FASTQ files
       for (auto I = lib.single_begin(), E = lib.single_end(); I != E; ++I, ++iread) {
-          if (path::extension(*I) == ".bam")
+          if (fs::extension(*I) == ".bam")
               continue;
 
           INFO("Correcting " << *I);
@@ -266,7 +266,7 @@ int main(int argc, char** argv) {
           std::string usuffix = std::to_string(ilib) + "_" +
                                 std::to_string(iread) + ".cor.fasta";
 
-          std::string outcor = path::append_path(cfg::get().output_dir, path::basename(*I) + usuffix);
+          std::string outcor = fs::append_path(cfg::get().output_dir, fs::basename(*I) + usuffix);
           io::osequencestream ors(outcor);
 
           io::FileReadStream irs(*I, io::PhredOffset);
@@ -278,7 +278,7 @@ int main(int argc, char** argv) {
 
       // Finally, correct all the BAM stuff in a row
       for (auto I = lib.reads_begin(), E = lib.reads_end(); I != E; ++I, ++iread) {
-        if (path::extension(*I) != ".bam")
+        if (fs::extension(*I) != ".bam")
               continue;
 
         INFO("Correcting " << *I);
@@ -286,7 +286,7 @@ int main(int argc, char** argv) {
         std::string usuffix = std::to_string(ilib) + "_" +
                               std::to_string(iread) + ".cor.fasta";
 
-        std::string outcor = path::append_path(cfg::get().output_dir, path::basename(*I) + usuffix);
+        std::string outcor = fs::append_path(cfg::get().output_dir, fs::basename(*I) + usuffix);
         io::osequencestream ors(outcor);
 
         BamTools::BamReader bam_reader;
@@ -305,7 +305,7 @@ int main(int argc, char** argv) {
     }
     cfg::get_writable().dataset = outdataset;
 
-    std::string fname = path::append_path(cfg::get().output_dir, "corrected.yaml");
+    std::string fname = fs::append_path(cfg::get().output_dir, "corrected.yaml");
     INFO("Saving corrected dataset description to " << fname);
     cfg::get_writable().dataset.save(fname);
 

@@ -132,7 +132,7 @@ void assemble_genome() {
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 
     // For informing spades.py about estimated params
-    debruijn_graph::config::write_lib_data(path::append_path(cfg::get().output_dir, "final"));
+    debruijn_graph::config::write_lib_data(fs::append_path(cfg::get().output_dir, "final"));
 
     INFO("SPAdes finished");
 }

@@ -34,7 +34,7 @@ void ContigProcessor::ReadContig() {
     contig_name_ = cur_read.name();
     contig_ = cur_read.GetSequenceString();
 
-    output_contig_file_ = path::append_path(path::parent_path(contig_file_), path::basename(contig_file_) + ".ref.fasta");
+    output_contig_file_ = fs::append_path(fs::parent_path(contig_file_), fs::basename(contig_file_) + ".ref.fasta");
     charts_.resize(contig_.length());
 }
 

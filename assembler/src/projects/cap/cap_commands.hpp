@@ -508,10 +508,10 @@ class BlocksToGRIMMFormat : public LocalCommand<CapEnvironment> {
       std::string file_from = args[1],
                   file_to = args[2];
 
-      path::make_full_path(file_from);
-      path::make_full_path(file_to);
+      file_from = fs::make_full_path(file_from);
+      file_to = fs::make_full_path(file_to);
 
-      std::string dir = path::parent_path(file_to);
+      std::string dir = fs::parent_path(file_to);
       cap::utils::MakeDirPath(dir);
 
       BlockPrinter<Graph>::ConvertBlocksToGRIMM(file_from, file_to);

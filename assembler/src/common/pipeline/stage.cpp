@@ -18,7 +18,7 @@ namespace spades {
 void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
                          const std::string &load_from,
                          const char* prefix) {
-    std::string p = path::append_path(load_from, prefix == NULL ? id_ : prefix);
+    std::string p = fs::append_path(load_from, prefix == NULL ? id_ : prefix);
     INFO("Loading current state from " << p);
 
     debruijn_graph::graphio::ScanAll(p, gp, false);
@@ -28,7 +28,7 @@ void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
 void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp,
                          const std::string &save_to,
                          const char* prefix) const {
-    std::string p = path::append_path(save_to, prefix == NULL ? id_ : prefix);
+    std::string p = fs::append_path(save_to, prefix == NULL ? id_ : prefix);
     INFO("Saving current state to " << p);
 
     debruijn_graph::graphio::PrintAll(p, gp);

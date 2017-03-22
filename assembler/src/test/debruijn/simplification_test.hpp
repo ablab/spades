@@ -19,7 +19,7 @@
 namespace debruijn_graph {
 using namespace config;
 
-BOOST_FIXTURE_TEST_SUITE(graph_simplification_tests, path::TmpFolderFixture)
+BOOST_FIXTURE_TEST_SUITE(graph_simplification_tests, fs::TmpFolderFixture)
 
 debruijn_config::simplification::bulge_remover standard_br_config_generation() {
     debruijn_config::simplification::bulge_remover br_config;
@@ -311,7 +311,7 @@ void TestRelativeCoverageRemover(std::string path, size_t graph_size) {
     gp_t gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
     INFO("Relative coverage component removal:");
-    if (!path::FileExists(path + ".flcvr") && !path::FileExists(path + ".kmidx")) {
+    if (!fs::FileExists(path + ".flcvr") && !fs::FileExists(path + ".kmidx")) {
         FillKmerCoverageWithAvg(gp.g, gp.index.inner_index());
         gp.flanking_cov.Fill(gp.index.inner_index());
     }

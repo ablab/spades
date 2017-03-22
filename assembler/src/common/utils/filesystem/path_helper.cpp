@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-namespace path {
+namespace fs {
 
 bool make_dir(std::string const& folder) {
     return mkdir(folder.c_str(), 0755) == 0;
@@ -87,9 +87,10 @@ std::string current_dir() {
     return result;
 }
 
-void make_full_path(std::string& path) {
+std::string make_full_path(std::string const& path) {
     if (!boost::starts_with(path, "/"))  // relative path
-        path = append_path(current_dir(), path);
+        return append_path(current_dir(), path);
+    return path;
 }
 
 std::string filename(std::string const& path) {
@@ -122,7 +123,7 @@ std::string extension(std::string const& path) {
 std::string parent_path(std::string const& path) {
     std::string cpath(path);
 
-    make_full_path(cpath);
+    cpath = make_full_path(cpath);
     size_t slash_pos = cpath.find_last_of('/');
 
     return (slash_pos == 0 ? std::string("/") : cpath.substr(0, slash_pos));

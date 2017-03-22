@@ -63,11 +63,11 @@ shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultColorer(con
 template <class graph_pack>
 void CollectContigPositions(graph_pack &gp) {
     if (!cfg::get().pos.contigs_for_threading.empty() &&
-        path::FileExists(cfg::get().pos.contigs_for_threading))
+        fs::FileExists(cfg::get().pos.contigs_for_threading))
       visualization::position_filler::FillPos(gp, cfg::get().pos.contigs_for_threading, "thr_", true);
 
     if (!cfg::get().pos.contigs_to_analyze.empty() &&
-        path::FileExists(cfg::get().pos.contigs_to_analyze))
+        fs::FileExists(cfg::get().pos.contigs_to_analyze))
       visualization::position_filler::FillPos(gp, cfg::get().pos.contigs_to_analyze, "anlz_", true);
 }
 
@@ -292,9 +292,9 @@ struct detail_info_printer {
         }
 
         if (config.save_graph_pack) {
-            string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
+            string saves_folder = fs::append_path(fs::append_path(folder_, "saves/"),
                                               ToString(call_cnt++, 2) + "_" + pos_name + "/");
-            path::make_dirs(saves_folder);
+            fs::make_dirs(saves_folder);
             graphio::ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp_.g);
             graphio::PrintGraphPack(saves_folder + "graph_pack", printer, gp_);
             //TODO: separate
@@ -302,9 +302,9 @@ struct detail_info_printer {
         }
 
         if (config.save_all) {
-            string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
+            string saves_folder = fs::append_path(fs::append_path(folder_, "saves/"),
                                                           ToString(call_cnt++, 2) + "_" + pos_name);
-            path::make_dirs(saves_folder);
+            fs::make_dirs(saves_folder);
             string p = saves_folder + "/saves";
             INFO("Saving current state to " << p);
 
@@ -313,17 +313,17 @@ struct detail_info_printer {
         }
 
         if (config.save_full_graph) {
-            string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
+            string saves_folder = fs::append_path(fs::append_path(folder_, "saves/"),
                                               ToString(call_cnt++, 2) + "_" + pos_name + "/");
-            path::make_dirs(saves_folder);
+            fs::make_dirs(saves_folder);
             graphio::ConjugateDataPrinter<conj_graph_pack::graph_t> printer(gp_.g);
             graphio::PrintBasicGraph(saves_folder + "graph", printer);
         }
 
         if (config.lib_info) {
-            string saves_folder = path::append_path(path::append_path(folder_, "saves/"),
+            string saves_folder = fs::append_path(fs::append_path(folder_, "saves/"),
                                                   ToString(call_cnt++, 2) + "_" + pos_name + "/");
-            path::make_dirs(saves_folder);
+            fs::make_dirs(saves_folder);
             config::write_lib_data(saves_folder + "lib_info");
         }
 
@@ -344,9 +344,9 @@ struct detail_info_printer {
         } 
 
         VERIFY(cfg::get().developer_mode);
-        string pics_folder = path::append_path(path::append_path(folder_, "pictures/"),
+        string pics_folder = fs::append_path(fs::append_path(folder_, "pictures/"),
                                           ToString(call_cnt++, 2) + "_" + pos_name + "/");
-        path::make_dirs(pics_folder);
+        fs::make_dirs(pics_folder);
         PrepareForDrawing(gp_);
     
         auto path1 = FindGenomeMappingPath(gp_.genome.GetSequence(), gp_.g, gp_.index,
@@ -376,10 +376,10 @@ struct detail_info_printer {
         }
     
         if (!config.components_for_kmer.empty()) {
-            string kmer_folder = path::append_path(pics_folder, "kmer_loc/");
+            string kmer_folder = fs::append_path(pics_folder, "kmer_loc/");
             make_dir(kmer_folder);
             auto kmer = RtSeq(gp_.k_value + 1, config.components_for_kmer.substr(0, gp_.k_value + 1).c_str());
-            string file_name = path::append_path(kmer_folder, pos_name + ".dot");
+            string file_name = fs::append_path(kmer_folder, pos_name + ".dot");
             WriteKmerComponent(gp_, kmer, file_name, colorer, labeler_);
         }
     
@@ -396,7 +396,7 @@ struct detail_info_printer {
         }
 
         if (!config.components_for_genome_pos.empty()) {
-            string pos_loc_folder = path::append_path(pics_folder, "pos_loc/");
+            string pos_loc_folder = fs::append_path(pics_folder, "pos_loc/");
             make_dir(pos_loc_folder);
             vector<string> positions;
             boost::split(positions, config.components_for_genome_pos,
@@ -405,9 +405,9 @@ struct detail_info_printer {
                 boost::optional<RtSeq> close_kp1mer = FindCloseKP1mer(gp_,
                                                                                  std::stoi(*it), gp_.k_value);
                 if (close_kp1mer) {
-                    string locality_folder = path::append_path(pos_loc_folder, *it + "/");
+                    string locality_folder = fs::append_path(pos_loc_folder, *it + "/");
                     make_dir(locality_folder);
-                    WriteKmerComponent(gp_, *close_kp1mer, path::append_path(locality_folder, pos_name + ".dot"), colorer, labeler_);
+                    WriteKmerComponent(gp_, *close_kp1mer, fs::append_path(locality_folder, pos_name + ".dot"), colorer, labeler_);
                 } else {
                     WARN(
                         "Failed to find genome kp1mer close to the one at position "

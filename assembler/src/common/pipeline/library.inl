@@ -55,7 +55,7 @@ void io::DataSet<Data>::load(const std::string &filename) {
         throw;
     }
     
-    std::string input_dir = path::parent_path(filename);
+    std::string input_dir = fs::parent_path(filename);
     if (input_dir[input_dir.length() - 1] != '/')
         input_dir += '/';
 

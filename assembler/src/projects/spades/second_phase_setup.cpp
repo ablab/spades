@@ -24,7 +24,7 @@ void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
     std::string old_pe_contigs_filename = cfg::get().output_dir + "final_contigs.fasta";
     std::string new_pe_contigs_filename = cfg::get().output_dir + "first_pe_contigs.fasta";
 
-    VERIFY(path::check_existence(old_pe_contigs_filename));
+    VERIFY(fs::check_existence(old_pe_contigs_filename));
     INFO("Moving preliminary contigs from " << old_pe_contigs_filename << " to " << new_pe_contigs_filename);
     int code = rename(old_pe_contigs_filename.c_str(), new_pe_contigs_filename.c_str());
     VERIFY(code == 0);

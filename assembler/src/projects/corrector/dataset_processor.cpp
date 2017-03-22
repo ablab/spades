@@ -26,7 +26,7 @@ namespace corrector {
 std::string DatasetProcessor::GetLibDir(const size_t lib_count) {
     if (lib_dirs_.find(lib_count) != lib_dirs_.end())
         return lib_dirs_[lib_count];
-    std::string res = path::make_temp_dir(corr_cfg::get().work_dir, "lib" + to_string(lib_count));
+    std::string res = fs::make_temp_dir(corr_cfg::get().work_dir, "lib" + to_string(lib_count));
     lib_dirs_[lib_count] = res;
     return res;
 }
@@ -42,9 +42,9 @@ void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
         if (all_contigs_.find(contig_name) != all_contigs_.end()) {
             WARN("Duplicated contig names! Multiple contigs with name" << contig_name);
         }
-        string full_path = path::append_path(genome_splitted_dir, contig_name + ".fasta");
-        string out_full_path = path::append_path(genome_splitted_dir, contig_name + ".ref.fasta");
-        string sam_filename = path::append_path(genome_splitted_dir, contig_name + ".pair.sam");
+        string full_path = fs::append_path(genome_splitted_dir, contig_name + ".fasta");
+        string out_full_path = fs::append_path(genome_splitted_dir, contig_name + ".ref.fasta");
+        string sam_filename = fs::append_path(genome_splitted_dir, contig_name + ".pair.sam");
         all_contigs_[contig_name] = {full_path, out_full_path, contig_seq.length(), sam_files_type(), sam_filename, cur_id};
         cur_id ++;
         buffered_reads_[contig_name].clear();
@@ -133,9 +133,9 @@ void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, cons
 string DatasetProcessor::RunPairedBwa(const string &left, const string &right, const size_t lib)  {
     string cur_dir = GetLibDir(lib);
     int run_res = 0;
-    string tmp_sam_filename = path::append_path(cur_dir, "tmp.sam");
-    string bwa_string = path::screen_whitespaces(path::screen_whitespaces(corr_cfg::get().bwa));
-    string genome_screened = path::screen_whitespaces(genome_file_);
+    string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
+    string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
+    string genome_screened = fs::screen_whitespaces(genome_file_);
     string index_line = bwa_string + string(" index ") + "-a " + "is " + genome_screened ;
     INFO("Running bwa index ...: " << index_line);
     run_res = system(index_line.c_str());
@@ -144,8 +144,8 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
         return "";
     }
     string nthreads_str = to_string(nthreads_);
-    string last_line = bwa_string + string(" mem ") + " -v 1 -t " + nthreads_str + " "+ genome_screened + " " + path::screen_whitespaces(left) + " " + path::screen_whitespaces(right)  + "  > "
-            + path::screen_whitespaces(tmp_sam_filename) ;
+    string last_line = bwa_string + string(" mem ") + " -v 1 -t " + nthreads_str + " "+ genome_screened + " " + fs::screen_whitespaces(left) + " " + fs::screen_whitespaces(right)  + "  > "
+            + fs::screen_whitespaces(tmp_sam_filename) ;
     INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
     if (run_res != 0) {
@@ -158,9 +158,9 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
 string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
     int run_res = 0;
     string cur_dir = GetLibDir(lib);
-    string tmp_sam_filename = path::append_path(cur_dir, "tmp.sam");
-    string bwa_string = path::screen_whitespaces(path::screen_whitespaces(corr_cfg::get().bwa));
-    string genome_screened = path::screen_whitespaces(genome_file_);
+    string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
+    string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
+    string genome_screened = fs::screen_whitespaces(genome_file_);
     string index_line = bwa_string + string(" index ") + "-a " + "is " + genome_screened ;
     INFO("Running bwa index ...: " << index_line);
     run_res = system(index_line.c_str());
@@ -169,7 +169,7 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
         return "";
     }
     string nthreads_str = to_string(nthreads_);
-    string last_line = bwa_string + " mem "+ " -v 1 -t " + nthreads_str + " " + genome_screened + " "  + path::screen_whitespaces(single)  + "  > " + path::screen_whitespaces(tmp_sam_filename);
+    string last_line = bwa_string + " mem "+ " -v 1 -t " + nthreads_str + " " + genome_screened + " "  + fs::screen_whitespaces(single)  + "  > " + fs::screen_whitespaces(tmp_sam_filename);
     INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
     if (run_res != 0) {
@@ -183,7 +183,7 @@ void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
     string out_dir = GetLibDir(lib_count);
     for (auto &ac : all_contigs_) {
         auto contig_name = ac.first;
-        string out_name = path::append_path(out_dir, contig_name + ".sam");
+        string out_name = fs::append_path(out_dir, contig_name + ".sam");
         ac.second.sam_filenames.push_back(make_pair(out_name, unsplitted_sam_files_[lib_count].second));
         BufferedOutputRead("@SQ\tSN:" + contig_name + "\tLN:" + to_string(all_contigs_[contig_name].contig_length), contig_name, lib_count);
     }

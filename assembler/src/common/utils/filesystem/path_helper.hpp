@@ -17,7 +17,7 @@
 #include "utils/logger/logger.hpp"
 #include "utils/verify.hpp"
 
-namespace path {
+namespace fs {
 //todo review and make names consistent!
 
 typedef std::vector<std::string> files_t;
@@ -34,8 +34,7 @@ std::string append_path(std::string const &prefix, std::string const &suffix);
 
 std::string current_dir();
 
-//todo why non-cons argument?!
-void make_full_path(std::string &path);
+std::string make_full_path(std::string const &path);
 
 std::string filename(std::string const &path);
 
@@ -79,12 +78,12 @@ public:
     TmpFolderFixture(std::string tmp_folder = "tmp") :
             tmp_folder_(tmp_folder)
     {
-        path::make_dirs(tmp_folder_);
+        fs::make_dirs(tmp_folder_);
     }
 
     ~TmpFolderFixture()
     {
-        path::remove_dir(tmp_folder_);
+        fs::remove_dir(tmp_folder_);
     }
 };
 

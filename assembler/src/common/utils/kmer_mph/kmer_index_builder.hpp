@@ -80,7 +80,7 @@ class KMerDiskCounter : public KMerCounter<Seq> {
 public:
   KMerDiskCounter(const std::string &work_dir, KMerSplitter<Seq> &splitter)
       : work_dir_(work_dir), splitter_(splitter) {
-    std::string prefix = path::append_path(work_dir, "kmers_XXXXXX");
+    std::string prefix = fs::append_path(work_dir, "kmers_XXXXXX");
     char *tempprefix = strcpy(new char[prefix.length() + 1], prefix.c_str());
     VERIFY_MSG(-1 != (fd_ = ::mkstemp(tempprefix)), "Cannot create temporary file");
     kmer_prefix_ = tempprefix;
@@ -105,7 +105,7 @@ public:
     unsigned K = splitter_.K();
 
     // Split k-mers into buckets.
-    path::files_t raw_kmers = splitter_.Split(num_buckets * num_threads);
+    fs::files_t raw_kmers = splitter_.Split(num_buckets * num_threads);
 
     INFO("Starting k-mer counting.");
     size_t kmers = 0;

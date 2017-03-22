@@ -50,7 +50,7 @@ public:
             : index_ptr_(std::make_shared<KMerIndexT>())
             , k_((unsigned) k) {
         //fixme string literal
-        workdir_ = path::make_temp_dir(workdir, "kmeridx");
+        workdir_ = fs::make_temp_dir(workdir, "kmeridx");
     }
 
     IndexWrapper(size_t k, const std::string &workdir, std::shared_ptr<KMerIndexT> index_ptr)
@@ -59,7 +59,7 @@ public:
     }
 
     ~IndexWrapper() {
-        path::remove_dir(workdir_);
+        fs::remove_dir(workdir_);
     }
 
     void clear() {

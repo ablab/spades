@@ -20,7 +20,7 @@ set<bin_id> ContigBinner::RelevantBins(const io::SingleRead& r) const {
 
 void ContigBinner::Init(bin_id bin) {
     string out_dir = out_root_ + "/" + bin + "/";
-    path::make_dirs(out_dir);
+    fs::make_dirs(out_dir);
     out_streams_.insert(make_pair(bin, make_shared<io::OPairedReadStream>(out_dir + sample_name_ + "_1.fastq",
                                                                           out_dir + sample_name_ + "_2.fastq")));
 }

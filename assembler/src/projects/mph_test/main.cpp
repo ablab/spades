@@ -85,10 +85,10 @@ class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {
         files_.push_back(filename);
     }
 
-    path::files_t Split(size_t num_files) override {
+    fs::files_t Split(size_t num_files) override {
         INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
-        path::files_t out = PrepareBuffers(num_files, nthreads_, read_buffer_size_);
+        fs::files_t out = PrepareBuffers(num_files, nthreads_, read_buffer_size_);
 
         size_t n = 10;
         BufferFiller filler(*this, K());

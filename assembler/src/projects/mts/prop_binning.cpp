@@ -17,7 +17,7 @@
 using namespace debruijn_graph;
 
 std::string add_suffix(const std::string& path, const std::string& suffix) {
-    auto ext = path::extension(path);
+    auto ext = fs::extension(path);
     return path.substr(0, path.length() - ext.length()) + suffix + ext;
 }
 
