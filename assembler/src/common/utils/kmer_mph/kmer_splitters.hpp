@@ -240,8 +240,9 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
                            unsigned K, uint32_t seed,
                            io::ReadStreamList<Read>& streams,
                            io::SingleStream* contigs_stream = 0,
-                           size_t read_buffer_size = 0)
-      : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size, seed),
+                           size_t read_buffer_size = 0,
+                           KmerFilter filter = KmerFilter())
+      : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, filter, read_buffer_size, seed),
       streams_(streams), contigs_(contigs_stream) {}
 
   RawKMers Split(size_t num_files, unsigned nthreads) override;

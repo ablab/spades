@@ -18,11 +18,11 @@ class cqf {
     typedef uint64_t digest;
 
     /// The hash function type.
-    typedef std::function<digest(const T&, uint64_t seed)> hasher;
+    typedef std::function<digest(const T&)> hasher;
 
     ~cqf() { qf_destroy(&qf_); }
 
-    cqf(hasher h, uint64_t maxn)
+    cqf(hasher h, uint64_t maxn) noexcept
             : hasher_(std::move(h)), insertions_(0) {
         unsigned qbits = unsigned(ceil(log2(maxn))) + 1;
         num_hash_bits_ = qbits + 8;
@@ -32,7 +32,7 @@ class cqf {
         assert((range_mask_ & qf_.metadata->range) == 0);
         fprintf(stderr, "%llu %llu %u %llu\n", maxn, num_slots_, num_hash_bits_, qf_.metadata->range);
     }
-    cqf(hasher h, uint64_t num_slots, unsigned hash_bits)
+    cqf(hasher h, uint64_t num_slots, unsigned hash_bits) noexcept
             : hasher_(std::move(h)),
               num_hash_bits_(hash_bits), num_slots_(num_slots), insertions_(0) {
         qf_init(&qf_, num_slots_, num_hash_bits_, 0, 239);
@@ -41,7 +41,7 @@ class cqf {
         fprintf(stderr, "%llu %u %llu\n", num_slots_, num_hash_bits_, qf_.metadata->range);
     }
 
-    cqf(cqf&&) = default;
+    cqf(cqf&&) noexcept = default;
 
     void replace_hasher(hasher h) {
         hasher_ = std::move(h);
@@ -50,11 +50,11 @@ class cqf {
 
     bool add(digest d, uint64_t count = 1,
              bool lock = true, bool spin = true) {
-        if (full()) {
+        /* if (full()) {
             std::lock_guard<std::mutex> lock(resize_mutex_);
             if (full())
                 expand();
-        }
+                }*/ 
 
         return qf_insert(&qf_, d & range_mask_, 0, count, lock, spin);
     }
@@ -73,7 +73,7 @@ class cqf {
 
     bool add(const T &o, uint64_t count = 1,
              bool lock = true, bool spin = true) {
-        digest d = hasher_(o, 0);
+        digest d = hasher_(o);
         return add(d, count, lock, spin);
     }
 
@@ -103,7 +103,7 @@ class cqf {
     }
 
     size_t lookup(const T &o, bool lock = false) const {
-        digest d = hasher_(o, 0);
+        digest d = hasher_(o);
         return lookup(d, lock);
     }
 
@@ -119,8 +119,6 @@ private:
             } while (!qfi_next(&other_cfi));
         }
     }
-
-    std::mutex resize_mutex_;
 
     hasher hasher_;
     QF qf_;

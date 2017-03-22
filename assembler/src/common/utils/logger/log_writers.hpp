@@ -51,7 +51,6 @@ public:
         std::lock_guard<std::mutex> guard(writer_mutex_);
         writer_->write_msg(time, cmem, max_rss, l, file, line_num, source, msg);
     }
-
 };
 
 } // logging
