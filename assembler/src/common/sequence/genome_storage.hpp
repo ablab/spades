@@ -18,27 +18,27 @@ struct Chromosome{
 
 class GenomeStorage {
 //all chromosomes glued
-    std::string s_;
+    std::string glued_genome_;
     std::vector<Chromosome> full_genome_;
 
     std::string ACGTise(const std::string &s) const {
         std::stringstream ss;
-        for (size_t i = 0; i < s.length(); i++){
-            if (!is_nucl(s[i])) {
-                char upper_cased = char(std::toupper(s[i]));
-                if (is_nucl(upper_cased))
-                    ss << upper_cased;
-            } else
-                ss << s[i];
+        std::string tmp(s);
+        transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
+        for (size_t i = 0; i < tmp.length(); i++){
+            if (is_nucl(tmp[i])) {
+                ss << tmp[i];
+            }
         }
         return ss.str();
     }
+
 public:
     GenomeStorage() {
     }
 
-    GenomeStorage(const std::string &s): s_(s), full_genome_() {
-        full_genome_.push_back(Chromosome("genome", ACGTise(s_)));
+    GenomeStorage(const std::string &s): glued_genome_(s), full_genome_() {
+        full_genome_.push_back(Chromosome("genome", ACGTise(glued_genome_)));
     }
 
     GenomeStorage(const vector<Chromosome> &chromosomes): full_genome_(chromosomes) {
@@ -47,7 +47,7 @@ public:
             ss << ACGTise(s.sequence);
 //do we need a separator between?
         }
-        s_ = ss.str();
+        glued_genome_ = ss.str();
     }
 
     GenomeStorage(const vector<string> &chromosomes): full_genome_() {
@@ -60,7 +60,7 @@ public:
             ss << fxd;
 //do we need a separator between?
         }
-        s_ = ss.str();
+        glued_genome_ = ss.str();
     }
 
 
@@ -68,10 +68,10 @@ public:
     Sequence GetSequence() const {
         stringstream ss;
         size_t l = 0, r = 0;
-        for(size_t i = 0; i < s_.size(); i++) {
-            if (!is_nucl(s_[i]) ) {
+        for(size_t i = 0; i < glued_genome_.size(); i++) {
+            if (!is_nucl(glued_genome_[i]) ) {
                 if (r > l) {
-                    ss << s_.substr(l, r - l);
+                    ss << glued_genome_.substr(l, r - l);
                 }
                 r = i + 1;
                 l = i + 1;
@@ -80,7 +80,7 @@ public:
             }
         }
         if (r > l) {
-            ss << s_.substr(l, r - l);
+            ss << glued_genome_.substr(l, r - l);
         }
         return Sequence(ss.str());
     }
@@ -91,15 +91,15 @@ public:
 
     void SetSequence(const Sequence &s) {
 
-        s_ = s.str();
+        glued_genome_ = s.str();
     }
 
     std::string str() const {
-        return s_;
+        return glued_genome_;
     }
 
     size_t size() const {
-        return s_.size();
+        return glued_genome_.size();
     }
 };
 

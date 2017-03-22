@@ -149,8 +149,8 @@ public:
         }
         if (edge_count > 0) {
             size_t total_genome_size = 0;
-            for (const auto &s: cfg::get().ds.reference_genome)
-                total_genome_size += 2*s.size();
+            for (const auto &chr: cfg::get().ds.reference_genome)
+                total_genome_size += 2*chr.size();
             INFO("Error edges count: " << black_count << " which is " <<
                  100.0 * (double) black_count / (double) edge_count << "% of all edges");
             INFO("Total length of all black edges: " << sum_length << ". While double genome length is " <<

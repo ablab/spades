@@ -39,15 +39,16 @@ private:
     size_t absolute_max_gap_;
     double relative_max_gap_;
     set<EdgeId> excluded_unique_;
+//Edges containing zero point for each reference
+//TODO: do we need circular/linear chromosomes support?
     set<EdgeId> circular_edges_;
     size_t unresolvable_len_;
-    const std::string fixed_prefix_ = "boxwood";
 //map from unique edges to their order in genome spelling;
-    mutable map<EdgeId, pair<std::string, size_t>> genome_spelled_;
+    map<EdgeId, pair<std::string, size_t>> genome_spelled_;
     bool consequent(const Range &mr1, const Range &mr2) const;
     bool consequent(const MappingRange &mr1, const MappingRange &mr2) const ;
 
-    PathScore CountMisassembliesWithStrand(const BidirectionalPath &path, const string strand) const;
+    PathScore InternalCountMisassemblies(const BidirectionalPath &path) const;
 //constructs longest sequence of consequetive ranges, stores result in used_mappings
     void FindBestRangeSequence(const set<MappingRange>& old_mappings, vector<MappingRange>& used_mappings) const;
 //Refills genomic positions uniting alingments separated with small gaps
@@ -69,8 +70,8 @@ public:
         auto chromosomes = gp_.genome.GetChromosomes();
         for (auto chr: chromosomes) {
             auto seq = Sequence(chr.sequence);
-            visualization::position_filler::FillPos(gp_, seq, "0" + chr.name);
-            visualization::position_filler::FillPos(gp_, !seq, "1" + chr.name);
+            visualization::position_filler::FillPos(gp_, seq, "_0_" + chr.name);
+            visualization::position_filler::FillPos(gp_, !seq, "_1_" + chr.name);
         }
         RefillPos();
     }

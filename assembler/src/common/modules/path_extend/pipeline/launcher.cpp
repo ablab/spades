@@ -93,7 +93,8 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
             if (edge_labels.find(edge_coord_pair.first) == edge_labels.end()) {
                 edge_labels[edge_coord_pair.first] = chr_info.first;
             }
-            edge_labels[edge_coord_pair.first] += "order: " + ToString(count) +
+            edge_labels[edge_coord_pair.first] += chr_info.first +
+                                                  "order: " + ToString(count) +
                                                   "\n mapped range: " +
                                                   ToString(edge_coord_pair.second.mapped_range.start_pos) + " : "
                                                   + ToString(edge_coord_pair.second.mapped_range.end_pos) +
