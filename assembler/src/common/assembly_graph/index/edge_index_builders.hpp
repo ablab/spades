@@ -70,15 +70,6 @@ fs::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files
     return out;
 }
 
-template<class Index, class Graph>
-void BuildIndexFromGraph(Index &index, const Graph &g, size_t read_buffer_size = 0) {
-    DeBruijnGraphKMerSplitter<Graph,
-            utils::StoringTypeFilter<typename Index::storing_type>>
-            splitter(index.workdir(), index.k(), g, read_buffer_size);
-    utils::KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
-    BuildIndex(index, counter, 16, 1);
-}
-
 template<class Index>
 class GraphPositionFillingIndexBuilder {
 public:
@@ -88,7 +79,11 @@ public:
     template<class Graph>
     void BuildIndexFromGraph(Index &index,
                              const Graph/*T*/ &g, size_t read_buffer_size = 0) const {
-        BuildIndexFromGraph(index, g, read_buffer_size);
+        DeBruijnGraphKMerSplitter<Graph,
+                utils::StoringTypeFilter<typename Index::storing_type>>
+                splitter(index.workdir(), index.k(), g, read_buffer_size);
+        utils::KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
+        BuildIndex(index, counter, 16, 1);
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Collecting k-mer coverage information from graph, this takes a while.");
