@@ -148,10 +148,11 @@ namespace barcode_index {
             }
         }
 
-        void FillMapFrom10XReads(const lib_vector_t& libs_10x) {
+        void FillMapFrom10XReads(const lib_vector_t& libs_10x, const Index &index, const KmerSubs &kmer_mapper) {
             INFO("Starting barcode index construction from 10X reads")
-            auto mapper = std::make_shared < alignment::BWAReadMapper < Graph > >
-                          (g_);
+//            auto mapper = std::make_shared < alignment::BWAReadMapper < Graph > > (g_);
+            auto mapper = std::make_shared < debruijn_graph::BasicSequenceMapper < Graph, Index> >
+                    (g_, index, kmer_mapper);
 
             auto streams = GetStreamsFromLibs(libs_10x);
             //Process every read from 10X dataset
@@ -178,9 +179,9 @@ namespace barcode_index {
             //INFO("Number of barcodes: " + std::to_string(barcode_codes_.GetBinLength()))
         }
 
-        void FillMap(const lib_vector_t& libs_10x) {
+        void FillMap(const lib_vector_t& libs_10x, const Index &index, const KmerSubs &kmer_mapper) {
             InitialFillMap();
-            FillMapFrom10XReads(libs_10x);
+            FillMapFrom10XReads(libs_10x, index, kmer_mapper);
             return;
         }
 
