@@ -73,9 +73,9 @@ namespace debruijn_graph {
         BarcodeStatisticsCounter counter = ConstructStatisticsCounter(graph_pack);
         INFO("Statistics counter constructed.");
 
-//        INFO("Basic stats: ");
-//        counter.FillStats();
-//        counter.PrintStats(cfg::get().output_dir + "barcode_stats");
+        INFO("Basic stats: ");
+        counter.FillStats();
+        counter.PrintStats(cfg::get().output_dir + "barcode_stats");
 
         INFO("Resolver stats: ");
         checker.CheckChooser(cfg::get().ts_res.genome_path);
