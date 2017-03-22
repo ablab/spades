@@ -1816,8 +1816,9 @@ private:
             return edges;
         }
         //Find edges with barcode score greater than some threshold
-        EdgeContainer initial_candidates = InitialFilter(edges, decisive_edge, absolute_barcode_threshold_,
-                                                         initial_abundancy_threshold_, tail_threshold_);
+        EdgeContainer initial_candidates = InitialSharedBarcodesFilter(edges, decisive_edge,
+                                                                       absolute_barcode_threshold_,
+                                                                       initial_abundancy_threshold_, tail_threshold_);
         DEBUG("Initial candidates: ");
         for(const auto& candidate: initial_candidates) {
             DEBUG(candidate.e_.int_id());
@@ -1839,8 +1840,9 @@ private:
             return initial_candidates;
         }
         DEBUG("After initial check: " << initial_candidates.size());
-        EdgeContainer next_candidates = MiddleFilter(initial_candidates, decisive_edge,
-                                                     internal_gap_threshold_, middle_abundancy_threshold_);
+//        EdgeContainer next_candidates = ReadCloudClosestFilter(initial_candidates, decisive_edge,
+//                                                               internal_gap_threshold_, middle_abundancy_threshold_);
+        EdgeContainer next_candidates = TopologyClosestFilter(initial_candidates, distance_bound_);
         DEBUG("After middle check: " << next_candidates.size());
         DEBUG("Middle candidates: ");
         for(const auto& candidate: next_candidates) {
@@ -1865,6 +1867,7 @@ private:
             EdgeId edge = next_candidates[0].e_;
             EdgeId other = next_candidates[1].e_;
             if (edge == g_.conjugate(other)) {
+                DEBUG("Pair of conjugates left");
                 stats_.pair_of_conjugates_left_++;
                 //fixme magic constants
                 result = ConjugateFilter(decisive_edge, next_candidates[0], next_candidates[1],
@@ -1877,9 +1880,9 @@ private:
         return result;
     }
 
-    EdgeContainer InitialFilter(const EdgeContainer& candidates, const EdgeId& decisive_edge,
-                                size_t shared_threshold, size_t abundancy_threshold,
-                                size_t tail_threshold) const {
+    EdgeContainer InitialSharedBarcodesFilter(const EdgeContainer &candidates, const EdgeId &decisive_edge,
+                                              size_t shared_threshold, size_t abundancy_threshold,
+                                              size_t tail_threshold) const {
         EdgeContainer result;
         std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(result),
                      [this, &decisive_edge, shared_threshold,
@@ -1893,29 +1896,70 @@ private:
         return result;
     }
 
-    EdgeContainer MiddleFilter(const EdgeContainer& candidates, const EdgeId& decisive_edge,
-                               size_t len_threshold, size_t abundancy_threshold) const {
+    EdgeContainer TopologyClosestFilter(const EdgeContainer& candidates, const size_t distance_bound) const {
         EdgeContainer result;
         std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(result),
-                     [this, &decisive_edge, &candidates, len_threshold, abundancy_threshold](const EdgeWithDistance& edge) {
-                         return MiddleCheck(decisive_edge, edge.e_, candidates, len_threshold, abundancy_threshold);
+                     [this, &candidates, distance_bound](const EdgeWithDistance& edge) {
+                         return TopologyCheck(edge.e_, candidates, distance_bound);
                      });
         return result;
     }
 
-    bool MiddleCheck(const EdgeId& decisive_edge, const EdgeId& candidate,
-                     const EdgeContainer& other_candidates, size_t len_threshold, size_t abundancy_threshold) const {
-        bool result = true;
+    bool TopologyCheck(const EdgeId& candidate, const EdgeContainer& candidates, const size_t distance_bound) const {
+        std::unordered_set<EdgeId> reached_unique_edges = GetReachedUniqueEdges(candidate, distance_bound);
+        bool are_all_candidates_reached = AreCandidatesReached(candidate, candidates, reached_unique_edges);
+        return are_all_candidates_reached;
+    }
+
+    unordered_set <EdgeId> GetReachedUniqueEdges(const EdgeId& edge, const size_t distance_bound) const {
+        DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
+                DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, distance_bound));
+        dijkstra.Run(g_.EdgeEnd(edge));
+        unordered_set <EdgeId> reached_unique_edges;
+        for (auto v: dijkstra.ReachedVertices()) {
+            for (auto connected: g_.OutgoingEdges(v)) {
+                if (unique_storage_.IsUnique(connected) and
+                    dijkstra.GetDistance(v) < distance_bound) {
+                    reached_unique_edges.insert(connected);
+                }
+            }
+        }
+        return reached_unique_edges;
+    }
+
+    bool AreCandidatesReached(const EdgeId& candidate, const EdgeContainer& candidates, const unordered_set<EdgeId>& reached) const {
+        for (const auto& ewd: candidates) {
+            if (reached.find(ewd.e_) == reached.end() and reached.find(g_.conjugate(ewd.e_)) == reached.end()
+                and ewd.e_ != candidate and ewd.e_ != g_.conjugate(candidate)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    EdgeContainer ReadCloudClosestFilter(const EdgeContainer &candidates, const EdgeId &decisive_edge,
+                                         size_t len_threshold, size_t abundancy_threshold) const {
+        EdgeContainer result;
+        std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(result),
+                     [this, &decisive_edge, &candidates, len_threshold, abundancy_threshold](const EdgeWithDistance& edge) {
+                         return ReadCloudClosestCheck(decisive_edge, edge.e_, candidates, len_threshold,
+                                                      abundancy_threshold);
+                     });
+        return result;
+    }
+
+    bool ReadCloudClosestCheck(const EdgeId &decisive_edge, const EdgeId &candidate,
+                               const EdgeContainer &other_candidates, size_t len_threshold, size_t abundancy_threshold) const {
         DEBUG("Middle check for: " << candidate.int_id());
         for (const auto& other : other_candidates) {
             EdgeId other_edge = other.e_;
             if (other_edge != candidate and !IsBetween(candidate, decisive_edge, other_edge,
                                                        len_threshold, abundancy_threshold)) {
-                result = false;
+                return false;
                 break;
             }
         }
-        return result;
+        return true;
     }
 
     EdgeContainer ConjugateFilter(const EdgeId& decisive_edge, const EdgeWithDistance& edgewd,
