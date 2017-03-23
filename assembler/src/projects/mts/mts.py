@@ -27,7 +27,7 @@ parser.add_argument("--threads", "-t", type=int, default=8, help="Number of thre
 parser.add_argument("dir", type=str, help="Output directory")
 parser.add_argument("--config", "-c", type=str, default="", help="config.yaml to be copied to the directory (unnecessary if config.yaml is already there)")
 parser.add_argument("--stats", "-s", action="store_true", help="Calculate stats (when the REFS parameter in config.yaml is provided)")
-parser.add_argument("--reuse-assemblies", action="store_true", help="Use existing assemblies (put them in the corresponding folders)")
+parser.add_argument("--reuse-assemblies", type=str, help="Directory with existing assemblies to reuse")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
 
 args = parser.parse_args()
@@ -40,19 +40,20 @@ base_params = ["snakemake", "--directory", os.path.realpath(args.dir), "--cores"
 if args.verbose:
     base_params.extend(["-p", "--verbose"])
 
-if args.config:
-    if os.path.exists(os.path.join(args.dir, "config.yaml")):
-        print("Config path specified, but config.yaml already exists in output folder " + args.dir)
-        sys.exit(239)
-
 if not os.path.exists(args.dir):
     os.makedirs(args.dir)
 
-print("Output folder set to " + args.dir)
+print("Output folder set to", args.dir)
 
 if args.config:
-    print("Copying config from " + args.config)
-    shutil.copy(args.config, args.dir)
+    ext_config = os.path.join(args.dir, "config.yaml")
+    if os.path.exists(ext_config):
+        if subprocess.call(["diff", ext_config, args.config]):
+            print("Config path specified, but different config.yaml already exists in output folder", args.dir)
+            sys.exit(239)
+    else:
+        print("Copying config from", args.config)
+        shutil.copy(args.config, args.dir)
 
 with cd(exec_dir):
     def call_snake(extra_params=[]):
@@ -60,7 +61,9 @@ with cd(exec_dir):
 
     print("Step #1 - Assembly")
     if args.reuse_assemblies:
-        call_snake(["assemble_all", "--touch"])
+        assembly_dir = os.path.join(args.dir, "assembly")
+        if not os.path.exists(assembly_dir):
+            os.symlink(args.reuse_assemblies, assembly_dir)
 
     call_snake()
 
