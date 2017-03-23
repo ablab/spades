@@ -88,12 +88,8 @@ register_input("reassembly", "reassembly/{frag}.fasta", CAGS)
 
 #Run this
 rule stats_reassembly:
-    input:   "stats/summary/gf_reassembly.tsv",
-             "stats/q_reassembly/total.info"
-    output:  "stats/summary/reassembly.tsv"
-    params:  "stats/q_reassembly"
-    message: "Gathered bins stats"
-    shell:   "{SCRIPTS}/gather_stats.py {params} {output}"
+    input:   expand(rules.gather_stats.output[0], stage="reassembly")
+    message: "Gathered reassembled bins stats"
 
 #---- Propagator statistics ----------------------------------------------------
 rule prop_stats:

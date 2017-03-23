@@ -76,10 +76,10 @@ rule combine_refs_info:
 rule gather_stats:
     input:   "stats/summary/gf_{stage}.tsv",
              "stats/q_{stage}/total.info"
-    output:  "stats/summary/full_{stage}.tsv"
-    params:  "stats/q_{stage}"
-    message: "Gathered bins stats"
-    shell:   "{SCRIPTS}/gather_stats.py {params} {output}"
+    output:  "stats/summary/{stage}_summary.tsv"
+    params:  "--problematic", "--heatmap", "stats/q_{stage}", "stats/summary/{stage}"
+    message: "Gathering {wildcards.stage} stats"
+    shell:   "{SCRIPTS}/gather_stats.py {params}"
 
 #---- CheckM stats -------------------------------------------------------------
 rule checkm:

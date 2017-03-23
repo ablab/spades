@@ -11,5 +11,4 @@ register_input("concoct", "binning/concoct/cluster.{frag}.fa", CAGS)
 
 # Run this AFTER 'all'
 rule stats_all:
-    input:   "stats/summary/full_{}.tsv".format(BINNER)
-    message: "Gathered some numbers, deal with them."
+    input:   "stats/summary/summary_{}.tsv".format(BINNER)
