@@ -32,7 +32,7 @@ class PathExtenderGapCloser: public PathGapCloser {
     shared_ptr<path_extend::PathExtender> extender_;
 
 protected:
-    Gap InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &path) override;
+    Gap InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &result) override;
 
 public:
     PathExtenderGapCloser(const Graph& g, size_t max_path_len, shared_ptr<PathExtender> extender):
@@ -47,7 +47,7 @@ class MatePairGapCloser: public PathGapCloser {
     static constexpr double weight_priority = 5;
 
 protected:
-    Gap InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &path) override;
+    Gap InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &result) override;
 
 public:
     EdgeId FindNext(const BidirectionalPath& path, size_t index,
@@ -72,7 +72,7 @@ class DijkstraGapCloser: public PathGapCloser {
     std::map<EdgeId, size_t> CountEdgesQuantity(const omnigraph::PathStorageCallback<Graph>& path_storage, size_t length_limit) const;
 
 protected:
-    Gap InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &path) override;
+    Gap InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &result) override;
 
 public:
 

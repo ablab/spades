@@ -92,13 +92,14 @@ BidirectionalPath PathGapCloser::Polish(const BidirectionalPath &path) {
             result.PushBack(path[i], path.GapAt(i));
         } else {
             auto new_gap = InnerCloseGap(path, i, result);
+            DEBUG(new_gap);
             result.PushBack(path[i], new_gap);
         }
     }
     return result;
 }
 
-Gap DijkstraGapCloser::InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &path) {
+Gap DijkstraGapCloser::InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &result) {
     omnigraph::PathStorageCallback<Graph> path_storage(g_);
     omnigraph::ProcessPaths(g_, 0,
                             max_path_len_,
@@ -107,33 +108,33 @@ Gap DijkstraGapCloser::InnerCloseGap(const BidirectionalPath &original_path, siz
                             path_storage);
     if (path_storage.size() == 0) {
 //No paths found, keeping the gap
-        return path.GapAt(position);
+        return original_path.GapAt(position);
     } else if (path_storage.size() > 1) {
-//More than one path, using shortest path for gap length estimation
+//More than one result, using shortest result for gap length estimation
 //We cannot use both common paths and bridges in one attempt;
-        Gap gap = FillWithMultiplePaths(path_storage, path);
+        Gap gap = FillWithMultiplePaths(path_storage, result);
         if (gap == Gap::INVALID())
-            gap = FillWithBridge(original_path, position, path_storage, path);
+            gap = FillWithBridge(original_path, position, path_storage, result);
         return gap;
     } else {
-//Closing the gap with the unique shortest path
+//Closing the gap with the unique shortest result
         for (EdgeId e : path_storage.paths().front()) {
-            path.PushBack(e);
+            result.PushBack(e);
         }
         return Gap(0);
     }
 }
 
-Gap PathExtenderGapCloser::InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &path) {
+Gap PathExtenderGapCloser::InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &result) {
     size_t added = 0;
     VertexId stop_vertex = g_.EdgeStart(original_path.At(position));
-    while (g_.EdgeEnd(path.Back()) != stop_vertex) {
-        bool has_grown = extender_->MakeGrowStep(path);
+    while (g_.EdgeEnd(result.Back()) != stop_vertex) {
+        bool has_grown = extender_->MakeGrowStep(result);
         if (!has_grown)
             break;
-        added += g_.length(path.Back());
+        added += g_.length(result.Back());
     }
-    return Gap(path.GapAt(position).gap - (int) added, 0, path.GapAt(position).trash_current);
+    return Gap(original_path.GapAt(position).gap - (int) added, 0, original_path.GapAt(position).trash_current);
 }
 
 
@@ -285,10 +286,10 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path, size_t index,
 }
 
 Gap MatePairGapCloser::InnerCloseGap(const BidirectionalPath &original_path, size_t position,
-                                                   BidirectionalPath &path)  {
+                                                   BidirectionalPath &result)  {
 //TODO:: condition about trash_previous - do we need it globally?
     if (original_path.GapAt(position).gap <= min_gap_ || original_path.GapAt(position).trash_previous > 0) {
-        return path.GapAt(position);
+        return original_path.GapAt(position);
     } else {
         DEBUG("position "<< position <<" gap between edges " << g_.int_id(original_path.At(position - 1))
               << " and " << g_.int_id(original_path.At(position)) << " was " << original_path.GapAt(position).gap);
@@ -316,18 +317,18 @@ Gap MatePairGapCloser::InnerCloseGap(const BidirectionalPath &original_path, siz
             }
             if (total > max_path_len_){
                 DEBUG("gap between edges " << g_.int_id(original_path.At(position -1)) << " and " << g_.int_id(original_path.At(position))
-                      << " was: " << original_path.GapAt(position).gap << ", closing path length too long: " << total);
+                      << " was: " << original_path.GapAt(position).gap << ", closing result length too long: " << total);
                 break;
             }
         }
         if (total > max_path_len_) {
-            return path.GapAt(position);
+            return original_path.GapAt(position);
         }
         int len = int(CumulativeLength(g_, addition));
         Gap gap(original_path.GapAt(position).gap - len);
         if (gap.gap < min_gap_ && addition.size() > 0) {
             if (original_path.GapAt(position).gap * 2 < len  ) {
-//inserted path significantly longer than estimated gap
+//inserted result significantly longer than estimated gap
                 DEBUG("Gap size estimation problem: gap between edges " << g_.int_id(original_path.At(position - 1))
                       << " and " << g_.int_id(original_path.At(position)) << " was "
                       << original_path.GapAt(position).gap << "filled len" << len);
@@ -340,7 +341,7 @@ Gap MatePairGapCloser::InnerCloseGap(const BidirectionalPath &original_path, siz
         DEBUG("filling");
         for (EdgeId e : addition) {
             DEBUG(g_.int_id(e));
-            path.PushBack(e);
+            result.PushBack(e);
         }
         return gap;
     }
