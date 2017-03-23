@@ -15,7 +15,8 @@ void PathPolisher::InfoAboutGaps(const PathContainer & result){
     }
 }
 
-PathPolisher::PathPolisher(const conj_graph_pack& gp, const config::dataset& dataset_info, const ScaffoldingUniqueEdgeStorage& storage, size_t max_resolvable_len ): gp_(gp) {
+PathPolisher::PathPolisher(const conj_graph_pack& gp, const config::dataset& dataset_info,
+                           const ScaffoldingUniqueEdgeStorage& storage, size_t max_resolvable_len, vector<shared_ptr<PathExtender>> extenders): gp_(gp) {
     gap_closers.push_back(make_shared<DijkstraGapCloser>(gp.g, max_resolvable_len));
     for (size_t i = 0; i <  dataset_info.reads.lib_count(); i++) {
         auto lib = dataset_info.reads[i];
@@ -23,6 +24,9 @@ PathPolisher::PathPolisher(const conj_graph_pack& gp, const config::dataset& dat
             shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp.g, lib, gp.paired_indices[i]);
             gap_closers.push_back(make_shared<MatePairGapCloser> (gp.g, max_resolvable_len, paired_lib, storage));
         }
+    }
+    for (auto extender: extenders) {
+        PathExtenderGapCloser(gp.g, max_resolvable_len, extender);
     }
 }
 
@@ -76,7 +80,7 @@ BidirectionalPath PathPolisher::Polish(const BidirectionalPath &init_path) {
     return *path;
 }
 
-BidirectionalPath DijkstraGapCloser::Polish(const BidirectionalPath &path) {
+BidirectionalPath PathGapCloser::Polish(const BidirectionalPath &path) {
     BidirectionalPath result(g_);
     if (path.Empty())
         return result;
@@ -87,36 +91,54 @@ BidirectionalPath DijkstraGapCloser::Polish(const BidirectionalPath &path) {
         if (g_.EdgeEnd(path[i - 1]) == g_.EdgeStart(path[i])) {
             result.PushBack(path[i], path.GapAt(i));
         } else {
-            //Connect edges using Dijkstra
-            omnigraph::PathStorageCallback<Graph> path_storage(g_);
-            omnigraph::ProcessPaths(g_, 0,
-                                    max_path_len_,
-                                    g_.EdgeEnd(path[i - 1]),
-                                    g_.EdgeStart(path[i]),
-                                    path_storage);
-
-            if (path_storage.size() == 0) {
-                //No paths found, keeping the gap
-                result.PushBack(path[i], path.GapAt(i));
-            } else if (path_storage.size() > 1) {
-                //More than one path, using shortest path for gap length estimation
-                //We cannot use both common paths and bridges in one attempt;
-                if (!FillWithMultiplePaths(path, i, path_storage, result))
-                    FillWithBridge(path, i, path_storage, result);
-            } else {
-                //Closing the gap with the unique shortest path
-                for (EdgeId e : path_storage.paths().front()) {
-                    result.PushBack(e);
-                }
-                result.PushBack(path[i]);
-            }
+            auto new_gap = InnerCloseGap(path, i, result);
+            result.PushBack(path[i], new_gap);
         }
     }
     return result;
 }
 
+Gap DijkstraGapCloser::InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &path) {
+    omnigraph::PathStorageCallback<Graph> path_storage(g_);
+    omnigraph::ProcessPaths(g_, 0,
+                            max_path_len_,
+                            g_.EdgeEnd(original_path[position - 1]),
+                            g_.EdgeStart(original_path[position]),
+                            path_storage);
+    if (path_storage.size() == 0) {
+//No paths found, keeping the gap
+        return path.GapAt(position);
+    } else if (path_storage.size() > 1) {
+//More than one path, using shortest path for gap length estimation
+//We cannot use both common paths and bridges in one attempt;
+        Gap gap = FillWithMultiplePaths(path_storage, path);
+        if (gap == Gap::INVALID())
+            gap = FillWithBridge(original_path, position, path_storage, path);
+        return gap;
+    } else {
+//Closing the gap with the unique shortest path
+        for (EdgeId e : path_storage.paths().front()) {
+            path.PushBack(e);
+        }
+        return Gap(0);
+    }
+}
 
-bool DijkstraGapCloser::FillWithBridge(const BidirectionalPath& path, size_t index,
+Gap PathExtenderGapCloser::InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &path) {
+    size_t added = 0;
+    VertexId stop_vertex = g_.EdgeStart(original_path.At(position));
+    while (g_.EdgeEnd(path.Back()) != stop_vertex) {
+        bool has_grown = extender_->MakeGrowStep(path);
+        if (!has_grown)
+            break;
+        added += g_.length(path.Back());
+    }
+    return Gap(path.GapAt(position).gap - (int) added, 0, path.GapAt(position).trash_current);
+}
+
+
+
+Gap DijkstraGapCloser::FillWithBridge(const BidirectionalPath& path, size_t index,
                                                           const omnigraph::PathStorageCallback<Graph>& path_storage,
                                                           BidirectionalPath& result) const {
     //TODO:: constant;
@@ -128,8 +150,7 @@ bool DijkstraGapCloser::FillWithBridge(const BidirectionalPath& path, size_t ind
             bridges.push_back(pair.first);
 
     if (bridges.empty()) {
-        result.PushBack(path[index], path.GapAt(index));
-        return false;
+        return path.GapAt(index);
     } else {
         std::sort(bridges.begin(), bridges.end(), [&] (EdgeId e1, EdgeId e2) {
             return g_.length(e1) > g_.length(e2); });
@@ -154,13 +175,11 @@ bool DijkstraGapCloser::FillWithBridge(const BidirectionalPath& path, size_t ind
         min_gap_after = std::max(min_gap_after, min_gap_);
         min_gap_before = std::max(min_gap_before, min_gap_);
         result.PushBack(bridge, Gap(min_gap_before));
-        result.PushBack(path[index], Gap(min_gap_after));
-        return true;
+        return Gap(min_gap_after);
     }
 }
 
-bool DijkstraGapCloser::FillWithMultiplePaths(const BidirectionalPath& path, size_t index,
-                                              const omnigraph::PathStorageCallback<Graph>& path_storage,
+Gap DijkstraGapCloser::FillWithMultiplePaths(const omnigraph::PathStorageCallback<Graph>& path_storage,
                                               BidirectionalPath& result) const {
     bool changed = false;
     auto left = LCP(path_storage);
@@ -170,9 +189,9 @@ bool DijkstraGapCloser::FillWithMultiplePaths(const BidirectionalPath& path, siz
     }
     if (changed) {
         int gap = max(min_gap_, int(MinPathLength(path_storage) - omnigraph::CumulativeLength(g_, left)));
-        result.PushBack(path[index], Gap(gap));
-    }
-    return changed;
+        return Gap(gap);
+    } else
+        return Gap::INVALID();
 }
 
 std::map<EdgeId, size_t> DijkstraGapCloser::CountEdgesQuantity(const omnigraph::PathStorageCallback<Graph>& path_storage, size_t length_limit ) const{
@@ -265,78 +284,66 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path, size_t index,
     }
 }
 
-//TODO: make shorter functions
-BidirectionalPath MatePairGapCloser::Polish(const BidirectionalPath& path) {
-    BidirectionalPath result(g_);
-    DEBUG("Path " << path.GetId() << " len "<< path.Length() << " size " << path.Size());
+Gap MatePairGapCloser::InnerCloseGap(const BidirectionalPath &original_path, size_t position,
+                                                   BidirectionalPath &path)  {
+//TODO:: condition about trash_previous - do we need it globally?
+    if (original_path.GapAt(position).gap <= min_gap_ || original_path.GapAt(position).trash_previous > 0) {
+        return path.GapAt(position);
+    } else {
+        DEBUG("position "<< position <<" gap between edges " << g_.int_id(original_path.At(position - 1))
+              << " and " << g_.int_id(original_path.At(position)) << " was " << original_path.GapAt(position).gap);
+        vector<EdgeId> addition;
+        EdgeId last = original_path.At(position - 1);
+        VertexId v = g_.EdgeEnd(last);
+        omnigraph::PathStorageCallback<Graph> path_storage(g_);
+        omnigraph::ProcessPaths(g_, 0,
+                                max_path_len_,
+                                g_.EdgeEnd(original_path.At(position - 1)),
+                                g_.EdgeStart(original_path.At(position)),
+                                path_storage);
+        set<EdgeId> present_in_paths;
+        for (const auto &p: path_storage.paths())
+            for (EdgeId e : p)
+                present_in_paths.insert(e);
 
-    VERIFY(path.GapAt(0) == Gap());
-    result.PushBack(path[0]);
-    for (size_t i = 1; i < path.Size(); ++i) {
-        if (g_.EdgeEnd(path[i - 1]) == g_.EdgeStart(path[i]) || path.GapAt(i).gap <= min_gap_) {
-            result.PushBack(path[i], path.GapAt(i));
-        } else {
-            DEBUG("position "<< i <<" gap between edges " << g_.int_id(path[i-1])
-                             << " and " << g_.int_id(path[i]) << " was " << path.GapAt(i).gap);
-
-            vector<EdgeId> addition;
-            VertexId v = g_.EdgeEnd(path[i - 1]);
-            EdgeId last = path[i - 1];
-            omnigraph::PathStorageCallback<Graph> path_storage(g_);
-            omnigraph::ProcessPaths(g_, 0,
-                                    max_path_len_,
-                                    g_.EdgeEnd(path[i - 1]),
-                                    g_.EdgeStart(path[i]),
-                                    path_storage);
-            set<EdgeId> present_in_paths;
-            for (const auto &p: path_storage.paths())
-                for (EdgeId e : p)
-                    present_in_paths.insert(e);
-
-            size_t total = 0;
-            while (last != EdgeId(0)) {
-                last = FindNext(path, i, present_in_paths, v);
-                if (last != EdgeId(0)){
-                    v = g_.EdgeEnd(last);
-                    addition.push_back(last);
-                    total += g_.length(last);
-                }
-                if (total > max_path_len_){
-                    DEBUG("gap between edges " << g_.int_id(path[i-1]) << " and " << g_.int_id(path[i])
-                                               << " was: " << path.GapAt(i).gap << ", closing path length too long: " << total);
-                    break;
-                }
+        size_t total = 0;
+        while (last != EdgeId(0)) {
+            last = FindNext(original_path, position, present_in_paths, v);
+            if (last != EdgeId(0)){
+                v = g_.EdgeEnd(last);
+                addition.push_back(last);
+                total += g_.length(last);
             }
-            if (total > max_path_len_) {
-                result.PushBack(path[i], path.GapAt(i));
-                continue;                
+            if (total > max_path_len_){
+                DEBUG("gap between edges " << g_.int_id(original_path.At(position -1)) << " and " << g_.int_id(original_path.At(position))
+                      << " was: " << original_path.GapAt(position).gap << ", closing path length too long: " << total);
+                break;
             }
-            int len = int(CumulativeLength(g_, addition));
-            VERIFY(path.GapAt(i).NoTrash());
-            Gap gap(path.GapAt(i).gap - len);
-            if (gap.gap < min_gap_ && addition.size() > 0) {
-                if (path.GapAt(i).gap * 3 < len * 2 ) {
-//inserted path significantly longer than estimated gap
-                    DEBUG("Gap size estimation problem: gap between edges " << g_.int_id(path[i - 1])
-                                                                            << " and " << g_.int_id(path[i]) << " was "
-                                                                            << path.GapAt(i).gap << "filled len" << len);
-                }
-                if (g_.EdgeEnd(addition.back()) != g_.EdgeStart(path[i]))
-                    gap = Gap(min_gap_);
-                else
-                    gap = Gap();
-            }
-            DEBUG("filling");
-            for (EdgeId e : addition) {
-                DEBUG(g_.int_id(e));
-                result.PushBack(e);
-            }
-            result.PushBack(path[i], gap);
-            DEBUG("filled");
         }
+        if (total > max_path_len_) {
+            return path.GapAt(position);
+        }
+        int len = int(CumulativeLength(g_, addition));
+        Gap gap(original_path.GapAt(position).gap - len);
+        if (gap.gap < min_gap_ && addition.size() > 0) {
+            if (original_path.GapAt(position).gap * 2 < len  ) {
+//inserted path significantly longer than estimated gap
+                DEBUG("Gap size estimation problem: gap between edges " << g_.int_id(original_path.At(position - 1))
+                      << " and " << g_.int_id(original_path.At(position)) << " was "
+                      << original_path.GapAt(position).gap << "filled len" << len);
+            }
+            if (g_.EdgeEnd(addition.back()) != g_.EdgeStart(original_path.At(position)))
+                gap = Gap(min_gap_);
+            else
+                gap = Gap();
+        }
+        DEBUG("filling");
+        for (EdgeId e : addition) {
+            DEBUG(g_.int_id(e));
+            path.PushBack(e);
+        }
+        return gap;
     }
-    DEBUG("result " << result.GetId() << " len "<< result.Length() << " size " << result.Size());
-    return result;
 }
 
 }

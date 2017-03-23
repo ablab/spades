@@ -386,10 +386,14 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap& cover_m
     return extenders;
 }
 
-void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &result) const {
+void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &result, const GraphCoverageMap& cover_map) const {
     //Fixes distances for paths gaps and tries to fill them in
     INFO("Closing gaps in paths");
-    PathPolisher polisher(gp_, dataset_info_, unique_data_.main_unique_storage_, params_.max_polisher_gap);
+
+    ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, support_);
+    Extenders extenders = generator.MakeBasicExtenders(unique_data_.main_unique_storage_,
+                                                       unique_data_.long_reads_cov_map_);
+    PathPolisher polisher(gp_, dataset_info_, unique_data_.main_unique_storage_, params_.max_polisher_gap, extenders);
     polisher.PolishPaths(paths, result);
     result.SortByLength();
     INFO("Gap closing completed")
@@ -433,7 +437,7 @@ void PathExtendLauncher::Launch() {
     TraverseLoops(paths, cover_map);
     DebugOutputPaths(paths, "loop_traveresed");
 
-    PolishPaths(paths, gp_.contig_paths);
+    PolishPaths(paths, gp_.contig_paths, cover_map);
     DebugOutputPaths(gp_.contig_paths, "polished_paths");
     
     GraphCoverageMap polished_map(gp_.g, gp_.contig_paths, true);

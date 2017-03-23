@@ -69,7 +69,7 @@ class PathExtendLauncher {
 
     void TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map) const;
 
-    void PolishPaths(const PathContainer &paths, PathContainer &result) const;
+    void PolishPaths(const PathContainer &paths, PathContainer &result, const GraphCoverageMap& cover_map) const;
 
     Extenders ConstructExtenders(const GraphCoverageMap& cover_map);
 
