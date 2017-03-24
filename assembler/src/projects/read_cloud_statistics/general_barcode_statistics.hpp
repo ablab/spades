@@ -222,7 +222,7 @@ private:
         stats_.reliable_storage_.InsertCoveredFraction(chunk_length_threshold, covered_fraction);
         INFO("Overall length: " << overall_length);
         INFO("Overall covered length: " << overall_covered_length);
-        INFO(covered_fraction);
+        INFO("Covered fraction: " << covered_fraction);
     }
 
 private:
