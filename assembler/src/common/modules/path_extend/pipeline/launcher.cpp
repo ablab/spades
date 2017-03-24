@@ -404,14 +404,18 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     }
 
     ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, support_);
-    Extenders extenders = generator.MakeBasicExtenders(unique_data_.main_unique_storage_,
-                                                       unique_data_.long_reads_cov_map_);
-    for (const auto& extender: extenders) {
-        gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender));
+//    auto used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage(unique));
+    for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
+        const auto &lib = dataset_info_.reads[lib_index];
+        if (support_.IsForPEExtender(lib)) {
+            gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap,
+                                                                     generator.MakePEExtender(lib_index, false)));
+            DEBUG("added gap closer");
+        }
     }
 
     PathPolisher polisher(gp_, gap_closers);
-    result = polisher.PolishPaths(paths);
+    polisher.PolishPaths(paths, result);
     result.SortByLength();
     INFO("Gap closing completed")
 }

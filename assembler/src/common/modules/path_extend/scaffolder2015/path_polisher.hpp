@@ -56,6 +56,7 @@ protected:
 public:
     PathExtenderGapCloser(const Graph& g, size_t max_path_len, shared_ptr<PathExtender> extender):
             TargetEdgeGapCloser(g, max_path_len), extender_(extender) {
+        DEBUG("ext added");
     }
 };
 
@@ -122,7 +123,7 @@ public:
     }
 
 
-    PathContainer PolishPaths(const PathContainer& paths);
+    void PolishPaths(const PathContainer &paths, PathContainer &result);
 };
 
 

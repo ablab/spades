@@ -15,8 +15,7 @@ void PathPolisher::InfoAboutGaps(const PathContainer & result){
     }
 }
 
-PathContainer PathPolisher::PolishPaths(const PathContainer &paths) {
-    PathContainer result;
+void PathPolisher::PolishPaths(const PathContainer &paths, PathContainer &result) {
     for (const auto& path_pair : paths) {
         BidirectionalPath path = Polish(*path_pair.first);
         BidirectionalPath *conjugate_path = new BidirectionalPath(Polish(path.Conjugate()));
@@ -24,7 +23,6 @@ PathContainer PathPolisher::PolishPaths(const PathContainer &paths) {
         result.AddPair(re_path, conjugate_path);
     }
     InfoAboutGaps(result);
-    return result;
 }
 
 size_t DijkstraGapCloser::MinPathLength(const PathsT& paths) const {

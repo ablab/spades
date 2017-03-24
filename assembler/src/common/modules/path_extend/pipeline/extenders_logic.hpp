@@ -71,6 +71,8 @@ public:
 
     Extenders MakeCoverageExtenders() const;
 
+    shared_ptr<SimpleExtender> MakePEExtender(size_t lib_index, bool investigate_loops) const;
+
 private:
 
     shared_ptr<ExtensionChooser> MakeLongReadsExtensionChooser(size_t lib_index, const GraphCoverageMap& read_paths_cov_map) const;
@@ -88,12 +90,7 @@ private:
 
     shared_ptr<SimpleExtender> MakeMetaExtender(size_t lib_index, bool investigate_loops) const;
 
-
-    shared_ptr<SimpleExtender> MakePEExtender(size_t lib_index, bool investigate_loops) const;
-
-
     shared_ptr<GapAnalyzer> MakeGapAnalyzer(double is_variation) const;
-
 
     shared_ptr<PathExtender> MakeScaffoldingExtender(size_t lib_index) const;
 

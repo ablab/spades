@@ -701,8 +701,7 @@ struct UsedUniqueStorage {
 
 class PathExtender {
 public:
-    PathExtender(const Graph & g):
-        g_(g){ }
+    PathExtender(const Graph & g): g_(g) {}
 
     virtual ~PathExtender() { }
 
@@ -964,6 +963,7 @@ public:
             DEBUG("in existing loop");
             return false;
         }
+        DEBUG("un ch enabled " << used_storage_->UniqueCheckEnabled());
         bool result;
         LoopDetector loop_detector(&path, cov_map_);
         if (DetectCycle(path)) {
@@ -1040,7 +1040,8 @@ public:
                        bool use_short_loop_cov_resolver) :
         LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, use_short_loop_cov_resolver, is),
         extensionChooser_(ec) {
-    }
+            used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage(ScaffoldingUniqueEdgeStorage()));
+        }
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
         return extensionChooser_;
@@ -1131,6 +1132,7 @@ protected:
 //In 2015 modes when trying to use already used unique edge, it is not added and path growing stops.
 //That allows us to avoid overlap removal hacks used earlier.
         if (used_storage_->UniqueCheckEnabled()) {
+            DEBUG("un chk enabled");
             if (used_storage_->IsUsedAndUnique(eid)) {
                 return false;
             } else {
