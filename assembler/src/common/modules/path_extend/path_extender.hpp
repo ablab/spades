@@ -19,7 +19,7 @@
 #include "path_filter.hpp"
 #include "overlap_analysis.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "read_cloud_path_extend/bounded_dijkstra.hpp"
+#include "read_cloud_path_extend/paired_dijkstra.hpp"
 #include <cmath>
 
 namespace path_extend {

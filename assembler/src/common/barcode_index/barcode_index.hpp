@@ -2,19 +2,9 @@
 
 #include <boost/unordered_map.hpp>
 #include <boost/dynamic_bitset.hpp>
-#include <memory>
-#include <utility>
-#include <fstream>
-#include <string>
-#include <unordered_set>
-#include <unordered_map>
 #include "io/reads/paired_readers.hpp"
 #include <common/assembly_graph/paths/mapping_path.hpp>
-#include <cassert>
-#include <common/modules/alignment/bwa_sequence_mapper.hpp>
-#include "common/modules/alignment/edge_index.hpp"
-#include "common/modules/alignment/kmer_mapper.hpp"
-#include "common/modules/alignment/sequence_mapper.hpp"
+#include <common/assembly_graph/core/graph.hpp>
 #include "common/pipeline/config_struct.hpp"
 #include "common/utils/indices/edge_index_builders.hpp"
 #include "common/utils/range.hpp"
@@ -26,15 +16,10 @@ using namespace omnigraph;
 
 namespace barcode_index {
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
-    typedef debruijn_graph::EdgeIndex<Graph> Index;
     typedef Graph::EdgeId EdgeId;
     typedef Graph::VertexId VertexId;
     typedef omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
-    typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
     typedef RtSeq Kmer;
-    typedef typename debruijn_graph::KmerFreeEdgeIndex<Graph, debruijn_graph::DefaultStoring> InnerIndex;
-    typedef typename InnerIndex::KeyWithHash KeyWithHash;
-    typedef typename debruijn_graph::EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
 
     enum BarcodeLibraryType {
         TSLR,

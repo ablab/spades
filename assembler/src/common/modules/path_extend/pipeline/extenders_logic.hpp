@@ -73,7 +73,7 @@ public:
 
     Extenders MakeMPExtenders() const;
 
-    Extenders MakeReadCloudExtender(const ScaffoldingUniqueEdgeStorage& storage) const;
+    Extenders MakeReadCloudExtenders(const ScaffoldingUniqueEdgeStorage& storage) const;
 
     Extenders MakeCoverageExtenders() const;
 
@@ -106,6 +106,8 @@ private:
     shared_ptr<SimpleExtender> MakeRNAExtender(size_t lib_index, bool investigate_loops) const;
 
     shared_ptr<SimpleExtender> MakeSimpleCoverageExtender(size_t lib_index) const;
+
+    shared_ptr<PathExtender> MakeReadCloudExtender(size_t lib_index, const ScaffoldingUniqueEdgeStorage& storage) const;
 
     void PrintExtenders(const vector<shared_ptr<PathExtender>> &extenders) const;
 
