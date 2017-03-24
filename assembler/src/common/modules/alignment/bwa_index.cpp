@@ -228,41 +228,29 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
     size_t read_length = seq.length();
     if (read_length < g_.k())
         return res;
-    read_length -= g_.k();
+    read_length = read_length - g_.k();
 
     mem_alnreg_v ar = mem_align1(memopt_.get(), idx_->bwt, idx_->bns, idx_->pac,
                                  int(seq.length()), seq.data());
     for (size_t i = 0; i < ar.n; ++i) {
         const mem_alnreg_t &a = ar.a[i];
         if (a.secondary >= 0) continue; // skip secondary alignments
-//        if (a.qe - a.qb < g_.k()) continue; // skip short alignments
-//        if (a.re - a.rb < g_.k()) continue;
+        if (size_t(a.qe - a.qb) < g_.k()) continue; // skip short alignments
+        if (size_t(a.re - a.rb) < g_.k()) continue;
         int is_rev = 0;
         size_t pos = bns_depos(idx_->bns, a.rb < idx_->bns->l_pac? a.rb : a.re - 1, &is_rev) - idx_->bns->anns[a.rid].offset;
 
 #if 0
-        fprintf(stderr, "%zu: [%lld, %lld]\t[%d, %d] %c %d %s %ld %zu\n",
+        fprintf(stderr, "%zu: [%lld, %lld)\t[%d, %d) %c %d %s %ld %d\n",
                 i,
-                a.rb, a.re, a.qb, a.qe,
+                pos, pos + a.re - a.rb, a.qb, a.qe,
                 "+-"[is_rev], a.rid,
-                idx_->bns->anns[a.rid].name, g_.int_id(ids_[a.rid]), pos);
+                idx_->bns->anns[a.rid].name, g_.int_id(ids_[a.rid]), a.secondary);
 #endif
 
-        size_t initial_range_end = a.qe;
-        size_t mapping_range_end = pos + a.re - a.rb;
-
-        // We had to reduce the range to kmer-based
-        if (pos + (a.re - a.rb) >= g_.length(ids_[a.rid])) {
-            if (a.qe > int(g_.k()) + a.qb)
-                initial_range_end -= g_.k();
-            else
-                continue;
-
-            if (a.re > int(g_.k()) + a.rb)
-                mapping_range_end -= g_.k();
-            else
-                continue;
-        }
+        // Reduce the range to kmer-based
+        size_t initial_range_end = a.qe - g_.k();
+        size_t mapping_range_end = pos + a.re - a.rb - g_.k();
 
         if (!is_rev) {
             res.push_back(ids_[a.rid],
@@ -271,7 +259,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
         } else {
             res.push_back(g_.conjugate(ids_[a.rid]),
                           { Range(a.qb, initial_range_end).Invert(read_length),
-                            Range(pos, mapping_range_end ).Invert(g_.length(ids_[a.rid])) });
+                            Range(pos,  mapping_range_end ).Invert(g_.length(ids_[a.rid])) });
 
         }
 
@@ -279,10 +267,10 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
         mem_aln_t aln = mem_reg2aln(memopt_.get(), idx_->bns, idx_->pac, seq.length(), seq.c_str(), &a);
 
         // print alignment
-        printf("\t%c\t%s\t%ld %ld %ld\t%d\t", "+-"[aln.is_rev], idx_->bns->anns[aln.rid].name, aln.rid, g_.int_id(ids_[aln.rid]), (long)aln.pos, aln.mapq);
+        fprintf(stderr, "\t%c\t%s\t%ld %ld %ld\t%d\t", "+-"[aln.is_rev], idx_->bns->anns[aln.rid].name, aln.rid, g_.int_id(ids_[aln.rid]), (long)aln.pos, aln.mapq);
         for (int k = 0; k < aln.n_cigar; ++k) // print CIGAR
-            printf("%d%c", aln.cigar[k]>>4, "MIDSH"[aln.cigar[k]&0xf]);
-        printf("\t%d\n", aln.NM); // print edit distance
+            fprintf(stderr, "%d%c", aln.cigar[k]>>4, "MIDSH"[aln.cigar[k]&0xf]);
+        fprintf(stderr, "\t%d\n", aln.NM); // print edit distance
         free(aln.cigar);
 #endif
 
