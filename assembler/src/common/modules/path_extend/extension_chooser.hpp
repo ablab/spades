@@ -14,9 +14,13 @@
 #include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "barcode_index/barcode_info_extractor.hpp"
 #include "barcode_index/barcode_mapper.hpp"
 #include "bounded_dijkstra.hpp"
 #include "modules/alignment/rna/ss_coverage.hpp"
+#include "pe_utils.hpp"
+#include "read_cloud_path_extend/paired_dijkstra.hpp"
+#include "weight_counter.hpp"
 
 #include <cfloat>
 #include <fstream>
@@ -1531,20 +1535,22 @@ protected:
     size_t fragment_len_;
     size_t distance_bound_;
     ScaffoldingUniqueEdgeStorage unique_storage_;
+    PairedLibConnectionCondition paired_connection_condition_;
     friend class TenXExtensionChecker;
 
 public:
-    ReadCloudExtensionChooser(const conj_graph_pack& gp,
+    ReadCloudExtensionChooser(const conj_graph_pack &gp,
                               barcode_extractor_ptr_t extractor,
                               size_t fragment_len,
                               size_t distance_bound,
-                              const ScaffoldingUniqueEdgeStorage& unique_storage) :
+                              const ScaffoldingUniqueEdgeStorage &unique_storage,
+                              PairedLibConnectionCondition paired_connection_condition) :
             ExtensionChooser(gp.g),
             barcode_extractor_ptr_(extractor),
             fragment_len_(fragment_len),
             distance_bound_(distance_bound),
-            unique_storage_(unique_storage) {
-    }
+            unique_storage_(unique_storage),
+            paired_connection_condition_(paired_connection_condition) {}
 
     //todo remove code duplication with ExtensionChooser2015
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer&) const override {
@@ -1555,28 +1561,17 @@ public:
         if (last_unique.second == -1) {
             return result;
         }
-        EdgeContainer candidates = GetInitialCandidates(last_unique.first, path);
-
         DEBUG("At edge " << path.Back().int_id());
         DEBUG("Decisive edge " << last_unique.first.int_id());
         DEBUG("Decisive edge barcodes: " << barcode_extractor_ptr_->GetNumberOfBarcodes(last_unique.first));
+
+        EdgeContainer candidates = GetInitialCandidates(last_unique.first, path);
 
         DEBUG("Searching for next unique edge.")
         result = FindNextUniqueEdge(last_unique.first, candidates);
         DEBUG("Searching finished.")
 
         DEBUG("next unique edges found, there are " << result.size() << " of them");
-//Backward check. We connected edges iff they are best continuation to each other.
-//        if (result.size() == 1) {
-//            //We should reduce gap size with length of the edges that came after last unique.
-//            result[0].d_ -= int (path.LengthAt(last_unique.second) - g_.length(last_unique.first));
-//            DEBUG("For edge " << g_.int_id(last_unique.first) << " unique next edge "<< result[0].e_ <<" found, doing backwards check ");
-//            EdgeContainer backwards_check = FindNextUniqueEdge(g_.conjugate(result[0].e_));
-//            if ((backwards_check.size() != 1) || (g_.conjugate(backwards_check[0].e_) != last_unique.first)) {
-//                DEBUG("Backward check failed")
-//                result.clear();
-//            }
-//        }
         return result;
     }
 
@@ -1588,11 +1583,6 @@ public:
         EdgeContainer best_candidates = GetBestCandidates(initial_candidates, last_unique);
         DEBUG("Finished searching")
         DEBUG("Best candidates: " << best_candidates.size());
-
-        //Try to find topologically closest edge to resolve loops
-//        if (best_candidates.size() > 1) {
-//            FilterByTopSort(best_candidates, result);
-//        }
 
         return best_candidates;
     }
@@ -1612,19 +1602,23 @@ protected:
     virtual EdgeContainer GetInitialCandidates(EdgeId last_edge, const BidirectionalPath& path) const {
         ExtensionChooser::EdgeContainer candidates;
         vector<EdgeId> initial_candidates;
-        auto put_checker = BarcodePutChecker<Graph>(g_, last_edge, unique_storage_, initial_candidates);
-        auto dij = BarcodeDijkstra<Graph>::CreateBarcodeBoundedDijkstra(g_, distance_bound_, put_checker);
+        DEBUG("Creating dijkstra");
+        auto dij = omnigraph::CreateUniqueDijkstra(g_, distance_bound_, unique_storage_);
+        DEBUG("dijkstra started");
         dij.Run(g_.EdgeEnd(last_edge));
-        DEBUG("Initial candidates: " << initial_candidates.size());
         DEBUG("Dijkstra finished");
-        candidates.reserve(initial_candidates.size());
-        for (const auto& edge : initial_candidates) {
-            VERIFY(unique_storage_.IsUnique(last_edge));
-            if (edge != last_edge and edge != g_.conjugate(last_edge) and
-                path.FindFirst(edge) == -1 and path.FindFirst(g_.conjugate(edge)) == -1) {
-                candidates.push_back(EdgeWithDistance(edge, dij.GetDistance(g_.EdgeStart(edge))));
+
+        for (auto v: dij.ReachedVertices()) {
+            for (auto connected: g_.OutgoingEdges(v)) {
+                size_t distance = dij.GetDistance(v);
+                if (unique_storage_.IsUnique(connected) and distance < distance_bound_ and
+                        IsFurtherInPath(path, connected, last_edge)) {
+                    EdgeWithDistance candidate(connected, distance);
+                    candidates.push_back(candidate);
+                }
             }
         }
+        DEBUG("Candidates: " << candidates.size());
         return candidates;
     }
 
@@ -1659,18 +1653,10 @@ protected:
         return closest_edges;
     }
 
-    void FilterByTopSort(const vector<EdgeWithDistance> &best_candidates, EdgeContainer &result) const {
-        auto closest_edges =  FindClosestEdge(best_candidates);
-        if (closest_edges.size() != 1) {
-            DEBUG("Unable to find single topmin edge.");
-            for (auto& edge : best_candidates) {
-                result.push_back(edge);
-            }
-        }
-        else {
-            DEBUG("Found topmin edge");
-            result.push_back(closest_edges.back());
-        }
+private:
+    bool IsFurtherInPath(const BidirectionalPath& path, const EdgeId& edge, const EdgeId& last_edge) const {
+        return edge != last_edge and edge != g_.conjugate(last_edge) and
+               path.FindFirst(edge) == -1 and path.FindFirst(g_.conjugate(edge)) == -1;
     }
 
     DECL_LOGGER("ReadCloudExtensionChooser")
@@ -1689,8 +1675,10 @@ public:
                          size_t fragment_len,
                          size_t distance_bound,
                          const ScaffoldingUniqueEdgeStorage& unique_storage,
+                         const PairedLibConnectionCondition& paired_connection_condition,
                          double absolute_barcode_threshold) :
-            ReadCloudExtensionChooser(gp, extractor, fragment_len, distance_bound, unique_storage),
+            ReadCloudExtensionChooser(gp, extractor, fragment_len, distance_bound,
+                                      unique_storage, paired_connection_condition),
             absolute_barcode_threshold_(absolute_barcode_threshold) {}
 
 private:
@@ -1781,10 +1769,12 @@ public:
 public:
     TenXExtensionChooser(const conj_graph_pack &gp, abstract_barcode_extractor_ptr_t extractor, size_t fragment_len,
                              size_t distance_bound, const ScaffoldingUniqueEdgeStorage &unique_storage,
+                             const PairedLibConnectionCondition& paired_connection_condition,
                              size_t absolute_barcode_threshold, size_t tail_threshold, size_t max_initial_candidates,
                              size_t internal_gap_threshold, size_t initial_abundancy_threshold_,
                              size_t middle_abundancy_threshold_) :
-            ReadCloudExtensionChooser(gp, extractor, fragment_len, distance_bound, unique_storage),
+            ReadCloudExtensionChooser(gp, extractor, fragment_len, distance_bound,
+                                      unique_storage, paired_connection_condition),
             barcode_extractor_ptr_(std::static_pointer_cast<frame_extractor_t>(extractor)),
             absolute_barcode_threshold_(absolute_barcode_threshold),
             tail_threshold_(tail_threshold),

@@ -107,7 +107,7 @@ public:
 
     Extenders MakeMPExtenders() const;
 
-    Extenders MakeReadCloudExtender(const ScaffoldingUniqueEdgeStorage& storage) const;
+    Extenders MakeReadCloudExtenders(const ScaffoldingUniqueEdgeStorage& storage) const;
 
     Extenders MakeCoverageExtenders() const;
 
@@ -146,6 +146,8 @@ private:
     std::shared_ptr<ExtensionChooser> MakeLongReadsRNAExtensionChooser(size_t lib_index, const GraphCoverageMap& read_paths_cov_map) const;
 
     std::shared_ptr<SimpleExtender> MakeLongReadsRNAExtender(size_t lib_index, const GraphCoverageMap& read_paths_cov_map) const;
+
+    shared_ptr<PathExtender> MakeReadCloudExtender(size_t lib_index, const ScaffoldingUniqueEdgeStorage& storage) const;
 
     void PrintExtenders(const std::vector<std::shared_ptr<PathExtender>> &extenders) const;
 
