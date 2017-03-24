@@ -14,88 +14,114 @@ namespace path_extend {
 class PathGapCloser {
 protected:
     const Graph& g_;
-    size_t max_path_len_;
-    int min_gap_;
-//returns updated gap to stop_vertex
-    virtual Gap InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &path) = 0;
+    const size_t max_path_len_;
+    const int min_gap_;
+
+    virtual Gap CloseGap(const BidirectionalPath &original_path, size_t position,
+                         BidirectionalPath &path) const = 0;
 public:
-    BidirectionalPath Polish(const BidirectionalPath& path);
-//TODO:: config
+    BidirectionalPath CloseGaps(const BidirectionalPath &path) const;
+
     PathGapCloser(const Graph& g, size_t max_path_len):
-            g_(g),
-            max_path_len_(max_path_len),
-            min_gap_(int(g.k() + 10)) {}
+                  g_(g),
+                  max_path_len_(max_path_len),
+                  //TODO:: config
+                  min_gap_(int(g.k() + 10)) {}
 
 };
 
-class PathExtenderGapCloser: public PathGapCloser {
+class TargetVertexGapCloser : public PathGapCloser {
+protected:
+    //returns updated gap to target vertex
+    virtual Gap CloseGap(VertexId target_vertex, const Gap &gap, BidirectionalPath &path) const = 0;
+
+    Gap CloseGap(const BidirectionalPath &original_path,
+                 size_t position, BidirectionalPath &path) const final override {
+        return CloseGap(g_.EdgeStart(original_path.At(position)), original_path.GapAt(position), path);
+    }
+
+public:
+    TargetVertexGapCloser(const Graph& g, size_t max_path_len):
+            PathGapCloser(g, max_path_len) {}
+
+};
+
+class PathExtenderGapCloser: public TargetVertexGapCloser {
     shared_ptr<path_extend::PathExtender> extender_;
 
 protected:
-    Gap InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &result) override;
+    Gap CloseGap(VertexId target_vertex, const Gap &gap, BidirectionalPath &path) const override;
 
 public:
     PathExtenderGapCloser(const Graph& g, size_t max_path_len, shared_ptr<PathExtender> extender):
-            PathGapCloser(g, max_path_len), extender_(extender) {
+            TargetVertexGapCloser(g, max_path_len), extender_(extender) {
     }
 };
 
-class MatePairGapCloser: public PathGapCloser {
+class MatePairGapCloser: public TargetVertexGapCloser {
     const shared_ptr<PairedInfoLibrary> lib_;
     const ScaffoldingUniqueEdgeStorage& storage_;
 //TODO: config? somewhere else?
     static constexpr double weight_priority = 5;
 
+    EdgeId FindNext(const BidirectionalPath& path,
+                    const set<EdgeId>& present_in_paths,
+                    VertexId last_v) const;
 protected:
-    Gap InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &result) override;
+    Gap CloseGap(VertexId target_vertex, const Gap &gap, BidirectionalPath &path) const override;
 
 public:
-    EdgeId FindNext(const BidirectionalPath& path, size_t index,
-                        const set<EdgeId>& present_in_paths, VertexId v) const;
-    MatePairGapCloser(const Graph& g, size_t max_path_len, const shared_ptr<PairedInfoLibrary> lib, const ScaffoldingUniqueEdgeStorage& storage):
-            PathGapCloser(g, max_path_len), lib_(lib), storage_(storage) {}
+    MatePairGapCloser(const Graph& g, size_t max_path_len,
+                      const shared_ptr<PairedInfoLibrary> lib,
+                      const ScaffoldingUniqueEdgeStorage& storage):
+            TargetVertexGapCloser(g, max_path_len), lib_(lib), storage_(storage) {}
 };
 
-class DijkstraGapCloser: public PathGapCloser {
-    Gap FillWithMultiplePaths(const omnigraph::PathStorageCallback<Graph>& path_storage,
-            BidirectionalPath& result) const;
+//TODO switch to a different Callback, no need to store all paths
+class DijkstraGapCloser: public TargetVertexGapCloser {
+    typedef vector<vector<EdgeId>> Paths;
 
-    Gap FillWithBridge(const BidirectionalPath& path, size_t index,
-                       const omnigraph::PathStorageCallback<Graph>& path_storage,
-                       BidirectionalPath& result) const;
-    size_t MinPathLength(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
+    Gap FillWithMultiplePaths(const Paths& paths,
+                              BidirectionalPath& result) const;
 
-    size_t MinPathSize(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
+    Gap FillWithBridge(const Gap &orig_gap,
+                       const Paths& paths, BidirectionalPath& result) const;
 
-    vector<EdgeId> LCP(const omnigraph::PathStorageCallback<Graph>& path_storage) const;
+    size_t MinPathLength(const Paths& paths) const;
 
-    std::map<EdgeId, size_t> CountEdgesQuantity(const omnigraph::PathStorageCallback<Graph>& path_storage, size_t length_limit) const;
+    size_t MinPathSize(const Paths& paths) const;
+
+    vector<EdgeId> LCP(const Paths& paths) const;
+
+    std::map<EdgeId, size_t> CountEdgesQuantity(const Paths& paths, size_t length_limit) const;
 
 protected:
-    Gap InnerCloseGap(const BidirectionalPath &original_path, size_t position, BidirectionalPath &result) override;
+    Gap CloseGap(VertexId target_vertex, const Gap &gap, BidirectionalPath &path) const override;
 
 public:
-
     DijkstraGapCloser(const Graph& g, size_t max_path_len):
-        PathGapCloser(g, max_path_len) {}
+        TargetVertexGapCloser(g, max_path_len) {}
 
 };
 
 class PathPolisher {
+    static const size_t MAX_POLISH_ATTEMPTS = 5;
 
-private:
-    const conj_graph_pack& gp_;
-    vector<shared_ptr<PathGapCloser>> gap_closers;
+    const conj_graph_pack &gp_;
+    vector<shared_ptr<PathGapCloser>> gap_closers_;
 
-private:
-    void InfoAboutGaps(const PathContainer & result);
+    void InfoAboutGaps(const PathContainer& result);
+
     BidirectionalPath Polish(const BidirectionalPath& path);
-    static const size_t max_polish_attempts = 5;
-public:
-    PathPolisher(const conj_graph_pack& gp, const config::dataset& dataset_info,
-                 const ScaffoldingUniqueEdgeStorage& storage, size_t max_resolvable_len, vector<shared_ptr<PathExtender>> extenders);
 
-    void PolishPaths(const PathContainer& paths, PathContainer& result);
+public:
+    PathPolisher(const conj_graph_pack &gp,
+                               const vector<shared_ptr<PathGapCloser>> &gap_closers):
+            gp_(gp), gap_closers_(gap_closers) {
+    }
+
+
+    PathContainer PolishPaths(const PathContainer& paths);
 };
 
 

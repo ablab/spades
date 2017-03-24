@@ -65,17 +65,17 @@ class PathExtendLauncher {
 
     void DebugOutputPaths(const PathContainer& paths, const string& name) const;
 
-    void FinalizePaths(PathContainer& paths, GraphCoverageMap &cover_map, const PathExtendResolver&resolver) const;
+    void FinalizePaths(PathContainer &paths, GraphCoverageMap &cover_map, const PathExtendResolver &resolver) const;
 
-    void TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map) const;
+    void TraverseLoops(PathContainer &paths, GraphCoverageMap &cover_map) const;
 
-    void PolishPaths(const PathContainer &paths, PathContainer &result, const GraphCoverageMap& cover_map) const;
+    void PolishPaths(const PathContainer &paths, PathContainer &result, const GraphCoverageMap &cover_map) const;
 
-    Extenders ConstructExtenders(const GraphCoverageMap& cover_map);
+    Extenders ConstructExtenders(const GraphCoverageMap &cover_map);
 
     Extenders ConstructMPExtenders(const ExtendersGenerator &generator);
 
-    Extenders ConstructMPExtender(const ExtendersGenerator &generator, size_t uniqe_edge_len);
+    Extenders ConstructMPExtender(const ExtendersGenerator &generator, size_t unique_edge_len);
 
     Extenders ConstructPBExtenders(const ExtendersGenerator &generator);
 

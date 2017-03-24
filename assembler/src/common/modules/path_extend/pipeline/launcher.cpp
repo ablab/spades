@@ -386,15 +386,32 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap& cover_m
     return extenders;
 }
 
-void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &result, const GraphCoverageMap& cover_map) const {
+void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &result,
+                                     const GraphCoverageMap& cover_map) const {
     //Fixes distances for paths gaps and tries to fill them in
     INFO("Closing gaps in paths");
+
+    vector<shared_ptr<PathGapCloser>> gap_closers;
+
+    gap_closers.push_back(make_shared<DijkstraGapCloser>(gp_.g, params_.max_polisher_gap));
+    for (size_t i = 0; i < dataset_info_.reads.lib_count(); i++) {
+        auto lib = dataset_info_.reads[i];
+        if (lib.type() == io::LibraryType::HQMatePairs || lib.type() == io::LibraryType::MatePairs) {
+            shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.paired_indices[i]);
+            gap_closers.push_back(make_shared<MatePairGapCloser> (gp_.g, params_.max_polisher_gap, paired_lib,
+                                                                   unique_data_.main_unique_storage_));
+        }
+    }
 
     ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, support_);
     Extenders extenders = generator.MakeBasicExtenders(unique_data_.main_unique_storage_,
                                                        unique_data_.long_reads_cov_map_);
-    PathPolisher polisher(gp_, dataset_info_, unique_data_.main_unique_storage_, params_.max_polisher_gap, extenders);
-    polisher.PolishPaths(paths, result);
+    for (const auto& extender: extenders) {
+        gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender));
+    }
+
+    PathPolisher polisher(gp_, gap_closers);
+    result = polisher.PolishPaths(paths);
     result.SortByLength();
     INFO("Gap closing completed")
 }
@@ -434,12 +451,14 @@ void PathExtendLauncher::Launch() {
     FinalizePaths(paths, cover_map, resolver);
     DebugOutputPaths(paths, "before_loop_traversal");
 
+    //FIXME think about ordering of path polisher vs loop traversal
     TraverseLoops(paths, cover_map);
     DebugOutputPaths(paths, "loop_traveresed");
 
     PolishPaths(paths, gp_.contig_paths, cover_map);
     DebugOutputPaths(gp_.contig_paths, "polished_paths");
-    
+
+    //FIXME why do we need new polished map?
     GraphCoverageMap polished_map(gp_.g, gp_.contig_paths, true);
     FinalizePaths(gp_.contig_paths, polished_map, resolver);
     DebugOutputPaths(gp_.contig_paths, "final_paths");
