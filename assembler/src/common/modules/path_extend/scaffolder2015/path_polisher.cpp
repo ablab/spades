@@ -27,7 +27,7 @@ PathContainer PathPolisher::PolishPaths(const PathContainer &paths) {
     return result;
 }
 
-size_t DijkstraGapCloser::MinPathLength(const Paths& paths) const {
+size_t DijkstraGapCloser::MinPathLength(const PathsT& paths) const {
     size_t shortest_len = omnigraph::CumulativeLength(g_, paths.front());
     for (size_t j = 1; j < paths.size(); ++j) {
         size_t cur_len = omnigraph::CumulativeLength(g_, paths[j]);
@@ -84,7 +84,9 @@ BidirectionalPath PathGapCloser::CloseGaps(const BidirectionalPath &path) const 
     return result;
 }
 
-Gap DijkstraGapCloser::CloseGap(VertexId target_vertex, const Gap &orig_gap, BidirectionalPath &result) const {
+Gap DijkstraGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, BidirectionalPath &result) const {
+    VertexId target_vertex = g_.EdgeStart(target_edge);
+//TODO:: actually we do not need paths, only edges..
     omnigraph::PathStorageCallback<Graph> path_storage(g_);
     omnigraph::ProcessPaths(g_, 0,
                             max_path_len_,
@@ -110,8 +112,9 @@ Gap DijkstraGapCloser::CloseGap(VertexId target_vertex, const Gap &orig_gap, Bid
     }
 }
 
-Gap PathExtenderGapCloser::CloseGap(VertexId target_vertex, const Gap &orig_gap, BidirectionalPath &result) const {
+Gap PathExtenderGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, BidirectionalPath &result) const {
     size_t added = 0;
+    VertexId target_vertex = g_.EdgeStart(target_edge);
     while (g_.EdgeEnd(result.Back()) != target_vertex) {
         bool has_grown = extender_->MakeGrowStep(result);
         if (!has_grown)
@@ -123,7 +126,7 @@ Gap PathExtenderGapCloser::CloseGap(VertexId target_vertex, const Gap &orig_gap,
 }
 
 Gap DijkstraGapCloser::FillWithBridge(const Gap &orig_gap,
-                                      const Paths& paths,
+                                      const PathsT& paths,
                                       BidirectionalPath& result) const {
     //TODO:: constant;
     auto counts = CountEdgesQuantity(paths, 300);
@@ -162,7 +165,7 @@ Gap DijkstraGapCloser::FillWithBridge(const Gap &orig_gap,
     }
 }
 
-Gap DijkstraGapCloser::FillWithMultiplePaths(const Paths& paths,
+Gap DijkstraGapCloser::FillWithMultiplePaths(const PathsT& paths,
                                               BidirectionalPath& result) const {
     bool changed = false;
     auto left = LCP(paths);
@@ -178,7 +181,7 @@ Gap DijkstraGapCloser::FillWithMultiplePaths(const Paths& paths,
         return Gap::INVALID();
 }
 
-std::map<EdgeId, size_t> DijkstraGapCloser::CountEdgesQuantity(const Paths &paths, size_t length_limit) const {
+std::map<EdgeId, size_t> DijkstraGapCloser::CountEdgesQuantity(const PathsT &paths, size_t length_limit) const {
     map<EdgeId, size_t> res;
     for (const auto& path: paths) {
         set<EdgeId> edge_set(path.begin(), path.end());
@@ -191,7 +194,7 @@ std::map<EdgeId, size_t> DijkstraGapCloser::CountEdgesQuantity(const Paths &path
     return res;
 };
 
-size_t DijkstraGapCloser::MinPathSize(const Paths& paths) const {
+size_t DijkstraGapCloser::MinPathSize(const PathsT& paths) const {
     size_t size = paths.front().size();
     for (size_t i = 1; i < paths.size(); ++i) {
         size = min(size, paths[i].size());
@@ -199,7 +202,7 @@ size_t DijkstraGapCloser::MinPathSize(const Paths& paths) const {
     return size;
 }
 
-vector<EdgeId> DijkstraGapCloser::LCP(const Paths& paths) const {
+vector<EdgeId> DijkstraGapCloser::LCP(const PathsT& paths) const {
     bool all_equal = true;
     size_t index = 0;
     size_t min_size = MinPathSize(paths);
@@ -270,7 +273,8 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
     }
 }
 //FIXME review logic
-Gap MatePairGapCloser::CloseGap(VertexId target_v, const Gap &orig_gap, BidirectionalPath &path) const {
+Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, BidirectionalPath &path) const {
+    VertexId target_vertex = g_.EdgeStart(target_edge);
 //TODO:: condition about trash_previous - do we need it globally?
     if (orig_gap.gap <= min_gap_ || orig_gap.trash_previous > 0) {
         return orig_gap;
@@ -279,12 +283,12 @@ Gap MatePairGapCloser::CloseGap(VertexId target_v, const Gap &orig_gap, Bidirect
         EdgeId last_e = path.Back();
         VertexId last_v = g_.EdgeEnd(last_e);
         DEBUG("Closing gap between edge " << g_.int_id(last_e)
-                  << " and vertex " << g_.int_id(target_v) << " was " << orig_gap);
+                  << " and edge " << g_.int_id(target_edge) << " was " << orig_gap);
         omnigraph::PathStorageCallback<Graph> path_storage(g_);
         omnigraph::ProcessPaths(g_, 0,
                                 max_path_len_,
                                 last_v,
-                                target_v,
+                                target_vertex,
                                 path_storage);
 
         set<EdgeId> present_in_paths;
@@ -314,7 +318,7 @@ Gap MatePairGapCloser::CloseGap(VertexId target_v, const Gap &orig_gap, Bidirect
 //inserted result significantly longer than estimated gap
                 DEBUG("Filled len" << len);
             }
-            if (g_.EdgeEnd(addition.back()) != target_v)
+            if (g_.EdgeEnd(addition.back()) != target_vertex)
                 gap = Gap(min_gap_);
             else
                 gap = Gap();

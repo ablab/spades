@@ -30,35 +30,36 @@ public:
 
 };
 
-class TargetVertexGapCloser : public PathGapCloser {
+//Intermediate abstract class - majority of GapClosers needs only one next edge after gap, not all original path.
+class TargetEdgeGapCloser : public PathGapCloser {
 protected:
-    //returns updated gap to target vertex
-    virtual Gap CloseGap(VertexId target_vertex, const Gap &gap, BidirectionalPath &path) const = 0;
+    //returns updated gap to target edge
+    virtual Gap CloseGap(EdgeId target_edge, const Gap &gap, BidirectionalPath &path) const = 0;
 
     Gap CloseGap(const BidirectionalPath &original_path,
                  size_t position, BidirectionalPath &path) const final override {
-        return CloseGap(g_.EdgeStart(original_path.At(position)), original_path.GapAt(position), path);
+        return CloseGap(original_path.At(position), original_path.GapAt(position), path);
     }
 
 public:
-    TargetVertexGapCloser(const Graph& g, size_t max_path_len):
+    TargetEdgeGapCloser(const Graph& g, size_t max_path_len):
             PathGapCloser(g, max_path_len) {}
 
 };
 
-class PathExtenderGapCloser: public TargetVertexGapCloser {
+class PathExtenderGapCloser: public TargetEdgeGapCloser {
     shared_ptr<path_extend::PathExtender> extender_;
 
 protected:
-    Gap CloseGap(VertexId target_vertex, const Gap &gap, BidirectionalPath &path) const override;
+    Gap CloseGap(EdgeId target_edge, const Gap &gap, BidirectionalPath &path) const override;
 
 public:
     PathExtenderGapCloser(const Graph& g, size_t max_path_len, shared_ptr<PathExtender> extender):
-            TargetVertexGapCloser(g, max_path_len), extender_(extender) {
+            TargetEdgeGapCloser(g, max_path_len), extender_(extender) {
     }
 };
 
-class MatePairGapCloser: public TargetVertexGapCloser {
+class MatePairGapCloser: public TargetEdgeGapCloser {
     const shared_ptr<PairedInfoLibrary> lib_;
     const ScaffoldingUniqueEdgeStorage& storage_;
 //TODO: config? somewhere else?
@@ -68,39 +69,39 @@ class MatePairGapCloser: public TargetVertexGapCloser {
                     const set<EdgeId>& present_in_paths,
                     VertexId last_v) const;
 protected:
-    Gap CloseGap(VertexId target_vertex, const Gap &gap, BidirectionalPath &path) const override;
+    Gap CloseGap(EdgeId target_edge, const Gap &gap, BidirectionalPath &path) const override;
 
 public:
     MatePairGapCloser(const Graph& g, size_t max_path_len,
                       const shared_ptr<PairedInfoLibrary> lib,
                       const ScaffoldingUniqueEdgeStorage& storage):
-            TargetVertexGapCloser(g, max_path_len), lib_(lib), storage_(storage) {}
+            TargetEdgeGapCloser(g, max_path_len), lib_(lib), storage_(storage) {}
 };
 
 //TODO switch to a different Callback, no need to store all paths
-class DijkstraGapCloser: public TargetVertexGapCloser {
-    typedef vector<vector<EdgeId>> Paths;
+class DijkstraGapCloser: public TargetEdgeGapCloser {
+    typedef vector<vector<EdgeId>> PathsT;
 
-    Gap FillWithMultiplePaths(const Paths& paths,
+    Gap FillWithMultiplePaths(const PathsT& paths,
                               BidirectionalPath& result) const;
 
     Gap FillWithBridge(const Gap &orig_gap,
-                       const Paths& paths, BidirectionalPath& result) const;
+                       const PathsT& paths, BidirectionalPath& result) const;
 
-    size_t MinPathLength(const Paths& paths) const;
+    size_t MinPathLength(const PathsT& paths) const;
 
-    size_t MinPathSize(const Paths& paths) const;
+    size_t MinPathSize(const PathsT& paths) const;
 
-    vector<EdgeId> LCP(const Paths& paths) const;
+    vector<EdgeId> LCP(const PathsT& paths) const;
 
-    std::map<EdgeId, size_t> CountEdgesQuantity(const Paths& paths, size_t length_limit) const;
+    std::map<EdgeId, size_t> CountEdgesQuantity(const PathsT& paths, size_t length_limit) const;
 
 protected:
-    Gap CloseGap(VertexId target_vertex, const Gap &gap, BidirectionalPath &path) const override;
+    Gap CloseGap(EdgeId target_edge, const Gap &gap, BidirectionalPath &path) const override;
 
 public:
     DijkstraGapCloser(const Graph& g, size_t max_path_len):
-        TargetVertexGapCloser(g, max_path_len) {}
+        TargetEdgeGapCloser(g, max_path_len) {}
 
 };
 
