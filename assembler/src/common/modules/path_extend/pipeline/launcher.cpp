@@ -130,7 +130,7 @@ void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
         debruijn_graph::GenomeConsistenceChecker genome_checker(gp_, unique_data_.main_unique_storage_,
                                                                 params_.pset.genome_consistency_checker.max_gap,
                                                                 params_.pset.genome_consistency_checker.relative_max_gap,
-                                                                unique_data_.main_unique_storage_.GetMinLength());
+                                                                unique_data_.main_unique_storage_.GetMinLength(), unique_data_.long_reads_cov_map_);
         scaffold_graph = ConstructScaffoldGraph(unique_data_.main_unique_storage_);
         if (params_.pset.scaffold_graph_params.output) {
             PrintScaffoldGraph(*scaffold_graph,
@@ -156,7 +156,7 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
                                                             use_main_storage ? unique_data_.main_unique_storage_:tmp_storage,
                                                             params_.pset.genome_consistency_checker.max_gap,
                                                             params_.pset.genome_consistency_checker.relative_max_gap,
-                                                            unresolvable_gap);
+                                                            unresolvable_gap, unique_data_.long_reads_cov_map_);
 
     size_t total_mis = 0, gap_mis = 0;
     genome_checker.SpellGenome();
@@ -170,9 +170,11 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
         }
         if (map_res.wrong_gap_size > 0) {
             INFO ("there are " << map_res.wrong_gap_size << " wrong gaps in path: ");
-            path->PrintINFO();
+            path->Print();
             gap_mis += map_res.wrong_gap_size;
         }
+        genome_checker.CheckPathEnd(*path);
+        genome_checker.CheckPathEnd(path->Conjugate());
     }
     INFO ("In total found " << total_mis << " misassemblies " << " and " << gap_mis << " gaps.");
 }
