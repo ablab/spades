@@ -2,8 +2,18 @@
 
 #include "barcode_index.hpp"
 #include "common/pipeline/library.hpp"
+#include "common/modules/alignment/edge_index.hpp"
+#include "common/modules/alignment/kmer_mapper.hpp"
+#include "common/modules/alignment/sequence_mapper.hpp"
 
 namespace barcode_index {
+    typedef debruijn_graph::EdgeIndex<Graph> Index;
+    typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
+    typedef typename debruijn_graph::KmerFreeEdgeIndex<Graph, debruijn_graph::DefaultStoring> InnerIndex;
+    typedef typename InnerIndex::KeyWithHash KeyWithHash;
+    typedef typename debruijn_graph::EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
+
+
     template<class barcode_entry_t>
     class BarcodeIndexBuilder {
     protected:
@@ -60,7 +70,6 @@ namespace barcode_index {
                     INFO("Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size()
                                       << "%)");
                 }
-                ++mapper_->barcodes_number_;
             }
         }
 
@@ -144,7 +153,6 @@ namespace barcode_index {
                     }
                     ++global_counter;
                 }
-                ++mapper_->barcodes_number_;
             }
         }
 
