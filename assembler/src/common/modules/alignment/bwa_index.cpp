@@ -9,7 +9,6 @@
 #include "bwa/bwa.h"
 #include "bwa/bwamem.h"
 #include "bwa/utils.h"
-#include "kseq/kseq.h"
 
 #include <string>
 #include <memory>
@@ -37,7 +36,7 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g)
 
 BWAIndex::~BWAIndex() {}
 
-static uint8_t* seqlib_add1(const kstring_t *seq, const kstring_t *name,
+static uint8_t* seqlib_add1(const std::string &seq, const std::string &name,
                             bntseq_t *bns, uint8_t *pac, int64_t *m_pac, int *m_seqs, int *m_holes, bntamb1_t **q) {
     bntann1_t *p;
     int lasts;
@@ -46,15 +45,15 @@ static uint8_t* seqlib_add1(const kstring_t *seq, const kstring_t *name,
         bns->anns = (bntann1_t*)realloc(bns->anns, *m_seqs * sizeof(bntann1_t));
     }
     p = bns->anns + bns->n_seqs;
-    p->name = strdup((char*)name->s);
+    p->name = strdup(name.c_str());
     p->anno = strdup("(null");
-    p->gi = 0; p->len = int(seq->l);
+    p->gi = 0; p->len = int(seq.size());
     p->offset = (bns->n_seqs == 0)? 0 : (p-1)->offset + (p-1)->len;
     p->n_ambs = 0;
-    for (size_t i = lasts = 0; i < seq->l; ++i) {
-        int c = nst_nt4_table[(int)seq->s[i]];
+    for (size_t i = lasts = 0; i < seq.size(); ++i) {
+        int c = nst_nt4_table[unsigned(seq[i])];
         if (c >= 4) { // N
-            if (lasts == seq->s[i]) { // contiguous N
+            if (lasts == seq[i]) { // contiguous N
                 ++(*q)->len;
             } else {
                 if (bns->n_holes == *m_holes) {
@@ -64,12 +63,12 @@ static uint8_t* seqlib_add1(const kstring_t *seq, const kstring_t *name,
                 *q = bns->ambs + bns->n_holes;
                 (*q)->len = 1;
                 (*q)->offset = p->offset + i;
-                (*q)->amb = seq->s[i];
+                (*q)->amb = seq[i];
                 ++p->n_ambs;
                 ++bns->n_holes;
             }
         }
-        lasts = seq->s[i];
+        lasts = seq[i];
         { // fill buffer
             if (c >= 4) c = lrand48() & 3;
             if (bns->l_pac == *m_pac) { // double the pac size
@@ -102,34 +101,13 @@ static uint8_t* seqlib_make_pac(const debruijn_graph::Graph &g,
     pac = (uint8_t*) calloc(m_pac/4, 1);
     q = bns->ambs;
 
-    // move through the sequences
-    // FIXME: not kstring is required
+    // Move through the sequences
     for (auto e : ids) {
         std::string ref = std::to_string(g.int_id(e));
         std::string seq = g.EdgeNucls(e).str();
 
-        // make the ref name kstring
-        kstring_t *name = (kstring_t*)malloc(1 * sizeof(kstring_t));
-        name->l = ref.length() + 1;
-        name->m = ref.length() + 3;
-        name->s = (char*)calloc(name->m, sizeof(char));
-        memcpy(name->s, ref.c_str(), ref.length()+1);
-
-        // make the sequence kstring
-        kstring_t *t = (kstring_t*)malloc(sizeof(kstring_t));
-        t->l = seq.length();
-        t->m = seq.length() + 2;
-        t->s = (char*)malloc(t->m);
-        memcpy(t->s, seq.c_str(), seq.length());
-
         // make the forward only pac
-        pac = seqlib_add1(t, name, bns, pac, &m_pac, &m_seqs, &m_holes, &q);
-
-        // clear it out
-        free(name->s);
-        free(name);
-        free(t->s);
-        free(t);
+        pac = seqlib_add1(seq, ref, bns, pac, &m_pac, &m_seqs, &m_holes, &q);
     }
 
     if (!for_only) {
@@ -149,7 +127,6 @@ static uint8_t* seqlib_make_pac(const debruijn_graph::Graph &g,
 static bwt_t *seqlib_bwt_pac2bwt(const uint8_t *pac, size_t bwt_seq_lenr) {
     bwt_t *bwt;
     ubyte_t *buf;
-    int i;
 
     // Initialization
     bwt = (bwt_t*)calloc(1, sizeof(bwt_t));
@@ -159,17 +136,17 @@ static bwt_t *seqlib_bwt_pac2bwt(const uint8_t *pac, size_t bwt_seq_lenr) {
     // Prepare sequence
     memset(bwt->L2, 0, 5 * 4);
     buf = (ubyte_t*)calloc(bwt->seq_len + 1, 1);
-    for (i = 0; i < (int)bwt->seq_len; ++i) {
+    for (bwtint_t i = 0; i < bwt->seq_len; ++i) {
         buf[i] = pac[i>>2] >> ((3 - (i&3)) << 1) & 3;
         ++bwt->L2[1+buf[i]];
     }
-    for (i = 2; i <= 4; ++i)
+    for (bwtint_t i = 2; i <= 4; ++i)
         bwt->L2[i] += bwt->L2[i-1];
 
     // Burrows-Wheeler Transform
     bwt->primary = is_bwt(buf, bwt->seq_len);
     bwt->bwt = (uint32_t*)calloc(bwt->bwt_size, 4);
-    for (i = 0; i < (int)bwt->seq_len; ++i)
+    for (bwtint_t  i = 0; i < bwt->seq_len; ++i)
         bwt->bwt[i>>4] |= buf[i] << ((15 - (i&15)) << 1);
     free(buf);
     return bwt;
@@ -177,10 +154,8 @@ static bwt_t *seqlib_bwt_pac2bwt(const uint8_t *pac, size_t bwt_seq_lenr) {
 
 static bntann1_t* seqlib_add_to_anns(const std::string& name, const std::string& seq, bntann1_t* ann, size_t offset) {
     ann->offset = offset;
-    ann->name = (char*)malloc(name.length()+1); // +1 for \0
-    strncpy(ann->name, name.c_str(), name.length()+1);
-    ann->anno = (char*)malloc(7);
-    strcpy(ann->anno, "(null)\0");
+    ann->name = strdup(name.c_str());
+    ann->anno = strdup("(null)");
     ann->len = int(seq.length());
     ann->n_ambs = 0; // number of "holes"
     ann->gi = 0; // gi?
