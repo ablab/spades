@@ -418,76 +418,74 @@ Extenders ExtendersGenerator::MakeMPExtenders(const ScaffoldingUniqueEdgeStorage
     return ExtractExtenders(result);
 }
 
-Extenders ExtendersGenerator::MakeReadCloudExtender(const ScaffoldingUniqueEdgeStorage &storage) const {
-    Extenders result;
+Extenders ExtendersGenerator::MakeReadCloudExtenders(const ScaffoldingUniqueEdgeStorage &storage) const {
+    ExtenderTriplets result;
 
-    //fixme move to params_
+    for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
+        const auto &lib = dataset_info_.reads[lib_index];
+
+        if (lib.type() == io::LibraryType::Clouds10x) {
+            result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index, storage));
+        }
+    }
+    std::stable_sort(result.begin(), result.end());
+
+    return ExtractExtenders(result);
+}
+
+shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_index, const ScaffoldingUniqueEdgeStorage &storage) const {
+    const auto &lib = dataset_info_.reads[lib_index];
+    const auto &pset = params_.pset;
     auto tslr_resolver_params = cfg::get().ts_res;
     size_t distance_bound = tslr_resolver_params.distance_bound;
     const size_t fragment_length = tslr_resolver_params.fragment_len;
     barcode_index::BarcodeLibraryType barcode_lib = barcode_index::GetLibType(tslr_resolver_params.library_type);
     shared_ptr<ExtensionChooser> extension_chooser;
     VERIFY(fragment_length > distance_bound);
-    VERIFY_MSG(barcode_lib == barcode_index::BarcodeLibraryType::TSLR or barcode_index::BarcodeLibraryType::TenX,
-        "Unknown library type.")
+    VERIFY_MSG(barcode_lib == barcode_index::BarcodeLibraryType::TenX, "Unknown library type.");
 
     INFO(storage.size() << " unique edges.");
     typedef barcode_index::AbstractBarcodeIndexInfoExtractor abstract_extractor_t;
 
-    if (barcode_lib == barcode_index::BarcodeLibraryType::TSLR) {
-        INFO("Read cloud library type: TSLR")
-        const double absolute_barcode_threshold = tslr_resolver_params.diff_threshold;
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+    auto condition = PairedLibConnectionCondition(gp_.g, paired_lib, lib_index, 0);
 
-        typedef barcode_index::BarcodeIndexInfoExtractor<barcode_index::SimpleEdgeEntry> tslr_extractor_t;
+    INFO("Read cloud library type: 10X")
+    auto tenx_resolver_stats = cfg::get().ts_res.tenx;
+    const size_t absolute_barcode_threshold = tenx_resolver_stats.absolute_barcode_threshold;
+    const size_t tail_threshold = tenx_resolver_stats.tail_threshold;
+    const size_t max_initial_candidates = tenx_resolver_stats.max_initial_candidates;
+    const size_t internal_gap_threshold = tenx_resolver_stats.internal_gap_threshold;
+    const size_t initial_abundancy_threshold = tenx_resolver_stats.initial_abundancy_threshold;
+    const size_t middle_abundancy_threshold = tenx_resolver_stats.middle_abundancy_threshold;
+    typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
 
-        auto extractor_ptr = make_shared<tslr_extractor_t>(gp_.barcode_mapper_ptr, gp_.g);
-        auto abstract_extractor_ptr = std::static_pointer_cast<abstract_extractor_t>(extractor_ptr);
+    auto tenx_extractor_ptr = make_shared<tenx_extractor_t>(gp_.barcode_mapper_ptr, gp_.g);
+    shared_ptr<abstract_extractor_t> abstract_extractor_ptr =
+            std::static_pointer_cast<abstract_extractor_t>(tenx_extractor_ptr);
 
-        extension_chooser = make_shared<TSLRExtensionChooser>(gp_,
-                                                              abstract_extractor_ptr,
-                                                              fragment_length,
-                                                              distance_bound,
-                                                              storage,
-                                                              absolute_barcode_threshold);
-    }
-    else {
-        INFO("Read cloud library type: 10X")
-        auto tenx_resolver_stats = cfg::get().ts_res.tenx;
-        const size_t absolute_barcode_threshold = tenx_resolver_stats.absolute_barcode_threshold;
-        const size_t tail_threshold = tenx_resolver_stats.tail_threshold;
-        const size_t max_initial_candidates = tenx_resolver_stats.max_initial_candidates;
-        const size_t internal_gap_threshold = tenx_resolver_stats.internal_gap_threshold;
-        const size_t initial_abundancy_threshold = tenx_resolver_stats.initial_abundancy_threshold;
-        const size_t middle_abundancy_threshold = tenx_resolver_stats.middle_abundancy_threshold;
-        typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
-
-        auto tenx_extractor_ptr = make_shared<tenx_extractor_t>(gp_.barcode_mapper_ptr, gp_.g);
-        shared_ptr<abstract_extractor_t> abstract_extractor_ptr =
-                std::static_pointer_cast<abstract_extractor_t>(tenx_extractor_ptr);
-
-        extension_chooser = make_shared<TenXExtensionChooser>(gp_,
-                                                              abstract_extractor_ptr,
-                                                              fragment_length,
-                                                              distance_bound,
-                                                              storage,
-                                                              absolute_barcode_threshold,
-                                                              tail_threshold,
-                                                              max_initial_candidates,
-                                                              internal_gap_threshold,
-                                                              initial_abundancy_threshold,
-                                                              middle_abundancy_threshold);
+    extension_chooser = make_shared<TenXExtensionChooser>(gp_,
+                                                          abstract_extractor_ptr,
+                                                          fragment_length,
+                                                          distance_bound,
+                                                          storage,
+                                                          condition,
+                                                          absolute_barcode_threshold,
+                                                          tail_threshold,
+                                                          max_initial_candidates,
+                                                          internal_gap_threshold,
+                                                          initial_abundancy_threshold,
+                                                          middle_abundancy_threshold);
 
 
-        shared_ptr<ReadCloudExtender> extender = make_shared<ReadCloudExtender>(gp_, cover_map_,
-                                                                                extension_chooser,
-                                                                                2500 /*insert size*/,
-                                                                                false, /*investigate short loops*/
-                                                                                false /*use short loop coverage resolver*/,
-                                                                                storage,
-                                                                                distance_bound);
-        result.push_back(extender);
-    }
-    return result;
+    shared_ptr<ReadCloudExtender> extender = make_shared<ReadCloudExtender>(gp_, cover_map_,
+                                                                            extension_chooser,
+                                                                            2500 /*insert size*/,
+                                                                            false, /*investigate short loops*/
+                                                                            false /*use short loop coverage resolver*/,
+                                                                            storage,
+                                                                            distance_bound);
+    return extender;
 }
 
 Extenders ExtendersGenerator::MakePBScaffoldingExtenders() const {
