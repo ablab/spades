@@ -55,7 +55,7 @@ namespace barcode_index {
          * @return Number of barcodes contained by the edge
          */
         size_t GetNumberOfBarcodes(const EdgeId &edge) const override {
-            return mapper_->GetEntryHeads(edge).Size();
+            return mapper_->GetEntry(edge).Size();
         }
 
         /**
@@ -90,7 +90,7 @@ namespace barcode_index {
          * @return True if the edge contains the barcode
          */
         bool HasBarcode(const EdgeId &edge, const BarcodeId& barcode) const override {
-            return mapper_->GetEntryHeads(edge).has_barcode(barcode);
+            return mapper_->GetEntry(edge).has_barcode(barcode);
         }
 
         /**
@@ -313,7 +313,7 @@ namespace barcode_index {
         }
 
         const barcode_entry_t& GetEntry(const EdgeId& edge) const {
-            return mapper_->GetEntryHeads(edge);
+            return mapper_->GetEntry(edge);
         }
 
     };

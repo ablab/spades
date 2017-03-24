@@ -2,23 +2,12 @@
 
 #include <boost/unordered_map.hpp>
 #include <boost/dynamic_bitset.hpp>
-#include <memory>
-#include <utility>
-#include <fstream>
-#include <string>
-#include <unordered_set>
-#include <unordered_map>
 #include "io/reads/paired_readers.hpp"
 #include <common/assembly_graph/paths/mapping_path.hpp>
-#include <cassert>
-#include <common/modules/alignment/bwa_sequence_mapper.hpp>
-#include "common/modules/alignment/edge_index.hpp"
-#include "common/modules/alignment/kmer_mapper.hpp"
-#include "common/modules/alignment/sequence_mapper.hpp"
+#include <common/assembly_graph/core/graph.hpp>
 #include "common/pipeline/config_struct.hpp"
 #include "common/utils/indices/edge_index_builders.hpp"
 #include "common/utils/range.hpp"
-#include "barcode_index_fwd.hpp"
 
 using std::string;
 using std::istringstream;
@@ -26,15 +15,17 @@ using namespace omnigraph;
 
 namespace barcode_index {
     typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
-    typedef debruijn_graph::EdgeIndex<Graph> Index;
     typedef Graph::EdgeId EdgeId;
     typedef Graph::VertexId VertexId;
     typedef omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
-    typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
     typedef RtSeq Kmer;
-    typedef typename debruijn_graph::KmerFreeEdgeIndex<Graph, debruijn_graph::DefaultStoring> InnerIndex;
-    typedef typename InnerIndex::KeyWithHash KeyWithHash;
-    typedef typename debruijn_graph::EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
+
+    template<class barcode_entry_t>
+    class BarcodeIndexBuilder;
+
+    template <class barcode_entry_t>
+    class BarcodeIndexInfoExtractor;
+
 
     enum BarcodeLibraryType {
         TSLR,
@@ -162,20 +153,16 @@ namespace barcode_index {
     public:
     protected:
         const Graph& g_;
-        size_t barcodes_number_ = 0;
     public:
         AbstractBarcodeIndex (const Graph &g) :
-                g_(g), barcodes_number_(0) {}
+                g_(g) {}
         virtual ~AbstractBarcodeIndex() {}
-
-        virtual size_t GetNumberOfBarcodes() const = 0;
 
         //Number of entries in the barcode map. Currently equals to the number of edges.
         virtual size_t size() const = 0;
 
         //Number of barcodes on the beginning/end of the edge
-        virtual size_t GetHeadBarcodeNumber(const EdgeId& edge) const = 0;
-        virtual size_t GetTailBarcodeNumber(const EdgeId& edge) const = 0;
+        virtual size_t GetBarcodeNumber(const EdgeId &edge) const = 0;
 
         //fixme this should be moved to DataScanner
         virtual void ReadEntry(ifstream& fin, const EdgeId& edge) = 0;
@@ -198,15 +185,14 @@ namespace barcode_index {
      * The edge contains the cloud if there is a read barcoded by cloud's barcode which is aligned to the edge.
      * Info example: FrameBarcodeInfo
      */
-    template <class barcode_entry_t>
+    template <class EdgeEntryT>
     class BarcodeIndex : public AbstractBarcodeIndex {
-    friend class BarcodeIndexBuilder<barcode_entry_t>;
-    friend class BarcodeIndexInfoExtractor<barcode_entry_t>;
+    friend class BarcodeIndexBuilder<EdgeEntryT>;
+    friend class BarcodeIndexInfoExtractor<EdgeEntryT>;
     friend class BarcodeStatisticsCollector;
     protected:
-        typedef std::unordered_map <EdgeId, barcode_entry_t> barcode_map_t;
+        typedef std::unordered_map <EdgeId, EdgeEntryT> barcode_map_t;
         using AbstractBarcodeIndex::g_;
-        using AbstractBarcodeIndex::barcodes_number_;
         barcode_map_t edge_to_entry_;
 
     public:
@@ -222,13 +208,9 @@ namespace barcode_index {
         void InitialFillMap() {
             edge_it_helper helper(g_);
             for (auto it = helper.begin(); it != helper.end(); ++it) {
-                barcode_entry_t set(*it);
+                EdgeEntryT set(*it);
                 edge_to_entry_.insert({*it, set});
             }
-        }
-
-        size_t GetNumberOfBarcodes() const override {
-            return barcodes_number_;
         }
 
         size_t size() const {
@@ -243,13 +225,8 @@ namespace barcode_index {
             return edge_to_entry_.cend();
         }
 
-
-        size_t GetHeadBarcodeNumber(const EdgeId& edge) const override {
-            return GetEntryHeads(edge).Size();
-        }
-
-        size_t GetTailBarcodeNumber(const EdgeId& edge) const override {
-            return GetEntryTails(edge).Size();
+        size_t GetBarcodeNumber(const EdgeId &edge) const override {
+            return GetEntry(edge).Size();
         }
 
         bool IsEmpty() override {
@@ -270,7 +247,7 @@ namespace barcode_index {
 
         void WriteEntry (ofstream& fout, const EdgeId& edge) override {
             fout << g_.int_id(edge) << std::endl;
-            GetEntryHeads(edge).Serialize(fout);
+            GetEntry(edge).Serialize(fout);
         }
 
         typename barcode_map_t::const_iterator GetEntryTailsIterator(const EdgeId& edge) const {
@@ -281,12 +258,8 @@ namespace barcode_index {
             return edge_to_entry_.find(edge);
         }
 
-        const barcode_entry_t& GetEntryHeads(const EdgeId& edge) const {
+        const EdgeEntryT& GetEntry(const EdgeId &edge) const {
             return edge_to_entry_.at(edge);
-        }
-
-        const barcode_entry_t& GetEntryTails(const EdgeId& edge) const {
-            return edge_to_entry_.at(g_.conjugate(edge));
         }
     };
 

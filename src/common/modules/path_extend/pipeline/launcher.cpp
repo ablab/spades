@@ -354,7 +354,7 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
 }
 
 Extenders PathExtendLauncher::ConstructReadCloudExtender(const ExtendersGenerator& generator) {
-    return generator.MakeReadCloudExtender(unique_data_.unique_read_cloud_storage_);
+    return generator.MakeReadCloudExtenders(unique_data_.unique_read_cloud_storage_);
 }
 
 void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_threshold) {
@@ -478,6 +478,8 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             gp_.barcode_mapper_ptr->Filter(initial_abundancy_threshold, initial_gap_threshold);
             INFO("Finished filtering");
             INFO("Average barcode coverage after filtering: " << extractor.AverageBarcodeCoverage());
+
+            //Creating read cloud unique storage
             INFO("Unique edge length: " << unique_edge_length);
             ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp_, unique_edge_length, unique_data_.unique_variation_);
             read_cloud_unique_edge_analyzer.FillUniqueEdgeStorage(unique_data_.unique_read_cloud_storage_);

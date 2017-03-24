@@ -17,7 +17,7 @@
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "read_cloud_path_extend/bounded_dijkstra.hpp"
+#include "read_cloud_path_extend/paired_dijkstra.hpp"
 
 #include <cmath>
 
