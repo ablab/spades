@@ -745,7 +745,7 @@ public:
               max_repeat_len_(max_repeat_length),
               detect_repeats_online_(detect_repeats_online) {
         extenders_ = pes;
-        used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage(unique));
+        used_storage_ = make_shared<UsedUniqueStorage>(unique);
         for (auto ex: extenders_) {
             ex->AddUniqueEdgeStorage(used_storage_);
         }
@@ -1040,7 +1040,7 @@ public:
                        bool use_short_loop_cov_resolver) :
         LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, use_short_loop_cov_resolver, is),
         extensionChooser_(ec) {
-            used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage(ScaffoldingUniqueEdgeStorage()));
+            used_storage_ = make_shared<UsedUniqueStorage>(ScaffoldingUniqueEdgeStorage());
         }
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
