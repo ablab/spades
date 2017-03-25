@@ -415,7 +415,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     }
 
     PathPolisher polisher(gp_, gap_closers);
-    polisher.PolishPaths(paths, result);
+    result = polisher.PolishPaths(paths);
     result.SortByLength();
     INFO("Gap closing completed")
 }

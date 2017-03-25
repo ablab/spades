@@ -122,8 +122,7 @@ public:
             gp_(gp), gap_closers_(gap_closers) {
     }
 
-
-    void PolishPaths(const PathContainer &paths, PathContainer &result);
+    PathContainer PolishPaths(const PathContainer &paths);
 };
 
 

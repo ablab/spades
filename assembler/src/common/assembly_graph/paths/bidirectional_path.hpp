@@ -864,7 +864,6 @@ using BidirectionalPathMap = map<BidirectionalPath*, Value, PathComparator>;
 typedef std::multiset <BidirectionalPath *, PathComparator> BidirectionalPathMultiset;
 
 class PathContainer {
-
 public:
 
     typedef std::vector<PathPair> PathContainerT;
@@ -897,6 +896,12 @@ public:
 
     PathContainer() {
     }
+
+    PathContainer(const PathContainer&) = delete;
+    PathContainer& operator=(const PathContainer&) = delete;
+
+    PathContainer(PathContainer&&) = default;
+    PathContainer& operator=(PathContainer&&) = default;
 
     BidirectionalPath& operator[](size_t index) const {
         return *(data_[index].first);
