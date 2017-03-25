@@ -266,6 +266,18 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
                                        false /*use short loop coverage resolver*/);
 }
 
+//FIXME do we need ExtenderTriplets story here?
+//FIXME integrate with MakeBasicExtenders
+Extenders ExtendersGenerator::MakePEExtenders() const {
+    Extenders result;
+    for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
+        const auto &lib = dataset_info_.reads[lib_index];
+        if (support_.IsForPEExtender(lib)) {
+            result.push_back(MakePEExtender(lib_index, false));
+        }
+    }
+    return result;
+}
 
 void ExtendersGenerator::PrintExtenders(const Extenders &extenders) const {
     DEBUG("Extenders in vector:");

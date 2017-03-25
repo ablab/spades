@@ -71,9 +71,11 @@ public:
 
     Extenders MakeCoverageExtenders() const;
 
-    shared_ptr<SimpleExtender> MakePEExtender(size_t lib_index, bool investigate_loops) const;
+    Extenders MakePEExtenders() const;
 
 private:
+
+    shared_ptr<SimpleExtender> MakePEExtender(size_t lib_index, bool investigate_loops) const;
 
     shared_ptr<ExtensionChooser> MakeLongReadsExtensionChooser(size_t lib_index, const GraphCoverageMap& read_paths_cov_map) const;
 
