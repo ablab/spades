@@ -234,13 +234,19 @@ void BWAIndex::Init() {
         free(aln.cigar);
 #endif
 
+omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetShortMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
+    omnigraph::MappingPath<debruijn_graph::EdgeId> res;
+    VERIFY(0 && "Not implemented yet");
+
+    return res;
+}
+
 omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
 
     // Turn read length into k-mers
     size_t read_length = seq.length();
-    if (read_length < g_.k())
-        return res;
+    VERIFY(read_length >= g_.k());
     read_length = read_length - g_.k();
 
     for (size_t i = 0; i < ar.n; ++i) {
@@ -279,8 +285,11 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
     std::string seq = sequence.str();
     mem_alnreg_v ar = mem_align1(memopt_.get(), idx_->bwt, idx_->bns, idx_->pac,
                                  int(seq.length()), seq.data());
-    // FIXME: Add special case for short reads (shorter than k)
-    res = GetMappingPath(ar, seq);
+    if (seq.length() < g_.k())
+        res = GetShortMappingPath(ar, seq);
+    else
+        res = GetMappingPath(ar, seq);
+
     free(ar.a);
 
     return res;

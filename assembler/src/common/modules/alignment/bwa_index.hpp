@@ -34,6 +34,7 @@ class BWAIndex {
   private:
     void Init();
     omnigraph::MappingPath<debruijn_graph::EdgeId> GetMappingPath(const mem_alnreg_v&, const std::string &) const;
+    omnigraph::MappingPath<debruijn_graph::EdgeId> GetShortMappingPath(const mem_alnreg_v&, const std::string &) const;
 
     const debruijn_graph::Graph& g_;
 
