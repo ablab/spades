@@ -215,6 +215,25 @@ void BWAIndex::Init() {
     idx_->pac = fwd_pac;
 }
 
+#if 0
+        fprintf(stderr, "%zu: [%lld, %lld)\t[%d, %d) %c %d %s %ld %d\n",
+                i,
+                pos, pos + a.re - a.rb, a.qb, a.qe,
+                "+-"[is_rev], a.rid,
+                idx_->bns->anns[a.rid].name, g_.int_id(ids_[a.rid]), a.secondary);
+#endif
+
+#if 0
+        mem_aln_t aln = mem_reg2aln(memopt_.get(), idx_->bns, idx_->pac, seq.length(), seq.c_str(), &a);
+
+        // print alignment
+        fprintf(stderr, "\t%c\t%s\t%ld %ld %ld\t%d\t", "+-"[aln.is_rev], idx_->bns->anns[aln.rid].name, aln.rid, g_.int_id(ids_[aln.rid]), (long)aln.pos, aln.mapq);
+        for (int k = 0; k < aln.n_cigar; ++k) // print CIGAR
+            fprintf(stderr, "%d%c", aln.cigar[k]>>4, "MIDSH"[aln.cigar[k]&0xf]);
+        fprintf(stderr, "\t%d\n", aln.NM); // print edit distance
+        free(aln.cigar);
+#endif
+
 omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
 
@@ -233,14 +252,6 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
         int is_rev = 0;
         size_t pos = bns_depos(idx_->bns, a.rb < idx_->bns->l_pac? a.rb : a.re - 1, &is_rev) - idx_->bns->anns[a.rid].offset;
 
-#if 0
-        fprintf(stderr, "%zu: [%lld, %lld)\t[%d, %d) %c %d %s %ld %d\n",
-                i,
-                pos, pos + a.re - a.rb, a.qb, a.qe,
-                "+-"[is_rev], a.rid,
-                idx_->bns->anns[a.rid].name, g_.int_id(ids_[a.rid]), a.secondary);
-#endif
-
         // Reduce the range to kmer-based
         size_t initial_range_end = a.qe - g_.k();
         size_t mapping_range_end = pos + a.re - a.rb - g_.k();
@@ -255,17 +266,6 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
                             Range(pos,  mapping_range_end).Invert(g_.length(ids_[a.rid])) });
 
         }
-
-#if 0
-        mem_aln_t aln = mem_reg2aln(memopt_.get(), idx_->bns, idx_->pac, seq.length(), seq.c_str(), &a);
-
-        // print alignment
-        fprintf(stderr, "\t%c\t%s\t%ld %ld %ld\t%d\t", "+-"[aln.is_rev], idx_->bns->anns[aln.rid].name, aln.rid, g_.int_id(ids_[aln.rid]), (long)aln.pos, aln.mapq);
-        for (int k = 0; k < aln.n_cigar; ++k) // print CIGAR
-            fprintf(stderr, "%d%c", aln.cigar[k]>>4, "MIDSH"[aln.cigar[k]&0xf]);
-        fprintf(stderr, "\t%d\n", aln.NM); // print edit distance
-        free(aln.cigar);
-#endif
     }
 
     return res;
