@@ -40,16 +40,20 @@ with open(args.name + "_summary.tsv", "w") as out_file:
 
 # (Optional) Draw GF heatmap
 if args.heatmap:
-    import matplotlib
-    # Force matplotlib to not use any Xwindows backend.
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    #gfs = gfs.pivot("reference", "cluster", "GF (%)")
-    plot = sns.heatmap(gfs, square=True)
-    fig = plot.get_figure()
-    fig.savefig(args.name + "_gf.png", bbox_inches="tight")
-    plt.gcf().clear()
+    try:
+        import matplotlib
+        # Force matplotlib to not use any Xwindows backend.
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
+        plot = sns.heatmap(gfs, square=True)
+        fig = plot.get_figure()
+        fig.savefig(args.name + "_gf.png", bbox_inches="tight")
+        plt.gcf().clear()
+    except:
+        print("Can't import matplotlib and/or seaborn; heatmap drawing will be disabled")
+        args.heatmap = False
 
 # (Optional) Write summary for problematic references
 if args.problematic:
@@ -80,11 +84,8 @@ if args.problematic:
             else:
                 good_bins.append(bin)
     if args.heatmap:
-        import matplotlib
-        # Force matplotlib to not use any Xwindows backend.
-        matplotlib.use('Agg')
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        plot = sns.heatmap(gfs.drop(good_refs, axis=0).drop(good_bins, axis=1), square=True)
-        fig = plot.get_figure()
-        fig.savefig(args.name + "_bad.png", bbox_inches="tight")
+        bad_table = gfs.drop(good_refs, axis=0).drop(good_bins, axis=1)
+        if bad_table.size:
+            plot = sns.heatmap(bad_table, square=True)
+            fig = plot.get_figure()
+            fig.savefig(args.name + "_bad.png", bbox_inches="tight")
