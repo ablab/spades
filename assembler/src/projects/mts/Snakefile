@@ -101,17 +101,22 @@ rule combine_splits:
     message: "Combine splitted contigs"
     shell:   "{SCRIPTS}/combine_contigs.py -r {input} > {output}"
 
-#FIXME what does gt1000 mean?
 rule concoct:
     input:   contigs=rules.combine_splits.output[0], profiles="binning/concoct/profiles.in"
-    output:  out="binning/concoct/clustering_gt1000.csv"
+    output:  "binning/concoct/clustering_gt{}.csv".format(MIN_CONTIG_LENGTH)
     params:  "binning/concoct"
     message: "Running CONCOCT clustering"
     shell:   "mkdir -p {params} && "
              "set +u; source activate concoct_env; set -u && "
              "concoct --composition_file {input.contigs} --coverage_file {input.profiles} -b {params}"
 
-binning_inputs = {"canopy": rules.canopy.output.out, "concoct": rules.concoct.output.out}
+rule concoct_post:
+    input:   rules.concoct.input.profiles, rules.concoct.output[0]
+    output:  "binning/concoct/bins.prof"
+    message: "Deriving bin profiles"
+    shell:   "{SCRIPTS}/bin_profiles {input} > {output}"
+
+binning_inputs = {"canopy": rules.canopy.output.out, "concoct": rules.concoct.output[0]}
 
 rule binning_post:
     input:   binning_inputs[BINNER]
@@ -136,10 +141,9 @@ rule read_binning:
           " -n {params.group} -l {input.left} -r {input.right}"
           " -a {input.ann} -f {params.splits} -o binning -d {params.out} >{log} 2>&1"
 
-#TODO: bin profiles for CONCOCT
 rule choose_samples:
     input:   binned=expand("propagation/{sample}_edges.ann", sample=GROUPS),
-             prof=rules.canopy.output.prof
+             prof="binning/{}/bins.prof".format(BINNER)
     output:  dynamic("binning/{cag}/left.fastq"),
              dynamic("binning/{cag}/right.fastq")
     log:     "binning/choose_samples.log"

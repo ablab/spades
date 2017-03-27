@@ -29,6 +29,7 @@ parser.add_argument("--config", "-c", type=str, default="", help="config.yaml to
 parser.add_argument("--stats", "-s", action="store_true", help="Calculate stats (when the REFS parameter in config.yaml is provided)")
 parser.add_argument("--reuse-assemblies", type=str, help="Directory with existing assemblies to reuse")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
+parser.add_argument("--alt", action="store_true", help=argparse.SUPPRESS)
 
 args = parser.parse_args()
 
@@ -65,11 +66,18 @@ with cd(exec_dir):
         if not os.path.exists(assembly_dir):
             os.symlink(args.reuse_assemblies, assembly_dir)
 
-    call_snake()
+    if args.alt:
+        call_snake(["--snakefile", "Alt.snake"])
+    else:
+        call_snake()
 
     if args.stats:
-        print("Step #2a - Assembly statistics")
-        call_snake(["--snakefile", "Stats.snake", "stats_assembly"])
+        if args.alt:
+            print("Step 2 - Assembly statistics")
+            call_snake(["--snakefile", "AltStats.snake"])
+        else:
+            print("Step #2a - Assembly statistics")
+            call_snake(["--snakefile", "Stats.snake", "stats_assembly"])
 
-        print("Step #2b - Reassembly statistics")
-        call_snake(["--snakefile", "Stats.snake", "stats_reassembly"])
+            print("Step #2b - Reassembly statistics")
+            call_snake(["--snakefile", "Stats.snake", "stats_reassembly"])

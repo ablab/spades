@@ -17,7 +17,12 @@ except:
         def load_pairs():
             for line in input:
                 params = line.split(":", 2)
-                yield (params[0].strip(), params[1].strip())
+                if len(params) < 2:
+                    continue
+                val = params[1].strip()
+                if val[0] == '\"' and val[-1] == '\"':
+                    val = val[1:-1]
+                yield (params[0].strip(), val)
         return dict(load_pairs())
     def dump_dict(dict, output):
         for k, v in dict.items():

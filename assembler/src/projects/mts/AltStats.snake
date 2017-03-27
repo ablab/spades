@@ -11,4 +11,4 @@ register_input("concoct", "binning/concoct/cluster.{frag}.fa", CAGS)
 
 # Run this AFTER 'all'
 rule stats_all:
-    input:   "stats/summary/summary_{}.tsv".format(BINNER)
+    input:   expand(rules.gather_stats.output[0], stage=BINNER)
