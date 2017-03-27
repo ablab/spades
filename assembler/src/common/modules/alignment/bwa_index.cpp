@@ -13,9 +13,6 @@
 #include <string>
 #include <memory>
 
-// all of the bwa and kseq stuff is in unaligned sequence
-// best way I had to keep from clashes with klib macros
-
 #define MEM_F_SOFTCLIP  0x200
 
 #define _set_pac(pac, l, c) ((pac)[(l)>>2] |= (c)<<((~(l)&3)<<1))
