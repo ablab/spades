@@ -15,6 +15,10 @@ typedef struct bwaidx_s bwaidx_t;
 
 struct mem_opt_s;
 typedef struct mem_opt_s mem_opt_t;
+
+struct mem_alnreg_s;
+typedef struct mem_alnreg_s mem_alnreg_t;
+typedef struct mem_alnreg_vs mem_alnreg_v;
 };
 
 namespace alignment {
@@ -29,6 +33,7 @@ class BWAIndex {
     omnigraph::MappingPath<debruijn_graph::EdgeId> AlignSequence(const Sequence &sequence) const;
   private:
     void Init();
+    omnigraph::MappingPath<debruijn_graph::EdgeId> GetMappingPath(const mem_alnreg_v&, const std::string &) const;
 
     const debruijn_graph::Graph& g_;
 
@@ -40,5 +45,5 @@ class BWAIndex {
 
     std::vector<debruijn_graph::EdgeId> ids_;
 };
-    
+
 }

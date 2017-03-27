@@ -54,7 +54,7 @@ typedef struct mem_opt_s {
 	int8_t mat[25];         // scoring matrix; mat[0] == 0 if unset
 } mem_opt_t;
 
-typedef struct {
+typedef struct mem_alnreg_s {
 	int64_t rb, re; // [rb,re): reference sequence in the alignment
 	int qb, qe;     // [qb,qe): query sequence in the alignment
 	int rid;        // reference seq ID
@@ -74,7 +74,7 @@ typedef struct {
 	uint64_t hash;
 } mem_alnreg_t;
 
-typedef struct { size_t n, m; mem_alnreg_t *a; } mem_alnreg_v;
+typedef struct mem_alnreg_vs { size_t n, m; mem_alnreg_t *a; } mem_alnreg_v;
 
 typedef struct {
 	int low, high;   // lower and upper bounds within which a read pair is considered to be properly paired

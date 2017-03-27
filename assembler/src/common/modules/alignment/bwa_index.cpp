@@ -215,25 +215,21 @@ void BWAIndex::Init() {
     idx_->pac = fwd_pac;
 }
 
-omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Sequence &sequence) const {
+omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
 
-    if (!idx_) return res;
-
     // Turn read length into k-mers
-    std::string seq = sequence.str();
     size_t read_length = seq.length();
     if (read_length < g_.k())
         return res;
     read_length = read_length - g_.k();
 
-    mem_alnreg_v ar = mem_align1(memopt_.get(), idx_->bwt, idx_->bns, idx_->pac,
-                                 int(seq.length()), seq.data());
     for (size_t i = 0; i < ar.n; ++i) {
         const mem_alnreg_t &a = ar.a[i];
         if (a.secondary >= 0) continue; // skip secondary alignments
         if (size_t(a.qe - a.qb) < g_.k()) continue; // skip short alignments
         if (size_t(a.re - a.rb) < g_.k()) continue;
+
         int is_rev = 0;
         size_t pos = bns_depos(idx_->bns, a.rb < idx_->bns->l_pac? a.rb : a.re - 1, &is_rev) - idx_->bns->anns[a.rid].offset;
 
@@ -256,7 +252,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
         } else {
             res.push_back(g_.conjugate(ids_[a.rid]),
                           { Range(a.qb, initial_range_end).Invert(read_length),
-                            Range(pos,  mapping_range_end ).Invert(g_.length(ids_[a.rid])) });
+                            Range(pos,  mapping_range_end).Invert(g_.length(ids_[a.rid])) });
 
         }
 
@@ -270,8 +266,21 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
         fprintf(stderr, "\t%d\n", aln.NM); // print edit distance
         free(aln.cigar);
 #endif
-
     }
+
+    return res;
+}
+
+omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Sequence &sequence) const {
+    omnigraph::MappingPath<debruijn_graph::EdgeId> res;
+
+    if (!idx_) return res;
+
+    std::string seq = sequence.str();
+    mem_alnreg_v ar = mem_align1(memopt_.get(), idx_->bwt, idx_->bns, idx_->pac,
+                                 int(seq.length()), seq.data());
+    // FIXME: Add special case for short reads (shorter than k)
+    res = GetMappingPath(ar, seq);
     free(ar.a);
 
     return res;
