@@ -70,7 +70,6 @@ namespace barcode_index {
                     INFO("Processed " << i << " barcodes from " << lib_vec.size() << " (" << i * 100 / lib_vec.size()
                                       << "%)");
                 }
-                ++mapper_->barcodes_number_;
             }
         }
 
@@ -154,7 +153,6 @@ namespace barcode_index {
                     }
                     ++global_counter;
                 }
-                ++mapper_->barcodes_number_;
             }
         }
 

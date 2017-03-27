@@ -1,44 +1,21 @@
 #include <common/assembly_graph/graph_support/scaff_supplementary.hpp>
 #include <common/modules/path_extend/pipeline/launch_support.hpp>
+#include <common/modules/path_extend/pipeline/extenders_logic.hpp>
 #include "projects/read_cloud_statistics/read_cloud_statistics_extractor.hpp"
 
 using namespace path_extend;
 
 namespace debruijn_graph {
-    //fixme code duplication with extenders_logic
-    path_extend::TenXExtensionChecker ConstructTenXChecker(const path_extend::ScaffoldingUniqueEdgeStorage& storage,
-                                                           const conj_graph_pack& gp) {
-        auto tslr_resolver_params = cfg::get().ts_res;
-        size_t distance_bound = tslr_resolver_params.distance_bound;
-        const size_t fragment_length = tslr_resolver_params.fragment_len;
-        barcode_index::BarcodeLibraryType barcode_lib = barcode_index::GetLibType(tslr_resolver_params.library_type);
-        VERIFY(fragment_length > distance_bound);
-        VERIFY_MSG(barcode_lib == barcode_index::BarcodeLibraryType::TenX, "Unknown library type.")
-        INFO(storage.size() << " unique edges.");
-        typedef barcode_index::AbstractBarcodeIndexInfoExtractor abstract_extractor_t;
 
-        auto tenx_resolver_stats = cfg::get().ts_res.tenx;
-        const size_t absolute_barcode_threshold = tenx_resolver_stats.absolute_barcode_threshold;
-        const size_t tail_threshold = tenx_resolver_stats.tail_threshold;
-        const size_t max_initial_candidates = tenx_resolver_stats.max_initial_candidates;
-        const size_t internal_gap_threshold = tenx_resolver_stats.internal_gap_threshold;
-        const size_t initial_abundancy_threshold = tenx_resolver_stats.initial_abundancy_threshold;
-        const size_t middle_abundancy_threshold = tenx_resolver_stats.middle_abundancy_threshold;
-
-        typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
-
-        auto tenx_extractor_ptr = make_shared<tenx_extractor_t>(gp.barcode_mapper_ptr, gp.g);
-        shared_ptr<abstract_extractor_t> abstract_extractor_ptr =
-                std::static_pointer_cast<abstract_extractor_t>(tenx_extractor_ptr);
-
-        TenXExtensionChooser extension_chooser = TenXExtensionChooser(gp, abstract_extractor_ptr, fragment_length,
-                                                                      distance_bound,
-                                                                      storage, absolute_barcode_threshold,
-                                                                      tail_threshold, max_initial_candidates,
-                                                                      internal_gap_threshold, initial_abundancy_threshold,
-                                                                      middle_abundancy_threshold);
-        TenXExtensionChecker checker = TenXExtensionChecker(extension_chooser, gp, storage);
-        return checker;
+    PathExtendParamsContainer GetPEParams() {
+        path_extend::PathExtendParamsContainer params(cfg::get().ds,
+                                                      cfg::get().pe_params,
+                                                      cfg::get().output_dir,
+                                                      cfg::get().mode,
+                                                      cfg::get().uneven_depth,
+                                                      cfg::get().avoid_rc_connections,
+                                                      cfg::get().use_scaffolder);
+        return params;
     }
 
     BarcodeStatisticsCounter ConstructStatisticsCounter(const conj_graph_pack& gp) {
@@ -47,35 +24,51 @@ namespace debruijn_graph {
         return BarcodeStatisticsCounter(tenx_extractor_ptr, gp);
     }
 
-    ScaffoldingUniqueEdgeStorage GetMainStorage(const conj_graph_pack& gp) {
-        path_extend::PathExtendParamsContainer params(cfg::get().ds,
-                                                      cfg::get().pe_params,
-                                                      cfg::get().output_dir,
-                                                      cfg::get().mode,
-                                                      cfg::get().uneven_depth,
-                                                      cfg::get().avoid_rc_connections,
-                                                      cfg::get().use_scaffolder);
-        ScaffoldingUniqueEdgeStorage main_unique_storage;
-        size_t min_unique_length = params.pset.scaffolding2015.unique_length_upper_bound;
-        double unique_variation =  params.pset.uniqueness_analyser.nonuniform_coverage_variation;
-        ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, min_unique_length, unique_variation);
-        unique_edge_analyzer.FillUniqueEdgeStorage(main_unique_storage);
-        return main_unique_storage;
+    ScaffoldingUniqueEdgeStorage GetUniqueStorage(const conj_graph_pack& gp, const PathExtendParamsContainer& params) {
+        const size_t unique_edge_length = cfg::get().ts_res.edge_length_threshold;
+        double unique_variation = params.pset.uniqueness_analyser.unique_coverage_variation;
+        ScaffoldingUniqueEdgeStorage read_cloud_storage;
+        ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp, unique_edge_length, unique_variation);
+        read_cloud_unique_edge_analyzer.FillUniqueEdgeStorage(read_cloud_storage);
+        return read_cloud_storage;
     }
 
+    shared_ptr<ExtensionChooser> ConstructExtensionChooser(const conj_graph_pack& gp,
+                                                           const PathExtendParamsContainer& params,
+                                                           const ScaffoldingUniqueEdgeStorage& read_cloud_storage) {
+        auto dataset_info = cfg::get().ds;
+        GraphCoverageMap cover_map(gp.g);
+        PELaunchSupport support(dataset_info, params);
+        path_extend::ExtendersGenerator generator(dataset_info, params, gp, cover_map, support);
+        auto read_cloud_extenders = generator.MakeReadCloudExtenders(read_cloud_storage);
+        VERIFY_MSG(read_cloud_extenders.size() > 0, "Read cloud libraries were not found");
+        VERIFY_MSG(read_cloud_extenders.size() < 2, "Multiple read cloud libraries are not supported");
+        auto path_extender = std::dynamic_pointer_cast<ReadCloudExtender>(read_cloud_extenders[0]);
+        shared_ptr<ExtensionChooser> extension_chooser(path_extender->GetExtensionChooser());
+        return extension_chooser;
+    }
+
+    path_extend::TenXExtensionChecker ConstructTenXChecker(const conj_graph_pack& gp) {
+        auto pe_params = GetPEParams();
+        auto read_cloud_storage = GetUniqueStorage(gp, pe_params);
+        auto extension_chooser_ptr = ConstructExtensionChooser(gp, pe_params, read_cloud_storage);
+        shared_ptr<TenXExtensionChooser> read_cloud_extension_chooser_ptr =
+                std::dynamic_pointer_cast<TenXExtensionChooser> (extension_chooser_ptr);
+        TenXExtensionChecker checker(*read_cloud_extension_chooser_ptr, gp, read_cloud_storage);
+        return checker;
+    }
 
     void ReadCloudStatisticsStage::run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
         INFO("Statistics counter started...");
         INFO("Library type: " << cfg::get().ts_res.library_type);
-        ScaffoldingUniqueEdgeStorage storage = GetMainStorage(graph_pack);
-        TenXExtensionChecker checker = ConstructTenXChecker(storage, graph_pack);
+        TenXExtensionChecker checker = ConstructTenXChecker(graph_pack);
         INFO("10X checker constructed.");
         BarcodeStatisticsCounter counter = ConstructStatisticsCounter(graph_pack);
         INFO("Statistics counter constructed.");
 
-        INFO("Basic stats: ");
-        counter.FillStats();
-        counter.PrintStats(cfg::get().output_dir + "barcode_stats");
+//        INFO("Basic stats: ");
+//        counter.FillStats();
+//        counter.PrintStats(cfg::get().output_dir + "barcode_stats");
 
         INFO("Resolver stats: ");
         checker.CheckChooser(cfg::get().ts_res.genome_path);

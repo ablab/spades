@@ -137,7 +137,7 @@ namespace omnigraph {
     typedef Dijkstra<Graph, UniqueDijkstraSettings> UniqueDijkstra;
 
     static UniqueDijkstra CreateUniqueDijkstra(const Graph &graph, size_t length_bound,
-                                               const path_extend::ScaffoldingUniqueEdgeStorage unique_storage,
+                                               const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
                                                size_t max_vertex_number = -1ul) {
         return UniqueDijkstra(graph,
                               UniqueDijkstraSettings(

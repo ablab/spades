@@ -1340,30 +1340,19 @@ public:
         if (last_unique.second == -1) {
             return result;
         }
-        EdgeContainer candidates = GetInitialCandidates(last_unique.first, path);
-
         DEBUG("At edge " << path.Back().int_id());
         DEBUG("Conjugate: " << g_.conjugate(path.Back()).int_id());
         DEBUG("Last unique: " << last_unique.first.int_id());
         DEBUG("Length: " << g_.length(last_unique.first));
         DEBUG("Barcodes: " << barcode_extractor_ptr_->GetNumberOfBarcodes(last_unique.first));
 
+        EdgeContainer candidates = GetInitialCandidates(last_unique.first, path);
+
         DEBUG("Searching for next unique edge.")
         result = FindNextUniqueEdge(last_unique.first, candidates);
         DEBUG("Searching finished.")
 
         DEBUG("next unique edges found, there are " << result.size() << " of them");
-//Backward check. We connected edges iff they are best continuation to each other.
-//        if (result.size() == 1) {
-//            //We should reduce gap size with length of the edges that came after last unique.
-//            result[0].d_ -= int (path.LengthAt(last_unique.second) - g_.length(last_unique.first));
-//            DEBUG("For edge " << g_.int_id(last_unique.first) << " unique next edge "<< result[0].e_ <<" found, doing backwards check ");
-//            EdgeContainer backwards_check = FindNextUniqueEdge(g_.conjugate(result[0].e_));
-//            if ((backwards_check.size() != 1) || (g_.conjugate(backwards_check[0].e_) != last_unique.first)) {
-//                DEBUG("Backward check failed")
-//                result.clear();
-//            }
-//        }
         return result;
     }
 
@@ -1398,10 +1387,9 @@ protected:
     virtual EdgeContainer GetInitialCandidates(EdgeId last_edge, const BidirectionalPath& path) const {
         ExtensionChooser::EdgeContainer candidates;
         vector<EdgeId> initial_candidates;
+        DEBUG("Creating dijkstra");
         auto dij = omnigraph::CreateUniqueDijkstra(g_, distance_bound_, unique_storage_);
-//        omnigraph::PairedDijkstra dijkstra =
-//                omnigraph::CreatePairedDijkstra(g_, distance_bound_, paired_connection_condition_);
-//        auto dijkstra = omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, distance_bound_);
+        DEBUG("dijkstra started");
         dij.Run(g_.EdgeEnd(last_edge));
         DEBUG("Dijkstra finished");
 

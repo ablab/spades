@@ -4,7 +4,7 @@
 
 namespace path_extend {
     class TenXExtensionChecker {
-        TenXExtensionChooser chooser_;
+        const TenXExtensionChooser chooser_;
         const conj_graph_pack& gp_;
         const ScaffoldingUniqueEdgeStorage storage_;
         vector<omnigraph::MappingPath<EdgeId>> reference_paths_;
@@ -90,6 +90,7 @@ namespace path_extend {
 
         void CheckInitialFilter() {
             InitialStats stats;
+            INFO("Distance bound: " << chooser_.distance_bound_);
             for (const auto& path: reference_paths_) {
                 size_t path_length = 0;
                 if (path.size() > 0) {
