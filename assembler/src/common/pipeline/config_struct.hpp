@@ -501,9 +501,7 @@ struct debruijn_config {
     std::string output_base;
     std::string output_dir;
     std::string tmp_dir;
-    std::string output_suffix;
     std::string output_saves;
-    std::string final_contigs_file;
     std::string log_filename;
     std::string series_analysis;
 
@@ -558,7 +556,6 @@ struct debruijn_config {
     size_t buffer_size;
     std::string temp_bin_reads_dir;
     std::string temp_bin_reads_path;
-    std::string temp_bin_reads_info;
     std::string paired_read_prefix;
     std::string single_read_prefix;
 
