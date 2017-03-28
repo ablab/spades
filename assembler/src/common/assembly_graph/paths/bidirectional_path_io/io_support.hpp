@@ -29,35 +29,14 @@ struct IOContigGreater
     }
 };
 
-class IOContigStorage {
-private:
+class ScaffoldSequenceMaker {
     const Graph &g_;
-    size_t k_;
-    vector<IOContig> storage_;
-
-    string ToString(const BidirectionalPath& path) const;
+    const size_t k_;
 public:
-
-    IOContigStorage(const Graph &g, const PathContainer &paths):
-        g_(g),
-        k_(g.k()),
-        storage_() {
-
-        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            BidirectionalPath* path = iter.get();
-            if (path->Length() <= 0)
-                continue;
-            string path_string = ToString(*path);
-            if (path_string.length() >= g.k()) {
-                storage_.emplace_back(path_string, path);
-            }
-        }
-        std::sort(storage_.begin(), storage_.end(), IOContigGreater());
+    ScaffoldSequenceMaker(const Graph& g) : g_(g), k_(g_.k()) {
     }
 
-    const vector<IOContig>& Storage() const {
-        return storage_;
-    }
+    string MakeSequence(const BidirectionalPath &scaffold) const;
 };
 
 //Finds common long edges in paths and joins them into

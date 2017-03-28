@@ -26,7 +26,20 @@ void path_extend::ContigWriter::OutputPaths(const PathContainer &paths,
                                                   const string &filename_base,
                                                   bool write_fastg) const {
     name_generator_->Preprocess(paths);
-    IOContigStorage storage(g_, paths);
+    vector<IOContig> storage;
+
+    ScaffoldSequenceMaker scaffold_maker(g_);
+    for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+        BidirectionalPath* path = iter.get();
+        if (path->Length() <= 0)
+            continue;
+        string path_string = scaffold_maker.MakeSequence(*path);
+        if (path_string.length() >= g_.k()) {
+            storage.emplace_back(path_string, path);
+        }
+    }
+    //sorting by length
+    std::sort(storage.begin(), storage.end(), IOContigGreater());
 
     INFO("Writing contigs to " << filename_base);
     io::osequencestream_simple oss(filename_base + ".fasta");
@@ -35,7 +48,7 @@ void path_extend::ContigWriter::OutputPaths(const PathContainer &paths,
         os_fastg.open((filename_base + ".paths").c_str());
 
     size_t i = 0;
-    for (const auto& precontig : storage.Storage()) {
+    for (const auto& precontig : storage) {
         ++i;
         std::string contig_id = name_generator_->MakeContigName(i, precontig);
         oss.set_header(contig_id);
@@ -53,7 +66,6 @@ void path_extend::ContigWriter::OutputPaths(const PathContainer &paths,
         os_fastg.close();
     DEBUG("Contigs written");
 }
-
 
 void path_extend::PathInfoWriter::WritePaths(const PathContainer &paths, const string &filename) const {
     std::ofstream oss(filename.c_str());

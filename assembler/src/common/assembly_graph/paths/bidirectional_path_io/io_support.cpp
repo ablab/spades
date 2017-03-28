@@ -84,7 +84,7 @@ void path_extend::TranscriptToGeneJoiner::Construct(const PathContainer &paths) 
     }
 }
 
-std::string path_extend::IOContigStorage::ToString(const BidirectionalPath &path) const {
+std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const BidirectionalPath &path) const {
     //TODO what is it and why is it here?
     if (path.IsInterstrandBulge() && path.Size() == 1) {
         return g_.EdgeNucls(path.Back()).Subseq(k_, g_.length(path.Back())).str();
