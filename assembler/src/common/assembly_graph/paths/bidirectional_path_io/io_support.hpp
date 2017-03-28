@@ -13,19 +13,19 @@ using namespace debruijn_graph;
 
 
 struct IOContig {
-    std::string sequence_;
-    BidirectionalPath* path_;
+    std::string sequence;
+    BidirectionalPath* path;
 
     IOContig(const std::string& sequence, BidirectionalPath* path) :
-        sequence_(sequence), path_(path) { }
+        sequence(sequence), path(path) { }
 };
 
 struct IOContigGreater
 {
     bool operator()(const IOContig &a, const IOContig &b) const {
-        if (a.sequence_.length() ==  b.sequence_.length())
-            return math::gr(a.path_->Coverage(), b.path_->Coverage());
-        return a.sequence_.length() > b.sequence_.length();
+        if (a.sequence.length() ==  b.sequence.length())
+            return math::gr(a.path->Coverage(), b.path->Coverage());
+        return a.sequence.length() > b.sequence.length();
     }
 };
 
@@ -81,7 +81,7 @@ public:
     void Preprocess(const PathContainer&) override {}
 
     std::string MakeContigName(size_t index, const IOContig &precontig) override {
-        return io::MakeContigId(index, precontig.sequence_.length(), precontig.path_->Coverage());
+        return io::MakeContigId(index, precontig.sequence.length(), precontig.path->Coverage());
     }
 };
 
@@ -94,9 +94,9 @@ public:
     void Preprocess(const PathContainer&) override {}
 
     std::string MakeContigName(size_t index, const IOContig &precontig) override {
-        EdgeId e = precontig.path_->At(0);
+        EdgeId e = precontig.path->At(0);
         size_t component = c_counter_.GetComponent(e);
-        return io::MakeContigComponentId(index, precontig.sequence_.length(), precontig.path_->Coverage(), component);
+        return io::MakeContigComponentId(index, precontig.sequence.length(), precontig.path->Coverage(), component);
     }
 };
 
@@ -121,7 +121,7 @@ public:
     }
 
     std::string MakeContigName(size_t index, const IOContig &precontig) override {
-        size_t id = transcript_joiner_.GetPathId(precontig.path_);
+        size_t id = transcript_joiner_.GetPathId(precontig.path);
         size_t parent_id = transcript_joiner_.FindTree(id);
         DEBUG("Path " << id << " Parent " << parent_id);
         if (gene_ids_.find(parent_id) == gene_ids_.end()) {
@@ -129,7 +129,7 @@ public:
             isoform_num_[parent_id] = 0;
             gene_num_++;
         }
-        string contig_id = io::MakeRNAContigId(index, precontig.sequence_.length(), precontig.path_->Coverage(), gene_ids_[parent_id], isoform_num_[parent_id]);
+        string contig_id = io::MakeRNAContigId(index, precontig.sequence.length(), precontig.path->Coverage(), gene_ids_[parent_id], isoform_num_[parent_id]);
         isoform_num_[parent_id]++;
         return contig_id;
     }

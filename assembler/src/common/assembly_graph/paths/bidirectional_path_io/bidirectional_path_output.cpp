@@ -25,7 +25,6 @@ string path_extend::ContigWriter::ToFASTGPathFormat(const BidirectionalPath &pat
 void path_extend::ContigWriter::OutputPaths(const PathContainer &paths,
                                                   const string &filename_base,
                                                   bool write_fastg) const {
-    name_generator_->Preprocess(paths);
     vector<IOContig> storage;
 
     ScaffoldSequenceMaker scaffold_maker(g_);
@@ -38,8 +37,13 @@ void path_extend::ContigWriter::OutputPaths(const PathContainer &paths,
             storage.emplace_back(path_string, path);
         }
     }
-    //sorting by length
-    std::sort(storage.begin(), storage.end(), IOContigGreater());
+
+    //sorting by length and coverage
+    std::sort(storage.begin(), storage.end(), [] (const IOContig &a, const IOContig &b) {
+        if (a.sequence.length() == b.sequence.length())
+            return math::gr(a.path->Coverage(), b.path->Coverage());
+        return a.sequence.length() > b.sequence.length();
+    });
 
     INFO("Writing contigs to " << filename_base);
     io::osequencestream_simple oss(filename_base + ".fasta");
@@ -47,18 +51,19 @@ void path_extend::ContigWriter::OutputPaths(const PathContainer &paths,
     if (write_fastg)
         os_fastg.open((filename_base + ".paths").c_str());
 
+    name_generator_->Preprocess(paths);
     size_t i = 0;
     for (const auto& precontig : storage) {
         ++i;
         std::string contig_id = name_generator_->MakeContigName(i, precontig);
         oss.set_header(contig_id);
-        oss << precontig.sequence_;
+        oss << precontig.sequence;
 
         if (write_fastg) {
             os_fastg << contig_id << endl;
-            os_fastg << ToFASTGPathFormat(*precontig.path_) << endl;
+            os_fastg << ToFASTGPathFormat(*precontig.path) << endl;
             os_fastg << contig_id << "'" << endl;
-            os_fastg << ToFASTGPathFormat(*precontig.path_->GetConjPath()) << endl;
+            os_fastg << ToFASTGPathFormat(*precontig.path->GetConjPath()) << endl;
         }
     }
 
