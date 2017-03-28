@@ -68,7 +68,7 @@ public:
 
     void ResolveShortLoop(BidirectionalPath& path) const override {
         DEBUG("resolve short loop by coverage");
-        path.Print();
+        path.PrintDEBUG();
 
         pair<EdgeId, EdgeId> edges;
         if (path.Size() >= 1 && GetLoopAndExit(g_, path.Back(), edges)) {
@@ -546,11 +546,11 @@ public:
                 VERIFY (last_cycle_pos == start_cycle_pos);
                 DEBUG("find cycle " << last_cycle_pos);
                 DEBUG("path");
-                path.Print();
+                path.PrintDEBUG();
                 DEBUG("last subpath");
-                path.SubPath(last_cycle_pos).Print();
+                path.SubPath(last_cycle_pos).PrintDEBUG();
                 DEBUG("cycle");
-                cycle->Print();
+                cycle->PrintDEBUG();
                 DEBUG("last_cycle_pos " << last_cycle_pos << " path size " << path.Size());
                 VERIFY(last_cycle_pos <= (int)path.Size());
                 DEBUG("last cycle pos + cycle " << last_cycle_pos + (int)cycle->Size());
@@ -572,7 +572,7 @@ public:
         visited_cycles_coverage_map_.Subscribe(p);
         visited_cycles_coverage_map_.Subscribe(cp);
         DEBUG("add cycle");
-        p->Print();
+        p->PrintDEBUG();
     }
 };
 
@@ -783,17 +783,17 @@ public:
 
             if (repeat_size > 0) {
                 DEBUG("repeat with length " << repeat_size);
-                path.Print();
-                repeat_path->Print();
+                path.PrintDEBUG();
+                repeat_path->PrintDEBUG();
                 BidirectionalPath repeat = path.SubPath(path.Size() - repeat_size);
                 int begin_repeat = repeat_path->FindLast(repeat);
                 VERIFY(begin_repeat > -1);
                 size_t end_repeat = (size_t) begin_repeat + repeat_size;
                 DEBUG("not consistent subpaths ");
                 BidirectionalPath begin1 = path.SubPath(0, path.Size() - repeat_size);
-                begin1.Print();
+                begin1.PrintDEBUG();
                 BidirectionalPath begin2 = repeat_path->SubPath(0, begin_repeat);
-                begin2.Print();
+                begin2.PrintDEBUG();
                 int gpa_in_repeat_path = repeat_path->GapAt(begin_repeat).gap;
                 BidirectionalPath end2 = repeat_path->SubPath(end_repeat);
                 BidirectionalPath begin1_conj = path.SubPath(0, path.Size() - repeat_size + 1).Conjugate();
@@ -816,7 +816,7 @@ public:
                 path.PushBack(repeat, gap);
                 path.PushBack(end2);
                 DEBUG("new path");
-                path.Print();
+                path.PrintDEBUG();
                 return false;
             }
         }
@@ -889,7 +889,7 @@ private:
                 } while (count_trying < 10 && (path->Length() != current_path_len));
                 path->CheckConjugateEnd(max_repeat_len_);
                 DEBUG("result path " << path->GetId());
-                path->Print();
+                path->PrintDEBUG();
             }
         }
     }
@@ -1098,7 +1098,7 @@ protected:
             return false;
         }
         DEBUG("Simple grow step");
-        path.Print();
+        path.PrintDEBUG();
         FindFollowingEdges(path, &candidates);
         DEBUG("found candidates");
         DEBUG(candidates.size())
@@ -1267,7 +1267,7 @@ protected:
         }
 
         DEBUG("Simple grow step, growing path");
-        path.Print();
+        path.PrintDEBUG();
         ExtensionChooser::EdgeContainer candidates = ec->Filter(path, sources_);
         DEBUG("scaffolding candidates " << candidates.size() << " from sources " << sources_.size());
 

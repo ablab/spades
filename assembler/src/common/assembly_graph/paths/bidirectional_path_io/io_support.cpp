@@ -130,7 +130,7 @@ void path_extend::ScaffoldBreaker::SplitPath(const BidirectionalPath &path, Path
 
         if (i < path.Size()) {
             DEBUG("split path " << i << " gap " << path.GapAt(i).gap);
-            p->Print();
+            p->PrintDEBUG();
         }
 
         BidirectionalPath *cp = new BidirectionalPath(p->Conjugate());

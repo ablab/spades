@@ -66,7 +66,7 @@ bool LongReadsLibConnectionCondition::CheckPath(BidirectionalPath *path, EdgeId 
     if (pos2.size() != 1) {
         if (pos2.size() >= 2) {
             DEBUG("Something went wrong:: Edge " << graph_.int_id(e2) << "is called unique but presents in path twice! first edge " << graph_.int_id(e1) << " path ");
-            path->Print();
+            path->PrintDEBUG();
         }
         return false;
     }

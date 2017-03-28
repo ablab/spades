@@ -14,6 +14,7 @@
 #pragma once
 
 #include <atomic>
+#include <boost/algorithm/string.hpp>
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/components/connected_component.hpp"
 
@@ -127,7 +128,6 @@ public:
               overlap_(path.overlap_) {
     }
 
-public:
     void Subscribe(PathListener * listener) {
         listeners_.push_back(listener);
     }
@@ -441,7 +441,7 @@ public:
                     end--;
                 }
                 DEBUG("Found palindromic fragment from " << begin_pos << " to " << *end_pos);
-                Print();
+                PrintDEBUG();
                 VERIFY(*end_pos < Size());
                 size_t tail_size = Size() - *end_pos - 1;
                 size_t head_size = begin_pos;
@@ -560,38 +560,31 @@ public:
         return false;
     }
 
-    void Print() const {
-        DEBUG("Path " << id_);
-        DEBUG("Length " << Length());
-        DEBUG("Weight " << weight_);
-        DEBUG("#, edge, length, [gap length, trash length], total length, total length from begin");
-        for (size_t i = 0; i < Size(); ++i) {
-            DEBUG(i << ", " << g_.int_id(At(i)) << ", " 
-                    << g_.length(At(i)) << ", " << GapAt(i)
-                    << ", " << LengthAt(i) << ", "
-                    << ((Length() < LengthAt(i)) ? 0 : Length() - LengthAt(i)));
+    void PrintDEBUG() const {
+        for (const auto& s: PrintLines()) {
+            DEBUG(s);
         }
     }
 
-    void PrintInfo() const {
-        INFO("Path " << id_);
-        INFO("Length " << Length());
-        INFO("Weight " << weight_);
-        INFO("#, edge, length, gap length, total length");
-        for (size_t i = 0; i < Size(); ++i) {
-            INFO(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i) << ", " << LengthAt(i));
+    void PrintINFO() const {
+        for (const auto& s: PrintLines()) {
+            INFO(s);
         }
     }
 
-    void Print(std::ostream& os) {
+    void Print(std::ostream &os) const {
         if (Empty()) {
             return;
         }
-        os << "Path " << GetId() << endl;
-        os << "Length " << Length() << endl;
-        os << "#, edge, length, gap, total length" << endl;
+        os << "Path " << GetId() << "\n";
+        os << "Length " << Length() << "\n";
+        os << "Weight " << weight_ << "\n";
+        os << "#, edge (length), gap info, total length, total length from start" << "\n";
         for (size_t i = 0; i < Size(); ++i) {
-            os << i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i))  << ", " << GapAt(i) << ", " << LengthAt(i) << endl;
+            os << i << ", " << g_.str(At(i))
+               << ", " << GapAt(i)
+               << ", " << LengthAt(i)
+               << ", " << ((Length() < LengthAt(i)) ? 0 : Length() - LengthAt(i)) << "\n";
         }
     }
 
@@ -638,6 +631,16 @@ public:
     }
 
 private:
+
+    vector<std::string> PrintLines() const {
+        stringstream ss;
+        Print(ss);
+        std::string as_str=ss.str();
+        boost::trim(as_str);
+        std::vector<std::string> result;
+        boost::split(result, as_str, boost::is_any_of("\n"), boost::token_compress_on);
+        return result;
+    }
 
     void RecountLengths() {
         cumulative_len_.clear();
@@ -975,8 +978,8 @@ public:
 
     void print() const {
         for (size_t i = 0; i < size(); ++i) {
-            Get(i)->Print();
-            GetConjugate(i)->Print();
+            Get(i)->PrintDEBUG();
+            GetConjugate(i)->PrintDEBUG();
         }
     }
 
@@ -1017,8 +1020,8 @@ protected:
 };
 
 inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, const BidirectionalPath& path1, const BidirectionalPath& path2, size_t max_diff) {
-    path1.Print();
-    path2.Print();
+    path1.PrintDEBUG();
+    path2.PrintDEBUG();
     if (start_pos1 >= path1.Size() || start_pos2 >= path2.Size()) {
         return make_pair(start_pos1, start_pos2);
     }

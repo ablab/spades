@@ -170,10 +170,10 @@ private:
             startPath->PushBack(endPath->At(i), endPath->GapAt(i));
         }
         DEBUG("travers");
-        startPath->Print();
-        endPath->Print();
+        startPath->PrintDEBUG();
+        endPath->PrintDEBUG();
         DEBUG("conj");
-        endPath->GetConjPath()->Print();
+        endPath->GetConjPath()->PrintDEBUG();
         endPath->Clear();
         return true;
     }

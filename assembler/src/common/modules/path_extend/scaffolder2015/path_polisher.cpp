@@ -58,7 +58,7 @@ BidirectionalPath PathPolisher::Polish(const BidirectionalPath &init_path) {
         count++;
         if (count > MAX_POLISH_ATTEMPTS) {
             INFO("Unexpected cycle while polishing path, stopping polishing " );
-            path->Print();
+            path->PrintDEBUG();
             break;
         }
     }

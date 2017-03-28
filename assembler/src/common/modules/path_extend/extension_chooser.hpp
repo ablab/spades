@@ -346,7 +346,7 @@ public:
             return edges;
         }
         std::set<size_t> to_exclude;
-        path.Print();
+        path.PrintDEBUG();
         EdgeContainer result = edges;
         ExcludeEdges(path, result, to_exclude);
         result = FindFilteredEdges(path, result, to_exclude);
@@ -885,7 +885,7 @@ public:
         if (edges.empty()) {
             return edges;
         }DEBUG("We in Filter of LongReadsExtensionChooser");
-        path.Print();
+        path.PrintDEBUG();
         map<EdgeId, double> weights_cands;
         for (auto it = edges.begin(); it != edges.end(); ++it) {
             weights_cands.insert(make_pair(it->e_, 0.0));

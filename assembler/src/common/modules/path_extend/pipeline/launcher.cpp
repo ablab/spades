@@ -151,12 +151,12 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
         auto map_res = genome_checker.CountMisassemblies(*path);
         if (map_res.misassemblies > 0) {
             INFO ("there are " << map_res.misassemblies << " misassemblies in path: ");
-            path->PrintInfo();
+            path->PrintINFO();
             total_mis += map_res.misassemblies;
         }
         if (map_res.wrong_gap_size > 0) {
             INFO ("there are " << map_res.wrong_gap_size << " wrong gaps in path: ");
-            path->PrintInfo();
+            path->PrintINFO();
             gap_mis += map_res.wrong_gap_size;
         }
     }
