@@ -13,7 +13,6 @@ typedef omnigraph::GapDescription<Graph> GapDescription;
 class GapJoiner {
     Graph& g_;
     omnigraph::EdgeRemover<Graph> edge_remover_;
-    bool add_flanks_;
 
     EdgeId ClipEnd(EdgeId e, size_t to_trim) {
         VERIFY(to_trim < g_.length(e));
