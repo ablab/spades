@@ -69,7 +69,6 @@ struct PathSegmentSequence {
 };
 
 class GFAPathWriter {
-private:
     std::ostream &ostream_;
 
 public:
@@ -82,19 +81,18 @@ public:
         ostream_ << "P" << "\t" ;
         ostream_ << path_segment_sequence.path_id_ << "_" << path_segment_sequence.segment_number_ << "\t";
         std::string delimeter = "";
-        for (size_t i = 0; i < path_segment_sequence.segment_sequence_.size() - 1; ++i) {
+        for (size_t i = 0; i < path_segment_sequence.segment_sequence_.size(); ++i) {
             ostream_ << delimeter << path_segment_sequence.segment_sequence_[i];
             delimeter = ",";
         }
         ostream_ << "\t";
-        std::string delimeter2 = "";
+        delimeter = "";
         for (size_t i = 0; i < path_segment_sequence.segment_sequence_.size() - 1; ++i) {
-                ostream_ << delimeter2 << "*";
-                delimeter2 = ",";
+            ostream_ << delimeter << "*";
+            delimeter = ",";
         }
         ostream_ << std::endl;
     }
-
 };
 
 template<class Graph>
