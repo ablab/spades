@@ -25,9 +25,16 @@ namespace alignment {
 
 class BWAIndex {
   public:
+    enum class AlignmentMode {
+        Default,
+        IntraCtg,
+        PacBio,
+        Ont2D
+    };
+
     // bwaidx / memopt are incomplete below, therefore we need to outline ctor
     // and dtor.
-    BWAIndex(const debruijn_graph::Graph& g);
+    BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode = AlignmentMode::Default);
     ~BWAIndex();
 
     omnigraph::MappingPath<debruijn_graph::EdgeId> AlignSequence(const Sequence &sequence) const;

@@ -23,11 +23,37 @@ int is_bwt(uint8_t *T, bwtint_t n);
 
 namespace alignment {
 
-BWAIndex::BWAIndex(const debruijn_graph::Graph& g)
+BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
         : g_(g),
           memopt_(mem_opt_init(), free),
           idx_(nullptr, bwa_idx_destroy) {
     memopt_->flag |= MEM_F_SOFTCLIP;
+    switch (mode) {
+        default:
+        case AlignmentMode::Default:
+            break;
+        case AlignmentMode::IntraCtg:
+            memopt_->o_del = 16; memopt_->o_ins = 16;
+            memopt_->b = 9;
+            memopt_->pen_clip5 = 5; memopt_->pen_clip3 = 5;
+            break;
+        case AlignmentMode::PacBio:
+        case AlignmentMode::Ont2D:
+            memopt_->o_del = 1; memopt_->e_del = 1;
+            memopt_->o_ins = 1; memopt_->e_ins = 1;
+            memopt_->b = 1;
+            memopt_->split_factor = 10.;
+            memopt_->pen_clip5 = 0; memopt_->pen_clip3 = 0;
+            if (mode == AlignmentMode::Ont2D) {
+                memopt_->min_chain_weight = 20;
+                memopt_->min_seed_len = 14;
+            } else {
+                memopt_->min_chain_weight = 40;
+                memopt_->min_seed_len = 17;
+            }
+            break;
+    };
+
     Init();
 }
 
