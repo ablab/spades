@@ -20,7 +20,6 @@ class GFASegmentWriter {
 private:
     std::ostream &ostream_;
 
-
 public:
 
     GFASegmentWriter(std::ostream &stream) : ostream_(stream)  {
@@ -50,7 +49,6 @@ public:
 
     }
 };
-
 
 struct PathSegmentSequence {
     size_t path_id_;
@@ -185,83 +183,6 @@ public:
     }
 };
 
-//This class uses corrected sequences to construct contig (just return as is, find unipath, trim contig)
-//TODO this classes must not live!
-template<class Graph>
-class ContigConstructor {
-private:
-    typedef typename Graph::EdgeId EdgeId;
-    const Graph &graph_;
-protected:
-
-    const Graph &graph() const {
-        return graph_;
-    }
-
-public:
-
-    ContigConstructor(const Graph &graph) : graph_(graph) {
-    }
-
-    virtual pair<string, double> construct(EdgeId e) = 0;
-
-    virtual ~ContigConstructor() {
-    }
-};
-
-template<class Graph>
-class DefaultContigConstructor : public ContigConstructor<Graph> {
-private:
-    typedef typename Graph::EdgeId EdgeId;
-public:
-
-    DefaultContigConstructor(const Graph &graph) : ContigConstructor<Graph>(graph) {
-    }
-
-    pair<string, double> construct(EdgeId e) {
-        return make_pair(this->graph().EdgeNucls(e).str(), this->graph().coverage(e));
-    }
-};
-
-template<class Graph>
-vector<typename Graph::EdgeId> Unipath(const Graph& g, typename Graph::EdgeId e) {
-    omnigraph::UniquePathFinder<Graph> unipath_finder(g);
-    vector<typename Graph::EdgeId> answer = unipath_finder.UniquePathBackward(e);
-    const vector<typename Graph::EdgeId>& forward = unipath_finder.UniquePathForward(e);
-    for (size_t i = 1; i < forward.size(); ++i) {
-        answer.push_back(forward[i]);
-    }
-    return answer;
-}
-
-template<class Graph>
-class UnipathConstructor : public ContigConstructor<Graph> {
-    typedef typename Graph::EdgeId EdgeId;
-
-    Sequence MergeSequences(const Graph& g,
-            const vector<typename Graph::EdgeId>& continuous_path) {
-        vector<Sequence> path_sequences;
-        for (size_t i = 0; i < continuous_path.size(); ++i) {
-            if(i > 0)
-                VERIFY(
-                    g.EdgeEnd(continuous_path[i - 1])
-                            == g.EdgeStart(continuous_path[i]));
-            path_sequences.push_back(this->graph().EdgeNucls(continuous_path[i]));
-        }
-        return MergeOverlappingSequences(path_sequences, g.k());
-    }
-
-public:
-
-    UnipathConstructor(const Graph &graph) : ContigConstructor<Graph>(graph) {
-    }
-
-    pair<string, double> construct(EdgeId e) {
-        vector<EdgeId> unipath = Unipath(this->graph(), e);
-        return make_pair(MergeSequences(this->graph(), unipath).str(), stats::AvgCoverage(this->graph(), unipath));
-    }
-};
-
 struct ExtendedContigIdT {
     string full_id_;
     string short_id_;
@@ -296,12 +217,11 @@ template<class Graph>
 class ContigPrinter {
 private:
     const Graph &graph_;
-    ContigConstructor<Graph> &constructor_;
+
     template<class sequence_stream>
-    void ReportEdge(sequence_stream& oss
-            , const pair<string, double> sequence_data) {
-        oss << sequence_data.second;
-        oss << sequence_data.first;
+    void ReportEdge(sequence_stream& oss, const string &s, double cov) {
+        oss << s;
+        oss << cov;
     }
 
     void ReportEdge(io::osequencestream_for_fastg& oss,
@@ -314,13 +234,14 @@ private:
     }
 
 public:
-    ContigPrinter(const Graph &graph, ContigConstructor<Graph> &constructor) : graph_(graph), constructor_(constructor) {
+    ContigPrinter(const Graph &graph) : graph_(graph) {
     }
 
     template<class sequence_stream>
     void PrintContigs(sequence_stream &os) {
         for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-            ReportEdge<sequence_stream>(os, constructor_.construct(*it));
+            EdgeId e = *it;
+            ReportEdge(os, graph_.EdgeNucls(e).str(), graph_.coverage(e));
         }
     }
 
@@ -329,67 +250,29 @@ public:
         map<EdgeId, ExtendedContigIdT> ids;
         MakeContigIdMap(graph_, ids, cc_counter, "EDGE");
         for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+            EdgeId e = *it;
             set<string> next;
-            VertexId v = graph_.EdgeEnd(*it);
-            auto edges = graph_.OutgoingEdges(v);
-            for (auto next_it = edges.begin(); next_it != edges.end(); ++next_it) {
-                next.insert(ids[*next_it].full_id_);
+            for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(e))) {
+                next.insert(ids[next_e].full_id_);
             }
-            ReportEdge(os, constructor_.construct(*it).first, ids[*it].full_id_, next);
-            if (*it != graph_.conjugate(*it))
-            {
+            ReportEdge(os, graph_.EdgeNucls(e).str(), ids[e].full_id_, next);
+            if (e != graph_.conjugate(e)) {
                 set<string> next_conj;
-                v = graph_.EdgeEnd(graph_.conjugate(*it));
-                edges = graph_.OutgoingEdges(v);
-                for (auto next_it = edges.begin(); next_it != edges.end(); ++next_it) {
-                    next_conj.insert(ids[*next_it].full_id_);
+                for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(graph_.conjugate(e)))) {
+                    next_conj.insert(ids[next_e].full_id_);
                 }
-                ReportEdge(os, constructor_.construct(graph_.conjugate(*it)).first, ids[graph_.conjugate(*it)].full_id_, next_conj);               
+                ReportEdge(os, graph_.EdgeNucls(graph_.conjugate(e)).str(), ids[graph_.conjugate(e)].full_id_, next_conj);
             }
         }
     }
 };
 
-template<class Graph>
-bool PossibleECSimpleCheck(const Graph& g
-        , typename Graph::EdgeId e) {
-    return g.OutgoingEdgeCount(g.EdgeStart(e)) > 1 && g.IncomingEdgeCount(g.EdgeEnd(e)) > 1;
-}
-
-template<class Graph>
-void ReportEdge(io::osequencestream_cov& oss
-        , const Graph& g
-        , typename Graph::EdgeId e
-        , bool output_unipath = false
-        , size_t solid_edge_length_bound = 0) {
-    typedef typename Graph::EdgeId EdgeId;
-    if (!output_unipath || (PossibleECSimpleCheck(g, e) && g.length(e) <= solid_edge_length_bound)) {
-        TRACE("Outputting edge " << g.str(e) << " as single edge");
-        oss << g.coverage(e);
-        oss << g.EdgeNucls(e);
-    } else {
-        TRACE("Outputting edge " << g.str(e) << " as part of unipath");
-        vector<EdgeId> unipath = Unipath(g, e);
-        TRACE("Unipath is " << g.str(unipath));
-        oss << stats::AvgCoverage(g, unipath);
-        TRACE("Merged sequence is of length " << MergeSequences(g, unipath).size());
-        oss << MergeSequences(g, unipath);
-    }
-}
-
 inline void OutputContigs(ConjugateDeBruijnGraph &g,
-                          const string &contigs_output_filename,
-                          bool output_unipath = false) {
+                          const string &contigs_output_filename) {
     INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
     io::osequencestream_cov oss(contigs_output_filename + ".fasta");
 
-    if (!output_unipath) {
-        DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g);
-        ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
-    } else {
-        UnipathConstructor<ConjugateDeBruijnGraph> constructor(g);
-        ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
-    }
+    ContigPrinter<ConjugateDeBruijnGraph>(g).PrintContigs(oss);
 }
 
 inline void OutputContigsToGFA(ConjugateDeBruijnGraph &g, path_extend::PathContainer &paths, const string &contigs_output_filename) {
@@ -398,52 +281,11 @@ inline void OutputContigsToGFA(ConjugateDeBruijnGraph &g, path_extend::PathConta
     writer.Write();
 }
 
-
 inline void OutputContigsToFASTG(ConjugateDeBruijnGraph& g,
                    const string& contigs_output_filename, const ConnectedComponentCounter & cc_counter) {
     INFO("Outputting graph to " << contigs_output_filename << ".fastg");
-    DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g);
     io::osequencestream_for_fastg ossfg(contigs_output_filename + ".fastg");
-    ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigsFASTG(ossfg, cc_counter);
-}
-
-inline bool ShouldCut(ConjugateDeBruijnGraph& g, VertexId v) {
-    vector<EdgeId> edges;
-    utils::push_back_all(edges, g.OutgoingEdges(v));
-
-    if(edges.size() == 0)
-        return false;
-    for(size_t i = 1; i < edges.size(); i++) {
-        if(g.EdgeNucls(edges[i])[g.k()] != g.EdgeNucls(edges[0])[g.k()])
-            return false;
-    }
-    edges.clear();
-    utils::push_back_all(edges, g.IncomingEdges(v));
-    for(size_t i = 0; i < edges.size(); i++)
-        for(size_t j = i + 1; j < edges.size(); j++) {
-            if(g.EdgeNucls(edges[i])[g.length(edges[i]) - 1] != g.EdgeNucls(edges[j])[g.length(edges[j]) - 1])
-                return true;
-        }
-    return false;
-}
-
-inline void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
-        const string& contigs_output_dir) {
-    INFO("Outputting contigs to " << contigs_output_dir);
-    int n = 0;
-    make_dir(contigs_output_dir);
-    char n_str[20];
-    set<ConjugateDeBruijnGraph::EdgeId> edges;
-    for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-        if (edges.count(*it) == 0) {
-            sprintf(n_str, "%d.fa", n);
-            edges.insert(g.conjugate(*it));
-            io::osequencestream oss(contigs_output_dir + n_str);
-            oss << g.EdgeNucls(*it);
-            n++;
-        }
-    }
-    DEBUG("SingleFileContigs(Conjugate) written");
+    ContigPrinter<ConjugateDeBruijnGraph>(g).PrintContigsFASTG(ossfg, cc_counter);
 }
 
 }

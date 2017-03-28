@@ -44,7 +44,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
         OutputContigsToGFA(gp.g, gp.contig_paths, cfg::get().output_dir + "assembly_graph");
     } else {
-        OutputContigs(gp.g, output_dir + "simplified_contigs", cfg::get().use_unipaths);
+        OutputContigs(gp.g, output_dir + "simplified_contigs");
         OutputContigs(gp.g, output_dir + cfg::get().co.contigs_name);
     }
 }

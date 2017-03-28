@@ -69,9 +69,6 @@ compute_paths_number false
 
 ; End of developer_mode parameters
 
-; use unipaths as additional contigs instead of just graph edges
-use_unipaths false 
-
 ;if true simple mismatches are corrected
 correct_mismatches          true
 

@@ -732,8 +732,6 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
 
     load(cfg.co, pt, "contig_output", complete);
 
-    load(cfg.use_unipaths, pt, "use_unipaths", complete);
-
     load(cfg.pb, pt, "pacbio_processor", complete);
 
     load(cfg.two_step_rr, pt, "two_step_rr", complete);

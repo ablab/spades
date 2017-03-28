@@ -512,7 +512,6 @@ struct debruijn_config {
     bool compute_paths_number;
 
     bool use_additional_contigs;
-    bool use_unipaths;
     std::string additional_contigs;
 
     struct scaffold_correction {

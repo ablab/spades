@@ -37,6 +37,7 @@ private:
 
     string ToString(const BidirectionalPath& path) const;
 public:
+
     IOContigStorage(const Graph &g, const PathContainer &paths):
         g_(g),
         k_(g.k()),
@@ -58,7 +59,6 @@ public:
         return storage_;
     }
 };
-
 
 //Finds common long edges in paths and joins them into
 //Based on disjoint set union
@@ -86,8 +86,6 @@ public:
 
     void Construct(const PathContainer &paths);
 };
-
-
 
 class ContigNameGenerator {
 public:
