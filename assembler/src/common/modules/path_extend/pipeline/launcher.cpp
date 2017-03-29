@@ -405,9 +405,9 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 
     ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, support_);
 
-    for (const auto& extender: generator.MakePEExtenders()) {
-        gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender));
-    }
+//    for (const auto& extender: generator.MakePEExtenders()) {
+//        gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender));
+//    }
 //    auto used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage(unique));
 
     PathPolisher polisher(gp_, gap_closers);
