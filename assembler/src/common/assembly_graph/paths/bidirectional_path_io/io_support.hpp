@@ -11,21 +11,19 @@
 namespace path_extend {
 using namespace debruijn_graph;
 
-
-struct IOContig {
+struct ScaffoldInfo {
     std::string sequence;
     BidirectionalPath* path;
 
-    IOContig(const std::string& sequence, BidirectionalPath* path) :
+    ScaffoldInfo(const std::string& sequence, BidirectionalPath* path) :
         sequence(sequence), path(path) { }
-};
 
-struct IOContigGreater
-{
-    bool operator()(const IOContig &a, const IOContig &b) const {
-        if (a.sequence.length() ==  b.sequence.length())
-            return math::gr(a.path->Coverage(), b.path->Coverage());
-        return a.sequence.length() > b.sequence.length();
+    size_t length() const {
+        return sequence.length();
+    }
+
+    double coverage() const {
+        return path->Coverage();
     }
 };
 
@@ -70,7 +68,7 @@ class ContigNameGenerator {
 public:
     virtual void Preprocess(const PathContainer& paths) = 0;
 
-    virtual std::string MakeContigName(size_t index, const IOContig &precontig) = 0;
+    virtual std::string MakeContigName(size_t index, const ScaffoldInfo &precontig) = 0;
 
     virtual ~ContigNameGenerator() {
     }
@@ -80,8 +78,8 @@ class DefaultContigNameGenerator: public ContigNameGenerator {
 public:
     void Preprocess(const PathContainer&) override {}
 
-    std::string MakeContigName(size_t index, const IOContig &precontig) override {
-        return io::MakeContigId(index, precontig.sequence.length(), precontig.path->Coverage());
+    std::string MakeContigName(size_t index, const ScaffoldInfo &precontig) override {
+        return io::MakeContigId(index, precontig.length(), precontig.coverage());
     }
 };
 
@@ -93,10 +91,10 @@ public:
 
     void Preprocess(const PathContainer&) override {}
 
-    std::string MakeContigName(size_t index, const IOContig &precontig) override {
+    std::string MakeContigName(size_t index, const ScaffoldInfo &precontig) override {
         EdgeId e = precontig.path->At(0);
         size_t component = c_counter_.GetComponent(e);
-        return io::MakeContigComponentId(index, precontig.sequence.length(), precontig.path->Coverage(), component);
+        return io::MakeContigComponentId(index, precontig.length(), precontig.coverage(), component);
     }
 };
 
@@ -120,7 +118,7 @@ public:
         transcript_joiner_.Construct(paths);
     }
 
-    std::string MakeContigName(size_t index, const IOContig &precontig) override {
+    std::string MakeContigName(size_t index, const ScaffoldInfo &precontig) override {
         size_t id = transcript_joiner_.GetPathId(precontig.path);
         size_t parent_id = transcript_joiner_.FindTree(id);
         DEBUG("Path " << id << " Parent " << parent_id);
@@ -129,7 +127,7 @@ public:
             isoform_num_[parent_id] = 0;
             gene_num_++;
         }
-        string contig_id = io::MakeRNAContigId(index, precontig.sequence.length(), precontig.path->Coverage(), gene_ids_[parent_id], isoform_num_[parent_id]);
+        string contig_id = io::MakeRNAContigId(index, precontig.length(), precontig.coverage(), gene_ids_[parent_id], isoform_num_[parent_id]);
         isoform_num_[parent_id]++;
         return contig_id;
     }

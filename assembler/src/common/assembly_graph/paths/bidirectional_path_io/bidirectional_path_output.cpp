@@ -25,7 +25,7 @@ string path_extend::ContigWriter::ToFASTGPathFormat(const BidirectionalPath &pat
 void path_extend::ContigWriter::OutputPaths(const PathContainer &paths,
                                                   const string &filename_base,
                                                   bool write_fastg) const {
-    vector<IOContig> storage;
+    vector<ScaffoldInfo> storage;
 
     ScaffoldSequenceMaker scaffold_maker(g_);
     for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
@@ -39,10 +39,10 @@ void path_extend::ContigWriter::OutputPaths(const PathContainer &paths,
     }
 
     //sorting by length and coverage
-    std::sort(storage.begin(), storage.end(), [] (const IOContig &a, const IOContig &b) {
-        if (a.sequence.length() == b.sequence.length())
-            return math::gr(a.path->Coverage(), b.path->Coverage());
-        return a.sequence.length() > b.sequence.length();
+    std::sort(storage.begin(), storage.end(), [] (const ScaffoldInfo &a, const ScaffoldInfo &b) {
+        if (a.length() == b.length())
+            return math::gr(a.coverage(), b.coverage());
+        return a.length() > b.length();
     });
 
     INFO("Writing contigs to " << filename_base);
