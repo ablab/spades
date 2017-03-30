@@ -118,6 +118,7 @@ public:
         TestReliableBarcodes(length_lower_bound);
     }
     void PrintStats(const string& stats_path) const {
+        mkdir(stats_path.c_str(), 0755);
         stats_.PrintStats(stats_path);
     }
 
