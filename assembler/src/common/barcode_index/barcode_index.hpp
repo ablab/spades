@@ -6,8 +6,8 @@
 #include <common/assembly_graph/paths/mapping_path.hpp>
 #include <common/assembly_graph/core/graph.hpp>
 #include "common/pipeline/config_struct.hpp"
-#include "common/utils/indices/edge_index_builders.hpp"
-#include "common/utils/range.hpp"
+#include "common/assembly_graph/index/edge_index_builders.hpp"
+#include "common/sequence/range.hpp"
 
 using std::string;
 using std::istringstream;
