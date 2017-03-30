@@ -2,6 +2,8 @@
 #include <common/modules/path_extend/pipeline/launch_support.hpp>
 #include <common/modules/path_extend/pipeline/extenders_logic.hpp>
 #include "projects/read_cloud_statistics/read_cloud_statistics_extractor.hpp"
+#include "reliable_barcodes_checker.hpp"
+#include "gap_distribution_extractor.hpp"
 
 using namespace path_extend;
 
@@ -18,11 +20,17 @@ namespace debruijn_graph {
         return params;
     }
 
-    BarcodeStatisticsCounter ConstructStatisticsCounter(const conj_graph_pack& gp) {
+    vector <shared_ptr<BarcodeStatisticsCounter>> ConstructBarcodeStatisticsCounters(const conj_graph_pack& gp) {
         typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
         auto tenx_extractor_ptr = make_shared<tenx_extractor_t>(gp.barcode_mapper_ptr, gp.g);
-        return BarcodeStatisticsCounter(tenx_extractor_ptr, gp);
+        auto reliable_checker = make_shared<ReliableBarcodesChecker>(tenx_extractor_ptr, gp);
+        auto gap_distribution_extractor = make_shared<GapDistributionExtractor>(tenx_extractor_ptr, gp);
+        vector<shared_ptr<BarcodeStatisticsCounter>> result;
+        result.push_back(reliable_checker);
+        result.push_back(gap_distribution_extractor);
+        return result;
     }
+
 
     ScaffoldingUniqueEdgeStorage GetUniqueStorage(const conj_graph_pack& gp, const PathExtendParamsContainer& params) {
         const size_t unique_edge_length = cfg::get().ts_res.edge_length_threshold;
@@ -58,18 +66,23 @@ namespace debruijn_graph {
         return checker;
     }
 
+    void RunBarcodeStatisticsCounters(const vector<shared_ptr<BarcodeStatisticsCounter>>& barcode_statistics_counters) {
+        const string stats_path = cfg::get().output_dir + "barcode_stats";
+        mkdir(stats_path.c_str(), 0755);
+        for (const auto& counter: barcode_statistics_counters) {
+            counter->FillStats();
+            counter->PrintStats(stats_path);
+        }
+    }
+
     void ReadCloudStatisticsStage::run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
         INFO("Statistics counter started...");
         INFO("Library type: " << cfg::get().ts_res.library_type);
         TenXExtensionChecker checker = ConstructTenXChecker(graph_pack);
         INFO("10X checker constructed.");
-        BarcodeStatisticsCounter counter = ConstructStatisticsCounter(graph_pack);
-        INFO("Statistics counter constructed.");
-
-//        INFO("Basic stats: ");
-//        counter.FillStats();
-//        counter.PrintStats(cfg::get().output_dir + "barcode_stats");
-
+        auto barcode_statistics_counters = ConstructBarcodeStatisticsCounters(graph_pack);
+        INFO("Statistics counters constructed.");
+        RunBarcodeStatisticsCounters(barcode_statistics_counters);
         INFO("Resolver stats: ");
         checker.CheckChooser(cfg::get().ts_res.genome_path);
         INFO("Statistics counter finished.");
