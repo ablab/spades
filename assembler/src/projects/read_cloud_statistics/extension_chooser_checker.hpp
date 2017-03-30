@@ -106,7 +106,6 @@ namespace path_extend {
                 if (path_length > path_length_threshold) {
                     //Select long edges in the middle of the path
                     for (size_t i = 0; i < path.size(); ++i) {
-//                        DEBUG("Init range: " << path[i].second.initial_range);
                         if (storage_.IsUnique(path[i].first) and
                                 path[i].second.initial_range.start_pos + edge_length_threshold <
                                     path[i].second.initial_range.end_pos) {

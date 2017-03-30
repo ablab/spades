@@ -51,7 +51,7 @@ ts_res
 	;Configs for 10X repeat resolution
 	tenx_resolver
 	{
-		tail_threshold 40000
+		tail_threshold 5000
 		max_initial_candidates 10
 		internal_gap_threshold 6000
 		absolute_barcode_threshold 2
