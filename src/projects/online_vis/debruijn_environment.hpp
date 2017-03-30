@@ -176,6 +176,10 @@ class DebruijnEnvironment : public Environment {
             return gp_.get<KmerMapperClass>();
         }
 
+        const shared_ptr<barcode_index::AbstractBarcodeIndex> GetBarcodeExtractor() const {
+            return gp_.barcode_mapper_ptr;
+        }
+
         const ElementFinder& finder() const {
             return element_finder_;
         }

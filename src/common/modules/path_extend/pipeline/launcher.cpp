@@ -465,7 +465,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             read_cloud_unique_edge_analyzer.FillUniqueEdgeStorage(unique_data_.unique_read_cloud_storage_);
 
             INFO("Creating read cloud extenders");
-            push_back_all(extenders, ConstructReadCloudExtender(generator));
+            utils::push_back_all(extenders, ConstructReadCloudExtender(generator));
         }
     }
 
