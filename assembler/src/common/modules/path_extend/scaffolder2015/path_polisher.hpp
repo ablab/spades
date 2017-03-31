@@ -69,7 +69,7 @@ class MatePairGapCloser: public TargetEdgeGapCloser {
 
     EdgeId FindNext(const BidirectionalPath& path,
                     const set<EdgeId>& present_in_paths,
-                    VertexId last_v) const;
+                    VertexId last_v, EdgeId target_edge) const;
 protected:
     Gap CloseGap(EdgeId target_edge, const Gap &gap, BidirectionalPath &path) const override;
 

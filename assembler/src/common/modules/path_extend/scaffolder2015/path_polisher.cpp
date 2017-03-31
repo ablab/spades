@@ -164,7 +164,7 @@ Gap DijkstraGapCloser::FillWithBridge(const Gap &orig_gap,
 
         min_gap_after = std::max(min_gap_after, min_gap_);
         min_gap_before = std::max(min_gap_before, min_gap_);
-        DEBUG(bridge.int_id() << min_gap_before);
+        DEBUG(bridge.int_id() << " " << min_gap_before);
         result.PushBack(bridge, Gap(min_gap_before));
         return Gap(min_gap_after);
     }
@@ -235,7 +235,7 @@ vector<EdgeId> DijkstraGapCloser::LCP(const PathsT& paths) const {
 
 EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
                                    const set<EdgeId>& present_in_paths,
-                                   VertexId last_v) const {
+                                   VertexId last_v, EdgeId target_edge) const {
     auto next_edges = g_.OutgoingEdges(last_v);
     map<EdgeId, double> candidates;
 
@@ -244,7 +244,7 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
             candidates.insert(make_pair(edge, 0));
 
     if (candidates.size() <= 1) {
-        if (candidates.size() == 0 || candidates.begin()->first == path.Back())
+        if (candidates.size() == 0 || candidates.begin()->first == target_edge)
             return EdgeId(0);
         else 
             return (candidates.begin()->first);
@@ -272,7 +272,7 @@ EdgeId MatePairGapCloser::FindNext(const BidirectionalPath& path,
             sort(to_sort.begin(), to_sort.end(), [&] (std::pair<EdgeId, double> a, std::pair<EdgeId, double> b ) {
                 return a.second > b.second;
             });
-            if (to_sort[0].second > to_sort[1].second * weight_priority && to_sort[0].first != path.Back())
+            if (to_sort[0].second > to_sort[1].second * weight_priority && to_sort[0].first != target_edge)
                 return to_sort[0].first;
             else
                 return EdgeId(0);
@@ -305,7 +305,7 @@ Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
 
         size_t total = 0;
         while (last_e != EdgeId(0)) {
-            last_e = FindNext(path, present_in_paths, last_v);
+            last_e = FindNext(path, present_in_paths, last_v, target_edge);
             if (last_e != EdgeId(0)) {
                 last_v = g_.EdgeEnd(last_e);
                 addition.push_back(last_e);
