@@ -221,7 +221,7 @@ class HammingGapAnalyzer: public GapAnalyzer {
     const size_t short_overlap_threshold_;
     const size_t basic_overlap_length_;
 
-    static constexpr double MIN_OVERLAP_COEFF = 0.3;
+    static constexpr double MIN_OVERLAP_COEFF = 0.05;
 
     size_t HammingDistance(const Sequence& s1, const Sequence& s2) const {
         VERIFY(s1.size() == s2.size());
