@@ -19,6 +19,7 @@ protected:
 
     virtual Gap CloseGap(const BidirectionalPath &original_path, size_t position,
                          BidirectionalPath &path) const = 0;
+    DECL_LOGGER("PathGapCloser")
 public:
     BidirectionalPath CloseGaps(const BidirectionalPath &path) const;
 
@@ -72,6 +73,8 @@ class MatePairGapCloser: public TargetEdgeGapCloser {
 protected:
     Gap CloseGap(EdgeId target_edge, const Gap &gap, BidirectionalPath &path) const override;
 
+    DECL_LOGGER("MatePairGapCloser")
+
 public:
     MatePairGapCloser(const Graph& g, size_t max_path_len,
                       const shared_ptr<PairedInfoLibrary> lib,
@@ -100,6 +103,8 @@ class DijkstraGapCloser: public TargetEdgeGapCloser {
 protected:
     Gap CloseGap(EdgeId target_edge, const Gap &gap, BidirectionalPath &path) const override;
 
+    DECL_LOGGER("DijkstraGapCloser")
+
 public:
     DijkstraGapCloser(const Graph& g, size_t max_path_len):
         TargetEdgeGapCloser(g, max_path_len) {}
@@ -115,6 +120,7 @@ class PathPolisher {
     void InfoAboutGaps(const PathContainer& result);
 
     BidirectionalPath Polish(const BidirectionalPath& path);
+    DECL_LOGGER("PathPolisher")
 
 public:
     PathPolisher(const conj_graph_pack &gp,
