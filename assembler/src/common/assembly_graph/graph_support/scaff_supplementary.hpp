@@ -20,7 +20,7 @@ private:
     set <EdgeId> unique_edges_;
     size_t min_unique_length_;
 public:
-    ScaffoldingUniqueEdgeStorage(): unique_edges_(){
+    ScaffoldingUniqueEdgeStorage(): unique_edges_(), min_unique_length_(0){
         DEBUG("storage created, empty");
     }
 

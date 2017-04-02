@@ -6,6 +6,7 @@
 
 #include "modules/path_extend/path_visualizer.hpp"
 #include "modules/path_extend/loop_traverser.hpp"
+#include "modules/path_extend/path_extender.hpp"
 #include "modules/alignment/long_read_storage.hpp"
 #include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
@@ -404,10 +405,12 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     }
 
     ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, support_);
-
-//    for (const auto& extender: generator.MakePEExtenders()) {
-//        gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender));
-//    }
+//TODO:: is it really empty?
+    auto polisher_storage_ = ScaffoldingUniqueEdgeStorage();
+    for  (const auto& extender: generator.MakePEExtenders()) {
+        extender->AddUniqueEdgeStorage(make_shared<UsedUniqueStorage>(polisher_storage_));
+        gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender));
+    }
 //    auto used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage(unique));
 
     PathPolisher polisher(gp_, gap_closers);

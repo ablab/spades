@@ -701,7 +701,9 @@ struct UsedUniqueStorage {
 
 class PathExtender {
 public:
-    PathExtender(const Graph & g): g_(g) {}
+    PathExtender(const Graph & g): g_(g) {
+        used_storage_ = make_shared<UsedUniqueStorage>(ScaffoldingUniqueEdgeStorage());        
+    }
 
     virtual ~PathExtender() { }
 
@@ -1039,9 +1041,7 @@ public:
                        bool investigate_short_loops,
                        bool use_short_loop_cov_resolver) :
         LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, use_short_loop_cov_resolver, is),
-        extensionChooser_(ec) {
-            used_storage_ = make_shared<UsedUniqueStorage>(ScaffoldingUniqueEdgeStorage());
-        }
+        extensionChooser_(ec) {}
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
         return extensionChooser_;
