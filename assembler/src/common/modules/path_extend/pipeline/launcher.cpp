@@ -406,11 +406,11 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 
     ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, support_);
 //TODO:: is it really empty?
-    auto polisher_storage_ = ScaffoldingUniqueEdgeStorage();
-    for  (const auto& extender: generator.MakePEExtenders()) {
-        extender->AddUniqueEdgeStorage(make_shared<UsedUniqueStorage>(polisher_storage_));
-        gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender));
-    }
+//    auto polisher_storage = ScaffoldingUniqueEdgeStorage();
+//    for  (const auto& extender: generator.MakePEExtenders()) {
+//        extender->AddUniqueEdgeStorage(make_shared<UsedUniqueStorage>(polisher_storage));
+//        gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender));
+//    }
 //    auto used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage(unique));
 
     PathPolisher polisher(gp_, gap_closers);
