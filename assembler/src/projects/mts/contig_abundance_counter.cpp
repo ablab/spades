@@ -25,11 +25,15 @@ public:
 
             for (size_t i = 0; i < full_contig.size(); i += split_length) {
                 if (full_contig.size() - i < min_length_bound) {
-                    DEBUG("Fragment shorter than min_length_bound " << min_length_bound);
+                    DEBUG("Fragment is shorter than min_length_bound " << min_length_bound);
                     break;
                 }
+                size_t end_pos = std::min(i + split_length, full_contig.size());
+                if (full_contig.size() - end_pos < min_length_bound)
+                    //Attach the short tail of a long contig; it will be skipped on the next iteration
+                    end_pos = full_contig.size();
 
-                io::SingleRead contig = full_contig.Substr(i, std::min(i + split_length, full_contig.size()));
+                io::SingleRead contig = full_contig.Substr(i, end_pos);
                 splits_os << contig;
 
                 contig_id id = GetId(contig);
