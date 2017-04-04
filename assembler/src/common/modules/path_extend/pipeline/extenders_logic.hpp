@@ -46,6 +46,8 @@ class ExtendersGenerator {
     const conj_graph_pack &gp_;
 
     const GraphCoverageMap &cover_map_;
+    const UniqueData &unique_data_;
+    UsedUniqueStorage &used_unique_storage_;
 
     const PELaunchSupport &support_;
 
@@ -54,20 +56,22 @@ public:
                        const PathExtendParamsContainer &params,
                        const conj_graph_pack &gp,
                        const GraphCoverageMap &cover_map,
+                       const UniqueData &unique_data,
+                       UsedUniqueStorage &used_unique_storage,
                        const PELaunchSupport& support) :
         dataset_info_(dataset_info),
         params_(params),
         gp_(gp),
         cover_map_(cover_map),
+        unique_data_(unique_data),
+        used_unique_storage_(used_unique_storage),
         support_(support) { }
 
-    Extenders MakePBScaffoldingExtenders(const ScaffoldingUniqueEdgeStorage &unique_storage_pb,
-                                         const vector<shared_ptr<GraphCoverageMap>> &long_reads_cov_map) const;
+    Extenders MakePBScaffoldingExtenders() const;
 
-    Extenders MakeBasicExtenders(const ScaffoldingUniqueEdgeStorage &storage,
-                                 const vector<shared_ptr<GraphCoverageMap>> &long_reads_cov_map) const;
+    Extenders MakeBasicExtenders() const;
 
-    Extenders MakeMPExtenders(const ScaffoldingUniqueEdgeStorage &storage) const;
+    Extenders MakeMPExtenders() const;
 
     Extenders MakeCoverageExtenders() const;
 
@@ -77,6 +81,8 @@ private:
 
     shared_ptr<SimpleExtender> MakePEExtender(size_t lib_index, bool investigate_loops) const;
 
+    Extenders MakeMPExtenders(const ScaffoldingUniqueEdgeStorage &storage) const;
+
     shared_ptr<ExtensionChooser> MakeLongReadsExtensionChooser(size_t lib_index, const GraphCoverageMap& read_paths_cov_map) const;
 
     shared_ptr<SimpleExtender> MakeLongReadsExtender(size_t lib_index, const GraphCoverageMap& read_paths_cov_map) const;
@@ -84,31 +90,18 @@ private:
     shared_ptr<SimpleExtender> MakeLongEdgePEExtender(size_t lib_index,
                                                       bool investigate_loops) const;
 
-    shared_ptr<WeightCounter> MakeMetaWeightCounter(shared_ptr<PairedInfoLibrary> lib,
-                                                    size_t read_length) const;
-
-    shared_ptr<SimpleExtensionChooser> MakeMetaExtensionChooser(shared_ptr<PairedInfoLibrary> lib,
-                                                                size_t read_length) const;
-
-    shared_ptr<SimpleExtender> MakeMetaExtender(size_t lib_index, bool investigate_loops) const;
-
     shared_ptr<GapAnalyzer> MakeGapAnalyzer(double is_variation) const;
 
     shared_ptr<PathExtender> MakeScaffoldingExtender(size_t lib_index) const;
 
-
     shared_ptr<PathExtender> MakeRNAScaffoldingExtender(size_t lib_index) const;
-
 
     shared_ptr<PathExtender> MakeMatePairScaffoldingExtender
         (size_t lib_index, const ScaffoldingUniqueEdgeStorage &storage) const;
 
-
     shared_ptr<SimpleExtender> MakeCoordCoverageExtender(size_t lib_index) const;
 
-
     shared_ptr<SimpleExtender> MakeRNAExtender(size_t lib_index, bool investigate_loops) const;
-
 
     void PrintExtenders(const vector<shared_ptr<PathExtender>> &extenders) const;
 

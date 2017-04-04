@@ -43,7 +43,7 @@ public:
             lib_connection_condition_(condition),
             unique_edges_(unique_edges),
             relative_weight_threshold_(relative_threshold),
-            graph_connection_condition_(g, 2 * unique_edges_.GetMinLength(), unique_edges),
+            graph_connection_condition_(g, 2 * unique_edges_.min_length(), unique_edges),
             //TODO to config!
             absolute_weight_threshold_(2),
             graph_connection_bonus_(2),

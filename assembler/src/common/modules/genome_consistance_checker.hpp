@@ -142,7 +142,7 @@ class GenomeConsistenceChecker {
     const size_t unresolvable_len_;
 
     const ScaffoldingUniqueEdgeStorage &storage_;
-    const vector<shared_ptr<path_extend::GraphCoverageMap>> &long_reads_cov_map_;
+    const vector<path_extend::GraphCoverageMap> &long_reads_cov_map_;
     static const size_t SIGNIFICANT_LENGTH_LOWER_LIMIT = 10000;
     GenomeInfo genome_info_;
     //Edges containing zero point for each reference
@@ -204,7 +204,7 @@ public:
                              double relative_max_gap /*= 0.2*/,
                              size_t unresolvable_len,
                              const ScaffoldingUniqueEdgeStorage &storage,
-                             const vector<shared_ptr<path_extend::GraphCoverageMap>> &long_reads_cov_map,
+                             const vector<path_extend::GraphCoverageMap> &long_reads_cov_map,
                              const io::DataSet<config::DataSetData> reads) :
             gp_(gp),
             absolute_max_gap_(max_gap),

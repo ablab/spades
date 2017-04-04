@@ -40,7 +40,7 @@ vector<shared_ptr<ConnectionCondition>>
                 INFO("Unusable for scaffold graph paired lib #" << lib_index);
                 continue;
             }
-            conditions.push_back(make_shared<ScaffoldGraphPairedConnectionCondition>(gp_.g, edge_storage.GetSet(),
+            conditions.push_back(make_shared<ScaffoldGraphPairedConnectionCondition>(gp_.g, edge_storage.unique_edges(),
                                                                                      paired_lib, lib_index,
                                                                                      params.always_add,
                                                                                      params.never_add,
@@ -56,7 +56,7 @@ shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaffoldG
     const pe_config::ParamSetT::ScaffoldGraphParamsT &params = params_.pset.scaffold_graph_params;
 
     INFO("Constructing connections");
-    LengthLowerBound edge_condition(gp_.g, edge_storage.GetMinLength());
+    LengthLowerBound edge_condition(gp_.g, edge_storage.min_length());
 
     vector<shared_ptr<ConnectionCondition>> conditions =
         ConstructPairedConnectionConditions(edge_storage);
@@ -69,9 +69,9 @@ shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaffoldG
 
     INFO("Total conditions " << conditions.size());
 
-    INFO("Constructing scaffold graph from set of size " << edge_storage.GetSet().size());
+    INFO("Constructing scaffold graph from set of size " << edge_storage.unique_edges().size());
 
-    DefaultScaffoldGraphConstructor constructor(gp_.g, edge_storage.GetSet(), conditions, edge_condition);
+    DefaultScaffoldGraphConstructor constructor(gp_.g, edge_storage.unique_edges(), conditions, edge_condition);
     auto scaffold_graph = constructor.Construct();
 
     INFO("Scaffold graph contains " << scaffold_graph->VertexCount() << " vertices and " << scaffold_graph->EdgeCount()
@@ -111,14 +111,14 @@ void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
         debruijn_graph::GenomeConsistenceChecker genome_checker(gp_,
                                                                 params_.pset.genome_consistency_checker.max_gap,
                                                                 params_.pset.genome_consistency_checker.relative_max_gap,
-                                                                unique_data_.main_unique_storage_.GetMinLength(),
+                                                                unique_data_.main_unique_storage_.min_length(),
                                                                 unique_data_.main_unique_storage_,
                                                                 unique_data_.long_reads_cov_map_,
                                                                 dataset_info_.reads);
         scaffold_graph = ConstructScaffoldGraph(unique_data_.main_unique_storage_);
         if (params_.pset.scaffold_graph_params.output) {
             PrintScaffoldGraph(*scaffold_graph,
-                               unique_data_.main_unique_storage_.GetSet(),
+                               unique_data_.main_unique_storage_.unique_edges(),
                                genome_checker,
                                params_.etc_dir + "scaffold_graph");
         }
@@ -129,7 +129,7 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
     if (gp_.genome.size() == 0)
         return;
     bool use_main_storage = params_.pset.genome_consistency_checker.use_main_storage;
-    size_t unresolvable_gap = unique_data_.main_unique_storage_.GetMinLength();
+    size_t unresolvable_gap = unique_data_.main_unique_storage_.min_length();
     ScaffoldingUniqueEdgeStorage tmp_storage;
     if (!use_main_storage) {
         unresolvable_gap = params_.pset.genome_consistency_checker.unresolvable_jump;
@@ -263,34 +263,30 @@ void PathExtendLauncher::TraverseLoops(PathContainer &paths, GraphCoverageMap &c
     INFO("Traversed " << res << " loops");
 }
 
-Extenders PathExtendLauncher::ConstructMPExtender(const ExtendersGenerator &generator, size_t uniqe_edge_len) {
-    ScaffoldingUniqueEdgeAnalyzer additional_edge_analyzer(gp_, (size_t) uniqe_edge_len, unique_data_.unique_variation_);
-    unique_data_.unique_storages_.push_back(make_shared<ScaffoldingUniqueEdgeStorage>());
-    additional_edge_analyzer.FillUniqueEdgeStorage(*unique_data_.unique_storages_.back());
-
-    return generator.MakeMPExtenders(*unique_data_.unique_storages_.back());
+void PathExtendLauncher::AddScaffUniqueStorage(size_t uniqe_edge_len) {
+    ScaffoldingUniqueEdgeAnalyzer additional_edge_analyzer(gp_, (size_t) uniqe_edge_len,
+                                                           unique_data_.unique_variation_);
+    unique_data_.unique_storages_.push_back(ScaffoldingUniqueEdgeStorage());
+    additional_edge_analyzer.FillUniqueEdgeStorage(unique_data_.unique_storages_.back());
 }
 
 Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &generator) {
     const pe_config::ParamSetT &pset = params_.pset;
 
-    Extenders extenders =  generator.MakeMPExtenders(unique_data_.main_unique_storage_);
-    INFO("Using " << extenders.size() << " mate-pair " << support_.LibStr(extenders.size()));
-
     size_t cur_length = unique_data_.min_unique_length_ - pset.scaffolding2015.unique_length_step;
     size_t lower_bound = max(pset.scaffolding2015.unique_length_lower_bound, pset.scaffolding2015.unique_length_step);
 
     while (cur_length > lower_bound) {
-        INFO("Adding extender with length " << cur_length);
-        utils::push_back_all(extenders, ConstructMPExtender(generator, cur_length));
+        INFO("Will add extenders for length " << cur_length);
+        AddScaffUniqueStorage(cur_length);
         cur_length -= pset.scaffolding2015.unique_length_step;
     }
     if (unique_data_.min_unique_length_ > lower_bound) {
-        INFO("Adding final extender with length " << lower_bound);
-        utils::push_back_all(extenders, ConstructMPExtender(generator, lower_bound));
+        INFO("Will add final extenders for length " << lower_bound);
+        AddScaffUniqueStorage(lower_bound);
     }
 
-    return extenders;
+    return generator.MakeMPExtenders();
 }
 
 void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_threshold) {
@@ -305,17 +301,17 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
         BidirectionalPath *conj_path = new BidirectionalPath(new_path->Conjugate());
         new_path->SetWeight((float) path.getWeight());
         conj_path->SetWeight((float) path.getWeight());
-        unique_data_.long_reads_paths_[lib_index]->AddPair(new_path, conj_path);
+        unique_data_.long_reads_paths_[lib_index].AddPair(new_path, conj_path);
     }
-    DEBUG("Long reads paths " << unique_data_.long_reads_paths_[lib_index]->size());
-    unique_data_.long_reads_cov_map_[lib_index]->AddPaths(*unique_data_.long_reads_paths_[lib_index]);
+    DEBUG("Long reads paths " << unique_data_.long_reads_paths_[lib_index].size());
+    unique_data_.long_reads_cov_map_[lib_index].AddPaths(unique_data_.long_reads_paths_[lib_index]);
 }
 
 
 void PathExtendLauncher::FillLongReadsCoverageMaps() {
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
-        unique_data_.long_reads_paths_.push_back(make_shared<PathContainer>());
-        unique_data_.long_reads_cov_map_.push_back(make_shared<GraphCoverageMap>(gp_.g));
+        unique_data_.long_reads_paths_.push_back(PathContainer());
+        unique_data_.long_reads_cov_map_.push_back(GraphCoverageMap(gp_.g));
         if (support_.IsForSingleReadExtender(dataset_info_.reads[lib_index])) {
             FillPathContainer(lib_index);
         }
@@ -353,19 +349,19 @@ void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
 
 Extenders PathExtendLauncher::ConstructPBExtenders(const ExtendersGenerator &generator) {
     FillPBUniqueEdgeStorages();
-    return generator.MakePBScaffoldingExtenders(unique_data_.unique_pb_storage_,
-                                                unique_data_.long_reads_cov_map_);
+    return generator.MakePBScaffoldingExtenders();
 }
 
 
-Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap& cover_map) {
+Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_map,
+                                                 UsedUniqueStorage &used_unique_storage) {
     INFO("Creating main extenders, unique edge length = " << unique_data_.min_unique_length_);
     if (support_.SingleReadsMapped() || support_.HasLongReads())
         FillLongReadsCoverageMaps();
 
-    ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, support_);
-    Extenders extenders = generator.MakeBasicExtenders(unique_data_.main_unique_storage_,
-                                                       unique_data_.long_reads_cov_map_);
+    ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map,
+                                 unique_data_, used_unique_storage, support_);
+    Extenders extenders = generator.MakeBasicExtenders();
 
     //long reads scaffolding extenders.
     if (support_.HasLongReads()) {
@@ -392,7 +388,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap& cover_m
 }
 
 void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &result,
-                                     const GraphCoverageMap& cover_map) const {
+                                     const GraphCoverageMap& /* cover_map */) const {
     //Fixes distances for paths gaps and tries to fill them in
     INFO("Closing gaps in paths");
 
@@ -408,14 +404,16 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
         }
     }
 
-    ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, support_);
-//TODO:: is it really empty?
+////TODO:: is it really empty?
+//    UniqueData unique_data;
+//    UsedUniqueStorage used_unique_storage(unique_data.main_unique_storage_);
+//    ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map,
+//                                 unique_data, used_unique_storage, support_);
 //    auto polisher_storage = ScaffoldingUniqueEdgeStorage();
 //    for  (const auto& extender: generator.MakePEExtenders()) {
-//        extender->AddUniqueEdgeStorage(make_shared<UsedUniqueStorage>(polisher_storage));
 //        gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender));
 //    }
-//    auto used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage(unique));
+//FIXME: uncomment cover_map 
 
     PathPolisher polisher(gp_, gap_closers);
     result = polisher.PolishPaths(paths);
@@ -443,14 +441,16 @@ void PathExtendLauncher::Launch() {
     DebugOutputPaths(seeds, "init_paths");
 
     GraphCoverageMap cover_map(gp_.g);
-    Extenders extenders = ConstructExtenders(cover_map);
-    shared_ptr<CompositeExtender> composite_extender = make_shared<CompositeExtender>(gp_.g, cover_map, extenders,
-                                                                                      unique_data_.main_unique_storage_,
-                                                                                      params_.max_path_diff,
-                                                                                      params_.pset.extension_options.max_repeat_length,
-                                                                                      params_.detect_repeats_online);
+    UsedUniqueStorage used_unique_storage(unique_data_.main_unique_storage_);
+    Extenders extenders = ConstructExtenders(cover_map, used_unique_storage);
+    CompositeExtender composite_extender(gp_.g, cover_map,
+                                         used_unique_storage,
+                                         extenders,
+                                         params_.max_path_diff,
+                                         params_.pset.extension_options.max_repeat_length,
+                                         params_.detect_repeats_online);
 
-    auto paths = resolver.ExtendSeeds(seeds, *composite_extender);
+    auto paths = resolver.ExtendSeeds(seeds, composite_extender);
     paths.FilterEmptyPaths();
     paths.SortByLength();
     DebugOutputPaths(paths, "raw_paths");

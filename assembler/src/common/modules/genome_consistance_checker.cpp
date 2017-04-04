@@ -94,7 +94,6 @@ void GenomeConsistenceChecker::ReportVariants(vector<pair<double, EdgeId>> &sort
     if (sorted_w.size() == 0) {
         INFO("No uniqueness info");
     }
-
 }
 
 void GenomeConsistenceChecker::ReportPathEndByLongLib(const path_extend::BidirectionalPathSet &covering_paths,
@@ -107,7 +106,7 @@ void GenomeConsistenceChecker::ReportPathEndByLongLib(const path_extend::Bidirec
             for (size_t p_ind = 0; p_ind < cov_path->Size(); p_ind++) {
                 if (cov_path->At(p_ind) == current_edge) {
                     for (size_t p_ind2  = p_ind + 1; p_ind2 < cov_path->Size(); p_ind2++) {
-                        if (gp_.g.length(cov_path->At(p_ind2)) >= storage_.GetMinLength() ) {
+                        if (gp_.g.length(cov_path->At(p_ind2)) >= storage_.min_length() ) {
                             next_weigths[cov_path->At(p_ind2)] += w;
                         }
                     }
@@ -128,7 +127,7 @@ void GenomeConsistenceChecker::ReportPathEndByPairedLib(const shared_ptr<path_ex
     vector<pair<double, EdgeId>> sorted_w;
     set<EdgeId> result;
     paired_lib->FindJumpEdges(current_edge, result, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(),
-                              storage_.GetMinLength());
+                              storage_.min_length());
     for (const auto e: result) {
         double w = paired_lib->CountPairedInfo(current_edge, e, std::numeric_limits<int>::min(),
                                                std::numeric_limits<int>::max());
@@ -164,7 +163,7 @@ void GenomeConsistenceChecker::CheckPathEnd(const BidirectionalPath &path) const
                         paired_lib = path_extend::MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
                     ReportPathEndByPairedLib(paired_lib, current_edge);
                 } else if (lib.is_long_read_lib()) {
-                    ReportPathEndByLongLib(long_reads_cov_map_[lib_index]->GetCoveringPaths(current_edge), current_edge);
+                    ReportPathEndByLongLib(long_reads_cov_map_[lib_index].GetCoveringPaths(current_edge), current_edge);
                 }
             }
             return;
@@ -173,7 +172,7 @@ void GenomeConsistenceChecker::CheckPathEnd(const BidirectionalPath &path) const
 }
 
 size_t GenomeConsistenceChecker::GetSupportingPathCount(EdgeId e1, EdgeId e2, size_t lib_index) const {
-    auto covering_paths = long_reads_cov_map_[lib_index]->GetCoveringPaths(e1);
+    auto covering_paths = long_reads_cov_map_[lib_index].GetCoveringPaths(e1);
     size_t res = 0;
     for (const auto & cov_path: covering_paths) {
         double w = cov_path->GetWeight();
@@ -431,7 +430,7 @@ void GenomeConsistenceChecker::TheoreticLenStats(vector<size_t> theoretic_lens) 
         cur += theoretic_lens[i];
         i++;
     }
-    INFO("Assuming gaps of length > " << storage_.GetMinLength() << " unresolvable..");
+    INFO("Assuming gaps of length > " << storage_.min_length() << " unresolvable..");
     if (theoretic_lens.size() > 0)
         INFO("Rough estimates on N50/L50:" << theoretic_lens[i - 1] << " / " << i - 1 << " with len " << total_len);
 }

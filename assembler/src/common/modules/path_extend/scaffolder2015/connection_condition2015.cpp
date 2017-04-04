@@ -216,7 +216,7 @@ int PairedLibConnectionCondition::GetMedianGap(debruijn_graph::EdgeId e1, debrui
 
 AssemblyGraphConnectionCondition::AssemblyGraphConnectionCondition(const debruijn_graph::Graph &g,
                     size_t max_connection_length, const ScaffoldingUniqueEdgeStorage & unique_edges) :
-        g_(g), max_connection_length_(max_connection_length), interesting_edge_set_(unique_edges.GetSet()), stored_distances_() {
+        g_(g), max_connection_length_(max_connection_length), interesting_edge_set_(unique_edges.unique_edges()), stored_distances_() {
 }
 
 map <debruijn_graph::EdgeId, double> AssemblyGraphConnectionCondition::ConnectedWith(debruijn_graph::EdgeId e) const {

@@ -78,8 +78,7 @@ public:
     virtual void BackEdgeAdded(EdgeId e, BidirectionalPath *path, const Gap &gap) = 0;
     virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath *path) = 0;
     virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath *path) = 0;
-    virtual ~PathListener() {
-    }
+    virtual ~PathListener() {}
 };
 
 

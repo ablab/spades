@@ -26,17 +26,7 @@ class PathExtendLauncher {
     shared_ptr<ContigNameGenerator> contig_name_generator_;
     ContigWriter writer_;
 
-    struct {
-        size_t min_unique_length_;
-        double unique_variation_;
-
-        ScaffoldingUniqueEdgeStorage main_unique_storage_;
-        vector<shared_ptr<ScaffoldingUniqueEdgeStorage>> unique_storages_;
-
-        ScaffoldingUniqueEdgeStorage unique_pb_storage_;
-        vector<shared_ptr<PathContainer>> long_reads_paths_;
-        vector<shared_ptr<GraphCoverageMap>> long_reads_cov_map_;
-    } unique_data_;
+    UniqueData unique_data_;
 
     vector<shared_ptr<ConnectionCondition>>
         ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage& edge_storage) const;
@@ -71,11 +61,11 @@ class PathExtendLauncher {
 
     void PolishPaths(const PathContainer &paths, PathContainer &result, const GraphCoverageMap &cover_map) const;
 
-    Extenders ConstructExtenders(const GraphCoverageMap &cover_map);
+    Extenders ConstructExtenders(const GraphCoverageMap &cover_map, UsedUniqueStorage &used_unique_storage);
 
     Extenders ConstructMPExtenders(const ExtendersGenerator &generator);
 
-    Extenders ConstructMPExtender(const ExtendersGenerator &generator, size_t unique_edge_len);
+    void AddScaffUniqueStorage(size_t uniqe_edge_len);
 
     Extenders ConstructPBExtenders(const ExtendersGenerator &generator);
 

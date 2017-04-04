@@ -44,9 +44,8 @@ public:
 private:
     const Graph& g_;
 
-    std::unordered_map <EdgeId, MapDataT * > edge_coverage_;
-
-    MapDataT * empty_;
+    std::unordered_map<EdgeId, MapDataT * > edge_coverage_;
+    const MapDataT empty_;
 
     void EdgeAdded(EdgeId e, BidirectionalPath * path) {
         auto iter = edge_coverage_.find(e);
@@ -85,19 +84,23 @@ private:
     }
 
 public:
-    GraphCoverageMap(const Graph& g) : g_(g), edge_coverage_() {
-        empty_ = new MapDataT();
+    GraphCoverageMap(const GraphCoverageMap&) = delete;
+    GraphCoverageMap& operator=(const GraphCoverageMap&) = delete;
+
+    GraphCoverageMap(GraphCoverageMap&&) = default;
+    GraphCoverageMap& operator=(GraphCoverageMap&&) = default;
+
+    explicit GraphCoverageMap(const Graph& g) : g_(g) {
+        //FIXME heavy constructor
         edge_coverage_.reserve(EdgeCount());
     }
 
-    GraphCoverageMap(const Graph& g, const PathContainer& paths, bool subscribe = false) : g_(g), edge_coverage_() {
-        empty_ = new MapDataT();
-        edge_coverage_.reserve(EdgeCount());
+    GraphCoverageMap(const Graph& g, const PathContainer& paths, bool subscribe = false) :
+            GraphCoverageMap(g) {
         AddPaths(paths, subscribe);
     }
 
-    virtual ~GraphCoverageMap() {
-        delete empty_;
+    ~GraphCoverageMap() {
         for (auto iter = edge_coverage_.begin(); iter != edge_coverage_.end(); ++iter) {
             delete iter->second;
         }
@@ -134,12 +137,12 @@ public:
         EdgeRemoved(e, path);
     }
 
-    MapDataT * GetEdgePaths(EdgeId e) const {
+    const MapDataT *  GetEdgePaths(EdgeId e) const {
         auto iter = edge_coverage_.find(e);
         if (iter != edge_coverage_.end()) {
             return iter->second;
         }
-        return empty_;
+        return &empty_;
     }
 
     int GetCoverage(EdgeId e) const {
@@ -180,8 +183,6 @@ public:
         return g_;
     }
 
-private:
-    GraphCoverageMap(const GraphCoverageMap& t) : g_(t.g_), empty_(t.empty_) {}
 };
 
 //result -- first edge is loop's back edge, second is loop exit edge

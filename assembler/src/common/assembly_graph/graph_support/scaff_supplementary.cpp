@@ -33,23 +33,23 @@ void ScaffoldingUniqueEdgeAnalyzer::SetCoverageBasedCutoff() {
 }
 
 
-void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgeStorage(ScaffoldingUniqueEdgeStorage &storage_) {
-    storage_.unique_edges_.clear();
+void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgeStorage(ScaffoldingUniqueEdgeStorage &storage) {
+    storage.unique_edges_.clear();
     size_t total_len = 0;
     size_t unique_len = 0;
     size_t unique_num = 0;
-    storage_.SetMinLength(length_cutoff_);
+    storage.set_min_length(length_cutoff_);
     for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
         size_t tlen = gp_.g.length(*iter);
         total_len += tlen;
         if (gp_.g.length(*iter) >= length_cutoff_ && gp_.g.coverage(*iter) > median_coverage_ * (1 - relative_coverage_variation_)
                 && gp_.g.coverage(*iter) < median_coverage_ * (1 + relative_coverage_variation_) ) {
-            storage_.unique_edges_.insert(*iter);
+            storage.unique_edges_.insert(*iter);
             unique_len += tlen;
             unique_num ++;
         }
     }
-    for (auto iter = storage_.begin(); iter != storage_.end(); ++iter) {
+    for (auto iter = storage.begin(); iter != storage.end(); ++iter) {
         DEBUG (gp_.g.int_id(*iter) << " " << gp_.g.coverage(*iter) << " " << gp_.g.length(*iter) );
     }
     INFO ("With length cutoff: " << length_cutoff_ <<", median long edge coverage: " << median_coverage_ << ", and maximal unique coverage: " <<
@@ -84,8 +84,9 @@ map<EdgeId, size_t> ScaffoldingUniqueEdgeAnalyzer::FillNextEdgeVoting(Bidirectio
     return voting;
 }
 
-bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap> long_reads_cov_map, const pe_config::LongReads lr_config, int direction) const {
-    BidirectionalPathSet all_set = long_reads_cov_map->GetCoveringPaths(e);
+bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, const GraphCoverageMap &long_reads_cov_map,
+                                                        const pe_config::LongReads &lr_config, int direction) const {
+    BidirectionalPathSet all_set = long_reads_cov_map.GetCoveringPaths(e);
     BidirectionalPathMap<size_t> active_paths;
     size_t loop_weight = 0;
     size_t nonloop_weight = 0;
@@ -146,7 +147,9 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<Gra
     return true;
 }
 
-bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<GraphCoverageMap> long_reads_cov_map, const pe_config::LongReads lr_config) const{
+bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e,
+                                                        const GraphCoverageMap &long_reads_cov_map,
+                                                        const pe_config::LongReads &lr_config) const{
     return (ConservativeByPaths(e, long_reads_cov_map, lr_config, 1) && ConservativeByPaths(e, long_reads_cov_map, lr_config, -1));
 }
 
@@ -167,7 +170,7 @@ void ScaffoldingUniqueEdgeAnalyzer::CheckCorrectness(ScaffoldingUniqueEdgeStorag
     }
 }
 
-set<VertexId> ScaffoldingUniqueEdgeAnalyzer::GetChildren(VertexId v, map <VertexId, set<VertexId>> &dijkstra_cash_) const {
+set<VertexId> ScaffoldingUniqueEdgeAnalyzer::GetChildren(VertexId v, map<VertexId, set<VertexId>> &dijkstra_cash_) const {
     DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
             DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(gp_.g, max_dijkstra_depth_, max_dijkstra_vertices_));
     dijkstra.Run(v);
@@ -180,7 +183,7 @@ set<VertexId> ScaffoldingUniqueEdgeAnalyzer::GetChildren(VertexId v, map <Vertex
     return dijkstra_cash_[v];
 }
 
-bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(EdgeId e1, EdgeId e2, map <VertexId, set<VertexId>> &dijkstra_cash_) const {
+bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(EdgeId e1, EdgeId e2, map<VertexId, set<VertexId>> &dijkstra_cash_) const {
     auto s1 = GetChildren(gp_.g.EdgeEnd(e1), dijkstra_cash_);
     auto s2 = GetChildren(gp_.g.EdgeEnd(e2), dijkstra_cash_);
     if (s1.find(gp_.g.EdgeStart(e2)) != s1.end()) {
@@ -198,7 +201,7 @@ bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(EdgeId e1, EdgeId e2, map
     return false;
 }
 
-bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(vector<pair<EdgeId, double>> &next_weights) const {
+bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(const vector<pair<EdgeId, double>> &next_weights) const {
     map <VertexId, set<VertexId>> dijkstra_cash_;
     for (size_t i = 0; i < next_weights.size(); i ++) {
         for (size_t j = i + 1; j < next_weights.size(); j++) {
@@ -238,17 +241,18 @@ bool ScaffoldingUniqueEdgeAnalyzer::FindCommonChildren(EdgeId from, size_t lib_i
 }
 
 
-void ScaffoldingUniqueEdgeAnalyzer::ClearLongEdgesWithPairedLib(size_t lib_index, ScaffoldingUniqueEdgeStorage &storage_) const {
+void ScaffoldingUniqueEdgeAnalyzer::ClearLongEdgesWithPairedLib(size_t lib_index,
+                                                                ScaffoldingUniqueEdgeStorage &storage) const {
     set<EdgeId> to_erase;
-    for (EdgeId edge: storage_ ) {
+    for (EdgeId edge: storage) {
         if (!FindCommonChildren(edge, lib_index)) {
             to_erase.insert(edge);
             to_erase.insert(gp_.g.conjugate(edge));
         }
     }
-    for (auto iter = storage_.begin(); iter !=  storage_.end(); ){
+    for (auto iter = storage.begin(); iter != storage.end(); ){
         if (to_erase.find(*iter) != to_erase.end()){
-            iter = storage_.erase(iter);
+            iter = storage.erase(iter);
         } else {
             iter++;
         }
@@ -256,7 +260,9 @@ void ScaffoldingUniqueEdgeAnalyzer::ClearLongEdgesWithPairedLib(size_t lib_index
 }
 
 
-void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(shared_ptr<GraphCoverageMap> long_reads_cov_map, ScaffoldingUniqueEdgeStorage& unique_storage_pb, const pe_config::LongReads lr_config) {
+void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(GraphCoverageMap &long_reads_cov_map,
+                                                                 ScaffoldingUniqueEdgeStorage &unique_storage_pb,
+                                                                 const pe_config::LongReads &lr_config) {
     for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
         EdgeId e = *iter;
         if (ConservativeByLength(e) && ConservativeByPaths(e, long_reads_cov_map, lr_config)) {

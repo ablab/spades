@@ -480,9 +480,9 @@ public:
         return edges;
     }
 
-    PathContainer ExtendSeeds(PathContainer &seeds, ContigsMaker &pathExtender) const {
+    PathContainer ExtendSeeds(PathContainer &seeds, CompositeExtender &composite_extender) const {
         PathContainer paths;
-        pathExtender.GrowAll(seeds, paths);
+        composite_extender.GrowAll(seeds, paths);
         return paths;
     }
 

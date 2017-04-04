@@ -634,123 +634,64 @@ private:
     BidirectionalPath* empty_;
 };
 
-class ContigsMaker {
-public:
-    ContigsMaker(const Graph & g)
-            : g_(g) { }
-
-    virtual ~ContigsMaker() { }
-
-    virtual void GrowPath(BidirectionalPath& path, PathContainer* paths_storage = nullptr) = 0;
-
-    virtual void GrowPathSimple(BidirectionalPath& path, PathContainer* paths_storage = nullptr) = 0;
-
-    virtual void GrowAll(PathContainer & paths, PathContainer& paths_storage) = 0;
-
-protected:
-    const Graph& g_;
-    DECL_LOGGER("PathExtender")
-};
-
-struct UsedUniqueStorage {
-    set<EdgeId> used_;
-
-    const ScaffoldingUniqueEdgeStorage& unique_;
-
-    UsedUniqueStorage(const ScaffoldingUniqueEdgeStorage& unique ):used_(), unique_(unique) {}
-
-    void insert(EdgeId e) {
-        if (unique_.IsUnique(e)) {
-            used_.insert(e);
-            used_.insert(e->conjugate());
-        }
-    }
-
-    bool IsUsedAndUnique(EdgeId e) const {
-        return (unique_.IsUnique(e) && used_.find(e) != used_.end());
-    }
-
-    bool UniqueCheckEnabled() const {
-        return unique_.size() > 0;
-    }
-
-
-};
-
 class PathExtender {
 public:
-    PathExtender(const Graph & g): g_(g) {
-        used_storage_ = make_shared<UsedUniqueStorage>(ScaffoldingUniqueEdgeStorage());        
-    }
+    explicit PathExtender(const Graph &g):
+        g_(g) { }
 
     virtual ~PathExtender() { }
 
     virtual bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage = nullptr) = 0;
 
-    void AddUniqueEdgeStorage(shared_ptr<UsedUniqueStorage> used_storage) {
-        used_storage_ = used_storage;
-    }
 protected:
-    const Graph& g_;
-    shared_ptr<UsedUniqueStorage> used_storage_;
+    const Graph &g_;
     DECL_LOGGER("PathExtender")
 };
 
-class CompositeExtender : public ContigsMaker {
+class CompositeExtender {
 public:
+
     CompositeExtender(const Graph &g, GraphCoverageMap& cov_map,
+                      UsedUniqueStorage &unique,
+                      const vector<shared_ptr<PathExtender>> &pes,
                       size_t max_diff_len,
                       size_t max_repeat_length,
                       bool detect_repeats_online)
-            : ContigsMaker(g),
+            : g_(g),
               cover_map_(cov_map),
+              used_storage_(unique),
+              //FIXME magic constant
               repeat_detector_(g, cover_map_, 2 * max_repeat_length),
-              extenders_(),
+              extenders_(pes),
               max_diff_len_(max_diff_len),
               max_repeat_len_(max_repeat_length),
               detect_repeats_online_(detect_repeats_online) {
     }
 
-    CompositeExtender(const Graph & g, GraphCoverageMap& cov_map,
-                      vector<shared_ptr<PathExtender> > pes,
-                      const ScaffoldingUniqueEdgeStorage& unique,
-                      size_t max_diff_len,
-                      size_t max_repeat_length,
-                      bool detect_repeats_online)
-            : ContigsMaker(g),
-              cover_map_(cov_map),
-              repeat_detector_(g, cover_map_, 2 * max_repeat_length),
-              extenders_(),
-              max_diff_len_(max_diff_len),
-              max_repeat_len_(max_repeat_length),
-              detect_repeats_online_(detect_repeats_online) {
-        extenders_ = pes;
-        used_storage_ = make_shared<UsedUniqueStorage>(unique);
-        for (auto ex: extenders_) {
-            ex->AddUniqueEdgeStorage(used_storage_);
-        }
-    }
-
-    void AddExtender(shared_ptr<PathExtender> pe) {
-        extenders_.push_back(pe);
-        pe->AddUniqueEdgeStorage(used_storage_);
-    }
-
-    void GrowAll(PathContainer& paths, PathContainer& result) override {
+    void GrowAll(PathContainer& paths, PathContainer& result) {
         result.clear();
         GrowAllPaths(paths, result);
         LengthPathFilter filter(g_, 0);
         filter.filter(result);
     }
 
-    void GrowPath(BidirectionalPath& path, PathContainer* paths_storage) override {
+    void GrowPath(BidirectionalPath& path, PathContainer* paths_storage) {
         while (MakeGrowStep(path, paths_storage)) { }
     }
 
-    void GrowPathSimple(BidirectionalPath& path, PathContainer* paths_storage) override {
+    void GrowPathSimple(BidirectionalPath& path, PathContainer* paths_storage) {
         while (MakeGrowStep(path, paths_storage, false)) { }
     }
 
+private:
+    const Graph &g_;
+    GraphCoverageMap &cover_map_;
+    UsedUniqueStorage &used_storage_;
+    RepeatDetector repeat_detector_;
+    vector<shared_ptr<PathExtender>> extenders_;
+    size_t max_diff_len_;
+    size_t max_repeat_len_;
+    bool detect_repeats_online_;
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage,
                       bool detect_repeats_online_local = true) {
@@ -810,15 +751,6 @@ public:
         return false;
     }
     
-private:
-    GraphCoverageMap& cover_map_;
-    RepeatDetector repeat_detector_;
-    vector<shared_ptr<PathExtender> > extenders_;
-    size_t max_diff_len_;
-    size_t max_repeat_len_;
-    bool detect_repeats_online_;
-    shared_ptr<UsedUniqueStorage> used_storage_;
-
     void SubscribeCoverageMap(BidirectionalPath * path) {
         path->Subscribe(&cover_map_);
         for (size_t i = 0; i < path->Size(); ++i) {
@@ -833,16 +765,17 @@ private:
                 INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             }
             //In 2015 modes do not use a seed already used in paths.
-            if (used_storage_->UniqueCheckEnabled()) {
+            //FIXME what is the logic here?
+            if (used_storage_.UniqueCheckEnabled()) {
                 bool was_used = false;
                 for (size_t ind =0; ind < paths.Get(i)->Size(); ind++) {
                     EdgeId eid = paths.Get(i)->At(ind);
-                    if (used_storage_->IsUsedAndUnique(eid)) {
+                    if (used_storage_.IsUsedAndUnique(eid)) {
                         DEBUG("Used edge " << g_.int_id(eid));
                         was_used = true;
                         break;
                     } else {
-                        used_storage_->insert(eid);
+                        used_storage_.insert(eid);
                     }
                 }
                 if (was_used) {
@@ -876,36 +809,23 @@ private:
 
 //All Path-Extenders inherit this one
 class LoopDetectingPathExtender : public PathExtender {
-
-protected:
-    bool investigate_short_loops_;
-    bool use_short_loop_cov_resolver_;
+    const bool use_short_loop_cov_resolver_;
     CovShortLoopResolver cov_loop_resolver_;
 
     InsertSizeLoopDetector is_detector_;
-    const GraphCoverageMap& cov_map_;
+    UsedUniqueStorage &used_storage_;
 
-public:
-    LoopDetectingPathExtender(const conj_graph_pack &gp,
-                                  const GraphCoverageMap &cov_map,
-                                  bool investigate_short_loops,
-                                  bool use_short_loop_cov_resolver,
-                                  size_t is)
-            : PathExtender(gp.g),
-              investigate_short_loops_(investigate_short_loops),
-              use_short_loop_cov_resolver_(use_short_loop_cov_resolver),
-              cov_loop_resolver_(gp),
-              is_detector_(gp.g, is),
-              cov_map_(cov_map) {
+protected:
+    const bool investigate_short_loops_;
+    const GraphCoverageMap &cov_map_;
 
-    }
-
-    bool isInvestigateShortLoops() const {
-        return investigate_short_loops_;
-    }
-
-    void setInvestigateShortLoops(bool investigateShortLoops) {
-        this->investigate_short_loops_ = investigateShortLoops;
+    bool TryUseEdge(BidirectionalPath &path, EdgeId e, const Gap &gap) {
+        bool success = used_storage_.TryUseEdge(path, e, gap);
+        if (success) {
+            DEBUG("Adding edge. PathId: " << path.GetId() << " path length: " << path.Length() - 1 << ", fixed gap : "
+                                          << gap.gap << ", trash length: " << gap.trash_previous << "-" << gap.trash_current);
+        }
+        return success;
     }
 
     bool DetectCycle(BidirectionalPath& path) {
@@ -930,7 +850,21 @@ public:
 
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* paths_storage = nullptr) = 0;
 
-    virtual bool ResolveShortLoopByCov(BidirectionalPath& path) = 0;
+    virtual bool ResolveShortLoopByCov(BidirectionalPath& path) {
+        LoopDetector loop_detector(&path, cov_map_);
+        size_t init_len = path.Length();
+        bool result = false;
+        while (path.Size() >= 1 && loop_detector.EdgeInShortLoop(path.Back())) {
+            cov_loop_resolver_.ResolveShortLoop(path);
+            if (init_len == path.Length()) {
+                return result;
+            } else {
+                result = true;
+            }
+            init_len = path.Length();
+        }
+        return true;
+    }
 
     virtual bool ResolveShortLoopByPI(BidirectionalPath& path) = 0;
 
@@ -938,12 +872,30 @@ public:
         return false;
     }
 
+public:
+    LoopDetectingPathExtender(const conj_graph_pack &gp,
+                              const GraphCoverageMap &cov_map,
+                              UsedUniqueStorage &unique,
+                              bool investigate_short_loops,
+                              bool use_short_loop_cov_resolver,
+                              size_t is)
+            : PathExtender(gp.g),
+              use_short_loop_cov_resolver_(use_short_loop_cov_resolver),
+              cov_loop_resolver_(gp),
+              is_detector_(gp.g, is),
+              used_storage_(unique),
+              investigate_short_loops_(investigate_short_loops),
+              cov_map_(cov_map) {
+
+    }
+
+
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override {
         if (is_detector_.InExistingLoop(path)) {
             DEBUG("in existing loop");
             return false;
         }
-        DEBUG("un ch enabled " << used_storage_->UniqueCheckEnabled());
+        DEBUG("un ch enabled " << used_storage_.UniqueCheckEnabled());
         bool result;
         LoopDetector loop_detector(&path, cov_map_);
         if (DetectCycle(path)) {
@@ -1015,13 +967,14 @@ protected:
 public:
 
     SimpleExtender(const conj_graph_pack &gp,
-                       const GraphCoverageMap &cov_map,
-                       shared_ptr<ExtensionChooser> ec,
-                       size_t is,
-                       bool investigate_short_loops,
-                       bool use_short_loop_cov_resolver,
-                       double weight_threshold = 0.0):
-        LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, use_short_loop_cov_resolver, is),
+                   const GraphCoverageMap &cov_map,
+                   UsedUniqueStorage &unique,
+                   shared_ptr<ExtensionChooser> ec,
+                   size_t is,
+                   bool investigate_short_loops,
+                   bool use_short_loop_cov_resolver,
+                   double weight_threshold = 0.0):
+        LoopDetectingPathExtender(gp, cov_map, unique, investigate_short_loops, use_short_loop_cov_resolver, is),
         extensionChooser_(ec),
         weight_threshold_(weight_threshold) {}
 
@@ -1031,22 +984,6 @@ public:
 
     bool CanInvestigateShortLoop() const override {
         return extensionChooser_->WeightCounterBased();
-    }
-
-    bool ResolveShortLoopByCov(BidirectionalPath& path) override {
-        LoopDetector loop_detector(&path, cov_map_);
-        size_t init_len = path.Length();
-        bool result = false;
-        while (path.Size() >= 1 && loop_detector.EdgeInShortLoop(path.Back())) {
-            cov_loop_resolver_.ResolveShortLoop(path);
-            if (init_len == path.Length()) {
-                return result;
-            } else {
-                result = true;
-            }
-            init_len = path.Length();
-        }
-        return true;
     }
 
     bool ResolveShortLoopByPI(BidirectionalPath& path) override {
@@ -1113,21 +1050,11 @@ protected:
         EdgeId eid = candidates.back().e_;
 //In 2015 modes when trying to use already used unique edge, it is not added and path growing stops.
 //That allows us to avoid overlap removal hacks used earlier.
-        if (used_storage_->UniqueCheckEnabled()) {
-            DEBUG("un chk enabled");
-            if (used_storage_->IsUsedAndUnique(eid)) {
-                return false;
-            } else {
-                used_storage_->insert(eid);
-            }
-        }
-        path.PushBack(eid, Gap(candidates.back().d_));
-        DEBUG("push done");
-        return true;
+        Gap gap(candidates.back().d_);
+        return TryUseEdge(path, eid, gap);
     }
 
     DECL_LOGGER("SimpleExtender")
-
 };
 
 
@@ -1136,14 +1063,15 @@ class MultiExtender: public SimpleExtender {
 
 public:
     MultiExtender(const conj_graph_pack &gp,
-                      const GraphCoverageMap &cov_map,
-                      shared_ptr<ExtensionChooser> ec,
-                      size_t is,
-                      bool investigate_short_loops,
-                      bool use_short_loop_cov_resolver,
-                      double weight_threshold,
-                      size_t max_candidates = 0) :
-        SimpleExtender(gp, cov_map, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold),
+                  const GraphCoverageMap &cov_map,
+                  UsedUniqueStorage &unique,
+                  shared_ptr<ExtensionChooser> ec,
+                  size_t is,
+                  bool investigate_short_loops,
+                  bool use_short_loop_cov_resolver,
+                  double weight_threshold,
+                  size_t max_candidates = 0) :
+        SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold),
         max_candidates_(max_candidates) {
     }
 
@@ -1242,6 +1170,14 @@ protected:
         return true;
     }
 
+    bool ResolveShortLoopByCov(BidirectionalPath&) override {
+        return false;
+    }
+
+    bool ResolveShortLoopByPI(BidirectionalPath&) override {
+        return false;
+    }
+
     //TODO fix awful design with virtual CheckGap and must_overlap flag!
     bool MakeSimpleGrowStepForChooser(BidirectionalPath& path, std::shared_ptr<ExtensionChooser> ec,
                                       bool must_overlap = false) {
@@ -1296,17 +1232,7 @@ protected:
             gap = Gap(candidates.back().d_);
         }
 
-        if (used_storage_->UniqueCheckEnabled()) {
-            if (used_storage_->IsUsedAndUnique(e)) {
-                return false;
-            } else {
-                used_storage_->insert(e);
-            }
-        }
-        DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap : "
-                                      << gap.gap << ", trash length: " << gap.trash_previous << "-" << gap.trash_current);
-        path.PushBack(e, NormalizeGap(gap));
-        return true;
+        return TryUseEdge(path, e, NormalizeGap(gap));
     }
 
     Gap NormalizeGap(Gap gap) const {
@@ -1320,13 +1246,14 @@ public:
 
     ScaffoldingPathExtender(const conj_graph_pack &gp,
                             const GraphCoverageMap &cov_map,
+                            UsedUniqueStorage &unique,
                             std::shared_ptr<ExtensionChooser> extension_chooser,
                             std::shared_ptr<GapAnalyzer> gap_analyzer,
                             size_t is,
                             bool investigate_short_loops,
                             bool avoid_rc_connections,
                             bool check_sink = true):
-        LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, false, is),
+        LoopDetectingPathExtender(gp, cov_map, unique, investigate_short_loops, false, is),
         extension_chooser_(extension_chooser),
         gap_analyzer_(gap_analyzer),
         avoid_rc_connections_(avoid_rc_connections),
@@ -1337,14 +1264,6 @@ public:
 
     bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
         return MakeSimpleGrowStepForChooser(path, extension_chooser_);
-    }
-
-    bool ResolveShortLoopByCov(BidirectionalPath&) override {
-        return false;
-    }
-
-    bool ResolveShortLoopByPI(BidirectionalPath&) override {
-        return false;
     }
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
@@ -1370,13 +1289,14 @@ public:
 
     RNAScaffoldingPathExtender(const conj_graph_pack &gp,
                                const GraphCoverageMap &cov_map,
+                               UsedUniqueStorage &unique,
                                std::shared_ptr<ExtensionChooser> extension_chooser,
                                std::shared_ptr<ExtensionChooser> strict_extension_chooser,
                                std::shared_ptr<GapAnalyzer> gap_joiner,
                                size_t is,
                                bool investigate_short_loops,
                                int min_overlap = 0):
-        ScaffoldingPathExtender(gp, cov_map, extension_chooser, gap_joiner, is, investigate_short_loops, true),
+        ScaffoldingPathExtender(gp, cov_map, unique, extension_chooser, gap_joiner, is, investigate_short_loops, true),
         strict_extension_chooser_(strict_extension_chooser), min_overlap_(min_overlap) {}
 
 

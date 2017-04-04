@@ -35,6 +35,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongReadsExtender(size_t lib_
 
     auto long_read_ec = MakeLongReadsExtensionChooser(lib_index, read_paths_cov_map);
     return make_shared<SimpleExtender>(gp_, cover_map_,
+                                       used_unique_storage_,
                                        long_read_ec,
                                        resolvable_repeat_length_bound,
                                        true, /* investigate short loops */
@@ -58,6 +59,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongEdgePEExtender(size_t lib
                                               opts.priority_coeff);
 
     return make_shared<SimpleExtender>(gp_, cover_map_,
+                                       used_unique_storage_,
                                        extension,
                                        paired_lib->GetISMax(),
                                        investigate_loops,
@@ -103,7 +105,8 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldingExtender(size_t lib_
                                                                        pset.scaffolder_options.cl_threshold,
                                                                        pset.scaffolder_options.var_coeff);
 
-    return make_shared<ScaffoldingPathExtender>(gp_, cover_map_, scaff_chooser,
+    return make_shared<ScaffoldingPathExtender>(gp_, cover_map_,
+                                                used_unique_storage_, scaff_chooser,
                                                 MakeGapAnalyzer(paired_lib->GetIsVar()),
                                                 paired_lib->GetISMax(),
                                                 false, /* investigate short loops */
@@ -130,6 +133,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeRNAScaffoldingExtender(size_t l
 
     VERIFY(pset.scaffolder_options.min_overlap_for_rna_scaffolding.is_initialized());
     return make_shared<RNAScaffoldingPathExtender>(gp_, cover_map_,
+                                                   used_unique_storage_,
                                                    scaff_chooser,
                                                    scaff_chooser2,
                                                    MakeGapAnalyzer(paired_lib->GetIsVar()),
@@ -138,9 +142,8 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeRNAScaffoldingExtender(size_t l
                                                    *pset.scaffolder_options.min_overlap_for_rna_scaffolding);
 }
 
-shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(
-    size_t lib_index,
-    const ScaffoldingUniqueEdgeStorage &storage) const {
+shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(size_t lib_index,
+                                                                             const ScaffoldingUniqueEdgeStorage &storage) const {
 
     const auto &lib = dataset_info_.reads[lib_index];
     const auto &pset = params_.pset;
@@ -173,6 +176,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeMatePairScaffoldingExtender(
                                                                     <= params_.pset.scaffolding2015.graph_connectivity_max_edges);
 
     return make_shared<ScaffoldingPathExtender>(gp_, cover_map_,
+                                                used_unique_storage_,
                                                 scaff_chooser,
                                                 MakeGapAnalyzer(paired_lib->GetIsVar()),
                                                 paired_lib->GetISMax(),
@@ -204,7 +208,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t 
 
     auto chooser = make_shared<JointExtensionChooser>(gp_.g, permissive_pi_chooser, coord_cov_chooser);
 
-    return make_shared<SimpleExtender>(gp_, cover_map_, chooser,
+    return make_shared<SimpleExtender>(gp_, cover_map_, used_unique_storage_, chooser,
                                        -1ul /* insert size is needed only for loop detection, which is not needed in this case */,
                                        false, /* investigate short loops */
                                        false /*use short loop coverage resolver*/,
@@ -230,6 +234,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
                                          opts.priority_coeff);
 
     return make_shared<MultiExtender>(gp_, cover_map_,
+                                      used_unique_storage_,
                                       extension,
                                       paired_lib->GetISMax(),
                                       investigate_loops,
@@ -263,6 +268,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
                                                          opts.priority_coeff);
 
     return make_shared<SimpleExtender>(gp_, cover_map_,
+                                       used_unique_storage_,
                                        extension_chooser,
                                        paired_lib->GetISMax(),
                                        investigate_loops,
@@ -302,6 +308,16 @@ void ExtendersGenerator::PrintExtenders(const Extenders &extenders) const {
     }
 }
 
+Extenders ExtendersGenerator::MakeMPExtenders() const {
+    Extenders extenders = MakeMPExtenders(unique_data_.main_unique_storage_);
+    INFO("Using " << extenders.size() << " mate-pair " << support_.LibStr(extenders.size()));
+
+    for (const auto& unique_storage : unique_data_.unique_storages_) {
+        utils::push_back_all(extenders, MakeMPExtenders(unique_storage));
+    }
+    return extenders;
+}
+
 Extenders ExtendersGenerator::MakeMPExtenders(const ScaffoldingUniqueEdgeStorage &storage) const {
     ExtenderTriplets result;
 
@@ -309,7 +325,8 @@ Extenders ExtendersGenerator::MakeMPExtenders(const ScaffoldingUniqueEdgeStorage
         const auto &lib = dataset_info_.reads[lib_index];
 
         if (lib.is_mate_pair()) {
-            result.emplace_back(lib.type(), lib_index, MakeMatePairScaffoldingExtender(lib_index, storage));
+            result.emplace_back(lib.type(), lib_index,
+                                MakeMatePairScaffoldingExtender(lib_index, storage));
         }
     }
     std::stable_sort(result.begin(), result.end());
@@ -317,8 +334,7 @@ Extenders ExtendersGenerator::MakeMPExtenders(const ScaffoldingUniqueEdgeStorage
     return ExtractExtenders(result);
 }
 
-Extenders ExtendersGenerator::MakePBScaffoldingExtenders(const ScaffoldingUniqueEdgeStorage &unique_storage_pb,
-                                                         const vector<shared_ptr<GraphCoverageMap>> &long_reads_cov_map) const {
+Extenders ExtendersGenerator::MakePBScaffoldingExtenders() const {
     const auto &pset = params_.pset;
     ExtenderTriplets result;
 
@@ -327,11 +343,11 @@ Extenders ExtendersGenerator::MakePBScaffoldingExtenders(const ScaffoldingUnique
             INFO("Creating scaffolding extender for lib " << lib_index);
             shared_ptr<ConnectionCondition> condition = make_shared<LongReadsLibConnectionCondition>(gp_.g,
                                                                                                      lib_index, 2,
-                                                                                                     *long_reads_cov_map[lib_index]);
+                                                                                                     unique_data_.long_reads_cov_map_[lib_index]);
             auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp_.g,
                                                                         nullptr,
                                                                         condition,
-                                                                        unique_storage_pb,
+                                                                        unique_data_.unique_pb_storage_,
                                                                         pset.scaffolder_options.cl_threshold,
                                                                         pset.scaffolder_options.var_coeff,
                                                                         pset.scaffolding2015.relative_weight_cutoff);
@@ -340,6 +356,7 @@ Extenders ExtendersGenerator::MakePBScaffoldingExtenders(const ScaffoldingUnique
                                 lib_index,
                                 //FIXME are utilized constants reasonable?
                                 make_shared<ScaffoldingPathExtender>(gp_, cover_map_,
+                                                                     used_unique_storage_,
                                                                      scaff_chooser,
                                                                      MakeGapAnalyzer(1000), /* "IS variation" */
                                                                      10000, /* insert size */
@@ -365,8 +382,7 @@ Extenders ExtendersGenerator::MakeCoverageExtenders() const {
     return result;
 }
 
-Extenders ExtendersGenerator::MakeBasicExtenders(const ScaffoldingUniqueEdgeStorage &storage,
-                                                 const vector<shared_ptr<GraphCoverageMap>> &long_reads_cov_map) const {
+Extenders ExtendersGenerator::MakeBasicExtenders() const {
     ExtenderTriplets basic_extenders;
     ExtenderTriplets loop_resolving_extenders;
     ExtenderTriplets scaffolding_extenders;
@@ -382,7 +398,9 @@ Extenders ExtendersGenerator::MakeBasicExtenders(const ScaffoldingUniqueEdgeStor
 
         //TODO: scaff2015 does not need any single read libs?
         if (support_.IsForSingleReadExtender(lib)) {
-            basic_extenders.emplace_back(lib.type(), lib_index, MakeLongReadsExtender(lib_index, *long_reads_cov_map[lib_index]));
+            basic_extenders.emplace_back(lib.type(), lib_index,
+                                         MakeLongReadsExtender(lib_index,
+                                                               unique_data_.long_reads_cov_map_[lib_index]));
             ++single_read_libs;
         }
         if (support_.IsForPEExtender(lib)) {
@@ -397,7 +415,9 @@ Extenders ExtendersGenerator::MakeBasicExtenders(const ScaffoldingUniqueEdgeStor
                     basic_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, false));
                 }
             } else if (pset.sm == sm_2015) {
-                basic_extenders.emplace_back(lib.type(), lib_index, MakeMatePairScaffoldingExtender(lib_index, storage));
+                basic_extenders.emplace_back(lib.type(), lib_index,
+                                             MakeMatePairScaffoldingExtender(lib_index,
+                                                                             unique_data_.main_unique_storage_));
             }
         }
         //TODO logic is very cryptic!
@@ -413,7 +433,9 @@ Extenders ExtendersGenerator::MakeBasicExtenders(const ScaffoldingUniqueEdgeStor
             } else {
                 scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeScaffoldingExtender(lib_index));
                 if (pset.sm == sm_combined) {
-                    scaffolding_extenders.emplace_back(lib.type(), lib_index, MakeMatePairScaffoldingExtender(lib_index, storage));
+                    scaffolding_extenders.emplace_back(lib.type(), lib_index,
+                                                       MakeMatePairScaffoldingExtender(lib_index,
+                                                                                       unique_data_.main_unique_storage_));
                 }
             }
         }
