@@ -41,6 +41,15 @@ if (SPADES_STATIC_BUILD)
   set(Boost_USE_STATIC_RUNTIME     ON)
 endif()
 
+option(SPADES_USE_GPROF "gprof profiler" OFF)
+
+if (SPADES_USE_GPROF)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+  SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg") 
+endif()
+
 # Define minimum and maximum K
 set(SPADES_MIN_K 1 CACHE INTEGER "Minimum k-mer length")
 set(SPADES_MAX_K 128 CACHE INTEGER "Maximum k-mer length")
