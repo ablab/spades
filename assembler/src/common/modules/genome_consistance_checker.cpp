@@ -34,7 +34,10 @@ bool GenomeConsistenceChecker::consequent(const MappingRange &mr1, const Mapping
 
 PathScore GenomeConsistenceChecker::CountMisassemblies(const BidirectionalPath &path) const {
     PathScore score = InternalCountMisassemblies(path);
-
+    if (path.Size() == 0) {
+        WARN ("0 length path in GCChecker!!!");
+        return PathScore(0,0,0);
+    }
     size_t total_length = path.LengthAt(0);
 //TODO: constant;
     if (total_length > score.mapped_length * 2) {
@@ -138,7 +141,7 @@ void GenomeConsistenceChecker::SpellGenome() {
 }
 
 void GenomeConsistenceChecker::ReportEdge(EdgeId e, double w) const{
-    INFO( "Edge " << gp_.g.int_id(e) << " weight " << w << " len " << gp_.g.length(e));
+    INFO( "Edge " << gp_.g.int_id(e) << " weight " << w << " len " << gp_.g.length(e) << " cov " << gp_.g.coverage(e));
     if (genome_spelled_.find(e) != genome_spelled_.end()) {
         INFO ("Chromosome " << genome_spelled_.at(e).first << " index " << genome_spelled_.at(e).second );
     } else {
@@ -175,6 +178,16 @@ void GenomeConsistenceChecker::CheckPathEnd(const BidirectionalPath &path) const
     for (int i =  (int)path.Size() - 1; i >= 0; --i) {
         if (storage_.IsUnique(path.At(i))) {
             EdgeId current_edge = path.At(i);
+            if (genome_spelled_.find(current_edge) != genome_spelled_.end()) {
+                auto chromosome = genome_spelled_.at(current_edge).first;
+                auto index = genome_spelled_.at(current_edge).second;
+                auto chromosome_size = chromosomes_spelled_.at(chromosome).size();
+                if (index == 0 || index == chromosome_size) {
+                    DEBUG("Path length " << path.Length() << "ended at the chromosome " << chromosome
+                          << (index == 0 ? " start": " end"));
+                    return;
+                }
+            }
             auto dataset_info_ = cfg::get().ds;
             for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
                 const auto &lib = dataset_info_.reads[lib_index];
@@ -194,7 +207,8 @@ void GenomeConsistenceChecker::CheckPathEnd(const BidirectionalPath &path) const
                     }
                     INFO("Path length " << path.Length() << "ended, looking on lib IS " <<
                          paired_lib->GetIS() << " last long edge: ");
-                    ReportEdge(current_edge, 0.0);
+                    ReportEdge(current_edge, -239.0);
+                    ReportVariants(sorted_w);
                 } else if (lib.is_long_read_lib()) {
                     auto covering_paths = long_reads_cov_map_[lib_index]->GetCoveringPaths(current_edge);
                     for (const auto & cov_path: covering_paths) {
@@ -217,6 +231,7 @@ void GenomeConsistenceChecker::CheckPathEnd(const BidirectionalPath &path) const
                         }
                     }
                     INFO("Path length " << path.Length() << " looking on long reads lib " << lib_index << " last long edge: ");
+                    ReportEdge(current_edge, -239.0);
                     ReportVariants(sorted_w);
                 }
 
@@ -311,10 +326,17 @@ PathScore GenomeConsistenceChecker::InternalCountMisassemblies(const Bidirection
                         DEBUG("interchromosome misassembly!");
                     }
                     if (cur_chr == path_chr && (circular_edges_.find(prev) != circular_edges_.end() ||
-                                circular_edges_.find(path.At(i)) != circular_edges_.end())) {
+                                                circular_edges_.find(path.At(i)) != circular_edges_.end())) {
                         INFO("Skipping fake(circular) misassembly");
+                    } else if (cur_in_genome <= prev_in_genome + 5 && cur_in_genome > prev_in_genome && cur_chr == path_chr  ) {
+                        INFO("Local misassembly between edges: "<<prev.int_id() << " and " << path.At(i).int_id());
+                        size_t total = 0;
+                        for (auto j = prev_in_genome + 1; j < cur_in_genome; j ++) {
+                            total += gp_.g.length(chromosomes_spelled_.at(cur_chr).at(j));
+                        }
+                        INFO("Jumped over " << cur_in_genome - prev_in_genome - 1 << " uniques of total length: " << total);
                     } else {
-                        INFO("Misassembly between edges: "<<prev.int_id() << " and " << path.At(i).int_id());
+                        INFO("Extensive misassembly between edges: "<<prev.int_id() << " and " << path.At(i).int_id());
                         INFO("Ranges: " << prev_range << " and " << cur_range);
                         INFO("Genomic positions: " << prev_in_genome<< ", " << path_chr << " and " << cur_in_genome <<", "<< cur_chr<< " resp.");
                         PrintMisassemblyInfo(prev, path.At(i));
