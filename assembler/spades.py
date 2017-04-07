@@ -303,6 +303,12 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             else:
                 support.error('wrong value for --cov-cutoff option: ' + arg +
                               ' (should be a positive float number, or \'auto\', or \'off\')', log)
+        elif opt == "--hidden-cov-cutoff":
+            if support.is_float(arg) and float(arg) > 0.0:
+                options_storage.lcer_cutoff = float(arg)
+            else:
+                support.error('wrong value for --hidden-cov-cutoff option: ' + arg +
+                              ' (should be a positive float number)', log)
         elif opt == '-i' or opt == "--iterations":
             options_storage.iterations = int(arg)
 
@@ -460,6 +466,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
         cfg["assembly"].__dict__["diploid_mode"] = options_storage.diploid_mode
         cfg["assembly"].__dict__["cov_cutoff"] = options_storage.cov_cutoff
+        cfg["assembly"].__dict__["lcer_cutoff"] = options_storage.lcer_cutoff
         if options_storage.spades_heap_check:
             cfg["assembly"].__dict__["heap_check"] = options_storage.spades_heap_check
         if options_storage.read_buffer_size:

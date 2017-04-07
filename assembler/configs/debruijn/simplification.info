@@ -182,13 +182,6 @@ simp
         relative_threshold          5     
     }
 
-    ; low covered edges initial remover
-    lcer
-    {
-        enabled                     false
-        coverage_threshold          0.0
-    }
-
     init_clean
     {
         self_conj_condition "{ ec_lb 100, cb 1.0 }"

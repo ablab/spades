@@ -58,6 +58,9 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
             subst_dict["coverage_threshold"] = 0.0
         else:
             subst_dict["coverage_threshold"] = cfg.cov_cutoff
+    if cfg.lcer_cutoff is not None:
+        subst_dict["lcer_enabled"] = bool_to_str(True)
+        subst_dict["lcer_coverage_threshold"] = cfg.lcer_cutoff
 
     #TODO: make something about spades.py and config param substitution 
     if "bwa_paired" in cfg.__dict__:

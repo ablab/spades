@@ -133,6 +133,13 @@ kmer_coverage_model {
     coverage_threshold 10.0
 }
 
+; low covered edges remover
+lcer
+{
+    lcer_enabled                     false
+    lcer_coverage_threshold          0.0
+}
+
 pacbio_processor
 {
 ;align and traverse.

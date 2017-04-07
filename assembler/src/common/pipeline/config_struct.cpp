@@ -301,11 +301,11 @@ void load(debruijn_config::simplification::isolated_edge_remover& ier,
   load(ier.max_length_any_cov, pt, "max_length_any_cov", complete);
 }
 
-void load(debruijn_config::simplification::low_covered_edge_remover& ier,
+void load(debruijn_config::simplification::low_covered_edge_remover& lcer,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
-  load(ier.enabled, pt, "enabled", complete);
-  load(ier.coverage_threshold, pt, "coverage_threshold", complete);
+  load(lcer.enabled, pt, "lcer_enabled", complete);
+  load(lcer.coverage_threshold, pt, "lcer_coverage_threshold", complete);
 }
 
 void load(debruijn_config::simplification::init_cleaning& init_clean,
@@ -595,7 +595,6 @@ void load(debruijn_config::simplification& simp,
   load(simp.ier, pt, "ier", complete); // isolated edges remover
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
-  load(simp.lcer, pt, "lcer", complete); //low coverage edge remover
   load(simp.init_clean, pt, "init_clean", complete); // presimplification
   load(simp.final_tc, pt, "final_tc", complete);
   load(simp.final_br, pt, "final_br", complete);
@@ -761,6 +760,8 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.flanking_range, pt, "flanking_range", complete);
     load(cfg.graph_read_corr, pt, "graph_read_corr", complete);
     load(cfg.kcm, pt, "kmer_coverage_model", complete);
+    //TODO come up with a fix to this hack
+    load(cfg.simp.lcer, pt, "lcer", complete); //low coverage edge remover
     load(cfg.pos, pt, "pos", complete); // position handler:
 
     load(cfg.rm, pt, "resolving_mode", complete);

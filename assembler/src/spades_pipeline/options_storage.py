@@ -95,6 +95,7 @@ iterations = None
 bh_heap_check = None
 spades_heap_check = None
 read_buffer_size = None
+lcer_cutoff = None 
 ### END OF OPTIONS
 
 # for restarting SPAdes
@@ -134,7 +135,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc ionto
                "help version test debug debug:false reference= series-analysis= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false "\
-               "continue restart-from= diploid truseq cov-cutoff= configs-dir= stop-after=".split()
+               "continue restart-from= diploid truseq cov-cutoff= hidden-cov-cutoff= configs-dir= stop-after=".split()
 short_options = "o:1:2:s:k:t:m:i:hv"
 
 # adding multiple paired-end, mate-pair and other (long reads) libraries support
@@ -323,6 +324,8 @@ def usage(spades_version, show_hidden=False, mode=None):
         sys.stderr.write("--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
                              " for SPAdes" + "\n")
         sys.stderr.write("--large-genome\tEnables optimizations for large genomes \n")
+        sys.stderr.write("--hidden-cov-cutoff\t<float>\t\tcoverage cutoff value deeply integrated in simplification"\
+                            " (a positive float number). Base coverage! Will be adjusted depending on K and RL! \n")
         sys.stderr.write("--help-hidden\tprints this usage message with all hidden options" + "\n")
 
     if show_hidden and mode == "dip":

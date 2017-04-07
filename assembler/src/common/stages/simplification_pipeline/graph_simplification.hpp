@@ -663,9 +663,12 @@ AlgoPtr<Graph> LowCoverageEdgeRemoverInstance(Graph &g,
     if (!lcer_config.enabled) {
         return nullptr;
     }
+    VERIFY(info.read_length() > g.k());
+    double threshold = lcer_config.coverage_threshold * double(info.read_length() - g.k()) / double(info.read_length());
+    INFO("Low coverage edge removal (LCER) activated and will remove edges of coverage lower than " << threshold);
     return make_shared<ParallelEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>>>
                         (g,
-                        CoverageUpperBound<Graph>(g, lcer_config.coverage_threshold),
+                        CoverageUpperBound<Graph>(g, threshold),
                         info.chunk_cnt(),
                         (EdgeRemovalHandlerF<Graph>)nullptr,
                         /*canonical_only*/true,
