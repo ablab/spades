@@ -73,8 +73,8 @@ rule multiplicities:
              "rm tmp/*.sorted"
 
 rule profile:
-    input:   contigs="assembly/{sample,\w+\d+}.fasta", mpl="profile/kmers.kmm"
-    output:  id="profile/{sample}.id", mpl="profile/{sample}.mpl", splits= "assembly/{sample}_splits.fasta"
+    input:   contigs="assembly/{sample}.fasta", mpl="profile/kmers.kmm"
+    output:  id="profile/{sample}.id", mpl="profile/{sample}.mpl", splits="assembly/{sample,sample\d+}_splits.fasta"
     log:     "profile/{sample}.log"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:   "{BIN}/contig_abundance_counter -k {SMALL_K} -w tmp -c {input.contigs}"
@@ -92,8 +92,10 @@ rule canopy:
     input:   "binning/canopy/profiles.in"
     output:  out="binning/canopy/binning.out", prof="binning/canopy/bins.prof"
     threads: THREADS
+    log:     "binning/canopy.log"
     message: "Running canopy clustering"
-    shell:   "{SOFT}/cc.bin -n {threads} -i {input} -o {output.out} -c {output.prof} >binning/canopy/canopy.log 2>&1"
+    shell:   "{SOFT}/cc.bin --filter_max_dominant_obs 1 -n {threads}"
+             " -i {input} -o {output.out} -c {output.prof} >{log} 2>&1"
 
 rule combine_splits:
     input:   expand("assembly/{sample}_splits.fasta", sample=GROUPS)
@@ -102,19 +104,20 @@ rule combine_splits:
     shell:   "{SCRIPTS}/combine_contigs.py -r {input} > {output}"
 
 rule concoct:
-    input:   contigs=rules.combine_splits.output[0], profiles="binning/concoct/profiles.in"
+    input:   contigs="assembly/samples_splits.fasta", profiles="binning/concoct/profiles.in"
     output:  "binning/concoct/clustering_gt{}.csv".format(MIN_CONTIG_LENGTH)
     params:  "binning/concoct"
+    log:     "binning/concoct.log"
     message: "Running CONCOCT clustering"
-    shell:   "mkdir -p {params} && "
-             "set +u; source activate concoct_env; set -u && "
-             "concoct --composition_file {input.contigs} --coverage_file {input.profiles} -b {params}"
+    shell:   "set +u; source activate concoct_env; set -u && "
+             "concoct --composition_file {input.contigs} --coverage_file {input.profiles}"
+             " -l {MIN_CONTIG_LENGTH} -b {params} >{log}"
 
 rule concoct_post:
-    input:   rules.concoct.input.profiles, rules.concoct.output[0]
+    input:   "binning/concoct/profiles.in", "binning/concoct/clustering_gt{}.csv".format(MIN_CONTIG_LENGTH)
     output:  "binning/concoct/bins.prof"
     message: "Deriving bin profiles"
-    shell:   "{SCRIPTS}/bin_profiles {input} > {output}"
+    shell:   "{SCRIPTS}/bin_profiles.py {input} > {output}"
 
 binning_inputs = {"canopy": rules.canopy.output.out, "concoct": rules.concoct.output[0]}
 
@@ -133,7 +136,6 @@ rule read_binning:
              splits="assembly/{sample}_splits.fasta",
              out="propagation/{sample}_edges",
              group=lambda wildcards: " ".join(GROUPS[wildcards.sample])
-             #left=" ".join(input.left), right=" ".join(input.right)
     log:     "binning/{sample}.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
     shell:
@@ -158,7 +160,7 @@ rule reassembly_config:
         with open(output[0], "w") as outfile:
             conf = {"k": SMALL_K, "sample_cnt": SAMPLE_COUNT,
                     "kmer_mult": str(rules.multiplicities.params.out),
-                    "bin": wildcards.cag, "bin_prof": str(rules.canopy.output.prof),
+                    "bin": wildcards.cag, "bin_prof": "binning/{}/bins.prof".format(BINNER),
                     "edges_sqn": "profile/{}_edges.fasta".format(wildcards.cag),
                     "edges_mpl": "profile/{}_edges.mpl".format(wildcards.cag),
                     "edge_fragments_mpl": "profile/{}_edges_frag.mpl".format(wildcards.cag),

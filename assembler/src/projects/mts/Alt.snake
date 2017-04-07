@@ -1,4 +1,4 @@
-configfile: "config.yaml"
+include: "Common.snake"
 
 import functools
 import itertools
@@ -6,29 +6,12 @@ import itertools
 from Bio import SeqIO
 
 from scripts.parse_output import ConcoctParser
-from scripts.common import detect_reads, gather_refs
 
-IN = config["IN"]
-SPADES = config.get("SPADES")
-SCRIPTS = config["SCRIPTS"]
-SOFT = config["SOFT"]
-THREADS = config.get("THREADS", 16)
 ASSEMBLER = config.get("ASSEMBLER", "megahit")
-ASSEMBLER_PATH = config.get("ASSEMBLER_PATH")
+
+#Override some values from Common.snake
 BINNER = config.get("BINNER", "metabat")
 
-#Autodetect samples and their reads
-MIN_CONTIG_LENGTH = 2000
-SAMPLE_DIRS = set(glob_wildcards(IN + "/{sample,sample\d+}")[0])
-SAMPLE_COUNT = len(SAMPLE_DIRS)
-SAMPLES = list()
-for i in range(1, SAMPLE_COUNT + 1):
-    sample_name = "sample" + str(i)
-    if sample_name not in SAMPLE_DIRS:
-        raise WorkflowError("Samples must be consecutive; missing " + sample_name)
-    SAMPLES.append(sample_name)
-
-SAMPLE_READS = dict(map(lambda sample: (sample, detect_reads(os.path.join(IN, sample))), SAMPLES))
 LEFT_READS = [reads[0] for reads in SAMPLE_READS.values()]
 RIGHT_READS = [reads[1] for reads in SAMPLE_READS.values()]
 
@@ -37,9 +20,6 @@ def sample_reads(dir, wildcards):
 
 left_reads  = functools.partial(sample_reads, 0)
 right_reads = functools.partial(sample_reads, 1)
-
-REFS = dict(gather_refs(config.get("REFS", [])))
-ALL_REFS = ",".join(path for path in REFS.values())
 
 rule all:
     input:   "binning/{}/binning.done".format(BINNER)
@@ -77,13 +57,13 @@ rule coassemble:
 
 # Common stuff
 rule cut_fragments:
-    input:   rules.coassemble.output[0]
+    input:   "assembly/samples.fasta"
     output:  "assembly/samples_frags.fasta"
     params:  split=10000
     shell:   "python2 {SOFT}/CONCOCT/scripts/cut_up_fasta.py -c {params.split} -o 0 -m {input} > {output}"
 
 rule bowtie_index:
-    input:   "assembly/{frags}.fasta" #rules.cut_fragments.output[0]
+    input:   "assembly/{frags}.fasta"
     output:  "align/index_{frags}.done"
     log:     "align/bowtie_{frags}.log"
     message: "Building bowtie index"
@@ -117,7 +97,7 @@ rule concoct_depth:
 #---- Binning with CONCOCT -----------------------------------------------------
 
 rule concoct:
-    input:   contigs=rules.cut_fragments.output[0], profiles=rules.concoct_depth.output[0]
+    input:   contigs="assembly/samples_frags.fasta", profiles="profile/depth_concoct.txt"
     output:  "binning/concoct/tables/clustering_gt{}.csv".format(MIN_CONTIG_LENGTH)
     params:  max_clusters=40, out="binning/concoct/tables"
     threads: THREADS
@@ -125,10 +105,13 @@ rule concoct:
     message: "Running CONCOCT clustering"
     shell:   "mkdir -p {params} && "
              "set +u; source activate concoct_env; set -u && "
-             "concoct -c {params.max_clusters} --composition_file {input.contigs} --coverage_file {input.profiles} --length_threshold {MIN_CONTIG_LENGTH} -b {params.out} > {log}"
+             "concoct -c {params.max_clusters} --composition_file {input.contigs}"
+             " --coverage_file {input.profiles} --length_threshold {MIN_CONTIG_LENGTH}"
+             " -b {params.out} > {log}"
 
 rule concoct_post:
-    input:   contigs=rules.cut_fragments.output[0], binning=rules.concoct.output[0]
+    input:   contigs="assembly/samples_frags.fasta",
+             binning="binning/concoct/tables/clustering_gt{}.csv".format(MIN_CONTIG_LENGTH)
     output:  touch("binning/concoct/binning.done")
     params:  out="binning/concoct"
     message: "Extracting CONCOCT bins"
@@ -137,7 +120,6 @@ rule concoct_post:
         parser = ConcoctParser()
         parser.parse_file(input.binning)
         ann = parser.samples_annotation["all"]
-        print(list(ann.items())[:10])
         for seq in SeqIO.parse(input.contigs, "fasta"):
             seq_id = ann.get(seq.id)
             if not seq_id:
@@ -148,7 +130,7 @@ rule concoct_post:
 #---- Binning with MetaBAT -----------------------------------------------------
 
 rule metabat:
-    input:   contigs=rules.coassemble.output[0], profiles="profile/samples/depth_metabat.txt"
+    input:   contigs="assembly/samples.fasta", profiles="profile/samples/depth_metabat.txt"
     output:  flag=touch("binning/metabat/binning.done"),
              ann=("annotation/metabat/samples.ann")
              #dynamic("binning/metabat/{cluster}.fa")
@@ -183,9 +165,7 @@ rule binning:
 #---- Optional propagator for SPAdes assembly ----------------------------------
 
 #Path to saves of necessary assembly stage
-K = 55
 SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(K)
-BIN = "~/Projects/mts/assembler/build/release/bin"
 
 rule prop_binning:
     input:   contigs="assembly/spades/samples.fasta", ann="annotation/{binner}/samples.ann",

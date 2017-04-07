@@ -10,12 +10,14 @@ from scripts.common import load_dict, dump_dict
 
 parser = argparse.ArgumentParser(description="MTS Multi Runner")
 
+all_configurations = ["canopy", "concoct", "megahit_metabat", "megahit_concoct", "spades_metabat", "spades_concoct"]
+
 parser.add_argument("--threads", "-t", type=int, default=8, help="Number of threads for each run")
 parser.add_argument("dir", type=str, help="Output directory")
 parser.add_argument("--config", type=str, help="Base config")
 #parser.add_argument("--in", type=str, help="Input directory")
 #parser.add_argument("--ref", type=str, help="References directory")
-parser.add_argument("--pipelines", type=str, nargs="+", default=["canopy"], help="Pipeline configurations to run")
+parser.add_argument("--pipelines", type=str, nargs="+", default=all_configurations, help="Pipeline configurations to run")
 parser.add_argument("--stats", "-s", action="store_true", help="Calculate stats (when the REFS parameter in config.yaml is provided)")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
 

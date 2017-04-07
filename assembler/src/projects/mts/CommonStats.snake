@@ -11,7 +11,7 @@ except KeyError:
 
 #Detect references
 REFS = dict(gather_refs(config.get("REFS", [])))
-ALL_REFS = ",".join(path for path in REFS.values())
+REFS_STR = ",".join(path for path in REFS.values())
 
 class Input:
     def __init__(self, fasta_template, fragments):
@@ -37,7 +37,7 @@ rule genome_fraction:
     log:     "stats/q_{stage}/.log"
     threads: THREADS
     message: "Aligning all of {wildcards.stage} on all references"
-    shell:   "{METAQUAST} -t {threads} -R {ALL_REFS} {input} -o {params.out} >/dev/null 2>&1 && "
+    shell:   "{METAQUAST} -t {threads} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1 && "
              "cp '{params.out}/summary/TSV/Genome_fraction_(%).tsv' {output}"
 
 rule gf_all:
