@@ -47,7 +47,7 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
     //TODO extract set<MappingRange> as a storage class
 
     MappingRange EraseAndExtract(set<MappingRange> &ranges, set<MappingRange>::iterator &position, const MappingRange &new_pos) {
-        auto &old_pos = *position;
+        auto old_pos = *position;
         if(old_pos.IntersectLeftOf(new_pos) || old_pos.StrictlyContinuesWith(new_pos, max_mapping_gap_, max_gap_diff_)) {
             ranges.erase(position);
             return old_pos.Merge(new_pos);
