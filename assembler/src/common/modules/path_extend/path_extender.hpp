@@ -1483,7 +1483,6 @@ protected:
 
     virtual bool FilterCandidates(BidirectionalPath &path, ExtensionChooser::EdgeContainer &candidates) {
         DEBUG("Simple grow step");
-        path.Print();
         DEBUG("Path size " << path.Size())
         candidates = extensionChooser_->Filter(path, candidates);
         DEBUG(candidates.size() << " candidates passed");
@@ -1514,7 +1513,7 @@ protected:
 //                used_storage_->insert(eid);
 //            }
 //        }
-        path.PushBack(eid, candidates.back().d_);
+        path.PushBack(eid, Gap(candidates.back().d_));
         DEBUG("push done");
         return true;
     }

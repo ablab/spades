@@ -6,10 +6,11 @@
 #include "common/modules/alignment/kmer_mapper.hpp"
 #include "common/modules/alignment/sequence_mapper.hpp"
 
+
 namespace barcode_index {
     typedef debruijn_graph::EdgeIndex<Graph> Index;
     typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
-    typedef typename debruijn_graph::KmerFreeEdgeIndex<Graph, debruijn_graph::DefaultStoring> InnerIndex;
+    typedef typename debruijn_graph::KmerFreeEdgeIndex<Graph, utils::DefaultStoring> InnerIndex;
     typedef typename InnerIndex::KeyWithHash KeyWithHash;
     typedef typename debruijn_graph::EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
 
@@ -249,11 +250,11 @@ namespace barcode_index {
             mapper_->edge_to_entry_.at(edge).InsertBarcode(barcode, count, range);
         }
 
-        bool IsAtEdgeTail(const EdgeId &edge, const omnigraph::Range &range) {
+        bool IsAtEdgeTail(const EdgeId &edge, const Range &range) {
             return range.start_pos + tail_threshold_ > g_.length(edge);
         }
 
-        bool IsAtEdgeHead(const omnigraph::Range &range) {
+        bool IsAtEdgeHead(const Range &range) {
             return range.end_pos < tail_threshold_;
         }
 
@@ -264,7 +265,7 @@ namespace barcode_index {
         }
 
         void InsertBarcodeWithRange(const BarcodeId &barcode, const EdgeId &edge,
-                                    const omnigraph::Range &range, size_t count) {
+                                    const Range &range, size_t count) {
             if (IsAtEdgeHead(range))
                 InsertBarcode(barcode, edge, count, range);
             if (IsAtEdgeTail(edge, range))
