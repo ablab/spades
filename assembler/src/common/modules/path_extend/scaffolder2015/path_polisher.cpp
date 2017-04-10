@@ -89,13 +89,13 @@ Gap DijkstraGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
     VertexId target_vertex = g_.EdgeStart(target_edge);
 //TODO:: actually we do not need paths, only edges..
     omnigraph::PathStorageCallback<Graph> path_storage(g_);
-    omnigraph::ProcessPaths(g_, 0,
+    int process_res = omnigraph::ProcessPaths(g_, 0,
                             max_path_len_,
                             g_.EdgeEnd(result.Back()),
                             target_vertex,
                             path_storage);
-    if (path_storage.size() == 0) {
-//No paths found, keeping the gap
+    if (path_storage.size() == 0 || process_res != 0) {
+//No paths found or path_processor error(in particular too many vertices in Dijkstra), keeping the gap
         return orig_gap;
     } else if (path_storage.size() > 1) {
 //More than one result, using shortest result for gap length estimation
