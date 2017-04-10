@@ -211,6 +211,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.configs_dir = support.check_dir_existence(arg)
         elif opt == "--reference":
             options_storage.reference = support.check_file_existence(arg, 'reference', log)
+            options_storage.developer_mode = True
         elif opt == "--series-analysis":
             options_storage.series_analysis = support.check_file_existence(arg, 'series-analysis', log)
         elif opt == "--dataset":
