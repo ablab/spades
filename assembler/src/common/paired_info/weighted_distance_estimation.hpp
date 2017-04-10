@@ -16,10 +16,10 @@ namespace omnigraph {
 
 namespace de {
 
-template<class Graph>
-class WeightedDistanceEstimator : public DistanceEstimator<Graph> {
+class WeightedDistanceEstimator : public DistanceEstimator {
 protected:
-    typedef DistanceEstimator<Graph> base;
+    typedef DistanceEstimator base;
+    typedef debruijn_graph::Graph Graph;
     typedef typename base::InPairedIndex InPairedIndex;
     typedef typename base::OutPairedIndex OutPairedIndex;
     typedef typename base::InHistogram InHistogram;
@@ -28,7 +28,7 @@ protected:
 public:
     WeightedDistanceEstimator(const Graph &graph,
                               const InPairedIndex &histogram,
-                              const GraphDistanceFinder<Graph> &distance_finder,
+                              const GraphDistanceFinder &distance_finder,
                               std::function<double(int)> weight_f,
                               size_t linkage_distance, size_t max_distance) :
             base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f) { }
@@ -104,6 +104,8 @@ protected:
         return my_name;
     }
 
+private:
+    DECL_LOGGER("WeightedDistanceEstimator");
 };
 
 }

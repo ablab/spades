@@ -20,8 +20,8 @@ namespace omnigraph {
 namespace de {
 
 //todo move to some more common place
-template<class Graph>
 class GraphDistanceFinder {
+    typedef debruijn_graph::Graph Graph;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef std::vector<EdgeId> Path;
@@ -84,9 +84,9 @@ private:
     const double delta_;
 };
 
-template<class Graph>
 class AbstractDistanceEstimator {
 protected:
+    typedef debruijn_graph::Graph Graph;
     typedef UnclusteredPairedInfoIndexT<Graph> InPairedIndex;
     typedef PairedInfoIndexT<Graph> OutPairedIndex;
     typedef typename InPairedIndex::HistProxy InHistogram;
@@ -95,7 +95,7 @@ protected:
 public:
     AbstractDistanceEstimator(const Graph &graph,
                               const InPairedIndex &index,
-                              const GraphDistanceFinder<Graph> &distance_finder,
+                              const GraphDistanceFinder &distance_finder,
                               size_t linkage_distance = 0)
             : graph_(graph), index_(index),
               distance_finder_(distance_finder), linkage_distance_(linkage_distance) { }
@@ -143,15 +143,17 @@ protected:
 private:
     const Graph &graph_;
     const InPairedIndex &index_;
-    const GraphDistanceFinder<Graph> &distance_finder_;
+    const GraphDistanceFinder &distance_finder_;
     const size_t linkage_distance_;
 
     virtual const string Name() const = 0;
+
+    DECL_LOGGER("AbstractDistanceEstimator");
 };
 
-template<class Graph>
-class DistanceEstimator : public AbstractDistanceEstimator<Graph> {
-    typedef AbstractDistanceEstimator<Graph> base;
+class DistanceEstimator : public AbstractDistanceEstimator {
+    typedef AbstractDistanceEstimator base;
+    typedef debruijn_graph::Graph Graph;
     typedef typename Graph::EdgeId EdgeId;
     typedef vector<size_t> GraphLengths;
     typedef vector<pair<int, double> > EstimHist;
@@ -166,7 +168,7 @@ protected:
 public:
     DistanceEstimator(const Graph &graph,
                       const InPairedIndex &index,
-                      const GraphDistanceFinder<Graph> &distance_finder,
+                      const GraphDistanceFinder &distance_finder,
                       size_t linkage_distance, size_t max_distance)
             : base(graph, index, distance_finder, linkage_distance), max_distance_(max_distance) { }
 

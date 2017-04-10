@@ -17,12 +17,12 @@ namespace omnigraph {
 
 namespace de {
 
-template<class Graph>
-class SmoothingDistanceEstimator : public WeightedDistanceEstimator<Graph> {
+class SmoothingDistanceEstimator : public WeightedDistanceEstimator {
     //FIXME configure
     static const size_t OVERLAP_TOLERANCE = 1000;
 protected:
-    typedef WeightedDistanceEstimator<Graph> base;
+    typedef WeightedDistanceEstimator base;
+    typedef debruijn_graph::Graph Graph;
     typedef typename base::InPairedIndex InPairedIndex;
     typedef typename base::OutPairedIndex OutPairedIndex;
     typedef typename base::InHistogram InHistogram;
@@ -32,7 +32,7 @@ protected:
 public:
     SmoothingDistanceEstimator(const Graph &graph,
                                const InPairedIndex &histogram,
-                               const GraphDistanceFinder<Graph> &dist_finder,
+                               const GraphDistanceFinder &dist_finder,
                                std::function<double(int)> weight_f,
                                size_t linkage_distance, size_t max_distance, size_t threshold,
                                double range_coeff, double delta_coeff,

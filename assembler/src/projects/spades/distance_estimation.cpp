@@ -24,7 +24,7 @@ using namespace omnigraph::de;
 
 template<class Graph>
 void estimate_with_estimator(const Graph &graph,
-                             const omnigraph::de::AbstractDistanceEstimator<Graph>& estimator,
+                             const omnigraph::de::AbstractDistanceEstimator& estimator,
                              omnigraph::de::AbstractPairInfoChecker<Graph>& checker,
                              PairedIndexT& clustered_index) {
     using config::estimation_mode;
@@ -107,7 +107,7 @@ void estimate_distance(conj_graph_pack& gp,
     const config::debruijn_config& config = cfg::get();
     size_t delta = size_t(lib.data().insert_size_deviation);
     size_t linkage_distance = size_t(config.de.linkage_distance_coeff * lib.data().insert_size_deviation);
-    GraphDistanceFinder<Graph> dist_finder(gp.g,  (size_t)math::round(lib.data().mean_insert_size), lib.data().read_length, delta);
+    GraphDistanceFinder dist_finder(gp.g,  (size_t)math::round(lib.data().mean_insert_size), lib.data().read_length, delta);
     size_t max_distance = size_t(config.de.max_distance_coeff * lib.data().insert_size_deviation);
 
     std::function<double(int)> weight_function;
@@ -131,27 +131,27 @@ void estimate_distance(conj_graph_pack& gp,
 
     switch (config.est_mode) {
         case estimation_mode::simple: {
-            const AbstractDistanceEstimator<Graph>&
+            const AbstractDistanceEstimator&
                     estimator =
-                    DistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
+                    DistanceEstimator(gp.g, paired_index, dist_finder,
                                              linkage_distance, max_distance);
 
             estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
             break;
         }
         case estimation_mode::weighted: {
-            const AbstractDistanceEstimator<Graph>&
+            const AbstractDistanceEstimator&
                     estimator =
-                    WeightedDistanceEstimator<Graph>(gp.g, paired_index,
+                    WeightedDistanceEstimator(gp.g, paired_index,
                                                      dist_finder, weight_function, linkage_distance, max_distance);
 
             estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
             break;
         }
         case estimation_mode::smoothing: {
-            const AbstractDistanceEstimator<Graph>&
+            const AbstractDistanceEstimator&
                     estimator =
-                    SmoothingDistanceEstimator<Graph>(gp.g, paired_index,
+                    SmoothingDistanceEstimator(gp.g, paired_index,
                                                       dist_finder, weight_function, linkage_distance, max_distance,
                                                       config.ade.threshold,
                                                       config.ade.range_coeff,
@@ -185,7 +185,7 @@ void estimate_distance(conj_graph_pack& gp,
         double is_var = lib.data().insert_size_deviation;
         size_t delta = size_t(is_var);
         size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
-        GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
+        GraphDistanceFinder dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
                                                lib.data().read_length, delta);
         size_t max_distance = size_t(cfg::get().de.max_distance_coeff_scaff * is_var);
         std::function<double(int)> weight_function;
@@ -205,8 +205,8 @@ void estimate_distance(conj_graph_pack& gp,
         PairInfoWeightChecker<Graph> checker(gp.g, 0.);
         DEBUG("Weight Filter Done");
 
-        const AbstractDistanceEstimator<Graph>& estimator =
-                SmoothingDistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
+        const AbstractDistanceEstimator& estimator =
+                SmoothingDistanceEstimator(gp.g, paired_index, dist_finder,
                                                   weight_function, linkage_distance, max_distance,
                                                   cfg::get().ade.threshold, cfg::get().ade.range_coeff,
                                                   cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,

@@ -18,7 +18,7 @@
 namespace online_visualization {
     class DrawPartOfGenomeCommand : public DrawingCommand {
         private:
-            void CheckPathIntegrity(const omnigraph::de::GraphDistanceFinder<Graph>& dist_finder, EdgeId first_edge, EdgeId second_edge) const {
+            void CheckPathIntegrity(const omnigraph::de::GraphDistanceFinder& dist_finder, EdgeId first_edge, EdgeId second_edge) const {
                 vector<size_t> distances = dist_finder.GetGraphDistancesLengths(first_edge, second_edge);
                 if (distances[0] == 0) {
                     INFO("Edges " << first_edge << " and " << second_edge << " are neighbouring");
