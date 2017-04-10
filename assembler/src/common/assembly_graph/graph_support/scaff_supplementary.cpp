@@ -101,7 +101,7 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, shared_ptr<Gra
         }
     }
 //TODO: small plasmid, paths a-b-a, b-a-b ?
-    if (loop_weight > 1) 
+    if (loop_weight > 1 && loop_weight * overwhelming_majority_ > nonloop_weight)
             return false;
         else
             DEBUG (gp_.g.int_id(e) << " loop/nonloop weight " << loop_weight << " " << nonloop_weight);
