@@ -471,16 +471,11 @@ public:
     PathContainer MakeSimpleSeeds() const {
         std::set<EdgeId> included;
         PathContainer edges;
-        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            if (g_.int_id(*iter) <= 0 || InTwoEdgeCycle(*iter, g_))
+        for (auto iter = g_.ConstEdgeBegin(/*canonical only*/true); !iter.IsEnd(); ++iter) {
+            EdgeId e = *iter;
+            if (g_.int_id(e) <= 0 || InTwoEdgeCycle(e, g_))
                 continue;
-            if (included.count(*iter) == 0) {
-                BidirectionalPath * first = new BidirectionalPath(g_, *iter);
-                BidirectionalPath * second = new BidirectionalPath(g_, g_.conjugate(*iter));
-                edges.AddPair(first,second);
-                included.insert(*iter);
-                included.insert(g_.conjugate(*iter));
-            }
+            edges.AddPair(new BidirectionalPath(g_, e), new BidirectionalPath(g_, g_.conjugate(e)));
         }
         return edges;
     }
