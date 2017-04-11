@@ -376,6 +376,10 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
         if options_storage.k_mers and options_storage.k_mers != 'auto' and len(options_storage.k_mers) > 1:
             support.error("you cannot specify multiple k-mer sizes in RNA-Seq mode!", log)
+    if [options_storage.meta, options_storage.large_genome, options_storage.truseq_mode,
+       options_storage.rna, options_storage.plasmid, options_storage.single_cell].count(True) > 1:
+        support.error("you cannot simultaneously use more than one mode out of "
+                      "Metagenomic, Large genome, Illumina TruSeq, RNA-Seq, Plasmid, and Single-cell!", log)
     if options_storage.continue_mode:
         return None, None
 
