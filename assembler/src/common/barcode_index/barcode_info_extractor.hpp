@@ -371,7 +371,7 @@ namespace barcode_index {
          * @param edge
          * @return length of the bin
          */
-        size_t GetBinLength(const EdgeId &edge) {
+        size_t GetBinLength(const EdgeId &edge) const {
             return GetEntry(edge).GetFrameSize();
         }
 
@@ -380,7 +380,7 @@ namespace barcode_index {
          * @param edge
          * @return number of bins on the edge
          */
-        size_t GetNumberOfBins(const EdgeId& edge) {
+        size_t GetNumberOfBins(const EdgeId& edge) const {
             return GetEntry(edge).GetNumberOfFrames();
         }
 
@@ -507,48 +507,5 @@ namespace barcode_index {
             VERIFY(max_pos >= min_pos);
             return max_pos - min_pos;
         }
-
-        double GetBarcodeCoverage(const EdgeId& edge, const BarcodeId& barcode) const {
-            const FrameEdgeEntry& entry = GetEntry(edge);
-            const FrameBarcodeInfo& info = GetInfo(edge, barcode);
-            size_t frame_size = entry.GetFrameSize();
-            size_t read_count = info.GetCount();
-            size_t length = GetMaxPos(edge, barcode) - GetMinPos(edge, barcode) + frame_size;
-            VERIFY(length > 0)
-            return static_cast<double>(read_count) / static_cast<double>(length);
-        }
-
-        double GetBarcodeCoverageWithoutGaps(const EdgeId& edge, const BarcodeId& barcode) const {
-            const FrameEdgeEntry& entry = GetEntry(edge);
-            const FrameBarcodeInfo& info = GetInfo(edge, barcode);
-            size_t frame_size = entry.GetFrameSize();
-            size_t covered_frames = info.GetCovered();
-            size_t read_count = info.GetCount();
-            size_t covered_length = frame_size * covered_frames;
-            VERIFY(covered_length != 0);
-            return static_cast<double>(read_count) / static_cast<double>(covered_length);
-        }
-
-        vector <size_t> GetGapDistribution(const EdgeId& edge, const BarcodeId& barcode) const {
-            const FrameEdgeEntry& entry = GetEntry(edge);
-            const FrameBarcodeInfo& info = GetInfo(edge, barcode);
-            size_t number_of_frames = info.GetSize();
-            size_t current_gap_length = 0;
-            vector <size_t> result;
-            for (size_t i = 0; i < number_of_frames; ++i) {
-                if (not info.GetFrame(i)) {
-                    ++current_gap_length;
-                }
-                else {
-                    if (current_gap_length > 0) {
-                        result.push_back(current_gap_length * entry.GetFrameSize());
-                    }
-                    current_gap_length = 0;
-                }
-            }
-            std::sort(result.begin(), result.end());
-            return result;
-        }
-
     };
 }

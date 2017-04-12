@@ -457,7 +457,7 @@ void load(debruijn_config::truseq_analysis& tsa,
   load(tsa.genome_file, pt, "genome_file");
 }
 
-void load(debruijn_config::tslr_resolver::tenx_resolver& tenx,
+void load(debruijn_config::read_cloud_resolver::tenx_resolver& tenx,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
     load(tenx.internal_gap_threshold, pt, "internal_gap_threshold");
@@ -466,9 +466,10 @@ void load(debruijn_config::tslr_resolver::tenx_resolver& tenx,
     load(tenx.absolute_barcode_threshold, pt, "absolute_barcode_threshold");
     load(tenx.initial_abundancy_threshold, pt, "initial_abundancy_threshold");
     load(tenx.middle_abundancy_threshold, pt, "middle_abundancy_threshold");
+    load(tenx.topology_filter_on, pt, "topology_filter_on");
 }
 
-void load(debruijn_config::tslr_resolver& ts_res,
+void load(debruijn_config::read_cloud_resolver& ts_res,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
     load(ts_res.read_cloud_dataset, pt, "read_cloud_dataset");
@@ -484,6 +485,7 @@ void load(debruijn_config::tslr_resolver& ts_res,
     load(ts_res.frame_size, pt, "frame_size");
     load(ts_res.fragment_len, pt, "fragment_len");
     load(ts_res.genome_path, pt, "genome_path");
+    load(ts_res.read_cloud_resolution_on, pt, "read_cloud_resolution_on");
     load(ts_res.tenx, pt, "tenx_resolver");
 }
 
