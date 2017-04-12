@@ -139,15 +139,18 @@ Gap DijkstraGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
     }
 }
 
-Gap PathExtenderGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, BidirectionalPath &result) const {
+Gap PathExtenderGapCloser::CloseGap(const BidirectionalPath &original_path,
+             size_t position, BidirectionalPath &path) const {
+    auto extender = extender_factory_->CreateExtender(original_path, position);
     size_t added = 0;
-    VertexId target_vertex = g_.EdgeStart(target_edge);
-    while (g_.EdgeEnd(result.Back()) != target_vertex) {
-        bool has_grown = extender_->MakeGrowStep(result);
+    VertexId target_vertex = g_.EdgeStart(original_path.At(position));
+    while (g_.EdgeEnd(path.Back()) != target_vertex) {
+        bool has_grown = extender->MakeGrowStep(path);
         if (!has_grown)
             break;
-        added += g_.length(result.Back());
+        added += g_.length(path.Back());
     }
+    auto orig_gap = original_path.GapAt(position);
     //FIXME think of checking for 0 in advance
     return Gap(orig_gap.gap - (int) added, {0, orig_gap.trash.current}, false);
 }

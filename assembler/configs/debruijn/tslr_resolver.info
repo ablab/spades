@@ -49,6 +49,7 @@ ts_res
 		topsort_bound 5000
 
 	;Configs for 10X repeat resolution
+		read_cloud_resolution_on true
 	tenx_resolver
 	{
 		tail_threshold 5000
@@ -57,5 +58,6 @@ ts_res
 		absolute_barcode_threshold 2
 		initial_abundancy_threshold 15
 		middle_abundancy_threshold 10
+		topology_filter_on false
 	}
 }
