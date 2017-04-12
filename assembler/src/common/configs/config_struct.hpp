@@ -415,7 +415,7 @@ struct debruijn_config {
         bool enable;
         unsigned granularity;
     };
-    
+
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
     std::filesystem::path dataset_file;
@@ -452,10 +452,10 @@ struct debruijn_config {
         bool start_only_from_tips;
         bool set_copynumber;
     };
-    
+
     contig_output co;
 
-    struct tslr_resolver {
+    struct read_cloud_resolver {
         std::string read_cloud_dataset;
         std::string library_type;
         std::string genome_path;
@@ -473,6 +473,8 @@ struct debruijn_config {
         size_t fragment_len;
         size_t topsort_bound;
 
+        bool read_cloud_resolution_on;
+
         struct tenx_resolver {
             size_t tail_threshold;
             size_t max_initial_candidates;
@@ -480,13 +482,14 @@ struct debruijn_config {
             size_t absolute_barcode_threshold;
             size_t initial_abundancy_threshold;
             size_t middle_abundancy_threshold;
+            bool topology_filter_on;
         };
 
         tenx_resolver tenx;
 
     };
 
-    tslr_resolver ts_res;
+    read_cloud_resolver ts_res;
     std::filesystem::path load_from;
     std::string entry_point;
 

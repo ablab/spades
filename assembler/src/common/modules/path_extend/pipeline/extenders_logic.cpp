@@ -445,12 +445,6 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_in
 
     INFO("Read cloud library type: 10X")
     auto tenx_resolver_stats = cfg::get().ts_res.tenx;
-    const size_t absolute_barcode_threshold = tenx_resolver_stats.absolute_barcode_threshold;
-    const size_t tail_threshold = tenx_resolver_stats.tail_threshold;
-    const size_t max_initial_candidates = tenx_resolver_stats.max_initial_candidates;
-    const size_t internal_gap_threshold = tenx_resolver_stats.internal_gap_threshold;
-    const size_t initial_abundancy_threshold = tenx_resolver_stats.initial_abundancy_threshold;
-    const size_t middle_abundancy_threshold = tenx_resolver_stats.middle_abundancy_threshold;
     typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
 
     auto tenx_extractor_ptr = make_shared<tenx_extractor_t>(gp_.barcode_mapper_ptr, gp_.g);
@@ -463,12 +457,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_in
                                                           distance_bound,
                                                           storage,
                                                           condition,
-                                                          absolute_barcode_threshold,
-                                                          tail_threshold,
-                                                          max_initial_candidates,
-                                                          internal_gap_threshold,
-                                                          initial_abundancy_threshold,
-                                                          middle_abundancy_threshold);
+                                                          tenx_resolver_stats);
 
 
     shared_ptr<ReadCloudExtender> extender = make_shared<ReadCloudExtender>(gp_, cover_map_,

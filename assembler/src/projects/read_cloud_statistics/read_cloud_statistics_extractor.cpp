@@ -24,7 +24,10 @@ namespace debruijn_graph {
         typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
         auto tenx_extractor_ptr = make_shared<tenx_extractor_t>(gp.barcode_mapper_ptr, gp.g);
         auto reliable_checker = make_shared<ReliableBarcodesChecker>(tenx_extractor_ptr, gp);
-        auto gap_distribution_extractor = make_shared<GapDistributionExtractor>(tenx_extractor_ptr, gp);
+        size_t length_bin = 500;
+        double coverage_bin = 0.1;
+        auto gap_distribution_extractor = make_shared<GapDistributionExtractor>(tenx_extractor_ptr, gp,
+                                                                                length_bin, coverage_bin);
         vector<shared_ptr<BarcodeStatisticsCounter>> result;
         result.push_back(reliable_checker);
         result.push_back(gap_distribution_extractor);
@@ -41,7 +44,7 @@ namespace debruijn_graph {
         return read_cloud_storage;
     }
 
-    shared_ptr<ExtensionChooser> ConstructExtensionChooser(const conj_graph_pack& gp,
+    shared_ptr<path_extend::ReadCloudExtender> ConstructExtender(const conj_graph_pack& gp,
                                                            const PathExtendParamsContainer& params,
                                                            const ScaffoldingUniqueEdgeStorage& read_cloud_storage) {
         auto dataset_info = cfg::get().ds;
@@ -51,18 +54,18 @@ namespace debruijn_graph {
         auto read_cloud_extenders = generator.MakeReadCloudExtenders(read_cloud_storage);
         VERIFY_MSG(read_cloud_extenders.size() > 0, "Read cloud libraries were not found");
         VERIFY_MSG(read_cloud_extenders.size() < 2, "Multiple read cloud libraries are not supported");
-        auto path_extender = std::dynamic_pointer_cast<ReadCloudExtender>(read_cloud_extenders[0]);
-        shared_ptr<ExtensionChooser> extension_chooser(path_extender->GetExtensionChooser());
-        return extension_chooser;
+        auto path_extender_ptr = std::dynamic_pointer_cast<ReadCloudExtender>(read_cloud_extenders[0]);
+        return path_extender_ptr;
     }
 
     path_extend::TenXExtensionChecker ConstructTenXChecker(const conj_graph_pack& gp) {
         auto pe_params = GetPEParams();
         auto read_cloud_storage = GetUniqueStorage(gp, pe_params);
-        auto extension_chooser_ptr = ConstructExtensionChooser(gp, pe_params, read_cloud_storage);
+        auto path_extender_ptr = ConstructExtender(gp, pe_params, read_cloud_storage);
+        shared_ptr<ExtensionChooser> extension_chooser_ptr(path_extender_ptr->GetExtensionChooser());
         shared_ptr<TenXExtensionChooser> read_cloud_extension_chooser_ptr =
                 std::dynamic_pointer_cast<TenXExtensionChooser> (extension_chooser_ptr);
-        TenXExtensionChecker checker(*read_cloud_extension_chooser_ptr, gp, read_cloud_storage);
+        TenXExtensionChecker checker(*read_cloud_extension_chooser_ptr, path_extender_ptr, gp, read_cloud_storage);
         return checker;
     }
 
@@ -80,9 +83,9 @@ namespace debruijn_graph {
         INFO("Library type: " << cfg::get().ts_res.library_type);
         TenXExtensionChecker checker = ConstructTenXChecker(graph_pack);
         INFO("10X checker constructed.");
-        auto barcode_statistics_counters = ConstructBarcodeStatisticsCounters(graph_pack);
-        INFO("Statistics counters constructed.");
-        RunBarcodeStatisticsCounters(barcode_statistics_counters);
+//        auto barcode_statistics_counters = ConstructBarcodeStatisticsCounters(graph_pack);
+//        INFO("Statistics counters constructed.");
+//        RunBarcodeStatisticsCounters(barcode_statistics_counters);
         INFO("Resolver stats: ");
         checker.CheckChooser(cfg::get().ts_res.genome_path);
         INFO("Statistics counter finished.");

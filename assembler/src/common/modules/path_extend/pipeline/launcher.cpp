@@ -440,7 +440,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
         }
     }
 
-    if (support_.HasReadClouds()) {
+    if (support_.HasReadClouds() and cfg::get().ts_res.read_cloud_resolution_on) {
         if (params_.pset.sm == sm_old) {
             INFO("Will not use read cloud path extend in this mode");
         } else {
