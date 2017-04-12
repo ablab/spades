@@ -459,7 +459,7 @@ struct debruijn_config {
     contig_output co;
 
     std::filesystem::path load_from;
-    struct tslr_resolver {
+    struct read_cloud_resolver {
         std::string read_cloud_dataset;
         std::string library_type;
         std::string genome_path;
@@ -477,6 +477,8 @@ struct debruijn_config {
         size_t fragment_len;
         size_t topsort_bound;
 
+        bool read_cloud_resolution_on;
+
         struct tenx_resolver {
             size_t tail_threshold;
             size_t max_initial_candidates;
@@ -484,13 +486,14 @@ struct debruijn_config {
             size_t absolute_barcode_threshold;
             size_t initial_abundancy_threshold;
             size_t middle_abundancy_threshold;
+            bool topology_filter_on;
         };
 
         tenx_resolver tenx;
 
     };
 
-    tslr_resolver ts_res;
+    read_cloud_resolver ts_res;
     std::string load_from;
     std::string entry_point;
 

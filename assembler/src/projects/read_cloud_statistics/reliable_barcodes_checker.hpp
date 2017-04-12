@@ -68,8 +68,8 @@ private:
     void CheckReliableUniformity(const size_t length_lower_bound) {
         const size_t min_reliable_length = 5000;
         const size_t max_gap_inside_cloud = 5000;
-        const double min_covered_ratio_strong = 0.9;
-        const double min_covered_ratio_weak = 0.85;
+        const double min_covered_ratio_strong = 0.0;
+        const double min_covered_ratio_weak = 0.0;
         const size_t max_gap_within_reliable_cloud_strong = 500;
         const size_t max_gap_within_reliable_cloud_weak = 1000;
 
@@ -103,7 +103,7 @@ private:
         UniformResult edge_result;
         for (auto entry_it = barcode_begin; entry_it != barcode_end; ++entry_it) {
             BarcodeId barcode = entry_it->first;
-            if (IsBarcodeOnTheEdge(edge, barcode, gap_threshold) or
+            if (IsBarcodeOnTheSide(edge, barcode, gap_threshold) or
                 extractor_->GetNumberOfReads(edge, barcode) < 10) continue;
             boost::dynamic_bitset<> current_barcoded_bins = extractor_->GetBitSet(edge, barcode);
             auto all_cloud_positions = GetCloudPositions(current_barcoded_bins, gap_threshold, bin_length);
@@ -216,7 +216,7 @@ private:
         auto barcode_end = extractor_->barcode_iterator_end(edge);
         for (auto entry_it = barcode_begin; entry_it != barcode_end; ++entry_it) {
             BarcodeId barcode = entry_it->first;
-            if (IsBarcodeOnTheEdge(edge, barcode, gap_threshold) or
+            if (IsBarcodeOnTheSide(edge, barcode, gap_threshold) or
                 extractor_->GetNumberOfReads(edge, barcode) < 10) continue;
             boost::dynamic_bitset<> current_barcoded_bins = extractor_->GetBitSet(edge, barcode);
             vector<std::pair<size_t, size_t>> reliable_cloud_positions =
