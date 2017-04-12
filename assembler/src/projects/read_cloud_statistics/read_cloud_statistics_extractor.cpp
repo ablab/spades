@@ -24,7 +24,10 @@ namespace debruijn_graph {
         typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
         auto tenx_extractor_ptr = make_shared<tenx_extractor_t>(gp.barcode_mapper_ptr, gp.g);
         auto reliable_checker = make_shared<ReliableBarcodesChecker>(tenx_extractor_ptr, gp);
-        auto gap_distribution_extractor = make_shared<GapDistributionExtractor>(tenx_extractor_ptr, gp);
+        size_t length_bin = 500;
+        double coverage_bin = 0.1;
+        auto gap_distribution_extractor = make_shared<GapDistributionExtractor>(tenx_extractor_ptr, gp,
+                                                                                length_bin, coverage_bin);
         vector<shared_ptr<BarcodeStatisticsCounter>> result;
         result.push_back(reliable_checker);
         result.push_back(gap_distribution_extractor);
