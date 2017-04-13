@@ -96,6 +96,7 @@ Gap DijkstraGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
                             path_storage);
     if (path_storage.size() == 0 || process_res != 0) {
 //No paths found or path_processor error(in particular too many vertices in Dijkstra), keeping the gap
+        DEBUG("PathProcessor nonzero exit code, gap left unchanged");
         return orig_gap;
     } else if (path_storage.size() > 1) {
 //More than one result, using shortest result for gap length estimation
@@ -292,12 +293,15 @@ Gap MatePairGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
         DEBUG("Closing gap with mate pairs between edge " << g_.int_id(last_e)
                   << " and edge " << g_.int_id(target_edge) << " was " << orig_gap);
         omnigraph::PathStorageCallback<Graph> path_storage(g_);
-        omnigraph::ProcessPaths(g_, 0,
+        int process_res = omnigraph::ProcessPaths(g_, 0,
                                 max_path_len_,
                                 last_v,
                                 target_vertex,
                                 path_storage);
-
+        if (process_res != 0) {
+            DEBUG("PathProcessor nonzero exit code, gap left unchanged");
+            return orig_gap;
+        }
         set<EdgeId> present_in_paths;
         for (const auto &p: path_storage.paths())
             for (EdgeId e : p)
