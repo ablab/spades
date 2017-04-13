@@ -7,18 +7,24 @@ from os import path
 import subprocess
 import sys
 
+from common import dump_dict
+
 if len(sys.argv) < 3:
     print("Usage: choose_samples.py <canopy.prof> <binning dir> [CAGS+]")
     exit(1)
 
 PROF = sys.argv[1]
 DIR = sys.argv[2]
+#PROF_OUT = sys.argv[3]
+PROF_OUT = path.join(DIR, "bins_total.prof")
 CAGS = None
 if len(sys.argv) == 4:
     CAGS = set(sys.argv[3:])
 DESIRED_ABUNDANCE = 50
 MIN_ABUNDANCE = 4
 MIN_TOTAL_ABUNDANCE = 15
+
+prof_dict = dict()
 
 #Assuming that samples are enumerated consecutively from 1 to N
 with open(PROF) as input:
@@ -51,6 +57,7 @@ with open(PROF) as input:
                     break
 
         print("Chosen samples are", samples, "with total mean abundance", sum)
+        prof_dict[CAG] = sum
         if sum < MIN_TOTAL_ABUNDANCE:
             print(CAG, "is too scarce; skipping")
             continue
@@ -59,3 +66,6 @@ with open(PROF) as input:
             reads = ["{}/{}/sample{}_{}.fastq".format(DIR, CAG, sample, suf) for sample in samples]
             with open("{}/{}/{}.fastq".format(DIR, CAG, name), "w") as output:
                 subprocess.check_call(["cat"] + reads, stdout=output)
+
+with open(PROF_OUT, "w") as prof_out:
+    dump_dict(prof_dict, prof_out)

@@ -3,7 +3,7 @@ include: "Common.snake"
 import os
 import os.path
 
-from scripts.common import dump_dict
+from scripts.common import load_dict, dump_dict
 
 #Path to saves of necessary assembly stage
 SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(K)
@@ -146,8 +146,9 @@ rule read_binning:
 rule choose_samples:
     input:   binned=expand("propagation/{sample}_edges.ann", sample=GROUPS),
              prof="binning/{}/bins.prof".format(BINNER)
-    output:  dynamic("binning/{cag}/left.fastq"),
-             dynamic("binning/{cag}/right.fastq")
+    output:  left=dynamic("binning/{cag}/left.fastq"),
+             right=dynamic("binning/{cag}/right.fastq"),
+             #prof="binning/bins_total.prof" #TODO: snakemake cannot mix dynamic and non-dynamic output
     log:     "binning/choose_samples.log"
     message: "Choosing samples for all CAGs"
     shell:   "{SCRIPTS}/choose_samples.py {input.prof} binning/ >{log} 2>&1"
@@ -167,6 +168,8 @@ rule reassembly_config:
                     "frag_size": 10000, "min_len": 100}
             dump_dict(conf, outfile)
 
+READ_LENGTH = config.get("READ_LENGTH", 100) #TODO: auto-detect default value
+
 rule reassemble:
     input:   left="binning/{cag}/left.fastq", right="binning/{cag}/right.fastq",
              config="reassembly/{cag}.yaml"
@@ -175,7 +178,12 @@ rule reassemble:
     log:     "reassembly/reassembly_{cag}.log"
     threads: THREADS
     message: "Reassembling reads for {wildcards.cag}"
-    shell:   "{SPADES_REASSEMBLY}/spades.py --meta -t {threads}"
-             " --pe1-1 {input.left} --pe1-2 {input.right} --pe1-ff"
-             " -o {params} --series-analysis {input.config} >{log} 2>&1 && "
-             "cp {params}/scaffolds.fasta {output}"
+    run:
+        COV_THRESHOLD = 0.5
+        with open("binning/bins_total.prof") as in_prof:
+            cag_prof = load_dict(in_prof)
+            bin_cov = COV_THRESHOLD * float(cag_prof[wildcards.cag]) * READ_LENGTH / (READ_LENGTH - SMALL_K)
+        shell("{SPADES_REASSEMBLY}/spades.py --meta -t {threads}"
+             " --pe1-1 {input.left} --pe1-2 {input.right} --pe1-ff -o {params}"
+             " --hidden-cov-cutoff {bin_cov} --series-analysis {input.config}"
+             " >{log} 2>&1 && cp {params}/scaffolds.fasta {output}")
