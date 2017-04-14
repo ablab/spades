@@ -1575,6 +1575,7 @@ public:
 
 private:
     EdgeContainer GetBestCandidates(const EdgeContainer& edges, const EdgeId& decisive_edge) const {
+        DEBUG("Decisive edge: " << decisive_edge.int_id());
         DEBUG("Input candidates: " << edges.size());
         stats_.overall_++;
         if (edges.size() == 0) {
@@ -1614,8 +1615,6 @@ private:
             return initial_candidates;
         }
         DEBUG("After initial check: " << initial_candidates.size());
-//        EdgeContainer next_candidates = ReadCloudClosestFilter(initial_candidates, decisive_edge,
-//                                                               internal_gap_threshold_, middle_abundancy_threshold_);
         EdgeContainer next_candidates = TopologyClosestFilter(initial_candidates, distance_bound_);
         DEBUG("After middle check: " << next_candidates.size());
         DEBUG("Middle candidates: ");
@@ -1630,8 +1629,15 @@ private:
         if (next_candidates.size() == 1) {
             stats_.middle_filter_helped_++;
             DEBUG("Middle helped");
+            DEBUG("Canditate: " << next_candidates.back().e_.int_id());
+            bool read_cloud_check = ReadCloudClosestCheck(decisive_edge, next_candidates.back().e_, initial_candidates,
+                                                          internal_gap_threshold_, middle_abundancy_threshold_);
+            if (not read_cloud_check) {
+                DEBUG("Read cloud check failed while topology check passed.");
+            }
             return next_candidates;
         }
+
 
         EdgeContainer result = next_candidates;
 
@@ -1769,7 +1775,7 @@ private:
     }
 
     bool IsBetween(const EdgeId& middle, const EdgeId& left, const EdgeId& right,
-                   size_t len_threshold, size_t abundancy_threshold) const {
+                   size_t len_threshold, size_t abundance_threshold) const {
         DEBUG("Checking against: " << right.int_id())
         auto side_barcodes = barcode_extractor_ptr_->GetSharedBarcodes(left, right);
         size_t middle_length = g_.length(middle);
@@ -1781,8 +1787,8 @@ private:
             size_t left_count = barcode_extractor_ptr_->GetNumberOfReads(left, barcode);
             size_t right_count = barcode_extractor_ptr_->GetNumberOfReads(right, barcode);
             if (!(barcode_extractor_ptr_->HasBarcode(middle, barcode))
-                and left_count >= abundancy_threshold
-                and right_count >= abundancy_threshold) {
+                and left_count >= abundance_threshold
+                and right_count >= abundance_threshold) {
                 ++side_barcodes_after_filter;
                 size_t right_length = barcode_extractor_ptr_->GetMinPos(right, barcode);
                 size_t left_length = g_.length(left) - barcode_extractor_ptr_->GetMaxPos(left, barcode);
