@@ -993,7 +993,7 @@ static inline uint64_t next_slot(QF *qf, uint64_t current)
 	return current;
 }
 
-static inline bool insert1(QF *qf, __uint128_t hash, bool lock, bool spin)
+static inline bool insert1(QF *qf, uint64_t hash, bool lock, bool spin)
 {
 	uint64_t hash_remainder           = hash & BITMASK(qf->metadata->bits_per_slot);
 	uint64_t hash_bucket_index        = hash >> qf->metadata->bits_per_slot;
@@ -1259,8 +1259,8 @@ static inline bool insert1(QF *qf, __uint128_t hash, bool lock, bool spin)
 	return true;
 }
 
-static inline bool insert(QF *qf, __uint128_t hash, uint64_t count, bool lock,
-													bool spin)
+static inline bool insert(QF *qf,uint64_t hash, uint64_t count, bool lock,
+                          bool spin)
 {
 	uint64_t hash_remainder           = hash & BITMASK(qf->metadata->bits_per_slot);
 	uint64_t hash_bucket_index        = hash >> qf->metadata->bits_per_slot;
@@ -1628,7 +1628,7 @@ bool qf_insert(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool
 
 uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value)
 {
-	__uint128_t hash = key;
+	uint64_t hash = key;
 	uint64_t hash_remainder   = hash & BITMASK(qf->metadata->bits_per_slot);
 	int64_t hash_bucket_index = hash >> qf->metadata->bits_per_slot;
 

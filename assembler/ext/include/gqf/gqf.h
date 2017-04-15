@@ -39,7 +39,7 @@ extern "C" {
 		uint64_t value_bits;
 		uint64_t key_remainder_bits;
 		uint64_t bits_per_slot;
-		__uint128_t range;
+		uint64_t range;
 		uint64_t nblocks;
 		uint64_t nelts;
 		uint64_t ndistinct_elts;
