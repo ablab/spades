@@ -78,13 +78,13 @@ class cqf {
         return num_slots_;
     }
 
-    size_t lookup(digest d) const {
-        return qf_count_key_value(&qf_, d & range_mask_, 0);
+    size_t lookup(digest d, bool lock = false) const {
+        return qf_count_key_value(&qf_, d & range_mask_, 0, lock);
     }
 
-    size_t lookup(const T&o) const {
-        digest d = hasher_(o, 0);
-        return lookup(d);
+    size_t lookup(const T&o, bool lock = false) const {
+        digest d = hasher_(o);
+        return lookup(d, lock);
     }
 
 protected:

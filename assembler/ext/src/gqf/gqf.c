@@ -1626,18 +1626,37 @@ bool qf_insert(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool
 		return insert(qf, key, count, lock, spin);
 }
 
-uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value)
+uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value,
+                            bool lock)
 {
 	uint64_t hash = key;
 	uint64_t hash_remainder   = hash & BITMASK(qf->metadata->bits_per_slot);
 	int64_t hash_bucket_index = hash >> qf->metadata->bits_per_slot;
+	uint64_t hash_bucket_lock_offset  = hash_bucket_index % NUM_SLOTS_TO_LOCK;
+    uint64_t res = 0;
 
-	if (!is_occupied(qf, hash_bucket_index))
-		return 0;
+	if (lock) {
+		/* take the lock for two lock-blocks; the lock-block in which the
+		 * hash_bucket_index falls and the next lock-block */
+
+		if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK], lock))
+			return 0;
+		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE)) {
+			if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1], lock)) {
+				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
+				return 0;
+			}
+		}
+	}
+    
+	if (!is_occupied(qf, hash_bucket_index)) {
+        res = 0;
+        goto end;
+    }
 
 	int64_t runstart_index = hash_bucket_index == 0 ? 0 : run_end(qf,
-																																hash_bucket_index-1)
-		+ 1;
+                                                                  hash_bucket_index-1)
+                             + 1;
 	if (runstart_index < hash_bucket_index)
 		runstart_index = hash_bucket_index;
 
@@ -1647,12 +1666,23 @@ uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value)
 	do {
 		current_end = decode_counter(qf, runstart_index, &current_remainder,
 																 &current_count);
-		if (current_remainder == hash_remainder)
-			return current_count;
+		if (current_remainder == hash_remainder) {
+            res = current_count;
+            goto end;
+        }
 		runstart_index = current_end + 1;
 	} while (!is_runend(qf, current_end));
 
-	return 0;
+    res = 0;
+
+end:
+    if (lock) {
+		qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
+		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE))
+			qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1]);
+	}
+
+    return res;
 }
 
 /* initialize the iterator at the run corresponding
@@ -1907,7 +1937,7 @@ uint64_t qf_inner_product(QF *qfa, QF *qfb)
 		uint64_t key = 0, value = 0, count = 0;
 		uint64_t count_mem;
 		qfi_get(&qfi, &key, &value, &count);
-		if ((count_mem = qf_count_key_value(qf_mem, key, 0)) > 0) {
+		if ((count_mem = qf_count_key_value(qf_mem, key, 0, false)) > 0) {
 			acc += count*count_mem;
 		}
 	} while (!qfi_next(&qfi));
