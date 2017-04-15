@@ -24,12 +24,16 @@ class cqf {
         num_hash_bits_ = qbits + 8;
         num_slots_ = (1ULL << qbits);
         qf_init(&qf_, num_slots_, num_hash_bits_, 0, 42);
+        range_mask_ = qf_.metadata->range - 1;
+        assert((range_mask_ & qf_.metadata->range) == 0);
         fprintf(stderr, "%llu %llu %u %llu\n", maxn, num_slots_, num_hash_bits_, qf_.metadata->range);
     }
     cqf(hasher h, uint64_t num_slots, unsigned hash_bits)
             : hasher_(std::move(h)),
               num_hash_bits_(hash_bits), num_slots_(num_slots), insertions_(0) {
         qf_init(&qf_, num_slots_, num_hash_bits_, 0, 239);
+        range_mask_ = qf_.metadata->range - 1;
+        assert((range_mask_ & qf_.metadata->range) == 0);
         fprintf(stderr, "%llu %u %llu\n", num_slots_, num_hash_bits_, qf_.metadata->range);
     }
 
@@ -37,7 +41,7 @@ class cqf {
 
     bool add(digest d, uint64_t count = 1,
              bool lock = true, bool spin = true) {
-        return qf_insert(&qf_, d % qf_.metadata->range, 0, count, lock, spin);
+        return qf_insert(&qf_, d & range_mask_, 0, count, lock, spin);
     }
 
     bool add(const T &o, uint64_t count = 1,
@@ -75,7 +79,7 @@ class cqf {
     }
 
     size_t lookup(digest d) const {
-        return qf_count_key_value(&qf_, d % qf_.metadata->range, 0);
+        return qf_count_key_value(&qf_, d & range_mask_, 0);
     }
 
     size_t lookup(const T&o) const {
@@ -89,6 +93,7 @@ protected:
     unsigned num_hash_bits_;
     uint64_t num_slots_;
     size_t insertions_;
+    uint64_t range_mask_;
 };
 
 
