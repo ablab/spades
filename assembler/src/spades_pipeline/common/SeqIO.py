@@ -6,6 +6,10 @@
 
 import itertools
 import sys
+import gzip
+
+fasta_ext = ['.fa', '.fas', '.fasta', '.seq', '.fsa', '.fna', '.ffn', '.frn']
+fastq_ext = ['.fq', 'fastq']
 
 def Open(f, mode):
     if f.endswith(".gz"):
@@ -145,3 +149,28 @@ def RemoveNs(input_handler, output_handler):
             r -= 1
         if r > l:
             write(SeqRecord(contig.seq[l:r], contig.id))
+
+
+def is_fasta(file_name):
+    for ext in fasta_ext:
+        if ext in file_name:
+            return True
+
+    return False
+
+
+def is_fastq(file_name):
+    for ext in fastq_ext:
+        if ext in file_name:
+            return True
+
+    return False
+
+
+def get_read_file_type(file_name):
+    if is_fastq(file_name):
+        return 'fastq'
+    elif is_fasta(file_name):
+        return 'fasta'
+    else:
+        return None

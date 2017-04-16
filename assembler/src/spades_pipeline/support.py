@@ -18,6 +18,8 @@ import tempfile
 import shutil
 import options_storage
 import itertools
+import SeqIO
+import math
 from os.path import abspath, expanduser, join
 from distutils.version import LooseVersion
 
@@ -597,6 +599,37 @@ def relative2abs_paths(dataset_data, dirname):
                 reads_library[key] = abs_paths_reads
         abs_paths_dataset_data.append(reads_library)
     return abs_paths_dataset_data
+
+
+def get_reads_length(dataset_data, log, num_checked=10 ** 4, diff_len_allowable=25):
+    max_reads_lenghts = [get_max_reads_length(reads_file, log, num_checked) for reads_file in get_reads_files(dataset_data)]
+
+    avg_len = sum(max_reads_lenghts) / len(max_reads_lenghts)
+    for max_len in max_reads_lenghts:
+        if math.fabs(max_len - avg_len) > diff_len_allowable:
+            warning('Read lengths differ more than allowable. Length: ' + str(max_len) + '. Avg. length: ' + str(avg_len) + '.', log)
+    reads_length = min(max_reads_lenghts)
+    log.info('Reads length: ' + str(reads_length))
+    return reads_length
+
+
+def get_reads_files(dataset_data):
+    for reads_library in dataset_data:
+        for key, value in reads_library.items():
+            if key.endswith('reads'):
+                for reads_file in value:
+                    yield reads_file
+
+
+def get_max_reads_length(reads_file, log, num_checked):
+    file_type = SeqIO.get_read_file_type(reads_file)
+    if not file_type:
+        error('Incorrect type of reads file: ' + reads_file, log)
+
+    with SeqIO.Open(reads_file, "r") as reads_file_handle:
+        max_reads_length = max([len(rec) for rec in itertools.islice(SeqIO.parse(reads_file_handle, file_type), num_checked)])
+        log.info('Max reads length: ' + str(max_reads_length))
+        return max_reads_length
 
 
 def check_dataset_reads(dataset_data, only_assembler, log):
