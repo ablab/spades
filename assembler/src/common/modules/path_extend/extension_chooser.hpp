@@ -1331,23 +1331,9 @@ public:
             unique_storage_(unique_storage),
             paired_connection_condition_(paired_connection_condition) {}
 
-    //todo remove code duplication with ExtensionChooser2015
-    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer&) const override {
+    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer& candidates) const override {
         EdgeContainer result;
-
-        pair<EdgeId, int> last_unique = FindLastUniqueInPath(path, unique_storage_);
-
-        if (last_unique.second == -1) {
-            return result;
-        }
-        DEBUG("At edge " << path.Back().int_id());
-        DEBUG("Conjugate: " << g_.conjugate(path.Back()).int_id());
-        DEBUG("Last unique: " << last_unique.first.int_id());
-        DEBUG("Length: " << g_.length(last_unique.first));
-        DEBUG("Barcodes: " << barcode_extractor_ptr_->GetNumberOfBarcodes(last_unique.first));
-
-        EdgeContainer candidates = GetInitialCandidates(last_unique.first, path);
-
+        auto last_unique = FindLastUniqueInPath(path, unique_storage_);
         DEBUG("Searching for next unique edge.")
         result = FindNextUniqueEdge(last_unique.first, candidates);
         DEBUG("Searching finished.")
@@ -1384,29 +1370,6 @@ public:
     }
 
 protected:
-    virtual EdgeContainer GetInitialCandidates(EdgeId last_edge, const BidirectionalPath& path) const {
-        ExtensionChooser::EdgeContainer candidates;
-        vector<EdgeId> initial_candidates;
-        DEBUG("Creating dijkstra");
-        auto dij = omnigraph::CreateUniqueDijkstra(g_, distance_bound_, unique_storage_);
-        DEBUG("dijkstra started");
-        dij.Run(g_.EdgeEnd(last_edge));
-        DEBUG("Dijkstra finished");
-
-        for (auto v: dij.ReachedVertices()) {
-            for (auto connected: g_.OutgoingEdges(v)) {
-                size_t distance = dij.GetDistance(v);
-                if (unique_storage_.IsUnique(connected) and distance < distance_bound_ and
-                        IsFurtherInPath(path, connected, last_edge)) {
-                    EdgeWithDistance candidate(connected, distance);
-                    candidates.push_back(candidate);
-                }
-            }
-        }
-        DEBUG("Candidates: " << candidates.size());
-        return candidates;
-    }
-
     virtual EdgeContainer GetBestCandidates(const EdgeContainer& edges,
                                                         const EdgeId& decisive_edge) const = 0;
 
@@ -1439,11 +1402,6 @@ protected:
     }
 
 private:
-    bool IsFurtherInPath(const BidirectionalPath& path, const EdgeId& edge, const EdgeId& last_edge) const {
-        return edge != last_edge and edge != g_.conjugate(last_edge) and
-               path.FindFirst(edge) == -1 and path.FindFirst(g_.conjugate(edge)) == -1;
-    }
-
     DECL_LOGGER("ReadCloudExtensionChooser")
 };
 
@@ -1534,18 +1492,13 @@ struct TenXExtensionChooserStatistics {
 };
 
 class TenXExtensionChooser : public ReadCloudExtensionChooser {
-
     typedef ReadCloudExtensionChooser::barcode_extractor_ptr_t abstract_barcode_extractor_ptr_t;
     typedef barcode_index::FrameBarcodeIndexInfoExtractor frame_extractor_t;
+    typedef debruijn_graph::config::debruijn_config::read_cloud_resolver::tenx_resolver tenx_configs_t;
     using ReadCloudExtensionChooser::unique_storage_;
     using ReadCloudExtensionChooser::fragment_len_;
     shared_ptr<frame_extractor_t> barcode_extractor_ptr_;
-    size_t absolute_barcode_threshold_;
-    size_t tail_threshold_;
-    size_t max_initial_candidates_;
-    size_t internal_gap_threshold_;
-    size_t initial_abundancy_threshold_;
-    size_t middle_abundancy_threshold_;
+    tenx_configs_t tenx_configs_;
     friend class TenXExtensionChecker;
 public:
     static TenXExtensionChooserStatistics stats_;
@@ -1555,18 +1508,11 @@ public:
     TenXExtensionChooser(const conj_graph_pack &gp, abstract_barcode_extractor_ptr_t extractor, size_t fragment_len,
                              size_t distance_bound, const ScaffoldingUniqueEdgeStorage &unique_storage,
                              const PairedLibConnectionCondition& paired_connection_condition,
-                             size_t absolute_barcode_threshold, size_t tail_threshold, size_t max_initial_candidates,
-                             size_t internal_gap_threshold, size_t initial_abundancy_threshold_,
-                             size_t middle_abundancy_threshold_) :
+                             const tenx_configs_t& tenx_configs) :
             ReadCloudExtensionChooser(gp, extractor, fragment_len, distance_bound,
                                       unique_storage, paired_connection_condition),
             barcode_extractor_ptr_(std::static_pointer_cast<frame_extractor_t>(extractor)),
-            absolute_barcode_threshold_(absolute_barcode_threshold),
-            tail_threshold_(tail_threshold),
-            max_initial_candidates_(max_initial_candidates),
-            internal_gap_threshold_(internal_gap_threshold),
-            initial_abundancy_threshold_(initial_abundancy_threshold_),
-            middle_abundancy_threshold_(middle_abundancy_threshold_) {}
+            tenx_configs_(tenx_configs) {}
 
 
     static void PrintStats(const string& filename) {
@@ -1574,8 +1520,9 @@ public:
     }
 
 private:
-    EdgeContainer GetBestCandidates(const EdgeContainer& edges, const EdgeId& decisive_edge) const {
-        DEBUG("Decisive edge: " << decisive_edge.int_id());
+    EdgeContainer GetBestCandidates(const EdgeContainer& edges, const EdgeId& last_unique_edge) const {
+        DEBUG("Last unique edge: " << last_unique_edge.int_id());
+        DEBUG("Barcodes on last unique edge: " << barcode_extractor_ptr_->GetNumberOfBarcodes(last_unique_edge));
         DEBUG("Input candidates: " << edges.size());
         stats_.overall_++;
         if (edges.size() == 0) {
@@ -1585,22 +1532,23 @@ private:
             stats_.single_candidate_++;
             return edges;
         }
-        size_t barcodes = barcode_extractor_ptr_->GetNumberOfBarcodes(decisive_edge);
+        size_t barcodes = barcode_extractor_ptr_->GetNumberOfBarcodes(last_unique_edge);
         if (barcodes == 0) {
             stats_.no_barcodes_on_last_edge_++;
             return edges;
         }
         //Find edges with barcode score greater than some threshold
-        EdgeContainer initial_candidates = InitialSharedBarcodesFilter(edges, decisive_edge,
-                                                                       absolute_barcode_threshold_,
-                                                                       initial_abundancy_threshold_, tail_threshold_);
+        EdgeContainer initial_candidates = InitialSharedBarcodesFilter(edges, last_unique_edge,
+                                                                       tenx_configs_.absolute_barcode_threshold,
+                                                                       tenx_configs_.initial_abundancy_threshold,
+                                                                       tenx_configs_.tail_threshold);
         DEBUG("Initial candidates: ");
         for(const auto& candidate: initial_candidates) {
             DEBUG(candidate.e_.int_id());
-            DEBUG("Shared barcodes: " << barcode_extractor_ptr_->CountSharedBarcodesWithFilter(decisive_edge,
-                                                                                               candidate.e_,
-                                                                                               initial_abundancy_threshold_,
-                                                                                               tail_threshold_));
+            DEBUG("Shared barcodes: " << barcode_extractor_ptr_->
+                    CountSharedBarcodesWithFilter(last_unique_edge, candidate.e_,
+                                                  tenx_configs_.initial_abundancy_threshold,
+                                                  tenx_configs_.tail_threshold));
         }
         if (initial_candidates.size() == 0 ) {
             stats_.no_candidates_after_initial_filter_++;
@@ -1610,12 +1558,14 @@ private:
             stats_.initial_filter_helped_++;
             return initial_candidates;
         }
-        if (initial_candidates.size() > max_initial_candidates_) {
+        if (initial_candidates.size() > tenx_configs_.max_initial_candidates) {
             stats_.too_much_candidates_after_initial_++;
             return initial_candidates;
         }
         DEBUG("After initial check: " << initial_candidates.size());
-        EdgeContainer next_candidates = TopologyClosestFilter(initial_candidates, distance_bound_);
+        EdgeContainer next_candidates = ReadCloudClosestFilter(initial_candidates, last_unique_edge,
+                                                               tenx_configs_.internal_gap_threshold,
+                                                               tenx_configs_.middle_abundancy_threshold);
         DEBUG("After middle check: " << next_candidates.size());
         DEBUG("Middle candidates: ");
         for(const auto& candidate: next_candidates) {
@@ -1629,16 +1579,16 @@ private:
         if (next_candidates.size() == 1) {
             stats_.middle_filter_helped_++;
             DEBUG("Middle helped");
-            DEBUG("Canditate: " << next_candidates.back().e_.int_id());
-            bool read_cloud_check = ReadCloudClosestCheck(decisive_edge, next_candidates.back().e_, initial_candidates,
-                                                          internal_gap_threshold_, middle_abundancy_threshold_);
-            if (not read_cloud_check) {
-                DEBUG("Read cloud check failed while topology check passed.");
-            }
+//            DEBUG("Canditate: " << next_candidates.back().e_.int_id());
+//            bool read_cloud_check = ReadCloudClosestCheck(last_unique_edge, next_candidates.back().e_,
+//                                                          initial_candidates,
+//                                                          tenx_configs_.internal_gap_threshold,
+//                                                          tenx_configs_.middle_abundancy_threshold);
+//            if (not read_cloud_check) {
+//                DEBUG("Read cloud check failed while topology check passed.");
+//            }
             return next_candidates;
         }
-
-
         EdgeContainer result = next_candidates;
 
         stats_.multiple_candidates_after_both_++;
@@ -1650,7 +1600,7 @@ private:
                 DEBUG("Pair of conjugates left");
                 stats_.pair_of_conjugates_left_++;
                 //fixme magic constants
-                result = ConjugateFilter(decisive_edge, next_candidates[0], next_candidates[1],
+                result = ConjugateFilter(last_unique_edge, next_candidates[0], next_candidates[1],
                                          1000, 2000, 0.2);
                 if (result.size() == 1) {
                     stats_.conjugate_resolved_++;

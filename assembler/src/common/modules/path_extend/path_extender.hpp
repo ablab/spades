@@ -1,4 +1,4 @@
-//***************************************************************************
+ //***************************************************************************
 //* Copyright (c) 2011-2014 Saint-Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
@@ -1424,19 +1424,7 @@ protected:
     ScaffoldingUniqueEdgeStorage unique_storage_;
     shared_ptr<barcode_index::AbstractBarcodeIndex> mapper_;
     size_t distance_bound_;
-
-
-    //todo should be precounted at barcode map construction stage
-    size_t GetMaximalBarcodeNumber (const std::string& path_to_tslr_dataset) const {
-        size_t result = 0;
-        std::ifstream fin;
-        fin.open(path_to_tslr_dataset);
-        string line;
-        while (getline(fin, line)) {
-            ++result;
-        }
-        return result / 2;
-    }
+    friend class TenXExtensionChecker;
 
 
 public:
@@ -1476,10 +1464,43 @@ public:
 
     bool MakeSimpleGrowStep(BidirectionalPath &path, PathContainer *paths_storage) override {
         ExtensionChooser::EdgeContainer candidates;
+        pair<EdgeId, int> last_unique = FindLastUniqueInPath(path, unique_storage_);
+
+        if (last_unique.second == -1) {
+            return false;
+        }
+        DEBUG("At edge " << path.Back().int_id());
+        DEBUG("Conjugate: " << g_.conjugate(path.Back()).int_id());
+        DEBUG("Last unique: " << last_unique.first.int_id());
+        DEBUG("Length: " << g_.length(last_unique.first));
+
+        candidates = GetInitialCandidates(last_unique.first, path);
         return FilterCandidates(path, candidates) and AddCandidates(path, paths_storage, candidates);
     }
 
 protected:
+    virtual ExtensionChooser::EdgeContainer GetInitialCandidates(EdgeId last_edge, const BidirectionalPath& path) const {
+        ExtensionChooser::EdgeContainer candidates;
+        vector<EdgeId> initial_candidates;
+        DEBUG("Creating dijkstra");
+        auto dij = omnigraph::CreateUniqueDijkstra(g_, distance_bound_, unique_storage_);
+        DEBUG("dijkstra started");
+        dij.Run(g_.EdgeEnd(last_edge));
+        DEBUG("Dijkstra finished");
+
+        for (auto v: dij.ReachedVertices()) {
+            for (auto connected: g_.OutgoingEdges(v)) {
+                size_t distance = dij.GetDistance(v);
+                if (unique_storage_.IsUnique(connected) and distance < distance_bound_ and
+                    IsFurtherInPath(path, connected, last_edge)) {
+                    EdgeWithDistance candidate(connected, distance);
+                    candidates.push_back(candidate);
+                }
+            }
+        }
+        DEBUG("Candidates: " << candidates.size());
+        return candidates;
+    }
 
     virtual bool FilterCandidates(BidirectionalPath &path, ExtensionChooser::EdgeContainer &candidates) {
         DEBUG("Simple grow step");
@@ -1517,6 +1538,22 @@ protected:
         DEBUG("push done");
         return true;
     }
+
+    std::pair<EdgeId, int> FindLastUniqueInPath(const BidirectionalPath& path,
+                                                const ScaffoldingUniqueEdgeStorage& storage) const {
+        for (int i =  (int)path.Size() - 1; i >= 0; --i) {
+            if (storage.IsUnique(path.At(i))) {
+                return std::make_pair(path.At(i), i);
+            }
+        }
+        return std::make_pair(EdgeId(0), -1);
+    }
+
+    bool IsFurtherInPath(const BidirectionalPath& path, const EdgeId& edge, const EdgeId& last_edge) const {
+        return edge != last_edge and edge != g_.conjugate(last_edge) and
+               path.FindFirst(edge) == -1 and path.FindFirst(g_.conjugate(edge)) == -1;
+    }
+private:
     DECL_LOGGER("ReadCloudExtender")
 
 };

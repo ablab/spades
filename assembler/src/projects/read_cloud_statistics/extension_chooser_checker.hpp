@@ -1,18 +1,20 @@
 #pragma once
 
 #include "modules/path_extend/extension_chooser.hpp"
+#include "modules/path_extend/path_extender.hpp"
 
 namespace path_extend {
     class TenXExtensionChecker {
         const TenXExtensionChooser chooser_;
+        shared_ptr<ReadCloudExtender> extender_ptr_;
         const conj_graph_pack& gp_;
         const ScaffoldingUniqueEdgeStorage storage_;
         vector<omnigraph::MappingPath<EdgeId>> reference_paths_;
 
     public:
-        TenXExtensionChecker(const TenXExtensionChooser& chooser, const conj_graph_pack& gp,
-                             const ScaffoldingUniqueEdgeStorage storage) :
-                chooser_(chooser), gp_(gp), storage_(storage) {}
+        TenXExtensionChecker(const TenXExtensionChooser& chooser, const shared_ptr<ReadCloudExtender> extender_ptr,
+                             const conj_graph_pack& gp, const ScaffoldingUniqueEdgeStorage storage) :
+                chooser_(chooser), extender_ptr_(extender_ptr), gp_(gp), storage_(storage) {}
 
         void CheckChooser(const string& genome_path) {
             INFO("Filling reference paths");
@@ -131,7 +133,7 @@ namespace path_extend {
                               const MappingSet &mapping_set, const size_t proximity_threshold, InitialStats &stats) {
             ++stats.overall_;
             BidirectionalPath empty_path(gp_.g);
-            ExtensionChooser::EdgeContainer candidates = chooser_.GetInitialCandidates(edge, empty_path);
+            ExtensionChooser::EdgeContainer candidates = extender_ptr_->GetInitialCandidates(edge, empty_path);
             DEBUG(candidates.size() << " candidates.");
             bool next_reachable = false;
             for (const auto& candidate: candidates) {
@@ -142,10 +144,11 @@ namespace path_extend {
             if (not next_reachable) {
                 ++stats.nonreachable_;
             }
-            ExtensionChooser::EdgeContainer after_filter = chooser_.InitialSharedBarcodesFilter(candidates, edge,
-                                                                                                chooser_.absolute_barcode_threshold_,
-                                                                                                chooser_.initial_abundancy_threshold_,
-                                                                                                chooser_.tail_threshold_);
+            ExtensionChooser::EdgeContainer after_filter =
+                    chooser_.InitialSharedBarcodesFilter(candidates, edge,
+                                                         chooser_.tenx_configs_.absolute_barcode_threshold,
+                                                         chooser_.tenx_configs_.initial_abundancy_threshold,
+                                                         chooser_.tenx_configs_.tail_threshold);
             DEBUG("Size after filter: " << after_filter.size());
             bool next_found = false;
             for (const auto& candidate: after_filter) {
@@ -196,7 +199,7 @@ namespace path_extend {
             size_t overall = 0;
             size_t failure_on_simple = 0;
 //            size_t failure_on_hard = 0;
-            INFO("Gap threshold: " << chooser_.internal_gap_threshold_);
+            INFO("Gap threshold: " << chooser_.tenx_configs_.internal_gap_threshold);
             for (const auto& path: reference_paths_) {
                 vector<EdgeId> long_edges_in_path;
                 for (size_t i = 0; i < path.size(); ++i) {
@@ -215,7 +218,8 @@ namespace path_extend {
                         ExtensionChooser::EdgeContainer simple;
                         simple.push_back(EdgeWithDistance(right, 0));
                         if (!chooser_.IsBetween(middle, left, right,
-                                                chooser_.internal_gap_threshold_, chooser_.middle_abundancy_threshold_)) {
+                                                chooser_.tenx_configs_.internal_gap_threshold,
+                                                chooser_.tenx_configs_.middle_abundancy_threshold)) {
                             failure_on_simple++;
                         }
                     }

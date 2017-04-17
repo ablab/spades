@@ -101,8 +101,8 @@ public:
         const size_t length_lower_bound = 50000;
         const size_t length_upper_bound = 200000;
         const size_t side_threshold = 5000;
-        const size_t gap_threshold = 5000;
-        FillGapDistributionOnLongEdges(length_lower_bound, length_upper_bound, side_threshold, gap_threshold);
+        const size_t external_gap_threshold = 200000;
+        FillGapDistributionOnLongEdges(length_lower_bound, length_upper_bound, side_threshold, external_gap_threshold);
     }
 
     void PrintStats(const string& stats_path) const override {
@@ -165,7 +165,7 @@ private:
         VERIFY(edge_bitset.size() >= position.right_);
         vector<size_t> cloud_gaps;
         size_t current_gap_length = 0;
-        for (size_t i = 0; i < edge_bitset.size(); ++i) {
+        for (size_t i = position.left_; i < position.right_; ++i) {
             if (not edge_bitset[i]) {
                 ++current_gap_length;
             }
