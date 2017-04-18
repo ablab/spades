@@ -482,7 +482,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 //    for  (const auto& extender: generator.MakePEExtenders()) {
 //        gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender));
 //    }
-//FIXME: uncomment cover_map 
+//FIXME: uncomment cover_map
 
     PathPolisher polisher(gp_, gap_closers);
     result = polisher.PolishPaths(paths);
