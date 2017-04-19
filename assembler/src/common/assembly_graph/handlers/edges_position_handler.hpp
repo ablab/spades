@@ -72,7 +72,7 @@ public:
         return new_pos;
     }
 
-    set<MappingRange> GetEdgePositions(EdgeId edge, string contig_id) const {
+    set<MappingRange> GetEdgePositions(EdgeId edge, const string &contig_id) const {
         VERIFY(this->IsAttached());
         auto edge_it = edges_positions_.find(edge);
         if(edge_it == edges_positions_.end())
@@ -83,6 +83,12 @@ public:
             return set<MappingRange>();
         else
             return it->second;
+    }
+
+    MappingRange GetUniqueEdgePosition(EdgeId edge, const string &contig_id) const {
+        auto poss = GetEdgePositions(edge, contig_id);
+        VERIFY(poss.size() == 1);
+        return *poss.begin();
     }
 
     vector<EdgePosition> GetEdgePositions(EdgeId edge) const {

@@ -86,41 +86,35 @@ MappingPath<EdgeId> GenomeConsistenceChecker::ConstructEdgeOrder(const string& c
     return MappingPath<EdgeId>(to_sort);
 }
 
-void GenomeConsistenceChecker::SpellChromosome(const string &chr, const MappingPath<EdgeId> &mapping_path, vector<size_t>& lengths) {
+//returns lengths of mapped regions, divided by "unresolvable_len_"
+vector<size_t> GenomeConsistenceChecker::SpellChromosome(const string &chr, const MappingPath<EdgeId> &mapping_path) {
     INFO("Spelling label " << chr);
-    chromosomes_spelled_[chr] = vector<EdgeId>(0);
-    vector<size_t> starts;
-    vector<size_t> ends;
-    size_t count = 0;
-    for (size_t i = 0; i < mapping_path.size(); i++) {
-        if (i > 0 && mapping_path[i].second.initial_range.start_pos - mapping_path[i-1].second.initial_range.end_pos > unresolvable_len_ ) {
-            INFO ("Large gap " << mapping_path[i].second.initial_range.start_pos - mapping_path[i-1].second.initial_range.end_pos );
-            starts.push_back(mapping_path[i].second.initial_range.start_pos);
-            ends.push_back(mapping_path[i-1].second.initial_range.end_pos);
-        }
-        if (i == 0) {
-            starts.push_back(mapping_path[i].second.initial_range.start_pos);
-        }
-        if (i == mapping_path.size() - 1){
-            ends.push_back(mapping_path[i].second.initial_range.end_pos);
-        }
-        INFO("Pos:" << count << " edge " << gp_.g.int_id(mapping_path[i].first) << " length "<< gp_.g.length(mapping_path[i].first) <<
-             " coverage " << gp_.g.coverage(mapping_path[i].first) << " mapped to " << mapping_path[i].second.mapped_range.start_pos
-             << " - " << mapping_path[i].second.mapped_range.end_pos << " init_range " << mapping_path[i].second.initial_range.start_pos << " - " << mapping_path[i].second.initial_range.end_pos );
-        genome_spelled_[mapping_path[i].first] = std::make_pair(chr, count);
-        chromosomes_spelled_[chr].push_back(mapping_path[i].first);
-        count++;
-    }
-    for (size_t i = 0; i < starts.size(); i++)
-        lengths.push_back(ends[i] - starts[i]);
+    genome_info_.AddInfo(ChromosomeInfo(chr, mapping_path));
 
+    vector<size_t> mapped_regions;
+    size_t pos = mapping_path.front().second.initial_range.start_pos;
+    for (size_t i = 0; i < mapping_path.size(); i++) {
+        INFO("Pos: " << i << " init_range " << mapping_path[i].second.initial_range
+                     << " mapped to edge " << gp_.g.str(mapping_path[i].first)
+                     << " range " << mapping_path[i].second.mapped_range);
+
+        size_t curr_start = mapping_path[i].second.initial_range.start_pos;
+        size_t prev_end = mapping_path[i-1].second.initial_range.end_pos;
+        if (i > 0 && curr_start - prev_end > unresolvable_len_) {
+            INFO ("Large gap " << mapping_path[i].second.initial_range.start_pos - mapping_path[i-1].second.initial_range.end_pos);
+            mapped_regions.push_back(prev_end - pos);
+            pos = curr_start;
+        }
+    }
+    mapped_regions.push_back(mapping_path.back().second.initial_range.end_pos - pos);
+    return mapped_regions;
 }
 
 void GenomeConsistenceChecker::SpellGenome() {
     auto all_positions = ConstructEdgeOrder();
     vector<size_t> theoretical_scaff_lengths;
     for (const auto &chr_info: all_positions) {
-        SpellChromosome(chr_info.first, chr_info.second, theoretical_scaff_lengths);
+        push_back_all(theoretical_scaff_lengths, SpellChromosome(chr_info.first, chr_info.second));
     }
     size_t total_len = 0;
     for (size_t i = 0; i < theoretical_scaff_lengths.size(); i++) {
@@ -140,11 +134,12 @@ void GenomeConsistenceChecker::SpellGenome() {
 }
 
 void GenomeConsistenceChecker::ReportEdge(EdgeId e, double w) const{
-    INFO( "Edge " << gp_.g.int_id(e) << " weight " << w << " len " << gp_.g.length(e) << " cov " << gp_.g.coverage(e));
-    if (genome_spelled_.find(e) != genome_spelled_.end()) {
-        INFO ("Chromosome " << genome_spelled_.at(e).first << " index " << genome_spelled_.at(e).second );
-    } else {
+    INFO("Edge " << gp_.g.int_id(e) << " weight " << w << " len " << gp_.g.length(e) << " cov " << gp_.g.coverage(e));
+    if (!genome_info_.Multiplicity(e)) {
         INFO(" no chromosome position");
+    } else {
+        auto info = genome_info_.UniqueChromosomeIdx(e);
+        INFO ("Chromosome " << info.first << " index " << info.second);
     }
 }
 
@@ -177,12 +172,11 @@ void GenomeConsistenceChecker::CheckPathEnd(const BidirectionalPath &path) const
     for (int i =  (int)path.Size() - 1; i >= 0; --i) {
         if (storage_.IsUnique(path.At(i))) {
             EdgeId current_edge = path.At(i);
-            if (genome_spelled_.find(current_edge) != genome_spelled_.end()) {
-                auto chromosome = genome_spelled_.at(current_edge).first;
-                auto index = genome_spelled_.at(current_edge).second;
-                auto chromosome_size = chromosomes_spelled_.at(chromosome).size();
-                if (index == 0 || index == chromosome_size) {
-                    DEBUG("Path length " << path.Length() << "ended at the chromosome " << chromosome
+            if (!genome_info_.Multiplicity(current_edge)) {
+                const auto &chr_info = genome_info_.UniqueChromosomeInfo(current_edge);
+                size_t index = chr_info.UniqueEdgeIdx(current_edge);
+                if (index == 0 || index == chr_info.size()) {
+                    DEBUG("Path length " << path.Length() << " ended at the chromosome " << chr_info.name()
                           << (index == 0 ? " start": " end"));
                     return;
                 }
@@ -265,15 +259,13 @@ size_t GenomeConsistenceChecker::GetSupportingPathCount(EdgeId e1, EdgeId e2, si
 }
 
 void GenomeConsistenceChecker::PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const {
-    VERIFY(genome_spelled_.find(e1) != genome_spelled_.end());
-    VERIFY(genome_spelled_.find(e2) != genome_spelled_.end());
-    auto pair1 = genome_spelled_.at(e1);
-    auto pair2 = genome_spelled_.at(e2);
+    VERIFY(genome_info_.Multiplicity(e1));
+    VERIFY(genome_info_.Multiplicity(e2));
+    const auto &chr_info1 = genome_info_.UniqueChromosomeInfo(e1);
+    const auto &chr_info2 = genome_info_.UniqueChromosomeInfo(e2);
 //FIXME: checks, compliment_strands;
-    size_t s1 = chromosomes_spelled_.at(pair1.first).size();
-    size_t s2 = chromosomes_spelled_.at(pair2.first).size();
-    EdgeId true_next = chromosomes_spelled_.at(pair1.first)[(pair1.second + 1) % s1];
-    EdgeId true_prev = chromosomes_spelled_.at(pair2.first)[(pair2.second + s2 - 1) % s2];
+    EdgeId true_next = chr_info1.EdgeAt((chr_info1.UniqueEdgeIdx(e1) + 1) % chr_info1.size());
+    EdgeId true_prev = chr_info2.EdgeAt((chr_info2.UniqueEdgeIdx(e2) + chr_info2.size() - 1) % chr_info2.size());
     auto dataset_info_ = cfg::get().ds;
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
         const auto &lib = dataset_info_.reads[lib_index];
@@ -305,11 +297,14 @@ PathScore GenomeConsistenceChecker::InternalCountMisassemblies(const Bidirection
     string path_chr = "";
     MappingRange prev_range;
     for (int i = 0; i < (int) path.Size(); i++) {
-        if (genome_spelled_.find(path.At(i)) != genome_spelled_.end()) {
+        EdgeId e = path.At(i);
+        if (genome_info_.Multiplicity(e)) {
 //const method, so at instead of []
-            size_t cur_in_genome =  genome_spelled_.at(path.At(i)).second;
-            string cur_chr = genome_spelled_.at(path.At(i)).first;
-            MappingRange cur_range = *gp_.edge_pos.GetEdgePositions(path.At(i), cur_chr).begin();
+            const auto& chr_info = genome_info_.UniqueChromosomeInfo(e);
+            size_t cur_in_genome = chr_info.UniqueEdgeIdx(e);
+            string cur_chr = chr_info.name();
+            MappingRange cur_range = gp_.edge_pos.GetUniqueEdgePosition(e, cur_chr);
+
             if (prev_in_genome != std::numeric_limits<std::size_t>::max()) {
                 if (cur_in_genome == prev_in_genome + 1 && cur_chr == path_chr) {
                     int dist_in_genome = (int) cur_range.initial_range.start_pos -  (int) prev_range.initial_range.end_pos;
@@ -325,26 +320,26 @@ PathScore GenomeConsistenceChecker::InternalCountMisassemblies(const Bidirection
                         DEBUG("interchromosome misassembly!");
                     }
                     if (cur_chr == path_chr && (circular_edges_.find(prev) != circular_edges_.end() ||
-                                                circular_edges_.find(path.At(i)) != circular_edges_.end())) {
+                                                circular_edges_.find(e) != circular_edges_.end())) {
                         INFO("Skipping fake(circular) misassembly");
-                    } else if (cur_in_genome <= prev_in_genome + 5 && cur_in_genome > prev_in_genome && cur_chr == path_chr  ) {
+                    } else if (cur_in_genome <= prev_in_genome + 5 && cur_in_genome > prev_in_genome && cur_chr == path_chr) {
                         INFO("Local misassembly between edges: "<<prev.int_id() << " and " << path.At(i).int_id());
                         size_t total = 0;
                         for (auto j = prev_in_genome + 1; j < cur_in_genome; j ++) {
-                            total += gp_.g.length(chromosomes_spelled_.at(cur_chr).at(j));
+                            total += gp_.g.length(chr_info.EdgeAt(j));
                         }
                         INFO("Jumped over " << cur_in_genome - prev_in_genome - 1 << " uniques of total length: " << total);
                     } else {
                         INFO("Extensive misassembly between edges: "<<prev.int_id() << " and " << path.At(i).int_id());
                         INFO("Ranges: " << prev_range << " and " << cur_range);
-                        INFO("Genomic positions: " << prev_in_genome<< ", " << path_chr << " and " << cur_in_genome <<", "<< cur_chr<< " resp.");
-                        PrintMisassemblyInfo(prev, path.At(i));
+                        INFO("Genomic positions: " << prev_in_genome << ", " << path_chr << " and " << cur_in_genome <<", "<< cur_chr<< " resp.");
+                        PrintMisassemblyInfo(prev, e);
                         res.misassemblies++;
                     }
                 }
             }
             res.mapped_length += cur_range.mapped_range.size();
-            prev = path.At(i);
+            prev = e;
             prev_in_genome = cur_in_genome;
             prev_range = cur_range;
             path_chr = cur_chr;
@@ -355,11 +350,11 @@ PathScore GenomeConsistenceChecker::InternalCountMisassemblies(const Bidirection
         DEBUG("Edge " << prev.int_id() << "  position in genome ordering: " << prev_in_genome);
     return res;
 }
+
 void GenomeConsistenceChecker::RefillPos() {
     RefillPos("0");
     RefillPos("1");
 }
-
 
 void GenomeConsistenceChecker::RefillPos(const string &strand) {
     for (auto chr: gp_.genome.GetChromosomes()) {
