@@ -180,15 +180,13 @@ class MappingPath {
     class mapping_path_iter : public boost::iterator_facade<mapping_path_iter,
             std::pair<const ElementId, const MappingRange>,
             boost::random_access_traversal_tag,
-            std::pair<const ElementId, const MappingRange>,
-            int/*difference type*/> {
+            std::pair<const ElementId, const MappingRange>> {
         friend class boost::iterator_core_access;
 
         const MappingPath &mapping_path_;
-        int pos_;
+        size_t pos_;
 
         std::pair<const ElementId, const MappingRange> dereference() const {
-            VERIFY(pos_ >= 0 && pos_ < int(mapping_path_.size()));
             return mapping_path_[pos_];
         };
 
@@ -196,11 +194,11 @@ class MappingPath {
             return &mapping_path_ == &that.mapping_path_ && pos_ == that.pos_;
         }
 
-        int distance_to(const mapping_path_iter &that) const {
+        ptrdiff_t distance_to(const mapping_path_iter &that) const {
             return that.pos_ - pos_;
         }
 
-        void advance(int n) {
+        void advance(ptrdiff_t n) {
             pos_ += n;
         }
 
@@ -213,7 +211,7 @@ class MappingPath {
         }
 
     public:
-        mapping_path_iter(const MappingPath &mapping_path, int pos) :
+        mapping_path_iter(const MappingPath &mapping_path, size_t pos) :
                 mapping_path_(mapping_path),
                 pos_(pos) {}
     };
@@ -239,6 +237,7 @@ class MappingPath {
     };
 
     std::pair<const ElementId, const MappingRange> operator[](size_t idx) const {
+        VERIFY(idx < size());
         return std::make_pair(edges_[idx], range_mappings_[idx]);
     }
 
