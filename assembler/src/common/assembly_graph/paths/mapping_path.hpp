@@ -8,7 +8,8 @@
 #pragma once
 
 #include "sequence/sequence.hpp"
-#include "sequence/range.hpp"
+#include "utils/range.hpp"
+#include <boost/iterator/iterator_facade.hpp>
 
 namespace omnigraph {
 
@@ -166,6 +167,64 @@ class MappingPath {
                 const std::vector<MappingRange> range_mappings)
             : edges_(edges),
               range_mappings_(range_mappings) {}
+
+    MappingPath(const std::vector<pair<ElementId, MappingRange>>& edge_mappings) {
+        edges_.reserve(edge_mappings.size());
+        range_mappings_.reserve(edge_mappings.size());
+        for (const auto &em : edge_mappings) {
+            edges_.push_back(em.first);
+            range_mappings_.push_back(em.second);
+        }
+    }
+
+    class mapping_path_iter : public boost::iterator_facade<mapping_path_iter,
+            std::pair<const ElementId, const MappingRange>,
+            boost::random_access_traversal_tag,
+            std::pair<const ElementId, const MappingRange>,
+            int/*difference type*/> {
+        friend class boost::iterator_core_access;
+
+        const MappingPath &mapping_path_;
+        int pos_;
+
+        std::pair<const ElementId, const MappingRange> dereference() const {
+            VERIFY(pos_ >= 0 && pos_ < int(mapping_path_.size()));
+            return mapping_path_[pos_];
+        };
+
+        bool equal(const mapping_path_iter &that) const {
+            return &mapping_path_ == &that.mapping_path_ && pos_ == that.pos_;
+        }
+
+        int distance_to(const mapping_path_iter &that) const {
+            return that.pos_ - pos_;
+        }
+
+        void advance(int n) {
+            pos_ += n;
+        }
+
+        void increment() {
+            advance(1);
+        }
+
+        void decrement() {
+            advance(-1);
+        }
+
+    public:
+        mapping_path_iter(const MappingPath &mapping_path, int pos) :
+                mapping_path_(mapping_path),
+                pos_(pos) {}
+    };
+
+    mapping_path_iter begin() const {
+        return mapping_path_iter(*this, 0);
+    }
+
+    mapping_path_iter end() const {
+        return mapping_path_iter(*this, size());
+    };
 
     size_t size() const { return edges_.size(); }
 

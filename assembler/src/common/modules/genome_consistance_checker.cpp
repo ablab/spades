@@ -50,9 +50,9 @@ PathScore GenomeConsistenceChecker::CountMisassemblies(const BidirectionalPath &
     }
 }
 
-map<std::string, vector<pair<EdgeId, MappingRange>>> GenomeConsistenceChecker::ConstructEdgeOrder() const {
+map<std::string, MappingPath<EdgeId>> GenomeConsistenceChecker::ConstructEdgeOrder() const {
     auto chromosomes = gp_.genome.GetChromosomes();
-    map<std::string, vector<pair<EdgeId, MappingRange>>> res;
+    map<std::string, MappingPath<EdgeId>> res;
     vector<std::string> fixed_prefixes{"0_", "1_"};
     for (const auto prefix: fixed_prefixes) {
         for (const auto &chr: chromosomes) {
@@ -63,10 +63,10 @@ map<std::string, vector<pair<EdgeId, MappingRange>>> GenomeConsistenceChecker::C
     return res;
 }
 
-vector<pair<EdgeId, MappingRange>> GenomeConsistenceChecker::ConstructEdgeOrder(const string chr_name) const {
-    vector<pair<EdgeId, MappingRange> > to_sort;
+MappingPath<EdgeId> GenomeConsistenceChecker::ConstructEdgeOrder(const string& chr_name) const {
+    vector<pair<EdgeId, MappingRange>> to_sort;
     DEBUG ("constructing edge order for chr " << chr_name);
-    for(auto e: storage_) {
+    for (auto e: storage_) {
         if (excluded_unique_.find(e) == excluded_unique_.end()) {
             set<MappingRange> mappings = gp_.edge_pos.GetEdgePositions(e, chr_name);
             if (mappings.size() > 1) {
@@ -79,37 +79,36 @@ vector<pair<EdgeId, MappingRange>> GenomeConsistenceChecker::ConstructEdgeOrder(
         }
     }
     DEBUG("Sorting " << to_sort << " positions:");
-    sort(to_sort.begin(), to_sort.end(), [](const pair<EdgeId, MappingRange> & a, const pair<EdgeId, MappingRange> & b) -> bool
-    {
+    sort(to_sort.begin(), to_sort.end(),
+         [](const pair<EdgeId, MappingRange> & a, const pair<EdgeId, MappingRange> & b) {
         return a.second.initial_range.start_pos < b.second.initial_range.start_pos;
-    }
-    );
-    return to_sort;
+    });
+    return MappingPath<EdgeId>(to_sort);
 }
 
-void GenomeConsistenceChecker::SpellChromosome(const pair<string, vector<pair<EdgeId, MappingRange>>>& chr_info, vector<size_t>& lengths) {
-    INFO("Spelling label " << chr_info.first);
-    chromosomes_spelled_[chr_info.first] = vector<EdgeId>(0);
+void GenomeConsistenceChecker::SpellChromosome(const string &chr, const MappingPath<EdgeId> &mapping_path, vector<size_t>& lengths) {
+    INFO("Spelling label " << chr);
+    chromosomes_spelled_[chr] = vector<EdgeId>(0);
     vector<size_t> starts;
     vector<size_t> ends;
     size_t count = 0;
-    for(size_t i = 0; i < chr_info.second.size(); i++) {
-        if (i > 0 && chr_info.second[i].second.initial_range.start_pos - chr_info.second[i-1].second.initial_range.end_pos > unresolvable_len_ ) {
-            INFO ("Large gap " << chr_info.second[i].second.initial_range.start_pos - chr_info.second[i-1].second.initial_range.end_pos );
-            starts.push_back(chr_info.second[i].second.initial_range.start_pos);
-            ends.push_back(chr_info.second[i-1].second.initial_range.end_pos);
+    for (size_t i = 0; i < mapping_path.size(); i++) {
+        if (i > 0 && mapping_path[i].second.initial_range.start_pos - mapping_path[i-1].second.initial_range.end_pos > unresolvable_len_ ) {
+            INFO ("Large gap " << mapping_path[i].second.initial_range.start_pos - mapping_path[i-1].second.initial_range.end_pos );
+            starts.push_back(mapping_path[i].second.initial_range.start_pos);
+            ends.push_back(mapping_path[i-1].second.initial_range.end_pos);
         }
         if (i == 0) {
-            starts.push_back(chr_info.second[i].second.initial_range.start_pos);
+            starts.push_back(mapping_path[i].second.initial_range.start_pos);
         }
-        if (i == chr_info.second.size() - 1){
-            ends.push_back(chr_info.second[i].second.initial_range.end_pos);
+        if (i == mapping_path.size() - 1){
+            ends.push_back(mapping_path[i].second.initial_range.end_pos);
         }
-        INFO("Pos:" << count << " edge " << gp_.g.int_id(chr_info.second[i].first) << " length "<< gp_.g.length(chr_info.second[i].first) <<
-             " coverage " << gp_.g.coverage(chr_info.second[i].first) << " mapped to " << chr_info.second[i].second.mapped_range.start_pos
-             << " - " << chr_info.second[i].second.mapped_range.end_pos << " init_range " << chr_info.second[i].second.initial_range.start_pos << " - " << chr_info.second[i].second.initial_range.end_pos );
-        genome_spelled_[chr_info.second[i].first] = std::make_pair(chr_info.first, count);
-        chromosomes_spelled_[chr_info.first].push_back(chr_info.second[i].first);
+        INFO("Pos:" << count << " edge " << gp_.g.int_id(mapping_path[i].first) << " length "<< gp_.g.length(mapping_path[i].first) <<
+             " coverage " << gp_.g.coverage(mapping_path[i].first) << " mapped to " << mapping_path[i].second.mapped_range.start_pos
+             << " - " << mapping_path[i].second.mapped_range.end_pos << " init_range " << mapping_path[i].second.initial_range.start_pos << " - " << mapping_path[i].second.initial_range.end_pos );
+        genome_spelled_[mapping_path[i].first] = std::make_pair(chr, count);
+        chromosomes_spelled_[chr].push_back(mapping_path[i].first);
         count++;
     }
     for (size_t i = 0; i < starts.size(); i++)
@@ -120,8 +119,8 @@ void GenomeConsistenceChecker::SpellChromosome(const pair<string, vector<pair<Ed
 void GenomeConsistenceChecker::SpellGenome() {
     auto all_positions = ConstructEdgeOrder();
     vector<size_t> theoretical_scaff_lengths;
-    for(const auto &chr_info: all_positions) {
-        SpellChromosome(chr_info, theoretical_scaff_lengths);
+    for (const auto &chr_info: all_positions) {
+        SpellChromosome(chr_info.first, chr_info.second, theoretical_scaff_lengths);
     }
     size_t total_len = 0;
     for (size_t i = 0; i < theoretical_scaff_lengths.size(); i++) {

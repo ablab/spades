@@ -14,14 +14,15 @@
 #include "pipeline/graph_pack.hpp"
 #include "visualization/position_filler.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "modules/path_extend/pe_utils.hpp"
 
 namespace debruijn_graph {
 
-
 using path_extend::BidirectionalPath;
 using path_extend::ScaffoldingUniqueEdgeStorage;
+using omnigraph::MappingPath;
 
 struct PathScore{
     size_t misassemblies;
@@ -31,8 +32,6 @@ struct PathScore{
 };
 
 class GenomeConsistenceChecker {
-
-private:
     const conj_graph_pack &gp_;
     //EdgesPositionHandler<Graph> &position_handler_;
     Sequence genome_;
@@ -71,9 +70,12 @@ DECL_LOGGER("GenomeConsistenceChecker");
 
 public:
     GenomeConsistenceChecker(const conj_graph_pack &gp, const ScaffoldingUniqueEdgeStorage &storage, size_t max_gap,
-                             double relative_max_gap /*= 0.2*/, size_t unresolvable_len, const vector<shared_ptr<path_extend::GraphCoverageMap>> &long_reads_cov_map) : gp_(gp),
-           genome_(gp.genome.GetSequence()), storage_(storage),absolute_max_gap_(max_gap),
-           relative_max_gap_(relative_max_gap), excluded_unique_(), circular_edges_(), unresolvable_len_(unresolvable_len), long_reads_cov_map_(long_reads_cov_map){
+                             double relative_max_gap /*= 0.2*/, size_t unresolvable_len,
+                             const vector<shared_ptr<path_extend::GraphCoverageMap>> &long_reads_cov_map) :
+            gp_(gp),
+            storage_(storage), absolute_max_gap_(max_gap),
+            relative_max_gap_(relative_max_gap),
+            unresolvable_len_(unresolvable_len), long_reads_cov_map_(long_reads_cov_map) {
         if (!gp.edge_pos.IsAttached()) {
             gp.edge_pos.Attach();
         }
@@ -86,14 +88,15 @@ public:
         }
         RefillPos();
     }
+
     PathScore CountMisassemblies(const BidirectionalPath &path) const;
     void CheckPathEnd(const BidirectionalPath &path) const;
-    map<std::string, vector<pair<EdgeId, MappingRange>>> ConstructEdgeOrder() const;
-    vector<pair<EdgeId, MappingRange> > ConstructEdgeOrder(const std::string chr_name) const;
+    map<std::string, MappingPath<EdgeId>> ConstructEdgeOrder() const;
+    MappingPath<EdgeId> ConstructEdgeOrder(const std::string &chr_name) const;
 
 //spells genome in language of long unique edges from storage;
     void SpellGenome();
-    void SpellChromosome(const std::pair<std::string, std::vector<std::pair<EdgeId, MappingRange>>> &chr_info, vector<size_t>& lengths);
+    void SpellChromosome(const std::string &chr, const MappingPath<EdgeId> &mapping_path, vector<size_t>& lengths);
 
 };
 
