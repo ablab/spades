@@ -88,6 +88,9 @@ private:
                 // accuired in the first attempt then insert the item in the
                 // local QF.
                 CQFKmerFilter::digest d = kmer.GetHash();
+                if (cqf.lookup(d, /* lock */ true) > 2)
+                  continue;
+
                 if (!cqf.add(d, /* count */ 1,
                              /* lock */ true, /* spin */ false)) {
                     local_cqf.add(d, /* count */ 1,
