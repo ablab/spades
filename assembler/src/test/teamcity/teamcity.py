@@ -230,7 +230,8 @@ def run_quast(dataset_info, contigs, quast_output_dir, opts):
             i += 1
 
     log.log('Running ' + cmd + ' on ' + ','.join(contigs))
-    quast_cmd = os.path.join(dataset_info.quast_dir, cmd) + " " + " ".join(quast_params) + " "
+    quast_home = os.environ['QUAST_HOME'] if "QUAST_HOME" in os.environ and os.environ['QUAST_HOME'] != "" else dataset_info.quast_dir
+    quast_cmd = os.path.join(quast_home, cmd) + " " + " ".join(quast_params) + " "
 
     ctg_option = ""
     if dataset_info.mode == "rna":
