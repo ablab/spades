@@ -17,6 +17,7 @@ add_executable(spades main.cpp
             contig_output_stage.cpp
             hybrid_aligning.cpp
             chromosome_removal.cpp
+            series_analysis.cpp
             ../mts/contig_abundance.cpp)
 
 target_include_directories(spades PRIVATE ${EXT_DIR}/include/ConsensusCore)
