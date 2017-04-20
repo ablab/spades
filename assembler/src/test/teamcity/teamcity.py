@@ -248,8 +248,12 @@ def run_quast(dataset_info, contigs, quast_output_dir, opts):
 
 # Construct limit map for QUAST metrics
 def construct_quast_limit_map(dataset_info, prefix):
-    return construct_limit_map(dataset_info, prefix, [('min_n50', "N50", True) , 
+    return construct_limit_map(dataset_info, prefix, [('min_n50', "N50", True),
                                         ('max_n50', "N50", False),
+                                        ('min_ng50', "NG50", True) ,
+                                        ('max_ng50', "NG50", False),
+                                        ('min_lg50', "LG50", False) ,
+                                        ('max_lg50', "LG50", True),
                                         ('max_mis', "# misassemblies", False),
                                         ('min_mis', "# misassemblies", True),
                                         ('min_genome_mapped', "Genome fraction (%)", True),
@@ -287,8 +291,6 @@ def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exi
         qcode = run_quast(dataset_info, [fn], output_dir, opts)
         if qcode != 0:
             log.err("Failed to run QUAST!")
-            if (prefix + 'assess') in dataset_info.__dict__ and dataset_info.__dict__[prefix + 'assess']:
-                return special_exit_code
             return qcode
 
         limit_map = None
@@ -457,26 +459,25 @@ def cmp_misassemblies(quast_output_dir, old_ctgs, new_ctgs):
 def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir):
     exit_code = 0
     rewrite_latest = True
-    enable_comparison = (dataset_info.mode in ("standard", "tru", "dip"))
+    enable_comparison = (dataset_info.mode in ("standard", "tru", "dip", "meta", "plasmid"))
 
     if enable_comparison and contig_storage_dir != '' and 'quast_params' in dataset_info.__dict__ and dataset_info.quast_params and '-R' in dataset_info.quast_params:
         for name, file_name, prefix, opts in contigs:
-            if (prefix + 'assess') in dataset_info.__dict__ and dataset_info.__dict__[prefix + 'assess']:
-                fn = os.path.join(output_dir, file_name + ".fasta") 
-                if not os.path.exists(fn):
-                    log.error('File for comparison is no found: ' + fn)
-                    exit_code = 8
+            fn = os.path.join(output_dir, file_name + ".fasta") 
+            if not os.path.exists(fn):
+                log.error('File for comparison is no found: ' + fn)
+                exit_code = 8
 
-                latest_ctg = os.path.join(contig_storage_dir, "latest_" + name + ".fasta")
-                if os.path.exists(latest_ctg):
-                    quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS_CMP_" + name.upper())
-                    qcode = run_quast(dataset_info, [fn, latest_ctg], quast_output_dir, opts)
+            latest_ctg = os.path.join(contig_storage_dir, "latest_" + name + ".fasta")
+            if os.path.exists(latest_ctg):
+                quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS_CMP_" + name.upper())
+                qcode = run_quast(dataset_info, [fn, latest_ctg], quast_output_dir, opts)
 
-                    log.log("======= " + name.upper() + " COMPARISON =======")
-                    if not cmp_misassemblies(quast_output_dir, "latest_" + name, file_name):
-                        rewrite_latest = False
-                else:
-                    log.warn('Fiailed to find ' + latest_ctg + ', nothing to compare misassemblies with')
+                log.log("======= " + name.upper() + " COMPARISON =======")
+                if not cmp_misassemblies(quast_output_dir, "latest_" + name, file_name):
+                    rewrite_latest = False
+            else:
+                log.warn('Fiailed to find ' + latest_ctg + ', nothing to compare misassemblies with')
 
     return exit_code, rewrite_latest
 
@@ -514,10 +515,7 @@ def load_info(dataset_path):
 # Get contig list to be assessed for this run
 def get_contigs_list(args, dataset_info, folder, before_rr = False):
     contigs = [("contigs", "contigs", "", "")]
-    if args.scaffolds:
-        contigs.append(("scaffolds", "scaffolds", "sc", " --scaffolds "))
-    else:
-        contigs.append(("scaffolds", "scaffolds", "sc", ""))
+    contigs.append(("scaffolds", "scaffolds", "sc", " --scaffolds "))
 
     if dataset_info.mode == "dip":
         contigs = [("contigs", "dipspades/consensus_contigs", "", "")]
@@ -541,8 +539,6 @@ def parse_args():
     parser.set_defaults(cfg_compilation=True)
     parser.add_argument("--no_contig_archive", dest="contig_archive", help="don't save contigs to common contig archive", action='store_false')
     parser.set_defaults(contig_archive=True)
-    parser.add_argument("--scaffolds", dest="scaffolds", help="evaluate scaffolds in scaffold mode", action='store_true')
-    parser.set_defaults(scaffolds=False)
     parser.add_argument("--contig_name", "-s", help="archive contig name custom suffix", type=str)
     parser.add_argument("--spades_cfg_dir", "-c", help="SPAdes config directory", type=str)
     parser.add_argument("--local_output_dir", "-o", help="use this output dir, override output directory provided in config", type=str)
