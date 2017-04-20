@@ -16,97 +16,14 @@
 
 namespace debruijn_graph {
 
-class GFASegmentWriter {
-private:
-    std::ostream &ostream_;
-
-public:
-
-    GFASegmentWriter(std::ostream &stream) : ostream_(stream)  {
-    }
-
-    void Write(size_t edge_id, const Sequence &seq, double cov) {
-        ostream_ << "S\t" << edge_id << "\t";
-        ostream_ << seq.str() << "\t";
-        ostream_ << "KC:i:" << int(cov) << std::endl;
-    }
-};
-
-class GFALinkWriter {
-private:
-    std::ostream &ostream_;
-    size_t overlap_size_;
-
-public:
-
-    GFALinkWriter(std::ostream &stream, size_t overlap_size) : ostream_(stream), overlap_size_(overlap_size)  {
-    }
-
-    void Write(size_t first_segment, std::string &first_orientation, size_t second_segment, std::string &second_orientation) {
-        ostream_ << "L\t" << first_segment << "\t" << first_orientation << "\t" ;
-        ostream_ << second_segment << "\t" << second_orientation << "\t" << overlap_size_ << "M";
-        ostream_ << std::endl;
-
-    }
-};
-
-struct PathSegmentSequence {
-    size_t path_id_;
-    size_t segment_number_;
-    std::vector<std::string> segment_sequence_;
-    PathSegmentSequence(size_t path_id, std::vector<std::string> &segment_sequence)
-    : path_id_(path_id), segment_number_(1), segment_sequence_(segment_sequence) {
-    }
-
-    PathSegmentSequence()
-    : path_id_(0), segment_number_(1), segment_sequence_(){
-    }
-    void Reset() {
-        segment_sequence_.clear();
-    }
-};
-
-class GFAPathWriter {
-    std::ostream &ostream_;
-
-public:
-
-    GFAPathWriter(std::ostream &stream)
-    : ostream_(stream)  {
-    }
-
-    void Write(const PathSegmentSequence &path_segment_sequence) {
-        ostream_ << "P" << "\t" ;
-        ostream_ << path_segment_sequence.path_id_ << "_" << path_segment_sequence.segment_number_ << "\t";
-        std::string delimeter = "";
-        for (size_t i = 0; i < path_segment_sequence.segment_sequence_.size(); ++i) {
-            ostream_ << delimeter << path_segment_sequence.segment_sequence_[i];
-            delimeter = ",";
-        }
-        ostream_ << "\t";
-        delimeter = "";
-        for (size_t i = 0; i < path_segment_sequence.segment_sequence_.size() - 1; ++i) {
-            ostream_ << delimeter << "*";
-            delimeter = ",";
-        }
-        ostream_ << std::endl;
-    }
-};
-
 template<class Graph>
 class GFAWriter {
-private:
     typedef typename Graph::EdgeId EdgeId;
     const Graph &graph_;
-    const path_extend::PathContainer &paths_;
-    const string filename_;
+    std::ostream &os_;
 
     bool IsCanonical(EdgeId e) const {
-        if (e <= graph_.conjugate(e)) {
-            return true;
-        } else {
-            return false;
-        }
+        return e <= graph_.conjugate(e);
     }
 
     EdgeId Canonical(EdgeId e) const {
@@ -117,70 +34,88 @@ private:
         return IsCanonical(e) ? "+" : "-";
     }
 
-    void WriteSegments(std::ofstream &stream) {
-        GFASegmentWriter segment_writer(stream);
+    void WriteSegment(size_t edge_id, const Sequence &seq, double cov) {
+        os_ << "S\t" << edge_id << "\t"
+           << seq.str() << "\t"
+           << "KC:i:" << size_t(math::round(cov)) << std::endl;
+    }
+
+    void WriteSegments() {
         for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-            segment_writer.Write((*it).int_id(), graph_.EdgeNucls(*it), graph_.coverage(*it) * double(graph_.length(*it)));
+            EdgeId e = *it;
+            WriteSegment(graph_.int_id(e), graph_.EdgeNucls(e), graph_.coverage(e) * double(graph_.length(e)));
         }
     }
 
-    void WriteLinks(std::ofstream &stream) {
-        GFALinkWriter link_writer(stream, graph_.k());
-        for (auto it = graph_.SmartVertexBegin(); !it.IsEnd(); ++it) {
-            for (auto inc_edge : graph_.IncomingEdges(*it)) {
-                std::string orientation_first = GetOrientation(inc_edge);
-                size_t segment_first = Canonical(inc_edge).int_id();
-                for (auto out_edge : graph_.OutgoingEdges(*it)) {
-                    size_t segment_second = Canonical(out_edge).int_id();
-                    std::string orientation_second = GetOrientation(out_edge);
-                    link_writer.Write(segment_first, orientation_first, segment_second, orientation_second);
-                }
-            }
+    void WriteLink(EdgeId e1, EdgeId e2,
+                   size_t overlap_size) {
+        os_ << "L\t" << EdgeString(e1, "\t") << "\t"
+           << EdgeString(e2, "\t") << "\t"
+           << overlap_size << "M" << std::endl;
+    }
+
+    void WriteLinks() {
+        for (VertexId v : graph_)
+            for (auto inc_edge : graph_.IncomingEdges(v))
+                for (auto out_edge : graph_.OutgoingEdges(v))
+                    WriteLink(inc_edge, out_edge, graph_.k());
+    }
+
+    std::string EdgeString(EdgeId e, const std::string &delim = "") {
+        return std::to_string(Canonical(e).int_id()) + delim + GetOrientation(e);
+    }
+
+    void WritePath(size_t path_id, size_t segment_id, const vector<std::string> &edge_strs) {
+        os_ << "P" << "\t" ;
+        os_ << path_id << "_" << segment_id << "\t";
+        std::string delimeter = "";
+        for (const auto& e : edge_strs) {
+            os_ << delimeter << e;
+            delimeter = ",";
         }
+        os_ << "\t";
+        delimeter = "";
+        for (size_t i = 0; i < edge_strs.size() - 1; ++i) {
+            os_ << delimeter << "*";
+            delimeter = ",";
+        }
+        os_ << std::endl;
     }
 
-    void UpdateSegmentedPath(PathSegmentSequence &segmented_path, EdgeId e) {
-        std::string segment_id = std::to_string(Canonical(e).int_id());
-        std::string orientation = GetOrientation(e);
-        segmented_path.segment_sequence_.push_back(segment_id + orientation);
+public:
+    GFAWriter(const Graph &graph, std::ostream &os)
+            : graph_(graph), os_(os) {
     }
 
-    void WritePaths(std::ofstream &stream) {
-        GFAPathWriter path_writer(stream);
-        for (const auto &path_pair : paths_) {
+    void WriteSegmentsAndLinks() {
+        WriteSegments();
+        WriteLinks();
+    }
+
+    void WritePaths(const path_extend::PathContainer &paths) {
+        for (const auto &path_pair : paths) {
             const path_extend::BidirectionalPath &p = (*path_pair.first);
             if (p.Size() == 0) {
                 continue;
             }
-            PathSegmentSequence segmented_path;
-            segmented_path.path_id_ = p.GetId();
+            std::vector<std::string> segmented_path;
+            size_t id = p.GetId();
+            size_t segment_id = 1;
             for (size_t i = 0; i < p.Size() - 1; ++i) {
                 EdgeId e = p[i];
-                UpdateSegmentedPath(segmented_path, e);
-                if (graph_.EdgeEnd(e) != graph_.EdgeStart(p[i+1])) {
-                    path_writer.Write(segmented_path);
-                    segmented_path.segment_number_++;
-                    segmented_path.Reset();
+                segmented_path.push_back(EdgeString(e));
+                if (graph_.EdgeEnd(e) != graph_.EdgeStart(p[i+1]) || p.GapAt(i+1).gap > 0) {
+                    WritePath(id, segment_id, segmented_path);
+                    segment_id++;
+                    segmented_path.clear();
                 }
             }
-            UpdateSegmentedPath(segmented_path, p.Back());
-            path_writer.Write(segmented_path);
 
+            segmented_path.push_back(EdgeString(p.Back()));
+            WritePath(id, segment_id, segmented_path);
         }
     }
 
-public:
-    GFAWriter(const Graph &graph, const path_extend::PathContainer &paths, const string &filename)
-    : graph_(graph), paths_(paths), filename_(filename) {
-    }
-
-    void Write() {
-        std::ofstream stream;
-        stream.open(filename_);
-        WriteSegments(stream);
-        WriteLinks(stream);
-        WritePaths(stream);
-    }
 };
 
 struct ExtendedContigIdT {
@@ -215,7 +150,6 @@ void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids, co
 //TODO refactor decently
 template<class Graph>
 class ContigPrinter {
-private:
     const Graph &graph_;
 
     template<class sequence_stream>
@@ -267,25 +201,30 @@ public:
     }
 };
 
-inline void OutputContigs(ConjugateDeBruijnGraph &g,
+inline void OutputContigs(const Graph &g,
                           const string &contigs_output_filename) {
     INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
     io::osequencestream_cov oss(contigs_output_filename + ".fasta");
 
-    ContigPrinter<ConjugateDeBruijnGraph>(g).PrintContigs(oss);
+    ContigPrinter<Graph>(g).PrintContigs(oss);
 }
 
-inline void OutputContigsToGFA(ConjugateDeBruijnGraph &g, path_extend::PathContainer &paths, const string &contigs_output_filename) {
+inline void OutputContigsToGFA(const Graph &g,
+                               const path_extend::PathContainer &paths,
+                               const string &contigs_output_filename) {
     INFO("Outputting graph to " << contigs_output_filename << ".gfa");
-    GFAWriter<ConjugateDeBruijnGraph> writer(g, paths, contigs_output_filename + ".gfa");
-    writer.Write();
+    std::ofstream os(contigs_output_filename + ".gfa");
+    GFAWriter<Graph> writer(g, os);
+    writer.WriteSegmentsAndLinks();
+    writer.WritePaths(paths);
 }
 
-inline void OutputContigsToFASTG(ConjugateDeBruijnGraph& g,
-                   const string& contigs_output_filename, const ConnectedComponentCounter & cc_counter) {
+inline void OutputContigsToFASTG(const Graph& g,
+                                 const string& contigs_output_filename,
+                                 const ConnectedComponentCounter &cc_counter) {
     INFO("Outputting graph to " << contigs_output_filename << ".fastg");
     io::osequencestream_for_fastg ossfg(contigs_output_filename + ".fastg");
-    ContigPrinter<ConjugateDeBruijnGraph>(g).PrintContigsFASTG(ossfg, cc_counter);
+    ContigPrinter<Graph>(g).PrintContigsFASTG(ossfg, cc_counter);
 }
 
 }
