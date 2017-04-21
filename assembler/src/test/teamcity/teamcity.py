@@ -411,9 +411,21 @@ def find_mis_positions(contig_report):
 
 # Compare two contig reports from QUAST
 def cmp_misassemblies(quast_output_dir, old_ctgs, new_ctgs):
+
     log.log("Comparing misassemblies in " + old_ctgs + " and " + new_ctgs)
-    old_pos = find_mis_positions(os.path.join(quast_output_dir, "contigs_reports/contigs_report_" + old_ctgs + ".stdout"))
-    new_pos = find_mis_positions(os.path.join(quast_output_dir, "contigs_reports/contigs_report_" + new_ctgs + ".stdout"))
+
+    old_contigs_report = os.path.join(quast_output_dir, "contigs_reports/contigs_report_" + old_ctgs + ".stdout")
+    new_contigs_report = os.path.join(quast_output_dir, "contigs_reports/contigs_report_" + new_ctgs + ".stdout")
+
+    if not os.path.exists(old_contigs_report):
+        log.warn("Old contigs report was not found in " + old_contigs_report)
+        return True
+    if not os.path.exists(new_contigs_report):
+        log.warn("New contigs report was not found in " + new_contigs_report)
+        return True
+
+    old_pos = find_mis_positions(old_contigs_report)
+    new_pos = find_mis_positions(new_contigs_report)
 
     for k, v in old_pos.items():
         if k in new_pos:
@@ -471,10 +483,14 @@ def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir)
 
             latest_ctg = os.path.join(contig_storage_dir, "latest_" + name + ".fasta")
             if os.path.exists(latest_ctg):
+                log.log("======= " + name.upper() + " COMPARISON =======")
                 quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS_CMP_" + name.upper())
                 qcode = run_quast(dataset_info, [fn, latest_ctg], quast_output_dir, opts)
 
-                log.log("======= " + name.upper() + " COMPARISON =======")
+
+                if dataset_info.mode == "meta":
+                    quast_output_dir = os.path.join(quast_output_dir, "combined_reference")
+
                 if not cmp_misassemblies(quast_output_dir, "latest_" + name, file_name):
                     rewrite_latest = False
             else:
