@@ -480,8 +480,9 @@ public:
     }
 
     BidirectionalPath SubPath(size_t from, size_t to) const {
+        VERIFY(from <= to && to <= Size());
         BidirectionalPath result(g_);
-        for (size_t i = from; i < min(to, Size()); ++i) {
+        for (size_t i = from; i < to; ++i) {
             result.PushBack(data_[i], i == from ? Gap() : gap_len_[i]);
         }
         return result;
