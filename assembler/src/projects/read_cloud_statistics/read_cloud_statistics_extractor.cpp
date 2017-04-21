@@ -83,9 +83,9 @@ namespace debruijn_graph {
         INFO("Library type: " << cfg::get().ts_res.library_type);
         TenXExtensionChecker checker = ConstructTenXChecker(graph_pack);
         INFO("10X checker constructed.");
-        auto barcode_statistics_counters = ConstructBarcodeStatisticsCounters(graph_pack);
-        INFO("Statistics counters constructed.");
-        RunBarcodeStatisticsCounters(barcode_statistics_counters);
+//        auto barcode_statistics_counters = ConstructBarcodeStatisticsCounters(graph_pack);
+//        INFO("Statistics counters constructed.");
+//        RunBarcodeStatisticsCounters(barcode_statistics_counters);
         INFO("Resolver stats: ");
         checker.CheckChooser(cfg::get().ts_res.genome_path);
         INFO("Statistics counter finished.");

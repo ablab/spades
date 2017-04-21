@@ -92,6 +92,8 @@ private:
                 current_right = i;
             }
         }
+        CloudPosition curr_pos(current_left, current_right + 1);
+        result.push_back(curr_pos);
         return result;
     }
 };
