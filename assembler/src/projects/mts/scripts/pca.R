@@ -5,8 +5,26 @@ format_ids <- function(table) {
   unique(table)
 }
 
+# my_normalize<-function(X) {
+#   X_norm<-X
+#   #column normalisation
+#   X_norm<-t(t(X_norm) / ifelse(colSums(X_norm) == 0, 1, colSums(X_norm)))
+#   #row normalisation
+#   X_norm<-X_norm / rowSums(X_norm)
+#   #mean/variance normalisation
+#   #X_norm<-exprs(standardise(ExpressionSet(X_norm)))
+#   #my variant of mean/var normalisation
+#   #X_norm<-t(as.matrix(scale(t(X_norm))))
+#   return(X_norm)
+# }
+
+normalize <- function(X) {
+  return (X / rowSums(X))
+}
+
 load_binning <- function(canopy_in, canopy_out) {
   data <- read.table(canopy_in)
+  data[,-1] <- normalize(data[,-1])
   names(data) <- c('contig', sapply(seq(1, dim(data)[2]-1, 1),
                                     function(x) {paste('mlt', x, sep='')}))
   data <- format_ids(data)
@@ -20,7 +38,7 @@ load_clusters <- function(canopy_in, canopy_out, int_contigs) {
   data <- load_binning(canopy_in, canopy_out)
   if (missing(int_contigs)) {
     pieces <- split(data, data$clust)[1:10]
-    lims <- lapply(pieces, function(x) head(x, 50))
+    lims <- lapply(pieces, function(x) head(x, 500))
     do.call(rbind, c(lims, list(make.row.names=FALSE)))
   } else {
     interesting <- read.table(int_contigs)
@@ -39,7 +57,7 @@ print_clusters <- function(pr, clust, image) {
   lev <- levels(factor(clust))
   cols <- 1:length(lev)
   #layout(rbind(1,2), heights=c(7,1))
-  plot(pr$x, col = as.numeric(clust), xlim=c(-100, 200), ylim=c(-50,50))
+  plot(pr$x, col = as.numeric(clust))#, xlim=c(-100, 200), ylim=c(-50,50))
   a <- split(as.data.frame(pr$x), clust)
   for (l in lev) {
     x <- a[[l]]
@@ -72,6 +90,5 @@ if (length(args) < 4) {
   clusters <- load_clusters(in_fn, out_fn, cont_fn)
 }
 
-print(clusters[1:10,])
 prc_data <- do_prc(clusters)
 print_clusters(prc_data, clusters$clust, image_out)

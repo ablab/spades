@@ -179,7 +179,7 @@ rule reassemble:
     threads: THREADS
     message: "Reassembling reads for {wildcards.cag}"
     run:
-        COV_THRESHOLD = 0.5
+        COV_THRESHOLD = 0.3
         with open("binning/bins_total.prof") as in_prof:
             cag_prof = load_dict(in_prof)
             bin_cov = COV_THRESHOLD * float(cag_prof[wildcards.cag]) * READ_LENGTH / (READ_LENGTH - SMALL_K)

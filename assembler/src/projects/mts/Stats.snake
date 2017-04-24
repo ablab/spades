@@ -19,7 +19,7 @@ except KeyError:
     METAQUAST = "metaquast"
 
 #Autodetect bins
-CAGS, = glob_wildcards("binning/{cag,CAG\d+}/left.fastq")
+CAGS, = glob_wildcards("binning/{cag,\w*\d+}/left.fastq")
 CAGS.sort()
 
 CAG_EDGES = [c + "_edges" for c in CAGS]
@@ -69,7 +69,7 @@ rule split_bins:
 
 rule cat_binned_contigs:
     input:   expand("binning/{{prop}}/{sample}.log", sample=GROUPS)
-    output:  "binning/{prop}/{cag,CAG\d+}.fasta"
+    output:  "binning/{prop}/{cag,\w*\d+}.fasta"
     params:  "`ls binning/{prop}/*-{cag}.fasta`"
     message: "Combine binned contigs ({wildcards.prop}) for {wildcards.cag}"
     shell:   "cat {params} > {output}"

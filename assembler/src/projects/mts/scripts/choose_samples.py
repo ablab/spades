@@ -20,7 +20,7 @@ PROF_OUT = path.join(DIR, "bins_total.prof")
 CAGS = None
 if len(sys.argv) == 4:
     CAGS = set(sys.argv[3:])
-DESIRED_ABUNDANCE = 50
+DESIRED_ABUNDANCE = sys.maxsize
 MIN_ABUNDANCE = 4
 MIN_TOTAL_ABUNDANCE = 15
 
