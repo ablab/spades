@@ -85,31 +85,12 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
                                             const string &filename) const {
     using namespace scaffold_graph;
 
-    INFO("Constructing reference labels");
-    map<debruijn_graph::EdgeId, string> edge_labels;
-    size_t count = 0;
-    for (const auto &chr_info: genome_checker.ConstructEdgeOrder()) {
-        for (const auto &edge_coord_pair: chr_info.second) {
-            if (edge_labels.find(edge_coord_pair.first) == edge_labels.end()) {
-                edge_labels[edge_coord_pair.first] = chr_info.first;
-            }
-            edge_labels[edge_coord_pair.first] += chr_info.first +
-                                                  "order: " + ToString(count) +
-                                                  "\n mapped range: " +
-                                                  ToString(edge_coord_pair.second.mapped_range.start_pos) + " : "
-                                                  + ToString(edge_coord_pair.second.mapped_range.end_pos) +
-                                                  "\n init range: " +
-                                                  ToString(edge_coord_pair.second.initial_range.start_pos) + " : "
-                                                  + ToString(edge_coord_pair.second.initial_range.end_pos) + "\n";
-            ++count;
-        }
-    }
     auto vertex_colorer = make_shared<ScaffoldVertexSetColorer>(main_edge_set);
     auto edge_colorer = make_shared<ScaffoldEdgeColorer>();
     graph_colorer::CompositeGraphColorer<ScaffoldGraph> colorer(vertex_colorer, edge_colorer);
 
     INFO("Visualizing scaffold graph");
-    ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, edge_labels);
+    ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, genome_checker.EdgeLabels());
     std::ofstream single_dot;
     single_dot.open((filename + "_single.dot").c_str());
     singleVisualizer.Visualize(single_dot, colorer);
@@ -159,7 +140,6 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
                                                             unresolvable_gap, unique_data_.long_reads_cov_map_);
 
     size_t total_mis = 0, gap_mis = 0;
-    genome_checker.SpellGenome();
     for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
         BidirectionalPath *path = iter.get();
         auto map_res = genome_checker.CountMisassemblies(*path);

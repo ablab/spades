@@ -10,7 +10,7 @@
 #include "sequence.hpp"
 #include "nucl.hpp"
 
-struct Chromosome{
+struct Chromosome {
     std::string name;
     std::string sequence;
     Chromosome(string chr_name, string seq): name(chr_name), sequence(seq){}
@@ -68,7 +68,7 @@ public:
     Sequence GetSequence() const {
         stringstream ss;
         size_t l = 0, r = 0;
-        for(size_t i = 0; i < glued_genome_.size(); i++) {
+        for (size_t i = 0; i < glued_genome_.size(); i++) {
             if (!is_nucl(glued_genome_[i]) ) {
                 if (r > l) {
                     ss << glued_genome_.substr(l, r - l);
@@ -90,7 +90,6 @@ public:
     }
 
     void SetSequence(const Sequence &s) {
-
         glued_genome_ = s.str();
     }
 

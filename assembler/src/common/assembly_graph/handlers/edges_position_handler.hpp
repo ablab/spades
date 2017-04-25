@@ -46,7 +46,7 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
     map<EdgeId, map<string, std::set<MappingRange>>> edges_positions_;
     //TODO extract set<MappingRange> as a storage class
 
-    MappingRange EraseAndExtract(set<MappingRange> &ranges, set<MappingRange>::iterator &position, const MappingRange &new_pos) {
+    MappingRange EraseAndExtract(set<MappingRange> &ranges, set<MappingRange>::iterator &position, const MappingRange &new_pos) const {
         auto old_pos = *position;
         if(old_pos.IntersectLeftOf(new_pos) || old_pos.StrictlyContinuesWith(new_pos, max_mapping_gap_, max_gap_diff_)) {
             ranges.erase(position);
@@ -60,7 +60,7 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
     }
 
 public:
-    MappingRange EraseAndExtract(set<MappingRange> &ranges, MappingRange new_pos) {
+    MappingRange EraseAndExtract(set<MappingRange> &ranges, MappingRange new_pos) const {
         auto it = ranges.lower_bound(new_pos);
         if(it != ranges.end()) {
             new_pos = EraseAndExtract(ranges, it, new_pos);
@@ -112,7 +112,7 @@ public:
 
     void AddEdgePosition(EdgeId edge, string contig_id, MappingRange new_pos) {
         VERIFY(this->IsAttached());
-        if(new_pos.empty())
+        if (new_pos.empty())
             return;
         set<MappingRange> &new_set = edges_positions_[edge][contig_id];
         new_pos = EraseAndExtract(new_set, new_pos);

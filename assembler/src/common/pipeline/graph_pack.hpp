@@ -121,8 +121,8 @@ struct graph_pack: private boost::noncopyable {
             edge_pos.Attach();
         }
         edge_pos.clear();
-        visualization::position_filler::FillPos(*this, genome.GetSequence(), "ref0");
-        visualization::position_filler::FillPos(*this, !genome.GetSequence(), "ref1");
+        visualization::position_filler::FillPos(*this, genome.str(), "ref0");
+        visualization::position_filler::FillPos(*this, ReverseComplement(genome.str()), "ref1");
     }
     
     void EnsureDebugInfo() {
