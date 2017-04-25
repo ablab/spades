@@ -1,10 +1,10 @@
-IN: "/Sid/snurk/mts/sim/data"
-SPADES: "~/Projects/mts/assembler/"
-QUAST: "python2 ~/opt/quast-3.2/metaquast.py"
-BIN: "~/Projects/mts/assembler/build/release/bin"
-SCRIPTS: "~/Projects/mts/assembler/src/projects/mts/scripts"
-SOFT: "/home/snurk/soft/"
-REF: "/Sid/snurk/mts/nielsen/ref.fasta"
-K: 55
-small_k: 21
-MIN_CONTIG_LENGTH: 2000
+IN: "/path/to/samples"
+#SPADES: "/path/to/SPAdes" #Optional
+#BIN: "/path/to/mts/binaries" #Optional
+#SCRIPTS: "~/Projects/mts/assembler/src/projects/mts/scripts" #Optional
+SOFT: "/path/to/canopy/etc"
+#K: 55 #Optional
+#SMALL_K: 21 #Optional
+#MIN_CONTIG_LENGTH: 2000 #Optional
+#REF: "/Sid/snurk/mts/nielsen/ref.fasta"
+#QUAST: "python2 /path/to/QUAST" #For stats only

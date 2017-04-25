@@ -8,8 +8,8 @@ With Miniconda installed, you can issue
 > conda install -c bioconda snakemake
 
 2. Running MTS
-Make a directory for output, place config.yaml there, and configure it. Then run
-> snakemake --directory <output directory>  --cores XX
+To assemble a dataset, you need to prepare a config.yaml. Use the provided template, it's mostly self-descriptive. Then run
+> ./mts.py -c <config> -t XX --directory <output directory>
 
 3. Gathering stats
 To render some interesting info, you need to specify some references in config:
@@ -17,5 +17,5 @@ REFS: path
 or
 REFS: [path1, path2, ...]
 where path can be either a single reference or a folder with references.
-Then run the stats target manually:
-> snakemake --directory <output directory> stats_all
+Then run
+> ./mts.py -s <output directory>
