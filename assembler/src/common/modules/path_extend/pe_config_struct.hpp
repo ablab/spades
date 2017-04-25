@@ -155,11 +155,16 @@ struct pe_config {
         struct PathFiltrationT {
             bool enabled;
             size_t min_length;
+            double rel_cutoff;
             size_t isolated_min_length;
+            double isolated_min_cov;
+            double rel_isolated_cutoff;
             size_t min_length_for_low_covered;
+            double rel_low_covered_cutoff;
             double min_coverage;
-        } path_filtration;
+        };
 
+        std::map<std::string, PathFiltrationT> path_filtration;
 
         bool use_coordinated_coverage;
 

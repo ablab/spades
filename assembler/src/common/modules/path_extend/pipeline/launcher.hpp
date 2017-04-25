@@ -55,7 +55,11 @@ class PathExtendLauncher {
 
     void DebugOutputPaths(const PathContainer& paths, const string& name) const;
 
-    void FinalizePaths(PathContainer &paths, GraphCoverageMap &cover_map, const PathExtendResolver &resolver) const;
+    void RemoveOverlapsAndArtifacts(PathContainer &paths, GraphCoverageMap &cover_map, const PathExtendResolver &resolver) const;
+
+    void CleanPaths(PathContainer &paths, const pe_config::ParamSetT::PathFiltrationT &path_filtration) const;
+
+    size_t GetLengthCutoff(size_t abs_cutoff, double rel_cutoff) const;
 
     void TraverseLoops(PathContainer &paths, GraphCoverageMap &cover_map) const;
 
@@ -69,6 +73,7 @@ class PathExtendLauncher {
 
     Extenders ConstructPBExtenders(const ExtendersGenerator &generator);
 
+    void FilterPaths();
 
 public:
 

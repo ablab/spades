@@ -100,6 +100,8 @@ de
 }
 
 pe {
+debug_output    true
+
 params {
     multi_path_extend   true
 
@@ -124,14 +126,55 @@ params {
         min_overlap_for_rna_scaffolding 10
     }
 
+    path_cleaning_presets "default soft hard"
+    ; All length cutoffs presented in nucleotides
+    ; So edges less than or equal to (relative cutoff * RL - K) or (absolute cutoff - K) will be deleted
     path_cleaning
     {
         enabled true
-        min_length  30
-        isolated_min_length 50
-        min_length_for_low_covered 150
+        min_length  110
+        isolated_min_length 130
+        isolated_min_cov 4
+        min_length_for_low_covered 140
+        rel_cutoff 1.3
+        rel_isolated_cutoff 1.5
+        rel_low_covered_cutoff 1.6
         min_coverage 2
     }
 
+    ; All length cutoffs presented in nucleotides
+    hard_path_cleaning
+    {
+        enabled true
+        min_length  130
+        isolated_min_length 180
+        isolated_min_cov 8
+        min_length_for_low_covered 180
+        rel_cutoff 1.5
+        rel_isolated_cutoff 2.0
+        rel_low_covered_cutoff 2.0
+        min_coverage 3
+    }
+
+    ; All length cutoffs presented in nucleotides
+    soft_path_cleaning
+    {
+        enabled true
+        min_length  85
+        isolated_min_length 100
+        isolated_min_cov 2
+        min_length_for_low_covered 130
+        rel_cutoff 1.05
+        rel_isolated_cutoff 1.2
+        rel_low_covered_cutoff 1.5
+        min_coverage 1
+    }
+
+    use_coordinated_coverage false
+    coordinated_coverage {
+       max_edge_length_repeat 1000
+       delta                  0.5
+       min_path_len           300
+    }
 }
 }

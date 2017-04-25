@@ -228,9 +228,9 @@ void FilterInterstandBulges(PathContainer &paths) {
     DEBUG("deleted paths with interstand bulges");
 }
 
-void PathExtendLauncher::FinalizePaths(PathContainer &paths,
-                                       GraphCoverageMap &cover_map,
-                                       const PathExtendResolver &resolver) const {
+void PathExtendLauncher::RemoveOverlapsAndArtifacts(PathContainer &paths,
+                                                    GraphCoverageMap &cover_map,
+                                                    const PathExtendResolver &resolver) const {
     INFO("Finalizing paths");
 
     INFO("Deduplicating paths");
@@ -253,16 +253,34 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
     }
     resolver.AddUncoveredEdges(paths, cover_map);
 
-    if (params_.pset.path_filtration.enabled) {
-        LengthPathFilter(gp_.g, params_.pset.path_filtration.min_length).filter(paths);;
-        IsolatedPathFilter(gp_.g,
-                           params_.pset.path_filtration.min_length_for_low_covered,
-                           params_.pset.path_filtration.min_coverage).filter(paths);
-        IsolatedPathFilter(gp_.g, params_.pset.path_filtration.isolated_min_length).filter(paths);
-    }
-    paths.FilterEmptyPaths();
     paths.SortByLength();
     INFO("Paths finalized");
+}
+
+
+void PathExtendLauncher::CleanPaths(PathContainer &paths, const pe_config::ParamSetT::PathFiltrationT &path_filtration) const {
+    if (path_filtration.enabled) {
+        LengthPathFilter(gp_.g, GetLengthCutoff(path_filtration.min_length, path_filtration.rel_cutoff)).filter(paths);
+        LowCoveredPathFilter(gp_.g,
+                             GetLengthCutoff(path_filtration.min_length_for_low_covered, path_filtration.rel_low_covered_cutoff),
+                             path_filtration.min_coverage).filter(paths);
+        IsolatedPathFilter(gp_.g, GetLengthCutoff(path_filtration.isolated_min_length, path_filtration.rel_isolated_cutoff),
+                             path_filtration.isolated_min_cov).filter(paths);
+    }
+
+    paths.SortByLength();
+}
+
+
+size_t PathExtendLauncher::GetLengthCutoff(size_t abs_cutoff, double rel_cutoff) const {
+    int rel_len = int(rel_cutoff * double(cfg::get().ds.RL())) - int(cfg::get().K);
+    int abs_len = int(abs_cutoff) - int(cfg::get().K);
+    size_t result = (size_t) max(0, max(rel_len, abs_len));
+
+    INFO("Read length relative cutoff " << rel_cutoff << " converted to " << rel_len);
+    INFO("Read length absolute cutoff " << abs_cutoff << " bp converted to " << result);
+    INFO("Length cutoff: " << result);
+    return result;
 }
 
 void PathExtendLauncher::TraverseLoops(PathContainer &paths, GraphCoverageMap &cover_map) const {
@@ -438,6 +456,24 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     INFO("Gap closing completed")
 }
 
+void PathExtendLauncher::FilterPaths() {
+    PathContainer contig_paths_copy(gp_.contig_paths.begin(), gp_.contig_paths.end());
+    for (const auto& it: params_.pset.path_filtration) {
+        if (it.first.empty() && it.second.enabled) {
+            INFO("Finalizing main paths");
+            CleanPaths(gp_.contig_paths, it.second);
+            DebugOutputPaths(gp_.contig_paths, "final_paths");
+        }
+        else if (it.second.enabled) {
+            INFO("Finalizing paths - " + it.first);
+            PathContainer to_clean(contig_paths_copy.begin(), contig_paths_copy.end());
+            CleanPaths(to_clean, it.second);
+            DebugOutputPaths(to_clean, it.first + "_final_paths");
+            writer_.OutputPaths(to_clean, params_.output_dir + it.first + "_filtered_final_paths" + ".fasta");
+        }
+    }
+}
+
 void PathExtendLauncher::Launch() {
     INFO("ExSPAnder repeat resolving tool started");
     make_dir(params_.output_dir);
@@ -480,8 +516,10 @@ void PathExtendLauncher::Launch() {
 
     //TODO use move assignment to original map here
     GraphCoverageMap polished_map(gp_.g, gp_.contig_paths, true);
-    FinalizePaths(gp_.contig_paths, polished_map, resolver);
-    DebugOutputPaths(gp_.contig_paths, "final_paths");
+    RemoveOverlapsAndArtifacts(gp_.contig_paths, polished_map, resolver);
+    DebugOutputPaths(gp_.contig_paths, "overlap_removed");
+
+    FilterPaths();
 
     CountMisassembliesWithReference(gp_.contig_paths);
 

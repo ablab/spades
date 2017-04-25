@@ -679,6 +679,11 @@ public:
         ConstIterator(const PathContainerT::const_iterator& iter)
                 : PathContainerT::const_iterator(iter) {
         }
+
+        ConstIterator(const PathContainer::Iterator& iter)
+            : PathContainerT::const_iterator(iter) {
+        }
+
         BidirectionalPath* get() const {
             return this->operator *().first;
         }
@@ -690,11 +695,19 @@ public:
     PathContainer() {
     }
 
+
     PathContainer(const PathContainer&) = delete;
     PathContainer& operator=(const PathContainer&) = delete;
 
     PathContainer(PathContainer&&) = default;
     PathContainer& operator=(PathContainer&&) = default;
+
+    PathContainer(ConstIterator begin, ConstIterator end) {
+        DeleteAllPaths();
+        for (ConstIterator it = begin; it != end; ++it) {
+            AddPair(new BidirectionalPath(*it.get()), new BidirectionalPath(*it.getConjugate()));
+        }
+    }
 
     BidirectionalPath& operator[](size_t index) const {
         return *(data_[index].first);
@@ -758,7 +771,6 @@ public:
     Iterator end() {
         return Iterator(data_.end());
     }
-
 
     ConstIterator begin() const {
         return ConstIterator(data_.begin());

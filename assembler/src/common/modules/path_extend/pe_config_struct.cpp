@@ -10,6 +10,28 @@
 
 namespace path_extend {
 
+//convert string to vector of words separated by space
+std::vector<string> StringToVector(const std::string& s) {
+    std::string word =
+        "";
+    std::vector<string> res;
+    for (size_t i = 0; i < s.length(); ++i) {
+        if (s[i] == ' ') {
+            if (word != "") {
+                res.push_back(word);
+                word = "";
+            }
+        }
+        else {
+            word += s[i];
+
+        }
+    }
+    if (word != "") {
+        res.push_back(word);
+    }
+    return res;
+}
 
 void load(scaffolding_mode &sm, boost::property_tree::ptree const& pt, std::string const& key, bool complete) {
     if (complete || pt.find(key) != pt.not_found()) {
@@ -102,7 +124,11 @@ void load(pe_config::ParamSetT::PathFiltrationT& pf,
     if (pf.enabled) {
         load(pf.min_length      , pt, "min_length"      , complete);
         load(pf.isolated_min_length      , pt, "isolated_min_length"      , complete);
+        load(pf.isolated_min_cov      , pt, "isolated_min_cov"      , complete);
         load(pf.min_length_for_low_covered      , pt, "min_length_for_low_covered"      , complete);
+        load(pf.rel_cutoff      , pt, "rel_cutoff"      , complete);
+        load(pf.rel_isolated_cutoff      , pt, "rel_isolated_cutoff"      , complete);
+        load(pf.rel_low_covered_cutoff      , pt, "rel_low_covered_cutoff"      , complete);
         load(pf.min_coverage      , pt, "min_coverage"      , complete);
     }
 }
@@ -141,7 +167,16 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
     load(p.use_coordinated_coverage, pt, "use_coordinated_coverage", complete);
     load(p.scaffolding2015, pt, "scaffolding2015", complete);
     load(p.scaffold_graph_params, pt, "scaffold_graph", complete);
-    load(p.path_filtration, pt, "path_cleaning", complete);
+
+    string path_cleaning_presets;
+    load(path_cleaning_presets, pt, "path_cleaning_presets", complete);
+    auto presets = StringToVector(path_cleaning_presets);
+    for (auto &key : presets) {
+        pe_config::ParamSetT::PathFiltrationT path_filtration;
+        std::string config_key = key == "default" ? "path_cleaning" : key + "_path_cleaning";
+        load(path_filtration, pt, config_key, complete);
+        p.path_filtration[key] = path_filtration;
+    }
     load(p.genome_consistency_checker, pt, "genome_consistency_checker", complete);
     load(p.uniqueness_analyser, pt, "uniqueness_analyser", complete);
     load(p.loop_traversal, pt, "loop_traversal", complete);

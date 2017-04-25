@@ -113,28 +113,6 @@ public:
 
 };
 
-
-class CoveragePathFilter: public ErasingPathFilter {
-
-protected:
-    double minCoverage;
-
-public:
-    CoveragePathFilter(Graph& g_, double cov): ErasingPathFilter(g_), minCoverage(cov) {
-
-    }
-
-    virtual bool predicate(BidirectionalPath& path) {
-        for (size_t i = 0; i < path.Size(); ++i) {
-            if (math::ls(g.coverage(path[i]), minCoverage)) {
-                return true;
-            }
-        }
-        return false;
-    }
-};
-
-
 class LengthPathFilter: public ErasingPathFilter {
 
 protected:
@@ -174,10 +152,34 @@ public:
 
             return g.IncomingEdgeCount(v1) == 0 &&
                 g.OutgoingEdgeCount(v2) == 0 &&
-                path.Length() < min_length_ &&
-                math::ls(path.Coverage(), min_cov_);
+                path.Length() <= min_length_ &&
+                math::le(path.Coverage(), min_cov_);
         }
         return false;
+    }
+};
+
+class LowCoveredPathFilter: public ErasingPathFilter {
+
+protected:
+    size_t min_length_;
+
+    double min_cov_;
+
+public:
+    LowCoveredPathFilter(const Graph& g_, size_t min_length, double min_cov):
+            ErasingPathFilter(g_),
+            min_length_(min_length),
+            min_cov_(min_cov) {
+    }
+
+    virtual bool predicate(BidirectionalPath& path) {
+        for (size_t i = 0; i < path.Size(); ++i) {
+            if (math::gr(g.coverage(path[i]), min_cov_)) {
+                return false;
+            }
+        }
+        return path.Length() <= min_length_;
     }
 };
 

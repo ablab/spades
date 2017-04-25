@@ -76,11 +76,8 @@ params {
         basic_overlap_coeff 2.0
     }
 
-    path_cleaning
-    {
-        enabled false
-    }
-    
+    path_cleaning_presets ""
+
     use_coordinated_coverage false
     coordinated_coverage
     {
