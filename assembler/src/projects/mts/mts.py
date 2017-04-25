@@ -65,6 +65,8 @@ with cd(exec_dir):
         assembly_dir = os.path.join(args.dir, "assembly")
         if not os.path.exists(assembly_dir):
             os.symlink(args.reuse_assemblies, assembly_dir)
+        else:
+            print("Warning: assembly folder already exists")
 
     if args.alt:
         call_snake(["--snakefile", "Alt.snake"])

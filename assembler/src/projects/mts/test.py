@@ -101,15 +101,8 @@ def run_mts(args, workdir):
     if not os.path.exists(args.dir):
         os.mkdir(args.dir)
     if args.saves:
-        log.log("Copying saves from" + args.saves)
-        for saves_dir in ["assembly", "reassembly"]:
-            full_dir = os.path.join(args.saves, saves_dir)
-            if os.path.isdir(full_dir):
-                os.symlink(full_dir, os.path.join(args.dir, saves_dir))
-            else:
-                log.warn("No " + saves_dir + " dir provided; skipping")
-        #Don't touch symlinked assemblies because it may corrupt other runs with the same dependencies
-        #mts_args.append("--reuse-assemblies")
+        log.log("Using saves from " + args.saves)
+        mts_args.extend(["--reuse-assemblies", args.saves])
     os.chdir(os.path.join(workdir, "src/projects/mts"))
     return subprocess.call(mts_args)
 
