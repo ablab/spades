@@ -369,7 +369,7 @@ public:
 
         //TODO Is it ok to have a non-symmetric overlap gap description
         return GapDescription(gap.left(), gap.right(),
-                              -int(overlap_info.r1.size()),
+                              -int(overlap_info.r2.size()),
                               g_.length(gap.left()) + g_.k() - overlap_info.r1.end_pos,
                               overlap_info.r2.start_pos);
     }
