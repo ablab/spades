@@ -8,6 +8,7 @@
 #include "modules/path_extend/path_extender.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "pipeline/graph_pack.hpp"
+#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 
 namespace path_extend {
 
@@ -43,6 +44,37 @@ public:
 
     virtual ~GapExtensionChooserFactory() {}
     virtual shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath &original_path, size_t position) const = 0;
+};
+
+class ReadCloudGapExtensionChooserFactory : public GapExtensionChooserFactory {
+    typedef shared_ptr <barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr;
+    const ScaffoldingUniqueEdgeStorage unique_storage_;
+    barcode_extractor_ptr extractor_;
+public:
+    ReadCloudGapExtensionChooserFactory(const Graph& g, const ScaffoldingUniqueEdgeStorage& unique_storage,
+                                        barcode_extractor_ptr extractor) :
+            GapExtensionChooserFactory(g), unique_storage_(unique_storage), extractor_(extractor) {}
+    virtual ~ReadCloudGapExtensionChooserFactory() {}
+    virtual shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath& original_path, size_t position) const override {
+
+        const EdgeId target_edge = FindUniqueAfterPosition(original_path, position);
+//        const Gap original_gap = original_path.GapAt(position);
+//        const size_t reserve = 1000;
+//        auto dij = DijkstraHelper::CreateBoundedDijkstra(g, original_gap.gap + reserve);
+//        dij.Run()
+        auto extension_chooser_ptr = std::make_shared<ReadCloudGapExtensionChooser>(this->g(), extractor_, target_edge, unique_storage_);
+        return extension_chooser_ptr;
+    }
+
+private:
+    EdgeId FindUniqueAfterPosition(const BidirectionalPath& path, const size_t position) const {
+        for (size_t i = position; i != path.Size(); ++i) {
+            if (unique_storage_.IsUnique(path.At(i))) {
+                return path.At(i);
+            }
+        }
+        return EdgeId(0);
+    }
 };
 
 class GapExtenderFactory {

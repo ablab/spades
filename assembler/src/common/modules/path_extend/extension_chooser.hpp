@@ -25,7 +25,6 @@
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "common/barcode_index/barcode_info_extractor.hpp"
 
-
 //#include "scaff_supplementary.hpp"
 
 namespace path_extend {
@@ -1354,7 +1353,10 @@ public:
             DEBUG(candidate.e_.int_id());
             DEBUG("Conj: " << g_.conjugate(candidate.e_).int_id());
         }
-
+        if (best_candidates.size() == 1) {
+            DEBUG("Edge: " << best_candidates[0].e_);
+            DEBUG("Distance: " << best_candidates[0].d_);
+        }
         return best_candidates;
     }
 
@@ -1752,6 +1754,60 @@ private:
     }
 
     DECL_LOGGER("10XExtensionChooser")
+};
+
+class ReadCloudGapExtensionChooser : public ExtensionChooser {
+protected:
+    typedef shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_t;
+    barcode_extractor_ptr_t barcode_extractor_ptr_;
+    EdgeId target_edge_;
+    const ScaffoldingUniqueEdgeStorage& unique_storage_;
+public:
+    ReadCloudGapExtensionChooser(const Graph &g, const barcode_extractor_ptr_t &barcode_extractor_ptr_,
+                                 const EdgeId &target_edge_, const ScaffoldingUniqueEdgeStorage& unique_storage_)
+            : ExtensionChooser(g), barcode_extractor_ptr_(barcode_extractor_ptr_),
+              target_edge_(target_edge_), unique_storage_(unique_storage_) {}
+
+    virtual EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
+        EdgeContainer result;
+        const size_t shared_threshold = 1;
+        const size_t count_threshold = 1;
+        const size_t gap_threshold = 5000;
+        const EdgeId last_unique = FindLastUniqueInPath(path);
+        DEBUG("Trying to close gap");
+        DEBUG("Last edge: " << path.Back().int_id());
+        DEBUG("Last unique: " << last_unique.int_id());
+        DEBUG("Target edge: " << target_edge_.int_id());
+        DEBUG(edges.size() << " candidates");
+        if (last_unique.int_id() != 0 and target_edge_.int_id() != 0) {
+            for (const auto &edge: edges) {
+                if (IsSupportedByClouds(edge.e_, last_unique, target_edge_, shared_threshold, count_threshold,
+                                        gap_threshold)) {
+                    result.push_back(edge);
+                }
+            }
+        }
+        return result;
+    }
+private:
+    bool IsSupportedByClouds(const EdgeId& edge, const EdgeId& last_edge, const EdgeId& target_edge,
+                             const size_t shared_threshold, const size_t count_threshold, const size_t gap_threshold) const {
+        return barcode_extractor_ptr_->AreEnoughSharedBarcodesWithFilter(last_edge, edge, shared_threshold,
+                                                                         count_threshold, gap_threshold) and
+               barcode_extractor_ptr_->AreEnoughSharedBarcodesWithFilter(edge, target_edge, shared_threshold,
+                                                                         count_threshold, gap_threshold);
+    }
+
+    EdgeId FindLastUniqueInPath(const BidirectionalPath& path) const {
+        for (int i =  static_cast<int>(path.Size()) - 1; i >= 0; --i) {
+            if (unique_storage_.IsUnique(path.At(i))) {
+                return path.At(i);
+            }
+        }
+        return EdgeId(0);
+    }
+
+    DECL_LOGGER("ReadCloudGapExtensionChooser");
 };
 }
 #endif /* EXTENSION_HPP_ */

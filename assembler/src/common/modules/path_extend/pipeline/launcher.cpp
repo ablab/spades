@@ -388,6 +388,13 @@ void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
     INFO(unique_data_.unique_pb_storage_.size() << " unique edges");
 }
 
+void PathExtendLauncher::FillReadCloudUniqueEdgeStorage() {
+    const size_t unique_edge_length = cfg::get().ts_res.edge_length_threshold;
+    INFO("Unique edge length: " << unique_edge_length);
+    ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp_, unique_edge_length, unique_data_.unique_variation_);
+    read_cloud_unique_edge_analyzer.FillUniqueEdgeStorage(unique_data_.unique_read_cloud_storage_);
+}
+
 Extenders PathExtendLauncher::ConstructPBExtenders(const ExtendersGenerator &generator) {
     FillPBUniqueEdgeStorages();
     return generator.MakePBScaffoldingExtenders();
@@ -421,7 +428,6 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             INFO("Filtering barcode mapper");
             const size_t initial_abundancy_threshold = cfg::get().ts_res.trimming_threshold;
             const size_t initial_gap_threshold = cfg::get().ts_res.gap_threshold;
-            const size_t unique_edge_length = cfg::get().ts_res.edge_length_threshold;
             //Filtering
             INFO("Abundancy threshold: " << initial_abundancy_threshold);
             INFO("Gap threshold: " << initial_gap_threshold);
@@ -432,9 +438,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             INFO("Average barcode coverage after filtering: " << extractor.AverageBarcodeCoverage());
 
             //Creating read cloud unique storage
-            INFO("Unique edge length: " << unique_edge_length);
-            ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp_, unique_edge_length, unique_data_.unique_variation_);
-            read_cloud_unique_edge_analyzer.FillUniqueEdgeStorage(unique_data_.unique_read_cloud_storage_);
+            FillReadCloudUniqueEdgeStorage();
 
             INFO("Creating read cloud extenders");
             utils::push_back_all(extenders, ConstructReadCloudExtender(generator));
@@ -471,6 +475,13 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             gap_closers.push_back(make_shared<MatePairGapCloser> (gp_.g, params_.max_polisher_gap, paired_lib,
                                                                    unique_data_.main_unique_storage_));
         }
+//        if (lib.type() == io::LibraryType::Clouds10x) {
+//            barcode_index::FrameBarcodeIndexInfoExtractor extractor(gp_.barcode_mapper_ptr, gp_.g);
+//            auto barcode_extractor_ptr = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
+//            auto chooser_factory = std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.g, unique_data_.unique_read_cloud_storage_, barcode_extractor_ptr);
+//            auto extender_factory = std::make_shared<SimpleExtenderFactory>(gp_, cover_map, chooser_factory);
+//            gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender_factory));
+//        }
     }
 
 ////TODO:: is it really empty?
