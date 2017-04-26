@@ -414,7 +414,7 @@ public:
         for (auto joiner : joiners_) {
             GapDescription fixed_gap = joiner->FixGap(gap);
             if (fixed_gap != GapDescription()) {
-                return NormalizeGap(fixed_gap);
+                return fixed_gap;
             }
         }
 
@@ -431,15 +431,6 @@ public:
     }
 
 private:
-    GapDescription NormalizeGap(const GapDescription &gap) const {
-        if (gap.estimated_dist() >= 0)
-            return gap;
-        return GapDescription(gap.left(), gap.right(),
-                              0,
-                              gap.left_trim(),
-                              gap.right_trim() - gap.estimated_dist());
-    }
-
     vector<shared_ptr<GapAnalyzer>> joiners_;
     const size_t may_overlap_threshold_;
     const int must_overlap_threshold_;
@@ -1331,8 +1322,15 @@ protected:
         }
         DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap : "
                                       << gap.gap << ", trash length: " << gap.trash_previous << "-" << gap.trash_current);
-        path.PushBack(e, gap);
+        path.PushBack(e, NormalizeGap(gap));
         return true;
+    }
+
+    Gap NormalizeGap(Gap gap) const {
+        VERIFY(gap != Gap::INVALID());
+        if (gap.overlap_after_trim(g_.k()) > 0)
+            gap.trash_current += gap.overlap_after_trim(g_.k());
+        return gap;
     }
 
 public:
