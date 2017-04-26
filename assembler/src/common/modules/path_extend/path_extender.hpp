@@ -17,7 +17,7 @@
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "read_cloud_path_extend/paired_dijkstra.hpp"
+#include "read_cloud_path_extend/read_cloud_dijkstra.hpp"
 
 #include <cmath>
 
@@ -739,7 +739,8 @@ public:
         DEBUG("Last unique: " << last_unique.first.int_id());
         DEBUG("Length: " << g_.length(last_unique.first));
 
-        candidates = GetInitialCandidates(last_unique.first, path);
+        const EdgeId last_edge = path.Back();
+        candidates = GetInitialCandidates(last_edge, path);
         return FilterCandidates(path, candidates) and AddCandidates(path, paths_storage, candidates);
     }
 
@@ -754,12 +755,13 @@ protected:
         DEBUG("Dijkstra finished");
 
         for (auto v: dij.ReachedVertices()) {
-            for (auto connected: g_.OutgoingEdges(v)) {
-                size_t distance = dij.GetDistance(v);
-                if (unique_storage_.IsUnique(connected) and distance < distance_bound_ and
-                    IsFurtherInPath(path, connected, last_edge)) {
-                    EdgeWithDistance candidate(connected, distance);
-                    candidates.push_back(candidate);
+            size_t distance = dij.GetDistance(v);
+            if (distance < distance_bound_) {
+                for (auto connected: g_.OutgoingEdges(v)) {
+                    if (unique_storage_.IsUnique(connected) and IsNotInPath(path, connected)) {
+                        EdgeWithDistance candidate(connected, distance);
+                        candidates.push_back(candidate);
+                    }
                 }
             }
         }
@@ -814,9 +816,8 @@ protected:
         return std::make_pair(EdgeId(0), -1);
     }
 
-    bool IsFurtherInPath(const BidirectionalPath& path, const EdgeId& edge, const EdgeId& last_edge) const {
-        return edge != last_edge and edge != g_.conjugate(last_edge) and
-               path.FindFirst(edge) == -1 and path.FindFirst(g_.conjugate(edge)) == -1;
+    bool IsNotInPath(const BidirectionalPath &path, const EdgeId &edge) const {
+        return path.FindFirst(edge) == -1 and path.FindFirst(g_.conjugate(edge)) == -1;
     }
 private:
     DECL_LOGGER("ReadCloudExtender")
