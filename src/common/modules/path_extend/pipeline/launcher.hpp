@@ -69,6 +69,8 @@ class PathExtendLauncher {
 
     void FillPBUniqueEdgeStorages();
 
+    void FillReadCloudUniqueEdgeStorage();
+
     void FillPathContainer(size_t lib_index, size_t size_threshold = 1);
 
     void FillLongReadsCoverageMaps();
