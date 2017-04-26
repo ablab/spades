@@ -1581,7 +1581,14 @@ public:
         EdgeContainer best_candidates = GetBestCandidates(initial_candidates, last_unique);
         DEBUG("Finished searching")
         DEBUG("Best candidates: " << best_candidates.size());
-
+        for (const auto& candidate: best_candidates) {
+            DEBUG(candidate.e_.int_id());
+            DEBUG("Conj: " << g_.conjugate(candidate.e_).int_id());
+        }
+        if (best_candidates.size() == 1) {
+            DEBUG("Edge: " << best_candidates[0].e_);
+            DEBUG("Distance: " << best_candidates[0].d_);
+        }
         return best_candidates;
     }
 
@@ -1979,6 +1986,119 @@ private:
     }
 
     DECL_LOGGER("10XExtensionChooser")
+};
+
+class ReadCloudGapExtensionChooser : public ExtensionChooser {
+protected:
+    typedef shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_t;
+    barcode_extractor_ptr_t barcode_extractor_ptr_;
+    EdgeId target_edge_;
+    const ScaffoldingUniqueEdgeStorage& unique_storage_;
+    struct ReadCloudGapExtensionChooserConfigs {
+        const size_t shared_threshold_;
+        const size_t count_threshold_;
+        const size_t gap_threshold_;
+        const size_t scan_bound_;
+
+        ReadCloudGapExtensionChooserConfigs(const size_t shared_threshold_, const size_t count_threshold_,
+                                            const size_t gap_threshold_, const size_t scan_bound_) :
+                                                                           shared_threshold_(shared_threshold_),
+                                                                           count_threshold_(count_threshold_),
+                                                                           gap_threshold_(gap_threshold_),
+                                                                           scan_bound_(scan_bound_) {}
+    };
+    const ReadCloudGapExtensionChooserConfigs configs_;
+
+public:
+    ReadCloudGapExtensionChooser(const Graph &g, const barcode_extractor_ptr_t &barcode_extractor_ptr_,
+                                 const EdgeId &target_edge_, const ScaffoldingUniqueEdgeStorage& unique_storage_)
+            : ExtensionChooser(g), barcode_extractor_ptr_(barcode_extractor_ptr_),
+              target_edge_(target_edge_), unique_storage_(unique_storage_), configs_(2, 1, 5000, 500) {}
+
+    virtual EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
+        DEBUG("Filter started");
+        EdgeContainer result;
+        const EdgeId last_unique = FindLastUniqueInPath(path);
+        DEBUG("Trying to close gap");
+        DEBUG("Last edge: " << path.Back().int_id());
+        DEBUG("Last unique: " << last_unique.int_id());
+        DEBUG("Target edge: " << target_edge_.int_id());
+        DEBUG(edges.size() << " candidates");
+        if (last_unique.int_id() == 0 or target_edge_.int_id() == 0) {
+            return result;
+        }
+
+        auto is_edge_supported_by_clouds = [this, &last_unique](const EdgeWithDistance& edge) {
+            return IsEdgeSupportedByClouds(edge.e_, last_unique, this->target_edge_, this->configs_.shared_threshold_,
+                                           this->configs_.count_threshold_, this->configs_.gap_threshold_);
+        };
+        std::copy_if(edges.begin(), edges.end(), std::back_inserter(result), is_edge_supported_by_clouds);
+        if (result.size() > 0) {
+            DEBUG("Found supported edges");
+            return result;
+        }
+
+        auto are_supported_by_clouds_reachable = [this, &last_unique](const EdgeWithDistance& edge) {
+            return AreSupportedByCloudsReachable(edge.e_, last_unique, this->target_edge_,
+                                                 this->configs_.shared_threshold_, this->configs_.count_threshold_,
+                                                 this->configs_.gap_threshold_, this->configs_.scan_bound_);
+        };
+        std::copy_if(edges.begin(), edges.end(), std::back_inserter(result), are_supported_by_clouds_reachable);
+        if (result.size() > 0) {
+            DEBUG("Supported edges are reachable from some candidates");
+        } else {
+            DEBUG("Candidates were not found.");
+        }
+        DEBUG("Filter finished")
+        return result;
+    }
+private:
+    bool IsEdgeSupportedByClouds(const EdgeId &edge, const EdgeId &last_edge, const EdgeId &target_edge,
+                                 const size_t shared_threshold, const size_t count_threshold,
+                                 const size_t gap_threshold) const {
+        return barcode_extractor_ptr_->AreEnoughSharedBarcodesWithFilter(last_edge, edge, shared_threshold,
+                                                                         count_threshold, gap_threshold) and
+               barcode_extractor_ptr_->AreEnoughSharedBarcodesWithFilter(edge, target_edge, shared_threshold,
+                                                                         count_threshold, gap_threshold);
+    }
+
+    bool AreSupportedByCloudsReachable(const EdgeId &edge, const EdgeId &last_edge, const EdgeId &target_edge,
+                                       const size_t shared_threshold, const size_t count_threshold,
+                                       const size_t gap_threshold, const size_t scan_bound) const {
+        DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
+                DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, scan_bound));
+        dijkstra.Run(g_.EdgeEnd(edge));
+        DEBUG("Running dij from candidate " << edge.int_id());
+        bool found_supported = false;
+        //todo use some fp here for better readability
+        //todo use custom dijkstra that stops on supported edges to improve performanc
+        for (auto v: dijkstra.ReachedVertices()) {
+            if (dijkstra.GetDistance(v) < scan_bound) {
+                for (auto connected: g_.OutgoingEdges(v)) {
+                    DEBUG("Checking edge " << connected.int_id());
+                    if (IsEdgeSupportedByClouds(connected, last_edge, target_edge,
+                                                shared_threshold, count_threshold, gap_threshold)) {
+                        found_supported = true;
+                        DEBUG("supported");
+                        break;
+                    }
+                }
+            }
+            if (found_supported) break;
+        }
+        return found_supported;
+    }
+
+    EdgeId FindLastUniqueInPath(const BidirectionalPath& path) const {
+        for (int i =  static_cast<int>(path.Size()) - 1; i >= 0; --i) {
+            if (unique_storage_.IsUnique(path.At(i))) {
+                return path.At(i);
+            }
+        }
+        return EdgeId(0);
+    }
+
+    DECL_LOGGER("ReadCloudGapExtensionChooser");
 };
 }
 #endif /* EXTENSION_HPP_ */

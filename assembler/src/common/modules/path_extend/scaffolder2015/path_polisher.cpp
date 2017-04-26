@@ -142,16 +142,29 @@ Gap PathExtenderGapCloser::CloseGap(const BidirectionalPath &original_path,
              size_t position, BidirectionalPath &path) const {
     auto extender = extender_factory_->CreateExtender(original_path, position);
     size_t added = 0;
+    DEBUG("Last edge: " << path.Back().int_id());
+    DEBUG("Target edge: " << original_path.At(position).int_id());
     VertexId target_vertex = g_.EdgeStart(original_path.At(position));
+    DEBUG("Target_vertex: " << target_vertex.int_id());
+    DEBUG("Current vertex: " << g_.EdgeEnd(path.Back()).int_id());
     while (g_.EdgeEnd(path.Back()) != target_vertex) {
+        DEBUG("Before makegrowstep")
         bool has_grown = extender->MakeGrowStep(path);
+        DEBUG("After makegrowstep")
         if (!has_grown)
             break;
+        DEBUG("no break")
         added += g_.length(path.Back());
+        DEBUG("Added edge " << path.Back().int_id());
+        DEBUG("Overall length " << added);
     }
+    DEBUG("While ended");
     auto orig_gap = original_path.GapAt(position);
     //FIXME think of checking for 0 in advance
-    return Gap(orig_gap.gap - (int) added, {0, orig_gap.trash.current}, false);
+    DEBUG("Original gap: " << orig_gap.gap << " , added " << (int) added);
+//    VERIFY(orig_gap.NoTrash());
+    return Gap((g_.EdgeEnd(path.Back()) == target_vertex) ? 0 :
+               std::max(orig_gap.gap - (int) added, int(g_.k() + 10)), 0, orig_gap.trash_current);
 }
 
 Gap DijkstraGapCloser::FillWithBridge(const Gap &orig_gap,
