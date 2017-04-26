@@ -414,7 +414,7 @@ public:
         for (auto joiner : joiners_) {
             GapDescription fixed_gap = joiner->FixGap(gap);
             if (fixed_gap != GapDescription()) {
-                return fixed_gap;
+                return NormalizeGap(fixed_gap);
             }
         }
 
@@ -431,6 +431,15 @@ public:
     }
 
 private:
+    GapDescription NormalizeGap(const GapDescription &gap) const {
+        if (gap.estimated_dist() >= 0)
+            return gap;
+        return GapDescription(gap.left(), gap.right(),
+                              0,
+                              gap.left_trim(),
+                              gap.right_trim() - gap.estimated_dist());
+    }
+
     vector<shared_ptr<GapAnalyzer>> joiners_;
     const size_t may_overlap_threshold_;
     const int must_overlap_threshold_;
