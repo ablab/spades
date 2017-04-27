@@ -108,10 +108,12 @@ void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
     //Scaffold graph
     shared_ptr<scaffold_graph::ScaffoldGraph> scaffold_graph;
     if (params_.pset.scaffold_graph_params.construct) {
-        debruijn_graph::GenomeConsistenceChecker genome_checker(gp_, unique_data_.main_unique_storage_,
+        debruijn_graph::GenomeConsistenceChecker genome_checker(gp_,
                                                                 params_.pset.genome_consistency_checker.max_gap,
                                                                 params_.pset.genome_consistency_checker.relative_max_gap,
-                                                                unique_data_.main_unique_storage_.GetMinLength(), unique_data_.long_reads_cov_map_);
+                                                                unique_data_.main_unique_storage_.GetMinLength(),
+                                                                unique_data_.main_unique_storage_,
+                                                                unique_data_.long_reads_cov_map_);
         scaffold_graph = ConstructScaffoldGraph(unique_data_.main_unique_storage_);
         if (params_.pset.scaffold_graph_params.output) {
             PrintScaffoldGraph(*scaffold_graph,
@@ -134,10 +136,11 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
         tmp_analyzer.FillUniqueEdgeStorage(tmp_storage);
     }
     debruijn_graph::GenomeConsistenceChecker genome_checker(gp_,
-                                                            use_main_storage ? unique_data_.main_unique_storage_:tmp_storage,
                                                             params_.pset.genome_consistency_checker.max_gap,
                                                             params_.pset.genome_consistency_checker.relative_max_gap,
-                                                            unresolvable_gap, unique_data_.long_reads_cov_map_);
+                                                            unresolvable_gap,
+                                                            use_main_storage ? unique_data_.main_unique_storage_ : tmp_storage,
+                                                            unique_data_.long_reads_cov_map_);
 
     size_t total_mis = 0, gap_mis = 0;
     for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
