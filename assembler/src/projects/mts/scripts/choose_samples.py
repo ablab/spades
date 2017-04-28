@@ -57,7 +57,7 @@ with open(PROF) as input:
                     break
 
         print("Chosen samples are", samples, "with total mean abundance", sum)
-        prof_dict[repr(CAG)] = sum
+        prof_dict[CAG] = sum
         if sum < MIN_TOTAL_ABUNDANCE:
             print(CAG, "is too scarce; skipping")
             continue

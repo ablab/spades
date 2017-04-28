@@ -13,20 +13,26 @@ try:
     def dump_dict(dict, output):
         yaml.dump(dict, output)
 except:
+    def strip_unquote(str):
+        str = str.strip()
+        if str[0] == '\"' and str[-1] == '\"':
+            str = str[1:-1]
+        return str
     def load_dict(input):
         def load_pairs():
             for line in input:
                 params = line.split(":", 2)
                 if len(params) < 2:
                     continue
-                val = params[1].strip()
-                if val[0] == '\"' and val[-1] == '\"':
-                    val = val[1:-1]
-                yield (params[0].strip(), val)
+                yield (strip_unquote(params[0]), strip_unquote(params[1]))
         return dict(load_pairs())
     def dump_dict(dict, output):
         for k, v in dict.items():
-            print(k, ": ", v, sep="", file=output)
+            try:
+                float(k)
+                print('"', k, '"', ": ", v, sep="", file=output)
+            except ValueError:
+                print(k, ": ", v, sep="", file=output)
 
 FASTA_EXTS = {".fasta", ".fa", ".fna", ".fsa", ".fastq", ".fastq.gz", ".fq", ".fq.gz", ".fna.gz"}
 def gather_paths(path, basename=False):
