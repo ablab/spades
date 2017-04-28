@@ -13,7 +13,7 @@ size_t SampleCount() {
     return sample_cnt_;
 }
 
-MplVector SingleClusterAnalyzer::SampleMpls(const KmerProfiles& kmer_mpls, size_t sample) const {
+MplVector SampleMpls(const KmerProfiles& kmer_mpls, size_t sample) {
     MplVector answer;
     answer.reserve(kmer_mpls.size());
     for (const auto& kmer_mpl : kmer_mpls) {
@@ -22,14 +22,14 @@ MplVector SingleClusterAnalyzer::SampleMpls(const KmerProfiles& kmer_mpls, size_
     return answer;
 }
 
-Mpl SingleClusterAnalyzer::SampleMedian(const KmerProfiles& kmer_mpls, size_t sample) const {
+Mpl SampleMedian(const KmerProfiles& kmer_mpls, size_t sample) {
     std::vector<Mpl> sample_mpls = SampleMpls(kmer_mpls, sample);
 
     std::nth_element(sample_mpls.begin(), sample_mpls.begin() + sample_mpls.size()/2, sample_mpls.end());
     return sample_mpls[sample_mpls.size()/2];
 }
 
-MplVector SingleClusterAnalyzer::MedianVector(const KmerProfiles& kmer_mpls) const {
+MplVector MedianVector(const KmerProfiles& kmer_mpls) {
     VERIFY(kmer_mpls.size() != 0);
     MplVector answer(SampleCount(), 0);
     for (size_t i = 0; i < SampleCount(); ++i) {
@@ -66,42 +66,44 @@ KmerProfiles SingleClusterAnalyzer::CloseKmerMpls(const KmerProfiles& kmer_mpls,
     return answer;
 }
 
-boost::optional<AbundanceVector> SingleClusterAnalyzer::operator()(const KmerProfiles& kmer_mpls) const {
+boost::optional<AbundanceVector> TrivialClusterAnalyzer::operator()(const KmerProfiles& kmer_mpls) const {
     auto med = MedianVector(kmer_mpls);
     return AbundanceVector(med.begin(), med.end());
-    //return boost::optional<AbundanceVector>(answer);
-    //MplVector center = MedianVector(kmer_mpls);
-    //auto locality = CloseKmerMpls(kmer_mpls, KmerProfile(center));
+}
 
-    //for (size_t it_cnt = 0; it_cnt < MAX_IT; ++it_cnt) {
-    //    DEBUG("Iteration " << it_cnt);
-    //    DEBUG("Center is " << PrintVector(center));
+boost::optional<AbundanceVector> SingleClusterAnalyzer::operator()(const KmerProfiles& kmer_mpls) const {
+    MplVector center = MedianVector(kmer_mpls);
+    auto locality = CloseKmerMpls(kmer_mpls, KmerProfile(center));
 
-    //    DEBUG("Locality size is " << locality.size()
-    //              << " making " << (double(locality.size()) / double(kmer_mpls.size()))
-    //              << " of total # points");
+    for (size_t it_cnt = 0; it_cnt < MAX_IT; ++it_cnt) {
+        DEBUG("Iteration " << it_cnt);
+        DEBUG("Center is " << PrintVector(center));
 
-    //    double center_share = double(locality.size()) / double(kmer_mpls.size());
-    //    if (math::ls(center_share, central_clust_share_)) {
-    //        DEBUG("Detected central area contains too few k-mers: share " << center_share
-    //                  << " ; center size " << locality.size()
-    //                  << " ; total size " << kmer_mpls.size());
-    //        return boost::none;
-    //    }
+        DEBUG("Locality size is " << locality.size()
+                  << " making " << (double(locality.size()) / double(kmer_mpls.size()))
+                  << " of total # points");
 
-    //    MplVector update = MedianVector(locality);
-    //    DEBUG("Center update is " << PrintVector(update));
+        double center_share = double(locality.size()) / double(kmer_mpls.size());
+        if (math::ls(center_share, central_clust_share_)) {
+            DEBUG("Detected central area contains too few k-mers: share " << center_share
+                      << " ; center size " << locality.size()
+                      << " ; total size " << kmer_mpls.size());
+            return boost::none;
+        }
 
-    //    if (center == update) {
-    //        DEBUG("Old and new centers matched on iteration " << it_cnt);
-    //        break;
-    //    }
+        MplVector update = MedianVector(locality);
+        DEBUG("Center update is " << PrintVector(update));
 
-    //    center = update;
-    //    locality = CloseKmerMpls(kmer_mpls, center);
-    //}
+        if (center == update) {
+            DEBUG("Old and new centers matched on iteration " << it_cnt);
+            break;
+        }
 
-    //return boost::optional<AbundanceVector>(MeanVector(locality, sample_cnt_));
+        center = update;
+        locality = CloseKmerMpls(kmer_mpls, center);
+    }
+
+    return boost::optional<AbundanceVector>(MeanVector(locality));
 }
 
 vector<std::string> ContigAbundanceCounter::SplitOnNs(const std::string& seq) const {
@@ -170,7 +172,7 @@ boost::optional<AbundanceVector> ContigAbundanceCounter::operator()(
         return boost::none;
     }
 
-    return cluster_analyzer_(kmer_mpls);
+    return (*cluster_analyzer_)(kmer_mpls);
 }
 
 }

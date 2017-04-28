@@ -77,15 +77,32 @@ std::string PrintVector(const AbVector& mpl_vector) {
     return ss.str();
 }
 
-class SingleClusterAnalyzer {
+MplVector SampleMpls(const KmerProfiles& kmer_mpls, size_t sample);
+Mpl SampleMedian(const KmerProfiles& kmer_mpls, size_t sample);
+MplVector MedianVector(const KmerProfiles& kmer_mpls);
+
+class ClusterAnalyzer {
+public:
+    virtual boost::optional<AbundanceVector> operator()(const KmerProfiles& kmer_mpls) const = 0;
+    virtual ~ClusterAnalyzer() {};
+};
+
+class TrivialClusterAnalyzer : public ClusterAnalyzer {
+public:
+    TrivialClusterAnalyzer() {}
+
+    boost::optional<AbundanceVector> operator()(const KmerProfiles& kmer_mpls) const override;
+
+private:
+    DECL_LOGGER("SingleClusterAnalyzer");
+};
+
+class SingleClusterAnalyzer : public ClusterAnalyzer {
     static const uint MAX_IT = 10;
 
     double coord_vise_proximity_;
     double central_clust_share_;
 
-    MplVector SampleMpls(const KmerProfiles& kmer_mpls, size_t sample) const;
-    Mpl SampleMedian(const KmerProfiles& kmer_mpls, size_t sample) const;
-    MplVector MedianVector(const KmerProfiles& kmer_mpls) const;
     bool AreClose(const KmerProfile& c, const KmerProfile& v) const;
     KmerProfiles CloseKmerMpls(const KmerProfiles& kmer_mpls, const KmerProfile& center) const;
 
@@ -96,7 +113,7 @@ public:
         central_clust_share_(central_clust_share) {
     }
 
-    boost::optional<AbundanceVector> operator()(const KmerProfiles& kmer_mpls) const;
+    boost::optional<AbundanceVector> operator()(const KmerProfiles& kmer_mpls) const override;
 
 private:
     DECL_LOGGER("SingleClusterAnalyzer");
@@ -111,19 +128,17 @@ class ContigAbundanceCounter {
                           utils::InvertableStoring> IndexT;
 
     unsigned k_;
-    SingleClusterAnalyzer cluster_analyzer_;
+    shared_ptr<ClusterAnalyzer> cluster_analyzer_;
     double min_earmark_share_;
     IndexT kmer_mpl_;
     InverterT inverter_;
     std::vector<Mpl> mpl_data_;
 
-    void FillMplMap(const std::string& kmers_mpl_file);
-
     vector<std::string> SplitOnNs(const std::string& seq) const;
 
 public:
     ContigAbundanceCounter(unsigned k,
-                           const SingleClusterAnalyzer& cluster_analyzer,
+                           shared_ptr<ClusterAnalyzer> cluster_analyzer,
                            const std::string& work_dir,
                            double min_earmark_share = 0.7) :
         k_(k),

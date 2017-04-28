@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
     create_console_logger();
 
     SetSampleCount(sample_cnt);
-    ContigAbundanceCounter abundance_counter(k, SingleClusterAnalyzer(), work_dir);
+    ContigAbundanceCounter abundance_counter(k, make_shared<TrivialClusterAnalyzer>(), work_dir);
     abundance_counter.Init(kmer_mult_fn);
 
     io::FileReadStream contigs_stream(contigs_path);

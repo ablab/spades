@@ -241,17 +241,17 @@ void SeriesAnalysis::run(conj_graph_pack &gp, const char *) {
     std::string cfg = cfg::get().series_analysis;
     INFO("Series analysis enabled with config " << cfg);
 
-    auto Buf = llvm::MemoryBuffer::getFile(cfg);
-    VERIFY_MSG(Buf, "Failed to load config file " + cfg);
+    auto buf = llvm::MemoryBuffer::getFile(cfg);
+    VERIFY_MSG(buf, "Failed to load config file " + cfg);
 
-    llvm::yaml::Input yin(*Buf.get());
+    llvm::yaml::Input yin(*buf.get());
     SeriesAnalysisConfig config;
     yin >> config;
 
     SetSampleCount(config.sample_cnt);
 
     ContigAbundanceCounter abundance_counter(config.k,
-                                             SingleClusterAnalyzer(2., 0.4),
+                                             shared_ptr<TrivialClusterAnalyzer>(),
                                              cfg::get().tmp_dir);
 
     DEBUG("Initiating abundance counter");
@@ -277,44 +277,45 @@ void SeriesAnalysis::run(conj_graph_pack &gp, const char *) {
         PrintEdgeFragmentProfiles(gp, abundance_counter, config.frag_size, config.min_len, os);
     }
 
-    boost::optional<AbundanceVector> bin_profile = InferAbundance(config.bin_prof, config.bin);
-    if (!bin_profile) {
-        ERROR("Couldn't estimate profile of bin");
-        return;
-    }
-
-    EdgeAbundance<Graph> edge_abundance(gp.g, abundance_counter);
-    edge_abundance.Fill();
-
-    gp.EnsureBasicMapping();
-    gp.FillQuality();
-    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
-    auto colorer = DefaultGPColorer(gp);
-    fs::make_dir(cfg::get().output_dir + "pictures/");
-    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
-                                   cfg::get().output_dir + "pictures/");
-
-    /*
-    INFO("Launching aggressive graph clearing");
-    //positive quality edges removed (folder colored_edges_deleted)
-    AggressiveClearing<Graph> clearing(gp.g, edge_abundance,
-                                        *bin_profile, 0.8, 0.3, [&](EdgeId e) {
-                    qual_removal_handler.HandleDelete(e);});
-    clearing.Run();
-    INFO("Graph clearing finished");
-    */
-
-    INFO("Drawing edges with failed abundance estimate")
-    fs::make_dir(cfg::get().output_dir + "pictures_no_ab/");
-    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler2(gp.g, gp.edge_qual, labeler, colorer,
-                                   cfg::get().output_dir + "pictures_no_ab/");
-
-    for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
-        if (edge_abundance.count(e) == 0) {
-            qual_removal_handler2.HandleDelete(e);
-        }
-    }
+//    boost::optional<AbundanceVector> bin_profile = InferAbundance(config.bin_prof, config.bin);
+//    if (!bin_profile) {
+//        ERROR("Couldn't estimate profile of bin");
+//        return;
+//    }
+//
+//    EdgeAbundance<Graph> edge_abundance(gp.g, abundance_counter);
+//    edge_abundance.Fill();
+//
+//    gp.EnsureBasicMapping();
+//    gp.FillQuality();
+//    visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
+//    auto colorer = DefaultGPColorer(gp);
+//
+//    /*
+//    fs::make_dir(cfg::get().output_dir + "pictures/");
+//    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
+//                                   cfg::get().output_dir + "pictures/");
+//
+//    INFO("Launching aggressive graph clearing");
+//    //positive quality edges removed (folder colored_edges_deleted)
+//    AggressiveClearing<Graph> clearing(gp.g, edge_abundance,
+//                                        *bin_profile, 0.8, 0.3, [&](EdgeId e) {
+//                    qual_removal_handler.HandleDelete(e);});
+//    clearing.Run();
+//    INFO("Graph clearing finished");
+//    */
+//
+//    INFO("Drawing edges with failed abundance estimate")
+//    fs::make_dir(cfg::get().output_dir + "pictures_no_ab/");
+//    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler2(gp.g, gp.edge_qual, labeler, colorer,
+//                                   cfg::get().output_dir + "pictures_no_ab/");
+//
+//    for (auto it = gp.g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+//        EdgeId e = *it;
+//        if (edge_abundance.count(e) == 0) {
+//            qual_removal_handler2.HandleDelete(e);
+//        }
+//    }
 }
 
 }
