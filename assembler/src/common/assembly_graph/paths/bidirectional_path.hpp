@@ -736,8 +736,9 @@ private:
     const Graph& g_;
     std::deque<EdgeId> data_;
     BidirectionalPath* conj_path_;
-    std::deque<size_t> cumulative_len_;  // Length from beginning of i-th edge to path end for forward directed path: L(e1 + e2 + ... + eN) ... L(eN)
-    std::deque<Gap> gap_len_;  // e1 - gap2 - e2 - ... - gapN - eN
+    // Length from beginning of i-th edge to path end: L(e_i + gap_(i+1) + e_(i+1) + ... + gap_N + e_N)
+    std::deque<size_t> cumulative_len_;
+    std::deque<Gap> gap_len_;  // e0 -> gap1 -> e1 -> ... -> gapN -> eN; gap0 = 0
     std::vector<PathListener *> listeners_;
     const uint64_t id_;  //Unique ID
     float weight_;
@@ -1037,18 +1038,19 @@ inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, c
             return make_pair(last1, last2);
         }
         EdgeId e = path1[cur_pos];
-        vector<size_t> poses2 = path2.FindAll(e);
+        vector<size_t> posistions_in_path2 = path2.FindAll(e);
         bool found = false;
-        for (size_t pos2 = 0; pos2 < poses2.size(); ++pos2) {
-            if (poses2[pos2] > last2) {
-                //todo check that formula makes sense
-                int diff = int(path2.LengthAt(last2)) - int(path2.LengthAt(poses2[pos2])) - 
-                                int(g.length(path2.At(last2))) - path2.GapAt(poses2[pos2]).gap;
+        for (size_t pos2 = 0; pos2 < posistions_in_path2.size(); ++pos2) {
+            if (posistions_in_path2[pos2] > last2) {
+                int path2_segment_len = int(path2.LengthAt(last2)) - int(g.length(path2.At(last2))) -
+                    int(path2.LengthAt(posistions_in_path2[pos2]));
+                int diff = abs(path1.GapAt(cur_pos).gap - path2_segment_len);
+
                 VERIFY(diff >= 0);
                 if (size_t(diff) > max_diff) {
                     break;
                 }
-                last2 = poses2[pos2];
+                last2 = posistions_in_path2[pos2];
                 last1 = cur_pos;
                 DEBUG("found " << cur_pos);
                 found = true;
