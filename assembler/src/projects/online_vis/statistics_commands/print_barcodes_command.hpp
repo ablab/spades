@@ -127,7 +127,7 @@ namespace online_visualization {
 
     protected:
         size_t MinArgNumber() const {
-            return 3;
+            return 2;
         }
 
         bool CheckCorrectness(const vector<string>& args) const {

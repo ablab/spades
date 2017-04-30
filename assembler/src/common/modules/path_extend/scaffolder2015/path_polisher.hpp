@@ -155,6 +155,9 @@ public:
             extender_factory_(extender_factory) {
         DEBUG("ext factory added");
     }
+
+private:
+    DECL_LOGGER("PathExtenderGapCloser")
 };
 
 class MatePairGapCloser: public TargetEdgeGapCloser {

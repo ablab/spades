@@ -19,7 +19,7 @@
 #include "path_filter.hpp"
 #include "overlap_analysis.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "read_cloud_path_extend/paired_dijkstra.hpp"
+#include "read_cloud_path_extend/read_cloud_dijkstras.hpp"
 #include <cmath>
 
 namespace path_extend {
@@ -878,7 +878,7 @@ private:
         }
         return false;
     }
-    
+
     void GrowAllPaths(PathContainer& paths, PathContainer& result) {
         for (size_t i = 0; i < paths.size(); ++i) {
             VERBOSE_POWER_T2(i, 100, "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
