@@ -209,7 +209,7 @@ def run_reads_assessment(dataset_info, working_dir, output_dir):
 # Run QUAST for a set of contigs
 def run_quast(dataset_info, contigs, quast_output_dir, opts):
     if not reduce(lambda x, y: os.path.exists(y) and x, contigs, True):
-        log.warn("No contigs were found in " + output_dir)
+        log.err("No contigs were found")
         return 8
 
     cmd = "quast.py"

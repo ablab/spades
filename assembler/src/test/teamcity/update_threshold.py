@@ -110,6 +110,7 @@ def process_quast_report(args, report, limit_map):
 def quast_run_and_update(dataset_info, fn, output_dir, name, prefix, opts):
     if not os.path.exists(fn):
         log.err("File not found " + fn)
+	return {}
 
     log.log("Processing " + fn)
     qcode = run_quast(dataset_info, [fn], output_dir, opts)
