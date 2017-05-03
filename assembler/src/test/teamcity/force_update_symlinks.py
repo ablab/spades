@@ -16,7 +16,7 @@ import os
 import glob
 
 def force_symlinks_for_suffix(contig_dir, suffix, name):
-    contigs = sorted(glob.glob(os.path.join(contig_dir, "*" + suffix + "_master.fasta")))
+    contigs = sorted(glob.glob(os.path.join(contig_dir, "2*" + suffix + "_master.fasta")))
     if len(contigs) == 0:
         return
     clink = os.path.join(contig_dir, name)
@@ -27,8 +27,10 @@ def force_symlinks_for_suffix(contig_dir, suffix, name):
 
 
 def force_symlinks(contig_dir):
-    force_symlinks_for_suffix(contig_dir, "ctg", "latest_contigs.fasta")
-    force_symlinks_for_suffix(contig_dir, "scafs", "latest_scaffolds.fasta")
+    force_symlinks_for_suffix(contig_dir, "contigs", "latest_contigs.fasta")
+    force_symlinks_for_suffix(contig_dir, "scaffolds", "latest_scaffolds.fasta")
+    force_symlinks_for_suffix(contig_dir, "before_rr", "latest_before_rr.fasta")
+
 
 
 def force_symlinks_recursive(storage_dir):
