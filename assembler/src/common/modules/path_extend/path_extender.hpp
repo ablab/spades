@@ -139,54 +139,30 @@ protected:
 };
 
 class LoopResolver : public ShortLoopResolver {
-    static const size_t ITER_COUNT = 10;
     const WeightCounter& wc_;
-
-private:
-    bool CheckLoopPlausible(EdgeId froward_loop_edge, EdgeId backward_loop_edge) const {
-        size_t single_loop_length = 2 * g_.length(froward_loop_edge) + g_.length(backward_loop_edge);
-        return single_loop_length <= wc_.get_libptr()->GetISMax();
-    }
+    double weight_threshold_;
 
 public:
-    LoopResolver(const Graph& g, const WeightCounter& wc)
+    LoopResolver(const Graph& g, const WeightCounter& wc, double weight_threshold = 0.0)
             : ShortLoopResolver(g),
-              wc_(wc) { }
+              wc_(wc),
+              weight_threshold_(weight_threshold) { }
     //This code works only if loop wasn't fairly resolved
     //
-    //Weird interface; need comments
+    //edges -- first edge is loop's back edge, second is loop exit edge
     void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) const {
         UndoCycles(path, edges.first);
-        BidirectionalPath experiment(path);
-        double max_weight = wc_.CountWeight(experiment, edges.second);
-        double diff = max_weight - wc_.CountWeight(experiment, edges.first);
-        size_t maxIter = 0;
-        for (size_t i = 1; i <= ITER_COUNT; ++i) {
-            double weight = wc_.CountWeight(experiment, edges.first);
-            if (weight > 0) {
-                MakeCycleStep(experiment, edges.first);
-                weight = wc_.CountWeight(experiment, edges.second);
-                double weight2 = wc_.CountWeight(experiment, edges.first);
-                if (weight > max_weight || (weight == max_weight && weight - weight2 > diff)
-                    || (weight == max_weight && weight - weight2 == diff && i == 1)) {
-                    max_weight = weight;
-                    maxIter = i;
-                    diff = weight - weight2;
-                }
-            }
-        }
+        double lopp_edge_weight = wc_.CountWeight(path, edges.first);
 
-        if (!CheckLoopPlausible(path.Back(), edges.first) && maxIter > 0) {
+        if (math::gr(lopp_edge_weight, weight_threshold_)) {
+            //Paired information on loop back edges exits => at leat one iteration
             MakeCycleStep(path, edges.first);
             path.PushBack(edges.second, Gap(int(g_.k() + 100)));
         }
         else {
-            for (size_t i = 0; i < maxIter; ++i) {
-                MakeCycleStep(path, edges.first);
-            }
+            //No information on loop back edges exits => 0 iterations
             path.PushBack(edges.second);
         }
-
     }
 
     void ResolveShortLoop(BidirectionalPath& path) const override {
@@ -1017,6 +993,8 @@ protected:
 
     shared_ptr<ExtensionChooser> extensionChooser_;
 
+    double weight_threshold_;
+
     void FindFollowingEdges(BidirectionalPath& path, ExtensionChooser::EdgeContainer * result) {
         DEBUG("Looking for the following edges")
         result->clear();
@@ -1039,9 +1017,11 @@ public:
                        shared_ptr<ExtensionChooser> ec,
                        size_t is,
                        bool investigate_short_loops,
-                       bool use_short_loop_cov_resolver) :
+                       bool use_short_loop_cov_resolver,
+                       double weight_threshold = 0.0):
         LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, use_short_loop_cov_resolver, is),
-        extensionChooser_(ec) {}
+        extensionChooser_(ec),
+        weight_threshold_(weight_threshold) {}
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
         return extensionChooser_;
@@ -1069,7 +1049,7 @@ public:
 
     bool ResolveShortLoopByPI(BidirectionalPath& path) override {
         if (extensionChooser_->WeightCounterBased()) {
-            LoopResolver loop_resolver(g_, extensionChooser_->wc());
+            LoopResolver loop_resolver(g_, extensionChooser_->wc(), weight_threshold_);
             LoopDetector loop_detector(&path, cov_map_);
             size_t init_len = path.Length();
             bool result = false;
@@ -1159,8 +1139,9 @@ public:
                       size_t is,
                       bool investigate_short_loops,
                       bool use_short_loop_cov_resolver,
+                      double weight_threshold,
                       size_t max_candidates = 0) :
-        SimpleExtender(gp, cov_map, ec, is, investigate_short_loops, use_short_loop_cov_resolver),
+        SimpleExtender(gp, cov_map, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold),
         max_candidates_(max_candidates) {
     }
 

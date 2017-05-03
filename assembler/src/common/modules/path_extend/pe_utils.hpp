@@ -184,6 +184,7 @@ private:
     GraphCoverageMap(const GraphCoverageMap& t) : g_(t.g_), empty_(t.empty_) {}
 };
 
+//result -- first edge is loop's back edge, second is loop exit edge
 inline bool GetLoopAndExit(const Graph& g, EdgeId e, pair<EdgeId, EdgeId>& result) {
     VertexId v = g.EdgeEnd(e);
     VertexId start = g.EdgeStart(e);

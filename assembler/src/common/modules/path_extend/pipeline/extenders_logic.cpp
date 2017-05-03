@@ -61,7 +61,8 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongEdgePEExtender(size_t lib
                                        extension,
                                        paired_lib->GetISMax(),
                                        investigate_loops,
-                                       false /*use short loop coverage resolver*/);
+                                       false /*use short loop coverage resolver*/,
+                                       opts.weight_threshold);
 }
 
 shared_ptr<GapAnalyzer> ExtendersGenerator::MakeGapAnalyzer(double is_variation) const {
@@ -206,7 +207,8 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t 
     return make_shared<SimpleExtender>(gp_, cover_map_, chooser,
                                        -1ul /* insert size is needed only for loop detection, which is not needed in this case */,
                                        false, /* investigate short loops */
-                                       false /*use short loop coverage resolver*/);
+                                       false /*use short loop coverage resolver*/,
+                                       params_.pset.extension_options.weight_threshold);
 }
 
 shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index, bool investigate_loops) const {
@@ -231,7 +233,8 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
                                       extension,
                                       paired_lib->GetISMax(),
                                       investigate_loops,
-                                      false /*use short loop coverage resolver*/);
+                                      false /*use short loop coverage resolver*/,
+                                      opts.weight_threshold);
 }
 
 shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, bool investigate_loops) const {
@@ -263,7 +266,8 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
                                        extension_chooser,
                                        paired_lib->GetISMax(),
                                        investigate_loops,
-                                       false /*use short loop coverage resolver*/);
+                                       false /*use short loop coverage resolver*/,
+                                       opts.weight_threshold);
 }
 
 //FIXME do we need ExtenderTriplets story here?
