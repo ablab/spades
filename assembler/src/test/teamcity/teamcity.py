@@ -94,7 +94,7 @@ try:
 
     #save contigs to storage
     contigs = get_contigs_list(args, dataset_info, True)
-    save_contigs(working_dir, contig_storage_dir, contigs, rewrite_latest)
+    save_contigs(args, working_dir, contig_storage_dir, contigs, rewrite_latest)
 
     sys.exit(exit_code)
 

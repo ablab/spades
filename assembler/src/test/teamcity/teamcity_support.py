@@ -690,7 +690,7 @@ def check_etalon_saves(dataset_info, working_dir, output_dir):
 
 
 # Save contigs to storage
-def save_contigs(working_dir, contig_storage_dir, contigs, rewrite_latest):
+def save_contigs(args, working_dir, contig_storage_dir, contigs, rewrite_latest):
     if contig_storage_dir == '':
         return
 
