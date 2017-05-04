@@ -154,8 +154,6 @@ class LoopTraverser {
                     DEBUG("Closing path is outside the component");
                     return false;
                 }
-                //FIXME discuss with Andrew
-                gap = std::max(gap, CumulativeLength(g_, shortest_path));
             }
         }
         start_path.PushBack(end_path.SubPath(common_size), Gap(int(gap)));

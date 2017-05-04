@@ -23,6 +23,8 @@ namespace path_extend {
 
 class ShortLoopResolver {
 public:
+    static const size_t BASIC_N_CNT = 100;
+
     ShortLoopResolver(const Graph& g)
             : g_(g) { }
 
@@ -157,7 +159,7 @@ public:
         if (math::gr(lopp_edge_weight, weight_threshold_)) {
             //Paired information on loop back edges exits => at leat one iteration
             MakeCycleStep(path, edges.first);
-            path.PushBack(edges.second, Gap(int(g_.k() + 100)));
+            path.PushBack(edges.second, Gap(int(g_.k() + BASIC_N_CNT)));
         }
         else {
             //No information on loop back edges exits => 0 iterations
