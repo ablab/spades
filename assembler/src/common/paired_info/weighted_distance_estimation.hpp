@@ -17,14 +17,13 @@ namespace de {
 class WeightedDistanceEstimator : public DistanceEstimator {
 protected:
     typedef DistanceEstimator base;
-    typedef debruijn_graph::Graph Graph;
     typedef typename base::InPairedIndex InPairedIndex;
     typedef typename base::OutPairedIndex OutPairedIndex;
     typedef typename base::InHistogram InHistogram;
     typedef typename base::OutHistogram OutHistogram;
 
 public:
-    WeightedDistanceEstimator(const Graph &graph,
+    WeightedDistanceEstimator(const debruijn_graph::Graph &graph,
                               const InPairedIndex &histogram,
                               const GraphDistanceFinder &distance_finder,
                               std::function<double(int)> weight_f,
@@ -34,10 +33,9 @@ public:
     virtual ~WeightedDistanceEstimator() { }
 
 protected:
-    typedef typename Graph::EdgeId EdgeId;
 
     typedef vector<pair<int, double> > EstimHist;
-    typedef pair<EdgeId, EdgeId> EdgePair;
+    typedef pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
     typedef vector<size_t> GraphLengths;
 
     std::function<double(int)> weight_f_;

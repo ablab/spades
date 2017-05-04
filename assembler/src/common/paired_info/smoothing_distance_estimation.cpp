@@ -2,6 +2,9 @@
 
 namespace omnigraph {
 namespace de {
+
+using namespace debruijn_graph;
+
 SmoothingDistanceEstimator::EstimHist SmoothingDistanceEstimator::FindEdgePairDistances(EdgePair ep,
                                                                                         const TempHistogram &raw_hist) const {
     size_t first_len = this->graph().length(ep.first);

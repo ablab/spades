@@ -23,27 +23,23 @@ namespace de {
 
 //todo move to some more common place
 class GraphDistanceFinder {
-    typedef debruijn_graph::Graph Graph;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef std::vector<EdgeId> Path;
+    typedef std::vector<debruijn_graph::EdgeId> Path;
     typedef std::vector<size_t> GraphLengths;
-    typedef std::map<EdgeId, GraphLengths> LengthMap;
+    typedef std::map<debruijn_graph::EdgeId, GraphLengths> LengthMap;
 
 public:
-    GraphDistanceFinder(const Graph &graph, size_t insert_size, size_t read_length, size_t delta) :
+    GraphDistanceFinder(const debruijn_graph::Graph &graph, size_t insert_size, size_t read_length, size_t delta) :
             graph_(graph), insert_size_(insert_size), gap_((int) (insert_size - 2 * read_length)),
             delta_((double) delta) { }
 
-    std::vector<size_t> GetGraphDistancesLengths(EdgeId e1, EdgeId e2) const;
+    std::vector<size_t> GetGraphDistancesLengths(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const;
 
     // finds all distances from a current edge to a set of edges
-    void FillGraphDistancesLengths(EdgeId e1, LengthMap &second_edges) const;
+    void FillGraphDistancesLengths(debruijn_graph::EdgeId e1, LengthMap &second_edges) const;
 
 private:
     DECL_LOGGER("GraphDistanceFinder");
-
-    const Graph &graph_;
+    const debruijn_graph::Graph &graph_;
     const size_t insert_size_;
     const int gap_;
     const double delta_;
@@ -51,43 +47,41 @@ private:
 
 class AbstractDistanceEstimator {
 protected:
-    typedef debruijn_graph::Graph Graph;
-    typedef UnclusteredPairedInfoIndexT<Graph> InPairedIndex;
-    typedef PairedInfoIndexT<Graph> OutPairedIndex;
+    typedef UnclusteredPairedInfoIndexT<debruijn_graph::Graph> InPairedIndex;
+    typedef PairedInfoIndexT<debruijn_graph::Graph> OutPairedIndex;
     typedef typename InPairedIndex::HistProxy InHistogram;
     typedef typename OutPairedIndex::Histogram OutHistogram;
 
 public:
-    AbstractDistanceEstimator(const Graph &graph,
+    AbstractDistanceEstimator(const debruijn_graph::Graph &graph,
                               const InPairedIndex &index,
                               const GraphDistanceFinder &distance_finder,
                               size_t linkage_distance = 0)
             : graph_(graph), index_(index),
               distance_finder_(distance_finder), linkage_distance_(linkage_distance) { }
 
-    virtual void Estimate(PairedInfoIndexT<Graph> &result, size_t nthreads) const = 0;
+    virtual void Estimate(PairedInfoIndexT<debruijn_graph::Graph> &result, size_t nthreads) const = 0;
 
     virtual ~AbstractDistanceEstimator() { }
 
 protected:
-    typedef typename Graph::EdgeId EdgeId;
-    typedef pair<EdgeId, EdgeId> EdgePair;
+    typedef pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
     typedef vector<pair<int, double> > EstimHist;
     typedef vector<size_t> GraphLengths;
-    typedef std::map<EdgeId, GraphLengths> LengthMap;
+    typedef std::map<debruijn_graph::EdgeId, GraphLengths> LengthMap;
 
-    const Graph &graph() const { return graph_; }
+    const debruijn_graph::Graph &graph() const { return graph_; }
 
     const InPairedIndex &index() const { return index_; }
 
-    void FillGraphDistancesLengths(EdgeId e1, LengthMap &second_edges) const;
+    void FillGraphDistancesLengths(debruijn_graph::EdgeId e1, LengthMap &second_edges) const;
 
     OutHistogram ClusterResult(EdgePair /*ep*/, const EstimHist &estimated) const;
 
-    void AddToResult(const OutHistogram &clustered, EdgePair ep, PairedInfoBuffer<Graph> &result) const;
+    void AddToResult(const OutHistogram &clustered, EdgePair ep, PairedInfoBuffer<debruijn_graph::Graph> &result) const;
 
 private:
-    const Graph &graph_;
+    const debruijn_graph::Graph &graph_;
     const InPairedIndex &index_;
     const GraphDistanceFinder &distance_finder_;
     const size_t linkage_distance_;
@@ -99,11 +93,9 @@ private:
 
 class DistanceEstimator : public AbstractDistanceEstimator {
     typedef AbstractDistanceEstimator base;
-    typedef debruijn_graph::Graph Graph;
-    typedef typename Graph::EdgeId EdgeId;
     typedef vector<size_t> GraphLengths;
     typedef vector<pair<int, double> > EstimHist;
-    typedef pair<EdgeId, EdgeId> EdgePair;
+    typedef pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
 
 protected:
     typedef typename base::InPairedIndex InPairedIndex;
@@ -112,7 +104,7 @@ protected:
     typedef typename base::OutHistogram OutHistogram;
 
 public:
-    DistanceEstimator(const Graph &graph,
+    DistanceEstimator(const debruijn_graph::Graph &graph,
                       const InPairedIndex &index,
                       const GraphDistanceFinder &distance_finder,
                       size_t linkage_distance, size_t max_distance)
@@ -134,9 +126,9 @@ protected:
                                                 const GraphLengths &raw_forward) const;
 
 private:
-    virtual void ProcessEdge(EdgeId e1,
+    virtual void ProcessEdge(debruijn_graph::EdgeId e1,
                              const InPairedIndex &pi,
-                             PairedInfoBuffer<Graph> &result) const;
+                             PairedInfoBuffer<debruijn_graph::Graph> &result) const;
 
     virtual const string Name() const {
         static const string my_name = "SIMPLE";

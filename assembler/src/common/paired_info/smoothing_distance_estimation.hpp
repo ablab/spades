@@ -21,7 +21,6 @@ class SmoothingDistanceEstimator : public WeightedDistanceEstimator {
     static const size_t OVERLAP_TOLERANCE = 1000;
 protected:
     typedef WeightedDistanceEstimator base;
-    typedef debruijn_graph::Graph Graph;
     typedef typename base::InPairedIndex InPairedIndex;
     typedef typename base::OutPairedIndex OutPairedIndex;
     typedef typename base::InHistogram InHistogram;
@@ -29,7 +28,7 @@ protected:
     typedef typename InPairedIndex::Histogram TempHistogram;
 
 public:
-    SmoothingDistanceEstimator(const Graph &graph,
+    SmoothingDistanceEstimator(const debruijn_graph::Graph &graph,
                                const InPairedIndex &histogram,
                                const GraphDistanceFinder &dist_finder,
                                std::function<double(int)> weight_f,
@@ -56,10 +55,9 @@ public:
     virtual ~SmoothingDistanceEstimator() { }
 
 protected:
-    typedef typename Graph::EdgeId EdgeId;
-    typedef pair<EdgeId, EdgeId> EdgePair;
+    typedef pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
     typedef vector<pair<int, double> > EstimHist;
-    typedef vector<PairInfo<EdgeId> > PairInfos;
+    typedef vector<PairInfo<debruijn_graph::EdgeId> > PairInfos;
     typedef vector<size_t> GraphLengths;
 
     EstimHist EstimateEdgePairDistances(EdgePair /*ep*/,
@@ -88,20 +86,21 @@ private:
     EstimHist FindEdgePairDistances(EdgePair ep,
                                     const TempHistogram &raw_hist) const;
 
-    void ProcessEdge(EdgeId e1,
+    void ProcessEdge(debruijn_graph::EdgeId e1,
                      const InPairedIndex &pi,
-                     PairedInfoBuffer<Graph> &result) const override;
+                     PairedInfoBuffer<debruijn_graph::Graph> &result) const override;
 
-    bool IsTipTip(EdgeId e1, EdgeId e2) const;
+    bool IsTipTip(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const;
 
-    void ExtendInfoRight(EdgeId e1, EdgeId e2, TempHistogram &data, size_t max_shift) const {
+    void ExtendInfoRight(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2, TempHistogram &data,
+                         size_t max_shift) const {
         ExtendRightDFS(e1, e2, data, 0, max_shift);
     }
 
     void MergeInto(const InHistogram &what, TempHistogram &where, int shift) const;
 
-    void ExtendRightDFS(const EdgeId &first, EdgeId current, TempHistogram &data, int shift,
-                        size_t max_shift) const;
+    void ExtendRightDFS(const debruijn_graph::EdgeId &first, debruijn_graph::EdgeId current, TempHistogram &data,
+                        int shift, size_t max_shift) const;
 
     const string Name() const override {
         static const string my_name = "SMOOTHING";

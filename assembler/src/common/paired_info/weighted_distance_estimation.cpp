@@ -3,6 +3,8 @@
 namespace omnigraph {
 namespace de {
 
+using namespace debruijn_graph;
+
 WeightedDistanceEstimator::EstimHist WeightedDistanceEstimator::EstimateEdgePairDistances(EdgePair ep,
                                                                                           const InHistogram &histogram,
                                                                                           const GraphLengths &raw_forward) const {

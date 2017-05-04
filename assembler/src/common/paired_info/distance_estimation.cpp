@@ -3,6 +3,8 @@
 namespace omnigraph {
 namespace de {
 
+using namespace debruijn_graph;
+
 std::vector<size_t> GraphDistanceFinder::GetGraphDistancesLengths(EdgeId e1, EdgeId e2) const {
     {
         LengthMap m;
