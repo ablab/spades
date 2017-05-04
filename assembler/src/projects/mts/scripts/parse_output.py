@@ -5,7 +5,7 @@ import argparse
 import os.path
 
 argparser = argparse.ArgumentParser(description="Binner output formatter")
-argparser.add_argument("--type", "-t", type=str, help="Binner type (canopy or concoct)", default="canopy")
+argparser.add_argument("--type", "-t", choices=["canopy", "concoct", "maxbin"], help="Binner type", default="canopy")
 argparser.add_argument("--output", "-o", type=str, help="Output directory with annotations")
 argparser.add_argument("input", type=str, help="File with binning info")
 
@@ -50,7 +50,14 @@ class ConcoctParser(Parser):
         sample_contig = annotation_str[0].replace("~", ",")
         return (sample_contig, bin_id)
 
-parsers = {"canopy": CanopyParser(), "concoct": ConcoctParser()}
+class MaxBinParser(Parser):
+    def parse(self, line):
+        annotation_str = line.split(",", 1)
+        bin_id = annotation_str[1].strip()
+        sample_contig = annotation_str[0].replace("~", ",")
+        return (sample_contig, bin_id)
+
+parsers = {"canopy": CanopyParser(), "concoct": ConcoctParser(), "maxbin": MaxBinParser()}
 
 if __name__ == "__main__":
     args = argparser.parse_args()
@@ -64,3 +71,4 @@ if __name__ == "__main__":
 
             for contig in annotation:
                 print(contig, ":", " ".join(annotation[contig]), file=sample_out)
+

@@ -10,7 +10,7 @@ import os
 import sys
 
 parser = argparse.ArgumentParser(description="Binner input formatter")
-parser.add_argument("--type", "-t", type=str, help="Binner type (canopy or concoct)", default="canopy")
+parser.add_argument("--type", "-t", choices=["canopy", "concoct", "maxbin"], help="Binner type", default="canopy")
 parser.add_argument("--output", "-o", type=str, help="Output file")
 parser.add_argument("--dir", "-d", type=str, help="Directory with profiles (pairs of .id .mpl files)")
 parser.add_argument("samples", type=str, nargs="+", help="Sample names")
@@ -37,7 +37,18 @@ class ConcoctFormatter:
     def profile(self, file, contig, profile):
         print(contig.replace(",", "~"), profile.replace(" ", "\t"), sep="\t", file=out)
 
-formatters = {"canopy": CanopyFormatter(), "concoct": ConcoctFormatter()}
+class MaxBinFormatter:
+    def __init__(self):
+        pass
+
+    def header(self, file, samples):
+        print("\t".join(["contig"] + ["cov_mean_" + sample for sample in samples]), file=out)
+
+    def profile(self, file, contig, profile):
+        print(contig.replace(",", "~"), profile.replace(" ", "\t"), sep="\t", file=out)
+
+
+formatters = {"canopy": CanopyFormatter(), "concoct": ConcoctFormatter(), "maxbin": MaxBinFormatter()}
 formatter = formatters[args.type]
 
 with open(args.output, "w") as out:

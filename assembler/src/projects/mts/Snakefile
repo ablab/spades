@@ -15,7 +15,7 @@ onstart:
         pass
     print("Detected", SAMPLE_COUNT, "samples in", IN)
     print("They form: ", GROUPS)
-
+	
 # ---- Main pipeline -----------------------------------------------------------
 
 rule all:
@@ -68,7 +68,7 @@ rule multiplicities:
     params:  kmc_files=" ".join(expand("tmp/{sample}", sample=SAMPLES)), out="profile/kmers"
     log:     "profile/kmers.log"
     message: "Gathering {SMALL_K}-mer multiplicities from all samples"
-    shell:   "{BIN}/kmer_multiplicity_counter -n {SAMPLE_COUNT} -k {SMALL_K} -s 3"
+    shell:   "{BIN}/kmer_multiplicity_counter -n {SAMPLE_COUNT} -k {SMALL_K} -s 2"
              " -f tmp -t {threads} -o {params.out} >{log} 2>&1 && "
              "rm tmp/*.sorted"
 
@@ -119,7 +119,26 @@ rule concoct_post:
     message: "Deriving bin profiles"
     shell:   "{SCRIPTS}/bin_profiles.py {input} > {output}"
 
-binning_inputs = {"canopy": rules.canopy.output.out, "concoct": rules.concoct.output[0]}
+
+rule maxbin:
+    input:   contigs="assembly/samples_splits.fasta", profiles="binning/maxbin/profiles.in"
+    output:  "binning/maxbin/clustering.csv"
+    threads: THREADS
+    params:  out="binning/maxbin/cluster"
+    log:     "binning/maxbin.log"
+    message: "Running MaxBin clustering"
+    shell:   "perl /home/tdvorkina/MaxBin/MaxBin-2.2.2/run_MaxBin.pl -thread {threads} -min_contig_length {MIN_CONTIG_LENGTH} "
+             " -contig {input.contigs} -abund {input.profiles}"
+             " -out {params.out} > {log}"
+	     "&& {SCRIPTS}/make_maxbincsv.py -o {output} {params.out}"
+	
+rule maxbin_post:
+    input:   "binning/maxbin/profiles.in", "binning/maxbin/clustering.csv"
+    output:  "binning/maxbin/bins.prof"
+    message: "Deriving bin profiles"
+    shell:   "{SCRIPTS}/bin_profiles.py {input} > {output}"
+
+binning_inputs = {"canopy": rules.canopy.output.out, "concoct": rules.concoct.output[0], "maxbin": rules.maxbin.output[0]}
 
 rule binning_post:
     input:   binning_inputs[BINNER]
