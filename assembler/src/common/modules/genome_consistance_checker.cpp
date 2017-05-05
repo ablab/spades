@@ -49,7 +49,7 @@ MappingPath<EdgeId> GenomeConsistenceChecker::ConstructEdgeOrder(const string& c
     for (auto e: storage_) {
         set<MappingRange> mappings = gp_.edge_pos.GetEdgePositions(e, chr_name);
         VERIFY_MSG(mappings.size() <= 1, "Presumably unique edge " << e << " with multiple mappings!");
-        if (!mappings.empty() == 0) {
+        if (!mappings.empty()) {
             to_sort.push_back(make_pair(e, *mappings.begin()));
         }
     }
@@ -367,8 +367,8 @@ void GenomeConsistenceChecker::Fill() {
         pos_filler.Process(ReverseComplement(chr.sequence), "1_" + chr.name);
     }
 
-    for (auto it = gp_.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-        FillPos(*it, tmp_edge_pos);
+    for (auto e: storage_) {
+        FillPos(e, tmp_edge_pos);
     }
 
     vector<size_t> theoretic_lens;
@@ -458,7 +458,6 @@ void GenomeConsistenceChecker::FillPos(EdgeId e, const EdgesPositionHandler<Grap
             }
         }
     }
-
     gp_.edge_pos.AddEdgePosition(e, chr, mapping_info.first);
 }
 
@@ -485,7 +484,7 @@ string GenomeConsistenceChecker::ChromosomeByUniqueEdge(const EdgeId &e,
         total += c;
 
     if (total > size_t(math::round((double) gp_.g.length(e) * 1.5))) {
-        DEBUG("Not unique, excluding");
+        INFO("Edge " << gp_g.int_id(e) <<" was not unique due to the references, excluding ");
         return "";
     }
 
