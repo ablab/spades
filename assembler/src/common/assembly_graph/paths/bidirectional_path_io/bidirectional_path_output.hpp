@@ -13,7 +13,7 @@ namespace path_extend {
 
 class ContigWriter {
     const Graph& g_;
-    map<EdgeId, ExtendedContigIdT> ids_;
+    map<EdgeId, ExtendedContigId> ids_;
     shared_ptr<ContigNameGenerator> name_generator_;
 
     string ToFASTGPathFormat(const BidirectionalPath &path) const;
@@ -25,8 +25,8 @@ public:
                  const ConnectedComponentCounter &c_counter,
                  shared_ptr<ContigNameGenerator> name_generator) :
             g_(g),
+            ids_(MakeEdgeIdMap(g_, c_counter, "NODE")),
             name_generator_(name_generator) {
-        MakeContigIdMap(g_, ids_, c_counter, "NODE");
     }
 
     void OutputPaths(const PathContainer &paths,

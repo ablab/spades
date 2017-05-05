@@ -118,33 +118,37 @@ public:
 
 };
 
-struct ExtendedContigIdT {
+struct ExtendedContigId {
     string full_id_;
     string short_id_;
 
-    ExtendedContigIdT(): full_id_(""), short_id_("") {}
+    ExtendedContigId() {}
 
-    ExtendedContigIdT(string full_id, string short_id): full_id_(full_id), short_id_(short_id) {}
+    ExtendedContigId(string full_id, string short_id):
+            full_id_(full_id), short_id_(short_id) {}
 };
 
 template <class Graph>
-void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids, const ConnectedComponentCounter &cc_counter_, string prefix) {
+map<EdgeId, ExtendedContigId> MakeEdgeIdMap(const Graph &graph,
+                   const ConnectedComponentCounter &cc_counter, const string &prefix) {
+    map<EdgeId, ExtendedContigId> ids;
     int counter = 0;
     for (auto it = graph.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
         EdgeId e = *it;
         if (ids.count(e) == 0) {
             string id;
             if (cfg::get().pd) {
-                size_t c_id = cc_counter_.GetComponent(e);
+                size_t c_id = cc_counter.GetComponent(e);
                 id = io::MakeContigComponentId(++counter, graph.length(e) + graph.k(), graph.coverage(e), c_id, prefix);
             }
             else
                 id = io::MakeContigId(++counter, graph.length(e) + graph.k(), graph.coverage(e), prefix);
-            ids[e] = ExtendedContigIdT(id, std::to_string(counter) + "+");
+            ids[e] = ExtendedContigId(id, std::to_string(counter) + "+");
             if (e != graph.conjugate(e))
-                ids[graph.conjugate(e)] =  ExtendedContigIdT(id + "'", std::to_string(counter) + "-");
+                ids[graph.conjugate(e)] =  ExtendedContigId(id + "'", std::to_string(counter) + "-");
         }
     }
+    return ids;
 }
 
 //TODO refactor decently
@@ -181,8 +185,7 @@ public:
 
     template<class sequence_stream>
     void PrintContigsFASTG(sequence_stream &os, const ConnectedComponentCounter & cc_counter) {
-        map<EdgeId, ExtendedContigIdT> ids;
-        MakeContigIdMap(graph_, ids, cc_counter, "EDGE");
+        map<EdgeId, ExtendedContigId> ids = MakeEdgeIdMap(graph_, cc_counter, "EDGE");
         for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
             EdgeId e = *it;
             set<string> next;
