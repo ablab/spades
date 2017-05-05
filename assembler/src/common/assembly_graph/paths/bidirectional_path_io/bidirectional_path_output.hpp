@@ -7,13 +7,9 @@
 
 #pragma once
 
-
 #include "io_support.hpp"
 
-
 namespace path_extend {
-
-using namespace debruijn_graph;
 
 class ContigWriter {
     const Graph& g_;
