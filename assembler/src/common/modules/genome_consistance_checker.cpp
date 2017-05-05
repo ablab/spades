@@ -217,62 +217,63 @@ void GenomeConsistenceChecker::PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const 
     }
 }
 
-PathScore GenomeConsistenceChecker::InternalCountMisassemblies(const BidirectionalPath &path) const {
-    PathScore res(0, 0, 0);
-    EdgeId prev;
-    size_t prev_in_genome = std::numeric_limits<std::size_t>::max();
-    size_t prev_in_path = std::numeric_limits<std::size_t>::max();
-    string path_chr = "";
-    MappingRange prev_range;
-    for (int i = 0; i < (int) path.Size(); i++) {
-        EdgeId e = path.At(i);
-        if (genome_info_.Multiplicity(e)) {
-//const method, so at instead of []
-            const auto& chr_info = genome_info_.UniqueChromosomeInfo(e);
-            size_t cur_in_genome = chr_info.UniqueEdgeIdx(e);
-            string cur_chr = chr_info.name();
-            MappingRange cur_range = gp_.edge_pos.GetUniqueEdgePosition(e, cur_chr);
+void GenomeConsistenceChecker::ClassifyPosition(size_t prev_pos, size_t cur_pos, const BidirectionalPath & path, PathScore &res) const{
+    EdgeId cur_e = path.At(cur_pos);
+    const auto& chr_info = genome_info_.UniqueChromosomeInfo(cur_e);
+    size_t cur_in_genome = chr_info.UniqueEdgeIdx(cur_e);
+    string cur_chr = chr_info.name();
+    MappingRange cur_range = gp_.edge_pos.GetUniqueEdgePosition(cur_e, cur_chr);
+    EdgeId prev_e = path.At(prev_pos);
+    const auto& prev_chr_info = genome_info_.UniqueChromosomeInfo(prev_e);
+    size_t prev_in_genome = prev_chr_info.UniqueEdgeIdx(prev_e);
+    string prev_chr = prev_chr_info.name();
+    MappingRange prev_range = gp_.edge_pos.GetUniqueEdgePosition(prev_e, prev_chr);
+    res.mapped_length += cur_range.mapped_range.size();
 
-            if (prev_in_genome != std::numeric_limits<std::size_t>::max()) {
-                if (cur_in_genome == prev_in_genome + 1 && cur_chr == path_chr) {
-                    int dist_in_genome = (int) cur_range.initial_range.start_pos -  (int) prev_range.initial_range.end_pos;
-                    int dist_in_path = (int) path.LengthAt(prev_in_path) - (int) path.LengthAt(i) +  (int) cur_range.mapped_range.start_pos - (int) prev_range.mapped_range.end_pos;
-                    DEBUG("Edge " << prev.int_id() << "  position in genome ordering: " << prev_in_genome);
-                    DEBUG("Gap in genome / gap in path: " << dist_in_genome << " / " << dist_in_path);
-                    if (size_t(abs(dist_in_genome - dist_in_path)) > absolute_max_gap_ && (dist_in_genome * (1 + relative_max_gap_) < dist_in_path || dist_in_path * (1 + relative_max_gap_) < dist_in_genome)) {
-
-                        res.wrong_gap_size ++;
-                    }
-                } else {
-                    if (cur_chr == path_chr && (circular_edges_.find(prev) != circular_edges_.end() ||
-                                                circular_edges_.find(e) != circular_edges_.end())) {
-                        INFO("Skipping fake(circular) misassembly");
-                    } else if (cur_in_genome <= prev_in_genome + 5 && cur_in_genome > prev_in_genome && cur_chr == path_chr) {
-                        INFO("Local misassembly between edges: "<<prev.int_id() << " and " << path.At(i).int_id());
-                        size_t total = 0;
-                        for (auto j = prev_in_genome + 1; j < cur_in_genome; j ++) {
-                            total += gp_.g.length(chr_info.EdgeAt(j));
-                        }
-                        INFO("Jumped over " << cur_in_genome - prev_in_genome - 1 << " uniques of total length: " << total);
-                    } else {
-                        INFO("Extensive misassembly between edges: "<<prev.int_id() << " and " << path.At(i).int_id());
-                        INFO("Ranges: " << prev_range << " and " << cur_range);
-                        INFO("Genomic positions: " << prev_in_genome << ", " << path_chr << " and " << cur_in_genome <<", "<< cur_chr<< " resp.");
-                        PrintMisassemblyInfo(prev, e);
-                        res.misassemblies++;
-                    }
-                }
+    if (cur_in_genome == prev_in_genome + 1 && cur_chr == prev_chr) {
+        int dist_in_genome = (int) cur_range.initial_range.start_pos -  (int) prev_range.initial_range.end_pos;
+        int dist_in_path = (int) path.LengthAt(prev_pos) - (int) path.LengthAt(cur_pos) +  (int) cur_range.mapped_range.start_pos - (int) prev_range.mapped_range.end_pos;
+        DEBUG("Edge " << prev_e.int_id() << "  position in genome ordering: " << prev_in_genome);
+        DEBUG("Gap in genome / gap in path: " << dist_in_genome << " / " << dist_in_path);
+        if (size_t(abs(dist_in_genome - dist_in_path)) > absolute_max_gap_ && (dist_in_genome * (1 + relative_max_gap_) < dist_in_path || dist_in_path * (1 + relative_max_gap_) < dist_in_genome)) {
+            res.wrong_gap_size ++;
+        }
+    } else {
+        if (cur_chr == prev_chr && (circular_edges_.find(prev_e) != circular_edges_.end() ||
+                                    circular_edges_.find(cur_e) != circular_edges_.end())) {
+            INFO("Skipping fake(circular) misassembly");
+        } else if (cur_in_genome <= prev_in_genome + 5 && cur_in_genome > prev_in_genome && cur_chr == prev_chr) {
+            INFO("Local misassembly between edges: "<<prev_e.int_id() << " and " << cur_e.int_id());
+            size_t total = 0;
+            for (auto j = prev_in_genome + 1; j < cur_in_genome; j ++) {
+                total += gp_.g.length(chr_info.EdgeAt(j));
             }
-            res.mapped_length += cur_range.mapped_range.size();
-            prev = e;
-            prev_in_genome = cur_in_genome;
-            prev_range = cur_range;
-            path_chr = cur_chr;
-            prev_in_path = i;
+            INFO("Jumped over " << cur_in_genome - prev_in_genome - 1 << " uniques of total length: " << total);
+        } else {
+            INFO("Extensive misassembly between edges: "<<prev_e.int_id() << " and " << cur_e.int_id());
+            INFO("Ranges: " << prev_range << " and " << cur_range);
+            INFO("Genomic positions: " << prev_in_genome << ", " << prev_chr << " and " << cur_in_genome <<", "<< cur_chr<< " resp.");
+            PrintMisassemblyInfo(prev_e, cur_e);
+            res.misassemblies++;
         }
     }
-    if (prev_in_path != std::numeric_limits<std::size_t>::max())
-        DEBUG("Edge " << prev.int_id() << "  position in genome ordering: " << prev_in_genome);
+}
+
+
+PathScore GenomeConsistenceChecker::InternalCountMisassemblies(const BidirectionalPath &path) const {
+    PathScore res(0, 0, 0);
+    size_t prev_pos = std::numeric_limits<std::size_t>::max();
+    for (int i = 0; i < (int) path.Size(); i++) {
+//const method, so at instead of []
+        EdgeId e = path.At(i);
+        if (genome_info_.Multiplicity(e)) {
+            const auto& chr_info = genome_info_.UniqueChromosomeInfo(e);
+            if (prev_pos != std::numeric_limits<std::size_t>::max()) {
+                ClassifyPosition(prev_pos, i, path, res);
+            }
+            prev_pos = i;
+        }
+    }
     return res;
 }
 
@@ -484,7 +485,7 @@ string GenomeConsistenceChecker::ChromosomeByUniqueEdge(const EdgeId &e,
         total += c;
 
     if (total > size_t(math::round((double) gp_.g.length(e) * 1.5))) {
-        INFO("Edge " << gp_g.int_id(e) <<" was not unique due to the references, excluding ");
+        INFO("Edge " << gp_.g.int_id(e) <<" was not unique due to the references, excluding ");
         return "";
     }
 

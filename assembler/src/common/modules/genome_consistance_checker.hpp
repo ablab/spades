@@ -153,6 +153,8 @@ class GenomeConsistenceChecker {
 
     void PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const;
 
+    void ClassifyPosition(size_t prev_pos, size_t cur_pos, const BidirectionalPath & path, PathScore &res) const;
+
     PathScore InternalCountMisassemblies(const BidirectionalPath &path) const;
 
 //constructs longest sequence of consequetive ranges, stores result in used_mappings
