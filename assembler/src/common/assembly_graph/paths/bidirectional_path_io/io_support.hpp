@@ -14,6 +14,7 @@ using namespace debruijn_graph;
 struct ScaffoldInfo {
     std::string sequence;
     BidirectionalPath* path;
+    std::string name;
 
     ScaffoldInfo(const std::string& sequence, BidirectionalPath* path) :
         sequence(sequence), path(path) { }
@@ -68,7 +69,7 @@ class ContigNameGenerator {
 public:
     virtual void Preprocess(const PathContainer& paths) = 0;
 
-    virtual std::string MakeContigName(size_t index, const ScaffoldInfo &precontig) = 0;
+    virtual std::string MakeContigName(size_t index, const ScaffoldInfo &scaffold_info) = 0;
 
     virtual ~ContigNameGenerator() {
     }
@@ -78,8 +79,8 @@ class DefaultContigNameGenerator: public ContigNameGenerator {
 public:
     void Preprocess(const PathContainer&) override {}
 
-    std::string MakeContigName(size_t index, const ScaffoldInfo &precontig) override {
-        return io::MakeContigId(index, precontig.length(), precontig.coverage());
+    std::string MakeContigName(size_t index, const ScaffoldInfo &scaffold_info) override {
+        return io::MakeContigId(index, scaffold_info.length(), scaffold_info.coverage());
     }
 };
 
@@ -91,10 +92,10 @@ public:
 
     void Preprocess(const PathContainer&) override {}
 
-    std::string MakeContigName(size_t index, const ScaffoldInfo &precontig) override {
-        EdgeId e = precontig.path->At(0);
+    std::string MakeContigName(size_t index, const ScaffoldInfo &scaffold_info) override {
+        EdgeId e = scaffold_info.path->At(0);
         size_t component = c_counter_.GetComponent(e);
-        return io::MakeContigComponentId(index, precontig.length(), precontig.coverage(), component);
+        return io::MakeContigComponentId(index, scaffold_info.length(), scaffold_info.coverage(), component);
     }
 };
 
@@ -118,8 +119,8 @@ public:
         transcript_joiner_.Construct(paths);
     }
 
-    std::string MakeContigName(size_t index, const ScaffoldInfo &precontig) override {
-        size_t id = transcript_joiner_.GetPathId(precontig.path);
+    std::string MakeContigName(size_t index, const ScaffoldInfo &scaffold_info) override {
+        size_t id = transcript_joiner_.GetPathId(scaffold_info.path);
         size_t parent_id = transcript_joiner_.FindTree(id);
         DEBUG("Path " << id << " Parent " << parent_id);
         if (gene_ids_.find(parent_id) == gene_ids_.end()) {
@@ -127,7 +128,11 @@ public:
             isoform_num_[parent_id] = 0;
             gene_num_++;
         }
-        string contig_id = io::MakeRNAContigId(index, precontig.length(), precontig.coverage(), gene_ids_[parent_id], isoform_num_[parent_id]);
+        string contig_id = io::MakeRNAContigId(index,
+                                               scaffold_info.length(),
+                                               scaffold_info.coverage(),
+                                               gene_ids_[parent_id],
+                                               isoform_num_[parent_id]);
         isoform_num_[parent_id]++;
         return contig_id;
     }

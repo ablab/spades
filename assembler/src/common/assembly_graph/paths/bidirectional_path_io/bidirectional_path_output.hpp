@@ -15,25 +15,20 @@ namespace path_extend {
 
 using namespace debruijn_graph;
 
-
 class ContigWriter {
-protected:
-    DECL_LOGGER("PathExtendIO")
-
-protected:
     const Graph& g_;
     map<EdgeId, ExtendedContigIdT> ids_;
     shared_ptr<ContigNameGenerator> name_generator_;
 
     string ToFASTGPathFormat(const BidirectionalPath &path) const;
-
+    void WriteScaffolds(const vector<ScaffoldInfo> &scaffold_storage, const string &fn) const;
+    void WritePathsFastg(const vector<ScaffoldInfo> &scaffold_storage, const string &fn) const;
 
 public:
     ContigWriter(const Graph& g,
                  const ConnectedComponentCounter &c_counter,
                  shared_ptr<ContigNameGenerator> name_generator) :
             g_(g),
-            ids_(),
             name_generator_(name_generator) {
         MakeContigIdMap(g_, ids_, c_counter, "NODE");
     }
@@ -42,16 +37,8 @@ public:
                                const string &filename_base,
                                bool write_fastg = true) const;
 
-};
-
-
-class PathInfoWriter {
-protected:
+private:
     DECL_LOGGER("PathExtendIO")
-
-public:
-
-    void WritePaths(const PathContainer &paths, const string &filename) const;
 };
 
 }

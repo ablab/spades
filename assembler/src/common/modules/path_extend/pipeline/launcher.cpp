@@ -201,12 +201,15 @@ void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const stri
     if (!params_.pe_cfg.debug_output) {
         return;
     }
-    PathInfoWriter path_writer;
     PathVisualizer visualizer;
 
     writer_.OutputPaths(paths, params_.etc_dir + name);
     if (params_.pe_cfg.output.write_paths) {
-        path_writer.WritePaths(paths, params_.etc_dir + name + ".dat");
+        std::ofstream oss(params_.etc_dir + name + ".dat");
+        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+            iter.get()->Print(oss);
+        }
+        oss.close();
     }
     if (params_.pe_cfg.viz.print_paths) {
         visualizer.writeGraphWithPathsSimple(gp_, params_.etc_dir + name + ".dot", name, paths);
