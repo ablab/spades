@@ -113,7 +113,8 @@ void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
                                                                 params_.pset.genome_consistency_checker.relative_max_gap,
                                                                 unique_data_.main_unique_storage_.GetMinLength(),
                                                                 unique_data_.main_unique_storage_,
-                                                                unique_data_.long_reads_cov_map_);
+                                                                unique_data_.long_reads_cov_map_,
+                                                                dataset_info_);
         scaffold_graph = ConstructScaffoldGraph(unique_data_.main_unique_storage_);
         if (params_.pset.scaffold_graph_params.output) {
             PrintScaffoldGraph(*scaffold_graph,
@@ -140,7 +141,8 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
                                                             params_.pset.genome_consistency_checker.relative_max_gap,
                                                             unresolvable_gap,
                                                             use_main_storage ? unique_data_.main_unique_storage_ : tmp_storage,
-                                                            unique_data_.long_reads_cov_map_);
+                                                            unique_data_.long_reads_cov_map_,
+                                                            dataset_info_);
 
     size_t total_mis = 0, gap_mis = 0;
     for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
@@ -152,7 +154,7 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
             total_mis += map_res.misassemblies;
         }
         if (map_res.wrong_gap_size > 0) {
-            INFO ("there are " << map_res.wrong_gap_size << " wrong gaps in path: ");
+            INFO ("there are " << map_res.wrong_gap_size << " wrong gaps in path. ");
             path->Print();
             gap_mis += map_res.wrong_gap_size;
         }

@@ -143,12 +143,13 @@ class GenomeConsistenceChecker {
 
     const ScaffoldingUniqueEdgeStorage &storage_;
     const vector<shared_ptr<path_extend::GraphCoverageMap>> &long_reads_cov_map_;
-
+    static const size_t LONG_PATH = 10000;
     GenomeInfo genome_info_;
     //Edges containing zero point for each reference
     //TODO: do we need circular/linear chromosomes support?
     set<EdgeId> circular_edges_;
 
+    debruijn_graph::config::dataset ds_;
     bool Consequent(const MappingRange &mr1, const MappingRange &mr2) const ;
 
     void PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const;
@@ -167,6 +168,10 @@ class GenomeConsistenceChecker {
     pair<MappingRange, size_t> Merge(const vector<MappingRange>& mappings) const;
 
     void FillPos(EdgeId e, const EdgesPositionHandler<Graph> &tmp_edge_pos);
+
+    void ReportPathEndByPairedLib(const shared_ptr<path_extend::PairedInfoLibrary> paired_lib, EdgeId current_edge) const;
+
+    void ReportPathEndByLongLib(const path_extend::BidirectionalPathSet &covering_paths, EdgeId current_edge) const;
 
     void ReportEdge(EdgeId e, double w) const;
 
@@ -190,13 +195,15 @@ public:
                              double relative_max_gap /*= 0.2*/,
                              size_t unresolvable_len,
                              const ScaffoldingUniqueEdgeStorage &storage,
-                             const vector<shared_ptr<path_extend::GraphCoverageMap>> &long_reads_cov_map) :
+                             const vector<shared_ptr<path_extend::GraphCoverageMap>> &long_reads_cov_map,
+                             const debruijn_graph::config::dataset ds) :
             gp_(gp),
             absolute_max_gap_(max_gap),
             relative_max_gap_(relative_max_gap),
             unresolvable_len_(unresolvable_len),
             storage_(storage),
-            long_reads_cov_map_(long_reads_cov_map) {
+            long_reads_cov_map_(long_reads_cov_map),
+            ds_(ds) {
         //Fixme call outside
         Fill();
     }

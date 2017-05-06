@@ -34,7 +34,7 @@ PathScore GenomeConsistenceChecker::CountMisassemblies(const BidirectionalPath &
     size_t total_length = path.LengthAt(0);
 //TODO: constant;
     if (total_length > score.mapped_length * 2) {
-        if (total_length > 10000) {
+        if (total_length > LONG_PATH) {
             INFO ("For path length " << total_length <<" mapped less than half of the path, skipping");
         }
         return PathScore(0,0,0);
@@ -96,6 +96,46 @@ void GenomeConsistenceChecker::ReportVariants(vector<pair<double, EdgeId>> &sort
     }
 
 }
+
+void GenomeConsistenceChecker::ReportPathEndByLongLib(const path_extend::BidirectionalPathSet &covering_paths,
+                                                      EdgeId current_edge) const {
+    vector<pair<double, EdgeId>> sorted_w;
+    for (const auto & cov_path: covering_paths) {
+        double w = cov_path->GetWeight();
+        map<EdgeId, double> next_weigths;
+        if (math::gr(w, 1.0)) {
+            for (size_t p_ind = 0; p_ind < cov_path->Size(); p_ind++) {
+                if (cov_path->At(p_ind) == current_edge) {
+                    for (size_t p_ind2  = p_ind + 1; p_ind2 < cov_path->Size(); p_ind2++) {
+                        if (gp_.g.length(cov_path->At(p_ind2)) >= storage_.GetMinLength() ) {
+                            next_weigths[cov_path->At(p_ind2)] += w;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        for (const auto &p: next_weigths) {
+            sorted_w.push_back(make_pair(p.second, p.first));
+        }
+    }
+    INFO("Looking on long reads, last long edge: ");
+    ReportVariants(sorted_w);
+}
+
+void GenomeConsistenceChecker::ReportPathEndByPairedLib(const shared_ptr<path_extend::PairedInfoLibrary> paired_lib, EdgeId current_edge) const {
+    vector<pair<double, EdgeId>> sorted_w;
+    set<EdgeId> result;
+    paired_lib->FindJumpEdges(current_edge, result, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), storage_.GetMinLength());
+    for (const auto e: result) {
+        double w = paired_lib->CountPairedInfo(current_edge, e, std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+        if (math::gr(w, 1.0))
+            sorted_w.push_back(make_pair(w, e));
+    }
+    INFO("Looking on lib IS " << paired_lib->GetIS());
+    ReportVariants(sorted_w);
+}
+
 void GenomeConsistenceChecker::CheckPathEnd(const BidirectionalPath &path) const {
     for (int i =  (int)path.Size() - 1; i >= 0; --i) {
         if (storage_.IsUnique(path.At(i))) {
@@ -109,53 +149,20 @@ void GenomeConsistenceChecker::CheckPathEnd(const BidirectionalPath &path) const
                     return;
                 }
             }
-            auto dataset_info_ = cfg::get().ds;
-            for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
-                const auto &lib = dataset_info_.reads[lib_index];
-                vector<pair<double, EdgeId>> sorted_w;
+            INFO("Path length " << path.Length() << " ended, last unique: ");
+            ReportEdge(current_edge, -239.0);
+            for (size_t lib_index = 0; lib_index < ds_.reads.lib_count(); ++lib_index) {
+                const auto &lib = ds_.reads[lib_index];
                 if (lib.is_paired()) {
                     shared_ptr<path_extend::PairedInfoLibrary> paired_lib;
                     if (lib.is_mate_pair())
                         paired_lib = path_extend::MakeNewLib(gp_.g, lib, gp_.paired_indices[lib_index]);
                     else if (lib.type() == io::LibraryType::PairedEnd)
                         paired_lib = path_extend::MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
-                    set<EdgeId> result;
-                    paired_lib->FindJumpEdges(current_edge, result, -1000000, 1000000, storage_.GetMinLength());
-                    for (const auto e: result) {
-                        double w = paired_lib->CountPairedInfo(current_edge, e, -1000000, 1000000);
-                        if (math::gr(w, 1.0))
-                            sorted_w.push_back(make_pair(w, e));
-                    }
-                    INFO("Path length " << path.Length() << "ended, looking on lib IS " <<
-                         paired_lib->GetIS() << " last long edge: ");
-                    ReportEdge(current_edge, -239.0);
-                    ReportVariants(sorted_w);
+                    ReportPathEndByPairedLib(paired_lib, current_edge);
                 } else if (lib.is_long_read_lib()) {
-                    auto covering_paths = long_reads_cov_map_[lib_index]->GetCoveringPaths(current_edge);
-                    for (const auto & cov_path: covering_paths) {
-                        double w = cov_path->GetWeight();
-                        map<EdgeId, double> next_weigths;
-                        if (math::gr(w, 1.0)) {
-                            for (size_t p_ind = 0; p_ind < cov_path->Size(); p_ind++) {
-                                if (cov_path->At(p_ind) == current_edge) {
-                                    for (size_t p_ind2  = p_ind + 1; p_ind2 < cov_path->Size(); p_ind2++) {
-                                        if (gp_.g.length(cov_path->At(p_ind2)) >= storage_.GetMinLength() ) {
-                                            next_weigths[cov_path->At(p_ind2)] += w;
-                                        }
-                                    }
-                                    break;
-                                }
-                            }
-                        }
-                        for (const auto &p: next_weigths) {
-                            sorted_w.push_back(make_pair(p.second, p.first));
-                        }
-                    }
-                    INFO("Path length " << path.Length() << " looking on long reads lib " << lib_index << " last long edge: ");
-                    ReportEdge(current_edge, -239.0);
-                    ReportVariants(sorted_w);
+                    ReportPathEndByLongLib(long_reads_cov_map_[lib_index]->GetCoveringPaths(current_edge), current_edge);
                 }
-
             }
             return;
         }
@@ -168,7 +175,6 @@ size_t GenomeConsistenceChecker::GetSupportingPathCount(EdgeId e1, EdgeId e2, si
     for (const auto & cov_path: covering_paths) {
         double w = cov_path->GetWeight();
         if (math::gr(w, 1.0)) {
-
             for (size_t p_ind = 0; p_ind < cov_path->Size(); p_ind++) {
                 if (cov_path->At(p_ind) == e1) {
                     for (size_t p_ind2 = p_ind + 1; p_ind2 < cov_path->Size(); p_ind2++) {
@@ -194,9 +200,8 @@ void GenomeConsistenceChecker::PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const 
 //FIXME: checks, compliment_strands;
     EdgeId true_next = chr_info1.EdgeAt((chr_info1.UniqueEdgeIdx(e1) + 1) % chr_info1.size());
     EdgeId true_prev = chr_info2.EdgeAt((chr_info2.UniqueEdgeIdx(e2) + chr_info2.size() - 1) % chr_info2.size());
-    auto dataset_info_ = cfg::get().ds;
-    for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
-        const auto &lib = dataset_info_.reads[lib_index];
+    for (size_t lib_index = 0; lib_index < ds_.reads.lib_count(); ++lib_index) {
+        const auto &lib = ds_.reads[lib_index];
         if (lib.is_paired()) {
             shared_ptr<path_extend::PairedInfoLibrary> paired_lib;
             if (lib.is_mate_pair())
@@ -228,8 +233,8 @@ void GenomeConsistenceChecker::ClassifyPosition(size_t prev_pos, size_t cur_pos,
     size_t prev_in_genome = prev_chr_info.UniqueEdgeIdx(prev_e);
     string prev_chr = prev_chr_info.name();
     MappingRange prev_range = gp_.edge_pos.GetUniqueEdgePosition(prev_e, prev_chr);
-    res.mapped_length += cur_range.mapped_range.size();
 
+    res.mapped_length += cur_range.mapped_range.size();
     if (cur_in_genome == prev_in_genome + 1 && cur_chr == prev_chr) {
         int dist_in_genome = (int) cur_range.initial_range.start_pos -  (int) prev_range.initial_range.end_pos;
         int dist_in_path = (int) path.LengthAt(prev_pos) - (int) path.LengthAt(cur_pos) +  (int) cur_range.mapped_range.start_pos - (int) prev_range.mapped_range.end_pos;
@@ -267,7 +272,6 @@ PathScore GenomeConsistenceChecker::InternalCountMisassemblies(const Bidirection
 //const method, so at instead of []
         EdgeId e = path.At(i);
         if (genome_info_.Multiplicity(e)) {
-            const auto& chr_info = genome_info_.UniqueChromosomeInfo(e);
             if (prev_pos != std::numeric_limits<std::size_t>::max()) {
                 ClassifyPosition(prev_pos, i, path, res);
             }
