@@ -30,7 +30,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
     INFO("Writing GFA to " << gfa_fn);
 
     std::ofstream os(gfa_fn);
-    GFAWriter<Graph> gfa_writer(gp.g, os);
+    path_extend::GFAWriter<Graph> gfa_writer(gp.g, os);
     gfa_writer.WriteSegmentsAndLinks();
 
     OutputEdgeSequences(gp.g, output_dir + "before_rr");
@@ -66,11 +66,11 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
                                                   fastg_writer));
         }
 
-        writer.OutputPaths(gp.contig_paths,
-                           CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name,
-                                              fastg_writer));
-
-        gfa_writer.WritePaths(gp.contig_paths);
+        auto writers = CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name, fastg_writer);
+        writers.push_back([&](const path_extend::ScaffoldStorage &storage) {
+            gfa_writer.WritePaths(storage);
+        });
+        writer.OutputPaths(gp.contig_paths, writers);
     } else {
         //FIXME weird logic
         OutputEdgeSequences(gp.g, output_dir + "simplified_contigs");
