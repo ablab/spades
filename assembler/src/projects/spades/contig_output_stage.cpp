@@ -33,7 +33,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
     GFAWriter<Graph> gfa_writer(gp.g, os);
     gfa_writer.WriteSegmentsAndLinks();
 
-    OutputContigs(gp.g, output_dir + "before_rr");
+    OutputEdgeSequences(gp.g, output_dir + "before_rr");
 
     INFO("Outputting FastG graph to " << output_dir << "assembly_graph.fastg");
     std::string fastg_fn = output_dir + "assembly_graph.fastg";
@@ -72,8 +72,9 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
         gfa_writer.WritePaths(gp.contig_paths);
     } else {
-        OutputContigs(gp.g, output_dir + "simplified_contigs");
-        OutputContigs(gp.g, output_dir + cfg::get().co.contigs_name);
+        //FIXME weird logic
+        OutputEdgeSequences(gp.g, output_dir + "simplified_contigs");
+        OutputEdgeSequences(gp.g, output_dir + cfg::get().co.contigs_name);
     }
 }
 
