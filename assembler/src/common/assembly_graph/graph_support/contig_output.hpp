@@ -13,6 +13,7 @@
 #include "assembly_graph/stats/statistics.hpp"
 #include "assembly_graph/paths/path_finders.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
+#include "assembly_graph/paths/bidirectional_path_io/io_support.hpp"
 
 namespace debruijn_graph {
 
@@ -118,98 +119,16 @@ public:
 
 };
 
-struct ExtendedContigId {
-    string full_id_;
-    string short_id_;
-
-    ExtendedContigId() {}
-
-    ExtendedContigId(string full_id, string short_id):
-            full_id_(full_id), short_id_(short_id) {}
-};
-
-template <class Graph>
-map<EdgeId, ExtendedContigId> MakeEdgeIdMap(const Graph &graph,
-                   const ConnectedComponentCounter &cc_counter, const string &prefix) {
-    map<EdgeId, ExtendedContigId> ids;
-    int counter = 0;
-    for (auto it = graph.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
-        if (ids.count(e) == 0) {
-            string id;
-            if (cfg::get().pd) {
-                size_t c_id = cc_counter.GetComponent(e);
-                id = io::MakeContigComponentId(++counter, graph.length(e) + graph.k(), graph.coverage(e), c_id, prefix);
-            }
-            else
-                id = io::MakeContigId(++counter, graph.length(e) + graph.k(), graph.coverage(e), prefix);
-            ids[e] = ExtendedContigId(id, std::to_string(counter) + "+");
-            if (e != graph.conjugate(e))
-                ids[graph.conjugate(e)] =  ExtendedContigId(id + "'", std::to_string(counter) + "-");
-        }
-    }
-    return ids;
-}
-
-//TODO refactor decently
-template<class Graph>
-class ContigPrinter {
-    const Graph &graph_;
-
-    template<class sequence_stream>
-    void ReportEdge(sequence_stream& oss, const string &s, double cov) {
-        oss << s;
-        oss << cov;
-    }
-
-    void ReportEdge(io::osequencestream_for_fastg& oss,
-            const string& sequence,
-            const string& id,
-            const set<string>& nex_ids) {
-        oss.set_header(id);
-        oss << nex_ids;
-        oss << sequence;
-    }
-
-public:
-    ContigPrinter(const Graph &graph) : graph_(graph) {
-    }
-
-    template<class sequence_stream>
-    void PrintContigs(sequence_stream &os) {
-        for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-            EdgeId e = *it;
-            ReportEdge(os, graph_.EdgeNucls(e).str(), graph_.coverage(e));
-        }
-    }
-
-    template<class sequence_stream>
-    void PrintContigsFASTG(sequence_stream &os, const ConnectedComponentCounter & cc_counter) {
-        map<EdgeId, ExtendedContigId> ids = MakeEdgeIdMap(graph_, cc_counter, "EDGE");
-        for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-            EdgeId e = *it;
-            set<string> next;
-            for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(e))) {
-                next.insert(ids[next_e].full_id_);
-            }
-            ReportEdge(os, graph_.EdgeNucls(e).str(), ids[e].full_id_, next);
-            if (e != graph_.conjugate(e)) {
-                set<string> next_conj;
-                for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(graph_.conjugate(e)))) {
-                    next_conj.insert(ids[next_e].full_id_);
-                }
-                ReportEdge(os, graph_.EdgeNucls(graph_.conjugate(e)).str(), ids[graph_.conjugate(e)].full_id_, next_conj);
-            }
-        }
-    }
-};
-
 inline void OutputContigs(const Graph &g,
                           const string &contigs_output_filename) {
     INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
     io::osequencestream_cov oss(contigs_output_filename + ".fasta");
 
-    ContigPrinter<Graph>(g).PrintContigs(oss);
+    for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+        EdgeId e = *it;
+        oss << g.EdgeNucls(e).str();
+        oss << g.coverage(e);
+    }
 }
 
 inline void OutputContigsToGFA(const Graph &g,
@@ -220,14 +139,6 @@ inline void OutputContigsToGFA(const Graph &g,
     GFAWriter<Graph> writer(g, os);
     writer.WriteSegmentsAndLinks();
     writer.WritePaths(paths);
-}
-
-inline void OutputContigsToFASTG(const Graph& g,
-                                 const string& contigs_output_filename,
-                                 const ConnectedComponentCounter &cc_counter) {
-    INFO("Outputting graph to " << contigs_output_filename << ".fastg");
-    io::osequencestream_for_fastg ossfg(contigs_output_filename + ".fastg");
-    ContigPrinter<Graph>(g).PrintContigsFASTG(ossfg, cc_counter);
 }
 
 }

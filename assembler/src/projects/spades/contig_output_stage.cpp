@@ -10,15 +10,36 @@
 
 namespace debruijn_graph {
 
+vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
+                                                     path_extend::FastgWriter<Graph> &fastg_writer) {
+    using namespace path_extend;
+    vector<PathsWriterT> writers;
+    //INFO("Outputting graph to " << contigs_output_filename << ".gfa");
+    writers.push_back(ContigWriter::BasicFastaWriter(fn_base + ".fasta"));
+    writers.push_back([&](const ScaffoldStorage& scaffold_storage) {
+        fastg_writer.WritePaths(scaffold_storage, fn_base + ".paths");
+    });
+    return writers;
+}
+
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
     auto output_dir = cfg::get().output_dir;
 
+    std::string gfa_fn = output_dir + "assembly_graph_with_scaffolds.gfa";
+
+    std::ofstream os(gfa_fn);
+    GFAWriter<Graph> gfa_writer(gp.g, os);
+    gfa_writer.WriteSegmentsAndLinks();
+
     OutputContigs(gp.g, output_dir + "before_rr");
-    OutputContigsToFASTG(gp.g, output_dir + "assembly_graph", gp.components);
+
+    std::string fastg_fn = output_dir + "assembly_graph.fastg";
+    path_extend::FastgWriter<Graph> fastg_writer(gp.g, gp.components);
+    fastg_writer.WriteSegmentsAndLinks(fastg_fn);
 
     if (output_paths_ && gp.contig_paths.size() != 0) {
         auto name_generator = path_extend::MakeContigNameGenerator(cfg::get().mode, gp);
-        path_extend::ContigWriter writer(gp.g, gp.components, name_generator);
+        path_extend::ContigWriter writer(gp.g, name_generator);
 
         bool output_broken_scaffolds = cfg::get().pe_params.param_set.scaffolder_options.enabled &&
             cfg::get().use_scaffolder &&
@@ -37,12 +58,16 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
             path_extend::ScaffoldBreaker breaker(min_gap);
             path_extend::PathContainer broken_scaffolds;
             breaker.Break(gp.contig_paths, broken_scaffolds);
-            writer.OutputPaths(broken_scaffolds, output_dir + cfg::get().co.contigs_name);
+            writer.OutputPaths(broken_scaffolds,
+                               CreatePathsWriters(output_dir + cfg::get().co.contigs_name,
+                                                  fastg_writer));
         }
 
-        writer.OutputPaths(gp.contig_paths, output_dir + cfg::get().co.scaffolds_name);
+        writer.OutputPaths(gp.contig_paths,
+                           CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name,
+                                              fastg_writer));
 
-        OutputContigsToGFA(gp.g, gp.contig_paths, cfg::get().output_dir + "assembly_graph_with_scaffolds");
+        gfa_writer.WritePaths(gp.contig_paths);
     } else {
         OutputContigs(gp.g, output_dir + "simplified_contigs");
         OutputContigs(gp.g, output_dir + cfg::get().co.contigs_name);

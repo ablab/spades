@@ -28,6 +28,8 @@ struct ScaffoldInfo {
     }
 };
 
+typedef vector<ScaffoldInfo> ScaffoldStorage;
+
 class ScaffoldSequenceMaker {
     const Graph &g_;
     const size_t k_;
