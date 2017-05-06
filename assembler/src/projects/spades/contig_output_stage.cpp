@@ -14,8 +14,9 @@ vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
                                                      path_extend::FastgWriter<Graph> &fastg_writer) {
     using namespace path_extend;
     vector<PathsWriterT> writers;
-    //INFO("Outputting graph to " << contigs_output_filename << ".gfa");
+
     writers.push_back(ContigWriter::BasicFastaWriter(fn_base + ".fasta"));
+    INFO("Outputting FastG paths to " << fn_base << ".paths");
     writers.push_back([&](const ScaffoldStorage& scaffold_storage) {
         fastg_writer.WritePaths(scaffold_storage, fn_base + ".paths");
     });
@@ -26,6 +27,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
     auto output_dir = cfg::get().output_dir;
 
     std::string gfa_fn = output_dir + "assembly_graph_with_scaffolds.gfa";
+    INFO("Writing GFA to " << gfa_fn);
 
     std::ofstream os(gfa_fn);
     GFAWriter<Graph> gfa_writer(gp.g, os);
@@ -33,6 +35,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
     OutputContigs(gp.g, output_dir + "before_rr");
 
+    INFO("Outputting FastG graph to " << output_dir << "assembly_graph.fastg");
     std::string fastg_fn = output_dir + "assembly_graph.fastg";
     path_extend::FastgWriter<Graph> fastg_writer(gp.g, gp.components);
     fastg_writer.WriteSegmentsAndLinks(fastg_fn);

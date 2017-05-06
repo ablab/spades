@@ -131,14 +131,4 @@ inline void OutputContigs(const Graph &g,
     }
 }
 
-inline void OutputContigsToGFA(const Graph &g,
-                               const path_extend::PathContainer &paths,
-                               const string &contigs_output_filename) {
-    INFO("Outputting graph to " << contigs_output_filename << ".gfa");
-    std::ofstream os(contigs_output_filename + ".gfa");
-    GFAWriter<Graph> writer(g, os);
-    writer.WriteSegmentsAndLinks();
-    writer.WritePaths(paths);
-}
-
 }

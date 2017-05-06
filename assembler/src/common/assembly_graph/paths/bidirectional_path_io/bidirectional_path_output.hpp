@@ -15,13 +15,13 @@ class FastgWriter {
     typedef typename Graph::EdgeId EdgeId;
 
     struct ExtendedContigId {
-        string full_id_;
-        string short_id_;
+        string full_id;
+        string short_id;
 
         ExtendedContigId() {}
 
         ExtendedContigId(string full_id, string short_id):
-                full_id_(full_id), short_id_(short_id) {}
+                full_id(full_id), short_id(short_id) {}
     };
 
     const Graph &graph_;
@@ -51,12 +51,12 @@ class FastgWriter {
     string ToPathString(const BidirectionalPath &path) const {
         if (path.Empty())
             return "";
-        string res = ids_.at(path.Front()).short_id_;
+        string res = ids_.at(path.Front()).short_id;
         for (size_t i = 1; i < path.Size(); ++i) {
             if (graph_.EdgeEnd(path[i - 1]) != graph_.EdgeStart(path[i])) {
-                res += ";\n" + ids_.at(path[i]).short_id_;
+                res += ";\n" + ids_.at(path[i]).short_id;
             } else {
-                res += "," + ids_.at(path[i]).short_id_;
+                res += "," + ids_.at(path[i]).short_id;
             }
         }
         return res;
@@ -85,15 +85,15 @@ public:
             EdgeId e = *it;
             set<string> next;
             for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(e))) {
-                next.insert(ids_[next_e].full_id_);
+                next.insert(ids_[next_e].full_id);
             }
-            ReportEdge(os, graph_.EdgeNucls(e).str(), ids_[e].full_id_, next);
+            ReportEdge(os, graph_.EdgeNucls(e).str(), ids_[e].full_id, next);
             if (e != graph_.conjugate(e)) {
                 set<string> next_conj;
                 for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(graph_.conjugate(e)))) {
-                    next_conj.insert(ids_[next_e].full_id_);
+                    next_conj.insert(ids_[next_e].full_id);
                 }
-                ReportEdge(os, graph_.EdgeNucls(graph_.conjugate(e)).str(), ids_[graph_.conjugate(e)].full_id_, next_conj);
+                ReportEdge(os, graph_.EdgeNucls(graph_.conjugate(e)).str(), ids_[graph_.conjugate(e)].full_id, next_conj);
             }
         }
     }
@@ -113,16 +113,6 @@ public:
 void WriteScaffolds(const ScaffoldStorage &scaffold_storage, const string &fn);
 
 typedef std::function<void (const ScaffoldStorage&)> PathsWriterT;
-
-//INFO("Writing contigs to " << filename_base);
-//
-//WriteScaffolds(storage, filename_base + ".fasta");
-//inline void OutputContigsToFASTG(const Graph& g,
-//                                 const string& contigs_output_filename,
-//                                 const ConnectedComponentCounter &cc_counter) {
-//    INFO("Outputting graph to " << contigs_output_filename << ".fastg");
-//    ContigPrinter<Graph>(g).PrintContigsFASTG(ossfg, cc_counter);
-//}
 
 class ContigWriter {
     const Graph& g_;
