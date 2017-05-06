@@ -135,7 +135,6 @@ class LoopTraverser {
 
         size_t common_size = start_path.CommonEndSize(end_path);
         DEBUG("Str " << start_path.Size() << ", end" << end_path.Size());
-        size_t gap = g_.k() + BASIC_N_CNT;
         if (common_size == 0 && !start_path.Empty() && !end_path.Empty()) {
             DEBUG("Estimating gap size");
             VertexId last_vertex = g_.EdgeEnd(start_path.Back());
@@ -156,7 +155,7 @@ class LoopTraverser {
                 }
             }
         }
-        start_path.PushBack(end_path.SubPath(common_size), Gap(int(gap)));
+        start_path.PushBack(end_path.SubPath(common_size), Gap(int(g_.k() + BASIC_N_CNT)));
 
         DEBUG("travers");
         start_path.PrintDEBUG();
