@@ -53,7 +53,7 @@ class FastgWriter {
             return "";
         string res = ids_.at(path.Front()).short_id;
         for (size_t i = 1; i < path.Size(); ++i) {
-            if (graph_.EdgeEnd(path[i - 1]) != graph_.EdgeStart(path[i])) {
+            if (graph_.EdgeEnd(path[i - 1]) != graph_.EdgeStart(path[i]) || path.GapAt(i).gap > 0) {
                 res += ";\n" + ids_.at(path[i]).short_id;
             } else {
                 res += "," + ids_.at(path[i]).short_id;
