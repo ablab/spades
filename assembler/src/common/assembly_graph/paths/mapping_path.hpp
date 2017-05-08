@@ -8,7 +8,7 @@
 #pragma once
 
 #include "sequence/sequence.hpp"
-#include "utils/range.hpp"
+#include "sequence/range.hpp"
 #include <boost/iterator/iterator_facade.hpp>
 
 namespace omnigraph {

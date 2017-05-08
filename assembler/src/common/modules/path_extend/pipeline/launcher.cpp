@@ -155,7 +155,7 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
         }
         if (map_res.wrong_gap_size > 0) {
             INFO ("there are " << map_res.wrong_gap_size << " wrong gaps in path. ");
-            path->Print();
+            path->PrintDEBUG();
             gap_mis += map_res.wrong_gap_size;
         }
         genome_checker.CheckPathEnd(*path);

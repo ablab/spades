@@ -61,7 +61,7 @@ public:
     }
 
     vector<size_t> EdgeIdxs(EdgeId e) const {
-        return get_all(edge_idxs_, e);
+        return utils::get_all(edge_idxs_, e);
     }
 
     size_t UniqueEdgeIdx(EdgeId e) const {
@@ -88,7 +88,7 @@ public:
     }
 
     const ChromosomeInfo& ChrInfo(const string &name) const {
-        return get(chr_infos_, name);
+        return utils::get(chr_infos_, name);
     }
 
     vector<string> ChromosomesByEdge(EdgeId e) const {
@@ -129,7 +129,7 @@ public:
 
     vector<string> Chromosomes() const {
         vector<string> answer;
-        push_back_all(answer, key_set(chr_infos_));
+        utils::push_back_all(answer, utils::key_set(chr_infos_));
         return answer;
     }
 };

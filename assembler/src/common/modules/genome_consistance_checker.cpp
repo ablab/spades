@@ -345,13 +345,13 @@ map<EdgeId, string> GenomeConsistenceChecker::EdgeLabels() const {
             auto mr = gp_.edge_pos.GetUniqueEdgePosition(e, chr);
             VERIFY(!answer.count(e));
             answer[e] += chr +
-                         "order: " + ToString(count) +
+                         "order: " + to_string(count) +
                          "\n mapped range: " +
-                         ToString(mr.mapped_range.start_pos) + " : "
-                         + ToString(mr.mapped_range.end_pos) +
+                         to_string(mr.mapped_range.start_pos) + " : "
+                         + to_string(mr.mapped_range.end_pos) +
                          "\n init range: " +
-                         ToString(mr.initial_range.start_pos) + " : "
-                         + ToString(mr.initial_range.end_pos) + "\n";
+                         to_string(mr.initial_range.start_pos) + " : "
+                         + to_string(mr.initial_range.end_pos) + "\n";
         }
     }
     return answer;
@@ -384,7 +384,7 @@ void GenomeConsistenceChecker::Fill() {
             auto mapping_path = ConstructEdgeOrder(label);
             genome_info_.AddInfo(ChromosomeInfo(label, mapping_path));
 
-            push_back_all(theoretic_lens, MappedRegions(mapping_path));
+            utils::push_back_all(theoretic_lens, MappedRegions(mapping_path));
         }
     }
 
@@ -485,7 +485,7 @@ string GenomeConsistenceChecker::ChromosomeByUniqueEdge(const EdgeId &e,
     DEBUG("Positioning edge " << gp_.g.str(e));
     map<string, size_t> total_al_lens = TotalAlignedLengths(tmp_edge_pos, e);
     total = 0;
-    for (size_t c : value_set(total_al_lens))
+    for (size_t c : utils::value_set(total_al_lens))
         total += c;
 
     if (total > size_t(math::round((double) gp_.g.length(e) * 1.5))) {
