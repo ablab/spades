@@ -383,7 +383,6 @@ void GenomeConsistenceChecker::Fill() {
             INFO("Spelling label " << label);
             auto mapping_path = ConstructEdgeOrder(label);
             genome_info_.AddInfo(ChromosomeInfo(label, mapping_path));
-
             utils::push_back_all(theoretic_lens, MappedRegions(mapping_path));
         }
     }
@@ -419,6 +418,8 @@ GenomeConsistenceChecker::TotalAlignedLengths(const EdgesPositionHandler<Graph> 
 
 vector<size_t> GenomeConsistenceChecker::MappedRegions(const GenomeConsistenceChecker::MappingPathT &mapping_path) const {
     vector<size_t> mapped_regions;
+    if (mapping_path.size() == 0)
+        return mapped_regions;
     size_t pos = mapping_path.front().second.initial_range.start_pos;
     for (size_t i = 0; i < mapping_path.size(); i++) {
         auto current_range = mapping_path[i].second;
