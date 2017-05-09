@@ -200,9 +200,25 @@ void GenomeConsistenceChecker::PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const 
     VERIFY(genome_info_.Multiplicity(e2));
     const auto &chr_info1 = genome_info_.UniqueChromosomeInfo(e1);
     const auto &chr_info2 = genome_info_.UniqueChromosomeInfo(e2);
+    size_t ind1 = chr_info1.UniqueEdgeIdx(e1);
+    size_t ind2 = chr_info2.UniqueEdgeIdx(e2);
 //FIXME: checks, compliment_strands;
     EdgeId true_next = chr_info1.EdgeAt((chr_info1.UniqueEdgeIdx(e1) + 1) % chr_info1.size());
     EdgeId true_prev = chr_info2.EdgeAt((chr_info2.UniqueEdgeIdx(e2) + chr_info2.size() - 1) % chr_info2.size());
+    INFO("Next genomic edge " << true_next.int_id() << " len " << gp_.g.length(true_next) << " prev " << true_prev.int_id() << " len " << gp_.g.length(true_prev));
+    if (chr_info1.name() == chr_info2.name() && ind1 < ind2) {
+        INFO("Same chromosome large forward jump misassembly");
+    } else if (chr_info1.name() == chr_info2.name() && ind1 > ind2)  {
+        INFO("Backward jump misassembly");
+    } else if (chr_info1.name().substr(1) == chr_info2.name().substr(1))  {
+        string revers = (ind1 + ind2 + 2 > chr_info1.size() ? " backwards " : " forward " );
+        INFO("Inversion" + revers +  "misassembly, chr edge size  " << chr_info1.size());
+    } else if (ind1 + 1 == chr_info1.size()  || ind2 == 0) {
+        string start_end = (ind2 == 0 ? " start " : " end ");
+        INFO("Chromosome " + start_end + " misassembly ");
+    } else {
+        INFO("Something else misassembly");
+    }
     for (size_t lib_index = 0; lib_index < reads_.lib_count(); ++lib_index) {
         const auto &lib = reads_[lib_index];
         if (lib.is_paired()) {
@@ -254,13 +270,16 @@ void GenomeConsistenceChecker::ClassifyPosition(size_t prev_pos, size_t cur_pos,
         if (cur_chr == prev_chr && (circular_edges_.find(prev_e) != circular_edges_.end() ||
                                     circular_edges_.find(cur_e) != circular_edges_.end())) {
             INFO("Skipping fake(circular) misassembly");
-        } else if (cur_in_genome <= prev_in_genome + 5 && cur_in_genome > prev_in_genome && cur_chr == prev_chr) {
+        } else if (cur_in_genome > prev_in_genome && cur_chr == prev_chr
+                && prev_range.initial_range.end_pos + SIGNIFICANT_LENGTH_LOWER_LIMIT > cur_range.initial_range.start_pos) {
             INFO("Local misassembly between edges: "<<prev_e.int_id() << " and " << cur_e.int_id());
             size_t total = 0;
             for (auto j = prev_in_genome + 1; j < cur_in_genome; j ++) {
                 total += gp_.g.length(chr_info.EdgeAt(j));
             }
             INFO("Jumped over " << cur_in_genome - prev_in_genome - 1 << " uniques of total length: " << total);
+        } else if (IsCloseToEnd(prev_range, prev_chr_info) && IsCloseToStart(cur_range, chr_info)) {
+            INFO ("Skipping fake misassembly - connected " << prev_chr << " and " << cur_chr);
         } else {
             INFO("Extensive misassembly between edges: "<<prev_e.int_id() << " and " << cur_e.int_id());
             INFO("Ranges: " << prev_range << " and " << cur_range);

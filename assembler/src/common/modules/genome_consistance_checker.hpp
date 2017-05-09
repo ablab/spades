@@ -188,6 +188,15 @@ class GenomeConsistenceChecker {
     //returns lengths of mapped regions, divided by "unresolvable_len_"
     vector<size_t> MappedRegions(const MappingPathT &mapping_path) const;
 
+    bool IsCloseToEnd(MappingRange range, const ChromosomeInfo &chr_info) const {
+        auto last_range = gp_.edge_pos.GetUniqueEdgePosition(chr_info.EdgeAt(chr_info.size() - 1), chr_info.name());
+        return range.initial_range.end_pos + SIGNIFICANT_LENGTH_LOWER_LIMIT > last_range.initial_range.end_pos;
+    }
+
+    bool IsCloseToStart(MappingRange range, const ChromosomeInfo &) const {
+        return range.initial_range.start_pos <= SIGNIFICANT_LENGTH_LOWER_LIMIT;
+    }
+
     DECL_LOGGER("GenomeConsistenceChecker");
 public:
     GenomeConsistenceChecker(const conj_graph_pack &gp,
