@@ -11,6 +11,7 @@
 #include "utils/stacktrace.hpp"
 #include "boost/noncopyable.hpp"
 
+#include <functional>
 #include <signal.h>
 
 namespace utils {
