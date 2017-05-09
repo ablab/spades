@@ -10,9 +10,12 @@
 #include "io_support.hpp"
 
 namespace path_extend {
+
 template<class Graph>
 class FastgWriter {
     typedef typename Graph::EdgeId EdgeId;
+
+    typedef std::function<std::string (size_t, const Graph&, EdgeId)> EdgeNamingF;
 
     struct ExtendedContigId {
         string full_id;
@@ -27,19 +30,12 @@ class FastgWriter {
     const Graph &graph_;
     map<EdgeId, ExtendedContigId> ids_;
 
-    void FillEdgeIdMap(const ConnectedComponentCounter &cc_counter,
-                                                const string &prefix) {
+    void FillEdgeIdMap(EdgeNamingF naming_f) {
         int counter = 0;
         for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
             EdgeId e = *it;
             if (ids_.count(e) == 0) {
-                string id;
-                if (cfg::get().pd) {
-                    size_t c_id = cc_counter.GetComponent(e);
-                    id = io::MakeContigComponentId(++counter, graph_.length(e) + graph_.k(), graph_.coverage(e), c_id, prefix);
-                } else {
-                    id = io::MakeContigId(++counter, graph_.length(e) + graph_.k(), graph_.coverage(e), prefix);
-                }
+                string id = naming_f(++counter, graph_, e);
                 ids_[e] = ExtendedContigId(id, std::to_string(counter) + "+");
                 if (e != graph_.conjugate(e))
                     ids_[graph_.conjugate(e)] =  ExtendedContigId(id + "'", std::to_string(counter) + "-");
@@ -72,11 +68,26 @@ class FastgWriter {
     }
 
 public:
+
+    static EdgeNamingF BasicNamingF(const string &prefix = "NODE") {
+        return [=](size_t cnt, const Graph &g, EdgeId e) {
+            return io::MakeContigId(cnt, g.length(e) + g.k(), g.coverage(e), prefix);
+        };
+    }
+
+    static EdgeNamingF PlasmidNamingF(const ConnectedComponentCounter &cc_counter, const string &prefix = "NODE") {
+        return [=, &cc_counter](size_t cnt, const Graph &g, EdgeId e) {
+            return io::MakeContigComponentId(cnt, g.length(e) + g.k(),
+                                             g.coverage(e),
+                                             cc_counter.GetComponent(e),
+                                             prefix);
+        };
+    }
+
     FastgWriter(const Graph &graph,
-              const ConnectedComponentCounter &cc_counter,
-              const string &prefix = "NODE")
+                EdgeNamingF edge_naming_f = BasicNamingF())
             : graph_(graph) {
-        FillEdgeIdMap(cc_counter, prefix);
+        FillEdgeIdMap(edge_naming_f);
     }
 
     void WriteSegmentsAndLinks(const string &fn) {

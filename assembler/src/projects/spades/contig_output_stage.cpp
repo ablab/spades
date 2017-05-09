@@ -24,25 +24,29 @@ vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
 }
 
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
+    using namespace path_extend;
     auto output_dir = cfg::get().output_dir;
 
     std::string gfa_fn = output_dir + "assembly_graph_with_scaffolds.gfa";
     INFO("Writing GFA to " << gfa_fn);
 
     std::ofstream os(gfa_fn);
-    path_extend::GFAWriter<Graph> gfa_writer(gp.g, os);
+    GFAWriter<Graph> gfa_writer(gp.g, os);
     gfa_writer.WriteSegmentsAndLinks();
 
     OutputEdgeSequences(gp.g, output_dir + "before_rr");
 
     INFO("Outputting FastG graph to " << output_dir << "assembly_graph.fastg");
     std::string fastg_fn = output_dir + "assembly_graph.fastg";
-    path_extend::FastgWriter<Graph> fastg_writer(gp.g, gp.components);
+    auto naming_f = cfg::get().pd ? FastgWriter<Graph>::PlasmidNamingF(gp.components) :
+                        FastgWriter<Graph>::BasicNamingF();
+
+    FastgWriter<Graph> fastg_writer(gp.g, naming_f);
     fastg_writer.WriteSegmentsAndLinks(fastg_fn);
 
     if (output_paths_ && gp.contig_paths.size() != 0) {
-        auto name_generator = path_extend::MakeContigNameGenerator(cfg::get().mode, gp);
-        path_extend::ContigWriter writer(gp.g, name_generator);
+        auto name_generator = MakeContigNameGenerator(cfg::get().mode, gp);
+        ContigWriter writer(gp.g, name_generator);
 
         bool output_broken_scaffolds = cfg::get().pe_params.param_set.scaffolder_options.enabled &&
             cfg::get().use_scaffolder &&
@@ -58,8 +62,8 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
                 WARN("Unsupported contig output mode");
             }
 
-            path_extend::ScaffoldBreaker breaker(min_gap);
-            path_extend::PathContainer broken_scaffolds;
+            ScaffoldBreaker breaker(min_gap);
+            PathContainer broken_scaffolds;
             breaker.Break(gp.contig_paths, broken_scaffolds);
             writer.OutputPaths(broken_scaffolds,
                                CreatePathsWriters(output_dir + cfg::get().co.contigs_name,
@@ -67,7 +71,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
         }
 
         auto writers = CreatePathsWriters(output_dir + cfg::get().co.scaffolds_name, fastg_writer);
-        writers.push_back([&](const path_extend::ScaffoldStorage &storage) {
+        writers.push_back([&](const ScaffoldStorage &storage) {
             gfa_writer.WritePaths(storage);
         });
         writer.OutputPaths(gp.contig_paths, writers);
