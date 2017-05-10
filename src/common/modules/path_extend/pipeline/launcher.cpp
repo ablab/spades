@@ -497,6 +497,8 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 
     gap_closers.push_back(std::make_shared<DijkstraGapCloser>(graph_, params_.max_polisher_gap));
 
+    ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, support_);
+
     const auto &paired_indices = gp_.get<UnclusteredPairedInfoIndicesT<Graph>>();
     for (size_t i = 0; i < dataset_info_.reads.lib_count(); i++) {
         auto lib = dataset_info_.reads[i];
@@ -505,12 +507,14 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             gap_closers.push_back(std::make_shared<MatePairGapCloser>(graph_, params_.max_polisher_gap, paired_lib,
                                                                       unique_data_.main_unique_storage_));
         }
-        if (lib.type() == io::LibraryType::Clouds10x) {
-            barcode_index::FrameBarcodeIndexInfoExtractor extractor(gp_.barcode_mapper_ptr, gp_.g);
+        if (lib.type() == io::LibraryType::Clouds10x and cfg::get().ts_res.read_cloud_resolution_on) {
             auto barcode_extractor_ptr = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
             auto cloud_chooser_factory = std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.g, unique_data_.unique_read_cloud_storage_,
                                                                                          barcode_extractor_ptr);
-            auto cloud_extender_factory = std::make_shared<SimpleExtenderFactory>(gp_, cover_map, cloud_chooser_factory);
+            auto simple_chooser = generator.MakeSimpleExtensionChooser(i);
+            auto simple_chooser_factory = std::make_shared<SameChooserFactory>(gp_.g, simple_chooser);
+            auto composite_chooser_factory = std::make_shared<CompositeChooserFactory>(gp_.g, simple_chooser_factory, cloud_chooser_factory);
+            auto cloud_extender_factory = std::make_shared<SimpleExtenderFactory>(gp_, cover_map, composite_chooser_factory);
             gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, cloud_extender_factory));
         }
     }
