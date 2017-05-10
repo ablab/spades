@@ -167,10 +167,11 @@ namespace barcode_index {
             //Process every read from 10X dataset
             io::SingleRead read;
             size_t counter = 0;
+            const vector<string> barcode_prefixes = {"BC:Z", "BX:Z"};
             for (auto stream: streams) {
                 while (!stream->eof()) {
                     *stream >> read;
-                    string barcode_string = GetTenXBarcodeFromRead(read);
+                    string barcode_string = GetTenXBarcodeFromRead(read, barcode_prefixes);
 
                     if (barcode_string != "") {
                         barcode_codes_.AddBarcode(barcode_string);
@@ -202,18 +203,18 @@ namespace barcode_index {
             auto key_and_value = std::make_pair(edge, entry);
             mapper_->edge_to_entry_.insert({edge, entry});
         }
-
-
-        //todo works with a certain format of 10x only
-        string GetTenXBarcodeFromRead(const io::SingleRead &read) {
+        
+        string GetTenXBarcodeFromRead(const io::SingleRead &read, const vector<string>& barcode_prefixes) {
             const size_t barcode_len = 16;
-            const string prefix_string = "BC:Z";
-            size_t prefix_len = prefix_string.size();
-            size_t start_pos = read.name().find(prefix_string);
-            if (start_pos != string::npos) {
-                VERIFY(start_pos + prefix_len + barcode_len <= read.name().length())
-                string barcode = read.name().substr(start_pos + 5, barcode_len);
-                return barcode;
+            for (const auto& prefix: barcode_prefixes) {
+
+                size_t prefix_len = prefix.size();
+                size_t start_pos = read.name().find(prefix);
+                if (start_pos != string::npos) {
+                    VERIFY(start_pos + prefix_len + barcode_len <= read.name().length())
+                    string barcode = read.name().substr(start_pos + 5, barcode_len);
+                    return barcode;
+                }
             }
             return "";
         }

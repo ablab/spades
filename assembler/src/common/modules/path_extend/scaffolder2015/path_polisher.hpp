@@ -51,6 +51,34 @@ public:
     virtual shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath &original_path, size_t position) const = 0;
 };
 
+class SameChooserFactory : public GapExtensionChooserFactory {
+    const shared_ptr<ExtensionChooser> chooser_;
+
+public:
+    SameChooserFactory(const Graph& g, shared_ptr<ExtensionChooser> chooser) : GapExtensionChooserFactory(g),
+                                                                               chooser_(chooser) {}
+
+    shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath& , size_t ) const override {
+        return chooser_;
+    }
+};
+
+class CompositeChooserFactory : public GapExtensionChooserFactory {
+    const shared_ptr<GapExtensionChooserFactory> first_;
+    const shared_ptr<GapExtensionChooserFactory> second_;
+
+public:
+    CompositeChooserFactory(const Graph& g, shared_ptr<GapExtensionChooserFactory> first,
+                            shared_ptr<GapExtensionChooserFactory> second):
+            GapExtensionChooserFactory(g), first_(first), second_(second) {}
+
+    shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath& path, size_t position) const override {
+        auto extension_chooser = std::make_shared<CompositeExtensionChooser>(this->g(), first_->CreateChooser(path, position),
+                                                                             second_->CreateChooser(path, position));
+        return extension_chooser;
+    }
+};
+
 class ReadCloudGapExtensionChooserFactory : public GapExtensionChooserFactory {
     typedef shared_ptr <barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr;
     const ScaffoldingUniqueEdgeStorage unique_storage_;
@@ -63,11 +91,9 @@ public:
     virtual shared_ptr<ExtensionChooser> CreateChooser(const BidirectionalPath& original_path, size_t position) const override {
 
         const EdgeId target_edge = FindUniqueAfterPosition(original_path, position);
-//        const Gap original_gap = original_path.GapAt(position);
-//        const size_t reserve = 1000;
-//        auto dij = DijkstraHelper::CreateBoundedDijkstra(g, original_gap.gap + reserve);
-//        dij.Run()
-        auto extension_chooser_ptr = std::make_shared<ReadCloudGapExtensionChooser>(this->g(), extractor_, target_edge, unique_storage_);
+//        const EdgeId next_edge = original_path.At(position);
+        auto extension_chooser_ptr = std::make_shared<ReadCloudGapExtensionChooser>(this->g(), extractor_, target_edge,
+                                                                                    unique_storage_);
         return extension_chooser_ptr;
     }
 
@@ -214,7 +240,7 @@ public:
 };
 
 class PathPolisher {
-    static const size_t MAX_POLISH_ATTEMPTS = 5;
+    static const size_t MAX_POLISH_ATTEMPTS = 10;
 
     const Graph &g_;
     std::vector<std::shared_ptr<PathGapCloser>> gap_closers_;
