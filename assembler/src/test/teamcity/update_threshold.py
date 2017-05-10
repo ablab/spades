@@ -48,6 +48,8 @@ def parse_args_ut():
     parser.add_argument("--etalon_contigs_suffix", help="suffix to saved contigs that will be used to compute thresholds; empty by default", type=str)
     parser.set_defaults(etalon_contigs_prefix="")
     parser.set_defaults(etalon_contigs_suffix="")
+    parser.add_argument("--force_to_update", help="comma-separated list of metrics for which threshold will be overwritten even if the metric satisfies current value; e.g. 'max_n50,min_n50,max_mis'")
+    parser.set_defaults(force_to_update = "")
     parser.add_argument("--overwrite_if_satisfies", dest="overwrite_if_satisfies", help="overwrite threshold even if metric satisfies current value", action='store_true')
     parser.set_defaults(overwrite_if_satisfies=False)
     parser.add_argument("--upper", "-u", help="upper coefficient, >= 1.0 (1.1 by default)", type=float)
@@ -61,9 +63,14 @@ def parse_args_ut():
 
 BASIC_METRICS = ["N50", "LG50", "# misassemblies", "Genome fraction (%)",  "# indels per 100 kbp", "# mismatches per 100 kbp", "# local misassemblies"]
 
+
+def metric_in_list(metric, mlist):
+    return metric in mlist.split(',')
+
+
 #use threshold update policy set by user
-def shall_update_threshold(add_metrics, metric, entry):
-    return (add_metrics == "all") or (add_metrics == "basic" and metric in BASIC_METRICS) or (add_metrics == "none" and entry.assess)
+def shall_update_threshold(args, metric, entry):
+    return (args.add_metrics == "all") or (args.add_metrics == "basic" and metric in BASIC_METRICS) or (args.add_metrics == "none" and entry.assess) or metric_in_list(entry.config_name, args.force_to_update)
 
 
 #update metrics using given quast report
@@ -79,13 +86,13 @@ def process_quast_report(args, report, limit_map):
             for entry in limit_map[metric]:
                 param_name = entry.config_name
 
-                if not shall_update_threshold(args.add_metrics, metric, entry):
+                if not shall_update_threshold(args, metric, entry):
                     log.log("Value for " + param_name + " will not be updated")
                     continue
 
                 #that metric shouold be higher than threshold (e.g. N50)
                 if entry.should_be_higher_than_theshold:
-                    if result_map[metric] < entry.value or args.overwrite_if_satisfies:
+                    if result_map[metric] < entry.value or args.overwrite_if_satisfies or metric_in_list(param_name, args.force_to_update):
                         #either not satisies or overwrite anyways
                         to_update[param_name] = result_map[metric] * args.lower
                         log.log("New value for " + param_name + " is set to " + str(to_update[param_name]))
@@ -94,7 +101,7 @@ def process_quast_report(args, report, limit_map):
 
                 #that metric shouold be less than threshold (e.g. misassemblies)
                 else:
-                    if result_map[metric] > entry.value or args.overwrite_if_satisfies:
+                    if result_map[metric] > entry.value or args.overwrite_if_satisfies or metric_in_list(param_name, args.force_to_update):
                         #either not satisies or overwrite anyways
                         to_update[param_name] = result_map[metric] * args.upper
                         log.log("New value for " + param_name + " is set to " + str(to_update[param_name]))
