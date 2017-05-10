@@ -20,7 +20,7 @@ if [ ! -d $etalons_folder ]; then
 fi
 
 diffs=0
-    for f in $etalons_folder/*/saves/* $etalons_folder/scaffolds* $etalons_folder/contigs*
+    for f in $etalons_folder/*/saves/* $etalons_folder/before_rr.fasta $etalons_folder/assembly_graph* $etalons_folder/scaffolds* $etalons_folder/contigs*
     do
         echo "Checking diffs in " $f
         set +e
