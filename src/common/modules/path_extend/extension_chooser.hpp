@@ -280,6 +280,24 @@ public:
     }
 };
 
+class CompositeExtensionChooser: public ExtensionChooser {
+    shared_ptr<ExtensionChooser> first_;
+    shared_ptr<ExtensionChooser> second_;
+public:
+    CompositeExtensionChooser(const Graph& g, shared_ptr<ExtensionChooser> first, shared_ptr<ExtensionChooser> second) :
+            ExtensionChooser(g), first_(first), second_(second) {}
+
+    EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
+        EdgeContainer answer;
+        auto first_result = first_->Filter(path, edges);
+        if (first_result.size() != 1) {
+            auto second_result = second_->Filter(path, edges);
+            return second_result;
+        }
+        return first_result;
+    }
+};
+
 
 class TrivialExtensionChooser: public ExtensionChooser {
 
@@ -2005,14 +2023,14 @@ protected:
     const ScaffoldingUniqueEdgeStorage& unique_storage_;
     struct ReadCloudGapExtensionChooserConfigs {
         const size_t shared_threshold_;
-        const size_t count_threshold_;
+        const size_t read_threshold;
         const size_t gap_threshold_;
         const size_t scan_bound_;
 
         ReadCloudGapExtensionChooserConfigs(const size_t shared_threshold_, const size_t count_threshold_,
                                             const size_t gap_threshold_, const size_t scan_bound_) :
                                                                            shared_threshold_(shared_threshold_),
-                                                                           count_threshold_(count_threshold_),
+                                                                           read_threshold(count_threshold_),
                                                                            gap_threshold_(gap_threshold_),
                                                                            scan_bound_(scan_bound_) {}
     };
@@ -2022,7 +2040,7 @@ public:
     ReadCloudGapExtensionChooser(const Graph &g, const barcode_extractor_ptr_t &barcode_extractor_ptr_,
                                  const EdgeId &target_edge_, const ScaffoldingUniqueEdgeStorage& unique_storage_)
             : ExtensionChooser(g), barcode_extractor_ptr_(barcode_extractor_ptr_),
-              target_edge_(target_edge_), unique_storage_(unique_storage_), configs_(2, 1, 5000, 500) {}
+              target_edge_(target_edge_), unique_storage_(unique_storage_), configs_(0, 1, 5000, 500) {}
 
     virtual EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
         DEBUG("Filter started");
@@ -2039,7 +2057,7 @@ public:
 
         auto is_edge_supported_by_clouds = [this, &last_unique](const EdgeWithDistance& edge) {
             return IsEdgeSupportedByClouds(edge.e_, last_unique, this->target_edge_, this->configs_.shared_threshold_,
-                                           this->configs_.count_threshold_, this->configs_.gap_threshold_);
+                                           this->configs_.read_threshold, this->configs_.gap_threshold_);
         };
         std::copy_if(edges.begin(), edges.end(), std::back_inserter(result), is_edge_supported_by_clouds);
         if (result.size() > 0) {
@@ -2049,7 +2067,7 @@ public:
 
         auto are_supported_by_clouds_reachable = [this, &last_unique](const EdgeWithDistance& edge) {
             return AreSupportedByCloudsReachable(edge.e_, last_unique, this->target_edge_,
-                                                 this->configs_.shared_threshold_, this->configs_.count_threshold_,
+                                                 this->configs_.shared_threshold_, this->configs_.read_threshold,
                                                  this->configs_.gap_threshold_, this->configs_.scan_bound_);
         };
         std::copy_if(edges.begin(), edges.end(), std::back_inserter(result), are_supported_by_clouds_reachable);
@@ -2079,8 +2097,7 @@ private:
         dijkstra.Run(g_.EdgeEnd(edge));
         DEBUG("Running dij from candidate " << edge.int_id());
         bool found_supported = false;
-        //todo use some fp here for better readability
-        //todo use custom dijkstra that stops on supported edges to improve performanc
+        //todo use custom dijkstra that stops on supported edges to improve performance
         for (auto v: dijkstra.ReachedVertices()) {
             if (dijkstra.GetDistance(v) < scan_bound) {
                 for (auto connected: g_.OutgoingEdges(v)) {
