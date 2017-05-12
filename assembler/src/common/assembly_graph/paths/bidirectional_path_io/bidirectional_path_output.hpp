@@ -69,13 +69,14 @@ class FastgWriter {
 
 public:
 
-    static EdgeNamingF BasicNamingF(const string &prefix = "NODE") {
+    static EdgeNamingF BasicNamingF(const string &prefix = "EDGE") {
         return [=](size_t cnt, const Graph &g, EdgeId e) {
             return io::MakeContigId(cnt, g.length(e) + g.k(), g.coverage(e), prefix);
         };
     }
 
-    static EdgeNamingF PlasmidNamingF(const ConnectedComponentCounter &cc_counter, const string &prefix = "NODE") {
+    static EdgeNamingF PlasmidNamingF(const ConnectedComponentCounter &cc_counter,
+                                      const string &prefix = "EDGE") {
         return [=, &cc_counter](size_t cnt, const Graph &g, EdgeId e) {
             return io::MakeContigComponentId(cnt, g.length(e) + g.k(),
                                              g.coverage(e),
