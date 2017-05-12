@@ -12,11 +12,48 @@
 namespace path_extend {
 
 template<class Graph>
+using EdgeNamingF = std::function<std::string (const Graph&, EdgeId)>;
+
+template<class Graph>
+EdgeNamingF<Graph> IdNamingF(const string &prefix = "") {
+    return [=](const Graph &g, EdgeId e) {
+        return io::MakeContigId(g.int_id(e), prefix);
+    };
+}
+
+template<class Graph>
+EdgeNamingF<Graph> BasicNamingF(const string &prefix = "EDGE") {
+    return [=](const Graph &g, EdgeId e) {
+        return io::MakeContigId(g.int_id(e), g.length(e) + g.k(), g.coverage(e), prefix);
+    };
+}
+
+template<class Graph>
+EdgeNamingF<Graph> PlasmidNamingF(const ConnectedComponentCounter &cc_counter,
+                           const string &prefix = "EDGE") {
+    return [=, &cc_counter](const Graph &g, EdgeId e) {
+        return io::MakeContigComponentId(g.int_id(e),
+                                         g.length(e) + g.k(),
+                                         g.coverage(e),
+                                         cc_counter.GetComponent(e),
+                                         prefix);
+    };
+}
+
+template<class Graph>
 class CanonicalEdgeHelper {
     const Graph &g_;
+    const EdgeNamingF<Graph> naming_f_;
+    const string pos_orient_;
+    const string neg_orient_;
 public:
 
-    CanonicalEdgeHelper(const Graph &g) : g_(g) {
+    CanonicalEdgeHelper(const Graph &g,
+                        EdgeNamingF<Graph> naming_f = IdNamingF<Graph>(),
+                        const string& pos_orient = "+",
+                        const string& neg_orient = "-") :
+            g_(g), naming_f_(naming_f),
+            pos_orient_(pos_orient), neg_orient_(neg_orient) {
     }
 
     bool IsCanonical(EdgeId e) const {
@@ -28,11 +65,12 @@ public:
     }
 
     std::string GetOrientation(EdgeId e) const {
-        return IsCanonical(e) ? "+" : "-";
+        return IsCanonical(e) ? pos_orient_ : neg_orient_;
     }
 
-    std::string EdgeString(EdgeId e, const std::string &delim = "") const {
-        return std::to_string(Canonical(e).int_id()) + delim + GetOrientation(e);
+    std::string EdgeString(EdgeId e,
+                           const std::string &delim = "") const {
+        return naming_f_(g_, Canonical(e)) + delim + GetOrientation(e);
     }
 };
 
@@ -40,30 +78,19 @@ template<class Graph>
 class FastgWriter {
     typedef typename Graph::EdgeId EdgeId;
 
-    typedef std::function<std::string (const Graph&, EdgeId)> EdgeNamingF;
-
     const Graph &graph_;
-    CanonicalEdgeHelper<Graph> canonical_helper_;
-    EdgeNamingF naming_f_;
-
-    std::string ShortEdgeId(EdgeId e) const {
-        return canonical_helper_.EdgeString(e);
-    }
-
-    std::string ExtendedEdgeId(EdgeId e) const {
-        string id = naming_f_(graph_, canonical_helper_.Canonical(e));
-        return canonical_helper_.IsCanonical(e) ? id : id + "'";
-    }
+    CanonicalEdgeHelper<Graph> short_namer_;
+    CanonicalEdgeHelper<Graph> extended_namer_;
 
     string ToPathString(const BidirectionalPath &path) const {
         if (path.Empty())
             return "";
-        string res = ShortEdgeId(path.Front());
+        string res = short_namer_.EdgeString(path.Front());
         for (size_t i = 1; i < path.Size(); ++i) {
             if (graph_.EdgeEnd(path[i - 1]) != graph_.EdgeStart(path[i]) || path.GapAt(i).gap > 0) {
-                res += ";\n" + ShortEdgeId(path[i]);
+                res += ";\n" + short_namer_.EdgeString(path[i]);
             } else {
-                res += "," + ShortEdgeId(path[i]);
+                res += "," + short_namer_.EdgeString(path[i]);
             }
         }
         return res;
@@ -80,27 +107,11 @@ class FastgWriter {
 
 public:
 
-    static EdgeNamingF BasicNamingF(const string &prefix = "EDGE") {
-        return [=](const Graph &g, EdgeId e) {
-            return io::MakeContigId(g.int_id(e), g.length(e) + g.k(), g.coverage(e), prefix);
-        };
-    }
-
-    static EdgeNamingF PlasmidNamingF(const ConnectedComponentCounter &cc_counter,
-                                      const string &prefix = "EDGE") {
-        return [=, &cc_counter](const Graph &g, EdgeId e) {
-            return io::MakeContigComponentId(g.int_id(e), g.length(e) + g.k(),
-                                             g.coverage(e),
-                                             cc_counter.GetComponent(e),
-                                             prefix);
-        };
-    }
-
     FastgWriter(const Graph &graph,
-                EdgeNamingF edge_naming_f = BasicNamingF())
+                EdgeNamingF<Graph> edge_naming_f = BasicNamingF<Graph>())
             : graph_(graph),
-              canonical_helper_(graph_),
-              naming_f_(edge_naming_f) {
+              short_namer_(graph_),
+              extended_namer_(graph_, edge_naming_f, "", "'") {
     }
 
     void WriteSegmentsAndLinks(const string &fn) {
@@ -109,16 +120,16 @@ public:
             EdgeId e = *it;
             set<string> next;
             for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(e))) {
-                next.insert(ExtendedEdgeId(next_e));
+                next.insert(extended_namer_.EdgeString(next_e));
             }
-            ReportEdge(os, graph_.EdgeNucls(e).str(), ExtendedEdgeId(e), next);
+            ReportEdge(os, graph_.EdgeNucls(e).str(), extended_namer_.EdgeString(e), next);
             if (e != graph_.conjugate(e)) {
                 set<string> next_conj;
                 for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(graph_.conjugate(e)))) {
-                    next_conj.insert(ExtendedEdgeId(next_e));
+                    next_conj.insert(extended_namer_.EdgeString(next_e));
                 }
                 ReportEdge(os, graph_.EdgeNucls(graph_.conjugate(e)).str(),
-                           ExtendedEdgeId(graph_.conjugate(e)), next_conj);
+                           extended_namer_.EdgeString(graph_.conjugate(e)), next_conj);
             }
         }
     }
@@ -139,7 +150,7 @@ template<class Graph>
 class GFAWriter {
     typedef typename Graph::EdgeId EdgeId;
     const Graph &graph_;
-    CanonicalEdgeHelper<Graph> canonical_helper_;
+    CanonicalEdgeHelper<Graph> edge_namer_;
     std::ostream &os_;
 
     void WriteSegment(size_t edge_id, const Sequence &seq, double cov) {
@@ -157,8 +168,8 @@ class GFAWriter {
 
     void WriteLink(EdgeId e1, EdgeId e2,
                    size_t overlap_size) {
-        os_ << "L\t" << canonical_helper_.EdgeString(e1, "\t") << "\t"
-            << canonical_helper_.EdgeString(e2, "\t") << "\t"
+        os_ << "L\t" << edge_namer_.EdgeString(e1, "\t") << "\t"
+            << edge_namer_.EdgeString(e2, "\t") << "\t"
             << overlap_size << "M" << std::endl;
     }
 
@@ -187,10 +198,11 @@ class GFAWriter {
     }
 
 public:
-    GFAWriter(const Graph &graph, std::ostream &os)
+    GFAWriter(const Graph &graph, std::ostream &os,
+              EdgeNamingF<Graph> naming_f = BasicNamingF<Graph>())
             : graph_(graph),
-              canonical_helper_(graph_),
-              os_(os) {
+              os_(os),
+              edge_namer_(graph_, naming_f) {
     }
 
     void WriteSegmentsAndLinks() {
@@ -209,7 +221,7 @@ public:
             size_t segment_id = 1;
             for (size_t i = 0; i < p.Size() - 1; ++i) {
                 EdgeId e = p[i];
-                segmented_path.push_back(canonical_helper_.EdgeString(e));
+                segmented_path.push_back(edge_namer_.EdgeString(e));
                 if (graph_.EdgeEnd(e) != graph_.EdgeStart(p[i+1]) || p.GapAt(i+1).gap > 0) {
                     WritePath(scaffold_info.name, segment_id, segmented_path);
                     segment_id++;
@@ -217,7 +229,7 @@ public:
                 }
             }
 
-            segmented_path.push_back(canonical_helper_.EdgeString(p.Back()));
+            segmented_path.push_back(edge_namer_.EdgeString(p.Back()));
             WritePath(scaffold_info.name, segment_id, segmented_path);
         }
     }

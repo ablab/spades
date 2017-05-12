@@ -22,8 +22,12 @@
 
 namespace io {
 
+inline std::string MakeContigId(size_t number, const std::string& prefix = "NODE") {
+    return prefix.empty() ? std::to_string(number) : (prefix + "_" + std::to_string(number));
+}
+
 inline std::string MakeContigId(size_t number, size_t length, const std::string& prefix = "NODE") {
-    return prefix + "_" + std::to_string(number) + "_length_" + std::to_string(length);
+    return MakeContigId(number, prefix) + "_length_" + std::to_string(length);
 }
 
 inline std::string MakeContigId(size_t number, size_t length, double coverage, const std::string& prefix = "NODE") {

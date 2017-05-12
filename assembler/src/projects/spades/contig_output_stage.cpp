@@ -38,8 +38,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
     INFO("Outputting FastG graph to " << output_dir << "assembly_graph.fastg");
     std::string fastg_fn = output_dir + "assembly_graph.fastg";
-    auto naming_f = cfg::get().pd ? FastgWriter<Graph>::PlasmidNamingF(gp.components) :
-                        FastgWriter<Graph>::BasicNamingF();
+    auto naming_f = cfg::get().pd ? PlasmidNamingF<Graph>(gp.components) : BasicNamingF<Graph>();
 
     FastgWriter<Graph> fastg_writer(gp.g, naming_f);
     fastg_writer.WriteSegmentsAndLinks(fastg_fn);
