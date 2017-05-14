@@ -188,13 +188,13 @@ class GFAWriter {
             os_ << delimeter << e;
             delimeter = ",";
         }
-        os_ << "\t";
-        delimeter = "";
-        for (size_t i = 0; i < edge_strs.size() - 1; ++i) {
-            os_ << delimeter << "*";
-            delimeter = ",";
-        }
-        os_ << std::endl;
+        os_ << "\t*\n";
+//        delimeter = "";
+//        for (size_t i = 0; i < edge_strs.size() - 1; ++i) {
+//            os_ << delimeter << "*";
+//            delimeter = ",";
+//        }
+//        os_ << "\n";
     }
 
 public:
