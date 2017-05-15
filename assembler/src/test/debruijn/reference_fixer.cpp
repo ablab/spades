@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
         ss << read.GetSequenceString();
     }
     io::SingleRead concat("concat", ss.str());
-    io::osequencestream out(out_fn);
+    io::OutputSequenceStream out(out_fn);
     out << concat;
     return 0;
 }

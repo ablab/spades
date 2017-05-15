@@ -48,7 +48,7 @@ void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
         all_contigs_[contig_name] = {full_path, out_full_path, contig_seq.length(), sam_files_type(), sam_filename, cur_id};
         cur_id ++;
         buffered_reads_[contig_name].clear();
-        io::osequencestream oss(full_path);
+        io::OutputSequenceStream oss(full_path);
         oss << io::SingleRead(contig_name, contig_seq);
         DEBUG("full_path " + full_path)
     }

@@ -26,7 +26,7 @@ void DumpEdgesAndAnnotation(const Graph& g,
                             const string& out_edges,
                             const string& out_annotation) {
     INFO("Dumping edges to " << out_edges << "; their annotation to " << out_annotation);
-    io::osequencestream oss(out_edges);
+    io::OutputSequenceStream oss(out_edges);
     AnnotationOutStream annotation_out(out_annotation);
     for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
         EdgeId e = *it;

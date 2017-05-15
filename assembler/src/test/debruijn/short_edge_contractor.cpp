@@ -53,7 +53,7 @@ void Launch(size_t K, string saves_path, size_t edge_length_bound,
     graphio::ScanGraphPack(saves_path, gp);
 
 
-    io::osequencestream oss(fastg_output);
+    io::OutputSequenceStream oss(fastg_output);
     for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         EdgeId e = *it;
         if (gp.g.length(e) > edge_length_bound) {

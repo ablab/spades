@@ -285,7 +285,7 @@ size_t ContigProcessor::ProcessMultipleSamFiles() {
     }
     vector<string> contig_name_splitted;
     boost::split(contig_name_splitted, contig_name_, boost::is_any_of("_"));
-    io::osequencestream oss(output_contig_file_);
+    io::OutputSequenceStream oss(output_contig_file_);
     for(size_t i = 0; i < contig_name_splitted.size(); i++) {
         if (contig_name_splitted[i] == "length" && i + 1 < contig_name_splitted.size()) {
             contig_name_splitted[i + 1] = std::to_string(int(s_new_contig.str().length()));

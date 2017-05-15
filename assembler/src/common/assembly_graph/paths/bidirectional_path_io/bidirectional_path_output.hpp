@@ -120,7 +120,7 @@ public:
     }
 
     void WriteSegmentsAndLinks(const string &fn) {
-        io::osequencestream os(fn);
+        io::OutputSequenceStream os(fn);
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             EdgeId e = *it;
             set<string> next;

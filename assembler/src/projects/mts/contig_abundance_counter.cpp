@@ -15,7 +15,7 @@ using namespace debruijn_graph;
 class Runner {
 public:
     static void Run(ContigAbundanceCounter& abundance_counter, size_t min_length_bound,
-                    io::FileReadStream& contigs_stream, io::osequencestream& splits_os,
+                    io::FileReadStream& contigs_stream, io::OutputSequenceStream& splits_os,
                     std::ofstream& id_out, std::ofstream& mpl_out) {
         static const size_t split_length = 10000;
         io::SingleRead full_contig;
@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
     abundance_counter.Init(kmer_mult_fn);
 
     io::FileReadStream contigs_stream(contigs_path);
-    io::osequencestream splits_os(splits_path);
+    io::OutputSequenceStream splits_os(splits_path);
 
     std::ofstream id_out(contigs_abundance_fn + ".id");
     std::ofstream mpl_out(contigs_abundance_fn + ".mpl");

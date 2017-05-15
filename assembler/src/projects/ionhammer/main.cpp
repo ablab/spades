@@ -267,7 +267,7 @@ int main(int argc, char** argv) {
                                 std::to_string(iread) + ".cor.fasta";
 
           std::string outcor = fs::append_path(cfg::get().output_dir, fs::basename(*I) + usuffix);
-          io::osequencestream ors(outcor);
+          io::OutputSequenceStream ors(outcor);
 
           io::FileReadStream irs(*I, io::PhredOffset);
           SingleReadCorrector read_corrector(kmer_data, debug_pred, select_pred);
@@ -287,7 +287,7 @@ int main(int argc, char** argv) {
                               std::to_string(iread) + ".cor.fasta";
 
         std::string outcor = fs::append_path(cfg::get().output_dir, fs::basename(*I) + usuffix);
-        io::osequencestream ors(outcor);
+        io::OutputSequenceStream ors(outcor);
 
         BamTools::BamReader bam_reader;
         bam_reader.Open(*I);

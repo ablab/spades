@@ -86,34 +86,6 @@ public:
         return operator <<(s);
     }
 
-    /**
-     * Fixme use separate class. Deprecate current class
-     * Has different way of making headers
-     * Doesn't increase counters, don't mix with other methods!
-     */
-    osequencestream& operator<<(const SingleRead& read) {
-        ofstream_ << ">" << read.name() << std::endl;
-        WriteWrapped(read.GetSequenceString(), ofstream_);
-        return *this;
-    }
-};
-
-class PairedOutputSequenceStream {
-    io::osequencestream os_l_;
-    io::osequencestream os_r_;
-
-public:
-    PairedOutputSequenceStream(const std::string& filename1,
-                               const std::string &filename2) :
-           os_l_(filename1),
-           os_r_(filename2) {
-    }
-
-    PairedOutputSequenceStream& operator<<(const PairedRead& read) {
-        os_l_ << read.first();
-        os_r_ << read.second();
-        return *this;
-    }
 };
 
 class osequencestream_cov: public osequencestream {
@@ -137,6 +109,39 @@ public:
 
     using osequencestream::operator<<;
 
+};
+
+class OutputSequenceStream {
+    std::ofstream ofstream_;
+public:
+
+    OutputSequenceStream(const std::string& filename):
+            ofstream_(filename) {
+    }
+
+    OutputSequenceStream& operator<<(const SingleRead& read) {
+        ofstream_ << ">" << read.name() << "\n";
+        WriteWrapped(read.GetSequenceString(), ofstream_);
+        return *this;
+    }
+};
+
+class PairedOutputSequenceStream {
+    OutputSequenceStream os_l_;
+    OutputSequenceStream os_r_;
+
+public:
+    PairedOutputSequenceStream(const std::string& filename1,
+                               const std::string &filename2) :
+            os_l_(filename1),
+            os_r_(filename2) {
+    }
+
+    PairedOutputSequenceStream& operator<<(const PairedRead& read) {
+        os_l_ << read.first();
+        os_r_ << read.second();
+        return *this;
+    }
 };
 
 }

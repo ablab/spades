@@ -7,7 +7,7 @@
 namespace path_extend {
 
 void WriteScaffolds(const ScaffoldStorage &scaffold_storage, const string &fn) {
-    io::osequencestream oss(fn);
+    io::OutputSequenceStream oss(fn);
     std::ofstream os_fastg;
 
     for (const auto& scaffold_info : scaffold_storage) {
