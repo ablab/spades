@@ -37,18 +37,8 @@ class ConcoctFormatter:
     def profile(self, file, contig, profile):
         print(contig.replace(",", "~"), profile.replace(" ", "\t"), sep="\t", file=out)
 
-class MaxBinFormatter:
-    def __init__(self):
-        pass
 
-    def header(self, file, samples):
-        print("\t".join(["contig"] + ["cov_mean_" + sample for sample in samples]), file=out)
-
-    def profile(self, file, contig, profile):
-        print(contig.replace(",", "~"), profile.replace(" ", "\t"), sep="\t", file=out)
-
-
-formatters = {"canopy": CanopyFormatter(), "concoct": ConcoctFormatter(), "maxbin": MaxBinFormatter()}
+formatters = {"canopy": CanopyFormatter(), "concoct": ConcoctFormatter(), "maxbin": ConcoctFormatter()}
 formatter = formatters[args.type]
 
 with open(args.output, "w") as out:

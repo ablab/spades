@@ -79,7 +79,7 @@ with cd(exec_dir):
             call_snake(["--snakefile", "AltStats.snake"])
         else:
             print("Step #2a - Assembly statistics")
-            call_snake(["--snakefile", "Stats.snake", "stats_assembly", "tsne_all"])
+            call_snake(["--snakefile", "Stats.snake", "stats_assembly"])
 
             print("Step #2b - Reassembly statistics")
-            call_snake(["--snakefile", "Stats.snake", "stats_reassembly", "tsne_all"])
+            call_snake(["--snakefile", "Stats.snake", "stats_reassembly"])

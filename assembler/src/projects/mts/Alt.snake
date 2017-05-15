@@ -161,14 +161,14 @@ rule binning:
 #---- Binning with MaxBin2 --------------------------------------------------------
 
 rule maxbin:
-    input:   contigs="assembly/samples.fasta", profiles="profile/samples/depth_maxbin.txt"
+    input:   contigs="assembly/samples.fasta", profiles="profile/samples/depth_concoct.txt"
     output:  flag=touch("binning/maxbin/binning.done"),
              ann=("annotation/metabat/samples.ann") 
     threads: THREADS
     params:  out="binning/maxbin/cluster", csv="binning/maxbin/clustering.csv"
     log:     "binning/maxbin.log"
     message: "Running MaxBin clustering"
-    shell:   "perl /home/tdvorkina/MaxBin/MaxBin-2.2.2/run_MaxBin.pl -thread {threads} -min_contig_length {MIN_CONTIG_LENGTH} "
+    shell:   "perl {SOFT}/run_MaxBin.pl -thread {threads} -min_contig_length {MIN_CONTIG_LENGTH} "
              " -contig {input.contigs} -abund {input.profiles}"
              " -out {params.out} > {log}"
              "&& {SCRIPTS}/make_maxbincsv.py -o {params.csv} {params.out}"
