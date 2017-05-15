@@ -50,11 +50,11 @@ if args.config:
     ext_config = os.path.join(args.dir, "config.yaml")
     if os.path.exists(ext_config):
         if subprocess.call(["diff", ext_config, args.config]):
-            print("Config path specified, but different config.yaml already exists in output folder", args.dir)
+            print("\033[33mConfig path specified, but different config.yaml already exists in output folder", args.dir, "\033[0m")
             sys.exit(239)
     else:
         print("Copying config from", args.config)
-        shutil.copy(args.config, args.dir)
+        shutil.copy(args.config, os.path.join(args.dir, "config.yaml"))
 
 with cd(exec_dir):
     def call_snake(extra_params=[]):
@@ -66,7 +66,7 @@ with cd(exec_dir):
         if not os.path.exists(assembly_dir):
             os.symlink(args.reuse_assemblies, assembly_dir)
         else:
-            print("Warning: assembly folder already exists")
+            print("\033[33mWarning: assembly folder already exists\033[0m")
 
     if args.alt:
         call_snake(["--snakefile", "Alt.snake"])

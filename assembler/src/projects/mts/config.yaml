@@ -1,10 +1,22 @@
-IN: "/path/to/samples"
-#SPADES: "/path/to/SPAdes" #Optional
-#BIN: "/path/to/mts/binaries" #Optional
-#SCRIPTS: "~/Projects/mts/assembler/src/projects/mts/scripts" #Optional
-SOFT: "/path/to/canopy/etc"
-#K: 55 #Optional
-#SMALL_K: 21 #Optional
-#MIN_CONTIG_LENGTH: 2000 #Optional
-#REF: "/Sid/snurk/mts/nielsen/ref.fasta"
-#QUAST: "python2 /path/to/QUAST" #For stats only
+data: "path/to/samples/directory"
+soft: "path/to/canopy/etc"
+#bin: "/path/to/mts/binaries" #Derived from the current dir by default
+#scripts: "/path/to/scripts/directory" #Derived from the current dir by default
+#assembly:
+    #assembler: spades
+    #dir: "/path/to/assembler/directory" #Derived from the current dir by default
+    #k: 55
+    #groups: []
+#profile:
+    #k: 21
+#binning:
+    #binner: canopy
+    #min_nonzeroes: 3
+    #min_length: 2000
+#propagation:
+    #enabled: true
+#reassembly:
+    #enabled: true
+#stats:
+    #quast: "python2 /path/to/QUAST" #Default is global
+    #refs: "path/to/refs/directory/or/list/of/them"

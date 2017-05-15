@@ -2,7 +2,7 @@ from scripts.common import gather_refs
 
 #Additional config parameters
 try:
-    QUAST_DIR = config["QUAST"]
+    QUAST_DIR = config["stats"]["quast"]
     QUAST = os.path.join(QUAST_DIR, "quast.py")
     METAQUAST = os.path.join(QUAST_DIR, "metaquast.py")
 except KeyError:
@@ -10,7 +10,7 @@ except KeyError:
     METAQUAST = "metaquast"
 
 #Detect references
-REFS = dict(gather_refs(config.get("REFS", [])))
+REFS = dict(gather_refs(config["stats"].get("refs", [])))
 REFS_STR = ",".join(path for path in REFS.values())
 
 class Input:

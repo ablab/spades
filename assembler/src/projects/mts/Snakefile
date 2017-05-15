@@ -94,7 +94,7 @@ rule canopy:
     threads: THREADS
     log:     "binning/canopy.log"
     message: "Running canopy clustering"
-    shell:   "{SOFT}/cc.bin --filter_max_dominant_obs 1 -n {threads}"
+    shell:   "{SOFT}/cc.bin --filter_max_dominant_obs 1 --filter_min_obs {MIN_NONZEROES} -n {threads}"
              " -i {input} -o {output.out} -c {output.prof} >{log} 2>&1"
 
 rule combine_splits:

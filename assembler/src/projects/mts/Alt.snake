@@ -7,10 +7,7 @@ from Bio import SeqIO
 
 from scripts.parse_output import ConcoctParser
 
-ASSEMBLER = config.get("ASSEMBLER", "megahit")
-
-#Override some values from Common.snake
-BINNER = config.get("BINNER", "metabat")
+ASSEMBLER = config["assembly"]["assembler"]
 
 LEFT_READS = [reads[0] for reads in SAMPLE_READS.values()]
 RIGHT_READS = [reads[1] for reads in SAMPLE_READS.values()]

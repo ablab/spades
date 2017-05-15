@@ -7,18 +7,45 @@ import os.path
 from scripts.common import detect_reads
 
 #Config parameters
-IN = config["IN"]
 LOCAL_DIR = config.get("LOCAL_DIR", "")
-SPADES = config.get("SPADES", LOCAL_DIR)
-SPADES_REASSEMBLY = config.get("SPADES_REASSEMBLY", SPADES)
-BIN = config.get("BIN", os.path.join(LOCAL_DIR, "build/release/bin"))
-SCRIPTS = config.get("SCRIPTS", os.path.join(LOCAL_DIR, "src/projects/mts/scripts"))
-SOFT = config["SOFT"]
-K = int(config.get("K", 55))
-SMALL_K = int(config.get("SMALL_K", 21))
-MIN_CONTIG_LENGTH = int(config.get("MIN_CONTIG_LENGTH", 2000))
-THREADS = config.get("THREADS", 16)
-BINNER = config.get("BINNER", "canopy")
+default_values = {
+    "bin":         os.path.join(LOCAL_DIR, "build/release/bin"),
+    "scripts":     os.path.join(LOCAL_DIR, "src/projects/mts/scripts"),
+    "threads":     16,
+    "assembly":    {"assembler": "spades", "dir": os.path.join(LOCAL_DIR, "bin"), "k": 55, "groups": []},
+    "profile":     {"k": 21},
+    "binning":     {"binner": "canopy", "min_length": 2000, "min_nonzeroes": 3},
+    "propagation": {"enabled": True},
+    "reassembly":  {"enabled": True}
+}
+
+# Taken from http://stackoverflow.com/questions/36831998/how-to-fill-default-parameters-in-yaml-file-using-python
+def setdefault_recursively(tgt, default = default_values):
+    for k in default:
+        if isinstance(default[k], dict): # if the current item is a dict,
+            # expand it recursively
+            setdefault_recursively(tgt.setdefault(k, {}), default[k])
+        else:
+            # ... otherwise simply set a default value if it's not set before
+            tgt.setdefault(k, default[k])
+
+setdefault_recursively(config)
+
+config["reassembly"].setdefault("dir", config["assembly"]["dir"])
+
+#TODO: check if modern Snakemake allows dictionaries in string splicing
+IN = config["data"]
+SPADES = config["assembly"]["dir"]
+SPADES_REASSEMBLY = config["reassembly"]["dir"]
+BIN = config["bin"]
+SCRIPTS = config["scripts"]
+SOFT = config["soft"]
+K = config["assembly"]["k"]
+SMALL_K = config["profile"]["k"]
+MIN_CONTIG_LENGTH = config["binning"]["min_length"]
+MIN_NONZEROES = config["binning"]["min_nonzeroes"]
+THREADS = config["threads"]
+BINNER = config["binning"]["binner"]
 
 #Autodetect samples and their reads
 SAMPLE_DIRS = set(glob_wildcards(os.path.join(IN, "{sample,sample\d+}"))[0])
@@ -33,7 +60,7 @@ for i in range(1, SAMPLE_COUNT + 1):
 SAMPLE_READS = dict(map(lambda sample: (sample, detect_reads(os.path.join(IN, sample))), SAMPLES))
 
 #Group samples
-GROUP_SAMPLES = config.get("GROUPS", [])
+GROUP_SAMPLES = config["assembly"]["groups"]
 USED_SAMPLES = set(chain(*GROUP_SAMPLES))
 #TODO: double-check
 #Replace the wildcard group with unused samples

@@ -6,33 +6,11 @@ except:
 
 import os
 import os.path
-try:
-    import yaml
-    def load_dict(input):
-        return yaml.load(input)
-    def dump_dict(dict, output):
-        yaml.dump(dict, output)
-except:
-    def strip_unquote(str):
-        str = str.strip()
-        if str[0] == '\"' and str[-1] == '\"':
-            str = str[1:-1]
-        return str
-    def load_dict(input):
-        def load_pairs():
-            for line in input:
-                params = line.split(":", 2)
-                if len(params) < 2:
-                    continue
-                yield (strip_unquote(params[0]), strip_unquote(params[1]))
-        return dict(load_pairs())
-    def dump_dict(dict, output):
-        for k, v in dict.items():
-            try:
-                float(k)
-                print('"', k, '"', ": ", v, sep="", file=output)
-            except ValueError:
-                print(k, ": ", v, sep="", file=output)
+import yaml
+def load_dict(input):
+    return yaml.load(input)
+def dump_dict(dict, output):
+    yaml.dump(dict, output)
 
 FASTA_EXTS = {".fasta", ".fa", ".fna", ".fsa", ".fastq", ".fastq.gz", ".fq", ".fq.gz", ".fna.gz"}
 def gather_paths(path, basename=False):

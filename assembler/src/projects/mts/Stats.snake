@@ -9,24 +9,11 @@ from pandas import DataFrame
 
 from scripts.common import dump_dict
 
-#Additional config parameters
-try:
-    QUAST_DIR = config["QUAST"]
-    QUAST = os.path.join(QUAST_DIR, "quast.py")
-    METAQUAST = os.path.join(QUAST_DIR, "metaquast.py")
-except KeyError:
-    QUAST = "quast"
-    METAQUAST = "metaquast"
-
 #Autodetect bins
 CAGS, = glob_wildcards("binning/{cag,\w*\d+}/left.fastq")
 CAGS.sort()
 
 CAG_EDGES = [c + "_edges" for c in CAGS]
-
-#Detect references
-REFS = dict(gather_refs(config.get("REFS", [])))
-ALL_REFS = ",".join(path for path in REFS.values())
 
 def ref_path(wildcards):
     return REFS[wildcards.ref]

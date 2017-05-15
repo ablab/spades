@@ -30,6 +30,8 @@ args = parser.parse_args()
 
 with open(args.config) as config_in:
     config_template = load_dict(config_in)
+    config_template.setdefault("assembly", dict())
+    config_template.setdefault("binning", dict())
 assemblies_dir = dict()
 
 def pipelines():
@@ -43,7 +45,7 @@ excluded = unsupported_configurations.union(args.exclude)
 for pipeline in pipelines():
     if pipeline in excluded:
         if pipeline in unsupported_configurations:
-            print("WARNING:", pipeline, "is not currently supported; skipping\n")
+            print("\033[33mWarning:", pipeline, "is not currently supported; skipping\033[0m\n")
         continue
     print("Running", pipeline)
     dir = os.path.join(args.dir, pipeline)
@@ -56,9 +58,10 @@ for pipeline in pipelines():
     params = pipeline.split("_")
     assembly_name = params[0]
     if not assembly_name == "main":
-        config["ASSEMBLER"] = params[0]
+        config["assembly"]["assembler"] = params[0]
         call_params.extend(["--alt"])
-    config["BINNER"] = params[1]
+
+    config["binning"]["binner"] = params[1]
     with open(os.path.join(dir, "config.yaml"), "w") as config_out:
         dump_dict(config, config_out)
     # Try to reuse assemblies from previous runs with the same assembler
@@ -66,11 +69,12 @@ for pipeline in pipelines():
     if assembly_dir:
         print("Reusing assemblies from", assembly_dir)
         call_params.extend(["--reuse-assemblies", assembly_dir])
-    else:
-        assemblies_dir[assembly_name] = os.path.join(dir, "assembly")
+    #TODO: rewrite using Snakemake API
     errcode = subprocess.call(call_params)
     if errcode:
         print(" ".join(call_params), "returned with error:", errcode)
+    elif not assembly_dir: #Reuse only successful run
+        assemblies_dir[assembly_name] = os.path.join(dir, "assembly")
     print()
 
 #TODO: compare stats
