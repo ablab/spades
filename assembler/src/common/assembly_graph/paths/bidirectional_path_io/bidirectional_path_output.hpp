@@ -77,7 +77,6 @@ public:
 template<class Graph>
 class FastgWriter {
     typedef typename Graph::EdgeId EdgeId;
-
     const Graph &graph_;
     CanonicalEdgeHelper<Graph> short_namer_;
     CanonicalEdgeHelper<Graph> extended_namer_;
@@ -96,13 +95,19 @@ class FastgWriter {
         return res;
     }
 
-    void ReportEdge(io::osequencestream_for_fastg& oss,
-                    const string& sequence,
-                    const string& id,
-                    const set<string>& nex_ids) {
-        oss.set_header(id);
-        oss << nex_ids;
-        oss << sequence;
+    string FormHeader(const string &id,
+                      const set<string>& next_ids) {
+        std::stringstream ss;
+        ss << id;
+        if (next_ids.size() > 0) {
+            auto delim = ":";
+            for (const auto &s : next_ids) {
+                ss  << delim << s;
+                delim = ",";
+            }
+        }
+        ss << ";";
+        return ss.str();
     }
 
 public:
@@ -115,32 +120,25 @@ public:
     }
 
     void WriteSegmentsAndLinks(const string &fn) {
-        io::osequencestream_for_fastg os(fn);
-        for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+        io::osequencestream os(fn);
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             EdgeId e = *it;
             set<string> next;
             for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(e))) {
                 next.insert(extended_namer_.EdgeString(next_e));
             }
-            ReportEdge(os, graph_.EdgeNucls(e).str(), extended_namer_.EdgeString(e), next);
-            if (e != graph_.conjugate(e)) {
-                set<string> next_conj;
-                for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(graph_.conjugate(e)))) {
-                    next_conj.insert(extended_namer_.EdgeString(next_e));
-                }
-                ReportEdge(os, graph_.EdgeNucls(graph_.conjugate(e)).str(),
-                           extended_namer_.EdgeString(graph_.conjugate(e)), next_conj);
-            }
+            os << io::SingleRead(FormHeader(extended_namer_.EdgeString(e), next),
+                                 graph_.EdgeNucls(e).str());
         }
     }
 
     void WritePaths(const ScaffoldStorage &scaffold_storage, const string &fn) const {
         std::ofstream os(fn);
         for (const auto& scaffold_info : scaffold_storage) {
-            os << scaffold_info.name << endl;
-            os << ToPathString(*scaffold_info.path) << endl;
-            os << scaffold_info.name << "'" << endl;
-            os << ToPathString(*scaffold_info.path->GetConjPath()) << endl;
+            os << scaffold_info.name << "\n";
+            os << ToPathString(*scaffold_info.path) << "\n";
+            os << scaffold_info.name << "'" << "\n";
+            os << ToPathString(*scaffold_info.path->GetConjPath()) << "\n";
         }
     }
 
@@ -201,8 +199,8 @@ public:
     GFAWriter(const Graph &graph, std::ostream &os,
               EdgeNamingF<Graph> naming_f = BasicNamingF<Graph>())
             : graph_(graph),
-              os_(os),
-              edge_namer_(graph_, naming_f) {
+              edge_namer_(graph_, naming_f),
+              os_(os) {
     }
 
     void WriteSegmentsAndLinks() {

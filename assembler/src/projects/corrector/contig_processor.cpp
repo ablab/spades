@@ -285,7 +285,7 @@ size_t ContigProcessor::ProcessMultipleSamFiles() {
     }
     vector<string> contig_name_splitted;
     boost::split(contig_name_splitted, contig_name_, boost::is_any_of("_"));
-    io::osequencestream_simple oss(output_contig_file_);
+    io::osequencestream oss(output_contig_file_);
     for(size_t i = 0; i < contig_name_splitted.size(); i++) {
         if (contig_name_splitted[i] == "length" && i + 1 < contig_name_splitted.size()) {
             contig_name_splitted[i + 1] = std::to_string(int(s_new_contig.str().length()));
@@ -296,8 +296,7 @@ size_t ContigProcessor::ProcessMultipleSamFiles() {
     for(size_t i = 1; i < contig_name_splitted.size(); i++) {
         new_header += "_" + contig_name_splitted[i];
     }
-    oss.set_header(new_header);
-    oss << s_new_contig.str();
+    oss << io::SingleRead(new_header, s_new_contig.str());
 
     return total_changes;
 }

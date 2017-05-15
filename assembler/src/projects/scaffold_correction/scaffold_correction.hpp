@@ -6,6 +6,7 @@
 
 #pragma once
 #include "io/reads/osequencestream.hpp"
+#include "io/reads/single_read.hpp"
 #include "io/reads/file_reader.hpp"
 #include "pipeline/stage.hpp"
 #include "pipeline/graph_pack.hpp"
@@ -254,12 +255,11 @@ namespace spades {
         }
 
         void OutputResults(const vector<io::SingleRead> &results) {
-            io::osequencestream_simple oss(output_file_);
+            io::osequencestream oss(output_file_);
             for(size_t i = 0; i < results.size(); i++) {
                 string sequence = results[i].GetSequenceString();
-                if(sequence != "") {
-                    oss.set_header(results[i].name());
-                    oss << sequence;
+                if (sequence != "") {
+                    oss << io::SingleRead(results[i].name(), sequence);
                 }
             }
         }
