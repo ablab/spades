@@ -121,7 +121,7 @@ rule tsne:
     input:   profile="binning/canopy/profiles.in", binning="binning/canopy/binning.out"
     output:  "stats/summary/tsne_{stage}"
     message: "Drawing BH-TSNE visualisation for {wildcards.stage}"
-    shell:   "python2 {SCRIPTS}/bhtsne-master/bh_tsne.py {input.profile} {input.binning} {output} -l metaSPAdes --percent 1.0 --iteration 2000 --perplexity 50"
+    shell:   "python2 {SCRIPTS}/run_tsne.py {input.profile} {input.binning} {output} -l metaSPAdes --percent 1.0 --iteration 2000 --perplexity 50"
 
 # Run this
 rule tsne_all:
