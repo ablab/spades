@@ -57,14 +57,14 @@ simp
     relative_ed
     {
         enabled true
-        diff_mult  10.
+        diff_mult  5.
     }
 
 	; bulge remover:
 	br
 	{
 		max_coverage			1000000.0
-		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
+		max_relative_coverage		5.		; bulge_cov < this * not_bulge_cov
 		max_delta			10
 		max_relative_delta		0.1
         parallel true
@@ -94,6 +94,7 @@ simp
     ; only in meta mode, inherits settings of final_br
     second_final_br
     {
+        enabled false
         max_delta           1500
         max_number_edges        3
     }
