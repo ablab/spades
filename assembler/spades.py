@@ -295,6 +295,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             else:
                 support.error('wrong PHRED quality offset value: ' + arg +
                               ' (should be either 33, 64, or \'auto\')', log)
+        elif opt == "--save-gp":
+            options_storage.save_gp = True
         elif opt == "--cov-cutoff":
             if arg == 'auto' or arg == 'off':
                 options_storage.cov_cutoff = arg
@@ -471,6 +473,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         cfg["assembly"].__dict__["diploid_mode"] = options_storage.diploid_mode
         cfg["assembly"].__dict__["cov_cutoff"] = options_storage.cov_cutoff
         cfg["assembly"].__dict__["lcer_cutoff"] = options_storage.lcer_cutoff
+        cfg["assembly"].__dict__["save_gp"] = options_storage.save_gp
         if options_storage.spades_heap_check:
             cfg["assembly"].__dict__["heap_check"] = options_storage.spades_heap_check
         if options_storage.read_buffer_size:

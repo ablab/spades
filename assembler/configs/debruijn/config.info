@@ -176,3 +176,4 @@ bwa_aligner
 ;flanking coverage range
 flanking_range 55
 series_analysis ""
+save_gp false

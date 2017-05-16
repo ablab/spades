@@ -21,7 +21,6 @@ BASE_STAGE = "construction"
 READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]
 READS_TYPES_USED_IN_RNA_SEQ = ["paired-end", "single", "trusted-contigs", "untrusted-contigs"]
 
-
 def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home):
     subst_dict = dict()
 
@@ -43,6 +42,7 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
 #    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
+    subst_dict["save_gp"] = bool_to_str(cfg.save_gp)
     if (not last_one):
         subst_dict["correct_mismatches"] = bool_to_str(False)
     if "resolving_mode" in cfg.__dict__:

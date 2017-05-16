@@ -87,6 +87,7 @@ qvoffset = None  # auto-detect by default
 cov_cutoff = 'off'  # default is 'off'
 
 # hidden options
+save_gp = False
 mismatch_corrector = None
 reference = None
 series_analysis = None
@@ -134,7 +135,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc ionto
                "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
                "help version test debug debug:false reference= series-analysis= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
-               "mismatch-correction mismatch-correction:false careful careful:false "\
+               "mismatch-correction mismatch-correction:false careful careful:false save-gp save-gp:false "\
                "continue restart-from= diploid truseq cov-cutoff= hidden-cov-cutoff= configs-dir= stop-after=".split()
 short_options = "o:1:2:s:k:t:m:i:hv"
 
@@ -324,6 +325,7 @@ def usage(spades_version, show_hidden=False, mode=None):
         sys.stderr.write("--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
                              " for SPAdes" + "\n")
         sys.stderr.write("--large-genome\tEnables optimizations for large genomes \n")
+        sys.stderr.write("--save-gp\tEnables saving graph pack before repeat resolution (even without --debug) \n")
         sys.stderr.write("--hidden-cov-cutoff\t<float>\t\tcoverage cutoff value deeply integrated in simplification"\
                             " (a positive float number). Base coverage! Will be adjusted depending on K and RL! \n")
         sys.stderr.write("--help-hidden\tprints this usage message with all hidden options" + "\n")
