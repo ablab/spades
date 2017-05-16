@@ -99,8 +99,8 @@ std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const Bidirectional
     for (size_t i = 0; i < path.Size(); ++i) {
         Gap gap = path.GapAt(i);
 
-        VERIFY(gap.trash_previous <= answer.length());
-        answer.erase(answer.length() - gap.trash_previous);
+        answer.erase((gap.trash_previous <= answer.length()) ?
+                            answer.length() - gap.trash_previous : 0);
 
         int overlap_after_trim = gap.overlap_after_trim(k_);
         if (overlap_after_trim < 0) {
