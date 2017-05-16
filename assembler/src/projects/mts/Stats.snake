@@ -127,4 +127,3 @@ rule tsne:
 rule tsne_all:
     input:   expand("stats/summary/tsne_{stage}.pdf", stage=FRAGMENT_NAMES_BY_STAGE.keys())
     message: "Drew all TSNEs"
-

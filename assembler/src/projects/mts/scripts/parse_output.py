@@ -50,14 +50,7 @@ class ConcoctParser(Parser):
         sample_contig = annotation_str[0].replace("~", ",")
         return (sample_contig, bin_id)
 
-class MaxBinParser(Parser):
-    def parse(self, line):
-        annotation_str = line.split(",", 1)
-        bin_id = annotation_str[1].strip()
-        sample_contig = annotation_str[0].replace("~", ",")
-        return (sample_contig, bin_id)
-
-parsers = {"canopy": CanopyParser(), "concoct": ConcoctParser(), "maxbin": MaxBinParser()}
+parsers = {"canopy": CanopyParser(), "concoct": ConcoctParser(), "maxbin": ConcoctParser()}
 
 if __name__ == "__main__":
     args = argparser.parse_args()
@@ -71,4 +64,3 @@ if __name__ == "__main__":
 
             for contig in annotation:
                 print(contig, ":", " ".join(annotation[contig]), file=sample_out)
-
