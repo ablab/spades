@@ -123,11 +123,11 @@ rule maxbin:
     input:   contigs="assembly/samples_splits.fasta", profiles="binning/maxbin/profiles.in"
     output:  "binning/maxbin/clustering_gt{}.csv".format(MIN_CONTIG_LENGTH)
     threads: THREADS
-    params:  out="binning/maxbin/cluster"
+    params:  out="binning/maxbin/cluster", profiles_list="binning/maxbin/profiles_list.in"
     log:     "binning/maxbin.log"
     message: "Running MaxBin clustering"
     shell:   "perl {SOFT}/MaxBin/run_MaxBin.pl -thread {threads} -min_contig_length {MIN_CONTIG_LENGTH} "
-             " -contig {input.contigs} -abund {input.profiles}"
+             " -contig {input.contigs} -abund_list {params.profiles_list}"
              " -out {params.out} > {log}"
 	     "&& {SCRIPTS}/make_maxbincsv.py -o {output} {params.out}"
 
