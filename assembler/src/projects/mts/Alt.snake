@@ -92,11 +92,11 @@ rule concoct_depth:
     shell:   "awk 'NR > 1 {{for(x=1;x<=NF;x++) if(x == 1 || (x >= 4 && x % 2 == 0)) printf \"%s\", $x (x == NF || x == (NF-1) ? \"\\n\":\"\\t\")}}' {input} > {output}"
 
 rule maxbin_depth:
-    input:   "profile/{frags}/depth_metabat.txt"
-    output:  "profile/{frags}/depth_maxbin.txt"
-    message: "Calculating contig depths"
-    shell:   "cp {input} {output}"
-
+    input:   expand("profile/{sample}.id", sample=GROUPS)
+    output:  "profile/depth_maxbin.txt"
+    params:  " ".join(list(GROUPS.keys()))
+    message: "Preparing input for {wildcards.binner}"
+    shell:   "{SCRIPTS}/make_input.py -t maxbin -d profile -o {output} {params}"
 
 #---- Binning with CONCOCT -----------------------------------------------------
 
@@ -161,15 +161,15 @@ rule binning:
 #---- Binning with MaxBin2 --------------------------------------------------------
 
 rule maxbin:
-    input:   contigs="assembly/samples.fasta", profiles="profile/samples/depth_concoct.txt"
+    input:   contigs="assembly/samples.fasta", profiles="profile/depth_maxbin.txt"
     output:  flag=touch("binning/maxbin/binning.done"),
              ann=("annotation/metabat/samples.ann") 
     threads: THREADS
-    params:  out="binning/maxbin/cluster", csv="binning/maxbin/clustering.csv"
+    params:  out="binning/maxbin/cluster", csv="binning/maxbin/clustering.csv", list="profile/depth_maxbin._list.in"
     log:     "binning/maxbin.log"
     message: "Running MaxBin clustering"
     shell:   "perl {SOFT}/run_MaxBin.pl -thread {threads} -min_contig_length {MIN_CONTIG_LENGTH} "
-             " -contig {input.contigs} -abund {input.profiles}"
+             " -contig {input.contigs} -abund {params.list}"
              " -out {params.out} > {log}"
              "&& {SCRIPTS}/make_maxbincsv.py -o {params.csv} {params.out}"
              "&& sed 's/,/ : /g' {params.csv} > {output.ann}"
