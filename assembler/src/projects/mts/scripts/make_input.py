@@ -42,8 +42,8 @@ class MaxBinListFormatter:
     def __init__(self):
         pass
 
-    def profile(self, file, contig, profile):
-        print(contig.replace(",", "~"), profile.replace(" ", "\t"), sep="\t", file=out)
+    def profile(self, file, contig, abund):
+        print(contig.replace(",", "~"), abund, sep="\t", file=out)
 
 
 
@@ -74,7 +74,7 @@ if args.type == "maxbin":
                     id_file = "{}/{}.id".format(args.dir, sample)
 		    #TODO: add header to these files
                     mpl_file = "{}/{}.mpl".format(args.dir, sample)
-                    print("Processing abundances from %s" % id_file)
+                    print("Maxbin2: Processing abundances from %s" % id_file)
 
                     with open(id_file, "r") as ctg_id, open(mpl_file, "r") as ctg_mpl:
                         for cid, cmpl in zip(ctg_id, ctg_mpl):
