@@ -119,18 +119,6 @@ rule concoct_post:
     message: "Deriving bin profiles"
     shell:   "{SCRIPTS}/bin_profiles.py {input} > {output}"
 
-rule maxbin:
-    input:   contigs="assembly/samples_splits.fasta", profiles="binning/maxbin/profiles.in"
-    output:  "binning/maxbin/clustering_gt{}.csv".format(MIN_CONTIG_LENGTH)
-    threads: THREADS
-    params:  out="binning/maxbin/cluster", profiles_list="binning/maxbin/profiles_list.in"
-    log:     "binning/maxbin.log"
-    message: "Running MaxBin clustering"
-    shell:   "perl {SOFT}/MaxBin/run_MaxBin.pl -thread {threads} -min_contig_length {MIN_CONTIG_LENGTH} -prob_threshold 0.9"
-             " -contig {input.contigs} -abund_list {params.profiles_list}"
-             " -out {params.out} > {log}"
-	     "&& {SCRIPTS}/make_maxbincsv.py -o {output} {params.out}"
-
 rule bin_profiles:
     input:   "binning/{}/profiles.in".format(BINNER), "binning/{}/clustering_gt{}.csv".format(BINNER, MIN_CONTIG_LENGTH)
     output:  "binning/{}/bins.prof".format(BINNER)
@@ -139,7 +127,7 @@ rule bin_profiles:
 
 ruleorder: canopy > bin_profiles
 
-binning_inputs = {"canopy": rules.canopy.output.out, "concoct": rules.concoct.output[0], "maxbin": rules.maxbin.output[0]}
+binning_inputs = {"canopy": rules.canopy.output.out, "concoct": rules.concoct.output[0]}
 
 rule binning_post:
     input:   binning_inputs[BINNER]
