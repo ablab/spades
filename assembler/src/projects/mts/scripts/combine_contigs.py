@@ -13,7 +13,7 @@ if sys.argv[1] == "-r":
 else:
     files = sys.argv[1:]
 
-sample_re = re.compile("sample\d+")
+sample_re = re.compile("(sample|group)\d+")
 
 output = sys.stdout
 

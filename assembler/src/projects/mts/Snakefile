@@ -25,6 +25,7 @@ rule all:
 rule assemble:
     input:   left=left_reads, right=right_reads
     output:  "assembly/{sample}.fasta"
+    wildcard_constraints: sample="(sample|group)\d+"
     #TODO: remove this boilerplate
     params:  left=lambda w: " ".join(expand("-1 {r}", r=left_reads(w))),
              right=lambda w: " ".join(expand("-2 {r}", r=right_reads(w))),
@@ -74,7 +75,8 @@ rule multiplicities:
 
 rule profile:
     input:   contigs="assembly/{sample}.fasta", mpl="profile/kmers.kmm"
-    output:  id="profile/{sample}.id", mpl="profile/{sample}.mpl", splits="assembly/{sample,sample\d+}_splits.fasta"
+    output:  id="profile/{sample}.id", mpl="profile/{sample}.mpl", splits="assembly/{sample}_splits.fasta"
+    wildcard_constraints: sample="(sample|group)\d+"
     log:     "profile/{sample}.log"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:   "{BIN}/contig_abundance_counter -k {SMALL_K} -w tmp -c {input.contigs}"
@@ -86,7 +88,7 @@ rule binning_pre:
     output:  "binning/{binner}/profiles.in"
     params:  " ".join(list(GROUPS.keys()))
     message: "Preparing input for {wildcards.binner}"
-    shell:   "{SCRIPTS}/make_input.py -t {wildcards.binner} -d profile -o {output} {params}"
+    shell:   "{SCRIPTS}/make_input.py -n {SAMPLE_COUNT} -t {wildcards.binner} -d profile -o {output} {params}"
 
 rule canopy:
     input:   "binning/canopy/profiles.in"
@@ -113,12 +115,6 @@ rule concoct:
              "concoct --composition_file {input.contigs} --coverage_file {input.profiles}"
              " -l {MIN_CONTIG_LENGTH} -b {params} >{log}"
 
-rule concoct_post:
-    input:   "binning/concoct/profiles.in", "binning/concoct/clustering_gt{}.csv".format(MIN_CONTIG_LENGTH)
-    output:  "binning/concoct/bins.prof"
-    message: "Deriving bin profiles"
-    shell:   "{SCRIPTS}/bin_profiles.py {input} > {output}"
-
 rule bin_profiles:
     input:   "binning/{}/profiles.in".format(BINNER), "binning/{}/clustering_gt{}.csv".format(BINNER, MIN_CONTIG_LENGTH)
     output:  "binning/{}/bins.prof".format(BINNER)
@@ -137,19 +133,20 @@ rule binning_post:
 
 #Post-clustering pipeline
 rule read_binning:
-    input:   contigs="assembly/{sample}.fasta", ann="annotation/{sample}.ann",
-             left=left_reads, right=right_reads
-    output:  "propagation/{sample}_edges.ann"
+    input:   contigs="assembly/{sample}.fasta", splits="assembly/{sample}_splits.fasta",
+             ann="annotation/{sample}.ann", left=left_reads, right=right_reads
+    output:  ann="propagation/{sample}_edges.ann",
+    wildcard_constraints: sample="(sample|group)\d+"
     params:  saves=os.path.join("assembly/{sample}/", SAVES),
-             splits="assembly/{sample}_splits.fasta",
              out="propagation/{sample}_edges",
-             group=lambda wildcards: " ".join(GROUPS[wildcards.sample])
+             group=lambda wildcards: " ".join(GROUPS[wildcards.sample]),
+
     log:     "binning/{sample}.log"
     message: "Propagating annotation & binning reads for {wildcards.sample}"
     shell:
           "{BIN}/prop_binning -k {K} -s {params.saves} -c {input.contigs}"
           " -n {params.group} -l {input.left} -r {input.right}"
-          " -a {input.ann} -f {params.splits} -o binning -d {params.out} >{log} 2>&1"
+          " -a {input.ann} -f {input.splits} -o binning -d {params.out} >{log} 2>&1"
 
 rule choose_samples:
     input:   binned=expand("propagation/{sample}_edges.ann", sample=GROUPS),

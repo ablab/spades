@@ -11,10 +11,12 @@ import os
 import sys
 
 parser = argparse.ArgumentParser(description="Binner input formatter")
+
 parser.add_argument("--type", "-t", choices=["canopy", "concoct"], help="Binner type", default="canopy")
+parser.add_argument("--count", "-n", type=int, help="Number of data samples")
 parser.add_argument("--output", "-o", type=str, help="Output file")
 parser.add_argument("--dir", "-d", type=str, help="Directory with profiles (pairs of .id .mpl files)")
-parser.add_argument("samples", type=str, nargs="+", help="Sample names")
+parser.add_argument("samples", type=str, nargs="+", help="Sample (or group) names")
 
 args = parser.parse_args()
 
@@ -43,7 +45,7 @@ formatters = {"canopy": CanopyFormatter(), "concoct": ConcoctFormatter()}
 formatter = formatters[args.type]
 
 with open(args.output, "w") as out:
-    formatter.header(out, args.samples)
+    formatter.header(out, ["sample" + str(i) for i in range(1, args.count + 1)])
     for sample in args.samples:
         id_file = "{}/{}.id".format(args.dir, sample)
         mpl_file = "{}/{}.mpl".format(args.dir, sample)
