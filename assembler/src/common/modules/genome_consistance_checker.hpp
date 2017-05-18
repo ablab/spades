@@ -143,13 +143,13 @@ class GenomeConsistenceChecker {
 
     const ScaffoldingUniqueEdgeStorage &storage_;
     const vector<shared_ptr<path_extend::GraphCoverageMap>> &long_reads_cov_map_;
-    static const size_t LONG_PATH = 10000;
+    static const size_t SIGNIFICANT_LENGTH_LOWER_LIMIT = 10000;
     GenomeInfo genome_info_;
     //Edges containing zero point for each reference
     //TODO: do we need circular/linear chromosomes support?
     set<EdgeId> circular_edges_;
 
-    debruijn_graph::config::dataset ds_;
+    io::DataSet<config::DataSetData> reads_;
     bool Consequent(const MappingRange &mr1, const MappingRange &mr2) const ;
 
     void PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const;
@@ -196,14 +196,14 @@ public:
                              size_t unresolvable_len,
                              const ScaffoldingUniqueEdgeStorage &storage,
                              const vector<shared_ptr<path_extend::GraphCoverageMap>> &long_reads_cov_map,
-                             const debruijn_graph::config::dataset ds) :
+                             const io::DataSet<config::DataSetData> reads) :
             gp_(gp),
             absolute_max_gap_(max_gap),
             relative_max_gap_(relative_max_gap),
             unresolvable_len_(unresolvable_len),
             storage_(storage),
             long_reads_cov_map_(long_reads_cov_map),
-            ds_(ds) {
+            reads_(reads) {
         //Fixme call outside
         Fill();
     }

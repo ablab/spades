@@ -34,7 +34,7 @@ PathScore GenomeConsistenceChecker::CountMisassemblies(const BidirectionalPath &
     size_t total_length = path.LengthAt(0);
 //TODO: constant;
     if (total_length > score.mapped_length * 2) {
-        if (total_length > LONG_PATH) {
+        if (total_length > SIGNIFICANT_LENGTH_LOWER_LIMIT) {
             INFO ("For path length " << total_length <<" mapped less than half of the path, skipping");
         }
         return PathScore(0,0,0);
@@ -123,12 +123,15 @@ void GenomeConsistenceChecker::ReportPathEndByLongLib(const path_extend::Bidirec
     ReportVariants(sorted_w);
 }
 
-void GenomeConsistenceChecker::ReportPathEndByPairedLib(const shared_ptr<path_extend::PairedInfoLibrary> paired_lib, EdgeId current_edge) const {
+void GenomeConsistenceChecker::ReportPathEndByPairedLib(const shared_ptr<path_extend::PairedInfoLibrary> paired_lib,
+                                                        EdgeId current_edge) const {
     vector<pair<double, EdgeId>> sorted_w;
     set<EdgeId> result;
-    paired_lib->FindJumpEdges(current_edge, result, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), storage_.GetMinLength());
+    paired_lib->FindJumpEdges(current_edge, result, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(),
+                              storage_.GetMinLength());
     for (const auto e: result) {
-        double w = paired_lib->CountPairedInfo(current_edge, e, std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+        double w = paired_lib->CountPairedInfo(current_edge, e, std::numeric_limits<int>::min(),
+                                               std::numeric_limits<int>::max());
         if (math::gr(w, 1.0))
             sorted_w.push_back(make_pair(w, e));
     }
@@ -150,9 +153,9 @@ void GenomeConsistenceChecker::CheckPathEnd(const BidirectionalPath &path) const
                 }
             }
             INFO("Path length " << path.Length() << " ended, last unique: ");
-            ReportEdge(current_edge, -239.0);
-            for (size_t lib_index = 0; lib_index < ds_.reads.lib_count(); ++lib_index) {
-                const auto &lib = ds_.reads[lib_index];
+            ReportEdge(current_edge, -1.0);
+            for (size_t lib_index = 0; lib_index < reads_.lib_count(); ++lib_index) {
+                const auto &lib = reads_[lib_index];
                 if (lib.is_paired()) {
                     shared_ptr<path_extend::PairedInfoLibrary> paired_lib;
                     if (lib.is_mate_pair())
@@ -200,8 +203,8 @@ void GenomeConsistenceChecker::PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const 
 //FIXME: checks, compliment_strands;
     EdgeId true_next = chr_info1.EdgeAt((chr_info1.UniqueEdgeIdx(e1) + 1) % chr_info1.size());
     EdgeId true_prev = chr_info2.EdgeAt((chr_info2.UniqueEdgeIdx(e2) + chr_info2.size() - 1) % chr_info2.size());
-    for (size_t lib_index = 0; lib_index < ds_.reads.lib_count(); ++lib_index) {
-        const auto &lib = ds_.reads[lib_index];
+    for (size_t lib_index = 0; lib_index < reads_.lib_count(); ++lib_index) {
+        const auto &lib = reads_[lib_index];
         if (lib.is_paired()) {
             shared_ptr<path_extend::PairedInfoLibrary> paired_lib;
             if (lib.is_mate_pair())
@@ -222,7 +225,8 @@ void GenomeConsistenceChecker::PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const 
     }
 }
 
-void GenomeConsistenceChecker::ClassifyPosition(size_t prev_pos, size_t cur_pos, const BidirectionalPath & path, PathScore &res) const{
+void GenomeConsistenceChecker::ClassifyPosition(size_t prev_pos, size_t cur_pos,
+                                                const BidirectionalPath & path, PathScore &res) const{
     EdgeId cur_e = path.At(cur_pos);
     const auto& chr_info = genome_info_.UniqueChromosomeInfo(cur_e);
     size_t cur_in_genome = chr_info.UniqueEdgeIdx(cur_e);
@@ -237,10 +241,13 @@ void GenomeConsistenceChecker::ClassifyPosition(size_t prev_pos, size_t cur_pos,
     res.mapped_length += cur_range.mapped_range.size();
     if (cur_in_genome == prev_in_genome + 1 && cur_chr == prev_chr) {
         int dist_in_genome = (int) cur_range.initial_range.start_pos -  (int) prev_range.initial_range.end_pos;
-        int dist_in_path = (int) path.LengthAt(prev_pos) - (int) path.LengthAt(cur_pos) +  (int) cur_range.mapped_range.start_pos - (int) prev_range.mapped_range.end_pos;
+        int dist_in_path = (int) path.LengthAt(prev_pos) - (int) path.LengthAt(cur_pos) +
+                (int) cur_range.mapped_range.start_pos - (int) prev_range.mapped_range.end_pos;
         DEBUG("Edge " << prev_e.int_id() << "  position in genome ordering: " << prev_in_genome);
         DEBUG("Gap in genome / gap in path: " << dist_in_genome << " / " << dist_in_path);
-        if (size_t(abs(dist_in_genome - dist_in_path)) > absolute_max_gap_ && (dist_in_genome * (1 + relative_max_gap_) < dist_in_path || dist_in_path * (1 + relative_max_gap_) < dist_in_genome)) {
+        if (size_t(abs(dist_in_genome - dist_in_path)) > absolute_max_gap_ &&
+                (dist_in_genome * (1 + relative_max_gap_) < dist_in_path ||
+                        dist_in_path * (1 + relative_max_gap_) < dist_in_genome)) {
             res.wrong_gap_size ++;
         }
     } else {
@@ -257,7 +264,8 @@ void GenomeConsistenceChecker::ClassifyPosition(size_t prev_pos, size_t cur_pos,
         } else {
             INFO("Extensive misassembly between edges: "<<prev_e.int_id() << " and " << cur_e.int_id());
             INFO("Ranges: " << prev_range << " and " << cur_range);
-            INFO("Genomic positions: " << prev_in_genome << ", " << prev_chr << " and " << cur_in_genome <<", "<< cur_chr<< " resp.");
+            INFO("Genomic positions: " << prev_in_genome << ", " << prev_chr <<
+                         " and " << cur_in_genome <<", "<< cur_chr<< " resp.");
             PrintMisassemblyInfo(prev_e, cur_e);
             res.misassemblies++;
         }
@@ -310,8 +318,10 @@ vector<MappingRange> GenomeConsistenceChecker::FindBestRangeSequence(const set<M
     for (size_t i = 0; i < sz; i++) {
         for (size_t j = 0; j < consecutive_mappings[i].size(); j++) {
             TRACE(consecutive_mappings[i][j]);
-            if (scores[consecutive_mappings[i][j]] < scores[i] + to_process[consecutive_mappings[i][j]].initial_range.size()) {
-                scores[consecutive_mappings[i][j]] = scores[i] + to_process[consecutive_mappings[i][j]].initial_range.size();
+            if (scores[consecutive_mappings[i][j]] < scores[i]
+                                                     + to_process[consecutive_mappings[i][j]].initial_range.size()) {
+                scores[consecutive_mappings[i][j]] = scores[i]
+                                                     + to_process[consecutive_mappings[i][j]].initial_range.size();
                 prev[consecutive_mappings[i][j]] = i;
             }
         }
@@ -457,7 +467,8 @@ void GenomeConsistenceChecker::FillPos(EdgeId e, const EdgesPositionHandler<Grap
     if ((total_mapped - mapping_info.second) * 10 >=  gp_.g.length(e)) {
         INFO ("Edge " << gp_.g.int_id(e) << " length "<< gp_.g.length(e)  << "is potentially misassembled! mappings: ");
         for (auto mp : tmp_edge_pos.GetEdgePositions(e, chr)) {
-            INFO("mp_range "<< mp.mapped_range.start_pos << " - " << mp.mapped_range.end_pos << " init_range " << mp.initial_range.start_pos << " - " << mp.initial_range.end_pos );
+            INFO("mp_range "<< mp.mapped_range.start_pos << " - " << mp.mapped_range.end_pos
+                 << " init_range " << mp.initial_range.start_pos << " - " << mp.initial_range.end_pos );
             if (mp.initial_range.start_pos < absolute_max_gap_) {
                 INFO ("Fake(linear order) misassembly on edge "<< e.int_id());
                 circular_edges_.insert(e);

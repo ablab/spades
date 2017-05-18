@@ -114,7 +114,7 @@ void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
                                                                 unique_data_.main_unique_storage_.GetMinLength(),
                                                                 unique_data_.main_unique_storage_,
                                                                 unique_data_.long_reads_cov_map_,
-                                                                dataset_info_);
+                                                                dataset_info_.reads);
         scaffold_graph = ConstructScaffoldGraph(unique_data_.main_unique_storage_);
         if (params_.pset.scaffold_graph_params.output) {
             PrintScaffoldGraph(*scaffold_graph,
@@ -142,7 +142,7 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
                                                             unresolvable_gap,
                                                             use_main_storage ? unique_data_.main_unique_storage_ : tmp_storage,
                                                             unique_data_.long_reads_cov_map_,
-                                                            dataset_info_);
+                                                            dataset_info_.reads);
 
     size_t total_mis = 0, gap_mis = 0;
     for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
