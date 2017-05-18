@@ -3,6 +3,8 @@ include: "Common.snake"
 import functools
 import itertools
 
+from os import listdir
+from os.path import isfile, join
 from Bio import SeqIO
 
 from scripts.parse_output import ConcoctParser
@@ -96,7 +98,26 @@ rule maxbin_depth:
     output:  "profile/depth_maxbin_list.txt"
     params:  prefix="profile/depth_maxbin"
     message: "Preparing input for Maxbin"
-    shell:   "{SCRIPTS}/make_maxbinin.py -p {input} -o {params.prefix}"
+    run:     
+             out_list = open(params.prefix + "_list.txt", "w")
+             prof = open(input[0], "r")
+             samples_files = []
+             first = True
+             for ln in prof.readlines():
+                 if first:
+                     first = False
+                     lst = ln.strip().split("\t")
+                     for ind in range(1, len(lst)):
+                         samples_files.append(open(params.prefix + "_" + str(ind), "w"))
+                         print(params.prefix + "_" + str(ind), file=out_list)
+                 lst = ln.strip().split("\t")
+                 contig_name = lst[0]
+                 for ind in range(len(samples_files)):
+                     samples_files[ind].write("\t".join([contig_name, lst[ind + 1] ]) + "\n")
+             for sf in samples_files:
+                 sf.close()
+             out_list.close()
+             prof.close()
 
 #---- Binning with CONCOCT -----------------------------------------------------
 
@@ -162,18 +183,35 @@ rule binning:
 
 rule maxbin:
     input:   contigs="assembly/samples_frags.fasta", profiles_list="profile/depth_maxbin_list.txt"
-    output:  flag=touch("binning/maxbin/binning.done"),
-             ann=("annotation/metabat/samples.ann") 
+    output:  "binning/maxbin/cluster.summary"
     threads: THREADS
-    params:  out="binning/maxbin/cluster", csv="binning/maxbin/clustering.csv"
+    params:  out="binning/maxbin/cluster"
     log:     "binning/maxbin.log"
     message: "Running MaxBin clustering"
     shell:   "perl {SOFT}/MaxBin/run_MaxBin.pl -thread {threads} -min_contig_length {MIN_CONTIG_LENGTH} -prob_threshold 0.3"
              " -contig {input.contigs} -abund_list {input.profiles_list}"
              " -out {params.out} > {log}"
-             "&& {SCRIPTS}/make_maxbincsv.py -o {params.csv} {params.out}"
-             "&& sed 's/,/ : /g' {params.csv} > {output.ann}"
 
+rule maxbin_post:
+     input:   "binning/maxbin/cluster.summary"
+     output:  flag=touch("binning/maxbin/binning.done"), ann=("annotation/metabat/samples.ann")
+     threads: THREADS
+     message: "Saving result to annotation"
+     run:
+               mypath = "/".join(input[0].split("/")[:-1])
+               fastafiles = [join(mypath, f) for f in listdir(mypath) if isfile(join(mypath, f)) and f.endswith("fasta")]
+               res = ""
+               for f in fastafiles:
+                   fin = open(f, "r")
+                   cluster_num = int(f.split(".")[-2])
+                   for l in fin.readlines():
+                       if l.startswith(">"):
+                           contig = l.strip()[1:]
+                           res += contig + " : " + str(cluster_num) + "\n"
+               fin.close()
+               fout = open(output.ann, "w")
+               fout.write(res)
+               fout.close()
 
 #---- Binning with DBScan ------------------------------------------------------
 
