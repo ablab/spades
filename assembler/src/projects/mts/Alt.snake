@@ -92,11 +92,11 @@ rule concoct_depth:
     shell:   "awk 'NR > 1 {{for(x=1;x<=NF;x++) if(x == 1 || (x >= 4 && x % 2 == 0)) printf \"%s\", $x (x == NF || x == (NF-1) ? \"\\n\":\"\\t\")}}' {input} > {output}"
 
 rule maxbin_depth:
-    input:   expand("profile/{sample}.id", sample=GROUPS)
-    output:  "profile/depth_maxbin.txt"
-    params:  " ".join(list(GROUPS.keys()))
-    message: "Preparing input for {wildcards.binner}"
-    shell:   "{SCRIPTS}/make_input.py -t maxbin -d profile -o {output} {params}"
+    input:   "profile/depth_concoct.txt"
+    output:  "profile/depth_maxbin_list.txt"
+    params:  prefix="profile/depth_maxbin"
+    message: "Preparing input for Maxbin"
+    shell:   "{SCRIPTS}/make_maxbinin.py -p {input} -o {params.prefix}"
 
 #---- Binning with CONCOCT -----------------------------------------------------
 
@@ -161,15 +161,15 @@ rule binning:
 #---- Binning with MaxBin2 --------------------------------------------------------
 
 rule maxbin:
-    input:   contigs="assembly/samples.fasta", profiles="profile/depth_maxbin.txt"
+    input:   contigs="assembly/samples_frags.fasta", profiles_list="profile/depth_maxbin_list.txt"
     output:  flag=touch("binning/maxbin/binning.done"),
              ann=("annotation/metabat/samples.ann") 
     threads: THREADS
-    params:  out="binning/maxbin/cluster", csv="binning/maxbin/clustering.csv", list="profile/depth_maxbin._list.in"
+    params:  out="binning/maxbin/cluster", csv="binning/maxbin/clustering.csv"
     log:     "binning/maxbin.log"
     message: "Running MaxBin clustering"
-    shell:   "perl {SOFT}/run_MaxBin.pl -thread {threads} -min_contig_length {MIN_CONTIG_LENGTH} "
-             " -contig {input.contigs} -abund {params.list}"
+    shell:   "perl {SOFT}/MaxBin/run_MaxBin.pl -thread {threads} -min_contig_length {MIN_CONTIG_LENGTH} -prob_threshold 0.3"
+             " -contig {input.contigs} -abund_list {input.profiles_list}"
              " -out {params.out} > {log}"
              "&& {SCRIPTS}/make_maxbincsv.py -o {params.csv} {params.out}"
              "&& sed 's/,/ : /g' {params.csv} > {output.ann}"
