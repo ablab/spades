@@ -180,6 +180,12 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
     load(p.genome_consistency_checker, pt, "genome_consistency_checker", complete);
     load(p.uniqueness_analyser, pt, "uniqueness_analyser", complete);
     load(p.loop_traversal, pt, "loop_traversal", complete);
+
+    if (pt.count("coverage_delta")) {
+        VERIFY_MSG(!p.coverage_delta, "Option can be loaded only once");
+        p.coverage_delta.reset(0.0);
+        load(*p.coverage_delta, pt, "coverage_delta");
+    }
 }
 
 void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,

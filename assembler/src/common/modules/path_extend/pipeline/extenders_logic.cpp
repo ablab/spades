@@ -242,6 +242,22 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
                                       opts.weight_threshold);
 }
 
+
+shared_ptr<SimpleExtender> ExtendersGenerator::MakeSimpleCoverageExtender() const {
+
+    VERIFY(params_.pset.coverage_delta.is_initialized());
+    shared_ptr<SimpleCoverageExtensionChooser> extension =
+        make_shared<SimpleCoverageExtensionChooser>(gp_.g, *params_.pset.coverage_delta);
+
+    return make_shared<SimpleExtender>(gp_, cover_map_,
+                                       used_unique_storage_,
+                                       extension,
+                                       1000, /*insert size for cycle detection*/
+                                       false /*investigate short loops*/,
+                                       false /*use short loop coverage resolver*/);
+}
+
+
 shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, bool investigate_loops) const {
     const auto &lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
@@ -410,6 +426,7 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
                     basic_extenders.emplace_back(lib.type(), lib_index, MakeLongEdgePEExtender(lib_index, false));
                 } else if (pset.multi_path_extend) {
                     basic_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, false));
+                    basic_extenders.emplace_back(lib.type(), lib_index, MakeSimpleCoverageExtender());
                     basic_extenders.emplace_back(lib.type(), lib_index, MakeRNAExtender(lib_index, false));
                 } else {
                     basic_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, false));
