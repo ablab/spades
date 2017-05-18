@@ -256,7 +256,6 @@ private:
             DEBUG("Path " << path1->GetId() << ", len " << path1->Length() << " and path " << path2->GetId() << ", len " << path2->Length() <<  " have similar starts");
             DEBUG("Path 1: " << last1 << " edges of length " << path1->Length() - path1->LengthAt(min(last1 + 1, path1->Size() - 1)));
             DEBUG("Path 2: " << last2 << " edges of length " << path2->Length() - path2->LengthAt(min(last2 + 1, path2->Size() - 1)));
-            DEBUG("Path 1 has overlap start " << path1->HasOverlapedBegin() << ", path 2 has overlap start " <<  path2->HasOverlapedBegin());
 
             if (add_overlap_begins) {
                 AddOverlap(paths, path1, first1, last1);
@@ -280,7 +279,6 @@ private:
             DEBUG("Path " << path1->GetId() << ", len " << path1->Length() << " and path " << path2->GetId() << ", len " << path2->Length() << " have similar ends");
             DEBUG("Path 1: " << path1->Size() - first1 << " edges of length " << path1->LengthAt(first1));
             DEBUG("Path 2: " << path2->Size() - first2 << " edges of length " << path2->LengthAt(first2));
-            DEBUG("Path 1 has overlap end " << path1->HasOverlapedEnd() << ", path 2 has overlap end " <<  path2->HasOverlapedEnd());
 
             if (add_overlap_begins){
                 AddOverlap(paths, path1, first1, last1);
@@ -303,7 +301,6 @@ private:
             }
         } else if (first2 == 0 && del_all) {
             DEBUG("Detaching overlap from " << path2->GetConjPath()->GetId() << " because of "<< path1->GetId());
-            DEBUG("Does it have overlap in the beginning: " << path2->HasOverlapedBegin());
             path2->PrintDEBUG();
             DEBUG(" >>>> ")
             path1->PrintDEBUG();
@@ -311,7 +308,6 @@ private:
             path2->GetConjPath()->PopBack(last2 + 1);
         } else if (last2 == size2 - 1 && del_all) {
             DEBUG("Detaching overlap from " << path2->GetId() << " because of "<< path1->GetId());
-            DEBUG("Does it have overlap in the end: " << path2->HasOverlapedEnd());
             path2->PrintDEBUG();
             DEBUG(" >>>> ")
             path1->PrintDEBUG();
@@ -319,7 +315,6 @@ private:
             path2->PopBack(last1 + 1 - first1);
         } else if (first1 == 0 && del_all) {
             DEBUG("Detaching overlap from " << path1->GetConjPath()->GetId() << " because of "<< path2->GetId());
-            DEBUG("Does it have overlap in the end: " << path1->HasOverlapedBegin());
             path1->PrintDEBUG();
             DEBUG(" >>>> ")
             path2->PrintDEBUG();
@@ -327,7 +322,6 @@ private:
             path1->GetConjPath()->PopBack(last1 + 1);
         } else if (last1 == size1 - 1 && del_all) {
             DEBUG("Detaching overlap from " << path1->GetId() << " because of "<< path2->GetId());
-            DEBUG("Does it have overlap in the end: " << path1->HasOverlapedBegin());
             path1->PrintDEBUG();
             DEBUG(" >>>> ")
             path2->PrintDEBUG();
@@ -340,22 +334,15 @@ private:
     }
 
     std::vector<EdgeId> GetSortedEdges() const {
-        std::set<EdgeId> edges_set;
-        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            edges_set.insert(*iter);
-            edges_set.insert(g_.conjugate(*iter));
-        }
-        std::vector<EdgeId> edges(edges_set.begin(), edges_set.end());
-        std::sort(edges.begin(), edges.end(), EdgeLengthAndIdComparator(g_));
+        std::vector<EdgeId> edges(GraphEdgeIterator<Graph>(g_, g_.begin()),
+                                  GraphEdgeIterator<Graph>(g_, g_.end()));
+        std::sort(edges.begin(), edges.end(), [&] (const EdgeId& e1, const EdgeId& e2) {
+            if (g_.length(e1) == g_.length(e2)) {
+                return e1.int_id() < e2.int_id();
+            }
+            return g_.length(e1) > g_.length(e2);
+        });
         return edges;
-    }
-
-    bool HasAlreadyOverlapedEnd(BidirectionalPath * path) const {
-        return !path->IsOverlap() and path->HasOverlapedEnd();
-    }
-
-    bool HasAlreadyOverlapedBegin(BidirectionalPath * path) const {
-        return !path->IsOverlap() and path->HasOverlapedBegin();
     }
 
     bool IsSamePath(BidirectionalPath * path1,
@@ -371,13 +358,11 @@ private:
             path2->PrintDEBUG();
             path1->PrintDEBUG();
             conj2->PopBack(overlap_size);
-            path2->SetOverlapedBeginTo(path1);
         } else if (path2->IsOverlap() && path2->Size() == overlap_size) {
             DEBUG("Detaching overlap from " << path1->GetId() << " because of "<< path2->GetId());
             path1->PrintDEBUG();
             path2->PrintDEBUG();
             path1->PopBack(overlap_size);
-            path1->SetOverlapedEndTo(path2);
         } else if (overlap_size < path2->Size()
                 && overlap_size < path1->Size()) {
             BidirectionalPath *overlap = new BidirectionalPath(g_, path1->Back());
@@ -397,8 +382,6 @@ private:
                 conj2->PopBack();
             }
             overlap->SetOverlap(true);
-            path1->SetOverlapedEndTo(overlap);
-            path2->SetOverlapedBeginTo(overlap);
         }
     }
 
@@ -433,24 +416,6 @@ private:
             RemoveOverlap(all_paths, path1, overlap_path, overlap_size);
         }
     }
-
-    class EdgeLengthAndIdComparator {
-    public:
-        EdgeLengthAndIdComparator(const Graph& g)
-                : g_(g) {
-        }
-        bool operator()(const EdgeId& e1, const EdgeId& e2) const {
-            if (g_.length(e1) > g_.length(e2)) {
-                return true;
-            }
-            if (g_.length(e2) > g_.length(e1)) {
-                return false;
-            }
-            return e1.int_id() < e2.int_id();
-        }
-    private:
-        const Graph& g_;
-    };
 
     const Graph& g_;
     GraphCoverageMap& coverage_map_;

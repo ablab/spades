@@ -96,8 +96,6 @@ public:
               listeners_(),
               id_(path_id_++),
               weight_(1.0),
-              has_overlaped_begin_(false),
-              has_overlaped_end_(false),
               overlap_(false) {
     }
 
@@ -123,8 +121,6 @@ public:
               listeners_(),
               id_(path_id_++),
               weight_(path.weight_),
-              has_overlaped_begin_(path.has_overlaped_begin_),
-              has_overlaped_end_(path.has_overlaped_end_),
               overlap_(path.overlap_) {
     }
 
@@ -589,33 +585,25 @@ public:
         }
     }
 
-    void SetOverlapedBeginTo(BidirectionalPath* to) {
-        if (has_overlaped_begin_) {
-            to->SetOverlapBegin();
-        }
-        SetOverlapBegin();
-        to->SetOverlapEnd();
-    }
-
-    void SetOverlapedEndTo(BidirectionalPath* to) {
-        if (has_overlaped_end_) {
-            to->SetOverlapEnd();
-        }
-        SetOverlapEnd();
-        to->SetOverlapBegin();
-    }
+//    void SetOverlapedBeginTo(BidirectionalPath* to) {
+//        if (has_overlaped_begin_) {
+//            to->SetOverlapBegin();
+//        }
+//        SetOverlapBegin();
+//        to->SetOverlapEnd();
+//    }
+//
+//    void SetOverlapedEndTo(BidirectionalPath* to) {
+//        if (has_overlaped_end_) {
+//            to->SetOverlapEnd();
+//        }
+//        SetOverlapEnd();
+//        to->SetOverlapBegin();
+//    }
 
     void SetOverlap(bool overlap = true) {
         overlap_ = overlap;
         conj_path_->overlap_ = overlap;
-    }
-
-    bool HasOverlapedBegin() const {
-        return has_overlaped_begin_;
-    }
-
-    bool HasOverlapedEnd() const {
-        return has_overlaped_end_;
     }
 
     bool IsOverlap() const {
@@ -624,11 +612,7 @@ public:
 
     void ResetOverlaps() {
         overlap_ = false;
-        has_overlaped_begin_ = false;
-        has_overlaped_end_ = false;
         conj_path_->overlap_ = false;
-        conj_path_->has_overlaped_begin_ = false;
-        conj_path_->has_overlaped_end_ = false;
     }
 
 private:
@@ -721,19 +705,6 @@ private:
         NotifyFrontEdgeRemoved(e);
     }
 
-    void SetOverlapBegin(bool overlap = true) {
-        if (has_overlaped_begin_ != overlap) {
-            has_overlaped_begin_ = overlap;
-        }
-        if (GetConjPath()->has_overlaped_end_ != overlap) {
-            GetConjPath()->has_overlaped_end_ = overlap;
-        }
-    }
-
-    void SetOverlapEnd(bool overlap = true) {
-        GetConjPath()->SetOverlapBegin(overlap);
-    }
-
     const Graph& g_;
     std::deque<EdgeId> data_;
     BidirectionalPath* conj_path_;
@@ -743,8 +714,8 @@ private:
     std::vector<PathListener *> listeners_;
     const uint64_t id_;  //Unique ID
     float weight_;
-    bool has_overlaped_begin_;
-    bool has_overlaped_end_;
+//    bool has_overlaped_begin_;
+//    bool has_overlaped_end_;
     bool overlap_;
     DECL_LOGGER("BidirectionalPath");
 };
