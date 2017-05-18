@@ -12,6 +12,9 @@ def load_dict(input):
 def dump_dict(dict, output):
     yaml.dump(dict, output)
 
+def sample_name(fullname):
+    return os.path.splitext(os.path.basename(fullname))[0]
+
 FASTA_EXTS = {".fasta", ".fa", ".fna", ".fsa", ".fastq", ".fastq.gz", ".fq", ".fq.gz", ".fna.gz"}
 def gather_paths(path, basename=False):
     for filename in os.listdir(path):
@@ -43,7 +46,7 @@ def gather_refs(data):
             for ref in gather_paths(data, True):
                 yield ref
         else:
-            yield (os.path.splitext(os.path.basename(data))[0], data)
+            yield (sample_name(data), data)
 
 def get_id(internal_id, sample):
     res = internal_id.split("_", 2)[1]
@@ -54,7 +57,7 @@ def load_annotation(file, normalize=True):
     sample, _ = os.path.splitext(os.path.basename(file))
     with open(file) as input:
         for line in input:
-            info = line.split(" : ")
+            info = line.split(",")
             id = get_id(info[0], sample) if normalize else info[0]
             bins = info[1].split()
             if id in res:

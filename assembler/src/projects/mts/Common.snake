@@ -13,7 +13,7 @@ default_values = {
     "scripts":     os.path.join(LOCAL_DIR, "src/projects/mts/scripts"),
     "threads":     16,
     "assembly":    {"assembler": "spades", "dir": os.path.join(LOCAL_DIR, "bin"), "k": 55, "groups": []},
-    "profile":     {"k": 21},
+    "profile":     {"profiler": "mts", "k": 21, "split": 10000},
     "binning":     {"binner": "canopy", "min_length": 2000, "min_nonzeroes": 3},
     "propagation": {"enabled": True},
     "reassembly":  {"enabled": True}
@@ -35,13 +35,16 @@ config["reassembly"].setdefault("dir", config["assembly"]["dir"])
 
 #TODO: check if modern Snakemake allows dictionaries in string splicing
 IN = config["data"]
-SPADES = config["assembly"]["dir"]
-SPADES_REASSEMBLY = config["reassembly"]["dir"]
+ASSEMBLER = config["assembly"]["assembler"]
+ASSEMBLER_DIR = config["assembly"]["dir"]
+REASSEMBLER_DIR = config["reassembly"]["dir"]
 BIN = config["bin"]
 SCRIPTS = config["scripts"]
 SOFT = config["soft"]
 K = config["assembly"]["k"]
 SMALL_K = config["profile"]["k"]
+PROFILER = config["profile"]["profiler"]
+SPLIT_LENGTH = config["profile"]["split"]
 MIN_CONTIG_LENGTH = config["binning"]["min_length"]
 MIN_NONZEROES = config["binning"]["min_nonzeroes"]
 THREADS = config["threads"]
@@ -58,6 +61,8 @@ for i in range(1, SAMPLE_COUNT + 1):
     SAMPLES.append(sample_name)
 
 SAMPLE_READS = dict(map(lambda sample: (sample, detect_reads(os.path.join(IN, sample))), SAMPLES))
+
+NAME_TEMPLATE = "(\w+\.?)?\d+"
 
 #Group samples
 GROUP_SAMPLES = config["assembly"]["groups"]
@@ -94,3 +99,9 @@ def sample_reads(dir, wildcards):
 
 left_reads  = partial(sample_reads, 0)
 right_reads = partial(sample_reads, 1)
+
+rule combine_splits:
+    input:   expand("{{dir}}/{sample}.fasta", sample=GROUPS)
+    output:  "{dir}/all.fasta"
+    message: "Combine all contigs from {wildcards.dir}"
+    shell:   "{SCRIPTS}/combine_contigs.py -r {input} > {output}"

@@ -20,11 +20,8 @@ class AnnotationStream {
 
     ContigAnnotation Parse(const std::string& s) const {
         ContigAnnotation annotation;
-        stringstream ss(s);
+        std::istringstream ss(s);
         ss >> annotation.first;
-        string delim;
-        ss >> delim;
-        VERIFY(delim == ":");
         while (true) {
             bin_id bin;
             ss >> bin;
@@ -67,7 +64,7 @@ public:
 
     AnnotationOutStream& operator <<(const ContigAnnotation& annotation) {
         inner_stream_ << annotation.first;
-        string delim = " : ";
+        string delim = "\t";
         for (bin_id bin : annotation.second) {
             inner_stream_ << delim << bin;
             delim = " ";
@@ -171,7 +168,7 @@ class AnnotationFiller {
             for (const bin_id& bin : bins) {
                 if (interesting_bins_.count(bin)) {
                     answer.push_back(bin);
-                } 
+                }
             }
             return answer;
         }

@@ -1,5 +1,4 @@
 include: "Common.snake"
-include: "CommonStats.snake"
 
 import os
 import os.path
@@ -7,123 +6,209 @@ import os.path
 import pandas
 from pandas import DataFrame
 
-from scripts.common import dump_dict
+from scripts.common import dump_dict, gather_refs
+
+#Additional config parameters
+try:
+    QUAST_DIR = config["QUAST"]
+    QUAST = os.path.join(QUAST_DIR, "quast.py")
+    METAQUAST = os.path.join(QUAST_DIR, "metaquast.py")
+except KeyError:
+    QUAST = "quast"
+    METAQUAST = "metaquast"
 
 #Autodetect bins
-CAGS, = glob_wildcards("binning/{cag,\w*\d+}/left.fastq")
-CAGS.sort()
+if config["reassembly"]["enabled"]:
+    BINS, = glob_wildcards("binning/{{cag,{}}}/left.fastq".format(NAME_TEMPLATE))
+else:
+    BINS, = glob_wildcards("binning/bins/{{cag,{}}}.fasta".format(NAME_TEMPLATE))
+if not BINS:
+    raise WorkflowError("No bins detected!")
+BINS.sort()
 
-CAG_EDGES = [c + "_edges" for c in CAGS]
+#Additional config parameters
+try:
+    QUAST_DIR = config["stats"]["quast"]
+    QUAST = os.path.join(QUAST_DIR, "quast.py")
+    METAQUAST = os.path.join(QUAST_DIR, "metaquast.py")
+except KeyError:
+    QUAST = "quast"
+    METAQUAST = "metaquast"
+
+#Detect references
+REFS = dict(gather_refs(config["stats"].get("refs", [])))
+REFS_STR = ",".join(path for path in REFS.values())
 
 def ref_path(wildcards):
     return REFS[wildcards.ref]
 
 onstart:
-    try:
-        os.mkdir("tmp")
-    except:
-        pass
     print("Detected", SAMPLE_COUNT, "samples in", IN)
-    if CAGS:
-        print("Detected good (abundant) CAGs:", " ".join(CAGS))
+    if BINS:
+        print("Detected good (abundant) bins:", " ".join(BINS))
     if REFS:
         print("Detected references:", " ".join(REFS))
+
+enabled_stats = ["stats/summary/gf_binning.tsv"]
+if config["propagation"]["enabled"]:
+    enabled_stats.append("stats/summary/gf_propagation.tsv")
+if config["reassembly"]["enabled"]:
+    enabled_stats.append("stats/summary/reassembly_summary.tsv")
+
+rule all_stats:
+    input:   enabled_stats
+    message: "Gathered stats: {input}"
+
+#---- Contigs of interest ------------------------------------------------------
+# rule filter_ref_alignments:
+#     input:   "stats/summary/gf_{stage}.tsv"
+#     output:  "stats/q_{stage}/runs_per_reference/{ref}/{fragments}.info"
+#     params:  "stats/q_{stage}/runs_per_reference/{ref}/contigs_reports/nucmer_output/{fragments}.coords.filtered"
+#     message: "Filtering alignments of {wildcards.fragments} from {wildcards.stage} onto {wildcards.ref}"
+#     shell:   "if [ -f {params} ] ; then {SCRIPTS}/filter_nucmer.py {params} {output} {MIN_CONTIG_LENGTH} 70 ; else touch {output} ; fi"
+#
+# def alignment_input(wildcards):
+#     template = "stats/q_{}/runs_per_reference/{{ref}}/{{fragments}}.info".format(wildcards.stage)
+#     return expand(template, ref = wildcards.ref, fragments=input_dict[wildcards.stage].fragments)
+#
+# rule combine_alignment_info:
+#     input:   alignment_input
+#     output:  "stats/q_{stage}/g_{ref}.info"
+#     message: "Combining good contigs of {wildcards.stage} for {wildcards.ref}"
+#     shell:   "rm -rf {output}; for f in {input}; do name=$(basename $f .info); cat $f | sed 's/^/'$name'-/g' >> {output} ; done"
+#
+# rule combine_refs_info:
+#     input:   expand("stats/q_{{stage}}/g_{ref}.info", ref=list(REFS.keys()))
+#     output:  "stats/q_{stage}/total.info"
+#     message: "Combining good contigs of {wildcards.stage} for all references"
+#     run:
+#         shell("rm -f {output}")
+#         for ref in REFS.keys():
+#             shell("awk '{{print $0 \"\t{ref}\"}}' stats/q_{wildcards.stage}/g_{ref}.info >> {output}")
+
+#---- Summary table ------------------------------------------------------------
+rule gather_stats:
+    input:   "stats/summary/gf_{stage}.tsv"#,
+             #"stats/q_{stage}/total.info"
+    output:  "stats/summary/{stage}_summary.tsv"
+    params:  "--problematic", "--heatmap", "stats/q_{stage}", "stats/summary/{stage}"
+    message: "Gathering {wildcards.stage} stats"
+    shell:   "{SCRIPTS}/gather_stats.py {params}"
 
 #===============================================================================
 #---- Statistics section -------------------------------------------------------
 #===============================================================================
 
-register_input("assembly", "assembly/{frag}.fasta", GROUPS)
-register_input("reassembly_edges", "profile/{frag}.fasta", CAG_EDGES)
+#---- Genome fraction ----------------------------------------------------------
+rule genome_fraction:
+    input:   expand("{{stage}}/bins/{bin}.fasta", bin=BINS) #stats_input
+    output:  "stats/summary/gf_{stage}.tsv"
+    params:  out="stats/q_{stage}"
+    log:     "stats/q_{stage}/.log"
+    threads: THREADS
+    message: "Aligning all of {wildcards.stage} on all references"
+    shell:   "{METAQUAST} -t {threads} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1 && "
+             "cp '{params.out}/summary/TSV/Genome_fraction_(%).tsv' {output}"
 
 #---- GF per bin per reference -------------------------------------------------
+rule combine_annotation:
+    input:   expand("{{stage}}/annotation/{sample}.ann", sample=SAMPLES)
+    output:  "{stage}/annotation/all.ann"
+    message: "Combine all annotation on {wildcards.stage}"
+    run:
+        shell("rm -f {output}")
+        for sample_ann in input:
+            sample, _ = os.path.splitext(os.path.basename(sample_ann))
+            shell("sed -e 's/^/{sample}-/' {sample_ann} >> {output}")
 
-#Helper formatters for determining input files from different stages
-SUBSTAGES = ["prelim", "prop"]
-SUB_DEPS = {"prelim": ("assembly/{}_splits.fasta",   "annotation/{}.ann"),
-            "prop":   ("propagation/{}_edges.fasta", "propagation/{}_edges.ann")}
-
-#Redistribute sample pieces to corresponding CAGs
-#TODO: split into different directories per sample
-rule split_bins:
-    input:   lambda w: SUB_DEPS[w.substage][0].format(w.sample),
-             lambda w: SUB_DEPS[w.substage][1].format(w.sample)
-    output:  touch("binning/{substage}/{sample}.log")
-    log:     "binning/{substage}/split_{sample}.log"
-    params:  "binning/{substage}"
-    message: "Splitting {wildcards.sample} between {wildcards.substage} bins"
-    shell:   "{SCRIPTS}/split_bins.py {input} {params} >{log}"
-
-rule cat_binned_contigs:
-    input:   expand("binning/{{prop}}/{sample}.log", sample=GROUPS)
-    output:  "binning/{prop}/{cag,\w*\d+}.fasta"
-    params:  "`ls binning/{prop}/*-{cag}.fasta`"
-    message: "Combine binned contigs ({wildcards.prop}) for {wildcards.cag}"
-    shell:   "cat {params} > {output}"
-
-for substage in SUBSTAGES:
-    register_input("bin_{}".format(substage), "binning/{}/{{frag}}.fasta".format(substage), CAGS)
-
-#Run this
-rule stats_assembly:
-    input:   expand("stats/summary/gf_bin_{substage}.tsv", substage=SUBSTAGES),
-             "stats/q_assembly/total.info"
-    message: "Gathered some numbers, deal with them."
-
-#---- Reassembly statistics ----------------------------------------------------
-register_input("reassembly", "reassembly/{frag}.fasta", CAGS)
-
-#Run this
-rule stats_reassembly:
-    input:   expand(rules.gather_stats.output[0], stage="reassembly")
-    message: "Gathered reassembled bins stats"
+#Redistribute sample pieces to corresponding bins
+rule filter_bin:
+    input:   contigs="{stage}/splits/all.fasta", ann="{stage}/annotation/all.ann"
+    output:  "{stage,(binning|propagation)}/bins/{bin,\w*\d+}.fasta"
+    message: "Filtering contigs from {wildcards.bin} for all of {wildcards.stage}"
+    shell:   "{SCRIPTS}/filter_bin.py {input} {wildcards.bin} >{output}"
 
 #---- Propagator statistics ----------------------------------------------------
 rule prop_stats:
-    input:   prelim="annotation/{sample}.ann", prop="annotation/{sample}_edges.ann",
-             contigs="assembly/{sample}.fasta", edges="assembly/{sample}_edges.fasta",
+    input:   prelim="binning/annotation/{sample}.ann", prop="propagation/annotation/{sample}.ann",
+             contigs="assembly/{sample}.fasta", edges="assembly/edges/{sample}.fasta",
              ref=REFS.values() #, bins="{sample}/{ref}.bin"
-    output:  "stats/prop_{cag}/{sample}.tsv"
-    log:     "stats/prop_{cag}/{sample}.log"
+    output:  "stats/prop_{bin}/{sample}.tsv"
+    log:     "stats/prop_{bin}/{sample}.log"
     message: "Calculating propagation statistics for {wildcards.sample}"
     shell:   "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref}"
              " -c {input.contigs} -a {input.prelim} -e {input.edges} -p {input.prop}"
-             " -b {wildcards.cag} -o {output} >{log}"
+             " -b {wildcards.bin} -o {output} >{log}"
 
 # Run this
 rule prop_stats_all:
-    input:   expand("stats/prop_{cag}/{sample}.tsv", sample=GROUPS, cag=CAGS)
+    input:   expand("stats/prop_{cag}/{sample}.tsv", sample=GROUPS, cag=BINS)
     message: "Calculated propagation statistics"
 
+#===============================================================================
+#---- Reference-free stats and metrics -----------------------------------------
+#===============================================================================
+
+#---- CheckM stats -------------------------------------------------------------
+rule checkm:
+    output:  qa="stats/checkm_{stage}/qa.tsv", tree_qa="stats/checkm_{stage}/tree_qa.tsv"
+    params:  dir="{stage}/bins", out="stats/checkm_{stage}",
+    threads: THREADS
+    run:
+        for file in os.listdir(params.dir):
+            ext = os.path.splitext(file)
+            if ext in FASTA_EXTS:
+                break
+        shell("set +u; source activate concoct_env; set -u \n"
+             "checkm tree -x {ext} {params.dir} {out} \n"
+             "checkm tree_qa -o 2 --tab_table -f {output.tree_qa} {params.out}\n"
+             "checkm lineage_set {params.out} {params.out}/lineage.ms\n"
+             "checkm analyze -x fasta {params.out}/lineage.ms reassembly {params.out}\n"
+             "checkm qa -o 2 --tab_table -f {output.qa} {params.out}/lineage.ms {params.out}")
+
+rule parse_checkm:
+    input:   qa=rules.checkm.output.qa, tree_qa=rules.checkm.output.tree_qa
+    output:  "stats/summary/checkm_{stage}.tsv"
+    run:
+        table = pandas.read_table(input.qa, dtype="str")
+        tree_table = pandas.read_table(input.tree_qa, dtype="str", na_filter=False)
+        all_table = pandas.merge(table, tree_table, on="Bin Id")
+        res_table = all_table[["Bin Id", "Taxonomy (contained)", "Taxonomy (sister lineage)", "Genome size (Mbp)", "Completeness", "Contamination"]].copy()
+        def extract_taxon(taxonomy):
+            return str(taxonomy).split(";")[-1]
+        for column in ["Taxonomy (contained)", "Taxonomy (sister lineage)"]:
+            res_table[column] = res_table[column].apply(extract_taxon)
+        res_table.to_csv(output[0], index=False, sep="\t")
+
 #---- PCA ----------------------------------------------------------------------
-FRAGMENT_NAMES_BY_STAGE = {"reassembly": CAG_EDGES,
-                           "assembly": list(GROUPS.keys())}
-
-def fragments_info_by_stage(wildcards):
-    fragments=FRAGMENT_NAMES_BY_STAGE[wildcards.stage]
-    return expand("stats/q_{stage}/runs_per_reference/{ref}/{fs}.info", stage=wildcards.stage, ref=wildcards.ref, fs=fragments)
-
-rule pca:
-    input:   "binning/canopy/profiles.in", "binning/canopy/binning.out", "stats/q_{stage}/total.info"
-    output:  "stats/summary/pca_{stage}.png"
-    message: "Drawing PCA visualisation for {wildcards.stage}"
-    shell:   "Rscript {SCRIPTS}/pca.R {input} {output}"
-
-# Run this
-rule pca_all:
-    input:   expand("stats/summary/pca_{stage}.png", stage=FRAGMENT_NAMES_BY_STAGE.keys())
-    message: "Drew all PCAs"
+# FRAGMENT_NAMES_BY_STAGE = {"reassembly": CAG_EDGES,
+#                            "assembly": list(GROUPS.keys())}
+#
+# def fragments_info_by_stage(wildcards):
+#     fragments=FRAGMENT_NAMES_BY_STAGE[wildcards.stage]
+#     return expand("stats/q_{stage}/runs_per_reference/{ref}/{fs}.info", stage=wildcards.stage, ref=wildcards.ref, fs=fragments)
+#
+# rule pca:
+#     input:   "binning/canopy/profiles.in", "binning/canopy/binning.out", "stats/q_{stage}/total.info"
+#     output:  "stats/summary/pca_{stage}.png"
+#     message: "Drawing PCA visualisation for {wildcards.stage}"
+#     shell:   "Rscript {SCRIPTS}/pca.R {input} {output}"
+#
+# # Run this
+# rule pca_all:
+#     input:   expand("stats/summary/pca_{stage}.png", stage=FRAGMENT_NAMES_BY_STAGE.keys())
+#     message: "Drew all PCAs"
 
 
 #---- TSNE ----------------------------------------------------------------------
 
-rule tsne:
-    input:   profile="binning/canopy/profiles.in", binning="binning/canopy/binning.out"
-    output:  "stats/summary/tsne_{stage}"
-    message: "Drawing BH-TSNE visualisation for {wildcards.stage}"
-    shell:   "python2 {SCRIPTS}/run_tsne.py {input.profile} {input.binning} {output} -l metaSPAdes --percent 1.0 --iteration 2000 --perplexity 50"
-
-# Run this
-rule tsne_all:
-    input:   expand("stats/summary/tsne_{stage}.pdf", stage=FRAGMENT_NAMES_BY_STAGE.keys())
-    message: "Drew all TSNEs"
+# rule tsne:
+#     input:   profile="binning/canopy/profiles.in", binning="binning/canopy/binning.out"
+#     output:  "stats/summary/tsne_{stage}"
+#     message: "Drawing BH-TSNE visualisation for {wildcards.stage}"
+#     shell:   "python2 {SCRIPTS}/run_tsne.py {input.profile} {input.binning} {output} -l metaSPAdes --percent 1.0 --iteration 2000 --perplexity 50"
+#
+# # Run this
+# rule tsne_all:
+#     input:   expand("stats/summary/tsne_{stage}.pdf", stage=FRAGMENT_NAMES_BY_STAGE.keys())
+#     message: "Drew all TSNEs"

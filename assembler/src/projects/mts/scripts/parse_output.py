@@ -20,7 +20,7 @@ class Parser:
             sample = sample_contig[0]
             contig = sample_contig[1]
         else:
-            sample = "all"
+            sample = "group1"
             contig = sample_contig[0]
         if sample not in self.samples_annotation:
             self.samples_annotation[sample] = dict()
@@ -61,6 +61,5 @@ if __name__ == "__main__":
     for sample, annotation in parser.samples_annotation.items():
         with open(os.path.join(args.output, sample + ".ann"), "w") as sample_out:
             annotation = parser.samples_annotation[sample]
-
             for contig in annotation:
-                print(contig, ":", " ".join(annotation[contig]), file=sample_out)
+                print(contig, "\t", " ".join(annotation[contig]), sep="", file=sample_out)

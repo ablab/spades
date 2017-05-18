@@ -33,7 +33,10 @@ args = parser.parse_args()
 with open(args.config) as config_in:
     config_template = load_dict(config_in)
     config_template.setdefault("assembly", dict())
+    config_template.setdefault("profile", dict())
     config_template.setdefault("binning", dict())
+    config_template.setdefault("propagation", dict())
+    config_template.setdefault("reassembly", dict())
 assemblies_dir = dict()
 
 def pipelines():
@@ -59,9 +62,14 @@ for pipeline in pipelines():
     config = config_template.copy()
     params = pipeline.split("_")
     assembly_name = params[0]
-    if not assembly_name == "main":
+    if assembly_name == "main":
+        config["profile"]["profiler"] = "mts"
+    else:
         config["assembly"]["assembler"] = params[0]
-        call_params.extend(["--alt"])
+        config["assembly"]["groups"] = ["*"]
+        config["profile"]["profiler"] = "jgi"
+        config["propagation"]["enabled"] = False
+        config["reassembly"]["enabled"] = False
 
     config["binning"]["binner"] = params[1]
     with open(os.path.join(dir, "config.yaml"), "w") as config_out:

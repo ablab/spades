@@ -74,12 +74,4 @@ with cd(exec_dir):
         call_snake()
 
     if args.stats:
-        if args.alt:
-            print("Step 2 - Assembly statistics")
-            call_snake(["--snakefile", "AltStats.snake"])
-        else:
-            print("Step #2a - Assembly statistics")
-            call_snake(["--snakefile", "Stats.snake", "stats_assembly"])
-
-            print("Step #2b - Reassembly statistics")
-            call_snake(["--snakefile", "Stats.snake", "stats_reassembly"])
+        call_snake(["--snakefile", "Stats.snake"])

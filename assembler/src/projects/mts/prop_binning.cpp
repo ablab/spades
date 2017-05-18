@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
     size_t k;
     string saves_path, contigs_path, splits_path, annotation_path;
     vector<string> sample_names, left_reads, right_reads;
-    string out_root, propagation_dump;
+    string out_root, edges_dump, propagation_dump;
     vector<bin_id> bins_of_interest;
     bool no_binning;
     try {
@@ -65,13 +65,15 @@ int main(int argc, char** argv) {
             >> Option('l', left_reads)
             >> Option('r', right_reads)
             >> Option('o', out_root)
-            >> Option('d', propagation_dump, "")
+            >> Option('p', propagation_dump, "")
+            >> Option('e', edges_dump, "")
             >> Option('b', bins_of_interest, {})
-            >> OptionPresent('p', no_binning);
+            >> OptionPresent('D', "no-binning", no_binning);
     } catch(GetOptEx &ex) {
         cout << "Usage: prop_binning -k <K> -s <saves path> -c <contigs path> -f <splits path> "
-                "-a <binning annotation> -n <sample names> -l <left reads> -r <right reads> -o <output root> "
-                "[-d <propagation info dump>] [-p to disable binning] [-b <bins of interest>*]"  << endl;
+                "-a <binning annotation> -n <sample names> -l <left reads> -r <right reads> "
+                "-o <reads output root> [-p <propagation info dump>] [-e <propagated edges dump>] "
+                "[-D to disable binning] [-b <bins of interest>*]"  << endl;
         exit(1);
     }
 
@@ -103,8 +105,7 @@ int main(int argc, char** argv) {
     if (!propagation_dump.empty()) {
         INFO("Dumping propagation info to " << propagation_dump);
         DumpEdgesAndAnnotation(gp.g, edge_annotation,
-                               propagation_dump + ".fasta",
-                               propagation_dump + ".ann");
+                               edges_dump, propagation_dump);
     }
 
     if (no_binning) {
