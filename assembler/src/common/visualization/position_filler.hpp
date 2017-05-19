@@ -38,7 +38,7 @@ public:
     }
 
     MappingPath Process(const Sequence &s, const string &name) const {
-        Process(s.str(), name);
+        return Process(s.str(), name);
     }
 
     MappingPath Process(const io::SingleRead &read) const {
