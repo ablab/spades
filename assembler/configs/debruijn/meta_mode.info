@@ -187,7 +187,16 @@ params {
         max_repeat_length          1000000 
     }
     
+
+
+
     use_coordinated_coverage true
+
+    coordinated_coverage
+    {
+       min_path_len           10000
+    }
+
 }
 
 }
