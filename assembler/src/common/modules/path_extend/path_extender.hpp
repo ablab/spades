@@ -21,6 +21,24 @@
 
 namespace path_extend {
 
+inline void SubscribeCoverageMap(BidirectionalPath * path, GraphCoverageMap &coverage_map) {
+    path->Subscribe(&coverage_map);
+    for (size_t i = 0; i < path->Size(); ++i) {
+        coverage_map.BackEdgeAdded(path->At(i), path, path->GapAt(i));
+    }
+}
+
+inline BidirectionalPath* AddPath(PathContainer &paths,
+                                  const BidirectionalPath &path,
+                                  GraphCoverageMap &coverage_map) {
+    BidirectionalPath* p = new BidirectionalPath(path);
+    BidirectionalPath* conj_p = new BidirectionalPath(path.GetConjPath() ? *path.GetConjPath() : path.Conjugate());
+    SubscribeCoverageMap(p, coverage_map);
+    SubscribeCoverageMap(conj_p, coverage_map);
+    paths.AddPair(p, conj_p);
+    return p;
+}
+
 class ShortLoopResolver {
 public:
     static const size_t BASIC_N_CNT = 100;
@@ -819,13 +837,6 @@ private:
     bool detect_repeats_online_;
     shared_ptr<UsedUniqueStorage> used_storage_;
 
-    void SubscribeCoverageMap(BidirectionalPath * path) {
-        path->Subscribe(&cover_map_);
-        for (size_t i = 0; i < path->Size(); ++i) {
-            cover_map_.BackEdgeAdded(path->At(i), path, path->GapAt(i));
-        }
-    }
-
     void GrowAllPaths(PathContainer& paths, PathContainer& result) {
         for (size_t i = 0; i < paths.size(); ++i) {
             VERBOSE_POWER_T2(i, 100, "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
@@ -852,11 +863,12 @@ private:
             }
 
             if (!cover_map_.IsCovered(*paths.Get(i))) {
+                AddPath(result, *paths.Get(i), cover_map_);
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
                 BidirectionalPath * conjugatePath = new BidirectionalPath(*paths.GetConjugate(i));
+                SubscribeCoverageMap(path, cover_map_);
+                SubscribeCoverageMap(conjugatePath, cover_map_);
                 result.AddPair(path, conjugatePath);
-                SubscribeCoverageMap(path);
-                SubscribeCoverageMap(conjugatePath);
                 size_t count_trying = 0;
                 size_t current_path_len = 0;
                 do {

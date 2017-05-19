@@ -90,7 +90,7 @@ public:
     BidirectionalPath(const Graph& g)
             : g_(g),
               data_(),
-              conj_path_(NULL),
+              conj_path_(nullptr),
               cumulative_len_(),
               gap_len_(),
               listeners_(),
@@ -115,7 +115,7 @@ public:
     BidirectionalPath(const BidirectionalPath& path)
             : g_(path.g_),
               data_(path.data_),
-              conj_path_(NULL),
+              conj_path_(nullptr),
               cumulative_len_(path.cumulative_len_),
               gap_len_(path.gap_len_),
               listeners_(),
@@ -334,28 +334,6 @@ public:
             }
         }
         return 0;
-    }
-
-    size_t OverlapEndSize(const BidirectionalPath* path2) const {
-        if (Size() == 0) {
-            return 0;
-        }
-        int last1 = (int) Size() - 1;
-        int max_over = 0;
-        vector<size_t> begins2 = path2->FindAll(At(last1));
-        for (size_t i = 0; i < begins2.size(); ++i) {
-            int begin2 = (int) begins2[i];
-            int cur1 = last1;
-            while (begin2 > 0 && cur1 > 0 && path2->At(begin2 - 1) == At(cur1 - 1)) {
-                cur1--;
-                begin2--;
-            }
-            int over = last1 - cur1 + 1;
-            if (begin2 == 0 && cur1 > 0 && over > max_over) {
-                max_over = over;
-            }
-        }
-        return (size_t) max_over;
     }
 
     int FindFirst(const BidirectionalPath& path, size_t from = 0) const {
@@ -805,12 +783,6 @@ inline bool EqualEnds(const BidirectionalPath& path1, size_t pos1, const Bidirec
     return LastNotEqualPosition(path1, pos1, path2, pos2, use_gaps) == -1UL;
 }
 
-inline bool PathIdCompare(const BidirectionalPath* p1, const BidirectionalPath* p2) {
-    return p1->GetId() < p2->GetId();
-}
-
-
-
 typedef std::pair<BidirectionalPath*, BidirectionalPath*> PathPair;
 
 inline bool compare_path_pairs(const PathPair& p1, const PathPair& p2) {
@@ -1056,6 +1028,31 @@ inline void DeleteMapWithPaths(map<EdgeId, BidirectionalPath*> m) {
     for (auto i = m.begin(); i != m.end(); ++i){
         delete i->second;
     }
+}
+
+inline bool CheckOverlap(const BidirectionalPath &path1,
+                         const BidirectionalPath &path2,
+                         size_t overlap) {
+    if (path1.Size() < overlap || path2.Size() < overlap)
+        return false;
+    for (size_t i = 0; i < overlap; ++i)
+        if (path1.At(path1.Size() - overlap + i) != path2.At(i))
+            return false;
+    return true;
+}
+
+inline size_t OverlapSize(const BidirectionalPath &path1, const BidirectionalPath &path2) {
+    if (path1.Size() == 0)
+        return 0;
+
+    size_t max_overlap = 0;
+    for (size_t end_pos : path2.FindAll(path1.Back())) {
+        size_t overlap = end_pos + 1;
+        if (overlap > max_overlap && CheckOverlap(path1, path2, overlap)) {
+            max_overlap = overlap;
+        }
+    }
+    return max_overlap;
 }
 
 }  // path extend
