@@ -68,9 +68,14 @@ public:
         return IsCanonical(e) ? pos_orient_ : neg_orient_;
     }
 
-    std::string EdgeString(EdgeId e,
-                           const std::string &delim = "") const {
+    std::string EdgeOrientationString(EdgeId e,
+                                      const std::string &delim = "") const {
         return naming_f_(g_, Canonical(e)) + delim + GetOrientation(e);
+    }
+
+    std::string EdgeString(EdgeId e) const {
+        VERIFY(IsCanonical(e));
+        return naming_f_(g_, e);
     }
 };
 
@@ -84,12 +89,12 @@ class FastgWriter {
     string ToPathString(const BidirectionalPath &path) const {
         if (path.Empty())
             return "";
-        string res = short_namer_.EdgeString(path.Front());
+        string res = short_namer_.EdgeOrientationString(path.Front());
         for (size_t i = 1; i < path.Size(); ++i) {
             if (graph_.EdgeEnd(path[i - 1]) != graph_.EdgeStart(path[i]) || path.GapAt(i).gap > 0) {
-                res += ";\n" + short_namer_.EdgeString(path[i]);
+                res += ";\n" + short_namer_.EdgeOrientationString(path[i]);
             } else {
-                res += "," + short_namer_.EdgeString(path[i]);
+                res += "," + short_namer_.EdgeOrientationString(path[i]);
             }
         }
         return res;
@@ -125,9 +130,9 @@ public:
             EdgeId e = *it;
             set<string> next;
             for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(e))) {
-                next.insert(extended_namer_.EdgeString(next_e));
+                next.insert(extended_namer_.EdgeOrientationString(next_e));
             }
-            os << io::SingleRead(FormHeader(extended_namer_.EdgeString(e), next),
+            os << io::SingleRead(FormHeader(extended_namer_.EdgeOrientationString(e), next),
                                  graph_.EdgeNucls(e).str());
         }
     }
@@ -151,24 +156,25 @@ class GFAWriter {
     CanonicalEdgeHelper<Graph> edge_namer_;
     std::ostream &os_;
 
-    void WriteSegment(size_t edge_id, const Sequence &seq, double cov) {
+    void WriteSegment(const std::string& edge_id, const Sequence &seq, double cov) {
         os_ << "S\t" << edge_id << "\t"
             << seq.str() << "\t"
-            << "KC:i:" << size_t(math::round(cov)) << std::endl;
+            << "KC:i:" << size_t(math::round(cov)) << "\n";
     }
 
     void WriteSegments() {
         for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
             EdgeId e = *it;
-            WriteSegment(graph_.int_id(e), graph_.EdgeNucls(e), graph_.coverage(e) * double(graph_.length(e)));
+            WriteSegment(edge_namer_.EdgeString(e), graph_.EdgeNucls(e),
+                         graph_.coverage(e) * double(graph_.length(e)));
         }
     }
 
     void WriteLink(EdgeId e1, EdgeId e2,
                    size_t overlap_size) {
-        os_ << "L\t" << edge_namer_.EdgeString(e1, "\t") << "\t"
-            << edge_namer_.EdgeString(e2, "\t") << "\t"
-            << overlap_size << "M" << std::endl;
+        os_ << "L\t" << edge_namer_.EdgeOrientationString(e1, "\t") << "\t"
+            << edge_namer_.EdgeOrientationString(e2, "\t") << "\t"
+            << overlap_size << "M\n";
     }
 
     void WriteLinks() {
@@ -197,7 +203,7 @@ class GFAWriter {
 
 public:
     GFAWriter(const Graph &graph, std::ostream &os,
-              EdgeNamingF<Graph> naming_f = BasicNamingF<Graph>())
+              EdgeNamingF<Graph> naming_f = IdNamingF<Graph>())
             : graph_(graph),
               edge_namer_(graph_, naming_f),
               os_(os) {
@@ -219,7 +225,7 @@ public:
             size_t segment_id = 1;
             for (size_t i = 0; i < p.Size() - 1; ++i) {
                 EdgeId e = p[i];
-                segmented_path.push_back(edge_namer_.EdgeString(e));
+                segmented_path.push_back(edge_namer_.EdgeOrientationString(e));
                 if (graph_.EdgeEnd(e) != graph_.EdgeStart(p[i+1]) || p.GapAt(i+1).gap > 0) {
                     WritePath(scaffold_info.name, segment_id, segmented_path);
                     segment_id++;
@@ -227,7 +233,7 @@ public:
                 }
             }
 
-            segmented_path.push_back(edge_namer_.EdgeString(p.Back()));
+            segmented_path.push_back(edge_namer_.EdgeOrientationString(p.Back()));
             WritePath(scaffold_info.name, segment_id, segmented_path);
         }
     }
