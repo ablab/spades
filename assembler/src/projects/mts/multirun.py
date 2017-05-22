@@ -5,6 +5,7 @@ import argparse
 import os
 import os.path
 import subprocess
+import sys
 
 from scripts.common import load_dict, dump_dict
 
@@ -25,6 +26,7 @@ parser.add_argument("--binners", "-b", type=str, nargs="+", default=all_binners,
 parser.add_argument("--exclude", "-e", type=str, nargs="+", default=[], help="Excluded (skipped) configurations")
 parser.add_argument("--stats", "-s", action="store_true", help="Calculate stats (when the REFS parameter in config.yaml is provided)")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
+parser.add_argument("--ignore-errors", action="store_true")
 
 args = parser.parse_args()
 
@@ -73,6 +75,8 @@ for pipeline in pipelines():
     errcode = subprocess.call(call_params)
     if errcode:
         print(" ".join(call_params), "returned with error:", errcode)
+        if not args.ignore_errors:
+            sys.exit(errcode)
     elif not assembly_dir: #Reuse only successful run
         assemblies_dir[assembly_name] = os.path.join(dir, "assembly")
     print()

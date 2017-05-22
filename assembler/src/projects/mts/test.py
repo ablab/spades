@@ -87,13 +87,15 @@ def parse_args():
     parser.add_argument("--config", "-c", help="Config template")
     parser.add_argument("dir", help="Output directory")
     parser.add_argument("--saves", "-s", type=str)
+    parser.add_argument("--multirun", "-m", action="store_true")
     parser.add_argument("--no-clean", action="store_true")
     parser.add_argument("--etalons", "-e", type=str, help="Directory of GF etalons")
+
     args = parser.parse_args()
     return args
 
 def run_mts(args, workdir):
-    mts_args = ["./mts.py"]
+    mts_args = ["./multirun.py"] if args.multirun else ["./mts.py"]
     if not args.no_clean:
         shutil.rmtree(args.dir, True)
         mts_args.extend(["--config", args.config])
