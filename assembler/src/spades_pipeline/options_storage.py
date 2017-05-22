@@ -12,7 +12,7 @@ import sys
 import support
 from os.path import basename
 
-SUPPORTED_PYTHON_VERSIONS = ['2.4', '2.5', '2.6', '2.7', '3.2', '3.3', '3.4', '3.5']
+SUPPORTED_PYTHON_VERSIONS = ['2.4-2.7', '3.2+']  # major.minor format only, close ('-') and open ('+') ranges allowed
 # allowed reads extensions for BayesHammer and for thw whole SPAdes pipeline
 BH_ALLOWED_READS_EXTENSIONS = ['.fq', '.fastq', '.bam']
 CONTIGS_ALLOWED_READS_EXTENSIONS = ['.fa', '.fasta']

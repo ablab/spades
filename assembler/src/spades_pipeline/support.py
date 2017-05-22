@@ -19,6 +19,7 @@ import shutil
 import options_storage
 import itertools
 from os.path import abspath, expanduser, join
+from distutils.version import LooseVersion
 
 # constants to print and detect warnings and errors in logs
 SPADES_PY_ERROR_MESSAGE = "== Error == "
@@ -60,9 +61,30 @@ def warning(warn_str, log=None, prefix="== Warning == "):
 
 
 def check_python_version():
-    if sys.version[0:3] not in options_storage.SUPPORTED_PYTHON_VERSIONS:
-        error("python version " + sys.version[0:3] + " is not supported!\n" + \
-              "Supported versions are " + ", ".join(options_storage.SUPPORTED_PYTHON_VERSIONS))
+    def __next_version(version):
+        components = version.split('.')
+        for i in reversed(range(len(components))):
+            if components[i].isdigit():
+                components[i] = str(int(components[i]) + 1)
+                break
+        return '.'.join(components)
+
+    current_version = sys.version.split()[0]
+    supported_versions_msg = []
+    for supported_versions in options_storage.SUPPORTED_PYTHON_VERSIONS:
+        major = supported_versions[0]
+        if '-' in supported_versions:  # range
+            min_inc, max_inc = supported_versions.split('-')
+        elif supported_versions.endswith('+'):  # half open range
+            min_inc, max_inc = supported_versions[:-1], major
+        else:  # exact version
+            min_inc = max_inc = supported_versions
+        max_exc = __next_version(max_inc)
+        supported_versions_msg.append("Python%s: %s" % (major, supported_versions.replace('+', " and higher")))
+        if LooseVersion(min_inc) <= LooseVersion(current_version) < LooseVersion(max_exc):
+            return True
+    error("Python version " + current_version + " is not supported!\n" +
+          "Supported versions are " + ", ".join(supported_versions_msg))
 
 
 def get_spades_binaries_info_message():
