@@ -40,11 +40,11 @@ def error(err_str, log=None, dipspades=False, prefix=SPADES_PY_ERROR_MESSAGE):
     if log:
         log.info("\n\n" + prefix + " " + err_str)
         log_warnings(log, with_error=True)
-        log.info("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@bioinf.spbau.ru")
+        log.info("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@cab.spbu.ru")
         log.info("Please provide us with params.txt and " + binary_name.lower() + ".log files from the output directory.")
     else:
         sys.stderr.write("\n\n" + prefix + " " + err_str + "\n\n")
-        sys.stderr.write("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@bioinf.spbau.ru\n")
+        sys.stderr.write("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@cab.spbu.ru\n")
         sys.stderr.write("Please provide us with params.txt and " + binary_name.lower() + ".log files from the output directory.\n")
         sys.stderr.flush()
     if current_tmp_dir and os.path.isdir(current_tmp_dir):
@@ -89,7 +89,7 @@ def check_python_version():
 
 def get_spades_binaries_info_message():
     return "You can obtain SPAdes binaries in one of two ways:" +\
-           "\n1. Download them from http://bioinf.spbau.ru/content/spades-download" +\
+           "\n1. Download them from http://cab.spbu.ru/software/spades/" +\
            "\n2. Build source code with ./spades_compile.sh script"
 
 
