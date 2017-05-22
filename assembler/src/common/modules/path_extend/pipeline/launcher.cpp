@@ -203,7 +203,7 @@ void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const stri
     }
     PathVisualizer visualizer;
 
-    writer_.OutputPaths(paths, params_.etc_dir + name);
+    writer_.OutputPaths(paths, params_.etc_dir + name + ".fasta");
     if (params_.pe_cfg.output.write_paths) {
         std::ofstream oss(params_.etc_dir + name + ".dat");
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
