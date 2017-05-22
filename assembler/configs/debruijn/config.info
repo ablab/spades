@@ -92,6 +92,12 @@ use_scaffolder  true
 
 avoid_rc_connections true
 
+calculate_coverage_for_each_lib false
+strand_specificity {
+    ss_enabled false
+    antisense false
+}
+
 contig_output {
     contigs_name    final_contigs
     scaffolds_name  scaffolds

@@ -530,6 +530,11 @@ struct debruijn_config {
         output_broken_scaffolds obs_mode;
     };
 
+    struct strand_specificity {
+        bool ss_enabled;
+        bool antisense;
+    };
+
     contig_output co;
 
     boost::optional<scaffold_correction> sc_cor;
@@ -588,6 +593,9 @@ struct debruijn_config {
     bwa_aligner bwa;
     boost::optional<plasmid> pd;
     size_t flanking_range;
+
+    bool calculate_coverage_for_each_lib;
+    strand_specificity ss;
 
     bool need_mapping;
 

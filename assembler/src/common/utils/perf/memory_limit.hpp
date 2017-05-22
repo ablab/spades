@@ -27,6 +27,8 @@
 
 #endif
 
+#include <common/utils/logger/logger.hpp>
+
 namespace utils {
 
 inline void limit_memory(size_t limit) {

@@ -185,6 +185,38 @@ public:
 
 };
 
+
+class PathContainerCoverageSwitcher {
+    const Graph& g_;
+
+    const SSCoverageStorage& coverage_storage_;
+
+    bool antisense_;
+
+    double CalculateCoverage(const BidirectionalPath& p, bool reverse) const {
+        double res = 0.0;
+        double len = 0;
+        for(auto e : p) {
+            res += coverage_storage_.GetCoverage(e, reverse) * double(g_.length(e));
+            len += (double) g_.length(e);
+        }
+        return res / len;
+    }
+
+public:
+    PathContainerCoverageSwitcher(const Graph& g, const SSCoverageStorage& coverage_storage, bool antisense):
+        g_(g), coverage_storage_(coverage_storage), antisense_(antisense) {}
+
+
+    void Apply(PathContainer& paths) const {
+        for (size_t i = 0; i < paths.size(); ++i) {
+            if (math::ls(CalculateCoverage(*paths.Get(i), antisense_), CalculateCoverage(*paths.GetConjugate(i), antisense_))) {
+                paths.Swap(i);
+            }
+        }
+    }
+};
+
 //result -- first edge is loop's back edge, second is loop exit edge
 inline bool GetLoopAndExit(const Graph& g, EdgeId e, pair<EdgeId, EdgeId>& result) {
     VertexId v = g.EdgeEnd(e);

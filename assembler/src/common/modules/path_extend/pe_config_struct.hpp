@@ -115,7 +115,11 @@ struct pe_config {
             bool cut_all;
         } overlap_removal;
 
-        boost::optional<double> coverage_delta;
+        struct SimpleCoverageReolver {
+            bool enabled;
+            double coverage_delta;
+            double min_upper_coverage;
+        } simple_coverage_resolver;
 
         struct ExtensionOptionsT {
             bool use_default_single_threshold;

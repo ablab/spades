@@ -25,6 +25,7 @@
 #include "modules/alignment/kmer_mapper.hpp"
 #include "visualization/position_filler.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
+#include "common/modules/alignment/rna/ss_coverage.hpp"
 
 namespace debruijn_graph {
 
@@ -50,6 +51,7 @@ struct graph_pack: private boost::noncopyable {
     PairedInfoIndicesT clustered_indices;
     PairedInfoIndicesT scaffolding_indices;
     LongReadContainerT single_long_reads;
+    vector<SSCoverageStorage> ss_coverage;
     GenomicInfo ginfo;
 
     GenomeStorage genome;
@@ -71,6 +73,7 @@ struct graph_pack: private boost::noncopyable {
               clustered_indices(g, lib_count),
               scaffolding_indices(g, lib_count),
               single_long_reads(g, lib_count),
+              ss_coverage(lib_count, SSCoverageStorage(g)),
               genome(genome),
               edge_qual(g),
               edge_pos(g, max_mapping_gap + k, max_gap_diff),

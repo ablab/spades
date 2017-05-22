@@ -525,6 +525,13 @@ void load(debruijn_config::graph_read_corr_cfg& graph_read_corr,
   load(graph_read_corr.binary, pt, "binary");
 }
 
+void load(debruijn_config::strand_specificity& ss,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(ss.ss_enabled, pt, "ss_enabled");
+    load(ss.antisense, pt, "antisense");
+}
+
 void load(debruijn_config::kmer_coverage_model& kcm,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
@@ -785,6 +792,10 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.bwa, pt, "bwa_aligner", complete);
 
     load(cfg.series_analysis, pt, "series_analysis", complete);
+
+    load(cfg.ss, pt, "strand_specificity", complete);
+    load(cfg.calculate_coverage_for_each_lib, pt, "calculate_coverage_for_each_lib", complete);
+
 
     if (pt.count("plasmid")) {
         VERIFY_MSG(!cfg.pd, "Option can be loaded only once");

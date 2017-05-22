@@ -288,25 +288,59 @@ public:
 
 
 class SimpleCoverageExtensionChooser: public ExtensionChooser {
+    const SSCoverageStorage& coverage_storage_;
     //less than 1
     double coverage_delta_;
     //larger than 1
     double inverted_coverage_delta_;
 
+    double min_upper_coverage_;
+
 public:
-    SimpleCoverageExtensionChooser(const Graph& g, double coverage_delta) :
-        ExtensionChooser(g), coverage_delta_(coverage_delta), inverted_coverage_delta_(0){
+    SimpleCoverageExtensionChooser(const SSCoverageStorage& coverage_storage, const Graph& g,
+                                   double coverage_delta, double min_upper_coverage = 0) :
+        ExtensionChooser(g), coverage_storage_(coverage_storage),
+        coverage_delta_(coverage_delta),
+        inverted_coverage_delta_(0),
+        min_upper_coverage_(min_upper_coverage) {
         VERIFY(math::le(coverage_delta_, 1.0));
         VERIFY(!math::eq(coverage_delta_, 0.0));
         inverted_coverage_delta_ = 1.0 / coverage_delta_;
     }
 
-    virtual EdgeContainer Filter(const BidirectionalPath& path,
-                                 const EdgeContainer& edges) const {
+    EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
+        if (edges.size() != 2)
+            return EdgeContainer();
+
+        size_t index = path.Size() - 1;
+        while (index > 0) {
+            if (g_.IncomingEdgeCount(g_.EdgeStart(path[index])) == 2)
+                break;
+            index--;
+        }
+
+        if (index == 0) {
+            return EdgeContainer();
+        }
+        DEBUG("Split found at " << index);
+        EdgeId path_edge_at_split = path[index - 1];
+
+        return Filter(path, edges, math::ls(coverage_storage_.GetCoverage(path_edge_at_split), coverage_storage_.GetCoverage(path_edge_at_split, true)));
+    }
+
+private:
+    EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges, bool reverse) const {
         DEBUG("COVERAGE extension chooser");
-        if (edges.size() != 2 || IsCoverageSimilar(edges.front().e_, edges.back().e_)) {
-            if (edges.size() == 2)
-                DEBUG("Candidates coverage is too similar: e1 = " << g_.coverage(edges.front().e_) << ", e2 = " << g_.coverage(edges.back().e_));
+        VERIFY(edges.size() == 2);
+        if (!IsEnoughCoverage(edges.front().e_, edges.back().e_, reverse)) {
+            DEBUG("Candidates are not covered enough: e1 = " << coverage_storage_.GetCoverage(edges.front().e_, reverse) <<
+                ", e2 = " << coverage_storage_.GetCoverage(edges.back().e_, reverse));
+            return EdgeContainer();
+        }
+
+        if (IsCoverageSimilar(edges.front().e_, edges.back().e_, reverse)) {
+            DEBUG("Candidates coverage is too similar: e1 = " << coverage_storage_.GetCoverage(edges.front().e_, reverse) <<
+                ", e2 = " << coverage_storage_.GetCoverage(edges.back().e_, reverse));
             return EdgeContainer();
         }
 
@@ -323,8 +357,15 @@ public:
             EdgeId path_edge_at_split = path[index - 1];
             EdgeId other_edge_at_split = GetOtherEdgeAtSplit(g_.EdgeEnd(path_edge_at_split), path_edge_at_split);
 
-            if (IsCoverageSimilar(path_edge_at_split, other_edge_at_split)) {
-                DEBUG("Path edge and alternative is too similar: path = " << g_.coverage(path_edge_at_split) << ", other = " << g_.coverage(other_edge_at_split));
+            if (IsCoverageSimilar(path_edge_at_split, other_edge_at_split, reverse)) {
+                DEBUG("Path edge and alternative is too similar: path = " << coverage_storage_.GetCoverage(path_edge_at_split, reverse) <<
+                    ", other = " << coverage_storage_.GetCoverage(other_edge_at_split, reverse));
+
+                return EdgeContainer();
+            }
+            if (!IsEnoughCoverage(path_edge_at_split, other_edge_at_split, reverse)) {
+                DEBUG("Path edge and alternative  coverage is too low: path = " << coverage_storage_.GetCoverage(path_edge_at_split, reverse) <<
+                    ", other = " << coverage_storage_.GetCoverage(other_edge_at_split, reverse));
 
                 return EdgeContainer();
             }
@@ -332,20 +373,26 @@ public:
             EdgeId candidate1 = edges.front().e_;
             EdgeId candidate2 = edges.back().e_;
 
-            if (math::gr(g_.coverage(path_edge_at_split), g_.coverage(other_edge_at_split))) {
-                DEBUG("path coverage is high, edge " << g_.int_id(path_edge_at_split) << ", path cov = " << g_.coverage(path_edge_at_split) << ", other " << g_.coverage(other_edge_at_split));
-                result.emplace_back(math::gr(g_.coverage(candidate1), g_.coverage(candidate2)) ? candidate1 : candidate2, 0);
+            if (math::gr(coverage_storage_.GetCoverage(path_edge_at_split, reverse), coverage_storage_.GetCoverage(other_edge_at_split, reverse))) {
+                DEBUG("path coverage is high, edge " << g_.int_id(path_edge_at_split) << ", path cov = "
+                          << coverage_storage_.GetCoverage(path_edge_at_split, reverse) << ", other " << coverage_storage_.GetCoverage(other_edge_at_split, reverse));
+
+                result.emplace_back(math::gr(coverage_storage_.GetCoverage(candidate1, reverse), coverage_storage_.GetCoverage(candidate2, reverse)) ? candidate1 : candidate2, 0);
             } else {
-                DEBUG("path coverage is low, edge " << g_.int_id(path_edge_at_split) << ", path cov = " << g_.coverage(path_edge_at_split) << ", other " << g_.coverage(other_edge_at_split));
-                result.emplace_back(math::ls(g_.coverage(candidate1), g_.coverage(candidate2)) ? candidate1 : candidate2, 0);
+                DEBUG("path coverage is low, edge " << g_.int_id(path_edge_at_split) << ", path cov = "
+                          << coverage_storage_.GetCoverage(path_edge_at_split, reverse) << ", other " << coverage_storage_.GetCoverage(other_edge_at_split, reverse));
+
+                result.emplace_back(math::ls(coverage_storage_.GetCoverage(candidate1, reverse), coverage_storage_.GetCoverage(candidate2, reverse)) ? candidate1 : candidate2, 0);
             }
 
-            if (!IsCoverageSimilar(path_edge_at_split, result.front().e_)) {
-                DEBUG("Coverage is NOT similar: path = " << g_.coverage(path_edge_at_split) << ", candidate = " << g_.coverage(result.front().e_))
+            if (!IsCoverageSimilar(path_edge_at_split, result.front().e_, reverse)) {
+                DEBUG("Coverage is NOT similar: path = " << coverage_storage_.GetCoverage(path_edge_at_split, reverse) <<
+                    ", candidate = " << coverage_storage_.GetCoverage(result.front().e_, reverse))
                 result.clear();
             }
             else {
-                DEBUG("Coverage is similar: path = " << g_.coverage(path_edge_at_split) << ", candidate = " << g_.coverage(result.front().e_))
+                DEBUG("Coverage is similar: path = " << coverage_storage_.GetCoverage(path_edge_at_split, reverse) <<
+                    ", candidate = " << coverage_storage_.GetCoverage(result.front().e_, reverse))
                 DEBUG("Coverage extension chooser helped, adding " << g_.int_id(result.front().e_));
             }
         }
@@ -354,12 +401,21 @@ public:
         return result;
     }
 
-private:
-    DECL_LOGGER("SimpleCoverageExtensionChooser");
+    bool IsEnoughCoverage(EdgeId e1, EdgeId e2, bool reverse) const {
+        double cov1 = coverage_storage_.GetCoverage(e1, reverse);
+        double cov2 = coverage_storage_.GetCoverage(e2, reverse);
+        return math::ge(max(cov1, cov2), min_upper_coverage_) || math::eq(min(cov1, cov2), 0.0);
+    }
 
-    bool IsCoverageSimilar(EdgeId e1, EdgeId e2) const {
-        double diff = g_.coverage(e1) / g_.coverage(e2);
+    bool IsCoverageSimilar(EdgeId e1, EdgeId e2, bool reverse) const {
+        double cov1 = coverage_storage_.GetCoverage(e1, reverse);
+        double cov2 = coverage_storage_.GetCoverage(e2, reverse);
 
+        if (math::eq(cov2, 0.0) || math::eq(cov1, 0.0)) {
+            return false;
+        }
+
+        double diff = cov1 / cov2;
         if (math::ls(diff, 1.0))
             return math::gr(diff, coverage_delta_);
         else
@@ -380,6 +436,9 @@ private:
             return split_edges.front();
 
     }
+
+    DECL_LOGGER("SimpleCoverageExtensionChooser");
+
 };
 
 

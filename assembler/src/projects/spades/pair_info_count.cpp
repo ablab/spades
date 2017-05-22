@@ -14,6 +14,8 @@
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "paired_info/pair_info_filler.hpp"
 #include "modules/path_extend/split_graph_pair_info.hpp"
+#include "modules/alignment/rna/ss_coverage_filler.hpp"
+
 
 #include "adt/bf.hpp"
 #include "adt/hll.hpp"
@@ -110,6 +112,64 @@ class EdgePairCounterFiller : public SequenceMapperListener {
     EdgePairCounter counter_;
 };
 
+static bool HasGoodRRLibs() {
+    for (const auto &lib : cfg::get().ds.reads) {
+        if (lib.is_contig_lib())
+            continue;
+
+        if (lib.is_paired() &&
+            lib.data().mean_insert_size == 0.0)
+            continue;
+
+        if (lib.is_repeat_resolvable())
+            return true;
+    }
+
+    return false;
+}
+
+static bool HasOnlyMP() {
+    for (const auto &lib : cfg::get().ds.reads) {
+        if (lib.type() == io::LibraryType::PathExtendContigs)
+            continue;
+
+        if (lib.type() != io::LibraryType::MatePairs &&
+            lib.type() != io::LibraryType::HQMatePairs)
+            return false;
+    }
+
+    return true;
+}
+
+static bool ShouldObtainLibCoverage() {
+    return cfg::get().calculate_coverage_for_each_lib;
+}
+
+//todo improve logic
+static bool ShouldObtainSingleReadsPaths(size_t ilib) {
+    using config::single_read_resolving_mode;
+    switch (cfg::get().single_reads_rr) {
+        case single_read_resolving_mode::all:
+            return true;
+        case single_read_resolving_mode::only_single_libs:
+            //Map when no PacBio/paried libs or only mate-pairs or single lib itself
+            if (!HasGoodRRLibs() || HasOnlyMP() ||
+                cfg::get().ds.reads[ilib].type() == io::LibraryType::SingleReads) {
+                if (cfg::get().mode != debruijn_graph::config::pipeline_type::meta) {
+                    return true;
+                } else {
+                    WARN("Single reads are not used in metagenomic mode");
+                }
+            }
+            break;
+        case single_read_resolving_mode::none:
+            break;
+        default:
+            VERIFY_MSG(false, "Invalid mode value");
+    }
+    return false;
+}
+
 static bool CollectLibInformation(const conj_graph_pack &gp,
                                   size_t &edgepairs,
                                   size_t ilib, size_t edge_length_threshold) {
@@ -157,7 +217,7 @@ static bool CollectLibInformation(const conj_graph_pack &gp,
 }
 
 // FIXME: This needs to be static
-void ProcessSingleReads(conj_graph_pack &gp,
+static void ProcessSingleReads(conj_graph_pack &gp,
                         size_t ilib,
                         bool use_binary = true,
                         bool map_paired = false) {
@@ -165,11 +225,20 @@ void ProcessSingleReads(conj_graph_pack &gp,
     auto& reads = cfg::get_writable().ds.reads[ilib];
 
     SequenceMapperNotifier notifier(gp);
-    //FIXME pretty awful, would be much better if listeners were shared ptrs
+
     LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib],
                                ChooseProperReadPathExtractor(gp.g, reads.type()));
+    if (ShouldObtainSingleReadsPaths(ilib)) {
+        //FIXME pretty awful, would be much better if listeners were shared ptrs
+        notifier.Subscribe(ilib, &read_mapper);
+    }
 
-    notifier.Subscribe(ilib, &read_mapper);
+    SSCoverageFiller ss_coverage_filler(gp.g, gp.ss_coverage[ilib], !cfg::get().ss.ss_enabled);
+    if (cfg::get().calculate_coverage_for_each_lib) {
+        INFO("Will calculate lib coverage as well");
+        map_paired = true;
+        notifier.Subscribe(ilib, &ss_coverage_filler);
+    }
 
     auto mapper_ptr = ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable);
     if (use_binary) {
@@ -182,6 +251,7 @@ void ProcessSingleReads(conj_graph_pack &gp,
     }
     cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;
 }
+
 
 static void ProcessPairedReads(conj_graph_pack &gp,
                                std::unique_ptr<PairedInfoFilter> filter, unsigned filter_threshold,
@@ -235,60 +305,6 @@ static void ProcessPairedReads(conj_graph_pack &gp,
     auto paired_streams = paired_binary_readers(reads, false, (size_t) data.mean_insert_size);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable));
     cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
-}
-
-static bool HasGoodRRLibs() {
-    for (const auto &lib : cfg::get().ds.reads) {
-        if (lib.is_contig_lib())
-            continue;
-
-        if (lib.is_paired() &&
-            lib.data().mean_insert_size == 0.0)
-            continue;
-
-        if (lib.is_repeat_resolvable())
-            return true;
-    }
-
-    return false;
-}
-
-static bool HasOnlyMP() {
-    for (const auto &lib : cfg::get().ds.reads) {
-        if (lib.type() == io::LibraryType::PathExtendContigs)
-            continue;
-
-        if (lib.type() != io::LibraryType::MatePairs &&
-            lib.type() != io::LibraryType::HQMatePairs)
-            return false;
-    }
-
-    return true;
-}
-
-//todo improve logic
-static bool ShouldMapSingleReads(size_t ilib) {
-    using config::single_read_resolving_mode;
-    switch (cfg::get().single_reads_rr) {
-        case single_read_resolving_mode::all:
-            return true;
-        case single_read_resolving_mode::only_single_libs:
-            //Map when no PacBio/paried libs or only mate-pairs or single lib itself
-            if (!HasGoodRRLibs() || HasOnlyMP() ||
-                cfg::get().ds.reads[ilib].type() == io::LibraryType::SingleReads) {
-                if (cfg::get().mode != debruijn_graph::config::pipeline_type::meta) {
-                    return true;
-                } else {
-                    WARN("Single reads are not used in metagenomic mode");
-                }
-            }
-            break;
-        case single_read_resolving_mode::none:
-            break;
-        default:
-            VERIFY_MSG(false, "Invalid mode value");
-    }
-    return false;
 }
 
 void PairInfoCount::run(conj_graph_pack &gp, const char *) {
@@ -367,7 +383,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
                 }
             }
 
-            if (ShouldMapSingleReads(i)) {
+            if (ShouldObtainSingleReadsPaths(i) || ShouldObtainLibCoverage()) {
                 cfg::get_writable().use_single_reads = true;
                 INFO("Mapping single reads of library #" << i);
                 ProcessSingleReads(gp, i, /*use_binary*/true, /*map_paired*/true);

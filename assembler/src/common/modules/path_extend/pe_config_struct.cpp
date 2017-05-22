@@ -153,6 +153,15 @@ void load(pe_config::ParamSetT::OverlapRemovalOptionsT& ors,
     load(ors.cut_all, pt, "cut_all"      , complete);
 }
 
+void load(pe_config::ParamSetT::SimpleCoverageResolver& scr,
+          boost::property_tree::ptree const& pt, bool complete)
+{
+    using config_common::load;
+    load(scr.enabled      , pt, "enabled"      , complete);
+    load(scr.coverage_delta      , pt, "coverage_delta"      , complete);
+    load(scr.min_upper_coverage      , pt, "min_upper_coverage"      , complete);
+}
+
 void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool complete) {
     using config_common::load;
     load(p.sm, pt, "scaffolding_mode", complete);
@@ -180,12 +189,7 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
     load(p.genome_consistency_checker, pt, "genome_consistency_checker", complete);
     load(p.uniqueness_analyser, pt, "uniqueness_analyser", complete);
     load(p.loop_traversal, pt, "loop_traversal", complete);
-
-    if (pt.count("coverage_delta")) {
-        VERIFY_MSG(!p.coverage_delta, "Option can be loaded only once");
-        p.coverage_delta.reset(0.0);
-        load(*p.coverage_delta, pt, "coverage_delta");
-    }
+    load(p.simple_coverage_resolver, pt, "simple_coverage_resolver", complete);
 }
 
 void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,

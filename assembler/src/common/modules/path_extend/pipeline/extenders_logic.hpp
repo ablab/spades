@@ -103,7 +103,7 @@ private:
 
     shared_ptr<SimpleExtender> MakeRNAExtender(size_t lib_index, bool investigate_loops) const;
 
-    shared_ptr<SimpleExtender> MakeSimpleCoverageExtender() const;
+    shared_ptr<SimpleExtender> MakeSimpleCoverageExtender(size_t lib_index) const;
 
     void PrintExtenders(const vector<shared_ptr<PathExtender>> &extenders) const;
 

@@ -2,6 +2,13 @@ mode rna
 
 preserve_raw_paired_index true
 
+calculate_coverage_for_each_lib true
+strand_specificity {
+    ss_enabled false
+    antisense false
+}
+
+
 contig_output {
     scaffolds_name  transcripts
     ; none  --- do not output broken scaffolds | break_gaps --- break only by N steches | break_all --- break all with overlap < k
@@ -175,6 +182,12 @@ params {
        max_edge_length_repeat 1000
        delta                  0.5
        min_path_len           300
+    }
+
+    simple_coverage_resolver {
+        enabled true
+        coverage_delta 0.5
+        min_upper_coverage 2
     }
 }
 }

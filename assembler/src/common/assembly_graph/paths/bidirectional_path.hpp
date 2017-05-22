@@ -721,6 +721,10 @@ public:
         return data_[index].second;
     }
 
+    void Swap(size_t index) {
+        std::swap(data_[index].first, data_[index].second);
+    }
+
     void DeleteAllPaths() {
         for (size_t i = 0; i < data_.size(); ++i) {
             DeletePathPair(data_[i]);
