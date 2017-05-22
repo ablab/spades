@@ -228,11 +228,15 @@ for dataset in datasets_dict.iterkeys():
     print("  " + dataset + "...")
     align_log = open(os.path.join(output_dir, dataset + ".log"),'w')
     align_err = open(os.path.join(output_dir, dataset + ".err"),'w') 
-    reads_string = reduce(lambda x, y: x + ',' + y, datasets_dict[dataset])   
-    if paired_mode:    
-        subprocess.call([bowtie, '-q', '-k', '1', '-x', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)   
+    reads_string = reduce(lambda x, y: x + (',' + y if os.path.getsize(y) > 0 else ""), datasets_dict[dataset], "")
+
+    if (len(reads_string) > 0):
+        if paired_mode:
+            subprocess.call([bowtie, '-q', '-k', '1', '-x', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)
+        else:
+            subprocess.call([bowtie, '-q', '-x', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)
     else:
-        subprocess.call([bowtie, '-q', '-x', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)
+        print("No files to feed into bowtie, or all of them are empty")
     align_log.close()
     align_err.close() 
 
