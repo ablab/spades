@@ -86,6 +86,19 @@ public:
 class BidirectionalPath : public PathListener {
     static std::atomic<uint64_t> path_id_;
 
+    const Graph& g_;
+    std::deque<EdgeId> data_;
+    BidirectionalPath* conj_path_;
+    // Length from beginning of i-th edge to path end: L(e_i + gap_(i+1) + e_(i+1) + ... + gap_N + e_N)
+    std::deque<size_t> cumulative_len_;
+    std::deque<Gap> gap_len_;  // e0 -> gap1 -> e1 -> ... -> gapN -> eN; gap0 = 0
+    std::vector<PathListener *> listeners_;
+    const uint64_t id_;  //Unique ID
+    float weight_;
+//    bool has_overlaped_begin_;
+//    bool has_overlaped_end_;
+    bool overlap_;
+
 public:
     BidirectionalPath(const Graph& g)
             : g_(g),
@@ -183,6 +196,10 @@ public:
 
     EdgeId At(size_t index) const {
         return data_[index];
+    }
+
+    size_t ShiftLength(size_t index) const {
+        return gap_len_[index].gap + g_.length(At(index));
     }
 
     // Length from beginning of i-th edge to path end for forward directed path: L(e1 + e2 + ... + eN)
@@ -563,6 +580,14 @@ public:
         }
     }
 
+    auto begin() const -> decltype(data_.begin()) {
+        return data_.begin();
+    }
+
+    auto end() const -> decltype(data_.end()) {
+        return data_.end();
+    }
+
 //    void SetOverlapedBeginTo(BidirectionalPath* to) {
 //        if (has_overlaped_begin_) {
 //            to->SetOverlapBegin();
@@ -683,18 +708,6 @@ private:
         NotifyFrontEdgeRemoved(e);
     }
 
-    const Graph& g_;
-    std::deque<EdgeId> data_;
-    BidirectionalPath* conj_path_;
-    // Length from beginning of i-th edge to path end: L(e_i + gap_(i+1) + e_(i+1) + ... + gap_N + e_N)
-    std::deque<size_t> cumulative_len_;
-    std::deque<Gap> gap_len_;  // e0 -> gap1 -> e1 -> ... -> gapN -> eN; gap0 = 0
-    std::vector<PathListener *> listeners_;
-    const uint64_t id_;  //Unique ID
-    float weight_;
-//    bool has_overlaped_begin_;
-//    bool has_overlaped_end_;
-    bool overlap_;
     DECL_LOGGER("BidirectionalPath");
 };
 
@@ -896,8 +909,10 @@ public:
         return true;
     }
 
-    void SortByLength() {
-        std::stable_sort(data_.begin(), data_.end(), compare_path_pairs);
+    void SortByLength(bool desc = true) {
+        std::stable_sort(data_.begin(), data_.end(), [=](const PathPair& p1, const PathPair& p2) {
+            return compare_path_pairs(p1, p2) == desc;
+        });
     }
 
     Iterator begin() {
@@ -964,7 +979,9 @@ protected:
 
 };
 
-inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, const BidirectionalPath& path1, const BidirectionalPath& path2, size_t max_diff) {
+inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2,
+                                         const BidirectionalPath& path1, const BidirectionalPath& path2,
+                                         size_t max_diff) {
     path1.PrintDEBUG();
     path2.PrintDEBUG();
     if (start_pos1 >= path1.Size() || start_pos2 >= path2.Size()) {

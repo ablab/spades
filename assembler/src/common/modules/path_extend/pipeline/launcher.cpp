@@ -224,10 +224,11 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
         resolver.RemoveOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff,
                                  params_.pset.cut_all_overlaps,
                                  (params_.mode == config::pipeline_type::moleculo));
-    } else if (params_.mode == config::pipeline_type::rna) {
-        resolver.RemoveRNAOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
+//    } else if (params_.mode == config::pipeline_type::rna) {
+//        resolver.RemoveRNAOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
     } else {
-        resolver.RemoveEqualPaths(paths, cover_map, params_.min_edge_len);
+        //FIXME should subpaths be removed here?
+        resolver.RemoveEqualPaths(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
     }
 
     if (params_.avoid_rc_connections) {
