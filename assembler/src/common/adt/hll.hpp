@@ -30,10 +30,13 @@ public:
 
 
     /// @tparam T The type of the element to insert.
-    /// @param x An instance of type `T`.
+    /// @param o An instance of type `T`.
     void add(const T &o) {
       digest d = hasher_(o);
+      add(d);
+    }
 
+    void add(digest d) {
       // Split digest into parts
       size_t id = (d & mask_) >> (64 - precision);
       uint8_t rho = uint8_t(((d & ~mask_) == 0 ? 64 : __builtin_clzll(d & ~mask_)) - precision + 1);
