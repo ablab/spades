@@ -43,8 +43,8 @@ private:
                              hll::hll<RtSeq> &hll, KmerFilter filter = KmerFilter()) const {
         size_t reads = 0;
         SeqHasher hasher(k + 1);
+        typename ReadStream::ReadT r;
         while (!stream.eof()) {
-            typename ReadStream::ReadT r;
             stream >> r;
             reads += 1;
 
@@ -79,8 +79,8 @@ private:
                              const KmerFilter &filter = KmerFilter()) const {
         size_t reads = 0;
         SeqHasher hasher(k + 1);
+        typename ReadStream::ReadT r;
         while (!stream.eof()) {
-            typename ReadStream::ReadT r;
             stream >> r;
             reads += 1;
 
