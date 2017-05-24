@@ -141,6 +141,7 @@ class DecentOverlapRemover {
     const PathContainer &paths_;
     const GraphCoverageMap &coverage_map_;
     const bool retain_one_copy_;
+    const bool end_start_only_;
     const OverlapFindingHelper helper_;
     SplitsStorage splits_;
 
@@ -173,6 +174,12 @@ class DecentOverlapRemover {
             }
         }
 
+        VERIFY(!retain_one_copy_ || !end_start_only_);
+
+        if (end_start_only_ && other_end != other.Size()) {
+            return 0;
+        }
+
         //checking if region on the other path has not been already added
         //TODO discuss if the logic is needed/correct. It complicates the procedure and prevents trivial parallelism.
         if (max_overlap == 0 || (retain_one_copy_ && AlreadyAdded(other, other_start, other_end))) {
@@ -200,12 +207,14 @@ public:
                          const PathContainer &paths,
                          GraphCoverageMap &coverage_map,
                          bool retain_one,
-                         size_t min_edge_len = 0,
-                         size_t max_diff = 0) :
+                         bool end_start_only,
+                         size_t min_edge_len,// = 0,
+                         size_t max_diff) :// = 0) :
             g_(g),
             paths_(paths),
             coverage_map_(coverage_map),
             retain_one_copy_(retain_one),
+            end_start_only_(end_start_only),
             helper_(g, coverage_map,
                     min_edge_len, max_diff) {
     }
@@ -740,10 +749,12 @@ public:
         PathDeduplicator deduplicator(g_, paths, coverage_map, max_path_diff, /*equal only*/true);
         deduplicator.Deduplicate();
     }
-//
-//    void RemoveRNAOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
-//                          size_t min_edge_len, size_t max_path_diff) const {
-//
+
+    void RemoveRNAOverlaps(PathContainer& /*paths*/, GraphCoverageMap& /*coverage_map*/,
+                          size_t /*min_edge_len*/, size_t /*max_path_diff*/) const {
+
+        VERIFY(false);
+        //FIXME remove on cleanup
 //        SimpleOverlapRemover remover(g_, coverage_map, min_edge_len, max_path_diff);
 //        remover.RemoveSimilarPaths(paths, true, false, false, false, false);
 //
@@ -752,7 +763,7 @@ public:
 //        OverlapRemover(g_, coverage_map).RemoveOverlaps(paths);
 //
 //        remover.RemoveSimilarPaths(paths, true, false, false, false, false);
-//    }
+    }
 
     void RemoveOverlaps(PathContainer &paths, GraphCoverageMap &coverage_map,
                         size_t min_edge_len, size_t max_path_diff,
@@ -762,6 +773,7 @@ public:
             CutPseudoSelfConjugatePaths(paths, coverage_map);
 
         CutNonUniqueSuffix(paths);
+        //FIXME remove on cleanup
 //        //writer.WritePathsToFASTA(paths, output_dir + "/before.fasta");
 //        //DEBUG("Removing subpaths");
 //        //delete not only eq,
@@ -777,7 +789,9 @@ public:
 
         VERIFY(min_edge_len == 0 && max_path_diff == 0 && cut_all);
         DecentOverlapRemover overlap_remover(g_, paths, coverage_map,
-                /*retain one copy*/!cut_all, min_edge_len, max_path_diff);
+                                             /*retain one copy*/!cut_all,
+                                             /*end/start overlaps only*/false,
+                                             min_edge_len, max_path_diff);
         overlap_remover.MarkOverlaps();
 
         PathSplitter splitter(overlap_remover.overlaps(), paths, coverage_map);
