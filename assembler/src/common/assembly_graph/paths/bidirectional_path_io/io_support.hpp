@@ -95,9 +95,8 @@ public:
     void Preprocess(const PathContainer&) override {}
 
     std::string MakeContigName(size_t index, const ScaffoldInfo &scaffold_info) override {
-        EdgeId e = scaffold_info.path->At(0);
-        size_t component = c_counter_.GetComponent(e);
-        return io::MakeContigComponentId(index, scaffold_info.length(), scaffold_info.coverage(), component);
+        return io::AddComponentId(io::MakeContigId(index, scaffold_info.length(), scaffold_info.coverage()),
+                                  c_counter_.GetComponent(scaffold_info.path->Front()));
     }
 };
 

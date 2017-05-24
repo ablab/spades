@@ -17,7 +17,7 @@ public:
     ConnectedComponentCounter(const Graph &g):g_(g) {}
     void CalculateComponents() const;
 //    size_t GetComponent(path_extend::BidirectionalPath * p) const;
-    size_t GetComponent(EdgeId & e) const;
+    size_t GetComponent(EdgeId e) const;
     bool IsFilled() const {
         return (component_ids_.size() != 0);
     }

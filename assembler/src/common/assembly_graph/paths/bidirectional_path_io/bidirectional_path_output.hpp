@@ -29,18 +29,6 @@ EdgeNamingF<Graph> BasicNamingF(const string &prefix = "EDGE") {
 }
 
 template<class Graph>
-EdgeNamingF<Graph> PlasmidNamingF(const ConnectedComponentCounter &cc_counter,
-                           const string &prefix = "EDGE") {
-    return [=, &cc_counter](const Graph &g, EdgeId e) {
-        return io::MakeContigComponentId(g.int_id(e),
-                                         g.length(e) + g.k(),
-                                         g.coverage(e),
-                                         cc_counter.GetComponent(e),
-                                         prefix);
-    };
-}
-
-template<class Graph>
 class CanonicalEdgeHelper {
     const Graph &g_;
     const EdgeNamingF<Graph> naming_f_;

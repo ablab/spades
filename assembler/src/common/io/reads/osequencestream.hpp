@@ -42,8 +42,8 @@ inline std::string MakeRNAContigId(size_t number, size_t length, double coverage
     return MakeContigId(number, length, coverage, prefix) + "_g" + std::to_string(gene_id)  + "_i" + std::to_string(isoform_id);
 }
 
-inline std::string MakeContigComponentId(size_t number, size_t length, double coverage, size_t component_id, const std::string& prefix = "NODE") {
-    return MakeContigId(number, length, coverage, prefix)  + "_component_" + std::to_string(component_id);
+inline std::string AddComponentId(const string& s, size_t component_id) {
+    return s + "_component_" + std::to_string(component_id);
 }
 
 inline void WriteWrapped(const std::string &s, ostream &os, size_t max_width = 60) {

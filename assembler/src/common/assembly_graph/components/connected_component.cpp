@@ -65,11 +65,11 @@ void ConnectedComponentCounter::CalculateComponents() const {
     return;
 }
 
-size_t ConnectedComponentCounter::GetComponent(EdgeId & e) const {
+size_t ConnectedComponentCounter::GetComponent(EdgeId e) const {
     if (component_ids_.size() == 0) {
         CalculateComponents();
     }
-    return component_ids_[e];
+    return component_ids_.at(e);
 }
 
 

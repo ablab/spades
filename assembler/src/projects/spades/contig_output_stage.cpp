@@ -23,6 +23,14 @@ vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
     return writers;
 }
 
+template<class Graph>
+path_extend::EdgeNamingF<Graph> PlasmidNamingF(path_extend::EdgeNamingF<Graph> naming_f,
+                                  const ConnectedComponentCounter &cc_counter) {
+    return [=, &cc_counter](const Graph &g, EdgeId e) {
+        return io::AddComponentId(naming_f(g, e), cc_counter.GetComponent(e));
+    };
+}
+
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
     using namespace path_extend;
     auto output_dir = cfg::get().output_dir;
@@ -31,16 +39,19 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
     INFO("Writing GFA to " << gfa_fn);
 
     std::ofstream os(gfa_fn);
-    GFAWriter<Graph> gfa_writer(gp.g, os);
+    GFAWriter<Graph> gfa_writer(gp.g, os,
+                                cfg::get().pd ? PlasmidNamingF<Graph>(IdNamingF<Graph>(), gp.components)
+                                              : IdNamingF<Graph>());
     gfa_writer.WriteSegmentsAndLinks();
 
     OutputEdgeSequences(gp.g, output_dir + "before_rr");
 
     INFO("Outputting FastG graph to " << output_dir << "assembly_graph.fastg");
     std::string fastg_fn = output_dir + "assembly_graph.fastg";
-    auto naming_f = cfg::get().pd ? PlasmidNamingF<Graph>(gp.components) : BasicNamingF<Graph>();
 
-    FastgWriter<Graph> fastg_writer(gp.g, naming_f);
+    FastgWriter<Graph> fastg_writer(gp.g,
+                                    cfg::get().pd ? PlasmidNamingF<Graph>(BasicNamingF<Graph>(), gp.components)
+                                                  : BasicNamingF<Graph>());
     fastg_writer.WriteSegmentsAndLinks(fastg_fn);
 
     if (output_paths_ && gp.contig_paths.size() != 0) {
