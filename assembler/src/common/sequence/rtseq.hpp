@@ -675,20 +675,20 @@ public:
         return operator[](0);
     }
 
-    static size_t GetHash(const DataType *data, size_t sz, uint32_t seed = 0) {
+    static size_t GetHash(const DataType *data, size_t sz, uint64_t seed = 0) {
         return CityHash64WithSeed((const char *) data, sz * sizeof(DataType), 0x9E3779B9 ^ seed);
     }
 
-    size_t GetHash(unsigned seed = 0) const {
+    size_t GetHash(uint64_t seed = 0) const {
         return GetHash(data_.data(), GetDataSize(size_), seed);
     }
 
     struct hash {
-        size_t operator()(const RuntimeSeq<max_size_, T> &seq, uint32_t seed = 0) const {
+        size_t operator()(const RuntimeSeq<max_size_, T> &seq, uint64_t seed = 0) const {
             return seq.GetHash(seed);
         }
 
-        size_t operator()(const DataType *data, size_t sz, unsigned seed = 0) {
+        size_t operator()(const DataType *data, size_t sz, uint64_t seed = 0) {
             return GetHash(data, sz, seed);
         }
     };
