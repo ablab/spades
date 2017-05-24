@@ -2,6 +2,7 @@
 #include "modules/path_extend/paired_library.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include <algorithm>
+#include <numeric>
 #include <limits>
 
 namespace debruijn_graph {

@@ -12,6 +12,7 @@
 #include "utils/extension_index/kmer_extension_index.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/parallel/parallel_wrapper.hpp"
+#include <numeric>
 
 namespace debruijn_graph {
 
