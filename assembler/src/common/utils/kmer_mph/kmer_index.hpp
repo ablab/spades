@@ -6,10 +6,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "mphf.hpp"
-#include "base_hash.hpp"
-
 #include "kmer_index_traits.hpp"
+
+#include <boomphf/BooPHF.h>
+#include <city/city.h>
 
 #include <vector>
 #include <cmath>
@@ -21,7 +21,7 @@ class KMerIndexBuilder;
 
 template<class traits>
 class KMerIndex {
- public:
+public:
   typedef traits kmer_index_traits;
   typedef typename traits::SeqType          KMerSeq;
   typedef typename traits::hash_function    hash_function;
@@ -29,11 +29,19 @@ class KMerIndex {
   typedef typename traits::KMerRawReference KMerRawReference;
   typedef size_t IdxType;
 
- private:
-  using KMerDataIndex = emphf::mphf<emphf::city_hasher>;
+private:
+  struct hash_function128 {
+    std::pair<uint64_t, uint64_t> operator()(const KMerSeq &k) const{
+      return CityHash128((const char *)k.data(), k.data_size() * sizeof(typename KMerSeq::DataType));
+    }
+    std::pair<uint64_t, uint64_t> operator()(const KMerRawReference k) const {
+      return CityHash128((const char *)k.data(), k.size() * sizeof(typename KMerSeq::DataType));
+    }
+  };
   typedef KMerIndex __self;
+  typedef boomphf::mphf<hash_function128> KMerDataIndex;
 
- public:
+public:
   KMerIndex(): index_(NULL), num_buckets_(0), size_(0) {}
 
   KMerIndex(const KMerIndex&) = delete;
@@ -62,7 +70,7 @@ class KMerIndex {
           return;
       size_ = 0;
       for (size_t i = 0; i < num_buckets_; i++)
-          size_ += index_[i].size();
+        size_ += index_[i].size();
   }
 
   size_t size() const {
@@ -72,15 +80,13 @@ class KMerIndex {
   size_t seq_idx(const KMerSeq &s) const {
     size_t bucket = seq_bucket(s);
 
-    return bucket_starts_[bucket] +
-            index_[bucket].lookup(s, typename traits::KMerSeqAdaptor());
+    return bucket_starts_[bucket] + index_[bucket].lookup(s);
   }
 
   size_t raw_seq_idx(const KMerRawReference data) const {
     size_t bucket = raw_seq_bucket(data);
 
-    return bucket_starts_[bucket] +
-            index_[bucket].lookup(data, typename traits::KMerRawReferenceAdaptor());
+    return bucket_starts_[bucket] + index_[bucket].lookup(data);
   }
 
   template<class Writer>

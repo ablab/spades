@@ -23,10 +23,7 @@
 #include "adt/iterator_range.hpp"
 #include "adt/loser_tree.hpp"
 
-#include "mphf.hpp"
-#include "base_hash.hpp"
-#include "hypergraph.hpp"
-#include "hypergraph_sorter_seq.hpp"
+#include "boomphf/BooPHF.h"
 
 #include <libcxx/sort.hpp>
 
@@ -302,19 +299,10 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
     auto bucket = counter.GetBucket(iFile, !save_final);
     size_t sz = bucket->end() - bucket->begin();
     index.bucket_starts_[iFile + 1] = sz;
-    typename kmer_index_traits::KMerRawReferenceAdaptor adaptor;
-    size_t max_nodes = (size_t(std::ceil(double(sz) * 1.23)) + 2) / 3 * 3;
-    if (max_nodes >= uint64_t(1) << 32) {
-        emphf::hypergraph_sorter_seq<emphf::hypergraph<uint64_t> > sorter;
-        typename KMerIndex<kmer_index_traits>::KMerDataIndex(sorter,
-                                                             sz, emphf::range(bucket->begin(), bucket->end()),
-                                                             adaptor).swap(data_index);
-    } else {
-        emphf::hypergraph_sorter_seq<emphf::hypergraph<uint32_t> > sorter;
-        typename KMerIndex<kmer_index_traits>::KMerDataIndex(sorter,
-                                                             sz, emphf::range(bucket->begin(), bucket->end()),
-                                                             adaptor).swap(data_index);
-    }
+
+    data_index = typename Index::KMerDataIndex(sz,
+                                               boomphf::range(bucket->begin(), bucket->end()),
+                                               1, 2.0, false);
   }
 
   // Finally, record the sizes of buckets.

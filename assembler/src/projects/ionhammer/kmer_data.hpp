@@ -11,6 +11,8 @@
 
 #include "config_struct.hpp"
 #include "utils/kmer_mph/kmer_index.hpp"
+#include "utils/logger/logger.hpp"
+
 #include "hkmer.hpp"
 
 #include <vector>

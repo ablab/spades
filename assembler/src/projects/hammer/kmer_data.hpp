@@ -10,7 +10,10 @@
 
 #include "kmer_stat.hpp"
 #include "adt/array_vector.hpp"
+
 #include "utils/kmer_mph/kmer_index.hpp"
+#include "utils/logger/logger.hpp"
+
 #include <vector>
 
 typedef utils::KMerIndex<utils::kmer_index_traits<hammer::KMer> > HammerKMerIndex;

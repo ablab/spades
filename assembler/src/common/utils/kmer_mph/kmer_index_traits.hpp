@@ -6,7 +6,6 @@
 //***************************************************************************
 
 #include "io/kmers/mmapped_reader.hpp"
-#include "mphf.hpp"
 
 namespace utils {
 
@@ -37,26 +36,12 @@ struct kmer_index_traits {
   };
 
   struct hash_function {
-    uint64_t operator()(const Seq &k) const{
-      return typename Seq::hash()(k);
+    uint64_t operator()(const Seq &k, uint64_t seed = 0) const{
+        return typename Seq::hash()(k, (uint32_t)seed);
     }
-    uint64_t operator()(const KMerRawReference k) const {
-      return typename Seq::hash()(k.data(), k.size());
+    uint64_t operator()(const KMerRawReference k, uint64_t seed = 0) const {
+        return typename Seq::hash()(k.data(), k.size(), (uint32_t)seed);
     }
-  };
-
-  struct KMerRawReferenceAdaptor {
-      emphf::byte_range_t operator()(const KMerRawReference k) const {
-          const uint8_t * data = (const uint8_t*)k.data();
-          return std::make_pair(data, data + k.data_size());
-      }
-  };
-
-  struct KMerSeqAdaptor {
-      emphf::byte_range_t operator()(const Seq &k) const {
-          const uint8_t * data = (const uint8_t*)k.data();
-          return std::make_pair(data, data + k.data_size() * sizeof(typename Seq::DataType));
-      }
   };
 
   template<class Writer>

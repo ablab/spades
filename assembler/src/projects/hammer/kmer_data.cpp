@@ -13,6 +13,7 @@
 #include "config_struct_hammer.hpp"
 
 #include "utils/kmer_mph/kmer_index_builder.hpp"
+#include "utils/logger/logger.hpp"
 
 #include "io/kmers/kmer_iterator.hpp"
 #include "adt/bf.hpp"
