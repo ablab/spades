@@ -140,10 +140,8 @@ class DecentOverlapRemover {
     const Graph &g_;
     const PathContainer &paths_;
     const GraphCoverageMap &coverage_map_;
-    const bool retain_one_copy_;
-    const bool end_start_only_;
+    SplitsStorage &splits_;
     const OverlapFindingHelper helper_;
-    SplitsStorage splits_;
 
     bool AlreadyAdded(PathPtr ptr, size_t pos) const {
         auto it = splits_.find(ptr);
@@ -159,7 +157,8 @@ class DecentOverlapRemover {
         return false;
     }
 
-    size_t AnalyzeOverlaps(const BidirectionalPath &path, const BidirectionalPath &other) {
+    size_t AnalyzeOverlaps(const BidirectionalPath &path, const BidirectionalPath &other,
+                           bool end_start_only, bool retain_one_copy) const {
         size_t max_overlap = 0;
         size_t other_start = size_t(-1);
         size_t other_end = size_t(-1);
@@ -174,31 +173,37 @@ class DecentOverlapRemover {
             }
         }
 
-        VERIFY(!retain_one_copy_ || !end_start_only_);
+        VERIFY(!retain_one_copy || !end_start_only);
 
-        if (end_start_only_ && other_end != other.Size()) {
+        if (end_start_only && other_end != other.Size()) {
             return 0;
         }
 
         //checking if region on the other path has not been already added
         //TODO discuss if the logic is needed/correct. It complicates the procedure and prevents trivial parallelism.
-        if (max_overlap == 0 || (retain_one_copy_ && AlreadyAdded(other, other_start, other_end))) {
+        if (max_overlap == 0 || (retain_one_copy && AlreadyAdded(other, other_start, other_end))) {
             return 0;
         }
+
+        DEBUG("First " << max_overlap << " edges of the path will be removed");
+        path.PrintDEBUG();
+        DEBUG("Due to overlap with path");
+        other.PrintDEBUG();
 
         return max_overlap;
     }
 
-    void MarkStartOverlaps(const BidirectionalPath &path) {
+    void MarkStartOverlaps(const BidirectionalPath &path, bool end_start_only, bool retain_one_copy) {
         set<size_t> overlap_poss;
         for (PathPtr candidate : helper_.FindCandidatePaths(path)) {
-            size_t overlap = AnalyzeOverlaps(path, *candidate);
+            size_t overlap = AnalyzeOverlaps(path, *candidate,
+                                             end_start_only, retain_one_copy);
             if (overlap > 0) {
                 overlap_poss.insert(overlap);
             }
         }
         if (!overlap_poss.empty())
-            splits_[&path] = overlap_poss;
+            utils::insert_all(splits_[&path], overlap_poss);
     }
 
 public:
@@ -207,32 +212,30 @@ public:
     DecentOverlapRemover(const Graph &g,
                          const PathContainer &paths,
                          GraphCoverageMap &coverage_map,
-                         bool retain_one,
-                         bool end_start_only,
+                         SplitsStorage &splits,
                          size_t min_edge_len,// = 0,
                          size_t max_diff) :// = 0) :
             g_(g),
             paths_(paths),
             coverage_map_(coverage_map),
-            retain_one_copy_(retain_one),
-            end_start_only_(end_start_only),
+            splits_(splits),
             helper_(g, coverage_map,
                     min_edge_len, max_diff) {
     }
 
-    void MarkOverlaps() {
+    void MarkOverlaps(bool end_start_only, bool retain_one_copy) {
         for (auto path_pair: paths_) {
             //FIXME think if this "optimization" is necessary
             if (path_pair.first->Size() == 0)
                 continue;
-            MarkStartOverlaps(*path_pair.first);
-            MarkStartOverlaps(*path_pair.second);
+            MarkStartOverlaps(*path_pair.first, end_start_only, retain_one_copy);
+            MarkStartOverlaps(*path_pair.second, end_start_only, retain_one_copy);
         }
     }
 
-    const SplitsStorage& overlaps() const {
-        return splits_;
-    }
+//    const SplitsStorage& overlaps() const {
+//        return splits_;
+//    }
 };
 
 class PathSplitter {
@@ -336,6 +339,8 @@ public:
             for (auto candidate : helper_.FindCandidatePaths(*path)) {
                 VERIFY(candidate != path && candidate != path->GetConjPath());
                 if (equal_only_ ? IsEqual(*path, *candidate) : IsSubpath(*path, *candidate)) {
+                    DEBUG("Clearing path");
+                    path->PrintDEBUG();
                     path->Clear();
                 }
             }
@@ -417,60 +422,51 @@ public:
 //
 //};
 //
-inline size_t NonUniqueCommon(BidirectionalPath * path, int pos1, int pos2) {
+
+inline size_t CommonForward(const BidirectionalPath &path, size_t pos1, size_t pos2) {
+    VERIFY(pos1 <= pos2);
     if (pos1 == pos2)
         return 0;
-    size_t answer = 0;
-    while (pos1 >= 0) {
-        if (path->At(pos1) == path->At(pos2)) {
-            pos1--;
-            pos2--;
-            answer++;
-        } else {
-            break;
-        }
+    size_t i = 0;
+    while (pos2 + i < path.Size() && path.At(pos1 + i) == path.At(pos2 + i)) {
+        ++i;
     }
-    return answer;
+    return i;
 }
 
-inline size_t MaximumNonUniqueSuffix(BidirectionalPath * path) {
-    if (path->Size() == 0) {
-        return 0;
+inline void MarkMaximumNonUniquePrefix(const BidirectionalPath &path, SplitsStorage &storage) {
+    if (path.Size() == 0) {
+        return;
     }
 
     size_t answer = 0;
-    EdgeId back = path->Back();
-    for (size_t pos : path->FindAll(back)) {
-        answer = std::max(answer, NonUniqueCommon(path, (int) pos, (int) path->Size() - 1));
+    for (size_t pos : path.FindAll(path.Front())) {
+        answer = std::max(answer, CommonForward(path, 0, pos));
     }
-    return answer;
+    storage[&path].insert(answer);
 }
 
 //FIXME why this has been done via the tmp vector?
-inline void CutNonUniqueSuffix(const PathContainer &paths) {
+inline void MarkNonUniquePrefixes(const PathContainer &paths, SplitsStorage &storage) {
     for (const auto &path_pair : paths) {
-        BidirectionalPath * path1 = path_pair.first;
-        BidirectionalPath * path2 = path_pair.second;
-        path1->PopBack(MaximumNonUniqueSuffix(path1));
-        path2->PopBack(MaximumNonUniqueSuffix(path2));
+        MarkMaximumNonUniquePrefix(*path_pair.first, storage);
+        MarkMaximumNonUniquePrefix(*path_pair.first, storage);
     }
 }
 
 //FIXME seems to work out of the box now, but need some thought
-inline void CutPseudoSelfConjugatePaths(PathContainer &paths, GraphCoverageMap &cov_map) {
-    vector<pair<BidirectionalPath *, BidirectionalPath *>> tmp_paths(paths.begin(), paths.end());
-    for (auto it = tmp_paths.begin(); it != tmp_paths.end(); ++it) {
-        BidirectionalPath * path1 = it->first;
-        BidirectionalPath * path2 = it->second;
-        if(path1 != path2) {
-            size_t last = 0;
-            while (last < path1->Size() && path1->At(last) == path2->At(last)) {
-                last++;
+inline void MarkPseudoSelfConjugatePaths(PathContainer &paths, SplitsStorage &storage) {
+    for (const auto &path_pair : paths) {
+        BidirectionalPath * path1 = path_pair.first;
+        BidirectionalPath * path2 = path_pair.second;
+        if (path1 != path2) {
+            size_t i = 0;
+            while (i < path1->Size() && path1->At(i) == path2->At(i)) {
+                i++;
             }
-            if(last > 0) {
-                AddPath(paths, path1->SubPath(0, last), cov_map);
-                path1->PopBack(last);
-                path2->PopBack(last);
+            if (i > 0) {
+                storage[path1].insert(i);
+                storage[path2].insert(i);
             }
         }
     }
@@ -725,23 +721,6 @@ class PathExtendResolver {
     const Graph& g_;
     size_t k_;
 
-    void InnerRemoveOverlaps(PathContainer &paths, GraphCoverageMap &coverage_map,
-                        size_t min_edge_len, size_t max_path_diff,
-                        bool retain_one,
-                        bool end_start_only) const {
-        DecentOverlapRemover overlap_remover(g_, paths, coverage_map,
-                                             retain_one,
-                                             end_start_only,
-                                             min_edge_len, max_path_diff);
-        overlap_remover.MarkOverlaps();
-
-        PathSplitter splitter(overlap_remover.overlaps(), paths, coverage_map);
-        splitter.Split();
-
-        PathDeduplicator deduplicator(g_, paths, coverage_map, max_path_diff, /*equal only*/false);
-        deduplicator.Deduplicate();
-    }
-
 public:
     PathExtendResolver(const Graph& g): g_(g), k_(g.k()) {
     }
@@ -789,10 +768,14 @@ public:
                         size_t min_edge_len, size_t max_path_diff,
                         bool cut_all,
                         bool cut_pseudo_self_conjugate) const {
-        if (cut_pseudo_self_conjugate)
-            CutPseudoSelfConjugatePaths(paths, coverage_map);
+        VERIFY(min_edge_len == 0 && max_path_diff == 0);
 
-        CutNonUniqueSuffix(paths);
+//        DEBUG("Initial paths");
+//        for (auto path_pair: paths) {
+//            path_pair.first->PrintDEBUG();
+//            path_pair.second->PrintDEBUG();
+//        }
+
         //FIXME remove on cleanup
 //        //writer.WritePathsToFASTA(paths, output_dir + "/before.fasta");
 //        //DEBUG("Removing subpaths");
@@ -807,14 +790,26 @@ public:
 //        //DEBUG("remove similar path. Max difference " << max_overlap);
 //        remover.RemoveSimilarPaths(paths, false, true, true, true, add_overlaps_begin);
 
-        VERIFY(min_edge_len == 0 && max_path_diff == 0);
+        SplitsStorage splits;
 
+        if (cut_pseudo_self_conjugate)
+            MarkPseudoSelfConjugatePaths(paths, splits);
+
+        MarkNonUniquePrefixes(paths, splits);
         //FIXME can't we simplify logic?
-        InnerRemoveOverlaps(paths, coverage_map, min_edge_len, max_path_diff,
-                /*retain one copy*/ false,/*end/start overlaps only*/ true);
+        DecentOverlapRemover overlap_remover(g_, paths, coverage_map, splits,
+                                             min_edge_len, max_path_diff);
+        //DO NOT CHANGE ORDER
+        INFO("Marking start/end overlaps");
+        overlap_remover.MarkOverlaps(/*retain one copy*/ false,/*end/start overlaps only*/ true);
+        INFO("Marking remaining overlaps");
+        overlap_remover.MarkOverlaps(/*retain one copy*/ !cut_all,/*end/start overlaps only*/ false);
 
-        InnerRemoveOverlaps(paths, coverage_map, min_edge_len, max_path_diff,
-                /*retain one copy*/ !cut_all,/*end/start overlaps only*/ false);
+        PathSplitter splitter(splits, paths, coverage_map);
+        splitter.Split();
+
+        PathDeduplicator deduplicator(g_, paths, coverage_map, max_path_diff, /*equal only*/false);
+        deduplicator.Deduplicate();
         DEBUG("end removing");
     }
 
