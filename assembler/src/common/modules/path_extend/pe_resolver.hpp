@@ -119,6 +119,7 @@ public:
                 utils::insert_all(candidates, coverage_map_.GetCoveringPaths(e));
                 cum_len += g_.length(e);
             }
+            VERIFY(path.Size() == 0 || candidates.count(&path));
         } else {
             for (size_t i = 0; i < path.Size(); ++i) {
                 EdgeId e = path.At(i);
@@ -127,7 +128,6 @@ public:
                 }
             }
         }
-        VERIFY(candidates.count(&path));
         candidates.erase(&path);
         //FIXME think if this is necessary; related to Anton's code on removal of pseudo-self-conj paths
         candidates.erase(path.GetConjPath());
@@ -197,7 +197,8 @@ class DecentOverlapRemover {
                 overlap_poss.insert(overlap);
             }
         }
-        splits_[&path] = overlap_poss;
+        if (!overlap_poss.empty())
+            splits_[&path] = overlap_poss;
     }
 
 public:
@@ -221,6 +222,9 @@ public:
 
     void MarkOverlaps() {
         for (auto path_pair: paths_) {
+            //FIXME think if this "optimization" is necessary
+            if (path_pair.first->Size() == 0)
+                continue;
             MarkStartOverlaps(*path_pair.first);
             MarkStartOverlaps(*path_pair.second);
         }
@@ -718,9 +722,25 @@ inline void CutPseudoSelfConjugatePaths(PathContainer &paths, GraphCoverageMap &
 
 class PathExtendResolver {
 
-protected:
     const Graph& g_;
     size_t k_;
+
+    void InnerRemoveOverlaps(PathContainer &paths, GraphCoverageMap &coverage_map,
+                        size_t min_edge_len, size_t max_path_diff,
+                        bool retain_one,
+                        bool end_start_only) const {
+        DecentOverlapRemover overlap_remover(g_, paths, coverage_map,
+                                             retain_one,
+                                             end_start_only,
+                                             min_edge_len, max_path_diff);
+        overlap_remover.MarkOverlaps();
+
+        PathSplitter splitter(overlap_remover.overlaps(), paths, coverage_map);
+        splitter.Split();
+
+        PathDeduplicator deduplicator(g_, paths, coverage_map, max_path_diff, /*equal only*/false);
+        deduplicator.Deduplicate();
+    }
 
 public:
     PathExtendResolver(const Graph& g): g_(g), k_(g.k()) {
@@ -787,19 +807,14 @@ public:
 //        //DEBUG("remove similar path. Max difference " << max_overlap);
 //        remover.RemoveSimilarPaths(paths, false, true, true, true, add_overlaps_begin);
 
-        VERIFY(min_edge_len == 0 && max_path_diff == 0 && cut_all);
-        DecentOverlapRemover overlap_remover(g_, paths, coverage_map,
-                                             /*retain one copy*/!cut_all,
-                                             /*end/start overlaps only*/false,
-                                             min_edge_len, max_path_diff);
-        overlap_remover.MarkOverlaps();
+        VERIFY(min_edge_len == 0 && max_path_diff == 0);
 
-        PathSplitter splitter(overlap_remover.overlaps(), paths, coverage_map);
-        splitter.Split();
+        //FIXME can't we simplify logic?
+        InnerRemoveOverlaps(paths, coverage_map, min_edge_len, max_path_diff,
+                /*retain one copy*/ false,/*end/start overlaps only*/ true);
 
-        PathDeduplicator deduplicator(g_, paths, coverage_map, max_path_diff, /*equal only*/false);
-        deduplicator.Deduplicate();
-
+        InnerRemoveOverlaps(paths, coverage_map, min_edge_len, max_path_diff,
+                /*retain one copy*/ !cut_all,/*end/start overlaps only*/ false);
         DEBUG("end removing");
     }
 
