@@ -26,9 +26,10 @@ public:
             : begin_iterator(std::move(begin_iterator)),
               end_iterator(std::move(end_iterator)) { }
 
-    IteratorT begin() const { return begin_iterator; }
-
-    IteratorT end() const { return end_iterator; }
+    const IteratorT& begin() const { return begin_iterator; }
+    const IteratorT& end() const { return end_iterator; }
+    IteratorT& begin() { return begin_iterator; }
+    IteratorT& end() { return end_iterator; }
 };
 
 template<class T>

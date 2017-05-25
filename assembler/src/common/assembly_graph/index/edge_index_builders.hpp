@@ -14,28 +14,32 @@ namespace debruijn_graph {
 
 template<class Graph, class KmerFilter>
 class DeBruijnGraphKMerSplitter : public utils::DeBruijnKMerSplitter<KmerFilter> {
-    typedef typename Graph::ConstEdgeIt EdgeIt;
+    typedef typename omnigraph::GraphEdgeIterator<Graph> EdgeIt;
     typedef typename Graph::EdgeId EdgeId;
+    typedef typename adt::iterator_range<EdgeIt> EdgeRange;
 
     const Graph &g_;
+    unsigned nthreads_;
 
-    size_t FillBufferFromEdges(EdgeIt &edge, unsigned thread_id);
+    size_t FillBufferFromEdges(EdgeRange &r, unsigned thread_id);
 
 public:
     DeBruijnGraphKMerSplitter(const std::string &work_dir,
-                              unsigned K, const Graph &g, size_t read_buffer_size = 0)
-            : utils::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size), g_(g) {}
+                              unsigned K, const Graph &g,
+                              unsigned nthreads, size_t read_buffer_size = 0)
+            : utils::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size),
+              g_(g), nthreads_(nthreads) {}
 
     fs::files_t Split(size_t num_files) override;
 };
 
 template<class Graph, class KmerFilter>
 size_t
-DeBruijnGraphKMerSplitter<Graph, KmerFilter>::FillBufferFromEdges(EdgeIt &edge,
+DeBruijnGraphKMerSplitter<Graph, KmerFilter>::FillBufferFromEdges(EdgeRange &r,
                                                                   unsigned thread_id) {
     size_t seqs = 0;
-    for (; !edge.IsEnd(); ++edge) {
-        const Sequence &nucls = g_.EdgeNucls(*edge);
+    for (auto &it = r.begin(); it != r.end(); ++it) {
+        const Sequence &nucls = g_.EdgeNucls(*it);
 
         seqs += 1;
         if (this->FillBufferFromSequence(nucls, thread_id))
@@ -49,11 +53,24 @@ template<class Graph, class KmerFilter>
 fs::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files) {
     INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
-    fs::files_t out = this->PrepareBuffers(num_files, 1, this->read_buffer_size_);
+    fs::files_t out = this->PrepareBuffers(num_files, nthreads_, this->read_buffer_size_);
+
+    omnigraph::IterationHelper<Graph, EdgeId> edges(g_);
+    auto its = edges.Chunks(nthreads_);
+
+    // Turn chunks into iterator ranges
+    std::vector<EdgeRange> ranges;
+    for (size_t i = 0; i < its.size() - 1; ++i)
+        ranges.emplace_back(its[i], its[i+1]);
+
+    VERIFY(ranges.size() <= nthreads_);
 
     size_t counter = 0, n = 10;
-    for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ) {
-        counter += FillBufferFromEdges(it, 0);
+    while (!std::all_of(ranges.begin(), ranges.end(),
+                        [](const EdgeRange &r) { return r.begin() == r.end(); })) {
+#       pragma omp parallel for num_threads(nthreads_) reduction(+ : counter)
+        for (size_t i = 0; i < ranges.size(); ++i)
+            counter += FillBufferFromEdges(ranges[i], omp_get_thread_num());
 
         this->DumpBuffers(out);
 
@@ -79,11 +96,13 @@ public:
     template<class Graph>
     void BuildIndexFromGraph(Index &index,
                              const Graph/*T*/ &g, size_t read_buffer_size = 0) const {
+        unsigned nthreads = omp_get_max_threads();
+
         DeBruijnGraphKMerSplitter<Graph,
-                utils::StoringTypeFilter<typename Index::storing_type>>
-                splitter(index.workdir(), index.k(), g, read_buffer_size);
+                                  utils::StoringTypeFilter<typename Index::storing_type>>
+                splitter(index.workdir(), index.k(), g, nthreads, read_buffer_size);
         utils::KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
-        BuildIndex(index, counter, 16, 1);
+        BuildIndex(index, counter, 16, nthreads);
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Collecting k-mer coverage information from graph, this takes a while.");
