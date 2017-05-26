@@ -222,13 +222,16 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
 
     if (params_.pset.remove_overlaps) {
         resolver.RemoveOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff,
-                                 params_.pset.cut_all_overlaps,
-                                 (params_.mode == config::pipeline_type::moleculo));
-//    } else if (params_.mode == config::pipeline_type::rna) {
-//        resolver.RemoveRNAOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
+                                params_.pset.cut_all_overlaps,
+                                (params_.mode == config::pipeline_type::moleculo));
+    } else if (params_.mode == config::pipeline_type::rna) {
+        resolver.RemoveRNAOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
     } else {
         //FIXME should subpaths be removed here?
         resolver.RemoveEqualPaths(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
+//        INFO("HERE. No overlaps removed");
+//        paths.SortByLength();
+//        return;
     }
 
     if (params_.avoid_rc_connections) {
@@ -244,6 +247,7 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
                            params_.pset.path_filtration.min_coverage).filter(paths);
         IsolatedPathFilter(gp_.g, params_.pset.path_filtration.isolated_min_length).filter(paths);
     }
+    paths.FilterEmptyPaths();
     paths.SortByLength();
     for (auto &path : paths) {
         path.first->ResetOverlaps();
@@ -443,30 +447,29 @@ void PathExtendLauncher::Launch() {
     seeds.SortByLength();
     DebugOutputPaths(seeds, "init_paths");
 
+    //FIXME why was subscription disabled?
     GraphCoverageMap cover_map(gp_.g);
     Extenders extenders = ConstructExtenders(cover_map);
-    shared_ptr<CompositeExtender> composite_extender = make_shared<CompositeExtender>(gp_.g, cover_map, extenders,
-                                                                                      unique_data_.main_unique_storage_,
-                                                                                      params_.max_path_diff,
-                                                                                      params_.pset.extension_options.max_repeat_length,
-                                                                                      params_.detect_repeats_online);
+    auto composite_extender =
+            make_shared<CompositeExtender>(gp_.g, cover_map, extenders,
+                                           unique_data_.main_unique_storage_,
+                                           params_.max_path_diff,
+                                           params_.pset.extension_options.max_repeat_length,
+                                           params_.detect_repeats_online);
 
     auto paths = resolver.ExtendSeeds(seeds, *composite_extender);
-    paths.FilterEmptyPaths();
-    paths.SortByLength();
-    DebugOutputPaths(paths, "raw_paths");
 
-    FinalizePaths(paths, cover_map, resolver);
-    DebugOutputPaths(paths, "before_loop_traversal");
+    DebugOutputPaths(paths, "raw_paths");
 
     //FIXME think about ordering of path polisher vs loop traversal
     TraverseLoops(paths, cover_map);
     DebugOutputPaths(paths, "loop_traveresed");
 
+    //FIXME does path polishing correctly work with coverage map
     PolishPaths(paths, gp_.contig_paths, cover_map);
     DebugOutputPaths(gp_.contig_paths, "polished_paths");
 
-    //FIXME why do we need new polished map?
+    //FIXME use move assignment to original map here
     GraphCoverageMap polished_map(gp_.g, gp_.contig_paths, true);
     FinalizePaths(gp_.contig_paths, polished_map, resolver);
     DebugOutputPaths(gp_.contig_paths, "final_paths");
