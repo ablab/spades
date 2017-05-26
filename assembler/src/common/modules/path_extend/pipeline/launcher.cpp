@@ -237,7 +237,6 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
     if (params_.avoid_rc_connections) {
         paths.FilterInterstandBulges();
     }
-    paths.FilterEmptyPaths();
     resolver.AddUncoveredEdges(paths, cover_map);
 
     if (params_.pset.path_filtration.enabled) {

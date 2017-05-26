@@ -907,6 +907,7 @@ public:
         }
     }
 
+    //FIXME implement as filter
     void FilterEmptyPaths() {
         DEBUG ("try to delete empty paths");
         for (Iterator iter = begin(); iter != end();) {
