@@ -249,9 +249,6 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
     }
     paths.FilterEmptyPaths();
     paths.SortByLength();
-    for (auto &path : paths) {
-        path.first->ResetOverlaps();
-    }
 }
 
 void PathExtendLauncher::TraverseLoops(PathContainer &paths, GraphCoverageMap &cover_map) const {

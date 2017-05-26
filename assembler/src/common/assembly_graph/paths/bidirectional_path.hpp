@@ -94,10 +94,6 @@ class BidirectionalPath : public PathListener {
     std::vector<PathListener *> listeners_;
     const uint64_t id_;  //Unique ID
     float weight_;
-//    bool has_overlaped_begin_;
-//    bool has_overlaped_end_;
-//FIXME remove
-    bool overlap_;
 
 public:
     BidirectionalPath(const Graph& g)
@@ -108,8 +104,7 @@ public:
               gap_len_(),
               listeners_(),
               id_(path_id_++),
-              weight_(1.0),
-              overlap_(false) {
+              weight_(1.0) {
     }
 
     BidirectionalPath(const Graph& g, const std::vector<EdgeId>& path)
@@ -133,8 +128,7 @@ public:
               gap_len_(path.gap_len_),
               listeners_(),
               id_(path_id_++),
-              weight_(path.weight_),
-              overlap_(path.overlap_) {
+              weight_(path.weight_) {
     }
 
     void Subscribe(PathListener * listener) {
@@ -586,36 +580,6 @@ public:
 
     auto end() const -> decltype(data_.end()) {
         return data_.end();
-    }
-
-//    void SetOverlapedBeginTo(BidirectionalPath* to) {
-//        if (has_overlaped_begin_) {
-//            to->SetOverlapBegin();
-//        }
-//        SetOverlapBegin();
-//        to->SetOverlapEnd();
-//    }
-//
-//    void SetOverlapedEndTo(BidirectionalPath* to) {
-//        if (has_overlaped_end_) {
-//            to->SetOverlapEnd();
-//        }
-//        SetOverlapEnd();
-//        to->SetOverlapBegin();
-//    }
-
-    void SetOverlap(bool overlap = true) {
-        overlap_ = overlap;
-        conj_path_->overlap_ = overlap;
-    }
-
-    bool IsOverlap() const {
-        return overlap_;
-    }
-
-    void ResetOverlaps() {
-        overlap_ = false;
-        conj_path_->overlap_ = false;
     }
 
 private:
