@@ -467,7 +467,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 
     vector<shared_ptr<PathGapCloser>> gap_closers;
 
-//    gap_closers.push_back(make_shared<DijkstraGapCloser>(gp_.g, params_.max_polisher_gap));
+    gap_closers.push_back(make_shared<DijkstraGapCloser>(gp_.g, params_.max_polisher_gap));
 
     ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, support_);
 
@@ -478,7 +478,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
             gap_closers.push_back(make_shared<MatePairGapCloser> (gp_.g, params_.max_polisher_gap, paired_lib,
                                                                    unique_data_.main_unique_storage_));
         }
-        if (lib.type() == io::LibraryType::Clouds10x) {
+        if (lib.type() == io::LibraryType::Clouds10x and cfg::get().ts_res.read_cloud_resolution_on) {
             auto barcode_extractor_ptr = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
             auto cloud_chooser_factory = std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.g, unique_data_.unique_read_cloud_storage_,
                                                                                          barcode_extractor_ptr);

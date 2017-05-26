@@ -1799,7 +1799,7 @@ public:
     ReadCloudGapExtensionChooser(const Graph &g, const barcode_extractor_ptr_t &barcode_extractor_ptr_,
                                  const EdgeId &target_edge_, const ScaffoldingUniqueEdgeStorage& unique_storage_)
             : ExtensionChooser(g), barcode_extractor_ptr_(barcode_extractor_ptr_),
-              target_edge_(target_edge_), unique_storage_(unique_storage_), configs_(1, 1, 5000, 500) {}
+              target_edge_(target_edge_), unique_storage_(unique_storage_), configs_(0, 1, 5000, 500) {}
 
     virtual EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
         DEBUG("Filter started");
