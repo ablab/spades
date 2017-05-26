@@ -82,7 +82,6 @@ public:
     }
 };
 
-
 class BidirectionalPath : public PathListener {
     static std::atomic<uint64_t> path_id_;
 
@@ -97,6 +96,7 @@ class BidirectionalPath : public PathListener {
     float weight_;
 //    bool has_overlaped_begin_;
 //    bool has_overlaped_end_;
+//FIXME remove
     bool overlap_;
 
 public:
@@ -958,6 +958,7 @@ public:
         DEBUG("empty paths are removed");
     }
 
+    //FIXME move out of this class
     void FilterInterstandBulges() {
         DEBUG ("Try to delete paths with interstand bulges");
         for (Iterator iter = begin(); iter != end(); ++iter) {
