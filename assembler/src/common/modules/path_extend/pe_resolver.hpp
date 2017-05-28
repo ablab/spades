@@ -402,6 +402,7 @@ public:
             //FIXME discuss min_edge_len
             helper_(g, coverage_map, 0, max_diff) {}
 
+    //FIXME use path container filtering?
     void Deduplicate() {
         for (auto path_pair : paths_) {
             auto path = path_pair.first;
@@ -810,11 +811,18 @@ public:
         return paths;
     }
 
-    void RemoveEqualPaths(PathContainer &paths, GraphCoverageMap &coverage_map,
-                          size_t /*min_edge_len*/, size_t max_path_diff) const {
-        PathDeduplicator deduplicator(g_, paths, coverage_map, max_path_diff, /*equal only*/true);
+    void Deduplicate(PathContainer &paths, GraphCoverageMap &coverage_map,
+                     size_t /*min_edge_len*/, size_t max_path_diff,
+                     bool equal_only = false) const {
+        PathDeduplicator deduplicator(g_, paths, coverage_map, max_path_diff, equal_only);
         deduplicator.Deduplicate();
     }
+
+//    void RemoveEqualPaths(PathContainer &paths, GraphCoverageMap &coverage_map,
+//                          size_t /*min_edge_len*/, size_t max_path_diff) const {
+//        PathDeduplicator deduplicator(g_, paths, coverage_map, max_path_diff, /*equal only*/true);
+//        deduplicator.Deduplicate();
+//    }
 
     void RemoveRNAOverlaps(PathContainer& /*paths*/, GraphCoverageMap& /*coverage_map*/,
                           size_t /*min_edge_len*/, size_t /*max_path_diff*/) const {
@@ -836,6 +844,9 @@ public:
                         bool cut_all) const {
         INFO("Removing overlaps");
         VERIFY(min_edge_len == 0 && max_path_diff == 0);
+
+        INFO("Deduplicating paths");
+        Deduplicate(paths, coverage_map, min_edge_len, max_path_diff);
 
 //        DEBUG("Initial paths");
 //        for (auto path_pair: paths) {
@@ -877,8 +888,7 @@ public:
         splitter.Split();
 
         INFO("Deduplicating paths");
-        PathDeduplicator deduplicator(g_, paths, coverage_map, max_path_diff, /*equal only*/false);
-        deduplicator.Deduplicate();
+        Deduplicate(paths, coverage_map, min_edge_len, max_path_diff);
         INFO("Overlaps removed");
     }
 

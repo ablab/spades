@@ -227,7 +227,8 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
         resolver.RemoveRNAOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
     } else {
         //FIXME should subpaths be removed here?
-        resolver.RemoveEqualPaths(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
+        resolver.Deduplicate(paths, cover_map, params_.min_edge_len,
+                             params_.max_path_diff, /*equal_only*/ true);
 //        INFO("HERE. No overlaps removed");
 //        paths.SortByLength();
 //        return;
