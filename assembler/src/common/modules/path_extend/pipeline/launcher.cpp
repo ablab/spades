@@ -222,8 +222,7 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
 
     if (params_.pset.remove_overlaps) {
         resolver.RemoveOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff,
-                                params_.pset.cut_all_overlaps,
-                                (params_.mode == config::pipeline_type::moleculo));
+                                params_.pset.cut_all_overlaps);
     } else if (params_.mode == config::pipeline_type::rna) {
         resolver.RemoveRNAOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
     } else {
