@@ -277,8 +277,14 @@ private:
         const double coverage_bound_;
         const size_t edge_limit_;
         mutable size_t edge_summary_length_;
+        const size_t edge_summary_length_limit_;
 
         void Find(EdgeId edge, std::set<EdgeId> &result) const {
+
+            if (edge_summary_length_ > edge_summary_length_limit_) {
+                return;
+            }
+
             if (result.size() > edge_limit_) {
                 return;
             }
@@ -307,12 +313,13 @@ private:
         }
 
     public:
-        CoverageBoundedDFS(const Graph &graph, double coverage_bound,
-                           size_t edge_limit = 10000)
+        CoverageBoundedDFS(const Graph &graph, double coverage_bound, size_t edge_summary_limit,
+                           size_t edge_limit = 500)
                 : graph_(graph),
                   coverage_bound_(coverage_bound),
                   edge_limit_(edge_limit),
-                  edge_summary_length_(0) {
+                  edge_summary_length_(0),
+                  edge_summary_length_limit_(edge_summary_limit) {
         }
 
         std::set<EdgeId> Find(VertexId v) const {
@@ -337,8 +344,8 @@ private:
     CoverageBoundedDFS dfs_helper;
 
 public:
-    HighCoverageComponentFinder(const Graph &graph, double max_coverage)
-    : AbstractNeighbourhoodFinder<Graph>(graph), coverage_bound_(max_coverage), dfs_helper(graph, max_coverage) {
+    HighCoverageComponentFinder(const Graph &graph, double max_coverage, size_t edge_sum_limit = std::numeric_limits<size_t>::max())
+    : AbstractNeighbourhoodFinder<Graph>(graph), coverage_bound_(max_coverage), dfs_helper(graph, max_coverage, edge_sum_limit) {
     }
 
     GraphComponent<Graph> Find(typename Graph::VertexId v) const {
