@@ -364,11 +364,13 @@ public:
             paths_(paths),
             coverage_map_(coverage_map) {}
 
-    void Split() {
-        for (auto path_pair: paths_) {
-            SplitPath(path_pair.first, GatherAllSplits(path_pair));
-        }
-    }
+     void Split() {
+         vector<PathPair> tmp_paths(paths_.begin(), paths_.end());
+         for (auto path_pair: tmp_paths) {
+             SplitPath(path_pair.first, GatherAllSplits(path_pair));
+         }
+     }
+
 };
 
 class PathDeduplicator {
@@ -886,10 +888,12 @@ public:
         INFO("Splitting paths");
         PathSplitter splitter(splits, paths, coverage_map);
         splitter.Split();
+        //splits are invalidated after this point
 
         INFO("Deduplicating paths");
         Deduplicate(paths, coverage_map, min_edge_len, max_path_diff);
         INFO("Overlaps removed");
+        //FIXME Add removal of empty paths here
     }
 
     void AddUncoveredEdges(PathContainer &paths, GraphCoverageMap &coverageMap) const {
