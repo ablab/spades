@@ -25,8 +25,6 @@ inline void PopFront(BidirectionalPath * const path, size_t cnt) {
     path->GetConjPath()->PopBack(cnt);
 }
 
-//FIXME think about overlaps of path with itself and with its conjugate
-
 //FIXME think about symmetry and what if it breaks?
 class OverlapFindingHelper {
     const Graph &g_;
@@ -63,8 +61,8 @@ class OverlapFindingHelper {
     pair<Range, Range> ComparePaths(const BidirectionalPath &path1,
                                       const BidirectionalPath &path2,
                                       size_t start2) const {
+        TRACE("Comparing paths " << path1.GetId() << " and " << path2.GetId());
         //TODO change to edit distance?
-        //FIXME what to do with gaps here? Currently process stops if gap > max_diff_
         size_t shift1 = 0;
         //path1 is always matched from the start
         const size_t start1 = 0;
@@ -72,7 +70,8 @@ class OverlapFindingHelper {
         size_t end2 = start2;
 
         for (size_t i = start1; i < path1.Size(); ++i) {
-            shift1 += path1.GapAt(i).gap; //First gap is always zero
+            //TODO is it ok that match allowed via arbitrary large gap?
+//            shift1 += path1.GapAt(i).gap; //First gap is always zero
             if (shift1 > max_diff_)
                 break;
 
@@ -85,9 +84,10 @@ class OverlapFindingHelper {
                     if (j > start2) {
                         break;
                     }
-                } else {
-                    shift2 += path2.GapAt(j).gap;
                 }
+//                } else {
+//                    shift2 += path2.GapAt(j).gap;
+//                }
 
                 if (shift2 > max_diff_) //shift1 + max_diff)
                     break;
@@ -96,8 +96,8 @@ class OverlapFindingHelper {
                     match = true;
                     break;
                 } else {
-//                    shift2 += path2.ShiftLength(j);
-                    shift2 += g_.length(path2.At(j));
+//                    shift2 += g_.length(path2.At(j));
+                    shift2 += path2.ShiftLength(j);
                 }
             }
             if (match) {
@@ -105,18 +105,18 @@ class OverlapFindingHelper {
                 end2 = j+1;
                 shift1 = 0;
             } else {
-                shift1 += g_.length(path1.At(i));
+//                shift1 += g_.length(path1.At(i));
+                shift1 += path1.ShiftLength(i);
             }
         }
 
-        //FIXME!!! starts should be extended too!!!
-        //Might want to ignore if equal/conjugate paths
         //Extending the ends of the paths if possible
         if (try_extend_ && end1 > 0) {
             TryExtendToEnd(path1, end1);
             TryExtendToEnd(path2, end2);
             TryExtendToStart(path2, start2);
         }
+
         return make_pair(Range(start1, end1), Range(start2, end2));
     }
 
@@ -202,6 +202,8 @@ public:
         return vector<PathPtr>(candidates.begin(), candidates.end());
     }
 
+private:
+    DECL_LOGGER("OverlapFindingHelper");
 };
 
 class DecentOverlapRemover {
@@ -242,7 +244,7 @@ class DecentOverlapRemover {
                 AlreadyAdded(other,
                              other_range.start_pos,
                              other_range.end_pos) &&
-                /*forcing cut all behavior on conjugate paths*/
+                /*forcing "cut_all" behavior on conjugate paths*/
                 &other != path.GetConjPath() &&
                 /*certain overkill*/
                 &other != &path) {
@@ -258,9 +260,10 @@ class DecentOverlapRemover {
         }
 
         DEBUG("First " << overlap << " edges of the path will be removed");
-        path.PrintDEBUG();
+        DEBUG(path.str());
         DEBUG("Due to overlap with path");
-        other.PrintDEBUG();
+        DEBUG(other.str());
+        DEBUG("Range " << other_range);
 
         return overlap;
     }
@@ -370,6 +373,8 @@ public:
          }
      }
 
+private:
+    DECL_LOGGER("PathSplitter");
 };
 
 class PathDeduplicator {
@@ -379,7 +384,9 @@ class PathDeduplicator {
     const OverlapFindingHelper helper_;
 
     bool IsRedundant(PathPtr path) const {
+        TRACE("Checking if path redundant " << path->GetId());
         for (auto candidate : helper_.FindCandidatePaths(*path)) {
+            TRACE("Considering candidate " << candidate->GetId());
 //                VERIFY(candidate != path && candidate != path->GetConjPath());
             if (candidate == path || candidate == path->GetConjPath())
                 continue;
@@ -408,12 +415,14 @@ public:
         for (auto path_pair : paths_) {
             auto path = path_pair.first;
             if (IsRedundant(path)) {
-                DEBUG("Clearing path");
-                path->PrintDEBUG();
+                TRACE("Clearing path " << path->str());
                 path->Clear();
             }
         }
     }
+
+private:
+    DECL_LOGGER("PathDeduplicator");
 };
 
 class PathExtendResolver {
