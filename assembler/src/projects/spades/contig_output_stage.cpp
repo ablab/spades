@@ -5,6 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "modules/path_extend/pe_resolver.hpp"
 #include "contig_output_stage.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
@@ -75,6 +76,16 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
             ScaffoldBreaker breaker(min_gap);
             PathContainer broken_scaffolds;
             breaker.Break(gp.contig_paths, broken_scaffolds);
+
+            //FIXME don't we want to use FinalizePaths here?
+            PathExtendResolver resolver(gp.g);
+            GraphCoverageMap cover_map(gp.g, broken_scaffolds, true);
+            resolver.Deduplicate(broken_scaffolds, cover_map,
+                    /*min_edge_len*/0,
+                    /*max_path_diff*/0);
+            broken_scaffolds.FilterEmptyPaths();
+            broken_scaffolds.SortByLength();
+
             writer.OutputPaths(broken_scaffolds,
                                CreatePathsWriters(output_dir + cfg::get().co.contigs_name,
                                                   fastg_writer));
