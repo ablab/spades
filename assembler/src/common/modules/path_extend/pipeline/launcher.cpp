@@ -226,12 +226,11 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
     } else if (params_.mode == config::pipeline_type::rna) {
         resolver.RemoveRNAOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
     } else {
-        //FIXME should subpaths be removed here?
+        INFO("Overlaps will not be removed");
+        INFO("Deduplicating paths");
         resolver.Deduplicate(paths, cover_map, params_.min_edge_len,
-                             params_.max_path_diff, /*equal_only*/ true);
-//        INFO("HERE. No overlaps removed");
-//        paths.SortByLength();
-//        return;
+                             //FIXME discuss with Andrey
+                             params_.max_path_diff, /*equal_only*/ false);
     }
 
     if (params_.avoid_rc_connections) {
