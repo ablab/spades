@@ -574,6 +574,12 @@ public:
         }
     }
 
+    std::string str() const {
+        stringstream ss;
+        Print(ss);
+        return ss.str();
+    }
+
     auto begin() const -> decltype(data_.begin()) {
         return data_.begin();
     }
@@ -585,9 +591,7 @@ public:
 private:
 
     vector<std::string> PrintLines() const {
-        stringstream ss;
-        Print(ss);
-        std::string as_str=ss.str();
+        auto as_str = str();
         boost::trim(as_str);
         std::vector<std::string> result;
         boost::split(result, as_str, boost::is_any_of("\n"), boost::token_compress_on);
