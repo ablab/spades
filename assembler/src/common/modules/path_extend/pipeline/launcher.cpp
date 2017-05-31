@@ -216,6 +216,20 @@ void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const stri
     }
 }
 
+//FIXME move out of this class
+void FilterInterstandBulges(PathContainer &paths) {
+    DEBUG ("Try to delete paths with interstand bulges");
+    for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+        if (EndsWithInterstrandBulge(*iter.get())) {
+            iter.get()->PopBack();
+        }
+        if (EndsWithInterstrandBulge(*iter.getConjugate())) {
+            iter.getConjugate()->PopBack();
+        }
+    }
+    DEBUG("deleted paths with interstand bulges");
+}
+
 void PathExtendLauncher::FinalizePaths(PathContainer &paths,
                                        GraphCoverageMap &cover_map,
                                        const PathExtendResolver &resolver) const {
@@ -233,8 +247,9 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
                              params_.max_path_diff, /*equal_only*/ false);
     }
 
+    //FIXME do we still need it?
     if (params_.avoid_rc_connections) {
-        paths.FilterInterstandBulges();
+        FilterInterstandBulges(paths);
     }
     resolver.AddUncoveredEdges(paths, cover_map);
 

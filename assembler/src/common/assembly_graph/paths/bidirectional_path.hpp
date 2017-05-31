@@ -131,6 +131,10 @@ public:
               weight_(path.weight_) {
     }
 
+    const Graph &g() const{
+        return g_;
+    }
+
     void Subscribe(PathListener * listener) {
         listeners_.push_back(listener);
     }
@@ -411,6 +415,8 @@ public:
 //        return ans;
 //    }
 
+    //FIXME how does it work?!
+    //FIXME replace with newer functions
     void FindConjEdges(size_t max_repeat_length) {
         for (size_t begin_pos = 0; begin_pos < Size(); ++begin_pos) {
             size_t begin = begin_pos;
@@ -499,51 +505,9 @@ public:
         return result;
     }
 
+    //FIXME remove
     vector<EdgeId> ToVector() const {
         return vector<EdgeId>(data_.begin(), data_.end());
-    }
-
-//    bool CameToInterstrandBulge() const {
-//        if (Empty())
-//            return false;
-//
-//        EdgeId lastEdge = Back();
-//        VertexId lastVertex = g_.EdgeEnd(lastEdge);
-//
-//        if (g_.OutgoingEdgeCount(lastVertex) == 2) {
-//            vector<EdgeId> bulgeEdges(g_.out_begin(lastVertex), g_.out_end(lastVertex));
-//            VertexId nextVertex = g_.EdgeEnd(bulgeEdges[0]);
-//
-//            if (bulgeEdges[0] == g_.conjugate(bulgeEdges[1]) && nextVertex == g_.EdgeEnd(bulgeEdges[1]) && g_.CheckUniqueOutgoingEdge(nextVertex)
-//                    && *(g_.out_begin(nextVertex)) == g_.conjugate(lastEdge)) {
-//
-//                DEBUG("Came to interstrand bulge " << g_.int_id(lastEdge));
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
-
-    bool IsInterstrandBulge() const {
-        if (Empty())
-            return false;
-
-        EdgeId lastEdge = Back();
-        VertexId lastVertex = g_.EdgeEnd(lastEdge);
-        VertexId prevVertex = g_.EdgeStart(lastEdge);
-
-        if (g_.OutgoingEdgeCount(prevVertex) == 2 && g_.IncomingEdgeCount(lastVertex) == 2 && g_.CheckUniqueOutgoingEdge(lastVertex)
-                && g_.CheckUniqueIncomingEdge(prevVertex) && *(g_.in_begin(prevVertex)) == g_.conjugate(*(g_.out_begin(lastVertex)))) {
-
-            vector<EdgeId> bulgeEdges(g_.out_begin(prevVertex), g_.out_end(prevVertex));
-            EdgeId bulgeEdge = bulgeEdges[0] == lastEdge ? bulgeEdges[1] : bulgeEdges[0];
-
-            if (bulgeEdge == g_.conjugate(lastEdge)) {
-                DEBUG("In interstrand bulge " << g_.int_id(lastEdge));
-                return true;
-            }
-        }
-        return false;
     }
 
     void PrintDEBUG() const {
@@ -927,20 +891,6 @@ public:
         DEBUG("empty paths are removed");
     }
 
-    //FIXME move out of this class
-    void FilterInterstandBulges() {
-        DEBUG ("Try to delete paths with interstand bulges");
-        for (Iterator iter = begin(); iter != end(); ++iter) {
-            if (iter.get()->IsInterstrandBulge()) {
-                iter.get()->PopBack();
-            }
-            if (iter.getConjugate()->IsInterstrandBulge()) {
-                iter.getConjugate()->PopBack();
-            }
-        }
-        DEBUG("deleted paths with interstand bulges");
-    }
-
 private:
     std::vector<PathPair> data_;
 
@@ -1040,6 +990,43 @@ inline size_t OverlapSize(const BidirectionalPath &path1, const BidirectionalPat
         }
     }
     return max_overlap;
+}
+
+
+//    bool CameToInterstrandBulge() const {
+//        if (Empty())
+//            return false;
+//
+//        EdgeId lastEdge = Back();
+//        VertexId lastVertex = g_.EdgeEnd(lastEdge);
+//
+//        if (g_.OutgoingEdgeCount(lastVertex) == 2) {
+//            vector<EdgeId> bulgeEdges(g_.out_begin(lastVertex), g_.out_end(lastVertex));
+//            VertexId nextVertex = g_.EdgeEnd(bulgeEdges[0]);
+//
+//            if (bulgeEdges[0] == g_.conjugate(bulgeEdges[1]) && nextVertex == g_.EdgeEnd(bulgeEdges[1]) && g_.CheckUniqueOutgoingEdge(nextVertex)
+//                    && *(g_.out_begin(nextVertex)) == g_.conjugate(lastEdge)) {
+//
+//                DEBUG("Came to interstrand bulge " << g_.int_id(lastEdge));
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
+
+inline bool EndsWithInterstrandBulge(const BidirectionalPath &path) {
+    if (path.Empty())
+        return false;
+
+    const Graph &g = path.g();
+    EdgeId e = path.Back();
+    VertexId v1 = g.EdgeStart(e);
+    VertexId v2 = g.EdgeEnd(e);
+
+    return v2 == g.conjugate(v1) &&
+            e != g.conjugate(e) &&
+            g.OutgoingEdgeCount(v1) == 2 &&
+            g.CheckUniqueIncomingEdge(v1);
 }
 
 }  // path extend
