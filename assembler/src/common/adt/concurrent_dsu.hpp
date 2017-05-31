@@ -26,6 +26,8 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 
+namespace dsu {
+
 class ConcurrentDSU {
     struct atomic_set_t {
         uint64_t data  : 61;
@@ -209,12 +211,12 @@ public:
         std::unordered_map<size_t, size_t> sizes;
 
 #if 0
-    for (size_t x = 0; x < size; ++x) {
-        if (data_[x].parent != x) {
-            size_t t = data_[x].parent;
-            VERIFY(data_[t].parent == t)
+        for (size_t x = 0; x < size; ++x) {
+            if (data_[x].parent != x) {
+                size_t t = data_[x].parent;
+                VERIFY(data_[t].parent == t)
+            }
         }
-    }
 #endif
 
         // Insert all the root elements into the map
@@ -256,7 +258,7 @@ public:
         os.close();
 
         // Write down the sizes
-        MMappedRecordWriter<size_t> index(Prefix + ".idx");
+        MMappedRecordWriter <size_t> index(Prefix + ".idx");
         index.reserve(sizes.size());
         size_t *idx = index.data();
         for (size_t x = 0, i = 0, sz = 0; x < data_.size(); ++x) {
@@ -292,6 +294,7 @@ private:
     mutable std::vector<std::atomic<atomic_set_t> > data_;
 };
 
+} //dsu
 #pragma GCC diagnostic pop
 
 #endif /* CONCURRENTDSU_HPP_ */

@@ -17,6 +17,8 @@
 
 #endif
 
+namespace adt {
+
 template<class Seq>
 class KMerVector {
 private:
@@ -37,13 +39,13 @@ private:
         je_free(storage_);
         storage_ = res;
 #else
-    // No JEMalloc, no cookies
-    ElTy *res = new ElTy[capacity_ * el_sz_];
-    if (storage_)
-      std::memcpy(res, storage_, size_ * sizeof(ElTy) * el_sz_);
+        // No JEMalloc, no cookies
+        ElTy *res = new ElTy[capacity_ * el_sz_];
+        if (storage_)
+            std::memcpy(res, storage_, size_ * sizeof(ElTy) * el_sz_);
 
-    delete[] storage_;
-    storage_ = res;
+        delete[] storage_;
+        storage_ = res;
 #endif
 
         return storage_;
@@ -59,12 +61,14 @@ public:
     typedef array_equal_to<ElTy> equal_to;
 
     explicit KMerVector(unsigned K, size_t capacity = 1)
-            : K_(K), size_(0), capacity_(std::max(capacity, (size_t) 1)), el_sz_(Seq::GetDataSize(K)), storage_(NULL),
+            : K_(K), size_(0), capacity_(std::max(capacity, (size_t) 1)), el_sz_(Seq::GetDataSize(K)),
+              storage_(NULL),
               vector_(realloc(), size_, el_sz_) {
     }
 
     KMerVector(KMerVector &&that)
-            : K_(that.K_), size_(that.size_), capacity_(that.capacity_), el_sz_(that.el_sz_), storage_(that.storage_),
+            : K_(that.K_), size_(that.size_), capacity_(that.capacity_), el_sz_(that.el_sz_),
+              storage_(that.storage_),
               vector_(storage_, size_, el_sz_) {
         that.storage_ = NULL;
     }
@@ -188,5 +192,5 @@ private:
     array_vector<ElTy> vector_;
 };
 
-
+} //adt
 #endif /* __KMER_VECTOR_HPP */
