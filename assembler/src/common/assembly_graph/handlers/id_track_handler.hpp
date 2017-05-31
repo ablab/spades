@@ -78,33 +78,4 @@ public:
     }
 };
 
-template<class VertexId, class EdgeId>
-class BaseIdTrackHandler {
-public:
-    BaseIdTrackHandler() {
-    }
-
-    size_t ReturnIntId(EdgeId e) const {
-        return e.int_id();
-    }
-
-    size_t ReturnIntId(VertexId v) const {
-        return v.int_id();
-    }
-};
-
-template<class Graph>
-class IdTrackHandler : public BaseIdTrackHandler<typename Graph::VertexId, typename Graph::EdgeId> {
-private:
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    const Graph &graph_;
-public:
-    IdTrackHandler(const Graph& g) : graph_(g) {
-    }
-
-    ~IdTrackHandler() {
-    }
-};
-
 }
