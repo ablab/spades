@@ -21,6 +21,195 @@
 
 namespace path_extend {
 
+//FIXME think about symmetry and what if it breaks?
+class OverlapFindingHelper {
+    const Graph &g_;
+    const GraphCoverageMap &coverage_map_;
+    const size_t min_edge_len_;
+    const size_t max_diff_;
+    const bool try_extend_;
+
+    //Changes second argument on success
+    bool TryExtendToEnd(const BidirectionalPath &path, size_t &pos) const {
+        //FIXME rewrite via LengthAt
+        size_t cum = 0;
+        for (size_t j = pos; j < path.Size(); ++j) {
+            cum += path.ShiftLength(j);
+            if (cum > max_diff_) {
+                return false;
+            }
+        }
+        pos = path.Size();
+        return true;
+    }
+
+    //Changes second argument on success
+    bool TryExtendToStart(const BidirectionalPath &path, size_t &pos) const {
+        size_t tmp_pos = path.Size() - pos;
+        if (TryExtendToEnd(*path.GetConjPath(), tmp_pos)) {
+            pos = path.Size() - tmp_pos;
+            return true;
+        }
+        return false;
+    }
+
+
+    pair<Range, Range> ComparePaths(const BidirectionalPath &path1,
+                                    const BidirectionalPath &path2,
+                                    size_t start2) const {
+        TRACE("Comparing paths " << path1.GetId() << " and " << path2.GetId());
+        //TODO change to edit distance?
+        size_t shift1 = 0;
+        //path1 is always matched from the start
+        const size_t start1 = 0;
+        size_t end1 = start1;
+        size_t end2 = start2;
+
+        for (size_t i = start1; i < path1.Size(); ++i) {
+            //TODO is it ok that match allowed via arbitrary large gap?
+//            shift1 += path1.GapAt(i).gap; //First gap is always zero
+            if (shift1 > max_diff_)
+                break;
+
+            bool match = false;
+            size_t j = end2;
+            size_t shift2 = 0;
+            for (; j < path2.Size(); ++j) {
+                if (end1 == 0) {
+                    //Force first match to start with pos2
+                    if (j > start2) {
+                        break;
+                    }
+                }
+//                } else {
+//                    shift2 += path2.GapAt(j).gap;
+//                }
+
+                if (shift2 > max_diff_) //shift1 + max_diff)
+                    break;
+                if (path1.At(i) == path2.At(j) &&
+                    (&path1 != &path2 || i != j)) {
+                    match = true;
+                    break;
+                } else {
+//                    shift2 += g_.length(path2.At(j));
+                    shift2 += path2.ShiftLength(j);
+                }
+            }
+            if (match) {
+                end1 = i+1;
+                end2 = j+1;
+                shift1 = 0;
+            } else {
+//                shift1 += g_.length(path1.At(i));
+                shift1 += path1.ShiftLength(i);
+            }
+        }
+
+        //Extending the ends of the paths if possible
+        if (try_extend_ && end1 > 0) {
+            TryExtendToEnd(path1, end1);
+            TryExtendToEnd(path2, end2);
+            TryExtendToStart(path2, start2);
+        }
+
+        return make_pair(Range(start1, end1), Range(start2, end2));
+    }
+
+public:
+    OverlapFindingHelper(const Graph &g,
+                         const GraphCoverageMap &coverage_map,
+                         size_t min_edge_len,
+                         size_t max_diff,
+                         bool try_extend = true) :
+            g_(g),
+            coverage_map_(coverage_map),
+            min_edge_len_(min_edge_len),
+            max_diff_(max_diff),
+            try_extend_(try_extend) {
+
+    }
+
+    bool IsSubpath(const BidirectionalPath &path,
+                   const BidirectionalPath &other) const {
+        for (size_t j = 0; j < other.Size(); ++j) {
+            auto range_pair = ComparePaths(path, other, j);
+            if (range_pair.first.end_pos == path.Size()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool IsEqual(const BidirectionalPath &path,
+                 const BidirectionalPath &other) const {
+
+        auto ends_pair = CommonPrefix(path, other);
+        return ends_pair.first == path.Size()
+               && ends_pair.second == other.Size();
+    }
+
+
+    pair<size_t, size_t> CommonPrefix(const BidirectionalPath &path1,
+                                      const BidirectionalPath &path2) const {
+        auto range_pair = ComparePaths(path1, path2, 0);
+        return make_pair(range_pair.first.end_pos, range_pair.second.end_pos);
+    };
+
+    //overlap is forced to start from the beginning of path1
+    pair<Range, Range> FindOverlap(const BidirectionalPath &path1,
+                                   const BidirectionalPath &path2,
+                                   bool end_start_only) const {
+        size_t max_overlap = 0;
+        pair<Range, Range> matching_ranges;
+        for (size_t j = 0; j < path2.Size(); ++j) {
+            auto range_pair = ComparePaths(path1, path2, j);
+            VERIFY(range_pair.first.start_pos == 0);
+            //checking if overlap is valid
+            if (end_start_only && range_pair.second.end_pos != path2.Size())
+                continue;
+
+            size_t overlap_size = range_pair.first.size();
+            if (overlap_size > max_overlap ||
+                //prefer overlaps with end of path2
+                (overlap_size == max_overlap &&
+                 range_pair.second.end_pos == path2.Size())) {
+                max_overlap = overlap_size;
+                matching_ranges = range_pair;
+            }
+        }
+        return matching_ranges;
+    }
+
+    vector<const BidirectionalPath*> FindCandidatePaths(const BidirectionalPath &path) const {
+        set<const BidirectionalPath*> candidates;
+        //FIXME needs discussion
+        if (min_edge_len_ == 0) {
+            size_t cum_len = 0;
+            for (size_t i = 0; i < path.Size(); ++i) {
+                EdgeId e = path.At(i);
+                cum_len += path.GapAt(i).gap;
+                if (cum_len > max_diff_)
+                    break;
+                utils::insert_all(candidates, coverage_map_.GetCoveringPaths(e));
+                cum_len += g_.length(e);
+            }
+            VERIFY(path.Size() == 0 || candidates.count(&path));
+        } else {
+            for (size_t i = 0; i < path.Size(); ++i) {
+                EdgeId e = path.At(i);
+                if (g_.length(e) >= min_edge_len_) {
+                    utils::insert_all(candidates, coverage_map_.GetCoveringPaths(e));
+                }
+            }
+        }
+        return vector<const BidirectionalPath*>(candidates.begin(), candidates.end());
+    }
+
+private:
+    DECL_LOGGER("OverlapFindingHelper");
+};
+
 inline void SubscribeCoverageMap(BidirectionalPath * path, GraphCoverageMap &coverage_map) {
     path->Subscribe(&coverage_map);
     for (size_t i = 0; i < path->Size(); ++i) {
@@ -581,10 +770,12 @@ public:
               repeat_len_(max_repeat_len){
         empty_ = new BidirectionalPath(g_);
     }
+
     ~RepeatDetector() {
         delete empty_;
     }
 
+    //FIXME same logic again!
     BidirectionalPath* RepeatPath(const BidirectionalPath& p) {
         if (p.Size() == 0) {
             return empty_;
@@ -614,6 +805,8 @@ public:
         DEBUG("max common size " << max_common_size);
         return result_p;
     }
+
+    //FIXME same logic again!
     size_t MaxCommonSize(const BidirectionalPath& p1, const BidirectionalPath& p2) const {
         DEBUG("max coomon size ")
         EdgeId last_e = p1.Back();
@@ -628,6 +821,7 @@ public:
         return max_common_size;
     }
 private:
+    //FIXME same logic again!
     size_t MaxCommonSize(const BidirectionalPath& p1, size_t pos1, const BidirectionalPath& p2, size_t pos2) const {
         int i1 = (int) pos1;
         int i2 = (int) pos2;
@@ -714,6 +908,7 @@ protected:
     DECL_LOGGER("PathExtender")
 };
 
+//FIXME what max_diff_len value is used?
 class CompositeExtender : public ContigsMaker {
 public:
     CompositeExtender(const Graph &g, GraphCoverageMap& cov_map,
@@ -773,6 +968,8 @@ public:
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage,
                       bool detect_repeats_online_local = true) {
         DEBUG("make grow step composite extender");
+        //FIXME !!!Can we disable it for good?!
+        //FIXME at least use new detection of overlaps
         if (detect_repeats_online_ && detect_repeats_online_local) {
             BidirectionalPath *repeat_path = repeat_detector_.RepeatPath(path);
             size_t repeat_size = repeat_detector_.MaxCommonSize(path, *repeat_path);
@@ -786,25 +983,30 @@ public:
                 VERIFY(begin_repeat > -1);
                 size_t end_repeat = (size_t) begin_repeat + repeat_size;
                 DEBUG("not consistent subpaths ");
-                BidirectionalPath begin1 = path.SubPath(0, path.Size() - repeat_size);
+                const BidirectionalPath begin1 = path.SubPath(0, path.Size() - repeat_size);
                 begin1.PrintDEBUG();
-                BidirectionalPath begin2 = repeat_path->SubPath(0, begin_repeat);
+                const BidirectionalPath begin2 = repeat_path->SubPath(0, begin_repeat);
                 begin2.PrintDEBUG();
-                int gpa_in_repeat_path = repeat_path->GapAt(begin_repeat).gap;
+                int gap_in_repeat_path = repeat_path->GapAt(begin_repeat).gap;
                 BidirectionalPath end2 = repeat_path->SubPath(end_repeat);
-                BidirectionalPath begin1_conj = path.SubPath(0, path.Size() - repeat_size + 1).Conjugate();
-                BidirectionalPath begin2_conj = repeat_path->SubPath(0, begin_repeat + 1).Conjugate();
-                pair<size_t, size_t> last = ComparePaths(0, 0, begin1_conj, begin2_conj, max_diff_len_);
+                //FIXME original method had different weird indices. Check that current version is correct.
+                BidirectionalPath begin1_conj = begin1.Conjugate();
+                BidirectionalPath begin2_conj = begin2.Conjugate();
+                OverlapFindingHelper helper(g_, cover_map_, /*min edge len*/ 0, max_diff_len_, /*try extend*/ false);
+                pair<size_t, size_t> last = helper.CommonPrefix(begin1_conj, begin2_conj);
                 DEBUG("last " << last.first << " last2 " << last.second);
                 Gap gap = path.GapAt(path.Size() - repeat_size);
                 path.Clear();
                 repeat_path->Clear();
 
+                //FIXME what does last.second check do here?
                 if (begin2.Size() == 0 || last.second != 0) { //TODO: incorrect: common edges, but then different ends
+                    //FIXME seems like this used to be always true!
                     path.PushBack(begin1);
                     repeat_path->PushBack(begin2);
                 } else {
-                    gap = Gap(gpa_in_repeat_path);
+                    //FIXME what is happening here?
+                    gap = Gap(gap_in_repeat_path);
                     path.PushBack(begin2);
                     repeat_path->PushBack(begin1);
                 }
