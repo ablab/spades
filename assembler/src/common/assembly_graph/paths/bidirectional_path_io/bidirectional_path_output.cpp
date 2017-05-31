@@ -6,15 +6,6 @@
 
 namespace path_extend {
 
-void WriteScaffolds(const ScaffoldStorage &scaffold_storage, const string &fn) {
-    io::OutputSequenceStream oss(fn);
-    std::ofstream os_fastg;
-
-    for (const auto& scaffold_info : scaffold_storage) {
-        oss << io::SingleRead(scaffold_info.name, scaffold_info.sequence);
-    }
-}
-
 void path_extend::ContigWriter::OutputPaths(const PathContainer &paths, const vector<PathsWriterT>& writers) const {
     ScaffoldStorage storage;
 
