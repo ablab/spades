@@ -11,7 +11,7 @@
  *  Created on: Jul 19, 2012
  *      Author: alex
  */
-
+//obsolete! Consider to remove
 #ifndef KMER_HASH_VECTOR_HPP_
 #define KMER_HASH_VECTOR_HPP_
 

@@ -23,7 +23,8 @@ namespace omnigraph {
 template<class Graph, typename ElementId, typename Comparator = std::less<ElementId>>
 class SmartIterator : public GraphActionHandler<Graph> {
     typedef GraphActionHandler<Graph> base;
-    DynamicQueueIterator<ElementId, Comparator> inner_it_;
+    typedef adt::DynamicQueueIterator<ElementId, Comparator> DynamicQueueIterator;
+    DynamicQueueIterator inner_it_;
     bool add_new_;
     bool canonical_only_;
     //todo think of checking it in HandleAdd

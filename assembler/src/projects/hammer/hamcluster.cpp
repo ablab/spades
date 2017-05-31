@@ -65,7 +65,7 @@ std::pair<size_t, size_t> SubKMerSplitter::split(Op &&op) {
 }
 
 #if 1
-static bool canMerge(const ConcurrentDSU &uf, size_t x, size_t y) {
+static bool canMerge(const dsu::ConcurrentDSU &uf, size_t x, size_t y) {
   size_t szx = uf.set_size(x), szy = uf.set_size(y);
   const size_t hardthr = 2500;
 
@@ -88,7 +88,7 @@ static bool canMerge(const ConcurrentDSU &uf, size_t x, size_t y) {
 #endif
 
 
-static void processBlockQuadratic(ConcurrentDSU  &uf,
+static void processBlockQuadratic(dsu::ConcurrentDSU  &uf,
                                   const std::vector<size_t>::iterator &block,
                                   size_t block_size,
                                   const KMerData &data,
@@ -110,7 +110,7 @@ static void processBlockQuadratic(ConcurrentDSU  &uf,
 
 void KMerHamClusterer::cluster(const std::string &prefix,
                                const KMerData &data,
-                               ConcurrentDSU &uf) {
+                               dsu::ConcurrentDSU &uf) {
   // First pass - split & sort the k-mers
   std::string fname = prefix + ".first", bfname = fname + ".blocks", kfname = fname + ".kmers";
   std::ofstream bfs(bfname, std::ios::out | std::ios::binary);
@@ -209,7 +209,7 @@ enum {
   FULLY_LOCKED = 3
 };
 
-static bool canMerge2(const ConcurrentDSU &uf, size_t kidx, size_t cidx) {
+static bool canMerge2(const dsu::ConcurrentDSU &uf, size_t kidx, size_t cidx) {
     // If either of indices is fully locked - bail out
     uint64_t kaux = uf.root_aux(kidx), caux = uf.root_aux(cidx);
     if (kaux == FULLY_LOCKED || caux == FULLY_LOCKED)
@@ -224,7 +224,7 @@ static bool canMerge2(const ConcurrentDSU &uf, size_t kidx, size_t cidx) {
     return true;
 }
 
-static void ClusterChunk(size_t start_idx, size_t end_idx, const KMerData &data, ConcurrentDSU &uf) {
+static void ClusterChunk(size_t start_idx, size_t end_idx, const KMerData &data, dsu::ConcurrentDSU &uf) {
     unsigned nthreads = cfg::get().general_max_nthreads;
 
     // INFO("Cluster: " << start_idx << ":" << end_idx);
@@ -274,7 +274,7 @@ static void ClusterChunk(size_t start_idx, size_t end_idx, const KMerData &data,
     }
 }
 
-void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, ConcurrentDSU &uf) {
+void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, dsu::ConcurrentDSU &uf) {
     size_t start_idx = 0;
     while (start_idx < data.size()) {
         size_t end_idx = start_idx + 64*1024;

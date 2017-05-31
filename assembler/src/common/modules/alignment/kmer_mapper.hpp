@@ -67,7 +67,7 @@ public:
         if (normalized_)
             return;
 
-        KMerVector<Kmer> all(k_, size());
+        adt::KMerVector<Kmer> all(k_, size());
         for (auto it = begin(); it != end(); ++it)
             all.push_back(it->first);
 

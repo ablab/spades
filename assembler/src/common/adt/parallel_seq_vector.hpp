@@ -5,6 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+//obsolete! Consider to remove
 #pragma once
 
 #include "parallel_unordered_map.hpp"

@@ -499,7 +499,7 @@ class SkeletonTreeFinder {
 
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef ConcurrentDSU color_partition_ds_t;
+    typedef dsu::ConcurrentDSU color_partition_ds_t;
 
     const LocalizedComponent<Graph>& component_;
     const ComponentColoring<Graph>& coloring_;

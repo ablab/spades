@@ -58,7 +58,7 @@ std::pair<size_t, size_t> SubKMerSplitter::split() {
 }
 
 #if 1
-static bool canMerge(const ConcurrentDSU &uf, unsigned x, unsigned y) {
+static bool canMerge(const dsu::ConcurrentDSU &uf, unsigned x, unsigned y) {
   size_t szx = uf.set_size(x), szy = uf.set_size(y);
   const size_t hardthr = 2500;
 
@@ -75,13 +75,13 @@ static bool canMerge(const ConcurrentDSU &uf, unsigned x, unsigned y) {
   return true;
 }
 #else
-static bool canMerge(const ConcurrentDSU &uf, unsigned x, unsigned y) {
+static bool canMerge(const dsu::ConcurrentDSU &uf, unsigned x, unsigned y) {
   return (uf.set_size(x) + uf.set_size(y)) < 10000;
 }
 #endif
 
 
-static void processBlockQuadratic(ConcurrentDSU  &uf,
+static void processBlockQuadratic(dsu::ConcurrentDSU &uf,
                                   const std::vector<size_t> &block,
                                   const KMerData &data,
                                   unsigned tau) {
@@ -113,7 +113,7 @@ static void processBlockQuadratic(ConcurrentDSU  &uf,
 
 void KMerHamClusterer::cluster(const std::string &prefix,
                                const KMerData &data,
-                               ConcurrentDSU &uf) {
+                               dsu::ConcurrentDSU &uf) {
   // First pass - split & sort the k-mers
   std::ostringstream tmp;
   tmp << prefix << ".first";

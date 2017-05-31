@@ -14,6 +14,8 @@
 #include <stdexcept>
 #include <vector>
 
+namespace adt {
+
 template<typename T>
 class pointer_iterator : public std::iterator<std::random_access_iterator_tag, T> {
 protected:
@@ -170,5 +172,7 @@ operator-(const pointer_iterator<T> &r1,
           const pointer_iterator<T> &r2) {
     return (r1.data_ - r2.data_);
 }
+
+} //adt
 
 #endif // __HAMMER_POINTER_ITERATOR_HPP__

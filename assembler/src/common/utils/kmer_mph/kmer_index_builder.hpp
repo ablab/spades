@@ -10,7 +10,6 @@
 
 #include "io/kmers/mmapped_reader.hpp"
 #include "io/kmers/mmapped_writer.hpp"
-#include "common/adt/pointer_iterator.hpp"
 #include "common/adt/kmer_vector.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
@@ -193,13 +192,13 @@ private:
       for (size_t sz : index) {
         auto end = std::next(beg, sz);
         ranges.push_back(adt::make_range(beg, end));
-        VERIFY(std::is_sorted(beg, end, array_less<typename Seq::DataType>()));
+        VERIFY(std::is_sorted(beg, end, adt::array_less<typename Seq::DataType>()));
         beg = end;
       }
 
       // Construct tree on top entries of runs
       adt::loser_tree<decltype(beg),
-                      array_less<typename Seq::DataType>> tree(ranges);
+              adt::array_less<typename Seq::DataType>> tree(ranges);
 
       if (tree.empty()) {
         FILE *g = fopen(ofname.c_str(), "ab");
@@ -209,14 +208,14 @@ private:
       }
 
       // Write it down!
-      KMerVector<Seq> buf(K, 1024*1024);
+      adt::KMerVector<Seq> buf(K, 1024*1024);
       auto pval = tree.pop();
       size_t total = 0;
       while (!tree.empty()) {
           buf.clear();
           for (size_t cnt = 0; cnt < buf.capacity() && !tree.empty(); ) {
               auto cval = tree.pop();
-              if (!array_equal_to<typename Seq::DataType>()(pval, cval)) {
+              if (!adt::array_equal_to<typename Seq::DataType>()(pval, cval)) {
                   buf.push_back(pval);
                   pval = cval;
                   cnt += 1;
@@ -242,11 +241,11 @@ private:
       return total;
     } else {
       // Sort the stuff
-      libcxx::sort(ins.begin(), ins.end(), array_less<typename Seq::DataType>());
+      libcxx::sort(ins.begin(), ins.end(), adt::array_less<typename Seq::DataType>());
 
       // FIXME: Use something like parallel version of unique_copy but with explicit
       // resizing.
-      auto it = std::unique(ins.begin(), ins.end(), array_equal_to<typename Seq::DataType>());
+      auto it = std::unique(ins.begin(), ins.end(), adt::array_equal_to<typename Seq::DataType>());
 
       MMappedRecordArrayWriter<typename Seq::DataType> os(ofname, Seq::GetDataSize(K));
       os.resize(it - ins.begin());

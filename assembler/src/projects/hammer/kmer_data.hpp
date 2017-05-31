@@ -114,7 +114,7 @@ class KMerData {
   }
 
  private:
-  array_vector<hammer::KMer::DataType> kmers_;
+  adt::array_vector<hammer::KMer::DataType> kmers_;
 
   KMerDataStorageType data_;
   KMerStorageType kmer_push_back_buffer_;

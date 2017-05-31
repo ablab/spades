@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
 
     std::vector<std::vector<size_t> > classes;
     if (stage(cfg::get().start_stage, hammer_config::HammerStage::HammingClustering)) {
-      ConcurrentDSU uf(kmer_data.size());
+      dsu::ConcurrentDSU uf(kmer_data.size());
       KMerHamClusterer clusterer(cfg::get().tau);
       INFO("Clustering Hamming graph.");
       clusterer.cluster(fs::append_path(cfg::get().working_dir, "kmers.hamcls"), kmer_data, uf);

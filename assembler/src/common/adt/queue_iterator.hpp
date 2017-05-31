@@ -11,6 +11,10 @@
 #include "utils/verify.hpp"
 #include <set>
 
+
+namespace adt {
+
+
 template<typename T, typename Comparator>
 class erasable_priority_queue {
 private:
@@ -20,13 +24,13 @@ public:
      * Be careful! This constructor requires Comparator to have default constructor even if you call it with
      * specified comparator. In this case just create default constructor with VERIFY(false) inside it.
      */
-    erasable_priority_queue(const Comparator& comparator = Comparator()) :
+    erasable_priority_queue(const Comparator &comparator = Comparator()) :
         storage_(comparator) {
     }
 
     template<typename InputIterator>
     erasable_priority_queue(InputIterator begin, InputIterator end,
-            const Comparator& comparator = Comparator()) :
+            const Comparator &comparator = Comparator()) :
         storage_(begin, end, comparator) {
     }
 
@@ -40,11 +44,11 @@ public:
         return *(storage_.begin());
     }
 
-    void push(const T& key) {
+    void push(const T &key) {
         storage_.insert(key);
     }
 
-    bool erase(const T& key) {
+    bool erase(const T &key) {
         bool res = storage_.erase(key) > 0;
         return res;
     }
@@ -78,7 +82,7 @@ class DynamicQueueIterator {
 
 public:
 
-    DynamicQueueIterator(const Comparator& comparator = Comparator()) :
+    DynamicQueueIterator(const Comparator &comparator = Comparator()) :
         current_actual_(false), current_deleted_(false), queue_(comparator) {
     }
 
@@ -87,11 +91,11 @@ public:
         queue_.insert(begin, end);
     }
 
-    void push(const T& to_add) {
+    void push(const T &to_add) {
         queue_.push(to_add);
     }
 
-    void erase(const T& to_remove) {
+    void erase(const T &to_remove) {
         if (current_actual_ && to_remove == current_) {
             current_deleted_ = true;
         }
@@ -114,7 +118,7 @@ public:
 
     const T& operator*() {
         VERIFY(!queue_.empty());
-        if(!current_actual_ || current_deleted_) {
+        if (!current_actual_ || current_deleted_) {
             current_ = queue_.top();
             current_actual_ = true;
             current_deleted_ = false;
@@ -137,7 +141,7 @@ public:
     }
 
 };
-
+} //adt
 
 #endif /* QUEUE_ITERATOR_HPP_ */
 

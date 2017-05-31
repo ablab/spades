@@ -23,7 +23,7 @@ struct kmer_index_traits {
 
   struct raw_equal_to {
     bool operator()(const Seq &lhs, const KMerRawReference rhs) {
-      return (array_equal_to<typename Seq::DataType>()(lhs.data(), lhs.data_size(), rhs));
+      return (adt::array_equal_to<typename Seq::DataType>()(lhs.data(), lhs.data_size(), rhs));
     }
   };
 

@@ -4,21 +4,21 @@
 #include <functional>
 #include <numeric>
 #include <cmath>
-
 namespace hll {
-  template<class T, unsigned precision = 24>
-  class hll {
+
+template<class T, unsigned precision = 24>
+class hll {
     static constexpr uint64_t m_ = 1ull << precision;
     static constexpr uint64_t mask_ = (m_ - 1) << (64 - precision);
-    
+
     constexpr double alpha(unsigned p) const {
       // constexpr switches are C++14 only :(
       return (p > 6 ?
               0.7213 / (1.0 + 1.079 / double(1ull << p)) :
               p == 6 ? 0.709 : p == 5 ? 0.697 : 0.673);
     }
-    
-   public:
+
+public:
     /// The hash digest type.
     typedef uint64_t digest;
 
@@ -26,8 +26,7 @@ namespace hll {
     typedef std::function<digest(const T)> hasher;
 
     hll(hasher h)
-      : hasher_(std::move(h)), data_(1ull << precision, 0)
-    { }
+            : hasher_(std::move(h)), data_(1ull << precision, 0) { }
 
 
     /// @tparam T The type of the element to insert.
@@ -46,24 +45,24 @@ namespace hll {
       for (size_t i = 0; i < data_.size(); ++i)
         data_[i] = std::max(data_[i], other.data_[i]);
     }
-    
+
     std::pair<double, bool> cardinality() const {
       // FIXME: Precision loss?
       // FIXME: Bias correction!
       double res = alpha(precision) * m_ * m_;
       double E = std::accumulate(data_.begin(), data_.end(),
-                                 0.0, [](double a, uint8_t b) { return a + exp2(-(double)b); });
+                                 0.0, [](double a, uint8_t b) { return a + exp2(-(double) b); });
       res /= E;
-      return { res, res > 5.0 * m_/2 };
+      return {res, res > 5.0 * m_ / 2};
     }
 
     void clear() {
-        std::fill(data_.begin(), data_.end(), 0);
+      std::fill(data_.begin(), data_.end(), 0);
     }
-      
-   private:
+
+private:
     hasher hasher_;
     std::vector<uint8_t> data_;
-  };
+};
 
-} //namespace hll
+} // hll

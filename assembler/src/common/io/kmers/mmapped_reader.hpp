@@ -8,12 +8,13 @@
 #ifndef HAMMER_MMAPPED_READER_HPP
 #define HAMMER_MMAPPED_READER_HPP
 
-#include "adt/pointer_iterator.hpp"
-#include "adt/array_vector.hpp"
+#include "common/adt/pointer_iterator.hpp"
+#include "common/adt/array_vector.hpp"
 
 #include "utils/verify.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
+#include "common/adt/pointer_iterator.hpp"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -200,8 +201,8 @@ public:
 template<typename T>
 class MMappedRecordReader : public MMappedReader {
 public:
-    typedef pointer_iterator<T> iterator;
-    typedef const pointer_iterator<T> const_iterator;
+    typedef adt::pointer_iterator<T> iterator;
+    typedef const adt::pointer_iterator<T> const_iterator;
 
     MMappedRecordReader(const std::string &FileName, bool unlink = true,
                         size_t blocksize = 64 * 1024 * 1024 / (sizeof(T) * (unsigned) getpagesize()) *
@@ -289,8 +290,8 @@ class MMappedRecordArrayReader : public MMappedReader {
     size_t elcnt_;
 
 public:
-    typedef typename array_vector<T>::iterator iterator;
-    typedef typename array_vector<T>::const_iterator const_iterator;
+    typedef typename adt::array_vector<T>::iterator iterator;
+    typedef typename adt::array_vector<T>::const_iterator const_iterator;
 
     MMappedRecordArrayReader(const std::string &FileName,
                              size_t elcnt = 1,

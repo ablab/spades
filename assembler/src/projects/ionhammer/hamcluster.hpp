@@ -16,8 +16,8 @@
 
 #include <iostream>
 #include <vector>
+#include <common/adt/concurrent_dsu.hpp>
 
-class ConcurrentDSU;
 
 typedef hammer::HSeq<(hammer::K + 1) / 2> SubKMer;
 
@@ -183,7 +183,7 @@ class KMerHamClusterer {
   KMerHamClusterer(unsigned tau)
       : tau_(tau) {}
 
-  void cluster(const std::string &prefix, const KMerData &data, ConcurrentDSU &uf);
+  void cluster(const std::string &prefix, const KMerData &data, dsu::ConcurrentDSU &uf);
  private:
   DECL_LOGGER("Hamming Clustering");
 };

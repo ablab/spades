@@ -65,7 +65,7 @@ private:
         size_t curr_depth_;
         size_t call_cnt_;
         Path reversed_edge_path_;
-        bag<VertexId> vertex_cnts_;
+        adt::bag<VertexId> vertex_cnts_;
 
         const Graph& g_;
         const DijkstraT& dijkstra_;

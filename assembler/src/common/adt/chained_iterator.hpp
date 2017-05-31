@@ -13,6 +13,8 @@
 #include <iterator>
 #include <vector>
 
+namespace adt {
+
 template<class It>
 class chained_iterator :
         public boost::iterator_facade<chained_iterator<It>,
@@ -72,5 +74,5 @@ private:
     std::vector<It> ends_;
 };
 
-
+} //adt
 #endif

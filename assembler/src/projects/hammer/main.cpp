@@ -150,7 +150,7 @@ int main(int argc, char * argv[]) {
       // Cluster the Hamming graph
       std::vector<std::vector<size_t> > classes;
       if (cfg::get().hamming_do || do_everything) {
-        ConcurrentDSU uf(Globals::kmer_data->size());
+        dsu::ConcurrentDSU uf(Globals::kmer_data->size());
         std::string ham_prefix = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls");
         INFO("Clustering Hamming graph.");
         if (cfg::get().general_tau > 1) {

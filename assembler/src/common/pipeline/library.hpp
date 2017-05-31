@@ -88,7 +88,7 @@ public:
         inner_iterator right_;
     };
 
-    typedef chained_iterator<std::vector<std::string>::const_iterator> single_reads_iterator;
+    typedef typename adt::chained_iterator<std::vector<std::string>::const_iterator> single_reads_iterator;
 
     SequencingLibraryBase()
             : type_(LibraryType::PairedEnd), orientation_(LibraryOrientation::FR) {}
@@ -261,8 +261,8 @@ public:
 public:
     typedef typename LibraryStorage::iterator iterator;
     typedef typename LibraryStorage::const_iterator const_iterator;
-    typedef chained_iterator<typename Library::single_reads_iterator> single_reads_iterator;
-    typedef chained_iterator<typename Library::paired_reads_iterator> paired_reads_iterator;
+    typedef adt::chained_iterator<typename Library::single_reads_iterator> single_reads_iterator;
+    typedef adt::chained_iterator<typename Library::paired_reads_iterator> paired_reads_iterator;
 
     DataSet() {}
     explicit DataSet(const std::string &path) { load(path); }

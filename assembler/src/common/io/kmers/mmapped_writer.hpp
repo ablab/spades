@@ -98,8 +98,8 @@ public:
 template<typename T>
 class MMappedRecordWriter : public MMappedWriter {
 public:
-    typedef pointer_iterator<T> iterator;
-    typedef const pointer_iterator<T> const_iterator;
+    typedef adt::pointer_iterator<T> iterator;
+    typedef const adt::pointer_iterator<T> const_iterator;
 
     MMappedRecordWriter() = default;
 
@@ -142,8 +142,8 @@ template<typename T>
 class MMappedRecordArrayWriter : public MMappedWriter {
     size_t elcnt_;
 public:
-    typedef typename array_vector<T>::iterator iterator;
-    typedef typename array_vector<T>::const_iterator const_iterator;
+    typedef typename adt::array_vector<T>::iterator iterator;
+    typedef typename adt::array_vector<T>::const_iterator const_iterator;
 
     MMappedRecordArrayWriter() = default;
 

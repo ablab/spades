@@ -5,6 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+//obsolete! Consider to remove
 #pragma once 
 
 #include <unordered_set>

@@ -62,7 +62,8 @@ public:
 #define IS_TRIVIALLY_COPYABLE(T) std::is_trivially_copyable<T>::value
 #endif
 
-    static_assert(IS_TRIVIALLY_COPYABLE(value_type), "Value type for SmallPODVector should be trivially copyable");
+    static_assert(IS_TRIVIALLY_COPYABLE(value_type),
+                  "Value type for SmallPODVector should be trivially copyable");
 
 #undef IS_TRIVIALLY_COPYABLE
 
@@ -394,6 +395,5 @@ public:
 #undef LIKELY
 #undef UNLIKELY
 
-}
-
+} //adt
 #endif // __ADT_SMALL_POD_VECTOR__

@@ -8,7 +8,10 @@ namespace adt {
 template<typename IntegerType>
 IntegerType ilog2(IntegerType x) {
     IntegerType lg = 0;
-    while (x >= 256) { x >>= 8; lg += 8; }
+    while (x >= 256) {
+        x >>= 8;
+        lg += 8;
+    }
     while (x >>= 1) lg += 1;
 
     return lg;
@@ -20,9 +23,9 @@ IntegerType ilog2ceil(IntegerType x) {
 }
 
 template<class It, class Cmp>
-class loser_tree  {
+class loser_tree {
     typedef typename std::iterator_traits<It>::value_type value_type;
-    
+
     size_t log_k_;
     size_t k_;
     std::vector<size_t> entry_;
@@ -34,10 +37,10 @@ class loser_tree  {
             return true;
         if (a.end() == a.begin())
             return false;
-        
+
         return inner_cmp_(*a.begin(), *b.begin());
     }
-    
+
     size_t init_winner(size_t root) {
         if (root >= k_)
             return root - k_;
@@ -53,7 +56,7 @@ class loser_tree  {
         }
     }
 
-  public:
+public:
     loser_tree(const std::vector<adt::iterator_range<It>> &runs,
                Cmp inner_cmp = Cmp())
             : inner_cmp_(inner_cmp), runs_(runs) {
@@ -61,11 +64,11 @@ class loser_tree  {
         k_ = (size_t(1) << log_k_);
 
         // fprintf(stderr, "k: %zu, logK: %zu, nruns: %zu\n", k_, log_k_, runs.size());
-        
+
         entry_.resize(2 * k_);
         for (size_t i = 0; i < k_; ++i)
             entry_[k_ + i] = i;
-        
+
         // Insert sentinels
         for (size_t i = runs.size(); i < k_; ++i)
             runs_.emplace_back(adt::make_range(runs_[0].end(), runs_[0].end()));
@@ -96,7 +99,7 @@ class loser_tree  {
         const auto &winner = runs_[winner_index];
         return (winner.begin() == winner.end());
     }
-    
+
 
     template<class It2>
     size_t multi_merge(It2 out, size_t amount = -1ULL) {
@@ -112,7 +115,7 @@ class loser_tree  {
 
             winner_index = replay(winner_index);
         }
-        
+
         entry_[0] = winner_index;
 
         return cnt;
@@ -125,10 +128,10 @@ class loser_tree  {
 
         return res;
     }
-    
 
-  private:
+
+private:
     std::vector<adt::iterator_range<It>> runs_;
 };
 
-}
+} //adt
