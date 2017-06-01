@@ -196,8 +196,8 @@ public:
         return data_[index];
     }
 
-    size_t ShiftLength(size_t index) const {
-        return gap_len_[index].gap + g_.length(At(index));
+    int ShiftLength(size_t index) const {
+        return gap_len_[index].gap + (int) g_.length(At(index));
     }
 
     // Length from beginning of i-th edge to path end for forward directed path: L(e1 + e2 + ... + eN)

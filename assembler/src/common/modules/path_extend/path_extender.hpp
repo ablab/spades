@@ -54,27 +54,24 @@ class OverlapFindingHelper {
     }
 
 
-    //TODO Think again about gaps, additional edges with weird gaps etc...
     pair<Range, Range> ComparePaths(const BidirectionalPath &path1,
                                     const BidirectionalPath &path2,
                                     size_t start2) const {
         TRACE("Comparing paths " << path1.GetId() << " and " << path2.GetId());
         //TODO change to edit distance?
-        size_t shift1 = 0;
+        int shift1 = 0;
         //path1 is always matched from the start
         const size_t start1 = 0;
         size_t end1 = start1;
         size_t end2 = start2;
 
         for (size_t i = start1; i < path1.Size(); ++i) {
-            //TODO is it ok that match allowed via arbitrary large gap?
-//            shift1 += path1.GapAt(i).gap; //First gap is always zero
-            if (shift1 > max_diff_)
+            if (abs(shift1) > int(max_diff_))
                 break;
 
             bool match = false;
             size_t j = end2;
-            size_t shift2 = 0;
+            int shift2 = 0;
             for (; j < path2.Size(); ++j) {
                 if (end1 == 0) {
                     //Force first match to start with pos2
@@ -82,18 +79,15 @@ class OverlapFindingHelper {
                         break;
                     }
                 }
-//                } else {
-//                    shift2 += path2.GapAt(j).gap;
-//                }
 
-                if (shift2 > max_diff_) //shift1 + max_diff)
+                if (abs(shift2) > int(max_diff_))
                     break;
                 if (path1.At(i) == path2.At(j) &&
-                    (&path1 != &path2 || i != j)) {
+                        abs(shift1 + path1.GapAt(i).gap - shift2 - path2.GapAt(j).gap) <= int(max_diff_) &&
+                        (&path1 != &path2 || i != j)) {
                     match = true;
                     break;
                 } else {
-//                    shift2 += g_.length(path2.At(j));
                     shift2 += path2.ShiftLength(j);
                 }
             }
@@ -102,7 +96,6 @@ class OverlapFindingHelper {
                 end2 = j+1;
                 shift1 = 0;
             } else {
-//                shift1 += g_.length(path1.At(i));
                 shift1 += path1.ShiftLength(i);
             }
         }
