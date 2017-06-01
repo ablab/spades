@@ -115,9 +115,9 @@ public:
         RecountLengths();
     }
 
-    BidirectionalPath(const Graph& g, EdgeId startingEdge)
+    BidirectionalPath(const Graph& g, EdgeId e)
             : BidirectionalPath(g) {
-        PushBack(startingEdge);
+        PushBack(e);
     }
 
     BidirectionalPath(const BidirectionalPath& path)

@@ -21,7 +21,6 @@ namespace path_extend {
 using namespace debruijn_graph;
 using namespace std;
 
-
 vector<shared_ptr<ConnectionCondition>>
     PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage& edge_storage) const {
 
@@ -216,7 +215,6 @@ void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const stri
     }
 }
 
-//FIXME move out of this class
 void FilterInterstandBulges(PathContainer &paths) {
     DEBUG ("Try to delete paths with interstand bulges");
     for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
@@ -233,21 +231,21 @@ void FilterInterstandBulges(PathContainer &paths) {
 void PathExtendLauncher::FinalizePaths(PathContainer &paths,
                                        GraphCoverageMap &cover_map,
                                        const PathExtendResolver &resolver) const {
-
+    //sorting is currently needed to retain overlaps in longest paths
+    paths.SortByLength(false);
     if (params_.pset.remove_overlaps) {
         resolver.RemoveOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff,
+                                //TODO introduce config parameter
+                                params_.mode == config::pipeline_type::rna,
                                 params_.pset.cut_all_overlaps);
-    } else if (params_.mode == config::pipeline_type::rna) {
-        resolver.RemoveRNAOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
     } else {
         INFO("Overlaps will not be removed");
         INFO("Deduplicating paths");
         resolver.Deduplicate(paths, cover_map, params_.min_edge_len,
-                             //FIXME discuss with Andrey
                              params_.max_path_diff, /*equal_only*/ false);
     }
 
-    //FIXME do we still need it?
+    //TODO do we still need it?
     if (params_.avoid_rc_connections) {
         FilterInterstandBulges(paths);
     }
@@ -339,6 +337,7 @@ void PathExtendLauncher::FillLongReadsCoverageMaps() {
 
 void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
     //FIXME magic constants
+    //FIXME need to change for correct usage of prelimnary contigs in loops
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer_pb(gp_, 500, 0.5);
 
     INFO("Filling backbone edges for long reads scaffolding...");
@@ -457,7 +456,6 @@ void PathExtendLauncher::Launch() {
     seeds.SortByLength();
     DebugOutputPaths(seeds, "init_paths");
 
-    //FIXME why was subscription disabled?
     GraphCoverageMap cover_map(gp_.g);
     Extenders extenders = ConstructExtenders(cover_map);
     auto composite_extender =
@@ -471,15 +469,15 @@ void PathExtendLauncher::Launch() {
 
     DebugOutputPaths(paths, "raw_paths");
 
-    //FIXME think about ordering of path polisher vs loop traversal
+    //TODO think about ordering of path polisher vs loop traversal
     TraverseLoops(paths, cover_map);
     DebugOutputPaths(paths, "loop_traveresed");
 
-    //FIXME does path polishing correctly work with coverage map
+    //TODO does path polishing correctly work with coverage map
     PolishPaths(paths, gp_.contig_paths, cover_map);
     DebugOutputPaths(gp_.contig_paths, "polished_paths");
 
-    //FIXME use move assignment to original map here
+    //TODO use move assignment to original map here
     GraphCoverageMap polished_map(gp_.g, gp_.contig_paths, true);
     FinalizePaths(gp_.contig_paths, polished_map, resolver);
     DebugOutputPaths(gp_.contig_paths, "final_paths");

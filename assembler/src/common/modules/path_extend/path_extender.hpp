@@ -54,6 +54,7 @@ class OverlapFindingHelper {
     }
 
 
+    //TODO Think again about gaps, additional edges with weird gaps etc...
     pair<Range, Range> ComparePaths(const BidirectionalPath &path1,
                                     const BidirectionalPath &path2,
                                     size_t start2) const {
@@ -198,6 +199,7 @@ public:
         } else {
             for (size_t i = 0; i < path.Size(); ++i) {
                 EdgeId e = path.At(i);
+                //TODO add optimization in this case
                 if (g_.length(e) >= min_edge_len_) {
                     utils::insert_all(candidates, coverage_map_.GetCoveringPaths(e));
                 }

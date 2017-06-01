@@ -28,9 +28,8 @@ inline void PopFront(BidirectionalPath * const path, size_t cnt) {
 class DecentOverlapRemover {
     const Graph &g_;
     const PathContainer &paths_;
-    const GraphCoverageMap &coverage_map_;
-    SplitsStorage &splits_;
     const OverlapFindingHelper helper_;
+    SplitsStorage splits_;
 
     bool AlreadyAdded(PathPtr ptr, size_t pos) const {
         auto it = splits_.find(ptr);
@@ -100,24 +99,7 @@ class DecentOverlapRemover {
             utils::insert_all(splits_[&path], overlap_poss);
     }
 
-public:
-    //FIXME First need to remove subpaths
-    //FIXME Order path container in order of increasing length for retain_one to work properly!!!
-    DecentOverlapRemover(const Graph &g,
-                         const PathContainer &paths,
-                         GraphCoverageMap &coverage_map,
-                         SplitsStorage &splits,
-                         size_t min_edge_len,// = 0,
-                         size_t max_diff) :// = 0) :
-            g_(g),
-            paths_(paths),
-            coverage_map_(coverage_map),
-            splits_(splits),
-            helper_(g, coverage_map,
-                    min_edge_len, max_diff) {
-    }
-
-    void MarkOverlaps(bool end_start_only, bool retain_one_copy) {
+    void InnerMarkOverlaps(bool end_start_only, bool retain_one_copy) {
         for (auto path_pair: paths_) {
             //FIXME think if this "optimization" is necessary
             if (path_pair.first->Size() == 0)
@@ -127,9 +109,36 @@ public:
         }
     }
 
-//    const SplitsStorage& overlaps() const {
-//        return splits_;
-//    }
+public:
+    //FIXME First need to remove subpaths
+    //FIXME Order path container in order of increasing length for retain_one to work properly!!!
+    DecentOverlapRemover(const Graph &g,
+                         const PathContainer &paths,
+                         GraphCoverageMap &coverage_map,
+                         size_t min_edge_len,// = 0,
+                         size_t max_diff) :// = 0) :
+            g_(g),
+            paths_(paths),
+            helper_(g, coverage_map,
+                    min_edge_len, max_diff) {
+    }
+
+    //Note that during start/end removal all repeat instance have to be cut
+//    void MarkOverlaps(bool end_start_only = false, bool retain_one_copy = true) {
+    void MarkOverlaps(bool end_start_only, bool retain_one_copy) {
+        VERIFY(!end_start_only || !retain_one_copy);
+        INFO("Marking start/end overlaps");
+        InnerMarkOverlaps(/*end/start overlaps only*/ true, /*retain one copy*/ false);
+        if (!end_start_only) {
+            INFO("Marking remaining overlaps");
+            InnerMarkOverlaps(/*end/start overlaps only*/ false, retain_one_copy);
+        }
+    }
+
+    const SplitsStorage& overlaps() const {
+        return splits_;
+    }
+
 private:
     DECL_LOGGER("DecentOverlapRemover");
 };
@@ -278,15 +287,9 @@ public:
         deduplicator.Deduplicate();
     }
 
-    void RemoveRNAOverlaps(PathContainer& /*paths*/, GraphCoverageMap& /*coverage_map*/,
-                          size_t /*min_edge_len*/, size_t /*max_path_diff*/) const {
-
-        VERIFY(false);
-    }
-
     void RemoveOverlaps(PathContainer &paths, GraphCoverageMap &coverage_map,
                         size_t min_edge_len, size_t max_path_diff,
-                        bool cut_all) const {
+                        bool end_start_only, bool cut_all) const {
         INFO("Removing overlaps");
         VERIFY(min_edge_len == 0 && max_path_diff == 0);
 
@@ -295,19 +298,13 @@ public:
 
         INFO("Deduplicated");
 
-        SplitsStorage splits;
-
-        DecentOverlapRemover overlap_remover(g_, paths, coverage_map, splits,
+        DecentOverlapRemover overlap_remover(g_, paths, coverage_map,
                                              min_edge_len, max_path_diff);
-        //FIXME can't we simplify logic?
-        //DO NOT CHANGE ORDER!
-        INFO("Marking start/end overlaps");
-        overlap_remover.MarkOverlaps(/*retain one copy*/ false,/*end/start overlaps only*/ true);
-        INFO("Marking remaining overlaps");
-        overlap_remover.MarkOverlaps(/*retain one copy*/ !cut_all,/*end/start overlaps only*/ false);
+        INFO("Marking overlaps");
+        overlap_remover.MarkOverlaps(end_start_only, !cut_all);
 
         INFO("Splitting paths");
-        PathSplitter splitter(splits, paths, coverage_map);
+        PathSplitter splitter(overlap_remover.overlaps(), paths, coverage_map);
         splitter.Split();
         //splits are invalidated after this point
 
