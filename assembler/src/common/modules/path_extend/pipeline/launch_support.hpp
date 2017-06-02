@@ -51,8 +51,7 @@ struct PathExtendParamsContainer {
         uneven_depth(uneven_depth_),
         avoid_rc_connections(avoid_rc_connections_),
         use_scaffolder(use_scaffolder_),
-        traverse_loops(true),
-        detect_repeats_online(mode_ != config::pipeline_type::meta && mode_ != config::pipeline_type::rna)
+        traverse_loops(true)
     {
         if (!(use_scaffolder && pset.scaffolder_options.enabled)) {
             traverse_loops = false;
@@ -82,7 +81,6 @@ struct PathExtendParamsContainer {
     bool avoid_rc_connections;
     bool use_scaffolder;
     bool traverse_loops;
-    bool detect_repeats_online;
 
     size_t min_edge_len;
     size_t max_path_diff;

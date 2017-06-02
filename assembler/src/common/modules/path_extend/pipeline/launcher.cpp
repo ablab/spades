@@ -447,8 +447,7 @@ void PathExtendLauncher::Launch() {
                                          used_unique_storage,
                                          extenders,
                                          params_.max_path_diff,
-                                         params_.pset.extension_options.max_repeat_length,
-                                         params_.detect_repeats_online);
+                                         params_.pset.extension_options.max_repeat_length);
 
     auto paths = resolver.ExtendSeeds(seeds, composite_extender);
     paths.FilterEmptyPaths();

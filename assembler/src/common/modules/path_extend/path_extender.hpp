@@ -554,86 +554,6 @@ public:
     }
 };
 
-class RepeatDetector {
-public:
-    RepeatDetector(const Graph& g, const GraphCoverageMap& cov_map, size_t max_repeat_len)
-            : g_(g),
-              cov_map_(cov_map),
-              used_paths_(),
-              repeat_len_(max_repeat_len){
-        empty_ = new BidirectionalPath(g_);
-    }
-    ~RepeatDetector() {
-        delete empty_;
-    }
-
-    BidirectionalPath* RepeatPath(const BidirectionalPath& p) {
-        if (p.Size() == 0) {
-            return empty_;
-        }
-        EdgeId last_e = p.Back();
-        BidirectionalPathSet cov_paths = cov_map_.GetCoveringPaths(last_e);
-        DEBUG("cov paths for e " << g_.int_id(last_e) << " size " << cov_paths.size());
-        size_t max_common_size = 0;
-        BidirectionalPath* result_p = empty_;
-        for (BidirectionalPath* cov_p : cov_paths) {
-            if (used_paths_.find(cov_p) == used_paths_.end() || cov_p == &p || cov_p == p.GetConjPath()) {
-                continue;
-            }
-            size_t common_size = MaxCommonSize(p, *cov_p);
-            DEBUG("max comon size with path " << cov_p->GetId() << " is " << common_size);
-            if (common_size == 0) {
-                continue;
-            }
-            VERIFY(common_size <= p.Size());
-            if (p.LengthAt(p.Size() - common_size) > repeat_len_) {
-                DEBUG("repeat from " << (p.Size() - common_size) << " length " << p.LengthAt(p.Size() - common_size) << " repeat length " << repeat_len_);
-                max_common_size = max(common_size, max_common_size);
-                result_p = cov_p;
-            }
-        }
-        used_paths_.insert(&p);
-        DEBUG("max common size " << max_common_size);
-        return result_p;
-    }
-    size_t MaxCommonSize(const BidirectionalPath& p1, const BidirectionalPath& p2) const {
-        DEBUG("max coomon size ")
-        EdgeId last_e = p1.Back();
-        vector<size_t> positions2 = p2.FindAll(last_e);
-        DEBUG("pos size " << positions2.size())
-        size_t max_common_size = 0;
-        for (size_t pos2 : positions2) {
-            size_t common_size = MaxCommonSize(p1, p1.Size() - 1, p2, pos2);
-            DEBUG("max common size from " << pos2 << " is " << common_size);
-            max_common_size = max(max_common_size, common_size);
-        }
-        return max_common_size;
-    }
-private:
-    size_t MaxCommonSize(const BidirectionalPath& p1, size_t pos1, const BidirectionalPath& p2, size_t pos2) const {
-        int i1 = (int) pos1;
-        int i2 = (int) pos2;
-        while (i1 >= 0 && i2 >= 0 &&
-                p1.At((size_t) i1) == p2.At((size_t) i2) &&
-                p1.GapAt((size_t) i1) == p2.GapAt((size_t) i2)) {
-            i1--;
-            i2--;
-        }
-        if (i1 >=0 && i2>=0 && p1.At((size_t) i1) == p2.At((size_t) i2)) {
-            i1--;
-            i2--;
-        }
-
-        VERIFY(i1 <= (int)pos1);
-        return std::max(size_t((int) pos1 - i1), (size_t)1);
-    }
-    const Graph& g_;
-    const GraphCoverageMap& cov_map_;
-    set<const BidirectionalPath*> used_paths_;
-    size_t repeat_len_;
-    BidirectionalPath* empty_;
-};
-
 class PathExtender {
 public:
     explicit PathExtender(const Graph &g):
@@ -655,17 +575,14 @@ public:
                       UsedUniqueStorage &unique,
                       const vector<shared_ptr<PathExtender>> &pes,
                       size_t max_diff_len,
-                      size_t max_repeat_length,
-                      bool detect_repeats_online)
+                      size_t max_repeat_length)
             : g_(g),
               cover_map_(cov_map),
               used_storage_(unique),
               //FIXME magic constant
-              repeat_detector_(g, cover_map_, 2 * max_repeat_length),
               extenders_(pes),
               max_diff_len_(max_diff_len),
-              max_repeat_len_(max_repeat_length),
-              detect_repeats_online_(detect_repeats_online) {
+              max_repeat_len_(max_repeat_length) {
     }
 
     void GrowAll(PathContainer& paths, PathContainer& result) {
@@ -679,66 +596,17 @@ public:
         while (MakeGrowStep(path, paths_storage)) { }
     }
 
-    void GrowPathSimple(BidirectionalPath& path, PathContainer* paths_storage) {
-        while (MakeGrowStep(path, paths_storage, false)) { }
-    }
 
 private:
     const Graph &g_;
     GraphCoverageMap &cover_map_;
     UsedUniqueStorage &used_storage_;
-    RepeatDetector repeat_detector_;
     vector<shared_ptr<PathExtender>> extenders_;
     size_t max_diff_len_;
     size_t max_repeat_len_;
-    bool detect_repeats_online_;
 
-    bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage,
-                      bool detect_repeats_online_local = true) {
+    bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) {
         DEBUG("make grow step composite extender");
-        if (detect_repeats_online_ && detect_repeats_online_local) {
-            BidirectionalPath *repeat_path = repeat_detector_.RepeatPath(path);
-            size_t repeat_size = repeat_detector_.MaxCommonSize(path, *repeat_path);
-
-            if (repeat_size > 0) {
-                DEBUG("repeat with length " << repeat_size);
-                path.PrintDEBUG();
-                repeat_path->PrintDEBUG();
-                BidirectionalPath repeat = path.SubPath(path.Size() - repeat_size);
-                int begin_repeat = repeat_path->FindLast(repeat);
-                VERIFY(begin_repeat > -1);
-                size_t end_repeat = (size_t) begin_repeat + repeat_size;
-                DEBUG("not consistent subpaths ");
-                BidirectionalPath begin1 = path.SubPath(0, path.Size() - repeat_size);
-                begin1.PrintDEBUG();
-                BidirectionalPath begin2 = repeat_path->SubPath(0, begin_repeat);
-                begin2.PrintDEBUG();
-                int gpa_in_repeat_path = repeat_path->GapAt(begin_repeat).gap;
-                BidirectionalPath end2 = repeat_path->SubPath(end_repeat);
-                BidirectionalPath begin1_conj = path.SubPath(0, path.Size() - repeat_size + 1).Conjugate();
-                BidirectionalPath begin2_conj = repeat_path->SubPath(0, begin_repeat + 1).Conjugate();
-                pair<size_t, size_t> last = ComparePaths(0, 0, begin1_conj, begin2_conj, max_diff_len_);
-                DEBUG("last " << last.first << " last2 " << last.second);
-                Gap gap = path.GapAt(path.Size() - repeat_size);
-                path.Clear();
-                repeat_path->Clear();
-
-                if (begin2.Size() == 0 || last.second != 0) { //TODO: incorrect: common edges, but then different ends
-                    path.PushBack(begin1);
-                    repeat_path->PushBack(begin2);
-                } else {
-                    gap = Gap(gpa_in_repeat_path);
-                    path.PushBack(begin2);
-                    repeat_path->PushBack(begin1);
-                }
-
-                path.PushBack(repeat, gap);
-                path.PushBack(end2);
-                DEBUG("new path");
-                path.PrintDEBUG();
-                return false;
-            }
-        }
 
         size_t current = 0;
         while (current < extenders_.size()) {
