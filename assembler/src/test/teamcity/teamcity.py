@@ -96,6 +96,10 @@ try:
     contigs = get_contigs_list(args, dataset_info, True)
     save_contigs(args, output_dir, contig_storage_dir, contigs, rewrite_latest)
 
+    #save quast report as build artifact
+    artifact_dir = os.path.join(working_dir, "quast_reports")
+    save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, artifact_dir)
+
     sys.exit(exit_code)
 
 except SystemExit:

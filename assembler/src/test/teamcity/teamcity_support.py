@@ -482,7 +482,7 @@ def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir)
         for name, file_name, prefix, opts in contigs:
             fn = os.path.join(output_dir, file_name + ".fasta") 
             if not os.path.exists(fn):
-                log.error('File for comparison is no found: ' + fn)
+                log.err('File for comparison is not found: ' + fn)
                 exit_code = 8
 
             latest_ctg = os.path.join(contig_storage_dir, "latest_" + name + ".fasta")
@@ -724,4 +724,44 @@ def save_contigs(args, output_dir, contig_storage_dir, contigs, rewrite_latest):
             if os.path.islink(lc):
                 os.remove(lc)
             os.symlink(os.path.join(contig_storage_dir, saved_ctg_name), lc)
+
+
+# Save QUAST report as artifact
+def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, artifact_dir):
+    working_dir = os.getcwd()
+    if not (dataset_info.mode in ("standard", "tru", "dip", "meta", "plasmid")):
+        return
+
+    if not os.path.exists(artifact_dir):
+        os.makedirs(artifact_dir)
+
+    log.log("======= Saving report of to " + artifact_dir + " =======")
+    for name, file_name, prefix, opts in contigs:
+        quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS_CMP_" + name.upper())
+
+        if not os.path.exists(quast_output_dir):
+            if not ('quast_params' in dataset_info.__dict__ and dataset_info.quast_params):
+                log.err('QUAST params are not set')
+                return
+
+            fn = os.path.join(output_dir, file_name + ".fasta") 
+            if not os.path.exists(fn):
+                log.err('File for analysis is no found: ' + fn)
+                continue
+
+            latest_ctg = os.path.join(contig_storage_dir, "latest_" + name + ".fasta")
+            flist = [fn]
+            if not os.path.exists(fn):
+                flist.append(latest_ctg)
+
+            run_quast(dataset_info, flist, quast_output_dir, opts)
+
+        compressed_report = os.path.join(artifact_dir, name + "_report.zip")
+        if os.path.exists(compressed_report):
+            os.remove(compressed_report)
+
+        log.log("Saving report of " + name + " to " + compressed_report)
+        os.chdir(quast_output_dir)
+        os.system("zip -0r " + compressed_report + " * > /dev/null")
+        os.chdir(working_dir)
 
