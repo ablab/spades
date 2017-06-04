@@ -22,7 +22,7 @@ public:
 
     virtual ~KMerSplitter() {}
 
-    virtual fs::files_t Split(size_t num_files) = 0;
+    virtual fs::files_t Split(size_t num_files, unsigned nthreads) = 0;
 
     size_t kmer_size() const {
         return Seq::GetDataSize(K_) * sizeof(typename Seq::DataType);
@@ -220,7 +220,7 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size, seed),
       streams_(streams), contigs_(contigs_stream), rs_({0 ,0 ,0}) {}
 
-  fs::files_t Split(size_t num_files) override;
+  fs::files_t Split(size_t num_files, unsigned nthreads) override;
 
   size_t read_length() const { return rs_.max_read_length_; }
   ReadStatistics stats() const { return rs_; }
@@ -246,17 +246,14 @@ DeBruijnReadKMerSplitter<Read, KmerFilter>::FillBufferFromStream(ReadStream &str
 }
 
 template<class Read, class KmerFilter>
-fs::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files) {
-  unsigned nthreads = (unsigned) streams_.size();
-
-  INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
+fs::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files, unsigned nthreads) {
   fs::files_t out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
   size_t counter = 0, rl = 0, bases = 0, n = 15;
   streams_.reset();
   while (!streams_.eof()) {
 #   pragma omp parallel for num_threads(nthreads) reduction(+ : counter) reduction(+ : bases) shared(rl)
-    for (unsigned i = 0; i < nthreads; ++i) {
+      for (unsigned i = 0; i < (unsigned)streams_.size(); ++i) {
       ReadStatistics stats = FillBufferFromStream(streams_[i], i);
       counter += stats.reads_;
       bases += stats.bases_;
@@ -320,7 +317,7 @@ class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
     kmers_.push_back(file);
   }
 
-  fs::files_t Split(size_t num_files) override;
+    fs::files_t Split(size_t num_files, unsigned nthreads) override;
 };
 
 template<class KmerFilter>
@@ -343,23 +340,21 @@ inline size_t DeBruijnKMerKMerSplitter<KmerFilter>::FillBufferFromKMers(kmer_ite
 }
 
 template<class KmerFilter>
-fs::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_files) {
-  unsigned nthreads = (unsigned) kmers_.size();
-
-  INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
+fs::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_files, unsigned nthreads) {
+  unsigned nit = (unsigned) kmers_.size();
 
   fs::files_t out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
   size_t counter = 0, n = 10;
   std::vector<kmer_iterator> its;
-  its.reserve(nthreads);
+  its.reserve(nit);
   for (auto it = kmers_.begin(), et = kmers_.end(); it != et; ++it)
     its.emplace_back(*it, RtSeq::GetDataSize(K_source_));
 
   while (std::any_of(its.begin(), its.end(),
                      [](const kmer_iterator &it) { return it.good(); })) {
 #   pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
-    for (unsigned i = 0; i < nthreads; ++i)
+    for (unsigned i = 0; i < nit; ++i)
       counter += FillBufferFromKMers(its[i], i);
 
     this->DumpBuffers(out);

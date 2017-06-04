@@ -41,7 +41,6 @@ class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {
   using Seq = RtSeq;
 
   std::vector<std::string> files_;
-  unsigned nthreads_;
   size_t read_buffer_size_;
 
   class BufferFiller {
@@ -78,17 +77,15 @@ class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {
 
 
   public:
-    ParallelSortingSplitter(const std::string &workdir, unsigned K, unsigned nthreads, size_t read_buffer_size = 0)
-            : KMerSortingSplitter<Seq>(workdir, K), nthreads_(nthreads), read_buffer_size_(read_buffer_size) {}
+    ParallelSortingSplitter(const std::string &workdir, unsigned K, size_t read_buffer_size = 0)
+            : KMerSortingSplitter<Seq>(workdir, K), read_buffer_size_(read_buffer_size) {}
 
     void push_back(const std::string &filename) {
         files_.push_back(filename);
     }
 
-    fs::files_t Split(size_t num_files) override {
-        INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
-
-        fs::files_t out = PrepareBuffers(num_files, nthreads_, read_buffer_size_);
+    fs::files_t Split(size_t num_files, unsigned nthreads) override {
+        fs::files_t out = PrepareBuffers(num_files, nthreads, read_buffer_size_);
 
         size_t n = 10;
         BufferFiller filler(*this, K());
@@ -96,7 +93,7 @@ class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {
             INFO("Processing " << file);
             auto irs = io::EasyStream(file, true, true);
             while (!irs->eof()) {
-                hammer::ReadProcessor rp(nthreads_);
+                hammer::ReadProcessor rp(nthreads);
                 rp.Run(*irs, filler);
                 DumpBuffers(out);
                 VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
@@ -160,7 +157,7 @@ int main(int argc, char* argv[]) {
         INFO("# of threads to use: " << nthreads);
 
         SimplePerfectHashMap index(K, workdir);
-        ParallelSortingSplitter splitter(workdir, K, nthreads, read_buffer_size);
+        ParallelSortingSplitter splitter(workdir, K, read_buffer_size);
         if (options.count("dataset")) {
             io::DataSet<> idataset;
             idataset.load(dataset);

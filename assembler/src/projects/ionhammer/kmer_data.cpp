@@ -24,7 +24,7 @@ class HammerKMerSplitter : public utils::KMerSortingSplitter<HKMer> {
   HammerKMerSplitter(const std::string &work_dir)
       : KMerSortingSplitter<HKMer>(work_dir, hammer::K) {}
 
-  fs::files_t Split(size_t num_files) override;
+  fs::files_t Split(size_t num_files, unsigned nthreads) override;
 
   friend class BufferFiller;
 };
@@ -60,11 +60,8 @@ class BufferFiller {
   }
 };
 
-fs::files_t HammerKMerSplitter::Split(size_t num_files) {
-  unsigned nthreads = cfg::get().max_nthreads;
+fs::files_t HammerKMerSplitter::Split(size_t num_files, unsigned nthreads) {
   size_t reads_buffer_size = cfg::get().count_split_buffer;
-
-  INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
   fs::files_t out = PrepareBuffers(num_files, nthreads, reads_buffer_size);
 

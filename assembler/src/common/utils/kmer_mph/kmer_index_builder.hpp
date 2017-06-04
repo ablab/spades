@@ -103,9 +103,11 @@ public:
 
   size_t Count(unsigned num_buckets, unsigned num_threads) override {
     unsigned K = splitter_.K();
+    unsigned num_files = num_buckets * num_threads;
 
     // Split k-mers into buckets.
-    fs::files_t raw_kmers = splitter_.Split(num_buckets * num_threads);
+    INFO("Splitting kmer instances into " << num_files << " buckets using " << num_threads << " threads. This might take a while.");
+    fs::files_t raw_kmers = splitter_.Split(num_files, num_threads);
 
     INFO("Starting k-mer counting.");
     size_t kmers = 0;

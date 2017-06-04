@@ -19,18 +19,17 @@ class DeBruijnGraphKMerSplitter : public utils::DeBruijnKMerSplitter<KmerFilter>
     typedef typename adt::iterator_range<EdgeIt> EdgeRange;
 
     const Graph &g_;
-    unsigned nthreads_;
 
     size_t FillBufferFromEdges(EdgeRange &r, unsigned thread_id);
 
 public:
     DeBruijnGraphKMerSplitter(const std::string &work_dir,
                               unsigned K, const Graph &g,
-                              unsigned nthreads, size_t read_buffer_size = 0)
+                              size_t read_buffer_size = 0)
             : utils::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size),
-              g_(g), nthreads_(nthreads) {}
+              g_(g) {}
 
-    fs::files_t Split(size_t num_files) override;
+    fs::files_t Split(size_t num_files, unsigned nthreads) override;
 };
 
 template<class Graph, class KmerFilter>
@@ -50,25 +49,23 @@ DeBruijnGraphKMerSplitter<Graph, KmerFilter>::FillBufferFromEdges(EdgeRange &r,
 }
 
 template<class Graph, class KmerFilter>
-fs::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files) {
-    INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
-
-    fs::files_t out = this->PrepareBuffers(num_files, nthreads_, this->read_buffer_size_);
+fs::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files, unsigned nthreads) {
+    fs::files_t out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
     omnigraph::IterationHelper<Graph, EdgeId> edges(g_);
-    auto its = edges.Chunks(nthreads_);
+    auto its = edges.Chunks(nthreads);
 
     // Turn chunks into iterator ranges
     std::vector<EdgeRange> ranges;
     for (size_t i = 0; i < its.size() - 1; ++i)
         ranges.emplace_back(its[i], its[i+1]);
 
-    VERIFY(ranges.size() <= nthreads_);
+    VERIFY(ranges.size() <= nthreads);
 
     size_t counter = 0, n = 10;
     while (!std::all_of(ranges.begin(), ranges.end(),
                         [](const EdgeRange &r) { return r.begin() == r.end(); })) {
-#       pragma omp parallel for num_threads(nthreads_) reduction(+ : counter)
+#       pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
         for (size_t i = 0; i < ranges.size(); ++i)
             counter += FillBufferFromEdges(ranges[i], omp_get_thread_num());
 
@@ -100,7 +97,7 @@ public:
 
         DeBruijnGraphKMerSplitter<Graph,
                                   utils::StoringTypeFilter<typename Index::storing_type>>
-                splitter(index.workdir(), index.k(), g, nthreads, read_buffer_size);
+                splitter(index.workdir(), index.k(), g, read_buffer_size);
         utils::KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
         BuildIndex(index, counter, 16, nthreads);
 
