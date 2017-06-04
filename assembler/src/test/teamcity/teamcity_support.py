@@ -762,6 +762,6 @@ def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, art
 
         log.log("Saving report of " + name + " to " + compressed_report)
         os.chdir(quast_output_dir)
-        os.system("zip -0r " + compressed_report + " * > /dev/null")
+        os.system("zip -9r " + compressed_report + " * > /dev/null")
         os.chdir(working_dir)
 
