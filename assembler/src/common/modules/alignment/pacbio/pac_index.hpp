@@ -410,7 +410,7 @@ public:
         size_t len =  mapping_descr.size();
         DEBUG("getting colors, table size "<< len);
         vector<vector<int> > cons_table(len);
-        for (auto i = 0; i < len; i++) {
+        for (size_t i = 0; i < len; i++) {
             cons_table[i].resize(len);
             cons_table[i][i] = 0;
         }
@@ -707,7 +707,7 @@ public:
                 }
             }
             cnt = 0;
-            if (b.sorted_positions.size() > near_to_cluster_end) {
+            if ( (int) b.sorted_positions.size() > near_to_cluster_end) {
                 for (auto b_iter = b.sorted_positions.end() - 1;
                                         b_iter != b.sorted_positions.begin() && cnt < near_to_cluster_end; --b_iter, cnt ++) {
                     if (similar_in_graph(*a_iter, *b_iter,
