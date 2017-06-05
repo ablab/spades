@@ -191,8 +191,8 @@ private:
     size_t kmer_size_;
 
 public:
-    UnbranchingPathFinder(Index &origin, size_t kmer_size) : origin_(origin), kmer_size_(kmer_size) {
-    }
+    UnbranchingPathFinder(Index &origin, size_t kmer_size) :
+            origin_(origin), kmer_size_(kmer_size) { }
 
     bool StepRightIfPossible(DeEdge &edge) {
         if (origin_.CheckUniqueOutgoing(edge.end) && origin_.CheckUniqueIncoming(edge.end)) {
@@ -263,7 +263,7 @@ private:
     }
 
     void AddStartDeEdges(kmer_iterator &it, size_t queueSize,
-                  std::vector<DeEdge>& start_edges) const {
+                         std::vector<DeEdge>& start_edges) const {
         for (; start_edges.size() < queueSize && it.good(); ++it) {
             KeyWithHash kh = origin_.ConstructKWH(Kmer(kmer_size_, *it));
             if (IsJunction(kh)) {

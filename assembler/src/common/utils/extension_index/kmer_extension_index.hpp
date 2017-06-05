@@ -50,7 +50,6 @@ private:
     char GetUnique(uint8_t mask) const {
         static char next[] = { -1, 0, 1, -1, 2, -1, -1, -1, 3, -1, -1, -1, -1,
                 -1, -1, -1 };
-        VERIFY(next[mask] != -1)
         return next[mask];
     }
 
@@ -59,17 +58,24 @@ private:
         return count[mask];
     }
 
-
     char inv_position(char nucl, bool as_is) const {
-        if(as_is)
+        if (as_is)
             return nucl;
         else
             return char(7 - nucl);
     }
 
-public:
-    explicit InOutMask(uint8_t mask = 0) : mask_(mask){
+    uint8_t outgoing() const {
+        return mask_ & 0xF;
     }
+
+    uint8_t incoming() const {
+        return mask_ >> 4;
+    }
+
+public:
+    explicit InOutMask(uint8_t mask = 0)
+            : mask_(mask) {}
 
     uint8_t get_mask() const {
         return mask_;
@@ -92,7 +98,7 @@ public:
         unsigned pmask = (unsigned) (1 << inv_position(char(pnucl + 4), as_is));
         if (!(mask_ & pmask)) {
 #           pragma omp atomic
-            mask_|= (unsigned char) pmask;
+            mask_ |= (unsigned char) pmask;
         }
     }
 
@@ -125,35 +131,35 @@ public:
     }
 
     bool IsDeadEnd() const {
-        return !(mask_ & 15);
+        return outgoing() == 0;
     }
 
     bool IsDeadStart() const {
-        return !(mask_ >> 4);
+        return incoming() == 0;
     }
 
     bool CheckUniqueOutgoing() const {
-        return CheckUnique(mask_ & 15);
+        return CheckUnique(outgoing());
     }
 
     bool CheckUniqueIncoming() const {
-        return CheckUnique(uint8_t(mask_ >> 4));
+        return CheckUnique(incoming());
     }
 
     char GetUniqueOutgoing() const {
-        return GetUnique(mask_ & 15);
+        return GetUnique(outgoing());
     }
 
     char GetUniqueIncoming() const {
-        return GetUnique(uint8_t(mask_ >> 4));
+        return GetUnique(incoming());
     }
 
     size_t OutgoingEdgeCount() const {
-        return Count(mask_ & 15);
+        return Count(outgoing());
     }
 
     size_t IncomingEdgeCount() const {
-        return Count(uint8_t(mask_ >> 4));
+        return Count(incoming());
     }
 };
 
@@ -186,8 +192,8 @@ template<typename KeyWithHash>
 struct AbstractDeEdge {
     KeyWithHash start;
     KeyWithHash end;
-    AbstractDeEdge(KeyWithHash _start, KeyWithHash _end) : start(_start), end(_end) {
-    }
+    AbstractDeEdge(KeyWithHash _start, KeyWithHash _end)
+            : start(_start), end(_end) {}
 
     AbstractDeEdge<KeyWithHash> &operator=(const AbstractDeEdge<KeyWithHash> &that) {
         this->start = that.start;
@@ -299,8 +305,7 @@ public:
         return this->get_value(kwh).IncomingEdgeCount();
     }
 
-    ~DeBruijnExtensionIndex() {
-    }
+    ~DeBruijnExtensionIndex() { }
 
 private:
    DECL_LOGGER("ExtentionIndex");
