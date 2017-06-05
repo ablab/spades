@@ -226,6 +226,7 @@ public:
     typedef typename base::IdxType KMerIdx;
     typedef typename base::KeyWithHash KeyWithHash;
     typedef AbstractDeEdge<KeyWithHash> DeEdge;
+    typedef InOutMask InOutMask;
     using base::ConstructKWH;
 
     DeBruijnExtensionIndex(unsigned K, const std::string &workdir)

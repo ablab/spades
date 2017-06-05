@@ -142,11 +142,11 @@ private:
     }
 
     void CalculateSequences(std::vector<KeyWithHash> &kwh_list,
-            std::vector<Sequence> &sequences) {
+                            std::vector<Sequence> &sequences) {
         size_t size = kwh_list.size();
         sequences.resize(size);
 
-#   pragma omp parallel for schedule(guided)
+#       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < size; ++i) {
             sequences[i] = ConstructSequenceWithEdge(kwh_list[i]);
         }
@@ -158,7 +158,7 @@ public:
     }
 
     void ConstructGraph(size_t queueMinSize, size_t queueMaxSize,
-            double queueGrowthRate) {
+                        double queueGrowthRate) {
         kmer_iterator it = origin_.kmer_begin();
         kmer_iterator end = origin_.kmer_end();
         size_t queueSize = queueMinSize;
@@ -186,6 +186,7 @@ private:
     typedef Index::kmer_iterator kmer_iterator;
     typedef Index::KeyWithHash KeyWithHash;
     typedef Index::DeEdge DeEdge;
+    typedef Index::InOutMask InOutMask;
 
     Index &origin_;
     size_t kmer_size_;
@@ -194,15 +195,17 @@ public:
     UnbranchingPathFinder(Index &origin, size_t kmer_size) :
             origin_(origin), kmer_size_(kmer_size) { }
 
-    bool StepRightIfPossible(DeEdge &edge) {
-        if (origin_.CheckUniqueOutgoing(edge.end) && origin_.CheckUniqueIncoming(edge.end)) {
-            edge = DeEdge(edge.end, origin_.GetUniqueOutgoing(edge.end));
+    bool StepRightIfPossible(DeEdge &edge) const {
+        InOutMask mask = origin_.get_value(edge.end);
+        if (mask.CheckUniqueOutgoing() && mask.CheckUniqueIncoming()) {
+            edge = DeEdge(edge.end,
+                          origin_.GetOutgoing(edge.end, mask.GetUniqueOutgoing()));
             return true;
         }
         return false;
     }
 
-    Sequence ConstructSeqGoingRight(DeEdge edge) {
+    Sequence ConstructSeqGoingRight(DeEdge edge) const {
         SequenceBuilder s;
         s.append(edge.start.key());
         s.append(edge.end[kmer_size_ - 1]);
@@ -213,18 +216,19 @@ public:
         return s.BuildSequence();
     }
 
-    Sequence ConstructSequenceWithEdge(DeEdge edge) {
+    Sequence ConstructSequenceWithEdge(DeEdge edge) const {
         return ConstructSeqGoingRight(edge);
     }
 
     //Loop consists of 4 parts: 2 selfRC k+1-mers and two sequences of arbitrary length RC to each other; pos is a position of one of selfRC edges
-    vector<Sequence> SplitLoop(Sequence s, size_t pos) {
-        return {s.Subseq(pos, pos + kmer_size_ + 1), s.Subseq(pos + 1, s.size() - kmer_size_) + s.Subseq(0, pos + kmer_size_)};
+    vector<Sequence> SplitLoop(Sequence s, size_t pos) const {
+        return { s.Subseq(pos, pos + kmer_size_ + 1),
+                 s.Subseq(pos + 1, s.size() - kmer_size_) + s.Subseq(0, pos + kmer_size_) };
 
     }
 
 //TODO Think about what happends to self rc perfect loops
-    vector<Sequence> ConstructLoopFromVertex(const KeyWithHash &kh) {
+    vector<Sequence> ConstructLoopFromVertex(const KeyWithHash &kh) const {
         DeEdge break_point(kh, origin_.GetUniqueOutgoing(kh));
         Sequence s = ConstructSequenceWithEdge(break_point);
         Kmer kmer = s.start<Kmer>(kmer_size_ + 1) >> 'A';
@@ -245,20 +249,27 @@ private:
     typedef Index::kmer_iterator kmer_iterator;
     typedef Index::DeEdge DeEdge;
     typedef Index::KeyWithHash KeyWithHash;
+    typedef Index::InOutMask InOutMask;
 
     Index &origin_;
     size_t kmer_size_;
 
-    bool IsJunction(KeyWithHash kh) const {
-        return !(origin_.CheckUniqueOutgoing(kh) && origin_.CheckUniqueIncoming(kh));
+    bool IsJunction(KeyWithHash kwh) const {
+        return IsJunction(origin_.get_value(kwh));
     }
 
-    void AddStartDeEdgesForVertex(KeyWithHash kh, std::vector<DeEdge>& start_edges) const {
+    bool IsJunction(InOutMask mask) const {
+        return !mask.CheckUniqueOutgoing() || !mask.CheckUniqueIncoming();
+    }
+
+    void AddStartDeEdgesForVertex(KeyWithHash kh, InOutMask mask,
+                                  std::vector<DeEdge>& start_edges) const {
         for (char next = 0; next < 4; next++) {
-            if (origin_.CheckOutgoing(kh, next)) {
-                TRACE("Added to queue " << DeEdge(kh, origin_.GetOutgoing(kh, next)));
-                start_edges.push_back(DeEdge(kh, origin_.GetOutgoing(kh, next)));
-            }
+            if (!mask.CheckOutgoing(next))
+                continue;
+
+            start_edges.emplace_back(kh, origin_.GetOutgoing(kh, next));
+            TRACE("Added to queue " << start_edges.back());
         }
     }
 
@@ -266,12 +277,15 @@ private:
                          std::vector<DeEdge>& start_edges) const {
         for (; start_edges.size() < queueSize && it.good(); ++it) {
             KeyWithHash kh = origin_.ConstructKWH(Kmer(kmer_size_, *it));
-            if (IsJunction(kh)) {
-                AddStartDeEdgesForVertex(kh, start_edges);
-                KeyWithHash kh_inv = !kh;
-                if(!(kh_inv.is_minimal())) {
-                    AddStartDeEdgesForVertex(kh_inv, start_edges);
-                }
+            auto extensions = origin_.get_value(kh);
+            if (!IsJunction(extensions))
+                continue;
+
+            AddStartDeEdgesForVertex(kh, extensions, start_edges);
+            KeyWithHash kh_inv = !kh;
+            if (!kh_inv.is_minimal()) {
+                AddStartDeEdgesForVertex(kh_inv, origin_.get_value(kh_inv),
+                                         start_edges);
             }
         }
     }
@@ -282,7 +296,7 @@ private:
         size_t start = sequences.size();
         sequences.resize(start + size);
 
-#   pragma omp parallel for schedule(guided)
+#       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < size; ++i) {
             sequences[start + i] = finder.ConstructSequenceWithEdge(edges[i]);
             TRACE("From " << edges[i] << " calculated sequence");
@@ -294,14 +308,14 @@ private:
         Kmer kmer = sequence.start<Kmer>(kmer_size_);
         KeyWithHash kwh = origin_.ConstructKWH(kmer);
         origin_.IsolateVertex(kwh);
-        for(size_t pos = kmer_size_; pos < sequence.size(); pos++) {
+        for (size_t pos = kmer_size_; pos < sequence.size(); pos++) {
             kwh = kwh << sequence[pos];
             origin_.IsolateVertex(kwh);
         }
     }
 
     void CleanCondensed(const std::vector<Sequence> &sequences) {
-#   pragma omp parallel for schedule(guided)
+#       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < sequences.size(); ++i) {
             CleanCondensed(sequences[i]);
         }
@@ -331,8 +345,8 @@ private:
     }
 
 public:
-    UnbranchingPathExtractor(Index &origin, size_t k) : origin_(origin), kmer_size_(k) {
-    }
+    UnbranchingPathExtractor(Index &origin, size_t k)
+            : origin_(origin), kmer_size_(k) {}
 
     //TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
     const std::vector<Sequence> ExtractUnbranchingPaths(size_t queueMinSize, size_t queueMaxSize,
