@@ -536,6 +536,10 @@ public:
         return buf_.size();
     }
 
+    void clear() {
+        return buf_.clear();
+    }
+
     char operator[](const size_t index) const {
         VERIFY(index < buf_.size());
         return buf_[index];

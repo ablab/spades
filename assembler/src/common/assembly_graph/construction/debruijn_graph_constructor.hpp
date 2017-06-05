@@ -205,19 +205,18 @@ public:
         return false;
     }
 
-    Sequence ConstructSeqGoingRight(DeEdge edge) const {
-        SequenceBuilder s;
-        s.append(edge.start.key());
-        s.append(edge.end[kmer_size_ - 1]);
+    Sequence ConstructSeqGoingRight(DeEdge edge, SequenceBuilder &builder) const {
+        builder.append(edge.start.key());
+        builder.append(edge.end[kmer_size_ - 1]);
         DeEdge initial = edge;
         while (StepRightIfPossible(edge) && edge != initial) {
-            s.append(edge.end[kmer_size_ - 1]);
+            builder.append(edge.end[kmer_size_ - 1]);
         }
-        return s.BuildSequence();
+        return builder.BuildSequence();
     }
 
-    Sequence ConstructSequenceWithEdge(DeEdge edge) const {
-        return ConstructSeqGoingRight(edge);
+    Sequence ConstructSequenceWithEdge(DeEdge edge, SequenceBuilder &builder) const {
+        return ConstructSeqGoingRight(edge, builder);
     }
 
     //Loop consists of 4 parts: 2 selfRC k+1-mers and two sequences of arbitrary length RC to each other; pos is a position of one of selfRC edges
@@ -230,7 +229,8 @@ public:
 //TODO Think about what happends to self rc perfect loops
     vector<Sequence> ConstructLoopFromVertex(const KeyWithHash &kh) const {
         DeEdge break_point(kh, origin_.GetUniqueOutgoing(kh));
-        Sequence s = ConstructSequenceWithEdge(break_point);
+        SequenceBuilder builder;
+        Sequence s = ConstructSequenceWithEdge(break_point, builder);
         Kmer kmer = s.start<Kmer>(kmer_size_ + 1) >> 'A';
         for(size_t i = kmer_size_; i < s.size(); i++) {
             kmer = kmer << s[i];
@@ -291,14 +291,19 @@ private:
     }
 
     void CalculateSequences(std::vector<DeEdge> &edges,
-                            std::vector<Sequence> &sequences, UnbranchingPathFinder &finder) const {
+                            std::vector<Sequence> &sequences, const UnbranchingPathFinder &finder) const {
         size_t size = edges.size();
         size_t start = sequences.size();
         sequences.resize(start + size);
 
+        std::vector<SequenceBuilder> builders;
+        builders.resize(omp_get_max_threads());
+
 #       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < size; ++i) {
-            sequences[start + i] = finder.ConstructSequenceWithEdge(edges[i]);
+            SequenceBuilder &builder = builders[omp_get_thread_num()];
+            sequences[start + i] = finder.ConstructSequenceWithEdge(edges[i], builder);
+            builder.clear(); // We reuse the buffer to reduce malloc traffic
             TRACE("From " << edges[i] << " calculated sequence");
             TRACE(sequences[start + i]);
         }
@@ -329,15 +334,15 @@ private:
         std::vector<Sequence> result;
         for (kmer_iterator it = origin_.kmer_begin(); it.good(); ++it) {
             KeyWithHash kh = origin_.ConstructKWH(Kmer(kmer_size_, *it));
-            if (!IsJunction(kh)) {
-                vector<Sequence> loop = finder.ConstructLoopFromVertex(kh);
-                for(Sequence s: loop) {
-                    result.push_back(s);
-                    CleanCondensed(s);
-                    if(s != (!s)) {
-                        result.push_back(!s);
-                    }
-                }
+            if (IsJunction(kh))
+                continue;
+
+            vector<Sequence> loop = finder.ConstructLoopFromVertex(kh);
+            for (Sequence s: loop) {
+                result.push_back(s);
+                CleanCondensed(s);
+                if (s != (!s))
+                    result.push_back(!s);
             }
         }
         INFO("Collecting perfect loops finished. " << result.size() << " loops collected");
