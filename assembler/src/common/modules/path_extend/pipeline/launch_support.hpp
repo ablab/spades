@@ -66,7 +66,7 @@ struct PathExtendParamsContainer {
             max_polisher_gap = max(max_polisher_gap, size_t(10000));
 
         min_edge_len = 100;
-        max_path_diff = mode == config::pipeline_type::rna ? 1 : FindMaxISRightQuantile(dataset_info);
+        max_path_diff = (mode == config::pipeline_type::rna || mode == config::pipeline_type::meta) ? 1 : FindMaxISRightQuantile(dataset_info);
     }
 
     const pe_config::MainPEParamsT& pe_cfg;
