@@ -231,8 +231,11 @@ void FilterInterstandBulges(PathContainer &paths) {
 void PathExtendLauncher::FinalizePaths(PathContainer &paths,
                                        GraphCoverageMap &cover_map,
                                        const PathExtendResolver &resolver) const {
-    //sorting is currently needed to retain overlaps in longest paths
-    paths.SortByLength(false);
+    INFO("Finalizing paths");
+    INFO("Initial deduplicating paths");
+    Deduplicate(gp_.g, paths, cover_map, params_.min_edge_len,
+                         params_.max_path_diff, /*equal_only*/ false);
+
     if (params_.pset.remove_overlaps) {
         resolver.RemoveOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff,
                                 //TODO introduce config parameter
@@ -240,9 +243,6 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
                                 params_.pset.cut_all_overlaps);
     } else {
         INFO("Overlaps will not be removed");
-        INFO("Deduplicating paths");
-        resolver.Deduplicate(paths, cover_map, params_.min_edge_len,
-                             params_.max_path_diff, /*equal_only*/ false);
     }
 
     //TODO do we still need it?
@@ -260,6 +260,7 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
     }
     paths.FilterEmptyPaths();
     paths.SortByLength();
+    INFO("Paths finalized");
 }
 
 void PathExtendLauncher::TraverseLoops(PathContainer &paths, GraphCoverageMap &cover_map) const {

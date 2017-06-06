@@ -45,6 +45,7 @@ class DecentOverlapRemover {
         return false;
     }
 
+    //NB! This can only be launched over paths taken from path container!
     size_t AnalyzeOverlaps(const BidirectionalPath &path, const BidirectionalPath &other,
                            bool end_start_only, bool retain_one_copy) const {
         VERIFY(!retain_one_copy || !end_start_only);
@@ -70,6 +71,8 @@ class DecentOverlapRemover {
         }
 
         if (&other == &path) {
+            if (overlap == path.Size())
+                return 0;
             overlap = std::min(overlap, other_range.start_pos);
         }
 
@@ -110,8 +113,6 @@ class DecentOverlapRemover {
     }
 
 public:
-    //FIXME First need to remove subpaths
-    //FIXME Order path container in order of increasing length for retain_one to work properly!!!
     DecentOverlapRemover(const Graph &g,
                          const PathContainer &paths,
                          GraphCoverageMap &coverage_map,
@@ -253,6 +254,16 @@ private:
     DECL_LOGGER("PathDeduplicator");
 };
 
+inline void Deduplicate(const Graph &g, PathContainer &paths, GraphCoverageMap &coverage_map,
+                 size_t /*min_edge_len*/, size_t max_path_diff,
+                 bool equal_only = false) {
+    //sorting is currently needed to retain longest paths
+    //FIXME do we really need it?
+    paths.SortByLength(false);
+    PathDeduplicator deduplicator(g, paths, coverage_map, max_path_diff, equal_only);
+    deduplicator.Deduplicate();
+}
+
 class PathExtendResolver {
 
     const Graph& g_;
@@ -280,21 +291,16 @@ public:
         return paths;
     }
 
-    void Deduplicate(PathContainer &paths, GraphCoverageMap &coverage_map,
-                     size_t /*min_edge_len*/, size_t max_path_diff,
-                     bool equal_only = false) const {
-        PathDeduplicator deduplicator(g_, paths, coverage_map, max_path_diff, equal_only);
-        deduplicator.Deduplicate();
-    }
-
     void RemoveOverlaps(PathContainer &paths, GraphCoverageMap &coverage_map,
                         size_t min_edge_len, size_t max_path_diff,
                         bool end_start_only, bool cut_all) const {
+        //sorting is currently needed to retain overlaps in longest paths
+        paths.SortByLength(false);
         INFO("Removing overlaps");
         VERIFY(min_edge_len == 0 && max_path_diff == 0);
 
         INFO("Deduplicating paths");
-        Deduplicate(paths, coverage_map, min_edge_len, max_path_diff);
+        Deduplicate(g_, paths, coverage_map, min_edge_len, max_path_diff);
 
         INFO("Deduplicated");
 
@@ -309,7 +315,7 @@ public:
         //splits are invalidated after this point
 
         INFO("Deduplicating paths");
-        Deduplicate(paths, coverage_map, min_edge_len, max_path_diff);
+        Deduplicate(g_, paths, coverage_map, min_edge_len, max_path_diff);
         INFO("Overlaps removed");
         //FIXME Add removal of empty paths here
     }
