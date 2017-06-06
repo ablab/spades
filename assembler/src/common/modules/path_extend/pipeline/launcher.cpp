@@ -221,9 +221,7 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
                                        const PathExtendResolver &resolver) const {
 
     if (params_.pset.remove_overlaps) {
-        resolver.RemoveOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff,
-                                 params_.pset.cut_all_overlaps,
-                                 (params_.mode == config::pipeline_type::moleculo));
+        resolver.RemoveOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff, params_.pset.cut_all_overlaps);
     } else if (params_.mode == config::pipeline_type::rna) {
         resolver.RemoveRNAOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
     } else {
@@ -446,8 +444,7 @@ void PathExtendLauncher::Launch() {
     CompositeExtender composite_extender(gp_.g, cover_map,
                                          used_unique_storage,
                                          extenders,
-                                         params_.max_path_diff,
-                                         params_.pset.extension_options.max_repeat_length);
+                                         params_.max_path_diff);
 
     auto paths = resolver.ExtendSeeds(seeds, composite_extender);
     paths.FilterEmptyPaths();

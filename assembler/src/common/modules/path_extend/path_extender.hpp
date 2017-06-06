@@ -574,15 +574,13 @@ public:
     CompositeExtender(const Graph &g, GraphCoverageMap& cov_map,
                       UsedUniqueStorage &unique,
                       const vector<shared_ptr<PathExtender>> &pes,
-                      size_t max_diff_len,
-                      size_t max_repeat_length)
+                      size_t max_diff_len)
             : g_(g),
               cover_map_(cov_map),
               used_storage_(unique),
               //FIXME magic constant
               extenders_(pes),
-              max_diff_len_(max_diff_len),
-              max_repeat_len_(max_repeat_length) {
+              max_diff_len_(max_diff_len) {
     }
 
     void GrowAll(PathContainer& paths, PathContainer& result) {
@@ -603,7 +601,6 @@ private:
     UsedUniqueStorage &used_storage_;
     vector<shared_ptr<PathExtender>> extenders_;
     size_t max_diff_len_;
-    size_t max_repeat_len_;
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) {
         DEBUG("make grow step composite extender");
@@ -666,7 +663,6 @@ private:
                     GrowPath(*path, &result);
                     GrowPath(*conjugatePath, &result);
                 } while (count_trying < 10 && (path->Length() != current_path_len));
-                path->CheckConjugateEnd(max_repeat_len_);
                 DEBUG("result path " << path->GetId());
                 path->PrintDEBUG();
             }

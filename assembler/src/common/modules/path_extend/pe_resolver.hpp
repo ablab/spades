@@ -495,8 +495,9 @@ public:
 
     void RemoveRNAOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
                           size_t min_edge_len, size_t max_path_diff) const  {
-
         SimpleOverlapRemover remover(g_, coverage_map);
+        remover.CutPseudoSelfConjugatePaths(paths);
+
         remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, true, false, false, false, false);
 
         remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, false, true, false, false, false);
@@ -508,11 +509,10 @@ public:
 
     void RemoveOverlaps(PathContainer &paths, GraphCoverageMap &coverage_map,
                         size_t min_edge_len, size_t max_path_diff,
-                        bool add_overlaps_begin,
-                        bool cut_preudo_self_conjugate) const {
+                        bool add_overlaps_begin) const {
         SimpleOverlapRemover remover(g_, coverage_map);
-        if (cut_preudo_self_conjugate)
-            remover.CutPseudoSelfConjugatePaths(paths);
+
+        remover.CutPseudoSelfConjugatePaths(paths);
 
         remover.CutNonUniqueSuffix(paths);
         //writer.WritePathsToFASTA(paths, output_dir + "/before.fasta");
