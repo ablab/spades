@@ -21,6 +21,10 @@
 
 namespace path_extend {
 
+inline BidirectionalPath OptimizedConjugate(const BidirectionalPath &path) {
+    return path.GetConjPath() ? *path.GetConjPath() : path.Conjugate();
+}
+
 //FIXME think about symmetry and what if it breaks?
 class OverlapFindingHelper {
     const Graph &g_;
@@ -46,7 +50,8 @@ class OverlapFindingHelper {
     //Changes second argument on success
     bool TryExtendToStart(const BidirectionalPath &path, size_t &pos) const {
         size_t tmp_pos = path.Size() - pos;
-        if (TryExtendToEnd(*path.GetConjPath(), tmp_pos)) {
+        //FIXME optimize
+        if (TryExtendToEnd(OptimizedConjugate(path), tmp_pos)) {
             pos = path.Size() - tmp_pos;
             return true;
         }
@@ -83,8 +88,7 @@ class OverlapFindingHelper {
                 if (abs(shift2) > int(max_diff_))
                     break;
                 if (path1.At(i) == path2.At(j) &&
-                        abs(shift1 + path1.GapAt(i).gap - shift2 - path2.GapAt(j).gap) <= int(max_diff_) &&
-                        (&path1 != &path2 || i != j)) {
+                        abs(shift1 + path1.GapAt(i).gap - shift2 - path2.GapAt(j).gap) <= int(max_diff_)) {
                     match = true;
                     break;
                 } else {
@@ -104,6 +108,8 @@ class OverlapFindingHelper {
         if (try_extend_ && end1 > 0) {
             TryExtendToEnd(path1, end1);
             TryExtendToEnd(path2, end2);
+            //no need to extend path1 left
+            VERIFY(start1 == 0);
             TryExtendToStart(path2, start2);
         }
 
@@ -114,14 +120,13 @@ public:
     OverlapFindingHelper(const Graph &g,
                          const GraphCoverageMap &coverage_map,
                          size_t min_edge_len,
-                         size_t max_diff,
-                         bool try_extend = true) :
+                         size_t max_diff) :
             g_(g),
             coverage_map_(coverage_map),
             min_edge_len_(min_edge_len),
             max_diff_(max_diff),
-            try_extend_(try_extend) {
-
+            //had to enable try_extend, otherwise equality lost symmetry
+            try_extend_(max_diff_ > 0) {
     }
 
     bool IsSubpath(const BidirectionalPath &path,
@@ -135,9 +140,9 @@ public:
         return false;
     }
 
+    //NB! Equality is not transitive if max_diff is > 0
     bool IsEqual(const BidirectionalPath &path,
                  const BidirectionalPath &other) const {
-
         auto ends_pair = CommonPrefix(path, other);
         return ends_pair.first == path.Size()
                && ends_pair.second == other.Size();
@@ -146,8 +151,24 @@ public:
 
     pair<size_t, size_t> CommonPrefix(const BidirectionalPath &path1,
                                       const BidirectionalPath &path2) const {
-        auto range_pair = ComparePaths(path1, path2, 0);
-        return make_pair(range_pair.first.end_pos, range_pair.second.end_pos);
+        auto answer = make_pair(0, 0);
+        size_t cum = 0;
+        size_t max_overlap = 0;
+        for (size_t j = 0; j < path2.Size(); ++j) {
+            auto range_pair = ComparePaths(path1, path2, j);
+            if (range_pair.second.start_pos == 0 && range_pair.first.size() > max_overlap) {
+                answer = make_pair(range_pair.first.end_pos, range_pair.second.end_pos);
+                max_overlap = range_pair.first.size();
+            }
+
+            if (!try_extend_)
+                break;
+
+            cum += path2.ShiftLength(j);
+            if (cum > max_diff_)
+                break;
+        }
+        return answer;
     };
 
     //overlap is forced to start from the beginning of path1
@@ -216,7 +237,7 @@ inline BidirectionalPath* AddPath(PathContainer &paths,
                                   const BidirectionalPath &path,
                                   GraphCoverageMap &coverage_map) {
     BidirectionalPath* p = new BidirectionalPath(path);
-    BidirectionalPath* conj_p = new BidirectionalPath(path.GetConjPath() ? *path.GetConjPath() : path.Conjugate());
+    BidirectionalPath* conj_p = new BidirectionalPath(OptimizedConjugate(path));
     SubscribeCoverageMap(p, coverage_map);
     SubscribeCoverageMap(conj_p, coverage_map);
     paths.AddPair(p, conj_p);
@@ -987,7 +1008,7 @@ public:
                 //FIXME original method had different weird indices. Check that current version is correct.
                 BidirectionalPath begin1_conj = begin1.Conjugate();
                 BidirectionalPath begin2_conj = begin2.Conjugate();
-                OverlapFindingHelper helper(g_, cover_map_, /*min edge len*/ 0, max_diff_len_, /*try extend*/ false);
+                OverlapFindingHelper helper(g_, cover_map_, /*min edge len*/ 0, max_diff_len_);
                 pair<size_t, size_t> last = helper.CommonPrefix(begin1_conj, begin2_conj);
                 DEBUG("last " << last.first << " last2 " << last.second);
                 Gap gap = path.GapAt(path.Size() - repeat_size);
