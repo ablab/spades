@@ -251,7 +251,7 @@ void SeriesAnalysis::run(conj_graph_pack &gp, const char *) {
     SetSampleCount(config.sample_cnt);
 
     ContigAbundanceCounter abundance_counter(config.k,
-                                             shared_ptr<TrivialClusterAnalyzer>(),
+                                             make_shared<TrivialClusterAnalyzer>(),
                                              cfg::get().tmp_dir);
 
     DEBUG("Initiating abundance counter");

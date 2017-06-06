@@ -94,7 +94,7 @@ public:
     boost::optional<AbundanceVector> operator()(const KmerProfiles& kmer_mpls) const override;
 
 private:
-    DECL_LOGGER("SingleClusterAnalyzer");
+    DECL_LOGGER("TrivialClusterAnalyzer");
 };
 
 class SingleClusterAnalyzer : public ClusterAnalyzer {
