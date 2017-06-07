@@ -47,11 +47,8 @@ inline std::string level_name(level l)
 /////////////////////////////////////////////////////
 struct writer
 {
-#ifdef SPADES_USE_JEMALLOC
   virtual void write_msg(double time_in_sec, size_t cmem, size_t max_rss, level l, const char* file, size_t line_num, const char* source, const char* msg) = 0;
-#else
-    virtual void write_msg(double time_in_sec, size_t max_rss, level l, const char* file, size_t line_num, const char* source, const char* msg) = 0;
-#endif
+
   virtual ~writer(){}
 };
 

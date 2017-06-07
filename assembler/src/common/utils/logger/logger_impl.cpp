@@ -97,28 +97,27 @@ bool logger::need_log(level desired_level, const char* source) const {
     return desired_level >= source_level;
 }
 
-#ifdef SPADES_USE_JEMALLOC
 
 void logger::log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg) {
   double time = timer_.time();
+  size_t mem = -1ull;
+  size_t max_rss;
+
+#ifdef SPADES_USE_JEMALLOC
   const size_t *cmem = 0, *cmem_max = 0;
   size_t clen = sizeof(cmem);
 
   je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
   je_mallctl("stats.cactive_max", &cmem_max, &clen, NULL, 0);
-
-  for (auto it = writers_.begin(); it != writers_.end(); ++it)
-    (*it)->write_msg(time, (*cmem) / 1024, (*cmem_max) / 1024, desired_level, file, line_num, source, msg);
-}
+  mem = (*cmem) / 1024;
+  max_rss = (*cmem_max) / 1024;
 #else
-void logger::log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg) {
-  double time = timer_.time();
-  size_t max_rss = get_max_rss();
+  max_rss = get_max_rss();
+#endif
 
   for (auto it = writers_.begin(); it != writers_.end(); ++it)
-    (*it)->write_msg(time, max_rss, desired_level, file, line_num, source, msg);
+    (*it)->write_msg(time, mem, max_rss, desired_level, file, line_num, source, msg);
 }
-#endif
 
 //
 void logger::add_writer(writer_ptr ptr)

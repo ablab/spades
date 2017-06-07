@@ -46,6 +46,7 @@ void create_console_logger(const string& dir) {
 
     logger *lg = create_logger(fs::FileExists(log_props_file) ? log_props_file : "");
     lg->add_writer(std::make_shared<console_writer>());
+    //lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<console_writer>()));
     attach_logger(lg);
 }
 
