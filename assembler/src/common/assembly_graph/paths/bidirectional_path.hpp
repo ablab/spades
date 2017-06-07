@@ -81,23 +81,29 @@ public:
     virtual ~PathListener() {}
 };
 
-
 class BidirectionalPath : public PathListener {
     static std::atomic<uint64_t> path_id_;
+
+    const Graph& g_;
+    std::deque<EdgeId> data_;
+    BidirectionalPath* conj_path_;
+    // Length from beginning of i-th edge to path end: L(e_i + gap_(i+1) + e_(i+1) + ... + gap_N + e_N)
+    std::deque<size_t> cumulative_len_;
+    std::deque<Gap> gap_len_;  // e0 -> gap1 -> e1 -> ... -> gapN -> eN; gap0 = 0
+    std::vector<PathListener *> listeners_;
+    const uint64_t id_;  //Unique ID
+    float weight_;
 
 public:
     BidirectionalPath(const Graph& g)
             : g_(g),
               data_(),
-              conj_path_(NULL),
+              conj_path_(nullptr),
               cumulative_len_(),
               gap_len_(),
               listeners_(),
               id_(path_id_++),
-              weight_(1.0),
-              has_overlaped_begin_(false),
-              has_overlaped_end_(false),
-              overlap_(false) {
+              weight_(1.0) {
     }
 
     BidirectionalPath(const Graph& g, const std::vector<EdgeId>& path)
@@ -108,23 +114,24 @@ public:
         RecountLengths();
     }
 
-    BidirectionalPath(const Graph& g, EdgeId startingEdge)
+    BidirectionalPath(const Graph& g, EdgeId e)
             : BidirectionalPath(g) {
-        PushBack(startingEdge);
+        PushBack(e);
     }
 
     BidirectionalPath(const BidirectionalPath& path)
             : g_(path.g_),
               data_(path.data_),
-              conj_path_(NULL),
+              conj_path_(nullptr),
               cumulative_len_(path.cumulative_len_),
               gap_len_(path.gap_len_),
               listeners_(),
               id_(path_id_++),
-              weight_(path.weight_),
-              has_overlaped_begin_(path.has_overlaped_begin_),
-              has_overlaped_end_(path.has_overlaped_end_),
-              overlap_(path.overlap_) {
+              weight_(path.weight_) {
+    }
+
+    const Graph &g() const{
+        return g_;
     }
 
     void Subscribe(PathListener * listener) {
@@ -186,6 +193,10 @@ public:
 
     EdgeId At(size_t index) const {
         return data_[index];
+    }
+
+    int ShiftLength(size_t index) const {
+        return gap_len_[index].gap + (int) g_.length(At(index));
     }
 
     // Length from beginning of i-th edge to path end for forward directed path: L(e1 + e2 + ... + eN)
@@ -339,28 +350,6 @@ public:
         return 0;
     }
 
-    size_t OverlapEndSize(const BidirectionalPath* path2) const {
-        if (Size() == 0) {
-            return 0;
-        }
-        int last1 = (int) Size() - 1;
-        int max_over = 0;
-        vector<size_t> begins2 = path2->FindAll(At(last1));
-        for (size_t i = 0; i < begins2.size(); ++i) {
-            int begin2 = (int) begins2[i];
-            int cur1 = last1;
-            while (begin2 > 0 && cur1 > 0 && path2->At(begin2 - 1) == At(cur1 - 1)) {
-                cur1--;
-                begin2--;
-            }
-            int over = last1 - cur1 + 1;
-            if (begin2 == 0 && cur1 > 0 && over > max_over) {
-                max_over = over;
-            }
-        }
-        return (size_t) max_over;
-    }
-
     int FindFirst(const BidirectionalPath& path, size_t from = 0) const {
         if (path.Size() > Size()) {
             return -1;
@@ -432,51 +421,9 @@ public:
         return result;
     }
 
+    //FIXME remove
     vector<EdgeId> ToVector() const {
         return vector<EdgeId>(data_.begin(), data_.end());
-    }
-
-//    bool CameToInterstrandBulge() const {
-//        if (Empty())
-//            return false;
-//
-//        EdgeId lastEdge = Back();
-//        VertexId lastVertex = g_.EdgeEnd(lastEdge);
-//
-//        if (g_.OutgoingEdgeCount(lastVertex) == 2) {
-//            vector<EdgeId> bulgeEdges(g_.out_begin(lastVertex), g_.out_end(lastVertex));
-//            VertexId nextVertex = g_.EdgeEnd(bulgeEdges[0]);
-//
-//            if (bulgeEdges[0] == g_.conjugate(bulgeEdges[1]) && nextVertex == g_.EdgeEnd(bulgeEdges[1]) && g_.CheckUniqueOutgoingEdge(nextVertex)
-//                    && *(g_.out_begin(nextVertex)) == g_.conjugate(lastEdge)) {
-//
-//                DEBUG("Came to interstrand bulge " << g_.int_id(lastEdge));
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
-
-    bool IsInterstrandBulge() const {
-        if (Empty())
-            return false;
-
-        EdgeId lastEdge = Back();
-        VertexId lastVertex = g_.EdgeEnd(lastEdge);
-        VertexId prevVertex = g_.EdgeStart(lastEdge);
-
-        if (g_.OutgoingEdgeCount(prevVertex) == 2 && g_.IncomingEdgeCount(lastVertex) == 2 && g_.CheckUniqueOutgoingEdge(lastVertex)
-                && g_.CheckUniqueIncomingEdge(prevVertex) && *(g_.in_begin(prevVertex)) == g_.conjugate(*(g_.out_begin(lastVertex)))) {
-
-            vector<EdgeId> bulgeEdges(g_.out_begin(prevVertex), g_.out_end(prevVertex));
-            EdgeId bulgeEdge = bulgeEdges[0] == lastEdge ? bulgeEdges[1] : bulgeEdges[0];
-
-            if (bulgeEdge == g_.conjugate(lastEdge)) {
-                DEBUG("In interstrand bulge " << g_.int_id(lastEdge));
-                return true;
-            }
-        }
-        return false;
     }
 
     void PrintDEBUG() const {
@@ -507,54 +454,24 @@ public:
         }
     }
 
-    void SetOverlapedBeginTo(BidirectionalPath* to) {
-        if (has_overlaped_begin_) {
-            to->SetOverlapBegin();
-        }
-        SetOverlapBegin();
-        to->SetOverlapEnd();
+    std::string str() const {
+        stringstream ss;
+        Print(ss);
+        return ss.str();
     }
 
-    void SetOverlapedEndTo(BidirectionalPath* to) {
-        if (has_overlaped_end_) {
-            to->SetOverlapEnd();
-        }
-        SetOverlapEnd();
-        to->SetOverlapBegin();
+    auto begin() const -> decltype(data_.begin()) {
+        return data_.begin();
     }
 
-    void SetOverlap(bool overlap = true) {
-        overlap_ = overlap;
-        conj_path_->overlap_ = overlap;
-    }
-
-    bool HasOverlapedBegin() const {
-        return has_overlaped_begin_;
-    }
-
-    bool HasOverlapedEnd() const {
-        return has_overlaped_end_;
-    }
-
-    bool IsOverlap() const {
-        return overlap_;
-    }
-
-    void ResetOverlaps() {
-        overlap_ = false;
-        has_overlaped_begin_ = false;
-        has_overlaped_end_ = false;
-        conj_path_->overlap_ = false;
-        conj_path_->has_overlaped_begin_ = false;
-        conj_path_->has_overlaped_end_ = false;
+    auto end() const -> decltype(data_.end()) {
+        return data_.end();
     }
 
 private:
 
     vector<std::string> PrintLines() const {
-        stringstream ss;
-        Print(ss);
-        std::string as_str=ss.str();
+        auto as_str = str();
         boost::trim(as_str);
         std::vector<std::string> result;
         boost::split(result, as_str, boost::is_any_of("\n"), boost::token_compress_on);
@@ -639,31 +556,6 @@ private:
         NotifyFrontEdgeRemoved(e);
     }
 
-    void SetOverlapBegin(bool overlap = true) {
-        if (has_overlaped_begin_ != overlap) {
-            has_overlaped_begin_ = overlap;
-        }
-        if (GetConjPath()->has_overlaped_end_ != overlap) {
-            GetConjPath()->has_overlaped_end_ = overlap;
-        }
-    }
-
-    void SetOverlapEnd(bool overlap = true) {
-        GetConjPath()->SetOverlapBegin(overlap);
-    }
-
-    const Graph& g_;
-    std::deque<EdgeId> data_;
-    BidirectionalPath* conj_path_;
-    // Length from beginning of i-th edge to path end: L(e_i + gap_(i+1) + e_(i+1) + ... + gap_N + e_N)
-    std::deque<size_t> cumulative_len_;
-    std::deque<Gap> gap_len_;  // e0 -> gap1 -> e1 -> ... -> gapN -> eN; gap0 = 0
-    std::vector<PathListener *> listeners_;
-    const uint64_t id_;  //Unique ID
-    float weight_;
-    bool has_overlaped_begin_;
-    bool has_overlaped_end_;
-    bool overlap_;
     DECL_LOGGER("BidirectionalPath");
 };
 
@@ -751,12 +643,6 @@ inline size_t LastNotEqualPosition(const BidirectionalPath& path1, size_t pos1, 
 inline bool EqualEnds(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2, bool use_gaps) {
     return LastNotEqualPosition(path1, pos1, path2, pos2, use_gaps) == -1UL;
 }
-
-inline bool PathIdCompare(const BidirectionalPath* p1, const BidirectionalPath* p2) {
-    return p1->GetId() < p2->GetId();
-}
-
-
 
 typedef std::pair<BidirectionalPath*, BidirectionalPath*> PathPair;
 
@@ -871,8 +757,10 @@ public:
         return true;
     }
 
-    void SortByLength() {
-        std::stable_sort(data_.begin(), data_.end(), compare_path_pairs);
+    void SortByLength(bool desc = true) {
+        std::stable_sort(data_.begin(), data_.end(), [=](const PathPair& p1, const PathPair& p2) {
+            return compare_path_pairs(p1, p2) == desc;
+        });
     }
 
     Iterator begin() {
@@ -903,6 +791,7 @@ public:
         }
     }
 
+    //FIXME implement as filter
     void FilterEmptyPaths() {
         DEBUG ("try to delete empty paths");
         for (Iterator iter = begin(); iter != end();) {
@@ -918,19 +807,6 @@ public:
         DEBUG("empty paths are removed");
     }
 
-    void FilterInterstandBulges() {
-        DEBUG ("Try to delete paths with interstand bulges");
-        for (Iterator iter = begin(); iter != end(); ++iter) {
-            if (iter.get()->IsInterstrandBulge()) {
-                iter.get()->PopBack();
-            }
-            if (iter.getConjugate()->IsInterstrandBulge()) {
-                iter.getConjugate()->PopBack();
-            }
-        }
-        DEBUG("deleted paths with interstand bulges");
-    }
-
 private:
     std::vector<PathPair> data_;
 
@@ -939,70 +815,19 @@ protected:
 
 };
 
-inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, const BidirectionalPath& path1, const BidirectionalPath& path2, size_t max_diff) {
-    path1.PrintDEBUG();
-    path2.PrintDEBUG();
-    if (start_pos1 >= path1.Size() || start_pos2 >= path2.Size()) {
-        return make_pair(start_pos1, start_pos2);
-    }
-    const Graph& g = path1.graph();
-    size_t cur_pos = start_pos1;
-    size_t last2 = start_pos2;
-    size_t last1 = cur_pos;
-    cur_pos++;
-    //todo review logic
-    size_t diff_len = 0;
-    while (cur_pos < path1.Size()) {
-        if (diff_len > max_diff) {
-            return make_pair(last1, last2);
-        }
-        EdgeId e = path1[cur_pos];
-        vector<size_t> posistions_in_path2 = path2.FindAll(e);
-        bool found = false;
-        for (size_t pos2 = 0; pos2 < posistions_in_path2.size(); ++pos2) {
-            if (posistions_in_path2[pos2] > last2) {
-                int path2_segment_len = int(path2.LengthAt(last2)) - int(g.length(path2.At(last2))) -
-                    int(path2.LengthAt(posistions_in_path2[pos2]));
-                int diff = abs(path1.GapAt(cur_pos).gap - path2_segment_len);
+inline bool EndsWithInterstrandBulge(const BidirectionalPath &path) {
+    if (path.Empty())
+        return false;
 
-                VERIFY(diff >= 0);
-                if (size_t(diff) > max_diff) {
-                    break;
-                }
-                last2 = posistions_in_path2[pos2];
-                last1 = cur_pos;
-                DEBUG("found " << cur_pos);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            diff_len += g.length(e) + path1.GapAt(cur_pos).gap;
-            DEBUG("not found " << cur_pos << " now diff len " << diff_len);
-        } else {
-            diff_len = 0;
-        }
-        cur_pos++;
-    }
-    return make_pair(last1, last2);
-}
+    const Graph &g = path.g();
+    EdgeId e = path.Back();
+    VertexId v1 = g.EdgeStart(e);
+    VertexId v2 = g.EdgeEnd(e);
 
-inline void DeletePaths(BidirectionalPathSet& paths) {
-    for (auto i = paths.begin(); i != paths.end(); ++i) {
-        delete (*i);
-    }
-}
-
-inline void DeletePaths(vector<BidirectionalPath*>& paths) {
-    for (auto i = paths.begin(); i != paths.end(); ++i) {
-        delete (*i);
-    }
-}
-
-inline void DeleteMapWithPaths(map<EdgeId, BidirectionalPath*> m) {
-    for (auto i = m.begin(); i != m.end(); ++i){
-        delete i->second;
-    }
+    return v2 == g.conjugate(v1) &&
+            e != g.conjugate(e) &&
+            g.OutgoingEdgeCount(v1) == 2 &&
+            g.CheckUniqueIncomingEdge(v1);
 }
 
 }  // path extend

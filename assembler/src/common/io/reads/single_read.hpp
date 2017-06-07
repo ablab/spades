@@ -39,14 +39,11 @@ class SingleRead {
 public:
 
     static std::string EmptyQuality(const std::string &seq) {
-        return std::string(seq.size(), (char) 33);
+        return std::string(seq.size(), (char) PhredOffset);
     }
-
-    static const int BAD_QUALITY_THRESHOLD = 2;
 
     SingleRead() :
             name_(""), seq_(""), qual_(""), left_offset_(0), right_offset_(0), valid_(false) {
-        DEBUG(name_ << " created");
     }
 
     SingleRead(const std::string &name, const std::string &seq,
@@ -54,7 +51,6 @@ public:
                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
             name_(name), seq_(seq), qual_(qual), left_offset_(left_offset), right_offset_(right_offset) {
         Init();
-        DEBUG(name_ << " created");
         for (size_t i = 0; i < qual_.size(); ++i) {
             qual_[i] = (char) (qual_[i] - offset);
         }
@@ -64,7 +60,6 @@ public:
                const std::string &qual,
                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
             name_(name), seq_(seq), qual_(qual), left_offset_(left_offset), right_offset_(right_offset) {
-        DEBUG(name_ << " created");
         Init();
     }
 
@@ -72,7 +67,6 @@ public:
                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
             name_(name), seq_(seq), qual_(EmptyQuality(seq_)), left_offset_(left_offset),
             right_offset_(right_offset) {
-        DEBUG(name_ << " created");
         Init();
     }
 
@@ -195,12 +189,6 @@ public:
         }
         return !file.fail();
     }
-
-
-    void print_size() const {
-        std::cerr << size() << std::endl;
-    }
-
 
 private:
     /*

@@ -87,6 +87,19 @@ const std::vector<typename MMapT::mapped_type> get_all(const MMapT &from, const 
     return answer;
 }
 
+template<class Container, class F = std::function<std::string(typename Container::value_type)>>
+std::string join(const Container &c,
+                 const std::string &delim = ", ",
+                 F str_f = [] (typename Container::value_type t) { return std::to_string(t); }) {
+    std::stringstream ss;
+    std::string d = "";
+    for (const auto &item : c) {
+        ss << d << str_f(item);
+        d = delim;
+    }
+    return ss.str();
+}
+
 }
 
 namespace std {

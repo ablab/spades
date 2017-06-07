@@ -228,8 +228,6 @@ public:
 
 };
 
-void WriteScaffolds(const ScaffoldStorage &scaffold_storage, const string &fn);
-
 typedef std::function<void (const ScaffoldStorage&)> PathsWriterT;
 
 class ContigWriter {
@@ -237,6 +235,16 @@ class ContigWriter {
     shared_ptr<ContigNameGenerator> name_generator_;
 
 public:
+
+    static void WriteScaffolds(const ScaffoldStorage &scaffold_storage, const string &fn) {
+        io::OutputSequenceStream oss(fn);
+        std::ofstream os_fastg;
+
+        for (const auto& scaffold_info : scaffold_storage) {
+            TRACE("Scaffold " << scaffold_info.name << " originates from path " << scaffold_info.path->str());
+            oss << io::SingleRead(scaffold_info.name, scaffold_info.sequence);
+        }
+    }
 
     static PathsWriterT BasicFastaWriter(const string &fn) {
         return [=](const ScaffoldStorage& scaffold_storage) {
@@ -261,7 +269,7 @@ public:
     }
 
 private:
-    DECL_LOGGER("PathExtendIO")
+    DECL_LOGGER("ContigWriter")
 };
 
 }

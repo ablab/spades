@@ -86,11 +86,6 @@ public:
         return !file.fail();
     }
 
-    void print_size() const {
-        first_.print_size();
-        second_.print_size();
-    }
-
 private:
     SingleRead first_;
     SingleRead second_;
