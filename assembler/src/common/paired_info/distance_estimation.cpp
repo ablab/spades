@@ -6,47 +6,41 @@ namespace de {
 using namespace debruijn_graph;
 
 std::vector<size_t> GraphDistanceFinder::GetGraphDistancesLengths(EdgeId e1, EdgeId e2) const {
-    {
-        LengthMap m;
-        m.insert({e2, {}});
+    LengthMap m;
+    m.insert({e2, {}});
 
-        FillGraphDistancesLengths(e1, m);
+    FillGraphDistancesLengths(e1, m);
 
-        return m[e2];
-    }
+    return m[e2];
 }
 
 void GraphDistanceFinder::FillGraphDistancesLengths(EdgeId e1, LengthMap &second_edges) const {
-    {
-        vector <size_t> path_lower_bounds;
+    vector <size_t> path_lower_bounds;
+    size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), insert_size_, delta_);
+    PathProcessor <Graph> paths_proc(graph_, graph_.EdgeEnd(e1), path_upper_bound);
 
-        size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), insert_size_, delta_);
+    for (auto &entry : second_edges) {
+        EdgeId e2 = entry.first;
+        size_t path_lower_bound = PairInfoPathLengthLowerBound(graph_.k(), graph_.length(e1),
+                                                               graph_.length(e2), gap_, delta_);
 
-        PathProcessor <Graph> paths_proc(graph_, graph_.EdgeEnd(e1), path_upper_bound);
+        TRACE("Bounds for paths are " << path_lower_bound << " " << path_upper_bound);
 
-        for (auto &entry : second_edges) {
-            EdgeId e2 = entry.first;
-            size_t path_lower_bound = PairInfoPathLengthLowerBound(graph_.k(), graph_.length(e1),
-                                                                   graph_.length(e2), gap_, delta_);
-
-            TRACE("Bounds for paths are " << path_lower_bound << " " << path_upper_bound);
-
-            DistancesLengthsCallback <Graph> callback(graph_);
-            paths_proc.Process(graph_.EdgeStart(e2), path_lower_bound, path_upper_bound, callback);
-            GraphLengths lengths = callback.distances();
-            for (size_t j = 0; j < lengths.size(); ++j) {
-                lengths[j] += graph_.length(e1);
-                TRACE("Resulting distance set for " <<
-                                                    " edge " << graph_.int_id(e2) <<
-                                                    " #" << j << " length " << lengths[j]);
-            }
-
-            if (e1 == e2)
-                lengths.push_back(0);
-
-            std::sort(lengths.begin(), lengths.end());
-            entry.second = lengths;
+        DistancesLengthsCallback <Graph> callback(graph_);
+        paths_proc.Process(graph_.EdgeStart(e2), path_lower_bound, path_upper_bound, callback);
+        GraphLengths lengths = callback.distances();
+        for (size_t j = 0; j < lengths.size(); ++j) {
+            lengths[j] += graph_.length(e1);
+            TRACE("Resulting distance set for " <<
+                                                " edge " << graph_.int_id(e2) <<
+                                                " #" << j << " length " << lengths[j]);
         }
+
+        if (e1 == e2)
+            lengths.push_back(0);
+
+        std::sort(lengths.begin(), lengths.end());
+        entry.second = lengths;
     }
 }
 
@@ -178,6 +172,5 @@ void DistanceEstimator::ProcessEdge(EdgeId e1, const InPairedIndex &pi, PairedIn
         this->AddToResult(res, ep, result);
     }
 }
-
 }
 }
