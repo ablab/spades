@@ -298,7 +298,7 @@ public:
         //sorting is currently needed to retain overlaps in longest paths
         paths.SortByLength(false);
         INFO("Removing overlaps");
-        VERIFY(min_edge_len == 0 && max_path_diff == 0);
+        //VERIFY(min_edge_len == 0 && max_path_diff == 0);
 
         INFO("Deduplicating paths");
         Deduplicate(g_, paths, coverage_map, min_edge_len, max_path_diff);
