@@ -14,35 +14,6 @@
 
 namespace omnigraph {
 
-template<class ItVec, class Condition, class Handler>
-void FindInterestingFromChunkIterators(const ItVec& chunk_iterators,
-                                       const Condition& predicate,
-                                       const Handler& handler) {
-    VERIFY(chunk_iterators.size() > 1);
-    typedef typename Condition::checked_type ElementType;
-    std::vector<std::vector<ElementType>> of_interest(omp_get_max_threads());
-
-    #pragma omp parallel for schedule(guided)
-    for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
-        size_t cnt = 0;
-        for (auto it = chunk_iterators[i], end = chunk_iterators[i + 1]; it != end; ++it) {
-             ElementType t = *it;
-             if (predicate(t)) {
-                 of_interest[omp_get_thread_num()].push_back(t);
-             }
-             cnt++;
-         }
-         DEBUG("Processed " << cnt << " elements as potential candidates by thread " << omp_get_thread_num());
-    }
-
-    for (auto& chunk : of_interest) {
-        for (const auto& el : chunk) {
-            handler(el);
-        }
-        chunk.clear();
-    }
-}
-
 template<class Graph, class ElementId>
 class InterestingElementFinder {
 protected:
@@ -100,6 +71,39 @@ class ParallelInterestingElementFinder : public InterestingElementFinder<Graph, 
 
     const size_t chunk_cnt_;
 public:
+
+    template<class ItVec, class Condition, class Handler>
+    static void FindInterestingFromChunkIterators(const ItVec& chunk_iterators,
+                                           const Condition& predicate,
+                                           const Handler& handler) {
+        VERIFY(chunk_iterators.size() > 1);
+        DEBUG("Parallel search for elements of interest");
+        typedef typename Condition::checked_type ElementType;
+        std::vector<std::vector<ElementType>> of_interest(omp_get_max_threads());
+
+        #pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
+            DEBUG("Processing chunk " << i << " by thread " << omp_get_thread_num());
+            size_t cnt = 0;
+            for (auto it = chunk_iterators[i], end = chunk_iterators[i + 1]; it != end; ++it) {
+                ElementType t = *it;
+                if (predicate(t)) {
+                    of_interest[omp_get_thread_num()].push_back(t);
+                }
+                cnt++;
+            }
+            DEBUG("Processed chunk " << i << ". " << cnt << " elements identified as potential candidates");
+        }
+
+        DEBUG("Merging chunks");
+        for (auto& chunk : of_interest) {
+            for (const auto& el : chunk) {
+                handler(el);
+            }
+            chunk.clear();
+        }
+        DEBUG("Chunks merged");
+    }
 
     ParallelInterestingElementFinder(func::TypedPredicate<ElementId> condition,
                                      size_t chunk_cnt)
@@ -222,6 +226,7 @@ public:
         curr_iteration_++;
         return triggered;
     }
+
 private:
     DECL_LOGGER("PersistentProcessingAlgorithm"); 
 };
@@ -269,6 +274,7 @@ private:
     DECL_LOGGER("ParallelEdgeRemovingAlgorithm");
 };
 
+//TODO use coverage order?
 template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
 class DisconnectionAlgorithm : public PersistentProcessingAlgorithm<Graph,
         typename Graph::EdgeId,
@@ -283,12 +289,13 @@ public:
                            func::TypedPredicate<EdgeId> condition,
                            size_t chunk_cnt,
                            EdgeRemovalHandlerF<Graph> removal_handler,
+                           bool second_check = true,
                            const Comparator& comp = Comparator(),
                            bool track_changes = true)
             : base(g,
                    std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(condition, chunk_cnt),
             /*canonical_only*/false, comp, track_changes),
-              condition_(condition),
+              condition_(second_check ? condition : func::AlwaysTrue<EdgeId>()),
               disconnector_(g, removal_handler) {
     }
 

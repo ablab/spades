@@ -506,11 +506,12 @@ private:
     }
 
     std::vector<std::vector<BulgeInfo>> FindBulges(const std::vector<EdgeId>& edge_buffer) const {
-        DEBUG("Looking for bulges (in parallel). Edge buffer size " << edge_buffer.size());
+        DEBUG("Looking for bulges (in parallel)");
         utils::perf_counter perf;
         std::vector<std::vector<BulgeInfo>> bulge_buffers(omp_get_max_threads());
-        size_t n = edge_buffer.size();
+        const size_t n = edge_buffer.size();
         //order is in agreement with coverage
+        DEBUG("Edge buffer size " << n);
         #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < n; ++i) {
             EdgeId e = edge_buffer[i];
@@ -574,7 +575,7 @@ private:
         return interacting_edges;
     }
 
-    size_t ProcessBulges(const std::vector<BulgeInfo>& independent_bulges, SmartEdgeSet&& interacting_edges) {
+    size_t ProcessBulges(const std::vector<BulgeInfo>& independent_bulges, SmartEdgeSet interacting_edges) {
         DEBUG("Processing bulges");
         utils::perf_counter perf;
 
@@ -653,7 +654,9 @@ public:
         while (proceed) {
             std::vector<EdgeId> edge_buffer;
             edge_buffer.reserve(buff_size_);
+            DEBUG("Filling edge buffer");
             proceed = FillEdgeBuffer(edge_buffer, proceed_condition);
+            DEBUG("Edge buffer filled");
 
             std::vector<BulgeInfo> bulges = MergeBuffers(FindBulges(edge_buffer));
 

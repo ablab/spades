@@ -727,44 +727,44 @@ private:
     ;
 };
 
-template<class Graph, class ElementType>
-class SemiParallelAlgorithmRunner {
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-
-    const Graph& g_;
-
-public:
-
-    const Graph& g() const {
-        return g_;
-    }
-
-    SemiParallelAlgorithmRunner(Graph& g)
-            : g_(g) {
-
-    }
-
-    template<class Algo, class ItVec, class Comparator = std::less<ElementType>>
-    bool RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators,
-            const Comparator& comp = Comparator()) {
-        VERIFY(chunk_iterators.size() > 1);
-        omnigraph::SmartSetIterator<Graph, ElementType, Comparator> it(g_, false, comp);
-
-        omnigraph::FindInterestingFromChunkIterators(chunk_iterators,
-                                          [&](ElementType el) {return algo.IsOfInterest(el);},
-                                          [&](ElementType el) {it.push(el);});
-
-        bool changed = false;
-        for (; !it.IsEnd(); ++it) {
-            changed |= algo.Process(*it);
-        }
-        return changed;
-    }
-
-private:
-    DECL_LOGGER("SemiParallelAlgorithmRunner");
-};
+//template<class Graph, class ElementType>
+//class SemiParallelAlgorithmRunner {
+//    typedef typename Graph::VertexId VertexId;
+//    typedef typename Graph::EdgeId EdgeId;
+//
+//    const Graph& g_;
+//
+//public:
+//
+//    const Graph& g() const {
+//        return g_;
+//    }
+//
+//    SemiParallelAlgorithmRunner(Graph& g)
+//            : g_(g) {
+//
+//    }
+//
+//    template<class Algo, class ItVec, class Comparator = std::less<ElementType>>
+//    bool RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators,
+//            const Comparator& comp = Comparator()) {
+//        VERIFY(chunk_iterators.size() > 1);
+//        omnigraph::SmartSetIterator<Graph, ElementType, Comparator> it(g_, false, comp);
+//
+//        omnigraph::FindInterestingFromChunkIterators(chunk_iterators,
+//                                          [&](ElementType el) {return algo.IsOfInterest(el);},
+//                                          [&](ElementType el) {it.push(el);});
+//
+//        bool changed = false;
+//        for (; !it.IsEnd(); ++it) {
+//            changed |= algo.Process(*it);
+//        }
+//        return changed;
+//    }
+//
+//private:
+//    DECL_LOGGER("SemiParallelAlgorithmRunner");
+//};
 
 template<class Graph>
 class SemiParallelEdgeRemovingAlgorithm {
@@ -839,6 +839,7 @@ bool ParallelClipTips(Graph &g,
     return true;
 }
 
+//TODO review if can be useful... AFAIK never actually worked
 //template<class Graph>
 //bool ParallelRemoveBulges(Graph &g,
 //              const config::debruijn_config::simplification::bulge_remover &br_config,
@@ -867,6 +868,7 @@ bool ParallelClipTips(Graph &g,
 //    return true;
 //}
 
+//TODO looks obsolete
 template<class Graph>
 bool ParallelEC(Graph &g,
                 size_t max_length,
