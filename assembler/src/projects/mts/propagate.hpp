@@ -14,10 +14,16 @@ namespace debruijn_graph {
 
 class AnnotationPropagator {
     const conj_graph_pack& gp_;
+    size_t length_threshold_;
 
 public:
-    AnnotationPropagator(const conj_graph_pack& gp) :
-                     gp_(gp) {
+    AnnotationPropagator(const conj_graph_pack& gp, size_t length_threshold) :
+                     gp_(gp), length_threshold_(length_threshold) {
+    }
+
+    template<typename Result, typename... Args>
+    std::shared_ptr<Result> make_propagator(Args... args) {
+        return std::make_shared<Result>(gp_, length_threshold_, args...);
     }
 
     void Run(io::SingleStream& contigs, EdgeAnnotation& edge_annotation);

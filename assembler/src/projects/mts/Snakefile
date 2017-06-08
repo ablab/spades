@@ -151,7 +151,7 @@ rule canopy:
 # Binning with CONCOCT
 rule concoct:
     input:   contigs="assembly/splits/all.fasta", profiles="binning/concoct/profiles_{}.in".format(PROFILER)
-    output:  out="binning/concoct/binning.out"
+    output:  "binning/concoct/binning.out"
     params:  max_clusters=40, out="binning/concoct"
     threads: THREADS
     log:     "binning/concoct.log"
@@ -160,7 +160,7 @@ rule concoct:
              "concoct -c {params.max_clusters} --composition_file {input.contigs}"
              " --coverage_file {input.profiles} --length_threshold {MIN_CONTIG_LENGTH}"
              " -b {params.out} >{log} 2>&1 && "
-             "cp binning/concoct/clustering_gt{MIN_CONTIG_LENGTH}.csv binning/concoct/binning.out"
+             "cp binning/concoct/clustering_gt{MIN_CONTIG_LENGTH}.csv {output}"
 
 rule extract_bins:
     input:   "assembly/splits/all.fasta", "binning/annotation/all.ann"
@@ -173,7 +173,6 @@ rule metabat:
     input:   contigs="assembly/full/all.fasta", profiles="profile/jgi/full/depth_metabat.txt"
     output:  flag=touch("binning/metabat/binning.done"),
              out="binning/metabat/binning.out"
-             #dynamic("binning/metabat/{cluster}.fa")
     threads: THREADS
     params:  "binning/metabat/cluster"
     log:     "binning/metabat.log"
@@ -188,7 +187,7 @@ rule metabat:
 # Binning with MAXBIN2
 rule maxbin:
     input:   contigs="assembly/splits/all.fasta", profiles="binning/maxbin/profiles_{}.in".format(PROFILER)
-    output:  "binning/maxbin/clustering_gt{}.csv".format(MIN_CONTIG_LENGTH)
+    output:  "binning/maxbin/binning.out"
     threads: THREADS
     params:  out="binning/maxbin/cluster"
     log:     "binning/maxbin.log"
@@ -259,7 +258,7 @@ rule prop_binning:
     log:     "binning/{group}.log"
     message: "Propagating annotation & binning reads for {wildcards.group}"
     shell:   "{BIN}/prop_binning -k {ASSEMBLY_K} -s {params.saves} -c {input.contigs}"
-             " -n {params.samples} -l {input.left} -r {input.right}"
+             " -n {params.samples} -l {input.left} -r {input.right} -t {MIN_CONTIG_LENGTH}"
              " -a {input.ann} -f {input.splits} -o binning -p {output.ann} -e {output.edges} >{log} 2>&1"
 
 rule prop_all:
@@ -284,6 +283,6 @@ rule choose_samples:
     input:   profs="binning/{}/bins.prof".format(BINNER), bins="binning/{}/filtered_bins.tsv".format(BINNER)
     output:  "binning/bins_total.prof"
     log:     "binning/choose_samples.log"
-    message: "Choosing bins and samples for them"
+    message: "Choosing bins for reassembly and samples for them"
     shell:   "rm -f binning/*.info && rm -rf binning/excluded && "
              "{SCRIPTS}/choose_samples.py {input.profs} {input.bins} {output} binning >{log} 2>&1"

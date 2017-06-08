@@ -21,21 +21,24 @@ std::string add_suffix(const std::string& path, const std::string& suffix) {
     return path.substr(0, path.length() - ext.length()) + suffix + ext;
 }
 
-void DumpEdgesAndAnnotation(const Graph& g,
-                            const EdgeAnnotation& edge_annotation,
-                            const string& out_edges,
-                            const string& out_annotation) {
-    INFO("Dumping edges to " << out_edges << "; their annotation to " << out_annotation);
+//TODO: refactor to process the graph only once
+void DumpEdges(const Graph& g, const string& out_edges) {
+    INFO("Dumping edges to " << out_edges);
     io::OutputSequenceStream oss(out_edges);
+    for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
+        EdgeId e = *it;
+        oss << io::SingleRead("NODE_" + std::to_string(g.int_id(e)), g.EdgeNucls(e).str());
+    }
+}
+
+void DumpAnnotation(const Graph& g, const EdgeAnnotation& edge_annotation, const string& out_annotation) {
+    INFO("Dumping annotation to " << out_annotation);
     AnnotationOutStream annotation_out(out_annotation);
     for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
         EdgeId e = *it;
-        io::SingleRead edge_read("NODE_" + std::to_string(g.int_id(e)),
-                                 g.EdgeNucls(e).str());
-        oss << edge_read;
         auto relevant_bins = edge_annotation.Annotation(e);
         if (!relevant_bins.empty()) {
-            annotation_out << ContigAnnotation(GetId(edge_read),
+            annotation_out << ContigAnnotation("NODE_" + std::to_string(g.int_id(e)),
                                                vector<bin_id>(relevant_bins.begin(), relevant_bins.end()));
         }
     }
@@ -52,6 +55,7 @@ int main(int argc, char** argv) {
     vector<string> sample_names, left_reads, right_reads;
     string out_root, edges_dump, propagation_dump;
     vector<bin_id> bins_of_interest;
+    size_t length_threshold;
     bool no_binning;
     try {
         GetOpt_pp ops(argc, argv);
@@ -68,7 +72,9 @@ int main(int argc, char** argv) {
             >> Option('p', propagation_dump, "")
             >> Option('e', edges_dump, "")
             >> Option('b', bins_of_interest, {})
-            >> OptionPresent('D', "no-binning", no_binning);
+            >> Option('t', length_threshold, (size_t)2000)
+            >> OptionPresent('D', "no-binning", no_binning)
+        ;
     } catch(GetOptEx &ex) {
         cout << "Usage: prop_binning -k <K> -s <saves path> -c <contigs path> -f <splits path> "
                 "-a <binning annotation> -n <sample names> -l <left reads> -r <right reads> "
@@ -98,14 +104,18 @@ int main(int argc, char** argv) {
     EdgeAnnotation edge_annotation = filler(contigs_stream, split_stream, annotation_in);
 
     INFO("Propagation launched");
-    AnnotationPropagator propagator(gp);
+    AnnotationPropagator propagator(gp, length_threshold);
     propagator.Run(contigs_stream, edge_annotation);
     INFO("Propagation finished");
 
+    if (!edges_dump.empty()) {
+        INFO("Dumping propagated edges to " << edges_dump);
+        DumpEdges(gp.g, edges_dump);
+    }
+
     if (!propagation_dump.empty()) {
-        INFO("Dumping propagation info to " << propagation_dump);
-        DumpEdgesAndAnnotation(gp.g, edge_annotation,
-                               edges_dump, propagation_dump);
+        INFO("Dumping propagated annotation to " << propagation_dump);
+        DumpAnnotation(gp.g, edge_annotation, propagation_dump);
     }
 
     if (no_binning) {

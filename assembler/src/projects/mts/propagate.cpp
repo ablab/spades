@@ -15,15 +15,20 @@
 #include "visualization.hpp"
 
 namespace debruijn_graph {
-static const size_t EDGE_LENGTH_THRESHOLD = 2000;
+static const size_t EDGE_LENGTH_THRESHOLD = 2000,
+                    EDGE_UPPER_THRESHOLD = 3000;
 
 //FIXME 2kb edge length threshold might affect tip propagator in undesired way
 class EdgeAnnotationPropagator {
     const conj_graph_pack& gp_;
     const string name_;
-    size_t edge_length_threshold_;
+    size_t edge_length_threshold_, edge_upper_threshold_;
 
 protected:
+    size_t edge_length_threshold() const {
+        return edge_length_threshold_;
+    }
+
     const conj_graph_pack& gp() const {
         return gp_;
     }
@@ -37,10 +42,12 @@ protected:
 public:
     EdgeAnnotationPropagator(const conj_graph_pack& gp,
                              const string& name,
-                             size_t edge_length_threshold = EDGE_LENGTH_THRESHOLD) :
+                             size_t edge_length_threshold = EDGE_LENGTH_THRESHOLD,
+                             size_t edge_upper_threshold = EDGE_UPPER_THRESHOLD) :
                     gp_(gp),
                     name_(name),
-                    edge_length_threshold_(edge_length_threshold) {}
+                    edge_length_threshold_(edge_length_threshold),
+                    edge_upper_threshold_(edge_upper_threshold) {}
 
     const std::string& name() const {
         return name_;
@@ -51,9 +58,20 @@ public:
         DEBUG("Propagating with propagator: " << name_);
         for (bin_id bin : edge_annotation.interesting_bins()) {
             DEBUG("Processing bin " << bin << " with propagator: " << name_);
-            auto init_edges = edge_annotation.EdgesOfBin(bin, edge_length_threshold_);
-            DEBUG("Initial edge cnt " << init_edges.size() << " (edge length threshold " << edge_length_threshold_ << ")");
+            auto init_edges = edge_annotation.EdgesOfBin(bin, edge_length_threshold());
+            DEBUG("Initial edge cnt " << init_edges.size() << " (edge length threshold " << edge_length_threshold() << ")");
             auto raw_propagated = PropagateEdges(init_edges);
+            auto old_size = raw_propagated.size();
+            //Filter
+            size_t n = 0;
+            for (auto i = raw_propagated.begin(); i != raw_propagated.end(); ++n) {
+                DEBUG("Edge cnt: " << raw_propagated.size() << "; iter " << n);
+                if (gp_.g.length(*i) > edge_upper_threshold_)
+                    raw_propagated.erase(i++);
+                else
+                    ++i;
+            }
+            DEBUG("Excluded " << (old_size - raw_propagated.size()) << " >" << edge_upper_threshold_ << "bp edges");
             set<EdgeId> propagated;
             std::set_difference(raw_propagated.begin(), raw_propagated.end(),
                                 init_edges.begin(), init_edges.end(),
@@ -72,40 +90,6 @@ private:
 class ConnectingPathPropagator : public EdgeAnnotationPropagator {
     size_t path_length_threshold_;
     size_t path_edge_cnt_;
-    const EdgeAnnotation& debug_annotation_;
-
-    bin_id DetermineBin(const set<EdgeId>& edges) const {
-        map<bin_id, size_t> cnt_map;
-        for (EdgeId e : edges) {
-            for (auto b : debug_annotation_.Annotation(e)) {
-                cnt_map[b]++;
-            }
-        }
-        bin_id candidate = "";
-        for (auto cnt_el : cnt_map) {
-            if (cnt_el.second > edges.size() / 2) {
-                if (candidate.empty())
-                    candidate = cnt_el.first;
-                else
-                    return "";
-            }
-        }
-        return candidate;
-    }
-
-    bool BadPath(const vector<EdgeId>& path, bin_id base_bin) const {
-        size_t cnt = 0;
-        for (EdgeId e : path) {
-            if (g().length(e) < 2000) 
-                continue;
-            auto ann = debug_annotation_.Annotation(e);
-            if (!ann.empty() &&
-                std::find(ann.begin(), ann.end(), base_bin) == ann.end()) {
-                cnt++;
-            }
-        }
-        return cnt > 0;
-    }
 
     set<VertexId> CollectEdgeStarts(const set<EdgeId>& edges) const {
         set<VertexId> answer;
@@ -116,29 +100,16 @@ class ConnectingPathPropagator : public EdgeAnnotationPropagator {
     }
 
     set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const override {
-        //static size_t pic_cnt = 0;
-        bin_id bin = DetermineBin(edges);
-        if (!bin.empty()) {
-            DEBUG("Bin determined as " << bin);
-        } else {
-            DEBUG("Failed to determine bin");
-        }
+        DEBUG(__FUNCTION__);
         set<EdgeId> answer;
         set<VertexId> starts = CollectEdgeStarts(edges);
         for (EdgeId e : edges) {
             PathProcessor<Graph> path_searcher(g(), g().EdgeEnd(e), path_length_threshold_);
             for (VertexId v : starts) {
                 auto callback = AdapterCallback<Graph>([&](const vector<EdgeId>& path) {
-                    //if (pic_cnt < 10) {
-                    //if (BadPath(path, bin)) {
-                    //    auto to_draw = path;
-                    //    to_draw.insert(to_draw.begin(), e);
-                    //    PrintAnnotatedAlongPath(gp(), to_draw, debug_annotation_, "/home/snurk/tmp/pics/pic_" + std::to_string(++pic_cnt) + "_");
-                    //}
-                    //}
                     utils::insert_all(answer, path);
                 }, true);
-                TRACE("Launching path search between edge " << g().str(e) << " and vertex "
+                DEBUG("Launching path search between edge " << g().str(e) << " and vertex "
                         << g().str(v) << " with length bound " << path_length_threshold_);
                 path_searcher.Process(v, 0, path_length_threshold_, callback, path_edge_cnt_);
             }
@@ -148,13 +119,12 @@ class ConnectingPathPropagator : public EdgeAnnotationPropagator {
 
 public:
     ConnectingPathPropagator(const conj_graph_pack& gp,
-                             size_t path_length_threshold, 
-                             size_t path_edge_cnt,
-                             const EdgeAnnotation& ann) :
-        EdgeAnnotationPropagator(gp, "ConnectingPath"),
+                             size_t length_threshold,
+                             size_t path_length_threshold,
+                             size_t path_edge_cnt) :
+        EdgeAnnotationPropagator(gp, "ConnectingPath", length_threshold),
         path_length_threshold_(path_length_threshold),
-        path_edge_cnt_(path_edge_cnt),
-        debug_annotation_(ann) {}
+        path_edge_cnt_(path_edge_cnt) {}
 
 private:
     DECL_LOGGER("ConnectingPathPropagator");
@@ -173,13 +143,15 @@ class PairedInfoPropagator : public EdgeAnnotationPropagator {
                         if (math::ge(point.weight, weight_threshold_)) {
                             DEBUG("Adding (" << g().str(e1) << "," << g().str(i.first) << "); " << point);
                             answer.insert(i.first);
-                        }	    
+                        }
         }
         return answer;
     }
 public:
-    PairedInfoPropagator(const conj_graph_pack& gp, omnigraph::de::DEWeight threshold):
-        EdgeAnnotationPropagator(gp, "PairedInfo"), weight_threshold_(threshold) {}
+    PairedInfoPropagator(const conj_graph_pack& gp,
+                         size_t length_threshold,
+                         omnigraph::de::DEWeight threshold):
+        EdgeAnnotationPropagator(gp, "PairedInfo", length_threshold), weight_threshold_(threshold) {}
 private:
     DECL_LOGGER("PairedInfoPropagator");
 };
@@ -202,7 +174,7 @@ protected:
             auto edges_of_contig = mapper_->MapRead(contig).simple_path();
             for (EdgeId e : edges_of_contig) {
                 if (edges.count(e)) {
-                    DEBUG("Edge " << gp().g.str(e) << " belongs to the contig #" << 
+                    DEBUG("Edge " << gp().g.str(e) << " belongs to the contig #" <<
                             contig.name() << " of " << edges_of_contig.size() << " edges");
                     utils::insert_all(answer, edges_of_contig);
                     break;
@@ -222,8 +194,8 @@ private:
 class TipPropagator : public EdgeAnnotationPropagator {
 
 public:
-    TipPropagator(const conj_graph_pack& gp) :
-        EdgeAnnotationPropagator(gp, "TipPropagator"), tipper_(gp.g) {}
+    TipPropagator(const conj_graph_pack& gp, size_t length_threshold) :
+        EdgeAnnotationPropagator(gp, "TipPropagator", length_threshold), tipper_(gp.g) {}
 
 protected:
     set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const override {
@@ -290,13 +262,13 @@ private:
     DECL_LOGGER("AnnotationChecker");
 };
 
-void AnnotationPropagator::Run(io::SingleStream& /*contigs*/, 
+void AnnotationPropagator::Run(io::SingleStream& /*contigs*/,
                      EdgeAnnotation& edge_annotation
                      /*const string& annotation_out_fn*/) {
     std::vector<std::shared_ptr<EdgeAnnotationPropagator>> propagator_pipeline {
-        std::make_shared<ConnectingPathPropagator>(gp_, 8000, 10, edge_annotation),
-        std::make_shared<TipPropagator>(gp_), 
-        std::make_shared<PairedInfoPropagator>(gp_, 10.)};//,
+        make_propagator<ConnectingPathPropagator>(8000, 10),
+        make_propagator<TipPropagator>(),
+        make_propagator<PairedInfoPropagator>(10.)};//,
 //        std::make_shared<ContigPropagator>(gp_, contigs)};//,
 //        std::make_shared<ConnectingPathPropagator>(gp_, 8000, 10, edge_annotation),
 //        std::make_shared<ContigPropagator>(gp_, contigs),

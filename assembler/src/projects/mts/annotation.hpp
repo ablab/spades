@@ -223,11 +223,15 @@ class AnnotationFiller {
         return answer;
     };
 
+    static bool IsSpurious(size_t colored_len, size_t full_len) {
+        return math::ls(double(colored_len) / double(full_len), 0.3);
+    }
+
     void FilterSpuriousInfo(map<EdgeId, map<bin_id, size_t>>& coloring) const {
         for (auto& edge_info : coloring) {
             size_t edge_len = gp_.g.length(edge_info.first);
             for (auto color_it = edge_info.second.begin(); color_it != edge_info.second.end(); ) {
-                if (math::ls(double(color_it->second) / double(edge_len), 0.3)) {
+                if (IsSpurious(color_it->second, edge_len)) {
                     edge_info.second.erase(color_it++);
                 } else {
                     ++color_it;
@@ -262,8 +266,15 @@ class AnnotationFiller {
             }
         }
         set<bin_id> answer;
+        using ColorInfo = std::pair<bin_id, size_t>;
+        auto it = std::max_element(path_colors.begin(), path_colors.end(),
+            [](const ColorInfo& p1, const ColorInfo& p2) {
+                 return p1.second < p2.second;
+             });
+         if (it != path_colors.end())
+            answer.insert(it->first);
         for (auto color_info : path_colors) {
-            if (math::gr(double(color_info.second) / double(total_len), 0.3)) {
+            if (!IsSpurious(color_info.second, total_len)) {
                 answer.insert(color_info.first);
             }
         }
