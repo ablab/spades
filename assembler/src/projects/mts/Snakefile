@@ -24,8 +24,7 @@ rule all:
 
 rule assemble:
     input:   left=left_reads, right=right_reads
-    output:  "assembly/{sample}.fasta"
-    wildcard_constraints: sample="(sample|group)\d+"
+    output:  "assembly/{sample,(sample|group)\d+}.fasta"
     #TODO: remove this boilerplate
     params:  left=lambda w: " ".join(expand("-1 {r}", r=left_reads(w))),
              right=lambda w: " ".join(expand("-2 {r}", r=right_reads(w))),
@@ -34,7 +33,7 @@ rule assemble:
     threads: THREADS
     message: "Assembling {wildcards.sample} with SPAdes"
     shell:   "{SPADES}/spades.py --meta -m 400 -t {threads} {params.left} {params.right}"
-             " -o {params.dir} >{log} 2>&1 && "
+             " --save-gp -o {params.dir} >{log} 2>&1 && "
              "cp {params.dir}/scaffolds.fasta {output}"
 
 rule assemble_all:
@@ -75,8 +74,8 @@ rule multiplicities:
 
 rule profile:
     input:   contigs="assembly/{sample}.fasta", mpl="profile/kmers.kmm"
-    output:  id="profile/{sample}.id", mpl="profile/{sample}.mpl", splits="assembly/{sample}_splits.fasta"
-    wildcard_constraints: sample="(sample|group)\d+"
+    output:  id="profile/{sample,(sample|group)\d+}.id", mpl="profile/{sample}.mpl",
+             splits="assembly/{sample}_splits.fasta"
     log:     "profile/{sample}.log"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:   "{BIN}/contig_abundance_counter -k {SMALL_K} -w tmp -c {input.contigs}"
@@ -135,8 +134,7 @@ rule binning_post:
 rule read_binning:
     input:   contigs="assembly/{sample}.fasta", splits="assembly/{sample}_splits.fasta",
              ann="annotation/{sample}.ann", left=left_reads, right=right_reads
-    output:  ann="propagation/{sample}_edges.ann",
-    wildcard_constraints: sample="(sample|group)\d+"
+    output:  ann="propagation/{sample,(sample|group)\d+}_edges.ann"
     params:  saves=os.path.join("assembly/{sample}/", SAVES),
              out="propagation/{sample}_edges",
              group=lambda wildcards: " ".join(GROUPS[wildcards.sample]),
