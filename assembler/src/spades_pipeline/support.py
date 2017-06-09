@@ -18,7 +18,7 @@ import tempfile
 import shutil
 import options_storage
 import itertools
-import SeqIO
+from common import SeqIO
 import math
 from os.path import abspath, expanduser, join
 from distutils.version import LooseVersion
