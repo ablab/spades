@@ -208,6 +208,10 @@ public:
         return gap_len_[index];
     }
 
+    void SetGapAt(size_t index, const Gap &gap) {
+        gap_len_[index] = gap;
+    }
+
     size_t GetId() const {
         return id_;
     }

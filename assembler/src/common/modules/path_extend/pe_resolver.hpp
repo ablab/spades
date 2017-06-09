@@ -98,8 +98,9 @@ class DecentOverlapRemover {
                 overlap_poss.insert(overlap);
             }
         }
-        if (!overlap_poss.empty())
+        if (!overlap_poss.empty()) {
             utils::insert_all(splits_[&path], overlap_poss);
+        }
     }
 
     void InnerMarkOverlaps(bool end_start_only, bool retain_one_copy) {

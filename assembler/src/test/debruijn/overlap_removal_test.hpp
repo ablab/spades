@@ -37,6 +37,7 @@ inline BidirectionalPath AsPath(const Graph &g,
                    [&] (size_t id) {
                        EdgeId e = finder.ReturnEdgeId(id);
                        VERIFY_MSG(e != EdgeId(), "Couldn't convert id " << id);
+                       INFO("Edge found " << g.str(e));
                        return e;});
     return BidirectionalPath(g, edges);
 }
@@ -224,6 +225,48 @@ BOOST_AUTO_TEST_CASE( TestBasicRepeat ) {
                result_ids);
 }
 
+BOOST_AUTO_TEST_CASE( TestBasicRepeatUneven ) {
+    Graph g(55);
+    GraphElementFinder<Graph> finder(g);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+
+    PathsInit path_ids = {{17572, 1565},
+                          {18066, 1565},
+                          {1565,  19391}};
+
+    PathsInit result_ids = {{19391}, {18066}, {17572}, {1565}};
+
+    size_t min_edge_len = 0;
+    size_t max_diff = 0;
+
+    CheckPaths(g, finder,
+               RemoveOverlaps(g, finder, path_ids,
+                              min_edge_len, max_diff,
+                       /*end_start_only*/ true, /*retain one*/ false),
+               result_ids);
+}
+
+BOOST_AUTO_TEST_CASE( TestBasicRepeatAllDisconnected ) {
+    Graph g(55);
+    GraphElementFinder<Graph> finder(g);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+
+    PathsInit path_ids = {{17572, 1565},
+                          {18066, 1565},
+                          {1565,  19391}};
+
+    PathsInit result_ids = {{19391}, {18066}, {17572}, {1565}};
+
+    size_t min_edge_len = 0;
+    size_t max_diff = 0;
+
+    CheckPaths(g, finder,
+               RemoveOverlaps(g, finder, path_ids,
+                              min_edge_len, max_diff,
+                       /*end_start_only*/ false, /*retain one*/ true),
+               result_ids);
+}
+
 BOOST_AUTO_TEST_CASE( TestBasicRepeatNoEffect ) {
     Graph g(55);
     GraphElementFinder<Graph> finder(g);
@@ -266,6 +309,27 @@ BOOST_AUTO_TEST_CASE( TestBasicRepeatEnd ) {
                result_ids);
 }
 
+BOOST_AUTO_TEST_CASE( TestBasicRepeatEndRetain ) {
+    Graph g(55);
+    GraphElementFinder<Graph> finder(g);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+
+    PathsInit path_ids = {
+            {17572, 1565},
+            {18066, 1565}};
+
+    PathsInit result_ids = {{18066, 1565}, {17572}, {1565}};
+
+    size_t min_edge_len = 0;
+    size_t max_diff = 0;
+
+    CheckPaths(g, finder,
+               RemoveOverlaps(g, finder, path_ids,
+                              min_edge_len, max_diff,
+                       /*end_start_only*/ false, /*retain one*/ true),
+               result_ids);
+}
+
 BOOST_AUTO_TEST_CASE( TestBasicRepeatStart ) {
     Graph g(55);
     GraphElementFinder<Graph> finder(g);
@@ -284,6 +348,27 @@ BOOST_AUTO_TEST_CASE( TestBasicRepeatStart ) {
                RemoveOverlaps(g, finder, path_ids,
                               min_edge_len, max_diff,
                               /*end_start_only*/ false, /*retain one*/ false),
+               result_ids);
+}
+
+BOOST_AUTO_TEST_CASE( TestBasicRepeatStartRetain ) {
+    Graph g(55);
+    GraphElementFinder<Graph> finder(g);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+
+    PathsInit path_ids = {
+            {1565, 19391},
+            {1565, 20042}};
+
+    PathsInit result_ids = {{1565, 20042}, {1565}, {19391}};
+
+    size_t min_edge_len = 0;
+    size_t max_diff = 0;
+
+    CheckPaths(g, finder,
+               RemoveOverlaps(g, finder, path_ids,
+                              min_edge_len, max_diff,
+                       /*end_start_only*/ false, /*retain one*/ true),
                result_ids);
 }
 
@@ -344,9 +429,59 @@ BOOST_AUTO_TEST_CASE( TestBasicDeduplicationEqual ) {
                result_ids);
 }
 
-//TODO add tests with discontinuous paths
-//TODO add tests with gaps
-//TODO add deduplication tests
+BOOST_AUTO_TEST_CASE( TestDeduplicateDiff ) {
+    Graph g(55);
+    GraphElementFinder<Graph> finder(g);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+
+    PathsInit path_ids = {
+            {20129, 17993, 20131, 17993, 19506},
+            {20129, 17993, 19506}};
+
+    GraphCoverageMap cov_map(g);
+    PathContainer container;
+
+    FormPaths(g, finder, cov_map, container, path_ids);
+
+    PathsInit result_ids = {{20129, 17993, 20131, 17993, 19506}};
+
+    size_t min_edge_len = 0;
+    size_t max_diff = 100;
+    Deduplicate(g, container, cov_map, min_edge_len, max_diff);
+
+    CheckPaths(g, finder,
+               container,
+               result_ids);
+}
+
+BOOST_AUTO_TEST_CASE( TestDeduplicateDiffGap ) {
+    Graph g(55);
+    GraphElementFinder<Graph> finder(g);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/ecoli_400k/distance_estimation", g);
+
+    PathsInit path_ids = {
+            {20129, 17993, 20131, 17993, 19506},
+            {20129, 17993, 19506}};
+
+    GraphCoverageMap cov_map(g);
+    PathContainer container;
+
+    FormPaths(g, finder, cov_map, container, path_ids);
+    container.Get(1)->SetGapAt(2, Gap(100));
+
+    PathsInit result_ids = {{20129, 17993, 20131, 17993, 19506}};
+
+    size_t min_edge_len = 0;
+    size_t max_diff = 100;
+    Deduplicate(g, container, cov_map, min_edge_len, max_diff);
+
+    CheckPaths(g, finder,
+               container,
+               result_ids);
+}
+
+//TODO add tests with discontinuous paths?
+//TODO add tests on whole the process
 
 BOOST_AUTO_TEST_SUITE_END()
 
