@@ -269,13 +269,12 @@ private:
                 continue;
 
             start_edges.emplace_back(kh, origin_.GetOutgoing(kh, next));
-            TRACE("Added to queue " << start_edges.back());
+            TRACE("Added to queue " << start_edges.back() << " " << mask);
         }
     }
 
-    void AddStartDeEdges(kmer_iterator &it, size_t queueSize,
-                         std::vector<DeEdge>& start_edges) const {
-        for (; start_edges.size() < queueSize && it.good(); ++it) {
+    void AddStartDeEdges(kmer_iterator &it, std::vector<DeEdge> &start_edges) const {
+        for ( ; it.good(); ++it) {
             KeyWithHash kh = origin_.ConstructKWH(Kmer(kmer_size_, *it));
             auto extensions = origin_.get_value(kh);
             if (!IsJunction(extensions))
@@ -356,22 +355,41 @@ public:
     //TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
     const std::vector<Sequence> ExtractUnbranchingPaths(size_t queueMinSize, size_t queueMaxSize,
                                                         double queueGrowthRate) {
+        INFO("Collecting junction k-mers");
+        auto its = origin_.kmer_begin(omp_get_max_threads());
+        std::vector<std::vector<DeEdge> > junctions(its.size(), std::vector<DeEdge>());
+
+#       pragma omp parallel for schedule(static)
+        for (size_t i = 0; i < its.size(); ++i)
+            AddStartDeEdges(its[i], junctions[i]);
+
         INFO("Extracting unbranching paths");
-        UnbranchingPathFinder finder(origin_, kmer_size_);
-        std::vector<Sequence> result;
-        size_t queueSize = queueMinSize;
-        std::vector<DeEdge> start_edges;
-        std::vector<Sequence> sequences;
-        start_edges.reserve(queueSize);
-        auto it = origin_.kmer_begin();
-        while (it.good()) {
-            AddStartDeEdges(it, queueSize, start_edges); // format a queue of junction kmers
-            CalculateSequences(start_edges, sequences, finder); // in parallel
-            start_edges.clear();
-            queueSize = min((size_t) ((double) queueSize * queueGrowthRate), queueMaxSize);
+        std::vector<std::vector<Sequence> > sequences(its.size(), std::vector<Sequence>());
+#       pragma omp parallel for schedule(static)
+        for (size_t i = 0; i < junctions.size(); ++i) {
+            UnbranchingPathFinder finder(origin_, kmer_size_);
+            CalculateSequences(junctions[i], sequences[i], finder);
+            junctions[i].clear();
+            junctions[i].shrink_to_fit();
         }
-        INFO("Extracting unbranching paths finished. " << sequences.size() << " sequences extracted");
-        return sequences;
+
+        INFO("Collecting per-thread buffers")
+        // FIXME: Do we really need this?
+        size_t snum = std::accumulate(sequences.begin(), sequences.end(),
+                                      0,
+                                      [](size_t val, const std::vector<Sequence> &s) {
+                                          return val + s.size();
+                                      });
+        sequences[0].reserve(snum);
+        for (size_t i = 1; i < sequences.size(); ++i) {
+            sequences[0].insert(sequences[0].end(),
+                                std::make_move_iterator(sequences[i].begin()), std::make_move_iterator(sequences[i].end()));
+            sequences[i].clear();
+            sequences[i].shrink_to_fit();
+        }
+
+        INFO("Extracting unbranching paths finished. " << sequences[0].size() << " sequences extracted");
+        return sequences[0];
     }
 
     const std::vector<Sequence> ExtractUnbranchingPathsAndLoops(size_t queueMinSize, size_t queueMaxSize,
@@ -379,9 +397,8 @@ public:
         std::vector<Sequence> result = ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
         CleanCondensed(result);
         std::vector<Sequence> loops = CollectLoops();
-        for(auto it = loops.begin(); it != loops.end(); ++it) {
-            result.push_back(*it);
-        }
+        result.insert(result.end(),
+                      std::make_move_iterator(loops.begin()), std::make_move_iterator(loops.end()));
         return result;
     }
 
@@ -389,10 +406,6 @@ private:
     DECL_LOGGER("UnbranchingPathExtractor")
 };
 
-//FIXME is it dead?
-/*
- * Only works for Conjugate dbg
- */
 template<class Graph>
 class FastGraphFromSequencesConstructor {
 private:
@@ -409,43 +422,27 @@ private:
         EdgeId edge_;
 
         size_t BitBool(bool flag) const {
-            if(flag)
+            if (flag)
                 return 1;
             return 0;
         }
 
     public:
-        size_t GetHash() const {
-            return hash_and_mask_ >> 2;
-        }
+        size_t GetHash() const { return hash_and_mask_ >> 2; }
+        bool IsRC() const { return hash_and_mask_ & 2; }
+        bool IsStart() const { return hash_and_mask_ & 1; }
+        EdgeId GetEdge() const { return edge_; }
+        bool IsInvalid() { return hash_and_mask_ + 1 == 0 && edge_ == EdgeId(0); }
 
-        bool IsRC() const {
-            return hash_and_mask_ & 2;
-        }
+        LinkRecord(size_t hash, EdgeId edge, bool is_start, bool is_rc)
+                : hash_and_mask_((hash << 2) | (BitBool(is_rc) << 1)| BitBool(is_start)), edge_(edge) { }
 
-        bool IsStart() const {
-            return hash_and_mask_ & 1;
-        }
+        LinkRecord()
+                : hash_and_mask_(-1ul), edge_(0) {}
 
-
-        EdgeId GetEdge() const {
-            return edge_;
-        }
-
-        LinkRecord(size_t hash, EdgeId edge, bool is_start, bool is_rc) :
-                hash_and_mask_((hash << 2) | (BitBool(is_rc) << 1)| BitBool(is_start)), edge_(edge) {
-        }
-
-        LinkRecord() :
-                hash_and_mask_(-1ul), edge_(0) {
-        }
-
-        bool IsInvalid() {
-            return hash_and_mask_ + 1 == 0 && edge_ == EdgeId(0);
-        }
 
         bool operator<(const LinkRecord &other) const {
-            if(this->hash_and_mask_ == other.hash_and_mask_)
+            if (this->hash_and_mask_ == other.hash_and_mask_)
                 return this->edge_ < other.edge_;
             return this->hash_and_mask_ < other.hash_and_mask_;
         }
@@ -454,7 +451,7 @@ private:
     LinkRecord StartLink(const EdgeId &edge, const Sequence &sequence) const {
         Kmer kmer(kmer_size_, sequence);
         Kmer kmer_rc = !kmer;
-        if(kmer < kmer_rc)
+        if (kmer < kmer_rc)
             return LinkRecord(origin_.ConstructKWH(kmer).idx(), edge, true, false);
         else
             return LinkRecord(origin_.ConstructKWH(kmer_rc).idx(), edge, true, true);
@@ -463,7 +460,7 @@ private:
     LinkRecord EndLink(const EdgeId &edge, const Sequence &sequence) const {
         Kmer kmer(kmer_size_, sequence, sequence.size() - kmer_size_);
         Kmer kmer_rc = !kmer;
-        if(kmer < kmer_rc)
+        if (kmer < kmer_rc)
             return LinkRecord(origin_.ConstructKWH(kmer).idx(), edge, false, false);
         else
             return LinkRecord(origin_.ConstructKWH(kmer_rc).idx(), edge, false, true);
@@ -473,13 +470,13 @@ private:
         size_t size = sequences.size();
         records.resize(size * 2, LinkRecord(0, EdgeId(0), false, false));
         restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
-#   pragma omp parallel for schedule(guided)
+#       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < size; ++i) {
             size_t j = i << 1;
             auto id_distributor = id_storage.GetSegmentIdDistributor(j, j + 2);//indices for two edges are required
             EdgeId edge = helper.AddEdge(DeBruijnEdgeData(sequences[i]), id_distributor);
             records[j] = StartLink(edge, sequences[i]);
-            if(graph.conjugate(edge) != edge)
+            if (graph.conjugate(edge) != edge)
                 records[j + 1] = EndLink(edge, sequences[i]);
             else
                 records[j + 1] = LinkRecord();
@@ -488,19 +485,18 @@ private:
 
     void LinkEdge(typename Graph::HelperT &helper, const Graph &graph, const VertexId v, const EdgeId edge, const bool is_start, const bool is_rc) const {
         VertexId v1 = v;
-        if(is_rc) {
+        if (is_rc)
             v1 = graph.conjugate(v);
-        }
-        if(is_start) {
+
+        if (is_start)
             helper.LinkOutgoingEdge(v1, edge);
-        } else {
+        else
             helper.LinkIncomingEdge(v1, edge);
-        }
     }
 
 public:
-    FastGraphFromSequencesConstructor(size_t k, Index &origin) : kmer_size_(k), origin_(origin) {
-    }
+    FastGraphFromSequencesConstructor(size_t k, Index &origin)
+            : kmer_size_(k), origin_(origin) {}
 
     void ConstructGraph(Graph &graph, const vector<Sequence> &sequences) const {
         typename Graph::HelperT helper = graph.GetConstructionHelper();
@@ -510,21 +506,22 @@ public:
         size_t size = records.size();
         vector<vector<VertexId>> vertices_list(omp_get_max_threads());
         restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
-#   pragma omp parallel for schedule(guided)
-        for(size_t i = 0; i < size; i++) {
-            if(i != 0 && records[i].GetHash() == records[i - 1].GetHash()) {
+#       pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < size; i++) {
+            if (i != 0 && records[i].GetHash() == records[i - 1].GetHash())
                 continue;
-            }
-            if(records[i].IsInvalid())
+            if (records[i].IsInvalid())
                 continue;
+
             auto id_distributor = id_storage.GetSegmentIdDistributor(i << 1, (i << 1) + 2);
             VertexId v = helper.CreateVertex(DeBruijnVertexData(), id_distributor);
             vertices_list[omp_get_thread_num()].push_back(v);
-            for(size_t j = i; j < size && records[j].GetHash() == records[i].GetHash(); j++) {
+            for (size_t j = i; j < size && records[j].GetHash() == records[i].GetHash(); j++) {
                 LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsStart(), records[j].IsRC());
             }
         }
-        for(size_t i = 0; i < vertices_list.size(); i++)
+
+        for (size_t i = 0; i < vertices_list.size(); i++)
             helper.AddVerticesToGraph(vertices_list[i].begin(), vertices_list[i].end());
     }
 };
@@ -546,12 +543,13 @@ private:
 
     void FilterRC(std::vector<Sequence> &edge_sequences) {
         size_t size = 0;
-        for(size_t i = 0; i < edge_sequences.size(); i++) {
-            if(!(edge_sequences[i] < !edge_sequences[i])) {
+        for (size_t i = 0; i < edge_sequences.size(); i++) {
+            if (!(edge_sequences[i] < !edge_sequences[i])) {
                 edge_sequences[size] = edge_sequences[i];
                 size++;
             }
         }
+        INFO("Size: " << size);
         edge_sequences.resize(size);
     }
 
@@ -561,9 +559,9 @@ public:
     }
 
     void ConstructGraph(size_t queueMinSize, size_t queueMaxSize,
-            double queueGrowthRate, bool keep_perfect_loops) {
+                        double queueGrowthRate, bool keep_perfect_loops) {
         std::vector<Sequence> edge_sequences;
-        if(keep_perfect_loops)
+        if (keep_perfect_loops)
             edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops(queueMinSize, queueMaxSize, queueGrowthRate);
         else
             edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPaths(queueMinSize, queueMaxSize, queueGrowthRate);
