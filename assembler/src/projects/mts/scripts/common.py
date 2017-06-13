@@ -57,7 +57,7 @@ def load_annotation(file, normalize=True):
     sample, _ = os.path.splitext(os.path.basename(file))
     with open(file) as input:
         for line in input:
-            info = line.split(",")
+            info = line.split("\t")
             id = get_id(info[0], sample) if normalize else info[0]
             bins = info[1].split()
             if id in res:

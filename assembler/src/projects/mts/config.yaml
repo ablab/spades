@@ -9,6 +9,7 @@ soft: "path/to/canopy/etc"
     #groups: []
 #profile:
     #k: 21
+    #split: 10000
 #binning:
     #binner: canopy
     #min_nonzeroes: 3

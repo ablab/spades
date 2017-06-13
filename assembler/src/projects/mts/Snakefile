@@ -49,23 +49,21 @@ rule spades:
              " --save-gp -o {params.dir} >{log} 2>&1 && "
              "cp {params.dir}/scaffolds.fasta {output}"
 
-rule assemble:
+rule split_contigs:
     input:   "assembly/{}/{{sample}}.fasta".format(ASSEMBLER)
-    output:  "assembly/{sample,(sample|group)\d+}.fasta"
-    message: "Finished assembly of {wildcards.sample}"
-    shell:   "cp {input} {output}"
-             #"ln -fs {ASSEMBLER}/{wildcards.sample}.fasta assembly/{wildcards.sample}.fasta"
-
-#---- Generating profiles/depths -----------------------------------------------
+    output:  "assembly/splits/{sample,(sample|group)\d+}.fasta"
+    message: "Cutting {wildcards.sample} into {SPLIT_LENGTH} bp splits"
+    shell:   "{SCRIPTS}/cut_fasta.py -c {SPLIT_LENGTH} -o 0 -m {input} > {output}"
 
 # MetaBAT way
-rule temp:
-    input:   expand("assembly/{sample}.fasta", sample=GROUPS)
-    output:  "binning/full/all.fasta"
+rule all_contigs:
+    input:   expand("assembly/{assembler}/{sample}.fasta", assembler=ASSEMBLER, sample=GROUPS)
+    output:  "assembly/full/all.fasta"
     shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
 
+#---- Generating profiles/depths -----------------------------------------------
 rule bowtie_index:
-    input:   "binning/{frags}/all.fasta"
+    input:   "assembly/{frags}/all.fasta"
     output:  "profile/jgi/{frags}/index.done"
     log:     "profile/jgi/{frags}/bowtie-build.log"
     message: "Building bowtie index"
@@ -129,21 +127,22 @@ rule multiplicities:
              "rm tmp/*.sorted"
 
 rule abundancies:
-    input:   contigs="assembly/{sample}.fasta", mpl="profile/mts/kmers.kmm"
+    input:   contigs="assembly/splits/{sample}.fasta", mpl="profile/mts/kmers.kmm"
     output:  id="profile/mts/{sample,(sample|group)\d+}.id", mpl="profile/mts/{sample}.mpl",
-             splits="profile/mts/splits/{sample}.fasta"
     log:     "profile/mts/{sample}.log"
     message: "Counting contig abundancies for {wildcards.sample}"
     shell:   "{BIN}/contig_abundance_counter -k {SMALL_K} -w tmp -c {input.contigs}"
              " -n {SAMPLE_COUNT} -m profile/mts/kmers -o profile/mts/{wildcards.sample}"
-             " -f {output.splits} -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
+             " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
 rule binning_pre:
     input:   expand("profile/mts/{sample}.id", sample=GROUPS)
     output:  "binning/{binner}/profiles_mts.in"
     params:  " ".join(list(GROUPS.keys()))
+    log:     "binning/input.log"
     message: "Preparing input for {wildcards.binner}"
-    shell:   "{SCRIPTS}/make_input.py -n {SAMPLE_COUNT} -t {wildcards.binner} -d profile/mts -o {output} {params}"
+    shell:   "{SCRIPTS}/make_input.py -n {SAMPLE_COUNT} -t {wildcards.binner}"
+             " -d profile/mts -o {output} {params} >{log}"
 
 #---- Binning ------------------------------------------------------------------
 
@@ -158,21 +157,9 @@ rule canopy:
     shell:   "{SOFT}/cc.bin --filter_max_dominant_obs 1 -n {threads}"
              " -i {input} -o {output.out} -c {output.prof} >{log} 2>&1"
 
-# Composition-based binners
-rule binning_contigs:
-     input:   expand("profile/mts/splits/{sample}.fasta", sample=GROUPS)
-                  if config["profile"]["profiler"] == "mts"
-                  else "assembly/all.fasta"
-     output:  "binning/splits/all.fasta"
-     run:
-         if config["profile"]["profiler"] == "mts":
-             shell("{SCRIPTS}/combine_contigs.py -r {input} > {output}")
-         else:
-             shell("{SCRIPTS}/cut_fasta.py -c {SPLIT_LENGTH} -o 0 -m {input} > {output}")
-
 # Binning with CONCOCT
 rule concoct:
-    input:   contigs="binning/splits/all.fasta", profiles="binning/concoct/profiles_{}.in".format(PROFILER)
+    input:   contigs="assembly/splits/all.fasta", profiles="binning/concoct/profiles_{}.in".format(PROFILER)
     output:  out="binning/concoct/binning.out"
     params:  max_clusters=40, out="binning/concoct"
     threads: THREADS
@@ -184,15 +171,15 @@ rule concoct:
              " -b {params.out} >{log} 2>&1 && "
              "cp binning/concoct/clustering_gt{MIN_CONTIG_LENGTH}.csv binning/concoct/binning.out"
 
-rule concoct_bins:
-    input:   "binning/splits/all.fasta", "binning/concoct/binning.out"
+rule extract_bins:
+    input:   "assembly/splits/all.fasta", "binning/annotation/all.ann"
     output:  touch("binning/concoct/binning.done")
     message: "Extracting CONCOCT bins"
     shell:   "mkdir -p binning/bins && {SCRIPTS}/split_bins.py {input} binning/bins"
 
 # Binning with MetaBAT
 rule metabat:
-    input:   contigs="assembly/all.fasta", profiles="profile/jgi/full/depth_metabat.txt"
+    input:   contigs="assembly/full/all.fasta", profiles="profile/jgi/full/depth_metabat.txt"
     output:  flag=touch("binning/metabat/binning.done"),
              out="binning/metabat/binning.out"
              #dynamic("binning/metabat/{cluster}.fa")
@@ -209,7 +196,7 @@ rule metabat:
 
 # Binning with MAXBIN2
 rule maxbin:
-    input:   contigs="binning/splits/all.fasta", profiles="binning/maxbin/profiles_{}.in".format(PROFILER)
+    input:   contigs="assembly/splits/all.fasta", profiles="binning/maxbin/profiles_{}.in".format(PROFILER)
     output:  "binning/maxbin/clustering_gt{}.csv".format(MIN_CONTIG_LENGTH)
     threads: THREADS
     params:  out="binning/maxbin/cluster"
@@ -242,9 +229,9 @@ rule binning_post:
 SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(K)
 
 rule prop_binning:
-    input:   contigs="assembly/spades/{sample}.fasta", splits="profile/mts/splits/{sample}.fasta",
+    input:   contigs="assembly/spades/{sample}.fasta", splits="assembly/splits/{sample}.fasta",
              ann="binning/annotation/{sample}.ann", left=left_reads, right=right_reads
-    output:  ann="propagation/annotation/{sample}.ann", edges="propagation/splits/{sample}.fasta"
+    output:  ann="propagation/annotation/{sample}.ann", edges="propagation/edges/{sample}.fasta"
     params:  saves=os.path.join("assembly/spades/{sample}/", SAVES),
              group=lambda wildcards: " ".join(GROUPS[wildcards.sample])
     log:     "binning/{sample}.log"
@@ -259,10 +246,8 @@ rule prop_all:
     message: "Finished propagation of all annotations."
 
 #---- Reassembly ---------------------------------------------------------------
-CHOOSE_STAGE = "propagation" if config["propagation"]["enabled"] else "binning"
-
 rule choose_samples:
-    input:   ann=expand("propagation/annotation/{sample}.ann", sample=GROUPS),
+    input:   flag="propagation.done",
              prof="binning/{}/bins.prof".format(BINNER)
     output:  dynamic("binning/{bin}/left.fastq"),
              dynamic("binning/{bin}/right.fastq")
@@ -282,7 +267,7 @@ rule reassembly_config:
                     "edges_sqn": "reassembly/{}_edges.fasta".format(wildcards.bin),
                     "edges_mpl": "reassembly/{}_edges.mpl".format(wildcards.bin),
                     "edge_fragments_mpl": "reassembly/{}_edges_frag.mpl".format(wildcards.bin),
-                    "frag_size": 10000, "min_len": 100}
+                    "frag_size": SPLIT_LENGTH, "min_len": 100}
             dump_dict(conf, outfile)
 
 rule reassemble:

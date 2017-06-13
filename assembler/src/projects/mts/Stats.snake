@@ -111,39 +111,32 @@ rule genome_fraction:
              "cp '{params.out}/summary/TSV/Genome_fraction_(%).tsv' {output}"
 
 #---- GF per bin per reference -------------------------------------------------
-rule combine_annotation:
-    input:   expand("{{stage}}/annotation/{sample}.ann", sample=SAMPLES)
-    output:  "{stage}/annotation/all.ann"
-    message: "Combine all annotation on {wildcards.stage}"
-    run:
-        shell("rm -f {output}")
-        for sample_ann in input:
-            sample, _ = os.path.splitext(os.path.basename(sample_ann))
-            shell("sed -e 's/^/{sample}-/' {sample_ann} >> {output}")
+CONTIGS_INPUT_DIR = {"binning": "assembly/splits/", "propagation": "propagation/edges/"}
 
 #Redistribute sample pieces to corresponding bins
 rule filter_bin:
-    input:   contigs="{stage}/splits/all.fasta", ann="{stage}/annotation/all.ann"
+    input:   contigs=lambda w: "{}/all.fasta".format(CONTIGS_INPUT_DIR[w.stage]),
+             ann="{stage}/annotation/all.ann"
     output:  "{stage,(binning|propagation)}/bins/{bin,\w*\d+}.fasta"
     message: "Filtering contigs from {wildcards.bin} for all of {wildcards.stage}"
-    shell:   "{SCRIPTS}/filter_bin.py {input} {wildcards.bin} >{output}"
+    shell:   "{SCRIPTS}/filter_bin.py {input.contigs} {input.ann} {wildcards.bin} >{output}"
 
 #---- Propagator statistics ----------------------------------------------------
-rule prop_stats:
-    input:   prelim="binning/annotation/{sample}.ann", prop="propagation/annotation/{sample}.ann",
-             contigs="assembly/{sample}.fasta", edges="assembly/edges/{sample}.fasta",
-             ref=REFS.values() #, bins="{sample}/{ref}.bin"
-    output:  "stats/prop_{bin}/{sample}.tsv"
-    log:     "stats/prop_{bin}/{sample}.log"
-    message: "Calculating propagation statistics for {wildcards.sample}"
-    shell:   "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref}"
-             " -c {input.contigs} -a {input.prelim} -e {input.edges} -p {input.prop}"
-             " -b {wildcards.bin} -o {output} >{log}"
+# rule prop_stats:
+#     input:   prelim="binning/annotation/{sample}.ann", prop="propagation/annotation/{sample}.ann",
+#              contigs="assembly/{sample}.fasta", edges="assembly/edges/{sample}.fasta",
+#              ref=REFS.values() #, bins="{sample}/{ref}.bin"
+#     output:  "stats/prop_{bin}/{sample}.tsv"
+#     log:     "stats/prop_{bin}/{sample}.log"
+#     message: "Calculating propagation statistics for {wildcards.sample}"
+#     shell:   "{BIN}/stats -k {K} -s {wildcards.sample}/assembly/{SAVES} -r {input.ref}"
+#              " -c {input.contigs} -a {input.prelim} -e {input.edges} -p {input.prop}"
+#              " -b {wildcards.bin} -o {output} >{log}"
 
 # Run this
-rule prop_stats_all:
-    input:   expand("stats/prop_{cag}/{sample}.tsv", sample=GROUPS, cag=BINS)
-    message: "Calculated propagation statistics"
+# rule prop_stats_all:
+#     input:   expand("stats/prop_{cag}/{sample}.tsv", sample=GROUPS, cag=BINS)
+#     message: "Calculated propagation statistics"
 
 #===============================================================================
 #---- Reference-free stats and metrics -----------------------------------------

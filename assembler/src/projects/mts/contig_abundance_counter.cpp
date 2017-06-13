@@ -15,43 +15,30 @@ using namespace debruijn_graph;
 class Runner {
 public:
     static void Run(ContigAbundanceCounter& abundance_counter, size_t min_length_bound,
-                    io::FileReadStream& contigs_stream, io::OutputSequenceStream& splits_os,
-                    std::ofstream& id_out, std::ofstream& mpl_out) {
-        static const size_t split_length = 10000;
-        io::SingleRead full_contig;
+                    io::FileReadStream& contigs_stream, std::ofstream& id_out, std::ofstream& mpl_out) {
+        io::SingleRead contig;
         while (!contigs_stream.eof()) {
-            contigs_stream >> full_contig;
-            DEBUG("Analyzing contig " << GetId(full_contig));
+            contigs_stream >> contig;
+            contig_id id = GetId(contig);
+            DEBUG("Analyzing contig " << id);
 
-            for (size_t i = 0; i < full_contig.size(); i += split_length) {
-                if (full_contig.size() - i < min_length_bound) {
-                    DEBUG("Fragment is shorter than min_length_bound " << min_length_bound);
-                    break;
-                }
-                size_t end_pos = std::min(i + split_length, full_contig.size());
-                if (full_contig.size() - end_pos < min_length_bound)
-                    //Attach the short tail of a long contig; it will be skipped on the next iteration
-                    end_pos = full_contig.size();
+            if (contig.size() < min_length_bound) {
+                DEBUG("Fragment is shorter than min_length_bound " << min_length_bound);
+                break;
+            }
 
-                io::SingleRead contig = full_contig.Substr(i, end_pos);
-                splits_os << contig;
+            auto abundance_vec = abundance_counter(contig.GetSequenceString(), contig.name());
 
-                contig_id id = GetId(contig);
-                DEBUG("Processing fragment # " << (i / split_length) << " with id " << id);
+            if (abundance_vec) {
+                stringstream ss;
+                copy(abundance_vec->begin(), abundance_vec->end(),
+                     ostream_iterator<Mpl>(ss, " "));
+                DEBUG("Successfully estimated abundance of " << id << " : " << ss.str());
 
-                auto abundance_vec = abundance_counter(contig.GetSequenceString(), contig.name());
-
-                if (abundance_vec) {
-                    stringstream ss;
-                    copy(abundance_vec->begin(), abundance_vec->end(),
-                         ostream_iterator<Mpl>(ss, " "));
-                    DEBUG("Successfully estimated abundance of " << id << " : " << ss.str());
-
-                    id_out << id << std::endl;
-                    mpl_out << ss.str() << std::endl;
-                } else {
-                    DEBUG("Failed to estimate abundance of " << id);
-                }
+                id_out << id << std::endl;
+                mpl_out << ss.str() << std::endl;
+            } else {
+                DEBUG("Failed to estimate abundance of " << id);
             }
         }
     }
@@ -64,7 +51,7 @@ int main(int argc, char** argv) {
 
     unsigned k;
     size_t sample_cnt, min_length_bound;
-    std::string work_dir, contigs_path, splits_path;
+    std::string work_dir, contigs_path;
     std::string kmer_mult_fn, contigs_abundance_fn;
 
     try {
@@ -73,14 +60,13 @@ int main(int argc, char** argv) {
         ops >> Option('k', k)
             >> Option('w', work_dir)
             >> Option('c', contigs_path)
-            >> Option('f', splits_path)
             >> Option('n', sample_cnt)
             >> Option('m', kmer_mult_fn)
             >> Option('o', contigs_abundance_fn)
             >> Option('l', min_length_bound, size_t(0));
     } catch(GetOptEx &ex) {
         std::cout << "Usage: contig_abundance_counter -k <K> -w <work_dir> -c <contigs path> "
-                "-n <sample cnt> -m <kmer multiplicities path> -f <splits_path> "
+                "-n <sample cnt> -m <kmer multiplicities path> "
                 "-o <contigs abundance path> [-l <contig length bound> (default: 0)]"  << std::endl;
         exit(1);
     }
@@ -93,13 +79,11 @@ int main(int argc, char** argv) {
     abundance_counter.Init(kmer_mult_fn);
 
     io::FileReadStream contigs_stream(contigs_path);
-    io::OutputSequenceStream splits_os(splits_path);
 
     std::ofstream id_out(contigs_abundance_fn + ".id");
     std::ofstream mpl_out(contigs_abundance_fn + ".mpl");
 
     Runner::Run(abundance_counter, min_length_bound,
-                contigs_stream, splits_os,
-                id_out, mpl_out);
+                contigs_stream, id_out, mpl_out);
     return 0;
 }
