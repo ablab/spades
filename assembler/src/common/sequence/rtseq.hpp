@@ -323,6 +323,10 @@ public:
             this->data_[cur] = 0;
     }
 
+    RuntimeSeq start(size_t K) const {
+        return RuntimeSeq(K, data_.data());
+    }
+    
     /**
      *  Reads sequence from the file (in the same format as BinWrite writes it)
      *  and returns false if error occured, true otherwise.

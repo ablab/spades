@@ -343,14 +343,14 @@ private:
                                       [](size_t val, const std::vector<KeyWithHash> &s) {
                                           return val + s.size();
                                       });
-        INFO("Total " << lnum << " loop k-mers");
+        INFO("Total " << lnum << " in-loop k-mers");
 
         UnbranchingPathFinder finder(origin_, kmer_size_);
         std::vector<Sequence> result;
         SequenceBuilder builder;
         for (const auto& entry : starts) {
             for (const auto& kwh : entry) {
-                if (!origin_.get_value(kwh).get_mask())
+                if (IsJunction(kwh))
                     continue;
 
                 for (Sequence s: finder.ConstructLoopFromVertex(kwh, builder)) {
@@ -399,7 +399,6 @@ public:
             junctions[i].shrink_to_fit();
         }
 
-        INFO("Collecting per-thread buffers")
         // FIXME: Do we really need this?
         size_t snum = std::accumulate(sequences.begin(), sequences.end(),
                                       0,

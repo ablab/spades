@@ -181,7 +181,25 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
 
         stop |= this->push_back_internal(kmer, thread_id);
       }
-      
+
+      return stop;
+  }
+
+    bool FillBufferFromSequence(const RtSeq &seq,
+                                unsigned thread_id) {
+      if (seq.size() < this->K_)
+        return false;
+
+      RtSeq kmer = seq.start(this->K_) >> 'A';
+      bool stop = false;
+      for (size_t j = this->K_ - 1; j < seq.size(); ++j) {
+        kmer <<= seq[j];
+        if (!kmer_filter_.filter(kmer))
+          continue;
+
+        stop |= this->push_back_internal(kmer, thread_id);
+      }
+
       return stop;
   }
 
@@ -325,7 +343,7 @@ inline size_t DeBruijnKMerKMerSplitter<KmerFilter>::FillBufferFromKMers(kmer_ite
                                                                         unsigned thread_id) {
   size_t seqs = 0;
   for (; kmer.good(); ++kmer) {
-    Sequence nucls(RtSeq(K_source_, *kmer));
+    RtSeq nucls(K_source_, *kmer);
     seqs += 1;
 
     bool stop = this->FillBufferFromSequence(nucls, thread_id);
@@ -368,7 +386,7 @@ fs::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_files, unsign
   INFO("Used " << counter << " kmers.");
 
   this->ClearBuffers();
-  
+
   return out;
 }
 
