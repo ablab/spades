@@ -65,7 +65,7 @@ struct PathExtendParamsContainer {
         if (HasLongReads(dataset_info))
             max_polisher_gap = max(max_polisher_gap, size_t(10000));
 
-        min_edge_len = 100;
+        min_edge_len = 0;
 
         max_path_diff = FindMaxISRightQuantile(dataset_info);
         if (mode == config::pipeline_type::rna)
