@@ -247,16 +247,21 @@ rule prop_all:
 
 #---- Reassembly ---------------------------------------------------------------
 rule choose_samples:
-    input:   flag="propagation.done",
-             prof="binning/{}/bins.prof".format(BINNER)
-    output:  dynamic("binning/{bin}/left.fastq"),
-             dynamic("binning/{bin}/right.fastq")
+    input:   "binning/{}/bins.prof".format(BINNER)
+    output:  dynamic("binning/bins/{bin}.info")
     log:     "binning/choose_samples.log"
-    message: "Choosing samples for all bins"
-    shell:   "{SCRIPTS}/choose_samples.py {input.prof} binning/ >{log} 2>&1"
+    message: "Choosing bins and samples for them"
+    shell:   "{SCRIPTS}/choose_samples.py {input} binning >{log} 2>&1"
+
+rule combine_reads:
+    input:   "propagation.done"
+    output:  "binning/{bin}/left.fastq", "binning/{bin}/right.fastq"
+    message: "Combine read fragments for {wildcards.bin}"
+    shell:   "cat binning/{wildcards.bin}/sample*_1.fastq > binning/{wildcards.bin}/left.fastq\n"
+             "cat binning/{wildcards.bin}/sample*_2.fastq > binning/{wildcards.bin}/right.fastq\n"
 
 rule reassembly_config:
-    input:   "binning/{bin}/left.fastq"
+    input:   "binning/bins/{bin}.info"
     output:  "reassembly/{bin}.yaml"
     message: "Generated config file for reassembly of {wildcards.bin}"
     run:

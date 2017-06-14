@@ -1,22 +1,21 @@
 #!/usr/bin/env python
 from __future__ import (print_function)
 
-import glob
 from operator import itemgetter
-from os import path
-import subprocess
+#import subprocess
+import os.path
 import sys
 
 from common import dump_dict
 
 if len(sys.argv) < 3:
-    print("Usage: choose_samples.py <canopy.prof> <binning dir> [CAGS+]")
+    print("Usage: choose_samples.py <bins.prof> <binning dir> [CAGS+]")
     exit(1)
 
 PROF = sys.argv[1]
 DIR = sys.argv[2]
 #PROF_OUT = sys.argv[3]
-PROF_OUT = path.join(DIR, "bins_total.prof")
+PROF_OUT = os.path.join(DIR, "bins_total.info")
 CAGS = None
 if len(sys.argv) == 4:
     CAGS = set(sys.argv[3:])
@@ -38,10 +37,8 @@ with open(PROF) as input:
         print("Profile of", CAG, ":", profile)
 
         weighted_profile = list((i, ab)
-            for i, ab in enumerate(profile) if ab >= MIN_ABUNDANCE and path.exists("{}/{}/sample{}_1.fastq".format(DIR, CAG, i + 1)))
+            for i, ab in enumerate(profile) if ab >= MIN_ABUNDANCE) #and path.exists("{}/{}/sample{}_1.fastq".format(DIR, CAG, i + 1)))
         weighted_profile.sort(key = itemgetter(1))
-
-	print("Wei:", weighted_profile)
 
         sum = 0
         samples = []
@@ -63,11 +60,8 @@ with open(PROF) as input:
         if sum < MIN_TOTAL_ABUNDANCE:
             print(CAG, "is too scarce; skipping")
             continue
-
-        for suf, name in [("1", "left"), ("2", "right")]:
-            reads = ["{}/{}/sample{}_{}.fastq".format(DIR, CAG, sample, suf) for sample in samples]
-            with open("{}/{}/{}.fastq".format(DIR, CAG, name), "w") as output:
-                subprocess.check_call(["cat"] + reads, stdout=output)
+        with open(os.path.join(DIR, "bins", CAG  + ".info"), "w") as out:
+            print(" ".join(map(str, samples)), file=out)
 
 with open(PROF_OUT, "w") as prof_out:
-    dump_dict(prof_dict, prof_out)
+   dump_dict(prof_dict, prof_out)
