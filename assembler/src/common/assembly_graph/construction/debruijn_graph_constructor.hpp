@@ -186,7 +186,6 @@ private:
     typedef Index::kmer_iterator kmer_iterator;
     typedef Index::KeyWithHash KeyWithHash;
     typedef Index::DeEdge DeEdge;
-    typedef Index::InOutMask InOutMask;
 
     Index &origin_;
     size_t kmer_size_;
@@ -196,7 +195,7 @@ public:
             origin_(origin), kmer_size_(kmer_size) { }
 
     bool StepRightIfPossible(DeEdge &edge) const {
-        InOutMask mask = origin_.get_value(edge.end);
+        utils::InOutMask mask = origin_.get_value(edge.end);
         if (mask.CheckUniqueOutgoing() && mask.CheckUniqueIncoming()) {
             edge = DeEdge(edge.end,
                           origin_.GetOutgoing(edge.end, mask.GetUniqueOutgoing()));
@@ -249,7 +248,6 @@ private:
     typedef Index::kmer_iterator kmer_iterator;
     typedef Index::DeEdge DeEdge;
     typedef Index::KeyWithHash KeyWithHash;
-    typedef Index::InOutMask InOutMask;
 
     Index &origin_;
     size_t kmer_size_;
@@ -258,11 +256,11 @@ private:
         return IsJunction(origin_.get_value(kwh));
     }
 
-    bool IsJunction(InOutMask mask) const {
+    bool IsJunction(utils::InOutMask mask) const {
         return !mask.CheckUniqueOutgoing() || !mask.CheckUniqueIncoming();
     }
 
-    void AddStartDeEdgesForVertex(KeyWithHash kh, InOutMask mask,
+    void AddStartDeEdgesForVertex(KeyWithHash kh, utils::InOutMask mask,
                                   std::vector<DeEdge>& start_edges) const {
         for (char next = 0; next < 4; next++) {
             if (!mask.CheckOutgoing(next))
