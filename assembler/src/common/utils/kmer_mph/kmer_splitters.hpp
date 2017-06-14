@@ -253,7 +253,7 @@ fs::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files, 
   streams_.reset();
   while (!streams_.eof()) {
 #   pragma omp parallel for num_threads(nthreads) reduction(+ : counter) reduction(+ : bases) shared(rl)
-      for (unsigned i = 0; i < (unsigned)streams_.size(); ++i) {
+    for (unsigned i = 0; i < (unsigned)streams_.size(); ++i) {
       ReadStatistics stats = FillBufferFromStream(streams_[i], i);
       counter += stats.reads_;
       bases += stats.bases_;

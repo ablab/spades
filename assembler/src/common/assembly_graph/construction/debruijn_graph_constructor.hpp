@@ -218,24 +218,22 @@ public:
         return ConstructSeqGoingRight(edge, builder);
     }
 
-    //Loop consists of 4 parts: 2 selfRC k+1-mers and two sequences of arbitrary length RC to each other; pos is a position of one of selfRC edges
-    vector<Sequence> SplitLoop(Sequence s, size_t pos) const {
+    // Loop consists of 4 parts: 2 selfRC k+1-mers and two sequences of arbitrary length RC to each other; pos is a position of one of selfRC edges
+    std::vector<Sequence> SplitLoop(Sequence s, size_t pos) const {
         return { s.Subseq(pos, pos + kmer_size_ + 1),
                  s.Subseq(pos + 1, s.size() - kmer_size_) + s.Subseq(0, pos + kmer_size_) };
 
     }
 
-//TODO Think about what happends to self rc perfect loops
-    vector<Sequence> ConstructLoopFromVertex(const KeyWithHash &kh) const {
+//  TODO Think about what happends to self rc perfect loops
+    std::vector<Sequence> ConstructLoopFromVertex(const KeyWithHash &kh, SequenceBuilder &builder) const {
         DeEdge break_point(kh, origin_.GetUniqueOutgoing(kh));
-        SequenceBuilder builder;
         Sequence s = ConstructSequenceWithEdge(break_point, builder);
         Kmer kmer = s.start<Kmer>(kmer_size_ + 1) >> 'A';
-        for(size_t i = kmer_size_; i < s.size(); i++) {
+        for (size_t i = kmer_size_; i < s.size(); i++) {
             kmer = kmer << s[i];
-            if (kmer == !kmer) {
+            if (kmer == !kmer)
                 return SplitLoop(s, i - kmer_size_);
-            }
         }
         return {s};
     }
@@ -327,19 +325,42 @@ private:
     //TODO make parallel
     const std::vector<Sequence> CollectLoops() {
         INFO("Collecting perfect loops");
+        auto its = origin_.kmer_begin(omp_get_max_threads());
+        std::vector<std::vector<KeyWithHash> > starts(its.size(), std::vector<KeyWithHash>());
+
+#       pragma omp parallel for schedule(static)
+        for (size_t i = 0; i < its.size(); ++i) {
+            auto &it = its[i];
+            for (; it.good(); ++it) {
+                KeyWithHash kh = origin_.ConstructKWH(Kmer(kmer_size_, *it));
+                if (!IsJunction(kh))
+                    starts[i].push_back(kh);
+            }
+        }
+
+        size_t lnum = std::accumulate(starts.begin(), starts.end(),
+                                      0,
+                                      [](size_t val, const std::vector<KeyWithHash> &s) {
+                                          return val + s.size();
+                                      });
+        INFO("Total " << lnum << " loop k-mers");
+
         UnbranchingPathFinder finder(origin_, kmer_size_);
         std::vector<Sequence> result;
-        for (kmer_iterator it = origin_.kmer_begin(); it.good(); ++it) {
-            KeyWithHash kh = origin_.ConstructKWH(Kmer(kmer_size_, *it));
-            if (IsJunction(kh))
-                continue;
+        SequenceBuilder builder;
+        for (const auto& entry : starts) {
+            for (const auto& kwh : entry) {
+                if (!origin_.get_value(kwh).get_mask())
+                    continue;
 
-            vector<Sequence> loop = finder.ConstructLoopFromVertex(kh);
-            for (Sequence s: loop) {
-                result.push_back(s);
-                CleanCondensed(s);
-                if (s != (!s))
-                    result.push_back(!s);
+                for (Sequence s: finder.ConstructLoopFromVertex(kwh, builder)) {
+                    result.push_back(s);
+                    CleanCondensed(s);
+                    Sequence s_rc = !s;
+                    if (s != s_rc)
+                        result.push_back(s_rc);
+                }
+                builder.clear();
             }
         }
         INFO("Collecting perfect loops finished. " << result.size() << " loops collected");
@@ -360,6 +381,13 @@ public:
 #       pragma omp parallel for schedule(static)
         for (size_t i = 0; i < its.size(); ++i)
             AddStartDeEdges(its[i], junctions[i]);
+
+        size_t jnum = std::accumulate(junctions.begin(), junctions.end(),
+                                      0,
+                                      [](size_t val, const std::vector<DeEdge> &s) {
+                                          return val + s.size();
+                                      });
+        INFO("Done. Total " << jnum << " junction k-mers");
 
         INFO("Extracting unbranching paths");
         std::vector<std::vector<Sequence> > sequences(its.size(), std::vector<Sequence>());
