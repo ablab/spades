@@ -232,13 +232,13 @@ public:
     PathDeduplicator(const Graph &g,
                      PathContainer &paths,
                      GraphCoverageMap &coverage_map,
-                     size_t max_diff = 0,
-                     bool equal_only = false) :
+                     size_t min_edge_len,
+                     size_t max_diff,
+                     bool equal_only) :
             g_(g),
             paths_(paths),
             equal_only_(equal_only),
-            //FIXME discuss min_edge_len
-            helper_(g, coverage_map, 0, max_diff) {}
+            helper_(g, coverage_map, min_edge_len, max_diff) {}
 
     //FIXME use path container filtering?
     void Deduplicate() {
@@ -256,12 +256,12 @@ private:
 };
 
 inline void Deduplicate(const Graph &g, PathContainer &paths, GraphCoverageMap &coverage_map,
-                 size_t /*min_edge_len*/, size_t max_path_diff,
+                 size_t min_edge_len, size_t max_path_diff,
                  bool equal_only = false) {
     //sorting is currently needed to retain longest paths
     //FIXME do we really need it?
     paths.SortByLength(false);
-    PathDeduplicator deduplicator(g, paths, coverage_map, max_path_diff, equal_only);
+    PathDeduplicator deduplicator(g, paths, coverage_map, min_edge_len, max_path_diff, equal_only);
     deduplicator.Deduplicate();
     paths.FilterEmptyPaths();
 }
