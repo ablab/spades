@@ -198,24 +198,28 @@ public:
 
     vector<const BidirectionalPath*> FindCandidatePaths(const BidirectionalPath &path) const {
         set<const BidirectionalPath*> candidates;
-        //FIXME needs discussion
+        //FIXME reduce code duplication
         if (min_edge_len_ == 0) {
             size_t cum_len = 0;
             for (size_t i = 0; i < path.Size(); ++i) {
-                EdgeId e = path.At(i);
-                cum_len += path.GapAt(i).gap;
+                //Gap should be considered only with edge to allow for matching of long gaps
+                //EdgeId e = path.At(i);
+                //cum_len += path.GapAt(i).gap;
                 if (cum_len > max_diff_)
                     break;
-                utils::insert_all(candidates, coverage_map_.GetCoveringPaths(e));
-                cum_len += g_.length(e);
+                utils::insert_all(candidates, coverage_map_.GetCoveringPaths(path.At(i)));
+                cum_len += path.ShiftLength(i); //g_.length(e);
             }
             VERIFY(path.Size() == 0 || candidates.count(&path));
         } else {
+            size_t cum_len = 0;
             for (size_t i = 0; i < path.Size(); ++i) {
+                if (cum_len > max_diff_)
+                    break;
                 EdgeId e = path.At(i);
-                //TODO add optimization in this case
                 if (g_.length(e) >= min_edge_len_) {
                     utils::insert_all(candidates, coverage_map_.GetCoveringPaths(e));
+                    cum_len += path.ShiftLength(i);
                 }
             }
         }
