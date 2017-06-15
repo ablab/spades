@@ -2,16 +2,12 @@ include: "Common.snake"
 
 configfile: "config.yaml"
 
-from itertools import chain
-from functools import partial
 import os.path
-
-from scripts.common import dump_dict
 
 def final_stage(w):
     if config["reassembly"]["enabled"]:
-        return "reassembly.done"
-    elif config["propagation"]["enabled"]:
+        return ["propagation.done", "binning/bins_total.prof"] #Stop after the bin choosing
+    if config["propagation"]["enabled"]:
         return "propagation.done" #Stop on the propagation
     return "binning/{}/binning.done".format(BINNER) #Stop on the preliminary binning
 
@@ -245,50 +241,9 @@ rule prop_all:
     output:  touch("propagation.done")
     message: "Finished propagation of all annotations."
 
-#---- Reassembly ---------------------------------------------------------------
 rule choose_samples:
     input:   "binning/{}/bins.prof".format(BINNER)
-    output:  dynamic("binning/bins/{bin}.info")
+    output:  "binning/bins_total.prof"
     log:     "binning/choose_samples.log"
     message: "Choosing bins and samples for them"
-    shell:   "{SCRIPTS}/choose_samples.py {input} binning >{log} 2>&1"
-
-rule combine_reads:
-    input:   "propagation.done"
-    output:  "binning/{bin}/left.fastq", "binning/{bin}/right.fastq"
-    message: "Combine read fragments for {wildcards.bin}"
-    shell:   "cat binning/{wildcards.bin}/sample*_1.fastq > binning/{wildcards.bin}/left.fastq\n"
-             "cat binning/{wildcards.bin}/sample*_2.fastq > binning/{wildcards.bin}/right.fastq\n"
-
-rule reassembly_config:
-    input:   "binning/bins/{bin}.info"
-    output:  "reassembly/{bin}.yaml"
-    message: "Generated config file for reassembly of {wildcards.bin}"
-    run:
-        with open(output[0], "w") as outfile:
-            conf = {"k": SMALL_K, "sample_cnt": SAMPLE_COUNT,
-                    "kmer_mult": str(rules.multiplicities.params.out),
-                    "bin": wildcards.bin, "bin_prof": "binning/{}/bins.prof".format(BINNER),
-                    "edges_sqn": "reassembly/{}_edges.fasta".format(wildcards.bin),
-                    "edges_mpl": "reassembly/{}_edges.mpl".format(wildcards.bin),
-                    "edge_fragments_mpl": "reassembly/{}_edges_frag.mpl".format(wildcards.bin),
-                    "frag_size": SPLIT_LENGTH, "min_len": 100}
-            dump_dict(conf, outfile)
-
-rule reassemble:
-    input:   left="binning/{bin}/left.fastq", right="binning/{bin}/right.fastq",
-             config="reassembly/{bin}.yaml"
-    output:  "reassembly/bins/{bin}.fasta"
-    params:  "reassembly/{bin}"
-    log:     "reassembly/{bin}.log"
-    threads: THREADS
-    message: "Reassembling reads for {wildcards.bin}"
-    shell:   "{REASSEMBLER_DIR}/spades.py --only-assembler -t {threads}"
-             " --pe1-1 {input.left} --pe1-2 {input.right} --pe1-ff"
-             " -o {params} --series-analysis {input.config} >{log} 2>&1 && "
-             "cp {params}/scaffolds.fasta {output}"
-
-rule reassemble_all:
-    input:   dynamic("reassembly/bins/{bin}.fasta")
-    output:  touch("reassembly.done")
-    message: "Reassembly finished."
+    shell:   "{SCRIPTS}/choose_samples.py {input} {output} binning >{log} 2>&1"

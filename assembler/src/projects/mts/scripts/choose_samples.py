@@ -5,20 +5,18 @@ from operator import itemgetter
 #import subprocess
 import os.path
 import sys
-
-from common import dump_dict
+import yaml
 
 if len(sys.argv) < 3:
-    print("Usage: choose_samples.py <bins.prof> <binning dir> [CAGS+]")
+    print("Usage: choose_samples.py <input table> <output table> <output dir> [CAGS+]")
     exit(1)
 
 PROF = sys.argv[1]
-DIR = sys.argv[2]
-#PROF_OUT = sys.argv[3]
-PROF_OUT = os.path.join(DIR, "bins_total.info")
+PROF_OUT = sys.argv[2]
+DIR = sys.argv[3]
 CAGS = None
-if len(sys.argv) == 4:
-    CAGS = set(sys.argv[3:])
+if len(sys.argv) > 4:
+    CAGS = set(sys.argv[4:])
 DESIRED_ABUNDANCE = 999999 #sys.maxsize
 MIN_ABUNDANCE = 4
 MIN_TOTAL_ABUNDANCE = 15
@@ -60,8 +58,8 @@ with open(PROF) as input:
         if sum < MIN_TOTAL_ABUNDANCE:
             print(CAG, "is too scarce; skipping")
             continue
-        with open(os.path.join(DIR, "bins", CAG  + ".info"), "w") as out:
+        with open(os.path.join(DIR, CAG  + ".info"), "w") as out:
             print(" ".join(map(str, samples)), file=out)
 
 with open(PROF_OUT, "w") as prof_out:
-   dump_dict(prof_dict, prof_out)
+    yaml.dump(prof_dict, prof_out)

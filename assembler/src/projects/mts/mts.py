@@ -7,6 +7,7 @@ import sys
 import os
 import os.path
 import shutil
+import yaml
 
 #copied from http://stackoverflow.com/questions/431684/how-do-i-cd-in-python/13197763#13197763
 class cd:
@@ -46,6 +47,7 @@ if not os.path.exists(args.dir):
 
 print("Output folder set to", args.dir)
 
+config_path = os.path.join(args.dir, "config.yaml")
 if args.config:
     ext_config = os.path.join(args.dir, "config.yaml")
     if os.path.exists(ext_config):
@@ -54,7 +56,7 @@ if args.config:
             sys.exit(239)
     else:
         print("Copying config from", args.config)
-        shutil.copy(args.config, os.path.join(args.dir, "config.yaml"))
+        shutil.copy(args.config, config_path)
 
 with cd(exec_dir):
     def call_snake(extra_params=[]):
@@ -68,10 +70,15 @@ with cd(exec_dir):
         else:
             print("\033[33mWarning: assembly folder already exists\033[0m")
 
-    if args.alt:
-        call_snake(["--snakefile", "Alt.snake"])
-    else:
-        call_snake()
+    call_snake()
+
+    with open(config_path) as config_in:
+        config = yaml.load(config_in)
+
+    if config.get("reassembly", dict()).get("enabled", True):
+        print("Step #1b - Ressembly")
+        call_snake(["--snakefile", "Reassembly.snake"])
 
     if args.stats:
+        print("Step #2 - Stats")
         call_snake(["--snakefile", "Stats.snake"])

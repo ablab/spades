@@ -6,11 +6,6 @@ except:
 
 import os
 import os.path
-import yaml
-def load_dict(input):
-    return yaml.load(input)
-def dump_dict(dict, output):
-    yaml.dump(dict, output)
 
 def sample_name(fullname):
     return os.path.splitext(os.path.basename(fullname))[0]

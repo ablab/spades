@@ -6,7 +6,7 @@ import os.path
 import pandas
 from pandas import DataFrame
 
-from scripts.common import dump_dict, gather_refs
+from scripts.common import gather_refs
 
 #Additional config parameters
 try:
@@ -19,9 +19,9 @@ except KeyError:
 
 #Autodetect bins
 if config["reassembly"]["enabled"]:
-    BINS, = glob_wildcards("binning/{{cag,{}}}/left.fastq".format(NAME_TEMPLATE))
+    BINS, = glob_wildcards("binning/{{bin,{}}}.info".format(NAME_TEMPLATE))
 else:
-    BINS, = glob_wildcards("binning/bins/{{cag,{}}}.fasta".format(NAME_TEMPLATE))
+    BINS, = glob_wildcards("binning/bins/{{bin,{}}}.fasta".format(NAME_TEMPLATE))
 if not BINS:
     raise WorkflowError("No bins detected!")
 BINS.sort()

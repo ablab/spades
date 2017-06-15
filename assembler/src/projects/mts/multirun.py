@@ -6,8 +6,7 @@ import os
 import os.path
 import subprocess
 import sys
-
-from scripts.common import load_dict, dump_dict
+import yaml
 
 parser = argparse.ArgumentParser(description="MTS Multi Runner")
 
@@ -31,7 +30,7 @@ parser.add_argument("--ignore-errors", action="store_true")
 args = parser.parse_args()
 
 with open(args.config) as config_in:
-    config_template = load_dict(config_in)
+    config_template = yaml.load(config_in)
     config_template.setdefault("assembly", dict())
     config_template.setdefault("profile", dict())
     config_template.setdefault("binning", dict())
@@ -73,7 +72,7 @@ for pipeline in pipelines():
 
     config["binning"]["binner"] = params[1]
     with open(os.path.join(dir, "config.yaml"), "w") as config_out:
-        dump_dict(config, config_out)
+        yaml.dump(config, config_out)
     # Try to reuse assemblies from previous runs with the same assembler
     assembly_dir = assemblies_dir.get(assembly_name)
     if assembly_dir:
