@@ -97,21 +97,17 @@ class BidirectionalPath : public PathListener {
 public:
     BidirectionalPath(const Graph& g)
             : g_(g),
-              data_(),
               conj_path_(nullptr),
-              cumulative_len_(),
-              gap_len_(),
-              listeners_(),
               id_(path_id_++),
               weight_(1.0) {
     }
 
     BidirectionalPath(const Graph& g, const std::vector<EdgeId>& path)
             : BidirectionalPath(g) {
+        //TODO cumulative_len takes O(N^2) to fill
         for (size_t i = 0; i < path.size(); ++i) {
             PushBack(path[i]);
         }
-        RecountLengths();
     }
 
     BidirectionalPath(const Graph& g, EdgeId e)
@@ -180,10 +176,11 @@ public:
     }
 
     size_t Length() const {
-        if (gap_len_.size() == 0 || cumulative_len_.size() == 0) {
+        if (Empty()) {
             return 0;
         }
-        return cumulative_len_[0] + gap_len_[0].gap;
+        VERIFY(gap_len_[0].gap == 0);
+        return cumulative_len_[0];
     }
 
     //TODO iterators forward/reverse
@@ -480,15 +477,6 @@ private:
         std::vector<std::string> result;
         boost::split(result, as_str, boost::is_any_of("\n"), boost::token_compress_on);
         return result;
-    }
-
-    void RecountLengths() {
-        cumulative_len_.clear();
-        size_t currentLength = 0;
-        for (auto iter = data_.rbegin(); iter != data_.rend(); ++iter) {
-            currentLength += g_.length((EdgeId) *iter);
-            cumulative_len_.push_front(currentLength);
-        }
     }
 
     void IncreaseLengths(size_t length, int gap) {
