@@ -25,7 +25,7 @@ inline BidirectionalPath OptimizedConjugate(const BidirectionalPath &path) {
     return path.GetConjPath() ? *path.GetConjPath() : path.Conjugate();
 }
 
-//FIXME think about symmetry and what if it breaks?
+//TODO think about symmetry and what if it breaks?
 class OverlapFindingHelper {
     const Graph &g_;
     const GraphCoverageMap &coverage_map_;
@@ -33,31 +33,19 @@ class OverlapFindingHelper {
     const size_t max_diff_;
     const bool try_extend_;
 
+    //TODO think of the cases when (gap + length) < 0
     //Changes second argument on success
-    bool TryExtendToEnd(const BidirectionalPath &path, size_t &pos) const {
-        //FIXME rewrite via LengthAt
-        size_t cum = 0;
-        for (size_t j = pos; j < path.Size(); ++j) {
-            cum += path.ShiftLength(j);
-            if (cum > max_diff_) {
-                return false;
-            }
-        }
-        pos = path.Size();
-        return true;
+    void TryExtendToEnd(const BidirectionalPath &path, size_t &pos) const {
+        if (pos < path.Size() &&
+                path.GapAt(pos).gap + path.LengthAt(pos) <= max_diff_)
+            pos = path.Size();
     }
 
     //Changes second argument on success
-    bool TryExtendToStart(const BidirectionalPath &path, size_t &pos) const {
-        size_t tmp_pos = path.Size() - pos;
-        //FIXME optimize
-        if (TryExtendToEnd(OptimizedConjugate(path), tmp_pos)) {
-            pos = path.Size() - tmp_pos;
-            return true;
-        }
-        return false;
+    void TryExtendToStart(const BidirectionalPath &path, size_t &pos) const {
+        if (pos > 0 && path.Length() - path.LengthAt(pos) <= max_diff_)
+            pos = 0;
     }
-
 
     pair<Range, Range> ComparePaths(const BidirectionalPath &path1,
                                     const BidirectionalPath &path2,
@@ -198,29 +186,14 @@ public:
 
     vector<const BidirectionalPath*> FindCandidatePaths(const BidirectionalPath &path) const {
         set<const BidirectionalPath*> candidates;
-        //FIXME reduce code duplication
-        if (min_edge_len_ == 0) {
-            size_t cum_len = 0;
-            for (size_t i = 0; i < path.Size(); ++i) {
-                //Gap should be considered only with edge to allow for matching of long gaps
-                //EdgeId e = path.At(i);
-                //cum_len += path.GapAt(i).gap;
-                if (cum_len > max_diff_)
-                    break;
-                utils::insert_all(candidates, coverage_map_.GetCoveringPaths(path.At(i)));
-                cum_len += path.ShiftLength(i); //g_.length(e);
-            }
-            VERIFY(path.Size() == 0 || candidates.count(&path));
-        } else {
-            size_t cum_len = 0;
-            for (size_t i = 0; i < path.Size(); ++i) {
-                if (cum_len > max_diff_)
-                    break;
-                EdgeId e = path.At(i);
-                if (g_.length(e) >= min_edge_len_) {
-                    utils::insert_all(candidates, coverage_map_.GetCoveringPaths(e));
-                    cum_len += path.ShiftLength(i);
-                }
+        size_t cum_len = 0;
+        for (size_t i = 0; i < path.Size(); ++i) {
+            if (cum_len > max_diff_)
+                break;
+            EdgeId e = path.At(i);
+            if (g_.length(e) >= min_edge_len_) {
+                utils::insert_all(candidates, coverage_map_.GetCoveringPaths(e));
+                cum_len += path.ShiftLength(i);
             }
         }
         return vector<const BidirectionalPath*>(candidates.begin(), candidates.end());
@@ -405,7 +378,7 @@ public:
 
 };
 
-//FIXME move to gap_closing.hpp
+//TODO move to gap_closing.hpp
 typedef omnigraph::GapDescription<Graph> GapDescription;
 class GapAnalyzer {
 
@@ -795,7 +768,6 @@ protected:
     DECL_LOGGER("PathExtender")
 };
 
-//FIXME what max_diff_len value is used?
 class CompositeExtender {
 public:
 
@@ -806,7 +778,6 @@ public:
             : g_(g),
               cover_map_(cov_map),
               used_storage_(unique),
-              //FIXME magic constant
               extenders_(pes),
               max_diff_len_(max_diff_len) {
     }

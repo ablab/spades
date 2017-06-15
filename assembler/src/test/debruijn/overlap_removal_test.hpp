@@ -89,7 +89,7 @@ inline PathContainer RemoveOverlaps(const Graph &g,
 
     FormPaths(g, finder, cov_map, container, path_ids);
 
-    DecentOverlapRemover overlap_remover(g, container, cov_map,
+    OverlapRemover overlap_remover(g, container, cov_map,
                                          min_edge_len, max_diff);
 
     overlap_remover.MarkOverlaps(end_start_only, retain_one);
