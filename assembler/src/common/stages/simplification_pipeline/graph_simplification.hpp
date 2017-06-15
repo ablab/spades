@@ -608,15 +608,10 @@ AlgoPtr<Graph> BRInstance(Graph &g,
 
     auto alternatives_analyzer = ParseBRConfig(g, br_config);
 
-    auto candidate_finder = std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(
-                                                          omnigraph::NecessaryBulgeCondition(g,
-                                                                              alternatives_analyzer.max_length(),
-                                                                              alternatives_analyzer.max_coverage()),
-                                                          info.chunk_cnt());
     if (br_config.parallel) {
         INFO("Creating parallel br instance");
         return make_shared<omnigraph::ParallelBulgeRemover<Graph>>(g,
-                candidate_finder,
+                info.chunk_cnt(),
                 br_config.buff_size,
                 br_config.buff_cov_diff,
                 br_config.buff_cov_rel_diff,
@@ -627,7 +622,7 @@ AlgoPtr<Graph> BRInstance(Graph &g,
     } else {
         INFO("Creating br instance");
         return make_shared<omnigraph::BulgeRemover<Graph>>(g,
-                candidate_finder,
+                info.chunk_cnt(),
                 alternatives_analyzer,
                 nullptr,
                 removal_handler,

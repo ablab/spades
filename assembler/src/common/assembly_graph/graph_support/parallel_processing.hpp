@@ -30,6 +30,9 @@ public:
     virtual bool Run(const Graph& /*g*/, HandlerF /*handler*/) const = 0;
 };
 
+template<class Graph, class ElementId>
+using InterestingFinderPtr = std::shared_ptr<InterestingElementFinder<Graph, ElementId>>;
+
 template<class Graph, class ElementId = typename Graph::EdgeId>
 class TrivialInterestingElementFinder :
         public InterestingElementFinder<Graph, ElementId> {
@@ -147,7 +150,7 @@ inline size_t LoopedRun(Algo& algo) {
     return total_triggered;
 }
 
-//todo only potentially relevant edges should be stored at any point
+//FIXME only potentially relevant edges should be stored at any point
 template<class Graph, class ElementId,
          class Comparator = std::less<ElementId>>
 class PersistentProcessingAlgorithm : public PersistentAlgorithmBase<Graph> {

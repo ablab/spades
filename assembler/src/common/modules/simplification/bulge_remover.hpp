@@ -307,6 +307,21 @@ NecessaryBulgeCondition(const Graph& g, size_t max_length, double max_coverage) 
                                                      CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
+template<class Graph>
+func::TypedPredicate<typename Graph::EdgeId>
+NecessaryBulgeCondition(const Graph& g, const AlternativesAnalyzer<Graph>& analyzer) {
+    return NecessaryBulgeCondition(g, analyzer.max_length(), analyzer.max_coverage());
+}
+
+template<class Graph>
+InterestingFinderPtr<Graph, typename Graph::EdgeId>
+BulgeCandidateFinder(const Graph &g,
+                     const AlternativesAnalyzer<Graph> &analyzer,
+                     size_t chunk_cnt) {
+    return std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(
+            omnigraph::NecessaryBulgeCondition(g, analyzer), chunk_cnt);
+};
+
 /**
  * This class removes simple bulges from given graph with the following algorithm: it iterates through all edges of
  * the graph and for each edge checks if this edge is likely to be a simple bulge
@@ -345,13 +360,13 @@ public:
 
     typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
 
-    BulgeRemover(Graph& g, const std::shared_ptr<InterestingElementFinder<Graph, EdgeId>>& interesting_finder,
+    BulgeRemover(Graph& g, size_t chunk_cnt,
             const AlternativesAnalyzer<Graph>& alternatives_analyzer,
             BulgeCallbackF opt_callback = 0,
             std::function<void(EdgeId)> removal_handler = 0,
             bool track_changes = true) :
             base(g,
-                 interesting_finder,
+                 BulgeCandidateFinder(g, alternatives_analyzer, chunk_cnt),
                  /*canonical_only*/true,
                  CoverageComparator<Graph>(g),
                  track_changes),
@@ -369,9 +384,10 @@ private:
 template<class Graph>
 class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
 private:
+    static const size_t SMALL_BUFFER_THR = 1000;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef std::shared_ptr<InterestingElementFinder<Graph, EdgeId>> CandidateFinderPtr;
+    typedef InterestingFinderPtr<Graph, EdgeId> CandidateFinderPtr;
     typedef SmartSetIterator<Graph, EdgeId, CoverageComparator<Graph>> SmartEdgeSet;
 
     size_t buff_size_;
@@ -438,6 +454,12 @@ private:
 
     };
 
+    SmartEdgeSet AsSmartSet(const std::vector<EdgeId> &edges) {
+        SmartEdgeSet smart_set(this->g(), false, CoverageComparator<Graph>(this->g()));
+        smart_set.insert(edges.begin(), edges.end());
+        return smart_set;
+    }
+
     bool CheckInteracting(const BulgeInfo& info, const std::unordered_set<EdgeId>& involved_edges) const {
         if (involved_edges.count(info.e))
             return true;
@@ -462,51 +484,50 @@ private:
         }
     }
 
-    //false if time to stop
+    //returns false if time to stop
     bool FillEdgeBuffer(vector<EdgeId>& buffer, func::TypedPredicate<EdgeId> proceed_condition) {
         VERIFY(buffer.empty());
         DEBUG("Filling edge buffer of size " << buff_size_);
         utils::perf_counter perf;
-        double low_cov = 0.;
-        double cov_diff = 0.;
+        double max_cov = std::numeric_limits<double>::min();
+        bool exhausted = false;
+
         while (!it_.IsEnd() && buffer.size() < buff_size_) {
             EdgeId e = *it_;
             TRACE("Current edge " << this->g().str(e));
-            if (!proceed_condition(e)) {
-                TRACE("Stop condition was reached.");
-                //need to release last element of the iterator to make it replaceable by new elements
-                it_.ReleaseCurrent();
-                return false;
-            }
 
             double cov = this->g().coverage(e);
             if (buffer.empty()) {
-                low_cov = cov;
-                cov_diff = max(buff_cov_diff_, buff_cov_rel_diff_ * low_cov);
-            } else {
-                if (math::gr(cov, low_cov + cov_diff)) {
-                    //need to release last element of the iterator to make it replaceable by new elements
-                    it_.ReleaseCurrent();
-                    return true;
-                }
+                DEBUG("Coverage interval [" << cov << ", " << max_cov << "]");
+                max_cov = cov + max(buff_cov_diff_, buff_cov_rel_diff_ * cov);
             }
+
+            if (!proceed_condition(e)) {
+                DEBUG("Stop condition was reached.");
+                exhausted = true;
+                break;
+            }
+
+            if (math::gr(cov, max_cov)) {
+                DEBUG("Coverage exceeded " << cov << " > " << max_cov);
+                break;
+            }
+
             TRACE("Potential bulge edge");
             buffer.push_back(e);
             ++it_;
         }
 
+        exhausted |= it_.IsEnd();
+        it_.ReleaseCurrent();
+
         DEBUG("Filled in " << perf.time() << " seconds");
-        if (buffer.size() == buff_size_) {
-            TRACE("Buffer filled");
-            return true;
-        } else {
-            TRACE("No more edges in iterator");
-            return false;
-        }
+        DEBUG("Candidate queue exhausted " << exhausted);
+        return !exhausted;
     }
 
     std::vector<std::vector<BulgeInfo>> FindBulges(const std::vector<EdgeId>& edge_buffer) const {
-        DEBUG("Looking for bulges (in parallel)");
+        DEBUG("Looking for bulges in parallel");
         utils::perf_counter perf;
         std::vector<std::vector<BulgeInfo>> bulge_buffers(omp_get_max_threads());
         const size_t n = edge_buffer.size();
@@ -520,7 +541,7 @@ private:
                 bulge_buffers[omp_get_thread_num()].push_back(BulgeInfo(i, e, std::move(alternative)));
             }
         }
-        DEBUG("Bulges found in " << perf.time() << " seconds");
+        DEBUG("Bulges found (in parallel) in " << perf.time() << " seconds");
         return bulge_buffers;
     }
 
@@ -575,7 +596,22 @@ private:
         return interacting_edges;
     }
 
-    size_t ProcessBulges(const std::vector<BulgeInfo>& independent_bulges, SmartEdgeSet interacting_edges) {
+    size_t BasicProcessBulges(SmartEdgeSet& edges) {
+        size_t triggered = 0;
+        //usual br strategy
+        for (; !edges.IsEnd(); ++edges) {
+            EdgeId e = *edges;
+            TRACE("Processing edge " << this->g().str(e));
+            std::vector<EdgeId> alternative = alternatives_analyzer_(e);
+            if (!alternative.empty()) {
+                gluer_(e, alternative);
+                triggered++;
+            }
+        }
+        return triggered;
+    }
+
+    size_t ProcessBulges(const std::vector<BulgeInfo>& independent_bulges, SmartEdgeSet& interacting_edges) {
         DEBUG("Processing bulges");
         utils::perf_counter perf;
 
@@ -591,16 +627,7 @@ private:
         perf.reset();
 
         DEBUG("Processing remaining interacting bulges " << interacting_edges.size());
-        //usual br strategy
-        for (; !interacting_edges.IsEnd(); ++interacting_edges) {
-            EdgeId e = *interacting_edges;
-            TRACE("Processing edge " << this->g().str(e));
-            std::vector<EdgeId> alternative = alternatives_analyzer_(e);
-            if (!alternative.empty()) {
-                gluer_(e, alternative);
-                triggered++;
-            }
-        }
+        triggered += BasicProcessBulges(interacting_edges);
         DEBUG("Interacting edges processed in " << perf.time() << " seconds");
         return triggered;
     }
@@ -609,22 +636,29 @@ public:
 
     typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
 
-    ParallelBulgeRemover(Graph& g, const CandidateFinderPtr& interesting_edge_finder,
-                         size_t buff_size, double buff_cov_diff,
-                         double buff_cov_rel_diff, const AlternativesAnalyzer<Graph>& alternatives_analyzer,
+    ParallelBulgeRemover(Graph& g,
+                         size_t chunk_cnt,
+                         size_t buff_size,
+                         double buff_cov_diff,
+                         double buff_cov_rel_diff,
+                         const AlternativesAnalyzer<Graph>& alternatives_analyzer,
                          BulgeCallbackF opt_callback = 0,
                          std::function<void(EdgeId)> removal_handler = 0,
                          bool track_changes = true) :
+
                          PersistentAlgorithmBase<Graph>(g),
                          buff_size_(buff_size),
                          buff_cov_diff_(buff_cov_diff),
                          buff_cov_rel_diff_(buff_cov_rel_diff),
                          alternatives_analyzer_(alternatives_analyzer),
                          gluer_(g, opt_callback, removal_handler),
-                         interesting_edge_finder_(interesting_edge_finder),
+                         interesting_edge_finder_(BulgeCandidateFinder(g, alternatives_analyzer, chunk_cnt)),
                          tracking_(track_changes),
                          curr_iteration_(0),
-                         it_(g, true, CoverageComparator<Graph>(g), true) {
+                         it_(g, /*add new*/true,
+                             CoverageComparator<Graph>(g),
+                             /*canonical only*/true,
+                             NecessaryBulgeCondition(g, alternatives_analyzer)) {
         VERIFY(buff_size_ > 0);
         it_.Detach();
     }
@@ -658,11 +692,22 @@ public:
             proceed = FillEdgeBuffer(edge_buffer, proceed_condition);
             DEBUG("Edge buffer filled");
 
-            std::vector<BulgeInfo> bulges = MergeBuffers(FindBulges(edge_buffer));
+            DEBUG("Edge buffer size " << edge_buffer.size());
+            size_t inner_triggered = 0;
+            //FIXME magic constant
+            if (edge_buffer.size() < SMALL_BUFFER_THR) {
+                DEBUG("Processing small buffer");
+                utils::perf_counter perf;
+                //TODO implement via moves?
+                auto edges = AsSmartSet(edge_buffer);
+                inner_triggered = BasicProcessBulges(edges);
+                DEBUG("Small buffer processed in " << perf.time() << " seconds");
+            } else {
+                std::vector<BulgeInfo> bulges = MergeBuffers(FindBulges(edge_buffer));
+                auto interacting_edges = RetainIndependentBulges(bulges);
+                inner_triggered = ProcessBulges(bulges, interacting_edges);
+            }
 
-            auto interacting_edges = RetainIndependentBulges(bulges);
-
-            size_t inner_triggered = ProcessBulges(bulges, std::move(interacting_edges));
             proceed |= (inner_triggered > 0);
             triggered += inner_triggered;
         }
