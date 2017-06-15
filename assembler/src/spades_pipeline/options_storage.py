@@ -166,13 +166,13 @@ def get_mode():
 
 
 def version(spades_version, mode=None):
-    sys.stderr.write("SPAdes v" + str(spades_version))
+    sys.stdout.write("SPAdes v" + str(spades_version))
     if mode is None:
         mode = get_mode()
     if mode is not None:
-        sys.stderr.write(" [" + mode + "SPAdes mode]")
-    sys.stderr.write("\n")
-    sys.stderr.flush()
+        sys.stdout.write(" [" + mode + "SPAdes mode]")
+    sys.stdout.write("\n")
+    sys.stdout.flush()
 
 
 def usage(spades_version, show_hidden=False, mode=None):
