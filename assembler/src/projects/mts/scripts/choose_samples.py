@@ -23,6 +23,9 @@ MIN_TOTAL_ABUNDANCE = 15
 
 prof_dict = dict()
 
+make_excluded = True
+exluded_dir = os.path.join(DIR, "excluded")
+
 #Assuming that samples are enumerated consecutively from 1 to N
 with open(PROF) as input:
     for line in input:
@@ -38,28 +41,37 @@ with open(PROF) as input:
             for i, ab in enumerate(profile) if ab >= MIN_ABUNDANCE) #and path.exists("{}/{}/sample{}_1.fastq".format(DIR, CAG, i + 1)))
         weighted_profile.sort(key = itemgetter(1))
 
-        sum = 0
+        total = 0
         samples = []
         #If we have overabundant samples, use the least.
         try:
             i = next(x for x, _ in weighted_profile if profile[x] >= DESIRED_ABUNDANCE)
-            sum = profile[i]
+            total = profile[i]
             samples = [i + 1]
         except StopIteration:
             #If there isn't any, collect from samples, starting from the largest
             for i, _ in reversed(weighted_profile):
-                sum += profile[i]
+                total += profile[i]
                 samples.append(i + 1)
-                if sum >= DESIRED_ABUNDANCE:
+                if total >= DESIRED_ABUNDANCE:
                     break
 
         print("Chosen samples are", samples, "with total mean abundance", sum)
-        prof_dict[CAG] = sum
-        if sum < MIN_TOTAL_ABUNDANCE:
+        prof_dict[CAG] = total
+        config_dir = DIR
+        if total < MIN_TOTAL_ABUNDANCE:
             print(CAG, "is too scarce; skipping")
-            continue
-        with open(os.path.join(DIR, CAG  + ".info"), "w") as out:
-            print(" ".join(map(str, samples)), file=out)
+            if make_excluded and not os.path.isdir(excluded_dir):
+                os.mkdir(excluded_dir)
+            make_excluded = False
+            config_dir = excluded_dir
+        config_path = os.path.join(config_dir, CAG + ".info")
+        with open(config_path, "w") as out:
+            print("total", sum(profile), file=out)
+            for i, ab in enumerate(profile, start=1):
+                if i in samples:
+                    print("+", file=out, end="")
+                print("sample" + str(i), ab, file=out)
 
 with open(PROF_OUT, "w") as prof_out:
     yaml.dump(prof_dict, prof_out)

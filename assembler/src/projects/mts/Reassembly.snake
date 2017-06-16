@@ -2,6 +2,8 @@ include: "Common.snake"
 
 import yaml
 
+READ_LENGTH = config.get("read_length", 100) #TODO: auto-detect default value
+
 BINS, = glob_wildcards("binning/{{bin,{}}}.info".format(NAME_TEMPLATE))
 if not BINS:
     raise WorkflowError("No bins detected!")
@@ -26,20 +28,36 @@ rule reassembly_config:
             yaml.dump(conf, outfile)
 
 rule combine_reads:
+    input:   flag="propagation.done", info="binning/{bin}.info"
     output:  "binning/{bin}/left.fastq", "binning/{bin}/right.fastq"
     message: "Combine read fragments for {wildcards.bin}"
-    shell:   "cat binning/{wildcards.bin}/sample*_1.fastq > binning/{wildcards.bin}/left.fastq\n"
-             "cat binning/{wildcards.bin}/sample*_2.fastq > binning/{wildcards.bin}/right.fastq\n"
+    run:
+        with open(input.info) as samples_info:
+            for line in samples_info:
+                sample_data = line.split()
+                if sample_data[0][0] == "+":
+                    sample = sample_data[0][1:]
+                    shell("cat binning/{wildcards.bin}/{sample}_1.fastq > binning/{wildcards.bin}/left.fastq")
+                    shell("cat binning/{wildcards.bin}/{sample}_2.fastq > binning/{wildcards.bin}/right.fastq")
 
 rule reassemble:
     input:   left="binning/{bin}/left.fastq", right="binning/{bin}/right.fastq",
-             config="reassembly/{bin}.yaml"
+             info="binning/{bin}.info", config="reassembly/{bin}.yaml"
     output:  "reassembly/bins/{bin}.fasta"
     params:  "reassembly/{bin}"
     log:     "reassembly/{bin}.log"
     threads: THREADS
     message: "Reassembling reads for {wildcards.bin}"
-    shell:   "{REASSEMBLER_DIR}/spades.py --only-assembler -t {threads}"
-             " --pe1-1 {input.left} --pe1-2 {input.right} --pe1-ff"
-             " -o {params} --series-analysis {input.config} >{log} 2>&1 && "
-             "cp {params}/scaffolds.fasta {output}"
+    run:
+        COV_THRESHOLD = 0.3
+        subtotal = 0
+        with open(input.info) as samples_info:
+            for line in samples_info:
+                sample_data = line.split()
+                if sample_data[0][0] == "+":
+                    subtotal += float(sample_data[1])
+        bin_cov = COV_THRESHOLD * subtotal * READ_LENGTH / (READ_LENGTH - SMALL_K)
+        shell("{REASSEMBLER_DIR}/spades.py --only-assembler -t {threads}"
+             " --pe1-1 {input.left} --pe1-2 {input.right} --pe1-ff -o {params}"
+             " --hidden-cov-cutoff {bin_cov} --series-analysis {input.config}"
+             " >{log} 2>&1 && cp {params}/scaffolds.fasta {output}")
