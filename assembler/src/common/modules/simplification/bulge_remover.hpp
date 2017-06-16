@@ -498,8 +498,8 @@ private:
 
             double cov = this->g().coverage(e);
             if (buffer.empty()) {
-                DEBUG("Coverage interval [" << cov << ", " << max_cov << "]");
                 max_cov = cov + max(buff_cov_diff_, buff_cov_rel_diff_ * cov);
+                DEBUG("Coverage interval [" << cov << ", " << max_cov << "]");
             }
 
             if (!proceed_condition(e)) {
@@ -712,7 +712,7 @@ public:
             triggered += inner_triggered;
         }
 
-        TRACE("Finished processing. Triggered = " << triggered);
+        DEBUG("Finished processing. Triggered = " << triggered);
         if (!tracking_)
             it_.Detach();
 
