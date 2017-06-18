@@ -255,6 +255,9 @@ public:
         }
     }
 
+    explicit RuntimeSeq(size_t k, const RuntimeSeq &seq)
+            : RuntimeSeq(k, seq.data_.data()) {}
+
     template<size_t size2_, typename T2 = T>
     explicit RuntimeSeq(const Seq<size2_, T2> &seq, bool) : size_(size2_) {
         VERIFY(size_ <= max_size_);
