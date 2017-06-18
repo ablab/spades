@@ -40,21 +40,21 @@ private:
 
     template<class ReadStream, class KmerFilter>
     size_t FillHLLFromStream(ReadStream &stream, unsigned k,
-                             hll::hll<RtSeq> &hll, KmerFilter filter = KmerFilter()) const {
+                             hll::hll<RtSeq> &hll, const KmerFilter &filter = KmerFilter()) const {
         size_t reads = 0;
-        SeqHasher hasher(k + 1);
+        SeqHasher hasher(k);
         typename ReadStream::ReadT r;
         while (!stream.eof()) {
             stream >> r;
             reads += 1;
 
             const Sequence &seq = r.sequence();
-            if (seq.size() < k + 1)
+            if (seq.size() < k)
                 continue;
 
-            RtSeq kmer = seq.start<RtSeq>(k + 1) >> 'A';
+            RtSeq kmer = seq.start<RtSeq>(k) >> 'A';
             SeqHasher::digest d = hasher.hash(kmer);
-            for (size_t j = k; j < seq.size(); ++j) {
+            for (size_t j = k - 1; j < seq.size(); ++j) {
                 uint8_t outchar = kmer[0];
                 uint8_t inchar = seq[j];
                 kmer <<= inchar;
@@ -78,19 +78,19 @@ private:
                              CQFKmerFilter &cqf, CQFKmerFilter &local_cqf,
                              const KmerFilter &filter = KmerFilter()) const {
         size_t reads = 0;
-        SeqHasher hasher(k + 1);
+        SeqHasher hasher(k);
         typename ReadStream::ReadT r;
         while (!stream.eof()) {
             stream >> r;
             reads += 1;
 
             const Sequence &seq = r.sequence();
-            if (seq.size() < k + 1)
+            if (seq.size() < k)
                 continue;
 
-            RtSeq kmer = seq.start<RtSeq>(k + 1) >> 'A';
+            RtSeq kmer = seq.start<RtSeq>(k) >> 'A';
             SeqHasher::digest d = hasher.hash(kmer);
-            for (size_t j = k; j < seq.size(); ++j) {
+            for (size_t j = k - 1; j < seq.size(); ++j) {
                 uint8_t outchar = kmer[0];
                 uint8_t inchar = seq[j];
                 kmer <<= inchar;
@@ -168,6 +168,76 @@ public:
         }
     }
 
+    template<class ReadStream, class KMerFilter>
+    size_t EstimateCardinality(unsigned k, ReadStream &streams,
+                               const KMerFilter &filter) const {
+        unsigned nthreads = (unsigned) streams.size();
+        SeqHasher hasher(k);
+
+        std::vector<hll::hll<RtSeq>> hlls;
+        hlls.reserve(nthreads);
+        for (unsigned i = 0; i < nthreads; ++i)
+            hlls.emplace_back([&](const RtSeq &s) { return hasher.hash(s); });
+
+        streams.reset();
+        size_t reads = 0, n = 15;
+        while (!streams.eof()) {
+#           pragma omp parallel for num_threads(nthreads) reduction(+:reads)
+            for (unsigned i = 0; i < nthreads; ++i)
+                reads += FillHLLFromStream(streams[i], k, hlls[omp_get_thread_num()],
+                                           filter);
+
+            if (reads >> n) {
+                INFO("Processed " << reads << " reads");
+                n += 1;
+            }
+        }
+        INFO("Total " << reads << " reads processed");
+
+        for (size_t i = 1; i < hlls.size(); ++i) {
+            hlls[0].merge(hlls[i]);
+            hlls[i].clear();
+        }
+
+        std::pair<double, bool> res = hlls[0].cardinality();
+        if (!res.second)
+            return 256ull * 1024 * 1024;
+
+        INFO("Estimated " << size_t(res.first) << " distinct kmers");
+        return size_t(res.first);
+    }
+
+    template<class ReadStream, class KMerFilter>
+    void FillCoverageHistogram(qf::cqf<RtSeq> &cqf, unsigned k, ReadStream &streams,
+                               const KMerFilter &filter, unsigned thr = 2) const {
+        unsigned nthreads = (unsigned) streams.size();
+        SeqHasher hasher(k);
+
+        // Create fallback per-thread CQF using same hash_size (important!) but different # of slots
+        std::vector<qf::cqf<RtSeq>> local_cqfs;
+        local_cqfs.reserve(nthreads);
+        for (unsigned i = 0; i < nthreads; ++i)
+            local_cqfs.emplace_back([&](const RtSeq &s) { return hasher.hash(s); },
+                                    1 << 16, cqf.hash_bits());
+
+        INFO("Filtering threshold " << thr);
+        streams.reset();
+        size_t reads = 0, n = 15;
+        while (!streams.eof()) {
+#           pragma omp parallel for num_threads(nthreads) reduction(+:reads)
+            for (unsigned i = 0; i < nthreads; ++i)
+                reads += FillCQFFromStream(streams[i], k, thr,
+                                           cqf, local_cqfs[i],
+                                           filter);
+
+            if (reads >> n) {
+                INFO("Processed " << reads << " reads");
+                n += 1;
+            }
+        }
+        INFO("Total " << reads << " reads processed");
+    }
+
 public:
     template<class Index, class Streams>
     void BuildExtensionIndexFromStream(fs::TmpDir workdir, Index &index,
@@ -178,74 +248,18 @@ public:
 
         std::vector<std::string> kmerfiles;
         if (1) {
-            INFO("Estimating k-mers cardinality");
-
-            size_t kmers = 0;
             SeqHasher hasher(index.k() + 1);
-            {
-                std::vector<hll::hll<RtSeq>> hlls;
-                hlls.reserve(nthreads);
-                for (unsigned i = 0; i < nthreads; ++i)
-                    hlls.emplace_back([&](const RtSeq &s) { return hasher.hash(s); });
 
-                streams.reset();
-                size_t reads = 0, n = 15;
-                while (!streams.eof()) {
-#                   pragma omp parallel for num_threads(nthreads) reduction(+:reads)
-                    for (unsigned i = 0; i < nthreads; ++i)
-                        reads += FillHLLFromStream(streams[i], index.k(), hlls[omp_get_thread_num()],
-                                                   KmerFilter());
-
-                    if (reads >> n) {
-                        INFO("Processed " << reads << " reads");
-                        n += 1;
-                    }
-                }
-                INFO("Total " << reads << " reads processed");
-
-                for (size_t i = 1; i < hlls.size(); ++i) {
-                    hlls[0].merge(hlls[i]);
-                    hlls[i].clear();
-                }
-
-                std::pair<double, bool> res = hlls[0].cardinality();
-
-                if (!res.second) {
-                    kmers = 256ull * 1024 * 1024;
-                } else {
-                    INFO("Estimated " << size_t(res.first) << " distinct kmers");
-                    kmers = size_t(res.first);
-                }
-
-            }
+            INFO("Estimating k-mers cardinality");
+            size_t kmers = EstimateCardinality(index.k() + 1, streams, KmerFilter());
 
             // Create main CQF using # of slots derived from estimated # of k-mers
             qf::cqf<RtSeq> cqf([&](const RtSeq &s) { return hasher.hash(s); },
                                kmers);
-            // Create fallback per-thread CQF using same hash_size (important!) but different # of slots
-            std::vector<qf::cqf<RtSeq>> local_cqfs;
-            local_cqfs.reserve(nthreads);
-            for (unsigned i = 0; i < nthreads; ++i)
-                local_cqfs.emplace_back([&](const RtSeq &s) { return hasher.hash(s); },
-                                        1 << 16, cqf.hash_bits());
 
             INFO("Building k-mer coverage histogram");
             unsigned thr = 2;
-            INFO("Filtering threshold " << thr);
-            streams.reset();
-            size_t reads = 0, n = 15;
-            while (!streams.eof()) {
-#               pragma omp parallel for num_threads(nthreads) reduction(+:reads)
-                for (unsigned i = 0; i < nthreads; ++i)
-                    reads += FillCQFFromStream(streams[i], index.k(), thr,
-                                               cqf, local_cqfs[i], KmerFilter());
-
-                if (reads >> n) {
-                    INFO("Processed " << reads << " reads");
-                    n += 1;
-                }
-            }
-            INFO("Total " << reads << " reads processed");
+            FillCoverageHistogram(cqf, index.k() + 1, streams, KmerFilter(), thr);
 
             // First, build a k+1-mer index
             CQFKmerFilterWrapper<KmerFilter> filter(KmerFilter(), cqf, thr);
