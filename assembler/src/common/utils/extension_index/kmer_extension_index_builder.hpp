@@ -122,32 +122,6 @@ private:
     }
 
 public:
-    template<class ReadStream, class Index>
-    size_t FillExtensionsFromStream(ReadStream &stream, Index &index) const {
-        unsigned k = index.k();
-        size_t rl = 0;
-
-        while (!stream.eof()) {
-            typename ReadStream::ReadT r;
-            stream >> r;
-            rl = std::max(rl, r.size());
-
-            const Sequence &seq = r.sequence();
-            if (seq.size() < k + 1)
-                continue;
-
-            typename Index::KeyWithHash kwh = index.ConstructKWH(seq.start<RtSeq>(k));
-            for (size_t j = k; j < seq.size(); ++j) {
-                char nnucl = seq[j], pnucl = kwh[0];
-                index.AddOutgoing(kwh, nnucl);
-                kwh <<= nnucl;
-                index.AddIncoming(kwh, pnucl);
-            }
-        }
-
-        return rl;
-    }
-
     template<class Index>
     void FillExtensionsFromIndex(const std::string &KPlusOneMersFilename,
                                  Index &index) const {
