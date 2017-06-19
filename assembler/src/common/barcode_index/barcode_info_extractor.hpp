@@ -343,7 +343,7 @@ namespace barcode_index {
          * @param barcode
          * @return leftmost barcoded bin of the edge
          */
-        size_t GetLeftMost(const EdgeId& edge, const BarcodeId& barcode) const {
+        size_t GetLeftBin(const EdgeId &edge, const BarcodeId &barcode) const {
             return GetInfo(edge, barcode).GetLeftMost();
         }
 
@@ -353,9 +353,10 @@ namespace barcode_index {
          * @param barcode
          * @return rightmost barcoded bin of the edge
          */
-        size_t GetRightMost(const EdgeId& edge, const BarcodeId& barcode) const {
+        size_t GetRightBin(const EdgeId &edge, const BarcodeId &barcode) const {
             return GetInfo(edge, barcode).GetRightMost();
         }
+
 
         /**
          *

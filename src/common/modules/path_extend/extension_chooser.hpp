@@ -1711,6 +1711,7 @@ struct TenXExtensionChooserStatistics {
     size_t no_candidates_;
     size_t single_candidate_;
     size_t no_barcodes_on_last_edge_;
+    size_t too_many_input_candidates_;
     size_t no_candidates_after_initial_filter_;
     size_t initial_filter_helped_;
     size_t too_much_candidates_after_initial_;
@@ -1725,6 +1726,7 @@ struct TenXExtensionChooserStatistics {
             no_candidates_(0),
             single_candidate_(0),
             no_barcodes_on_last_edge_(0),
+            too_many_input_candidates_(0),
             no_candidates_after_initial_filter_(0),
             initial_filter_helped_(0),
             too_much_candidates_after_initial_(0),
@@ -1741,6 +1743,7 @@ struct TenXExtensionChooserStatistics {
         fout << "No candidates: " << no_candidates_ << endl;
         fout << "Single candidate: " << single_candidate_ << endl;
         fout << "No barcodes on last edge: " << no_barcodes_on_last_edge_ << endl;
+        fout << "Too many input candidates: " << too_many_input_candidates_ << endl;
         fout << "No candidates after initial filter: " << no_candidates_after_initial_filter_ << endl;
         fout << "Initial filter helped: " << initial_filter_helped_ << endl;
         fout << "Too much after initial: " << too_much_candidates_after_initial_ << endl;
@@ -1793,6 +1796,12 @@ private:
             stats_.single_candidate_++;
             return edges;
         }
+        size_t input_edges_threshold = 2000;
+        if (edges.size() > input_edges_threshold) {
+            stats_.too_many_input_candidates_++;
+            DEBUG("Too many input candidates");
+            return edges;
+        }
         size_t barcodes = barcode_extractor_ptr_->GetNumberOfBarcodes(last_unique_edge);
         if (barcodes == 0) {
             stats_.no_barcodes_on_last_edge_++;
@@ -1821,6 +1830,7 @@ private:
         }
         if (initial_candidates.size() > tenx_configs_.max_initial_candidates) {
             stats_.too_much_candidates_after_initial_++;
+            DEBUG("Too many initial candidates");
             return initial_candidates;
         }
         DEBUG("After initial check: " << initial_candidates.size());
@@ -1840,7 +1850,7 @@ private:
         if (next_candidates.size() == 1) {
             stats_.middle_filter_helped_++;
             DEBUG("Middle helped");
-//            DEBUG("Canditate: " << next_candidates.back().e_.int_id());
+            DEBUG("Canditate: " << next_candidates.back().e_.int_id());
 //            bool read_cloud_check = ReadCloudClosestCheck(last_unique_edge, next_candidates.back().e_,
 //                                                          initial_candidates,
 //                                                          tenx_configs_.internal_gap_threshold,
@@ -1851,7 +1861,6 @@ private:
             return next_candidates;
         }
         EdgeContainer result = next_candidates;
-
         stats_.multiple_candidates_after_both_++;
         DEBUG("Multiple after middle");
         if (next_candidates.size() == 2) {
