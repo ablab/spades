@@ -73,7 +73,7 @@ private:
                     d = hasher_.hash(!kmer);
                 else
                     d = hasher_.hash(kmer);
-                cov_.push_back(unsigned(filter_.lookup(d, /* lock */ true)));
+                cov_.push_back(unsigned(filter_.lookup(d, /* lock */ false)));
             }
 
             size_t n = cov_.size() / 2;
