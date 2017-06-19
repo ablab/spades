@@ -203,7 +203,7 @@ namespace barcode_index {
             auto key_and_value = std::make_pair(edge, entry);
             mapper_->edge_to_entry_.insert({edge, entry});
         }
-        
+
         string GetTenXBarcodeFromRead(const io::SingleRead &read, const vector<string>& barcode_prefixes) {
             const size_t barcode_len = 16;
             for (const auto& prefix: barcode_prefixes) {

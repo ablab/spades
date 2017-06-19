@@ -1,9 +1,12 @@
 #include <common/assembly_graph/graph_support/scaff_supplementary.hpp>
 #include <common/modules/path_extend/pipeline/launch_support.hpp>
 #include <common/modules/path_extend/pipeline/extenders_logic.hpp>
-#include "projects/read_cloud_statistics/read_cloud_statistics_extractor.hpp"
+#include "read_cloud_statistics_extractor.hpp"
 #include "reliable_barcodes_checker.hpp"
 #include "gap_distribution_extractor.hpp"
+#include "contracted_graph_statistics.hpp"
+#include "cluster_storage_builder.hpp"
+#include "cluster_storage_analyzer.hpp"
 
 using namespace path_extend;
 
@@ -20,9 +23,14 @@ namespace debruijn_graph {
         return params;
     }
 
-    vector <shared_ptr<BarcodeStatisticsCounter>> ConstructBarcodeStatisticsCounters(const conj_graph_pack& gp) {
+    shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> ConstructBarcodeExtractor(const conj_graph_pack& gp) {
         typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
         auto tenx_extractor_ptr = make_shared<tenx_extractor_t>(gp.barcode_mapper_ptr, gp.g);
+        return tenx_extractor_ptr;
+    }
+
+    vector <shared_ptr<BarcodeStatisticsCounter>> ConstructBarcodeStatisticsCounters(const conj_graph_pack& gp) {
+        auto tenx_extractor_ptr = ConstructBarcodeExtractor(gp);
         auto reliable_checker = make_shared<ReliableBarcodesChecker>(tenx_extractor_ptr, gp);
         size_t length_bin = 500;
         double coverage_bin = 0.1;
@@ -37,7 +45,7 @@ namespace debruijn_graph {
 
     ScaffoldingUniqueEdgeStorage GetUniqueStorage(const conj_graph_pack& gp, const PathExtendParamsContainer& params) {
         const size_t unique_edge_length = cfg::get().ts_res.edge_length_threshold;
-        double unique_variation = params.pset.uniqueness_analyser.unique_coverage_variation;
+        double unique_variation = params.pset.uniqueness_analyser.nonuniform_coverage_variation;
         ScaffoldingUniqueEdgeStorage read_cloud_storage;
         ScaffoldingUniqueEdgeAnalyzer read_cloud_unique_edge_analyzer(gp, unique_edge_length, unique_variation);
         read_cloud_unique_edge_analyzer.FillUniqueEdgeStorage(read_cloud_storage);
@@ -71,23 +79,55 @@ namespace debruijn_graph {
 
     void RunBarcodeStatisticsCounters(const vector<shared_ptr<BarcodeStatisticsCounter>>& barcode_statistics_counters) {
         const string stats_path = cfg::get().output_dir + "barcode_stats";
-        mkdir(stats_path.c_str(), 0755);
         for (const auto& counter: barcode_statistics_counters) {
             counter->FillStats();
             counter->PrintStats(stats_path);
         }
     }
 
+    void AnalyzeClusterStorage(const conj_graph_pack& gp, const string& stats_base_path) {
+        auto params = GetPEParams();
+        auto unique_storage = GetUniqueStorage(gp, params);
+        const size_t distance = cfg::get().ts_res.distance;
+        const string distance_path = stats_base_path + "/distance_" + std::to_string(distance);
+        mkdir(distance_path.c_str(), 0755);
+        auto scaffold_graph_constructor = cluster_statistics::ScaffoldGraphConstructor(unique_storage, distance, gp.g);
+        auto scaffold_graph = scaffold_graph_constructor.ConstructGraph();
+        auto barcode_extractor_ptr = ConstructBarcodeExtractor(gp);
+        const size_t builder_read_threshold = 5;
+        const size_t analyzer_read_threshold = 15;
+
+        auto cluster_storage_builder = cluster_statistics::ClusterStorageBuilder(gp.g, scaffold_graph,
+                                                                                 barcode_extractor_ptr, unique_storage,
+                                                                                 distance, builder_read_threshold);
+        auto cluster_storage = cluster_storage_builder.ConstructClusterStorage();
+        
+        cluster_statistics::ClusterStorageAnalyzer cluster_analyzer(scaffold_graph);
+        cluster_analyzer.AnalyzeStorage(cluster_storage, distance_path, analyzer_read_threshold);
+    }
+
+
     void ReadCloudStatisticsStage::run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
         INFO("Statistics counter started...");
         INFO("Library type: " << cfg::get().ts_res.library_type);
+        const string stats_path = cfg::get().output_dir + "barcode_stats";
+        mkdir(stats_path.c_str(), 0755);
         TenXExtensionChecker checker = ConstructTenXChecker(graph_pack);
+
         INFO("10X checker constructed.");
 //        auto barcode_statistics_counters = ConstructBarcodeStatisticsCounters(graph_pack);
 //        INFO("Statistics counters constructed.");
 //        RunBarcodeStatisticsCounters(barcode_statistics_counters);
+
         INFO("Resolver stats: ");
-        checker.CheckChooser(cfg::get().ts_res.genome_path);
+//        checker.CheckChooser(cfg::get().ts_res.genome_path);
+
+        INFO("Contracted graph stats:");
+//        const size_t unique_edge_length = cfg::get().ts_res.edge_length_threshold;
+//        RawContractedGraphBuilder graph_builder(graph_pack.g, unique_edge_length);
+//        graph_builder.BuildRawContractedGraph();
+        INFO("Cluster statistics:");
+        AnalyzeClusterStorage(graph_pack, stats_path);
         INFO("Statistics counter finished.");
     }
 }
