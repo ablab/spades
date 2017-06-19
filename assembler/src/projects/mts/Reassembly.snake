@@ -32,13 +32,18 @@ rule combine_reads:
     output:  "binning/{bin}/left.fastq", "binning/{bin}/right.fastq"
     message: "Combine read fragments for {wildcards.bin}"
     run:
+        shell("rm -f binning/{wildcards.bin}/left.fastq")
+        shell("rm -f binning/{wildcards.bin}/right.fastq")
         with open(input.info) as samples_info:
             for line in samples_info:
                 sample_data = line.split()
                 if sample_data[0][0] == "+":
                     sample = sample_data[0][1:]
-                    shell("cat binning/{wildcards.bin}/{sample}_1.fastq > binning/{wildcards.bin}/left.fastq")
-                    shell("cat binning/{wildcards.bin}/{sample}_2.fastq > binning/{wildcards.bin}/right.fastq")
+                    if not os.path.exists("binning/{}/{}_1.fastq".format(wildcards.bin, sample)):
+                        print("\033[33mWarning: {} contains no reads for {}\033[0m".format(sample, wildcards.bin))
+                        continue
+                    shell("cat binning/{wildcards.bin}/{sample}_1.fastq >> binning/{wildcards.bin}/left.fastq")
+                    shell("cat binning/{wildcards.bin}/{sample}_2.fastq >> binning/{wildcards.bin}/right.fastq")
 
 rule reassemble:
     input:   left="binning/{bin}/left.fastq", right="binning/{bin}/right.fastq",

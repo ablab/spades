@@ -4,6 +4,9 @@ configfile: "config.yaml"
 
 import os.path
 
+onstart:
+    shell("mkdir -p tmp")
+
 def final_stage(w):
     if config["reassembly"]["enabled"]:
         return ["propagation.done", "binning/bins_total.prof"] #Stop after the bin choosing

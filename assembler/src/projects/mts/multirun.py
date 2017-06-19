@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser(description="MTS Multi Runner")
 
 all_assemblers = ["main", "spades", "megahit"]
 all_binners = ["canopy", "concoct", "metabat"]
-unsupported_configurations = set(["main_metabat", "spades_canopy", "megahit_canopy"])
+unsupported = set(["main_metabat", "spades_canopy", "megahit_canopy"])
 
 parser.add_argument("--threads", "-t", type=int, default=8, help="Number of threads for each run")
 parser.add_argument("dir", type=str, help="Output directory")
@@ -31,12 +31,6 @@ args = parser.parse_args()
 
 with open(args.config) as config_in:
     config_template = yaml.load(config_in)
-    config_template.setdefault("assembly", dict())
-    config_template.setdefault("profile", dict())
-    config_template.setdefault("binning", dict())
-    config_template.setdefault("propagation", dict())
-    config_template.setdefault("reassembly", dict())
-assemblies_dir = dict()
 
 def pipelines():
     for assembler in args.assemblers:
@@ -45,47 +39,48 @@ def pipelines():
     for pipeline in args.pipelines:
         yield pipeline
 
-excluded = unsupported_configurations.union(args.exclude)
+prev_runs = dict()
+
+excluded = unsupported.union(args.exclude)
 for pipeline in pipelines():
     if pipeline in excluded:
-        if pipeline in unsupported_configurations:
+        if pipeline in unsupported:
             print("\033[33mWarning:", pipeline, "is not currently supported; skipping\033[0m\n")
         continue
     print("Running", pipeline)
-    dir = os.path.join(args.dir, pipeline)
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-    call_params = ["./mts.py", "-t", str(args.threads), dir]
+    cur_dir = os.path.join(args.dir, pipeline)
+    if not os.path.exists(cur_dir):
+        os.makedirs(cur_dir)
+    call_params = ["./mts.py", "-t", str(args.threads), cur_dir]
     if args.stats:
         call_params.extend(["--stats"])
     config = config_template.copy()
     params = pipeline.split("_")
     assembly_name = params[0]
     if assembly_name == "main":
-        config["profile"]["profiler"] = "mts"
+        config["profile"] = {"profiler": "mts"}
     else:
-        config["assembly"]["assembler"] = params[0]
-        config["assembly"]["groups"] = ["*"]
-        config["profile"]["profiler"] = "jgi"
-        config["propagation"]["enabled"] = False
-        config["reassembly"]["enabled"] = False
+        config["assembly"] = {"assembler": params[0], "groups": ["*"]}
+        config["profile"] = {"profiler": "jgi"}
+        config["propagation"] = {"enabled": False}
+        config["reassembly"] = {"enabled": False}
 
-    config["binning"]["binner"] = params[1]
-    with open(os.path.join(dir, "config.yaml"), "w") as config_out:
+    config["binning"] = {"binner": params[1]}
+    with open(os.path.join(cur_dir, "config.yaml"), "w") as config_out:
         yaml.dump(config, config_out)
     # Try to reuse assemblies from previous runs with the same assembler
-    assembly_dir = assemblies_dir.get(assembly_name)
-    if assembly_dir:
-        print("Reusing assemblies from", assembly_dir)
-        call_params.extend(["--reuse-assemblies", assembly_dir])
+    prev_run = prev_runs.get(assembly_name)
+    if prev_run:
+        print("Reusing same data from", prev_run)
+        call_params.extend(["--reuse-from", prev_run])
     #TODO: rewrite using Snakemake API
     errcode = subprocess.call(call_params)
     if errcode:
         print(" ".join(call_params), "returned with error:", errcode)
         if not args.ignore_errors:
             sys.exit(errcode)
-    elif not assembly_dir: #Reuse only successful run
-        assemblies_dir[assembly_name] = os.path.join(dir, "assembly")
+    elif not prev_run: #Reuse only successful run
+        prev_runs[assembly_name] = cur_dir
     print()
 
 #TODO: compare stats

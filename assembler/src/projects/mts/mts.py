@@ -29,6 +29,8 @@ parser.add_argument("dir", type=str, help="Output directory")
 parser.add_argument("--config", "-c", type=str, default="", help="config.yaml to be copied to the directory (unnecessary if config.yaml is already there)")
 parser.add_argument("--stats", "-s", action="store_true", help="Calculate stats (when the REFS parameter in config.yaml is provided)")
 parser.add_argument("--reuse-assemblies", type=str, help="Directory with existing assemblies to reuse")
+parser.add_argument("--reuse-profiles", type=str, help="Directory with existing profiles to reuse")
+parser.add_argument("--reuse-from", type=str, help="Directory with another assembly to reuse everything that is possible (overrides other --reuses)")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
 parser.add_argument("--alt", action="store_true", help=argparse.SUPPRESS)
 
@@ -49,10 +51,9 @@ print("Output folder set to", args.dir)
 
 config_path = os.path.join(args.dir, "config.yaml")
 if args.config:
-    ext_config = os.path.join(args.dir, "config.yaml")
-    if os.path.exists(ext_config):
-        if subprocess.call(["diff", ext_config, args.config]):
-            print("\033[33mConfig path specified, but different config.yaml already exists in output folder", args.dir, "\033[0m")
+    if os.path.exists(config_path):
+        if subprocess.call(["diff", config_path, args.config]):
+            print("\033[31mConfig path specified, but different config.yaml already exists in output folder", args.dir, "\033[0m")
             sys.exit(239)
     else:
         print("Copying config from", args.config)
@@ -62,14 +63,23 @@ with cd(exec_dir):
     def call_snake(extra_params=[]):
         subprocess.check_call(base_params + extra_params, stdout=sys.stdout, stderr=sys.stderr)
 
-    print("Step #1 - Assembly")
-    if args.reuse_assemblies:
-        assembly_dir = os.path.join(args.dir, "assembly")
-        if not os.path.exists(assembly_dir):
-            os.symlink(args.reuse_assemblies, assembly_dir)
+    def reuse_dir(dir_from, dir_name):
+        if not dir_from:
+            return
+        local_dir = os.path.join(args.dir, dir_name)
+        if not os.path.exists(local_dir):
+            os.symlink(dir_from, local_dir)
         else:
-            print("\033[33mWarning: assembly folder already exists\033[0m")
+            print("\033[33mWarning: {} folder already exists\033[0m".format(dir_name))
 
+    if args.reuse_from:
+        args.reuse_assemblies = os.path.join(args.reuse_from, "assembly")
+        args.reuse_profiles = os.path.join(args.reuse_from, "profile")
+
+    reuse_dir(args.reuse_assemblies, "assembly")
+    reuse_dir(args.reuse_profiles, "profile")
+
+    print("Step #1 - Assembly")
     call_snake()
 
     with open(config_path) as config_in:
