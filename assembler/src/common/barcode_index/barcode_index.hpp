@@ -660,16 +660,14 @@ namespace barcode_index {
 
         void InsertBarcode(const BarcodeId& barcode, const size_t count, const Range& range) {
             if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
-                FrameBarcodeInfo info(number_of_frames_) ;
+                FrameBarcodeInfo info(number_of_frames_);
                 barcode_distribution_.insert({barcode, info});
             }
-            else {
-                size_t left_frame = GetFrameFromPos(range.start_pos);
-                size_t right_frame = GetFrameFromPos(range.end_pos);
-                DEBUG("Range: " << range);
-                DEBUG("Frames: " << left_frame << " " << right_frame);
-                barcode_distribution_.at(barcode).Update(count, left_frame, right_frame);
-            }
+            size_t left_frame = GetFrameFromPos(range.start_pos);
+            size_t right_frame = GetFrameFromPos(range.end_pos);
+            DEBUG("Range: " << range);
+            DEBUG("Frames: " << left_frame << " " << right_frame);
+            barcode_distribution_.at(barcode).Update(count, left_frame, right_frame);
         }
 
 
