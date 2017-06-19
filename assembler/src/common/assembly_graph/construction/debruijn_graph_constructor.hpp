@@ -205,6 +205,7 @@ public:
     }
 
     Sequence ConstructSeqGoingRight(DeEdge edge, SequenceBuilder &builder) const {
+        builder.clear(); // We reuse the buffer to reduce malloc traffic
         builder.append(edge.start.key());
         builder.append(edge.end[kmer_size_ - 1]);
         DeEdge initial = edge;
@@ -286,19 +287,16 @@ private:
     }
 
     void CalculateSequences(std::vector<DeEdge> &edges,
-                            std::vector<Sequence> &sequences, const UnbranchingPathFinder &finder) const {
+                            std::vector<Sequence> &sequences,
+                            const UnbranchingPathFinder &finder) const {
+        SequenceBuilder builder;
+
         size_t size = edges.size();
         size_t start = sequences.size();
         sequences.resize(start + size);
 
-        std::vector<SequenceBuilder> builders;
-        builders.resize(omp_get_max_threads());
-
-#       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < size; ++i) {
-            SequenceBuilder &builder = builders[omp_get_thread_num()];
             sequences[start + i] = finder.ConstructSequenceWithEdge(edges[i], builder);
-            builder.clear(); // We reuse the buffer to reduce malloc traffic
             TRACE("From " << edges[i] << " calculated sequence");
             TRACE(sequences[start + i]);
         }
@@ -321,8 +319,8 @@ private:
         }
     }
 
-    //This methods collects all loops that were not extracted by finding unbranching paths because there are no junctions on loops.
-    //TODO make parallel
+    // This methods collects all loops that were not extracted by finding
+    // unbranching paths because there are no junctions on loops.
     const std::vector<Sequence> CollectLoops() {
         INFO("Collecting perfect loops");
         auto its = origin_.kmer_begin(omp_get_max_threads());
@@ -360,7 +358,6 @@ private:
                     if (s != s_rc)
                         result.push_back(s_rc);
                 }
-                builder.clear();
             }
         }
         INFO("Collecting perfect loops finished. " << result.size() << " loops collected");
