@@ -136,7 +136,7 @@ utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_c
     INFO("Condensing graph");
     VERIFY(!index.IsAttached());
     DeBruijnGraphExtentionConstructor<Graph> g_c(g, ext);
-    g_c.ConstructGraph(100, 10000, 1.2, params.keep_perfect_loops);//TODO move these parameters to config
+    g_c.ConstructGraph(params.keep_perfect_loops);
 
     INFO("Building index with from graph")
     //todo pass buffer size
