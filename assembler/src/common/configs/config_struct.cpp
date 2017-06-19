@@ -1,4 +1,3 @@
-//* Copyright (c) 2015 Saint Petersburg State University
 //* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
@@ -478,6 +477,7 @@ void load(debruijn_config::read_cloud_resolver& ts_res,
     load(ts_res.diff_threshold, pt, "diff_threshold");
     load(ts_res.gap_threshold, pt, "gap_threshold");
     load(ts_res.barcode_number_threshold, pt, "barcode_number_threshold");
+    load(ts_res.distance, pt, "distance");
     load(ts_res.topsort_bound, pt, "topsort_bound");
     load(ts_res.edge_tail_len, pt, "edge_tail_len");
     load(ts_res.frame_size, pt, "frame_size");

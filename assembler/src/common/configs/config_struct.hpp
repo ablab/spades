@@ -470,6 +470,7 @@ struct debruijn_config {
         double barcode_number_threshold;
         size_t distance_bound;
         size_t edge_length_threshold;
+        size_t distance;
         size_t fragment_len;
         size_t topsort_bound;
 

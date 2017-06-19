@@ -754,8 +754,12 @@ protected:
         dij.Run(g_.EdgeEnd(last_edge));
         DEBUG("Dijkstra finished");
 
+        size_t max_distance = 0;
         for (auto v: dij.ReachedVertices()) {
             size_t distance = dij.GetDistance(v);
+            if (distance > max_distance) {
+                max_distance = distance;
+            }
             if (distance < distance_bound_) {
                 for (auto connected: g_.OutgoingEdges(v)) {
                     if (unique_storage_.IsUnique(connected) and IsNotInPath(path, connected)) {
@@ -764,6 +768,11 @@ protected:
                     }
                 }
             }
+        }
+        const size_t error = 1000;
+        DEBUG(max_distance);
+        if (max_distance + error > distance_bound_ and candidates.size() == 0) {
+            DEBUG("No uniques");
         }
         DEBUG("Candidates: " << candidates.size());
         return candidates;
