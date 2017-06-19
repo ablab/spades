@@ -7,6 +7,7 @@
 #pragma once
 
 #include "kmer_extension_index.hpp"
+#include "common/io/reads/coverage_filtering_read_wrapper.hpp"
 #include "utils/kmer_mph/kmer_splitters.hpp"
 #include "adt/cyclichash.hpp"
 #include "adt/hll.hpp"
@@ -101,7 +102,7 @@ private:
                 // First try and insert in the main QF. If lock can't be
                 // accuired in the first attempt then insert the item in the
                 // local QF.
-                if (cqf.lookup(d, /* lock */ true) > thr)
+                if (cqf.lookup(d, /* lock */ true) >= thr)
                   continue;
 
                 if (!cqf.add(d, /* count */ 1,
@@ -222,24 +223,27 @@ public:
 
         std::vector<std::string> kmerfiles;
         if (1) {
-            SeqHasher hasher(index.k() + 1);
+            unsigned kplusone = index.k() + 1;
+            SeqHasher hasher(kplusone);
 
             INFO("Estimating k-mers cardinality");
-            size_t kmers = EstimateCardinality(index.k() + 1, streams, KmerFilter());
+            size_t kmers = EstimateCardinality(kplusone, streams, KmerFilter());
 
             // Create main CQF using # of slots derived from estimated # of k-mers
             qf::cqf<RtSeq> cqf([&](const RtSeq &s) { return hasher.hash(s); },
                                kmers);
 
             INFO("Building k-mer coverage histogram");
-            unsigned thr = 2;
-            FillCoverageHistogram(cqf, index.k() + 1, streams, KmerFilter(), thr);
+            unsigned kthr = 2;
+            unsigned rthr = 2;
+            FillCoverageHistogram(cqf, kplusone, streams, KmerFilter(), std::max(kthr, rthr));
 
             // First, build a k+1-mer index
-            CQFKmerFilterWrapper<KmerFilter> filter(KmerFilter(), cqf, thr);
-            DeBruijnReadKMerSplitter<typename Streams::ReadT, CQFKmerFilterWrapper<KmerFilter> >
-                    splitter(workdir, index.k() + 1, 0xDEADBEEF, streams,
-                             contigs_stream, read_buffer_size, filter);
+            auto wstreams = CovFilteringWrap(streams, kplusone, cqf, rthr);
+            DeBruijnReadKMerSplitter<typename Streams::ReadT, KmerFilter>
+                    splitter(workdir, kplusone, 0xDEADBEEF,
+                             wstreams,
+                             contigs_stream, read_buffer_size);
             KMerDiskCounter<RtSeq> counter(workdir, splitter);
             counter.CountAll(nthreads, nthreads, /* merge */ false);
 
@@ -263,7 +267,6 @@ public:
                                         Index &index, Counter &counter,
                                         unsigned nthreads, size_t read_buffer_size = 0) const {
         VERIFY(counter.k() == index.k() + 1);
-        std::vector<std::string> kmerfiles;
 
         // Now, count unique k-mers from k+1-mers
         DeBruijnKMerKMerSplitter<StoringTypeFilter<typename Index::storing_type> >
