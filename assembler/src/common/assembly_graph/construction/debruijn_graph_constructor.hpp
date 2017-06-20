@@ -290,16 +290,16 @@ private:
                             std::vector<Sequence> &sequences,
                             const UnbranchingPathFinder &finder) const {
         SequenceBuilder builder;
+        sequences.reserve(sequences.size() + edges.size());
 
-        size_t size = edges.size();
-        size_t start = sequences.size();
-        sequences.resize(start + size);
+         for (auto edge : edges) {
+             Sequence s = finder.ConstructSequenceWithEdge(edge, builder);
+             if (!s < s)
+                 continue;
 
-        for (size_t i = 0; i < size; ++i) {
-            sequences[start + i] = finder.ConstructSequenceWithEdge(edges[i], builder);
-            TRACE("From " << edges[i] << " calculated sequence");
-            TRACE(sequences[start + i]);
-        }
+             sequences.push_back(s);
+             TRACE("From " << edge << " calculated sequence\n" << s);
+          }
     }
 
     void CleanCondensed(const Sequence &sequence) {
@@ -316,6 +316,7 @@ private:
 #       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < sequences.size(); ++i) {
             CleanCondensed(sequences[i]);
+            CleanCondensed(!sequences[i]);
         }
     }
 
@@ -352,11 +353,14 @@ private:
                     continue;
 
                 for (Sequence s: finder.ConstructLoopFromVertex(kwh, builder)) {
-                    result.push_back(s);
-                    CleanCondensed(s);
                     Sequence s_rc = !s;
-                    if (s != s_rc)
+                    if (s_rc < s)
                         result.push_back(s_rc);
+                    else
+                        result.push_back(s);
+
+                    CleanCondensed(s);
+                    CleanCondensed(s_rc);
                 }
             }
         }
@@ -561,17 +565,6 @@ private:
     DeBruijn &origin_;
     size_t kmer_size_;
 
-    void FilterRC(std::vector<Sequence> &edge_sequences) {
-        size_t size = 0;
-        for (size_t i = 0; i < edge_sequences.size(); i++) {
-            if (!(edge_sequences[i] < !edge_sequences[i])) {
-                edge_sequences[size] = edge_sequences[i];
-                size++;
-            }
-        }
-        edge_sequences.resize(size);
-    }
-
 public:
     DeBruijnGraphExtentionConstructor(Graph& graph, DeBruijn &origin) :
             graph_(graph), origin_(origin), kmer_size_(graph.k()) {
@@ -583,7 +576,6 @@ public:
             edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops();
         else
             edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPaths();
-        FilterRC(edge_sequences);
         FastGraphFromSequencesConstructor<Graph>(kmer_size_, origin_).ConstructGraph(graph_, edge_sequences);
     }
 
