@@ -7,6 +7,34 @@ except:
 import os
 import os.path
 
+default_values = {
+    "threads":     16,
+    "assembly":    {"assembler": "spades", "k": 55, "groups": []},
+    "profile":     {"profiler": "mts", "k": 21, "split": 10000},
+    "binning":     {"binner": "canopy", "min_length": 2000, "min_nonzeroes": 3},
+    "propagation": {"enabled": True},
+    "reassembly":  {"enabled": True}
+}
+
+# Taken from http://stackoverflow.com/questions/36831998/how-to-fill-default-parameters-in-yaml-file-using-python
+def setdefault_recursively(tgt, default = default_values):
+    for k in default:
+        if isinstance(default[k], dict): # if the current item is a dict,
+            # expand it recursively
+            setdefault_recursively(tgt.setdefault(k, {}), default[k])
+        else:
+            # ... otherwise simply set a default value if it's not set before
+            tgt.setdefault(k, default[k])
+
+def fill_default_values(config):
+    local_dir = config.get("LOCAL_DIR")
+    if local_dir:
+        default_values["bin"] = os.path.join(local_dir, "build/release/bin")
+        default_values["scripts"] = os.path.join(local_dir, "src/projects/mts/scripts")
+        default_values["assembly"]["dir"] = os.path.join(local_dir, "bin")
+    setdefault_recursively(config)
+    config["reassembly"].setdefault("dir", config["assembly"].get("dir"))
+
 def sample_name(fullname):
     return os.path.splitext(os.path.basename(fullname))[0]
 

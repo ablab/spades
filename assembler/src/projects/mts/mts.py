@@ -9,6 +9,8 @@ import os.path
 import shutil
 import yaml
 
+from scripts.common import fill_default_values
+
 #copied from http://stackoverflow.com/questions/431684/how-do-i-cd-in-python/13197763#13197763
 class cd:
     """Context manager for changing the current working directory"""
@@ -72,18 +74,23 @@ with cd(exec_dir):
         else:
             print("\033[33mWarning: {} folder already exists\033[0m".format(dir_name))
 
+    with open(config_path) as config_in:
+        config = yaml.load(config_in)
+    fill_default_values(config)
+
     if args.reuse_from:
-        args.reuse_assemblies = os.path.join(args.reuse_from, "assembly")
+        args.reuse_assemblies = os.path.join(args.reuse_from, "assembly", config["assembly"]["assembler"])
         args.reuse_profiles = os.path.join(args.reuse_from, "profile")
 
-    reuse_dir(args.reuse_assemblies, "assembly")
+    try:
+        os.makedirs(os.path.join(args.dir, "assembly"))
+    except:
+        pass
+    reuse_dir(args.reuse_assemblies, "assembly/" + config["assembly"]["assembler"])
     reuse_dir(args.reuse_profiles, "profile")
 
     print("Step #1 - Assembly")
     call_snake()
-
-    with open(config_path) as config_in:
-        config = yaml.load(config_in)
 
     if config.get("reassembly", dict()).get("enabled", True):
         print("Step #1b - Ressembly")

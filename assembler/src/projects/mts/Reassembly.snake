@@ -15,10 +15,10 @@ rule reassemble_all:
 rule reassembly_config:
     input:   "binning/{bin}.info"
     output:  "reassembly/{bin}.yaml"
-    message: "Generated config file for reassembly of {wildcards.bin}"
+    message: "Generating config file for reassembly of {wildcards.bin}"
     run:
         with open(output[0], "w") as outfile:
-            conf = {"k": SMALL_K, "sample_cnt": SAMPLE_COUNT,
+            conf = {"k": PROFILE_K, "sample_cnt": SAMPLE_COUNT,
                     "kmer_mult": "profile/mts/kmers",
                     "bin": wildcards.bin, "bin_prof": "binning/{}/bins.prof".format(BINNER),
                     "edges_sqn": "reassembly/{}_edges.fasta".format(wildcards.bin),
@@ -30,7 +30,7 @@ rule reassembly_config:
 rule combine_reads:
     input:   flag="propagation.done", info="binning/{bin}.info"
     output:  "binning/{bin}/left.fastq", "binning/{bin}/right.fastq"
-    message: "Combine read fragments for {wildcards.bin}"
+    message: "Combining read fragments for {wildcards.bin}"
     run:
         shell("rm -f binning/{wildcards.bin}/left.fastq")
         shell("rm -f binning/{wildcards.bin}/right.fastq")
@@ -61,7 +61,7 @@ rule reassemble:
                 sample_data = line.split()
                 if sample_data[0][0] == "+":
                     subtotal += float(sample_data[1])
-        bin_cov = COV_THRESHOLD * subtotal * READ_LENGTH / (READ_LENGTH - SMALL_K)
+        bin_cov = COV_THRESHOLD * subtotal * READ_LENGTH / (READ_LENGTH - PROFILE_K)
         shell("{REASSEMBLER_DIR}/spades.py --only-assembler -t {threads}"
              " --pe1-1 {input.left} --pe1-2 {input.right} --pe1-ff -o {params}"
              " --hidden-cov-cutoff {bin_cov} --series-analysis {input.config}"
