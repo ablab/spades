@@ -236,6 +236,7 @@ struct debruijn_config {
             size_t max_delta;
             double max_relative_delta;
             size_t max_number_edges;
+            size_t dijkstra_vertex_limit;
             bool parallel;
             size_t buff_size;
             double buff_cov_diff;

@@ -30,7 +30,8 @@ debruijn_config::simplification::bulge_remover standard_br_config_generation() {
     br_config.max_coverage = 1000.;
     br_config.max_relative_coverage = 1.2;
     br_config.max_delta = 3;
-    br_config.max_number_edges = -1ul;
+    br_config.max_number_edges = std::numeric_limits<size_t>::max();
+    br_config.dijkstra_vertex_limit = std::numeric_limits<size_t>::max();
     br_config.max_relative_delta = 0.1;
     //fixme test both
     br_config.parallel = false;//true;

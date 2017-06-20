@@ -382,11 +382,12 @@ AlternativesAnalyzer<Graph> ParseBRConfig(const Graph &g,
     DEBUG("Length bound " << max_length);
 
     return AlternativesAnalyzer<Graph>(g, config.max_coverage,
-                                                    max_length,
-                                                    config.max_relative_coverage,
-                                                    config.max_delta,
-                                                    config.max_relative_delta,
-                                                    config.max_number_edges);
+                                       max_length,
+                                       config.max_relative_coverage,
+                                       config.max_delta,
+                                       config.max_relative_delta,
+                                       config.max_number_edges,
+                                       config.dijkstra_vertex_limit);
 }
 
 template<class Graph>

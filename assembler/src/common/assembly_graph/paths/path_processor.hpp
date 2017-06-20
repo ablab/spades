@@ -173,10 +173,12 @@ private:
 
 public:
 
-    PathProcessor(const Graph& g, VertexId start, size_t length_bound) :
+    PathProcessor(const Graph& g, VertexId start, size_t length_bound,
+                  size_t dijkstra_vertex_limit = MAX_DIJKSTRA_VERTICES) :
               g_(g),
               start_(start),
-              dijkstra_(DijkstraHelper<Graph>::CreateBoundedDijkstra(g, length_bound, MAX_DIJKSTRA_VERTICES)) {
+              dijkstra_(DijkstraHelper<Graph>::CreateBoundedDijkstra(g, length_bound,
+                                                                     dijkstra_vertex_limit)) {
         TRACE("Dijkstra launched");
         dijkstra_.Run(start);
         TRACE("Dijkstra finished");
@@ -184,7 +186,9 @@ public:
 
     // dfs from the end vertices
     // 3 two mistakes, 2 bad dijkstra, 1 some bad dfs, 0 = okay
-    int Process(VertexId end, size_t min_len, size_t max_len, Callback& callback, size_t edge_depth_bound = -1ul) const {
+    int Process(VertexId end, size_t min_len, size_t max_len,
+                Callback& callback,
+                size_t edge_depth_bound = std::numeric_limits<size_t>::max()) const {
         TRACE("Process launched");
         int error_code = 0;
 
@@ -219,7 +223,8 @@ private:
 template<class Graph>
 int ProcessPaths(const Graph& g, size_t min_len, size_t max_len,
                  typename Graph::VertexId start, typename Graph::VertexId end,
-                 typename PathProcessor<Graph>::Callback& callback, size_t max_edge_cnt = -1ul) {
+                 typename PathProcessor<Graph>::Callback& callback,
+                 size_t max_edge_cnt = std::numeric_limits<size_t>::max()) {
     PathProcessor<Graph> processor(g, start, max_len);
     return processor.Process(end, min_len, max_len, callback, max_edge_cnt);
 }

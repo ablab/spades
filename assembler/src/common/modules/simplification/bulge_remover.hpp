@@ -210,6 +210,7 @@ class AlternativesAnalyzer {
     size_t max_delta_;
     double max_relative_delta_;
     size_t max_edge_cnt_;
+    size_t dijkstra_vertex_limit_;
 
     static vector<EdgeId> EmptyPath() {
         static vector<EdgeId> vec = {};
@@ -229,14 +230,16 @@ class AlternativesAnalyzer {
 public:
     AlternativesAnalyzer(const Graph& g, double max_coverage, size_t max_length,
                          double max_relative_coverage, size_t max_delta,
-                         double max_relative_delta, size_t max_edge_cnt) :
+                         double max_relative_delta, size_t max_edge_cnt,
+                         size_t dijkstra_vertex_limit) :
                          g_(g),
                          max_coverage_(max_coverage),
                          max_length_(max_length),
                          max_relative_coverage_(max_relative_coverage),
                          max_delta_(max_delta),
                          max_relative_delta_(max_relative_delta),
-                         max_edge_cnt_(max_edge_cnt) {
+                         max_edge_cnt_(max_edge_cnt),
+                         dijkstra_vertex_limit_(dijkstra_vertex_limit) {
         DEBUG("Created alternatives analyzer max_length=" << max_length
         << " max_coverage=" << max_coverage
         << " max_relative_coverage=" << max_relative_coverage
@@ -261,8 +264,18 @@ public:
         VertexId end = g_.EdgeEnd(e);
         TRACE("End " << g_.str(end));
 
-        ProcessPaths(g_, (g_.length(e) > delta) ? g_.length(e) - delta : 0,
-                g_.length(e) + delta, start, end, path_chooser, max_edge_cnt_);
+//        template<class Graph>
+//        int ProcessPaths(const Graph& g, size_t min_len, size_t max_len,
+//                         typename Graph::VertexId start, typename Graph::VertexId end,
+//                         typename PathProcessor<Graph>::Callback& callback,
+//                         size_t max_edge_cnt = std::numeric_limits<size_t>::max()) {
+//            PathProcessor<Graph> processor(g, start, max_len);
+//            return processor.Process(end, min_len, max_len, callback, max_edge_cnt);
+//        }
+        size_t max_path_len = g_.length(e) + delta;
+        PathProcessor<Graph> processor(g_, start, max_path_len, dijkstra_vertex_limit_);
+        processor.Process(end, (g_.length(e) > delta) ? g_.length(e) - delta : 0,
+                          max_path_len, path_chooser, max_edge_cnt_);
 
         const vector<EdgeId>& path = path_chooser.most_covered_path();
         if (!path.empty()) {
@@ -674,21 +687,21 @@ public:
         }
         if (primary_launch) {
             it_.clear();
-            TRACE("Primary launch.");
-            TRACE("Start search for interesting edges");
+            DEBUG("Primary launch.");
+            DEBUG("Start search for interesting edges");
             interesting_edge_finder_->Run(this->g(), [&](EdgeId e) {it_.push(e);});
-            TRACE(it_.size() << " interesting edges to process");
+            DEBUG(it_.size() << " interesting edges to process");
         } else {
             VERIFY(tracking_);
-            TRACE(it_.size() << " edges to process");
+            DEBUG(it_.size() << " edges to process");
         }
 
         size_t triggered = 0;
         bool proceed = true;
         while (proceed) {
             std::vector<EdgeId> edge_buffer;
-            edge_buffer.reserve(buff_size_);
             DEBUG("Filling edge buffer");
+            edge_buffer.reserve(buff_size_);
             proceed = FillEdgeBuffer(edge_buffer, proceed_condition);
             DEBUG("Edge buffer filled");
 
@@ -710,6 +723,7 @@ public:
 
             proceed |= (inner_triggered > 0);
             triggered += inner_triggered;
+            DEBUG("Buffer processed");
         }
 
         DEBUG("Finished processing. Triggered = " << triggered);

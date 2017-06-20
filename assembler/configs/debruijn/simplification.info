@@ -32,6 +32,7 @@ simp
 		max_delta			3
 		max_relative_delta		0.1
         max_number_edges        1000
+        dijkstra_vertex_limit   3000
         parallel true
         buff_size 10000
         buff_cov_diff 2.

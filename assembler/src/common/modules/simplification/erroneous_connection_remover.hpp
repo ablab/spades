@@ -130,7 +130,7 @@ inline bool IsAlternativePathExist(const Graph &g, typename Graph::EdgeId e){
     VertexId end = g.EdgeEnd(e);
     TRACE("End " << g.str(end));
 
-    ProcessPaths(g, 0, std::numeric_limits<std::size_t>::max(), start, end, path_chooser, std::numeric_limits<std::size_t>::max());
+    ProcessPaths(g, 0, std::numeric_limits<std::size_t>::max(), start, end, path_chooser);
 
     const vector<EdgeId>& path = path_chooser.most_covered_path();
     double path_coverage = path_chooser.max_coverage();
@@ -156,7 +156,7 @@ inline bool IsAlternativeInclusivePathExist(const Graph &g, typename Graph::Edge
     VertexId end = g.EdgeEnd(forbidden_edge);
     TRACE("End " << g.str(end));
 
-    ProcessPaths(g, 0, std::numeric_limits<std::size_t>::max(), start, end, path_chooser, std::numeric_limits<std::size_t>::max());
+    ProcessPaths(g, 0, std::numeric_limits<std::size_t>::max(), start, end, path_chooser);
 
     const vector<EdgeId>& path = path_chooser.most_covered_path();
     double path_coverage = path_chooser.max_coverage();
@@ -260,7 +260,7 @@ public:
 
     TopologicalThornCondition(Graph& g,
                               size_t max_jump_dist,
-                              size_t max_edge_cnt = -1ul)
+                              size_t max_edge_cnt = std::numeric_limits<size_t>::max())
             : base(g),
               max_jump_distance_(max_jump_dist),
               max_edge_cnt_(max_edge_cnt) {

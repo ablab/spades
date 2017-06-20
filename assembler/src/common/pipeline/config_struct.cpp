@@ -249,6 +249,7 @@ void load(debruijn_config::simplification::bulge_remover& br,
   load(br.max_delta,                        pt,     "max_delta", complete);
   load(br.max_relative_delta,               pt,     "max_relative_delta", complete);
   load(br.max_number_edges,                 pt,     "max_number_edges", complete);
+  load(br.dijkstra_vertex_limit,            pt,     "dijkstra_vertex_limit", complete);
   load(br.parallel,                         pt,     "parallel", complete);
   load(br.buff_size,                        pt,     "buff_size", complete);
   load(br.buff_cov_diff,                    pt,     "buff_cov_diff", complete);
