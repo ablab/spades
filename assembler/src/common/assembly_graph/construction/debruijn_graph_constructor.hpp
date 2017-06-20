@@ -324,10 +324,10 @@ private:
     // unbranching paths because there are no junctions on loops.
     const std::vector<Sequence> CollectLoops() {
         INFO("Collecting perfect loops");
-        auto its = origin_.kmer_begin(omp_get_max_threads());
+        auto its = origin_.kmer_begin(16 * omp_get_max_threads());
         std::vector<std::vector<KeyWithHash> > starts(its.size(), std::vector<KeyWithHash>());
 
-#       pragma omp parallel for schedule(static)
+#       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < its.size(); ++i) {
             auto &it = its[i];
             for (; it.good(); ++it) {
@@ -375,10 +375,10 @@ public:
     //TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
     const std::vector<Sequence> ExtractUnbranchingPaths() const {
         INFO("Collecting junction k-mers");
-        auto its = origin_.kmer_begin(omp_get_max_threads());
+        auto its = origin_.kmer_begin(16 * omp_get_max_threads());
         std::vector<std::vector<DeEdge> > junctions(its.size(), std::vector<DeEdge>());
 
-#       pragma omp parallel for schedule(static)
+#       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < its.size(); ++i)
             AddStartDeEdges(its[i], junctions[i]);
 
@@ -391,7 +391,7 @@ public:
 
         INFO("Extracting unbranching paths");
         std::vector<std::vector<Sequence> > sequences(its.size(), std::vector<Sequence>());
-#       pragma omp parallel for schedule(static)
+#       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < junctions.size(); ++i) {
             UnbranchingPathFinder finder(origin_, kmer_size_);
             CalculateSequences(junctions[i], sequences[i], finder);
