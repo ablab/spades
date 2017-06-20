@@ -179,67 +179,6 @@ private:
     DECL_LOGGER("DeBruijnGraphConstructor")
 };
 
-class UnbranchingPathFinder {
-private:
-    typedef utils::DeBruijnExtensionIndex<> Index;
-    typedef RtSeq Kmer;
-    typedef Index::kmer_iterator kmer_iterator;
-    typedef Index::KeyWithHash KeyWithHash;
-    typedef Index::DeEdge DeEdge;
-
-    Index &origin_;
-    size_t kmer_size_;
-
-public:
-    UnbranchingPathFinder(Index &origin, size_t kmer_size) :
-            origin_(origin), kmer_size_(kmer_size) { }
-
-    bool StepRightIfPossible(DeEdge &edge) const {
-        utils::InOutMask mask = origin_.get_value(edge.end);
-        if (mask.CheckUniqueOutgoing() && mask.CheckUniqueIncoming()) {
-            edge = DeEdge(edge.end,
-                          origin_.GetOutgoing(edge.end, mask.GetUniqueOutgoing()));
-            return true;
-        }
-        return false;
-    }
-
-    Sequence ConstructSeqGoingRight(DeEdge edge, SequenceBuilder &builder) const {
-        builder.clear(); // We reuse the buffer to reduce malloc traffic
-        builder.append(edge.start.key());
-        builder.append(edge.end[kmer_size_ - 1]);
-        DeEdge initial = edge;
-        while (StepRightIfPossible(edge) && edge != initial) {
-            builder.append(edge.end[kmer_size_ - 1]);
-        }
-        return builder.BuildSequence();
-    }
-
-    Sequence ConstructSequenceWithEdge(DeEdge edge, SequenceBuilder &builder) const {
-        return ConstructSeqGoingRight(edge, builder);
-    }
-
-    // Loop consists of 4 parts: 2 selfRC k+1-mers and two sequences of arbitrary length RC to each other; pos is a position of one of selfRC edges
-    std::vector<Sequence> SplitLoop(Sequence s, size_t pos) const {
-        return { s.Subseq(pos, pos + kmer_size_ + 1),
-                 s.Subseq(pos + 1, s.size() - kmer_size_) + s.Subseq(0, pos + kmer_size_) };
-
-    }
-
-//  TODO Think about what happends to self rc perfect loops
-    std::vector<Sequence> ConstructLoopFromVertex(const KeyWithHash &kh, SequenceBuilder &builder) const {
-        DeEdge break_point(kh, origin_.GetUniqueOutgoing(kh));
-        Sequence s = ConstructSequenceWithEdge(break_point, builder);
-        Kmer kmer = s.start<Kmer>(kmer_size_ + 1) >> 'A';
-        for (size_t i = kmer_size_; i < s.size(); i++) {
-            kmer = kmer << s[i];
-            if (kmer == !kmer)
-                return SplitLoop(s, i - kmer_size_);
-        }
-        return {s};
-    }
-};
-
 class UnbranchingPathExtractor {
 private:
     typedef utils::DeBruijnExtensionIndex<> Index;
@@ -270,36 +209,80 @@ private:
         }
     }
 
-    void AddStartDeEdges(kmer_iterator &it, std::vector<DeEdge> &start_edges) const {
-        for ( ; it.good(); ++it) {
-            KeyWithHash kh = origin_.ConstructKWH(Kmer(kmer_size_, *it));
-            auto extensions = origin_.get_value(kh);
-            if (!IsJunction(extensions))
-                continue;
+    void AddStartDeEdges(KeyWithHash kh, std::vector<DeEdge>& start_edges) const {
+        start_edges.clear();
+        auto extensions = origin_.get_value(kh);
+        if (!IsJunction(extensions))
+            return;
 
-            AddStartDeEdgesForVertex(kh, extensions, start_edges);
-            KeyWithHash kh_inv = !kh;
-            if (!kh_inv.is_minimal()) {
-                AddStartDeEdgesForVertex(kh_inv, origin_.get_value(kh_inv),
-                                         start_edges);
-            }
+        AddStartDeEdgesForVertex(kh, extensions, start_edges);
+        KeyWithHash kh_inv = !kh;
+        if (!kh_inv.is_minimal()) {
+            AddStartDeEdgesForVertex(kh_inv, origin_.get_value(kh_inv),
+                                     start_edges);
         }
     }
 
-    void CalculateSequences(std::vector<DeEdge> &edges,
-                            std::vector<Sequence> &sequences,
-                            const UnbranchingPathFinder &finder) const {
+    bool StepRightIfPossible(DeEdge &edge) const {
+        utils::InOutMask mask = origin_.get_value(edge.end);
+        if (mask.CheckUniqueOutgoing() && mask.CheckUniqueIncoming()) {
+            edge = DeEdge(edge.end,
+                          origin_.GetOutgoing(edge.end, mask.GetUniqueOutgoing()));
+            return true;
+        }
+        return false;
+    }
+
+    Sequence ConstructSequenceWithEdge(DeEdge edge, SequenceBuilder &builder) const {
+        builder.clear(); // We reuse the buffer to reduce malloc traffic
+        builder.append(edge.start.key());
+        builder.append(edge.end[kmer_size_ - 1]);
+        DeEdge initial = edge;
+        while (StepRightIfPossible(edge) && edge != initial) {
+            builder.append(edge.end[kmer_size_ - 1]);
+        }
+        return builder.BuildSequence();
+    }
+
+    // Loop consists of 4 parts: 2 selfRC k+1-mers and two sequences of arbitrary length RC to each other; pos is a position of one of selfRC edges
+    std::vector<Sequence> SplitLoop(Sequence s, size_t pos) const {
+        return { s.Subseq(pos, pos + kmer_size_ + 1),
+                 s.Subseq(pos + 1, s.size() - kmer_size_) + s.Subseq(0, pos + kmer_size_) };
+
+    }
+
+//  TODO Think about what happends to self rc perfect loops
+    std::vector<Sequence> ConstructLoopFromVertex(const KeyWithHash &kh, SequenceBuilder &builder) const {
+        DeEdge break_point(kh, origin_.GetUniqueOutgoing(kh));
+        Sequence s = ConstructSequenceWithEdge(break_point, builder);
+        Kmer kmer = s.start<Kmer>(kmer_size_ + 1) >> 'A';
+        for (size_t i = kmer_size_; i < s.size(); i++) {
+            kmer = kmer << s[i];
+            if (kmer == !kmer)
+                return SplitLoop(s, i - kmer_size_);
+        }
+        return {s};
+    }
+
+    void CalculateSequences(kmer_iterator &it,
+                            std::vector<Sequence> &sequences) const {
         SequenceBuilder builder;
-        sequences.reserve(sequences.size() + edges.size());
+        std::vector<DeEdge> start_edges;
+        start_edges.reserve(8);
 
-         for (auto edge : edges) {
-             Sequence s = finder.ConstructSequenceWithEdge(edge, builder);
-             if (!s < s)
-                 continue;
+        for ( ; it.good(); ++it) {
+            KeyWithHash kh = origin_.ConstructKWH(Kmer(kmer_size_, *it));
+            AddStartDeEdges(kh, start_edges);
 
-             sequences.push_back(s);
-             TRACE("From " << edge << " calculated sequence\n" << s);
-          }
+            for (auto edge : start_edges) {
+                Sequence s = ConstructSequenceWithEdge(edge, builder);
+                if (!s < s)
+                    continue;
+
+                sequences.push_back(s);
+                TRACE("From " << edge << " calculated sequence\n" << s);
+            }
+        }
     }
 
     void CleanCondensed(const Sequence &sequence) {
@@ -344,7 +327,6 @@ private:
                                       });
         INFO("Total " << lnum << " in-loop k-mers");
 
-        UnbranchingPathFinder finder(origin_, kmer_size_);
         std::vector<Sequence> result;
         SequenceBuilder builder;
         for (const auto& entry : starts) {
@@ -352,7 +334,7 @@ private:
                 if (IsJunction(kwh))
                     continue;
 
-                for (Sequence s: finder.ConstructLoopFromVertex(kwh, builder)) {
+                for (Sequence s : ConstructLoopFromVertex(kwh, builder)) {
                     Sequence s_rc = !s;
                     if (s_rc < s)
                         result.push_back(s_rc);
@@ -374,30 +356,13 @@ public:
 
     //TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
     const std::vector<Sequence> ExtractUnbranchingPaths() const {
-        INFO("Collecting junction k-mers");
         auto its = origin_.kmer_begin(16 * omp_get_max_threads());
-        std::vector<std::vector<DeEdge> > junctions(its.size(), std::vector<DeEdge>());
-
-#       pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < its.size(); ++i)
-            AddStartDeEdges(its[i], junctions[i]);
-
-        size_t jnum = std::accumulate(junctions.begin(), junctions.end(),
-                                      0,
-                                      [](size_t val, const std::vector<DeEdge> &s) {
-                                          return val + s.size();
-                                      });
-        INFO("Done. Total " << jnum << " junction k-mers");
 
         INFO("Extracting unbranching paths");
         std::vector<std::vector<Sequence> > sequences(its.size(), std::vector<Sequence>());
 #       pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < junctions.size(); ++i) {
-            UnbranchingPathFinder finder(origin_, kmer_size_);
-            CalculateSequences(junctions[i], sequences[i], finder);
-            junctions[i].clear();
-            junctions[i].shrink_to_fit();
-        }
+        for (size_t i = 0; i < its.size(); ++i)
+            CalculateSequences(its[i], sequences[i]);
 
         // FIXME: Do we really need this?
         size_t snum = std::accumulate(sequences.begin(), sequences.end(),
