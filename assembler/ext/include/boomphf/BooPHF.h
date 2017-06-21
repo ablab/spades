@@ -345,7 +345,6 @@ class Progress
 #pragma mark hasher
 ////////////////////////////////////////////////////////////////
 
-typedef std::array<uint64_t,10> hash_set_t;
 typedef std::array<uint64_t,2> hash_pair_t;
 
 typedef hash_pair_t internal_hash_t; // ou hash_pair_t directement ?  __uint128_t
@@ -362,7 +361,7 @@ struct internalHasher {
     }
 };
 
-template <class SingleHasher_t> class XorshiftHashFunctors {
+template<class SingleHasher_t> class XorshiftHashFunctors {
     /*  Xorshift128*
         Written in 2014 by Sebastiano Vigna (vigna@acm.org)
 
@@ -370,37 +369,17 @@ template <class SingleHasher_t> class XorshiftHashFunctors {
         and related and neighboring rights to this software to the public domain
         worldwide. This software is distributed without any warranty.
 
-        See <http://creativecommons.org/publicdomain/zero/1.0/>. */
-    /* This is the fastest generator passing BigCrush without
-       systematic failures, but due to the relatively short period it is
-       acceptable only for applications with a mild amount of parallelism;
-       otherwise, use a xorshift1024* generator.
+        See <http://creativecommons.org/publicdomain/zero/1.0/>.
 
-       The state must be seeded so that it is not everywhere zero. If you have
-       a nonzero 64-bit seed, we suggest to pass it twice through
-       MurmurHash3's avalanching function. */
+        This is the fastest generator passing BigCrush without
+        systematic failures, but due to the relatively short period it is
+        acceptable only for applications with a mild amount of parallelism;
+        otherwise, use a xorshift1024* generator.
 
-    uint64_t next(uint64_t *s) const {
-        uint64_t s1 = s[0];
-        const uint64_t s0 = s[1];
-        s[0] = s0;
-        s1 ^= s1 << 23; // a
-        return (s[1] = (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26))) + s0; // b, c
-    }
-
+        The state must be seeded so that it is not everywhere zero. If you have
+        a nonzero 64-bit seed, we suggest to pass it twice through
+        MurmurHash3's avalanching function. */
   public:
-    template<class Item>
-    uint64_t h0(hash_pair_t &s, const Item& key) const {
-        s[0] = singleHasher(key).first;
-        return s[0];
-    }
-
-    template<class Item>
-    uint64_t h1(hash_pair_t &s, const Item& key) const {
-        s[1] = singleHasher(key).second;
-        return s[1];
-    }
-
     template<class Item>
     hash_pair_t hashpair128(const Item& key) const {
         auto h = singleHasher(key);
@@ -414,26 +393,6 @@ template <class SingleHasher_t> class XorshiftHashFunctors {
         s[0] = s0;
         s1 ^= s1 << 23; // a
         return (s[1] = (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26))) + s0; // b, c
-    }
-
-    //this one returns all the  hashes
-    template<class Item>
-    hash_set_t operator()(const Item& key) {
-        uint64_t s[2];
-        hash_set_t hset;
-
-        auto h = singleHasher(key);
-        s[0] = h.first;
-        s[1] = h.second;
-
-        hset[0] = s[0];
-        hset[1] = s[1];
-
-        for (size_t ii=2;ii< 10 /* it's much better have a constant here, for inlining; this loop is super performance critical*/; ii++) {
-            hset[ii] = next(s);
-        }
-
-        return hset;
     }
 
   private:
@@ -603,55 +562,45 @@ class bitVector {
         printf("\n");
     }
 
-    //return value at pos
-    uint64_t operator[](uint64_t pos) const
-    {
+    // return value at pos
+    uint64_t operator[](uint64_t pos) const {
         //unsigned char * _bitArray8 = (unsigned char *) _bitArray;
         //return (_bitArray8[pos >> 3ULL] >> (pos & 7 ) ) & 1;
-
-        return (_bitArray[pos >> 6ULL] >> (pos & 63 ) ) & 1;
-
+        return (_bitArray[pos >> 6ULL] >> (pos & 63)) & 1;
     }
 
     //atomically   return old val and set to 1
-    uint64_t atomic_test_and_set(uint64_t pos)
-    {
-        uint64_t oldval =   __sync_fetch_and_or (_bitArray + (pos >> 6), (uint64_t) (1ULL << (pos & 63)) );
-
-        return  ( oldval >> (pos & 63 ) ) & 1;
+    uint64_t atomic_test_and_set(uint64_t pos) {
+        uint64_t oldval =   __sync_fetch_and_or(_bitArray + (pos >> 6), (uint64_t) (1ULL << (pos & 63)) );
+        return (oldval >> (pos & 63)) & 1;
     }
 
 
-    uint64_t get(uint64_t pos) const
-    {
+    uint64_t get(uint64_t pos) const {
         return (*this)[pos];
     }
 
-    uint64_t get64(uint64_t cell64) const
-    {
+    uint64_t get64(uint64_t cell64) const {
         return _bitArray[cell64];
     }
 
     //set bit pos to 1
-    void set(uint64_t pos)
-    {
+    void set(uint64_t pos) {
         assert(pos<_size);
         //_bitArray [pos >> 6] |=   (1ULL << (pos & 63) ) ;
         __sync_fetch_and_or (_bitArray + (pos >> 6ULL), (1ULL << (pos & 63)) );
     }
 
     //set bit pos to 0
-    void reset(uint64_t pos)
-    {
+    void reset(uint64_t pos) {
         //_bitArray [pos >> 6] &=   ~(1ULL << (pos & 63) ) ;
         __sync_fetch_and_and (_bitArray + (pos >> 6ULL), ~(1ULL << (pos & 63) ));
     }
 
-    //return value of  last rank
-    // add offset to  all ranks  computed
-    uint64_t build_ranks(uint64_t offset =0)
-    {
-        _ranks.reserve(2+ _size/_nb_bits_per_rank_sample);
+    // return value of last rank
+    // add offset to all ranks computed
+    uint64_t build_ranks(uint64_t offset = 0) {
+        _ranks.reserve(2 + _size/_nb_bits_per_rank_sample);
 
         uint64_t curent_rank = offset;
         for (size_t ii = 0; ii < _nchar; ii++) {
@@ -664,15 +613,13 @@ class bitVector {
         return curent_rank;
     }
 
-    uint64_t rank(uint64_t pos) const
-    {
+    uint64_t rank(uint64_t pos) const {
         uint64_t word_idx = pos / 64ULL;
         uint64_t word_offset = pos % 64;
         uint64_t block = pos / _nb_bits_per_rank_sample;
         uint64_t r = _ranks[block];
-        for (uint64_t w = block * _nb_bits_per_rank_sample / 64; w < word_idx; ++w) {
-            r += popcount_64( _bitArray[w] );
-        }
+        for (uint64_t w = block * _nb_bits_per_rank_sample / 64; w < word_idx; ++w)
+            r += popcount_64(_bitArray[w]);
         uint64_t mask = (uint64_t(1) << word_offset ) - 1;
         r += popcount_64( _bitArray[word_idx] & mask);
 
@@ -681,8 +628,7 @@ class bitVector {
 
 
 
-    void save(std::ostream& os) const
-    {
+    void save(std::ostream& os) const {
         os.write(reinterpret_cast<char const*>(&_size), sizeof(_size));
         os.write(reinterpret_cast<char const*>(&_nchar), sizeof(_nchar));
         os.write(reinterpret_cast<char const*>(_bitArray), (std::streamsize)(sizeof(uint64_t) * _nchar));
@@ -691,8 +637,7 @@ class bitVector {
         os.write(reinterpret_cast<char const*>(_ranks.data()), (std::streamsize)(sizeof(_ranks[0]) * _ranks.size()));
     }
 
-    void load(std::istream& is)
-    {
+    void load(std::istream& is) {
         is.read(reinterpret_cast<char*>(&_size), sizeof(_size));
         is.read(reinterpret_cast<char*>(&_nchar), sizeof(_nchar));
         this->resize(_size);
@@ -870,32 +815,24 @@ class mphf {
         hash_pair_t bbhash = _hasher.hashpair128(elem);
         uint64_t level_hash = getLevel(bbhash, elem, &level);
 
-        if( level == (_nb_levels-1))
-        {
+        if (level == (_nb_levels-1)) {
             //auto in_final_map  = _final_hash.find (elem);
             auto in_final_map  = _final_hash.find(bbhash);
-
-            if ( in_final_map == _final_hash.end() )
-            {
+            if (in_final_map == _final_hash.end()) {
                 //elem was not in orignal set of keys
                 return ULLONG_MAX; //  means elem not in set
-            }
-            else
-            {
+            } else {
                 minimal_hp =  in_final_map->second + _lastbitsetrank;
                 //printf("lookup %llu  level %i   --> %llu \n",elem,level,minimal_hp);
-
                 return minimal_hp;
             }
             //				minimal_hp = _final_hash[elem] + _lastbitsetrank;
             //				return minimal_hp;
-        }
-        else
-        {
+        } else {
             //non_minimal_hp =  level_hash %  _levels[level].hash_domain; // in fact non minimal hp would be  + _levels[level]->idx_begin
             non_minimal_hp = fastrange64(level_hash,_levels[level].hash_domain);
         }
-        minimal_hp = _levels[level].bitset.rank(non_minimal_hp );
+        minimal_hp = _levels[level].bitset.rank(non_minimal_hp);
         //	printf("lookup %llu  level %i   --> %llu \n",elem,level,minimal_hp);
 
         return minimal_hp;
@@ -1024,14 +961,13 @@ class mphf {
                         pthread_mutex_lock(&_mutex); //see later if possible to avoid this, mais pas bcp item vont la
                         // calc rank de fin  precedent level qq part, puis init hashidx avec ce rank, direct minimal, pas besoin inser ds bitset et rank
 
-                        auto in_final_map = _final_hash.find(val);
-                        if (in_final_map != _final_hash.end()) // key already in final hash
+                        if (_final_hash.count(val)) // key already in final hash
                         {
                             fprintf(stderr,"The impossible happened : collision on 128 bit hashes... please switch to safe branch, and play the lottery.");
                             fprintf(stderr,"Another more likely explanation might be that you have duplicate keys in your input.\
                                         If so, you can ignore this message, but be aware that too many duplicate keys will increase ram usage\n");
                         }
-                        in_final_map->second = hashidx;
+                        _final_hash[val] = hashidx;
 
 
                         pthread_mutex_unlock(&_mutex);
@@ -1065,14 +1001,7 @@ class mphf {
                         //#endif
 
 
-                        //computes next hash
-
-                        //							if ( level == 0)
-                        //								level_hash = _hasher.h0(bbhash,val);
-                        //							else if ( level == 1)
-                        //								level_hash = _hasher.h1(bbhash,val);
-                        //							else
-
+                        // computes next hash
                         if (level == 0)
                             level_hash = bbhash[0];
                         else if (level == 1)
@@ -1102,9 +1031,7 @@ class mphf {
     }
 
 
-    void save(std::ostream& os) const
-    {
-
+    void save(std::ostream& os) const {
         os.write(reinterpret_cast<char const*>(&_gamma), sizeof(_gamma));
         os.write(reinterpret_cast<char const*>(&_nb_levels), sizeof(_nb_levels));
         os.write(reinterpret_cast<char const*>(&_lastbitsetrank), sizeof(_lastbitsetrank));
@@ -1127,9 +1054,7 @@ class mphf {
 
     }
 
-    void load(std::istream& is)
-    {
-
+    void load(std::istream& is) {
         is.read(reinterpret_cast<char*>(&_gamma), sizeof(_gamma));
         is.read(reinterpret_cast<char*>(&_nb_levels), sizeof(_nb_levels));
         is.read(reinterpret_cast<char*>(&_lastbitsetrank), sizeof(_lastbitsetrank));
@@ -1276,11 +1201,11 @@ class mphf {
         int level = 0;
         uint64_t hash_raw=0;
 
-        for (int ii = 0; ii<(_nb_levels-1) &&  ii < maxlevel ; ii++ ) {
+        for (int ii = 0; ii<(_nb_levels-1) &&  ii < maxlevel ; ii++) {
             //calc le hash suivant
-            if ( ii == 0)
+            if (ii == 0)
                 hash_raw = bbhash[0];
-            else if ( ii == 1)
+            else if (ii == 1)
                 hash_raw = bbhash[1];
             else
                 hash_raw = _hasher.next(bbhash);
@@ -1305,9 +1230,8 @@ class mphf {
         //			printf(" :  %llu / %llu \n ",hashl,_levels[i].hash_domain);
         //#endif
 
-        if ( _levels[i].bitset.atomic_test_and_set(hashl)) {
+        if (_levels[i].bitset.atomic_test_and_set(hashl))
             _tempBitset->atomic_test_and_set(hashl);
-        }
     }
 
     //loop to insert into level i
@@ -1432,7 +1356,6 @@ class mphf {
     }
 
   private:
-    //level ** _levels;
     std::vector<level> _levels;
     int _nb_levels;
     MultiHasher_t _hasher;
