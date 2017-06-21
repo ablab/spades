@@ -27,29 +27,35 @@ rule reassembly_config:
                     "frag_size": SPLIT_LENGTH, "min_len": 100}
             yaml.dump(conf, outfile)
 
-rule combine_reads:
-    input:   flag="propagation.done", info="binning/{bin}.info"
-    output:  "binning/{bin}/left.fastq", "binning/{bin}/right.fastq"
-    message: "Combining read fragments for {wildcards.bin}"
-    run:
-        shell("rm -f binning/{wildcards.bin}/left.fastq")
-        shell("rm -f binning/{wildcards.bin}/right.fastq")
-        with open(input.info) as samples_info:
-            for line in samples_info:
-                sample_data = line.split()
-                if sample_data[0][0] == "+":
-                    sample = sample_data[0][1:]
-                    if not os.path.exists("binning/{}/{}_1.fastq".format(wildcards.bin, sample)):
-                        print("\033[33mWarning: {} contains no reads for {}\033[0m".format(sample, wildcards.bin))
-                        continue
-                    shell("cat binning/{wildcards.bin}/{sample}_1.fastq >> binning/{wildcards.bin}/left.fastq")
-                    shell("cat binning/{wildcards.bin}/{sample}_2.fastq >> binning/{wildcards.bin}/right.fastq")
+#For bin reassembly, we choose only matching reads from samples which were marked with +
+#in the corresponding {bin}.info file
+BIN_READS = dict()
+for bin in BINS:
+    with open("binning/{}.info".format(bin)) as samples_info:
+        samples = []
+        for line in samples_info:
+            sample_data = line.split()
+            if sample_data[0][0] == "+":
+                sample = sample_data[0][1:]
+                if not os.path.exists("binning/{}/{}_1.fastq.gz".format(bin, sample)):
+                    print("\033[33mWarning: {} contains no reads for {}\033[0m".format(sample, bin))
+                    continue
+                samples.append(sample)
+        BIN_READS[bin] = (["binning/{}/{}_1.fastq.gz".format(bin, sample) for sample in samples],
+                          ["binning/{}/{}_2.fastq.gz".format(bin, sample) for sample in samples])
+
+def bin_reads(dir, wildcards):
+    return BIN_READS[wildcards["bin"]][dir]
+
+#Returns the filepath with left/right reads for a sample or list of them for a group, used as Snakemake input
+left_bin_reads, right_bin_reads = reads_input(bin_reads)
 
 rule reassemble:
-    input:   left="binning/{bin}/left.fastq", right="binning/{bin}/right.fastq",
-             info="binning/{bin}.info", config="reassembly/{bin}.yaml"
+    input:   info="binning/{bin}.info", config="reassembly/{bin}.yaml"
     output:  "reassembly/bins/{bin}.fasta"
-    params:  "reassembly/{bin}"
+    params:  out="reassembly/{bin}",
+             left=lambda w: " ".join(expand("--pe1-1 {r}", r=left_bin_reads(w))),
+             right=lambda w: " ".join(expand("--pe1-2 {r}", r=right_bin_reads(w))),
     log:     "reassembly/{bin}.log"
     threads: THREADS
     message: "Reassembling reads for {wildcards.bin}"
@@ -63,6 +69,6 @@ rule reassemble:
                     subtotal += float(sample_data[1])
         bin_cov = COV_THRESHOLD * subtotal * READ_LENGTH / (READ_LENGTH - PROFILE_K)
         shell("{REASSEMBLER_DIR}/spades.py --only-assembler -t {threads}"
-             " --pe1-1 {input.left} --pe1-2 {input.right} --pe1-ff -o {params}"
+             " {params.left} {params.right} --pe1-ff -o {params.out}"
              " --hidden-cov-cutoff {bin_cov} --series-analysis {input.config}"
-             " >{log} 2>&1 && cp {params}/scaffolds.fasta {output}")
+             " >{log} 2>&1 && cp {params.out}/scaffolds.fasta {output}")

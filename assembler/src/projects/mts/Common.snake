@@ -69,18 +69,20 @@ for group in GROUP_SAMPLES:
     GROUPS[key] = group
 
 #Helpers for locating input files
+
+#Returns all filepaths with left/right reads for a sample/group/bin/etc, used as Snakemake input
+def reads_input(dict):
+    return (partial(dict, 0), partial(dict, 1))
+
 def sample_reads(dir, wildcards):
     return SAMPLE_READS[wildcards["sample"]][dir]
+
+left_sample_reads, right_sample_reads = reads_input(sample_reads)
 
 def group_reads(dir, wildcards):
     return SAMPLE_READS[wildcards["group"]][dir]
 
-#Returns the filepath with left/right reads for a sample or list of them for a group, used as Snakemake input
-left_sample_reads  = partial(sample_reads, 0)
-right_sample_reads = partial(sample_reads, 1)
-
-left_reads  = partial(group_reads, 0)
-right_reads = partial(group_reads, 1)
+left_reads, right_reads = reads_input(group_reads)
 
 rule combine_contigs:
     input:   expand("{{dir}}/{group}.fasta", group=GROUPS)
