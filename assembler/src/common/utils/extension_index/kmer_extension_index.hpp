@@ -70,7 +70,7 @@ private:
     }
 
     uint8_t incoming() const {
-        return mask_ >> 4;
+        return (mask_ >> 4) & 0xF;
     }
 
 public:
