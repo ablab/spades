@@ -245,7 +245,7 @@ private:
     }
 
     // Loop consists of 4 parts: 2 selfRC k+1-mers and two sequences of arbitrary length RC to each other; pos is a position of one of selfRC edges
-    std::vector<Sequence> SplitLoop(Sequence s, size_t pos) const {
+    std::vector<Sequence> SplitLoop(const Sequence &s, size_t pos) const {
         return { s.Subseq(pos, pos + kmer_size_ + 1),
                  s.Subseq(pos + 1, s.size() - kmer_size_) + s.Subseq(0, pos + kmer_size_) };
 
@@ -305,10 +305,10 @@ private:
 
     // This methods collects all loops that were not extracted by finding
     // unbranching paths because there are no junctions on loops.
-    const std::vector<Sequence> CollectLoops() {
+    const std::vector<Sequence> CollectLoops(unsigned nchunks) {
         INFO("Collecting perfect loops");
-        auto its = origin_.kmer_begin(16 * omp_get_max_threads());
-        std::vector<std::vector<KeyWithHash> > starts(its.size(), std::vector<KeyWithHash>());
+        auto its = origin_.kmer_begin(nchunks);
+        std::vector<std::vector<KeyWithHash> > starts(its.size());
 
 #       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < its.size(); ++i) {
@@ -319,13 +319,6 @@ private:
                     starts[i].push_back(kh);
             }
         }
-
-        size_t lnum = std::accumulate(starts.begin(), starts.end(),
-                                      0,
-                                      [](size_t val, const std::vector<KeyWithHash> &s) {
-                                          return val + s.size();
-                                      });
-        INFO("Total " << lnum << " in-loop k-mers");
 
         std::vector<Sequence> result;
         SequenceBuilder builder;
@@ -355,16 +348,15 @@ public:
             : origin_(origin), kmer_size_(k) {}
 
     //TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
-    const std::vector<Sequence> ExtractUnbranchingPaths() const {
-        auto its = origin_.kmer_begin(16 * omp_get_max_threads());
+    const std::vector<Sequence> ExtractUnbranchingPaths(unsigned nchunks) const {
+        auto its = origin_.kmer_begin(nchunks);
 
         INFO("Extracting unbranching paths");
-        std::vector<std::vector<Sequence> > sequences(its.size(), std::vector<Sequence>());
+        std::vector<std::vector<Sequence>> sequences(its.size());
 #       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < its.size(); ++i)
             CalculateSequences(its[i], sequences[i]);
 
-        // FIXME: Do we really need this?
         size_t snum = std::accumulate(sequences.begin(), sequences.end(),
                                       0,
                                       [](size_t val, const std::vector<Sequence> &s) {
@@ -382,10 +374,10 @@ public:
         return sequences[0];
     }
 
-    const std::vector<Sequence> ExtractUnbranchingPathsAndLoops() {
-        std::vector<Sequence> result = ExtractUnbranchingPaths();
+    const std::vector<Sequence> ExtractUnbranchingPathsAndLoops(unsigned nchunks) {
+        std::vector<Sequence> result = ExtractUnbranchingPaths(nchunks);
         CleanCondensed(result);
-        std::vector<Sequence> loops = CollectLoops();
+        std::vector<Sequence> loops = CollectLoops(nchunks);
         result.insert(result.end(),
                       std::make_move_iterator(loops.begin()), std::make_move_iterator(loops.end()));
         return result;
@@ -455,7 +447,7 @@ private:
             return LinkRecord(origin_.ConstructKWH(kmer_rc).idx(), edge, false, true);
     }
 
-    void CollectLinkRecords(typename Graph::HelperT &helper, const Graph &graph, vector<LinkRecord> &records, const vector<Sequence> &sequences) const {
+    void CollectLinkRecords(typename Graph::HelperT &helper, const Graph &graph, std::vector<LinkRecord> &records, const vector<Sequence> &sequences) const {
         size_t size = sequences.size();
         records.resize(size * 2, LinkRecord(0, EdgeId(0), false, false));
         restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
@@ -537,10 +529,11 @@ public:
 
     void ConstructGraph(bool keep_perfect_loops) {
         std::vector<Sequence> edge_sequences;
+        unsigned nchunks = 16 * omp_get_max_threads();
         if (keep_perfect_loops)
-            edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops();
+            edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPathsAndLoops(nchunks);
         else
-            edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPaths();
+            edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPaths(nchunks);
         FastGraphFromSequencesConstructor<Graph>(kmer_size_, origin_).ConstructGraph(graph_, edge_sequences);
     }
 

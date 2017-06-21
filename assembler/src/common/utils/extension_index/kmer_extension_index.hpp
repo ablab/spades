@@ -192,8 +192,8 @@ template<typename KeyWithHash>
 struct AbstractDeEdge {
     KeyWithHash start;
     KeyWithHash end;
-    AbstractDeEdge(KeyWithHash _start, KeyWithHash _end)
-            : start(std::move(_start)), end(std::move(_end)) {}
+    AbstractDeEdge(KeyWithHash s, KeyWithHash e)
+            : start(std::move(s)), end(std::move(e)) {}
 
     AbstractDeEdge<KeyWithHash> &operator=(const AbstractDeEdge<KeyWithHash> &that) {
         this->start = that.start;
