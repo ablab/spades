@@ -8,15 +8,19 @@ import sys
 import yaml
 
 if len(sys.argv) < 3:
-    print("Usage: choose_samples.py <input table> <output table> <output dir> [CAGS+]")
+    print("Usage: choose_samples.py <input table> <input bins> <output table> <output dir> ")
     exit(1)
 
 PROF = sys.argv[1]
-PROF_OUT = sys.argv[2]
-DIR = sys.argv[3]
-CAGS = None
-if len(sys.argv) > 4:
-    CAGS = set(sys.argv[4:])
+BINS = sys.argv[2]
+PROF_OUT = sys.argv[3]
+DIR = sys.argv[4]
+CAGS = set()
+with open(BINS) as input:
+    for line in input:
+        bin = line.split("\t")[0]
+        CAGS.add(bin)
+
 DESIRED_ABUNDANCE = 999999 #sys.maxsize
 MIN_ABUNDANCE = 4
 MIN_TOTAL_ABUNDANCE = 15
@@ -24,16 +28,16 @@ MIN_TOTAL_ABUNDANCE = 15
 prof_dict = dict()
 
 make_excluded = True
-exluded_dir = os.path.join(DIR, "excluded")
+excluded_dir = os.path.join(DIR, "excluded")
 
 #Assuming that samples are enumerated consecutively from 1 to N
 with open(PROF) as input:
     for line in input:
         params = line.split()
         CAG = params[0]
-        if CAGS and CAG not in CAGS:
+        if len(CAGS) == 0 and CAG not in CAGS:
             continue
-        profile = map(float, params[1:])
+        profile = list(map(float, params[1:]))
 
         print("Profile of", CAG, ":", profile)
 

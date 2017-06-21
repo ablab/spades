@@ -207,11 +207,17 @@ rule bin_profiles:
 
 ruleorder: canopy > bin_profiles
 
-rule binning_post:
+rule binning_format:
     input:   "binning/{}/binning.out".format(BINNER)
+    output:  "binning/{}/unified_binning.tsv".format(BINNER)
+    message: "Making unified binning results"
+    shell:   "{SCRIPTS}/convert_output.py -t {BINNER} -o {output} {input}"
+
+rule binning_post:
+    input:   "binning/{}/unified_binning.tsv".format(BINNER)
     output:  expand("binning/annotation/{sample}.ann", sample=GROUPS)
     message: "Preparing raw annotations"
-    shell:   "{SCRIPTS}/parse_output.py -t {BINNER} -o binning/annotation {input}"
+    shell:   "{SCRIPTS}/parse_output.py -o binning/annotation {input}"
 
 #---- Post-clustering pipeline -------------------------------------------------
 
@@ -242,9 +248,15 @@ rule gzip_reads:
     message: "Compressing reads for reassembly"
     shell:   "gzip binning/*/*_?.fastq"
 
+rule choose_bins:
+    input:   "binning/{}/unified_binning.tsv".format(BINNER)
+    output:  "binning/{}/filtered_bins.tsv".format(BINNER)
+    message: "Filter small bins"
+    shell:   "Rscript {SCRIPTS}/len_gen.R {input} {output}"
+
 rule choose_samples:
-    input:   "binning/{}/bins.prof".format(BINNER)
+    input:   profs="binning/{}/bins.prof".format(BINNER), bins="binning/{}/filtered_bins.tsv".format(BINNER)
     output:  "binning/bins_total.prof"
     log:     "binning/choose_samples.log"
     message: "Choosing bins and samples for them"
-    shell:   "{SCRIPTS}/choose_samples.py {input} {output} binning >{log} 2>&1"
+    shell:   "{SCRIPTS}/choose_samples.py {input.profs} {input.bins} {output} binning >{log} 2>&1"
