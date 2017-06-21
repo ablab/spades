@@ -411,7 +411,7 @@ template <class SingleHasher_t> class XorshiftHashFunctors {
     uint64_t next(hash_pair_t &s) const {
         uint64_t s1 = s[0];
         const uint64_t s0 = s[1];
-        s[0 ] = s0;
+        s[0] = s0;
         s1 ^= s1 << 23; // a
         return (s[1] = (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26))) + s0; // b, c
     }
@@ -865,14 +865,15 @@ class mphf {
 
         //auto hashes = _hasher(elem);
         uint64_t non_minimal_hp,minimal_hp;
+        int level;
 
-        hash_pair_t bbhash; int level;
-        uint64_t level_hash = getLevel(bbhash,elem,&level);
+        hash_pair_t bbhash = _hasher.hashpair128(elem);
+        uint64_t level_hash = getLevel(bbhash, elem, &level);
 
         if( level == (_nb_levels-1))
         {
             //auto in_final_map  = _final_hash.find (elem);
-            auto in_final_map  = _final_hash.find (_hasher.hashpair128(elem));
+            auto in_final_map  = _final_hash.find(bbhash);
 
             if ( in_final_map == _final_hash.end() )
             {
@@ -1018,24 +1019,19 @@ class mphf {
                     if(i == _nb_levels-1) //stop cascade here, insert into exact hash
                     {
 
-                        uint64_t hashidx =  __sync_fetch_and_add (& _hashidx, 1);
+                        uint64_t hashidx =  __sync_fetch_and_add(&_hashidx, 1);
 
                         pthread_mutex_lock(&_mutex); //see later if possible to avoid this, mais pas bcp item vont la
                         // calc rank de fin  precedent level qq part, puis init hashidx avec ce rank, direct minimal, pas besoin inser ds bitset et rank
 
-                        auto in_final_map  = _final_hash.find (val);
-                        if ( in_final_map != _final_hash.end() ) // key already in final hash
+                        auto in_final_map = _final_hash.find(val);
+                        if (in_final_map != _final_hash.end()) // key already in final hash
                         {
                             fprintf(stderr,"The impossible happened : collision on 128 bit hashes... please switch to safe branch, and play the lottery.");
                             fprintf(stderr,"Another more likely explanation might be that you have duplicate keys in your input.\
                                         If so, you can ignore this message, but be aware that too many duplicate keys will increase ram usage\n");
                         }
-
-
-                        _final_hash[val] = hashidx;
-
-
-
+                        in_final_map->second = hashidx;
 
 
                         pthread_mutex_unlock(&_mutex);
@@ -1250,25 +1246,21 @@ class mphf {
 
     //overload getLevel with either elem_t or internal_hash_t
     template<class elem_t>
-    uint64_t getLevel(hash_pair_t & bbhash, elem_t val, int * res_level, int maxlevel = 100, int minlevel =0) const {
+    uint64_t getLevel(hash_pair_t bbhash, elem_t val, int *res_level, int maxlevel = 100, int minlevel = 0) const {
         int level = 0;
         uint64_t hash_raw=0;
 
-        for (int ii = 0; ii<(_nb_levels-1) &&  ii < maxlevel ; ii++)  {
+        for (int ii = 0; ii < (_nb_levels-1) && ii < maxlevel ; ii++) {
             //calc le hash suivant
             if (ii == 0)
-                hash_raw = _hasher.h0(bbhash,val);
+                hash_raw = bbhash[0];
             else if (ii == 1)
-                hash_raw = _hasher.h1(bbhash,val);
+                hash_raw = bbhash[1];
             else
                 hash_raw = _hasher.next(bbhash);
 
-
-            if (ii >= minlevel && _levels[ii].get(hash_raw) ) //
-                //if(  _levels[ii].get(hash_raw) ) //
-            {
+            if (ii >= minlevel && _levels[ii].get(hash_raw))
                 break;
-            }
 
             level++;
         }
@@ -1278,7 +1270,8 @@ class mphf {
     }
 
 
-    //compute level and returns hash of last level reached
+    // compute level and returns hash of last level reached
+    // FIXME: The usage of getLevel here is *super* confusing, really.
     uint64_t getLevel(internal_hash_t &bbhash,int * res_level, int maxlevel = 100, int minlevel =0) const {
         int level = 0;
         uint64_t hash_raw=0;
@@ -1292,11 +1285,8 @@ class mphf {
             else
                 hash_raw = _hasher.next(bbhash);
 
-            if (ii >= minlevel && _levels[ii].get(hash_raw) ) //
-                //if(  _levels[ii].get(hash_raw) ) //
-            {
+            if (ii >= minlevel && _levels[ii].get(hash_raw))
                 break;
-            }
 
             level++;
         }
