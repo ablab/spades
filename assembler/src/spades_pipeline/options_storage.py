@@ -126,11 +126,15 @@ truseq_mode = False
 correct_scaffolds = False
 run_truseq_postprocessing = False
 
+#rna options
+strand_specific = None  # None, True, False are possible
+
 dict_of_prefixes = dict()
 dict_of_rel2abs = dict()
 
 # list of spades.py options
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc iontorrent meta large-genome rna plasmid "\
+               "ss-fr ss-rf "\
                "only-error-correction only-assembler "\
                "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
                "help version test debug debug:false reference= series-analysis= config-file= dataset= "\
@@ -255,6 +259,8 @@ def usage(spades_version, show_hidden=False, mode=None):
     if mode == "dip":
         sys.stderr.write("Input haplocontigs:" + "\n")
         sys.stderr.write("--hap\t<filename>\tfile with haplocontigs" + "\n")
+    if mode == "rna":
+        sys.stderr.write("--ss-<type>\tstrand specific data, <type> = fr (antisense) and rf (normal)\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Pipeline options:" + "\n")
@@ -391,6 +397,7 @@ def set_test_options():
     global output_dir
     global single_cell
     global test_mode
+    global meta
 
     output_dir = os.path.abspath('spades_test')
     single_cell = False
@@ -411,6 +418,8 @@ def save_restart_options(log):
         support.error("you cannot specify --only-assembler with --restart-from option!", log)
     if only_error_correction:
         support.error("you cannot specify --only-error-correction with --restart-from option!", log)
+    if strand_specific is not None:
+        support.error("you cannot specify strand specificity (--ss-rf or --ss-fr) with --restart-from option!", log)
 
     global restart_k_mers
     global restart_careful

@@ -21,6 +21,7 @@ BASE_STAGE = "construction"
 READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]
 READS_TYPES_USED_IN_RNA_SEQ = ["paired-end", "single", "trusted-contigs", "untrusted-contigs"]
 
+
 def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home):
     subst_dict = dict()
 
@@ -68,6 +69,15 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     subst_dict["path_to_bwa"] =  os.path.join(execution_home, "bwa-spades")
     if "series_analysis" in cfg.__dict__:
         subst_dict["series_analysis"] = cfg.series_analysis
+    process_cfg.substitute_params(filename, subst_dict, log)
+
+
+def prepare_config_rnaspades(filename, log):
+    if not options_storage.rna:
+        return
+    subst_dict = dict()
+    subst_dict["ss_enabled"] = bool_to_str(options_storage.strand_specific is not None)
+    subst_dict["antisense"] = bool_to_str(options_storage.strand_specific)
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
@@ -121,6 +131,7 @@ def reveal_original_k_mers(RL):
         original_k_mers = options_storage.original_k_mers
     original_k_mers = [k for k in original_k_mers if k < RL]
     return original_k_mers
+
 
 def add_configs(command, configs_dir):
     #Order matters here!
@@ -181,6 +192,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
         #FIXME why here???
         process_cfg.substitute_params(os.path.join(dst_configs, "pe_params.info"), {"scaffolding_mode": cfg.scaffolding_mode}, log)
 
+    prepare_config_rnaspades(os.path.join(dst_configs, "rna_mode.info"), log)
     cfg_fn = os.path.join(dst_configs, "config.info")
     prepare_config_spades(cfg_fn, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home)
 

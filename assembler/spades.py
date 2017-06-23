@@ -240,8 +240,15 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.large_genome = True
         elif opt == "--plasmid":
             options_storage.plasmid = True
+
         elif opt == "--rna":
             options_storage.rna = True
+        elif opt.startswith("--ss-"):  # strand specificity, RNA-Seq only
+            if opt == "--ss-rf":
+                options_storage.strand_specific = True
+            elif opt == "--ss-fr":
+                options_storage.strand_specific = False
+
         elif opt == "--iontorrent":
             options_storage.iontorrent = True
         elif opt == "--disable-gzip-output":
@@ -365,7 +372,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             support.error("the output_dir should exist for --continue and for --restart-from!", log)
         os.makedirs(options_storage.output_dir)
     if options_storage.restart_from:
-        if options_storage.continue_mode: # saving parameters specified with --restart-from
+        if options_storage.continue_mode:  # saving parameters specified with --restart-from
             if not support.dataset_is_empty(dataset_data):
                 support.error("you cannot specify reads with --restart-from option!", log)
             options_storage.save_restart_options(log)
