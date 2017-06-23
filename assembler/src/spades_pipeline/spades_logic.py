@@ -362,11 +362,18 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
                 shutil.copyfile(os.path.join(latest, "before_rr.fasta"), result_before_rr_contigs)
         if options_storage.rna:
             if os.path.isfile(os.path.join(latest, "transcripts.fasta")):
-                    if not os.path.isfile(cfg.result_transcripts) or not options_storage.continue_mode:
-                        shutil.copyfile(os.path.join(latest, "transcripts.fasta"), cfg.result_transcripts)
+                if not os.path.isfile(cfg.result_transcripts) or not options_storage.continue_mode:
+                    shutil.copyfile(os.path.join(latest, "transcripts.fasta"), cfg.result_transcripts)
             if os.path.isfile(os.path.join(latest, "transcripts.paths")):
                 if not os.path.isfile(cfg.result_transcripts_paths) or not options_storage.continue_mode:
                     shutil.copyfile(os.path.join(latest, "transcripts.paths"), cfg.result_transcripts_paths)
+            for filtering_type in options_storage.filtering_types:
+                prefix = filtering_type + "_filtered_"
+                result_filtered_transcripts = os.path.join(cfg.output_dir, prefix + options_storage.transcripts_name)
+                latest_filtered_transcripts = os.path.join(latest, prefix + "final_paths.fasta")
+                if os.path.isfile(latest_filtered_transcripts):
+                    if not os.path.isfile(result_filtered_transcripts) or not options_storage.continue_mode:
+                        shutil.copyfile(latest_filtered_transcripts, result_filtered_transcripts)
         else:
             if os.path.isfile(os.path.join(latest, "final_contigs.fasta")):
                 if not os.path.isfile(cfg.result_contigs) or not options_storage.continue_mode:

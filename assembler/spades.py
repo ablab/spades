@@ -423,8 +423,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if len(dataset_data) != len(support.get_lib_ids_by_type(dataset_data, spades_logic.READS_TYPES_USED_IN_RNA_SEQ)):
             support.error('you cannot specify any data types except ' +
                           ', '.join(spades_logic.READS_TYPES_USED_IN_RNA_SEQ) + ' in RNA-Seq mode!')
-        if len(support.get_lib_ids_by_type(dataset_data, 'paired-end')) > 1:
-            support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
+        #if len(support.get_lib_ids_by_type(dataset_data, 'paired-end')) > 1:
+        #    support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
 
     if existing_dataset_data is None:
         pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
@@ -921,29 +921,37 @@ def main(args):
             if "assembly" in cfg and os.path.isfile(result_contigs_filename):
                 message = " * Assembled contigs are in " + support.process_spaces(result_contigs_filename)
                 log.info(message)
-            if options_storage.rna:
-                if "assembly" in cfg and os.path.isfile(result_transcripts_filename):
+            if options_storage.rna and "assembly" in cfg:
+                if os.path.isfile(result_transcripts_filename):
                     message = " * Assembled transcripts are in " + support.process_spaces(result_transcripts_filename)
                     log.info(message)
-                if "assembly" in cfg and os.path.isfile(result_transcripts_paths_filename):
+                if os.path.isfile(result_transcripts_paths_filename):
                     message = " * Paths in the assembly graph corresponding to the transcripts are in " + \
                               support.process_spaces(result_transcripts_paths_filename)
                     log.info(message)
-            else:
-                if "assembly" in cfg and os.path.isfile(result_scaffolds_filename):
+                for filtering_type in options_storage.filtering_types:
+                    result_filtered_transcripts_filename = os.path.join(cfg["common"].output_dir,
+                                                                        filtering_type + "_filtered_" +
+                                                                        options_storage.transcripts_name)
+                    if os.path.isfile(result_filtered_transcripts_filename):
+                        message = " * " + filtering_type.capitalize() + " filtered transcripts are in " + \
+                                  support.process_spaces(result_filtered_transcripts_filename)
+                        log.info(message)
+            elif "assembly" in cfg:
+                if os.path.isfile(result_scaffolds_filename):
                     message = " * Assembled scaffolds are in " + support.process_spaces(result_scaffolds_filename)
                     log.info(message)
-                if "assembly" in cfg and os.path.isfile(result_assembly_graph_filename):
+                if os.path.isfile(result_assembly_graph_filename):
                     message = " * Assembly graph is in " + support.process_spaces(result_assembly_graph_filename)
                     log.info(message)
-                if "assembly" in cfg and os.path.isfile(result_assembly_graph_filename_gfa):
+                if os.path.isfile(result_assembly_graph_filename_gfa):
                     message = " * Assembly graph in GFA format is in " + support.process_spaces(result_assembly_graph_filename_gfa)
                     log.info(message)
-                if "assembly" in cfg and os.path.isfile(result_contigs_paths_filename):
+                if os.path.isfile(result_contigs_paths_filename):
                     message = " * Paths in the assembly graph corresponding to the contigs are in " + \
                               support.process_spaces(result_contigs_paths_filename)
                     log.info(message)
-                if "assembly" in cfg and os.path.isfile(result_scaffolds_paths_filename):
+                if os.path.isfile(result_scaffolds_paths_filename):
                     message = " * Paths in the assembly graph corresponding to the scaffolds are in " + \
                               support.process_spaces(result_scaffolds_paths_filename)
                     log.info(message)

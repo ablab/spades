@@ -38,6 +38,7 @@ contigs_paths = "contigs.paths"
 scaffolds_paths = "scaffolds.paths"
 transcripts_name = "transcripts.fasta"
 transcripts_paths = "transcripts.paths"
+filtering_types = ["hard", "soft", "default"]
 
 #other constants
 MIN_K = 1
@@ -253,14 +254,15 @@ def usage(spades_version, show_hidden=False, mode=None):
         sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
         sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
         sys.stderr.write("--nanopore\t<filename>\tfile with Nanopore reads\n")
-    sys.stderr.write("--tslr\t<filename>\tfile with TSLR-contigs\n")
+    if not mode == "rna":
+        sys.stderr.write("--tslr\t<filename>\tfile with TSLR-contigs\n")
     sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")
     sys.stderr.write("--untrusted-contigs\t<filename>\tfile with untrusted contigs\n")
     if mode == "dip":
         sys.stderr.write("Input haplocontigs:" + "\n")
         sys.stderr.write("--hap\t<filename>\tfile with haplocontigs" + "\n")
     if mode == "rna":
-        sys.stderr.write("--ss-<type>\tstrand specific data, <type> = fr (antisense) and rf (normal)\n")
+        sys.stderr.write("--ss-<type>\tstrand specific data, <type> = fr (normal) and rf (antisense)\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Pipeline options:" + "\n")
@@ -302,7 +304,7 @@ def usage(spades_version, show_hidden=False, mode=None):
         sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n")
     else:
         sys.stderr.write("-k\t\t<int>\t\tk-mer size (must be odd and less than " + str(MAX_K + 1) + ") " \
-                         "[default: " + str(K_MERS_RNA[0]) + "]\n")
+                         "[default: 'auto']\n")
 
     if mode not in ["rna", "meta"]:
         sys.stderr.write("--cov-cutoff\t<float>\t\tcoverage cutoff value (a positive float number, "
