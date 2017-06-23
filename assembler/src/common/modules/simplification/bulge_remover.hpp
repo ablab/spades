@@ -264,14 +264,6 @@ public:
         VertexId end = g_.EdgeEnd(e);
         TRACE("End " << g_.str(end));
 
-//        template<class Graph>
-//        int ProcessPaths(const Graph& g, size_t min_len, size_t max_len,
-//                         typename Graph::VertexId start, typename Graph::VertexId end,
-//                         typename PathProcessor<Graph>::Callback& callback,
-//                         size_t max_edge_cnt = std::numeric_limits<size_t>::max()) {
-//            PathProcessor<Graph> processor(g, start, max_len);
-//            return processor.Process(end, min_len, max_len, callback, max_edge_cnt);
-//        }
         size_t max_path_len = g_.length(e) + delta;
         PathProcessor<Graph> processor(g_, start, max_path_len, dijkstra_vertex_limit_);
         processor.Process(end, (g_.length(e) > delta) ? g_.length(e) - delta : 0,

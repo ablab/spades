@@ -340,22 +340,7 @@ public:
     bool ShouldFilterConjugate() const {
         return true;
     }
-//    bool operator()(EdgeId e) {
-//        if (ec_condition_->Check(e)) {
-//            edges_to_remove_.push_back(e);
-//        }
-//        return false;
-//    }
-//
-//    void RemoveCollectedEdges() {
-//        omnigraph::SmartSetIterator<Graph, EdgeId> to_delete(g_, edges_to_remove_.begin(), edges_to_remove_.end());
-//        while (!to_delete.IsEnd()) {
-//            EdgeId e = *to_delete;
-//            handler_f_(e);
-//            g_.DeleteEdge(e);
-//            ++to_delete;
-//        }
-//    }
+
 private:
     DECL_LOGGER("ParallelLowCoverageFunctor");
 };
@@ -725,70 +710,6 @@ public:
 private:
     DECL_LOGGER("TwoStepAlgorithmRunner")
     ;
-};
-
-//template<class Graph, class ElementType>
-//class SemiParallelAlgorithmRunner {
-//    typedef typename Graph::VertexId VertexId;
-//    typedef typename Graph::EdgeId EdgeId;
-//
-//    const Graph& g_;
-//
-//public:
-//
-//    const Graph& g() const {
-//        return g_;
-//    }
-//
-//    SemiParallelAlgorithmRunner(Graph& g)
-//            : g_(g) {
-//
-//    }
-//
-//    template<class Algo, class ItVec, class Comparator = std::less<ElementType>>
-//    bool RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators,
-//            const Comparator& comp = Comparator()) {
-//        VERIFY(chunk_iterators.size() > 1);
-//        omnigraph::SmartSetIterator<Graph, ElementType, Comparator> it(g_, false, comp);
-//
-//        omnigraph::FindInterestingFromChunkIterators(chunk_iterators,
-//                                          [&](ElementType el) {return algo.IsOfInterest(el);},
-//                                          [&](ElementType el) {it.push(el);});
-//
-//        bool changed = false;
-//        for (; !it.IsEnd(); ++it) {
-//            changed |= algo.Process(*it);
-//        }
-//        return changed;
-//    }
-//
-//private:
-//    DECL_LOGGER("SemiParallelAlgorithmRunner");
-//};
-
-template<class Graph>
-class SemiParallelEdgeRemovingAlgorithm {
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    Graph& g_;
-    func::TypedPredicate<EdgeId> condition_;
-    omnigraph::EdgeRemover<Graph> edge_remover_;
-
-public:
-    SemiParallelEdgeRemovingAlgorithm(Graph& g,
-                                      func::TypedPredicate<EdgeId> condition,
-                                      std::function<void(EdgeId)> removal_handler = 0) :
-            g_(g), condition_(condition), edge_remover_(g, removal_handler) {
-    }
-
-    bool IsOfInterest(EdgeId e) const {
-        return condition_(e);
-    }
-
-    bool Process(EdgeId e) {
-        edge_remover_.DeleteEdge(e);
-        return true;
-    }
 };
 
 template<class Graph, class AlgoRunner, class Algo>

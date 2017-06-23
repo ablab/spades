@@ -82,7 +82,7 @@ public:
         VERIFY(chunk_iterators.size() > 1);
         DEBUG("Parallel search for elements of interest");
         typedef typename Condition::checked_type ElementType;
-        std::vector<std::vector<ElementType>> of_interest(omp_get_max_threads());
+        std::vector<std::vector<ElementType>> of_interest(chunk_iterators.size() - 1);
 
         #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
@@ -91,7 +91,7 @@ public:
             for (auto it = chunk_iterators[i], end = chunk_iterators[i + 1]; it != end; ++it) {
                 ElementType t = *it;
                 if (predicate(t)) {
-                    of_interest[omp_get_thread_num()].push_back(t);
+                    of_interest[i].push_back(t);
                 }
                 cnt++;
             }
