@@ -1,7 +1,8 @@
 library(dplyr)
 library(tidyr)
 library(stringr)
-args <- commandArgs(trailingOnly = TRUE)
+
+args <- commandArgs(TRUE)
 in_fn <- args[1]
 out_fn <- args[2]
 d<-read.csv(in_fn, header=FALSE, sep="\t")
@@ -14,10 +15,10 @@ d <- d %>% mutate(len = as.numeric(lens))
 #- as.integer(str_extract(d$name, "\\d+,"))
 info <- d %>% group_by(bin, sample) %>% summarize(total_len=sum(len))
 dth_largest <- function(x, d) {
-  x<-sort(x)
-  pos<-max(1, length(x) - d)
-  x[pos]
+    x<-sort(x)
+    pos<-max(1, length(x) - d)
+    x[pos]
 }
-bin_info<-info %>% group_by(bin) %>% summarize(third_largest = dth_largest(total_len, 3)) %>% arrange(desc(third_largest))
-nrow(bin_info %>% filter(third_largest > 1000000))
-write.table(bin_info[bin_info$third_largest > 1000000,], out_fn, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)
+bin_info<-info %>% group_by(bin) %>% summarize(char_size = dth_largest(total_len, 1)) %>% arrange(desc(char_size))
+bin_info<-bin_info %>% filter(char_size > 500000)
+write.table(bin_info, out_fn, sep="\t", row.names=FALSE, col.names=FALSE, quote=FALSE)

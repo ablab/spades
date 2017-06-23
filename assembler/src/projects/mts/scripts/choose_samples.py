@@ -31,40 +31,48 @@ make_excluded = True
 excluded_dir = os.path.join(DIR, "excluded")
 
 #Assuming that samples are enumerated consecutively from 1 to N
+#(it is forced by the pipeline)
 with open(PROF) as input:
     for line in input:
+        exclude = False
+        samples = []
         params = line.split()
         CAG = params[0]
-        if len(CAGS) == 0 and CAG not in CAGS:
-            continue
         profile = list(map(float, params[1:]))
+        if CAG not in CAGS:
+            print(CAG, "was excluded from reassembly")
+            exclude = True
+        else:
+            print("Profile of", CAG, ":", profile)
 
-        print("Profile of", CAG, ":", profile)
+            #Sort samples by their abundancies
+            weighted_profile = list((i, ab)
+                for i, ab in enumerate(profile) if ab >= MIN_ABUNDANCE) #and path.exists("{}/{}/sample{}_1.fastq".format(DIR, CAG, i + 1)))
+            weighted_profile.sort(key = itemgetter(1))
 
-        weighted_profile = list((i, ab)
-            for i, ab in enumerate(profile) if ab >= MIN_ABUNDANCE) #and path.exists("{}/{}/sample{}_1.fastq".format(DIR, CAG, i + 1)))
-        weighted_profile.sort(key = itemgetter(1))
+            total = 0
+            #If we have overabundant samples, use the least.
+            try:
+                i = next(x for x, _ in weighted_profile if profile[x] >= DESIRED_ABUNDANCE)
+                total = profile[i]
+                samples = [i + 1]
+            except StopIteration:
+                #If there isn't any, collect from samples, starting from the largest
+                for i, _ in reversed(weighted_profile):
+                    total += profile[i]
+                    samples.append(i + 1)
+                    if total >= DESIRED_ABUNDANCE:
+                        break
 
-        total = 0
-        samples = []
-        #If we have overabundant samples, use the least.
-        try:
-            i = next(x for x, _ in weighted_profile if profile[x] >= DESIRED_ABUNDANCE)
-            total = profile[i]
-            samples = [i + 1]
-        except StopIteration:
-            #If there isn't any, collect from samples, starting from the largest
-            for i, _ in reversed(weighted_profile):
-                total += profile[i]
-                samples.append(i + 1)
-                if total >= DESIRED_ABUNDANCE:
-                    break
+            print("Chosen samples are", samples, "with total mean abundance", total)
+            prof_dict[CAG] = total
 
-        print("Chosen samples are", samples, "with total mean abundance", sum)
-        prof_dict[CAG] = total
+            if total < MIN_TOTAL_ABUNDANCE:
+                print(CAG, "is too scarce; skipping")
+                exclude = True
+
         config_dir = DIR
-        if total < MIN_TOTAL_ABUNDANCE:
-            print(CAG, "is too scarce; skipping")
+        if exclude:
             if make_excluded and not os.path.isdir(excluded_dir):
                 os.mkdir(excluded_dir)
             make_excluded = False

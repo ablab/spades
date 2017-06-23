@@ -213,11 +213,36 @@ rule binning_format:
     message: "Making unified binning results"
     shell:   "{SCRIPTS}/convert_output.py -t {BINNER} -o {output} {input}"
 
-rule binning_post:
+rule annotate:
     input:   "binning/{}/unified_binning.tsv".format(BINNER)
     output:  expand("binning/annotation/{sample}.ann", sample=GROUPS)
+    params:  "binning/annotation/"
     message: "Preparing raw annotations"
-    shell:   "{SCRIPTS}/parse_output.py -o binning/annotation {input}"
+    run:
+        samples_annotation = dict()
+        #Load the whole annotation: {sample: [bins]}
+        with open(input[0]) as input_file:
+            for line in input_file:
+                annotation_str = line.split("\t", 1)
+                bin_id = annotation_str[1].strip()
+                sample_contig = annotation_str[0].split('-', 1)
+                if len(sample_contig) > 1:
+                    sample = sample_contig[0]
+                    contig = sample_contig[1]
+                else: #Backward compatibility with old alternative pipeline runs
+                    sample = "group1"
+                    contig = sample_contig[0]
+                annotation = samples_annotation.setdefault(sample, dict())
+                if contig not in annotation:
+                    annotation[contig] = [bin_id]
+                else:
+                    annotation[contig].append(bin_id)
+        #Serialize it in the propagator format
+        for sample, annotation in samples_annotation.items():
+            with open(os.path.join(params[0], sample + ".ann"), "w") as sample_out:
+                for contig in samples_annotation[sample]:
+                    print(contig, "\t", " ".join(annotation[contig]), sep="", file=sample_out)
+
 
 #---- Post-clustering pipeline -------------------------------------------------
 
@@ -251,12 +276,14 @@ rule gzip_reads:
 rule choose_bins:
     input:   "binning/{}/unified_binning.tsv".format(BINNER)
     output:  "binning/{}/filtered_bins.tsv".format(BINNER)
+    log:     "binning/choose_bins.log"
     message: "Filter small bins"
-    shell:   "Rscript {SCRIPTS}/len_gen.R {input} {output}"
+    shell:   "Rscript {SCRIPTS}/len_gen.R {input} {output} >{log} 2>&1"
 
 rule choose_samples:
     input:   profs="binning/{}/bins.prof".format(BINNER), bins="binning/{}/filtered_bins.tsv".format(BINNER)
     output:  "binning/bins_total.prof"
     log:     "binning/choose_samples.log"
     message: "Choosing bins and samples for them"
-    shell:   "{SCRIPTS}/choose_samples.py {input.profs} {input.bins} {output} binning >{log} 2>&1"
+    shell:   "rm -f binning/*.info && rm -rf binning/excluded && "
+             "{SCRIPTS}/choose_samples.py {input.profs} {input.bins} {output} binning >{log} 2>&1"
