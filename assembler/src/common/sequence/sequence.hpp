@@ -16,6 +16,9 @@
 #include "seq.hpp"
 #include "rtseq.hpp"
 
+#include <llvm/ADT/IntrusiveRefCntPtr.h>
+#include <llvm/Support/TrailingObjects.h>
+
 class Sequence {
     // Type to store Seq in Sequences
     typedef seq_element_type ST;
@@ -26,16 +29,36 @@ class Sequence {
     // Number of bits in STN (for faster div and mod)
     const static size_t STNBits = log_<STN, 2>::value;
 
-    template<typename T>
-    struct array_deleter {
-        void operator()(const T *p) { delete[] p; }
+    class ManagedNuclBuffer final : public llvm::ThreadSafeRefCountedBase<ManagedNuclBuffer>,
+                                    protected llvm::TrailingObjects<ManagedNuclBuffer, ST> {
+        friend TrailingObjects;
+
+        ManagedNuclBuffer() {}
+
+        ManagedNuclBuffer(size_t nucls, ST *buf) {
+            std::uninitialized_copy(buf, buf + Sequence::DataSize(nucls), data());
+        }
+
+      public:
+        static ManagedNuclBuffer *create(size_t nucls) {
+            void *mem = ::operator new(totalSizeToAlloc<ST>(Sequence::DataSize(nucls)));
+            return new (mem) ManagedNuclBuffer();
+        }
+
+        static ManagedNuclBuffer *create(size_t nucls, ST *data) {
+            void *mem = ::operator new(totalSizeToAlloc<ST>(Sequence::DataSize(nucls)));
+            return new (mem) ManagedNuclBuffer(nucls, data);
+        }
+
+        const ST *data() const { return getTrailingObjects<ST>(); }
+        ST *data() { return getTrailingObjects<ST>(); }
     };
 
 private:
     size_t from_;
     size_t size_;
     bool rtl_; // Right to left + complimentary (?)
-    std::shared_ptr<ST> data_;
+    llvm::IntrusiveRefCntPtr<ManagedNuclBuffer> data_;
 
     static size_t DataSize(size_t size) {
         return (size + STN - 1) >> STNBits;
@@ -44,7 +67,7 @@ private:
     template<typename S>
     void InitFromNucls(const S &s, bool rc = false) {
         size_t bytes_size = DataSize(size_);
-        ST *bytes = data_.get();
+        ST *bytes = data_->data();
 
         VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
 
@@ -95,64 +118,64 @@ private:
     }
 
 
+    Sequence(size_t size, int)
+            : from_(0), size_(size), rtl_(false), data_(ManagedNuclBuffer::create(size_)) {}
+
 public:
     /**
      * Sequence initialization (arbitrary size string)
      *
      * @param s ACGT or 0123-string
      */
-    explicit Sequence(const char *s, bool rc = false) :
-            from_(0), size_(strlen(s)), rtl_(false), data_(new ST[DataSize(size_)], array_deleter<ST>()) {
+    explicit Sequence(const char *s, bool rc = false)
+            : Sequence(strlen(s), 0) {
         InitFromNucls(s, rc);
     }
 
-    explicit Sequence(char *s, bool rc = false) :
-            from_(0), size_(strlen(s)), rtl_(false), data_(new ST[DataSize(size_)], array_deleter<ST>()) {
+    explicit Sequence(char *s, bool rc = false)
+            : Sequence(strlen(s), 0) {
         InitFromNucls(s, rc);
     }
 
     template<typename S>
-    explicit Sequence(const S &s, bool rc = false) :
-            from_(0), size_(s.size()), rtl_(false), data_(new ST[DataSize(size_)], array_deleter<ST>()) {
+    explicit Sequence(const S &s, bool rc = false)
+            : Sequence(s.size(), 0) {
         InitFromNucls(s, rc);
     }
 
-    Sequence() :
-            from_(0), size_(0), rtl_(false), data_(new ST[DataSize(size_)], array_deleter<ST>()) {
-        memset(data_.get(), 0, DataSize(size_));
+    Sequence()
+            : Sequence(size_t(0), 0) {
+        memset(data_->data(), 0, DataSize(size_));
     }
 
     template<size_t size2_>
-    explicit Sequence(const Seq<size2_> &kmer, size_t) :
-            from_(0), size_(kmer.size()), rtl_(false), data_(new ST[DataSize(size_)], array_deleter<ST>()) {
-
-        kmer.copy_data(data_.get());
+    explicit Sequence(const Seq<size2_> &kmer, size_t)
+            : Sequence(kmer.size(), 0) {
+        kmer.copy_data(data_->data());
     }
 
     template<size_t size2_>
-    explicit Sequence(const RuntimeSeq<size2_> &kmer, size_t) :
-            from_(0), size_(kmer.size()), rtl_(false), data_(new ST[DataSize(size_)], array_deleter<ST>()) {
-
-        kmer.copy_data(data_.get());
+    explicit Sequence(const RuntimeSeq<size2_> &kmer, size_t)
+            : Sequence(kmer.size(), 0) {
+        kmer.copy_data(data_->data());
     }
 
-    Sequence(const Sequence &seq, size_t from, size_t size, bool rtl) :
-            from_(from), size_(size), rtl_(rtl), data_(seq.data_) {
-    }
+    Sequence(const Sequence &seq, size_t from, size_t size, bool rtl)
+            : from_(from), size_(size), rtl_(rtl), data_(seq.data_) {}
 
-    Sequence(const Sequence &s) :
-            from_(s.from_), size_(s.size_), rtl_(s.rtl_), data_(s.data_) {
-    }
+    Sequence(const Sequence &s)
+            : Sequence(s, s.from_, s.size_, s.rtl_) {}
 
     ~Sequence() { }
 
     const Sequence &operator=(const Sequence &rhs) {
-        if (&rhs != this) {
-            from_ = rhs.from_;
-            size_ = rhs.size_;
-            rtl_ = rhs.rtl_;
-            data_ = rhs.data_;
-        }
+        if (&rhs == this)
+            return *this;
+
+        from_ = rhs.from_;
+        size_ = rhs.size_;
+        rtl_ = rhs.rtl_;
+        data_ = rhs.data_;
 
         return *this;
     }
@@ -160,7 +183,7 @@ public:
     char operator[](const size_t index) const {
         //todo can be put back after switching to distributing release without asserts
         //VERIFY(index < size_);
-        const ST *bytes = data_.get();
+        const ST *bytes = data_->data();
         if (rtl_) {
             size_t i = from_ + size_ - 1 - index;
             return complement((bytes[i >> STNBits] >> ((i & (STN - 1)) << 1)) & 3);
@@ -171,13 +194,11 @@ public:
     }
 
     bool operator==(const Sequence &that) const {
-        if (size_ != that.size_) {
+        if (size_ != that.size_)
             return false;
-        }
 
-        if (data_ == that.data_ && from_ == that.from_ && rtl_ == that.rtl_) {
+        if (data_ == that.data_ && from_ == that.from_ && rtl_ == that.rtl_)
             return true;
-        }
 
         for (size_t i = 0; i < size_; ++i) {
             if (this->operator[](i) != that[i]) {
@@ -275,12 +296,10 @@ public:
 
 private:
     inline bool ReadHeader(std::istream &file);
-
     inline bool WriteHeader(std::ostream &file) const;
 
 public:
     inline bool BinRead(std::istream &file);
-
     inline bool BinWrite(std::ostream &file) const;
 };
 
@@ -302,7 +321,7 @@ Seq<size2_> Sequence::fast_start() const {
     size_t start = from_ >> STNBits;
     size_t end = (from_ + size_ - 1) >> STNBits;
     size_t shift = (from_ & (STN - 1)) << 1;
-    const ST *bytes = data_.get();
+    const ST *bytes = data_->data();
 
     for (size_t i = start; i <= end; ++i) {
         result[i - start] = bytes[i] >> shift;
@@ -451,10 +470,10 @@ std::string Sequence::str() const {
 
 std::string Sequence::err() const {
     std::ostringstream oss;
-    oss << "{ *data=" << data_ <<
-    ", from_=" << from_ <<
-    ", size_=" << size_ <<
-    ", rtl_=" << int(rtl_) << " }";
+    oss << "{ *data=" << data_->data() <<
+            ", from_=" << from_ <<
+            ", size_=" << size_ <<
+            ", rtl_=" << int(rtl_) << " }";
     return oss.str();
 }
 
@@ -485,8 +504,8 @@ bool Sequence::WriteHeader(std::ostream &file) const {
 bool Sequence::BinRead(std::istream &file) {
     ReadHeader(file);
 
-    data_ = std::shared_ptr<ST>(new ST[DataSize(size_)], array_deleter<ST>());
-    file.read((char *) data_.get(), DataSize(size_) * sizeof(ST));
+    data_ = llvm::IntrusiveRefCntPtr<ManagedNuclBuffer>(ManagedNuclBuffer::create(size_));
+    file.read((char *) data_->data(), DataSize(size_) * sizeof(ST));
 
     return !file.fail();
 }
@@ -500,7 +519,7 @@ bool Sequence::BinWrite(std::ostream &file) const {
 
     WriteHeader(file);
 
-    file.write((const char *) data_.get(), DataSize(size_) * sizeof(ST));
+    file.write((const char *) data_->data(), DataSize(size_) * sizeof(ST));
 
     return !file.fail();
 }

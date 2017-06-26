@@ -296,22 +296,7 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
 
   INFO("Building perfect hash indices");
 
-  // Index building requires up to 40 bytes per k-mer. Limit number of threads depending on the memory limit.
-  unsigned num_threads = num_threads_;
-# ifdef SPADES_USE_JEMALLOC
-  const size_t *cmem = 0;
-  size_t clen = sizeof(cmem);
-
-  je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  size_t bucket_size = (36 * kmers + kmers * counter.kmer_size()) / num_buckets_;
-  num_threads = std::min<unsigned>((unsigned) ((utils::get_memory_limit() - *cmem) / bucket_size), num_threads);
-  if (num_threads < 1)
-    num_threads = 1;
-  if (num_threads < num_threads_)
-    WARN("Number of threads was limited down to " << num_threads << " in order to fit the memory limits during the index construction");
-# endif
-
-# pragma omp parallel for shared(index) num_threads(num_threads)
+# pragma omp parallel for shared(index) num_threads(num_threads_)
   for (unsigned iFile = 0; iFile < num_buckets_; ++iFile) {
     typename KMerIndex<kmer_index_traits>::KMerDataIndex &data_index = index.index_[iFile];
     auto bucket = counter.GetBucket(iFile, !save_final);

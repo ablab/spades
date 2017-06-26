@@ -579,6 +579,52 @@ inline uint64_t PowerOf2Floor(uint64_t A) {
 ///
 /// Examples:
 /// \code
+///   alignTo(5, 8) = 8
+///   alignTo(17, 8) = 24
+///   alignTo(~0LL, 8) = 0
+///   alignTo(321, 255) = 510
+///
+///   alignTo(5, 8, 7) = 7
+///   alignTo(17, 8, 1) = 17
+///   alignTo(~0LL, 8, 3) = 3
+///   alignTo(321, 255, 42) = 552
+/// \endcode
+inline uint64_t alignTo(uint64_t Value, uint64_t Align, uint64_t Skew = 0) {
+  assert(Align != 0u && "Align can't be 0.");
+  Skew %= Align;
+  return (Value + Align - 1 - Skew) / Align * Align + Skew;
+}
+
+/// Returns the next integer (mod 2**64) that is greater than or equal to
+/// \p Value and is a multiple of \c Align. \c Align must be non-zero.
+template <uint64_t Align> constexpr inline uint64_t alignTo(uint64_t Value) {
+  static_assert(Align != 0u, "Align must be non-zero");
+  return (Value + Align - 1) / Align * Align;
+}
+
+/// \c alignTo for contexts where a constant expression is required.
+/// \sa alignTo
+///
+/// \todo FIXME: remove when \c constexpr becomes really \c constexpr
+template <uint64_t Align>
+struct AlignTo {
+  static_assert(Align != 0u, "Align must be non-zero");
+  template <uint64_t Value>
+  struct from_value {
+    static const uint64_t value = (Value + Align - 1) / Align * Align;
+  };
+};
+
+/// Returns the next integer (mod 2**64) that is greater than or equal to
+/// \p Value and is a multiple of \p Align. \p Align must be non-zero.
+///
+/// If non-zero \p Skew is specified, the return value will be a minimal
+/// integer that is greater than or equal to \p Value and equal to
+/// \p Align * N + \p Skew for some integer N. If \p Skew is larger than
+/// \p Align, its value is adjusted to '\p Skew mod \p Align'.
+///
+/// Examples:
+/// \code
 ///   RoundUpToAlignment(5, 8) = 8
 ///   RoundUpToAlignment(17, 8) = 24
 ///   RoundUpToAlignment(~0LL, 8) = 0

@@ -108,7 +108,7 @@ public:
 
   void Release() const {
     int NewRefCount = --RefCount;
-    assert(NewRefCount >= 0 && "Reference count was already zero.");
+    // assert(NewRefCount >= 0 && "Reference count was already zero.");
     if (NewRefCount == 0)
       delete static_cast<const Derived*>(this);
   }
