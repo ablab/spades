@@ -11,9 +11,9 @@
 
 namespace adt {
 
-template<class T, class hash = std::hash <T>>
+template<class T, class hash = std::hash<T>>
 class bag {
-    typedef std::unordered_map <T, size_t, hash> Data;
+    typedef std::unordered_map<T, size_t, hash> Data;
     Data data_;
     size_t size_;
 public:
@@ -87,6 +87,5 @@ public:
     }
 
 };
-
 
 } //adt

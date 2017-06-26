@@ -43,42 +43,25 @@ struct flat_map {
     flat_map(std::initializer_list<value_type> init)
             : flat_map(init.begin(), init.end()) { }
 
-    iterator begin() { return data_.begin(); }
-
-    iterator end() { return data_.end(); }
-
-    const_iterator begin() const { return data_.begin(); }
-
-    const_iterator end() const { return data_.end(); }
-
-    const_iterator cbegin() const { return data_.cbegin(); }
-
-    const_iterator cend() const { return data_.cend(); }
-
-    reverse_iterator rbegin() { return data_.rbegin(); }
-
-    reverse_iterator rend() { return data_.rend(); }
-
-    const_reverse_iterator rbegin() const { return data_.rbegin(); }
-
-    const_reverse_iterator rend() const { return data_.rend(); }
-
-    const_reverse_iterator crbegin() const { return data_.crbegin(); }
-
-    const_reverse_iterator crend() const { return data_.crend(); }
+    iterator                begin()              {    return data_.begin();    }
+    iterator                end()                {    return data_.end();      }
+    const_iterator          begin()     const    {    return data_.begin();    }
+    const_iterator          end()       const    {    return data_.end();      }
+    const_iterator          cbegin()    const    {    return data_.cbegin();   }
+    const_iterator          cend()      const    {    return data_.cend();     }
+    reverse_iterator        rbegin()             {    return data_.rbegin();   }
+    reverse_iterator        rend()               {    return data_.rend();     }
+    const_reverse_iterator  rbegin()    const    {    return data_.rbegin();   }
+    const_reverse_iterator  rend()      const    {    return data_.rend();     }
+    const_reverse_iterator  crbegin()   const    {    return data_.crbegin();  }
+    const_reverse_iterator  crend()     const    {    return data_.crend();    }
 
     bool empty() const { return data_.empty(); }
-
     size_type size() const { return data_.size(); }
-
     size_type max_size() const { return data_.max_size(); }
-
     size_type capacity() const { return data_.capacity(); }
-
     void reserve(size_type size) { data_.reserve(size); }
-
     void shrink_to_fit() { data_.shrink_to_fit(); }
-
     size_type bytes_used() const { return capacity() * sizeof(value_type) + sizeof(data_); }
 
     mapped_type &operator[](const key_type &key) {
@@ -234,7 +217,6 @@ struct flat_map {
     key_compare key_comp() const {
         return key_compare();
     }
-
     value_compare value_comp() const {
         return value_compare();
     }
@@ -243,47 +225,38 @@ struct flat_map {
     iterator find(const T &key) {
         return binary_find(begin(), end(), key, KeyOrValueCompare());
     }
-
     template<typename T>
     const_iterator find(const T &key) const {
         return binary_find(begin(), end(), key, KeyOrValueCompare());
     }
-
     template<typename T>
     size_type count(const T &key) const {
         return std::binary_search(begin(), end(), key, KeyOrValueCompare()) ? 1 : 0;
     }
-
     template<typename T>
     iterator lower_bound(const T &key) {
         return std::lower_bound(begin(), end(), key, KeyOrValueCompare());
     }
-
     template<typename T>
     const_iterator lower_bound(const T &key) const {
         return std::lower_bound(begin(), end(), key, KeyOrValueCompare());
     }
-
     template<typename T>
     iterator upper_bound(const T &key) {
         return std::upper_bound(begin(), end(), key, KeyOrValueCompare());
     }
-
     template<typename T>
     const_iterator upper_bound(const T &key) const {
         return std::upper_bound(begin(), end(), key, KeyOrValueCompare());
     }
-
     template<typename T>
     std::pair<iterator, iterator> equal_range(const T &key) {
         return std::equal_range(begin(), end(), key, KeyOrValueCompare());
     }
-
     template<typename T>
     std::pair<const_iterator, const_iterator> equal_range(const T &key) const {
         return std::equal_range(begin(), end(), key, KeyOrValueCompare());
     }
-
     allocator_type get_allocator() const {
         return data_.get_allocator();
     }
@@ -291,23 +264,18 @@ struct flat_map {
     bool operator==(const flat_map &other) const {
         return data_ == other.data_;
     }
-
     bool operator!=(const flat_map &other) const {
         return !(*this == other);
     }
-
     bool operator<(const flat_map &other) const {
         return data_ < other.data_;
     }
-
     bool operator>(const flat_map &other) const {
         return other < *this;
     }
-
     bool operator<=(const flat_map &other) const {
         return !(other < *this);
     }
-
     bool operator>=(const flat_map &other) const {
         return !(*this < other);
     }
@@ -323,34 +291,27 @@ private:
         bool operator()(const key_type &lhs, const key_type &rhs) const {
             return key_compare()(lhs, rhs);
         }
-
         bool operator()(const key_type &lhs, const value_type &rhs) const {
             return key_compare()(lhs, rhs.first);
         }
-
         template<typename T>
         bool operator()(const key_type &lhs, const T &rhs) const {
             return key_compare()(lhs, rhs);
         }
-
         template<typename T>
         bool operator()(const T &lhs, const key_type &rhs) const {
             return key_compare()(lhs, rhs);
         }
-
         bool operator()(const value_type &lhs, const key_type &rhs) const {
             return key_compare()(lhs.first, rhs);
         }
-
         bool operator()(const value_type &lhs, const value_type &rhs) const {
             return key_compare()(lhs.first, rhs.first);
         }
-
         template<typename T>
         bool operator()(const value_type &lhs, const T &rhs) const {
             return key_compare()(lhs.first, rhs);
         }
-
         template<typename T>
         bool operator()(const T &lhs, const value_type &rhs) const {
             return key_compare()(lhs, rhs.first);

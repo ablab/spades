@@ -25,7 +25,6 @@ public:
     } // filter_iterator
 
     value_type operator*() const { return *current_; }
-
     value_type operator->() const { return *current_; }
 
     filter_iterator &operator++() {
@@ -34,7 +33,6 @@ public:
     }
 
     bool operator==(const filter_iterator &rhs) const { return current_ == rhs.current_; }
-
     bool operator!=(const filter_iterator &rhs) const { return !(operator==(rhs)); }
 
 private:

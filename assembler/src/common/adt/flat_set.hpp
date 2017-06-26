@@ -37,54 +37,31 @@ struct flat_set {
     flat_set(std::initializer_list<value_type> init)
             : flat_set(init.begin(), init.end()) { }
 
-    iterator begin() { return data_.begin(); }
-
-    iterator end() { return data_.end(); }
-
-    const_iterator begin() const { return data_.begin(); }
-
-    const_iterator end() const { return data_.end(); }
-
-    const_iterator cbegin() const { return data_.cbegin(); }
-
-    const_iterator cend() const { return data_.cend(); }
-
-    reverse_iterator rbegin() { return data_.rbegin(); }
-
-    reverse_iterator rend() { return data_.rend(); }
-
-    const_reverse_iterator rbegin() const { return data_.rbegin(); }
-
-    const_reverse_iterator rend() const { return data_.rend(); }
-
-    const_reverse_iterator crbegin() const { return data_.crbegin(); }
-
-    const_reverse_iterator crend() const { return data_.crend(); }
+    iterator                begin()         { return data_.begin();   }
+    iterator                end()           { return data_.end();     }
+    const_iterator          begin()   const { return data_.begin();   }
+    const_iterator          end()     const { return data_.end();     }
+    const_iterator          cbegin()  const { return data_.cbegin();  }
+    const_iterator          cend()    const { return data_.cend();    }
+    reverse_iterator        rbegin()        { return data_.rbegin();  }
+    reverse_iterator        rend()          { return data_.rend();    }
+    const_reverse_iterator  rbegin()  const { return data_.rbegin();  }
+    const_reverse_iterator  rend()    const { return data_.rend();    }
+    const_reverse_iterator  crbegin() const { return data_.crbegin(); }
+    const_reverse_iterator  crend()   const { return data_.crend();   }
 
     bool empty() const { return data_.empty(); }
-
     size_type size() const { return data_.size(); }
-
     size_type max_size() const { return data_.max_size(); }
-
     size_type capacity() const { return data_.capacity(); }
-
     void reserve(size_type size) { data_.reserve(size); }
-
     void shrink_to_fit() { data_.shrink_to_fit(); }
-
     size_type bytes_used() const { return capacity() * sizeof(value_type) + sizeof(data_); }
 
     std::pair<iterator, bool> insert(value_type &&value) { return emplace(std::move(value)); }
-
     std::pair<iterator, bool> insert(const value_type &value) { return emplace(value); }
-
-    iterator insert(const_iterator hint, value_type &&value) {
-        return emplace_hint(hint, std::move(value));
-    }
-
-    iterator insert(const_iterator hint, const value_type &value) { return emplace_hint(hint, value); }
-
+    iterator insert(const_iterator hint, value_type && value) { return emplace_hint(hint, std::move(value)); }
+    iterator insert(const_iterator hint, const value_type & value) { return emplace_hint(hint, value); }
     void insert(std::initializer_list<value_type> il) { insert(il.begin(), il.end()); }
 
     template<typename It>
@@ -136,16 +113,13 @@ struct flat_set {
     }
 
     iterator erase(iterator it) { return data_.erase(it); }
-
     iterator erase(const_iterator it) { return erase(iterator_const_cast(it)); }
-
     size_type erase(const value_type &val) {
         auto found = find(val);
         if (found == end()) return 0;
         erase(found);
         return 1;
     }
-
     iterator erase(const_iterator first, const_iterator last) {
         return data_.erase(iterator_const_cast(first), iterator_const_cast(last));
     }
@@ -182,45 +156,35 @@ struct flat_set {
 
         return emplace(std::forward<First>(first), std::forward<Args>(args)...).first;
     }
-
     iterator emplace_hint(const_iterator hint) { return emplace_hint(hint, value_type()); }
 
     key_compare key_comp() const { return key_compare(); }
-
     value_compare value_comp() const { return value_compare(); }
 
     iterator find(const value_type &key) {
         return binary_find(begin(), end(), key, Comp());
     }
-
     const_iterator find(const value_type &key) const {
         return binary_find(begin(), end(), key, Comp());
     }
-
     size_type count(const value_type &key) const {
         return std::binary_search(begin(), end(), key, Comp()) ? 1 : 0;
     }
-
     iterator lower_bound(const value_type &key) {
         return std::lower_bound(begin(), end(), key, Comp());
     }
-
     const_iterator lower_bound(const value_type &key) const {
         return std::lower_bound(begin(), end(), key, Comp());
     }
-
     iterator upper_bound(const value_type &key) {
         return std::upper_bound(begin(), end(), key, Comp());
     }
-
     const_iterator upper_bound(const value_type &key) const {
         return std::upper_bound(begin(), end(), key, Comp());
     }
-
     std::pair<iterator, iterator> equal_range(const value_type &key) {
         return std::equal_range(begin(), end(), key, Comp());
     }
-
     std::pair<const_iterator, const_iterator> equal_range(const value_type &key) const {
         return std::equal_range(begin(), end(), key, Comp());
     }
@@ -228,23 +192,18 @@ struct flat_set {
     bool operator==(const flat_set &other) const {
         return data_ == other.data_;
     }
-
     bool operator!=(const flat_set &other) const {
         return !(*this == other);
     }
-
     bool operator<(const flat_set &other) const {
         return data_ < other.data_;
     }
-
     bool operator>(const flat_set &other) const {
         return other < *this;
     }
-
     bool operator<=(const flat_set &other) const {
         return !(other < *this);
     }
-
     bool operator>=(const flat_set &other) const {
         return !(*this < other);
     }
