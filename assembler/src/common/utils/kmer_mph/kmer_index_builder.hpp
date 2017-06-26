@@ -49,6 +49,7 @@
 
 namespace utils {
 
+
 template<class Seq, class traits = kmer_index_traits<Seq> >
 class KMerCounter {
  public:

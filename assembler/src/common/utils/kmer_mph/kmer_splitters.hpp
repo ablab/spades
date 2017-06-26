@@ -46,7 +46,7 @@ public:
             : KMerSplitter<Seq>(work_dir, K, seed), cell_size_(0), num_files_(0) {}
 
 protected:
-    using SeqKMerVector = KMerVector<Seq>;
+    using SeqKMerVector = adt::KMerVector<Seq>;
     using KMerBuffer = std::vector<SeqKMerVector>;
 
     std::vector<KMerBuffer> kmer_buffers_;
@@ -83,7 +83,7 @@ protected:
         kmer_buffers_.resize(nthreads);
         for (unsigned i = 0; i < nthreads; ++i) {
             KMerBuffer &entry = kmer_buffers_[i];
-            entry.resize(num_files_, KMerVector<Seq>(this->K_, (size_t) (1.1 * (double) cell_size_)));
+            entry.resize(num_files_, adt::KMerVector<Seq>(this->K_, (size_t) (1.1 * (double) cell_size_)));
         }
 
         return out;
@@ -108,14 +108,14 @@ protected:
             for (size_t i = 0; i < kmer_buffers_.size(); ++i)
                 sz += kmer_buffers_[i][k].size();
 
-            KMerVector<Seq> SortBuffer(this->K_, sz);
+            adt::KMerVector<Seq> SortBuffer(this->K_, sz);
             for (auto & entry : kmer_buffers_) {
                 const auto &buffer = entry[k];
                 for (size_t j = 0; j < buffer.size(); ++j)
                     SortBuffer.push_back(buffer[j]);
             }
-            libcxx::sort(SortBuffer.begin(), SortBuffer.end(), typename KMerVector<Seq>::less2_fast());
-            auto it = std::unique(SortBuffer.begin(), SortBuffer.end(), typename KMerVector<Seq>::equal_to());
+            libcxx::sort(SortBuffer.begin(), SortBuffer.end(), typename adt::KMerVector<Seq>::less2_fast());
+            auto it = std::unique(SortBuffer.begin(), SortBuffer.end(), typename adt::KMerVector<Seq>::equal_to());
 
 #     pragma omp critical
             {
