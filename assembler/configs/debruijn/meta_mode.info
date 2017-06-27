@@ -67,7 +67,7 @@ simp
 		max_relative_coverage		5.		; bulge_cov < this * not_bulge_cov
 		max_delta			10
 		max_relative_delta		0.1
-        dijkstra_vertex_limit   500
+        dijkstra_vertex_limit   3000
         parallel true
 	}
 
