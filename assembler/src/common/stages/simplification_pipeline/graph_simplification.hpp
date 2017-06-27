@@ -452,7 +452,7 @@ AlgoPtr<Graph> RelativelyLowCoverageDisconnectorInstance(Graph &g,
             omnigraph::simplification::relative_coverage::
             RelativeCovDisconnectionCondition<Graph>(g, flanking_cov, rced_config.diff_mult, rced_config.edge_sum),
             info.chunk_cnt(),
-            nullptr, /*second check*/false);
+            nullptr);
 }
 
 template<class Graph>
@@ -649,7 +649,7 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph &g,
 
     return make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g, condition,
                                                                  info.chunk_cnt(),
-                                                                 removal_handler, /*second check*/true);
+                                                                 removal_handler);
 }
 
 template<class Graph>

@@ -292,13 +292,13 @@ public:
                            func::TypedPredicate<EdgeId> condition,
                            size_t chunk_cnt,
                            EdgeRemovalHandlerF<Graph> removal_handler,
-                           bool second_check = true,
                            const Comparator& comp = Comparator(),
                            bool track_changes = true)
             : base(g,
                    std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph>>(condition, chunk_cnt),
             /*canonical_only*/false, comp, track_changes),
-              condition_(second_check ? condition : func::AlwaysTrue<EdgeId>()),
+              //condition_(second_check ? condition : func::AlwaysTrue<EdgeId>()),
+              condition_(condition),
               disconnector_(g, removal_handler) {
     }
 
