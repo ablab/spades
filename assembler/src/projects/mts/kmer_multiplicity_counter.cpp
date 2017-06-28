@@ -49,7 +49,7 @@ class KmerMultiplicityCounter {
 
     string SortKmersCountFile(const string& filename) {
         MMappedRecordArrayReader<seq_element_type> ins(filename, RtSeq::GetDataSize(k_) + 1, false);
-        libcxx::sort(ins.begin(), ins.end(), array_less<seq_element_type>());
+        libcxx::sort(ins.begin(), ins.end(), adt::array_less<seq_element_type>());
         std::string sorted_filename = filename + KMER_SORTED_EXTENSION;
         std::ofstream out(sorted_filename);
         out.write((char*) ins.data(), ins.data_size());
