@@ -75,6 +75,7 @@ class NDNASeqHash {
     uint32_t seed_;
 };
 
+//FIXME bring to standard hash interface
 template<unsigned precision = 64, typename chartype = uint8_t,
          typename hasher = DNASeqHash<chartype>>
 class CyclicHash {
@@ -115,7 +116,7 @@ class CyclicHash {
     // This is a convenience function, use eat, update and .hashvalue to use as
     // a rolling hash function
     template<class Seq>
-    digest hash(const Seq &s) {
+    digest hash(const Seq &s) const {
         digest answer(0);
         for (size_t k = 0; k < s.size(); ++k)
             answer = rol1(answer) ^ hasher_(s[k]);
@@ -123,7 +124,7 @@ class CyclicHash {
         return answer;
     }
 
-    digest hashz(chartype outchar, unsigned n) {
+    digest hashz(chartype outchar, unsigned n) const {
         digest answer = hasher_.hashvalues[static_cast<unsigned int>(outchar)];
         for (unsigned k = 0; k < n; ++k)
             answer = rol1(answer);
@@ -133,7 +134,7 @@ class CyclicHash {
     // Add inchar as an input and remove outchar, the hashvalue is updated. This
     // function can be used to update the hash value from the hash value of
     // [outchar]ABC to the hash value of ABC[inchar]
-    digest update(chartype outchar, chartype inchar) {
+    digest update(chartype outchar, chartype inchar) const {
         hashvalue = rol1(hashvalue) ^ roln(hasher_(outchar)) ^ hasher_(inchar);
         return hashvalue;
     }
@@ -141,7 +142,7 @@ class CyclicHash {
     // This is the reverse of the update function.  This function can be used to
     // update the hash value from the hash value of ABC[inchar] to the hash
     // value of [outchar]ABC
-    digest reverse_update(chartype outchar, chartype inchar) {
+    digest reverse_update(chartype outchar, chartype inchar) const {
         hashvalue ^= roln(hasher_(outchar)) ^ hasher_(inchar);
         hashvalue = ror1(hashvalue);
         return hashvalue;
@@ -150,7 +151,7 @@ class CyclicHash {
     // Add inchar as an input, this is used typically only at the start the hash
     // value is updated to that of a longer string (one where inchar was
     // appended)
-    digest eat(chartype inchar) {
+    digest eat(chartype inchar) const {
         hashvalue = rol1(hashvalue) ^ hasher_(inchar);
         return hashvalue;
     }
@@ -158,21 +159,21 @@ class CyclicHash {
     // Add inchar as an input and remove outchar, the hashvalue is updated. This
     // function can be used to update the hash value from the hash value of
     // [outchar]ABC to the hash value of ABC[inchar]
-    digest hash_update(digest hashvalue, chartype outchar, chartype inchar) {
+    digest hash_update(digest hashvalue, chartype outchar, chartype inchar) const {
         return rol1(hashvalue) ^ roln(hasher_(outchar)) ^ hasher_(inchar);
     }
 
     // For an n-gram X it returns hash value of (n + 1)-gram XY without changing
     // the object X. For example, if X = "ABC", then X.hash_extend("D") returns
     // value of "ABCD" without changing the state of X
-    digest hash_extend(chartype Y) {
+    digest hash_extend(chartype Y) const {
         return rol1(hashvalue) ^ hasher_(Y);
     }
 
     //  Same as hash_extend, but with prepending the n-gram with character Y. If
     //  X = "ABC", then X.hash_prepend("D") returns value of "DABC" without
     //  changing the state of X
-    digest hash_prepend(chartype Y) {
+    digest hash_prepend(chartype Y) const {
         return roln(hasher_(Y)) ^ hashvalue;
     }
 
