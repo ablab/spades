@@ -4,10 +4,9 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#ifndef COMMON_IO_COVFILTERINGREADERWRAPPER_HPP_
-#define COMMON_IO_COVFILTERINGREADERWRAPPER_HPP_
+#pragma once
 
-#include "ireader.hpp"
+#include "io/reads/ireader.hpp"
 
 #include "adt/cqf.hpp"
 #include "adt/cyclichash.hpp"
@@ -104,5 +103,3 @@ inline ReadStreamList<ReadType> CovFilteringWrap(ReadStreamList<ReadType> &reade
 }
 
 }
-
-#endif /* COMMON_IO_COVFILTERINGREADERWRAPPER_HPP_ */
