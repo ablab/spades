@@ -11,12 +11,14 @@
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
 #include "order_and_law.hpp"
-#include <boost/iterator/iterator_facade.hpp>
 #include "utils/stl_utils.hpp"
+
+#include "adt/small_pod_vector.hpp"
+
+#include <boost/iterator/iterator_facade.hpp>
 
 namespace omnigraph {
 
-using std::vector;
 template<class DataMaster>
 class GraphCore;
 
@@ -92,7 +94,7 @@ private:
     typedef typename DataMaster::VertexData VertexData;
     typedef restricted::pure_pointer<PairedEdge<DataMaster>> EdgeId;
     typedef restricted::pure_pointer<PairedVertex<DataMaster>> VertexId;
-    typedef typename std::vector<EdgeId>::const_iterator edge_raw_iterator;
+    typedef typename adt::SmallPODVector<EdgeId>::const_iterator edge_raw_iterator;
 
     class conjugate_iterator : public boost::iterator_facade<conjugate_iterator,
             EdgeId, boost::forward_traversal_tag, EdgeId> {
@@ -137,7 +139,7 @@ private:
     friend class PairedElementManipulationHelper<VertexId>;
     friend class conjugate_iterator;
 
-    std::vector<EdgeId> outgoing_edges_;
+    adt::SmallPODVector<EdgeId> outgoing_edges_;
 
     VertexId conjugate_;
 
@@ -196,7 +198,7 @@ private:
     }
 
     const std::vector<EdgeId> OutgoingEdgesTo(VertexId v) const {
-        vector<EdgeId> result;
+        std::vector<EdgeId> result;
         for (auto it = outgoing_edges_.begin(); it != outgoing_edges_.end(); ++it) {
             if ((*it)->end() == v) {
                 result.push_back(*it);
@@ -517,7 +519,7 @@ public:
     //////////////////////shortcut methods
 
     std::vector<EdgeId> IncidentEdges(VertexId v) const {
-        vector<EdgeId> answer;
+        std::vector<EdgeId> answer;
         utils::push_back_all(answer, IncomingEdges(v));
         utils::push_back_all(answer, OutgoingEdges(v));
         return answer;
