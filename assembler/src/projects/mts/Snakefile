@@ -126,6 +126,7 @@ rule abundancies:
              " -n {SAMPLE_COUNT} -m profile/mts/kmers -o profile/mts/{wildcards.group}"
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
+
 rule binning_pre:
     input:   expand("profile/mts/{group}.id", group=GROUPS)
     output:  "binning/{binner}/profiles_mts.in"
@@ -134,6 +135,13 @@ rule binning_pre:
     message: "Preparing input for {wildcards.binner}"
     shell:   "{SCRIPTS}/make_input.py -n {SAMPLE_COUNT} -t {wildcards.binner}"
              " -d profile/mts -o {output} {params} >{log}"
+
+rule filter_contigs:
+    input:   contigs="assembly/splits/all.fasta", profile="binning/{}/profiles_mts.in".format(BINNER)
+    output:  contigs="assembly/splits/all_filtered.fasta"
+    message: "Leave contigs that have profile information"
+    shell:   "cut -f1 < {input.profile} > tmp/names_tmp.txt && sed -i '1d' tmp/names_tmp.txt && "
+             "python2 {SCRIPTS}/contig_name_filter.py {input.contigs} tmp/names_tmp.txt {output.contigs}"
 
 #---- Binning ------------------------------------------------------------------
 
@@ -196,6 +204,17 @@ rule maxbin:
              " -contig {input.contigs} -abund {input.profiles}"
              " -out {params.out} > {log}"
              "&& {SCRIPTS}/make_maxbincsv.py -o {output} {params.out}"
+
+# Binning with GATTACA
+rule gattaca:
+    input:   contigs="assembly/splits/all_filtered.fasta", profiles="binning/gattaca/profiles_{}.in".format(PROFILER)
+    output:  "binning/gattaca/binning.out"
+    threads: THREADS
+    log:     "binning/gattaca.log"
+    message: "Running GATTACA clustering"
+    shell:   "set +u; source activate py27; set -u\n"
+             "python /home/tdvorkina/GATTACA/gattaca-public/src/python/gattaca.py cluster --contigs {input.contigs}"
+             " --coverage {input.profiles} --algorithm dirichlet --clusters {output}  > {log}"
 
 # Postprocessing
 rule bin_profiles:
