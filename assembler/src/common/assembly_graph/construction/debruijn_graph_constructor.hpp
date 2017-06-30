@@ -276,7 +276,7 @@ private:
 
             for (auto edge : start_edges) {
                 Sequence s = ConstructSequenceWithEdge(edge, builder);
-                if (!s < s)
+                if (s < !s)
                     continue;
 
                 sequences.push_back(s);
@@ -329,7 +329,7 @@ private:
 
                 for (Sequence s : ConstructLoopFromVertex(kwh, builder)) {
                     Sequence s_rc = !s;
-                    if (s_rc < s)
+                    if (s < s_rc)
                         result.push_back(s_rc);
                     else
                         result.push_back(s);
