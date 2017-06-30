@@ -82,6 +82,7 @@ class CyclicHash {
   public:
     /// The hash digest type.
     typedef uint64_t digest;
+    typedef chartype char_t;
 
   private:
      constexpr digest mask(unsigned bits) const {

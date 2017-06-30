@@ -12,6 +12,7 @@ typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
 template<class Hasher, class KmerFilter>
 class KmerHashProcessor {
     typedef typename Hasher::digest HashT;
+    typedef typename Hasher::char_t CharT;
     typedef std::function<void (const RtSeq&, HashT)> ProcessF;
     const Hasher hasher_;
     ProcessF process_f_;
@@ -30,12 +31,20 @@ public:
         hash_ = hasher_.hash(kmer);
     }
 
-    void ProcessKmer(uint8_t outchar, uint8_t inchar) {
+    void ProcessKmer(char inchar) {
         kmer_ <<= inchar;
-        hash_ = hasher_.hash_update(hash_, outchar, inchar);
+        hash_ = hasher_.hash_update(hash_, (CharT) kmer_[0], (CharT) inchar);
         if (!filter_.filter(kmer_))
             return;
         process_f_(kmer_, hash_);
+    }
+
+    //todo use unsigned type for k
+    void ProcessSequence(const Sequence &s, size_t k) {
+        Init(s.start<RtSeq>(k) >> 'A');
+        for (size_t j = k - 1; j < s.size(); ++j) {
+            ProcessKmer(s[j]);
+        }
     }
 
 };
@@ -58,6 +67,10 @@ template<class ReadStream, class Processor, class KmerFilter>
 size_t FillFromStream(ReadStream &stream, Processor &processor, unsigned k,
                       const KmerFilter &filter = KmerFilter()) {
     size_t reads = 0;
+
+    KmerHashProcessor<SeqHasher, KmerFilter> kmer_hash_processor(SeqHasher(k),
+                                                                 [&](const RtSeq &kmer, uint64_t hash) { processor.ProcessKmer(kmer, hash); },
+                                                                 filter);
     typename ReadStream::ReadT r;
     while (!stream.eof()) {
         stream >> r;
@@ -67,15 +80,7 @@ size_t FillFromStream(ReadStream &stream, Processor &processor, unsigned k,
         if (seq.size() < k)
             continue;
 
-        KmerHashProcessor<SeqHasher, KmerFilter> kmer_hash_processor(SeqHasher(k),
-                                              [&](const RtSeq &kmer, uint64_t hash) { processor.ProcessKmer(kmer, hash); },
-                                              filter);
-        RtSeq kmer = seq.start<RtSeq>(k) >> 'A';
-        kmer_hash_processor.Init(kmer);
-        for (size_t j = k - 1; j < seq.size(); ++j) {
-            kmer_hash_processor.ProcessKmer(kmer[0], seq[j]);
-        }
-
+        kmer_hash_processor.ProcessSequence(seq, k);
         if (reads >= 1000000)
             break;
 
