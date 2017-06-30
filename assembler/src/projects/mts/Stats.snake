@@ -49,11 +49,15 @@ onstart:
     if REFS:
         print("Detected references:", " ".join(REFS))
 
-enabled_stats = ["stats/summary/gf_binning.tsv"]
-if config["propagation"]["enabled"]:
-    enabled_stats.append("stats/summary/gf_propagation.tsv")
-if config["reassembly"]["enabled"]:
-    enabled_stats.append("stats/summary/reassembly_summary.tsv")
+enabled_stats = []
+if config["stats"].get("refs"):
+    enabled_stats.append["stats/summary/gf_binning.tsv"]
+    if config["propagation"]["enabled"]:
+        enabled_stats.append("stats/summary/gf_propagation.tsv")
+    if config["reassembly"]["enabled"]:
+        enabled_stats.append("stats/summary/reassembly_summary.tsv")
+if config["stats"].get("checkm", False):
+    enabled_stats.append("stats/summary/checkm_reassembly.tsv")
 
 rule all_stats:
     input:   enabled_stats
@@ -147,17 +151,20 @@ rule checkm:
     output:  qa="stats/checkm_{stage}/qa.tsv", tree_qa="stats/checkm_{stage}/tree_qa.tsv"
     params:  dir="{stage}/bins", out="stats/checkm_{stage}",
     threads: THREADS
+    log:     "stats/checkm_{stage}.log"
+    message: "Running CheckM for results of {wildcards.stage}"
     run:
-        for file in os.listdir(params.dir):
-            ext = os.path.splitext(file)
-            if ext in FASTA_EXTS:
-                break
+        # for file in os.listdir(params.dir):
+        #     ext = os.path.splitext(file)
+        #     if ext in FASTA_EXTS:
+        #         break
+        ext = ".fasta"
         shell("set +u; source activate concoct_env; set -u \n"
-             "checkm tree -x {ext} {params.dir} {out} \n"
-             "checkm tree_qa -o 2 --tab_table -f {output.tree_qa} {params.out}\n"
-             "checkm lineage_set {params.out} {params.out}/lineage.ms\n"
-             "checkm analyze -x fasta {params.out}/lineage.ms reassembly {params.out}\n"
-             "checkm qa -o 2 --tab_table -f {output.qa} {params.out}/lineage.ms {params.out}")
+             "checkm tree -x {ext} {params.dir} {params.out} >{log} \n"
+             "checkm tree_qa -o 2 --tab_table -f {output.tree_qa} {params.out} >>{log}\n"
+             "checkm lineage_set {params.out} {params.out}/lineage.ms >>{log}\n"
+             "checkm analyze -x fasta {params.out}/lineage.ms reassembly {params.out} >>{log}\n"
+             "checkm qa -o 2 --tab_table -f {output.qa} {params.out}/lineage.ms {params.out} >>{log}")
 
 rule parse_checkm:
     input:   qa=rules.checkm.output.qa, tree_qa=rules.checkm.output.tree_qa
