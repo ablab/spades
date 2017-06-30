@@ -29,7 +29,8 @@ endif()
 add_executable(prop_binning
                propagate.cpp
                read_binning.cpp
-               prop_binning.cpp)
+               prop_binning.cpp
+               gzstream/gzstream.C)
 
 target_link_libraries(prop_binning common_modules nlopt BamTools ssw getopt_pp ${COMMON_LIBRARIES})
 

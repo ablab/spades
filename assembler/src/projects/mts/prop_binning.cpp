@@ -51,10 +51,9 @@ int main(int argc, char** argv) {
     create_console_logger();
 
     size_t k;
-    string saves_path, contigs_path, splits_path, annotation_path;
+    string saves_path, contigs_path, splits_path, annotation_path, bins_file;
     vector<string> sample_names, left_reads, right_reads;
     string out_root, edges_dump, propagation_dump;
-    vector<bin_id> bins_of_interest;
     size_t length_threshold;
     bool no_binning;
     try {
@@ -71,21 +70,27 @@ int main(int argc, char** argv) {
             >> Option('o', out_root)
             >> Option('p', propagation_dump, "")
             >> Option('e', edges_dump, "")
-            >> Option('b', bins_of_interest, {})
+            >> Option('b', bins_file)
             >> Option('t', length_threshold, (size_t)2000)
             >> OptionPresent('D', "no-binning", no_binning)
         ;
     } catch(GetOptEx &ex) {
         cout << "Usage: prop_binning -k <K> -s <saves path> -c <contigs path> -f <splits path> "
                 "-a <binning annotation> -n <sample names> -l <left reads> -r <right reads> "
-                "-o <reads output root> [-p <propagation info dump>] [-e <propagated edges dump>] "
-                "[-D to disable binning] [-b <bins of interest>*]"  << endl;
+                "-o <reads output root> -b <bins to propagate> [-D to disable binning] "
+                "[-p <propagation info dump>] [-e <propagated edges dump>]"  << endl;
         exit(1);
     }
 
-    for (const auto& bin_id : bins_of_interest) {
-        VERIFY_MSG(bin_id.find_last_of(',') == std::string::npos, "Specify bins of interest via space, not comma");
+    vector<bin_id> bins_of_interest;
+    ifstream bins_stream(bins_file);
+    bin_id bin;
+    while (!bins_stream.eof()) {
+        bins_stream >> bin;
+        bins_of_interest.push_back(bin);
+        bins_stream.ignore(numeric_limits<std::streamsize>::max(), '\n'); //Skip the rest of bin info
     }
+    INFO("Loaded " << bins_of_interest.size() << " interesting bins");
 
     conj_graph_pack gp(k, "tmp", 1);
     gp.kmer_mapper.Attach();
@@ -118,22 +123,14 @@ int main(int argc, char** argv) {
         DumpAnnotation(gp.g, edge_annotation, propagation_dump);
     }
 
+    //Binning stage
     if (no_binning) {
         INFO("Binning was disabled with -p flag");
         return 0;
     }
-    //Binning stage
-//    contigs_stream.reset();
-//    INFO("Using propagated annotation from " << propagated_path);
-//    AnnotationStream binning_stream(propagated_path);
-    for (size_t i = 0; i < sample_names.size(); ++i) {
-        ContigBinner binner(gp, edge_annotation, out_root, sample_names[i]);
-        INFO("Initializing binner for " << sample_names[i]);
-        auto paired_stream = io::PairedEasyStream(left_reads[i], right_reads[i], false, 0);
-        INFO("Running binner on " << left_reads[i] << " and " << right_reads[i]);
-        binner.Run(*paired_stream);
-        binner.close();
-    }
+
+    for (size_t i = 0; i < sample_names.size(); ++i)
+        BinReads(gp, out_root, sample_names[i], left_reads[i], right_reads[i], edge_annotation, bins_of_interest);
 
     return 0;
 }

@@ -9,7 +9,7 @@ onstart:
 
 def final_stage(w):
     if config["reassembly"]["enabled"]:
-        return ["binning/reads.done", "binning/bins_total.prof"] #Stop after the bin choosing
+        return ["propagation.done", "binning/bins_total.prof"] #Stop after the bin choosing
     if config["propagation"]["enabled"]:
         return "propagation.done" #Stop on the propagation
     return "binning/{}/binning.done".format(BINNER) #Stop on the preliminary binning
@@ -265,12 +265,6 @@ rule prop_all:
     input:   expand("propagation/annotation/{group}.ann", group=GROUPS)
     output:  touch("propagation.done")
     message: "Finished propagation of all annotations."
-
-rule gzip_reads:
-    input:   "propagation.done"
-    output:  touch("binning/reads.done")
-    message: "Compressing reads for reassembly"
-    shell:   "gzip binning/*/*_?.fastq"
 
 rule choose_bins:
     input:   "binning/{}/unified_binning.tsv".format(BINNER)
