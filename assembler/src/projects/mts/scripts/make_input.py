@@ -12,7 +12,7 @@ import sys
 
 parser = argparse.ArgumentParser(description="Binner input formatter")
 
-parser.add_argument("--type", "-t", choices=["canopy", "concoct", "gattaca"], help="Binner type", default="canopy")
+parser.add_argument("--type", "-t", choices=["canopy", "concoct", "gattaca", "binsanity"], help="Binner type", default="canopy")
 parser.add_argument("--count", "-n", type=int, help="Number of data samples")
 parser.add_argument("--output", "-o", type=str, help="Output file")
 parser.add_argument("--dir", "-d", type=str, help="Directory with profiles (pairs of .id .mpl files)")
@@ -38,7 +38,17 @@ class ConcoctFormatter:
         print("\t".join(["contig"] + ["cov_mean_" + sample for sample in samples]), file=out)
 
     def profile(self, file, contig, profile):
-        print(contig.replace(",", "~"), profile.replace(" ", "\t"), sep="\t", file=out)
+        print(contig, profile.replace(" ", "\t"), sep="\t", file=out)
+
+class BinSanityFormatter:
+    def __init__(self):
+        pass
+
+    def header(self, file, samples):
+        pass
+
+    def profile(self, file, contig, profile):
+        print(contig, profile.replace(" ", "\t"), sep="\t", file=out)
 
 
 class GattacaFormatter:
@@ -49,16 +59,17 @@ class GattacaFormatter:
         print("\t".join(["contig", "length"] + ["cov_mean_" + sample for sample in samples]), file=out)
 
     def get_len(self, x):
-    	if len(x.split("(")) > 1:
-            return int(x.split("(")[1].split(",")[1][:-1]) - int(x.split("(")[1].split(",")[0])
-    	else:
-            return int(x.split("_")[3])		
+        if "(" in x:
+            start, end = re.search("\((\d+)_(\d+)\)", x)
+            return end - start
+        else:
+            return int(x.split("_")[3])
 
     def profile(self, file, contig, profile):
         l = self.get_len(contig)
-        print(contig.replace(",", "~"), l, profile.replace(" ", "\t"), sep="\t", file=out)
+        print(contig, l, profile.replace(" ", "\t"), sep="\t", file=out)
 
-formatters = {"canopy": CanopyFormatter(), "concoct": ConcoctFormatter(), "gattaca":GattacaFormatter()}
+formatters = {"canopy": CanopyFormatter(), "concoct": ConcoctFormatter(), "gattaca": GattacaFormatter(), "binsanity": BinSanityFormatter()}
 formatter = formatters[args.type]
 
 with open(args.output, "w") as out:

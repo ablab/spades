@@ -1,11 +1,13 @@
+#!/usr/bin/env python
+from __future__ import print_function
 
 import sys
 from Bio import SeqIO
 
-if len(sys.argv) < 4: 
-    print "Usage: %s <contigs_file> <file with names> <output> [<operation mode>]" % sys.argv[0]
-    print "Operation mode is \"retain\" (default) or \"remove\""
-    sys.exit(1) 
+if len(sys.argv) < 4:
+    print("Usage:", sys.argv[0], "<contigs_file> <file with names> <output> [<operation mode>]")
+    print("Operation mode is \"retain\" (default) or \"remove\"")
+    sys.exit(1)
 
 f_n = sys.argv[1]
 names_f = open(sys.argv[2], "r")
@@ -21,8 +23,8 @@ if (len(sys.argv) == 5):
                       if record.name not in names)
     else:
         if sys.argv[4] != "retain":
-            print "Wrong operation mode"
- 
+            print("Wrong operation mode")
+
 output_handle = open(sys.argv[3], "w")
 SeqIO.write(filtered_iterator, output_handle, "fasta")
 output_handle.close()

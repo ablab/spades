@@ -126,7 +126,6 @@ rule abundancies:
              " -n {SAMPLE_COUNT} -m profile/mts/kmers -o profile/mts/{wildcards.group}"
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
-
 rule binning_pre:
     input:   expand("profile/mts/{group}.id", group=GROUPS)
     output:  "binning/{binner}/profiles_mts.in"
@@ -141,7 +140,7 @@ rule filter_contigs:
     output:  contigs="assembly/splits/all_filtered.fasta"
     message: "Leave contigs that have profile information"
     shell:   "cut -f1 < {input.profile} > tmp/names_tmp.txt && sed -i '1d' tmp/names_tmp.txt && "
-             "python2 {SCRIPTS}/contig_name_filter.py {input.contigs} tmp/names_tmp.txt {output.contigs}"
+             "{SCRIPTS}/contig_name_filter.py {input.contigs} tmp/names_tmp.txt {output.contigs}"
 
 #---- Binning ------------------------------------------------------------------
 
@@ -164,7 +163,7 @@ rule concoct:
     threads: THREADS
     log:     "binning/concoct.log"
     message: "Running CONCOCT clustering"
-    shell:   "set +u; source activate concoct_env; set -u\n"
+    shell:   "set +u; source activate py27; set -u\n"
              "concoct -c {params.max_clusters} --composition_file {input.contigs}"
              " --coverage_file {input.profiles} --length_threshold {MIN_CONTIG_LENGTH}"
              " -b {params.out} >{log} 2>&1 && "
@@ -206,6 +205,8 @@ rule maxbin:
              "&& {SCRIPTS}/make_maxbincsv.py -o {output} {params.out}"
 
 # Binning with GATTACA
+# conda create -n py27 python=2.7.9 numpy scipy scikit-learn anaconda
+# conda install -c bioconda pysam=0.11.2.2
 rule gattaca:
     input:   contigs="assembly/splits/all_filtered.fasta", profiles="binning/gattaca/profiles_{}.in".format(PROFILER)
     output:  "binning/gattaca/binning.out"
@@ -213,8 +214,19 @@ rule gattaca:
     log:     "binning/gattaca.log"
     message: "Running GATTACA clustering"
     shell:   "set +u; source activate py27; set -u\n"
-             "python /home/tdvorkina/GATTACA/gattaca-public/src/python/gattaca.py cluster --contigs {input.contigs}"
+             "python {SOFT}/gattaca/gattaca.py cluster --contigs {input.contigs}"
              " --coverage {input.profiles} --algorithm dirichlet --clusters {output}  > {log}"
+
+# Binning with BinSanity
+rule binsanity:
+    input:   contigs="assembly/splits/all_filtered.fasta", profiles="binning/binsanity/profiles_{}.in".format(PROFILER)
+    output:  "binning/binsanity/binning.out"
+    threads: THREADS
+    log:     "binning/binsanity.log"
+    message: "Running BinSanity clustering"
+    shell:   "python2 /home/tdvorkina/binsanity/src/BinSanity/test-scripts/Binsanity-lc "
+             " -f ./ -l {input.contigs} -c {input.profiles} -o binning/binsanity/BINSANITY-RESULTS > {log}  && "
+             "{SCRIPTS}/clusters2csv.py binning/binsanity/BINSANITY-RESULTS/KMEAN-BINS {output} && mv Binsanity-log.txt binning/ "
 
 # Postprocessing
 rule bin_profiles:
@@ -270,13 +282,14 @@ SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(ASSEMBLY_K)
 
 rule prop_binning:
     input:   contigs="assembly/spades/{group}.fasta", splits="assembly/splits/{group}.fasta",
-             ann="binning/annotation/{group}.ann",    left=left_reads, right=right_reads
+             ann="binning/annotation/{group}.ann",    left=left_reads, right=right_reads,
+             bins="binning/{}/filtered_bins.tsv".format(BINNER)
     output:  ann="propagation/annotation/{group}.ann", edges="propagation/edges/{group}.fasta"
     params:  saves=os.path.join("assembly/spades/{group}/", SAVES),
              samples=lambda wildcards: " ".join(GROUPS[wildcards.group])
     log:     "binning/{group}.log"
     message: "Propagating annotation & binning reads for {wildcards.group}"
-    shell:   "{BIN}/prop_binning -k {ASSEMBLY_K} -s {params.saves} -c {input.contigs}"
+    shell:   "{BIN}/prop_binning -k {ASSEMBLY_K} -s {params.saves} -c {input.contigs} -b {input.bins}"
              " -n {params.samples} -l {input.left} -r {input.right} -t {MIN_CONTIG_LENGTH}"
              " -a {input.ann} -f {input.splits} -o binning -p {output.ann} -e {output.edges} >{log} 2>&1"
 

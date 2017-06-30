@@ -5,7 +5,7 @@ import argparse
 import os.path
 
 argparser = argparse.ArgumentParser(description="Binner output formatter")
-argparser.add_argument("--type", "-t", choices=["canopy", "concoct", "maxbin", "gattaca"], help="Binner type", default="canopy")
+argparser.add_argument("--type", "-t", choices=["canopy", "concoct", "maxbin", "gattaca", "binsanity"], help="Binner type", default="canopy")
 argparser.add_argument("--output", "-o", type=str, help="Output directory with unified binning results")
 argparser.add_argument("input", type=str, help="File with binning info")
 
@@ -36,7 +36,7 @@ class ConcoctParser(Parser):
         sample_contig = annotation_str[0].replace("~", ",")
         return (sample_contig, bin_id)
 
-parsers = {"canopy": CanopyParser(), "concoct": ConcoctParser(), "maxbin": ConcoctParser(), "gattaca": ConcoctParser()}
+parsers = {"canopy": CanopyParser(), "concoct": ConcoctParser(), "maxbin": ConcoctParser(), "gattaca": ConcoctParser(), "binsanity": ConcoctParser()}
 
 if __name__ == "__main__":
     args = argparser.parse_args()
