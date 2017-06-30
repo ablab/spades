@@ -6,7 +6,7 @@
 //***************************************************************************
 #pragma once
 //todo rename file
-#include "io/reads/delegating_reader_wrapper.hpp"
+#include "filtering_reader_wrapper.hpp"
 #include "pipeline/library.hpp"
 
 namespace io {
@@ -42,6 +42,8 @@ inline std::pair<size_t, size_t> LongestValidCoords(const SingleRead& r) {
 
 inline SingleRead LongestValid(const SingleRead& r) {
     std::pair<size_t, size_t> p = LongestValidCoords(r);
+    if (p.first == p.second)
+        return SingleRead();
     return r.Substr(p.first, p.second);
 }
 
@@ -50,9 +52,11 @@ inline PairedRead LongestValid(const PairedRead& r) {
     std::pair<size_t, size_t> c2 = LongestValidCoords(r.second());
     size_t len1 = c1.second - c1.first;
     size_t len2 = c2.second - c2.first;
+    //FIXME is it the desired logic?
     if (len1 == 0 || len2 == 0) {
         return PairedRead();
     }
+
     if (len1 == r.first().size() && len2 == r.second().size()) {
         return r;
     }
