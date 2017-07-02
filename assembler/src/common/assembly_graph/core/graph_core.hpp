@@ -16,6 +16,7 @@
 #include "adt/small_pod_vector.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
+#include <btree/safe_btree_set.h>
 
 namespace omnigraph {
 
@@ -234,13 +235,14 @@ public:
     typedef typename DataMasterT::EdgeData EdgeData;
     typedef restricted::pure_pointer<PairedEdge<DataMaster>> EdgeId;
     typedef restricted::pure_pointer<PairedVertex<DataMaster>> VertexId;
-    typedef typename std::set<VertexId>::const_iterator VertexIt;
+    typedef btree::safe_btree_set<VertexId> VertexContainer;
+    typedef typename VertexContainer::const_iterator VertexIt;
     typedef typename PairedVertex<DataMaster>::edge_const_iterator edge_const_iterator;
 
 private:
    restricted::LocalIdDistributor id_distributor_;
    DataMaster master_;
-   std::set<VertexId> vertices_;
+   VertexContainer vertices_;
 
    friend class ConstructionHelper<DataMaster>;
 public:

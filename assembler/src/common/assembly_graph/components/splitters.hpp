@@ -795,7 +795,7 @@ shared_ptr<GraphSplitter<Graph>> ReliableSplitter(const Graph &graph,
                             size_t edge_length_bound = ReliableNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND,
                             size_t max_size = ReliableNeighbourhoodFinder<Graph>::DEFAULT_MAX_SIZE) {
     typedef typename Graph::VertexId VertexId;
-    shared_ptr<RelaxingIterator<VertexId>> inner_iterator = make_shared<CollectionIterator<set<VertexId>>>(graph.begin(), graph.end());
+    shared_ptr<RelaxingIterator<VertexId>> inner_iterator = make_shared<CollectionIterator<typename Graph::VertexContainer>>(graph.begin(), graph.end());
     shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf = make_shared<ReliableNeighbourhoodFinder<Graph>>(graph, edge_length_bound, max_size);
     return make_shared<NeighbourhoodFindingSplitter<Graph>>(graph,
             inner_iterator, nf);
@@ -806,7 +806,7 @@ shared_ptr<GraphSplitter<Graph>> ConnectedSplitter(const Graph &graph,
                             size_t edge_length_bound = 1000000,
                             size_t max_size = 1000000) {
     typedef typename Graph::VertexId VertexId;
-    shared_ptr<RelaxingIterator<VertexId>> inner_iterator = make_shared<CollectionIterator<set<VertexId>>>(graph.begin(), graph.end());
+    shared_ptr<RelaxingIterator<VertexId>> inner_iterator = make_shared<CollectionIterator<typename Graph::VertexContainer>>(graph.begin(), graph.end());
     shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf = make_shared<ReliableNeighbourhoodFinder<Graph>>(graph, edge_length_bound, max_size);
     return make_shared<NeighbourhoodFindingSplitter<Graph>>(graph,
             inner_iterator, nf);
@@ -833,7 +833,7 @@ shared_ptr<GraphSplitter<Graph>> LongEdgesExclusiveSplitter(
                 ReliableNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND) {
     typedef typename Graph::VertexId VertexId;
     shared_ptr<RelaxingIterator<VertexId>> inner_iterator = make_shared<
-            CollectionIterator<set<VertexId>>>(graph.begin(), graph.end());
+            CollectionIterator<typename Graph::VertexContainer>>(graph.begin(), graph.end());
     shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf = make_shared<
             ShortEdgeComponentFinder<Graph>>(graph, bound);
     return make_shared<NeighbourhoodFindingSplitter<Graph>>(graph,
