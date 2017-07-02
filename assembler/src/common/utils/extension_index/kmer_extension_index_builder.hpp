@@ -81,7 +81,7 @@ public:
             FillCoverageHistogram(cqf, kplusone, streams, KmerFilter(), std::max(kthr, rthr));
 
             // First, build a k+1-mer index
-            auto wstreams = CovFilteringWrap(streams, kplusone, cqf, rthr);
+            auto wstreams = io::CovFilteringWrap(streams, kplusone, cqf, rthr);
             DeBruijnReadKMerSplitter<typename Streams::ReadT, KmerFilter>
                     splitter(workdir, kplusone, 0xDEADBEEF,
                              wstreams,

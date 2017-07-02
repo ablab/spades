@@ -12,15 +12,16 @@
 #include "adt/cyclichash.hpp"
 
 #include <memory>
+#include <common/utils/kmer_counting.hpp>
 
 namespace io {
 
-using CQFKmerFilter = qf::cqf<RtSeq>;
+typedef qf::cqf<RtSeq> CQFKmerFilter;
+typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
 
 template<class ReadType>
 class CoverageFilteringReaderWrapper: public DelegatingWrapper<ReadType> {
     typedef std::shared_ptr<ReadStream<ReadType>> ReadStreamPtr;
-    using SeqHasher = CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>>;
 public:
     explicit CoverageFilteringReaderWrapper(ReadStreamPtr reader,
                                             unsigned k,
@@ -72,7 +73,7 @@ private:
                     d = hasher_.hash(!kmer);
                 else
                     d = hasher_.hash(kmer);
-                cov_.push_back(unsigned(filter_.lookup(d, /* lock */ false)));
+                cov_.push_back(unsigned(filter_.lookup(d)));
             }
 
             size_t n = cov_.size() / 2;
@@ -100,6 +101,45 @@ inline ReadStreamList<ReadType> CovFilteringWrap(ReadStreamList<ReadType> &reade
                                           k, filter, thr));
 
     return answer;
+}
+
+inline unsigned CountMedianMlt(const Sequence &s, unsigned k, const SeqHasher &hasher, const CQFKmerFilter &kmer_mlt_index) {
+    std::vector<unsigned> mlts;
+
+    auto process_f = [&] (const RtSeq& kmer, uint64_t hash) {
+        if (!kmer.IsMinimal()) {
+            hash = hasher.hash(!kmer);
+        }
+        mlts.push_back(unsigned(kmer_mlt_index.lookup(hash)));
+    };
+
+    utils::KmerHashProcessor<SeqHasher> processor(hasher, process_f);
+    processor.ProcessSequence(s, k);
+
+    size_t n = mlts.size() / 2;
+    std::nth_element(mlts.begin(), mlts.begin() + n, mlts.end());
+    return mlts[n];
+}
+
+template<class PairedReadType>
+inline ReadStreamList<PairedReadType> PairedCovFilteringWrap(const ReadStreamList<PairedReadType> &readers,
+                                                  unsigned k,
+                                                  unsigned thr) {
+    utils::StoringTypeFilter<utils::InvertableStoring> filter;
+    SeqHasher hasher(k);
+    auto single_readers = io::SquashingWrap<PairedReadType>(readers);
+
+    size_t kmers_cnt_est = EstimateCardinality(k, single_readers, filter);
+    auto cqf = make_shared<CQFKmerFilter>([=](const RtSeq &s) { return hasher.hash(s); },
+                                          kmers_cnt_est);
+
+    //TODO check if needed
+    single_readers.reset();
+    utils::FillCoverageHistogram(*cqf, k, single_readers, filter);
+
+    auto filter_f = [=] (io::PairedRead& p_r) { return CountMedianMlt(p_r.first().sequence(), k, hasher, *cqf) > thr ||
+                    CountMedianMlt(p_r.second().sequence(), k, hasher, *cqf) > thr; };
+    return io::FilteringWrap<PairedReadType>(readers, filter_f);
 }
 
 }

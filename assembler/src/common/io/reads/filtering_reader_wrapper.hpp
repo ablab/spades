@@ -27,6 +27,7 @@
 
 #include <boost/optional.hpp>
 #include "delegating_reader_wrapper.hpp"
+#include "read_stream_vector.hpp"
 
 namespace io {
 
@@ -34,8 +35,8 @@ template<typename ReadType>
 class FilteringReaderWrapper : public DelegatingWrapper<ReadType> {
     typedef DelegatingWrapper<ReadType> base;
     //allows read to be modified
-    typedef std::function<bool (ReadType&)> FilterF;
 public:
+    typedef std::function<bool (ReadType&)> FilterF;
   /*
    * Default constructor.
    *
@@ -108,5 +109,23 @@ private:
     }
 
 };
+
+//FIXME Rename and move!
+template<class ReadType>
+std::shared_ptr<ReadStream<ReadType>> FilteringWrap(std::shared_ptr<ReadStream<ReadType>> reader_ptr,
+                                                    typename FilteringReaderWrapper<ReadType>::FilterF filter) {
+    return std::make_shared<FilteringReaderWrapper<ReadType>>(reader_ptr, filter);
+}
+
+//FIXME Rename and move!
+template<class ReadType>
+ReadStreamList<ReadType> FilteringWrap(const ReadStreamList<ReadType>& readers,
+                                       typename FilteringReaderWrapper<ReadType>::FilterF filter) {
+    ReadStreamList<ReadType> answer;
+    for (size_t i = 0; i < readers.size(); ++i) {
+        answer.push_back(FilteringWrap<ReadType>(readers.ptr_at(i), filter));
+    }
+    return answer;
+}
 
 }

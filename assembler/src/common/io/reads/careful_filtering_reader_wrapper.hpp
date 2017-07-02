@@ -125,12 +125,14 @@ private:
     }
 };
 
+//FIXME Rename and move!
 template<class ReadType>
 std::shared_ptr<ReadStream<ReadType>> CarefulFilteringWrap(std::shared_ptr<ReadStream<ReadType>> reader_ptr) {
     //return reader_ptr = make_shared<CarefulFilteringWrapper<ReadType>>(reader_ptr, false, LibraryOrientation::Undefined);
     return std::make_shared<CarefulFilteringWrapper<ReadType>>(reader_ptr);
 }
 
+//FIXME Rename and move!
 template<class ReadType>
 ReadStreamList<ReadType> CarefulFilteringWrap(const ReadStreamList<ReadType>& readers) {
     ReadStreamList<ReadType> answer;

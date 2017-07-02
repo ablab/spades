@@ -3,13 +3,14 @@
 #include "adt/cyclichash.hpp"
 #include "adt/hll.hpp"
 #include "adt/cqf.hpp"
+#include "ph_map/storing_traits.hpp"
 
 namespace utils {
 
 typedef qf::cqf<RtSeq> CQFKmerFilter;
 typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
 
-template<class Hasher, class KmerFilter>
+template<class Hasher, class KmerFilter = StoringTypeFilter<SimpleStoring>>
 class KmerHashProcessor {
     typedef typename Hasher::digest HashT;
     typedef typename Hasher::char_t CharT;
@@ -22,7 +23,7 @@ class KmerHashProcessor {
 public:
     KmerHashProcessor(const Hasher &hasher,
                       const ProcessF &process_f,
-                      const KmerFilter &filter) :
+                      const KmerFilter &filter = StoringTypeFilter<SimpleStoring>()) :
             hasher_(hasher), process_f_(process_f), filter_(filter) {
     }
 
