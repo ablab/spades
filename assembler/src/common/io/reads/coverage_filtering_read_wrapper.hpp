@@ -6,13 +6,12 @@
 
 #pragma once
 
+#include <memory>
 #include "io/reads/ireader.hpp"
 
 #include "adt/cqf.hpp"
 #include "adt/cyclichash.hpp"
-
-#include <memory>
-#include <common/utils/kmer_counting.hpp>
+#include "utils/kmer_counting.hpp"
 
 namespace io {
 
@@ -133,8 +132,6 @@ inline ReadStreamList<PairedReadType> PairedCovFilteringWrap(const ReadStreamLis
     auto cqf = make_shared<CQFKmerFilter>([=](const RtSeq &s) { return hasher.hash(s); },
                                           kmers_cnt_est);
 
-    //TODO check if needed
-    single_readers.reset();
     utils::FillCoverageHistogram(*cqf, k, single_readers, filter);
 
     auto filter_f = [=] (io::PairedRead& p_r) { return CountMedianMlt(p_r.first().sequence(), k, hasher, *cqf) > thr ||
