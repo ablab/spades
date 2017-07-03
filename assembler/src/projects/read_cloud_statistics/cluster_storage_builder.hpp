@@ -4,7 +4,8 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/utility/result_of.hpp>
 #include "common/assembly_graph/dijkstra/dijkstra_helper.hpp"
-
+#include "contracted_graph.hpp"
+#include "scaffold_graph.hpp"
 #define BOOST_RESULT_OF_USE_DECLTYPE
 
 
@@ -55,6 +56,7 @@ namespace cluster_statistics {
 
     class Cluster {
         std::unordered_map<EdgeId, MappingInfo> mappings_;
+        scaffold_graph::ScaffoldGraph internal_graph_;
         size_t span_;
         size_t reads_;
         BarcodeId barcode_;
@@ -62,19 +64,21 @@ namespace cluster_statistics {
     public:
         typedef unordered_map<EdgeId, MappingInfo>::const_iterator const_iterator;
 
-        Cluster(size_t length, size_t reads, const BarcodeId &barcode) : mappings_(), span_(length), reads_(reads),
-                                                                         barcode_(barcode), id_(0) {}
+        Cluster(size_t length, size_t reads, const BarcodeId &barcode) : mappings_(), internal_graph_(), span_(length),
+                                                                         reads_(reads), barcode_(barcode), id_(0) {}
 
         Cluster(const MappingInfo &map_info, const BarcodeId &barcode) :
-                mappings_({{map_info.GetEdge(), map_info}}), span_(map_info.GetSpan()), reads_(map_info.GetReads()),
-                barcode_(barcode), id_(0) {}
+                mappings_({{map_info.GetEdge(), map_info}}), internal_graph_(), span_(map_info.GetSpan()),
+                reads_(map_info.GetReads()), barcode_(barcode), id_(0) {}
 
-        Cluster() : mappings_(), span_(0), reads_(0), barcode_(0), id_(0) {}
+        Cluster() : mappings_(), internal_graph_(), span_(0), reads_(0), barcode_(0), id_(0) {}
 
-        void MergeWithCluster(const Cluster &other, size_t distance) {
+        void MergeWithCluster(const Cluster &other, const EdgeId& first, const EdgeId& second, size_t distance) {
             mappings_.insert(other.mappings_.begin(), other.mappings_.end());
             span_ += distance + other.span_;
             reads_ += other.reads_;
+            path_extend::EdgeWithDistance ewd(second, distance);
+            internal_graph_.AddEdge(first, ewd);
         }
 
         void SetId(size_t id) {
@@ -127,6 +131,10 @@ namespace cluster_statistics {
             return ((double) reads_) / ((double) span_);
         }
 
+        scaffold_graph::ScaffoldGraph GetInternalGraph() const {
+            return internal_graph_;
+        };
+
         const_iterator begin() const {
             return mappings_.begin();
         }
@@ -170,84 +178,6 @@ namespace cluster_statistics {
         const_iterator end() const {
             return clusters_.end();
         }
-    };
-
-    class ScaffoldGraph {
-        std::unordered_map<EdgeId, std::vector<path_extend::EdgeWithDistance>> edge_to_adjacent_;
-
-    public:
-        typedef std::unordered_map<EdgeId, vector<path_extend::EdgeWithDistance>>::const_iterator const_iterator;
-        typedef std::vector<path_extend::EdgeWithDistance>::const_iterator const_adjacent_iterator;
-
-        ScaffoldGraph() : edge_to_adjacent_() {};
-
-        void AddEdge(const EdgeId &first, const path_extend::EdgeWithDistance &second) {
-            if (edge_to_adjacent_.find(first) == edge_to_adjacent_.end()) {
-                edge_to_adjacent_[first] = {second};
-            } else {
-                edge_to_adjacent_[first].push_back(second);
-            }
-        }
-
-        const_adjacent_iterator adjacent_begin(const EdgeId& edge) {
-            return edge_to_adjacent_[edge].begin();
-        }
-
-        const_adjacent_iterator adjacent_end(const EdgeId& edge) {
-            return edge_to_adjacent_[edge].end();
-        }
-
-        bool HasEdge(const EdgeId& first, const EdgeId& second) {
-            for(auto it = adjacent_begin(first); it != adjacent_end(first); ++it) {
-                if ((*it).e_.int_id() == second.int_id()) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        const_iterator begin() {
-            return edge_to_adjacent_.begin();
-        }
-
-        const_iterator end() {
-            return edge_to_adjacent_.end();
-        }
-    };
-
-    class ScaffoldGraphConstructor {
-    public:
-        ScaffoldGraphConstructor(const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_, size_t distance_,
-                                 const Graph &g_) : unique_storage_(unique_storage_), distance_(distance_), g_(g_) {}
-
-        ScaffoldGraph ConstructGraph() {
-            ScaffoldGraph scaffold_graph;
-            auto dij = omnigraph::CreateUniqueDijkstra(g_, distance_, unique_storage_);
-//        DijkstraHelper<Graph>::BoundedDijkstra d = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, distance_, 10000);
-
-            edge_it_helper edge_iterator(g_);
-            for (const auto unique_edge: unique_storage_) {
-                dij.Run(g_.EdgeEnd(unique_edge));
-                for (auto v: dij.ReachedVertices()) {
-                    size_t distance = dij.GetDistance(v);
-                    if (distance < distance_) {
-                        for (auto connected: g_.OutgoingEdges(v)) {
-                            if (unique_storage_.IsUnique(connected) and connected != unique_edge
-                                and connected != g_.conjugate(unique_edge)) {
-                                path_extend::EdgeWithDistance next(connected, distance);
-                                scaffold_graph.AddEdge(unique_edge, next);
-                            }
-                        }
-                    }
-                }
-            }
-            return scaffold_graph;
-        }
-
-    private:
-        path_extend::ScaffoldingUniqueEdgeStorage unique_storage_;
-        size_t distance_;
-        const Graph &g_;
     };
 
     struct EdgeWithBarcode {
@@ -343,13 +273,13 @@ namespace cluster_statistics {
     class ClusterStorageBuilder {
     private:
         const Graph &g_;
-        ScaffoldGraph scaffold_graph_;
+        scaffold_graph::ScaffoldGraph scaffold_graph_;
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_;
         const path_extend::ScaffoldingUniqueEdgeStorage unique_storage_;
         const size_t distance_;
         const size_t min_read_threshold_;
     public:
-        ClusterStorageBuilder(const Graph &g, const ScaffoldGraph &scaffold_graph_,
+        ClusterStorageBuilder(const Graph &g, const scaffold_graph::ScaffoldGraph &scaffold_graph_,
                               const shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_,
                               const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_, const size_t distance,
                               const size_t min_read_threshold)
@@ -370,8 +300,7 @@ namespace cluster_statistics {
             return cluster_storage;
         }
 
-        void
-        ConstructClusterStorageFromUnique(ClusterStorage &cluster_storage, EdgeClusterStorage &edge_cluster_storage) {
+        void ConstructClusterStorageFromUnique(ClusterStorage &cluster_storage, EdgeClusterStorage &edge_cluster_storage) {
             for (const auto &unique_edge: unique_storage_) {
                 ExtractClustersFromEdge(unique_edge, distance_, min_read_threshold_, edge_cluster_storage,
                                         cluster_storage);
@@ -379,7 +308,7 @@ namespace cluster_statistics {
         }
 
         void MergeClustersUsingScaffoldGraph(ClusterStorage &cluster_storage, EdgeClusterStorage &edge_cluster_storage,
-                                             ScaffoldGraph &scaffold_graph) {
+                                             scaffold_graph::ScaffoldGraph &scaffold_graph) {
             for (const auto &entry: scaffold_graph) {
                 EdgeId head = entry.first;
                 for (const auto &tail: entry.second) {
@@ -446,7 +375,7 @@ namespace cluster_statistics {
                 DEBUG("Between edges: " << head_tail_distance);
                 DEBUG("Distance: " << distance);
                 if (distance < (int) distance_threshold and distance > 0) {
-                    head_cluster.MergeWithCluster(tail_cluster, (size_t) distance);
+                    head_cluster.MergeWithCluster(tail_cluster, head, tail, (size_t) distance);
                     cluster_storage.Remove(head_cluster.GetId());
                     cluster_storage.Remove(tail_cluster.GetId());
                     size_t new_id = cluster_storage.Add(head_cluster);
