@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * read_converter.hpp
- *
- *  Created on: Apr 13, 2012
- *      Author: andrey
- */
-
 #pragma once
 
 #include "io/reads/binary_converter.hpp"
