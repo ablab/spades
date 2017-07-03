@@ -4,9 +4,11 @@
 #include "read_cloud_statistics_extractor.hpp"
 #include "reliable_barcodes_checker.hpp"
 #include "gap_distribution_extractor.hpp"
-#include "contracted_graph_statistics.hpp"
+#include "contracted_graph.hpp"
+#include "contracted_graph_analyzer.hpp"
 #include "cluster_storage_builder.hpp"
 #include "cluster_storage_analyzer.hpp"
+#include "scaffold_graph.hpp"
 
 using namespace path_extend;
 
@@ -85,14 +87,18 @@ namespace debruijn_graph {
         }
     }
 
-    void AnalyzeClusterStorage(const conj_graph_pack& gp, const string& stats_base_path) {
+    void AnalyzeTransitions(const conj_graph_pack& gp, const string& stats_base_path, size_t distance) {
         auto params = GetPEParams();
         auto unique_storage = GetUniqueStorage(gp, params);
-        const size_t distance = cfg::get().ts_res.distance;
-        const string distance_path = stats_base_path + "/distance_" + std::to_string(distance);
-        mkdir(distance_path.c_str(), 0755);
-        auto scaffold_graph_constructor = cluster_statistics::ScaffoldGraphConstructor(unique_storage, distance, gp.g);
-        auto scaffold_graph = scaffold_graph_constructor.ConstructGraph();
+        INFO("Distance: " << distance);
+        const size_t unique_edge_length = cfg::get().ts_res.edge_length_threshold;
+        contracted_graph::ContractedGraphBuilder graph_builder(gp.g, unique_storage);
+        auto contracted_graph = graph_builder.BuildContractedGraph();
+        auto scaffold_graph_constructor = scaffold_graph::ScaffoldGraphConstructor(unique_storage, distance, gp.g);
+        auto scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphUsingDijkstra();
+        auto contracted_scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphFromContractedGraph(contracted_graph);
+        INFO("Scaffold graph size: " << scaffold_graph.Size());
+        INFO("Contracted scaffold graph size: " << contracted_scaffold_graph.Size());
         auto barcode_extractor_ptr = ConstructBarcodeExtractor(gp);
         const size_t builder_read_threshold = 5;
         const size_t analyzer_read_threshold = 15;
@@ -101,9 +107,55 @@ namespace debruijn_graph {
                                                                                  barcode_extractor_ptr, unique_storage,
                                                                                  distance, builder_read_threshold);
         auto cluster_storage = cluster_storage_builder.ConstructClusterStorage();
-        
-        cluster_statistics::ClusterStorageAnalyzer cluster_analyzer(scaffold_graph);
-        cluster_analyzer.AnalyzeStorage(cluster_storage, distance_path, analyzer_read_threshold);
+
+        const string reference_path = cfg::get().ts_res.genome_path;
+
+        cluster_statistics::PathClusterStorageBuilder path_cluster_builder;
+        auto path_cluster_storage = path_cluster_builder.BuildClusterStorage(cluster_storage, analyzer_read_threshold);
+        INFO(path_cluster_storage.Size() << " distinct clusters");
+
+        INFO("Reference path: " << reference_path);
+        transitions::StrictTransitionStorageBuilder transition_builder(gp, unique_storage);
+        auto strict_transition_storage = transition_builder.GetTransitionStorage(reference_path);
+        INFO("Strict transition storage size: " << strict_transition_storage.Size());
+
+        cluster_statistics::ClusterStorageAnalyzer cluster_analyzer(scaffold_graph, strict_transition_storage,
+                                                                    path_cluster_storage, cluster_storage,
+                                                                    analyzer_read_threshold);
+        auto transition_clusters = cluster_analyzer.ExtractTransitionClusters(cluster_storage);
+        INFO(transition_clusters.size() << " transition clusters.");
+
+        size_t correct_clusters = 0;
+        for (const auto& cluster: transition_clusters) {
+            if (cluster_analyzer.IsCorrect(cluster)) {
+                correct_clusters++;
+            }
+        }
+        INFO(correct_clusters << " correct clusters.");
+
+        scaffold_graph::ScaffoldGraphAnalyzer scaffold_analyzer(contracted_scaffold_graph);
+        scaffold_analyzer.FillStatistics();
+        scaffold_analyzer.SerializeStatistics(stats_base_path);
+
+        cluster_analyzer.FillStatistics();
+        cluster_analyzer.SerializeStatistics(stats_base_path);
+
+        contracted_graph::ContractedGraphAnalyzer contracted_analyzer(gp.g, path_cluster_storage, contracted_graph,
+                                                                      strict_transition_storage, analyzer_read_threshold);
+        contracted_analyzer.FillStatistics();
+        contracted_analyzer.SerializeStatistics(stats_base_path);
+    }
+
+    void AnalyzeTransitionsForMultipleDistances(const conj_graph_pack& gp, const string& stats_base_path) {
+        vector<size_t> distances = {2500, 5000, 10000, 20000, 35000, 50000};
+#pragma omp parallel for
+        for (size_t i = 0; i < distances.size(); ++i) {
+            size_t distance = distances[i];
+            string stat_path = fs::append_path(stats_base_path, "distance_" + std::to_string(distance));
+            fs::make_dir(stat_path);
+            INFO(stat_path);
+            AnalyzeTransitions(gp, stat_path, distance);
+        }
     }
 
 
@@ -122,12 +174,11 @@ namespace debruijn_graph {
         INFO("Resolver stats: ");
 //        checker.CheckChooser(cfg::get().ts_res.genome_path);
 
-        INFO("Contracted graph stats:");
-//        const size_t unique_edge_length = cfg::get().ts_res.edge_length_threshold;
-//        RawContractedGraphBuilder graph_builder(graph_pack.g, unique_edge_length);
-//        graph_builder.BuildRawContractedGraph();
+        INFO("Transition stats:");
+        size_t distance = 35000;
+        AnalyzeTransitions(graph_pack, stats_path, distance);
+//        AnalyzeTransitionsForMultipleDistances(graph_pack, stats_path);
         INFO("Cluster statistics:");
-        AnalyzeClusterStorage(graph_pack, stats_path);
         INFO("Statistics counter finished.");
     }
 }
