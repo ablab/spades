@@ -76,10 +76,10 @@ void Construction::init(debruijn_graph::conj_graph_pack &gp, const char *) {
     storage().contigs_stream = MultifileWrap(trusted_contigs);
 
     // FIXME: indices here are awful
-    auto& dataset = cfg::get_writable().ds;
+    auto& dataset = cfg::get_writable().ds.reads;
     std::vector<size_t> libs_for_construction;
-    for (size_t i = 0; i < dataset.reads.lib_count(); ++i)
-        if (dataset.reads[i].is_graph_contructable())
+    for (size_t i = 0; i < dataset.lib_count(); ++i)
+        if (dataset[i].is_graph_contructable())
             libs_for_construction.push_back(i);
 
     storage().params = cfg::get().con;
