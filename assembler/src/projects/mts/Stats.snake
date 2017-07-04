@@ -163,7 +163,7 @@ rule checkm:
              "checkm tree -x {ext} {params.dir} {params.out} >{log} \n"
              "checkm tree_qa -o 2 --tab_table -f {output.tree_qa} {params.out} >>{log}\n"
              "checkm lineage_set {params.out} {params.out}/lineage.ms >>{log}\n"
-             "checkm analyze -x fasta {params.out}/lineage.ms reassembly {params.out} >>{log}\n"
+             "checkm analyze -x fasta {params.out}/lineage.ms {params.dir} {params.out} >>{log}\n"
              "checkm qa -o 2 --tab_table -f {output.qa} {params.out}/lineage.ms {params.out} >>{log}")
 
 rule parse_checkm:

@@ -31,7 +31,8 @@ rule megahit:
     log:     "assembly/megahit.log"
     message: "Assembling {wildcards.sample} with MegaHIT"
     shell:   "rm -rf {params.dir} &&"
-             " {SOFT}/megahit/megahit -1 {params.left} -2 {params.right} -t {threads} -o {params.dir} >{log} 2>&1 &&"
+             " {SOFT}/megahit/megahit -1 {params.left} -2 {params.right}"
+             " -t {threads} -o {params.dir} >{log} 2>&1 &&"
              " cp {params.dir}/final.contigs.fa {output}"
 
 # Assemble with SPAdes
@@ -40,11 +41,12 @@ rule spades:
     output:  "assembly/spades/{group}.fasta"
     params:  left=lambda w: " ".join(expand("-1 {r}", r=left_reads(w))),
              right=lambda w: " ".join(expand("-2 {r}", r=right_reads(w))),
-             dir="assembly/spades/{group}"
+             dir="assembly/spades/{group}", bh=lambda w: "" if is_fastq(w) else "--only-assembler"
     threads: THREADS
     log:     "assembly/{group}.log"
     message: "Assembling {wildcards.group} with metaSPAdes"
-    shell:   "{ASSEMBLER_DIR}/spades.py --meta -m 400 -t {threads} {params.left} {params.right}"
+    shell:   "{ASSEMBLER_DIR}/spades.py {params.bh} --meta -m 400 -t {threads}"
+             " {params.left} {params.right}"
              " --save-gp -o {params.dir} >{log} 2>&1 && "
              "cp {params.dir}/scaffolds.fasta {output}"
 
@@ -62,6 +64,9 @@ rule all_contigs:
     shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
 
 #---- Generating profiles/depths -----------------------------------------------
+
+# MetaBAT way
+
 rule bowtie_index:
     input:   "assembly/{frags}/all.fasta"
     output:  "profile/jgi/{frags}/index.done"
@@ -97,14 +102,15 @@ rule kmc:
     output:  temp("tmp/{sample}.kmc_pre"), temp("tmp/{sample}.kmc_suf")
     params:  min_mult=2, tmp="tmp/{sample}_kmc", out="tmp/{sample}",
              desc="profile/{sample}.desc",
-             left=left_sample_reads, right=right_sample_reads
+             left=left_sample_reads, right=right_sample_reads,
+             format=lambda w: "-fq" if is_fastq(w) else "-fa"
     log:     "profile/kmc_{sample}.log"
     threads: THREADS
     message: "Running kmc for {wildcards.sample}"
     shell:   "mkdir -p {params.tmp}\n"
              "echo '{params.left}\n{params.right}' > {params.desc}\n"
-             "{SOFT}/kmc -k{PROFILE_K} -t{threads} -ci{params.min_mult} -cs65535"
-             " @{params.desc} {params.out} {params.tmp} >{log} 2>&1 && "
+             "{SOFT}/kmc {params.format} -k{PROFILE_K} -t{threads} -ci{params.min_mult}"
+             " -cs65535 @{params.desc} {params.out} {params.tmp} >{log} 2>&1 && "
              "rm -rf {params.tmp}"
 
 rule multiplicities:

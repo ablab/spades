@@ -29,7 +29,7 @@ BINNER = config["binning"]["binner"]
 #Autodetect samples and their reads
 #Check that sample names are consecutive and all are presented
 SAMPLE_DIRS = set(glob_wildcards(os.path.join(IN, "{sample,sample\d+}"))[0])
-SAMPLE_COUNT = len(SAMPLE_DIRS)
+SAMPLE_COUNT = config.get("count", len(SAMPLE_DIRS))
 SAMPLES = list()
 for i in range(1, SAMPLE_COUNT + 1):
     sample_name = "sample" + str(i)
@@ -83,6 +83,11 @@ def group_reads(dir, wildcards):
     return SAMPLE_READS[wildcards["group"]][dir]
 
 left_reads, right_reads = reads_input(group_reads)
+
+def is_fastq(wildcards):
+    name = wildcards.get("group", wildcards.get("sample"))
+    _, ext = os.path.splitext(SAMPLE_READS[name][0])
+    return (ext in {".fastq", ".fq", ".fastq.gz", "fq.gz"})
 
 rule combine_contigs:
     input:   expand("{{dir}}/{group}.fasta", group=GROUPS)

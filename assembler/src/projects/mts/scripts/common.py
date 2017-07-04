@@ -38,7 +38,7 @@ def fill_default_values(config):
 def sample_name(fullname):
     return os.path.splitext(os.path.basename(fullname))[0]
 
-FASTA_EXTS = {".fasta", ".fa", ".fna", ".fsa", ".fastq", ".fastq.gz", ".fq", ".fq.gz", ".fna.gz"}
+FASTA_EXTS = {".fasta", ".fasta.gz", ".fa", ".fna", ".fsa", ".fastq", ".fastq.gz", ".fq", ".fq.gz", ".fna.gz"}
 def gather_paths(path, basename=False):
     for filename in os.listdir(path):
         name = os.path.basename(filename)
