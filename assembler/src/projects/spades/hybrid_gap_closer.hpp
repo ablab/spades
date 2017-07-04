@@ -709,7 +709,7 @@ public:
 
         gap_joiner(ConstructConsensus());
 
-        CompressAllVertices(g_, true, /*chunk_cnt*/100);
+        CompressAllVertices(g_, /*chunk_cnt*/100);
         return fate_tracker.Old2NewMapping();
     };
 

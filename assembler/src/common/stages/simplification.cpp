@@ -11,6 +11,7 @@
 #include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "stages/simplification_pipeline/single_cell_simplification.hpp"
 #include "stages/simplification_pipeline/rna_simplification.hpp"
+#include "modules/simplification/cleaner.hpp"
 
 #include "simplification.hpp"
 
@@ -59,17 +60,17 @@ class GraphSimplifier {
         return true;
     }
 
-    void RemoveShortPolyATEdges(size_t max_length,
-                                HandlerF removal_handler = 0, size_t chunk_cnt = 1) {
+    void RemoveShortPolyATEdges(HandlerF removal_handler, size_t chunk_cnt) {
         INFO("Removing short polyAT");
         EdgeRemover<Graph> er(g_, removal_handler);
-        ATCondition<Graph> condition (g_, 0.8, max_length, false);
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
+        ATCondition<Graph> condition(g_, 0.8, false);
+        for (auto iter = g_.SmartEdgeBegin(/*canonical only*/true); !iter.IsEnd(); ++iter){
             if (g_.length(*iter) == 1 && condition.Check(*iter)) {
                 er.DeleteEdgeNoCompress(*iter);
             }
         }
-        ParallelCompress(g_, chunk_cnt);
+        omnigraph::CompressAllVertices(g_, chunk_cnt);
+        omnigraph::CleanIsolatedVertices(g_, chunk_cnt);
     }
 
     void InitialCleaning() {
@@ -85,8 +86,12 @@ class GraphSimplifier {
                 algos);
 
         if (info_container_.mode() == config::pipeline_type::rna){
-            RemoveShortPolyATEdges(1, removal_handler_, info_container_.chunk_cnt());
-            PushValid(ShortPolyATEdgesRemoverInstance(g_, 1, removal_handler_, info_container_.chunk_cnt()), "Short PolyA/T Edges",algos) ;
+            //TODO create algo
+            RemoveShortPolyATEdges(removal_handler_, info_container_.chunk_cnt());
+            PushValid(std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>(g_, func::And(LengthUpperBound<Graph>(g_, 1),
+                                                                                                      ATCondition<Graph>(g_, 0.8, false)),
+                                                                                     info_container_.chunk_cnt(), removal_handler_, true),
+                      "Short PolyA/T Edges", algos) ;
             PushValid(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips", algos);
         }
 

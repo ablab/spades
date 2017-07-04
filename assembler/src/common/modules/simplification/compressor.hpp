@@ -118,7 +118,7 @@ protected:
 * Method compresses all vertices which can be compressed.
 */
 template<class Graph>
-bool CompressAllVertices(Graph &g, bool safe_merging = true, size_t chunk_cnt = 1) {
+size_t CompressAllVertices(Graph &g, size_t chunk_cnt = 1, bool safe_merging = true) {
     CompressingProcessor<Graph> compressor(g, chunk_cnt, safe_merging);
     return compressor.Run();
 }

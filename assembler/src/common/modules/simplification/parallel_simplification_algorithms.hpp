@@ -722,6 +722,7 @@ bool RunEdgeAlgorithm(Graph& g, AlgoRunner& runner, Algo& algo, size_t chunk_cnt
     return runner.RunFromChunkIterators(algo, omnigraph::IterationHelper<Graph, typename Graph::EdgeId>(g).Chunks(chunk_cnt));
 }
 
+//Deprecated
 template<class Graph>
 void ParallelCompress(Graph &g, size_t chunk_cnt, bool loop_post_compression = true) {
     INFO("Parallel compression");
@@ -738,6 +739,7 @@ void ParallelCompress(Graph &g, size_t chunk_cnt, bool loop_post_compression = t
     }
 }
 
+//Deprecated
 template<class Graph>
 bool ParallelClipTips(Graph &g,
                       size_t max_length,
@@ -790,6 +792,7 @@ bool ParallelClipTips(Graph &g,
 //}
 
 //TODO looks obsolete
+//Deprecated
 template<class Graph>
 bool ParallelEC(Graph &g,
                 size_t max_length,

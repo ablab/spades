@@ -36,4 +36,10 @@ protected:
     }
 };
 
+template<class Graph>
+size_t CleanIsolatedVertices(Graph &g, size_t chunk_cnt = 1) {
+    Cleaner<Graph> cleaner(g, chunk_cnt);
+    return cleaner.Run();
+}
+
 }

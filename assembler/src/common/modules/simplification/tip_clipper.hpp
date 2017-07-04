@@ -147,22 +147,19 @@ class ATCondition: public EdgeCondition<Graph> {
     typedef typename Graph::VertexId VertexId;
     typedef EdgeCondition<Graph> base;
     const double max_AT_percentage_;
-    const size_t max_tip_length_;
     const bool check_tip_ ;
 
 public:
 
-    ATCondition(const Graph& g, double max_AT_percentage, size_t max_tip_length, bool check_tip) :
-            base(g), max_AT_percentage_(max_AT_percentage), max_tip_length_(max_tip_length), check_tip_(check_tip) {
+    ATCondition(const Graph& g, double max_AT_percentage, bool check_tip) :
+            base(g), max_AT_percentage_(max_AT_percentage), check_tip_(check_tip) {
 		DEBUG("check_tip: " << check_tip_);
     }
 
     bool Check(EdgeId e) const {
         //+1 is a trick to deal with edges of 0 coverage from iterative run
+        //FIXME where is the trick?
         size_t start = 0;
-        //TODO: Do we need this check?
-        if(this->g().length(e) > max_tip_length_)
-            return false;
         size_t end = this->g().length(e) + this->g().k();
         if (check_tip_) {
             if (this->g().OutgoingEdgeCount(this->g().EdgeEnd(e)) == 0)
@@ -171,17 +168,16 @@ public:
                 end = this->g().length(e);
             else return false;
         }
-        std::array<size_t, 4> counts = std::array<size_t, 4>();
+        std::array<size_t, 4> counts;
         const Sequence &s_edge = this->g().EdgeNucls(e);
 
         for (size_t position = start; position < end; position ++) {
-            counts[s_edge[position]] ++;
+            counts[s_edge[position]]++;
         }
         size_t curm = *std::max_element(counts.begin(), counts.end());
-        if (curm > max_AT_percentage_ * double(end - start)) {
+        if (curm > size_t(math::round(max_AT_percentage_ * double(end - start)))) {
             DEBUG("deleting edge" << s_edge.str());;
 			DEBUG("curm: " << curm);
-			
             DEBUG("start end cutoff" << start << " " << end << " " << max_AT_percentage_ * double(this->g().length(e)));
 
             return true;
