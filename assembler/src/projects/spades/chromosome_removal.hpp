@@ -31,6 +31,5 @@ private:
     void PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bound,
                                             std::function<void(typename Graph::EdgeId)> removal_handler = 0);
     void CompressAll(Graph &g);
-    void DeleteAndCompress(EdgeId e, Graph &g);
 };
 }

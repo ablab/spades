@@ -15,7 +15,7 @@
 
 namespace debruijn_graph {
 
-
+//TODO replace with standard methods
 void ChromosomeRemoval::CompressAll(Graph &g) {
     for (auto it = g.SmartVertexBegin(); ! it.IsEnd(); ++it) {
         if (g.IsDeadStart(*it) && g.IsDeadEnd(*it)) {
@@ -25,27 +25,6 @@ void ChromosomeRemoval::CompressAll(Graph &g) {
         }
     }
 }
-
-void ChromosomeRemoval::DeleteAndCompress(EdgeId e, Graph &g){
-    auto start = g.EdgeStart(e);
-    auto end = g.EdgeEnd(e);
-    g.DeleteEdge(e);
-    bool is_cycle = (start == end || start == g.conjugate(end));
-    if (g.IsDeadStart(start) && g.IsDeadEnd(start)) {
-        g.DeleteVertex(start);
-    } else {
-        g.CompressVertex(start);
-    }
-    if (is_cycle) {
-        return;
-    }
-    if (g.IsDeadStart(end) && g.IsDeadEnd(end)) {
-        g.DeleteVertex(end);
-    } else {
-        g.CompressVertex(end);
-    }
-}
-
 
 size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
     std::stack<EdgeId> next;
