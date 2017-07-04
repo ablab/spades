@@ -260,12 +260,6 @@ class GraphSimplifier {
         //FIXME need better configuration
 
         if (info_container_.mode() == config::pipeline_type::meta) {
-            PushValid(
-                    BRInstance(g_, simplif_cfg_.second_final_br,
-                                       info_container_, removal_handler_),
-                    "Yet another final bulge remover",
-                    algos);
-
             EdgePredicate<Graph> meta_thorn_condition
                     = And(LengthUpperBound<Graph>(g_, LengthThresholdFinder::MaxErroneousConnectionLength(
                                                                            g_.k(), simplif_cfg_.isec.max_ec_length_coefficient)),

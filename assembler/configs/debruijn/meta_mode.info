@@ -91,15 +91,6 @@ simp
         max_relative_delta		0.1
     }
 
-    ; second final bulge remover:
-    ; only in meta mode, inherits settings of final_br
-    second_final_br
-    {
-        enabled false
-        max_delta           1500
-        max_number_edges        3
-    }
-
     ; hidden ec remover
     her
     {
@@ -188,9 +179,6 @@ params {
         max_repeat_length          1000000 
     }
     
-
-
-
     use_coordinated_coverage true
 
     coordinated_coverage

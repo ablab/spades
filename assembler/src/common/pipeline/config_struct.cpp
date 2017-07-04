@@ -603,8 +603,6 @@ void load(debruijn_config::simplification& simp,
   load(simp.init_clean, pt, "init_clean", complete); // presimplification
   load(simp.final_tc, pt, "final_tc", complete);
   load(simp.final_br, pt, "final_br", complete);
-  simp.second_final_br = simp.final_br;
-  load(simp.second_final_br, pt, "second_final_br", false);
 }
 
 void load(debruijn_config::info_printer& printer,

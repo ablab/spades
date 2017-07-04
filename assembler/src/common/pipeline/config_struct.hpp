@@ -355,7 +355,6 @@ struct debruijn_config {
         low_covered_edge_remover lcer;
         tip_clipper final_tc;
         bulge_remover final_br;
-        bulge_remover second_final_br;
 
         init_cleaning init_clean;
     };
