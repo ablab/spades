@@ -160,8 +160,8 @@ protected:
 
 private:
     SmartSetIterator<Graph, ElementId, Comparator> it_;
-    bool tracking_;
-    size_t total_iteration_estimate_;
+    const bool tracking_;
+    const size_t total_iteration_estimate_;
     size_t curr_iteration_;
 
 protected:

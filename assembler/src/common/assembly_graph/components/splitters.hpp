@@ -344,11 +344,15 @@ private:
     CoverageBoundedDFS dfs_helper;
 
 public:
-    HighCoverageComponentFinder(const Graph &graph, double max_coverage, size_t edge_sum_limit = std::numeric_limits<size_t>::max())
-    : AbstractNeighbourhoodFinder<Graph>(graph), coverage_bound_(max_coverage), dfs_helper(graph, max_coverage, edge_sum_limit) {
+    HighCoverageComponentFinder(const Graph &graph,
+                                double max_coverage,
+                                size_t edge_sum_limit = std::numeric_limits<size_t>::max())
+            : AbstractNeighbourhoodFinder<Graph>(graph),
+              coverage_bound_(max_coverage),
+              dfs_helper(graph, max_coverage, edge_sum_limit) {
     }
 
-    GraphComponent<Graph> Find(typename Graph::VertexId v) const {
+    GraphComponent<Graph> Find(VertexId v) const {
         std::set<EdgeId> result = dfs_helper.Find(v);
         return GraphComponent<Graph>::FromEdges(this->graph(), result, false);
     }
