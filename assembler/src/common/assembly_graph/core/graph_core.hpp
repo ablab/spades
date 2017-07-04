@@ -506,11 +506,11 @@ public:
         return edge->conjugate();
     }
 
-    size_t length(const EdgeId edge) const {
+    size_t length(EdgeId edge) const {
         return master_.length(data(edge));
     }
 
-    size_t length(const VertexId v) const {
+    size_t length(VertexId v) const {
         return master_.length(data(v));
     }
 

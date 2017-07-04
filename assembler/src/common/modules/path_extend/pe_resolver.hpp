@@ -12,455 +12,261 @@
  *      Author: andrey
  */
 
-#ifndef PE_RESOLVER_HPP_
-#define PE_RESOLVER_HPP_
+#pragma once
 
 #include "path_extender.hpp"
 
 namespace path_extend {
 
+typedef const BidirectionalPath * PathPtr;
+typedef unordered_map<PathPtr, set<size_t>> SplitsStorage;
 
-class SimpleOverlapRemover {
+inline void PopFront(BidirectionalPath * const path, size_t cnt) {
+    path->GetConjPath()->PopBack(cnt);
+}
 
-public:
-    SimpleOverlapRemover(const Graph& g, GraphCoverageMap& cm)
-            : g_(g), coverage_map_(cm) {
+class OverlapRemover {
+    const Graph &g_;
+    const PathContainer &paths_;
+    const OverlapFindingHelper helper_;
+    SplitsStorage splits_;
+
+    bool AlreadyAdded(PathPtr ptr, size_t pos) const {
+        auto it = splits_.find(ptr);
+        return it != splits_.end() && it->second.count(pos);
     }
 
-    void RemoveOverlaps(PathContainer& paths) const {
-        for (size_t i = 0; i < paths.size(); i++) {
-            FindAndRemovePathOverlap(paths, paths.Get(i));
-            FindAndRemovePathOverlap(paths, paths.GetConjugate(i));
-        }
+    //TODO if situation start ==0 && end==p.Size is not interesting then code can be simplified
+    bool AlreadyAdded(const BidirectionalPath &p, size_t start, size_t end) const {
+        if (start == 0 && AlreadyAdded(&p, end))
+            return true;
+        if (end == p.Size() && AlreadyAdded(p.GetConjPath(), p.Size() - start))
+            return true;
+        return false;
     }
 
-    size_t NonUniqueCommon(BidirectionalPath * path, int pos1, int pos2) {
-        size_t answer = 0;
-        while (pos1 >= 0) {
-            if (path->At(pos1) == path->At(pos2)) {
-                pos1--;
-                pos2--;
-                answer++;
-            } else {
-                break;
-            }
-        }
-        return answer;
-    }
+    //NB! This can only be launched over paths taken from path container!
+    size_t AnalyzeOverlaps(const BidirectionalPath &path, const BidirectionalPath &other,
+                           bool end_start_only, bool retain_one_copy) const {
+        VERIFY(!retain_one_copy || !end_start_only);
+        auto range_pair = helper_.FindOverlap(path, other, end_start_only);
+        size_t overlap = range_pair.first.size();
+        auto other_range = range_pair.second;
 
-    size_t MaximumNonUniqueSuffix(BidirectionalPath * path) {
-        if (path->Size() == 0) {
+        if (overlap == 0) {
             return 0;
         }
 
-        size_t answer = 0;
-        EdgeId back = path->Back();
-        vector<size_t> all_pos = path->FindAll(back);
-        for (size_t i = 0; i < all_pos.size() - 1; ++i) {
-            answer = std::max(answer, NonUniqueCommon(path, (int) all_pos[i], (int) path->Size() - 1));
+        //checking if region on the other path has not been already added
+        //TODO discuss if the logic is needed/correct. It complicates the procedure and prevents trivial parallelism.
+        if (retain_one_copy &&
+                AlreadyAdded(other,
+                             other_range.start_pos,
+                             other_range.end_pos) &&
+                /*forcing "cut_all" behavior on conjugate paths*/
+                &other != path.GetConjPath() &&
+                /*certain overkill*/
+                &other != &path) {
+            return 0;
         }
-        return answer;
+
+        if (&other == &path) {
+            if (overlap == path.Size())
+                return 0;
+            overlap = std::min(overlap, other_range.start_pos);
+        }
+
+        if (&other == path.GetConjPath()) {
+            overlap = std::min(overlap, other.Size() - other_range.end_pos);
+        }
+
+        DEBUG("First " << overlap << " edges of the path will be removed");
+        DEBUG(path.str());
+        DEBUG("Due to overlap with path");
+        DEBUG(other.str());
+        DEBUG("Range " << other_range);
+
+        return overlap;
     }
 
-    void CutNonUniqueSuffix(PathContainer& paths) {
-        vector<pair<BidirectionalPath *, BidirectionalPath *>> tmp_paths(paths.begin(), paths.end());
-        for (auto it = tmp_paths.begin(); it != tmp_paths.end(); ++it) {
-            BidirectionalPath * path1 = it->first;
-            BidirectionalPath * path2 = it->second;
-            size_t longest_suffix1 = MaximumNonUniqueSuffix(path1);
-            path1->PopBack(longest_suffix1);
-            size_t longest_suffix2 = MaximumNonUniqueSuffix(path2);
-            path2->PopBack(longest_suffix2);
-        }
-    }
-
-    void CutPseudoSelfConjugatePaths(PathContainer& paths) {
-        vector<pair<BidirectionalPath *, BidirectionalPath *>> tmp_paths(paths.begin(), paths.end());
-        for (auto it = tmp_paths.begin(); it != tmp_paths.end(); ++it) {
-            BidirectionalPath * path1 = it->first;
-            BidirectionalPath * path2 = it->second;
-            bool ups = false;
-            if(path1 != path2) {
-                size_t last = 0;
-                while(last < path1->Size() && path1->operator [](last) == path2->operator [](last)) {
-                    last++;
-                }
-                if(last > 0) {
-                    AddOverlap(paths, path1, 0, last - 1);
-                    path1->PopBack(last);
-                    path2->PopBack(last);
-                }
-            }
-            if(ups) path1->PrintDEBUG();
-        }
-    }
-
-    void RemoveSimilarPaths(PathContainer& paths, size_t min_edge_len, size_t max_path_diff, bool del_only_equal, bool del_subpaths, bool del_begins, bool del_all, bool add_overlap_begins) const {
-        DEBUG("== Removing similar paths ==");
-        DEBUG("Min edge len " << min_edge_len << ", max path diff " << max_path_diff)
-        DEBUG("Only equal " << del_only_equal << ", subpaths " << del_subpaths << ", starts " << del_begins << ", all " << del_all << ", add starts " << add_overlap_begins);
-        std::vector<EdgeId> edges = GetSortedEdges();
-        for (size_t edgeIndex = 0; edgeIndex < edges.size(); ++edgeIndex) {
-            EdgeId edge = edges.at(edgeIndex);
-            BidirectionalPathSet cov_paths = coverage_map_.GetCoveringPaths(edge);
-            std::vector<BidirectionalPath*> cov_vect(cov_paths.begin(), cov_paths.end());
-            std::sort(cov_vect.begin(), cov_vect.end(), PathIdCompare);
-            for (size_t vect_i = 0; vect_i < cov_vect.size(); ++vect_i) {
-                BidirectionalPath* path1 = cov_vect.at(vect_i);
-                if (cov_paths.find(path1) == cov_paths.end()) {
-                    continue;
-                }
-                for (size_t vect_i1 = vect_i + 1; vect_i1 < cov_vect.size(); ++vect_i1) {
-                    BidirectionalPath* path2 = cov_vect.at(vect_i1);
-                    if (path1 == path2 || path1 == path2->GetConjPath()) {
-                        continue;
-                    }
-                    if (cov_paths.find(path2) == cov_paths.end())
-                        continue;
-                    if ((*path1) == (*path2)) {
-                        if (path2->IsOverlap()) {
-                            path1->SetOverlap(true);
-                        }
-                        DEBUG("Removing path " << path2->GetId() << " because of path " << path1->GetId());
-                        path2->PrintDEBUG();
-                        path1->PrintDEBUG();
-                        path2->Clear();
-                        cov_paths = coverage_map_.GetCoveringPaths(edge);
-                        continue;
-                    }
-                    if (g_.length(edge) <= min_edge_len || path1->IsOverlap() || path2->IsOverlap() || del_only_equal) {
-                        continue;
-                    }
-                    CompareAndCut(paths, edge, path1, path2, max_path_diff,
-                                  del_subpaths, del_begins, del_all, add_overlap_begins);
-                    cov_paths = coverage_map_.GetCoveringPaths(edge);
-                }
+    void MarkStartOverlaps(const BidirectionalPath &path, bool end_start_only, bool retain_one_copy) {
+        set<size_t> overlap_poss;
+        for (PathPtr candidate : helper_.FindCandidatePaths(path)) {
+            size_t overlap = AnalyzeOverlaps(path, *candidate,
+                                             end_start_only, retain_one_copy);
+            if (overlap > 0) {
+                overlap_poss.insert(overlap);
             }
         }
-        DEBUG("== Emd removing similar paths ==");
+        if (!overlap_poss.empty()) {
+            utils::insert_all(splits_[&path], overlap_poss);
+        }
+    }
+
+    void InnerMarkOverlaps(bool end_start_only, bool retain_one_copy) {
+        for (auto path_pair: paths_) {
+            //TODO think if this "optimization" is necessary
+            if (path_pair.first->Size() == 0)
+                continue;
+            MarkStartOverlaps(*path_pair.first, end_start_only, retain_one_copy);
+            MarkStartOverlaps(*path_pair.second, end_start_only, retain_one_copy);
+        }
+    }
+
+public:
+    OverlapRemover(const Graph &g,
+                         const PathContainer &paths,
+                         GraphCoverageMap &coverage_map,
+                         size_t min_edge_len,// = 0,
+                         size_t max_diff) :// = 0) :
+            g_(g),
+            paths_(paths),
+            helper_(g, coverage_map,
+                    min_edge_len, max_diff) {
+    }
+
+    //Note that during start/end removal all repeat instance have to be cut
+//    void MarkOverlaps(bool end_start_only = false, bool retain_one_copy = true) {
+    void MarkOverlaps(bool end_start_only, bool retain_one_copy) {
+        VERIFY(!end_start_only || !retain_one_copy);
+        INFO("Marking start/end overlaps");
+        InnerMarkOverlaps(/*end/start overlaps only*/ true, /*retain one copy*/ false);
+        if (!end_start_only) {
+            INFO("Marking remaining overlaps");
+            InnerMarkOverlaps(/*end/start overlaps only*/ false, retain_one_copy);
+        }
+    }
+
+    const SplitsStorage& overlaps() const {
+        return splits_;
     }
 
 private:
-    
-    void SubscribeCoverageMap(BidirectionalPath* path) const {
-        path->Subscribe(&coverage_map_);
-        for (size_t i = 0; i < path->Size(); ++i) {
-            coverage_map_.BackEdgeAdded(path->At(i), path, path->GapAt(i));
+    DECL_LOGGER("OverlapRemover");
+};
+
+class PathSplitter {
+    const SplitsStorage splits_;
+    PathContainer &paths_;
+    GraphCoverageMap &coverage_map_;
+
+    set<size_t> TransformConjSplits(PathPtr p) const {
+        set<size_t> path_splits;
+        size_t path_len = p->Size();
+        auto it = splits_.find(p);
+        if (it != splits_.end()) {
+//                std::transform(it->second.begin(), it->second.end(),
+//                               std::inserter(path_splits, path_splits.end()),
+//                               [=] (size_t pos) {return path_len - pos;});
+            for (size_t pos : it->second) {
+                path_splits.insert(path_len - pos);
+            }
         }
+        return path_splits;
     }
 
-    void CompareAndCut(PathContainer& paths, EdgeId edge, BidirectionalPath* path1, BidirectionalPath* path2,
-                       size_t max_path_diff,
-                       bool del_subpaths, bool del_begins,
-                       bool del_all, bool add_overlap_begins) const {
-        vector<size_t> positions1 = path1->FindAll(edge);
-        vector<size_t> positions2 = path2->FindAll(edge);
-        size_t i1 = 0;
-        size_t i2 = 0;
-        bool renewed = false;
-        while (i1 < positions1.size()) {
-            while (i2 < positions2.size()) {
-                DEBUG("CompareAndCutFromPos paths " << g_.int_id(edge));
-                CompareAndCutFromPos(paths, path1, (int) positions1[i1], path2,
-                                     (int) positions2[i2], max_path_diff,
-                                     del_subpaths, del_begins, del_all, add_overlap_begins);
+    set<size_t> GatherAllSplits(const PathPair &pp) const {
+        VERIFY(pp.first->Size() == pp.second->Size());
+        set<size_t> path_splits = TransformConjSplits(pp.second);
+        auto it = splits_.find(pp.first);
+        if (it != splits_.end()) {
+            utils::insert_all(path_splits, it->second);
+        }
+        return path_splits;
+    }
 
-                if (positions1[i1] >= path1->Size() || path1->At(positions1[i1]) != edge || positions2[i2] >= path2->Size() || path2->At(positions2[i2]) != edge) {
-                    vector<size_t> new_positions1 = path1->FindAll(edge);
-                    vector<size_t> new_positions2 = path2->FindAll(edge);
-
-                    if (new_positions1.size() == positions1.size() && new_positions2.size() == positions2.size()) {
-                        return;
-                    }
-                    else {
-                        positions1 = new_positions1;
-                        positions2 = new_positions2;
-                        i1 = 0;
-                        i2 = 0;
-                        renewed = true;
-                        break;
-                    }
-                    ++i2;
-                }
-                ++i2;
-            }
-
-            if (renewed) {
-                renewed = false;
+    void SplitPath(BidirectionalPath * const p, const set<size_t> &path_splits) {
+        size_t start_pos = 0;
+        for (size_t split_pos : path_splits) {
+            if (split_pos == 0)
                 continue;
-            }
-            ++i1;
+            if (split_pos == p->Size())
+                break;
+            AddPath(paths_, p->SubPath(start_pos, split_pos), coverage_map_);
+            start_pos = split_pos;
         }
+        PopFront(p, start_pos);
     }
 
-    void CompareAndCutFromPos(PathContainer& paths, BidirectionalPath* path1, int pos1,
-                              BidirectionalPath* path2, int pos2,
-                              size_t max_path_diff,
-                              bool delete_subpaths, bool delete_begins,
-                              bool delete_all, bool add_overlap_begins) const {
-        int last2 = pos2;
-        int last1 = pos1;
-        if (last1 >= (int) path1->Size() || last2 >= (int) path2->Size()) {
-            return;
-        }
-        vector<int> other_path_end;
-        pair<int, int> posRes = ComparePaths(last1, last2, *path1, *path2, max_path_diff);
-        last1 = posRes.first;
-        last2 = posRes.second;
-        BidirectionalPath* conj1 = path1->GetConjPath();
-        BidirectionalPath* conj2 = path2->GetConjPath();
-        size_t first1 = conj1->Size() - pos1 - 1;
-        size_t first2 = conj2->Size() - pos2 - 1;
-        posRes = ComparePaths(first1, first2, *conj1, *conj2, max_path_diff);
-        first2 = conj2->Size() - posRes.second - 1;
-        first1 = conj1->Size() - posRes.first - 1;
-        if ((int)path2->LengthAt(last2) - (int)g_.length(path2->At(last2)) < (int) max_path_diff) {
-            last2 = (int)path2->Size() - 1;
-        }
-        if ((int)path2->Length() - (int)path2->LengthAt(first2) < (int) max_path_diff) {
-            first2 = 0;
-        }
-        if ((int)path1->LengthAt(last1) - (int)g_.length(path1->At(last1)) < (int) max_path_diff) {
-            last1 = (int)path1->Size() - 1;
-        }
-        if ((int)path1->Length() - (int)path1->LengthAt(first1) < (int) max_path_diff) {
-            first1 = 0;
-        }
+public:
+    PathSplitter(const SplitsStorage &splits,
+                 PathContainer &paths,
+                 GraphCoverageMap &coverage_map) :
+            splits_(splits),
+            paths_(paths),
+            coverage_map_(coverage_map) {}
 
-        CutOverlaps(paths, path1, first1, last1, path1->Size(), path2,
-                         first2, last2, path2->Size(), delete_subpaths,
-                         delete_begins, delete_all, add_overlap_begins);
-    }
+     void Split() {
+         vector<PathPair> tmp_paths(paths_.begin(), paths_.end());
+         for (auto path_pair: tmp_paths) {
+             SplitPath(path_pair.first, GatherAllSplits(path_pair));
+         }
+     }
 
-    void AddOverlap(PathContainer& paths, BidirectionalPath* path1, size_t first1, size_t last1) const {
-        BidirectionalPath* overlap = new BidirectionalPath(path1->SubPath(first1, last1 + 1));
-        BidirectionalPath* conj_overlap = new BidirectionalPath(overlap->Conjugate());
-        SubscribeCoverageMap(overlap);
-        SubscribeCoverageMap(conj_overlap);
-        paths.AddPair(overlap, conj_overlap);
-    }
+private:
+    DECL_LOGGER("PathSplitter");
+};
 
-    bool CutOverlaps(PathContainer& paths, BidirectionalPath* path1, size_t first1, size_t last1, size_t size1, BidirectionalPath* path2, size_t first2,
-                     size_t last2, size_t size2, bool del_subpaths, bool del_begins, bool del_all, bool add_overlap_begins) const {
-        if (first1 == 0 && last1 == size1 - 1 && del_subpaths) {
-            DEBUG("Removing path " << path1->GetId() << " because of path " << path2->GetId());
-            path1->PrintDEBUG();
-            path2->PrintDEBUG();
-            path1->Clear();
-        } else if (first2 == 0 && last2 == size2 - 1 && del_subpaths) {
-            DEBUG("Removing path " << path2->GetId() << " because of path " << path1->GetId());
-            path2->PrintDEBUG();
-            path1->PrintDEBUG();
-            path2->Clear();
-        } else if (first2 == 0 && first1 == 0 && del_begins) {
-            DEBUG("Path " << path1->GetId() << ", len " << path1->Length() << " and path " << path2->GetId() << ", len " << path2->Length() <<  " have similar starts");
-            DEBUG("Path 1: " << last1 << " edges of length " << path1->Length() - path1->LengthAt(min(last1 + 1, path1->Size() - 1)));
-            DEBUG("Path 2: " << last2 << " edges of length " << path2->Length() - path2->LengthAt(min(last2 + 1, path2->Size() - 1)));
-            DEBUG("Path 1 has overlap start " << path1->HasOverlapedBegin() << ", path 2 has overlap start " <<  path2->HasOverlapedBegin());
+class PathDeduplicator {
+    const Graph& g_;
+    PathContainer &paths_;
+    const bool equal_only_;
+    const OverlapFindingHelper helper_;
 
-            if (add_overlap_begins) {
-                AddOverlap(paths, path1, first1, last1);
-                DEBUG("Detaching overlap " << path2->GetId() << " and " << path1->GetId());
-                path2->PrintDEBUG();
-                path1->PrintDEBUG();
-                path1->GetConjPath()->PopBack(last1 + 1);
-                path2->GetConjPath()->PopBack(last2 + 1);
-            } else if (path1->Length() < path2->Length()) {
-                DEBUG("Detaching overlap from " << path1->GetId() << " because of "<< path2->GetId());
-                path1->PrintDEBUG();
-                path2->PrintDEBUG();
-                path1->GetConjPath()->PopBack(last1 + 1);
-            } else {
-                DEBUG("Detaching overlap from " << path2->GetId() << " because of "<< path1->GetId());
-                path2->PrintDEBUG();
-                path1->PrintDEBUG();
-                path2->GetConjPath()->PopBack(last2 + 1);
-            }
-        } else if ((last1 == size1 - 1 && last2 == size2 - 1) && del_begins) {
-            DEBUG("Path " << path1->GetId() << ", len " << path1->Length() << " and path " << path2->GetId() << ", len " << path2->Length() << " have similar ends");
-            DEBUG("Path 1: " << path1->Size() - first1 << " edges of length " << path1->LengthAt(first1));
-            DEBUG("Path 2: " << path2->Size() - first2 << " edges of length " << path2->LengthAt(first2));
-            DEBUG("Path 1 has overlap end " << path1->HasOverlapedEnd() << ", path 2 has overlap end " <<  path2->HasOverlapedEnd());
-
-            if (add_overlap_begins){
-                AddOverlap(paths, path1, first1, last1);
-                DEBUG("Detaching overlap " << path2->GetId() << " and " << path1->GetId());
-                path2->PrintDEBUG();
-                path1->PrintDEBUG();
-                path1->PopBack(last1 + 1 - first1);
-                path2->PopBack(last2 + 1 - first2);
-            }
-            if (path1->Length() < path2->Length()) {
-                DEBUG("Detaching overlap from " << path1->GetId() << " because of "<< path2->GetId());
-                path1->PrintDEBUG();
-                path2->PrintDEBUG();
-                path1->PopBack(last1 + 1 - first1);
-            } else {
-                DEBUG("Detaching overlap from " << path2->GetId() << " because of "<< path1->GetId());
-                path2->PrintDEBUG();
-                path1->PrintDEBUG();
-                path2->PopBack(last2 + 1 - first2);
-            }
-        } else if (first2 == 0 && del_all) {
-            DEBUG("Detaching overlap from " << path2->GetConjPath()->GetId() << " because of "<< path1->GetId());
-            DEBUG("Does it have overlap in the beginning: " << path2->HasOverlapedBegin());
-            path2->PrintDEBUG();
-            DEBUG(" >>>> ")
-            path1->PrintDEBUG();
-            DEBUG(" ==== ");
-            path2->GetConjPath()->PopBack(last2 + 1);
-        } else if (last2 == size2 - 1 && del_all) {
-            DEBUG("Detaching overlap from " << path2->GetId() << " because of "<< path1->GetId());
-            DEBUG("Does it have overlap in the end: " << path2->HasOverlapedEnd());
-            path2->PrintDEBUG();
-            DEBUG(" >>>> ")
-            path1->PrintDEBUG();
-            DEBUG(" ==== ");
-            path2->PopBack(last1 + 1 - first1);
-        } else if (first1 == 0 && del_all) {
-            DEBUG("Detaching overlap from " << path1->GetConjPath()->GetId() << " because of "<< path2->GetId());
-            DEBUG("Does it have overlap in the end: " << path1->HasOverlapedBegin());
-            path1->PrintDEBUG();
-            DEBUG(" >>>> ")
-            path2->PrintDEBUG();
-            DEBUG(" ==== ");
-            path1->GetConjPath()->PopBack(last1 + 1);
-        } else if (last1 == size1 - 1 && del_all) {
-            DEBUG("Detaching overlap from " << path1->GetId() << " because of "<< path2->GetId());
-            DEBUG("Does it have overlap in the end: " << path1->HasOverlapedBegin());
-            path1->PrintDEBUG();
-            DEBUG(" >>>> ")
-            path2->PrintDEBUG();
-            DEBUG(" ==== ");
-            path1->PopBack(last1 + 1 - first1);
-        } else {
-            return false;
-        }
-        return true;
-    }
-
-    std::vector<EdgeId> GetSortedEdges() const {
-        std::set<EdgeId> edges_set;
-        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            edges_set.insert(*iter);
-            edges_set.insert(g_.conjugate(*iter));
-        }
-        std::vector<EdgeId> edges(edges_set.begin(), edges_set.end());
-        std::sort(edges.begin(), edges.end(), EdgeLengthAndIdComparator(g_));
-        return edges;
-    }
-
-    bool HasAlreadyOverlapedEnd(BidirectionalPath * path) const {
-        return !path->IsOverlap() and path->HasOverlapedEnd();
-    }
-
-    bool HasAlreadyOverlapedBegin(BidirectionalPath * path) const {
-        return !path->IsOverlap() and path->HasOverlapedBegin();
-    }
-
-    bool IsSamePath(BidirectionalPath * path1,
-                    BidirectionalPath * path2) const {
-        return *path2 == *path1 or *path2 == *path1->GetConjPath();
-    }
-
-    void RemoveOverlap(PathContainer& paths, BidirectionalPath* path1,
-                       BidirectionalPath* path2, size_t overlap_size) const {
-        BidirectionalPath* conj2 = path2->GetConjPath();
-        if (path1->IsOverlap() && overlap_size == path1->Size()) {
-            DEBUG("Detaching overlap from " << path2->GetConjPath()->GetId() << " because of "<< path1->GetId());
-            path2->PrintDEBUG();
-            path1->PrintDEBUG();
-            conj2->PopBack(overlap_size);
-            path2->SetOverlapedBeginTo(path1);
-        } else if (path2->IsOverlap() && path2->Size() == overlap_size) {
-            DEBUG("Detaching overlap from " << path1->GetId() << " because of "<< path2->GetId());
-            path1->PrintDEBUG();
-            path2->PrintDEBUG();
-            path1->PopBack(overlap_size);
-            path1->SetOverlapedEndTo(path2);
-        } else if (overlap_size < path2->Size()
-                && overlap_size < path1->Size()) {
-            BidirectionalPath *overlap = new BidirectionalPath(g_, path1->Back());
-            BidirectionalPath *conj_overlap = new BidirectionalPath(g_, g_.conjugate(path1->Back()));
-            SubscribeCoverageMap(overlap);
-            SubscribeCoverageMap(conj_overlap);
-            paths.AddPair(overlap, conj_overlap);
-            DEBUG("Detaching overlap " << path1->GetId() << " and " << conj2->GetId());
-            path1->PrintDEBUG();
-            conj2->PrintDEBUG();
-            path1->PopBack();
-            conj2->PopBack();
-
-            for (size_t i = 1; i < overlap_size; ++i) {
-                conj_overlap->PushBack(g_.conjugate(path1->Back()));
-                path1->PopBack();
-                conj2->PopBack();
-            }
-            overlap->SetOverlap(true);
-            path1->SetOverlapedEndTo(overlap);
-            path2->SetOverlapedBeginTo(overlap);
-        }
-    }
-
-    void FindAndRemovePathOverlap(PathContainer& all_paths,
-                                  BidirectionalPath* path1) const {
-        int last = (int) path1->Size() - 1;
-        if (last <= 0 or coverage_map_.GetCoverage(path1->At(last)) <= 1) {
-            return;
-        }
-        BidirectionalPathSet paths =
-                coverage_map_.GetCoveringPaths(path1->At(last));
-        BidirectionalPath* overlap_path = NULL;
-        size_t overlap_size = 0;
-        for (auto path_iter = paths.begin(); path_iter != paths.end();
-                ++path_iter) {
-            if (IsSamePath(*path_iter, path1)) {
+    bool IsRedundant(PathPtr path) const {
+        TRACE("Checking if path redundant " << path->GetId());
+        for (auto candidate : helper_.FindCandidatePaths(*path)) {
+            TRACE("Considering candidate " << candidate->GetId());
+//                VERIFY(candidate != path && candidate != path->GetConjPath());
+            if (candidate == path || candidate == path->GetConjPath())
                 continue;
-            }
-            size_t over_size = path1->OverlapEndSize(*path_iter);
-            if (over_size > overlap_size) {
-                overlap_size = over_size;
-                overlap_path = *path_iter;
-            } else if (over_size == overlap_size &&
-                    (overlap_path == NULL || (*path_iter)->GetId() < overlap_path->GetId())) {
-                overlap_path = *path_iter;
-            }
-        }
-        if (overlap_path == NULL) {
-            return;
-        }
-        if (overlap_size > 0) {
-            RemoveOverlap(all_paths, path1, overlap_path, overlap_size);
-        }
-    }
-
-    class EdgeLengthAndIdComparator {
-    public:
-        EdgeLengthAndIdComparator(const Graph& g)
-                : g_(g) {
-        }
-        bool operator()(const EdgeId& e1, const EdgeId& e2) const {
-            if (g_.length(e1) > g_.length(e2)) {
+            if (equal_only_ ? helper_.IsEqual(*path, *candidate) : helper_.IsSubpath(*path, *candidate)) {
                 return true;
             }
-            if (g_.length(e2) > g_.length(e1)) {
-                return false;
-            }
-            return e1.int_id() < e2.int_id();
         }
-    private:
-        const Graph& g_;
-    };
+        return false;
+    }
 
-    const Graph& g_;
-    GraphCoverageMap& coverage_map_;
-protected:
-    DECL_LOGGER("PEResolver")
+public:
+
+    PathDeduplicator(const Graph &g,
+                     PathContainer &paths,
+                     GraphCoverageMap &coverage_map,
+                     size_t min_edge_len,
+                     size_t max_diff,
+                     bool equal_only) :
+            g_(g),
+            paths_(paths),
+            equal_only_(equal_only),
+            helper_(g, coverage_map, min_edge_len, max_diff) {}
+
+    //TODO use path container filtering?
+    void Deduplicate() {
+        for (auto path_pair : paths_) {
+            auto path = path_pair.first;
+            if (IsRedundant(path)) {
+                TRACE("Clearing path " << path->str());
+                path->Clear();
+            }
+        }
+    }
+
+private:
+    DECL_LOGGER("PathDeduplicator");
 };
+
+inline void Deduplicate(const Graph &g, PathContainer &paths, GraphCoverageMap &coverage_map,
+                 size_t min_edge_len, size_t max_path_diff,
+                 bool equal_only = false) {
+    //sorting is currently needed to retain longest paths
+    paths.SortByLength(false);
+    PathDeduplicator deduplicator(g, paths, coverage_map, min_edge_len, max_path_diff, equal_only);
+    deduplicator.Deduplicate();
+    paths.FilterEmptyPaths();
+}
 
 class PathExtendResolver {
 
-protected:
     const Graph& g_;
     size_t k_;
 
@@ -486,88 +292,45 @@ public:
         return paths;
     }
 
-    void RemoveEqualPaths(PathContainer &paths, GraphCoverageMap &coverage_map,
-                          size_t min_edge_len) const  {
-
-        SimpleOverlapRemover remover(g_, coverage_map);
-        remover.RemoveSimilarPaths(paths, min_edge_len, min_edge_len, true, false, false, false, false);
-    }
-
-    void RemoveRNAOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
-                          size_t min_edge_len, size_t max_path_diff) const  {
-        SimpleOverlapRemover remover(g_, coverage_map);
-        remover.CutPseudoSelfConjugatePaths(paths);
-
-        remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, true, false, false, false, false);
-
-        remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, false, true, false, false, false);
-
-        remover.RemoveOverlaps(paths);
-
-        remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, true, false, false, false, false);
-    }
-
     void RemoveOverlaps(PathContainer &paths, GraphCoverageMap &coverage_map,
                         size_t min_edge_len, size_t max_path_diff,
-                        bool add_overlaps_begin) const {
-        SimpleOverlapRemover remover(g_, coverage_map);
+                        bool end_start_only, bool cut_all) const {
+        //sorting is currently needed to retain overlaps in longest paths
+        paths.SortByLength(false);
+        INFO("Removing overlaps");
+        //VERIFY(min_edge_len == 0 && max_path_diff == 0);
 
-        remover.CutPseudoSelfConjugatePaths(paths);
+        INFO("Deduplicating paths");
+        Deduplicate(g_, paths, coverage_map, min_edge_len, max_path_diff);
 
-        remover.CutNonUniqueSuffix(paths);
-        //writer.WritePathsToFASTA(paths, output_dir + "/before.fasta");
-        //DEBUG("Removing subpaths");
-        //delete not only eq,
-        remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, false, true, false, false, add_overlaps_begin);
-        //writer.WritePathsToFASTA(paths, output_dir + "/remove_similar.fasta");
-        //DEBUG("Remove overlaps")
-        remover.RemoveOverlaps(paths);
-        //writer.WritePathsToFASTA(paths, output_dir + "/after_remove_overlaps.fasta");
-        remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, true, false, false, false, add_overlaps_begin);
-        //writer.WritePathsToFASTA(paths, output_dir + "/remove_equal.fasta");
-        //DEBUG("remove similar path. Max difference " << max_overlap);
-        remover.RemoveSimilarPaths(paths, min_edge_len, max_path_diff, false, true, true, true, add_overlaps_begin);
-        DEBUG("end removing");
-    }
+        INFO("Deduplicated");
 
-    void RemoveMatePairEnds(PathContainer& paths, size_t min_edge_len) const {
-        DEBUG("remove mp ends");
-        for (size_t i = 0; i < paths.size(); ++i) {
-            RemoveMatePairEnd(*paths.Get(i), min_edge_len);
-            RemoveMatePairEnd(*paths.GetConjugate(i), min_edge_len);
-        }
+        OverlapRemover overlap_remover(g_, paths, coverage_map,
+                                             min_edge_len, max_path_diff);
+        INFO("Marking overlaps");
+        overlap_remover.MarkOverlaps(end_start_only, !cut_all);
+
+        INFO("Splitting paths");
+        PathSplitter splitter(overlap_remover.overlaps(), paths, coverage_map);
+        splitter.Split();
+        //splits are invalidated after this point
+
+        INFO("Deduplicating paths");
+        Deduplicate(g_, paths, coverage_map, min_edge_len, max_path_diff);
+        INFO("Overlaps removed");
     }
 
     void AddUncoveredEdges(PathContainer &paths, GraphCoverageMap &coverageMap) const {
-        std::set<EdgeId> included;
-        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.ConstEdgeBegin(true); !iter.IsEnd(); ++iter) {
             EdgeId e = *iter;
-            if (included.count(e) == 0 && !coverageMap.IsCovered(e)) {
-                BidirectionalPath* path = new BidirectionalPath(g_, e);
-                BidirectionalPath* conj = new BidirectionalPath(g_, g_.conjugate(e));
-                path->Subscribe(&coverageMap);
-                conj->Subscribe(&coverageMap);
-                coverageMap.BackEdgeAdded(path->At(0), path, Gap());
-                coverageMap.BackEdgeAdded(conj->At(0), conj, Gap());
-                paths.AddPair(path, conj);
-                included.insert(e);
-                included.insert(g_.conjugate(e));
+            if (!coverageMap.IsCovered(e)) {
+                AddPath(paths, BidirectionalPath(g_, e), coverageMap);
             }
         }
     }
 
-private:
-    void RemoveMatePairEnd(BidirectionalPath& path, size_t min_edge_len) const {
-        int pos = int(path.Size()) - 1;
-        while (pos > 0 and g_.length(path.At(pos)) < min_edge_len) {
-            path.PopBack();
-            pos--;
-        }
-    }
 protected:
     DECL_LOGGER("PEResolver")
 };
 
-} /* PE_RESOLVER_HPP_ */
-
-#endif
+}

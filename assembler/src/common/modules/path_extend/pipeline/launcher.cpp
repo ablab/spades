@@ -21,7 +21,6 @@ namespace path_extend {
 using namespace debruijn_graph;
 using namespace std;
 
-
 vector<shared_ptr<ConnectionCondition>>
     PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage& edge_storage) const {
 
@@ -216,22 +215,40 @@ void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const stri
     }
 }
 
+void FilterInterstandBulges(PathContainer &paths) {
+    DEBUG ("Try to delete paths with interstand bulges");
+    for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+        if (EndsWithInterstrandBulge(*iter.get())) {
+            iter.get()->PopBack();
+        }
+        if (EndsWithInterstrandBulge(*iter.getConjugate())) {
+            iter.getConjugate()->PopBack();
+        }
+    }
+    DEBUG("deleted paths with interstand bulges");
+}
+
 void PathExtendLauncher::FinalizePaths(PathContainer &paths,
                                        GraphCoverageMap &cover_map,
                                        const PathExtendResolver &resolver) const {
+    INFO("Finalizing paths");
+    INFO("Initial deduplicating paths");
+    Deduplicate(gp_.g, paths, cover_map, params_.min_edge_len,
+                         params_.max_path_diff, /*equal_only*/ false);
 
     if (params_.pset.remove_overlaps) {
-        resolver.RemoveOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff, params_.pset.cut_all_overlaps);
-    } else if (params_.mode == config::pipeline_type::rna) {
-        resolver.RemoveRNAOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff);
+        resolver.RemoveOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff,
+                                //TODO introduce config parameter
+                                params_.mode == config::pipeline_type::rna,
+                                params_.pset.cut_all_overlaps);
     } else {
-        resolver.RemoveEqualPaths(paths, cover_map, params_.min_edge_len);
+        INFO("Overlaps will not be removed");
     }
 
+    //TODO do we still need it?
     if (params_.avoid_rc_connections) {
-        paths.FilterInterstandBulges();
+        FilterInterstandBulges(paths);
     }
-    paths.FilterEmptyPaths();
     resolver.AddUncoveredEdges(paths, cover_map);
 
     if (params_.pset.path_filtration.enabled) {
@@ -241,10 +258,9 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
                            params_.pset.path_filtration.min_coverage).filter(paths);
         IsolatedPathFilter(gp_.g, params_.pset.path_filtration.isolated_min_length).filter(paths);
     }
+    paths.FilterEmptyPaths();
     paths.SortByLength();
-    for (auto &path : paths) {
-        path.first->ResetOverlaps();
-    }
+    INFO("Paths finalized");
 }
 
 void PathExtendLauncher::TraverseLoops(PathContainer &paths, GraphCoverageMap &cover_map) const {
@@ -318,6 +334,7 @@ void PathExtendLauncher::FillLongReadsCoverageMaps() {
 
 void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
     //FIXME magic constants
+    //FIXME need to change for correct usage of prelimnary contigs in loops
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer_pb(gp_, 500, 0.5);
 
     INFO("Filling backbone edges for long reads scaffolding...");
@@ -447,21 +464,17 @@ void PathExtendLauncher::Launch() {
                                          params_.max_path_diff);
 
     auto paths = resolver.ExtendSeeds(seeds, composite_extender);
-    paths.FilterEmptyPaths();
-    paths.SortByLength();
     DebugOutputPaths(paths, "raw_paths");
 
-    FinalizePaths(paths, cover_map, resolver);
-    DebugOutputPaths(paths, "before_loop_traversal");
-
-    //FIXME think about ordering of path polisher vs loop traversal
+    //TODO think about ordering of path polisher vs loop traversal
     TraverseLoops(paths, cover_map);
     DebugOutputPaths(paths, "loop_traveresed");
 
+    //TODO does path polishing correctly work with coverage map
     PolishPaths(paths, gp_.contig_paths, cover_map);
     DebugOutputPaths(gp_.contig_paths, "polished_paths");
 
-    //FIXME why do we need new polished map?
+    //TODO use move assignment to original map here
     GraphCoverageMap polished_map(gp_.g, gp_.contig_paths, true);
     FinalizePaths(gp_.contig_paths, polished_map, resolver);
     DebugOutputPaths(gp_.contig_paths, "final_paths");

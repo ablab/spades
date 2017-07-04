@@ -16,6 +16,7 @@
 #include "simplification_test.hpp"
 #include "order_and_law_test.hpp"
 #include "path_extend_test.hpp"
+#include "overlap_removal_test.hpp"
 #include "overlap_analysis_test.hpp"
 //#include "detail_coverage_test.hpp"
 #include "paired_info_test.hpp"

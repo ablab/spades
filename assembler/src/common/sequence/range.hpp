@@ -83,6 +83,5 @@ public:
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Range& range) {
-    os << "[" << (range.start_pos + 1) << " - " << range.end_pos << "]";
-    return os;
+    return os << "[" << range.start_pos << ", " << range.end_pos << ")";
 }

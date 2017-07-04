@@ -59,6 +59,12 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
         }
     }
 
+    std::string RangeStr(const Range &range) const {
+        std::stringstream ss;
+        ss << "[" << (range.start_pos + 1) << " - " << range.end_pos << "]";
+        return ss.str();
+    }
+
 public:
     MappingRange EraseAndExtract(set<MappingRange> &ranges, MappingRange new_pos) const {
         auto it = ranges.lower_bound(new_pos);
@@ -142,9 +148,11 @@ public:
         vector<EdgePosition> positions = GetEdgePositions(edge);
         size_t counter = 0;
         for (auto pos_it = positions.begin(), end = positions.end(); pos_it != end; ++pos_it) {
-            ss << "(" << pos_it->contigId << ": " << pos_it->mr << ")\\n";
+            ss << "(" << pos_it->contigId << ": "
+               << RangeStr(pos_it->mr.initial_range) << " --> "
+               << RangeStr(pos_it->mr.mapped_range) << ")\\n";
             counter++;
-            if(counter > 30) {
+            if (counter > 30) {
                 ss << "and many more. Totally " << positions.size() << " positions.";
                 break;
             }

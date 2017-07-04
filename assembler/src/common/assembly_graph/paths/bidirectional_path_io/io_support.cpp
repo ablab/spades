@@ -85,8 +85,10 @@ void path_extend::TranscriptToGeneJoiner::Construct(const PathContainer &paths) 
 }
 
 std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const BidirectionalPath &path) const {
+    TRACE("Forming sequence for path " << path.str());
     //TODO what is it and why is it here?
-    if (path.IsInterstrandBulge() && path.Size() == 1) {
+    if (path.Size() == 1 && EndsWithInterstrandBulge(path)) {
+        TRACE("Interstrand bulge edge");
         return g_.EdgeNucls(path.Back()).Subseq(k_, g_.length(path.Back())).str();
     }
 
@@ -98,20 +100,25 @@ std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const Bidirectional
 
     for (size_t i = 0; i < path.Size(); ++i) {
         Gap gap = path.GapAt(i);
+        TRACE("Adding edge " << g_.str(path[i]));
+        TRACE("Gap " << gap);
 
         answer.erase((gap.trash_previous <= answer.length()) ?
                             answer.length() - gap.trash_previous : 0);
 
         int overlap_after_trim = gap.overlap_after_trim(k_);
+        TRACE("Overlap after trim " << overlap_after_trim);
         if (overlap_after_trim < 0) {
             answer += std::string(abs(overlap_after_trim), 'N');
             overlap_after_trim = 0;
         }
+        TRACE("Corrected overlap after trim " << overlap_after_trim);
 
         VERIFY(overlap_after_trim >= 0);
 
         answer += g_.EdgeNucls(path[i]).Subseq(gap.trash_current + overlap_after_trim).str();
     }
+    TRACE("Sequence formed");
 
     return answer;
 }
