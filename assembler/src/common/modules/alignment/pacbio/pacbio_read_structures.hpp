@@ -15,6 +15,7 @@
 #include <set>
 
 namespace pacbio {
+static const int STRING_DIST_INF = 1e8;
 typedef omnigraph::GapDescription<debruijn_graph::Graph> GapDescription;
 
 template<class T>
@@ -219,9 +220,9 @@ inline int StringDistance(string &a, string &b) {
         int high = min(min(b_len, i + d + 1), i + a_len - b_len + d + 1);
         TRACE(low << " " <<high);
         for (int j = low; j < high; j++)
-            table[i][j] = 1000000;
+            table[i][j] = STRING_DIST_INF;
     }
-    table[a_len - 1][b_len - 1] = 1000000;
+    table[a_len - 1][b_len - 1] = STRING_DIST_INF;
     table[0][0] = 0;
 //free deletions on begin
 //      for(int j = 0; j < b_len; j++)

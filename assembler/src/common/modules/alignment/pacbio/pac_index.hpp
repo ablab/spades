@@ -166,7 +166,6 @@ public:
             }
         }
     }
-
     ClustersSet GetOrderClusters(const Sequence &s) const {
         MappingDescription descr = GetSeedsFromRead(s);
         ClustersSet res;
@@ -745,7 +744,7 @@ public:
         int s_len = int(s.size());
         string seq_string = s.Subseq(start_pos, min(end_pos + 1, s_len)).str();
         size_t best_path_ind = paths.size();
-        size_t best_score = std::numeric_limits<size_t>::max();
+        int best_score = STRING_DIST_INF;
         DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
         if (paths.size() == 0) {
             DEBUG ("no paths");
@@ -767,7 +766,7 @@ public:
                     DEBUG(g_.int_id(*j_iter));
                 }
             }
-            size_t cur_score = StringDistance(cur_string, seq_string);
+            int cur_score = StringDistance(cur_string, seq_string);
             if (paths.size() > 1 && paths.size() < 10) {
                 DEBUG("score: "<< cur_score);
             }
@@ -777,7 +776,7 @@ public:
             }
         }
         DEBUG(best_score);
-        if (best_score == std::numeric_limits<size_t>::max())
+        if (best_score == STRING_DIST_INF)
             return vector<EdgeId>(0);
         if (paths.size() > 1 && paths.size() < 10) {
             DEBUG("best score found! Path " <<best_path_ind <<" score "<< best_score);
@@ -866,6 +865,7 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
         int quality = (int) keys.size();
         if (quality > 1000) {
             DEBUG ("Ignoring repretive kmer")
+            continue;
         }
         for (auto iter = keys.begin(); iter != keys.end(); ++iter) {
 
