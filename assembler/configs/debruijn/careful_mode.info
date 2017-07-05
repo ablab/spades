@@ -22,7 +22,7 @@ simp
     ; relative coverage erroneous component remover:
     rcc
     {
-       ; enabled false
+        enabled false
     }
 
     init_clean

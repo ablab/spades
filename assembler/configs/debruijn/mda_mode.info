@@ -39,7 +39,7 @@ simp
     rcc
     {
         enabled true
-        coverage_gap    10.
+        coverage_gap    20.
         max_length_coeff    2.0
         max_length_with_tips_coeff   3.0
         max_vertex_cnt      30
