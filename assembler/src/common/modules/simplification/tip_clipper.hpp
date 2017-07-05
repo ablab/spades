@@ -168,7 +168,7 @@ public:
                 end = this->g().length(e);
             else return false;
         }
-        std::array<size_t, 4> counts{};
+        std::array<size_t, 4> counts = std::array<size_t, 4>();
         const Sequence &s_edge = this->g().EdgeNucls(e);
 
         for (size_t position = start; position < end; position ++) {
