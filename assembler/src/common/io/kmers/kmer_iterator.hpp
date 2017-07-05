@@ -35,7 +35,7 @@ std::vector<raw_kmer_iterator<Seq>> make_kmer_iterator(const std::string &FileNa
     size_t chunk = round_up(file_size / amount,
                             getpagesize() * Seq::GetDataSize(K) * sizeof(typename Seq::DataType));
     size_t offset = 0;
-    if (chunk > file_size)
+    if (chunk == 0 || chunk > file_size)
         chunk = file_size;
 
     while (offset < file_size) {
