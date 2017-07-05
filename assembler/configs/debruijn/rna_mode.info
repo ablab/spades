@@ -105,6 +105,8 @@ params {
 
     scaffolding_mode old
 
+    cut_all_overlaps  true
+
     extension_options
     {
         use_default_single_threshold true
