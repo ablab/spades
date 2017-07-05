@@ -102,7 +102,6 @@ de
 pe {
 params {
     multi_path_extend   true
-    remove_overlaps     false
 
     scaffolding_mode old
 
