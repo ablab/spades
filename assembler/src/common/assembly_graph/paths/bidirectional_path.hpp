@@ -638,14 +638,6 @@ inline bool EqualEnds(const BidirectionalPath& path1, size_t pos1, const Bidirec
 
 typedef std::pair<BidirectionalPath*, BidirectionalPath*> PathPair;
 
-inline bool compare_path_pairs(const PathPair& p1, const PathPair& p2) {
-    if (p1.first->Length() != p2.first->Length() || p1.first->Size() == 0 || p2.first->Size() == 0) {
-        return p1.first->Length() > p2.first->Length();
-    }
-    const Graph& g = p1.first->graph();
-    return g.int_id(p1.first->Front()) < g.int_id(p2.first->Front());
-}
-
 class PathComparator {
 public:
     bool operator()(const BidirectionalPath& p1, const BidirectionalPath& p2) const {
@@ -751,7 +743,13 @@ public:
 
     void SortByLength(bool desc = true) {
         std::stable_sort(data_.begin(), data_.end(), [=](const PathPair& p1, const PathPair& p2) {
-            return compare_path_pairs(p1, p2) == desc;
+            if (p1.first->Length() != p2.first->Length() || p1.first->Empty()) {
+                VERIFY(p2.first->Empty() || !p1.first->Empty());
+                return desc ? p1.first->Length() > p2.first->Length()
+                            : p1.first->Length() < p2.first->Length();
+            }
+            const Graph& g = p1.first->graph();
+            return g.int_id(p1.first->Front()) < g.int_id(p2.first->Front());
         });
     }
 
