@@ -88,9 +88,9 @@ def group_reads(dir, wildcards):
 left_reads, right_reads = reads_input(group_reads)
 
 def is_fastq(wildcards):
-    name = wildcards.get("sample")
+    name = getattr(wildcards, "sample", None)
     if not name:
-        name = GROUPS[wildcards.get("group")][0]
+        name = GROUPS[wildcards.group][0]
     for ext in {".fastq", ".fq", ".fastq.gz", "fq.gz"}:
         if SAMPLE_READS[name][0].endswith(ext):
             return True
