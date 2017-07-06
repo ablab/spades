@@ -307,9 +307,8 @@ rule prop_all:
 rule choose_bins:
     input:   "binning/{}/unified_binning.tsv".format(BINNER)
     output:  "binning/{}/filtered_bins.tsv".format(BINNER)
-    log:     "binning/choose_bins.log"
     message: "Filter small bins"
-    shell:   "Rscript {SCRIPTS}/len_gen.R {input} {output} >{log} 2>&1"
+    shell:   "{SCRIPTS}/choose_bins.py {input} >{output} 2>&1"
 
 rule choose_samples:
     input:   profs="binning/{}/bins.prof".format(BINNER), bins="binning/{}/filtered_bins.tsv".format(BINNER)

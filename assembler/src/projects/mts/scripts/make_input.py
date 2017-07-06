@@ -10,6 +10,8 @@ import argparse
 import os
 import sys
 
+from common import contig_length
+
 parser = argparse.ArgumentParser(description="Binner input formatter")
 
 parser.add_argument("--type", "-t", choices=["canopy", "concoct", "gattaca", "binsanity"], help="Binner type", default="canopy")
@@ -58,15 +60,8 @@ class GattacaFormatter:
     def header(self, file, samples):
         print("\t".join(["contig", "length"] + ["cov_mean_" + sample for sample in samples]), file=out)
 
-    def get_len(self, x):
-        if "(" in x:
-            start, end = re.search("\((\d+)_(\d+)\)", x)
-            return end - start
-        else:
-            return int(x.split("_")[3])
-
     def profile(self, file, contig, profile):
-        l = self.get_len(contig)
+        l = contig_length(contig)
         print(contig, l, profile.replace(" ", "\t"), sep="\t", file=out)
 
 formatters = {"canopy": CanopyFormatter(), "concoct": ConcoctFormatter(), "gattaca": GattacaFormatter(), "binsanity": BinSanityFormatter()}

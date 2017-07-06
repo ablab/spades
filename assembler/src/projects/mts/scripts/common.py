@@ -6,6 +6,7 @@ except:
 
 import os
 import os.path
+import re
 
 default_values = {
     "threads":     16,
@@ -88,6 +89,13 @@ def load_annotation(file, normalize=True):
             else:
                 res[id] = set(bins)
     return res
+
+def contig_length(name):
+    if "(" in name:
+        start, end = re.search("\((\d+)_(\d+)\)", name).groups()
+        return int(end) - int(start)
+    else:
+        return int(name.split("_")[3])
 
 class Row:
     def __init__(self, data, colnames):
