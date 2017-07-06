@@ -31,14 +31,14 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongReadsExtender(size_t lib_
         resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().read_length);
     }
     INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
-
+    bool investigate_short_loop = lib.is_contig_lib() || lib.is_long_read_lib() || support_.UseCoverageResolverForSingleReads(lib.type());
 
     auto long_read_ec = MakeLongReadsExtensionChooser(lib_index, read_paths_cov_map);
     return make_shared<SimpleExtender>(gp_, cover_map_,
                                        used_unique_storage_,
                                        long_read_ec,
                                        resolvable_repeat_length_bound,
-                                       true, /* investigate short loops */
+                                       investigate_short_loop, /* investigate short loops */
                                        support_.UseCoverageResolverForSingleReads(lib.type()));
 }
 
