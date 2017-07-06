@@ -743,8 +743,7 @@ public:
 
     void SortByLength(bool desc = true) {
         std::stable_sort(data_.begin(), data_.end(), [=](const PathPair& p1, const PathPair& p2) {
-            if (p1.first->Length() != p2.first->Length() || p1.first->Empty()) {
-                VERIFY(p2.first->Empty() || !p1.first->Empty());
+            if (p1.first->Empty() || p2.first->Empty() || p1.first->Length() != p2.first->Length()) {
                 return desc ? p1.first->Length() > p2.first->Length()
                             : p1.first->Length() < p2.first->Length();
             }
