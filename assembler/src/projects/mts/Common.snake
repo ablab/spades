@@ -43,8 +43,12 @@ NAME_TEMPLATE = "(\w+\.?)?\d+"
 
 #Group samples
 GROUP_SAMPLES = config["assembly"]["groups"]
+#Form /N groups
+if type(GROUP_SAMPLES) == str and GROUP_SAMPLES[0] == "/":
+    group_size = SAMPLE_COUNT // int(GROUP_SAMPLES[1:])
+    GROUP_SAMPLES = [["sample"+str(j) for j in range(i, min(i + group_size, SAMPLE_COUNT + 1))]
+                     for i in range(1, SAMPLE_COUNT, group_size)]
 USED_SAMPLES = set(chain(*GROUP_SAMPLES))
-#TODO: double-check
 #Replace the wildcard group with unused samples
 if GROUP_SAMPLES and GROUP_SAMPLES[-1] == "*":
     GROUP_SAMPLES[-1] = [sample for sample in SAMPLES if sample not in USED_SAMPLES]
@@ -60,10 +64,9 @@ GROUPS = dict()
 group_id = 1
 for group in GROUP_SAMPLES:
     if len(group) == 1:
-        key = group[0]
+        key = group[0] #Groups of a single sample are simply called sampleXX
     else:
         key = "group" + str(group_id)
-        #SAMPLE_READS[key] = ["reads/{}/{}.fastq".format(key, dir) for dir in ["left", "right"]]
         SAMPLE_READS[key] = ([SAMPLE_READS[s][0] for s in group], [SAMPLE_READS[s][1] for s in group])
         group_id += 1
     GROUPS[key] = group
@@ -85,9 +88,13 @@ def group_reads(dir, wildcards):
 left_reads, right_reads = reads_input(group_reads)
 
 def is_fastq(wildcards):
-    name = wildcards.get("group", wildcards.get("sample"))
-    _, ext = os.path.splitext(SAMPLE_READS[name][0])
-    return (ext in {".fastq", ".fq", ".fastq.gz", "fq.gz"})
+    name = wildcards.get("sample")
+    if not name:
+        name = GROUPS[wildcards.get("group")][0]
+    for ext in {".fastq", ".fq", ".fastq.gz", "fq.gz"}:
+        if SAMPLE_READS[name][0].endswith(ext):
+            return True
+    return False
 
 rule combine_contigs:
     input:   expand("{{dir}}/{group}.fasta", group=GROUPS)
