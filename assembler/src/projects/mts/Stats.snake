@@ -51,13 +51,18 @@ onstart:
 
 enabled_stats = []
 if config["stats"].get("refs"):
-    enabled_stats.append["stats/summary/gf_binning.tsv"]
+    enabled_stats.append("stats/summary/gf_binning.tsv")
     if config["propagation"]["enabled"]:
         enabled_stats.append("stats/summary/gf_propagation.tsv")
     if config["reassembly"]["enabled"]:
         enabled_stats.append("stats/summary/reassembly_summary.tsv")
-if config["stats"].get("checkm", False):
-    enabled_stats.append("stats/summary/checkm_reassembly.tsv")
+
+stats_targets = {"checkm": "checkm_{}.tsv",
+                 "pca":    "pca_{}.png",
+                 "tsne":   "tsne_{}.png"}
+for stage in ["binning", "reassembly"]:
+    for stat in config["stats"].get(stage, []):
+        enabled_stats.append(os.path.join("stats/summary", stats_targets[stat].format(stage)))
 
 rule all_stats:
     input:   enabled_stats
@@ -160,15 +165,16 @@ rule checkm:
         #         break
         ext = ".fasta"
         shell("set +u; source activate concoct_env; set -u \n"
-             "checkm tree -x {ext} {params.dir} {params.out} >{log} \n"
-             "checkm tree_qa -o 2 --tab_table -f {output.tree_qa} {params.out} >>{log}\n"
-             "checkm lineage_set {params.out} {params.out}/lineage.ms >>{log}\n"
-             "checkm analyze -x fasta {params.out}/lineage.ms {params.dir} {params.out} >>{log}\n"
-             "checkm qa -o 2 --tab_table -f {output.qa} {params.out}/lineage.ms {params.out} >>{log}")
+             "checkm tree -x {ext} {params.dir} {params.out} >{log} 2>&1\n"
+             "checkm tree_qa -o 2 --tab_table -f {output.tree_qa} {params.out} >>{log} 2>&1\n"
+             "checkm lineage_set {params.out} {params.out}/lineage.ms >>{log} 2>&1\n"
+             "checkm analyze -x fasta {params.out}/lineage.ms {params.dir} {params.out} >>{log} 2>&1\n"
+             "checkm qa -o 2 --tab_table -f {output.qa} {params.out}/lineage.ms {params.out} >>{log} 2>&1")
 
 rule parse_checkm:
     input:   qa=rules.checkm.output.qa, tree_qa=rules.checkm.output.tree_qa
     output:  "stats/summary/checkm_{stage}.tsv"
+    message: "Parse CheckM results for {wildcards.stage}"
     run:
         table = pandas.read_table(input.qa, dtype="str")
         tree_table = pandas.read_table(input.tree_qa, dtype="str", na_filter=False)
@@ -183,32 +189,25 @@ rule parse_checkm:
 #---- PCA ----------------------------------------------------------------------
 # FRAGMENT_NAMES_BY_STAGE = {"reassembly": CAG_EDGES,
 #                            "assembly": list(GROUPS.keys())}
-#
-# def fragments_info_by_stage(wildcards):
-#     fragments=FRAGMENT_NAMES_BY_STAGE[wildcards.stage]
-#     return expand("stats/q_{stage}/runs_per_reference/{ref}/{fs}.info", stage=wildcards.stage, ref=wildcards.ref, fs=fragments)
-#
-# rule pca:
-#     input:   "binning/canopy/profiles.in", "binning/canopy/binning.out", "stats/q_{stage}/total.info"
-#     output:  "stats/summary/pca_{stage}.png"
-#     message: "Drawing PCA visualisation for {wildcards.stage}"
-#     shell:   "Rscript {SCRIPTS}/pca.R {input} {output}"
-#
-# # Run this
-# rule pca_all:
-#     input:   expand("stats/summary/pca_{stage}.png", stage=FRAGMENT_NAMES_BY_STAGE.keys())
-#     message: "Drew all PCAs"
 
+def fragments_info_by_stage(wildcards):
+    fragments=FRAGMENT_NAMES_BY_STAGE[wildcards.stage]
+    return expand("stats/q_{stage}/runs_per_reference/{ref}/{fs}.info", stage=wildcards.stage, ref=wildcards.ref, fs=fragments)
+
+rule pca:
+    input:   "binning/{}/profiles_{}.in".format(BINNER, PROFILER),
+             "binning/{}/unified_binning.tsv".format(BINNER),
+             #"stats/q_{stage}/total.info"
+    output:  "stats/summary/pca_{stage}.png"
+    message: "Drawing PCA visualisation for {wildcards.stage}"
+    shell:   "Rscript {SCRIPTS}/pca.R {input} {output}"
 
 #---- TSNE ----------------------------------------------------------------------
 
-# rule tsne:
-#     input:   profile="binning/canopy/profiles.in", binning="binning/canopy/binning.out"
-#     output:  "stats/summary/tsne_{stage}"
-#     message: "Drawing BH-TSNE visualisation for {wildcards.stage}"
-#     shell:   "python2 {SCRIPTS}/run_tsne.py {input.profile} {input.binning} {output} -l metaSPAdes --percent 1.0 --iteration 2000 --perplexity 50"
-#
-# # Run this
-# rule tsne_all:
-#     input:   expand("stats/summary/tsne_{stage}.pdf", stage=FRAGMENT_NAMES_BY_STAGE.keys())
-#     message: "Drew all TSNEs"
+rule tsne:
+    input:   "binning/{}/profiles_{}.in".format(BINNER, PROFILER),
+             "binning/{}/unified_binning.tsv".format(BINNER),
+    output:  "stats/summary/tsne_{stage}.png"
+    message: "Drawing BH-TSNE visualisation for {wildcards.stage}"
+    shell:   "python2 {SCRIPTS}/run_tsne.py {input} {output}"
+             " --percent 1.0 --iteration 2000 --perplexity 50"

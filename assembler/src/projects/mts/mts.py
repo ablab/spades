@@ -93,7 +93,7 @@ with cd(exec_dir):
     call_snake()
 
     if config.get("reassembly", dict()).get("enabled", True):
-        print("Step #1b - Ressembly")
+        print("Step #1b - Reassembly")
         call_snake(["--snakefile", "Reassembly.snake"])
 
     if args.stats:

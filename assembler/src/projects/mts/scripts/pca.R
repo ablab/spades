@@ -22,22 +22,23 @@ normalize <- function(X) {
   return (X / rowSums(X))
 }
 
-load_binning <- function(canopy_in, canopy_out) {
-  data <- read.table(canopy_in)
+load_binning <- function(profiles_in, binning_out) {
+  data <- read.table(profiles_in)
   data[,-1] <- normalize(data[,-1])
   names(data) <- c('contig', sapply(seq(1, dim(data)[2]-1, 1),
                                     function(x) {paste('mlt', x, sep='')}))
   data <- format_ids(data)
-  binned <- read.table(canopy_out)
-  names(binned) <- c('clust', 'contig')
+  binned <- read.table(binning_out)
+  names(binned) <- c('contig', 'bin')
   binned <- format_ids(binned)
   merge(x=data, y=binned, by='contig')
 }
 
-load_clusters <- function(canopy_in, canopy_out, int_contigs) {
-  data <- load_binning(canopy_in, canopy_out)
+load_clusters <- function(profiles_in, binning_out, int_contigs) {
+  data <- load_binning(profiles_in, binning_out)
+  print(head(data))
   if (missing(int_contigs)) {
-    pieces <- split(data, data$clust)[1:10]
+    pieces <- split(data, data$bin)[1:10]
     lims <- lapply(pieces, function(x) head(x, 500))
     do.call(rbind, c(lims, list(make.row.names=FALSE)))
   } else {
@@ -51,14 +52,14 @@ do_prc <- function(clusters) {
   prcomp(~ ., data = clusters[, grep('mlt', colnames(clusters))])
 }
 
-print_clusters <- function(pr, clust, image) {
+print_clusters <- function(pr, bin, image) {
   if (!missing(image))
     png(filename=image, width=1024, height=768)
-  lev <- levels(factor(clust))
+  lev <- levels(factor(bin))
   cols <- 1:length(lev)
   #layout(rbind(1,2), heights=c(7,1))
-  plot(pr$x, col = as.numeric(clust))#, xlim=c(-100, 200), ylim=c(-50,50))
-  a <- split(as.data.frame(pr$x), clust)
+  plot(pr$x, col = as.numeric(bin))#, xlim=c(-100, 200), ylim=c(-50,50))
+  a <- split(as.data.frame(pr$x), bin)
   for (l in lev) {
     x <- a[[l]]
     text(median(x$PC1), median(x$PC2), l)
@@ -74,7 +75,7 @@ local_data <- function() {
                             "/Volumes/Chihua-Sid/mts/out/70p_3.log")
 
   prc_data <- do_prc(clusters)
-  print_clusters(prc_data, clusters$clust)
+  print_clusters(prc_data, clusters$bin)
   prc_data
 }
 
@@ -91,4 +92,4 @@ if (length(args) < 4) {
 }
 
 prc_data <- do_prc(clusters)
-print_clusters(prc_data, clusters$clust, image_out)
+print_clusters(prc_data, clusters$bin, image_out)

@@ -81,20 +81,15 @@ def run_tsne(features_file, colors_file, output_prefix
              , lst=[]
              , draw_per = 1.0
              , iter = 1000
-             , perplexity = 50
-             , pipeline = "metaSPAdes"):
+             , perplexity = 50):
     # read data
-    if pipeline == "alternative":
-        data_df = pd.read_csv(features_file, sep='\t', header = None)
-        cluster_colors = pd.read_csv(colors_file, sep=',', header = None)
-    else:
-        data_df = pd.read_csv(features_file, sep=' ', header = None)
-        cluster_colors = pd.read_csv(colors_file, sep='\t', header = None)
+    data_df = pd.read_csv(features_file, sep=' ', header = None)
+    cluster_colors = pd.read_csv(colors_file, sep='\t', header = None)
 
     # make dataframe pretty
-    cluster_colors = cluster_colors.rename(columns={0:'color'})
+    cluster_colors = cluster_colors.rename(columns={1:'color'})
     cluster_colors["color"] = [int(x[3:]) for x in cluster_colors["color"].tolist()]
-    cluster_colors = cluster_colors.rename(columns={1:0})
+    cluster_colors = cluster_colors.rename(columns={0:0})
 
     # filter by samples
     if len(filter_sample) > 0:
@@ -203,11 +198,8 @@ def get_points(file):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("profile", help="profile information (depth)")
-    parser.add_argument("bining", help="file with bining results")
+    parser.add_argument("binning", help="file with binning results")
     parser.add_argument("output", help="path to pdf-file to save graph")
-    parser.add_argument("-l", "--pipeline", help="number of TSNE iterations",
-                        choices=["metaSPAdes", "alternative"],
-                        default="metaSPAdes")
     parser.add_argument("-p", "--percent", help="sets size of random subsample from profile to run TSNE",
                         type=float,
                         default=1.0)
@@ -228,14 +220,13 @@ def main():
 
     args = parser.parse_args()
     points = get_points(args.pointsfile)
-    run_tsne(args.profile, args.bining, args.output
+    run_tsne(args.profile, args.binning, args.output
              , args.samples
              , args.clusters
              , points
              , args.percent
              , args.iteration
-             , args.perplexity
-             , args.pipeline)
+             , args.perplexity)
 
 if __name__ == "__main__":
     main()
