@@ -175,7 +175,7 @@ public:
             counts[s_edge[position]]++;
         }
         size_t curm = *std::max_element(counts.begin(), counts.end());
-        if (curm > size_t(math::round(max_AT_percentage_ * double(end - start)))) {
+        if (math::gr(double(curm), max_AT_percentage_ * double(end - start))) {
             DEBUG("deleting edge" << s_edge.str());;
 			DEBUG("curm: " << curm);
             DEBUG("start end cutoff" << start << " " << end << " " << max_AT_percentage_ * double(this->g().length(e)));
