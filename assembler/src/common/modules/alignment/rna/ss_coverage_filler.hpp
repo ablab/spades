@@ -17,18 +17,18 @@ private:
 
     std::vector<SSCoverageStorage> tmp_storages_;
 
-    bool symmertic_;
+    bool symmetric_;
 
     void ProcessRange(size_t thread_index, const MappingPath<EdgeId>& read) {
         for (size_t i = 0; i < read.size(); ++i) {
             const auto& range = read[i].second;
             size_t kmer_count = range.mapped_range.end_pos - range.mapped_range.start_pos;
-            tmp_storages_[thread_index].IncreaseKmerCount(read[i].first, kmer_count, symmertic_);
+            tmp_storages_[thread_index].IncreaseKmerCount(read[i].first, kmer_count, symmetric_);
         }
     }
 public:
     SSCoverageFiller(const Graph& g, SSCoverageStorage& storage, bool symmertic = false):
-        g_(g), storage_(storage), tmp_storages_(), symmertic_(symmertic) {}
+        g_(g), storage_(storage), tmp_storages_(), symmetric_(symmertic) {}
 
     void StartProcessLibrary(size_t threads_count) override {
         tmp_storages_.clear();

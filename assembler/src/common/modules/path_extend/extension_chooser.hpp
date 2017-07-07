@@ -356,6 +356,7 @@ private:
             DEBUG("Split found at " << index);
             EdgeId path_edge_at_split = path[index - 1];
             EdgeId other_edge_at_split = GetOtherEdgeAtSplit(g_.EdgeEnd(path_edge_at_split), path_edge_at_split);
+            VERIFY(other_edge_at_split != EdgeId());
 
             if (IsCoverageSimilar(path_edge_at_split, other_edge_at_split, reverse)) {
                 DEBUG("Path edge and alternative is too similar: path = " << coverage_storage_.GetCoverage(path_edge_at_split, reverse) <<
@@ -424,17 +425,11 @@ private:
 
     EdgeId GetOtherEdgeAtSplit(VertexId split, EdgeId e) const {
         VERIFY(g_.IncomingEdgeCount(split) == 2);
-        vector<EdgeId> split_edges;
-        for (auto e : g_.IncomingEdges(split)) {
-            split_edges.push_back(e);
+        for (auto other : g_.IncomingEdges(split)) {
+            if (e != other)
+                return other;
         }
-        VERIFY(split_edges.size() == 2);
-
-        if (split_edges.front() == e)
-            return split_edges.back();
-        else
-            return split_edges.front();
-
+        return EdgeId();
     }
 
     DECL_LOGGER("SimpleCoverageExtensionChooser");

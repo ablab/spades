@@ -23,14 +23,13 @@ public:
 
     double GetCoverage(EdgeId e, bool reverse = false) const {
         if (reverse) {
-            if (storage_.find(g_.conjugate(e)) == storage_.end())
-                return 0.0;
-            return storage_.at(g_.conjugate(e));
+            e = g_.conjugate(e);
         }
 
-        if (storage_.find(e) == storage_.end())
+        auto it = storage_.find(e);
+        if (it == storage_.end())
             return 0.0;
-        return storage_.at(e);
+        return it->second;
     }
 
     void IncreaseKmerCount(EdgeId e, size_t count, bool add_reverse = false) {

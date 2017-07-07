@@ -115,7 +115,7 @@ struct pe_config {
             bool cut_all;
         } overlap_removal;
 
-        struct SimpleCoverageReolver {
+        struct SimpleCoverageResolver {
             bool enabled;
             double coverage_delta;
             double min_upper_coverage;

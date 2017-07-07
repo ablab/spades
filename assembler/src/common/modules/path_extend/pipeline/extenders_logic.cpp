@@ -245,7 +245,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
 
 shared_ptr<SimpleExtender> ExtendersGenerator::MakeSimpleCoverageExtender(size_t lib_index) const {
 
-    shared_ptr<SimpleCoverageExtensionChooser> extension =
+    auto extension =
         make_shared<SimpleCoverageExtensionChooser>(gp_.ss_coverage[lib_index], gp_.g,
                                                     params_.pset.simple_coverage_resolver.coverage_delta,
                                                     params_.pset.simple_coverage_resolver.min_upper_coverage);
