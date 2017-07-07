@@ -459,7 +459,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 void PathExtendLauncher::FilterPaths() {
     PathContainer contig_paths_copy(gp_.contig_paths.begin(), gp_.contig_paths.end());
     for (const auto& it: params_.pset.path_filtration) {
-        if (it.first.empty() && it.second.enabled) {
+        if (it.first == "default" && it.second.enabled) {
             INFO("Finalizing main paths");
             CleanPaths(gp_.contig_paths, it.second);
             DebugOutputPaths(gp_.contig_paths, "final_paths");
