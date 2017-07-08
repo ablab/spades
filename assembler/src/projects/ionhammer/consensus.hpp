@@ -10,14 +10,14 @@
 
 #include "HSeq.hpp"
 
-#include <limits>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <limits>
 
 namespace hammer {
 namespace iontorrent {
 
-inline
-std::pair<hammer::HomopolymerRun, double> consensus(const boost::numeric::ublas::matrix<double>& scores) {
+inline std::pair<hammer::HomopolymerRun, double> consensus(
+    const boost::numeric::ublas::matrix<double>& scores) {
   double inf = -std::numeric_limits<double>::infinity();
 
   double max = inf;
@@ -34,7 +34,7 @@ std::pair<hammer::HomopolymerRun, double> consensus(const boost::numeric::ublas:
   return std::make_pair(hammer::HomopolymerRun(nucl, len), max);
 }
 
-};
-};
+};  // namespace iontorrent
+};  // namespace hammer
 
-#endif // __HAMMER_IT_CONSENSUS_HPP__
+#endif  // __HAMMER_IT_CONSENSUS_HPP__

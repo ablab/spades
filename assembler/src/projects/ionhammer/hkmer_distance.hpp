@@ -8,8 +8,8 @@
 #ifndef __HAMMER_HKMER_DISTANCE_HPP__
 #define __HAMMER_HKMER_DISTANCE_HPP__
 
-#include "hkmer.hpp"
 #include "err_helper_table.hpp"
+#include "hkmer.hpp"
 
 namespace hammer {
 
@@ -29,9 +29,8 @@ struct IonPairAlignEvent {
   unsigned length;
 };
 
-template<typename It1, typename It2>
+template <typename It1, typename It2>
 class IonPairAligner {
-
   It1 x_it_;
   It1 x_end_;
   It2 y_it_;
@@ -40,17 +39,16 @@ class IonPairAligner {
   bool empty_;
   hammer::HomopolymerRun cx_, cy_;
   int end_diff_;
-  bool at_the_start_; // turned off once we find a pair of runs with same nucleotide
+  bool at_the_start_;  // turned off once we find a pair of runs with same
+                       // nucleotide
 
   IonPairAlignEvent<It1, It2> front_;
 
   // true iff alignment process is not yet finished
   bool checkForZeroLengthRuns() {
-    if (x_it_ == x_end_ || y_it_ == y_end_)
-      return false;
+    if (x_it_ == x_end_ || y_it_ == y_end_) return false;
 
-    if (cx_.len > 0 && cy_.len > 0)
-      return true;
+    if (cx_.len > 0 && cy_.len > 0) return true;
 
     bool result = true;
     while (cx_.len == 0) {
@@ -74,16 +72,14 @@ class IonPairAligner {
 
   bool fetchNextX() {
     ++x_it_;
-    if (x_it_ == x_end_)
-      return false;
+    if (x_it_ == x_end_) return false;
     cx_ = *x_it_;
     return true;
   }
 
   bool fetchNextY() {
     ++y_it_;
-    if (y_it_ == y_end_)
-      return false;
+    if (y_it_ == y_end_) return false;
     cy_ = *y_it_;
     return true;
   }
@@ -118,19 +114,25 @@ class IonPairAligner {
   void finishAlignmentProcess() {
     empty_ = true;
     if (x_it_ != x_end_) {
-        end_diff_ += x_end_ - x_it_;
+      end_diff_ += x_end_ - x_it_;
     }
     if (y_it_ != y_end_) {
-        end_diff_ -= y_end_ - y_it_;
+      end_diff_ -= y_end_ - y_it_;
     }
   }
 
  public:
-  IonPairAligner(const It1 &x_begin, const It1 &x_end,
-                 const It2 &y_begin, const It2 &y_end)
-    : x_it_(x_begin), x_end_(x_end), y_it_(y_begin), y_end_(y_end),
-        empty_(false), cx_(*x_it_), cy_(*y_it_), end_diff_(0), at_the_start_(true)
-  {
+  IonPairAligner(const It1 &x_begin, const It1 &x_end, const It2 &y_begin,
+                 const It2 &y_end)
+      : x_it_(x_begin),
+        x_end_(x_end),
+        y_it_(y_begin),
+        y_end_(y_end),
+        empty_(false),
+        cx_(*x_it_),
+        cy_(*y_it_),
+        end_diff_(0),
+        at_the_start_(true) {
     popFront();
   }
 
@@ -178,8 +180,7 @@ class IonPairAligner {
         at_the_start_ = false;
       }
 
-      if (!end)
-        break;
+      if (!end) break;
     }
 
     if (!checkForZeroLengthRuns()) {
@@ -193,7 +194,6 @@ class IonPairAligner {
     VERIFY(y_it_ < y_end_);
 
     if (cx_.nucl == cy_.nucl) {
-
       if (cx_.len >= 4 && cy_.len >= 4) {
         if (cx_.len < cy_.len)
           yieldBaseInsertion();
@@ -217,7 +217,6 @@ class IonPairAligner {
       yieldMismatch();
       return;
     } else {
-
       using namespace hammer::errHelper;
       auto hint = getHint(x_it_, x_end_, y_it_, y_end_, cx_.len, cy_.len);
 
@@ -239,20 +238,18 @@ class IonPairAligner {
   }
 };
 
-
 // returns distance between two homopolymer sequences;
 // optionally, fills *end_diff:
 //  [ --------- X ----------- ]
 // [---------- Y -------]######
 //                       \____/
 //                       end_diff
-template <int kMismatchCost=1,
-          int kBaseInsertionCost=1, int kRunInsertionCost=1,
-          int kBaseDeletionCost=1, int kRunDeletionCost=1,
-          typename It1, typename It2>
+template <int kMismatchCost = 1, int kBaseInsertionCost = 1,
+          int kRunInsertionCost = 1, int kBaseDeletionCost = 1,
+          int kRunDeletionCost = 1, typename It1, typename It2>
 inline unsigned distanceHKMer(const It1 &x_begin, const It1 &x_end,
                               const It2 &y_begin, const It2 &y_end,
-                              unsigned tau = -1, int *end_diff=NULL) {
+                              unsigned tau = -1, int *end_diff = NULL) {
   unsigned dist = 0;
 
   IonPairAligner<It1, It2> aligner(x_begin, x_end, y_begin, y_end);
@@ -261,24 +258,28 @@ inline unsigned distanceHKMer(const It1 &x_begin, const It1 &x_end,
     auto event = aligner.front();
     switch (event.type) {
       case kIonEventMismatch:
-        dist += kMismatchCost * event.length; break;
-      case kIonEventBaseInsertion:
-        dist += kBaseInsertionCost * event.length; break;
-      case kIonEventBaseDeletion:
-        dist += kBaseDeletionCost * event.length; break;
-      case kIonEventRunInsertion:
-        dist += kRunInsertionCost * event.length; break;
-      case kIonEventRunDeletion:
-        dist += kRunDeletionCost * event.length; break;
-      default: break;
-    }
-    if (dist > tau && end_diff == NULL)
+        dist += kMismatchCost * event.length;
         break;
+      case kIonEventBaseInsertion:
+        dist += kBaseInsertionCost * event.length;
+        break;
+      case kIonEventBaseDeletion:
+        dist += kBaseDeletionCost * event.length;
+        break;
+      case kIonEventRunInsertion:
+        dist += kRunInsertionCost * event.length;
+        break;
+      case kIonEventRunDeletion:
+        dist += kRunDeletionCost * event.length;
+        break;
+      default:
+        break;
+    }
+    if (dist > tau && end_diff == NULL) break;
     aligner.popFront();
   }
 
-  if (end_diff != NULL)
-      *end_diff = aligner.endDiff();
+  if (end_diff != NULL) *end_diff = aligner.endDiff();
 
   return dist;
 }
@@ -287,92 +288,90 @@ inline unsigned distanceHKMer(const It1 &x_begin, const It1 &x_end,
 #include <iostream>
 namespace unittest {
 
-  namespace detail {
+namespace detail {
 
-    typedef hammer::HKMer::StorageType::const_iterator It;
+typedef hammer::HKMer::StorageType::const_iterator It;
 
-    inline unsigned distanceHKMer(It beg1, It end1, It beg2, It end2) {
-      unsigned dist = 0;
+inline unsigned distanceHKMer(It beg1, It end1, It beg2, It end2) {
+  unsigned dist = 0;
 
-      IonPairAligner<It, It> aligner(beg1, end1, beg2, end2);
+  IonPairAligner<It, It> aligner(beg1, end1, beg2, end2);
 
-      while (!aligner.empty()) {
-        auto event = aligner.front();
-        switch (event.type) {
-        case kIonEventMismatch:
-          std::cerr << event.length << 'X';
-          dist += event.length; break;
-        case kIonEventBaseInsertion:
-          std::cerr << event.length << 'I';
-          dist += event.length; break;
-        case kIonEventBaseDeletion:
-          std::cerr << event.length << 'D';
-          dist += event.length; break;
-        case kIonEventRunInsertion:
-          std::cerr << event.length << 'I';
-          dist += event.length; break;
-        case kIonEventRunDeletion:
-          std::cerr << event.length << 'D';
-          dist += event.length; break;
-        default: break;
-        }
-        aligner.popFront();
-      }
-
-      std::cerr << " (end. diff. = " << aligner.endDiff() << ")" << std::endl;
-      return dist;
+  while (!aligner.empty()) {
+    auto event = aligner.front();
+    switch (event.type) {
+      case kIonEventMismatch:
+        std::cerr << event.length << 'X';
+        dist += event.length;
+        break;
+      case kIonEventBaseInsertion:
+        std::cerr << event.length << 'I';
+        dist += event.length;
+        break;
+      case kIonEventBaseDeletion:
+        std::cerr << event.length << 'D';
+        dist += event.length;
+        break;
+      case kIonEventRunInsertion:
+        std::cerr << event.length << 'I';
+        dist += event.length;
+        break;
+      case kIonEventRunDeletion:
+        std::cerr << event.length << 'D';
+        dist += event.length;
+        break;
+      default:
+        break;
     }
-
-    inline unsigned distance(const std::string &s, const std::string &t) {
-      using namespace hammer;
-      HKMer k1, k2;
-      for (size_t i = 0; i < s.size(); ++i)
-        k1 <<= s[i];
-      for (size_t i = 0; i < t.size(); ++i)
-        k2 <<= t[i];
-
-      return distanceHKMer(k1.begin(), k1.end(), k2.begin(), k2.end());
-    }
+    aligner.popFront();
   }
 
-  inline void hkmer_distance() {
-    using namespace detail;
-
-    assert(distance("ACGTACGTACGTACGT",
-                    "CGTACGTACGTACGTA") > 1);
-
-    assert(distance("AACGTACGTACGTACGT",
-                    "CGTACGTACGTACGTA") > 1);
-
-    assert(distance("GATAGCGATTTGTTCGGTTTAGGGGGGG",
-                    "GATAGCGATTTGTTCGTTTAG") >= 7);
-
-    assert(distance("ATAGCGATTTGTTCGGTTTAGGGGGGGT",
-                    "ATAGCGATTTGTTCGTTTAGA") >= 7);
-
-    assert(distance("GATTTGTTCGGTTTAGGGGGGGTAGGGGGATTA",
-                    "GATTTGTTCGTTTAGGGGGGGTAGGGGGATTA") == 1);
-
-    assert(distance("TTAAGGCTTACAAAGACTGCGTTT",
-                    "TTAAGGCTTACAAAGACTGCGTTTT") == 1);
-
-    assert(distance("AAGGCTTACAAAGACTGCGTTTAA",
-                    "AAGGCTTACAAAGACTGCGTA") >= 2);
-
-    assert(distance("ACAAAGACTGCGTTTAAGAGC",
-                    "ACAAAGACTGCGTTTTAAGAGC") == 1);
-
-    assert(distance("CTAGGAATGAAAAAGAGAACAAGAA",
-                    "CTAGGAATGAAAAAGAGAAAAAAGAATG") == 2);
-
-    assert(distance("ACACACAGGGTTTTTGAACTGGATT",
-                    "ACACACAGGGTTTTGAACTGGATT") == 1);
-
-    assert(distance("ACATAAGCCTTTGTACTTAGC",
-                    "ACATAAGCCTTTGACTTAGCA") == 1);
-  }
+  std::cerr << " (end. diff. = " << aligner.endDiff() << ")" << std::endl;
+  return dist;
 }
 
+inline unsigned distance(const std::string &s, const std::string &t) {
+  using namespace hammer;
+  HKMer k1, k2;
+  for (size_t i = 0; i < s.size(); ++i) k1 <<= s[i];
+  for (size_t i = 0; i < t.size(); ++i) k2 <<= t[i];
 
-};
-#endif // __HAMMER_HKMER_DISTANCE_HPP__
+  return distanceHKMer(k1.begin(), k1.end(), k2.begin(), k2.end());
+}
+}  // namespace detail
+
+inline void hkmer_distance() {
+  using namespace detail;
+
+  assert(distance("ACGTACGTACGTACGT", "CGTACGTACGTACGTA") > 1);
+
+  assert(distance("AACGTACGTACGTACGT", "CGTACGTACGTACGTA") > 1);
+
+  assert(distance("GATAGCGATTTGTTCGGTTTAGGGGGGG", "GATAGCGATTTGTTCGTTTAG") >=
+         7);
+
+  assert(distance("ATAGCGATTTGTTCGGTTTAGGGGGGGT", "ATAGCGATTTGTTCGTTTAGA") >=
+         7);
+
+  assert(distance("GATTTGTTCGGTTTAGGGGGGGTAGGGGGATTA",
+                  "GATTTGTTCGTTTAGGGGGGGTAGGGGGATTA") == 1);
+
+  assert(distance("TTAAGGCTTACAAAGACTGCGTTT", "TTAAGGCTTACAAAGACTGCGTTTT") ==
+         1);
+
+  assert(distance("AAGGCTTACAAAGACTGCGTTTAA", "AAGGCTTACAAAGACTGCGTA") >= 2);
+
+  assert(distance("ACAAAGACTGCGTTTAAGAGC", "ACAAAGACTGCGTTTTAAGAGC") == 1);
+
+  assert(distance("CTAGGAATGAAAAAGAGAACAAGAA",
+                  "CTAGGAATGAAAAAGAGAAAAAAGAATG") == 2);
+
+  assert(distance("ACACACAGGGTTTTTGAACTGGATT", "ACACACAGGGTTTTGAACTGGATT") ==
+         1);
+
+  assert(distance("ACATAAGCCTTTGTACTTAGC", "ACATAAGCCTTTGACTTAGCA") == 1);
+}
+}  // namespace unittest
+
+};      // namespace hammer
+#endif  // __HAMMER_HKMER_DISTANCE_HPP__

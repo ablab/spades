@@ -8,11 +8,11 @@
 #ifndef __HAMMER_IT_FLOW_SPACE_READ_HPP__
 #define __HAMMER_IT_FLOW_SPACE_READ_HPP__
 
-#include "io/reads/single_read.hpp"
 #include "HSeq.hpp"
+#include "io/reads/single_read.hpp"
 
-#include <deque>
 #include <cstddef>
+#include <deque>
 #include <string>
 
 namespace hammer {
@@ -21,6 +21,7 @@ namespace hammer {
 class FlowSpaceRead {
   std::string name_;
   std::deque<HomopolymerRun> runs_;
+
  public:
   FlowSpaceRead(const io::SingleRead& read) : name_(read.name()) {
     const auto& seq = read.GetSequenceString();
@@ -28,24 +29,15 @@ class FlowSpaceRead {
   }
 
   template <typename It>
-  FlowSpaceRead(It runs_beg, It runs_end) :
-    runs_(runs_beg, runs_end) {}
+  FlowSpaceRead(It runs_beg, It runs_end) : runs_(runs_beg, runs_end) {}
 
-  size_t size() const {
-    return runs_.size();
-  }
+  size_t size() const { return runs_.size(); }
 
-  const std::string& name() const {
-    return name_;
-  }
+  const std::string& name() const { return name_; }
 
-  HomopolymerRun operator[](size_t index) const {
-    return runs_[index];
-  }
+  HomopolymerRun operator[](size_t index) const { return runs_[index]; }
 
-  HomopolymerRun& operator[](size_t index) {
-    return runs_[index];
-  }
+  HomopolymerRun& operator[](size_t index) { return runs_[index]; }
 
   void TrimLeft(size_t n_runs) {
     if (n_runs >= runs_.size())
@@ -63,15 +55,12 @@ class FlowSpaceRead {
 
   std::string GetSequenceString() const {
     std::string seq;
-    for (size_t i = 0; i < runs_.size(); ++i)
-      seq += runs_[i].str();
+    for (size_t i = 0; i < runs_.size(); ++i) seq += runs_[i].str();
     return seq;
   }
 
-  const std::deque<hammer::HomopolymerRun>& data() const {
-    return runs_;
-  }
+  const std::deque<hammer::HomopolymerRun>& data() const { return runs_; }
 };
 
-} // namespace hammer
+}  // namespace hammer
 #endif

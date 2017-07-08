@@ -9,35 +9,35 @@
 #define __HAMMER_IT_READ_CORRECTOR_HPP__
 
 #include "HSeq.hpp"
+#include "config_struct.hpp"
+#include "consensus.hpp"
 #include "flow_space_read.hpp"
 #include "hkmer_distance.hpp"
-#include "consensus.hpp"
-#include "valid_hkmer_generator.hpp"
-#include "config_struct.hpp"
 #include "io/reads/single_read.hpp"
+#include "valid_hkmer_generator.hpp"
 
-#include <boost/optional.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/storage.hpp>
+#include <boost/optional.hpp>
 
 #include <bamtools/api/BamAlignment.h>
 #include <bamtools/api/SamHeader.h>
 #include "seqeval/BaseHypothesisEvaluator.h"
 
+#include <algorithm>
+#include <cassert>
 #include <deque>
-#include <vector>
+#include <fstream>
 #include <iterator>
 #include <limits>
-#include <cassert>
 #include <list>
 #include <string>
-#include <algorithm>
-#include <fstream>
+#include <vector>
 
 #if 1
-#include "sequence/nucl.hpp"
-#include <iostream>
 #include <iomanip>
+#include <iostream>
+#include "sequence/nucl.hpp"
 #endif
 
 namespace hammer {
@@ -50,16 +50,14 @@ typedef std::vector<ScoreMatrix> ScoreStorage;
 
 template <typename It1, typename It2>
 static bool exactAlignH(It1 a_begin, It1 a_initial_pos, It1 a_end,
-                        It2 b_initial_pos, It2 /*b_end*/,
-                        uint8_t max_offset, uint8_t n_cmp, int* p_offset)
-{
+                        It2 b_initial_pos, It2 /*b_end*/, uint8_t max_offset,
+                        uint8_t n_cmp, int *p_offset) {
   int M = max_offset * 2 + 1;
   for (int i = 0; i < M; i++) {
-    int offset = (i / 2) * ((i & 1) ? 1 : -1); // 0, -1, 1, -2, 2, ...
+    int offset = (i / 2) * ((i & 1) ? 1 : -1);  // 0, -1, 1, -2, 2, ...
     auto a_it = a_initial_pos + offset;
     auto b_it = b_initial_pos;
-    if (a_it < a_begin || a_it + n_cmp > a_end)
-      continue;
+    if (a_it < a_begin || a_it + n_cmp > a_end) continue;
     bool match = true;
     for (size_t j = 0; j < n_cmp; j++)
       if ((a_it + j)->raw != (b_it + j)->raw) {
@@ -76,22 +74,19 @@ static bool exactAlignH(It1 a_begin, It1 a_initial_pos, It1 a_end,
 
 template <typename It1, typename It2>
 static int overlapAlignH(It1 a_begin, It1 a_end, It2 b_begin, It2 b_end,
-                         uint8_t max_offset)
-{
+                         uint8_t max_offset) {
   // TODO: use dynamic programming
   int M = max_offset * 2 + 1;
   int best_offset = 0;
   int best_score = 0;
   for (int i = 0; i < M; i++) {
-    int offset = (i / 2) * ((i & 1) ? 1 : -1); // 0, -1, 1, -2, 2, ...
+    int offset = (i / 2) * ((i & 1) ? 1 : -1);  // 0, -1, 1, -2, 2, ...
     auto a_it = offset < 0 ? a_begin : a_begin + offset;
     auto b_it = offset < 0 ? b_begin - offset : b_begin;
-    if (b_it < b_begin || a_it >= a_end)
-        continue;
+    if (b_it < b_begin || a_it >= a_end) continue;
     int score = 0;
-    for ( ; a_it != a_end && b_it != b_end; ++a_it, ++b_it)
-      if (a_it->nucl == b_it->nucl)
-        score += std::min(a_it->len, b_it->len);
+    for (; a_it != a_end && b_it != b_end; ++a_it, ++b_it)
+      if (a_it->nucl == b_it->nucl) score += std::min(a_it->len, b_it->len);
     score -= i / 4;
     if (score > best_score) {
       best_offset = offset;
@@ -101,7 +96,6 @@ static int overlapAlignH(It1 a_begin, It1 a_end, It2 b_begin, It2 b_end,
   return best_offset;
 }
 
-
 struct Score {
   short value;
   short dir;
@@ -110,16 +104,15 @@ struct Score {
 
 #if 1
 template <typename It1, typename It2>
-static void dump(boost::numeric::ublas::matrix<Score> &scores,
-                 It1 x_begin, It1 x_end, It2 y_begin, It2 y_end) {
+static void dump(boost::numeric::ublas::matrix<Score> &scores, It1 x_begin,
+                 It1 x_end, It2 y_begin, It2 y_end) {
   std::cerr << "        ";
   for (auto it = x_begin; it != x_end; ++it)
     std::cerr << std::setw(3) << int(it->len) << nucl(it->nucl);
   std::cerr << "\n    ";
   auto m = x_end - x_begin;
   auto n = y_end - y_begin;
-  for (int i = 0; i <= m; i++)
-    std::cerr << std::setw(4) << scores(i, 0).value;
+  for (int i = 0; i <= m; i++) std::cerr << std::setw(4) << scores(i, 0).value;
   std::cerr << '\n';
   for (int i = 1; i <= n; i++) {
     auto run = *(y_begin + i - 1);
@@ -132,33 +125,29 @@ static void dump(boost::numeric::ublas::matrix<Score> &scores,
 #endif
 
 template <typename It1, typename It2>
-static int alignH(It1 read_begin, It1 read_end,
-                  It2 consensus_begin, It2 consensus_end,
-                  int approx_read_offset, size_t n_skip_consensus,
-                  uint8_t n_side = 5, uint8_t n_cmp = 8) {
-
+static int alignH(It1 read_begin, It1 read_end, It2 consensus_begin,
+                  It2 consensus_end, int approx_read_offset,
+                  size_t n_skip_consensus, uint8_t n_side = 5,
+                  uint8_t n_cmp = 8) {
   int left_offset = n_side;
   int read_len = int(read_end - read_begin);
   int consensus_len = int(consensus_end - consensus_begin);
 
   It1 x_begin = read_begin + std::max(approx_read_offset - n_side, 0);
-  if (x_begin == read_begin)
-    left_offset = approx_read_offset;
+  if (x_begin == read_begin) left_offset = approx_read_offset;
 
   if (approx_read_offset - n_side + n_cmp >= read_len) {
     x_begin = read_end - std::min(n_cmp + 2 * n_side, read_len);
     left_offset = int(read_begin + approx_read_offset - x_begin);
   }
 
-  auto x_end = x_begin + std::min(int(2 * n_side + n_cmp),
-                                  int(read_end - x_begin));
+  auto x_end =
+      x_begin + std::min(int(2 * n_side + n_cmp), int(read_end - x_begin));
 
-  auto y_begin = consensus_begin +
-    std::min(int(n_skip_consensus), consensus_len);
-  if (y_begin == consensus_end)
-      return 0; // weird situation
-  auto y_end = y_begin + std::min(int(n_cmp),
-                                  int(consensus_end - y_begin));
+  auto y_begin =
+      consensus_begin + std::min(int(n_skip_consensus), consensus_len);
+  if (y_begin == consensus_end) return 0;  // weird situation
+  auto y_end = y_begin + std::min(int(n_cmp), int(consensus_end - y_begin));
 
   // glocal alignment of homopolymer runs
   const short kDirUpLeft = 0;
@@ -256,10 +245,9 @@ static int alignH(It1 read_begin, It1 read_end,
 
   int min_acceptable_score = ((kNuclMatch + kFullMatch) * n_cmp * 4) / 5;
   if (scores(highest_x, highest_y).value < min_acceptable_score && n_cmp < 16U)
-    return alignH(read_begin, read_end,
-                  consensus_begin, consensus_end,
-                  approx_read_offset, n_skip_consensus,
-                  n_side, uint8_t(n_cmp * 2));
+    return alignH(read_begin, read_end, consensus_begin, consensus_end,
+                  approx_read_offset, n_skip_consensus, n_side,
+                  uint8_t(n_cmp * 2));
 
   int x = int(highest_x);
   int y = int(highest_y);
@@ -267,11 +255,14 @@ static int alignH(It1 read_begin, It1 read_end,
     int dir = scores(x, y).dir;
     switch (dir) {
       case kDirUp:
-        --x; break;
+        --x;
+        break;
       case kDirLeft:
-        --y; break;
+        --y;
+        break;
       case kDirUpLeft:
-        --x, --y; break;
+        --x, --y;
+        break;
       default:
         break;
     }
@@ -287,43 +278,43 @@ static int alignH(It1 read_begin, It1 read_end,
 
 // Not used now
 class HKMerProlonger {
-  const KMerData& kmer_data_;
+  const KMerData &kmer_data_;
 
  public:
   struct RightSide {
     static size_t changingPosition() { return hammer::K - 1; }
     static hammer::HKMer shift(const hammer::HKMer &kmer) {
       hammer::HKMer res;
-      for (size_t i = 1; i < hammer::K; ++i)
-        res[i - 1] = kmer[i];
+      for (size_t i = 1; i < hammer::K; ++i) res[i - 1] = kmer[i];
       return res;
     }
     template <typename T, typename U>
-    static void append(T& cont, U obj) { cont.push_back(obj); }
+    static void append(T &cont, U obj) {
+      cont.push_back(obj);
+    }
   };
 
   struct LeftSide {
     static size_t changingPosition() { return 0; }
     static hammer::HKMer shift(const hammer::HKMer &kmer) {
       hammer::HKMer res;
-      for (size_t i = 1; i < hammer::K; ++i)
-        res[i] = kmer[i - 1];
+      for (size_t i = 1; i < hammer::K; ++i) res[i] = kmer[i - 1];
       return res;
     }
     template <typename T, typename U>
-    static void append(T& cont, U obj) { cont.push_front(obj); }
+    static void append(T &cont, U obj) {
+      cont.push_front(obj);
+    }
   };
 
  public:
-
   /// @param[in] seed               kmer to prolong
   /// @param[in] bases_to_recover   maximum number of bases to recover
   template <typename Side>
   std::deque<hammer::HomopolymerRun> prolong(const hammer::HKMer &seed,
                                              size_t bases_to_recover) {
     std::deque<hammer::HomopolymerRun> good_runs(hammer::K);
-    for (size_t i = 0; i < hammer::K; ++i)
-      good_runs[i] = seed[i];
+    for (size_t i = 0; i < hammer::K; ++i) good_runs[i] = seed[i];
 
     auto good_kmer = seed;
     auto changing_pos = Side::changingPosition();
@@ -338,8 +329,7 @@ class HKMerProlonger {
       auto kmer = Side::shift(good_kmer);
 
       for (size_t nucl = 0; nucl < 4; ++nucl) {
-        if (nucl == good_kmer[changing_pos].nucl)
-          continue;
+        if (nucl == good_kmer[changing_pos].nucl) continue;
         for (size_t len = 1; len <= 4; ++len) {
           kmer[changing_pos] = hammer::HomopolymerRun(nucl, len);
           auto &k = kmer_data_[kmer];
@@ -366,14 +356,14 @@ class HKMerProlonger {
   }
 
  public:
-  HKMerProlonger(const KMerData& kmer_data) : kmer_data_(kmer_data) {}
+  HKMerProlonger(const KMerData &kmer_data) : kmer_data_(kmer_data) {}
 };
 
 static const double kLowScoreThreshold = 1.0;
 
 class CorrectedRead {
-  FlowSpaceRead raw_read_; // Uncorrected read
-  const KMerData& kmer_data_;
+  FlowSpaceRead raw_read_;  // Uncorrected read
+  const KMerData &kmer_data_;
   bool debug_mode_;
 
   // Stores runs after joining chunks
@@ -381,19 +371,15 @@ class CorrectedRead {
 
   // Contiguous part of read with strong consensus
   struct ConsensusChunk {
-    int approx_read_offset; // in the vector of raw read runs
+    int approx_read_offset;  // in the vector of raw read runs
     int approx_end_read_offset_;
     unsigned rollback_end;  // remove if don't align well
 
     int initial_read_offset_;
 
-    enum {
-      kChunkLeftAligned,
-      kChunkRightAligned,
-      kChunkNotAligned
-    } alignment;
+    enum { kChunkLeftAligned, kChunkRightAligned, kChunkNotAligned } alignment;
 
-    const FlowSpaceRead& raw_read;
+    const FlowSpaceRead &raw_read;
     size_t trimmed_left;
     size_t trimmed_right;
     bool debug_mode;
@@ -401,24 +387,21 @@ class CorrectedRead {
     std::vector<hammer::HomopolymerRun> consensus;
     std::vector<double> consensus_scores;
 
-    int raw_start_offset() const {
-      return initial_read_offset_;
-    }
+    int raw_start_offset() const { return initial_read_offset_; }
 
-    ConsensusChunk(int initial_read_offset,
-                   int approximate_read_offset,
-                   int approximate_end_read_offset,
-                   const ScoreStorage &scores,
-                   unsigned rollback_end,
-                   const FlowSpaceRead &read,
+    ConsensusChunk(int initial_read_offset, int approximate_read_offset,
+                   int approximate_end_read_offset, const ScoreStorage &scores,
+                   unsigned rollback_end, const FlowSpaceRead &read,
                    bool debug_mode)
-      :   approx_read_offset(approximate_read_offset),
+        : approx_read_offset(approximate_read_offset),
           approx_end_read_offset_(approximate_end_read_offset),
           rollback_end(rollback_end),
           initial_read_offset_(initial_read_offset),
-          alignment(kChunkNotAligned), raw_read(read),
-          trimmed_left(0), trimmed_right(0), debug_mode(debug_mode)
-    {
+          alignment(kChunkNotAligned),
+          raw_read(read),
+          trimmed_left(0),
+          trimmed_right(0),
+          debug_mode(debug_mode) {
       bool left_trim = true;
       for (size_t i = 0; i < scores.size(); ++i) {
         auto run = hammer::iontorrent::consensus(scores[i]);
@@ -431,8 +414,10 @@ class CorrectedRead {
         }
 
         if (debug_mode && left_trim) {
-            std::cerr << "[ConsensusChunk] trimmed from left: " << trimmed_left << std::endl;
-            std::cerr << "[ConsensusChunk] approx. read offset: " << approx_read_offset << std::endl;
+          std::cerr << "[ConsensusChunk] trimmed from left: " << trimmed_left
+                    << std::endl;
+          std::cerr << "[ConsensusChunk] approx. read offset: "
+                    << approx_read_offset << std::endl;
         }
 
         left_trim = false;
@@ -442,13 +427,11 @@ class CorrectedRead {
       }
 
       size_t right_end = consensus_scores.size();
-      if (right_end == 0)
-        return;
+      if (right_end == 0) return;
 
       while (consensus_scores[right_end - 1] <= kLowScoreThreshold) {
         --right_end;
-        if (right_end == 0)
-          break;
+        if (right_end == 0) break;
       }
 
       trimmed_right = consensus.size() - right_end;
@@ -456,39 +439,38 @@ class CorrectedRead {
       consensus_scores.resize(right_end);
     }
 
-    void AlignLeftEndAgainstRead(size_t skip=0) {
-      const auto& data = raw_read.data();
+    void AlignLeftEndAgainstRead(size_t skip = 0) {
+      const auto &data = raw_read.data();
 
-      int offset = alignH(data.begin(), data.end(),
-                          consensus.begin(), consensus.end(),
-                          approx_read_offset, skip);
+      int offset = alignH(data.begin(), data.end(), consensus.begin(),
+                          consensus.end(), approx_read_offset, skip);
 
       if (debug_mode) {
-        std::cerr << "[approx. read offset (left)] before: " << approx_read_offset << "; after: "
-                  << approx_read_offset + offset << std::endl;
+        std::cerr << "[approx. read offset (left)] before: "
+                  << approx_read_offset
+                  << "; after: " << approx_read_offset + offset << std::endl;
       }
 
       approx_read_offset += offset;
       alignment = kChunkLeftAligned;
     }
 
-    void AlignRightEndAgainstRead(size_t skip=0) {
-      const auto& data = raw_read.data();
+    void AlignRightEndAgainstRead(size_t skip = 0) {
+      const auto &data = raw_read.data();
       int position_on_read = approx_end_read_offset_ - 1;
-      int offset = alignH(data.rbegin(), data.rend(),
-                          consensus.rbegin(), consensus.rend(),
+      int offset = alignH(data.rbegin(), data.rend(), consensus.rbegin(),
+                          consensus.rend(),
                           int(data.size()) - 1 - position_on_read, skip);
       if (debug_mode) {
-        std::cerr << "[approx. read offset (right)] before: " << approx_read_offset << "; after: "
-                  << approx_read_offset - offset << std::endl;
+        std::cerr << "[approx. read offset (right)] before: "
+                  << approx_read_offset
+                  << "; after: " << approx_read_offset - offset << std::endl;
       }
       approx_read_offset -= offset;
       alignment = kChunkRightAligned;
     }
 
-    int approx_end_read_offset() const {
-      return approx_end_read_offset_;
-    }
+    int approx_end_read_offset() const { return approx_end_read_offset_; }
 
     int approx_end_read_offset_untrimmed() const {
       return approx_end_read_offset() + int(trimmed_right);
@@ -505,38 +487,37 @@ class CorrectedRead {
       rollback_end = 0;
     }
 
-    bool DoMerge(ConsensusChunk& chunk) {
+    bool DoMerge(ConsensusChunk &chunk) {
       int right_end_offset = approx_end_read_offset();
 
       if (debug_mode) {
-        std::cerr << "============== Merging chunks ===============" << std::endl;
-        std::cerr << "(" << approx_read_offset << " .. " << right_end_offset << ")";
-        std::cerr << " -- (" << chunk.approx_read_offset << " .. " << chunk.approx_end_read_offset() << ")" << std::endl;
+        std::cerr << "============== Merging chunks ==============="
+                  << std::endl;
+        std::cerr << "(" << approx_read_offset << " .. " << right_end_offset
+                  << ")";
+        std::cerr << " -- (" << chunk.approx_read_offset << " .. "
+                  << chunk.approx_end_read_offset() << ")" << std::endl;
 
         int white_l = 0;
         for (int i = right_end_offset - 1; i >= 0; --i)
           white_l += raw_read[i].len;
         for (size_t i = 0; i < consensus.size(); ++i)
           white_l -= consensus[i].len;
-        for (int i = 0; i < white_l; ++i)
-          std::cerr << ' ';
+        for (int i = 0; i < white_l; ++i) std::cerr << ' ';
         for (size_t i = std::max(-white_l, 0); i < consensus.size(); ++i)
           std::cerr << consensus[i].str();
         std::cerr << std::endl;
 
         for (int i = 0; i < chunk.approx_read_offset; ++i)
-          for (int j = 0; j < raw_read[i].len; ++j)
-            std::cerr << ' ';
+          for (int j = 0; j < raw_read[i].len; ++j) std::cerr << ' ';
         for (size_t i = 0; i < chunk.consensus.size(); ++i)
           std::cerr << chunk.consensus[i].str();
         std::cerr << std::endl;
       }
 
       if (right_end_offset <= chunk.approx_read_offset) {
-
         for (int i = right_end_offset; i < chunk.approx_read_offset; ++i) {
-          if (i >= static_cast<int>(raw_read.size()))
-            return false;
+          if (i >= static_cast<int>(raw_read.size())) return false;
           consensus.push_back(raw_read[i]);
           alignment = kChunkNotAligned;
 
@@ -544,8 +525,8 @@ class CorrectedRead {
           consensus_scores.push_back(0);
         }
 
-        consensus.insert(consensus.end(),
-                         chunk.consensus.begin(), chunk.consensus.end());
+        consensus.insert(consensus.end(), chunk.consensus.begin(),
+                         chunk.consensus.end());
 
         consensus_scores.insert(consensus_scores.end(),
                                 chunk.consensus_scores.begin(),
@@ -553,14 +534,11 @@ class CorrectedRead {
 
       } else {
         int overlap = right_end_offset - chunk.approx_read_offset;
-        overlap -= overlapAlignH(consensus.end() - overlap,
-                                 consensus.end(),
+        overlap -= overlapAlignH(consensus.end() - overlap, consensus.end(),
                                  chunk.consensus.begin(),
-                                 chunk.consensus.begin() + overlap,
-                                 5);
+                                 chunk.consensus.begin() + overlap, 5);
 
-        if (overlap > static_cast<int>(chunk.consensus.size()))
-          return false;
+        if (overlap > static_cast<int>(chunk.consensus.size())) return false;
 
         if (overlap < 0) {
           chunk.approx_read_offset = right_end_offset - overlap;
@@ -573,7 +551,8 @@ class CorrectedRead {
         // FIXME
         if (overlap > 0 && rollback_end > 0) {
           for (int i = 0; i < overlap; i++) {
-            if (n_runs - overlap + i < 0 || n_runs - overlap + i >= consensus.size())
+            if (n_runs - overlap + i < 0 ||
+                n_runs - overlap + i >= consensus.size())
               continue;
             auto left_run = consensus[n_runs - overlap + i];
             auto right_run = chunk.consensus[i];
@@ -586,11 +565,10 @@ class CorrectedRead {
         }
 
         if (overlap >= 3 && n_runs > overlap) {
-          for ( ; n_trim < overlap / 3; ++n_trim) {
+          for (; n_trim < overlap / 3; ++n_trim) {
             auto score1 = consensus_scores[n_runs - n_trim - 1];
             auto score2 = chunk.consensus_scores[overlap - n_trim - 1];
-            if (score1 > score2)
-              break;
+            if (score1 > score2) break;
           }
 
           consensus.resize(consensus.size() - n_trim);
@@ -601,43 +579,37 @@ class CorrectedRead {
                          chunk.consensus.begin() + overlap - n_trim,
                          chunk.consensus.end());
 
-        consensus_scores.insert(consensus_scores.end(),
-                                chunk.consensus_scores.begin() + overlap - n_trim,
-                                chunk.consensus_scores.end());
+        consensus_scores.insert(
+            consensus_scores.end(),
+            chunk.consensus_scores.begin() + overlap - n_trim,
+            chunk.consensus_scores.end());
       }
 
       approx_end_read_offset_ = chunk.approx_end_read_offset();
       return true;
     }
 
-    bool MergeWithDisjointChunk(ConsensusChunk& chunk) {
-      if (debug_mode)
-        std::cerr << "[MergeWithDisjointChunk]" << std::endl;
+    bool MergeWithDisjointChunk(ConsensusChunk &chunk) {
+      if (debug_mode) std::cerr << "[MergeWithDisjointChunk]" << std::endl;
       AlignRightEndAgainstRead();
-      if (chunk.alignment != kChunkLeftAligned)
-        chunk.AlignLeftEndAgainstRead();
+      if (chunk.alignment != kChunkLeftAligned) chunk.AlignLeftEndAgainstRead();
       return DoMerge(chunk);
     }
 
-    bool MergeWithOverlappingChunk(ConsensusChunk& chunk) {
-      if (debug_mode)
-        std::cerr << "[MergeWithOverlappingChunk]" << std::endl;
+    bool MergeWithOverlappingChunk(ConsensusChunk &chunk) {
+      if (debug_mode) std::cerr << "[MergeWithOverlappingChunk]" << std::endl;
       int right_end_offset = approx_end_read_offset_;
       size_t overlap = right_end_offset - chunk.approx_read_offset;
-      if (overlap > chunk.consensus_scores.size())
-        return false;
+      if (overlap > chunk.consensus_scores.size()) return false;
 
       AlignRightEndAgainstRead();
-      if (chunk.alignment != kChunkLeftAligned)
-        chunk.AlignLeftEndAgainstRead();
+      if (chunk.alignment != kChunkLeftAligned) chunk.AlignLeftEndAgainstRead();
       return DoMerge(chunk);
     }
 
    public:
-
-    bool TryMergeWith(ConsensusChunk& chunk) {
-      if (chunk.consensus.empty())
-        return true;
+    bool TryMergeWith(ConsensusChunk &chunk) {
+      if (chunk.consensus.empty()) return true;
 
       alignment = kChunkNotAligned;
       int right_end_offset = approx_end_read_offset_;
@@ -647,17 +619,14 @@ class CorrectedRead {
       else
         return MergeWithOverlappingChunk(chunk);
     }
-
   };
 
   // Chunks where strong consensus was obtained
   std::list<ConsensusChunk> chunks_;
   int trimmed_by_gen_;
 
-  void PushChunk(const ScoreStorage &scores,
-                 int initial_read_offset,
-                 int approx_read_offset,
-                 int approx_end_read_offset,
+  void PushChunk(const ScoreStorage &scores, int initial_read_offset,
+                 int approx_read_offset, int approx_end_read_offset,
                  unsigned rollback_end) {
     chunks_.push_back(ConsensusChunk(initial_read_offset, approx_read_offset,
                                      approx_end_read_offset, scores,
@@ -666,8 +635,7 @@ class CorrectedRead {
       auto &consensus = chunks_.back().consensus;
       size_t len = consensus.size();
       size_t nucl_len = 0;
-      for (size_t i = 0; i < len; ++i)
-        nucl_len += consensus[i].len;
+      for (size_t i = 0; i < len; ++i) nucl_len += consensus[i].len;
     }
 
     chunks_.back().AlignLeftEndAgainstRead();
@@ -675,9 +643,7 @@ class CorrectedRead {
       trimmed_by_gen_ = chunks_.back().raw_start_offset();
   }
 
-  const ConsensusChunk& LastChunk() const {
-    return chunks_.back();
-  }
+  const ConsensusChunk &LastChunk() const { return chunks_.back(); }
 
   class ChunkCollector {
     CorrectedRead &cread_;
@@ -716,17 +682,16 @@ class CorrectedRead {
       k[1] = kmer_data_[kmer_data_[!seq].changeto];
       k[1].kmer = !k[1].kmer;
 
-      if (k[0].qual > k[1].qual)
-        std::swap(k[0], k[1]);
+      if (k[0].qual > k[1].qual) std::swap(k[0], k[1]);
       using namespace hammer;
       for (size_t i = 0; i < 2; ++i) {
         auto &kmer = k[i].kmer;
         int end_diff;
-        auto dist = distanceHKMer(kmer.begin(), kmer.end(), seq.begin(), seq.end(), 3, &end_diff);
+        auto dist = distanceHKMer(kmer.begin(), kmer.end(), seq.begin(),
+                                  seq.end(), 3, &end_diff);
         if (debug_mode_) {
-          std::cerr << "[GetCenterOfCluster] distance("
-                    << seq << ", " << kmer << ") = " << dist << std::endl;
-
+          std::cerr << "[GetCenterOfCluster] distance(" << seq << ", " << kmer
+                    << ") = " << dist << std::endl;
         }
         if (dist <= 2) {
           return Center{kmer, start_pos + int(hammer::K) + end_diff};
@@ -736,8 +701,7 @@ class CorrectedRead {
     }
 
     bool IsInconsistent(const Center &center) const {
-      if (!last_good_center_is_defined)
-        return false;
+      if (!last_good_center_is_defined) return false;
 
       for (size_t i = 0; i < hammer::K - skipped - 1; ++i)
         if (last_good_center.seq[i + skipped + 1].nucl != center.seq[i].nucl)
@@ -750,17 +714,16 @@ class CorrectedRead {
       unsigned rollback_end = 0;
 
       if (replacing) {
-        if (rollback_size < 0)
-          rollback_size = 0;
+        if (rollback_size < 0) rollback_size = 0;
         if (rollback_size < int(scores.size()))
-            rollback_end = int(scores.size()) - rollback_size;
+          rollback_end = int(scores.size()) - rollback_size;
         replacing = false;
         rollback_size = 0;
       }
 
       if (scores.size() > hammer::K) {
-        cread_.PushChunk(scores, raw_chunk_start_pos,
-                         approx_read_offset, approx_end_read_offset, rollback_end);
+        cread_.PushChunk(scores, raw_chunk_start_pos, approx_read_offset,
+                         approx_end_read_offset, rollback_end);
         pos = cread_.LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
         pos += skipped;
       } else {
@@ -779,12 +742,12 @@ class CorrectedRead {
 
     // side effect: changes chunk_pos, pos, and approx_n_insertions
     bool TryToAlignCurrentCenter(const Center &center) {
-      if (!last_good_center_is_defined)
-        return true;
+      if (!last_good_center_is_defined) return true;
 
       if (debug_mode_) {
         std::cerr << "[TryToAlignCurrentCenter] " << center.seq.str()
-                  << " (previous good center is " << last_good_center.seq.str() << ","
+                  << " (previous good center is " << last_good_center.seq.str()
+                  << ","
                   << " skipped " << skipped << " centers)" << std::endl;
       }
 
@@ -793,15 +756,15 @@ class CorrectedRead {
       int offset;
       bool aligned = exactAlignH(last_good_center.seq.begin(),
                                  last_good_center.seq.begin() + skipped + 1,
-                                 last_good_center.seq.end(),
-                                 center.seq.begin(), center.seq.end(), 3, 8, &offset);
+                                 last_good_center.seq.end(), center.seq.begin(),
+                                 center.seq.end(), 3, 8, &offset);
 
       bool result = aligned && chunk_pos + offset >= 0;
       if (result) {
         if (debug_mode_)
-          std::cerr << "[TryToAlignCurrentCenter] offset = " << offset << std::endl;
-        if (offset < 0)
-          approx_n_insertions -= offset;
+          std::cerr << "[TryToAlignCurrentCenter] offset = " << offset
+                    << std::endl;
+        if (offset < 0) approx_n_insertions -= offset;
         pos += offset;
         chunk_pos += offset;
       }
@@ -820,12 +783,12 @@ class CorrectedRead {
       auto k = kmer_data_[center.seq];
 
       for (size_t i = 0; i < hammer::K; ++i)
-        scores[chunk_pos + i](center.seq[i].nucl, center.seq[i].len) += double(k.count) * (1.0 - k.qual);
+        scores[chunk_pos + i](center.seq[i].nucl, center.seq[i].len) +=
+            double(k.count) * (1.0 - k.qual);
 
       last_good_center = center;
       last_good_center_is_defined = true;
-      if (raw_chunk_start_pos == -1)
-        raw_chunk_start_pos = raw_pos;
+      if (raw_chunk_start_pos == -1) raw_chunk_start_pos = raw_pos;
       approx_end_read_offset = center.end_offset;
       if (debug_mode_) {
         std::cerr << "e.o. = " << approx_end_read_offset << std::endl;
@@ -834,20 +797,27 @@ class CorrectedRead {
       skipped = 0;
     }
 
-  public:
-    ChunkCollector(const io::SingleRead& r, CorrectedRead &cread,
-                   const KMerData &kmer_data, bool debug_mode) :
-       cread_(cread), kmer_data_(kmer_data), debug_mode_(debug_mode),
-      gen(r), pos(int(gen.trimmed_left())), skipped(0),
-      last_good_center(), last_good_center_is_defined(false),
-      is_first_center(true),
-      replacing(false), rollback_size(0),
-      need_to_align(false),
-      approx_read_offset(0), approx_end_read_offset(0),
-      scores(), chunk_pos(0),
-      raw_chunk_start_pos(-1),
-      approx_n_insertions(0)
-    {
+   public:
+    ChunkCollector(const io::SingleRead &r, CorrectedRead &cread,
+                   const KMerData &kmer_data, bool debug_mode)
+        : cread_(cread),
+          kmer_data_(kmer_data),
+          debug_mode_(debug_mode),
+          gen(r),
+          pos(int(gen.trimmed_left())),
+          skipped(0),
+          last_good_center(),
+          last_good_center_is_defined(false),
+          is_first_center(true),
+          replacing(false),
+          rollback_size(0),
+          need_to_align(false),
+          approx_read_offset(0),
+          approx_end_read_offset(0),
+          scores(),
+          chunk_pos(0),
+          raw_chunk_start_pos(-1),
+          approx_n_insertions(0) {
       --pos;
       --chunk_pos;
     }
@@ -858,7 +828,7 @@ class CorrectedRead {
       raw_pos = int(gen.trimmed_left()) - 1;
 
       if (debug_mode_) {
-          std::cerr << "gen. trimmed = " << gen.trimmed_left() << std::endl;
+        std::cerr << "gen. trimmed = " << gen.trimmed_left() << std::endl;
       }
 
       while (gen.HasMore()) {
@@ -869,9 +839,10 @@ class CorrectedRead {
         ++raw_pos;
         if (debug_mode_) {
           std::cerr << "=================================" << std::endl;
-          std::cerr << "pos = " << pos << ", raw_pos = " << raw_pos <<
-            ", last_good_center_is_defined = " << last_good_center_is_defined <<
-            ", skipped = " << skipped << std::endl;
+          std::cerr << "pos = " << pos << ", raw_pos = " << raw_pos
+                    << ", last_good_center_is_defined = "
+                    << last_good_center_is_defined << ", skipped = " << skipped
+                    << std::endl;
         }
         ++chunk_pos;
 
@@ -884,21 +855,25 @@ class CorrectedRead {
           qual = kmer_data_[center.seq].qual;
         }
 
-        if (qual > lowQualThreshold && last_good_center_is_defined && skipped == 0) {
+        if (qual > lowQualThreshold && last_good_center_is_defined &&
+            skipped == 0) {
           if (debug_mode_) {
-            std::cerr << "raw_pos + hammer::K = " << raw_pos + hammer::K << std::endl;
-            std::cerr << "last_good_center.end_offset + 1 = " <<  last_good_center.end_offset + 1 << std::endl;
+            std::cerr << "raw_pos + hammer::K = " << raw_pos + hammer::K
+                      << std::endl;
+            std::cerr << "last_good_center.end_offset + 1 = "
+                      << last_good_center.end_offset + 1 << std::endl;
           }
           // Finding a center by means of clustering failed.
           // Let's try the following: take last good center and make a new one
-          // from it by appending next homopolymer run; if its quality is high, we use it.
+          // from it by appending next homopolymer run; if its quality is high,
+          // we use it.
           if (raw_pos + hammer::K < last_good_center.end_offset + 1) {
             --pos;
             --chunk_pos;
             if (debug_mode_) {
               std::cerr << "skipping low-quality hk-mer" << std::endl;
             }
-            continue; // move to next hk-mer
+            continue;  // move to next hk-mer
           } else if (raw_pos + hammer::K == last_good_center.end_offset + 1) {
             auto seq_corr = last_good_center.seq;
             for (size_t i = 0; i < hammer::K - 1; ++i)
@@ -907,7 +882,8 @@ class CorrectedRead {
             center = Center{seq_corr, last_good_center.end_offset + 1};
             qual = kmer_data_[center.seq].qual;
             if (debug_mode_) {
-              std::cerr << "seq_corr = " << seq_corr.str() << " , qual = " << qual << std::endl;
+              std::cerr << "seq_corr = " << seq_corr.str()
+                        << " , qual = " << qual << std::endl;
             }
 
             if (qual > lowQualThreshold && can_be_changed) {
@@ -922,9 +898,9 @@ class CorrectedRead {
         bool inconsistent = IsInconsistent(center);
 
         if (debug_mode_ && !low_qual && seq != center.seq) {
-          std::cerr << "replaced " << seq.str()
-                    << " (quality " << kmer_data_[seq].qual
-                    << ", count " << kmer_data_[seq].count << ")"
+          std::cerr << "replaced " << seq.str() << " (quality "
+                    << kmer_data_[seq].qual << ", count "
+                    << kmer_data_[seq].count << ")"
                     << " with " << center.seq.str() << std::endl;
         }
 
@@ -954,7 +930,8 @@ class CorrectedRead {
           }
 
           if (debug_mode_) {
-              std::cerr << "[include into consensus] raw_pos = " << raw_pos << std::endl;
+            std::cerr << "[include into consensus] raw_pos = " << raw_pos
+                      << std::endl;
           }
           IncludeIntoConsensus(center);
         }
@@ -964,34 +941,29 @@ class CorrectedRead {
     }
   };
 
-  void CollectChunks(const io::SingleRead& r) {
+  void CollectChunks(const io::SingleRead &r) {
     ChunkCollector chunk_collector(r, *this, kmer_data_, debug_mode_);
     chunk_collector.Run();
   }
 
  public:
-  CorrectedRead(const io::SingleRead& read, const KMerData& kmer_data,
-                bool debug_mode = false) :
-    raw_read_(read),
-    kmer_data_(kmer_data),
-    debug_mode_(debug_mode)
-  {
+  CorrectedRead(const io::SingleRead &read, const KMerData &kmer_data,
+                bool debug_mode = false)
+      : raw_read_(read), kmer_data_(kmer_data), debug_mode_(debug_mode) {
     CollectChunks(read);
   }
 
   void MergeChunks() {
-    if (chunks_.empty())
-      return;
+    if (chunks_.empty()) return;
 
     auto iter = chunks_.begin();
-    ConsensusChunk& merged = *iter;
+    ConsensusChunk &merged = *iter;
 
     if (debug_mode_) {
       if (chunks_.size() == 1) {
         iter->AlignLeftEndAgainstRead();
         for (int i = 0; i < iter->approx_read_offset; ++i)
-          for (int j = 0; j < raw_read_[i].len; ++j)
-            std::cerr << ' ';
+          for (int j = 0; j < raw_read_[i].len; ++j) std::cerr << ' ';
         for (size_t i = 0; i < iter->consensus.size(); ++i)
           std::cerr << iter->consensus[i].str();
         std::cerr << std::endl;
@@ -1000,8 +972,7 @@ class CorrectedRead {
 
     ++iter;
     while (iter != chunks_.end()) {
-      if (iter->consensus.size() > hammer::K)
-        merged.TryMergeWith(*iter);
+      if (iter->consensus.size() > hammer::K) merged.TryMergeWith(*iter);
       iter = chunks_.erase(iter);
     }
 
@@ -1010,16 +981,16 @@ class CorrectedRead {
 
   void AttachUncorrectedRuns() {
     // attach runs from the right
-    const auto& data = raw_read_.data();
+    const auto &data = raw_read_.data();
     int n_raw = int(raw_read_.size());
     int end_read_offset = LastChunk().approx_end_read_offset();
     if (end_read_offset < n_raw && end_read_offset >= 0) {
       corrected_runs_.insert(corrected_runs_.end(),
-                             data.begin() + end_read_offset,
-                             data.end());
+                             data.begin() + end_read_offset, data.end());
     }
     if (debug_mode_) {
-      std::cerr << "n_raw = " << n_raw << ", end_read_offset = " << end_read_offset << std::endl;
+      std::cerr << "n_raw = " << n_raw
+                << ", end_read_offset = " << end_read_offset << std::endl;
     }
 
     // attach runs from the left
@@ -1033,16 +1004,14 @@ class CorrectedRead {
   }
 
   std::string GetSequenceString() const {
-    if (chunks_.empty() && corrected_runs_.empty())
-      return "";
+    if (chunks_.empty() && corrected_runs_.empty()) return "";
     std::string res;
     if (!corrected_runs_.empty()) {
       for (auto it = corrected_runs_.begin(); it != corrected_runs_.end(); ++it)
         res += it->str();
     } else {
-      auto& runs = chunks_.front().consensus;
-      for (auto it = runs.begin(); it != runs.end(); ++it)
-        res += it->str();
+      auto &runs = chunks_.front().consensus;
+      for (auto it = runs.begin(); it != runs.end(); ++it) res += it->str();
     }
     return res;
   }
@@ -1052,7 +1021,6 @@ class SingleReadCorrector {
   const KMerData &kmer_data_;
 
  public:
-
   struct ReadSelectionPredicate {
     virtual bool operator()(const io::SingleRead &read) = 0;
   };
@@ -1060,76 +1028,70 @@ class SingleReadCorrector {
   struct DebugOutputPredicate : public ReadSelectionPredicate {};
 
   struct NoDebug : public DebugOutputPredicate {
-    virtual bool operator()(const io::SingleRead &) {
-      return false;
-    }
+    virtual bool operator()(const io::SingleRead &) { return false; }
   };
 
   struct FullDebug : public DebugOutputPredicate {
-    virtual bool operator()(const io::SingleRead &) {
-      return true;
-    }
+    virtual bool operator()(const io::SingleRead &) { return true; }
   };
 
   class DebugIfContains : public DebugOutputPredicate {
     Sequence needle_;
     Sequence needle_rc_;
-  public:
-    DebugIfContains(const Sequence &seq) :
-      needle_(seq), needle_rc_(!seq) {}
+
+   public:
+    DebugIfContains(const Sequence &seq) : needle_(seq), needle_rc_(!seq) {}
 
     virtual bool operator()(const io::SingleRead &read) {
       auto read_seq = read.sequence();
-      if (read_seq.size() < needle_.size())
-          return false;
-      if (read_seq.find(needle_, 0) != -1ULL)
-        return true;
-      if (read_seq.find(needle_rc_, 0) != -1ULL)
-        return true;
+      if (read_seq.size() < needle_.size()) return false;
+      if (read_seq.find(needle_, 0) != -1ULL) return true;
+      if (read_seq.find(needle_rc_, 0) != -1ULL) return true;
       return false;
     }
   };
 
   struct SelectPredicate : public ReadSelectionPredicate {};
   struct SelectAll : public SelectPredicate {
-    virtual bool operator()(const io::SingleRead &) {
-      return true;
-    }
+    virtual bool operator()(const io::SingleRead &) { return true; }
   };
 
   class SelectByName : public SelectPredicate {
     std::set<std::string> names_;
-  public:
-    SelectByName(const std::set<std::string>& names) :
-      names_(names) {}
+
+   public:
+    SelectByName(const std::set<std::string> &names) : names_(names) {}
     virtual bool operator()(const io::SingleRead &r) {
       return names_.find(r.name()) != names_.end();
     }
   };
 
-private:
-  BamTools::SamHeader* sam_header_;
+ private:
+  BamTools::SamHeader *sam_header_;
   DebugOutputPredicate &debug_pred_;
   SelectPredicate &select_pred_;
 
-public:
+ public:
   SingleReadCorrector(const KMerData &kmer_data,
                       BamTools::SamHeader *sam_header,
-                      DebugOutputPredicate &debug,
-                      SelectPredicate &select) :
-    kmer_data_(kmer_data), sam_header_(sam_header),
-    debug_pred_(debug), select_pred_(select) {}
+                      DebugOutputPredicate &debug, SelectPredicate &select)
+      : kmer_data_(kmer_data),
+        sam_header_(sam_header),
+        debug_pred_(debug),
+        select_pred_(select) {}
 
-  SingleReadCorrector(const KMerData &kmer_data,
-                      DebugOutputPredicate &debug,
-                      SelectPredicate &select) :
-    kmer_data_(kmer_data), sam_header_(NULL),
-    debug_pred_(debug), select_pred_(select) {}
+  SingleReadCorrector(const KMerData &kmer_data, DebugOutputPredicate &debug,
+                      SelectPredicate &select)
+      : kmer_data_(kmer_data),
+        sam_header_(NULL),
+        debug_pred_(debug),
+        select_pred_(select) {}
 
-  std::unique_ptr<io::SingleRead> operator()(std::unique_ptr<io::SingleRead> r) {
+  std::unique_ptr<io::SingleRead> operator()(
+      std::unique_ptr<io::SingleRead> r) {
     return operator()(*r);
   }
-  
+
   std::unique_ptr<io::SingleRead> operator()(const io::SingleRead &r) {
     if (!select_pred_(r)) return nullptr;
     bool debug_mode = debug_pred_(r);
@@ -1142,32 +1104,28 @@ public:
 
     CorrectedRead read(r, kmer_data_, debug_mode);
     read.MergeChunks();
-    if (cfg::get().keep_uncorrected_ends)
-      read.AttachUncorrectedRuns();
+    if (cfg::get().keep_uncorrected_ends) read.AttachUncorrectedRuns();
 
     if (debug_mode) {
       std::cerr << "final result: " << read.GetSequenceString() << std::endl;
     }
 
     auto seq = read.GetSequenceString();
-    if (seq.empty())
-      return nullptr;
+    if (seq.empty()) return nullptr;
 
     return std::unique_ptr<io::SingleRead>(new io::SingleRead(r.name(), seq));
   }
 
-  std::unique_ptr<io::BamRead>
-  operator()(std::unique_ptr<BamTools::BamAlignment> alignment) {
+  std::unique_ptr<io::BamRead> operator()(
+      std::unique_ptr<BamTools::BamAlignment> alignment) {
     VERIFY(sam_header_);
     io::SingleRead r(alignment->Name, alignment->QueryBases);
     // reverse strand means we're working with a mapped BAM, might be
     // the case for datasets downloaded from IonCommunity
-    if (alignment->IsReverseStrand())
-      r = !r;
+    if (alignment->IsReverseStrand()) r = !r;
     auto corrected_r = operator()(r);
     std::string rg;
-    if (!alignment->GetTag("RG", rg) || !corrected_r)
-      return nullptr;
+    if (!alignment->GetTag("RG", rg) || !corrected_r) return nullptr;
     auto flow_order = sam_header_->ReadGroups[rg].FlowOrder;
 
     float delta_score, fit_score;
@@ -1176,17 +1134,26 @@ public:
       std::reverse(seq.begin(), seq.end());
       for (auto it = seq.begin(); it != seq.end(); ++it) {
         switch (*it) {
-        case 'A': *it = 'T'; break;
-        case 'C': *it = 'G'; break;
-        case 'G': *it = 'C'; break;
-        case 'T': *it = 'A'; break;
-        default: break;
+          case 'A':
+            *it = 'T';
+            break;
+          case 'C':
+            *it = 'G';
+            break;
+          case 'G':
+            *it = 'C';
+            break;
+          case 'T':
+            *it = 'A';
+            break;
+          default:
+            break;
         }
       }
     }
 
-    BaseHypothesisEvaluator(*alignment, flow_order, seq,
-                            delta_score, fit_score, 0);
+    BaseHypothesisEvaluator(*alignment, flow_order, seq, delta_score, fit_score,
+                            0);
     std::stringstream ss;
     ss << alignment->Name << "_" << delta_score << "_" << fit_score;
     alignment->Name = ss.str();
@@ -1201,22 +1168,22 @@ public:
 
 class PairedReadCorrector : public SingleReadCorrector {
  public:
-  PairedReadCorrector(const KMerData &kmer_data,
-                      DebugOutputPredicate &debug,
+  PairedReadCorrector(const KMerData &kmer_data, DebugOutputPredicate &debug,
                       SelectPredicate &select)
-    : SingleReadCorrector(kmer_data, debug, select) {}
+      : SingleReadCorrector(kmer_data, debug, select) {}
 
-  std::unique_ptr<io::PairedRead> operator()(std::unique_ptr<io::PairedRead> r) {
+  std::unique_ptr<io::PairedRead> operator()(
+      std::unique_ptr<io::PairedRead> r) {
     auto corrected_r = SingleReadCorrector::operator()(r->first());
     auto corrected_l = SingleReadCorrector::operator()(r->second());
 
-    if (!corrected_r || !corrected_l)
-      return nullptr;
+    if (!corrected_r || !corrected_l) return nullptr;
 
-    return std::unique_ptr<io::PairedRead>(new io::PairedRead(*corrected_r, *corrected_l, 0));
+    return std::unique_ptr<io::PairedRead>(
+        new io::PairedRead(*corrected_r, *corrected_l, 0));
   }
 };
 
-}; // namespace correction
-}; // namespace hammer
-#endif // __HAMMER_IT_READ_CORRECTOR_HPP__
+};      // namespace correction
+};      // namespace hammer
+#endif  // __HAMMER_IT_READ_CORRECTOR_HPP__

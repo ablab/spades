@@ -11,6 +11,8 @@
 
 #include "utils/kmer_mph/kmer_index_builder.hpp"
 
+#include <mutex>
+#include <random>
 #include "io/kmers/mmapped_writer.hpp"
 #include "io/reads/file_reader.hpp"
 #include "io/reads/read_processor.hpp"
@@ -35,22 +37,22 @@ class BufferFiller {
 
  public:
   BufferFiller(HammerKMerSplitter &splitter)
-          : processed_(0), splitter_(splitter) {}
+      : processed_(0), splitter_(splitter) {}
 
   size_t processed() const { return processed_; }
 
-    bool operator()(std::unique_ptr<io::SingleRead> r) {
+  bool operator()(std::unique_ptr<io::SingleRead> r) {
     ValidHKMerGenerator<hammer::K> gen(*r);
     unsigned thread_id = omp_get_thread_num();
 
-#   pragma omp atomic
+#pragma omp atomic
     processed_ += 1;
 
     bool stop = false;
     while (gen.HasMore()) {
       HKMer seq = gen.kmer();
 
-      stop |= splitter_.push_back_internal( seq, thread_id);
+      stop |= splitter_.push_back_internal(seq, thread_id);
       stop |= splitter_.push_back_internal(!seq, thread_id);
 
       gen.Next();
@@ -90,48 +92,71 @@ fs::files_t HammerKMerSplitter::Split(size_t num_files, unsigned nthreads) {
 }
 
 static inline void Merge(KMerStat &lhs, const KMerStat &rhs) {
-  if (lhs.count == 0)
-    lhs.kmer = rhs.kmer;
+  if (lhs.count == 0) lhs.kmer = rhs.kmer;
 
   lhs.count += rhs.count;
-  lhs.qual *= rhs.qual;
+  lhs.qual += rhs.qual;
 }
 
 static void PushKMer(KMerData &data, HKMer kmer, double qual) {
   KMerStat &kmc = data[kmer];
   kmc.lock();
-  Merge(kmc, KMerStat(1, kmer, qual));
+  Merge(kmc, KMerStat(1, kmer, (float)qual));
   kmc.unlock();
 }
 
 static void PushKMerRC(KMerData &data, HKMer kmer, double qual) {
-  kmer = !kmer;
-
-  KMerStat &kmc = data[kmer];
-  kmc.lock();
-  Merge(kmc, KMerStat(1, kmer, qual));
-  kmc.unlock();
+  PushKMer(data, !kmer, qual);
 }
 
 class KMerDataFiller {
-  KMerData &data_;
+  KMerData &Data;
+  mutable std::default_random_engine RandomEngine;
+  mutable std::uniform_real_distribution<double> UniformRandGenerator;
+  mutable std::mutex Lock;
+  double SampleRate;
 
  public:
-  KMerDataFiller(KMerData &data)
-      : data_(data) {}
+  KMerDataFiller(KMerData &data, double sampleRate = 1.0)
+      : Data(data),
+        RandomEngine(42),
+        UniformRandGenerator(0, 1),
+        SampleRate(sampleRate) {}
 
-    bool operator()(std::unique_ptr<io::SingleRead> r) const {
+  double NextUniform() const {
+    std::lock_guard<std::mutex> guard(Lock);
+    return UniformRandGenerator(RandomEngine);
+  }
+
+  bool operator()(std::unique_ptr<io::SingleRead> &&r) const {
     ValidHKMerGenerator<hammer::K> gen(*r);
-    while (gen.HasMore()) {
-      HKMer kmer = gen.kmer();
-      double correct = gen.correct_probability();
 
-      PushKMer(data_, kmer, 1 - correct);
-      PushKMerRC(data_, kmer, 1 - correct);
+    // tiny quality regularization
+    const double decay = 0.9999;
+    double prior = 1.0;
 
-      gen.Next();
+    bool skipRead = SampleRate < 1.0 && (NextUniform() > SampleRate);
+
+    if (skipRead) {
+      return false;
     }
 
+    while (gen.HasMore()) {
+      const HKMer kmer = gen.kmer();
+      const double p = gen.correct_probability();
+      gen.Next();
+
+      assert(p < 1.0);
+      assert(p >= 0);
+      const double correct = p * prior;
+
+      prior *= decay;
+      {
+        PushKMer(Data, kmer, log(1 - correct));
+
+        PushKMerRC(Data, kmer, log(1 - correct));
+      }
+    }
     // Do not stop
     return false;
   }
@@ -140,30 +165,43 @@ class KMerDataFiller {
 void KMerDataCounter::FillKMerData(KMerData &data) {
   HammerKMerSplitter splitter(cfg::get().working_dir);
   utils::KMerDiskCounter<hammer::HKMer> counter(cfg::get().working_dir, splitter);
+
   size_t sz = utils::KMerIndexBuilder<HammerKMerIndex>(cfg::get().working_dir, num_files_, cfg::get().max_nthreads).BuildIndex(data.index_, counter);
+
 
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");
   data.data_.resize(sz);
 
-  const auto& dataset = cfg::get().dataset;
-  for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
+  const auto &dataset = cfg::get().dataset;
+  for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et;
+       ++it) {
     INFO("Processing " << *it);
     io::FileReadStream irs(*it, io::PhredOffset);
-    KMerDataFiller filler(data);
+    KMerDataFiller filler(data, cfg::get().sample_rate);
     hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, filler);
   }
 
   INFO("Collection done, postprocessing.");
 
   size_t singletons = 0;
+  size_t skipped = 0;
   for (size_t i = 0; i < data.size(); ++i) {
-    VERIFY(data[i].count);
-
-    if (data[i].count == 1)
+    if (data[i].count == 1) {
       singletons += 1;
+    }
+    if (data[i].count == 0) {
+      skipped += 1;
+    }
   }
 
-  INFO("Merge done. There are " << data.size() << " kmers in total. "
-       "Among them " << singletons << " (" <<  100.0 * double(singletons) / double(data.size()) << "%) are singletons.");
+  INFO("Merge done. There are "
+       << data.size()
+       << " kmers in total. "
+          "Among them "
+       << singletons << " (" << 100.0 * double(singletons) / double(data.size())
+       << "%) are singletons."
+       << "Among them " << skipped << " ("
+       << 100.0 * double(skipped) / double(data.size())
+       << "%) are skipped during sampling.");
 }

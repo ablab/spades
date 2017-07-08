@@ -10,6 +10,7 @@
 
 #include "adt/pointer_iterator.hpp"
 #include "adt/array_vector.hpp"
+#include "common/utils/verify.hpp"
 
 #include <string>
 
@@ -19,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <strings.h>
+#include <stdio.h>
 
 class MMappedWriter {
     int StreamFile;

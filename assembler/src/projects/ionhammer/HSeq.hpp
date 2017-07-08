@@ -8,13 +8,13 @@
 #ifndef __HAMMER_HSEQ_HPP__
 #define __HAMMER_HSEQ_HPP__
 
-#include "sequence/nucl.hpp"
 #include <city/city.h>
+#include "sequence/nucl.hpp"
 
 #include <array>
+#include <deque>
 #include <string>
 #include <vector>
-#include <deque>
 
 #include <cstdint>
 
@@ -23,56 +23,50 @@ namespace hammer {
 union HomopolymerRun {
   uint8_t raw;
   struct {
-    uint8_t len  : 6;
+    uint8_t len : 6;
     uint8_t nucl : 2;
   };
 
-  HomopolymerRun()
-      : raw(0) {}
-  HomopolymerRun(uint8_t nucl, uint8_t len)
+  HomopolymerRun() : raw(0) {}
+  HomopolymerRun(uint8_t nucl, uint8_t len = 1)
       : len(len & 63), nucl(nucl & 3) {}
 
-  bool operator==(const HomopolymerRun &that) const {
-    return raw == that.raw;
-  }
+  bool operator==(const HomopolymerRun &that) const { return raw == that.raw; }
 
-  bool operator!=(const HomopolymerRun &that) const {
-    return raw != that.raw;
-  }
+  bool operator!=(const HomopolymerRun &that) const { return raw != that.raw; }
 
-  bool operator<(const HomopolymerRun &that) const {
-    return raw < that.raw;
-  }
+  bool operator<(const HomopolymerRun &that) const { return raw < that.raw; }
 
-  std::string str() const {
-    return std::string(len, ::nucl(nucl));
-  }
+  inline char Nucl() const { return nucl; }
+
+  inline char Len() const { return len; }
+
+  std::string str() const { return std::string(len, ::nucl(nucl)); }
 };
 
 namespace iontorrent {
-  // Container shall have push_back method
-  template <typename Container>
-  void toHomopolymerRuns(const std::string &seq, Container& runs) {
-    if (seq.empty())
-      return;
+// Container shall have push_back method
+template <typename Container>
+void toHomopolymerRuns(const std::string &seq, Container &runs) {
+  if (seq.empty()) return;
 
-    char nucl = seq[0];
-    uint8_t len = 1;
-    for (size_t i = 1; i < seq.size(); ++i) {
-      if (seq[i] != nucl) {
-        runs.push_back(HomopolymerRun(dignucl(nucl), len));
-        len = 1;
-        nucl = seq[i];
-      } else {
-        ++len;
-      }
-    }
-    if (len > 0) {
+  char nucl = seq[0];
+  uint8_t len = 1;
+  for (size_t i = 1; i < seq.size(); ++i) {
+    if (seq[i] != nucl) {
       runs.push_back(HomopolymerRun(dignucl(nucl), len));
+      len = 1;
+      nucl = seq[i];
+    } else {
+      ++len;
     }
   }
+  if (len > 0) {
+    runs.push_back(HomopolymerRun(dignucl(nucl), len));
+  }
+}
 
-};
+};  // namespace iontorrent
 
 template <size_t N = 16>
 class HSeq {
@@ -82,14 +76,12 @@ class HSeq {
  private:
   StorageType data_;
 
-  const static size_t PrimeNum = 239;
-
  public:
   HSeq() {}
 
-  HSeq(typename StorageType::const_iterator Start,
-       typename StorageType::const_iterator End) {
-    std::copy(Start, End, data_.begin());
+  template <class Iterator>
+  HSeq(Iterator start, Iterator end) {
+    std::copy(start, end, data_.begin());
   }
 
   typedef HomopolymerRun DataType;
@@ -101,13 +93,9 @@ class HSeq {
     return N * sizeof(HomopolymerRun);
   }
 
-  typename StorageType::const_iterator begin() const {
-    return data_.begin();
-  }
+  typename StorageType::const_iterator begin() const { return data_.begin(); }
 
-  typename StorageType::const_iterator end() const {
-    return data_.end();
-  }
+  typename StorageType::const_iterator end() const { return data_.end(); }
 
   typename StorageType::const_reverse_iterator rbegin() const {
     return data_.rbegin();
@@ -117,21 +105,13 @@ class HSeq {
     return data_.rend();
   }
 
-  const HomopolymerRun *data() const {
-    return data_.data();
-  }
+  const HomopolymerRun *data() const { return data_.data(); }
 
-  size_t data_size() const {
-    return DataSize;
-  }
+  size_t data_size() const { return DataSize; }
 
-  HomopolymerRun &operator[](size_t idx) {
-    return data_[idx];
-  }
+  HomopolymerRun &operator[](size_t idx) { return data_[idx]; }
 
-  const HomopolymerRun &operator[](size_t idx) const {
-    return data_[idx];
-  }
+  const HomopolymerRun &operator[](size_t idx) const { return data_[idx]; }
 
   HSeq<N> operator!() const {
     HSeq<N> res(*this);
@@ -144,56 +124,97 @@ class HSeq {
       res[N - i - 1] = front;
     }
 
-    if (N & 1)
-      res[N/2].nucl = complement(res[N/2].nucl) & 3;
+    if (N & 1) res[N / 2].nucl = complement(res[N / 2].nucl) & 3;
 
     return res;
   }
 
   HSeq<N> operator<<(char nucl) const {
-    if (is_nucl(nucl))
-      nucl = dignucl(nucl);
+    if (is_nucl(nucl)) nucl = dignucl(nucl);
 
     HSeq<N> res(*this);
     // Easy case - just add to run
-    HomopolymerRun &last = res[N-1];
+    HomopolymerRun &last = res[N - 1];
     if (last.nucl == nucl) {
       last.len += 1;
       return res;
     }
 
     // Hard case - have to shift the stuff
-    for (size_t i = 0; i < N - 1; ++i)
-      res[i] = res[i + 1];
+    for (size_t i = 0; i < N - 1; ++i) res[i] = res[i + 1];
     res[N - 1].nucl = nucl;
     res[N - 1].len = 1;
 
     return res;
   }
 
-  HSeq<N>& operator<<=(char nucl) {
-    if (is_nucl(nucl))
-      nucl = dignucl(nucl);
+  HSeq<N> operator<<(HomopolymerRun run) const {
+    HSeq<N> res(*this);
+    // Easy case - just add to run
+    HomopolymerRun &last = res[N - 1];
+    if (last.nucl == run.nucl) {
+      last.len += run.len;
+      return res;
+    }
+
+    // Hard case - have to shift the stuff
+    for (size_t i = 0; i < N - 1; ++i) res[i] = res[i + 1];
+    res[N - 1] = run;
+
+    return res;
+  }
+
+  HSeq<N> &operator<<=(char nucl) {
+    if (is_nucl(nucl)) nucl = dignucl(nucl);
 
     // Easy case - just add to run
-    HomopolymerRun &last = data_[N-1];
+    HomopolymerRun &last = data_[N - 1];
     if (last.nucl == nucl) {
       last.len = (last.len + 1) & 63;
       return *this;
     }
 
     // Hard case - have to shift the stuff
-    for (size_t i = 0; i < N - 1; ++i)
-      data_[i] = data_[i + 1];
+    for (size_t i = 0; i < N - 1; ++i) data_[i] = data_[i + 1];
     data_[N - 1].nucl = nucl & 3;
     data_[N - 1].len = 1;
 
     return *this;
   }
 
+  HSeq<N> &operator<<=(HomopolymerRun run) {
+    // Easy case - just add to run
+    HomopolymerRun &last = data_[N - 1];
+    if (last.nucl == run.nucl) {
+      last.len = (last.len + run.len) & 63;
+      return *this;
+    }
+
+    // Hard case - have to shift the stuff
+    for (size_t i = 0; i < N - 1; ++i) data_[i] = data_[i + 1];
+    data_[N - 1] = run;
+    return *this;
+  }
+
+  HSeq<N> operator>>(HomopolymerRun run) const {
+    HSeq<N> res(*this);
+    // Easy case - just add to run
+    HomopolymerRun &first = res[0];
+    if (first.nucl == run.nucl) {
+      first.len += run.len;
+      return res;
+    }
+
+    // Hard case - have to shift the stuff
+    for (size_t i = 0; i < N - 1; ++i) res[i + 1] = res[i];
+    res[0].nucl = run.nucl;
+    res[0].len = run.len;
+
+    return res;
+  }
+
   HSeq<N> operator>>(char nucl) const {
-    if (is_nucl(nucl))
-      nucl = dignucl(nucl);
+    if (is_nucl(nucl)) nucl = dignucl(nucl);
 
     HSeq<N> res(*this);
     // Easy case - just add to run
@@ -204,39 +225,40 @@ class HSeq {
     }
 
     // Hard case - have to shift the stuff
-    for (size_t i = 0; i < N - 1; ++i)
-      res[i + 1] = res[i];
+    for (size_t i = 0; i < N - 1; ++i) res[i + 1] = res[i];
     res[0].nucl = nucl;
     res[0].len = 1;
 
     return res;
   }
 
-  bool operator==(const HSeq<N> &that) const {
-    return (data_ == that.data_);
-  }
-  bool operator!=(const HSeq<N> &that) const {
-    return (data_ != that.data_);
-  }
+  bool operator==(const HSeq<N> &that) const { return (data_ == that.data_); }
+  bool operator!=(const HSeq<N> &that) const { return (data_ != that.data_); }
 
   size_t size() const {
     size_t res = 0;
-    for (size_t i = 0; i < N; ++i)
-      res += data_[i].len;
+    for (size_t i = 0; i < N; ++i) res += data_[i].len;
+
+    return res;
+  }
+  size_t max_run_length() const {
+    size_t res = 0;
+    for (size_t i = 0; i < N; ++i) res = std::max((size_t)(data_[i].len), res);
 
     return res;
   }
 
   std::string str() const {
     std::string res;
-    for (size_t i = 0; i < N; ++i)
-      res += data_[i].str();
+    for (size_t i = 0; i < N; ++i) res += data_[i].str();
 
     return res;
   }
 
-  static size_t GetHash(const DataType *data, size_t sz = DataSize, uint32_t seed = 0) {
-    return CityHash64WithSeed((const char*)data, sz * sizeof(DataType), 0x9E3779B9 ^ seed);
+  static size_t GetHash(const DataType *data, size_t sz = DataSize,
+                        uint32_t seed = 0) {
+    return CityHash64WithSeed((const char *)data, sz * sizeof(DataType),
+                              0x9E3779B9 ^ seed);
   }
 
   size_t GetHash(uint32_t seed = 0) const {
@@ -248,7 +270,8 @@ class HSeq {
       return seq.GetHash(seed);
     }
 
-    size_t operator()(const DataType *data, size_t sz = DataSize, uint32_t seed = 0) const {
+    size_t operator()(const DataType *data, size_t sz = DataSize,
+                      uint32_t seed = 0) const {
       return GetHash(data, sz, seed);
     }
   };
@@ -257,8 +280,7 @@ class HSeq {
     bool operator()(const HSeq<N> &l, const HSeq<N> &r) const {
       for (size_t i = 0; i < N; ++i) {
         const uint8_t lr = l[i].raw, rr = r[i].raw;
-        if (lr != rr)
-          return lr < rr;
+        if (lr != rr) return lr < rr;
       }
 
       return false;
@@ -266,24 +288,24 @@ class HSeq {
   };
 };
 
-template<size_t N>
-std::ostream& operator<<(std::ostream& os, const HSeq<N> &seq) {
+template <size_t N>
+std::ostream &operator<<(std::ostream &os, const HSeq<N> &seq) {
   os << seq.str();
   return os;
 }
 
 namespace internal {
-  template <size_t N>
-  inline size_t getSize(const hammer::HSeq<N> &) {
-    return N;
-  }
-
-  template <typename T>
-  inline size_t getSize(const T& a) { 
-    return a.size(); 
-  }
+template <size_t N>
+inline size_t getSize(const hammer::HSeq<N> &) {
+  return N;
 }
 
-};
+template <typename T>
+inline size_t getSize(const T &a) {
+  return a.size();
+}
+}  // namespace internal
 
-#endif // __HAMMER_HSEQ_HPP__
+};  // namespace hammer
+
+#endif  // __HAMMER_HSEQ_HPP__
