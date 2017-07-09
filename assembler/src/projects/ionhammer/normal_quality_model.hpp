@@ -117,7 +117,7 @@ class Binarizer {
   Binarizer(const vector<double>& borders) : borders_(borders) {}
 
   int GetBin(double value) const {
-    int index = 0;
+    uint index = 0;
     while (index < borders_.size() && value > borders_[index]) {
       ++index;
     }
@@ -179,7 +179,7 @@ class NormalClusterModel {
                                 stat.qual, stat.count);
   }
 
-  double IsHighQuality(const hammer::KMerStat& stat) const {
+  bool IsHighQuality(const hammer::KMerStat& stat) const {
     const auto bin = binarizer_.GetBin(GetKmerBinIdx(stat.kmer));
     return trans_.Apply(stat.qual, stat.count) <= median_qualities_[bin];
   }
@@ -429,7 +429,7 @@ class ModelEstimator {
     }
 
     const auto len_limit = std::min(qualities.size(), 7UL);
-    for (int max_run_len = 2; max_run_len < len_limit; ++max_run_len) {
+    for (uint max_run_len = 2; max_run_len < len_limit; ++max_run_len) {
       if (total_count < min_sample_size) {
         break;
       }
@@ -478,7 +478,7 @@ class ModelEstimator {
       }
     }
 
-    const auto quantile = good_samples.size() * cfg::get().dist_one_subcluster_alpha;
+    const size_t quantile = (size_t)(good_samples.size() * cfg::get().dist_one_subcluster_alpha);
     std::nth_element(good_samples.begin(), good_samples.begin() + quantile,
                      good_samples.end());
     return good_samples[quantile];

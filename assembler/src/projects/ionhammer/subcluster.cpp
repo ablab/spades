@@ -89,7 +89,7 @@ void TGenomicHKMersEstimator::ProceedCluster(std::vector<size_t>& cluster) {
     const auto idx = cluster[i];
     const auto& stat = data_[idx];
 
-    if (stat.count < cfg::get().subcluster_min_count && (i > 0)) {
+    if ((uint)stat.count < cfg::get().subcluster_min_count && (i > 0)) {
       break;
     }
 
@@ -117,7 +117,7 @@ void TGenomicHKMersEstimator::ProceedCluster(std::vector<size_t>& cluster) {
       const auto& centerCandidate = data_[candidates[i]];
       kmerErrorRates.push_back(exp(GenerateLikelihood(centerCandidate.kmer, centerCandidate.kmer)));
 
-      for (int j = 0; j < i; ++j) {
+      for (size_t j = 0; j < i; ++j) {
         const auto& parent = data_[candidates[j]];
 
         if (cfg::get().subcluster_filter_by_count_enabled) {
@@ -194,7 +194,7 @@ void TGenomicHKMersEstimator::ProceedCluster(std::vector<size_t>& cluster) {
       for (size_t j = 0; j < k; ++j) {
         hammer::HKMer kmery = centralKmers[j];
         double cdist = hammer::hkmerDistance(kmerx, kmery).levenshtein_;
-        if (cdist < dist || (cdist == dist && count < data_[kmery].count)) {
+        if (cdist < dist || (cdist == dist && count < (size_t)data_[kmery].count)) {
           cidx = j;
           dist = cdist;
           count = data_[kmery].count;

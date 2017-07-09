@@ -569,10 +569,10 @@ class CorrectLastHRun {
           kmer[K - 1].len = (uint8_t)(run.len - i - 2);
           if (is_good_function_(kmer)) {
             StateBuilder<PenaltyCalcer> builder(previous_, calcer_, context_);
-            builder.AddEvent(IonEvent(run.nucl, i + 2, i + 1, true));
-            builder.AddEvent(IonEvent(c, 0, 1, true));
+            builder.AddEvent(IonEvent(run.nucl, (char)(i + 2), (char)(i + 1), true));
+            builder.AddEvent(IonEvent(c, (char)0, (char)1, true));
             builder.AddEvent(
-                IonEvent(run.nucl, run.len - 2 - i, run.len - 2 - i, true));
+                IonEvent(run.nucl, (char)(run.len - 2 - i), (char)(run.len - 2 - i), true));
             corrections.emplace(builder.Build());
           }
         }
@@ -605,7 +605,7 @@ class CorrectLastHRun {
           for (const auto& deletion : deletions) {
             const uint8_t restSize =
                 (uint8_t)(deletion.overserved_size_ - deletion.fixed_size_);
-            if (std::abs(restSize) <= kMaxInDel) {
+            if (restSize <= kMaxInDel) {
               StateBuilder<PenaltyCalcer> builder(previous_, calcer_, context_);
               builder.AddEvent(deletion);
               corrections.emplace(builder.Build());

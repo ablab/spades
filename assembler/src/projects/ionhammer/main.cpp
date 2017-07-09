@@ -414,8 +414,7 @@ int main(int argc, char** argv) {
     }
     cfg::get_writable().dataset = outdataset;
 
-    std::string fname =
-        fs::append_path(cfg::get().output_dir, "corrected.yaml");
+    std::string fname = fs::append_path(cfg::get().output_dir, "corrected.yaml");
     INFO("Saving corrected dataset description to " << fname);
     cfg::get_writable().dataset.save(fname);
   } catch (std::bad_alloc const& e) {

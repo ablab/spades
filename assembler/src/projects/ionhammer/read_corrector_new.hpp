@@ -190,7 +190,7 @@ class ReadCorrector {
 
     bool overflow = false;
 
-    for (int pass = 0; pass < 2 * (simple_passes_count + complex_passes_count); ++pass) {
+    for (uint pass = 0; pass < 2 * (simple_passes_count + complex_passes_count); ++pass) {
       const bool reverse = pass % 2 == 0;  // tail has more errors, so let's start with "simple" part
       const bool only_simple = pass < 2 * simple_passes_count;
       if (reverse) {

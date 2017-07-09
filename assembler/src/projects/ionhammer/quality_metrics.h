@@ -174,7 +174,7 @@ class ClusteringQuality {
 
   int MaxRunLength(const HKMer& kmer) const {
     int max_len = kmer[0].len;
-    for (int i = 0; i < hammer::K; ++i) {
+    for (uint i = 0; i < hammer::K; ++i) {
       max_len = std::max(max_len, (int)kmer[i].len);
     }
     return max_len;

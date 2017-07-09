@@ -9,7 +9,7 @@ using namespace n_gamma_poisson_model;
 std::array<double, 100000> PoissonGammaDistribution::LogGammaIntegerCache =
     []() -> std::array<double, 100000> {
   std::array<double, 100000> cache;
-  for (int i = 0; i < cache.size(); ++i) {
+  for (size_t i = 0; i < cache.size(); ++i) {
     cache[i] = boost::math::lgamma(i + 1);
   }
   return cache;
