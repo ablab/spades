@@ -48,7 +48,6 @@ struct KMerStat {
     return posterior_genomic_ll > cfg::get().skip_threshold &&  !dist_one_subcluster;  // log(0.9)
   }
 
-  size_t ceilCount() const { return (size_t)ceil(count); }
 };
 
 };  // namespace hammer

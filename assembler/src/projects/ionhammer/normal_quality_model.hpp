@@ -175,12 +175,12 @@ class NormalClusterModel {
   }
 
   double GenomicLogLikelihood(const hammer::KMerStat& stat) const {
-    return GenomicLogLikelihood(binarizer_.GetBin(GetKmerBinIdx(stat.kmer)),
+    return GenomicLogLikelihood(binarizer_.GetBin((double)GetKmerBinIdx(stat.kmer)),
                                 stat.qual, stat.count);
   }
 
   bool IsHighQuality(const hammer::KMerStat& stat) const {
-    const auto bin = binarizer_.GetBin(GetKmerBinIdx(stat.kmer));
+    const auto bin = binarizer_.GetBin((double)GetKmerBinIdx(stat.kmer));
     return trans_.Apply(stat.qual, stat.count) <= median_qualities_[bin];
   }
 
@@ -276,7 +276,7 @@ class NormalMixtureEstimator {
 
     for (size_t iter = 0; iter < max_iterations_; ++iter) {
       auto stats =
-          NComputationUtils::ParallelStatisticsCalcer<Stats>(num_threads_)
+          n_computation_utils::ParallelStatisticsCalcer<Stats>(num_threads_)
               .Calculate(observations.size(),
                          [&]() -> Stats { return Stats(); },
                          [&](Stats& stat, size_t k) {
@@ -294,8 +294,8 @@ class NormalMixtureEstimator {
                              stats.sum_left_, stats.sum2_left_, stats.weight_left_),
                          NormalDistribution::FromStats(
                              stats.sum_right_, stats.sum2_right_,
-                             observations.size() - stats.weight_left_),
-                         stats.weight_left_ / observations.size());
+                             (double)observations.size() - stats.weight_left_),
+                         stats.weight_left_ / (double)observations.size());
 
 // expectation
 #pragma omp parallel for num_threads(num_threads_)
@@ -318,7 +318,7 @@ class NormalMixtureEstimator {
         INFO("Likelihood first: " << llFirst);
         const double llSecond = mixture.GetSecond().LogLikelihoodFromStats(
             stats.sum_right_, stats.sum2_right_,
-            observations.size() - stats.weight_left_);
+            (double)observations.size() - stats.weight_left_);
         INFO("Likelihood second: " << llSecond);
         INFO("First weights: " << mixture.GetFirstWeight());
       }
@@ -460,7 +460,7 @@ class ModelEstimator {
                                << model.GetSecond().GetSigmaSqr());
       median_qualities.push_back(median_quality);
       models.push_back(model);
-      borders.push_back(bin);
+      borders.push_back((double)bin);
     }
     borders.resize(borders.size() - 1);
 
@@ -478,7 +478,7 @@ class ModelEstimator {
       }
     }
 
-    const size_t quantile = (size_t)(good_samples.size() * cfg::get().dist_one_subcluster_alpha);
+    const size_t quantile = (size_t)((double)good_samples.size() * cfg::get().dist_one_subcluster_alpha);
     std::nth_element(good_samples.begin(), good_samples.begin() + quantile,
                      good_samples.end());
     return good_samples[quantile];

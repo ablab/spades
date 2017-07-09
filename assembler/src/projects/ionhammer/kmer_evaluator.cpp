@@ -31,7 +31,7 @@ void runComparison(const HKMerSet& reference_kmers,
   std::cout << "Reference kmers:    " << total_genomic << std::endl;
   std::cout << "Contig kmers:       " << total_contig << std::endl;
   std::cout << "  Genomic:          " << contig_genomic << " ("
-            << (contig_genomic * 100.0 / total_genomic) << "%)" << std::endl;
+            << ((double)contig_genomic * 100.0 / (double)total_genomic) << "%)" << std::endl;
   std::cout << "  Non-genomic:      " << contig_non_genomic << std::endl;
 }
 

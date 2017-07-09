@@ -5,7 +5,7 @@
 #ifndef PROJECT_THREAD_UTILS_H
 #define PROJECT_THREAD_UTILS_H
 
-namespace NComputationUtils {
+namespace n_computation_utils {
 
 template <class AdditiveStat>
 class ParallelStatisticsCalcer {
@@ -53,5 +53,5 @@ class TAdditiveStatisticsCalcer {
         [&](TAdditiveStat& stat, size_t i) { stat.Add(stats_[i]); });
   }
 };
-}  // namespace NComputationUtils
+}  // namespace n_computation_utils
 #endif  // PROJECT_THREAD_UTILS_H

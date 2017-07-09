@@ -44,17 +44,21 @@ class TKmerQualitySamples {
       sum += q;
       sum2 += q * q;
     }
-    double mean = sum / quality.size();
-    double sd = sum2 / quality.size() - mean * mean;
+    double mean = sum / ((double)quality.size());
+    double sd = sum2 / ((double)quality.size()) - mean * mean;
 
     std::sort(quality.begin(), quality.end());
 
+    const size_t quantile99 = (size_t)((double)quality.size() * 0.99);
+    const size_t quantile001 = (size_t)((double)quality.size() * 0.001);
+    const auto quantile01 = (size_t)((double)quality.size() * 0.01);
+    const auto quantile999 = (size_t)((double)quality.size() * 0.999);
     INFO(message << "\nmean\tmedian\tsd\t0.01\t0.99\t0.001\t0.999\n"
                  << mean << "\t" << quality[quality.size() / 2] << "\t" << sd
-                 << "\t" << quality[(size_t)(quality.size() * 0.01)] << "\t"
-                 << quality[(size_t)(quality.size() * 0.99)] << "\t"
-                 << quality[(size_t)(quality.size() * 0.001)] << "\t"
-                 << quality[(size_t)(quality.size() * 0.999)]);
+                 << "\t" << quality[quantile01] << "\t"
+                 << quality[quantile99] << "\t"
+                 << quality[quantile001] << "\t"
+                 << quality[quantile999]);
   }
 
   std::vector<TKmerQualitySample>::const_iterator begin() {
@@ -131,7 +135,7 @@ class ClusteringQuality {
 
       TKmerQualitySample qualitySample = {kmerStat.qual,
                                           exp(kmerStat.posterior_genomic_ll),
-                                          kmerStat.ceilCount(), idx};
+                                          (size_t)kmerStat.count, idx};
 
       if (oracle_.IsGenomic(kmer)) {
         genomic_centers_.Add(qualitySample);

@@ -211,7 +211,7 @@ class StateBuilder {
       next_.current_read_->Add(run);
     }
 
-    next_.cursor_ += event.overserved_size_;
+    next_.cursor_ = (int16_t)(next_.cursor_ + event.overserved_size_);
     penalty_calcer_.Update(next_.penalty_state, event,
                          context_.TryGetKMerStats(next_.kmer_));
 
@@ -364,7 +364,7 @@ class HRunSizeSearcher {
       hkmer_[K - 1].len = (uint8_t)(observed_size_ + i);
       if (is_good_func(hkmer_)) {
         results.push_back(
-            IonEvent(nucl, observed_size_, observed_size_ + i, true));
+            IonEvent(nucl, observed_size_, (uint8_t)(observed_size_ + i), true));
         if (greedy) {
           break;
         }
@@ -560,19 +560,20 @@ class CorrectLastHRun {
         }
 
         HKMer kmer = previous_.GetHKMer();
-        kmer <<= HRun(run.nucl, run.len - 1);
+        kmer <<= HRun(run.nucl, (uint8_t)(run.len - 1));
         kmer <<= HRun(c, 1);
         kmer <<= HRun(run.nucl, 1);
 
-        for (uint i = 0; i < (run.len - 2); ++i) {
+        const uint maxLen = (uint)(run.len - 2);
+        for (uint i = 0; i < maxLen; ++i) {
           kmer[K - 3].len = (uint8_t)(i + 1);
-          kmer[K - 1].len = (uint8_t)(run.len - i - 2);
+          kmer[K - 1].len = (uint8_t)(maxLen - i);
           if (is_good_function_(kmer)) {
             StateBuilder<PenaltyCalcer> builder(previous_, calcer_, context_);
             builder.AddEvent(IonEvent(run.nucl, (char)(i + 2), (char)(i + 1), true));
             builder.AddEvent(IonEvent(c, (char)0, (char)1, true));
             builder.AddEvent(
-                IonEvent(run.nucl, (char)(run.len - 2 - i), (char)(run.len - 2 - i), true));
+                IonEvent(run.nucl, (char)(maxLen - i), (char)(maxLen - i), true));
             corrections.emplace(builder.Build());
           }
         }
@@ -667,7 +668,7 @@ class CorrectLastHRun {
       {
         HKMer test = previous_.GetHKMer();
         HRun fixed = run;
-        fixed.len += 1;
+        fixed.len += (uint8_t)1;
         test <<= fixed;
         size_t local_cursor = cursor + run.len;
 
@@ -682,7 +683,7 @@ class CorrectLastHRun {
           if (is_good_function_(test)) {
             found = true;
             StateBuilder<PenaltyCalcer> builder(previous_, calcer_, context_);
-            builder.AddEvent(IonEvent(run.nucl, run.len, run.len + 1, false));
+            builder.AddEvent(IonEvent(run.nucl, run.len, (char) (run.len + 1), false));
             corrections.emplace(builder.Build());
             break;
           }
@@ -692,7 +693,7 @@ class CorrectLastHRun {
       if (run.len > 1) {
         HKMer test = previous_.GetHKMer();
         HRun fixed = run;
-        fixed.len -= 1;
+        fixed.len -= (uint8_t)1;
         test <<= fixed;
 
         size_t local_cursor = cursor + run.len;
@@ -708,7 +709,7 @@ class CorrectLastHRun {
           if (is_good_function_(test)) {
             found = true;
             StateBuilder<PenaltyCalcer> builder(previous_, calcer_, context_);
-            builder.AddEvent(IonEvent(run.nucl, run.len, run.len - 1, false));
+            builder.AddEvent(IonEvent(run.nucl, run.len, (uint8_t)(run.len - 1), false));
             corrections.emplace(builder.Build());
             break;
           }

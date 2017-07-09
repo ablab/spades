@@ -113,7 +113,7 @@ class ValidHKMerGenerator {
    * @result probability that last generated k-mer is correct.
    */
   double correct_probability() const {
-    return exp(correct_probability_ / length);
+    return exp(correct_probability_ / (double)length);
   }
 
   /**
@@ -228,11 +228,11 @@ void ValidHKMerGenerator<kK>::Next() {
         toadd -= 1;
 
         correct_probability_ += cprob;
-        length += len;
+        length += (size_t)len;
 
         if (probs_.size() == kK) {
           correct_probability_ -= probs_[0];
-          length -= runlens_[0];
+          length -= (size_t)runlens_[0];
           probs_.pop_front();
           runlens_.pop_front();
         }

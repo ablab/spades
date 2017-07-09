@@ -44,7 +44,7 @@ class TOneErrorClustering {
     auto fixed = source;
     for (uint k = 0; k < K; ++k) {
       for (uint i = (uint)std::max(source[k].len - 1, 1);
-           i <= source[k].len + 1; ++i) {
+           i <= (uint)(source[k].len + 1); ++i) {
         if (i == source[k].len) {
           continue;
         }

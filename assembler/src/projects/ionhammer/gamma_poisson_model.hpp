@@ -76,55 +76,55 @@ class GammaMixture {
 
 class PoissonGammaDistribution {
  private:
-  const GammaDistribution& Prior;
-  static std::array<double, 100000> LogGammaIntegerCache;
+  const GammaDistribution& prior_;
+  static std::array<double, 100000> log_gamma_integer_cache_;
 
  private:
   inline double IntLogGamma(size_t count) const {
-    if (count < LogGammaIntegerCache.size()) {
-      return LogGammaIntegerCache[count];
+    if (count < log_gamma_integer_cache_.size()) {
+      return log_gamma_integer_cache_[count];
     } else {
-      return boost::math::lgamma(count + 1);
+      return boost::math::lgamma(((double)count) + 1);
     }
   }
 
  public:
-  PoissonGammaDistribution(const GammaDistribution& prior) : Prior(prior) {}
+  PoissonGammaDistribution(const GammaDistribution& prior) : prior_(prior) {}
 
   inline double PartialLogLikelihood(size_t count) const {
-    const double a = Prior.GetShape();
-    const double b = Prior.GetRate();
+    const double a = prior_.GetShape();
+    const double b = prior_.GetRate();
 
     double ll = 0.0;
-    ll += a * log(b) - (a + count) * log(b + 1);
+    ll += a * log(b) - (a + (double)count) * log(b + 1);
     ll +=
-        boost::math::lgamma(Prior.GetShape() + count) - Prior.LogGammaAtShape();
+        boost::math::lgamma(prior_.GetShape() + (double)count) - prior_.LogGammaAtShape();
     return ll;
   }
 
   inline double LogLikelihood(size_t count) const {
-    const double a = Prior.GetShape();
-    const double b = Prior.GetRate();
+    const double a = prior_.GetShape();
+    const double b = prior_.GetRate();
 
     double ll = 0.0;
-    ll += a * log(b) - (a + count) * log(b + 1);
-    ll += boost::math::lgamma(Prior.GetShape() + count) - IntLogGamma(count) -
-          Prior.LogGammaAtShape();
+    ll += a * log(b) - (a + (double)count) * log(b + 1);
+    ll += boost::math::lgamma(prior_.GetShape() + ((double)count)) - IntLogGamma(count) -
+          prior_.LogGammaAtShape();
 
     return ll;
   }
 
   inline double Quantile(double p) const {
-    const double a = Prior.GetShape();
-    const double b = Prior.GetRate();
+    const double a = prior_.GetShape();
+    const double b = prior_.GetRate();
     return boost::math::ibeta_inva(a, 1.0 / (1.0 + b), 1.0 - p);
   }
 
   inline double Cumulative(size_t count) const {
-    const double a = Prior.GetShape();
-    const double b = Prior.GetRate();
+    const double a = prior_.GetShape();
+    const double b = prior_.GetRate();
 
-    return 1.0 - boost::math::ibeta(count + 1, a, 1.0 / (1.0 + b));
+    return 1.0 - boost::math::ibeta((double)count + 1, a, 1.0 / (1.0 + b));
   }
 };
 
@@ -162,8 +162,8 @@ class ParametricClusterModel {
 
   ParametricClusterModel(const GammaMixture& prior,
                          const QualFunc& qualFunc,
-                          const double countThreshold,
-                          const std::array<double, RunSizeLimit>& alphas)
+                         const double countThreshold,
+                         const std::array<double, RunSizeLimit>& alphas)
       : prior_(prior), qual_func_(qualFunc), count_threshold_(countThreshold) {
     std::copy(alphas.begin(), alphas.end(), alphas_.begin());
     for (uint i = 0; i < RunSizeLimit; ++i) {
@@ -202,9 +202,9 @@ class ParametricClusterModel {
     const double a = prior.GetShape();
     const double b = prior.GetRate();
 
-    double ll = a * log(b) - (a + count) * log(b + 1);
-    ll += boost::math::lgamma(prior.GetShape() + count) -
-          prior.LogGammaAtShape() - boost::math::lgamma(count + 1);
+    double ll = a * log(b) - (a + (double)count) * log(b + 1);
+    ll += boost::math::lgamma(prior.GetShape() + ((double)count)) -
+          prior.LogGammaAtShape() - boost::math::lgamma(((double)count) + 1);
     return ll;
   }
 };
@@ -215,30 +215,31 @@ class TClusterModelEstimator {
   const KMerData& data_;
   double threshold_;
   uint num_threads_;
-  size_t MaxIterations;
-  bool CalcLikelihood;
+  size_t max_terations_;
+  bool calc_likelihood_;
 
  private:
+
   struct TClusterSufficientStat {
-    size_t Count = 0;
-    double Quality = 0;
-    double GenomicClassProb = 0;
+    double count_ = 0;
+    double qualtiy_ = 0;
+    double genomic_class_prob_ = 0;
   };
 
   struct TQualityStat {
-    double Quality = 0;
-    double Class = 0;
+    double quality_ = 0;
+    double class_ = 0;
 
-    TQualityStat(double quality, double cls) : Quality(quality), Class(cls) {}
+    TQualityStat(double quality, double cls) : quality_(quality), class_(cls) {}
   };
 
   struct TRunErrorStats {
-    const KMerData* Data;
-    std::array<double, RunSizeLimit> ErrorCounts;
-    std::array<double, RunSizeLimit> TotalCount;
+    const KMerData* data_;
+    std::array<double, RunSizeLimit> error_counts_;
+    std::array<double, RunSizeLimit> total_count_;
 
     TRunErrorStats(const KMerData& data)
-        : Data(&data){
+        : data_(&data){
 
           };
 
@@ -249,8 +250,8 @@ class TClusterModelEstimator {
 
       std::array<double, RunSizeLimit> alphas;
       for (uint i = 0; i < RunSizeLimit; ++i) {
-        alphas[i] = (ErrorCounts[i] + priors[i] * priorSize) /
-                    (TotalCount[i] + priorSize);
+        alphas[i] = (error_counts_[i] + priors[i] * (double)priorSize) /
+                    (total_count_[i] + (double)priorSize);
       }
       alphas[0] *= 2;
       return alphas;
@@ -259,30 +260,30 @@ class TClusterModelEstimator {
     TRunErrorStats& operator+=(const TRunErrorStats& other) {
       if (this != &other) {
         for (uint i = 0; i < RunSizeLimit; ++i) {
-          ErrorCounts[i] += other.ErrorCounts[i];
-          TotalCount[i] += other.TotalCount[i];
+          error_counts_[i] += other.error_counts_[i];
+          total_count_[i] += other.total_count_[i];
         }
       }
       return *this;
     }
 
     void Add(const std::vector<size_t>& indices, size_t centerIdx) {
-      const auto& center = (*Data)[centerIdx].kmer;
+      const auto& center = (*data_)[centerIdx].kmer;
 
       for (auto idx : indices) {
         if (idx == centerIdx) {
           continue;
         }
-        auto errKmerCount = (*Data)[idx].ceilCount();
-        const auto& errKmer = (*Data)[idx].kmer;
+        double errKmerCount = (double)(*data_)[idx].count;
+        const auto& errKmer = (*data_)[idx].kmer;
         for (uint i = 0; i < hammer::K; ++i) {
           if (center[i].len > RunSizeLimit) {
             continue;
           }
           const int len = center[i].len - 1;
-          TotalCount[len] += errKmerCount;
+          total_count_[len] += errKmerCount;
           if (center[i].len != errKmer[i].len) {
-            ErrorCounts[len] += errKmerCount;
+            error_counts_[len] += errKmerCount;
           }
         }
       }
@@ -290,7 +291,7 @@ class TClusterModelEstimator {
         if (center[i].len > RunSizeLimit) {
           continue;
         }
-        TotalCount[center[i].len - 1] += (*Data)[centerIdx].count;
+        total_count_[center[i].len - 1] += (*data_)[centerIdx].count;
       }
     }
   };
@@ -299,31 +300,31 @@ class TClusterModelEstimator {
                           const PoissonGammaDistribution& second,
                           const QualFunc& qualFunc,
                           TClusterSufficientStat& center) const {
-    const double logPrior = qualFunc.GenomicLogLikelihood(center.Quality) +
-                            log(boost::math::gamma_q(center.Count, threshold_));
+    const double logPrior = qualFunc.GenomicLogLikelihood(center.qualtiy_) +
+                            log(boost::math::gamma_q(center.count_, threshold_));
 
-    const double firstLL = first.PartialLogLikelihood(center.Count) + logPrior;
-    const double secondLL = second.PartialLogLikelihood(center.Count) +
+    const double firstLL = first.PartialLogLikelihood((size_t)center.count_) + logPrior;
+    const double secondLL = second.PartialLogLikelihood((size_t)center.count_) +
                             log(max(1.0 - exp(logPrior), 1e-20));
 
     const double posterior = 1.0 / (1.0 + exp(secondLL - firstLL));
-    center.GenomicClassProb = posterior;
+    center.genomic_class_prob_ = posterior;
   }
 
   inline void QualityExpectation(const QualFunc& qualFunc,
                                  TClusterSufficientStat& center) const {
-    center.GenomicClassProb =
-        exp(qualFunc.GenomicLogLikelihood(center.Quality));
+    center.genomic_class_prob_ =
+        exp(qualFunc.GenomicLogLikelihood(center.qualtiy_));
   }
 
   inline TClusterSufficientStat Create(const size_t centerIdx) const {
     TClusterSufficientStat stat;
-    stat.GenomicClassProb =
+    stat.genomic_class_prob_ =
         data_[centerIdx].count > 0
             ? boost::math::gamma_q(data_[centerIdx].count, threshold_)
             : 0;
-    stat.Count = data_[centerIdx].ceilCount();
-    stat.Quality = data_[centerIdx].qual;
+    stat.count_ = data_[centerIdx].count;
+    stat.qualtiy_ = data_[centerIdx].qual;
     return stat;
   }
 
@@ -335,7 +336,7 @@ class TClusterModelEstimator {
     for (size_t i = 0; i < clusterCenters.size(); ++i) {
       const size_t centerIdx = clusterCenters[i];
       auto stat = Create(centerIdx);
-      if (stat.Count > 0) {
+      if (stat.count_ > 0) {
         clusterSufficientStat.push_back(stat);
       }
     }
@@ -365,134 +366,134 @@ class TClusterModelEstimator {
   template <bool WEIGHTED = true>
   class TCountsStat {
    private:
-    double Count = 0;
-    double Count2 = 0;
-    double Weight = 0;
+    double count_ = 0;
+    double count2_ = 0;
+    double weight_ = 0;
 
    public:
     void Add(const TClusterSufficientStat& stat) {
-      const double w = (WEIGHTED ? stat.GenomicClassProb : 1.0);
-      Count += w * stat.Count;
-      Count2 += w * stat.Count * stat.Count;
-      Weight += w;
+      const double w = (WEIGHTED ? stat.genomic_class_prob_ : 1.0);
+      count_ += w * stat.count_;
+      count2_ += w * stat.count_ * stat.count_;
+      weight_ += w;
     }
 
     TCountsStat& operator+=(const TCountsStat& other) {
       if (this != &other) {
-        Count += other.Count;
-        Count2 += other.Count2;
-        Weight += other.Weight;
+        count_ += other.count_;
+        count2_ += other.count2_;
+        weight_ += other.weight_;
       }
       return *this;
     }
 
-    double GetWeightedSum() const { return Count; }
+    double GetWeightedSum() const { return count_; }
 
-    double GetWeightedSum2() const { return Count2; }
+    double GetWeightedSum2() const { return count2_; }
 
-    double GetWeight() const { return Weight; }
+    double GetWeight() const { return weight_; }
   };
 
   class TLogGammaStat {
    private:
-    double GenomicShape;
-    double NonGenomicShape;
-    double GenomicLogGammaSum = 0;
-    double NonGenomicLogGammaSum = 0;
+    double genomic_shape_;
+    double non_genomic_shape_;
+    double genomic_log_gamma_sum_ = 0;
+    double non_genomic_log_gamma_sum_ = 0;
 
    public:
     TLogGammaStat(double genomicShape, double nonGenomicShape)
-        : GenomicShape(genomicShape), NonGenomicLogGammaSum(nonGenomicShape) {}
+        : genomic_shape_(genomicShape), non_genomic_log_gamma_sum_(nonGenomicShape) {}
 
     void Add(const TClusterSufficientStat& stat) {
-      GenomicLogGammaSum += stat.GenomicClassProb *
-                            boost::math::lgamma(stat.Count + GenomicShape);
-      NonGenomicLogGammaSum +=
-          (1.0 - stat.GenomicClassProb) *
-          boost::math::lgamma(stat.Count + NonGenomicShape);
+      genomic_log_gamma_sum_ += stat.genomic_class_prob_ *
+                            boost::math::lgamma(stat.count_ + genomic_shape_);
+      non_genomic_log_gamma_sum_ +=
+          (1.0 - stat.genomic_class_prob_) *
+          boost::math::lgamma(stat.count_ + non_genomic_shape_);
     }
 
     TLogGammaStat& operator+=(const TLogGammaStat& other) {
       if (this != &other) {
-        GenomicLogGammaSum += other.GenomicLogGammaSum;
-        NonGenomicLogGammaSum += other.NonGenomicLogGammaSum;
+        genomic_log_gamma_sum_ += other.genomic_log_gamma_sum_;
+        non_genomic_log_gamma_sum_ += other.non_genomic_log_gamma_sum_;
       }
       return *this;
     }
 
-    double GetGenomicLogGammaSum() const { return GenomicLogGammaSum; }
+    double GetGenomicLogGammaSum() const { return genomic_log_gamma_sum_; }
 
-    double GetNonGenomicLogGammaSum() const { return NonGenomicLogGammaSum; }
+    double GetNonGenomicLogGammaSum() const { return non_genomic_log_gamma_sum_; }
   };
 
   class TQualityLogitLinearRegressionPoint {
    private:
     // p(genomic) = exp(Alpha qual + beta) / (1.0 + exp(Alpha qual + beta))
-    QualFunc Func;
+    QualFunc func_;
 
-    double Likelihood = 0;
+    double likelihood_ = 0;
 
-    double DerAlpha = 0;
-    double DerBeta = 0;
+    double der_alpha_ = 0;
+    double der_beta_ = 0;
 
-    double Der2Alpha = 0;
-    double Der2Beta = 0;
-    double Der2AlphaBeta = 0;
+    double der2_alpha_ = 0;
+    double der2_beta_ = 0;
+    double der2_alpha_beta_ = 0;
 
    public:
-    TQualityLogitLinearRegressionPoint(QualFunc func) : Func(func) {}
+    TQualityLogitLinearRegressionPoint(QualFunc func) : func_(func) {}
 
     void Add(const TClusterSufficientStat& statistic) {
-      Add(statistic.GenomicClassProb, statistic.Quality);
+      Add(statistic.genomic_class_prob_, statistic.qualtiy_);
     }
 
     void Add(const TQualityStat& statistic) {
-      Add(statistic.Class, statistic.Quality);
+      Add(statistic.class_, statistic.quality_);
     }
 
     void Add(const double firstClassProb, double qual) {
-      const double val = Func(qual);
+      const double val = func_(qual);
       const double expPoint = exp(val);
       const double p =
           std::isfinite(expPoint) ? expPoint / (1.0 + expPoint) : 1.0;
 
-      DerAlpha += (firstClassProb - p) * qual;
-      DerBeta += firstClassProb - p;
+      der_alpha_ += (firstClassProb - p) * qual;
+      der_beta_ += firstClassProb - p;
 
-      Der2Alpha -= sqr(qual) * p * (1 - p);
-      Der2Beta -= p * (1 - p);
-      Der2AlphaBeta -= qual * p * (1 - p);
+      der2_alpha_ -= sqr(qual) * p * (1 - p);
+      der2_beta_ -= p * (1 - p);
+      der2_alpha_beta_ -= qual * p * (1 - p);
 
-      Likelihood += firstClassProb * val -
+      likelihood_ += firstClassProb * val -
                     (std::isfinite(expPoint) ? log(1 + expPoint) : val);
     }
 
     TQualityLogitLinearRegressionPoint& operator+=(
         const TQualityLogitLinearRegressionPoint& other) {
       if (this != &other) {
-        Likelihood += other.Likelihood;
+        likelihood_ += other.likelihood_;
 
-        DerAlpha += other.DerAlpha;
-        DerBeta += other.DerBeta;
+        der_alpha_ += other.der_alpha_;
+        der_beta_ += other.der_beta_;
 
-        Der2Alpha += other.Der2Alpha;
-        Der2Beta += other.Der2Beta;
-        Der2AlphaBeta += other.Der2AlphaBeta;
+        der2_alpha_ += other.der2_alpha_;
+        der2_beta_ += other.der2_beta_;
+        der2_alpha_beta_ += other.der2_alpha_beta_;
       }
       return *this;
     }
 
-    double GetLikelihood() const { return Likelihood; }
+    double GetLikelihood() const { return likelihood_; }
 
-    double GetDerAlpha() const { return DerAlpha; }
+    double GetDerAlpha() const { return der_alpha_; }
 
-    double GetDerBeta() const { return DerBeta; }
+    double GetDerBeta() const { return der_beta_; }
 
-    double GetDer2Alpha() const { return Der2Alpha; }
+    double GetDer2Alpha() const { return der2_alpha_; }
 
-    double GetDer2Beta() const { return Der2Beta; }
+    double GetDer2Beta() const { return der2_beta_; }
 
-    double GetDer2AlphaBeta() const { return Der2AlphaBeta; }
+    double GetDer2AlphaBeta() const { return der2_alpha_beta_; }
   };
 
   QualFunc Update(const QualFunc& current,
@@ -516,57 +517,57 @@ class TClusterModelEstimator {
 
   class TGammaDerivativesStats {
    private:
-    double FirstClassShift;
-    double SecondClassShift;
+    double first_class_shift_;
+    double second_class_shift_;
 
-    double DigammaSumFirst = 0;
-    double TrigammaSumFirst = 0;
+    double digamma_sum_first_ = 0;
+    double trigamma_sum_first_ = 0;
 
-    double DigammaSumSecond = 0;
-    double TrigammaSumSecond = 0;
+    double digamma_sum_second_ = 0;
+    double trigamma_sum_second_ = 0;
 
    public:
     TGammaDerivativesStats(double firstShift, double secondShift)
-        : FirstClassShift(firstShift), SecondClassShift(secondShift) {}
+        : first_class_shift_(firstShift), second_class_shift_(secondShift) {}
 
     void Add(const TClusterSufficientStat& statistic) {
-      const double p = statistic.GenomicClassProb;
-      DigammaSumFirst +=
-          p > 1e-3 ? p * boost::math::digamma(statistic.Count + FirstClassShift)
+      const double p = statistic.genomic_class_prob_;
+      digamma_sum_first_ +=
+          p > 1e-3 ? p * boost::math::digamma(statistic.count_ + first_class_shift_)
                    : 0;
-      TrigammaSumFirst +=
+      trigamma_sum_first_ +=
           p > 1e-3
-              ? p * boost::math::trigamma(statistic.Count + FirstClassShift)
+              ? p * boost::math::trigamma(statistic.count_ + first_class_shift_)
               : 0;
 
-      DigammaSumSecond +=
-          p < (1.0 - 1e-3) ? (1.0 - p) * boost::math::digamma(statistic.Count +
-                                                              SecondClassShift)
+      digamma_sum_second_ +=
+          p < (1.0 - 1e-3) ? (1.0 - p) * boost::math::digamma(statistic.count_ +
+                                                              second_class_shift_)
                            : 0;
-      TrigammaSumSecond +=
-          p < (1.0 - 1e-3) ? (1.0 - p) * boost::math::trigamma(statistic.Count +
-                                                               SecondClassShift)
+      trigamma_sum_second_ +=
+          p < (1.0 - 1e-3) ? (1.0 - p) * boost::math::trigamma(statistic.count_ +
+                                                               second_class_shift_)
                            : 0;
     }
 
     TGammaDerivativesStats& operator+=(const TGammaDerivativesStats& other) {
       if (this != &other) {
-        DigammaSumFirst += other.DigammaSumFirst;
-        TrigammaSumFirst += other.TrigammaSumFirst;
+        digamma_sum_first_ += other.digamma_sum_first_;
+        trigamma_sum_first_ += other.trigamma_sum_first_;
 
-        DigammaSumSecond = other.DigammaSumSecond;
-        TrigammaSumSecond += other.TrigammaSumSecond;
+        digamma_sum_second_ = other.digamma_sum_second_;
+        trigamma_sum_second_ += other.trigamma_sum_second_;
       }
       return *this;
     }
 
-    double GetDigammaSumFirst() const { return DigammaSumFirst; }
+    double GetDigammaSumFirst() const { return digamma_sum_first_; }
 
-    double GetTrigammaSumFirst() const { return TrigammaSumFirst; }
+    double GetTrigammaSumFirst() const { return trigamma_sum_first_; }
 
-    double GetDigammaSumSecond() const { return DigammaSumSecond; }
+    double GetDigammaSumSecond() const { return digamma_sum_second_; }
 
-    double GetTrigammaSumSecond() const { return TrigammaSumSecond; }
+    double GetTrigammaSumSecond() const { return trigamma_sum_second_; }
   };
 
   static inline double sqr(double x) { return x * x; }
@@ -611,8 +612,8 @@ class TClusterModelEstimator {
       : data_(data),
         threshold_(threshold),
         num_threads_(num_threads),
-        MaxIterations(maxIterations),
-        CalcLikelihood(calcLikelihood) {}
+        max_terations_(maxIterations),
+        calc_likelihood_(calcLikelihood) {}
 
   static inline GammaDistribution Update(const GammaDistribution& point,
                                           const TDirection& direction,
@@ -648,7 +649,7 @@ class TClusterModelEstimator {
 
       for (uint i = 0; i < 15; ++i) {
         const auto qualDerStats =
-            NComputationUtils::TAdditiveStatisticsCalcer<
+            n_computation_utils::TAdditiveStatisticsCalcer<
                 TQualityStat, TQualityLogitLinearRegressionPoint>(qualStats,
                                                                   num_threads_)
                 .Calculate([&]() -> TQualityLogitLinearRegressionPoint {
@@ -669,7 +670,7 @@ class TClusterModelEstimator {
 
     auto alphas = [&]() -> std::array<double, RunSizeLimit> {
       TRunErrorStats errorStats =
-          NComputationUtils::ParallelStatisticsCalcer<TRunErrorStats>(
+          n_computation_utils::ParallelStatisticsCalcer<TRunErrorStats>(
               num_threads_)
               .Calculate(
                   clusters.size(),
@@ -686,7 +687,7 @@ class TClusterModelEstimator {
         CreateSufficientStats(clusterCenter);
 
     const auto totalStats =
-        NComputationUtils::TAdditiveStatisticsCalcer<TClusterSufficientStat,
+        n_computation_utils::TAdditiveStatisticsCalcer<TClusterSufficientStat,
                                                      TCountsStat<false>>(
             clusterSufficientStat, num_threads_)
             .Calculate([]() -> TCountsStat<false> {
@@ -699,7 +700,7 @@ class TClusterModelEstimator {
     }
 
     auto countsStats =
-        NComputationUtils::TAdditiveStatisticsCalcer<TClusterSufficientStat,
+        n_computation_utils::TAdditiveStatisticsCalcer<TClusterSufficientStat,
                                                      TCountsStat<true>>(
             clusterSufficientStat, num_threads_)
             .Calculate([]() -> TCountsStat<true> {
@@ -728,9 +729,9 @@ class TClusterModelEstimator {
       return GammaDistribution(shape, rate);
     }();
 
-    for (uint i = 0, steps = 0; i < MaxIterations; ++i, ++steps) {
+    for (uint i = 0, steps = 0; i < max_terations_; ++i, ++steps) {
       auto gammaDerStats =
-          NComputationUtils::TAdditiveStatisticsCalcer<TClusterSufficientStat,
+          n_computation_utils::TAdditiveStatisticsCalcer<TClusterSufficientStat,
                                                        TGammaDerivativesStats>(
               clusterSufficientStat, num_threads_)
               .Calculate([&]() -> TGammaDerivativesStats {
@@ -758,9 +759,9 @@ class TClusterModelEstimator {
       genomicPrior = Update(genomicPrior, genomicDirection);
       nonGenomicPrior = Update(nonGenomicPrior, nonGenomicDirection);
 
-      if (CalcLikelihood) {
+      if (calc_likelihood_) {
         auto logGammaStats =
-            NComputationUtils::TAdditiveStatisticsCalcer<TClusterSufficientStat,
+            n_computation_utils::TAdditiveStatisticsCalcer<TClusterSufficientStat,
                                                          TLogGammaStat>(
                 clusterSufficientStat, num_threads_)
                 .Calculate([&]() -> TLogGammaStat {
@@ -794,7 +795,7 @@ class TClusterModelEstimator {
 
       if (useEM) {
         if ((shapeDiff < 1e-2) || gradientNorm < 1e-1 ||
-            (steps == 5 && (i < MaxIterations - 10))) {
+            (steps == 5 && (i < max_terations_ - 10))) {
           PoissonGammaDistribution genomic(genomicPrior);
           PoissonGammaDistribution nonGenomic(nonGenomicPrior);
 #pragma omp parallel for num_threads(num_threads_)
@@ -803,7 +804,7 @@ class TClusterModelEstimator {
                         clusterSufficientStat[k]);
           }
 
-          countsStats = NComputationUtils::TAdditiveStatisticsCalcer<
+          countsStats = n_computation_utils::TAdditiveStatisticsCalcer<
                             TClusterSufficientStat, TCountsStat<true>>(
                             clusterSufficientStat, num_threads_)
                             .Calculate([]() -> TCountsStat<true> {
@@ -835,22 +836,22 @@ class TClusterModelEstimator {
     double sum = 0;
     double sum2 = 0;
     for (auto count : counts) {
-      sum += count;
-      sum2 += count * count;
+      sum += (double)count;
+      sum2 += (double)count * (double)count;
     }
 
     GammaDistribution prior =
-        TClusterModelEstimator::MomentMethodEstimator(sum, sum2, observations);
+        TClusterModelEstimator::MomentMethodEstimator(sum, sum2, (double)observations);
 
     for (uint i = 0, steps = 0; i < 10; ++i, ++steps) {
       double digammaSum = 0;
       double trigammaSum = 0;
       for (auto count : counts) {
-        digammaSum += boost::math::digamma(count + prior.GetShape());
-        trigammaSum += boost::math::trigamma(count + prior.GetShape());
+        digammaSum += boost::math::digamma((double)count + prior.GetShape());
+        trigammaSum += boost::math::trigamma((double)count + prior.GetShape());
       }
 
-      auto direction = MoveDirection(prior.GetShape(), sum, observations,
+      auto direction = MoveDirection(prior.GetShape(), sum, (double)observations,
                                      digammaSum, trigammaSum);
 
       const double shapeDiff = std::abs(direction.Direction);

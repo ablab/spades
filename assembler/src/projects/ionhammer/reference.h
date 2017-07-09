@@ -51,7 +51,7 @@ class TGenomReferenceOracle {
 
     INFO("Set kmers:       " << total_set);
     INFO("Genomic: " << set_genomic << " ("
-                     << (set_genomic * 100.0 / total_genomic) << "%)");
+                     << ((double)set_genomic * 100.0 / (double)total_genomic) << "%)");
     INFO("NonGenomic: " << set_non_genomic);
   }
 };

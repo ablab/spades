@@ -99,7 +99,7 @@ class GammaPoissonLikelihoodCalcer {
         if (idx != -1ULL) {
           const auto& kmer_stat = data_[idx];
           if (kmer_stat.skip()) {
-            counts.push_back(data_[idx].ceilCount());
+            counts.push_back(data_[idx].count);
           }
           const double p = exp(kmer_stat.posterior_genomic_ll);
           sum_count += p * data_[idx].count;
@@ -153,7 +153,7 @@ class GammaPoissonLikelihoodCalcer {
       return;
     }
 
-    const size_t last_kmer_count = last_kmer_stats ? last_kmer_stats->ceilCount() : 0;
+    const size_t last_kmer_count = last_kmer_stats ? last_kmer_stats->count : 0;
 
     const int bits = 4;
     const uint dist =
@@ -181,7 +181,7 @@ class GammaPoissonLikelihoodCalcer {
       const size_t cnt = min(max(noise_quantiles_lower_, last_kmer_count), noise_quantile_upper_);
 
       // state.Likelihood += dist * log(Model.ErrorRate(event.FixedSize));
-      state.likelihood_ += state.hkmer_distance_to_read_ * correction_penalty_;
+      state.likelihood_ += (double)state.hkmer_distance_to_read_ * correction_penalty_;
       state.likelihood_ += count_distribution_.LogLikelihood(cnt);
     }
 
@@ -199,7 +199,7 @@ class GammaPoissonLikelihoodCalcer {
     }
     const auto& stat = data_[idx];
 
-    return stat.good() && (stat.ceilCount() <= upper_quantile_) && (stat.ceilCount() >= lower_quantile_) && !stat.dist_one_subcluster;
+    return stat.good() && (stat.count <= upper_quantile_) && (stat.count >= lower_quantile_) && !stat.dist_one_subcluster;
   }
 
   inline bool IsGood(const HKMer& kmer) const {

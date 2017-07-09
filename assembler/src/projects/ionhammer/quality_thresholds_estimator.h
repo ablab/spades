@@ -61,7 +61,7 @@ class SimpleTwoClassClustering {
       }
       return sum;
     }();
-    const double total_weight = to - from;
+    const double total_weight = (double)(to - from);
 
     double best_score = 0;
     double best_left_sum = 0;
@@ -83,7 +83,7 @@ class SimpleTwoClassClustering {
 
       if (split_score <= best_score) {
         best_score = split_score;
-        best_left_weight = (size_t)weight;
+        best_left_weight = weight;
         best_left_sum = sum;
         best_split = sample;
       }
