@@ -106,9 +106,10 @@ def run_mts(args, workdir):
         for dir_name, saves_arg in [("assembly", "--reuse-assemblies"), ("profile", "--reuse-profiles")]:
             saves_dir = os.path.join(args.data, dir_name)
             if os.path.exists(saves_dir):
-                log.log("Reusing {} saves from {}".format(dir_name, saves_dir)
+                log.log("Reusing {} saves from {}".format(dir_name, saves_dir))
                 mts_args.extend([saves_arg, saves_dir])
     os.chdir(os.path.join(workdir, "src/projects/mts"))
+    log.log("Calling " + " ".join(mts_args))
     return subprocess.call(mts_args)
 
 def check_etalons(args, workdir):

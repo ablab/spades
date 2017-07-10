@@ -19,5 +19,6 @@ soft: "path/to/canopy/etc"
 #reassembly:
     #enabled: true
 #stats:
+    #stage: ["gf", "summary", "pca", "tsne", "checkm"] #stage can be binning, propagation, reassembly, or all
     #quast: "python2 /path/to/QUAST" #Default is global
     #refs: "path/to/refs/directory/or/list/of/them"

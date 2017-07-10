@@ -12,10 +12,11 @@ To assemble a dataset, you need to prepare a config.yaml. Use the provided templ
 > ./mts.py -c <config> -t XX --directory <output directory>
 
 3. Gathering stats
-To render some interesting info, you need to specify some references in config:
-REFS: path
+To enable stats for some stage(s), add the section to the config:
+stats:
+    stage: [stat1, stat2]
+"gf" stats require references provided with "refs" parameter:
+    refs: path
 or
-REFS: [path1, path2, ...]
+    refs: [path1, path2, ...]
 where path can be either a single reference or a folder with references.
-Then run
-> ./mts.py -s <output directory>
