@@ -17,13 +17,11 @@ unsupported = set(["main_metabat", "spades_canopy", "megahit_canopy"])
 parser.add_argument("--threads", "-t", type=int, default=8, help="Number of threads for each run")
 parser.add_argument("dir", type=str, help="Output directory")
 parser.add_argument("--config", "-c", type=str, help="Base config")
-#parser.add_argument("--in", type=str, help="Input directory")
-#parser.add_argument("--ref", type=str, help="References directory")
 parser.add_argument("--pipelines", "-p", type=str, nargs="+", default=[], help="Pipeline configurations to run")
 parser.add_argument("--assemblers", "-a", type=str, nargs="+", default=all_assemblers, help="Assemblers to use")
 parser.add_argument("--binners", "-b", type=str, nargs="+", default=all_binners, help="Binners to use")
 parser.add_argument("--exclude", "-e", type=str, nargs="+", default=[], help="Excluded (skipped) configurations")
-parser.add_argument("--stats", "-s", action="store_true", help="Calculate stats (when the REFS parameter in config.yaml is provided)")
+parser.add_argument("--no-stats", "-S", action="store_true", help="Skip the stats section (overrides the config value)")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
 parser.add_argument("--ignore-errors", action="store_true")
 
@@ -52,8 +50,8 @@ for pipeline in pipelines():
     if not os.path.exists(cur_dir):
         os.makedirs(cur_dir)
     call_params = ["./mts.py", "-t", str(args.threads), cur_dir]
-    if args.stats:
-        call_params.extend(["--stats"])
+    if args.no_stats:
+        call_params.extend(["--no-stats"])
     config = config_template.copy()
     params = pipeline.split("_")
     assembly_name = params[0]

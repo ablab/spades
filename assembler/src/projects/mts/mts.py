@@ -29,10 +29,10 @@ parser = argparse.ArgumentParser(description="MTS - Metagenomic Time Series")
 parser.add_argument("--threads", "-t", type=int, default=8, help="Number of threads")
 parser.add_argument("dir", type=str, help="Output directory")
 parser.add_argument("--config", "-c", type=str, default="", help="config.yaml to be copied to the directory (unnecessary if config.yaml is already there)")
-parser.add_argument("--stats", "-s", action="store_true", help="Calculate stats (when the REFS parameter in config.yaml is provided)")
 parser.add_argument("--reuse-assemblies", type=str, help="Directory with existing assemblies to reuse")
 parser.add_argument("--reuse-profiles", type=str, help="Directory with existing profiles to reuse")
 parser.add_argument("--reuse-from", type=str, help="Directory with another assembly to reuse everything that is possible (overrides other --reuses)")
+parser.add_argument("--no-stats", "-S", action="store_true", help="Skip the stats section (overrides the config value)")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
 parser.add_argument("--alt", action="store_true", help=argparse.SUPPRESS)
 
@@ -96,6 +96,6 @@ with cd(exec_dir):
         print("Step #1b - Reassembly")
         call_snake(["--snakefile", "Reassembly.snake"])
 
-    if args.stats:
+    if not args.no_stats and len(config.get("stats", dict())) > 0:
         print("Step #2 - Stats")
         call_snake(["--snakefile", "Stats.snake"])

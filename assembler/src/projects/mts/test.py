@@ -84,12 +84,12 @@ def compile_mts(workdir):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", "-c", help="Config template")
+    parser.add_argument("--data", "-c", help="Directory with config and saves")
     parser.add_argument("dir", help="Output directory")
-    parser.add_argument("--saves", "-s", type=str)
-    parser.add_argument("--multirun", "-m", action="store_true")
-    parser.add_argument("--no-clean", action="store_true")
-    parser.add_argument("--etalons", "-e", type=str, help="Directory of GF etalons")
+    parser.add_argument("--saves", "-s", action="store_true", help="Reuse assemblies and/or profiles from data directory")
+    parser.add_argument("--multirun", "-m", action="store_true", help="Enable multiruns")
+    parser.add_argument("--no-clean", action="store_true", help="Do not clean the prvieous run")
+    parser.add_argument("--etalons", "-e", action="store_true", help="Compare with etalons")
 
     args = parser.parse_args()
     return args
@@ -98,13 +98,16 @@ def run_mts(args, workdir):
     mts_args = ["./multirun.py"] if args.multirun else ["./mts.py"]
     if not args.no_clean:
         shutil.rmtree(args.dir, True)
-        mts_args.extend(["--config", args.config])
+        mts_args.extend(["--config", os.path.join(args.data, "config.yaml")])
     mts_args.extend(["--stats", args.dir])
     if not os.path.exists(args.dir):
         os.mkdir(args.dir)
     if args.saves:
-        log.log("Using saves from " + args.saves)
-        mts_args.extend(["--reuse-assemblies", args.saves])
+        for dir_name, saves_arg in [("assembly", "--reuse-assemblies"), ("profile", "--reuse-profiles")]:
+            saves_dir = os.path.join(args.data, dir_name)
+            if os.path.exists(saves_dir):
+                log.log("Reusing {} saves from {}".format(dir_name, saves_dir)
+                mts_args.extend([saves_arg, saves_dir])
     os.chdir(os.path.join(workdir, "src/projects/mts"))
     return subprocess.call(mts_args)
 
@@ -140,8 +143,9 @@ def check_etalons(args, workdir):
             log.err("GF of {} in {} = {}% is higher than expected {:.2f}%".format(cag, ref, est_val, upper))
             mut.res = 7
 
-    for file in os.listdir(args.etalons):
-        etalon = os.path.join(args.etalons, file)
+    etalons_dir = os.path.join(args.data, "etalons")
+    for file in os.listdir(etalons_dir):
+        etalon = os.path.join(etalons_dir, file)
         estimated = os.path.join(args.dir, "stats", "summary", file)
         log.log("Trying to compare " + etalon + " and " + estimated)
         if not os.path.isfile(estimated):
@@ -174,12 +178,12 @@ if __name__ == "__main__":
         ecode = compile_mts(workdir)
         if ecode != 0:
             log.err("MTS compilation finished abnormally with exit code " + str(ecode))
-            sys.exit(3)
+            sys.exit(2)
 
         ecode = run_mts(args, workdir)
         if ecode != 0:
             log.err("Error while running MTS: " + str(ecode))
-            sys.exit(ecode)
+            sys.exit(3)
 
         if args.etalons:
             ecode = check_etalons(args, workdir)

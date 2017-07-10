@@ -50,18 +50,14 @@ onstart:
         print("Detected references:", " ".join(REFS))
 
 enabled_stats = []
-if config["stats"].get("refs"):
-    enabled_stats.append("stats/summary/gf_binning.tsv")
-    if config["propagation"]["enabled"]:
-        enabled_stats.append("stats/summary/gf_propagation.tsv")
-    if config["reassembly"]["enabled"]:
-        enabled_stats.append("stats/summary/reassembly_summary.tsv")
-
 stats_targets = {"checkm": "checkm_{}.tsv",
                  "pca":    "pca_{}.png",
                  "tsne":   "tsne_{}.png"}
+if config["stats"].get("refs"):
+    stats_targets["gf"] = "gf_{}.tsv"
+    stats_targets["summary"] = "summary_{}.tsv"
 for stage in ["binning", "reassembly"]:
-    for stat in config["stats"].get(stage, []):
+    for stat in config["stats"].get(stage, []) + config["stats"].get("all", []):
         enabled_stats.append(os.path.join("stats/summary", stats_targets[stat].format(stage)))
 
 rule all_stats:
@@ -97,9 +93,8 @@ rule all_stats:
 
 #---- Summary table ------------------------------------------------------------
 rule gather_stats:
-    input:   "stats/summary/gf_{stage}.tsv"#,
-             #"stats/q_{stage}/total.info"
-    output:  "stats/summary/{stage}_summary.tsv"
+    input:   "stats/summary/gf_{stage}.tsv"
+    output:  "stats/summary/summary_{stage}.tsv"
     params:  "--problematic", "--heatmap", "stats/q_{stage}", "stats/summary/{stage}"
     message: "Gathering {wildcards.stage} stats"
     shell:   "{SCRIPTS}/gather_stats.py {params}"
