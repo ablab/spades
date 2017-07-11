@@ -14,7 +14,6 @@
 #include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
-#include "projects/read_cloud_statistics/extension_chooser_checker.hpp"
 
 
 namespace path_extend {

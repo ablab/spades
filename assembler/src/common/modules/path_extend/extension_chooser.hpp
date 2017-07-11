@@ -1522,7 +1522,6 @@ class TenXExtensionChooser : public ReadCloudExtensionChooser {
     using ReadCloudExtensionChooser::fragment_len_;
     shared_ptr<frame_extractor_t> barcode_extractor_ptr_;
     tenx_configs_t tenx_configs_;
-    friend class TenXExtensionChecker;
 public:
     static TenXExtensionChooserStatistics stats_;
 
