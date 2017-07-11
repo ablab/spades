@@ -10,7 +10,6 @@ teamcity_precompiled/
 CMakeFiles/
 scripts/
 share/
-picture*
 *.launch
 *.ebwt
 *.pyc

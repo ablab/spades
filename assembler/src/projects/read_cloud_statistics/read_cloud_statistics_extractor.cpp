@@ -60,7 +60,9 @@ namespace debruijn_graph {
         auto dataset_info = cfg::get().ds;
         GraphCoverageMap cover_map(gp.g);
         PELaunchSupport support(dataset_info, params);
-        path_extend::ExtendersGenerator generator(dataset_info, params, gp, cover_map, support);
+        UniqueData unique_data;
+        UsedUniqueStorage used_unique_storage(read_cloud_storage);
+        path_extend::ExtendersGenerator generator(dataset_info, params, gp, cover_map, unique_data, used_unique_storage, support);
         auto read_cloud_extenders = generator.MakeReadCloudExtenders(read_cloud_storage);
         VERIFY_MSG(read_cloud_extenders.size() > 0, "Read cloud libraries were not found");
         VERIFY_MSG(read_cloud_extenders.size() < 2, "Multiple read cloud libraries are not supported");

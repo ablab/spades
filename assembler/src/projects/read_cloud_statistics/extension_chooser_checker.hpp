@@ -8,12 +8,12 @@ namespace path_extend {
         const TenXExtensionChooser chooser_;
         shared_ptr<ReadCloudExtender> extender_ptr_;
         const conj_graph_pack& gp_;
-        const ScaffoldingUniqueEdgeStorage storage_;
+        const ScaffoldingUniqueEdgeStorage& storage_;
         vector<omnigraph::MappingPath<EdgeId>> reference_paths_;
 
     public:
         TenXExtensionChecker(const TenXExtensionChooser& chooser, const shared_ptr<ReadCloudExtender> extender_ptr,
-                             const conj_graph_pack& gp, const ScaffoldingUniqueEdgeStorage storage) :
+                             const conj_graph_pack& gp, const ScaffoldingUniqueEdgeStorage& storage) :
                 chooser_(chooser), extender_ptr_(extender_ptr), gp_(gp), storage_(storage) {}
 
         void CheckChooser(const string& genome_path) {

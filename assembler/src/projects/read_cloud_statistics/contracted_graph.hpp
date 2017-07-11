@@ -105,7 +105,7 @@ namespace contracted_graph {
 
     class ContractedGraphBuilder {
         const Graph &g_;
-        path_extend::ScaffoldingUniqueEdgeStorage unique_storage_;
+        const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         vector<EdgeId> long_edges_;
         unordered_set<VertexId> long_vertices_;
         unordered_map<VertexId, size_t> vertex_to_capacity_;
@@ -119,7 +119,7 @@ namespace contracted_graph {
 
 
         ContractedGraphBuilder(const Graph &g,
-                               const path_extend::ScaffoldingUniqueEdgeStorage unique_storage) : g_(g),
+                               const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage) : g_(g),
                                                                                                  unique_storage_(unique_storage) {}
 
         ContractedGraph BuildContractedGraph() {
@@ -217,10 +217,10 @@ namespace contracted_graph {
             omnigraph::IterationHelper<Graph, EdgeId> edge_iteration_helper(g);
 
             boost::disjoint_sets<Rank, Parent> dsets(r, p);
-            for (auto it = g.vertices().begin(); it != g.vertices().end(); ++it) {
+            for (auto it = g.begin(); it != g.end(); ++it) {
                 dsets.make_set(*it);
             }
-            INFO("Overall vertices: " << dsets.count_sets(g.vertices().begin(), g.vertices().end()));
+            INFO("Overall vertices: " << dsets.count_sets(g.begin(), g.end()));
             size_t short_edges = 0;
             size_t long_edges = 0;
             size_t self_linkages = 0;

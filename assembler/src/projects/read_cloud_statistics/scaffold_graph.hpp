@@ -55,7 +55,7 @@ namespace scaffold_graph {
     };
 
     class ScaffoldGraphConstructor {
-        path_extend::ScaffoldingUniqueEdgeStorage unique_storage_;
+        const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         size_t distance_;
         const Graph &g_;
 

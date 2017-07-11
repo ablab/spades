@@ -275,7 +275,7 @@ namespace cluster_statistics {
         const Graph &g_;
         scaffold_graph::ScaffoldGraph scaffold_graph_;
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_;
-        const path_extend::ScaffoldingUniqueEdgeStorage unique_storage_;
+        const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         const size_t distance_;
         const size_t min_read_threshold_;
     public:

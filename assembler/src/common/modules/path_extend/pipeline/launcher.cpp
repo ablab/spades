@@ -347,7 +347,6 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
 
 
 void PathExtendLauncher::FillLongReadsCoverageMaps() {
-    VERIFY(dataset_info_.reads.lib_count() == gp_.single_long_reads.size());
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
         unique_data_.long_reads_paths_.push_back(PathContainer());
         unique_data_.long_reads_cov_map_.push_back(GraphCoverageMap(gp_.g));
@@ -461,7 +460,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
 }
 
 void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &result,
-                                     const GraphCoverageMap& /* cover_map */) const {
+                                     const GraphCoverageMap& cover_map) const {
     //Fixes distances for paths gaps and tries to fill them in
     INFO("Closing gaps in paths");
 
@@ -469,7 +468,9 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 
      gap_closers.push_back(make_shared<DijkstraGapCloser>(gp_.g, params_.max_polisher_gap));
 
-    ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, support_);
+    UniqueData unique_data;
+    UsedUniqueStorage used_unique_storage(unique_data.main_unique_storage_);
+    ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, unique_data_, used_unique_storage, support_);
 
     for (size_t i = 0; i < dataset_info_.reads.lib_count(); i++) {
         auto lib = dataset_info_.reads[i];
@@ -485,21 +486,10 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
              auto simple_chooser = generator.MakeSimpleExtensionChooser(i);
              auto simple_chooser_factory = std::make_shared<SameChooserFactory>(gp_.g, simple_chooser);
              auto composite_chooser_factory = std::make_shared<CompositeChooserFactory>(gp_.g, simple_chooser_factory, cloud_chooser_factory);
-             auto cloud_extender_factory = std::make_shared<SimpleExtenderFactory>(gp_, cover_map, composite_chooser_factory);
+             auto cloud_extender_factory = std::make_shared<SimpleExtenderFactory>(gp_, cover_map, used_unique_storage, composite_chooser_factory);
              gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, cloud_extender_factory));
          }
     }
-
-////TODO:: is it really empty?
-//    UniqueData unique_data;
-//    UsedUniqueStorage used_unique_storage(unique_data.main_unique_storage_);
-//    ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map,
-//                                 unique_data, used_unique_storage, support_);
-//    auto polisher_storage = ScaffoldingUniqueEdgeStorage();
-//    for  (const auto& extender: generator.MakePEExtenders()) {
-//        gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender));
-//    }
-//FIXME: uncomment cover_map
 
     PathPolisher polisher(gp_, gap_closers);
     result = polisher.PolishPaths(paths);

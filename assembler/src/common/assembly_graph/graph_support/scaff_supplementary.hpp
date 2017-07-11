@@ -107,6 +107,7 @@ public:
     void FillUniqueEdgesWithLongReads(GraphCoverageMap &long_reads_cov_map,
                                       ScaffoldingUniqueEdgeStorage &unique_storage_pb,
                                       const pe_config::LongReads &lr_config);
+    void FillUniqueEdgesWithTopology(ScaffoldingUniqueEdgeStorage &storage_);
 };
 
 class UsedUniqueStorage {
@@ -165,12 +166,9 @@ struct UniqueData {
     vector<ScaffoldingUniqueEdgeStorage> unique_storages_;
 
     ScaffoldingUniqueEdgeStorage unique_pb_storage_;
+    ScaffoldingUniqueEdgeStorage unique_read_cloud_storage_;
     vector<PathContainer> long_reads_paths_;
     vector<GraphCoverageMap> long_reads_cov_map_;
-    void FillUniqueEdgeStorage(ScaffoldingUniqueEdgeStorage &storage_);
-    void ClearLongEdgesWithPairedLib(size_t lib_index, ScaffoldingUniqueEdgeStorage &storage_) const;
-    void FillUniqueEdgesWithLongReads(shared_ptr<GraphCoverageMap> long_reads_cov_map, ScaffoldingUniqueEdgeStorage& unique_storage_pb, const pe_config::LongReads lr_config);
-    void FillUniqueEdgesWithTopology(ScaffoldingUniqueEdgeStorage &storage_);
 };
 }
 
