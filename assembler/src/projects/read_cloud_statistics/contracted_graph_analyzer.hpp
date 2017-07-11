@@ -6,6 +6,32 @@
 #include "cluster_storage_analyzer.hpp"
 
 namespace contracted_graph {
+    struct ContractedVertexData {
+        size_t indegree_;
+        size_t outdegree_;
+        size_t capacity_;
+    };
+
+    class VertexDataStats: public read_cloud_statistics::Statistic {
+        std::unordered_map<VertexId, ContractedVertexData> data_;
+
+     public:
+        VertexDataStats(): read_cloud_statistics::Statistic("contracted_vertex_stats"), data_() {}
+        VertexDataStats(const VertexDataStats& other) = default;
+        void Insert(const VertexId& vertex, size_t indegree, size_t outdegree, size_t capacity) {
+            data_[vertex].indegree_ = indegree;
+            data_[vertex].outdegree_ = outdegree;
+            data_[vertex].capacity_ = capacity;
+        }
+
+        void Serialize(ofstream& fout) override {
+            for (const auto& entry: data_) {
+                fout << entry.first.int_id() << " " << entry.second.indegree_ << " "
+                     << entry.second.outdegree_ << " " << entry.second.capacity_ << std::endl;
+            }
+        }
+    };
+
     struct TransitionVertexData {
         std::unordered_map<transitions::Transition, size_t> correct_transition_to_weight_;
         std::unordered_map<transitions::Transition, size_t> any_transition_to_weight_;
@@ -94,12 +120,26 @@ namespace contracted_graph {
 
         void FillStatistics() override {
             auto transition_statistics_ptr = make_shared<TransitionStatistics>(GetTransitionStatistics(min_read_threshold_));
+            auto vertex_statistics_ptr = make_shared<VertexDataStats>(GetVertexDataStats());
             AddStatistic(transition_statistics_ptr);
+            AddStatistic(vertex_statistics_ptr);
         }
 
         DECL_LOGGER("ContractedGraphAnalyzer");
 
      private:
+        VertexDataStats GetVertexDataStats() {
+            VertexDataStats stats;
+            for (const auto& entry: contracted_graph_) {
+                VertexId vertex = entry.first;
+                size_t outcoming = contracted_graph_.GetOutcoming(vertex).size();
+                size_t incoming = contracted_graph_.GetIncoming(vertex).size();
+                size_t capacity = contracted_graph_.GetCapacity(vertex);
+                stats.Insert(vertex, incoming, outcoming, capacity);
+            }
+            return stats;
+        }
+
         TransitionStatistics GetTransitionStatistics(size_t min_read_threshold) {
             TransitionStatistics stats;
             INFO("Getting transition statistics...")
@@ -126,7 +166,7 @@ namespace contracted_graph {
                         DEBUG("Outcoming edge: " << out_edge.int_id());
                         vector<EdgeId> edges = {in_edge, out_edge};
                         cluster_statistics::SimplePath path(edges);
-                        DEBUG("Number of clusters")
+                        DEBUG("Number of clusters");
                         size_t clusters = GetNumberOfClusters(path, min_read_threshold);
                         vertex_data.all_clusters_+=clusters;
                         transitions::Transition transition(in_edge, out_edge);

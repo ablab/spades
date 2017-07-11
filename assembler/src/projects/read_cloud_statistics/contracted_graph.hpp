@@ -31,6 +31,7 @@ namespace contracted_graph {
     class ContractedGraph {
         std::map<VertexId, AdjacencyMap> outcoming_;
         std::map<VertexId, AdjacencyMap> incoming_;
+        std::map<VertexId, size_t> capacity_;
     public:
 
         typedef std::map<VertexId, AdjacencyMap>::const_iterator const_iterator;
@@ -84,6 +85,15 @@ namespace contracted_graph {
             return outcoming;
         }
 
+        size_t GetCapacity(const VertexId& vertex) {
+            VERIFY(capacity_.find(vertex) != capacity_.end());
+            return capacity_[vertex];
+        }
+
+        void InsertCapacity(const VertexId& vertex, size_t capacity) {
+            capacity_[vertex] = capacity;
+        }
+
         const_iterator begin() const {
             return outcoming_.begin();
         }
@@ -98,6 +108,7 @@ namespace contracted_graph {
         path_extend::ScaffoldingUniqueEdgeStorage unique_storage_;
         vector<EdgeId> long_edges_;
         unordered_set<VertexId> long_vertices_;
+        unordered_map<VertexId, size_t> vertex_to_capacity_;
 
     public:
         typedef std::map<VertexId, std::size_t> rank_t; // => order on Element
@@ -126,7 +137,11 @@ namespace contracted_graph {
             GetLongEdgesStats(long_edges_);
 
             for (const auto& edge: long_edges_) {
-                graph.InsertEdge(dsu.find_set(g_.EdgeStart(edge)), dsu.find_set(g_.EdgeEnd(edge)), edge);
+                VertexId start_root = dsu.find_set(g_.EdgeStart(edge));
+                VertexId end_root = dsu.find_set(g_.EdgeEnd(edge));
+                graph.InsertEdge(start_root, end_root, edge);
+                graph.InsertCapacity(start_root, vertex_to_capacity_[start_root]);
+                graph.InsertCapacity(end_root, vertex_to_capacity_[end_root]);
             }
 
             return graph;
@@ -217,10 +232,18 @@ namespace contracted_graph {
                     ++short_edges;
                     VertexId start = g.EdgeStart(edge);
                     VertexId end = g.EdgeEnd(edge);
-                    if (dsets.find_set(start) == dsets.find_set(end)) {
+                    VertexId start_root = dsets.find_set(start);
+                    VertexId end_root = dsets.find_set(end);
+                    if (start_root == end_root) {
                         ++self_linkages;
+                        vertex_to_capacity_[dsets.find_set(start)] += g_.length(edge);
+                    } else {
+                        size_t start_capacity = vertex_to_capacity_[start_root];
+                        size_t end_capacity = vertex_to_capacity_[end_root];
+                        dsets.union_set(start, end);
+                        vertex_to_capacity_[dsets.find_set(start)] = start_capacity + end_capacity + g_.length(edge);
                     }
-                    dsets.union_set(g.EdgeStart(edge), g.EdgeEnd(edge));
+
                 } else {
                     ++long_edges;
                     if (dsets.find_set(g.EdgeStart(edge)) == dsets.find_set(g.EdgeEnd(edge))) {
@@ -242,21 +265,4 @@ namespace contracted_graph {
             return dsets;
         };
     };
-class OutDegreeDistribuiton: public read_cloud_statistics::Statistic {
-    std::map<size_t, size_t> degree_distribution_;
-
- public:
-    OutDegreeDistribuiton(): read_cloud_statistics::Statistic("out_degree_distribution"), degree_distribution_() {}
-    OutDegreeDistribuiton(const OutDegreeDistribuiton& other) = default;
-    void Insert(size_t degree) {
-        degree_distribution_[degree]++;
-    }
-
-    void Serialize(ofstream& fout) override {
-        for (const auto& entry: degree_distribution_) {
-            fout << entry.first << " " << entry.second << std::endl;
-        }
-    }
-};
-
 }
