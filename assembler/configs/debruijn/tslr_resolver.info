@@ -43,6 +43,9 @@ ts_res
 		;length threshold for reliable edges
 		edge_length_threshold  3000
 
+		;Read cloud clustering threshold
+		distance 5000
+
 		;Average length of read cloud fragment
 		fragment_len 50000
 

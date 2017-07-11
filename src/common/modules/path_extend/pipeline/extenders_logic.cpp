@@ -468,6 +468,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_in
 
 
     shared_ptr<ReadCloudExtender> extender = make_shared<ReadCloudExtender>(gp_, cover_map_,
+                                                                            used_unique_storage_,
                                                                             extension_chooser,
                                                                             2500 /*insert size*/,
                                                                             false, /*investigate short loops*/

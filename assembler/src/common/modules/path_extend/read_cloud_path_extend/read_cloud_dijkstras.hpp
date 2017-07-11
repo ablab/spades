@@ -137,7 +137,7 @@ public:
         DEBUG("Gap " << gap)
         DEBUG("Is unique " << unique_storage_.IsUnique(edge));
 
-        if (g_.length(edge) < unique_storage_.GetMinLength()) {
+        if (g_.length(edge) < unique_storage_.min_length()) {
             DEBUG("Short edge, passed" << endl)  //todo use short edges to reduce number of candidates
             return true;
         }
