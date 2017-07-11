@@ -30,18 +30,6 @@ class PathExtendLauncher {
     ContigWriter writer_;
 
     UniqueData unique_data_;
-//    struct {
-//        size_t min_unique_length_;
-//        double unique_variation_;
-//
-//        ScaffoldingUniqueEdgeStorage main_unique_storage_;
-//        vector<shared_ptr<ScaffoldingUniqueEdgeStorage>> unique_storages_;
-//
-//        ScaffoldingUniqueEdgeStorage unique_pb_storage_;
-//        ScaffoldingUniqueEdgeStorage unique_read_cloud_storage_;
-//        vector<shared_ptr<PathContainer>> long_reads_paths_;
-//        vector<shared_ptr<GraphCoverageMap>> long_reads_cov_map_;
-//    } unique_data_;
 
     std::vector<std::shared_ptr<ConnectionCondition>>
         ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage &edge_storage) const;

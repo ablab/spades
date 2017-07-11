@@ -1,4 +1,4 @@
- //***************************************************************************
+//***************************************************************************
 //* Copyright (c) 2011-2014 Saint-Petersburg Academic University
 //* Copyright (c) 2014-2020 Saint Petersburg State University
 //* All Rights Reserved
@@ -686,7 +686,7 @@ class ReadCloudExtender : public LoopDetectingPathExtender { //Traverse forward 
 protected:
 
     shared_ptr<ExtensionChooser> extensionChooser_;
-    ScaffoldingUniqueEdgeStorage unique_storage_;
+    const ScaffoldingUniqueEdgeStorage& unique_storage_;
     shared_ptr<barcode_index::AbstractBarcodeIndex> mapper_;
     size_t distance_bound_;
     friend class TenXExtensionChecker;
@@ -696,6 +696,7 @@ public:
 
     ReadCloudExtender(const conj_graph_pack &gp,
                              const GraphCoverageMap &cov_map,
+                             UsedUniqueStorage& unique,
                              shared_ptr<ExtensionChooser> ec,
                              size_t is,
                              bool investigate_short_loops,
@@ -703,8 +704,8 @@ public:
                              const ScaffoldingUniqueEdgeStorage& unique_storage,
                              const size_t distance_bound)
             :
-            LoopDetectingPathExtender(gp, cov_map, investigate_short_loops, use_short_loop_cov_resolver,
-                                      is),
+            LoopDetectingPathExtender(gp, cov_map, unique, investigate_short_loops,
+                                      use_short_loop_cov_resolver, is),
             extensionChooser_(ec),
             unique_storage_(unique_storage),
             mapper_(gp.barcode_mapper_ptr),

@@ -82,7 +82,7 @@ public:
 
 class ReadCloudGapExtensionChooserFactory : public GapExtensionChooserFactory {
     typedef shared_ptr <barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr;
-    const ScaffoldingUniqueEdgeStorage unique_storage_;
+    const ScaffoldingUniqueEdgeStorage& unique_storage_;
     barcode_extractor_ptr extractor_;
 public:
     ReadCloudGapExtensionChooserFactory(const Graph& g, const ScaffoldingUniqueEdgeStorage& unique_storage,
@@ -129,19 +129,22 @@ public:
 class SimpleExtenderFactory : public GapExtenderFactory {
     const conj_graph_pack &gp_;
     const GraphCoverageMap &cover_map_;
+    UsedUniqueStorage& unique_;
     const shared_ptr<GapExtensionChooserFactory> chooser_factory_;
     static const size_t MAGIC_LOOP_CONSTANT = 1000;
 public:
     SimpleExtenderFactory(const conj_graph_pack &gp,
                           const GraphCoverageMap &cover_map,
+                          UsedUniqueStorage& unique,
                           const shared_ptr<GapExtensionChooserFactory> chooser_factory):
             gp_(gp),
             cover_map_(cover_map),
+            unique_(unique),
             chooser_factory_(chooser_factory) {
     }
 
     shared_ptr<PathExtender> CreateExtender(const BidirectionalPath &original_path, size_t position) const override {
-        return make_shared<SimpleExtender>(gp_, cover_map_,
+        return make_shared<SimpleExtender>(gp_, cover_map_, unique_,
                                            chooser_factory_->CreateChooser(original_path, position),
                                            MAGIC_LOOP_CONSTANT,
                                            false,
