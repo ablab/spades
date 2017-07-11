@@ -34,6 +34,15 @@ inline bool HasLongReads(const config::dataset& dataset_info) {
     return false;
 }
 
+inline bool HasReadClouds(const config::dataset& dataset_info) {
+    for (const auto& lib: dataset_info.reads) {
+        if (lib.type() == io::LibraryType::Clouds10x) {
+            return true;
+        }
+    }
+    return false;
+}
+
 struct PathExtendParamsContainer {
 
     PathExtendParamsContainer(const config::dataset& dataset_info,
@@ -62,9 +71,9 @@ struct PathExtendParamsContainer {
             traverse_loops = false;
 
         //Parameters are subject to change
-        max_polisher_gap = 10000;
+        max_polisher_gap = FindMaxISRightQuantile(dataset_info);
         //TODO: params
-        if (HasLongReads(dataset_info))
+        if (HasLongReads(dataset_info) or HasReadClouds(dataset_info))
             max_polisher_gap = std::max(max_polisher_gap, size_t(10000));
 
         min_edge_len = 0;

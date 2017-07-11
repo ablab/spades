@@ -2,13 +2,11 @@ ts_res
 {
 	;Dataset configs
 
+		;TSLR leftover
 		read_cloud_dataset  /Nancy/itolstoganov/tenx_metagenome/easy_test/data/dataset.info
 
+		;remove this
 		library_type tenx
-
-		;genome file for tenx stats
-		genome_path /Nancy/itolstoganov/tenx_metagenome/easy_test/data/references/contig_refs/combined.fasta
-
 
 	;Barcode index construction configs
 
@@ -55,12 +53,24 @@ ts_res
 		read_cloud_resolution_on true
 	tenx_resolver
 	{
-		tail_threshold 5000
+		tail_threshold 25000
 		max_initial_candidates 10
 		internal_gap_threshold 6000
 		absolute_barcode_threshold 2
 		initial_abundancy_threshold 15
 		middle_abundancy_threshold 10
 		topology_filter_on false
+	}
+
+	statistics
+	{
+		;Genome file
+		genome_path ""
+
+		;Baseline SPAdes contigs
+		base_contigs_path ""
+
+		;CloudSPAdes contigs
+		cloud_contigs_path ""
 	}
 }
