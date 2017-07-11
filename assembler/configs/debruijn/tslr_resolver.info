@@ -55,7 +55,7 @@ ts_res
 		read_cloud_resolution_on true
 	tenx_resolver
 	{
-		tail_threshold 5000
+		tail_threshold 25000
 		max_initial_candidates 10
 		internal_gap_threshold 6000
 		absolute_barcode_threshold 2
