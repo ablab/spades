@@ -485,7 +485,6 @@ void load(debruijn_config::read_cloud_resolver& ts_res,
     load(ts_res.edge_tail_len, pt, "edge_tail_len");
     load(ts_res.frame_size, pt, "frame_size");
     load(ts_res.fragment_len, pt, "fragment_len");
-    load(ts_res.genome_path, pt, "genome_path");
     load(ts_res.read_cloud_resolution_on, pt, "read_cloud_resolution_on");
     load(ts_res.tenx, pt, "tenx_resolver");
 }

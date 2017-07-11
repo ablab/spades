@@ -462,7 +462,6 @@ struct debruijn_config {
     struct read_cloud_resolver {
         std::string read_cloud_dataset;
         std::string library_type;
-        std::string genome_path;
 
         size_t edge_tail_len;
         size_t frame_size;
