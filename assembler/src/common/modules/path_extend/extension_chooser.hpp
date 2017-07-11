@@ -1551,7 +1551,7 @@ protected:
     barcode_extractor_ptr_t barcode_extractor_ptr_;
     size_t fragment_len_;
     size_t distance_bound_;
-    ScaffoldingUniqueEdgeStorage unique_storage_;
+    const ScaffoldingUniqueEdgeStorage& unique_storage_;
     PairedLibConnectionCondition paired_connection_condition_;
     friend class TenXExtensionChecker;
 
@@ -1754,7 +1754,6 @@ class TenXExtensionChooser : public ReadCloudExtensionChooser {
     using ReadCloudExtensionChooser::fragment_len_;
     shared_ptr<frame_extractor_t> barcode_extractor_ptr_;
     tenx_configs_t tenx_configs_;
-    friend class TenXExtensionChecker;
 public:
     static TenXExtensionChooserStatistics stats_;
 
