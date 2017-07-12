@@ -36,7 +36,6 @@ load_binning <- function(profiles_in, binning_out) {
 
 load_clusters <- function(profiles_in, binning_out, int_contigs) {
   data <- load_binning(profiles_in, binning_out)
-  print(head(data))
   if (missing(int_contigs)) {
     pieces <- split(data, data$bin)[1:10]
     lims <- lapply(pieces, function(x) head(x, 500))

@@ -50,17 +50,21 @@ rule spades:
              " --save-gp -o {params.dir} >{log} 2>&1 && "
              "cp {params.dir}/scaffolds.fasta {output}"
 
+rule copy_contigs:
+    input:   "assembly/{}/{{group}}.fasta".format(ASSEMBLER)
+    output:  "assembly/full/{group}.fasta"
+    shell:   "cp {input} {output}"
+
 rule split_contigs:
     input:   "assembly/{}/{{group}}.fasta".format(ASSEMBLER)
     output:  "assembly/splits/{group,(sample|group)\d+}.fasta"
     message: "Cutting {wildcards.group} into {SPLIT_LENGTH} bp splits"
     shell:   "{SCRIPTS}/cut_fasta.py -c {SPLIT_LENGTH} -o 0 -m {input} > {output}"
 
-# MetaBAT way
-rule all_contigs:
-    input:   expand("assembly/{assembler}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS)
-    output:  "assembly/full/all.fasta"
-    message: "Combining contigs from all samples"
+rule combine_contigs:
+    input:   expand("assembly/{{frags}}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS)
+    output:  "assembly/{frags}/all.fasta"
+    message: "Combine all {frags} contigs from {wildcards.dir}"
     shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
 
 #---- Generating profiles/depths -----------------------------------------------
@@ -245,9 +249,10 @@ ruleorder: canopy > bin_profiles
 
 rule binning_format:
     input:   "binning/{}/binning.out".format(BINNER)
-    output:  "binning/{}/unified_binning.tsv".format(BINNER)
+    output:  "binning/unified_binning.tsv".format(BINNER)
     message: "Making unified binning results"
-    shell:   "{SCRIPTS}/convert_output.py -t {BINNER} -o {output} {input}"
+    shell:   "{SCRIPTS}/convert_output.py -t {BINNER} -o {output} {input} &&"
+             "cp {output} binning/binning.tsv" #Additional table for stats
 
 rule annotate:
     input:   "binning/{}/unified_binning.tsv".format(BINNER)

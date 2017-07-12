@@ -96,12 +96,6 @@ def is_fastq(wildcards):
             return True
     return False
 
-rule combine_contigs:
-    input:   expand("{{dir}}/{group}.fasta", group=GROUPS)
-    output:  "{dir}/all.fasta"
-    message: "Combine all contigs from {wildcards.dir}"
-    shell:   "{SCRIPTS}/combine_contigs.py -r {input} > {output}"
-
 rule combine_annotation:
     input:   expand("{{stage}}/annotation/{group}.ann", group=GROUPS)
     output:  "{stage}/annotation/all.ann"

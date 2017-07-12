@@ -99,7 +99,6 @@ def run_mts(args, workdir):
     if not args.no_clean:
         shutil.rmtree(args.dir, True)
         mts_args.extend(["--config", os.path.join(args.data, "config.yaml")])
-    mts_args.extend(["--stats", args.dir])
     if not os.path.exists(args.dir):
         os.mkdir(args.dir)
     if args.saves:
@@ -108,6 +107,7 @@ def run_mts(args, workdir):
             if os.path.exists(saves_dir):
                 log.log("Reusing {} saves from {}".format(dir_name, saves_dir))
                 mts_args.extend([saves_arg, saves_dir])
+    mts_args.append(args.dir)
     os.chdir(os.path.join(workdir, "src/projects/mts"))
     log.log("Calling " + " ".join(mts_args))
     return subprocess.call(mts_args)

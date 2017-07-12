@@ -20,9 +20,12 @@ args = parser.parse_args()
 
 # Write summary table with correspondence between bins and their best references
 res_table = DataFrame(columns=["bin", "ref", "GF", "purity", "NGA50", "misassemblies"])
-gf_table = pandas.read_table(os.path.join(args.dir, "summary", "TSV", "Genome_fraction_(%).tsv"), dtype=str).set_index("Assemblies")
+gf_table = pandas.read_table(os.path.join(args.dir, "summary", "TSV", "Total_aligned_length.tsv"), dtype=str).set_index("Assemblies")
 gfs = gf_table.apply(pandas.to_numeric, errors="coerce")
 best_ref = gfs.apply(lambda col: col.idxmax())
+
+with open(args.name + "_best.tsv", "w") as out_file:
+    best_ref.to_csv(out_file, sep="\t")
 
 for bin, ref in best_ref.iteritems():
     if type(ref) is float:

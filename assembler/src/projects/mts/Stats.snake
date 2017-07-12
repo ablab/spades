@@ -52,13 +52,18 @@ onstart:
 enabled_stats = []
 stats_targets = {"checkm": "checkm_{}.tsv",
                  "pca":    "pca_{}.png",
-                 "tsne":   "tsne_{}.png"}
+                 "tsne":   "tsne_{}.png",
+                 "f1":     "f1_{}.txt"}
 if config["stats"].get("refs"):
     stats_targets["gf"] = "gf_{}.tsv"
-    stats_targets["summary"] = "summary_{}.tsv"
+    stats_targets["summary"] = "{}_summary.tsv"
 for stage in ["binning", "reassembly"]:
-    for stat in config["stats"].get(stage, []) + config["stats"].get("all", []):
-        enabled_stats.append(os.path.join("stats/summary", stats_targets[stat].format(stage)))
+    stage_stats = config["stats"].get(stage, [])
+    if stage_stats == "all":
+        stats = stats_targets.keys()
+    else:
+        stats = stage_stats + config["stats"].get("all", [])
+    enabled_stats.extend(os.path.join("stats/summary", stats_targets[st].format(stage)) for st in stats)
 
 rule all_stats:
     input:   enabled_stats
@@ -94,7 +99,7 @@ rule all_stats:
 #---- Summary table ------------------------------------------------------------
 rule gather_stats:
     input:   "stats/summary/gf_{stage}.tsv"
-    output:  "stats/summary/summary_{stage}.tsv"
+    output:  "stats/summary/{stage}_summary.tsv"
     params:  "--problematic", "--heatmap", "stats/q_{stage}", "stats/summary/{stage}"
     message: "Gathering {wildcards.stage} stats"
     shell:   "{SCRIPTS}/gather_stats.py {params}"
@@ -160,11 +165,11 @@ rule checkm:
         #         break
         ext = ".fasta"
         shell("set +u; source activate concoct_env; set -u \n"
-             "checkm tree -x {ext} {params.dir} {params.out} >{log} 2>&1\n"
+             "checkm tree -t {THREADS} -x {ext} {params.dir} {params.out} >{log} 2>&1\n"
              "checkm tree_qa -o 2 --tab_table -f {output.tree_qa} {params.out} >>{log} 2>&1\n"
              "checkm lineage_set {params.out} {params.out}/lineage.ms >>{log} 2>&1\n"
-             "checkm analyze -x fasta {params.out}/lineage.ms {params.dir} {params.out} >>{log} 2>&1\n"
-             "checkm qa -o 2 --tab_table -f {output.qa} {params.out}/lineage.ms {params.out} >>{log} 2>&1")
+             "checkm analyze -t {THREADS} -x fasta {params.out}/lineage.ms {params.dir} {params.out} >>{log} 2>&1\n"
+             "checkm qa -t {THREADS} -o 2 --tab_table -f {output.qa} {params.out}/lineage.ms {params.out} >>{log} 2>&1")
 
 rule parse_checkm:
     input:   qa=rules.checkm.output.qa, tree_qa=rules.checkm.output.tree_qa
@@ -180,6 +185,27 @@ rule parse_checkm:
         for column in ["Taxonomy (contained)", "Taxonomy (sister lineage)"]:
             res_table[column] = res_table[column].apply(extract_taxon)
         res_table.to_csv(output[0], index=False, sep="\t")
+
+rule combine_bins:
+    input:   expand("{{stage}}/bins/{bin}.fasta", bin=BINS)
+    output:  "{stage}/all.fasta"
+    message: "Combine all contigs from {wildcards.stage}"
+    shell:   "{SCRIPTS}/combine_contigs.py -r {input} > {output}"
+
+rule reassembly_mock_binning:
+    output:  "reassembly/binning.tsv"
+    message: "Preparing reassembly mock binning"
+    run:
+        shell("rm -f {output}")
+        for bin in BINS:
+            shell("grep '>' reassembly/bins/{bin}.fasta | cut -c 2- | awk '{{print \"{bin}-\" $0 \"\\t{bin}\"}}' >> {output}")
+
+#F1 stats
+rule calc_f1:
+    input:   "{stage}/binning.tsv", "{stage}/all.fasta"
+    output:  "stats/summary/f1_{stage}.txt"
+    message: "Calculating F1 metrics for {wildcards.stage}"
+    shell:   "cd {stage}/bins/ && {SCRIPTS}/evaluate.py ../binning.tsv ../all.fasta fasta > ../../{output}"
 
 #---- PCA ----------------------------------------------------------------------
 # FRAGMENT_NAMES_BY_STAGE = {"reassembly": CAG_EDGES,
