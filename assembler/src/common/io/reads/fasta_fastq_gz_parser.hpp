@@ -39,7 +39,12 @@ namespace io {
 
 namespace fastafastqgz {
 // STEP 1: declare the type of file handler and the read() function
+// Silence bogus gcc warnings
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+// STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)
+#pragma GCC diagnostic pop
 }
 
 class FastaFastqGzParser: public Parser {

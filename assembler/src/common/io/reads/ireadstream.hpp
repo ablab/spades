@@ -21,8 +21,12 @@
 #include "read.hpp"
 #include "sequence/nucl.hpp"
 
+// Silence bogus gcc warnings
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
 // STEP 1: declare the type of file handler and the read() function
 KSEQ_INIT(gzFile, gzread)
+#pragma GCC diagnostic pop
 
 /*
 * Read name, seq and qual strings from FASTQ data (one by one)
