@@ -114,10 +114,10 @@ class IonPairAligner {
   void finishAlignmentProcess() {
     empty_ = true;
     if (x_it_ != x_end_) {
-      end_diff_ += x_end_ - x_it_;
+      end_diff_ += int(x_end_ - x_it_);
     }
     if (y_it_ != y_end_) {
-      end_diff_ -= y_end_ - y_it_;
+      end_diff_ -= int(y_end_ - y_it_);
     }
   }
 

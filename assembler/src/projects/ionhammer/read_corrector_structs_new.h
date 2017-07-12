@@ -113,7 +113,7 @@ class CorrectionState {
 
   const CorrectedRead* Read() const { return current_read_.get(); }
 
-  uint Position() const { return (uint)cursor_; }
+  unsigned Position() const { return (unsigned)cursor_; }
 };
 
 class CorrectionContext {
@@ -223,16 +223,16 @@ class StateBuilder {
   inline State Build() { return next_; }
 
   static State Initial(const CorrectionContext& context,
-                        const PenaltyCalcer& penalty,
-                       uint skip) {
+                       const PenaltyCalcer& penalty,
+                       unsigned skip) {
     State state;
     state.penalty_state = PenaltyCalcer::CreateState(
-        context.IsReversed(), (uint)context.GetRead().size());
+        context.IsReversed(), (unsigned)context.GetRead().size());
     state.current_read_.reset(new CorrectedRead());
     size_t offset = 0;
     size_t minSkip = 0;
 
-    for (uint i = 0; i < hammer::K; ++i) {
+    for (unsigned i = 0; i < hammer::K; ++i) {
       minSkip += context.GetHRun(minSkip).len;
       if (minSkip >= context.GetRead().size()) {
         break;
@@ -240,7 +240,7 @@ class StateBuilder {
     }
 
     if (minSkip > skip) {
-      skip = (uint)minSkip;
+      skip = (unsigned)minSkip;
     }
     state.cursor_ = (int16_t)skip;
 
@@ -264,7 +264,7 @@ class MoveToNextDivergence {
   State& state_;
   const CorrectionContext& context_;
   const PenaltyCalcer& calcer_;
-  uint cursor_;
+  unsigned cursor_;
 
  public:
   MoveToNextDivergence(State& state,
@@ -273,7 +273,7 @@ class MoveToNextDivergence {
       : state_(state),
         context_(context),
         calcer_(calcer),
-        cursor_((uint)state.cursor_) {}
+        cursor_((unsigned)state.cursor_) {}
 
   inline bool FindNextDivergence() {
     const auto& context = context_;
@@ -291,12 +291,12 @@ class MoveToNextDivergence {
         break;
       }
     }
-    return cursor_ != (uint)state_.cursor_;
+    return cursor_ != (unsigned)state_.cursor_;
   }
 
   // we'll use it only while we move in branch…
   inline void Move() {
-    for (uint i = 0; i < Proceeded.size(); ++i) {
+    for (unsigned i = 0; i < Proceeded.size(); ++i) {
       state_.current_read_->Add(Proceeded[i].FixedHRun());
       state_.kmer_ <<= Proceeded[i].FixedHRun();
       calcer_.Update(state_.penalty_state, Proceeded[i],
@@ -350,7 +350,7 @@ class HRunSizeSearcher {
   }
 
   inline IonEvent WithoutCorrection() {
-    hkmer_[K - 1].len = (uint8_t)observed_size_;
+    hkmer_[K - 1].len = observed_size_ & 0x3F;
     return IonEvent(observed_nucl_, observed_size_, observed_size_, is_good_func(hkmer_));
   }
 
@@ -361,7 +361,7 @@ class HRunSizeSearcher {
 
     const char nucl = hkmer_[K - 1].nucl;
     for (char i = 1; i <= max_error_size; ++i) {
-      hkmer_[K - 1].len = (uint8_t)(observed_size_ + i);
+      hkmer_[K - 1].len = (observed_size_ + i) & 0x3F;
       if (is_good_func(hkmer_)) {
         results.push_back(
             IonEvent(nucl, observed_size_, (uint8_t)(observed_size_ + i), true));
@@ -383,7 +383,7 @@ class HRunSizeSearcher {
     const char start = (const char)std::max(1, observed_size_ - max_error_size);
 
     for (char i = (char)(observed_size_ - 1); i >= start; --i) {
-      hkmer_[K - 1].len = (uint8_t)i;
+      hkmer_[K - 1].len = i & 0x3F;
       if (is_good_func(hkmer_)) {
         results.push_back(IonEvent(nucl, observed_size_, i, true));
         if (greedy) {
@@ -398,7 +398,7 @@ class HRunSizeSearcher {
     const char nucl = hkmer_[K - 1].nucl;
     bool found = false;
     for (char i = 1; i <= max_error_size; ++i) {
-      hkmer_[K - 1].len = (uint8_t)(observed_size_ + i);
+      hkmer_[K - 1].len = (observed_size_ + i) & 0x3F;
       if (is_good_func(hkmer_)) {
         found = true;
         break;
@@ -416,7 +416,7 @@ class HRunSizeSearcher {
     const char start = (const char)std::max(1, observed_size_ - max_error_size);
 
     for (char i = (char)(observed_size_ - 1); i >= start; --i) {
-      hkmer_[K - 1].len = (uint8_t)i;
+      hkmer_[K - 1].len = i & 0x3F;
       if (is_good_func(hkmer_)) {
         found = true;
         break;
@@ -458,10 +458,10 @@ class CorrectLastHRun {
   const PenaltyCalcer& calcer_;
   std::function<bool(const hammer::HKMer&)> is_good_function_;
 
-  const uint kMaxFulldel = cfg::get().max_full_del;
-  const uint kMaxInDel = cfg::get().max_indel;
-  const uint kMaxFromZeroInsertion = cfg::get().max_from_zero_insertion;
-  const uint kMaxSecondIndel = cfg::get().max_second_indel;
+  const unsigned kMaxFulldel = cfg::get().max_full_del;
+  const unsigned kMaxInDel = cfg::get().max_indel;
+  const unsigned kMaxFromZeroInsertion = cfg::get().max_from_zero_insertion;
+  const unsigned kMaxSecondIndel = cfg::get().max_second_indel;
 
  private:
   inline bool AddAnotherNuclInsertions(const HRun run,
@@ -478,8 +478,8 @@ class CorrectLastHRun {
       HKMer another_nucl_insertion = kmer;
       another_nucl_insertion <<= HRun(c, 1);
 
-      for (uint i = 1; i <= kMaxFromZeroInsertion; ++i) {
-        another_nucl_insertion[K - 1].len = (uint8_t)i;
+      for (unsigned i = 1; i <= kMaxFromZeroInsertion; ++i) {
+        another_nucl_insertion[K - 1].len = i & 0x3F;
         if (is_good_function_(another_nucl_insertion)) {
           HRunSizeSearcher rest_searcher(another_nucl_insertion, run, is_good_function_);
           auto events = rest_searcher.Find((const char)kMaxSecondIndel);
@@ -509,8 +509,8 @@ class CorrectLastHRun {
         is_good_function_(calcer_.Good()) {}
 
   inline void AddOnlySimpleCorrections(std::priority_queue<TState>& corrections,
-                                       uint indel_size = 1) {
-    const uint cursor = previous_.Position();
+                                       unsigned indel_size = 1) {
+    const unsigned cursor = previous_.Position();
     const HRun run = context_.GetHRun(cursor);
 
     if (!is_good_function_(previous_.GetHKMer())) {
@@ -564,10 +564,10 @@ class CorrectLastHRun {
         kmer <<= HRun(c, 1);
         kmer <<= HRun(run.nucl, 1);
 
-        const uint maxLen = (uint)(run.len - 2);
-        for (uint i = 0; i < maxLen; ++i) {
-          kmer[K - 3].len = (uint8_t)(i + 1);
-          kmer[K - 1].len = (uint8_t)(maxLen - i);
+        const unsigned maxLen = (unsigned)(run.len - 2);
+        for (unsigned i = 0; i < maxLen; ++i) {
+          kmer[K - 3].len = (i + 1) & 0x3F;
+          kmer[K - 1].len = (maxLen - i) & 0x3F;
           if (is_good_function_(kmer)) {
             StateBuilder<PenaltyCalcer> builder(previous_, calcer_, context_);
             builder.AddEvent(IonEvent(run.nucl, (char)(i + 2), (char)(i + 1), true));
@@ -582,7 +582,7 @@ class CorrectLastHRun {
   }
 
   inline bool AddPossibleCorrections(std::priority_queue<TState>& corrections) {
-    const uint cursor = previous_.Position();
+    const unsigned cursor = previous_.Position();
     const HRun run = context_.GetHRun(cursor);
     bool found = false;
 
@@ -668,11 +668,11 @@ class CorrectLastHRun {
       {
         HKMer test = previous_.GetHKMer();
         HRun fixed = run;
-        fixed.len += (uint8_t)1;
+        fixed.len = (fixed.len + 1) & 0x3F;
         test <<= fixed;
         size_t local_cursor = cursor + run.len;
 
-        for (uint i = 0; i < (K - 1); ++i) {
+        for (unsigned i = 0; i < (K - 1); ++i) {
           if (local_cursor >= context_.GetRead().size()) {
             break;
           }
@@ -693,12 +693,12 @@ class CorrectLastHRun {
       if (run.len > 1) {
         HKMer test = previous_.GetHKMer();
         HRun fixed = run;
-        fixed.len -= (uint8_t)1;
+        fixed.len = (fixed.len - 1) & 0x3F;
         test <<= fixed;
 
         size_t local_cursor = cursor + run.len;
 
-        for (uint i = 0; i < (K - 1); ++i) {
+        for (unsigned i = 0; i < (K - 1); ++i) {
           if (local_cursor >= context_.GetRead().size()) {
             break;
           }

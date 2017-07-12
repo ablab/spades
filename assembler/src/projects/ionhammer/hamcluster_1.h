@@ -48,7 +48,7 @@ class TOneErrorClustering {
         if (i == source[k].len) {
           continue;
         }
-        fixed[k].len = (uint8_t)i;
+        fixed[k].len = i & 0x3F;
 
         TryMergeClusters(source, source_idx, fixed);
       }
