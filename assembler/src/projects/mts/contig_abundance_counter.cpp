@@ -15,7 +15,7 @@ using namespace debruijn_graph;
 class Runner {
 public:
     static void Run(ContigAbundanceCounter& abundance_counter, size_t min_length_bound,
-                    io::FileReadStream& contigs_stream, std::ofstream& id_out, std::ofstream& mpl_out) {
+                    io::FileReadStream& contigs_stream, std::ofstream& out) {
         io::SingleRead contig;
         while (!contigs_stream.eof()) {
             contigs_stream >> contig;
@@ -30,13 +30,11 @@ public:
             auto abundance_vec = abundance_counter(contig.GetSequenceString(), contig.name());
 
             if (abundance_vec) {
-                stringstream ss;
-                copy(abundance_vec->begin(), abundance_vec->end(),
-                     ostream_iterator<Mpl>(ss, " "));
-                DEBUG("Successfully estimated abundance of " << id << " : " << ss.str());
-
-                id_out << id << std::endl;
-                mpl_out << ss.str() << std::endl;
+                DEBUG("Successfully estimated abundance of " << id);
+                out << id;
+                for (auto mpl : *abundance_vec)
+                     out << "\t" << mpl;
+                out << std::endl;
             } else {
                 DEBUG("Failed to estimate abundance of " << id);
             }
@@ -80,10 +78,9 @@ int main(int argc, char** argv) {
 
     io::FileReadStream contigs_stream(contigs_path);
 
-    std::ofstream id_out(contigs_abundance_fn + ".id");
-    std::ofstream mpl_out(contigs_abundance_fn + ".mpl");
+    std::ofstream out(contigs_abundance_fn);
 
     Runner::Run(abundance_counter, min_length_bound,
-                contigs_stream, id_out, mpl_out);
+                contigs_stream, out);
     return 0;
 }

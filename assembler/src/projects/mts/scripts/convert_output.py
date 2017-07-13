@@ -3,11 +3,14 @@ from __future__ import print_function
 
 import argparse
 import os.path
+import re
 
 argparser = argparse.ArgumentParser(description="Binner output formatter")
 argparser.add_argument("--type", "-t", choices=["canopy", "concoct", "maxbin", "gattaca", "binsanity"], help="Binner type", default="canopy")
 argparser.add_argument("--output", "-o", type=str, help="Output directory with unified binning results")
 argparser.add_argument("input", type=str, help="File with binning info")
+
+extract_num = re.compile("\d+")
 
 class Parser:
     def __init__(self):
@@ -15,7 +18,8 @@ class Parser:
 
     def add(self, line):
         sample_contig, bin_id = self.parse(line)
-        self.bins.append(sample_contig + "\t" + bin_id)
+        bin_num = extract_num.findall(bin_id)[0]
+        self.bins.append(sample_contig + "\t" + "BIN" + bin_num)
 
     def parse_file(self, file):
         with open(file, "r") as input_file:

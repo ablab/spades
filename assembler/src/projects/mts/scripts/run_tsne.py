@@ -75,6 +75,9 @@ def form_points(df):
 
     return points, names
 
+import re
+extract_num = re.compile("\d+")
+
 def run_tsne(features_file, colors_file, output_prefix
              , filter_sample=[]
              , filter_cluster=[]
@@ -83,13 +86,15 @@ def run_tsne(features_file, colors_file, output_prefix
              , iter = 1000
              , perplexity = 50):
     # read data
-    data_df = pd.read_csv(features_file, sep=' ', header = None)
-    cluster_colors = pd.read_csv(colors_file, sep='\t', header = None)
+    data_df = pd.read_table(features_file, header=None)
+    cluster_colors = pd.read_table(colors_file, header=None)
+    print(data_df.head())
 
     # make dataframe pretty
     cluster_colors = cluster_colors.rename(columns={1:'color'})
-    cluster_colors["color"] = [int(x[3:]) for x in cluster_colors["color"].tolist()]
-    cluster_colors = cluster_colors.rename(columns={0:0})
+    cluster_colors["color"] = [int(extract_num.findall(str(x))[0]) for x in cluster_colors["color"].tolist()]
+    print(cluster_colors.head())
+    #cluster_colors = cluster_colors.rename(columns={0:0})
 
     # filter by samples
     if len(filter_sample) > 0:
@@ -124,9 +129,11 @@ def run_tsne(features_file, colors_file, output_prefix
     # filter by length
     mapped["length"] = [int(x.split("_")[3]) for x in mapped[0].tolist()]
     mapped = mapped[mapped["length"] > 2000]
+    print(mapped)
 
     # normalize like in CONCOCT
     data = mapped.as_matrix(columns=mapped.columns[2:-1])
+
     v = (1.0/mapped["length"]).as_matrix()[:, np.newaxis]
     data = data + v
     along_Y = np.apply_along_axis(sum, 0, data)
@@ -134,7 +141,7 @@ def run_tsne(features_file, colors_file, output_prefix
     along_X = np.apply_along_axis(sum, 1, data)
     data = data/along_X[:, None]
     data = np.log(data)
-
+    #print(data)
 
     embedding_array = bhtsne.run_bh_tsne(data, initial_dims=data.shape[1], perplexity=perplexity, max_iter=iter)
     mapped["x"] = embedding_array[:, 0]

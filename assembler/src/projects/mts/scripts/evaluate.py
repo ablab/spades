@@ -2,6 +2,7 @@
 #Evaluation script from MyCC
 
 import os
+import os.path
 import re
 import numpy as np
 import sys
@@ -36,10 +37,11 @@ myfilelist=[]
 for i in os.listdir('./'):
     if target in i:
         bases=0
+        sample,_=os.path.splitext(i) #Hack for MTS compatibility
         f=open(i)
         for j in f:
             if '>' in j:
-                h=j.strip().replace('>','')
+                h=sample+"-"+j.strip().replace('>','')
                 if split:
                     h=h.split()[0]
                 SeqLen[h]=0
@@ -57,13 +59,14 @@ if not myfilelist:
 
 for i in myfilelist:
     ClusterSeq[i]=[]
+    sample,_=os.path.splitext(i) #Hack for MTS compatibility
     f=open(i)
     for j in f:
         if '>' in j:
             j=j.strip().replace('>','')
             if split:
                 j=j.split()[0]
-            ClusterSeq[i].append(j)
+            ClusterSeq[i].append(sample+"-"+j)
             Seqs.append(j)
     f.close()
 

@@ -61,12 +61,6 @@ rule split_contigs:
     message: "Cutting {wildcards.group} into {SPLIT_LENGTH} bp splits"
     shell:   "{SCRIPTS}/cut_fasta.py -c {SPLIT_LENGTH} -o 0 -m {input} > {output}"
 
-rule combine_contigs:
-    input:   expand("assembly/{{frags}}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS)
-    output:  "assembly/{frags}/all.fasta"
-    message: "Combine all {frags} contigs from {wildcards.dir}"
-    shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
-
 #---- Generating profiles/depths -----------------------------------------------
 
 # MetaBAT way
@@ -129,21 +123,31 @@ rule multiplicities:
 
 rule abundancies:
     input:   contigs="assembly/splits/{group}.fasta", mpl="profile/mts/kmers.kmm"
-    output:  id="profile/mts/{group,(sample|group)\d+}.id", mpl="profile/mts/{group}.mpl",
+    output:  "profile/mts/{group}.tsv"
     log:     "profile/mts/{group}.log"
     message: "Counting contig abundancies for {wildcards.group}"
     shell:   "{BIN}/contig_abundance_counter -k {PROFILE_K} -w tmp -c {input.contigs}"
-             " -n {SAMPLE_COUNT} -m profile/mts/kmers -o profile/mts/{wildcards.group}"
+             " -n {SAMPLE_COUNT} -m profile/mts/kmers -o {output}"
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
+rule combine_profiles:
+    input:   expand("profile/mts/{group}.tsv", group=GROUPS)
+    output:  "profile/mts/all.tsv"
+    message: "Combine all profiles"
+    run:
+        shell("rm -f {output}")
+        for sample_ann in input:
+            sample, _ = os.path.splitext(os.path.basename(sample_ann))
+            shell("sed -e 's/^/{sample}-/' {sample_ann} >> {output}")
+
 rule binning_pre:
-    input:   expand("profile/mts/{group}.id", group=GROUPS)
+    input:   "profile/mts/all.tsv"
     output:  "binning/{binner}/profiles_mts.in"
     params:  " ".join(list(GROUPS.keys()))
     log:     "binning/input.log"
     message: "Preparing input for {wildcards.binner}"
     shell:   "{SCRIPTS}/make_input.py -n {SAMPLE_COUNT} -t {wildcards.binner}"
-             " -d profile/mts -o {output} {params} >{log}"
+             " -o {output} {input} >{log}"
 
 rule filter_contigs:
     input:   contigs="assembly/splits/all.fasta", profile="binning/{}/profiles_mts.in".format(BINNER)
@@ -240,7 +244,7 @@ rule binsanity:
 
 # Postprocessing
 rule bin_profiles:
-    input:   "binning/{}/profiles_{}.in".format(BINNER, PROFILER), "binning/{}/binning.out".format(BINNER)
+    input:   "profile/{}/all.tsv".format(PROFILER), "binning/{}/unified_binning.tsv".format(BINNER)
     output:  "binning/{}/bins.prof".format(BINNER)
     message: "Deriving bin profiles"
     shell:   "{SCRIPTS}/bin_profiles.py {input} > {output}"
@@ -249,7 +253,7 @@ ruleorder: canopy > bin_profiles
 
 rule binning_format:
     input:   "binning/{}/binning.out".format(BINNER)
-    output:  "binning/unified_binning.tsv".format(BINNER)
+    output:  "binning/{}/unified_binning.tsv".format(BINNER)
     message: "Making unified binning results"
     shell:   "{SCRIPTS}/convert_output.py -t {BINNER} -o {output} {input} &&"
              "cp {output} binning/binning.tsv" #Additional table for stats
@@ -278,6 +282,7 @@ rule annotate:
                     annotation[contig] = [bin_id]
                 else:
                     annotation[contig].append(bin_id)
+
         #Serialize it in the propagator format
         for sample, annotation in samples_annotation.items():
             with open(os.path.join(params[0], sample + ".ann"), "w") as sample_out:
@@ -316,9 +321,9 @@ rule choose_bins:
     shell:   "{SCRIPTS}/choose_bins.py {input} >{output} 2>&1"
 
 rule choose_samples:
-    input:   profs="binning/{}/bins.prof".format(BINNER), bins="binning/{}/filtered_bins.tsv".format(BINNER)
+    input:   "binning/{}/bins.prof".format(BINNER), "binning/{}/filtered_bins.tsv".format(BINNER)
     output:  "binning/bins_total.prof"
     log:     "binning/choose_samples.log"
     message: "Choosing bins for reassembly and samples for them"
     shell:   "rm -f binning/*.info && rm -rf binning/excluded && "
-             "{SCRIPTS}/choose_samples.py {input.profs} {input.bins} {output} binning >{log} 2>&1"
+             "{SCRIPTS}/choose_samples.py {input} {output} binning >{log} 2>&1"

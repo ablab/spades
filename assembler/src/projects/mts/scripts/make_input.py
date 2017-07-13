@@ -8,6 +8,7 @@ except ImportError:
 import re
 import argparse
 import os
+import os.path
 import sys
 
 from common import contig_length
@@ -17,8 +18,7 @@ parser = argparse.ArgumentParser(description="Binner input formatter")
 parser.add_argument("--type", "-t", choices=["canopy", "concoct", "gattaca", "binsanity"], help="Binner type", default="canopy")
 parser.add_argument("--count", "-n", type=int, help="Number of data samples")
 parser.add_argument("--output", "-o", type=str, help="Output file")
-parser.add_argument("--dir", "-d", type=str, help="Directory with profiles (pairs of .id .mpl files)")
-parser.add_argument("samples", type=str, nargs="+", help="Sample (or group) names")
+parser.add_argument("profiles", type=str, help="Groups profiles in .tsv format")
 
 args = parser.parse_args()
 
@@ -30,7 +30,7 @@ class CanopyFormatter:
         pass
 
     def profile(self, file, contig, profile):
-        print(contig, profile, file=out)
+        print(contig, " ".join(profile), file=out)
 
 class ConcoctFormatter:
     def __init__(self):
@@ -40,7 +40,7 @@ class ConcoctFormatter:
         print("\t".join(["contig"] + ["cov_mean_" + sample for sample in samples]), file=out)
 
     def profile(self, file, contig, profile):
-        print(contig, profile.replace(" ", "\t"), sep="\t", file=out)
+        print(contig, *profile, sep="\t", file=out)
 
 class BinSanityFormatter:
     def __init__(self):
@@ -50,8 +50,7 @@ class BinSanityFormatter:
         pass
 
     def profile(self, file, contig, profile):
-        print(contig, profile.replace(" ", "\t"), sep="\t", file=out)
-
+        print(contig, *profile, sep="\t", file=out)
 
 class GattacaFormatter:
     def __init__(self):
@@ -62,19 +61,14 @@ class GattacaFormatter:
 
     def profile(self, file, contig, profile):
         l = contig_length(contig)
-        print(contig, l, profile.replace(" ", "\t"), sep="\t", file=out)
+        print(contig, l, *profile, sep="\t", file=out)
 
 formatters = {"canopy": CanopyFormatter(), "concoct": ConcoctFormatter(), "gattaca": GattacaFormatter(), "binsanity": BinSanityFormatter()}
 formatter = formatters[args.type]
 
 with open(args.output, "w") as out:
     formatter.header(out, ["sample" + str(i) for i in range(1, args.count + 1)])
-    for sample in args.samples:
-        id_file = "{}/{}.id".format(args.dir, sample)
-        mpl_file = "{}/{}.mpl".format(args.dir, sample)
-
-        print("Processing abundances from %s" % id_file)
-
-        with open(id_file, "r") as ctg_id, open(mpl_file, "r") as ctg_mpl:
-            for cid, cmpl in zip(ctg_id, ctg_mpl):
-                formatter.profile(out, sample + "-" + cid.strip(), cmpl.strip())
+    with open(args.profiles, "r") as input:
+        for line in input:
+            params = line.strip().split("\t")
+            formatter.profile(out, params[0], params[1:])

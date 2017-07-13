@@ -12,14 +12,14 @@ if len(sys.argv) < 3:
     exit(1)
 
 PROF = sys.argv[1]
-BINS = sys.argv[2]
+FILTERED_BINS = sys.argv[2]
 PROF_OUT = sys.argv[3]
 DIR = sys.argv[4]
-CAGS = set()
-with open(BINS) as input:
+BINS = set()
+with open(FILTERED_BINS) as input:
     for line in input:
-        bin = line.split("\t")[0]
-        CAGS.add(bin)
+        bin = line.split()[0]
+        BINS.add(bin)
 
 DESIRED_ABUNDANCE = 999999 #sys.maxsize
 MIN_ABUNDANCE = 4
@@ -37,13 +37,14 @@ with open(PROF) as input:
         exclude = False
         samples = []
         params = line.split()
-        CAG = params[0]
+        print(params)
+        bin = params[0]
         profile = list(map(float, params[1:]))
-        if CAG not in CAGS:
-            print(CAG, "was excluded from reassembly")
+        if bin not in BINS:
+            print(bin, "was excluded from reassembly")
             exclude = True
         else:
-            print("Profile of", CAG, ":", profile)
+            print("Profile of", bin, ":", profile)
 
             #Sort samples by their abundancies
             weighted_profile = list((i, ab)
@@ -65,10 +66,10 @@ with open(PROF) as input:
                         break
 
             print("Chosen samples are", samples, "with total mean abundance", total)
-            prof_dict[CAG] = total
+            prof_dict[bin] = total
 
             if total < MIN_TOTAL_ABUNDANCE:
-                print(CAG, "is too scarce; skipping")
+                print(bin, "is too scarce; skipping")
                 exclude = True
 
         config_dir = DIR
@@ -77,7 +78,7 @@ with open(PROF) as input:
                 os.mkdir(excluded_dir)
             make_excluded = False
             config_dir = excluded_dir
-        config_path = os.path.join(config_dir, CAG + ".info")
+        config_path = os.path.join(config_dir, bin + ".info")
         with open(config_path, "w") as out:
             print("total", sum(profile), file=out)
             for i, ab in enumerate(profile, start=1):

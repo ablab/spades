@@ -55,6 +55,7 @@ stats_targets = {"checkm": "checkm_{}.tsv",
                  "tsne":   "tsne_{}.png",
                  "f1":     "f1_{}.txt"}
 if config["stats"].get("refs"):
+    enabled_stats.append("stats/summary/refs_profiles.tsv")
     stats_targets["gf"] = "gf_{}.tsv"
     stats_targets["summary"] = "{}_summary.tsv"
 for stage in ["binning", "reassembly"]:
@@ -107,6 +108,21 @@ rule gather_stats:
 #===============================================================================
 #---- Statistics section -------------------------------------------------------
 #===============================================================================
+
+#---- Reference profiles
+rule combine_refs:
+    input:   list(REFS.values())
+    output:  "stats/refs.fasta"
+    message: "Combining all references in a single file"
+    shell:   "cat {input} > {output}"
+
+rule ref_profiles:
+    input:   "stats/refs.fasta"
+    output:  "stats/summary/refs_profiles.tsv"
+    log:     "stats/refs_profiles.log"
+    message: "Calculating etalon profiles of references"
+    shell:   "{BIN}/contig_abundance_counter -k {PROFILE_K} -w tmp -c {input}"
+             " -n {SAMPLE_COUNT} -m profile/mts/kmers -o {output} >{log} 2>&1"
 
 #---- Genome fraction ----------------------------------------------------------
 rule genome_fraction:
@@ -164,8 +180,8 @@ rule checkm:
         #     if ext in FASTA_EXTS:
         #         break
         ext = ".fasta"
-        shell("set +u; source activate concoct_env; set -u \n"
-             "checkm tree -t {THREADS} -x {ext} {params.dir} {params.out} >{log} 2>&1\n"
+        shell("set +u; source activate py27; set -u \n"
+             "checkm tree -t {THREADS} --pplacer_threads {THREADS} -x {ext} {params.dir} {params.out} >{log} 2>&1\n"
              "checkm tree_qa -o 2 --tab_table -f {output.tree_qa} {params.out} >>{log} 2>&1\n"
              "checkm lineage_set {params.out} {params.out}/lineage.ms >>{log} 2>&1\n"
              "checkm analyze -t {THREADS} -x fasta {params.out}/lineage.ms {params.dir} {params.out} >>{log} 2>&1\n"
@@ -188,7 +204,7 @@ rule parse_checkm:
 
 rule combine_bins:
     input:   expand("{{stage}}/bins/{bin}.fasta", bin=BINS)
-    output:  "{stage}/all.fasta"
+    output:  "{stage,(binning|propagation|reassembly)}/all.fasta"
     message: "Combine all contigs from {wildcards.stage}"
     shell:   "{SCRIPTS}/combine_contigs.py -r {input} > {output}"
 
@@ -200,7 +216,7 @@ rule reassembly_mock_binning:
         for bin in BINS:
             shell("grep '>' reassembly/bins/{bin}.fasta | cut -c 2- | awk '{{print \"{bin}-\" $0 \"\\t{bin}\"}}' >> {output}")
 
-#F1 stats
+#---- F1 stats -----------------------------------------------------------------
 rule calc_f1:
     input:   "{stage}/binning.tsv", "{stage}/all.fasta"
     output:  "stats/summary/f1_{stage}.txt"
@@ -216,7 +232,7 @@ def fragments_info_by_stage(wildcards):
     return expand("stats/q_{stage}/runs_per_reference/{ref}/{fs}.info", stage=wildcards.stage, ref=wildcards.ref, fs=fragments)
 
 rule pca:
-    input:   "binning/{}/profiles_{}.in".format(BINNER, PROFILER),
+    input:   "profile/{}/all.tsv".format(PROFILER),
              "binning/{}/unified_binning.tsv".format(BINNER),
              #"stats/q_{stage}/total.info"
     output:  "stats/summary/pca_{stage}.png"
@@ -226,7 +242,7 @@ rule pca:
 #---- TSNE ----------------------------------------------------------------------
 
 rule tsne:
-    input:   "binning/{}/profiles_{}.in".format(BINNER, PROFILER),
+    input:   "profile/{}/all.tsv".format(PROFILER),
              "binning/{}/unified_binning.tsv".format(BINNER),
     output:  "stats/summary/tsne_{stage}.png"
     message: "Drawing BH-TSNE visualisation for {wildcards.stage}"

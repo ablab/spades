@@ -96,6 +96,12 @@ def is_fastq(wildcards):
             return True
     return False
 
+rule combine_contigs:
+    input:   expand("assembly/{{frags}}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS)
+    output:  "assembly/{frags}/all.fasta"
+    message: "Combine all {wildcards.frags} contigs"
+    shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
+
 rule combine_annotation:
     input:   expand("{{stage}}/annotation/{group}.ann", group=GROUPS)
     output:  "{stage}/annotation/all.ann"
