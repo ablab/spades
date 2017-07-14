@@ -16,6 +16,6 @@ install(FILES truspades/reference_construction.py truspades/moleculo_filter_cont
         DESTINATION share/spades/spades_pipeline/truspades
         COMPONENT runtime)
 # Common module
-install(FILES common/alignment.py common/parallel_launcher.py common/sam_parser.py common/SeqIO.py
+install(FILES common/alignment.py common/parallel_launcher.py common/sam_parser.py common/SeqIO.py common/__init__.py
         DESTINATION share/spades/spades_pipeline/common
         COMPONENT runtime)
