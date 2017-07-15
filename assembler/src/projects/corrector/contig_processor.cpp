@@ -74,8 +74,13 @@ size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordere
         if (maxj != maxi) {
             DEBUG("Interesting positions differ with majority!");
             DEBUG("On position " << i << "  old: " << old << " majority: " << pos_to_var[maxi] << "interesting: " << pos_to_var[maxj]);
-            if (strat != Strategy::MajorityOnly)
-                maxi = maxj;
+            if (strat != Strategy::MajorityOnly) {
+                if (charts_[i].votes[maxj] > interesting_weight_cutoff)
+                    maxi = maxj;
+                else
+                    DEBUG(" alternative interesting position with weight " << charts_[i].votes[maxj] <<
+                          " fails weight cutoff");
+            }
         }
     }
     if (old != pos_to_var[maxi]) {
@@ -257,7 +262,19 @@ size_t ContigProcessor::ProcessMultipleSamFiles() {
         }
         sm.close();
     }
-
+    size_t total_coverage = 0;
+    for (const auto &pos: charts_)
+        total_coverage += pos.TotalMapped();
+    size_t average_coverage = total_coverage / contig_.length();
+    size_t different_cov = 0;
+    for (const auto &pos: charts_)
+        if ((pos.TotalMapped() < average_coverage / 2) || (pos.TotalMapped() > (average_coverage * 3) / 2))
+            different_cov++;
+    if (different_cov < contig_.length() * 3/ 10) {
+        interesting_weight_cutoff = int (average_coverage / 2);
+        DEBUG ("coverage is relatively uniform, average coverage is " << average_coverage
+               << " setting interesting positions heuristics to " << interesting_weight_cutoff);
+    }
     ipp_.FillInterestingPositions(charts_);
     for (const auto &sf : sam_files_) {
         MappedSamStream sm(sf.first);

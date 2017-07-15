@@ -41,12 +41,14 @@ class ContigProcessor {
     std::vector<int> error_counts_;
 
     const size_t kMaxErrorNum = 20;
-
+    int interesting_weight_cutoff;
 public:
     ContigProcessor(const sam_files_type &sam_files, const std::string &contig_file)
             : sam_files_(sam_files), contig_file_(contig_file) {
         ReadContig();
         ipp_.set_contig(contig_);
+//At least three reads to believe in inexact repeats heuristics.
+        interesting_weight_cutoff = 2;
     }
     size_t ProcessMultipleSamFiles();
 private:

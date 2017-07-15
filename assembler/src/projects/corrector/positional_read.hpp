@@ -42,7 +42,12 @@ struct position_description {
         return maxi;
     }
 
-
+    size_t TotalMapped() const {
+        size_t res = 0;
+        for (size_t i = 0; i < MAX_VARIANTS; i++)
+            res += votes[i];
+        return res;
+    }
     std::string str() const;
     void clear() ;
 };
