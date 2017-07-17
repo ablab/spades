@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 from __future__ import (print_function)
 
+import numpy as np
 import pandas
 from pandas import DataFrame
 
-from math import isnan
 import argparse
 import os.path
 from operator import add
@@ -20,8 +20,12 @@ args = parser.parse_args()
 
 # Write summary table with correspondence between bins and their best references
 res_table = DataFrame(columns=["bin", "ref", "GF", "purity", "NGA50", "misassemblies"])
-gf_table = pandas.read_table(os.path.join(args.dir, "summary", "TSV", "Total_aligned_length.tsv"), dtype=str).set_index("Assemblies")
+gf_table = pandas.read_table(os.path.join(args.dir, "summary", "TSV", "Genome_fraction_(%).tsv"), dtype=str).set_index("Assemblies")
 gfs = gf_table.apply(pandas.to_numeric, errors="coerce")
+#Drop zeroes
+gfs.fillna(0, inplace=True)
+gfs = gfs.iloc[gfs.apply(lambda row: row.sum() > 0, axis=1), gfs.apply(lambda col: col.sum() > 0)]
+
 best_ref = gfs.apply(lambda col: col.idxmax())
 
 with open(args.name + "_best.tsv", "w") as out_file:
@@ -49,8 +53,12 @@ if args.heatmap:
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         import seaborn as sns
+        from sklearn.cluster.bicluster import SpectralCoclustering
+        model = SpectralCoclustering(n_clusters=gfs.shape[1], random_state=0)
+        model.fit(gfs.as_matrix())
+        fit_data = gfs.iloc[np.argsort(model.row_labels_), np.argsort(model.column_labels_)]
 
-        plot = sns.heatmap(gfs, square=True)
+        plot = sns.heatmap(fit_data, square=True)
         fig = plot.get_figure()
         fig.savefig(args.name + "_gf.png", bbox_inches="tight")
         plt.gcf().clear()

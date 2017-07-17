@@ -23,13 +23,13 @@ rule all:
 # Assemble with MegaHIT
 rule megahit:
     input:   left=left_reads, right=right_reads
-    output:  "assembly/megahit/{sample}.fasta"
+    output:  "assembly/megahit/{group}.fasta"
     params:  left=lambda w: ",".join(left_reads(w)),
              right=lambda w: ",".join(right_reads(w)),
-             dir="assembly/megahit/{sample}"
+             dir="assembly/megahit/{group}"
     threads: THREADS
     log:     "assembly/megahit.log"
-    message: "Assembling {wildcards.sample} with MegaHIT"
+    message: "Assembling {wildcards.group} with MegaHIT"
     shell:   "rm -rf {params.dir} &&"
              " {SOFT}/megahit/megahit -1 {params.left} -2 {params.right}"
              " -t {threads} -o {params.dir} >{log} 2>&1 &&"
@@ -52,7 +52,7 @@ rule spades:
 
 rule copy_contigs:
     input:   "assembly/{}/{{group}}.fasta".format(ASSEMBLER)
-    output:  "assembly/full/{group}.fasta"
+    output:  "assembly/full/{group,(sample|group\d+)}.fasta"
     shell:   "cp {input} {output}"
 
 rule split_contigs:
@@ -167,7 +167,8 @@ rule canopy:
     log:     "binning/canopy.log"
     message: "Running canopy clustering"
     shell:   "{SOFT}/cc.bin --filter_max_dominant_obs 1 -n {threads}"
-             " -i {input} -o {output.out} -c {output.prof} >{log} 2>&1"
+             " -i {input} -o {output.out} -c binning/canopy/canopy_bins.prof >{log} 2>&1 && "
+             "sed 's/CAG/BIN/g' binning/canopy/canopy_bins.prof >{output.prof}"
 
 # Binning with CONCOCT
 rule concoct:

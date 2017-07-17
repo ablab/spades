@@ -37,7 +37,7 @@ except KeyError:
 
 #Detect references
 REFS = dict(gather_refs(config["stats"].get("refs", [])))
-REFS_STR = ",".join(path for path in REFS.values())
+REFS_STR = ",".join(path for path in sorted(REFS.values()))
 
 def ref_path(wildcards):
     return REFS[wildcards.ref]
@@ -55,10 +55,11 @@ stats_targets = {"checkm": "checkm_{}.tsv",
                  "tsne":   "tsne_{}.png",
                  "f1":     "f1_{}.txt"}
 if config["stats"].get("refs"):
-    enabled_stats.append("stats/summary/refs_profiles.tsv")
+    if config["profile"].get("profile") == "mts":
+        enabled_stats.append("stats/summary/refs_profiles.tsv")
     stats_targets["gf"] = "gf_{}.tsv"
     stats_targets["summary"] = "{}_summary.tsv"
-for stage in ["binning", "reassembly"]:
+for stage in ["binning", "propagation", "reassembly"]:
     stage_stats = config["stats"].get(stage, [])
     if stage_stats == "all":
         stats = stats_targets.keys()
@@ -136,7 +137,13 @@ rule genome_fraction:
              "cp '{params.out}/summary/TSV/Genome_fraction_(%).tsv' {output}"
 
 #---- GF per bin per reference -------------------------------------------------
-CONTIGS_INPUT_DIR = {"binning": "assembly/splits/", "propagation": "propagation/edges/"}
+CONTIGS_INPUT_DIR = {"binning": "assembly/splits", "propagation": "propagation/edges"}
+
+rule combine_splits:
+    input:   expand("propagation/edges/{group}.fasta", assembler=ASSEMBLER, group=GROUPS)
+    output:  "propagation/edges/all.fasta"
+    message: "Combine all propagated edges"
+    shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
 
 #Redistribute sample pieces to corresponding bins
 rule filter_bin:
