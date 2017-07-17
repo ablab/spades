@@ -167,7 +167,7 @@ namespace barcode_index {
             //Process every read from 10X dataset
             io::SingleRead read;
             size_t counter = 0;
-            const vector<string> barcode_prefixes = {"BC:Z", "BX:Z"};
+            const vector<string> barcode_prefixes = {"BC:Z:", "BX:Z:"};
             for (auto stream: streams) {
                 while (!stream->eof()) {
                     *stream >> read;
@@ -186,7 +186,6 @@ namespace barcode_index {
                 }
             }
             INFO("FillMap finished")
-            //INFO("Number of barcodes: " + std::to_string(barcode_codes_.GetBinLength()))
         }
 
         void FillMap(const lib_vector_t& libs_10x, const Index &index, const KmerSubs &kmer_mapper) {
@@ -205,18 +204,27 @@ namespace barcode_index {
         }
 
         string GetTenXBarcodeFromRead(const io::SingleRead &read, const vector<string>& barcode_prefixes) {
-            const size_t barcode_len = 16;
             for (const auto& prefix: barcode_prefixes) {
-
                 size_t prefix_len = prefix.size();
                 size_t start_pos = read.name().find(prefix);
                 if (start_pos != string::npos) {
-                    VERIFY(start_pos + prefix_len + barcode_len <= read.name().length())
-                    string barcode = read.name().substr(start_pos + 5, barcode_len);
+                    string barcode = GetBarcodeFromStartPos(start_pos + prefix_len, read.name());
+                    TRACE(barcode);
                     return barcode;
                 }
             }
             return "";
+        }
+
+        string GetBarcodeFromStartPos(const size_t start_pos, const string& read_id) {
+            string result = "";
+            for (auto it = read_id.begin() + start_pos; it != read_id.end(); ++it) {
+                if (std::isspace(*it)) {
+                    return result;
+                }
+                result.push_back(*it);
+            }
+            return result;
         }
 
         KmerMultiset BuildKmerMultisetFromStream(shared_ptr <io::ReadStream<io::PairedRead>> read_stream) {
