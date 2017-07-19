@@ -292,18 +292,12 @@ public:
         return paths;
     }
 
+    //Paths should be deduplicated first!
     void RemoveOverlaps(PathContainer &paths, GraphCoverageMap &coverage_map,
                         size_t min_edge_len, size_t max_path_diff,
                         bool end_start_only, bool cut_all) const {
-        //sorting is currently needed to retain overlaps in longest paths
-        paths.SortByLength(false);
         INFO("Removing overlaps");
         //VERIFY(min_edge_len == 0 && max_path_diff == 0);
-
-        INFO("Deduplicating paths");
-        Deduplicate(g_, paths, coverage_map, min_edge_len, max_path_diff);
-
-        INFO("Deduplicated");
 
         OverlapRemover overlap_remover(g_, paths, coverage_map,
                                              min_edge_len, max_path_diff);

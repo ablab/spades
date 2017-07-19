@@ -162,8 +162,10 @@ long_reads {
 }
 
 params {
-    remove_overlaps     true
-    cut_all_overlaps  true
+    overlap_removal {
+        enabled true
+        cut_all true
+    }
 
     scaffolding_mode old_pe_2015
 
@@ -193,6 +195,10 @@ params {
 prelim_pe {
 params {
     scaffolding_mode old
+
+    overlap_removal {
+        enabled false
+    }
 
     use_coordinated_coverage false
     remove_overlaps     false

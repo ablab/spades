@@ -101,7 +101,11 @@ simp
 pe {
 params {
     normalize_weight        true
-    cut_all_overlaps  true
+
+    overlap_removal {
+        enabled true
+        cut_all true
+    }
 
     scaffolding_mode old
 

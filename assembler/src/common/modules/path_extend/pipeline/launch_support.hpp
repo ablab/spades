@@ -85,6 +85,7 @@ struct PathExtendParamsContainer {
     bool use_scaffolder;
     bool traverse_loops;
 
+    //todo move to config
     size_t min_edge_len;
     size_t max_path_diff;
     size_t max_polisher_gap;

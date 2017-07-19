@@ -18,9 +18,12 @@ params {
     multi_path_extend   false
     ; old | 2015 | combined | old_pe_2015
     scaffolding_mode old_pe_2015
-
-    remove_overlaps     true
-    cut_all_overlaps  false
+    
+    overlap_removal {
+        enabled true
+        end_start_only  false
+        cut_all false
+    }
 
     split_edge_length    99
     normalize_weight     true

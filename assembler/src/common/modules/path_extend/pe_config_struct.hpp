@@ -108,8 +108,12 @@ struct pe_config {
         size_t split_edge_length;
 
         bool multi_path_extend;
-        bool remove_overlaps;
-        bool cut_all_overlaps;
+
+        struct OverlapRemovalOptionsT {
+            bool enabled;
+            bool end_start_only;
+            bool cut_all;
+        } overlap_removal;
 
         struct ExtensionOptionsT {
             bool use_default_single_threshold;

@@ -119,12 +119,19 @@ void load(pe_config::ParamSetT::GenomeConsistencyCheckerParamsT& gcc,
 
 }
 
+void load(pe_config::ParamSetT::OverlapRemovalOptionsT& ors,
+          boost::property_tree::ptree const& pt, bool complete) {
+    using config_common::load;
+    load(ors.enabled, pt, "enabled"      , complete);
+    load(ors.end_start_only, pt, "end_start_only"      , complete);
+    load(ors.cut_all, pt, "cut_all"      , complete);
+}
+
 void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool complete) {
     using config_common::load;
     load(p.sm, pt, "scaffolding_mode", complete);
     load(p.normalize_weight, pt,  "normalize_weight", complete);
-    load(p.cut_all_overlaps, pt, "cut_all_overlaps", complete);
-    load(p.remove_overlaps, pt, "remove_overlaps", complete);
+    load(p.overlap_removal, pt, "overlap_removal", complete);
     load(p.multi_path_extend, pt, "multi_path_extend", complete);
     load(p.split_edge_length, pt, "split_edge_length", complete);
     load(p.extension_options, pt, "extension_options", complete);

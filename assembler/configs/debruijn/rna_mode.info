@@ -105,7 +105,11 @@ params {
 
     scaffolding_mode old
 
-    cut_all_overlaps  true
+    overlap_removal {
+        enabled true
+        end_start_only  true
+        cut_all true
+    }
 
     extension_options
     {
@@ -116,10 +120,8 @@ params {
     scaffolder {
         cutoff        1
         hard_cutoff   10
-
-	cluster_info false
-
-	min_overlap_for_rna_scaffolding 10
+        cluster_info false
+        min_overlap_for_rna_scaffolding 10
     }
 
     path_cleaning

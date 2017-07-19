@@ -232,15 +232,19 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
                                        GraphCoverageMap &cover_map,
                                        const PathExtendResolver &resolver) const {
     INFO("Finalizing paths");
-    INFO("Initial deduplicating paths");
-    Deduplicate(gp_.g, paths, cover_map, params_.min_edge_len,
-                         params_.max_path_diff, /*equal_only*/ false);
 
-    if (params_.pset.remove_overlaps) {
+    //sorting is currently needed to retain overlaps in longest paths
+    paths.SortByLength(false);
+    INFO("Deduplicating paths");
+    Deduplicate(gp_.g, paths, cover_map, params_.min_edge_len,
+                         params_.max_path_diff);
+
+    INFO("Paths deduplicated");
+
+    if (params_.pset.overlap_removal.enabled) {
         resolver.RemoveOverlaps(paths, cover_map, params_.min_edge_len, params_.max_path_diff,
-                                //TODO introduce config parameter
-                                params_.mode == config::pipeline_type::rna,
-                                params_.pset.cut_all_overlaps);
+                                params_.pset.overlap_removal.end_start_only,
+                                params_.pset.overlap_removal.cut_all);
     } else {
         INFO("Overlaps will not be removed");
     }
