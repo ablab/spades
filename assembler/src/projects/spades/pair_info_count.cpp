@@ -177,7 +177,7 @@ static bool CollectLibInformation(const conj_graph_pack &gp,
     InsertSizeCounter hist_counter(gp, edge_length_threshold);
     EdgePairCounterFiller pcounter(cfg::get().max_threads);
 
-    SequenceMapperNotifier notifier(gp);
+    SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
     notifier.Subscribe(ilib, &hist_counter);
     notifier.Subscribe(ilib, &pcounter);
 
@@ -224,13 +224,15 @@ static void ProcessSingleReads(conj_graph_pack &gp,
     //FIXME make const
     auto& reads = cfg::get_writable().ds.reads[ilib];
 
-    SequenceMapperNotifier notifier(gp);
+    SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
 
     LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib],
                                ChooseProperReadPathExtractor(gp.g, reads.type()));
+
     if (ShouldObtainSingleReadsPaths(ilib)) {
         //FIXME pretty awful, would be much better if listeners were shared ptrs
         notifier.Subscribe(ilib, &read_mapper);
+        cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;
     }
 
     SSCoverageFiller ss_coverage_filler(gp.g, gp.ss_coverage[ilib], !cfg::get().ss.ss_enabled);
@@ -249,7 +251,6 @@ static void ProcessSingleReads(conj_graph_pack &gp,
                                                   map_paired, /*handle Ns*/false);
         notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
     }
-    cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;
 }
 
 
@@ -267,7 +268,7 @@ static void ProcessPairedReads(conj_graph_pack &gp,
         round_thr = unsigned(std::min(cfg::get().de.max_distance_coeff * data.insert_size_deviation * cfg::get().de.rounding_coeff,
                                       cfg::get().de.rounding_thr));
 
-    SequenceMapperNotifier notifier(gp);
+    SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
     INFO("Left insert size quantile " << data.insert_size_left_quantile <<
          ", right insert size quantile " << data.insert_size_right_quantile <<
          ", filtering threshold " << filter_threshold <<
@@ -366,7 +367,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
 
                     INFO("Filtering data for library #" << i);
                     {
-                        SequenceMapperNotifier notifier(gp);
+                        SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
                         DEFilter filter_counter(*filter, gp.g);
                         notifier.Subscribe(i, &filter_counter);
 
@@ -384,7 +385,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
             }
 
             if (ShouldObtainSingleReadsPaths(i) || ShouldObtainLibCoverage()) {
-                cfg::get_writable().use_single_reads = true;
+                cfg::get_writable().use_single_reads |= ShouldObtainSingleReadsPaths(i);
                 INFO("Mapping single reads of library #" << i);
                 ProcessSingleReads(gp, i, /*use_binary*/true, /*map_paired*/true);
                 INFO("Total paths obtained from single reads: " << gp.single_long_reads[i].size());

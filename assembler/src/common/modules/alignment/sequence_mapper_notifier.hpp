@@ -43,14 +43,13 @@ class SequenceMapperNotifier {
 public:
     typedef SequenceMapper<conj_graph_pack::graph_t> SequenceMapperT;
 
-    SequenceMapperNotifier(const conj_graph_pack& gp)
-            : gp_(gp) { }
+    typedef std::vector<SequenceMapperListener*> ListenersContainer;
+
+    SequenceMapperNotifier(const conj_graph_pack& gp, size_t lib_count)
+            : gp_(gp), listeners_(lib_count) { }
 
     void Subscribe(size_t lib_index, SequenceMapperListener* listener) {
-        while ((int)lib_index >= (int)listeners_.size() - 1) {
-            std::vector<SequenceMapperListener*> vect;
-            listeners_.push_back(vect);
-        }
+        VERIFY(lib_index < listeners_.size());
         listeners_[lib_index].push_back(listener);
     }
 

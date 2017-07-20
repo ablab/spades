@@ -416,7 +416,7 @@ void HybridLibrariesAligning::run(conj_graph_pack& gp, const char*) {
                 //FIXME make const
                 auto& reads = cfg::get_writable().ds.reads[lib_id];
 
-                SequenceMapperNotifier notifier(gp);
+                SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
                 //FIXME pretty awful, would be much better if listeners were shared ptrs
                 LongReadMapper read_mapper(gp.g, gp.single_long_reads[lib_id],
                                            ChooseProperReadPathExtractor(gp.g, reads.type()));

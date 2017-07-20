@@ -504,7 +504,7 @@ void PathExtendLauncher::Launch() {
     auto paths = resolver.ExtendSeeds(seeds, composite_extender);
     DebugOutputPaths(paths, "raw_paths");
 
-    FinalizePaths(paths, cover_map, resolver);
+    RemoveOverlapsAndArtifacts(paths, cover_map, resolver);
     DebugOutputPaths(paths, "before_loop_traveral");
     //TODO think about ordering of path polisher vs loop traversal
     TraverseLoops(paths, cover_map);
