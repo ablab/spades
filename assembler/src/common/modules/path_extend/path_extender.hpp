@@ -76,7 +76,8 @@ class OverlapFindingHelper {
                 if (abs(shift2) > int(max_diff_))
                     break;
                 if (path1.At(i) == path2.At(j) &&
-                        abs(shift1 + path1.GapAt(i).gap - shift2 - path2.GapAt(j).gap) <= int(max_diff_)) {
+                        (end1 == 0 ||
+                            abs(shift1 + path1.GapAt(i).gap - shift2 - path2.GapAt(j).gap) <= int(max_diff_))) {
                     match = true;
                     break;
                 } else {
