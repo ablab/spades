@@ -42,6 +42,8 @@ class ContigProcessor {
 
     const size_t kMaxErrorNum = 20;
     int interesting_weight_cutoff;
+protected:
+    DECL_LOGGER("ContigProcessor")
 public:
     ContigProcessor(const sam_files_type &sam_files, const std::string &contig_file)
             : sam_files_(sam_files), contig_file_(contig_file) {

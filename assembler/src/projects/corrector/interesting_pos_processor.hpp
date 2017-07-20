@@ -11,6 +11,8 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include "utils/logger/log_writers.hpp"
+
 
 namespace corrector {
 typedef std::vector<WeightedPositionalRead> WeightedReadStorage;
@@ -28,6 +30,9 @@ class InterestingPositionProcessor {
     const int kAnchorNum = 6;
     static const size_t kMaxErrorCount = 6;
     const int error_weight[kMaxErrorCount] = { 100, 10, 8, 5, 2, 1 };
+
+private:
+    DECL_LOGGER("InterestingPositionProcessor")
 
 public:
     InterestingPositionProcessor() {}

@@ -19,11 +19,18 @@
 #include <string>
 
 using namespace std;
-void create_console_logger() {
+
+void create_console_logger(const string& dir) {
     using namespace logging;
 
-    logger *lg = create_logger("");
+    string log_props_file = corr_cfg::get().log_filename;
+
+    if (!fs::FileExists(log_props_file))
+        log_props_file = fs::append_path(dir, corr_cfg::get().log_filename);
+    cout << log_props_file;
+    logger *lg = create_logger(fs::FileExists(log_props_file) ? log_props_file : "");
     lg->add_writer(std::make_shared<console_writer>());
+    //lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<console_writer>()));
     attach_logger(lg);
 }
 
@@ -33,8 +40,6 @@ int main(int argc, char** argv) {
     srand(42);
     srandom(42);
     try {
-        create_console_logger();
-
         if (argc != 3) {
             WARN("Wrong argument number");
             return 1;
@@ -42,6 +47,8 @@ int main(int argc, char** argv) {
         string contig_name(argv[2]);
         string cfg_file(argv[1]);
         corr_cfg::create_instance(cfg_file);
+        string cfg_dir = fs::parent_path(cfg_file);
+        create_console_logger(cfg_dir);
         string work_dir = corr_cfg::get().work_dir;
         if (!fs::check_existence(corr_cfg::get().output_dir))
             fs::make_dir(corr_cfg::get().output_dir);

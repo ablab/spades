@@ -25,6 +25,7 @@ struct corrector_config {
     unsigned max_nthreads;
     Strategy strat;
     std::string bwa;
+    std::string log_filename;
 };
 
 void load(corrector::corrector_config& cfg, const std::string &filename);

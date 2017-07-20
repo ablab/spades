@@ -53,6 +53,7 @@ struct MappingTraits<corrector::corrector_config> {
         io.mapOptional("max_nthreads", cfg.max_nthreads, 1u);
         io.mapRequired("strategy", cfg.strat);
         io.mapOptional("bwa", cfg.bwa, std::string("."));
+        io.mapOptional("log_filename", cfg.log_filename, std::string("."));
     }
 };
 }}
