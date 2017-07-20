@@ -53,9 +53,9 @@ int main(int argc, char* argv[]) {
         options.add_options()
                 ("k,kmer", "K-mer length", cxxopts::value<unsigned>(k)->default_value("21"), "K")
                 ("c,cov", "Median kmer count threshold", cxxopts::value<unsigned>(thr)->default_value("2"), "threshold")
-                ("d,dataset", "Dataset description (in YAML), input files ignored", cxxopts::value<std::string>(dataset_desc), "file")
-                ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(omp_get_max_threads())), "num")
-                ("w,workdir", "Working directory to use", cxxopts::value<std::string>(workdir)->default_value("."), "dir")
+                ("d,dataset", "Dataset description (in YAML)", cxxopts::value<std::string>(dataset_desc), "file")
+                ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(omp_get_max_threads() / 2)), "num")
+                ("o,outdir", "Output directory to use", cxxopts::value<std::string>(workdir)->default_value("."), "dir")
 //                ("b,bufsize", "Sorting buffer size, per thread", cxxopts::value<size_t>(read_buffer_size)->default_value("536870912"))
                 ("h,help", "Print help");
 
@@ -104,16 +104,17 @@ int main(int argc, char* argv[]) {
         CQFKmerFilter cqf([=](const RtSeq &s) { return hasher.hash(s); },
                                               kmers_cnt_est);
 
-        utils::FillCoverageHistogram(cqf, k, single_readers, filter);
+        utils::FillCoverageHistogram(cqf, k, single_readers, filter, thr + 1);
         
         auto filter_f = [=,&cqf] (io::PairedRead& p_r) { return io::CountMedianMlt(p_r.first().sequence(), k, hasher, cqf) > thr ||
                                                            io::CountMedianMlt(p_r.second().sequence(), k, hasher, cqf) > thr; };
 
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
-            auto filtered = io::FilteringWrap<io::PairedRead>(io::paired_easy_library_reader(dataset[i], /*followed by rc*/false, /*insert size*/0),
+            auto filtered = io::FilteringWrap<io::PairedRead>(io::paired_easy_library_reader(dataset[i], 
+                        /*followed by rc*/false, /*insert size*/0),
                                                               filter_f);
-            io::OPairedReadStream ostream(workdir + "/" + to_string(i) + ".1.fastq",
-                                          workdir + "/" + to_string(i) + ".2.fastq");
+            io::OPairedReadStream ostream(workdir + "/" + to_string(i + 1) + ".1.fastq",
+                                          workdir + "/" + to_string(i + 1) + ".2.fastq");
 
             //FIXME find utility method?
             io::PairedRead paired_read;

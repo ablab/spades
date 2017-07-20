@@ -167,7 +167,7 @@ size_t EstimateCardinality(unsigned k, ReadStream &streams,
 
 template<class ReadStream, class KMerFilter>
 void FillCoverageHistogram(qf::cqf<RtSeq> &cqf, unsigned k, ReadStream &streams,
-                           const KMerFilter &filter, unsigned thr = 2) {
+                           const KMerFilter &filter, unsigned thr) {
     unsigned nthreads = (unsigned) streams.size();
     SeqHasher hasher(k);
 
@@ -178,11 +178,11 @@ void FillCoverageHistogram(qf::cqf<RtSeq> &cqf, unsigned k, ReadStream &streams,
         local_cqfs.emplace_back([&](const RtSeq &s) { return hasher.hash(s); },
                                 1 << 16, cqf.hash_bits());
 
-    INFO("Filtering threshold " << thr);
+    INFO("Counting threshold " << thr);
     streams.reset();
     size_t reads = 0, n = 15;
     while (!streams.eof()) {
-#           pragma omp parallel for num_threads(nthreads) reduction(+:reads)
+        #pragma omp parallel for num_threads(nthreads) reduction(+:reads)
         for (unsigned i = 0; i < nthreads; ++i) {
             CQFProcessor processor(cqf, local_cqfs[i], thr);
             reads += FillFromStream(streams[i], processor, k, filter);
@@ -190,7 +190,7 @@ void FillCoverageHistogram(qf::cqf<RtSeq> &cqf, unsigned k, ReadStream &streams,
 
         if (reads >> n) {
             INFO("Processed " << reads << " reads");
-            n += 1;
+            n++;
         }
     }
     INFO("Total " << reads << " reads processed");

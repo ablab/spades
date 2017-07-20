@@ -132,7 +132,7 @@ inline ReadStreamList<PairedReadType> PairedCovFilteringWrap(const ReadStreamLis
     auto cqf = make_shared<CQFKmerFilter>([=](const RtSeq &s) { return hasher.hash(s); },
                                           kmers_cnt_est);
 
-    utils::FillCoverageHistogram(*cqf, k, single_readers, filter);
+    utils::FillCoverageHistogram(*cqf, k, single_readers, filter, thr + 1);
 
     auto filter_f = [=] (io::PairedRead& p_r) { return CountMedianMlt(p_r.first().sequence(), k, hasher, *cqf) > thr ||
                     CountMedianMlt(p_r.second().sequence(), k, hasher, *cqf) > thr; };
