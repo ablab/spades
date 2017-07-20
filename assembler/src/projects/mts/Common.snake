@@ -26,6 +26,10 @@ MIN_NONZEROES = config["binning"]["min_nonzeroes"]
 THREADS = config["threads"]
 BINNER = config["binning"]["binner"]
 
+IS_COASSEMBLY = config["assembly"].get("groups") == ["*"]
+if not IS_COASSEMBLY and BINNER == "metabat":
+    raise WorkflowError("MetaBAT is supported only in the full coassembly mode")
+
 #Autodetect samples and their reads
 #Check that sample names are consecutive and all are presented
 SAMPLE_DIRS = set(glob_wildcards(os.path.join(IN, "{sample,sample\d+}"))[0])

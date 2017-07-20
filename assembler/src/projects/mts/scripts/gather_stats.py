@@ -24,7 +24,7 @@ gf_table = pandas.read_table(os.path.join(args.dir, "summary", "TSV", "Genome_fr
 gfs = gf_table.apply(pandas.to_numeric, errors="coerce")
 #Drop zeroes
 gfs.fillna(0, inplace=True)
-gfs = gfs.iloc[gfs.apply(lambda row: row.sum() > 0, axis=1), gfs.apply(lambda col: col.sum() > 0)]
+gfs = gfs.loc[gfs.apply(lambda row: row.sum() > 0, axis=1), gfs.apply(lambda col: col.sum() > 0)]
 
 best_ref = gfs.apply(lambda col: col.idxmax())
 

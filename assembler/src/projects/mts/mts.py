@@ -69,24 +69,23 @@ with cd(exec_dir):
         if not dir_from:
             return
         local_dir = os.path.join(args.dir, dir_name)
-        if not os.path.exists(local_dir):
-            os.symlink(dir_from, local_dir)
-        else:
-            print("\033[33mWarning: {} folder already exists\033[0m".format(dir_name))
+        if not os.path.isdir(dir_from):
+            print("\033[33mWarning: {} source directory doesn't exist\033[0m".format(dir_from))
+            return
+        if os.path.exists(local_dir):
+            print("\033[33mWarning: {} destination directory already exists\033[0m".format(dir_name))
+            return
+        os.symlink(dir_from, local_dir)
 
     with open(config_path) as config_in:
         config = yaml.load(config_in)
     fill_default_values(config)
 
     if args.reuse_from:
-        args.reuse_assemblies = os.path.join(args.reuse_from, "assembly", config["assembly"]["assembler"])
+        args.reuse_assemblies = os.path.join(args.reuse_from, "assembly")
         args.reuse_profiles = os.path.join(args.reuse_from, "profile")
 
-    try:
-        os.makedirs(os.path.join(args.dir, "assembly"))
-    except:
-        pass
-    reuse_dir(args.reuse_assemblies, "assembly/" + config["assembly"]["assembler"])
+    reuse_dir(args.reuse_assemblies, "assembly")
     reuse_dir(args.reuse_profiles, "profile")
 
     print("Step #1 - Assembly")

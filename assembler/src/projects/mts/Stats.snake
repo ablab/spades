@@ -55,8 +55,6 @@ stats_targets = {"checkm": "checkm_{}.tsv",
                  "tsne":   "tsne_{}.png",
                  "f1":     "f1_{}.txt"}
 if config["stats"].get("refs"):
-    if config["profile"].get("profile") == "mts":
-        enabled_stats.append("stats/summary/refs_profiles.tsv")
     stats_targets["gf"] = "gf_{}.tsv"
     stats_targets["summary"] = "{}_summary.tsv"
 for stage in ["binning", "propagation", "reassembly"]:
@@ -67,50 +65,55 @@ for stage in ["binning", "propagation", "reassembly"]:
         stats = stage_stats + config["stats"].get("all", [])
     enabled_stats.extend(os.path.join("stats/summary", stats_targets[st].format(stage)) for st in stats)
 
+misc_targets = {"ref_profiles": "ref_profiles.tsv"}
+enabled_stats.extend(os.path.join("stats/summary", misc_targets[st].format(stage)) for st in config["stats"].get("misc", []))
+
 rule all_stats:
     input:   enabled_stats
     message: "Gathered stats: {input}"
-
-#---- Contigs of interest ------------------------------------------------------
-# rule filter_ref_alignments:
-#     input:   "stats/summary/gf_{stage}.tsv"
-#     output:  "stats/q_{stage}/runs_per_reference/{ref}/{fragments}.info"
-#     params:  "stats/q_{stage}/runs_per_reference/{ref}/contigs_reports/nucmer_output/{fragments}.coords.filtered"
-#     message: "Filtering alignments of {wildcards.fragments} from {wildcards.stage} onto {wildcards.ref}"
-#     shell:   "if [ -f {params} ] ; then {SCRIPTS}/filter_nucmer.py {params} {output} {MIN_CONTIG_LENGTH} 70 ; else touch {output} ; fi"
-#
-# def alignment_input(wildcards):
-#     template = "stats/q_{}/runs_per_reference/{{ref}}/{{fragments}}.info".format(wildcards.stage)
-#     return expand(template, ref = wildcards.ref, fragments=input_dict[wildcards.stage].fragments)
-#
-# rule combine_alignment_info:
-#     input:   alignment_input
-#     output:  "stats/q_{stage}/g_{ref}.info"
-#     message: "Combining good contigs of {wildcards.stage} for {wildcards.ref}"
-#     shell:   "rm -rf {output}; for f in {input}; do name=$(basename $f .info); cat $f | sed 's/^/'$name'-/g' >> {output} ; done"
-#
-# rule combine_refs_info:
-#     input:   expand("stats/q_{{stage}}/g_{ref}.info", ref=list(REFS.keys()))
-#     output:  "stats/q_{stage}/total.info"
-#     message: "Combining good contigs of {wildcards.stage} for all references"
-#     run:
-#         shell("rm -f {output}")
-#         for ref in REFS.keys():
-#             shell("awk '{{print $0 \"\t{ref}\"}}' stats/q_{wildcards.stage}/g_{ref}.info >> {output}")
-
-#---- Summary table ------------------------------------------------------------
-rule gather_stats:
-    input:   "stats/summary/gf_{stage}.tsv"
-    output:  "stats/summary/{stage}_summary.tsv"
-    params:  "--problematic", "--heatmap", "stats/q_{stage}", "stats/summary/{stage}"
-    message: "Gathering {wildcards.stage} stats"
-    shell:   "{SCRIPTS}/gather_stats.py {params}"
 
 #===============================================================================
 #---- Statistics section -------------------------------------------------------
 #===============================================================================
 
-#---- Reference profiles
+#---- F1 stats ----------------------------------------------------------------
+rule filter_ref_alignments:
+    input:   "stats/summary/gf_{stage}.tsv"
+    output:  "stats/q_{stage}/{ref}.tsv"
+    params:  " ".join(BINS)
+    message: "Filtering alignments from {wildcards.stage} onto {wildcards.ref}"
+    shell:   "rm -f {output}\n"
+             "for bin in {params}\ndo\n"
+             "    file=stats/q_{wildcards.stage}/runs_per_reference/{wildcards.ref}/contigs_reports/nucmer_output/$bin.coords.filtered\n"
+             "    if [ -f $file ] ; then\n"
+             "        {SCRIPTS}/filter_nucmer.py $file {MIN_CONTIG_LENGTH} 70 | awk -v b=$bin '{{print b \"-\" $0}}' >> {output}\n"
+             "    fi\n"
+             "done\n"
+             "if [ -n {output} ] ; then touch {output} ; fi\n"
+
+rule combine_refs_info:
+    input:   expand("stats/q_{{stage}}/{ref}.tsv", ref=REFS)
+    output:  "stats/q_{stage}/total.tsv"
+    params:  " ".join(REFS)
+    message: "Combining good contigs of {wildcards.stage} for all bins"
+    shell:   "rm -f {output}\n"
+             "for ref in {params}\ndo\n"
+             "    file=stats/q_{wildcards.stage}/$ref.tsv\n"
+             "    if [ -f $file ] ; then\n"
+             "        awk -v r=$ref '{{print $0 \"\\t\" r}}' $file >> {output}\n"
+             "    fi\n"
+             "done"
+
+ruleorder: combine_refs_info > filter_ref_alignments
+
+rule calc_f1:
+    input:   binning="{stage}/binning.tsv", contigs="{stage}/all.fasta", etalons="stats/q_{stage}/total.tsv"
+    output:  "stats/summary/f1_{stage}.txt"
+    log:     "stats/f1_{stage}.log"
+    message: "Calculating F1 metrics for {wildcards.stage}"
+    shell:   "{SCRIPTS}/validate.pl --ffile={input.contigs} --cfile={input.binning} --sfile={input.etalons} --ofile={log} > {output}"
+
+#---- Reference profiles -------------------------------------------------------
 rule combine_refs:
     input:   list(REFS.values())
     output:  "stats/refs.fasta"
@@ -119,8 +122,8 @@ rule combine_refs:
 
 rule ref_profiles:
     input:   "stats/refs.fasta"
-    output:  "stats/summary/refs_profiles.tsv"
-    log:     "stats/refs_profiles.log"
+    output:  "stats/summary/ref_profiles.tsv"
+    log:     "stats/ref_profiles.log"
     message: "Calculating etalon profiles of references"
     shell:   "{BIN}/contig_abundance_counter -k {PROFILE_K} -w tmp -c {input}"
              " -n {SAMPLE_COUNT} -m profile/mts/kmers -o {output} >{log} 2>&1"
@@ -223,12 +226,13 @@ rule reassembly_mock_binning:
         for bin in BINS:
             shell("grep '>' reassembly/bins/{bin}.fasta | cut -c 2- | awk '{{print \"{bin}-\" $0 \"\\t{bin}\"}}' >> {output}")
 
-#---- F1 stats -----------------------------------------------------------------
-rule calc_f1:
-    input:   "{stage}/binning.tsv", "{stage}/all.fasta"
-    output:  "stats/summary/f1_{stage}.txt"
-    message: "Calculating F1 metrics for {wildcards.stage}"
-    shell:   "cd {stage}/bins/ && {SCRIPTS}/evaluate.py ../binning.tsv ../all.fasta fasta > ../../{output}"
+#---- Summary table ------------------------------------------------------------
+rule gather_stats:
+    input:   "stats/summary/gf_{stage}.tsv"
+    output:  "stats/summary/{stage}_summary.tsv"
+    params:  "--problematic", "--heatmap", "stats/q_{stage}", "stats/summary/{stage}"
+    message: "Gathering {wildcards.stage} stats"
+    shell:   "{SCRIPTS}/gather_stats.py {params}"
 
 #---- PCA ----------------------------------------------------------------------
 # FRAGMENT_NAMES_BY_STAGE = {"reassembly": CAG_EDGES,

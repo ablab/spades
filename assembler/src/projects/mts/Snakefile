@@ -229,8 +229,8 @@ rule gattaca:
     log:     "binning/gattaca.log"
     message: "Running GATTACA clustering"
     shell:   "set +u; source activate py27; set -u\n"
-             "python {SOFT}/gattaca/gattaca.py cluster --contigs {input.contigs}"
-             " --coverage {input.profiles} --algorithm dirichlet --clusters {output}  > {log}"
+             "python {SOFT}/gattaca/src/python/gattaca.py cluster --contigs {input.contigs}"
+             " --coverage {input.profiles} --algorithm dirichlet --clusters {output} >{log} 2>&1"
 
 # Binning with BinSanity
 rule binsanity:
