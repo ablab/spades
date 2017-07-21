@@ -103,48 +103,7 @@ namespace barcode_index {
         }
     };
 
-    /**
-     * uint64_t wrapper
-     */
-    class BarcodeId {
-        uint64_t int_id_;
-        
-    public:
-        BarcodeId(uint64_t int_id) : int_id_(int_id) {}
-        uint64_t int_id() const {
-            return int_id_;
-        }
-        friend bool operator ==(const BarcodeId& left, const BarcodeId& right);
-        friend bool operator !=(const BarcodeId& left, const BarcodeId& right);
-        friend bool operator <(const BarcodeId& left, const BarcodeId& right);
-        friend bool operator >(const BarcodeId& left, const BarcodeId& right);
-        friend bool operator <=(const BarcodeId& left, const BarcodeId& right);
-        friend bool operator >=(const BarcodeId& left, const BarcodeId& right);
-        friend std::ostream& operator<< (std::ostream& stream, const BarcodeId& bid);
-    };
-
-    inline bool operator ==(const BarcodeId& left, const BarcodeId& right) {
-        return left.int_id() == right.int_id();
-    }
-    inline bool operator !=(const BarcodeId& left, const BarcodeId& right) {
-        return left.int_id() != right.int_id();
-    }
-    inline bool operator <(const BarcodeId& left, const BarcodeId& right) {
-        return left.int_id() < right.int_id();
-    }
-    inline bool operator >(const BarcodeId& left, const BarcodeId& right) {
-        return left.int_id() > right.int_id();
-    }
-    inline bool operator <=(const BarcodeId& left, const BarcodeId& right) {
-        return left.int_id() <= right.int_id();
-    }
-    inline bool operator >=(const BarcodeId& left, const BarcodeId& right) {
-        return left.int_id() >= right.int_id();
-    }
-    inline std::ostream& operator<< (std::ostream& stream, const BarcodeId& bid) {
-        stream << bid.int_id();
-        return stream;
-    }
+    typedef uint64_t BarcodeId;
 
     /**
      This class provides partial interface to BarcodeIndex.
@@ -522,7 +481,7 @@ namespace barcode_index {
         void SerializeDistribution(ofstream &fout) const {
             fout << barcode_distribution_.size() << endl;
             for (auto entry : barcode_distribution_) {
-                fout << entry.first.int_id() << ' ' << entry.second << endl;
+                fout << entry.first << ' ' << entry.second << endl;
             }
         }
 
@@ -542,7 +501,6 @@ namespace barcode_index {
         virtual void InsertBarcode(const BarcodeId& code, const size_t count, const Range& range) = 0;
     };
 
-    //Contains abundancy for each barcode aligned to given edge
     class SimpleEdgeEntry : public EdgeEntry<SimpleBarcodeInfo> {
         friend class BarcodeIndex<SimpleEdgeEntry>;
         friend class BarcodeIndexBuilder<SimpleEdgeEntry>;

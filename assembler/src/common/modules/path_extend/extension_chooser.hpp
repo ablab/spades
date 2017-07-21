@@ -1609,13 +1609,6 @@ private:
             stats_.middle_filter_helped_++;
             DEBUG("Middle helped");
             DEBUG("Canditate: " << next_candidates.back().e_.int_id());
-//            bool read_cloud_check = ReadCloudClosestCheck(last_unique_edge, next_candidates.back().e_,
-//                                                          initial_candidates,
-//                                                          tenx_configs_.internal_gap_threshold,
-//                                                          tenx_configs_.middle_abundancy_threshold);
-//            if (not read_cloud_check) {
-//                DEBUG("Read cloud check failed while topology check passed.");
-//            }
             return next_candidates;
         }
         EdgeContainer result = next_candidates;

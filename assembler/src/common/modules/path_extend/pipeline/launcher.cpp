@@ -15,6 +15,8 @@
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
 
+//fixme remove it later
+#include "barcode_index/cluster_storage.hpp"
 
 namespace path_extend {
 
@@ -430,7 +432,16 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             INFO("Barcode number threshold: " << barcode_number_threshold);
             INFO("Gap threshold: " << initial_gap_threshold);
             barcode_index::FrameBarcodeIndexInfoExtractor extractor(gp_.barcode_mapper_ptr, gp_.g);
+            auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
             INFO("Average barcode coverage before filtering: " << extractor.AverageBarcodeCoverage());
+            scaffold_graph::ScaffoldGraph scaffold_graph(gp_.g);
+
+            const size_t temp_distance = 5000;
+            const size_t temp_min_read_threshold = 10;
+            cluster_storage::ClusterStorageBuilder cluster_storage_builder(gp_.g, scaffold_graph, barcode_extractor_ptr,
+                                                                           unique_data_.unique_read_cloud_storage_,
+                                                                           temp_distance, temp_min_read_threshold);
+
             gp_.barcode_mapper_ptr->Filter(barcode_number_threshold, initial_gap_threshold);
             INFO("Finished filtering");
             INFO("Average barcode coverage after filtering: " << extractor.AverageBarcodeCoverage());
