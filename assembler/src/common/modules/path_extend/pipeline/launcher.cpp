@@ -20,6 +20,9 @@
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
 
+//fixme remove it later
+#include "barcode_index/cluster_storage.hpp"
+#include "barcode_index/cluster_storage_extractor.hpp"
 #include <unordered_set>
 
 namespace path_extend {
@@ -459,10 +462,14 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             INFO("Barcode number threshold: " << barcode_number_threshold);
             INFO("Gap threshold: " << initial_gap_threshold);
             barcode_index::FrameBarcodeIndexInfoExtractor extractor(gp_.barcode_mapper_ptr, gp_.g);
-            INFO("Average barcode coverage before filtering: " << extractor.AverageBarcodeCoverage());
-            gp_.barcode_mapper_ptr->Filter(barcode_number_threshold, initial_gap_threshold);
-            INFO("Finished filtering");
-            INFO("Average barcode coverage after filtering: " << extractor.AverageBarcodeCoverage());
+            auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
+            scaffold_graph::ScaffoldGraph scaffold_graph(gp_.g);
+
+            const size_t temp_distance = 5000;
+            const size_t temp_min_read_threshold = 10;
+            cluster_storage::ClusterStorageBuilder cluster_storage_builder(gp_.g, scaffold_graph, barcode_extractor_ptr,
+                                                                           unique_data_.unique_read_cloud_storage_,
+                                                                           temp_distance, temp_min_read_threshold);
 
             //Creating read cloud unique storage
             FillReadCloudUniqueEdgeStorage();
@@ -537,7 +544,6 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     INFO("Gap closing completed")
 }
 
-TenXExtensionChooserStatistics TenXExtensionChooser::stats_ = TenXExtensionChooserStatistics();
 
 void PathExtendLauncher::FilterPaths(PathContainer &contig_paths) {
     auto default_filtration = params_.pset.path_filtration.end();
@@ -711,8 +717,6 @@ void PathExtendLauncher::Launch() {
     AddFLPaths(contig_paths);
 
     SelectStrandSpecificPaths(contig_paths);
-
-    FilterPaths(contig_paths);
 
     CountMisassembliesWithReference(contig_paths);
 

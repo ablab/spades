@@ -37,14 +37,17 @@ public:
         size_t color_;
         //read pair weight or anything else
         double weight_;
+        //todo discuss
+        uint64_t length_;
 
     public:
 
-        ScaffoldEdge(ScaffoldVertex start, ScaffoldVertex end, size_t lib_id = (size_t) -1, double weight = 0) :
+        ScaffoldEdge(ScaffoldVertex start, ScaffoldVertex end, size_t lib_id = (size_t) -1, double weight = 0, uint64_t length = 0) :
             id_(scaffold_edge_id_++),
             start_(start), end_(end),
             color_(lib_id),
-            weight_(weight) {
+            weight_(weight),
+            length_(length){
         }
 
         ScaffoldEdgeIdT getId() const {
@@ -58,6 +61,10 @@ public:
 
         double getWeight() const {
             return weight_;
+        }
+
+        uint64_t getLength() const {
+            return length_;
         }
 
         const ScaffoldVertex getStart() const {
