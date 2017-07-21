@@ -144,6 +144,16 @@ namespace contracted_graph {
                 graph.InsertCapacity(end_root, vertex_to_capacity_[end_root]);
             }
 
+//            for (auto it = vertex_iteration_helper.begin(); it != vertex_iteration_helper.end(); ++it) {
+//                VertexId vertex = *it;
+//                if (vertex.int_id() == 16052 or vertex.int_id() == 27971) {
+//                    INFO("Vertex id: " << vertex.int_id());
+//                    INFO("Root id: " << dsu.find_set(vertex).int_id());
+//                    INFO("Capacity: " << graph.GetCapacity(dsu.find_set(vertex)));
+//                    INFO("Degree: " << graph.GetOutcoming(dsu.find_set(vertex)).size());
+//                }
+//            }
+
             return graph;
         }
 

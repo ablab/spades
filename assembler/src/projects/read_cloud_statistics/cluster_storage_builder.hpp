@@ -222,13 +222,13 @@ namespace cluster_statistics {
         }
     };
 
-    class EdgeClusterStorage {
+    class InternalEdgeClusterStorage {
         unordered_map<EdgeId, BarcodeClusterStorage> edge_to_storage_head_;
         unordered_map<EdgeId, BarcodeClusterStorage> edge_to_storage_tail_;
         typedef typename unordered_map<EdgeId, BarcodeClusterStorage>::const_iterator const_edge_iterator;
 
     public:
-        EdgeClusterStorage() : edge_to_storage_head_(), edge_to_storage_tail_() {}
+        InternalEdgeClusterStorage() : edge_to_storage_head_(), edge_to_storage_tail_() {}
 
         void InsertOnHead(const EdgeId &edge, const BarcodeId &barcode, size_t cluster_id) {
             edge_to_storage_head_[edge].Insert(barcode, cluster_id);
@@ -290,7 +290,7 @@ namespace cluster_statistics {
         ClusterStorage ConstructClusterStorage() {
             INFO("Building clusters");
             ClusterStorage cluster_storage;
-            EdgeClusterStorage edge_cluster_storage;
+            InternalEdgeClusterStorage edge_cluster_storage;
             ConstructClusterStorageFromUnique(cluster_storage, edge_cluster_storage);
             INFO("Old size: " << cluster_storage.Size());
             INFO("Old external size: " << edge_cluster_storage.Size());
@@ -300,14 +300,14 @@ namespace cluster_statistics {
             return cluster_storage;
         }
 
-        void ConstructClusterStorageFromUnique(ClusterStorage &cluster_storage, EdgeClusterStorage &edge_cluster_storage) {
+        void ConstructClusterStorageFromUnique(ClusterStorage &cluster_storage, InternalEdgeClusterStorage &edge_cluster_storage) {
             for (const auto &unique_edge: unique_storage_) {
                 ExtractClustersFromEdge(unique_edge, distance_, min_read_threshold_, edge_cluster_storage,
                                         cluster_storage);
             }
         }
 
-        void MergeClustersUsingScaffoldGraph(ClusterStorage &cluster_storage, EdgeClusterStorage &edge_cluster_storage,
+        void MergeClustersUsingScaffoldGraph(ClusterStorage &cluster_storage, InternalEdgeClusterStorage &edge_cluster_storage,
                                              scaffold_graph::ScaffoldGraph &scaffold_graph) {
             for (const auto &entry: scaffold_graph) {
                 EdgeId head = entry.first;
@@ -336,7 +336,7 @@ namespace cluster_statistics {
         };
 
         void MergeClustersOnEdges(const EdgeId &head, const EdgeId &tail, ClusterStorage &cluster_storage,
-                                  EdgeClusterStorage &edge_cluster_storage, size_t distance_threshold,
+                                  InternalEdgeClusterStorage &edge_cluster_storage, size_t distance_threshold,
                                   int head_tail_distance) {
             auto barcode_storage_head = edge_cluster_storage.GetTailBarcodeStorage(head);
             auto barcode_storage_tail = edge_cluster_storage.GetHeadBarcodeStorage(tail);
@@ -395,7 +395,7 @@ namespace cluster_statistics {
         }
 
         void ExtractClustersFromEdge(const EdgeId &edge, size_t distance, size_t min_read_threshold,
-                                     EdgeClusterStorage &edge_cluster_storage, ClusterStorage &cluster_storage) {
+                                     InternalEdgeClusterStorage &edge_cluster_storage, ClusterStorage &cluster_storage) {
             DEBUG("Building clusters on edge " << edge.int_id());
             for (auto barcode_it = barcode_extractor_ptr_->barcode_iterator_begin(edge);
                  barcode_it != barcode_extractor_ptr_->barcode_iterator_end(edge); ++barcode_it) {

@@ -269,56 +269,62 @@ struct hash<cluster_statistics::SimplePath> {
 
 namespace cluster_statistics {
 
-    class PathClusterStorage {
-        std::unordered_map<SimplePath, vector<Cluster>> data_;
+    template <class Key>
+    class KeyClusterStorage {
+        std::unordered_map<Key, vector<Cluster>> entry_to_clusters;
 
      public:
-        typedef std::unordered_map<SimplePath, vector<Cluster>>::const_iterator const_iterator;
-        typedef vector<Cluster>::const_iterator path_const_iterator;
+        typedef typename std::unordered_map<Key, vector<Cluster>>::const_iterator const_iterator;
+        typedef vector<Cluster>::const_iterator key_const_iterator;
 
-        void InsertData(const SimplePath& path, const Cluster& cluster) {
-            data_[path].push_back(cluster);
+        void InsertKeyWithCluster(const Key &key, const Cluster &cluster) {
+            entry_to_clusters[key].push_back(cluster);
         }
 
         size_t Size() const {
-            return data_.size();
+            return entry_to_clusters.size();
         }
 
         const_iterator begin() const {
-            return data_.begin();
+            return entry_to_clusters.begin();
         }
 
         const_iterator end() const {
-            return data_.end();
+            return entry_to_clusters.end();
         }
 
-        bool HasPath(const SimplePath& path) {
-            return data_.find(path) != data_.end();
+        bool HasKey(const Key &key) const {
+            return entry_to_clusters.find(key) != entry_to_clusters.end();
         }
 
-        path_const_iterator begin(const SimplePath& path) const {
-            return data_.at(path).begin();
+        key_const_iterator begin(const Key& key) const {
+            return entry_to_clusters.at(key).begin();
         }
 
-        path_const_iterator end(const SimplePath& path) const {
-            return data_.at(path).end();
+        key_const_iterator end(const Key& key) const {
+            return entry_to_clusters.at(key).end();
         }
 
-        vector<Cluster> GetClusters(const SimplePath& path) const {
-            return data_.at(path);
+        vector<Cluster> GetClusters(const Key& key) const {
+            return entry_to_clusters.at(key);
         }
 
-        size_t GetNumberOfClusters(const SimplePath& path) const {
-            if (data_.find(path) == data_.end()) {
+        size_t GetNumberOfClusters(const Key& key) const {
+            if (entry_to_clusters.find(key) == entry_to_clusters.end()) {
                 return 0;
             }
-            return data_.at(path).size();
+            return entry_to_clusters.at(key).size();
         }
     };
 
+    typedef KeyClusterStorage<SimplePath> PathClusterStorage;
+    typedef KeyClusterStorage<transitions::Transition> TransitionClusterStorage;
+    typedef KeyClusterStorage<EdgeId> EdgeClusterStorage;
+
     class PathClusterStorageBuilder {
      public:
-        PathClusterStorage BuildClusterStorage(const ClusterStorage& cluster_storage, const size_t min_read_threshold) {
+        PathClusterStorage BuildPathClusterStorage(const ClusterStorage &cluster_storage,
+                                                                const size_t min_read_threshold) {
             PathClusterStorage result;
             OrderingAnalyzer ordering_analyzer;
             for (const auto& entry: cluster_storage) {
@@ -326,7 +332,70 @@ namespace cluster_statistics {
                     auto ordering = ordering_analyzer.GetOrderingFromCluster(entry.second);
                     if (ordering_analyzer.CheckOrdering(ordering, entry.second)) {
                         SimplePath path(ordering);
-                        result.InsertData(path, entry.second);
+                        result.InsertKeyWithCluster(path, entry.second);
+                    }
+                }
+            }
+            return result;
+        }
+    };
+
+
+//fixme remove code duplication and simplify
+    struct PathPredicate {
+      virtual ~PathPredicate() {}
+      virtual bool Check(const SimplePath& path) const = 0;
+      bool operator()(const SimplePath& path) const { return Check(path);}
+    };
+
+    struct TwoEdgePathPredicate : public PathPredicate {
+      bool Check(const SimplePath& path) const override {
+          return path.data_.size() == 2;
+      }
+    };
+
+    struct ThreeEdgePathPredicate : public PathPredicate {
+      bool Check(const SimplePath& path) const override {
+          return path.data_.size() == 3;
+      }
+    };
+
+    struct ManyEdgePathPredicate : public PathPredicate {
+      bool Check(const SimplePath& path) const override {
+          return path.data_.size() > 3;
+      }
+    };
+
+    class PredicateTransitionClusterStorageBuilder {
+     public:
+        TransitionClusterStorage BuildTransitionClusterStorage(const PathClusterStorage& path_cluster_storage,
+                                                               const PathPredicate& path_predicate) {
+            TransitionClusterStorage result;
+            for (const auto& entry: path_cluster_storage) {
+                if (path_predicate(entry.first)) {
+                    for (auto it_first = entry.first.data_.begin(), it_second = std::next(it_first);
+                         it_second != entry.first.data_.end(); ++it_first, ++it_second) {
+                        transitions::Transition transition(*it_first, *it_second);
+                        std::for_each(entry.second.begin(), entry.second.end(), [&result, &transition](const Cluster& cluster) {
+                          result.InsertKeyWithCluster(transition, cluster);
+                        });
+                    }
+                }
+            }
+            return result;
+        }
+    };
+
+    class EdgeClusterStorageBuilder {
+     public:
+        EdgeClusterStorage BuildEdgeClusterStorage(const ClusterStorage& cluster_storage,
+                                                               const size_t min_read_threshold) {
+            EdgeClusterStorage result;
+            for (const auto& entry: cluster_storage) {
+                if (entry.second.Size() >= 2 and entry.second.GetReads() >= min_read_threshold) {
+                    for (auto it = entry.second.begin(); it != entry.second.end(); ++it) {
+                        const EdgeId edge = (*it).first;
+                        result.InsertKeyWithCluster(edge, entry.second);
                     }
                 }
             }
@@ -337,7 +406,7 @@ namespace cluster_statistics {
 
     class ClusterStorageAnalyzer: public read_cloud_statistics::StatisticProcessor {
         const scaffold_graph::ScaffoldGraph& scaffold_graph_;
-        const transitions::TransitionStorage& transition_storage_;
+        const transitions::ContigTransitionStorage& transition_storage_;
         const PathClusterStorage& path_cluster_storage_;
         const ClusterStorage& cluster_storage_;
         const size_t min_read_threshold_;
@@ -345,7 +414,7 @@ namespace cluster_statistics {
     public:
 
         ClusterStorageAnalyzer(const scaffold_graph::ScaffoldGraph &scaffold_graph_,
-                               const transitions::TransitionStorage &transition_storage_,
+                               const transitions::ContigTransitionStorage &transition_storage_,
                                const PathClusterStorage &path_storage, const ClusterStorage& cluster_storage,
                                size_t min_read_threshold)
             : StatisticProcessor("cluster_statistics"),

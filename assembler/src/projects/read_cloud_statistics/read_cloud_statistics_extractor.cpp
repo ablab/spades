@@ -89,11 +89,48 @@ namespace debruijn_graph {
         }
     }
 
+    std::unordered_map<string, transitions::ContigTransitionStorage> BuildTransitionStorages(const conj_graph_pack& gp,
+                                                                                             const ScaffoldingUniqueEdgeStorage& unique_storage) {
+        const string reference_path = cfg::get().ts_res.statistics.genome_path;
+        const string base_contigs_path = cfg::get().ts_res.statistics.base_contigs_path;
+        const string cloud_contigs_path = cfg::get().ts_res.statistics.cloud_contigs_path;
+        const string EMPTY_STRING = "";
+        std::unordered_map<string, transitions::ContigTransitionStorage> name_to_transition_storage;
+        INFO("Reference path: " << reference_path);
+        INFO("Base contigs path: " << base_contigs_path);
+        INFO("Cloud contigs path: " << cloud_contigs_path);
+
+        transitions::StrictTransitionStorageBuilder strict_transition_builder(gp, unique_storage);
+        transitions::ApproximateTransitionStorageBuilder approximate_transition_builder(gp, unique_storage);
+
+        if (reference_path != EMPTY_STRING) {
+            INFO("Reference transitions...")
+            auto reference_transition_storage = strict_transition_builder.GetTransitionStorage(reference_path);
+            INFO("Reference transition storage size: " << reference_transition_storage.Size());
+            name_to_transition_storage.insert({"Reference", reference_transition_storage});
+        }
+
+        if (base_contigs_path != EMPTY_STRING) {
+            INFO("Contig transitions...")
+            auto contig_transition_storage = approximate_transition_builder.GetTransitionStorage(base_contigs_path);
+            INFO("Contig transition storage size: " << contig_transition_storage.Size());
+            name_to_transition_storage.insert({"Contig", contig_transition_storage});
+        }
+
+        if (cloud_contigs_path != EMPTY_STRING) {
+            INFO("Read cloud contig transitions...")
+            auto read_cloud_transition_storage = approximate_transition_builder.GetTransitionStorage(cloud_contigs_path);
+            INFO("Read cloud contig transition storage size: " << read_cloud_transition_storage.Size());
+            name_to_transition_storage.insert({"Read cloud contig", read_cloud_transition_storage});
+        }
+
+        return name_to_transition_storage;
+    }
+
     void AnalyzeTransitions(const conj_graph_pack& gp, const string& stats_base_path, size_t distance) {
         auto params = GetPEParams();
         auto unique_storage = GetUniqueStorage(gp, params);
         INFO("Distance: " << distance);
-        const size_t unique_edge_length = cfg::get().ts_res.edge_length_threshold;
         contracted_graph::ContractedGraphBuilder graph_builder(gp.g, unique_storage);
         auto contracted_graph = graph_builder.BuildContractedGraph();
         auto scaffold_graph_constructor = scaffold_graph::ScaffoldGraphConstructor(unique_storage, distance, gp.g);
@@ -102,7 +139,7 @@ namespace debruijn_graph {
         INFO("Scaffold graph size: " << scaffold_graph.Size());
         INFO("Contracted scaffold graph size: " << contracted_scaffold_graph.Size());
         auto barcode_extractor_ptr = ConstructBarcodeExtractor(gp);
-        const size_t builder_read_threshold = 5;
+        const size_t builder_read_threshold = 3;
         const size_t analyzer_read_threshold = 15;
 
         auto cluster_storage_builder = cluster_statistics::ClusterStorageBuilder(gp.g, scaffold_graph,
@@ -110,18 +147,16 @@ namespace debruijn_graph {
                                                                                  distance, builder_read_threshold);
         auto cluster_storage = cluster_storage_builder.ConstructClusterStorage();
 
-        const string reference_path = cfg::get().ts_res.genome_path;
 
         cluster_statistics::PathClusterStorageBuilder path_cluster_builder;
-        auto path_cluster_storage = path_cluster_builder.BuildClusterStorage(cluster_storage, analyzer_read_threshold);
+        auto path_cluster_storage =
+            path_cluster_builder.BuildPathClusterStorage(cluster_storage, analyzer_read_threshold);
         INFO(path_cluster_storage.Size() << " distinct clusters");
 
-        INFO("Reference path: " << reference_path);
-        transitions::StrictTransitionStorageBuilder transition_builder(gp, unique_storage);
-        auto strict_transition_storage = transition_builder.GetTransitionStorage(reference_path);
-        INFO("Strict transition storage size: " << strict_transition_storage.Size());
+        auto name_to_transition_storage = BuildTransitionStorages(gp, unique_storage);
+        auto reference_transition_storage = name_to_transition_storage.at("Reference");
 
-        cluster_statistics::ClusterStorageAnalyzer cluster_analyzer(scaffold_graph, strict_transition_storage,
+        cluster_statistics::ClusterStorageAnalyzer cluster_analyzer(scaffold_graph, reference_transition_storage,
                                                                     path_cluster_storage, cluster_storage,
                                                                     analyzer_read_threshold);
         auto transition_clusters = cluster_analyzer.ExtractTransitionClusters(cluster_storage);
@@ -142,8 +177,11 @@ namespace debruijn_graph {
         cluster_analyzer.FillStatistics();
         cluster_analyzer.SerializeStatistics(stats_base_path);
 
-        contracted_graph::ContractedGraphAnalyzer contracted_analyzer(gp.g, path_cluster_storage, contracted_graph,
-                                                                      strict_transition_storage, analyzer_read_threshold);
+        contracted_graph::ContractedGraphAnalyzer contracted_analyzer(gp.g, *barcode_extractor_ptr, path_cluster_storage,
+                                                                      contracted_graph, name_to_transition_storage,
+                                                                      reference_transition_storage,
+                                                                      cluster_storage,
+                                                                      analyzer_read_threshold);
         contracted_analyzer.FillStatistics();
         contracted_analyzer.SerializeStatistics(stats_base_path);
     }
@@ -166,7 +204,7 @@ namespace debruijn_graph {
         INFO("Library type: " << cfg::get().ts_res.library_type);
         const string stats_path = cfg::get().output_dir + "barcode_stats";
         mkdir(stats_path.c_str(), 0755);
-        TenXExtensionChecker checker = ConstructTenXChecker(graph_pack);
+//        TenXExtensionChecker checker = ConstructTenXChecker(graph_pack);
 
         INFO("10X checker constructed.");
 //        auto barcode_statistics_counters = ConstructBarcodeStatisticsCounters(graph_pack);
@@ -177,7 +215,7 @@ namespace debruijn_graph {
 //        checker.CheckChooser(cfg::get().ts_res.genome_path);
 
         INFO("Transition stats:");
-        size_t distance = 35000;
+        size_t distance = cfg::get().ts_res.distance;
         AnalyzeTransitions(graph_pack, stats_path, distance);
 //        AnalyzeTransitionsForMultipleDistances(graph_pack, stats_path);
         INFO("Cluster statistics:");
