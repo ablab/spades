@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
         cxxopts::Options options(argv[0], " kmer count read filter");
         options.add_options()
                 ("k,kmer", "K-mer length", cxxopts::value<unsigned>(k)->default_value("21"), "K")
-                ("c,cov", "Median kmer count threshold", cxxopts::value<unsigned>(thr)->default_value("2"), "threshold")
+                ("c,cov", "Median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EQUAL to this value will be ignored)", cxxopts::value<unsigned>(thr)->default_value("2"), "threshold")
                 ("d,dataset", "Dataset description (in YAML)", cxxopts::value<std::string>(dataset_desc), "file")
                 ("t,threads", "# of threads to use", cxxopts::value<unsigned>(nthreads)->default_value(std::to_string(omp_get_max_threads() / 2)), "num")
                 ("o,outdir", "Output directory to use", cxxopts::value<std::string>(workdir)->default_value("."), "dir")
