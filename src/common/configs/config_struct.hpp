@@ -484,8 +484,8 @@ struct debruijn_config {
             size_t max_initial_candidates;
             size_t internal_gap_threshold;
             size_t absolute_barcode_threshold;
-            size_t initial_abundancy_threshold;
-            size_t middle_abundancy_threshold;
+            size_t initial_coverage_threshold;
+            size_t middle_coverage_threshold;
             bool topology_filter_on;
         };
 
