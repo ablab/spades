@@ -100,16 +100,20 @@ int main(int argc, char* argv[]) {
         utils::StoringTypeFilter<utils::InvertableStoring> filter;
         SeqHasher hasher(k);
         io::BinarySingleStreams single_readers = io::single_binary_readers(dataset, /*followed by rc*/false, /*including paired*/true);
+        INFO("Estimating kmer cardinality");
         size_t kmers_cnt_est = EstimateCardinality(k, single_readers, filter);
         CQFKmerFilter cqf([=](const RtSeq &s) { return hasher.hash(s); },
                                               kmers_cnt_est);
 
+        INFO("Filling kmer coverage");
         utils::FillCoverageHistogram(cqf, k, single_readers, filter, thr + 1);
         
-        auto filter_f = [=,&cqf] (io::PairedRead& p_r) { return io::CountMedianMlt(p_r.first().sequence(), k, hasher, cqf) > thr ||
-                                                           io::CountMedianMlt(p_r.second().sequence(), k, hasher, cqf) > thr; };
+        auto filter_f = [=,&cqf] (io::PairedRead& p_r) { 
+            return (p_r.first().size() >= k && io::CountMedianMlt(p_r.first().sequence(), k, hasher, cqf) > thr) ||
+                       (p_r.second().size() >= k && io::CountMedianMlt(p_r.second().sequence(), k, hasher, cqf) > thr); };
 
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
+            INFO("Filtering library " << i);
             auto filtered = io::FilteringWrap<io::PairedRead>(io::paired_easy_library_reader(dataset[i], 
                         /*followed by rc*/false, /*insert size*/0),
                                                               filter_f);
