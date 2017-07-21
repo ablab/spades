@@ -464,8 +464,8 @@ void load(debruijn_config::read_cloud_resolver::tenx_resolver& tenx,
     load(tenx.tail_threshold, pt, "tail_threshold");
     load(tenx.max_initial_candidates, pt, "max_initial_candidates");
     load(tenx.absolute_barcode_threshold, pt, "absolute_barcode_threshold");
-    load(tenx.initial_abundancy_threshold, pt, "initial_abundancy_threshold");
-    load(tenx.middle_abundancy_threshold, pt, "middle_abundancy_threshold");
+    load(tenx.initial_coverage_threshold, pt, "initial_abundancy_threshold");
+    load(tenx.middle_coverage_threshold, pt, "middle_abundancy_threshold");
     load(tenx.topology_filter_on, pt, "topology_filter_on");
 }
 

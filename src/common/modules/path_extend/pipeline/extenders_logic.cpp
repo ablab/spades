@@ -451,20 +451,22 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_in
     auto condition = PairedLibConnectionCondition(gp_.g, paired_lib, lib_index, 0);
 
     INFO("Read cloud library type: 10X")
-    auto tenx_resolver_stats = cfg::get().ts_res.tenx;
+    auto tenx_resolver_configs = cfg::get().ts_res.tenx;
     typedef barcode_index::FrameBarcodeIndexInfoExtractor tenx_extractor_t;
 
     auto tenx_extractor_ptr = make_shared<tenx_extractor_t>(gp_.barcode_mapper_ptr, gp_.g);
     shared_ptr<abstract_extractor_t> abstract_extractor_ptr =
             std::static_pointer_cast<abstract_extractor_t>(tenx_extractor_ptr);
 
-    extension_chooser = make_shared<TenXExtensionChooser>(gp_,
-                                                          abstract_extractor_ptr,
-                                                          fragment_length,
-                                                          distance_bound,
-                                                          storage,
-                                                          condition,
-                                                          tenx_resolver_stats);
+    //fixme magic constants
+    const size_t last_edges_distance = 25000;
+    const size_t topology_filter_distance = 5000;
+
+    auto unique_edges_getter = make_shared<DistanceBasedUniqueEdgesGetter>(storage, last_edges_distance);
+
+    extension_chooser = make_shared<TenXExtensionChooser>(gp_, abstract_extractor_ptr, storage,
+                                                          unique_edges_getter, tenx_resolver_configs,
+                                                          topology_filter_distance);
 
 
     shared_ptr<ReadCloudExtender> extender = make_shared<ReadCloudExtender>(gp_, cover_map_,

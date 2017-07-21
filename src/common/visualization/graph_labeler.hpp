@@ -360,7 +360,7 @@ public:
             else {
                 if (index % barcodes_on_string_ == 0) ret_label += "\\n";
                 else ret_label += ", ";
-                ret_label += std::to_string(barcodes[index].int_id());
+                ret_label += std::to_string(barcodes[index]);
             }
         }
         return ret_label;
