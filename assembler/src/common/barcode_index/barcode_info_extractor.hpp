@@ -31,7 +31,7 @@ namespace barcode_index {
     };
 
     /**
-     * BarcodeIndexInfoExtractor extracts useful statistics from BarcodeIndex
+     * BarcodeIndexInfoExtractor extracts information from BarcodeIndex
      */
     template<class barcode_entry_t>
     class BarcodeIndexInfoExtractor : public AbstractBarcodeIndexInfoExtractor {
@@ -143,7 +143,6 @@ namespace barcode_index {
             return result;
         }
 
-
         typename distribution_t::const_iterator barcode_iterator_begin(const EdgeId &edge) const {
             auto entry_it = mapper_->GetEntryHeadsIterator(edge);
             return entry_it->second.begin();
@@ -195,7 +194,7 @@ namespace barcode_index {
                                         entry_iterator first_end, entry_iterator second_end) :
                     first_(first), second_(second), first_end_(first_end), second_end_(second_end) {}
 
-            //todo optimize with lower bounds
+            //todo optimize with lower bounds?
             const_intersection_iterator operator++() {
                 if (first_ == first_end_ and second_ == second_end_) {
                     ++first_;
@@ -210,15 +209,11 @@ namespace barcode_index {
                     }
                 }
                 while (get_first_key() != get_second_key() and (first_ != first_end_ or second_ != second_end_)) {
-                    DEBUG("first: " << get_first_key() << " and");
-                    DEBUG("second: " << get_second_key());
                     while (get_first_key() < get_second_key() and first_ != first_end_) {
                         ++first_;
-                        DEBUG("first: " << get_first_key());
                     }
                     while (get_second_key() < get_first_key() and second_ != second_end_) {
                         ++second_;
-                        DEBUG("second: " << get_second_key());
                     }
                     if ((first_ == first_end_ and get_second_key() > get_first_key()) or
                             (second_ == second_end_ and get_first_key() > get_second_key())) {
@@ -402,7 +397,6 @@ namespace barcode_index {
             size_t current = 0;
             for (auto it = intersection_iterator_begin(first, second); it != intersection_iterator_end(first, second); ++it) {
                 BarcodeId barcode = (*it).key_;
-                //todo make lazy and address to info directly
                 bool is_in_the_end_of_first = g_.length(first) <= gap_threshold or
                                                      GetMaxPos(first, barcode) + gap_threshold > g_.length(first);
                 bool is_in_the_beginning_of_second = g_.length(second) <= gap_threshold or
@@ -448,34 +442,6 @@ namespace barcode_index {
         }
 
         /**
-         * @param first first edge
-         * @param second second edge
-         * @param count_threshold edge contains barcode iff there are at least count_threshold reads aligned to the edge
-         * @param gap_threshold clouds located at the beginning of the first or at the end of the second edge are discarded.
-         *      Cloud is located in the beginning of the edge if it is not aligned to the last gap_threshold nucleotides of the edge.
-         * @return list of barcodes which pass requirements determined by count_threshold and gap_threshold.
-         */
-        vector<BarcodeId> GetSharedBarcodesWithFilter (const EdgeId &first,
-                                              const EdgeId &second,
-                                              size_t count_threshold,
-                                              size_t gap_threshold) const {
-            vector<BarcodeId> result;
-            for (auto it = intersection_iterator_begin(first, second); it != intersection_iterator_end(first, second); ++it) {
-                auto barcode = (*it).key_;
-                bool is_in_the_end_of_first = g_.length(first) <= gap_threshold or
-                                                     GetMaxPos(first, barcode) + gap_threshold > g_.length(first);
-                bool is_in_the_beginning_of_second = g_.length(second) <= gap_threshold or
-                                                     GetMinPos(second, barcode) < gap_threshold;
-                bool enough_count = (*it).info_first_.GetCount() >= count_threshold and
-                                    (*it).info_second_.GetCount() >= count_threshold;
-                if (is_in_the_end_of_first and is_in_the_beginning_of_second and enough_count) {
-                    result.push_back(barcode);
-                }
-            }
-            return result;
-        }
-
-        /**
          *
          * @param edge
          * @param barcode
@@ -501,12 +467,5 @@ namespace barcode_index {
             return info.GetRightMost() * frame_size;
         }
 
-
-        size_t GetBarcodeLength(const EdgeId& edge, const BarcodeId& barcode) const {
-            size_t max_pos = GetMaxPos(edge, barcode);
-            size_t min_pos = GetMinPos(edge, barcode);
-            VERIFY(max_pos >= min_pos);
-            return max_pos - min_pos;
-        }
     };
 }

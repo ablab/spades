@@ -689,7 +689,6 @@ protected:
     const ScaffoldingUniqueEdgeStorage& unique_storage_;
     shared_ptr<barcode_index::AbstractBarcodeIndex> mapper_;
     size_t distance_bound_;
-    friend class TenXExtensionChecker;
 
 
 public:
