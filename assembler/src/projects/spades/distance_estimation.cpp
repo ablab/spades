@@ -159,7 +159,7 @@ void estimate_distance(conj_graph_pack& gp,
 
     INFO("Improving paired information");
     PairInfoImprover<Graph> improver(gp.g, clustered_index, lib,
-                                     config.mode == debruijn_graph::config::pipeline_type::meta ?
+                                     (config.mode == debruijn_graph::config::pipeline_type::meta || config.mode == debruijn_graph::config::pipeline_type::metaplasmid)?
                                      std::numeric_limits<size_t>::max() : config.max_repeat_length);
 
     improver.ImprovePairedInfo((unsigned) config.max_threads);
@@ -183,6 +183,8 @@ void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
                 gp.paired_indices[i].clear();
             }
         }
+//Clearing used edges for plasmids
+    gp.used_edges.clear();
 }
 
 }

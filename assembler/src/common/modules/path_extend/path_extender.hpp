@@ -305,11 +305,22 @@ private:
                 path.PushBack(loop_outgoing);
             }
             else {
-                DEBUG("Multiple cycles");
-                //If the forward edge is shorter than K, avoid overlapping bases between backward edge and outgoing edge
-                //Make sure that the N-stretch will be exactly 100 bp
-                uint32_t overlapping_bases = (uint32_t) std::max(int(g_.k()) - int(g_.length(forward_cycle_edge)), 0);
-                path.PushBack(loop_outgoing, Gap(int(g_.k() + BASIC_N_CNT - overlapping_bases), {0, overlapping_bases}));
+//TODO:: what should be here?
+                if (cfg::get().pd && loop_count * (g_.length(forward_cycle_edge) + g_.length(loop_outgoing)) < 1000) {
+                    INFO(" Plasmid mode: full loop resolving. Loop multiplicity: " << loop_count);
+                    INFO(" Loop edges " << forward_cycle_edge << " " << loop_outgoing);
+                    for(size_t i = 0; i < loop_count; i++) {
+                        path.PushBack(forward_cycle_edge);
+                        path.PushBack(loop_outgoing);
+                    }
+                } else {
+                    DEBUG("Multiple cycles");
+                    //If the forward edge is shorter than K, avoid overlapping bases between backward edge and outgoing edge
+                    //Make sure that the N-stretch will be exactly 100 bp
+                    uint32_t overlapping_bases = (uint32_t) std::max(int(g_.k()) - int(g_.length(forward_cycle_edge)), 0);
+                    path.PushBack(loop_outgoing, Gap(int(g_.k() + BASIC_N_CNT - overlapping_bases), {0, overlapping_bases}));
+
+                }
             }
         }
         else {
@@ -969,6 +980,9 @@ protected:
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path, PathContainer* paths_storage = nullptr) = 0;
 
     virtual bool ResolveShortLoopByCov(BidirectionalPath& path) {
+        if (TryToResolveTwoLoops(path)) {
+            return true;
+        }
         LoopDetector loop_detector(&path, cov_map_);
         size_t init_len = path.Length();
         bool result = false;
@@ -1007,6 +1021,42 @@ public:
 
     }
 
+    bool TryToResolveTwoLoops(BidirectionalPath& path) {
+        EdgeId last_edge = path.Back();
+        VertexId last_vertex = g_.EdgeEnd(last_edge);
+        VertexId first_vertex = g_.EdgeStart(last_edge);
+        DEBUG("Looking for two loop structure");
+        auto between = g_.GetEdgesBetween(last_vertex, first_vertex);
+        if (between.size() != 2 || g_.OutgoingEdgeCount(last_vertex) != 2 || g_.IncomingEdgeCount(first_vertex) != 2
+            || g_.IncomingEdgeCount(last_vertex) != 1 || g_.OutgoingEdgeCount(first_vertex) != 1 ) {
+            return false;
+        }
+        DEBUG("two glued cycles!");
+        if (path.Size() >= 3 && path[path.Size()-3] == last_edge) {
+            if (path.Size() >= 5 && path.Front() == last_edge){
+                path.GetConjPath()->PopBack();
+                DEBUG("removing extra");
+                path.PrintDEBUG();
+            }
+            DEBUG("already traversed");
+            return false;
+        }
+//FIXME: constants
+        if (g_.coverage(between[0]) > 1.3 *g_.coverage(between[1]) || g_.coverage(between[1]) > 1.3 *g_.coverage(between[0])) {
+            DEBUG("coverage not close");
+            return false;
+        }
+        if (path.Size() == 1) {
+            path.PushBack(between[0]);
+            path.PushBack(last_edge);
+            path.PushBack(between[1]);
+        } else {
+            DEBUG("Resolved two edge-cycle, adding two edges");
+            path.PushBack(between[0] == path[path.Size() - 2]? between[1] : between[0]);
+            path.PushBack(last_edge);
+        }
+        return true;
+    }
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override {
         if (is_detector_.InExistingLoop(path)) {
@@ -1018,6 +1068,8 @@ public:
         LoopDetector loop_detector(&path, cov_map_);
         if (DetectCycle(path)) {
             result = false;
+        } else if (TryToResolveTwoLoops(path)) {
+            result = true;
         } else if (path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back()) && use_short_loop_cov_resolver_) {
             DEBUG("edge in short loop");
             result = ResolveShortLoop(path);

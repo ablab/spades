@@ -242,6 +242,32 @@ public:
 };
 
 template<class Graph>
+class IsAllowedCondition : public EdgeCondition<Graph> {
+    typedef EdgeCondition<Graph> base;
+
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    std::set<VertexId> forbidden_;
+    /**
+     * This class checks if any end of given edge is forbidden for deletion because of some xternal reason
+     */
+
+public:
+    IsAllowedCondition(const Graph& g, const std::set<VertexId>& forbidden) : base(g), forbidden_(forbidden) {
+    }
+
+    bool Check(EdgeId e) const {
+        return (forbidden_.find(this->g().EdgeStart(e)) == forbidden_.end() && forbidden_.find(this->g().EdgeEnd(e)) == forbidden_.end());
+    }
+
+private:
+    DECL_LOGGER("IsAllowedCondition");
+
+};
+
+
+
+template<class Graph>
 func::TypedPredicate<typename Graph::EdgeId>AddDeadEndCondition(const Graph& g,
                                                                 func::TypedPredicate<typename Graph::EdgeId> condition) {
     return func::And(DeadEndCondition<Graph>(g), condition);

@@ -75,7 +75,6 @@ def main():
     # import alignment and molecule_postprocassing
     import alignment
     import moleculo_postprocessing
-
     #  run command
     if isfile(args.result_scaffolds_filename):
         shutil.move(args.result_scaffolds_filename, args.assembled_scaffolds_filename)

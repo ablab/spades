@@ -35,6 +35,8 @@ def get_mode():
         mode = "plasmid"
     elif script_basename == "metaspades.py" or nargs.meta:
         mode = "meta"
+    if script_basename == "metaplasmidspades.py" or (nargs.plasmid and nargs.meta):
+        mode = "metaplasmid"
     return mode
 
 
@@ -46,6 +48,9 @@ def add_mode_to_args(args):
         args.plasmid = True
     elif mode == "meta":
         args.meta = True
+    elif mode == "metaplasmid":
+        args.meta = True
+        args.plasmid = True
 
 
 def version():
@@ -922,9 +927,9 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
         if args.careful:
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
     if [args.meta, args.large_genome, args.truseq_mode,
-        args.rna, args.plasmid, args.single_cell].count(True) > 1:
+        args.rna, args.plasmid, args.single_cell].count(True) > 1 and [args.meta, args.plasmid].count(True) < 2:
         support.error("you cannot simultaneously use more than one mode out of "
-                      "Metagenomic, Large genome, Illumina TruSeq, RNA-Seq, Plasmid, and Single-cell!", log)
+                      "Metagenomic, Large genome, Illumina TruSeq, RNA-Seq, Plasmid, and Single-cell (except combining Metagenomic and Plasmid)!", log)
     if args.continue_mode:
         return None
 

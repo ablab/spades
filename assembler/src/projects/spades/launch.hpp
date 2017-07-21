@@ -49,6 +49,25 @@ inline bool HybridLibrariesPresent() {
     return false;
 }
 
+inline std::string GetContigName(std::string contig_id, size_t cov) {
+    std::string res = std::to_string(cov);
+    while (res.length() < 4) {
+        res = "_" + res;
+    }
+    return contig_id + res;
+}
+inline std::set<debruijn_graph::Graph::VertexId> FillForbiddenSet(debruijn_graph::Graph& g) {
+    std::set<debruijn_graph::VertexId> res;
+    for (auto it = g.SmartVertexBegin(); ! it.IsEnd(); ++it) {
+        if (g.IsDeadStart(*it) || g.IsDeadEnd(*it))
+            res.insert(*it);
+    }
+    INFO("forbidding: "<< res.size())
+    return res;
+}
+
+
+
 void assemble_genome() {
     INFO("SPAdes started");
     if (cfg::get().mode == debruijn_graph::config::pipeline_type::meta && !MetaCompatibleLibraries()) {
@@ -82,7 +101,7 @@ void assemble_genome() {
     SPAdes.add<ReadConversion>();
     SPAdes.add<debruijn_graph::Construction>();
 
-    if (cfg::get().mode != debruijn_graph::config::pipeline_type::meta)
+    if (cfg::get().mode != debruijn_graph::config::pipeline_type::meta && cfg::get().mode != debruijn_graph::config::pipeline_type::metaplasmid)
         SPAdes.add<debruijn_graph::GenomicInfoFiller>();
 
     VERIFY(!cfg::get().gc.before_raw_simplify || !cfg::get().gc.before_simplify);
@@ -117,7 +136,6 @@ void assemble_genome() {
         SPAdes.add<debruijn_graph::GapClosing>("late_gapcloser");
 
     SPAdes.add<debruijn_graph::SimplificationCleanup>();
-
     if (cfg::get().correct_mismatches)
         SPAdes.add<debruijn_graph::MismatchCorrection>();
 
@@ -128,11 +146,12 @@ void assemble_genome() {
         if (!cfg::get().series_analysis.empty())
             SPAdes.add<debruijn_graph::SeriesAnalysis>();
 
-        if (cfg::get().pd)
+        if (cfg::get().pd &&  !two_step_rr)
             SPAdes.add<debruijn_graph::ChromosomeRemoval>();
 
-        if (HybridLibrariesPresent())
-            SPAdes.add<debruijn_graph::HybridLibrariesAligning>();
+        if (HybridLibrariesPresent()) {
+            SPAdes.add(new debruijn_graph::HybridLibrariesAligning());
+        }
 
         //No graph modification allowed after HybridLibrariesAligning stage!
 
@@ -140,6 +159,22 @@ void assemble_genome() {
                .add<debruijn_graph::PairInfoCount>()
                .add<debruijn_graph::DistanceEstimation>()
                .add<debruijn_graph::RepeatResolution>();
+
+        if (cfg::get().mode == debruijn_graph::config::pipeline_type::metaplasmid) {
+            size_t cov = 5;
+            double multiplier = 1.3;
+            size_t max_cov = 600;
+            SPAdes.add(new debruijn_graph::ContigOutput(true, GetContigName(cfg::get().co.contigs_name, 0)));
+            while (cov < max_cov) {
+                SPAdes.add(new debruijn_graph::ChromosomeRemoval(cov));
+                SPAdes.add(new debruijn_graph::RepeatResolution());
+                SPAdes.add(new debruijn_graph::ContigOutput(true, GetContigName(cfg::get().co.contigs_name, cov)));
+                cov = std::max(cov + 5, size_t(cov*multiplier));
+            }
+        }
+
+    } else {
+        SPAdes.add<debruijn_graph::ContigOutput>(false);
     }
 
     SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);

@@ -179,6 +179,28 @@ public:
                                        max_vertex_number,
                                        collect_traceback);
     }
+    //------------------------------
+    // coverage bounded dijkstra
+    //------------------------------
+    typedef ComposedDijkstraSettings<Graph,
+            LengthCalculator<Graph>,
+            BoundProcessChecker<Graph>,
+            CoveragePutChecker<Graph>,
+            ForwardNeighbourIteratorFactory<Graph> > CoverageBoundedDijkstraSettings;
+
+    typedef Dijkstra<Graph, CoverageBoundedDijkstraSettings> CoverageBoundedDijkstra;
+
+    static CoverageBoundedDijkstra CreateCoverageBoundedDijkstra(const Graph &graph, size_t length_bound, double min_coverage,
+                                                                 size_t max_vertex_number = -1ul) {
+        return CoverageBoundedDijkstra(graph, CoverageBoundedDijkstraSettings(
+                LengthCalculator<Graph>(graph),
+                BoundProcessChecker<Graph>(length_bound),
+                CoveragePutChecker<Graph>(min_coverage, graph, length_bound),
+                ForwardNeighbourIteratorFactory<Graph>(graph)),
+                                       max_vertex_number);
+    }
+
+
 };
 
 }

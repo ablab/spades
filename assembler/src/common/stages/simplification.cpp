@@ -280,7 +280,7 @@ public:
                 "Final bulge remover");
 
         //TODO need better configuration
-        if (info_container_.mode() == config::pipeline_type::meta) {
+        if (info_container_.mode() == config::pipeline_type::meta || info_container_.mode() == config::pipeline_type::metaplasmid ) {
             EdgePredicate<Graph> meta_thorn_condition
                     = And(LengthUpperBound<Graph>(g_, LengthThresholdFinder::MaxErroneousConnectionLength(
                                                                            g_.k(), simplif_cfg_.isec.max_ec_length_coefficient)),
@@ -317,7 +317,7 @@ public:
         RemoveHiddenEC(gp_.g, gp_.flanking_cov, simplif_cfg_.her, info_container_, removal_handler_);
 
         //TODO better configuration
-        if (info_container_.mode() == config::pipeline_type::meta) {
+        if (info_container_.mode() == config::pipeline_type::meta || info_container_.mode() == config::pipeline_type::metaplasmid ) {
             VERIFY(math::ls(simplif_cfg_.her.unreliability_threshold, 0.));
             MetaHiddenECRemover<Graph> algo(g_, info_container_.chunk_cnt(), gp_.flanking_cov,
                                             simplif_cfg_.her.uniqueness_length,

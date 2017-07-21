@@ -323,13 +323,13 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
 }
 
 void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_threshold) {
+    INFO("filling path container");
     std::vector<PathInfo<Graph>> paths;
     gp_.single_long_reads[lib_index].SaveAllPaths(paths);
     for (const auto &path: paths) {
         const auto &edges = path.path();
         if (edges.size() <= size_threshold)
             continue;
-
         BidirectionalPath *new_path = new BidirectionalPath(gp_.g, edges);
         BidirectionalPath *conj_path = new BidirectionalPath(new_path->Conjugate());
         new_path->SetWeight((float) path.weight());
@@ -342,13 +342,16 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
 
 
 void PathExtendLauncher::FillLongReadsCoverageMaps() {
+    INFO("long reads start ")
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
+        INFO("lib_index" << lib_index);
         unique_data_.long_reads_paths_.push_back(PathContainer());
         unique_data_.long_reads_cov_map_.push_back(GraphCoverageMap(gp_.g));
         if (support_.IsForSingleReadExtender(dataset_info_.reads[lib_index])) {
             FillPathContainer(lib_index);
         }
     }
+    INFO("out");
 }
 
 void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
@@ -390,15 +393,15 @@ Extenders PathExtendLauncher::ConstructPBExtenders(const ExtendersGenerator &gen
 Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_map,
                                                  UsedUniqueStorage &used_unique_storage) {
     INFO("Creating main extenders, unique edge length = " << unique_data_.min_unique_length_);
-    if (support_.SingleReadsMapped() || support_.HasLongReads())
+    if (!cfg::get().pd &&  (support_.SingleReadsMapped() || support_.HasLongReads()))
         FillLongReadsCoverageMaps();
-
     ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map,
                                  unique_data_, used_unique_storage, support_);
     Extenders extenders = generator.MakeBasicExtenders();
 
     //long reads scaffolding extenders.
-    if (support_.HasLongReads()) {
+
+    if (!cfg::get().pd && support_.HasLongReads()) {
         if (params_.pset.sm == scaffolding_mode::sm_old) {
             INFO("Will not use new long read scaffolding algorithm in this mode");
         } else {
@@ -527,7 +530,7 @@ void PathExtendLauncher::Launch() {
     fs::make_dir(params_.output_dir);
     fs::make_dir(params_.etc_dir);
 
-    if (support_.NeedsUniqueEdgeStorage()) {
+    if (!cfg::get().pd && support_.NeedsUniqueEdgeStorage()) {
         //Fill the storage to enable unique edge check
         EstimateUniqueEdgesParams();
         FillUniqueEdgeStorage();

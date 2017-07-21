@@ -63,8 +63,8 @@ def main():
                 result_fasta = list(support.read_fasta(result_filename))
                 # correctness check: should be one contig of length 1000 bp
                 correct_number = 1
-                if args.mode == "plasmid":
-                    correct_length = 9667
+                if args.mode == "plasmid" or args.mode == "metaplasmid":
+                    correct_length = 9689
                 else:
                     correct_length = 1000
                 if not len(result_fasta):

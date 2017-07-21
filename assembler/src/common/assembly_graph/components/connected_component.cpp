@@ -7,6 +7,8 @@
 #include <map>
 #include <stack>
 #include <vector>
+#include <set>
+#include <unordered_set>
 
 namespace debruijn_graph {
 
@@ -17,13 +19,13 @@ void ConnectedComponentCounter::CalculateComponents() const {
     size_t cur_id = 0;
     for (auto e = g_.ConstEdgeBegin(); !e.IsEnd(); ++e) {
         if (component_ids.find(*e) == component_ids.end()) {
-            std::stack<EdgeId> next;
-            next.push(*e);
-            std::set<EdgeId> used;
+            std::unordered_set <EdgeId> next;
+            next.insert(*e);
+            std::set <EdgeId> used;
             size_t ans = 0;
             while (!next.empty()) {
-                auto cur = next.top();
-                next.pop();
+                auto cur = *next.begin();
+                next.erase(next.begin());
                 if (used.find(cur) != used.end()) {
                     continue;
                 }
@@ -40,7 +42,7 @@ void ConnectedComponentCounter::CalculateComponents() const {
                 neighbours.insert(neighbours.end(), tmp.begin(), tmp.end());
                 for (auto ee:neighbours) {
                     if (used.find(ee) == used.end()) {
-                        next.push(ee);
+                        next.insert(ee);
                     }
                 }
             }

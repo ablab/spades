@@ -30,11 +30,16 @@ namespace omnigraph {
 * consistent. Now high level events are merge, glue and split. This list can be extended in near future.
 */
 template<typename VertexId, typename EdgeId>
-class ActionHandler : private boost::noncopyable {
+class ActionHandler  {
     const std::string handler_name_;
 private:
     bool attached_;
 public:
+    ActionHandler(const ActionHandler&) = delete;
+    ActionHandler& operator=(const ActionHandler&) = delete;
+    ActionHandler(ActionHandler&&) = default;
+
+
     /**
      * Create action handler with given name. With this name one can find out what tipe of handler is it.
      */
@@ -175,6 +180,15 @@ public:
         TRACE("Bye-bye my lovely graph!");
         DetachAndIsolate();
     }
+
+    GraphActionHandler(GraphActionHandler<Graph> &&other) noexcept : base(other.name()), g_(other.g_) {
+        if (other.IsAttached())
+            other.Detach();
+        g_->RemoveActionHandler(&other);
+        TRACE("Adding new action handler: " << this->name());
+        g_->AddActionHandler(this);
+    }
+
 
     virtual ~GraphActionHandler() {
         DetachAndIsolate();

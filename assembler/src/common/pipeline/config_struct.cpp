@@ -74,7 +74,8 @@ std::vector<std::string> PipelineTypeNames() {
                     {"moleculo", pipeline_type::moleculo},
                     {"rna", pipeline_type::rna},
                     {"plasmid", pipeline_type::plasmid},
-                    {"large_genome", pipeline_type::large_genome}
+                    {"large_genome", pipeline_type::large_genome},
+                    {"metaplasmid", pipeline_type::metaplasmid}
                     }, pipeline_type::total);
 }
 
@@ -436,6 +437,24 @@ void load(debruijn_config::plasmid& pd,
     load(pd.small_component_relative_coverage, pt, "small_component_relative_coverage");
     load(pd.min_component_length, pt, "min_component_length");
     load(pd.min_isolated_length, pt, "min_isolated_length");
+    load(pd.meta_mode, pt, "meta_mode");
+    std::string remove_list;
+    load(remove_list, pt, "remove_list");
+    load(pd.absolute_coverage_cutoff, pt, "absolute_coverage_cutoff");
+    load(pd.circular_removal, pt, "circular_removal");
+    load(pd.min_start_edge_length, pt, "min_start_edge_length");
+    load(pd.min_start_coverage, pt, "min_start_coverage");
+    load(pd.max_loop, pt, "max_loop");
+    pd.reference_removal = "";
+    boost::optional<std::string> reference =
+            pt.get_optional<std::string>("reference_removal");
+    if (reference && *reference != "N/A") {
+        pd.reference_removal = *reference;
+    }
+    load (pd.HMM_filtration, pt, "HMM_filtration");
+    load(pd.iterative_coverage_elimination, pt, "iterative_coverage_elimination");
+    load(pd.iterative_step, pt, "iterative_step"); //5
+    load(pd.max_length, pt, "max_length"); //1000000
 }
 
 void load(debruijn_config::gap_closer& gc,
@@ -683,6 +702,10 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.pb, pt, "pacbio_processor", complete);
 
     load(cfg.two_step_rr, pt, "two_step_rr", complete);
+//TODO::how to do it normally??
+    if (cfg.two_step_rr && cfg.mode == pipeline_type::plasmid) {
+        cfg.mode = pipeline_type::metaplasmid;
+    }
     load(cfg.use_intermediate_contigs, pt, "use_intermediate_contigs", complete);
     load(cfg.single_reads_rr, pt, "single_reads_rr", complete);
     load(cfg.min_edge_length_for_is_count, pt, "min_edge_length_for_is_count", complete);
@@ -795,7 +818,7 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
 
     //some post-loading processing
     using config::pipeline_type;
-    cfg.uneven_depth = std::set<pipeline_type>{pipeline_type::mda, pipeline_type::rna, pipeline_type::meta}.count(cfg.mode);
+    cfg.uneven_depth = std::set<pipeline_type>{pipeline_type::mda, pipeline_type::rna, pipeline_type::meta, pipeline_type::metaplasmid}.count(cfg.mode);
     if (!cfg.developer_mode) {
         cfg.pe_params.debug_output = false;
         cfg.pe_params.viz.DisableAll();
