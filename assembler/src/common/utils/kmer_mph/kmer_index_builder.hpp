@@ -302,7 +302,7 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
 
     data_index = typename Index::KMerDataIndex(sz,
                                                boomphf::range(bucket->begin(), bucket->end()),
-                                               1, 2.0, false);
+                                               1, 2.0, false, false);
   }
 
   // Finally, record the sizes of buckets.
