@@ -34,42 +34,6 @@
 
 namespace debruijn_graph {
 
-template<class StoringType>
-struct CoverageCollector {
-};
-
-template<>
-struct CoverageCollector<utils::SimpleStoring> {
-    template<class Info>
-    static void CollectCoverage(Info edge_info) {
-        edge_info.edge_id->IncCoverage(edge_info.count);
-    }
-};
-
-template<>
-struct CoverageCollector<utils::InvertableStoring> {
-    template<class Info>
-    static void CollectCoverage(Info edge_info) {
-        edge_info.edge_id->IncCoverage(edge_info.count);
-        edge_info.edge_id->conjugate()->IncCoverage(edge_info.count);
-    }
-};
-
-
-template<class Index>
-void FillCoverageFromIndex(const Index &index) {
-    for (auto I = index.value_cbegin(), E = index.value_cend();
-            I != E; ++I) {
-        const auto& edge_info = *I;
-        VERIFY(edge_info.offset != -1u);
-//      VERIFY(edge_info.edge_id.get() != NULL);
-        if(edge_info.offset != -1u) {
-            CoverageCollector<typename Index::storing_type>::CollectCoverage(edge_info);
-        }
-    }
-    DEBUG("Coverage counted");
-}
-
 template<class Graph, class Readers, class Index>
 size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
         Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
@@ -104,12 +68,12 @@ size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
 
 template<class ExtensionIndex>
 void EarlyClipTips(size_t k, const config::debruijn_config::construction& params, size_t rl, ExtensionIndex& ext) {
-    if (params.early_tc.enable) {
-        size_t length_bound = rl - k;
-        if (params.early_tc.length_bound)
-            length_bound = params.early_tc.length_bound.get();
-        AlternativeEarlyTipClipper(ext, length_bound).ClipTips();
-    }
+    if (!params.early_tc.enable)
+        return;
+    
+    size_t length_bound = (params.early_tc.length_bound ?
+                           params.early_tc.length_bound.get() : rl - k);
+    AlternativeEarlyTipClipper(ext, length_bound).ClipTips();
 }
 
 template<class Graph, class Read, class Index>
