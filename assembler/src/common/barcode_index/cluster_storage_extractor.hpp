@@ -34,12 +34,12 @@ class OrderingAnalyzer {
     }
 
     vector<EdgeId> GetOrderingFromCluster(const Cluster &cluster) const {
-        scaffold_graph::ScaffoldGraph cluster_graph = cluster.GetInternalGraph();
+        Cluster::InternalGraph cluster_graph = cluster.GetInternalGraph();
         auto ordering = GetOrdering(cluster_graph);
         return ordering;
     }
 
-    vector<EdgeId> GetOrdering(const scaffold_graph::ScaffoldGraph &graph) const {
+    vector<EdgeId> GetOrdering(const Cluster::InternalGraph &graph) const {
         std::unordered_map<EdgeId, vertex_state> color_map;
         std::vector<EdgeId> result;
         for (const auto &entry: graph) {
@@ -67,7 +67,7 @@ class OrderingAnalyzer {
         VERIFY(ordering.size() > 1);
         for (size_t i = 1; i != ordering.size(); ++i) {
             auto internal_graph = cluster.GetInternalGraph();
-            if (not internal_graph.HasEdge(ordering[i - 1], ordering[i])) {
+            if (not internal_graph.ContainsEdge(ordering[i - 1], ordering[i])) {
                 return false;
             }
         }
@@ -78,7 +78,7 @@ class OrderingAnalyzer {
         for (size_t i = 0; i != ordering.size(); ++i) {
             for (size_t j = i + 1; j != ordering.size(); ++j) {
                 auto internal_graph = cluster.GetInternalGraph();
-                if (internal_graph.HasEdge(ordering[j], ordering[i])) {
+                if (internal_graph.ContainsEdge(ordering[j], ordering[i])) {
                     return false;
                 }
             }
@@ -87,14 +87,14 @@ class OrderingAnalyzer {
     }
 
     bool ScaffoldDFS(const EdgeId &edge,
-                     const scaffold_graph::ScaffoldGraph &graph,
+                     const Cluster::InternalGraph &graph,
                      std::unordered_map<EdgeId, vertex_state> &state_map,
                      std::vector<EdgeId> &ordering,
                      bool &has_cycle) const {
         state_map[edge] = vertex_state::current;
         DEBUG("Starting from " << edge.int_id());
         for (auto it = graph.adjacent_begin(edge); it != graph.adjacent_end(edge); ++it) {
-            EdgeId next = (*it).e_;
+            EdgeId next = (*it);
             DEBUG("Checking " << next.int_id());
             switch (state_map[next]) {
                 case not_visited: DEBUG("white");
@@ -116,33 +116,6 @@ class OrderingAnalyzer {
 
     DECL_LOGGER("OrderingAnalyzer")
 };
-
-struct SimplePath {
-  vector<EdgeId> data_;
-  SimplePath(const vector<EdgeId> &data_) : data_(data_) {}
-  bool operator ==(const SimplePath& other) const {
-      return data_ == other.data_;
-  }
-};
-
-}
-
-namespace std {
-template<>
-struct hash<cluster_statistics::SimplePath> {
-  size_t operator()(const cluster_statistics::SimplePath& edges) const {
-      using std::hash;
-      size_t sum = 0;
-      for_each(edges.data_.begin(), edges.data_.end(), [&sum](const EdgeId& edge){
-        sum += std::hash<size_t>()(edge.int_id());
-      });
-      return sum;
-  }
-};
-
-}
-
-namespace cluster_statistics {
 
 template <class Key>
 class KeyClusterStorage {
@@ -192,72 +165,7 @@ class KeyClusterStorage {
     }
 };
 
-typedef KeyClusterStorage<SimplePath> PathClusterStorage;
-typedef KeyClusterStorage<transitions::Transition> TransitionClusterStorage;
 typedef KeyClusterStorage<EdgeId> EdgeClusterStorage;
-
-class PathClusterStorageBuilder {
- public:
-    PathClusterStorage BuildPathClusterStorage(const ClusterStorage &cluster_storage,
-                                               const size_t min_read_threshold) {
-        PathClusterStorage result;
-        OrderingAnalyzer ordering_analyzer;
-        for (const auto& entry: cluster_storage) {
-            if (entry.second.Size() >= 2 and entry.second.GetReads() >= min_read_threshold) {
-                auto ordering = ordering_analyzer.GetOrderingFromCluster(entry.second);
-                if (ordering_analyzer.CheckOrdering(ordering, entry.second)) {
-                    SimplePath path(ordering);
-                    result.InsertKeyWithCluster(path, entry.second);
-                }
-            }
-        }
-        return result;
-    }
-};
-
-struct PathPredicate {
-  virtual ~PathPredicate() {}
-  virtual bool Check(const SimplePath& path) const = 0;
-  bool operator()(const SimplePath& path) const { return Check(path);}
-};
-
-struct TwoEdgePathPredicate : public PathPredicate {
-  bool Check(const SimplePath& path) const override {
-      return path.data_.size() == 2;
-  }
-};
-
-struct ThreeEdgePathPredicate : public PathPredicate {
-  bool Check(const SimplePath& path) const override {
-      return path.data_.size() == 3;
-  }
-};
-
-struct ManyEdgePathPredicate : public PathPredicate {
-  bool Check(const SimplePath& path) const override {
-      return path.data_.size() > 3;
-  }
-};
-
-class PredicateTransitionClusterStorageBuilder {
- public:
-    TransitionClusterStorage BuildTransitionClusterStorage(const PathClusterStorage& path_cluster_storage,
-                                                           const PathPredicate& path_predicate) {
-        TransitionClusterStorage result;
-        for (const auto& entry: path_cluster_storage) {
-            if (path_predicate(entry.first)) {
-                for (auto it_first = entry.first.data_.begin(), it_second = std::next(it_first);
-                     it_second != entry.first.data_.end(); ++it_first, ++it_second) {
-                    transitions::Transition transition(*it_first, *it_second);
-                    std::for_each(entry.second.begin(), entry.second.end(), [&result, &transition](const Cluster& cluster) {
-                      result.InsertKeyWithCluster(transition, cluster);
-                    });
-                }
-            }
-        }
-        return result;
-    }
-};
 
 class EdgeClusterStorageBuilder {
  public:

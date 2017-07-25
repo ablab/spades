@@ -59,14 +59,28 @@ class Cluster {
             }
         };
 
-        class InternalGraph {
-            std::unordered_map<EdgeId, vector<EdgeId>> edge_to_adjacent_;
+        template <class T>
+        class SimpleGraph {
+            std::unordered_map<T, unordered_set<T>> edge_to_adjacent_;
 
          public:
-            typedef std::unordered_map<EdgeId, vector<EdgeId>>::const_iterator const_iterator;
+            typedef typename std::unordered_map<T, unordered_set<T>>::const_iterator const_iterator;
+            typedef typename std::unordered_set<T>::const_iterator const_adjacent_iterator;
 
-            void AddEdge(const EdgeId& first, const EdgeId& second) {
-                edge_to_adjacent_[first].push_back(second);
+            void AddEdge(const T& first, const T& second) {
+                edge_to_adjacent_[first].insert(second);
+            }
+
+            bool ContainsVertex(const T& vertex) {
+                return edge_to_adjacent_.find(vertex) != edge_to_adjacent_.end();
+            }
+
+            bool ContainsEdge(const T& start, const T& end) {
+                auto first_adjacent = edge_to_adjacent_.find(start);
+                if (first_adjacent == edge_to_adjacent_.end()) {
+                    return false;
+                }
+                return (*first_adjacent).second.find(end) != (*first_adjacent).second.end();
             }
 
             const_iterator begin() const {
@@ -76,7 +90,18 @@ class Cluster {
             const_iterator end() const {
                 return edge_to_adjacent_.end();
             }
+
+            const_adjacent_iterator adjacent_begin(const T& vertex) const {
+                return edge_to_adjacent_.at(vertex).begin();
+            }
+
+            const_adjacent_iterator adjacent_end(const T& vertex) const {
+                return edge_to_adjacent_.at(vertex).end();
+            }
+
         };
+
+        typedef SimpleGraph<EdgeId> InternalGraph;
 
 
     std::unordered_map<EdgeId, MappingInfo> mappings_;

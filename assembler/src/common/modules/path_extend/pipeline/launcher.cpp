@@ -17,6 +17,7 @@
 
 //fixme remove it later
 #include "barcode_index/cluster_storage.hpp"
+#include "barcode_index/cluster_storage_extractor.hpp"
 
 namespace path_extend {
 
