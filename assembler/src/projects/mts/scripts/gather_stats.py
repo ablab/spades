@@ -13,8 +13,9 @@ import sys
 parser = argparse.ArgumentParser(description="MTS - Metagenomic Time Series")
 parser.add_argument("dir", type=str, help="QUAST output directory")
 parser.add_argument("name", type=str, help="Output base name")
+parser.add_argument("--nga", action="store_true", help="NGA50 plots for references")
 parser.add_argument("--problematic", action="store_true", help="Problematic references report")
-parser.add_argument("--heatmap", action="store_true", help="Best reference summary table")
+parser.add_argument("--plot", action="store_true", help="Draw plots for metrics")
 
 args = parser.parse_args()
 
@@ -42,29 +43,42 @@ for bin, ref in best_ref.iteritems():
                "NGA50": col["NGA50"], "misassemblies": col["# misassemblies"]}
     res_table = res_table.append(row, ignore_index=True)
 
-with open(args.name + "_summary.tsv", "w") as out_file:
-    res_table.to_csv(out_file, index=False, sep="\t")
+res_table.to_csv(args.name + "_summary.tsv", index=False, sep="\t")
 
-# (Optional) Draw GF heatmap
-if args.heatmap:
+if args.plot:
     try:
         import matplotlib
         # Force matplotlib to not use any Xwindows backend.
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         import seaborn as sns
-        from sklearn.cluster.bicluster import SpectralCoclustering
-        model = SpectralCoclustering(n_clusters=gfs.shape[1], random_state=0)
-        model.fit(gfs.as_matrix())
-        fit_data = gfs.iloc[np.argsort(model.row_labels_), np.argsort(model.column_labels_)]
-
-        plot = sns.heatmap(fit_data, square=True)
-        fig = plot.get_figure()
-        fig.savefig(args.name + "_gf.png", bbox_inches="tight")
-        plt.gcf().clear()
     except:
-        print("Can't import matplotlib and/or seaborn; heatmap drawing will be disabled")
-        args.heatmap = False
+        print("Cannot import matplotlib and/or seaborn; drawing will be disabled")
+        args.plot = False
+
+# (Optional) Draw GF heatmap
+if args.plot:
+    from sklearn.cluster.bicluster import SpectralCoclustering
+    model = SpectralCoclustering(n_clusters=gfs.shape[1], random_state=0)
+    model.fit(gfs.as_matrix())
+    fit_data = gfs.iloc[np.argsort(model.row_labels_), np.argsort(model.column_labels_)]
+
+    plot = sns.heatmap(fit_data, square=True)
+    fig = plot.get_figure()
+    fig.savefig(args.name + "_gf.png", bbox_inches="tight")
+    plt.gcf().clear()
+
+# (Optional) Draw NGA plots
+if args.nga:
+    nga_table = pandas.read_table(os.path.join(args.dir, "summary/TSV/NGA50.tsv"), index_col=0)
+    nga_table = nga_table.apply(pandas.to_numeric, errors="coerce")
+    nga_series = nga_table.max(axis=1)
+    nga_series.to_csv(args.name + "_nga.tsv", sep="\t")
+    if args.plot:
+        plot = nga_series.plot(kind="bar", logy=True)
+        fig = plot.get_figure()
+        fig.savefig(args.name + "_nga.png", bbox_inches="tight")
+        plt.gcf().clear()
 
 # (Optional) Write summary for problematic references
 if args.problematic:
@@ -94,7 +108,7 @@ if args.problematic:
                 print(bin, "is a mixture of", cnt, "references", file=out_file) #TODO: which ones?
             else:
                 good_bins.append(bin)
-    if args.heatmap:
+    if args.plot:
         bad_table = gfs.drop(good_refs, axis=0).drop(good_bins, axis=1)
         if bad_table.size:
             plot = sns.heatmap(bad_table, square=True)

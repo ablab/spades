@@ -57,7 +57,12 @@ stats_targets = {"checkm": "checkm_{}.tsv",
 if config["stats"].get("refs"):
     stats_targets["gf"] = "gf_{}.tsv"
     stats_targets["summary"] = "{}_summary.tsv"
-for stage in ["binning", "propagation", "reassembly"]:
+STAGES = ["binning", "propagation", "reassembly"]
+if IS_COASSEMBLY:
+    STAGES.append("assembly")
+for stage in STAGES:
+    if not config.get(stage, {}).get("enabled", True):
+        continue
     stage_stats = config["stats"].get(stage, [])
     if stage_stats == "all":
         stats = stats_targets.keys()
@@ -138,6 +143,18 @@ rule genome_fraction:
     message: "Aligning all of {wildcards.stage} on all references"
     shell:   "{METAQUAST} -t {threads} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1 && "
              "cp '{params.out}/summary/TSV/Genome_fraction_(%).tsv' {output}"
+
+rule assembly_gf:
+    input:   expand("assembly/{assembler}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS) #stats_input
+    output:  "stats/summary/gf_assembly.tsv"
+    params:  out="stats/q_assembly"
+    log:     "stats/q_assembly/.log"
+    threads: THREADS
+    message: "Aligning all of assembly on all references"
+    shell:   "{METAQUAST} -t {threads} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1 && "
+             "cp '{params.out}/summary/TSV/Genome_fraction_(%).tsv' {output}"
+
+ruleorder: assembly_gf > genome_fraction
 
 #---- GF per bin per reference -------------------------------------------------
 CONTIGS_INPUT_DIR = {"binning": "assembly/splits", "propagation": "propagation/edges"}
@@ -230,7 +247,7 @@ rule reassembly_mock_binning:
 rule gather_stats:
     input:   "stats/summary/gf_{stage}.tsv"
     output:  "stats/summary/{stage}_summary.tsv"
-    params:  "--problematic", "--heatmap", "stats/q_{stage}", "stats/summary/{stage}"
+    params:  "--problematic", "--nga", "--plot", "stats/q_{stage}", "stats/summary/{stage}"
     message: "Gathering {wildcards.stage} stats"
     shell:   "{SCRIPTS}/gather_stats.py {params}"
 

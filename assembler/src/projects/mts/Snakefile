@@ -76,10 +76,11 @@ rule align:
     input:   left=left_sample_reads, right=right_sample_reads,
              index="profile/jgi/{frags}/index.done"
     output:  "profile/jgi/{frags}/{sample}.bam"
+    params:  lambda w: "-q" if is_fastq(w) else "-f"
     threads: THREADS
     log:     "profile/jgi/{frags}/bowtie-{sample}.log"
     message: "Aligning {wildcards.sample} with bowtie"
-    shell:   "bowtie2 -x profile/jgi/index_{wildcards.frags} -p {threads}"
+    shell:   "bowtie2 -x profile/jgi/index_{wildcards.frags} {params} -p {threads}"
              " -1 {input.left} -2 {input.right} 2>{log} | samtools view -bS - > {output}"
 
 rule depth:
@@ -89,11 +90,11 @@ rule depth:
     message: "Calculating contig depths"
     shell:   "{SOFT}/metabat/jgi_summarize_bam_contig_depths --outputDepth {output} {input} >{log} 2>&1"
 
-rule concoct_depth:
+rule convert_depth:
     input:   "profile/jgi/splits/depth_metabat.txt"
-    output:  "binning/concoct/profiles_jgi.in"
-    message: "Converting depth file into CONCOCT format"
-    shell:   "awk 'NR > 1 {{for(x=1;x<=NF;x++) if(x == 1 || (x >= 4 && x % 2 == 0)) printf \"%s\", $x (x == NF || x == (NF-1) ? \"\\n\":\"\\t\")}}' {input} > {output}"
+    output:  "binning/{BINNER}/profiles_jgi.in"
+    message: "Converting depth file into {BINNER} format"
+    shell:   "{SCRIPTS}/make_input.py -t {BINNER} -n {SAMPLE_COUNT} --jgi {input} {output}"
 
 # Our way
 rule kmc:
@@ -143,20 +144,23 @@ rule combine_profiles:
 rule binning_pre:
     input:   "profile/mts/all.tsv"
     output:  "binning/{binner}/profiles_mts.in"
-    params:  " ".join(list(GROUPS.keys()))
-    log:     "binning/input.log"
     message: "Preparing input for {wildcards.binner}"
-    shell:   "{SCRIPTS}/make_input.py -n {SAMPLE_COUNT} -t {wildcards.binner}"
-             " -o {output} {input} >{log}"
+    shell:   "{SCRIPTS}/make_input.py -n {SAMPLE_COUNT} -t {wildcards.binner} {input} {output}"
 
 rule filter_contigs:
-    input:   contigs="assembly/splits/all.fasta", profile="binning/{}/profiles_mts.in".format(BINNER)
+    input:   contigs="assembly/splits/all.fasta", profile="binning/{}/profiles_{}.in".format(BINNER, PROFILER)
     output:  contigs="assembly/splits/all_filtered.fasta"
     message: "Leave contigs that have profile information"
     shell:   "cut -f1 < {input.profile} > tmp/names_tmp.txt && sed -i '1d' tmp/names_tmp.txt && "
              "{SCRIPTS}/contig_name_filter.py {input.contigs} tmp/names_tmp.txt {output.contigs}"
 
 #---- Binning ------------------------------------------------------------------
+
+rule extract_bins:
+    input:   "assembly/splits/all.fasta", "binning/annotation/all.ann"
+    output:  touch("binning/{}/binning.done".format(BINNER))
+    message: "Extracting {BINNER} bins"
+    shell:   "mkdir -p binning/bins && {SCRIPTS}/split_bins.py {input} binning/bins"
 
 # Binning with Canopy
 rule canopy:
@@ -174,21 +178,15 @@ rule canopy:
 rule concoct:
     input:   contigs="assembly/splits/all.fasta", profiles="binning/concoct/profiles_{}.in".format(PROFILER)
     output:  "binning/concoct/binning.out"
-    params:  max_clusters=40, out="binning/concoct"
+    params:  out="binning/concoct"
     threads: THREADS
     log:     "binning/concoct.log"
     message: "Running CONCOCT clustering"
     shell:   "set +u; source activate py27; set -u\n"
-             "concoct -c {params.max_clusters} --composition_file {input.contigs}"
+             "concoct --composition_file {input.contigs}"
              " --coverage_file {input.profiles} --length_threshold {MIN_CONTIG_LENGTH}"
              " -b {params.out} >{log} 2>&1 && "
              "cp binning/concoct/clustering_gt{MIN_CONTIG_LENGTH}.csv {output}"
-
-rule extract_bins:
-    input:   "assembly/splits/all.fasta", "binning/annotation/all.ann"
-    output:  touch("binning/concoct/binning.done")
-    message: "Extracting CONCOCT bins"
-    shell:   "mkdir -p binning/bins && {SCRIPTS}/split_bins.py {input} binning/bins"
 
 # Binning with MetaBAT
 rule metabat:
@@ -204,20 +202,36 @@ rule metabat:
              " -i {input.contigs} -a {input.profiles}"
              " -o {params} > {log} && "
              "sed 's/\t/,/g' {params} > {output.out} && mkdir -p binning/bins && "
-             "for file in binning/metabat/*.fa ; do bin=${{file##*/}}; mv $file binning/bins/${{bin%.*}}.fasta; done"
+             "for file in binning/metabat/*.fa ; do bin=${{file//[^0-9]}}; mv $file binning/bins/BIN$bin.fasta; done"
+
+ruleorder: metabat > extract_bins
 
 # Binning with MAXBIN2
 rule maxbin:
     input:   contigs="assembly/splits/all.fasta", profiles="binning/maxbin/profiles_{}.in".format(PROFILER)
-    output:  "binning/maxbin/binning.out"
+    output:  "binning/maxbin/cluster.summary"
     threads: THREADS
-    params:  out="binning/maxbin/cluster"
     log:     "binning/maxbin.log"
     message: "Running MaxBin2 clustering"
-    shell:   "perl {SOFT}/MaxBin/run_MaxBin.pl -thread {threads} -min_contig_length {MIN_CONTIG_LENGTH} "
-             " -contig {input.contigs} -abund {input.profiles}"
-             " -out {params.out} > {log}"
-             "&& {SCRIPTS}/make_maxbincsv.py -o {output} {params.out}"
+    shell:   "perl {SOFT}/MaxBin/run_MaxBin.pl -thread {threads} -min_contig_length {MIN_CONTIG_LENGTH} -prob_threshold 0.3"
+             " -contig {input.contigs} -abund_list binning/maxbin/profiles_{PROFILER}.in"
+             " -out binning/maxbin/cluster >{log}"
+
+rule maxbin_post:
+    input:   "binning/maxbin/cluster.summary"
+    output:  flag=touch("binning/maxbin/binning.done"), binning="binning/maxbin/unified_binning.tsv"
+    threads: THREADS
+    message: "Postprocessing of MaxBin results"
+    shell:   "rm -f {output.binning}\n"
+             "mkdir -p binning/bins\n"
+             "for file in binning/maxbin/*.fasta ; do\n"
+             "    bin=BIN${{file//[^0-9]}}\n"
+             "    binfile=binning/bins/$bin.fasta\n"
+             "    mv $file $binfile\n"
+             "    grep '>' $binfile | cut -c 2- | awk -v b=$bin '{{print $0 \"\\t\" b}}' >> {output.binning}\n"
+             "done"
+
+ruleorder: maxbin_post > extract_bins
 
 # Binning with GATTACA
 # conda create -n py27 python=2.7.9 numpy scipy scikit-learn anaconda
@@ -244,6 +258,15 @@ rule binsanity:
              "{SCRIPTS}/clusters2csv.py binning/binsanity/BINSANITY-RESULTS/KMEAN-BINS {output} && mv Binsanity-log.txt binning/ "
 
 # Postprocessing
+rule binning_format:
+    input:   "binning/{}/binning.out".format(BINNER)
+    output:  "binning/{}/unified_binning.tsv".format(BINNER)
+    message: "Making unified binning results"
+    shell:   "{SCRIPTS}/convert_output.py -t {BINNER} -o {output} {input} &&"
+             "cp {output} binning/binning.tsv" #Additional table for stats
+
+ruleorder: maxbin_post > binning_format
+
 rule bin_profiles:
     input:   "profile/{}/all.tsv".format(PROFILER), "binning/{}/unified_binning.tsv".format(BINNER)
     output:  "binning/{}/bins.prof".format(BINNER)
@@ -251,13 +274,6 @@ rule bin_profiles:
     shell:   "{SCRIPTS}/bin_profiles.py {input} > {output}"
 
 ruleorder: canopy > bin_profiles
-
-rule binning_format:
-    input:   "binning/{}/binning.out".format(BINNER)
-    output:  "binning/{}/unified_binning.tsv".format(BINNER)
-    message: "Making unified binning results"
-    shell:   "{SCRIPTS}/convert_output.py -t {BINNER} -o {output} {input} &&"
-             "cp {output} binning/binning.tsv" #Additional table for stats
 
 rule annotate:
     input:   "binning/{}/unified_binning.tsv".format(BINNER)

@@ -21,7 +21,7 @@ with open(FILTERED_BINS) as input:
         bin = line.split()[0]
         BINS.add(bin)
 
-DESIRED_ABUNDANCE = 999999 #sys.maxsize
+DESIRED_ABUNDANCE = 50 #999999 #sys.maxsize
 MIN_ABUNDANCE = 4
 MIN_TOTAL_ABUNDANCE = 15
 

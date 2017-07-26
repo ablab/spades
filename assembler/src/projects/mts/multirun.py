@@ -11,8 +11,8 @@ import yaml
 parser = argparse.ArgumentParser(description="MTS Multi Runner")
 
 all_assemblers = ["main", "spades", "megahit"]
-all_binners = ["canopy", "concoct", "metabat"]
-unsupported = set(["main_metabat", "spades_canopy", "megahit_canopy"])
+all_binners = ["canopy", "concoct", "gattaca", "maxbin", "metabat"]
+unsupported = set(["main_metabat", "main_maxbin", "spades_canopy", "megahit_canopy"])
 
 parser.add_argument("--threads", "-t", type=int, default=8, help="Number of threads for each run")
 parser.add_argument("dir", type=str, help="Output directory")

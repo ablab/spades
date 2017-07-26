@@ -26,9 +26,13 @@ MIN_NONZEROES = config["binning"]["min_nonzeroes"]
 THREADS = config["threads"]
 BINNER = config["binning"]["binner"]
 
+# Check for unsupported configurations
+if PROFILER != "jgi" and BINNER == "metabat":
+    raise WorkflowError("MetaBAT is supported only with JGI profiler")
+
 IS_COASSEMBLY = config["assembly"].get("groups") == ["*"]
-if not IS_COASSEMBLY and BINNER == "metabat":
-    raise WorkflowError("MetaBAT is supported only in the full coassembly mode")
+if not IS_COASSEMBLY and BINNER == "maxbin":
+    raise WorkflowError("MaxBin is supported only in the full coassembly mode")
 
 #Autodetect samples and their reads
 #Check that sample names are consecutive and all are presented
