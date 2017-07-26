@@ -143,7 +143,6 @@ namespace barcode_index {
             return result;
         }
 
-
         typename distribution_t::const_iterator barcode_iterator_begin(const EdgeId &edge) const {
             auto entry_it = mapper_->GetEntryHeadsIterator(edge);
             return entry_it->second.begin();
@@ -467,5 +466,6 @@ namespace barcode_index {
             size_t frame_size = entry.GetFrameSize();
             return info.GetRightMost() * frame_size;
         }
+
     };
 }

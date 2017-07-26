@@ -434,7 +434,6 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             INFO("Gap threshold: " << initial_gap_threshold);
             barcode_index::FrameBarcodeIndexInfoExtractor extractor(gp_.barcode_mapper_ptr, gp_.g);
             auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-            INFO("Average barcode coverage before filtering: " << extractor.AverageBarcodeCoverage());
             scaffold_graph::ScaffoldGraph scaffold_graph(gp_.g);
 
             const size_t temp_distance = 5000;
@@ -442,10 +441,6 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
             cluster_storage::ClusterStorageBuilder cluster_storage_builder(gp_.g, scaffold_graph, barcode_extractor_ptr,
                                                                            unique_data_.unique_read_cloud_storage_,
                                                                            temp_distance, temp_min_read_threshold);
-
-            gp_.barcode_mapper_ptr->Filter(barcode_number_threshold, initial_gap_threshold);
-            INFO("Finished filtering");
-            INFO("Average barcode coverage after filtering: " << extractor.AverageBarcodeCoverage());
 
             //Creating read cloud unique storage
             FillReadCloudUniqueEdgeStorage();
@@ -508,7 +503,6 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     INFO("Gap closing completed")
 }
 
-TenXExtensionChooserStatistics TenXExtensionChooser::stats_ = TenXExtensionChooserStatistics();
 
 void PathExtendLauncher::FilterPaths() {
     PathContainer contig_paths_copy(gp_.contig_paths.begin(), gp_.contig_paths.end());
@@ -580,11 +574,6 @@ void PathExtendLauncher::Launch() {
     FilterPaths();
 
     CountMisassembliesWithReference(gp_.contig_paths);
-
-    TenXExtensionChooser::PrintStats(cfg::get().output_dir + "10x_extender_stats");
-
-
-
     INFO("ExSPAnder repeat resolving tool finished");
 }
 
