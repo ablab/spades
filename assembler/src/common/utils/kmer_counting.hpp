@@ -42,10 +42,12 @@ public:
 
     //todo use unsigned type for k
     void ProcessSequence(const Sequence &s, size_t k) {
+        INFO("Processing sequence");
         Init(s.start<RtSeq>(k) >> 'A');
         for (size_t j = k - 1; j < s.size(); ++j) {
             ProcessKmer(s[j]);
         }
+        INFO("Processed");
     }
 
 };
@@ -60,7 +62,7 @@ public:
         hll_.add(hash);
     }
 
-    void Finalize() {}
+    //void Finalize() {}
 
 };
 
@@ -86,7 +88,7 @@ size_t FillFromStream(ReadStream &stream, Processor &processor, unsigned k,
             break;
 
     }
-    processor.Finalize();
+    //processor.Finalize();
 
     return reads;
 }
@@ -118,9 +120,10 @@ public:
         }
     }
 
-    void Finalize() {
-        cqf_.merge(local_cqf_);
-    }
+//    void Finalize() {
+//        INFO("Merging local CQF");
+//        cqf_.merge(local_cqf_);
+//    }
 
 };
 
@@ -193,6 +196,12 @@ void FillCoverageHistogram(qf::cqf<RtSeq> &cqf, unsigned k, ReadStream &streams,
             n++;
         }
     }
+
+    INFO("Merging local CQF");
+    for (unsigned i = 0; i < nthreads; ++i) {
+        cqf.merge(local_cqfs[i]);
+    }
+
     INFO("Total " << reads << " reads processed");
 }
 

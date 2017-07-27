@@ -107,6 +107,7 @@ int main(int argc, char* argv[]) {
 
         INFO("Filling kmer coverage");
         utils::FillCoverageHistogram(cqf, k, single_readers, filter, thr + 1);
+        INFO("Kmer coverage filled");
         
         auto filter_f = [=,&cqf] (io::PairedRead& p_r) { 
             return (p_r.first().size() >= k && io::CountMedianMlt(p_r.first().sequence(), k, hasher, cqf) > thr) ||
