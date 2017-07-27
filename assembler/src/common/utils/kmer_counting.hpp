@@ -42,12 +42,10 @@ public:
 
     //todo use unsigned type for k
     void ProcessSequence(const Sequence &s, size_t k) {
-        INFO("Processing sequence");
         Init(s.start<RtSeq>(k) >> 'A');
         for (size_t j = k - 1; j < s.size(); ++j) {
             ProcessKmer(s[j]);
         }
-        INFO("Processed");
     }
 
 };
