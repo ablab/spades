@@ -166,10 +166,15 @@ class GFAWriter {
     }
 
     void WriteLinks() {
-        for (VertexId v : graph_)
-            for (auto inc_edge : graph_.IncomingEdges(v))
-                for (auto out_edge : graph_.OutgoingEdges(v))
+        //TODO switch to constant vertex iterator
+        for (auto it = graph_.SmartVertexBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
+            VertexId v = *it;
+            for (auto inc_edge : graph_.IncomingEdges(v)) {
+                for (auto out_edge : graph_.OutgoingEdges(v)) {
                     WriteLink(inc_edge, out_edge, graph_.k());
+                }
+            }
+        }
     }
 
     void WritePath(const std::string& name, size_t segment_id, const vector<std::string> &edge_strs) {
