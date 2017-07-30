@@ -104,18 +104,8 @@ def is_fastq(wildcards):
             return True
     return False
 
-rule combine_contigs:
+rule combine_samples:
     input:   expand("assembly/{{frags}}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS)
     output:  "assembly/{frags}/all.fasta"
     message: "Combine all {wildcards.frags} contigs"
     shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
-
-rule combine_annotation:
-    input:   expand("{{stage}}/annotation/{group}.ann", group=GROUPS)
-    output:  "{stage}/annotation/all.ann"
-    message: "Combine all annotation on {wildcards.stage}"
-    run:
-        shell("rm -f {output}")
-        for sample_ann in input:
-            sample, _ = os.path.splitext(os.path.basename(sample_ann))
-            shell("sed -e 's/^/{sample}-/' {sample_ann} >> {output}")

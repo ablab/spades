@@ -5,6 +5,8 @@ import os.path
 
 import pandas
 from pandas import DataFrame
+from snakemake.utils import report
+import textwrap
 
 from scripts.common import gather_refs
 
@@ -19,7 +21,7 @@ except KeyError:
 
 #Autodetect bins
 if config["reassembly"]["enabled"]:
-    BINS, = glob_wildcards("binning/{{bin,{}}}.info".format(NAME_TEMPLATE))
+    BINS, = glob_wildcards("reassembly/{{bin,{}}}.info".format(NAME_TEMPLATE))
 else:
     BINS, = glob_wildcards("binning/bins/{{bin,{}}}.fasta".format(NAME_TEMPLATE))
 if not BINS:
@@ -50,16 +52,16 @@ onstart:
         print("Detected references:", " ".join(REFS))
 
 enabled_stats = []
-stats_targets = {"checkm": "checkm_{}.tsv",
-                 "pca":    "pca_{}.png",
-                 "tsne":   "tsne_{}.png",
-                 "f1":     "f1_{}.txt"}
+stats_targets = {"checkm": "{}_checkm.tsv",
+                 "pca":    "{}_pca.png",
+                 "tsne":   "{}_tsne.png",
+                 "report": "{}_report.html"}
 if config["stats"].get("refs"):
-    stats_targets["gf"] = "gf_{}.tsv"
+    #stats_targets["gf"]      = "{}_gf.tsv"
+    stats_targets["f1"]      = "{}_f1.txt"
     stats_targets["summary"] = "{}_summary.tsv"
+    #stats_targets["nga"]     = "{}_nga.tsv"
 STAGES = ["binning", "propagation", "reassembly"]
-if IS_COASSEMBLY:
-    STAGES.append("assembly")
 for stage in STAGES:
     if not config.get(stage, {}).get("enabled", True):
         continue
@@ -70,7 +72,7 @@ for stage in STAGES:
         stats = stage_stats + config["stats"].get("all", [])
     enabled_stats.extend(os.path.join("stats/summary", stats_targets[st].format(stage)) for st in stats)
 
-misc_targets = {"ref_profiles": "ref_profiles.tsv"}
+misc_targets = {"ref_profiles": "ref_profiles.tsv", "binning_nga": "full_binning_nga.tsv"}
 enabled_stats.extend(os.path.join("stats/summary", misc_targets[st].format(stage)) for st in config["stats"].get("misc", []))
 
 rule all_stats:
@@ -81,17 +83,47 @@ rule all_stats:
 #---- Statistics section -------------------------------------------------------
 #===============================================================================
 
-#---- F1 stats ----------------------------------------------------------------
+#---- Binning NGA --------------------------------------------------------------
+rule glue_bins:
+    input:   "assembly/{}/all.fasta".format(ASSEMBLER), "binning/binning.tsv"
+    output:  touch("binning/full.done")
+    log:     "binning/glue.log"
+    message: "Distributing full contigs between bins"
+    shell:   "mkdir -p binning/full && {SCRIPTS}/split_bins.py {input} binning/full -g >{log}"
+
+rule binning_gf:
+    input:   "binning/full.done"
+    output:  touch("stats/nga_binning.done")
+    params:  out="stats/nga_binning"
+    log:     "stats/nga_binning.log"
+    threads: THREADS
+    message: "Calculating NGA of binning"
+    shell:   "{METAQUAST} -t {threads} -R {REFS_STR} `ls binning/full/*.fasta` -o {params.out} >/dev/null 2>&1 && "
+             "cp {params.out}/summary/TSV/NGA50.tsv {output}"
+
+rule binning_nga:
+    input:   "stats/nga_binning.done"
+    output:  "stats/summary/full_binning_nga.tsv"
+    shell:   "{SCRIPTS}/gather_stats.py --nga stats/nga_binning stats/summary/full_binning"
+
+#---- F1 stats -----------------------------------------------------------------
+rule combine_bins:
+    input:   expand("{{stage}}/{{frags}}/{bin}.fasta", bin=BINS)
+    output:  "{stage,(binning|propagation|reassembly)}/{frags}/all.fasta"
+    message: "Combine all {wildcards.stage} {wildcards.frags} contigs"
+    shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
+
 rule filter_ref_alignments:
-    input:   "stats/summary/gf_{stage}.tsv"
+    input:   "stats/q_{stage}.done"
     output:  "stats/q_{stage}/{ref}.tsv"
-    params:  " ".join(BINS)
+    params:  bins=" ".join(BINS),
+             prefix=lambda w: "| awk -v b=$bin '{{print b \"-\" $0}}'" if w.stage == "reassembly" else ""
     message: "Filtering alignments from {wildcards.stage} onto {wildcards.ref}"
     shell:   "rm -f {output}\n"
              "for bin in {params}\ndo\n"
-             "    file=stats/q_{wildcards.stage}/runs_per_reference/{wildcards.ref}/contigs_reports/nucmer_output/$bin.coords.filtered\n"
+             "    file=stats/q_{wildcards.stage}/runs_per_reference/{wildcards.ref}/contigs_reports/contigs_report_$bin.stdout\n"
              "    if [ -f $file ] ; then\n"
-             "        {SCRIPTS}/filter_nucmer.py $file {MIN_CONTIG_LENGTH} 70 | awk -v b=$bin '{{print b \"-\" $0}}' >> {output}\n"
+             "        {SCRIPTS}/filter_nucmer.py $file {MIN_CONTIG_LENGTH} 70 {params.prefix} >> {output}\n"
              "    fi\n"
              "done\n"
              "if [ -n {output} ] ; then touch {output} ; fi\n"
@@ -112,8 +144,8 @@ rule combine_refs_info:
 ruleorder: combine_refs_info > filter_ref_alignments
 
 rule calc_f1:
-    input:   binning="{stage}/binning.tsv", contigs="{stage}/all.fasta", etalons="stats/q_{stage}/total.tsv"
-    output:  "stats/summary/f1_{stage}.txt"
+    input:   binning="{stage}/binning.tsv", contigs="{stage}/bins/all.fasta", etalons="stats/q_{stage}/total.tsv"
+    output:  "stats/summary/{stage}_f1.txt"
     log:     "stats/f1_{stage}.log"
     message: "Calculating F1 metrics for {wildcards.stage}"
     shell:   "{SCRIPTS}/validate.pl --ffile={input.contigs} --cfile={input.binning} --sfile={input.etalons} --ofile={log} > {output}"
@@ -133,47 +165,42 @@ rule ref_profiles:
     shell:   "{BIN}/contig_abundance_counter -k {PROFILE_K} -w tmp -c {input}"
              " -n {SAMPLE_COUNT} -m profile/mts/kmers -o {output} >{log} 2>&1"
 
-#---- Genome fraction ----------------------------------------------------------
-rule genome_fraction:
+#---- Genome fraction etc. -----------------------------------------------------
+rule quast_all:
     input:   expand("{{stage}}/bins/{bin}.fasta", bin=BINS) #stats_input
-    output:  "stats/summary/gf_{stage}.tsv"
+    output:  touch("stats/q_{stage}.done")
     params:  out="stats/q_{stage}"
     log:     "stats/q_{stage}/.log"
     threads: THREADS
     message: "Aligning all of {wildcards.stage} on all references"
-    shell:   "{METAQUAST} -t {threads} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1 && "
-             "cp '{params.out}/summary/TSV/Genome_fraction_(%).tsv' {output}"
+    shell:   "{METAQUAST} -t {threads} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1"
 
-rule assembly_gf:
-    input:   expand("assembly/{assembler}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS) #stats_input
-    output:  "stats/summary/gf_assembly.tsv"
-    params:  out="stats/q_assembly"
-    log:     "stats/q_assembly/.log"
-    threads: THREADS
-    message: "Aligning all of assembly on all references"
-    shell:   "{METAQUAST} -t {threads} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1 && "
-             "cp '{params.out}/summary/TSV/Genome_fraction_(%).tsv' {output}"
-
-ruleorder: assembly_gf > genome_fraction
-
-#---- GF per bin per reference -------------------------------------------------
-CONTIGS_INPUT_DIR = {"binning": "assembly/splits", "propagation": "propagation/edges"}
-
-rule combine_splits:
-    input:   expand("propagation/edges/{group}.fasta", assembler=ASSEMBLER, group=GROUPS)
-    output:  "propagation/edges/all.fasta"
-    message: "Combine all propagated edges"
-    shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
-
-#Redistribute sample pieces to corresponding bins
-rule filter_bin:
-    input:   contigs=lambda w: "{}/all.fasta".format(CONTIGS_INPUT_DIR[w.stage]),
-             ann="{stage}/annotation/all.ann"
-    output:  "{stage,(binning|propagation)}/bins/{bin,\w*\d+}.fasta"
-    message: "Filtering contigs from {wildcards.bin} for all of {wildcards.stage}"
-    shell:   "{SCRIPTS}/filter_bin.py {input.contigs} {input.ann} {wildcards.bin} >{output}"
+rule gather_stats:
+    input:   "stats/q_{stage}.done"
+    output:  "stats/summary/{stage}_summary.tsv"
+    params:  "--gf", "--problematic", "--nga", "--plot", "stats/q_{stage}", "stats/summary/{stage}"
+    message: "Gathering {wildcards.stage} stats"
+    shell:   "{SCRIPTS}/gather_stats.py {params}"
 
 #---- Propagator statistics ----------------------------------------------------
+rule prop_annotation:
+    input:   expand("propagation/annotation/{group}.ann", group=GROUPS)
+    output:  "propagation/binning.tsv"
+    message: "Combine propagated annotation"
+    run:
+        shell("rm -f {output}")
+        for sample_ann in input:
+            sample, _ = os.path.splitext(os.path.basename(sample_ann))
+            shell("sed -e 's/^/{sample}-/' {sample_ann} >> {output}")
+
+#Redistribute sample pieces to corresponding bins
+rule filter_prop:
+    input:   contigs="propagation/edges/all.fasta",
+             ann="propagation/binning.tsv"
+    output:  "propagation/bins/{bin,\w*\d+}.fasta"
+    message: "Filtering propagated contigs from {wildcards.bin}"
+    shell:   "{SCRIPTS}/filter_bin.py {input.contigs} {input.ann} {wildcards.bin} >{output}"
+
 # rule prop_stats:
 #     input:   prelim="binning/annotation/{sample}.ann", prop="propagation/annotation/{sample}.ann",
 #              contigs="assembly/{sample}.fasta", edges="assembly/edges/{sample}.fasta",
@@ -229,12 +256,6 @@ rule parse_checkm:
             res_table[column] = res_table[column].apply(extract_taxon)
         res_table.to_csv(output[0], index=False, sep="\t")
 
-rule combine_bins:
-    input:   expand("{{stage}}/bins/{bin}.fasta", bin=BINS)
-    output:  "{stage,(binning|propagation|reassembly)}/all.fasta"
-    message: "Combine all contigs from {wildcards.stage}"
-    shell:   "{SCRIPTS}/combine_contigs.py -r {input} > {output}"
-
 rule reassembly_mock_binning:
     output:  "reassembly/binning.tsv"
     message: "Preparing reassembly mock binning"
@@ -242,14 +263,6 @@ rule reassembly_mock_binning:
         shell("rm -f {output}")
         for bin in BINS:
             shell("grep '>' reassembly/bins/{bin}.fasta | cut -c 2- | awk '{{print \"{bin}-\" $0 \"\\t{bin}\"}}' >> {output}")
-
-#---- Summary table ------------------------------------------------------------
-rule gather_stats:
-    input:   "stats/summary/gf_{stage}.tsv"
-    output:  "stats/summary/{stage}_summary.tsv"
-    params:  "--problematic", "--nga", "--plot", "stats/q_{stage}", "stats/summary/{stage}"
-    message: "Gathering {wildcards.stage} stats"
-    shell:   "{SCRIPTS}/gather_stats.py {params}"
 
 #---- PCA ----------------------------------------------------------------------
 # FRAGMENT_NAMES_BY_STAGE = {"reassembly": CAG_EDGES,
@@ -267,7 +280,7 @@ rule pca:
     message: "Drawing PCA visualisation for {wildcards.stage}"
     shell:   "Rscript {SCRIPTS}/pca.R {input} {output}"
 
-#---- TSNE ----------------------------------------------------------------------
+#---- TSNE ---------------------------------------------------------------------
 
 rule tsne:
     input:   "profile/{}/all.tsv".format(PROFILER),
@@ -276,3 +289,42 @@ rule tsne:
     message: "Drawing BH-TSNE visualisation for {wildcards.stage}"
     shell:   "python2 {SCRIPTS}/run_tsne.py {input} {output}"
              " --percent 1.0 --iteration 2000 --perplexity 50"
+
+#---- HTML summary report ------------------------------------------------------
+
+report_targets = {"p1": "reassembly_gf.png",
+                  "t1": "f1_reassembly.txt",
+                  "p2": "reassembly_nga.png"
+                 }
+
+def render(key, value):
+    if key[0] == "p": #This is a Picture
+        return "        .. figure:: {}\n\n           {}".format(value, os.path.splitext(value)[0])
+    elif key[0] == "t": #This is a Text
+        return "\n        {}\n".format(value)
+    return None
+
+def render_all(targets):
+    return ("\n" + "\n\n".join(render(key, value) for key, value in targets.items()))
+
+rule report:
+    input:   "stats/summary/reassembly_summary.tsv"
+    output:  "stats/summary/report_reassembly.html"
+    message: "Printing the report"
+    run:
+        report("""
+        =============
+        Stats summary
+        =============
+        Data: {SAMPLE_COUNT} samples from {IN}
+
+        Reassembly stats
+        ----------------
+        """
+        #
+        # .. figure:: reassembly_gf.png
+        #
+        #    reassembly_gf
+        #"""
+        + render_all(report_targets)
+        , output[0])

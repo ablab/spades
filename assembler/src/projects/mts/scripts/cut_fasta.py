@@ -5,7 +5,7 @@ import argparse
 from Bio import SeqIO
 
 
-def cut_up_fasta(fastfiles, chunk_size, overlap, merge_last):
+def cut_up_fasta(fastfiles, chunk_size, overlap, min_length, merge_last):
     for ff in fastfiles:
         for record in SeqIO.parse(ff, "fasta"):
             if (not merge_last and len(record.seq) > chunk_size) or (merge_last and len(record.seq) >= 2 * chunk_size):
@@ -15,7 +15,7 @@ def cut_up_fasta(fastfiles, chunk_size, overlap, merge_last):
                     end = start + len(split_seq)
                     print ">%s_(%i_%i)\n%s" % (record.id, start, end, split_seq)
                     i = i + 1
-            else:
+            elif len(record.seq) >= min_length:
                 print ">%s\n%s" % (record.id, record.seq)
 
 
@@ -38,8 +38,9 @@ if __name__ == "__main__":
                 formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "contigs", nargs="+", help="Fasta files with contigs\n")
-    parser.add_argument("-c", "--chunk_size", default=1999, type=int, help="Chunk size\n")
-    parser.add_argument("-o", "--overlap_size", default=1900, type=int, help="Overlap size\n")
+    parser.add_argument("-c", "--chunk_size", default=10000, type=int, help="Chunk size\n")
+    parser.add_argument("-o", "--overlap_size", default=0, type=int, help="Overlap size\n")
+    parser.add_argument("-l", "--min_length", default=2000, type=int, help="Minimum split/contig length")
     parser.add_argument("-m", "--merge_last", default=False, action="store_true", help="Concatenate final part to last contig\n")
     args = parser.parse_args()
-    cut_up_fasta(args.contigs, args.chunk_size, args.overlap_size, args.merge_last)
+    cut_up_fasta(args.contigs, args.chunk_size, args.overlap_size, args.min_length, args.merge_last)

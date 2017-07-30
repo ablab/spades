@@ -76,6 +76,17 @@ def get_id(internal_id, sample):
     res = internal_id.split("_", 2)[1]
     return sample + "-" + res
 
+id_re = re.compile("\\d+")
+def extract_id(contig_id):
+    params = contig_id.split("_")
+    if len(params) > 1:
+        return params[1]
+    params = id_re.findall(contig_id)
+    if contig_id.startswith("sample") or contig_id.startswith("group"):
+        return params[1]
+    else:
+        return params[0]
+
 def load_annotation(file, normalize=True):
     res = dict()
     sample, _ = os.path.splitext(os.path.basename(file))

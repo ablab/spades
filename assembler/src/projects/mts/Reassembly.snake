@@ -4,7 +4,7 @@ import yaml
 
 READ_LENGTH = config.get("read_length", 100) #TODO: auto-detect default value
 
-BINS, = glob_wildcards("binning/{{bin,{}}}.info".format(NAME_TEMPLATE))
+BINS, = glob_wildcards("reassembly/{{bin,{}}}.info".format(NAME_TEMPLATE))
 if not BINS:
     raise WorkflowError("No bins detected!")
 
@@ -13,7 +13,7 @@ rule reassemble_all:
     message: "Reassembly finished."
 
 rule reassembly_config:
-    input:   "binning/{bin}.info"
+    input:   "reassembly/{bin}.info"
     output:  "reassembly/{bin}.yaml"
     message: "Generating config file for reassembly of {wildcards.bin}"
     run:
@@ -31,18 +31,18 @@ rule reassembly_config:
 #in the corresponding {bin}.info file
 BIN_READS = dict()
 for bin in BINS:
-    with open("binning/{}.info".format(bin)) as samples_info:
+    with open("reassembly/{}.info".format(bin)) as samples_info:
         samples = []
         for line in samples_info:
             sample_data = line.split()
             if sample_data[0][0] == "+":
                 sample = sample_data[0][1:]
-                if not os.path.exists("binning/{}/{}_1.fastq.gz".format(bin, sample)):
+                if not os.path.exists("reads/{}/{}_1.fastq.gz".format(bin, sample)):
                     print("\033[33mWarning: {} contains no reads for {}\033[0m".format(sample, bin))
                     continue
                 samples.append(sample)
-        BIN_READS[bin] = (["binning/{}/{}_1.fastq.gz".format(bin, sample) for sample in samples],
-                          ["binning/{}/{}_2.fastq.gz".format(bin, sample) for sample in samples])
+        BIN_READS[bin] = (["reads/{}/{}_1.fastq.gz".format(bin, sample) for sample in samples],
+                          ["reads/{}/{}_2.fastq.gz".format(bin, sample) for sample in samples])
 
 def bin_reads(dir, wildcards):
     return BIN_READS[wildcards["bin"]][dir]
@@ -51,7 +51,7 @@ def bin_reads(dir, wildcards):
 left_bin_reads, right_bin_reads = reads_input(bin_reads)
 
 rule reassemble:
-    input:   info="binning/{bin}.info", config="reassembly/{bin}.yaml"
+    input:   info="reassembly/{bin}.info", config="reassembly/{bin}.yaml"
     output:  "reassembly/bins/{bin}.fasta"
     params:  out="reassembly/{bin}",
              left=lambda w: " ".join(expand("--pe1-1 {r}", r=left_bin_reads(w))),

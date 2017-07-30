@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+from operator import itemgetter
 import os
 from os import path
 import sys
@@ -9,28 +10,37 @@ import common
 import subprocess
 
 def print_usage():
-        print("Usage: split_bins.py <contigs> <binning info> <output directory> [-p]")
+        print("Usage: split_bins.py <contigs> <binning info> <output directory> [-g]")
 
 contigs = sys.argv[1]
 sample, _ = path.splitext(path.basename(contigs))
 out_dir = sys.argv[3]
-prepend_name = False
-if len(sys.argv) > 4 and sys.argv[4] == "-p":
-    prepend_name = True
+glue = False
+if len(sys.argv) > 4 and sys.argv[4]:
+    glue = True
 
 binning = common.load_annotation(sys.argv[2], False)
 
-subprocess.call("rm -f {}/{}-*.fasta".format(out_dir, sample), shell=True)
+if glue:
+    glue_binning = dict()
+    for split, bins in binning.items():
+        contig_bins = glue_binning.setdefault(common.extract_id(split), {})
+        for bin in bins:
+            contig_bins.setdefault(bin, 0)
+            contig_bins[bin] += 1
+
+subprocess.call("rm -f {}/*.fasta".format(out_dir, sample), shell=True)
 
 cags = set()
 for seq in SeqIO.parse(contigs, "fasta"):
-    seq_id = seq.id
-    if prepend_name:
-        seq.id = sample + "-" + seq_id
-        seq.description = ""
-    for cag in binning.get(seq_id, []):
+    if glue:
+        bins = []
+        bin_freq = glue_binning.get(common.extract_id(seq.id))
+        if bin_freq:
+            bins = [max(bin_freq.items(), key=itemgetter(1))[0]]
+    else:
+        bins = binning.get(seq.id, [])
+    for cag in bins:
         filename = cag + ".fasta"
-        if prepend_name:
-            filename = sample + "-" + filename
         with open(path.join(out_dir, filename), "a") as output:
             SeqIO.write(seq, output, "fasta")

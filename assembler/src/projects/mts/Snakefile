@@ -9,7 +9,7 @@ onstart:
 
 def final_stage(w):
     if config["reassembly"]["enabled"]:
-        return ["propagation.done", "binning/bins_total.prof"] #Stop after the bin choosing
+        return ["propagation.done", "reassembly/bins_total.prof"] #Stop after the bin choosing
     if config["propagation"]["enabled"]:
         return "propagation.done" #Stop on the propagation
     return "binning/{}/binning.done".format(BINNER) #Stop on the preliminary binning
@@ -157,7 +157,7 @@ rule filter_contigs:
 #---- Binning ------------------------------------------------------------------
 
 rule extract_bins:
-    input:   "assembly/splits/all.fasta", "binning/annotation/all.ann"
+    input:   "assembly/splits/all.fasta", "binning/binning.tsv"
     output:  touch("binning/{}/binning.done".format(BINNER))
     message: "Extracting {BINNER} bins"
     shell:   "mkdir -p binning/bins && {SCRIPTS}/split_bins.py {input} binning/bins"
@@ -165,8 +165,7 @@ rule extract_bins:
 # Binning with Canopy
 rule canopy:
     input:   "binning/canopy/profiles_{}.in".format(PROFILER)
-    output:  out="binning/canopy/binning.out", prof="binning/canopy/bins.prof",
-             flag=touch("binning/canopy/binning.done")
+    output:  out="binning/canopy/binning.out", prof="binning/canopy/bins.prof"
     threads: THREADS
     log:     "binning/canopy.log"
     message: "Running canopy clustering"
@@ -200,8 +199,7 @@ rule metabat:
     shell:   "{SOFT}/metabat/metabat -t {threads} -m {MIN_CONTIG_LENGTH} "
              " --minContigByCorr {MIN_CONTIG_LENGTH} --saveCls"
              " -i {input.contigs} -a {input.profiles}"
-             " -o {params} > {log} && "
-             "sed 's/\t/,/g' {params} > {output.out} && mkdir -p binning/bins && "
+             " -o {output.out} >{log} && mkdir -p binning/bins && "
              "for file in binning/metabat/*.fa ; do bin=${{file//[^0-9]}}; mv $file binning/bins/BIN$bin.fasta; done"
 
 ruleorder: metabat > extract_bins
@@ -218,18 +216,19 @@ rule maxbin:
              " -out binning/maxbin/cluster >{log}"
 
 rule maxbin_post:
-    input:   "binning/maxbin/cluster.summary"
-    output:  flag=touch("binning/maxbin/binning.done"), binning="binning/maxbin/unified_binning.tsv"
-    threads: THREADS
-    message: "Postprocessing of MaxBin results"
-    shell:   "rm -f {output.binning}\n"
-             "mkdir -p binning/bins\n"
-             "for file in binning/maxbin/*.fasta ; do\n"
-             "    bin=BIN${{file//[^0-9]}}\n"
-             "    binfile=binning/bins/$bin.fasta\n"
-             "    mv $file $binfile\n"
-             "    grep '>' $binfile | cut -c 2- | awk -v b=$bin '{{print $0 \"\\t\" b}}' >> {output.binning}\n"
-             "done"
+     input:   "binning/maxbin/cluster.summary"
+     output:  flag=touch("binning/maxbin/binning.done"), binning="binning/maxbin/binning.out"
+     threads: THREADS
+     message: "Postprocessing of MaxBin results"
+     shell:   "rm -f {output.binning}\n"
+              "mkdir -p binning/bins\n"
+              "for file in binning/maxbin/*.fasta ; do\n"
+              "    bin=BIN${{file//[^0-9]}}\n"
+              "    binfile=binning/bins/$bin.fasta\n"
+              "    mv $file $binfile\n"
+              "    grep '>' $binfile | cut -c 2- | awk -v b=$bin '{{print $0 \"\\t\" b}}' >> {output.binning}\n"
+              "done\n"
+              "cp {output.binning} binning/binning.tsv"
 
 ruleorder: maxbin_post > extract_bins
 
@@ -260,23 +259,20 @@ rule binsanity:
 # Postprocessing
 rule binning_format:
     input:   "binning/{}/binning.out".format(BINNER)
-    output:  "binning/{}/unified_binning.tsv".format(BINNER)
+    output:  "binning/binning.tsv".format(BINNER)
     message: "Making unified binning results"
-    shell:   "{SCRIPTS}/convert_output.py -t {BINNER} -o {output} {input} &&"
-             "cp {output} binning/binning.tsv" #Additional table for stats
-
-ruleorder: maxbin_post > binning_format
+    shell:   "{SCRIPTS}/convert_output.py -t {BINNER} -o {output} {input}"
 
 rule bin_profiles:
-    input:   "profile/{}/all.tsv".format(PROFILER), "binning/{}/unified_binning.tsv".format(BINNER)
-    output:  "binning/{}/bins.prof".format(BINNER)
+    input:   "profile/{}/all.tsv".format(PROFILER), "binning/binning.tsv"
+    output:  "binning/bins.prof".format(BINNER)
     message: "Deriving bin profiles"
     shell:   "{SCRIPTS}/bin_profiles.py {input} > {output}"
 
 ruleorder: canopy > bin_profiles
 
 rule annotate:
-    input:   "binning/{}/unified_binning.tsv".format(BINNER)
+    input:   "binning/binning.tsv".format(BINNER)
     output:  expand("binning/annotation/{sample}.ann", sample=GROUPS)
     params:  "binning/annotation/"
     message: "Preparing raw annotations"
@@ -316,31 +312,32 @@ SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(ASSEMBLY_K)
 rule prop_binning:
     input:   contigs="assembly/spades/{group}.fasta", splits="assembly/splits/{group}.fasta",
              ann="binning/annotation/{group}.ann",    left=left_reads, right=right_reads,
-             bins="binning/{}/filtered_bins.tsv".format(BINNER)
+             bins="binning/filtered_bins.tsv"
     output:  ann="propagation/annotation/{group}.ann", edges="propagation/edges/{group}.fasta"
     params:  saves=os.path.join("assembly/spades/{group}/", SAVES),
              samples=lambda wildcards: " ".join(GROUPS[wildcards.group])
     log:     "binning/{group}.log"
     message: "Propagating annotation & binning reads for {wildcards.group}"
-    shell:   "{BIN}/prop_binning -k {ASSEMBLY_K} -s {params.saves} -c {input.contigs} -b {input.bins}"
+    shell:   "mkdir -p reads && "
+             "{BIN}/prop_binning -k {ASSEMBLY_K} -s {params.saves} -c {input.contigs} -b {input.bins}"
              " -n {params.samples} -l {input.left} -r {input.right} -t {MIN_CONTIG_LENGTH}"
-             " -a {input.ann} -f {input.splits} -o binning -p {output.ann} -e {output.edges} >{log} 2>&1"
+             " -a {input.ann} -f {input.splits} -o reads -p {output.ann} -e {output.edges} >{log} 2>&1"
 
 rule prop_all:
-    input:   expand("propagation/annotation/{group}.ann", group=GROUPS)
+    input:   "binning/{}/binning.done".format(BINNER), expand("propagation/annotation/{group}.ann", group=GROUPS)
     output:  touch("propagation.done")
     message: "Finished propagation of all annotations."
 
 rule choose_bins:
-    input:   "binning/{}/unified_binning.tsv".format(BINNER)
-    output:  "binning/{}/filtered_bins.tsv".format(BINNER)
+    input:   "binning/binning.tsv"
+    output:  "binning/filtered_bins.tsv"
     message: "Filter small bins"
     shell:   "{SCRIPTS}/choose_bins.py {input} >{output} 2>&1"
 
 rule choose_samples:
-    input:   "binning/{}/bins.prof".format(BINNER), "binning/{}/filtered_bins.tsv".format(BINNER)
-    output:  "binning/bins_total.prof"
+    input:   "binning/bins.prof", "binning/filtered_bins.tsv"
+    output:  "reassembly/bins_total.prof"
     log:     "binning/choose_samples.log"
     message: "Choosing bins for reassembly and samples for them"
-    shell:   "rm -f binning/*.info && rm -rf binning/excluded && "
-             "{SCRIPTS}/choose_samples.py {input} {output} binning >{log} 2>&1"
+    shell:   "rm -f reassembly/*.info && rm -rf reassembly/excluded && "
+             "{SCRIPTS}/choose_samples.py {input} {output} reassembly >{log} 2>&1"
