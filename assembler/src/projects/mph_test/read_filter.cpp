@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
 
         utils::StoringTypeFilter<utils::InvertableStoring> filter;
         SeqHasher hasher(k);
-        io::BinarySingleStreams single_readers = io::single_binary_readers(dataset, /*followed by rc*/false, /*including paired*/true);
+        io::BinarySingleStreams single_readers = io::single_binary_readers(dataset, /*followed by rc*/true, /*including paired*/true);
         INFO("Estimating kmer cardinality");
         size_t kmers_cnt_est = EstimateCardinality(k, single_readers, filter);
         CQFKmerFilter cqf([=](const RtSeq &s) { return hasher.hash(s); },
