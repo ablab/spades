@@ -33,8 +33,8 @@ public:
     }
 
     void ProcessKmer(char inchar) {
-        kmer_ <<= inchar;
         hash_ = hasher_.hash_update(hash_, (CharT) kmer_[0], (CharT) inchar);
+        kmer_ <<= inchar;
         if (!filter_.filter(kmer_))
             return;
         process_f_(kmer_, hash_);
