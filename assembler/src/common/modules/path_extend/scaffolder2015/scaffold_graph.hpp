@@ -38,11 +38,11 @@ public:
         //read pair weight or anything else
         double weight_;
         //todo discuss
-        uint64_t length_;
+        size_t length_;
 
     public:
 
-        ScaffoldEdge(ScaffoldVertex start, ScaffoldVertex end, size_t lib_id = (size_t) -1, double weight = 0, uint64_t length = 0) :
+        ScaffoldEdge(ScaffoldVertex start, ScaffoldVertex end, size_t lib_id = (size_t) -1, double weight = 0, size_t length = 0) :
             id_(scaffold_edge_id_++),
             start_(start), end_(end),
             color_(lib_id),
@@ -63,7 +63,7 @@ public:
             return weight_;
         }
 
-        uint64_t getLength() const {
+        size_t getLength() const {
             return length_;
         }
 
@@ -170,7 +170,7 @@ public:
 
     //Add edge (and conjugate) if not exists
     //v1 and v2 must exist
-    bool AddEdge(ScaffoldVertex v1, ScaffoldVertex v2, size_t lib_id, double weight);
+    bool AddEdge(ScaffoldVertex v1, ScaffoldVertex v2, size_t lib_id, double weight, size_t length);
 
     bool AddEdge(const ScaffoldEdge &e);
 

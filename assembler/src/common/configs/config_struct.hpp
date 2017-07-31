@@ -487,6 +487,14 @@ struct debruijn_config {
 
         tenx_resolver tenx;
 
+        struct stats {
+            std::string genome_path;
+            std::string base_contigs_path;
+            std::string cloud_contigs_path;
+        };
+
+        stats statistics;
+
     };
 
     read_cloud_resolver ts_res;
