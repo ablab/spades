@@ -133,13 +133,13 @@ namespace debruijn_graph {
         INFO("Distance: " << distance);
         contracted_graph::ContractedGraphBuilder graph_builder(gp.g, unique_storage);
         auto contracted_graph = graph_builder.BuildContractedGraph();
-        auto scaffold_graph_constructor = scaffold_graph::ScaffoldGraphConstructor(unique_storage, distance, gp.g);
+        auto scaffold_graph_constructor = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage, distance, gp.g);
         auto scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphUsingDijkstra();
         auto contracted_scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphFromContractedGraph(contracted_graph);
         INFO("Scaffold graph size: " << scaffold_graph.Size());
         INFO("Contracted scaffold graph size: " << contracted_scaffold_graph.Size());
         auto barcode_extractor_ptr = ConstructBarcodeExtractor(gp);
-        const size_t builder_read_threshold = 3;
+        const size_t builder_read_threshold = 1;
         const size_t analyzer_read_threshold = 15;
 
         auto cluster_storage_builder = cluster_statistics::ClusterStorageBuilder(gp.g, scaffold_graph,
@@ -147,6 +147,33 @@ namespace debruijn_graph {
                                                                                  distance, builder_read_threshold);
         auto cluster_storage = cluster_storage_builder.ConstructClusterStorage();
 
+
+        cluster_statistics::OrderingAnalyzer ordering_analyzer;
+        size_t clusters = 0;
+        size_t eulerian_clusters = 0;
+        size_t path_clusters = 0;
+
+        for (const auto& entry: cluster_storage) {
+            auto cluster = entry.second;
+            if (cluster.Size() >= 2 and cluster.GetReads() >= analyzer_read_threshold) {
+                ++clusters;
+                if (ordering_analyzer.IsEulerianCluster(cluster)) {
+                    ++eulerian_clusters;
+                }
+            }
+        }
+        INFO(eulerian_clusters << " Eulerian clusters");
+        INFO(clusters << " clusters");
+
+        for (const auto& entry: cluster_storage) {
+            auto cluster = entry.second;
+            if (cluster.Size() >= 2 and cluster.GetReads() >= analyzer_read_threshold) {
+                if (ordering_analyzer.IsPathCluster(cluster)) {
+                    ++path_clusters;
+                }
+            }
+        }
+        INFO(path_clusters << " path clusters.");
 
         cluster_statistics::PathClusterStorageBuilder path_cluster_builder;
         auto path_cluster_storage =
@@ -159,6 +186,10 @@ namespace debruijn_graph {
         cluster_statistics::ClusterStorageAnalyzer cluster_analyzer(scaffold_graph, reference_transition_storage,
                                                                     path_cluster_storage, cluster_storage,
                                                                     analyzer_read_threshold);
+
+        cluster_analyzer.FillStatistics();
+        cluster_analyzer.SerializeStatistics(stats_base_path);
+
         auto transition_clusters = cluster_analyzer.ExtractTransitionClusters(cluster_storage);
         INFO(transition_clusters.size() << " transition clusters.");
 
@@ -170,12 +201,9 @@ namespace debruijn_graph {
         }
         INFO(correct_clusters << " correct clusters.");
 
-        scaffold_graph::ScaffoldGraphAnalyzer scaffold_analyzer(contracted_scaffold_graph);
+        scaffold_graph_utils::ScaffoldGraphAnalyzer scaffold_analyzer(contracted_scaffold_graph);
         scaffold_analyzer.FillStatistics();
         scaffold_analyzer.SerializeStatistics(stats_base_path);
-
-        cluster_analyzer.FillStatistics();
-        cluster_analyzer.SerializeStatistics(stats_base_path);
 
         contracted_graph::ContractedGraphAnalyzer contracted_analyzer(gp.g, *barcode_extractor_ptr, path_cluster_storage,
                                                                       contracted_graph, name_to_transition_storage,

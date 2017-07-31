@@ -5,8 +5,8 @@
 
 namespace transitions {
 struct Transition {
-    const EdgeId first_;
-    const EdgeId second_;
+    EdgeId first_;
+    EdgeId second_;
  public:
     Transition(const EdgeId &first, const EdgeId &second) : first_(first), second_(second) {}
     bool operator== (const Transition& other) const {
@@ -17,6 +17,8 @@ struct Transition {
         return first_.int_id() < other.first_.int_id() or (first_.int_id() == other.first_.int_id() and
             second_.int_id() < other.second_.int_id());
     }
+
+    Transition& operator =(const Transition& other) = default;
 };
 }
 

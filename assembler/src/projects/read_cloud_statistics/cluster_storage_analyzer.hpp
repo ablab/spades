@@ -20,7 +20,8 @@ class ClusterSpanDistribution: public read_cloud_statistics::Statistic {
         }
     }
 
-    void Serialize(ofstream &fout) {
+    void Serialize(const string& path) {
+        ofstream fout(path);
         for (const auto &entry: size_distribition_) {
             fout << entry.first << " " << entry.second << std::endl;
         }
@@ -36,7 +37,8 @@ class ClusterCoverageDistribution: public read_cloud_statistics::Statistic {
         coverages_.push_back(coverage);
     }
 
-    void Serialize(ofstream &fout) {
+    void Serialize(const string& path) {
+        ofstream fout(path);
         std::sort(coverages_.begin(), coverages_.end());
         for (const auto &coverage: coverages_) {
             fout << coverage << std::endl;
@@ -57,7 +59,8 @@ class BarcodeToClustersDistribution: public read_cloud_statistics::Statistic {
         }
     }
 
-    void Serialize(ofstream &fout) {
+    void Serialize(const string& path) {
+        ofstream fout(path);
         for (const auto &entry: barcode_to_clusters_) {
             fout << entry.second << std::endl;
         }
@@ -93,7 +96,8 @@ class EdgesToClustersDistribution: public read_cloud_statistics::Statistic {
         edges_to_number_of_paths_[1].correct_cluster_ = single_edge_clusters;
     }
 
-    void Serialize(ofstream &fout) {
+    void Serialize(const string& path) {
+        ofstream fout(path);
         for (const auto &entry: edges_to_number_of_paths_) {
             fout << entry.first << " " << entry.second.total_ << " " << entry.second.single_cluster_ << " " <<
                  entry.second.correct_cluster_ << std::endl;
@@ -122,7 +126,8 @@ class EdgesToPathsDistribution: public read_cloud_statistics::Statistic {
         }
     }
 
-    void Serialize(ofstream &fout) {
+    void Serialize(const string& path) {
+        ofstream fout(path);
         for (const auto &entry: edges_to_number_of_paths_) {
             fout << entry.first << " " << entry.second.single_path_ << " " << entry.second.correct_path_ << std::endl;
         }
@@ -139,53 +144,248 @@ class OrderingAnalyzer {
       visited
     };
 
+    bool CheckNonPathCluster(const Cluster &cluster) {
+        auto condensation = GetCondensation(cluster.GetInternalGraph());
+        auto ordering = GetOrdering(condensation);
+//        INFO("Condensation size: " << condensation.Size());
+        return IsSimplePath(condensation);
+    }
+
+    bool IsCycle(const Cluster &cluster) {
+        auto graph = cluster.GetInternalGraph();
+        std::unordered_map<EdgeId, size_t> indegree;
+        std::unordered_map<EdgeId, size_t> outdegree;
+        for (const auto &entry: graph) {
+            EdgeId first = entry.first;
+            for (auto it = graph.adjacent_begin(first); it != graph.adjacent_end(first); ++it) {
+                EdgeId second = (*it).e_;
+                indegree[second]++;
+                outdegree[first]++;
+            }
+        }
+        for (const auto &edge_entry: indegree) {
+            if (edge_entry.second != 1) {
+                return false;
+            }
+        }
+        for (const auto &entry: outdegree) {
+            if (entry.second != 1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool IsSimplePath(const scaffold_graph_utils::ScaffoldGraph &graph) {
+        std::unordered_map<EdgeId, size_t> indegree;
+        std::unordered_map<EdgeId, size_t> outdegree;
+        for (const auto &entry: graph) {
+            EdgeId first = entry.first;
+            for (auto it = graph.adjacent_begin(first); it != graph.adjacent_end(first); ++it) {
+                EdgeId second = (*it).e_;
+                indegree[second]++;
+                outdegree[first]++;
+            }
+        }
+        for (const auto &entry: indegree) {
+            if (entry.second >= 2) {
+                return false;
+            }
+        }
+        for (const auto entry: outdegree) {
+            if (entry.second >= 2) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    scaffold_graph_utils::ScaffoldGraph GetCondensation(const scaffold_graph_utils::ScaffoldGraph &graph) {
+        auto components = GetStronglyConnectedComponents(graph);
+        std::unordered_map<EdgeId, EdgeId> vertex_to_root;
+        scaffold_graph_utils::ScaffoldGraph condensation;
+        for (const auto &component: components) {
+            VERIFY(component.size() > 0);
+            EdgeId root = *(component.begin());
+            for (const auto &vertex: component) {
+                vertex_to_root[vertex] = root;
+            }
+        }
+        for (const auto &entry: graph) {
+            EdgeId vertex = entry.first;
+            for (auto it = graph.adjacent_begin(vertex); it != graph.adjacent_end(vertex); ++it) {
+                EdgeId next = (*it).e_;
+                EdgeId prev_root = vertex_to_root.at(vertex);
+                EdgeId next_root = vertex_to_root.at(next);
+                if (prev_root != next_root) {
+                    path_extend::EdgeWithDistance ewd(next_root, 0);
+                    condensation.AddEdge(prev_root, ewd);
+                }
+            }
+        }
+        return condensation;
+    }
+
+    //fixme refactor this later
+    vector<unordered_set<EdgeId>> GetStronglyConnectedComponents(const scaffold_graph_utils::ScaffoldGraph &graph) const {
+        scaffold_graph_utils::ScaffoldGraph transposed_graph;
+        for (const auto &entry: graph) {
+            for (auto it = graph.adjacent_begin(entry.first); it != graph.adjacent_end(entry.first); ++it) {
+                path_extend::EdgeWithDistance ewd(entry.first, 0);
+                transposed_graph.AddEdge((*it).e_, ewd);
+            }
+        }
+        std::unordered_map<EdgeId, bool> vertex_to_visited;
+        for (const auto &entry: graph) {
+            vertex_to_visited[entry.first] = false;
+        }
+        vector<EdgeId> ordering;
+        for (const auto &entry: graph) {
+            if (not vertex_to_visited.at(entry.first)) {
+                GetTimeOutOrdering(entry.first, graph, vertex_to_visited, ordering);
+            }
+        }
+        for (const auto &entry: graph) {
+            vertex_to_visited[entry.first] = false;
+        }
+        vector<unordered_set<EdgeId>> components;
+        for (int i = (int) ordering.size() - 1; i >= 0; --i) {
+            EdgeId vertex = ordering[i];
+            if (not vertex_to_visited.at(vertex)) {
+                unordered_set<EdgeId> component;
+                GetStrConComponent(vertex, graph, vertex_to_visited, component);
+                components.push_back(component);
+            }
+        }
+        return components;
+    }
+
+    void GetTimeOutOrdering(const EdgeId &vertex, const scaffold_graph_utils::ScaffoldGraph &graph,
+                            std::unordered_map<EdgeId, bool> &vertex_to_visited, vector<EdgeId> &ordering) const {
+        vertex_to_visited.at(vertex) = true;
+        for (auto it = graph.adjacent_begin(vertex); it != graph.adjacent_end(vertex); ++it) {
+            auto next = (*it).e_;
+            if (not vertex_to_visited.at(next)) {
+                GetTimeOutOrdering(next, graph, vertex_to_visited, ordering);
+            }
+        }
+        ordering.push_back(vertex);
+    }
+
+    void GetStrConComponent(const EdgeId &vertex,
+                            const scaffold_graph_utils::ScaffoldGraph &graph,
+                            std::unordered_map<EdgeId, bool> &vertex_to_visited,
+                            unordered_set<EdgeId> &component) const {
+        vertex_to_visited.at(vertex) = true;
+        component.insert(vertex);
+        for (auto it = graph.adjacent_begin(vertex); it != graph.adjacent_end(vertex); ++it) {
+            auto next = (*it).e_;
+            if (not vertex_to_visited.at(next)) {
+                GetStrConComponent(next, graph, vertex_to_visited, component);
+            }
+        }
+    }
+
     bool IsPathCluster(const Cluster &cluster) const {
         auto ordering = GetOrderingFromCluster(cluster);
         return CheckOrdering(ordering, cluster);
     }
 
+    bool IsEulerianCluster(const Cluster& cluster) const {
+        return IsEulerianPath(cluster.GetInternalGraph());
+    }
+
     bool CheckOrdering(const vector<EdgeId> &ordering, const Cluster &cluster) const {
         if (ordering.size() == 0) {
-            DEBUG("Found cycle");
+            DEBUG("Not a path-cluster");
             return false;
         }
         DEBUG("Checking ordering");
-        if (not CheckClusterOrdering(ordering, cluster)) {
-            DEBUG("False ordering");
-            return false;
-        }
-        DEBUG("Checking uniqueness");
-        return IsOrderingUnique(ordering, cluster);
+        VERIFY(CheckClusterOrdering(ordering, cluster));
+        return true;
     }
 
     vector<EdgeId> GetOrderingFromCluster(const Cluster &cluster) const {
-        scaffold_graph::ScaffoldGraph cluster_graph = cluster.GetInternalGraph();
+        scaffold_graph_utils::ScaffoldGraph cluster_graph = cluster.GetInternalGraph();
+        INFO("Printing graph");
+        for (const auto& vertex: cluster_graph) {
+            for (auto it = cluster_graph.adjacent_begin(vertex.first); it != cluster_graph.adjacent_end(vertex.first); ++it) {
+                TRACE(vertex.first.int_id() << " -> " << (*it).e_.int_id());
+            }
+        }
         auto ordering = GetOrdering(cluster_graph);
         return ordering;
     }
 
-    vector<EdgeId> GetOrdering(const scaffold_graph::ScaffoldGraph &graph) const {
-        std::unordered_map<EdgeId, vertex_state> color_map;
-        std::vector<EdgeId> result;
-        for (const auto &entry: graph) {
-            color_map.insert({entry.first, vertex_state::not_visited});
-        }
-        std::vector<EdgeId> ordering;
-        DEBUG("Topsort for " << color_map.size() << " edges.");
-        for (const auto &entry: color_map) {
-            EdgeId edge = entry.first;
-            if (color_map[edge] == vertex_state::not_visited) {
-                bool has_cycle = false;
-                ScaffoldDFS(edge, graph, color_map, ordering, has_cycle);
-                if (has_cycle) {
-                    return result;
-                }
+    vector<EdgeId> GetOrdering(const scaffold_graph_utils::ScaffoldGraph &graph) const {
+        vector<EdgeId> result;
+        boost::optional<EdgeId> start;
+        boost::optional<EdgeId> end;
+        auto indegrees = GetIndegrees(graph);
+        auto outdegrees = GetOutdegrees(graph);
+        size_t number_of_edges = 0;
+        for (const auto& entry: indegrees) {
+            if (entry.second == 1) {
+                end = entry.first;
+                TRACE(entry.first.int_id() << ": " << entry.second);
             }
         }
-        DEBUG("Ordering size: " << ordering.size());
-        VERIFY(ordering.size() == color_map.size());
-        std::reverse(ordering.begin(), ordering.end());
-        return ordering;
+        for (const auto& entry: outdegrees) {
+            if (entry.second == 1) {
+                start = entry.first;
+                TRACE(entry.first.int_id() << ": " << entry.second);
+            }
+            number_of_edges += entry.second;
+        }
+        DEBUG("Found start and end");
+        std::map<std::pair<EdgeId, EdgeId>, bool> edge_to_visited;
+        vector<EdgeId> start_ordering;
+        vector<EdgeId> end_ordering;
+        for (const auto& vertex: graph) {
+            for (auto it = graph.adjacent_begin(vertex.first); it != graph.adjacent_end(vertex.first); ++it) {
+                edge_to_visited[{vertex.first, (*it).e_}] = false;
+            }
+        }
+        DEBUG("Started traversing");
+        bool start_move_result = start.is_initialized();
+        bool end_move_result = end.is_initialized();
+        scaffold_graph_utils::TransposedScaffoldGraphConstructor transposed_constructor;
+        auto transposed_graph = transposed_constructor.ConstructTransposedScaffoldGraph(graph);
+        EdgeId current_start;
+        EdgeId current_end;
+        if (start.is_initialized()) {
+            current_start = start.get();
+            start_ordering.push_back(current_start);
+        }
+        if (end.is_initialized()) {
+            current_end = end.get();
+            end_ordering.push_back(current_end);
+        }
+        while (start_move_result or end_move_result) {
+            if (start.is_initialized()) {
+                start_move_result = TraversePath(graph, true, current_start, current_end, indegrees, outdegrees,
+                                                 edge_to_visited, start_ordering, end_ordering);
+            }
+            if (end.is_initialized()) {
+                end_move_result = TraversePath(transposed_graph, false, current_end, current_start, indegrees, outdegrees,
+                                               edge_to_visited, start_ordering, end_ordering);
+            }
+        }
+        DEBUG("Finished traversing");
+        bool in_empty = std::all_of(indegrees.begin(), indegrees.end(), [](const std::pair<EdgeId, size_t>& entry) {
+          return entry.second == 0;
+        });
+        bool out_empty = std::all_of(outdegrees.begin(), outdegrees.end(), [](const std::pair<EdgeId, size_t>& entry) {
+            return entry.second == 0;
+        });
+        if (in_empty and out_empty) {
+            std::move(start_ordering.begin(), start_ordering.end(), std::back_inserter(result));
+            std::move(end_ordering.rbegin(), end_ordering.rend(), std::back_inserter(result));
+            DEBUG("Number of edges: " << number_of_edges);
+            DEBUG("Result size: " << result.size());
+            VERIFY(number_of_edges + 1 == result.size());
+        }
+        return result;
     }
 
     bool CheckClusterOrdering(const vector<EdgeId> &ordering, const Cluster &cluster) const {
@@ -199,47 +399,105 @@ class OrderingAnalyzer {
         return true;
     }
 
-    bool IsOrderingUnique(const vector<EdgeId> &ordering, const Cluster &cluster) const {
-        for (size_t i = 0; i != ordering.size(); ++i) {
-            for (size_t j = i + 1; j != ordering.size(); ++j) {
-                auto internal_graph = cluster.GetInternalGraph();
-                if (internal_graph.HasEdge(ordering[j], ordering[i])) {
-                    return false;
+ private:
+    std::unordered_map<EdgeId, size_t> GetIndegrees(const scaffold_graph_utils::ScaffoldGraph& graph) const {
+        std::unordered_map<EdgeId, size_t> indegree;
+        for (const auto& entry: graph) {
+            indegree[entry.first] = 0;
+        }
+        for (const auto &entry: graph) {
+            EdgeId first = entry.first;
+            for (auto it = graph.adjacent_begin(first); it != graph.adjacent_end(first); ++it) {
+                EdgeId second = (*it).e_;
+                indegree[second]++;
+            }
+        }
+        return indegree;
+    }
+
+    std::unordered_map<EdgeId, size_t> GetOutdegrees(const scaffold_graph_utils::ScaffoldGraph& graph) const {
+        std::unordered_map<EdgeId, size_t> outdegree;
+        for (const auto& entry: graph) {
+            outdegree[entry.first] = 0;
+        }
+        for (const auto &entry: graph) {
+            EdgeId first = entry.first;
+            for (auto it = graph.adjacent_begin(first); it != graph.adjacent_end(first); ++it) {
+                outdegree[first]++;
+            }
+        }
+        return outdegree;
+    };
+
+    bool IsEulerianPath(const scaffold_graph_utils::ScaffoldGraph &graph) const {
+        auto indegrees = GetIndegrees(graph);
+        auto outdegrees = GetOutdegrees(graph);
+        size_t odd_in = 0;
+        size_t odd_out = 0;
+        for (const auto& entry: indegrees) {
+            if (entry.second % 2 != 0) {
+                ++odd_in;
+            }
+        }
+        for (const auto& entry: outdegrees) {
+            if (entry.second % 2 != 0) {
+                ++odd_out;
+            }
+        }
+        return odd_in <= 1 and odd_out <= 1 and (odd_in == 1 or odd_out == 1);
+    }
+
+    bool TraversePath(const scaffold_graph_utils::ScaffoldGraph& graph, bool forward, EdgeId& current_vertex,
+                       const EdgeId& other_end, std::unordered_map<EdgeId, size_t>& indegrees,
+                       std::unordered_map<EdgeId, size_t>& outdegrees,
+                       map<std::pair<EdgeId, EdgeId>, bool>& edge_to_visited,
+                      std::vector<EdgeId>& start_ordering, std::vector<EdgeId>& end_ordering) const {
+        bool moved = false;
+        DEBUG("Current vertex: " << current_vertex.int_id());
+        if (forward) {
+            DEBUG("Outdegree: " << outdegrees[current_vertex]);
+            while (outdegrees[current_vertex] == 1) {
+                for (auto it = graph.adjacent_begin(current_vertex); it != graph.adjacent_end(current_vertex); ++it) {
+                    EdgeId next = (*it).e_;
+                    DEBUG("Next: " << next.int_id());
+                    if (not edge_to_visited[{current_vertex, next}]) {
+                        outdegrees[current_vertex]--;
+                        indegrees[next]--;
+                        edge_to_visited[{current_vertex, next}] = true;
+                        current_vertex = next;
+                        moved = true;
+                        if (next != other_end) {
+                            start_ordering.push_back(next);
+                        }
+                        break;
+                    }
+                }
+            }
+        } else {
+            DEBUG("Indegree: " << indegrees[current_vertex]);
+            while (indegrees[current_vertex] == 1) {
+                end_ordering.push_back(current_vertex);
+                for (auto it = graph.adjacent_begin(current_vertex); it != graph.adjacent_end(current_vertex); ++it) {
+                    EdgeId next = (*it).e_;
+                    DEBUG("Next: " << next.int_id());
+                    if (not edge_to_visited[{next, current_vertex}]) {
+                        outdegrees[next]--;
+                        indegrees[current_vertex]--;
+                        edge_to_visited[{next, current_vertex}] = true;
+                        current_vertex = next;
+                        moved = true;
+                        if (next != other_end) {
+                            end_ordering.push_back(next);
+                        }
+                        break;
+                    }
                 }
             }
         }
-        return true;
+        return moved;
     }
 
-    bool ScaffoldDFS(const EdgeId &edge,
-                     const scaffold_graph::ScaffoldGraph &graph,
-                     std::unordered_map<EdgeId, vertex_state> &state_map,
-                     std::vector<EdgeId> &ordering,
-                     bool &has_cycle) const {
-        state_map[edge] = vertex_state::current;
-        DEBUG("Starting from " << edge.int_id());
-        for (auto it = graph.adjacent_begin(edge); it != graph.adjacent_end(edge); ++it) {
-            EdgeId next = (*it).e_;
-            DEBUG("Checking " << next.int_id());
-            switch (state_map[next]) {
-                case not_visited: DEBUG("white");
-                    ScaffoldDFS(next, graph, state_map, ordering, has_cycle);
-                    break;
-                case current: DEBUG("gray");
-                    has_cycle = true;
-                    return true;
-                case visited: DEBUG("black");
-                    break;
-                default: break;
-            }
-        }
-        ordering.push_back(edge);
-        DEBUG("pushing back " << edge.int_id());
-        state_map[edge] = vertex_state::visited;
-        return has_cycle;
-    }
-
-    DECL_LOGGER("OrderingAnalyzer")
+    DECL_LOGGER("OrderingAnalyzer");
 };
 
 struct SimplePath {
@@ -342,34 +600,48 @@ namespace cluster_statistics {
 
 
 //fixme remove code duplication and simplify
-    struct PathPredicate {
-      virtual ~PathPredicate() {}
-      virtual bool Check(const SimplePath& path) const = 0;
-      bool operator()(const SimplePath& path) const { return Check(path);}
+    template<class T>
+    struct Predicate {
+      virtual ~Predicate() {}
+      virtual bool Check(const T& value) const = 0;
+      bool operator()(const T& value) const { return Check(value);}
     };
 
-    struct TwoEdgePathPredicate : public PathPredicate {
+    struct TwoEdgePathPredicate : public Predicate<SimplePath> {
       bool Check(const SimplePath& path) const override {
           return path.data_.size() == 2;
       }
     };
 
-    struct ThreeEdgePathPredicate : public PathPredicate {
+    struct ThreeEdgePathPredicate : public Predicate<SimplePath> {
       bool Check(const SimplePath& path) const override {
           return path.data_.size() == 3;
       }
     };
 
-    struct ManyEdgePathPredicate : public PathPredicate {
+    struct ManyEdgePathPredicate : public Predicate<SimplePath> {
       bool Check(const SimplePath& path) const override {
           return path.data_.size() > 3;
+      }
+    };
+
+    struct NonPathClusterPredicate: public Predicate<Cluster> {
+      size_t min_edges_;
+      size_t min_read_threshold_;
+      NonPathClusterPredicate(size_t min_edges_, size_t min_read_threshold_)
+          : min_edges_(min_edges_), min_read_threshold_(min_read_threshold_) {}
+
+      bool Check(const Cluster& cluster) const override {
+          OrderingAnalyzer ordering_analyzer;
+          return cluster.Size() >= min_edges_ and cluster.GetReads() >= min_read_threshold_
+              and (not ordering_analyzer.IsPathCluster(cluster));
       }
     };
 
     class PredicateTransitionClusterStorageBuilder {
      public:
         TransitionClusterStorage BuildTransitionClusterStorage(const PathClusterStorage& path_cluster_storage,
-                                                               const PathPredicate& path_predicate) {
+                                                               const Predicate<SimplePath>& path_predicate) {
             TransitionClusterStorage result;
             for (const auto& entry: path_cluster_storage) {
                 if (path_predicate(entry.first)) {
@@ -389,10 +661,10 @@ namespace cluster_statistics {
     class EdgeClusterStorageBuilder {
      public:
         EdgeClusterStorage BuildEdgeClusterStorage(const ClusterStorage& cluster_storage,
-                                                               const size_t min_read_threshold) {
+                                                   const Predicate<Cluster>& cluster_predicate) {
             EdgeClusterStorage result;
             for (const auto& entry: cluster_storage) {
-                if (entry.second.Size() >= 2 and entry.second.GetReads() >= min_read_threshold) {
+                if (cluster_predicate(entry.second)) {
                     for (auto it = entry.second.begin(); it != entry.second.end(); ++it) {
                         const EdgeId edge = (*it).first;
                         result.InsertKeyWithCluster(edge, entry.second);
@@ -405,7 +677,7 @@ namespace cluster_statistics {
 
 
     class ClusterStorageAnalyzer: public read_cloud_statistics::StatisticProcessor {
-        const scaffold_graph::ScaffoldGraph& scaffold_graph_;
+        const scaffold_graph_utils::ScaffoldGraph& scaffold_graph_;
         const transitions::ContigTransitionStorage& transition_storage_;
         const PathClusterStorage& path_cluster_storage_;
         const ClusterStorage& cluster_storage_;
@@ -413,7 +685,7 @@ namespace cluster_statistics {
 
     public:
 
-        ClusterStorageAnalyzer(const scaffold_graph::ScaffoldGraph &scaffold_graph_,
+        ClusterStorageAnalyzer(const scaffold_graph_utils::ScaffoldGraph &scaffold_graph_,
                                const transitions::ContigTransitionStorage &transition_storage_,
                                const PathClusterStorage &path_storage, const ClusterStorage& cluster_storage,
                                size_t min_read_threshold)

@@ -4,7 +4,6 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/utility/result_of.hpp>
 #include "common/assembly_graph/dijkstra/dijkstra_helper.hpp"
-#include "contracted_graph.hpp"
 #include "scaffold_graph.hpp"
 #define BOOST_RESULT_OF_USE_DECLTYPE
 
@@ -56,7 +55,7 @@ namespace cluster_statistics {
 
     class Cluster {
         std::unordered_map<EdgeId, MappingInfo> mappings_;
-        scaffold_graph::ScaffoldGraph internal_graph_;
+        scaffold_graph_utils::ScaffoldGraph internal_graph_;
         size_t span_;
         size_t reads_;
         BarcodeId barcode_;
@@ -131,7 +130,7 @@ namespace cluster_statistics {
             return ((double) reads_) / ((double) span_);
         }
 
-        scaffold_graph::ScaffoldGraph GetInternalGraph() const {
+        scaffold_graph_utils::ScaffoldGraph GetInternalGraph() const {
             return internal_graph_;
         };
 
@@ -273,13 +272,13 @@ namespace cluster_statistics {
     class ClusterStorageBuilder {
     private:
         const Graph &g_;
-        scaffold_graph::ScaffoldGraph scaffold_graph_;
+        scaffold_graph_utils::ScaffoldGraph scaffold_graph_;
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_;
         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         const size_t distance_;
         const size_t min_read_threshold_;
     public:
-        ClusterStorageBuilder(const Graph &g, const scaffold_graph::ScaffoldGraph &scaffold_graph_,
+        ClusterStorageBuilder(const Graph &g, const scaffold_graph_utils::ScaffoldGraph &scaffold_graph_,
                               const shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_,
                               const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_, const size_t distance,
                               const size_t min_read_threshold)
@@ -308,7 +307,7 @@ namespace cluster_statistics {
         }
 
         void MergeClustersUsingScaffoldGraph(ClusterStorage &cluster_storage, InternalEdgeClusterStorage &edge_cluster_storage,
-                                             scaffold_graph::ScaffoldGraph &scaffold_graph) {
+                                             scaffold_graph_utils::ScaffoldGraph &scaffold_graph) {
             for (const auto &entry: scaffold_graph) {
                 EdgeId head = entry.first;
                 for (const auto &tail: entry.second) {

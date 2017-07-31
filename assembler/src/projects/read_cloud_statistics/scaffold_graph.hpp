@@ -2,58 +2,10 @@
 
 #include "contracted_graph.hpp"
 #include "statistics_processor.hpp"
+#include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 
-namespace scaffold_graph {
-    class ScaffoldGraph {
-        std::unordered_map<EdgeId, std::vector<path_extend::EdgeWithDistance>> edge_to_adjacent_;
-
-     public:
-        typedef std::unordered_map<EdgeId, vector<path_extend::EdgeWithDistance>>::const_iterator const_iterator;
-        typedef std::vector<path_extend::EdgeWithDistance>::const_iterator const_adjacent_iterator;
-
-        ScaffoldGraph() : edge_to_adjacent_() {};
-
-        void AddEdge(const EdgeId &first, const path_extend::EdgeWithDistance &second) {
-            if (edge_to_adjacent_.find(first) == edge_to_adjacent_.end()) {
-                edge_to_adjacent_[first] = {second};
-            } else {
-                edge_to_adjacent_[first].push_back(second);
-            }
-            if (edge_to_adjacent_.find(second.e_) == edge_to_adjacent_.end()) {
-                edge_to_adjacent_[second.e_] = {};
-            }
-        }
-
-        const_adjacent_iterator adjacent_begin(const EdgeId &edge) const {
-            return edge_to_adjacent_.at(edge).begin();
-        }
-
-        const_adjacent_iterator adjacent_end(const EdgeId &edge) const {
-            return edge_to_adjacent_.at(edge).end();
-        }
-
-        bool HasEdge(const EdgeId &first, const EdgeId &second) const {
-            for (auto it = adjacent_begin(first); it != adjacent_end(first); ++it) {
-                if ((*it).e_.int_id() == second.int_id()) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        const_iterator begin() const {
-            return edge_to_adjacent_.begin();
-        }
-
-        const_iterator end() const {
-            return edge_to_adjacent_.end();
-        }
-
-        size_t Size() const {
-            return edge_to_adjacent_.size();
-        }
-    };
-
+namespace scaffold_graph_utils {
+    using path_extend::scaffold_graph::ScaffoldGraph;
     class ScaffoldGraphConstructor {
         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         size_t distance_;
@@ -134,6 +86,22 @@ namespace scaffold_graph {
         DECL_LOGGER("ScaffoldGraphConstructor");
     };
 
+    class TransposedScaffoldGraphConstructor {
+     public:
+        ScaffoldGraph ConstructTransposedScaffoldGraph(const ScaffoldGraph& scaffold_graph) {
+            ScaffoldGraph result;
+            for (const auto& vertex: scaffold_graph) {
+                for (auto it = scaffold_graph.adjacent_begin(vertex.first); it != scaffold_graph.adjacent_end(vertex.first); ++it) {
+                    EdgeId tail = (*it).e_;
+                    int distance = (*it).d_;
+                    path_extend::EdgeWithDistance new_tail(vertex.first, distance);
+                    result.AddEdge(tail, new_tail);
+                }
+            }
+            return result;
+        }
+    };
+
     class OutDegreeDistribuiton: public read_cloud_statistics::Statistic {
         std::map<size_t, size_t> degree_distribution_;
 
@@ -144,7 +112,8 @@ namespace scaffold_graph {
             degree_distribution_[degree]++;
         }
 
-        void Serialize(ofstream& fout) override {
+        void Serialize(const string& path) override {
+            ofstream fout(path);
             for (const auto& entry: degree_distribution_) {
                 fout << entry.first << " " << entry.second << std::endl;
             }
@@ -161,7 +130,8 @@ namespace scaffold_graph {
             edge_to_degree_[edge] = degree;
         }
 
-        void Serialize(ofstream& fout) override {
+        void Serialize(const string& path) override {
+            ofstream fout(path);
             for (const auto& entry: edge_to_degree_) {
                 fout << entry.first.int_id() << " " << entry.second << std::endl;
             }

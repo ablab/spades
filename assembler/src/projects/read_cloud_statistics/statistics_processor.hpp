@@ -6,7 +6,7 @@ class Statistic {
 
  public:
     Statistic(const string name): name_(name) {}
-    virtual void Serialize(ofstream& fout) = 0;
+    virtual void Serialize(const string& path) = 0;
 
     string GetName() const {
         return name_;
@@ -31,8 +31,7 @@ class StatisticProcessor {
         for (const auto& stat_pointer: statistics_) {
             const string new_path = fs::append_path(path, stat_pointer->GetName());
             INFO(new_path);
-            ofstream stream(new_path);
-            stat_pointer->Serialize(stream);
+            stat_pointer->Serialize(new_path);
         }
     }
 
