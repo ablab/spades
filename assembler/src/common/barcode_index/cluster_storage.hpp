@@ -29,6 +29,14 @@ class Cluster {
                                                                                         right_pos_(right_pos),
                                                                                         edge_(edge), reads_(reads) {}
 
+            //fixme may result in incorrect span
+            void Merge(const MappingInfo& other) {
+                VERIFY(edge_ == other.edge_);
+                left_pos_ = std::min(left_pos_, other.left_pos_);
+                right_pos_ = std::max(right_pos_, other.right_pos_);
+                reads_ += other.reads_;
+            }
+
             size_t GetSpan() const {
                 VERIFY(right_pos_ >= left_pos_);
                 return right_pos_ - left_pos_;
@@ -59,46 +67,83 @@ class Cluster {
             }
         };
 
-        template <class T>
+        template <class Vertex>
         class SimpleGraph {
-            std::unordered_map<T, unordered_set<T>> edge_to_adjacent_;
+            std::unordered_map<Vertex, unordered_set<Vertex>> edge_to_incoming_;
+            std::unordered_map<Vertex, unordered_set<Vertex>> edge_to_outcoming_;
+            std::unordered_set<Vertex> vertices_;
 
          public:
-            typedef typename std::unordered_map<T, unordered_set<T>>::const_iterator const_iterator;
-            typedef typename std::unordered_set<T>::const_iterator const_adjacent_iterator;
+            typedef typename std::unordered_set<Vertex>::const_iterator const_iterator;
 
-            void AddEdge(const T& first, const T& second) {
-                edge_to_adjacent_[first].insert(second);
+            void AddVertex(const Vertex& vertex) {
+                if (vertices_.insert(vertex).second) {
+                    unordered_set<Vertex> empty_entry;
+                    edge_to_incoming_[vertex] = empty_entry;
+                    edge_to_outcoming_[vertex] = empty_entry;
+                }
             }
 
-            bool ContainsVertex(const T& vertex) {
-                return edge_to_adjacent_.find(vertex) != edge_to_adjacent_.end();
+            void AddEdge(const Vertex& first, const Vertex& second) {
+                VERIFY(vertices_.find(first) != vertices_.end());
+                VERIFY(vertices_.find(second) != vertices_.end());
+                edge_to_outcoming_[first].insert(second);
+                edge_to_incoming_[second].insert(first);
             }
 
-            bool ContainsEdge(const T& start, const T& end) {
-                auto first_adjacent = edge_to_adjacent_.find(start);
-                if (first_adjacent == edge_to_adjacent_.end()) {
+            bool ContainsVertex(const Vertex& vertex) const {
+                return edge_to_outcoming_.find(vertex) != edge_to_outcoming_.end();
+            }
+
+            bool ContainsEdge(const Vertex& start, const Vertex& end) const {
+                VERIFY(ContainsVertex(start));
+                VERIFY(ContainsVertex(end));
+                auto first_adjacent = edge_to_outcoming_.find(start);
+                if (first_adjacent == edge_to_outcoming_.end()) {
                     return false;
                 }
                 return (*first_adjacent).second.find(end) != (*first_adjacent).second.end();
             }
 
+            void Merge(const SimpleGraph<Vertex>& other) {
+                for (const auto& vertex: other) {
+                    AddVertex(vertex);
+                }
+                for (const auto& vertex: other) {
+                    for (auto it = other.outcoming_begin(vertex); it != other.outcoming_end(vertex); ++it) {
+                        Vertex next = *it;
+                        AddEdge(vertex, next);
+                    }
+                }
+            }
+
             const_iterator begin() const {
-                return edge_to_adjacent_.begin();
+                return vertices_.begin();
             }
 
             const_iterator end() const {
-                return edge_to_adjacent_.end();
+                return vertices_.end();
             }
 
-            const_adjacent_iterator adjacent_begin(const T& vertex) const {
-                return edge_to_adjacent_.at(vertex).begin();
+            const_iterator outcoming_begin(const Vertex& vertex) const {
+                return edge_to_outcoming_.at(vertex).begin();
             }
 
-            const_adjacent_iterator adjacent_end(const T& vertex) const {
-                return edge_to_adjacent_.at(vertex).end();
+            const_iterator outcoming_end(const Vertex& vertex) const {
+                return edge_to_outcoming_.at(vertex).end();
             }
 
+            const_iterator incoming_begin(const Vertex& vertex) const {
+                return edge_to_incoming_.at(vertex).begin();
+            }
+
+            const_iterator incoming_end(const Vertex& vertex) const {
+                return edge_to_incoming_.at(vertex).end();
+            }
+
+            size_t NumberOfVertices() const {
+                return vertices_.size();
+            }
         };
 
         typedef SimpleGraph<EdgeId> InternalGraph;
@@ -118,16 +163,28 @@ class Cluster {
                                                                                          span_(length), reads_(reads),
                                                                                          barcode_(barcode), id_(0) {}
 
+    Cluster(const InternalGraph& graph) : mappings_(), internal_graph_(graph), span_(0), reads_(0), barcode_(0), id_(0) {}
+
     Cluster(const MappingInfo &map_info, const BarcodeId &barcode) :
         mappings_({{map_info.GetEdge(), map_info}}), internal_graph_(), span_(map_info.GetSpan()),
-        reads_(map_info.GetReads()), barcode_(barcode), id_(0) {}
+        reads_(map_info.GetReads()), barcode_(barcode), id_(0) {
+        internal_graph_.AddVertex(map_info.GetEdge());
+    }
 
     Cluster() : mappings_(), internal_graph_(), span_(0), reads_(0), barcode_(0), id_(0) {}
 
     void MergeWithCluster(const Cluster &other, const EdgeId& first, const EdgeId& second, uint64_t distance) {
-        mappings_.insert(other.mappings_.begin(), other.mappings_.end());
+        for (const auto& mapping_entry: other.mappings_) {
+            EdgeId mapping_edge = mapping_entry.second.GetEdge();
+            if (mappings_.find(mapping_edge) != mappings_.end()) {
+                mappings_.at(mapping_edge).Merge(mapping_entry.second);
+            } else {
+                mappings_.insert(mapping_entry);
+            }
+        }
         span_ += distance + other.span_;
         reads_ += other.reads_;
+        internal_graph_.Merge(other.GetInternalGraph());
         internal_graph_.AddEdge(first, second);
     }
 
@@ -206,7 +263,7 @@ class ClusterStorage {
         clusters_.erase(cluster_id);
     }
 
-    size_t Add(Cluster cluster) {
+    size_t Add(Cluster& cluster) {
         cluster.SetId(current_id);
         clusters_.insert({cluster.GetId(), cluster});
         ++current_id;
@@ -214,7 +271,7 @@ class ClusterStorage {
     }
 
     const Cluster Get(size_t cluster_id) {
-        return clusters_[cluster_id];
+        return clusters_.at(cluster_id);
     }
 
     size_t Size() const {
@@ -256,7 +313,7 @@ class BarcodeClusterStorage {
     }
 
     size_t GetCluster(const BarcodeId &barcode) {
-        return data_[barcode];
+        return data_.at(barcode);
     }
 
     const_iterator begin() {
@@ -343,11 +400,12 @@ class ClusterStorageBuilder {
         ClusterStorage cluster_storage;
         InternalEdgeClusterStorage edge_cluster_storage;
         ConstructClusterStorageFromUnique(cluster_storage, edge_cluster_storage);
-        INFO("Old size: " << cluster_storage.Size());
-        INFO("Old external size: " << edge_cluster_storage.Size());
+        DEBUG("Old size: " << cluster_storage.Size());
+        DEBUG("Old external size: " << edge_cluster_storage.Size());
         MergeClustersUsingScaffoldGraph(cluster_storage, edge_cluster_storage, scaffold_graph_);
-        INFO("New size: " << cluster_storage.Size());
-        INFO("New external size: " << edge_cluster_storage.Size());
+        DEBUG("New size: " << cluster_storage.Size());
+        DEBUG("New external size: " << edge_cluster_storage.Size());
+        INFO("Finished building clusters")
         return cluster_storage;
     }
 
@@ -364,6 +422,7 @@ class ClusterStorageBuilder {
                 EdgeId head = it->getStart();
                 EdgeId tail = it->getEnd();
                 uint64_t distance = it->getLength();
+                DEBUG("Merging clusters using scaffold edge " << head.int_id() << " -> " << tail.int_id());
                 MergeClustersOnEdges(head, tail, cluster_storage, edge_cluster_storage, distance_threshold_, distance);
         }
     }
@@ -378,61 +437,69 @@ class ClusterStorageBuilder {
       }
     };
 
-    void MergeClustersOnEdges(const EdgeId &head, const EdgeId &tail, ClusterStorage &cluster_storage,
+    void MergeClustersOnEdges(const EdgeId &first, const EdgeId &second, ClusterStorage &cluster_storage,
                               InternalEdgeClusterStorage &edge_cluster_storage, uint64_t distance_threshold,
                               uint64_t head_tail_distance) {
-        auto barcode_storage_head = edge_cluster_storage.GetTailBarcodeStorage(head);
-        auto barcode_storage_tail = edge_cluster_storage.GetHeadBarcodeStorage(tail);
+        auto barcode_storage_first = edge_cluster_storage.GetTailBarcodeStorage(first);
+        auto barcode_storage_second = edge_cluster_storage.GetHeadBarcodeStorage(second);
         vector<BarcodeId> intersection;
         TakeKey take_key;
         typedef boost::transform_iterator<TakeKey, BarcodeClusterStorage::const_iterator> key_iterator;
-        key_iterator head_iterator_begin(barcode_storage_head.begin(), take_key);
-        key_iterator head_iterator_end(barcode_storage_head.end(), take_key);
-        key_iterator tail_iterator_begin(barcode_storage_tail.begin(), take_key);
-        key_iterator tail_iterator_end(barcode_storage_tail.end(), take_key);
+        key_iterator head_iterator_begin(barcode_storage_first.begin(), take_key);
+        key_iterator head_iterator_end(barcode_storage_first.end(), take_key);
+        key_iterator tail_iterator_begin(barcode_storage_second.begin(), take_key);
+        key_iterator tail_iterator_end(barcode_storage_second.end(), take_key);
         std::set_intersection(head_iterator_begin, head_iterator_end,
                               tail_iterator_begin, tail_iterator_end,
                               std::back_inserter(intersection));
         DEBUG("Intersection: " << intersection.size());
         for (const auto &barcode: intersection) {
-            auto head_cluster_id = barcode_storage_head.GetCluster(barcode);
-            auto tail_cluster_id = barcode_storage_tail.GetCluster(barcode);
-            Cluster head_cluster = cluster_storage.Get(head_cluster_id);
-            Cluster tail_cluster = cluster_storage.Get(tail_cluster_id);
-            if (head_cluster.Size() == 0 or tail_cluster.Size() == 0) {
+            DEBUG("Merging barcode: " << barcode);
+            DEBUG("Getting clusters from edges");
+            auto first_cluster_id = barcode_storage_first.GetCluster(barcode);
+            auto second_cluster_id = barcode_storage_second.GetCluster(barcode);
+            DEBUG("Getting clusters from storage");
+            DEBUG("First id: " << first_cluster_id);
+            Cluster first_cluster = cluster_storage.Get(first_cluster_id);
+            DEBUG("Second id: " << second_cluster_id);
+            Cluster second_cluster = cluster_storage.Get(second_cluster_id);
+            if (first_cluster.Size() == 0 or second_cluster.Size() == 0) {
 //                    WARN("Empty clusters")
                 continue;
             }
-            DEBUG("Head cluster size: " << head_cluster.Size());
-            DEBUG("Head cluster id: " << head_cluster.GetId());
-            Cluster::MappingInfo head_cluster_mapping = head_cluster.GetMapping(head);
-            DEBUG("Tail cluster size: " << tail_cluster.Size());
-            DEBUG("Tail cluster id: " << tail_cluster.GetId());
-            Cluster::MappingInfo tail_cluster_mapping = tail_cluster.GetMapping(tail);
-            VERIFY(g_.length(tail) > tail_cluster_mapping.GetRight());
-            uint64_t distance_to_end = g_.length(head) - head_cluster_mapping.GetRight();
-            uint64_t distance_to_start = tail_cluster_mapping.GetLeft();
+            DEBUG("Head cluster size: " << first_cluster.Size());
+            DEBUG("Head cluster id: " << first_cluster.GetId());
+            Cluster::MappingInfo first_cluster_mapping = first_cluster.GetMapping(first);
+            DEBUG("Tail cluster size: " << second_cluster.Size());
+            DEBUG("Tail cluster id: " << second_cluster.GetId());
+            Cluster::MappingInfo second_cluster_mapping = second_cluster.GetMapping(second);
+            VERIFY(g_.length(second) >= second_cluster_mapping.GetRight());
+            uint64_t distance_to_end = g_.length(first) - first_cluster_mapping.GetRight();
+            uint64_t distance_to_start = second_cluster_mapping.GetLeft();
             uint64_t distance = distance_to_end + distance_to_start + head_tail_distance;
             DEBUG("Distance to end: " << distance_to_end);
             DEBUG("Distance to start: " << distance_to_start);
             DEBUG("Between edges: " << head_tail_distance);
             DEBUG("Distance: " << distance);
             if (distance < distance_threshold) {
-                head_cluster.MergeWithCluster(tail_cluster, head, tail, (size_t) distance);
-                cluster_storage.Remove(head_cluster.GetId());
-                cluster_storage.Remove(tail_cluster.GetId());
-                size_t new_id = cluster_storage.Add(head_cluster);
-                DEBUG("New cluster size: " << head_cluster.Size());
-                DEBUG("New cluster id: " << head_cluster.GetId());
-                for (const auto &mapping_entry: head_cluster) {
+                first_cluster.MergeWithCluster(second_cluster, first, second, (size_t) distance);
+                cluster_storage.Remove(first_cluster.GetId());
+                cluster_storage.Remove(second_cluster.GetId());
+                size_t new_id = cluster_storage.Add(first_cluster);
+                DEBUG("New cluster size: " << first_cluster.Size());
+                DEBUG("New cluster id: " << first_cluster.GetId());
+                DEBUG("First edge: " << first.int_id());
+                DEBUG("Second edge: " << second.int_id());
+                for (const auto &mapping_entry: first_cluster) {
                     const EdgeId edge = mapping_entry.second.GetEdge();
-                    if (mapping_entry.second.IsOnHead((size_t) distance)) {
+                    if (mapping_entry.second.IsOnHead((size_t) distance_threshold)) {
                         edge_cluster_storage.InsertOnHead(edge, barcode, new_id);
                     }
-                    if (mapping_entry.second.IsOnTail((size_t) distance, g_.length(edge))) {
+                    if (mapping_entry.second.IsOnTail((size_t) distance_threshold, g_.length(edge))) {
                         edge_cluster_storage.InsertOnTail(edge, barcode, new_id);
                     }
                 }
+                DEBUG("Finished inserting");
             }
         }
     }
@@ -445,11 +512,9 @@ class ClusterStorageBuilder {
             BarcodeId barcode = (*barcode_it).first;
             DEBUG("For barcode: " << barcode);
             if (barcode_extractor_ptr_->GetNumberOfReads(edge, barcode) > min_read_threshold) {
-                const size_t leftmost = barcode_extractor_ptr_->GetMinPos(edge, barcode);
-                const size_t rightmost = barcode_extractor_ptr_->GetMaxPos(edge, barcode);
                 auto local_clusters = ExtractClustersFromBarcodeOnEdge(edge, barcode, distance);
                 vector<size_t> local_ids;
-                for (const auto &cluster: local_clusters) {
+                for (auto& cluster: local_clusters) {
                     size_t id = cluster_storage.Add(cluster);
                     local_ids.push_back(id);
                     DEBUG("Id: " << id);
@@ -457,11 +522,13 @@ class ClusterStorageBuilder {
                               << ")");
                 }
                 VERIFY(local_clusters.size() >= 1);
-                if (leftmost < distance) {
+                auto left_mapping = cluster_storage.Get(local_ids[0]).GetMapping(edge);
+                auto right_mapping = cluster_storage.Get(local_ids.back()).GetMapping(edge);
+                if (left_mapping.IsOnHead(distance)) {
                     edge_cluster_storage.InsertOnHead(edge, barcode, local_ids[0]);
                     DEBUG("Head cluster id: " << local_ids[0]);
                 }
-                if (rightmost + distance > g_.length(edge)) {
+                if (right_mapping.IsOnTail(distance, g_.length(edge))) {
                     edge_cluster_storage.InsertOnTail(edge, barcode, local_ids.back());
                     DEBUG("Tail cluster id: " << local_ids.back());
                 }
@@ -481,7 +548,7 @@ class ClusterStorageBuilder {
         size_t current_gap = 0;
         bool has_cluster = true;
         auto bitset = barcode_extractor_ptr_->GetBitSet(edge, barcode);
-        for (size_t i = current_left; i < rightmost; ++i) {
+        for (size_t i = current_left; i <= rightmost; ++i) {
             if (bitset.test(i)) {
                 current_right = i;
                 if (!has_cluster) {
