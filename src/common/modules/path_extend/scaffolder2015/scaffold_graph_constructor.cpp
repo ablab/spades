@@ -59,7 +59,7 @@ void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const std::share
             if (graph_->Exists(connected)) {
                 if (use_terminal_vertices_only && graph_->IncomingEdgeCount(connected) > 0)
                     continue;
-                graph_->AddEdge(v, connected, condition->GetLibIndex(), w);
+                graph_->AddEdge(v, connected, condition->GetLibIndex(), w, 0);
             }
         }
     }

@@ -96,11 +96,11 @@ void ScaffoldGraph::AddVertices(const std::set<ScaffoldGraph::ScaffoldVertex> &v
     }
 }
 
-bool ScaffoldGraph::AddEdge(ScaffoldGraph::ScaffoldVertex v1, ScaffoldGraph::ScaffoldVertex v2, size_t lib_id, double weight) {
+bool ScaffoldGraph::AddEdge(ScaffoldGraph::ScaffoldVertex v1, ScaffoldGraph::ScaffoldVertex v2, size_t lib_id, double weight, size_t length) {
     VERIFY(Exists(v1));
     VERIFY(Exists(v2));
 
-    ScaffoldEdge e(v1, v2, lib_id, weight);
+    ScaffoldEdge e(v1, v2, lib_id, weight, length);
     if (Exists(e)) {
         return false;
     }
@@ -118,7 +118,8 @@ void ScaffoldGraph::Print(std::ostream &os) const {
     for (auto e_iter = edges_.begin(); e_iter != edges_.end(); ++e_iter) {
         os << "Edge " << e_iter->second.getId() <<
             ": " << int_id(e_iter->second.getStart()) << " -> " << int_id(e_iter->second.getEnd()) <<
-            ", lib index = " << e_iter->second.getColor() << ", weight " << e_iter->second.getWeight() << std::endl;
+            ", lib index = " << e_iter->second.getColor() << ", weight " << e_iter->second.getWeight()
+           << ", length = " << e_iter->second.getLength() << std::endl;
     }
 }
 
@@ -257,7 +258,7 @@ bool ScaffoldGraph::RemoveEdge(const ScaffoldGraph::ScaffoldEdge &e) {
 }
 
 bool ScaffoldGraph::AddEdge(const ScaffoldGraph::ScaffoldEdge &e) {
-    return AddEdge(e.getStart(), e.getEnd(), e.getColor(), e.getWeight());
+    return AddEdge(e.getStart(), e.getEnd(), e.getColor(), e.getWeight(), e.getLength());
 }
 
 } //scaffold_graph

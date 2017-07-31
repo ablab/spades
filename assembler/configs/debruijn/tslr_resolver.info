@@ -56,10 +56,22 @@ ts_res
 		tail_threshold 25000
 		max_initial_candidates 10
 		internal_gap_threshold 6000
-		absolute_barcode_threshold 2
-		initial_abundancy_threshold 15
-		middle_abundancy_threshold 10
-		topology_filter_on false
+		absolute_barcode_threshold 1
+		initial_abundancy_threshold 3
+		middle_abundancy_threshold 2
+		topology_filter_on true
+	}
+
+	statistics
+	{
+		;Genome file
+		genome_path ""
+
+		;Baseline SPAdes contigs
+		base_contigs_path ""
+
+		;CloudSPAdes contigs
+		cloud_contigs_path ""
 	}
 
 	statistics
