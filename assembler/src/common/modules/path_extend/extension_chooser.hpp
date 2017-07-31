@@ -1728,10 +1728,10 @@ class InitialTenXFilter: public InternalTenXFilter {
         DEBUG("Input candidates: " << candidates.size());
 
         if (candidates.size() == 0) {
-            DEBUG("10XStats: No candidates");
+            DEBUG("10XStats: No input candidates");
             return candidates;
         } else if (candidates.size() == 1) {
-            DEBUG("10XStats: Single candidate");
+            DEBUG("10XStats: Single input candidate");
             return candidates;
         }
         const size_t input_edges_threshold = 2000;
@@ -1747,11 +1747,13 @@ class InitialTenXFilter: public InternalTenXFilter {
             DEBUG("10XStats: No barcodes on last edges");
             return candidates;
         }
+        const size_t candidate_segment_len = cfg::get().ts_res.edge_length_threshold;
         //Find edges with barcode score greater than some threshold
         EdgeContainer initial_candidates = InitialSharedBarcodesFilter(candidates, last_unique_edges,
                                                                        tenx_configs_.absolute_barcode_threshold,
                                                                        tenx_configs_.initial_coverage_threshold,
-                                                                       tenx_configs_.tail_threshold);
+                                                                       tenx_configs_.tail_threshold,
+                                                                       candidate_segment_len);
         DEBUG(initial_candidates.size() << " initial candidates: ");
         for(const auto& candidate: initial_candidates) {
             TRACE(candidate.e_.int_id());
@@ -1769,21 +1771,39 @@ class InitialTenXFilter: public InternalTenXFilter {
     }
 
     EdgeContainer InitialSharedBarcodesFilter(const EdgeContainer &candidates, const vector<EdgeId>& edges,
-                                              size_t shared_threshold, size_t coverage_threshold,
-                                              size_t tail_threshold) const {
+                                              size_t score_threshold, size_t coverage_threshold,
+                                              size_t path_segment_len, size_t candidate_segment_len) const {
         EdgeContainer result;
-        auto barcodes_from_path = ExtractBarcodesFromMultipleEdges(edges, coverage_threshold, tail_threshold);
+        auto barcodes_from_path = ExtractBarcodesFromMultipleEdges(edges, coverage_threshold, path_segment_len);
+        double max_score = 0;
+        DEBUG("Path end Id: " << edges.back().int_id());
         //fixme optimize with iteration
         std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(result),
-                     [this, &barcodes_from_path, shared_threshold,
-                         coverage_threshold, tail_threshold](const EdgeWithDistance& edge) {
+                     [this, &barcodes_from_path, score_threshold,
+                         coverage_threshold, path_segment_len, &max_score, candidate_segment_len](const EdgeWithDistance& edge) {
+                       double coverage_second = g_.coverage(edge.e_);
                        vector<barcode_index::BarcodeId> shared_barcodes;
-                       std::set<barcode_index::BarcodeId> barcodes_from_candidate = ExtractBarcodesFromCandidate(edge.e_, coverage_threshold, tail_threshold);
+                       std::set<barcode_index::BarcodeId> barcodes_from_candidate =
+                           ExtractBarcodesFromCandidate(edge.e_, coverage_threshold, candidate_segment_len);
                        std::set_intersection(barcodes_from_candidate.begin(), barcodes_from_candidate.end(),
                                              barcodes_from_path.begin(), barcodes_from_path.end(),
                                              std::back_inserter(shared_barcodes));
-                       return shared_barcodes.size() >= shared_threshold;
+                       double score = static_cast<double> (shared_barcodes.size()) / coverage_second;
+
+                       TRACE("Candidate Id: " << edge.e_.int_id());
+                       TRACE("Suffix barcodes: " << barcodes_from_path.size());
+                       TRACE("Candidate barcodes: " << barcodes_from_candidate.size());
+                       TRACE("Shared barcodes: " << shared_barcodes.size());
+                       TRACE("Coverage of the candidate: " << coverage_second);
+                       TRACE("Length of the candidate: " << g_.length(edge.e_));
+                       TRACE("Score: " << score);
+                       if (score > max_score) {
+                           max_score = score;
+                       }
+
+                       return score >= score_threshold;
                      });
+        TRACE("Max score: " << max_score);
         return result;
     }
 
@@ -1811,7 +1831,7 @@ class InitialTenXFilter: public InternalTenXFilter {
         std::set<barcode_index::BarcodeId> barcodes;
         for (const auto& barcode: barcode_extractor_ptr_->GetBarcodes(edge)) {
             if (barcode_extractor_ptr_->GetNumberOfReads(edge, barcode) >= coverage_threshold and
-                barcode_extractor_ptr_->GetMinPos(edge, barcode) > tail_threshold) {
+                barcode_extractor_ptr_->GetMinPos(edge, barcode) <= tail_threshold) {
                 barcodes.insert(barcode);
             }
         }
@@ -2104,8 +2124,8 @@ class TenXExtensionChooser : public ReadCloudExtensionChooser {
         if (tenx_configs_.topology_filter_on) {
             filters.push_back(topology_filter);
         }
-        filters.push_back(read_cloud_closest_filter);
-        filters.push_back(conjugate_filter);
+//        filters.push_back(read_cloud_closest_filter);
+//        filters.push_back(conjugate_filter);
         auto current_candidates = initial_candidates;
         for (const auto& filter_ptr: filters) {
             current_candidates = filter_ptr->FilterCandidates(current_candidates, last_unique_edges);

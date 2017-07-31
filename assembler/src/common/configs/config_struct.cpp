@@ -466,6 +466,14 @@ void load(debruijn_config::read_cloud_resolver::tenx_resolver& tenx,
     load(tenx.topology_filter_on, pt, "topology_filter_on");
 }
 
+void load(debruijn_config::read_cloud_resolver::stats& statistics,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(statistics.genome_path, pt, "genome_path");
+    load(statistics.base_contigs_path, pt, "base_contigs_path");
+    load(statistics.cloud_contigs_path, pt, "cloud_contigs_path");
+}
+
 void load(debruijn_config::read_cloud_resolver& ts_res,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
@@ -484,6 +492,7 @@ void load(debruijn_config::read_cloud_resolver& ts_res,
     load(ts_res.fragment_len, pt, "fragment_len");
     load(ts_res.read_cloud_resolution_on, pt, "read_cloud_resolution_on");
     load(ts_res.tenx, pt, "tenx_resolver");
+    load(ts_res.statistics, pt, "statistics");
 }
 
 void load(bwa_aligner& bwa,
