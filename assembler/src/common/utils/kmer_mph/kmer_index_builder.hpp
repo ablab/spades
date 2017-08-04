@@ -113,6 +113,10 @@ public:
       kmers += MergeKMers(raw_kmers[iFile], GetUniqueKMersFname(iFile), K);
     }
     INFO("K-mer counting done. There are " << kmers << " kmers in total. ");
+    if (!kmers) {
+      FATAL_ERROR("No kmers were extracted from reads. Check the read lengths and k-mer length settings");
+      exit(-1);
+    }
 
     INFO("Merging temporary buckets.");
     for (unsigned i = 0; i < num_buckets; ++i) {
