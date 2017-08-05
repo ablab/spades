@@ -20,7 +20,7 @@ class StageManager;
 class AssemblyStage {
 public:
     AssemblyStage(const char *name, const char *id)
-            : name_(name), id_(id), parent_(NULL) { }
+            : name_(name), id_(id), parent_(nullptr) { }
 
     virtual ~AssemblyStage() { }
 
@@ -32,12 +32,12 @@ public:
 
     const char *id() const { return id_; }
 
-    virtual void load(debruijn_graph::conj_graph_pack &, const std::string &load_from, const char *prefix = NULL);
+    virtual void load(debruijn_graph::conj_graph_pack &, const std::string &load_from, const char *prefix = nullptr);
 
     virtual void save(const debruijn_graph::conj_graph_pack &, const std::string &save_to,
-                      const char *prefix = NULL) const;
+                      const char *prefix = nullptr) const;
 
-    virtual void run(debruijn_graph::conj_graph_pack &, const char *started_from = NULL) = 0;
+    virtual void run(debruijn_graph::conj_graph_pack &, const char *started_from = nullptr) = 0;
 
 private:
     const char *name_;
@@ -54,7 +54,7 @@ public:
     class PhaseBase : public AssemblyStage {
     public:
         PhaseBase(const char *name, const char *id)
-                : AssemblyStage(name, id), parent_stage_(NULL) { }
+                : AssemblyStage(name, id), parent_stage_(nullptr) { }
 
     protected:
         CompositeStageBase *parent_stage_;
@@ -65,21 +65,22 @@ public:
     CompositeStageBase(const char *name, const char *id)
             : AssemblyStage(name, id) { }
 
-    CompositeStageBase *add(PhaseBase *phase) {
+    CompositeStageBase &add(PhaseBase *phase) {
         phases_.push_back(std::unique_ptr<PhaseBase>(phase));
         phase->parent_stage_ = this;
 
-        return this;
+        return *this;
     }
 
-    CompositeStageBase *add(std::initializer_list<PhaseBase *> phases) {
-        for (auto it = phases.begin(), et = phases.end(); it != et; ++it)
-            add(*it);
+    CompositeStageBase &add(std::initializer_list<PhaseBase *> phases) {
+        for (PhaseBase *phase : phases)
+            add(phase);
 
-        return this;
+        return *this;
     }
 
-    void run(debruijn_graph::conj_graph_pack &gp, const char * = NULL);
+    virtual void init(debruijn_graph::conj_graph_pack &, const char * = nullptr) {}
+    void run(debruijn_graph::conj_graph_pack &gp, const char * = nullptr);
 
 private:
     std::vector<std::unique_ptr<PhaseBase> > phases_;
@@ -139,14 +140,14 @@ public:
     }
 
     StageManager &add(std::initializer_list<AssemblyStage *> stages) {
-        for (auto it = stages.begin(), et = stages.end(); it != et; ++it)
-            add(*it);
+        for (AssemblyStage *stage : stages)
+            add(stage);
 
         return *this;
     }
 
     void run(debruijn_graph::conj_graph_pack &g,
-             const char *start_from = NULL);
+             const char *start_from = nullptr);
 
     const SavesPolicy &saves_policy() const {
         return saves_policy_;

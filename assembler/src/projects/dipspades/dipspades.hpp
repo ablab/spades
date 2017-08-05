@@ -248,16 +248,16 @@ void run_dipspades() {
     StageManager DS_Manager ( {dsp_cfg::get().rp.developer_mode,
                                dsp_cfg::get().io.saves,
                                dsp_cfg::get().io.output_saves} );
-    auto ds_phase = new DipSPAdes();
-    ds_phase -> add(new ContigGraphConstructionStage()) ->
-            add(new PolymorphicBulgeRemoverStage()) ->
-            add(new EqualKmerGluingStage()) ->
-            add(new ConsensusConstructionStage());
-    if(dsp_cfg::get().ha.ha_enabled) {
-        ds_phase->add(new HaplotypeAssemblyStage());
+    DipSPAdes ds_phase;
+    ds_phase.add(new ContigGraphConstructionStage())
+            .add(new PolymorphicBulgeRemoverStage())
+            .add(new EqualKmerGluingStage())
+            .add(new ConsensusConstructionStage());
+    if (dsp_cfg::get().ha.ha_enabled) {
+        ds_phase.add(new HaplotypeAssemblyStage());
     }
 
-    DS_Manager.add(ds_phase);
+    DS_Manager.add(&ds_phase);
     DS_Manager.run(conj_gp, dsp_cfg::get().rp.entry_point.c_str());
     INFO("dipSPAdes finished");
 }
