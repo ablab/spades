@@ -236,28 +236,27 @@ public:
 void run_dipspades() {
     INFO("dipSPAdes started");
 
-    debruijn_graph::conj_graph_pack conj_gp(
-            dsp_cfg::get().bp.K,
-            dsp_cfg::get().io.tmp_dir,
-            dsp_cfg::get().io.num_libraries,
-            std::vector<std::string>(), // reference genome
-            1); // flanking range
+    debruijn_graph::conj_graph_pack
+            conj_gp(dsp_cfg::get().bp.K,
+                    dsp_cfg::get().io.tmp_dir,
+                    dsp_cfg::get().io.num_libraries,
+                    std::vector<std::string>(), // reference genome
+                    1); // flanking range
 
     conj_gp.kmer_mapper.Attach();
 
     StageManager DS_Manager ( {dsp_cfg::get().rp.developer_mode,
                                dsp_cfg::get().io.saves,
                                dsp_cfg::get().io.output_saves} );
-    DipSPAdes ds_phase;
-    ds_phase.add(new ContigGraphConstructionStage())
-            .add(new PolymorphicBulgeRemoverStage())
-            .add(new EqualKmerGluingStage())
-            .add(new ConsensusConstructionStage());
-    if (dsp_cfg::get().ha.ha_enabled) {
-        ds_phase.add(new HaplotypeAssemblyStage());
-    }
+    DipSPAdes *ds_phase = new DipSPAdes();
+    ds_phase->add<ContigGraphConstructionStage>()
+            .add<PolymorphicBulgeRemoverStage>()
+            .add<EqualKmerGluingStage>()
+            .add<ConsensusConstructionStage>();
+    if (dsp_cfg::get().ha.ha_enabled)
+        ds_phase->add<HaplotypeAssemblyStage>();
 
-    DS_Manager.add(&ds_phase);
+    DS_Manager.add(ds_phase);
     DS_Manager.run(conj_gp, dsp_cfg::get().rp.entry_point.c_str());
     INFO("dipSPAdes finished");
 }

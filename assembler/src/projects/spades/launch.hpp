@@ -80,54 +80,52 @@ void assemble_genome() {
         conj_gp.kmer_mapper.Attach();
     }
     // Build the pipeline
-    SPAdes.add(new debruijn_graph::Construction())
-          .add(new debruijn_graph::GenomicInfoFiller());
+    SPAdes.add<debruijn_graph::Construction>()
+          .add<debruijn_graph::GenomicInfoFiller>();
     if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
-        SPAdes.add(new debruijn_graph::GapClosing("early_gapcloser"));
+        SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
 
-    SPAdes.add(new debruijn_graph::Simplification(two_step_rr));
+    SPAdes.add<debruijn_graph::Simplification>(two_step_rr);
 
     if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
-        SPAdes.add(new debruijn_graph::GapClosing("late_gapcloser"));
+        SPAdes.add<debruijn_graph::GapClosing>("late_gapcloser");
 
-    SPAdes.add(new debruijn_graph::SimplificationCleanup());
+    SPAdes.add<debruijn_graph::SimplificationCleanup>();
     //currently cannot be used with two step rr
     if (cfg::get().correct_mismatches && !cfg::get().two_step_rr)
-        SPAdes.add(new debruijn_graph::MismatchCorrection());
+        SPAdes.add<debruijn_graph::MismatchCorrection>();
     if (cfg::get().rr_enable) {
         if (two_step_rr) {
             if (cfg::get().use_intermediate_contigs)
-                SPAdes.add(new debruijn_graph::PairInfoCount(true))
-                      .add(new debruijn_graph::DistanceEstimation(true))
-                      .add(new debruijn_graph::RepeatResolution(true))
-                      .add(new debruijn_graph::ContigOutput())
-                      .add(new debruijn_graph::SecondPhaseSetup());
+                SPAdes.add<debruijn_graph::PairInfoCount>(true)
+                       .add<debruijn_graph::DistanceEstimation>(true)
+                       .add<debruijn_graph::RepeatResolution>(true)
+                       .add<debruijn_graph::ContigOutput>()
+                       .add<debruijn_graph::SecondPhaseSetup>();
 
-            SPAdes.add(new debruijn_graph::Simplification());
+            SPAdes.add<debruijn_graph::Simplification>();
         }
 
         if (!cfg::get().series_analysis.empty())
-            SPAdes.add(new debruijn_graph::SeriesAnalysis());
+            SPAdes.add<debruijn_graph::SeriesAnalysis>();
 
-        if (cfg::get().pd) {
-            SPAdes.add(new debruijn_graph::ChromosomeRemoval());
-        }
+        if (cfg::get().pd)
+            SPAdes.add<debruijn_graph::ChromosomeRemoval>();
 
-        if (HybridLibrariesPresent()) {
-            SPAdes.add(new debruijn_graph::HybridLibrariesAligning());
-        }
+        if (HybridLibrariesPresent())
+            SPAdes.add<debruijn_graph::HybridLibrariesAligning>();
 
         //No graph modification allowed after HybridLibrariesAligning stage!
 
-        SPAdes.add(new debruijn_graph::ContigOutput(false, "intermediate_contigs"))
-              .add(new debruijn_graph::PairInfoCount())
-              .add(new debruijn_graph::DistanceEstimation())
-              .add(new debruijn_graph::RepeatResolution());
+        SPAdes.add<debruijn_graph::ContigOutput>(false, "intermediate_contigs")
+               .add<debruijn_graph::PairInfoCount>()
+               .add<debruijn_graph::DistanceEstimation>()
+               .add<debruijn_graph::RepeatResolution>();
     } else {
-        SPAdes.add(new debruijn_graph::ContigOutput(false));
+        SPAdes.add<debruijn_graph::ContigOutput>(false);
     }
 
-    SPAdes.add(new debruijn_graph::ContigOutput());
+    SPAdes.add<debruijn_graph::ContigOutput>();
 
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 

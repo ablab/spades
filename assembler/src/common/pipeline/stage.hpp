@@ -72,9 +72,10 @@ public:
         return *this;
     }
 
-    CompositeStageBase &add(std::initializer_list<PhaseBase *> phases) {
-        for (PhaseBase *phase : phases)
-            add(phase);
+    template<typename Phase, typename ... Args>
+    CompositeStageBase &add(Args&&... args) {
+        phases_.push_back(std::unique_ptr<Phase>(new Phase(std::forward<Args>(args)...)));
+        phases_.back()->parent_stage_ = this;
 
         return *this;
     }
@@ -139,9 +140,10 @@ public:
         return *this;
     }
 
-    StageManager &add(std::initializer_list<AssemblyStage *> stages) {
-        for (AssemblyStage *stage : stages)
-            add(stage);
+    template<typename Stage, typename ... Args>
+    StageManager &add(Args&&... args) {
+        stages_.push_back(std::unique_ptr<Stage>(new Stage(std::forward<Args>(args)...)));
+        stages_.back()->parent_ = this;
 
         return *this;
     }
