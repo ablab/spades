@@ -22,21 +22,16 @@ public:
     AssemblyStage(const char *name, const char *id)
             : name_(name), id_(id), parent_(nullptr) { }
 
-    virtual ~AssemblyStage() { }
-
+    virtual ~AssemblyStage() = default;
     AssemblyStage(const AssemblyStage &) = delete;
-
     AssemblyStage &operator=(const AssemblyStage &) = delete;
 
     const char *name() const { return name_; }
-
     const char *id() const { return id_; }
 
     virtual void load(debruijn_graph::conj_graph_pack &, const std::string &load_from, const char *prefix = nullptr);
-
     virtual void save(const debruijn_graph::conj_graph_pack &, const std::string &save_to,
                       const char *prefix = nullptr) const;
-
     virtual void run(debruijn_graph::conj_graph_pack &, const char *started_from = nullptr) = 0;
 
 private:
@@ -96,11 +91,9 @@ public:
                 : PhaseBase(name, id) { }
 
         CompositeStage<Storage> *parent() { return static_cast<CompositeStage<Storage> *>(parent_stage_); }
-
         const CompositeStage<Storage> *parent() const { return static_cast<const CompositeStage<Storage> *>(parent_stage_); }
 
         Storage &storage() { return parent()->storage(); }
-
         const Storage &storage() const { return parent()->storage(); }
     };
 
