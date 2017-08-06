@@ -39,8 +39,9 @@ private:
 public:
     EdgeIndex(const Graph& g, const std::string &workdir)
             : omnigraph::GraphActionHandler<Graph>(g, "EdgeIndex"),
-              inner_index_(g, workdir),
+              inner_index_(g),
               updater_(g, inner_index_),
+              refiller_(workdir),
               delete_index_(true) {
     }
 

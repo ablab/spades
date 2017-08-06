@@ -114,9 +114,10 @@ void EarlyClipTips(size_t k, const config::debruijn_config::construction& params
 
 template<class Graph, class Read, class Index>
 utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_config::construction params,
-                                                 io::ReadStreamList<Read>& streams, Graph& g,
-                                                 Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-    size_t k = g.k();
+                                                        const std::string &workdir,
+                                                        io::ReadStreamList<Read>& streams, Graph& g,
+                                                        Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+    unsigned k = unsigned(g.k());
     INFO("Constructing DeBruijn graph for k=" << k);
 
     TRACE("Filling indices");
@@ -126,10 +127,13 @@ utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_c
     // FIXME: output_dir here is damn ugly!
     typedef utils::DeBruijnExtensionIndex<> ExtensionIndex;
     typedef typename utils::ExtensionIndexHelper<ExtensionIndex>::DeBruijnExtensionIndexBuilderT ExtensionIndexBuilder;
-    ExtensionIndex ext((unsigned) k, index.inner_index().workdir());
+    ExtensionIndex ext(k);
 
     //fixme hack
-    utils::ReadStatistics stats = ExtensionIndexBuilder().BuildExtensionIndexFromStream(ext, streams, (contigs_stream == 0) ? 0 : &(*contigs_stream), params.read_buffer_size);
+    utils::ReadStatistics stats =
+            ExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext,
+                                                                  streams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
+                                                                  params.read_buffer_size);
 
     EarlyClipTips(k, params, stats.max_read_length_, ext);
 
@@ -148,10 +152,11 @@ utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_c
 
 template<class Graph, class Index, class Streams>
 utils::ReadStatistics ConstructGraph(const config::debruijn_config::construction &params,
-                              Streams& streams, Graph& g,
-                              Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+                                     const std::string &workdir,
+                                     Streams& streams, Graph& g,
+                                     Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     if (params.con_mode == config::construction_mode::extention) {
-        return ConstructGraphUsingExtentionIndex(params, streams, g, index, contigs_stream);
+        return ConstructGraphUsingExtentionIndex(params, workdir, streams, g, index, contigs_stream);
 //    } else if(params.con_mode == construction_mode::con_old){
 //        return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
     } else {
@@ -163,10 +168,11 @@ utils::ReadStatistics ConstructGraph(const config::debruijn_config::construction
 
 template<class Graph, class Index, class Streams>
 utils::ReadStatistics ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
-                                  Streams& streams, Graph& g,
-                                  Index& index, FlankingCoverage<Graph>& flanking_cov,
-                                  io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-    utils::ReadStatistics rs = ConstructGraph(params, streams, g, index, contigs_stream);
+                                                 const std::string &workdir,
+                                                 Streams& streams, Graph& g,
+                                                 Index& index, FlankingCoverage<Graph>& flanking_cov,
+                                                 io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+    utils::ReadStatistics rs = ConstructGraph(params, workdir, streams, g, index, contigs_stream);
 
     typedef typename Index::InnerIndex InnerIndex;
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;

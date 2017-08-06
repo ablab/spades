@@ -34,7 +34,6 @@ protected:
     //these fields are protected only for reduction of storage in edge indices BinWrite
     std::shared_ptr<KMerIndexT> index_ptr_;
 private:
-    std::string workdir_;
     unsigned k_;
 
 protected:
@@ -46,21 +45,16 @@ protected:
         return idx != InvalidIdx && idx < index_ptr_->size();
     }
 public:
-    IndexWrapper(size_t k, const std::string &workdir)
-            : index_ptr_(std::make_shared<KMerIndexT>())
-            , k_((unsigned) k) {
-        //fixme string literal
-        workdir_ = fs::make_temp_dir(workdir, "kmeridx");
-    }
+    IndexWrapper(unsigned k)
+            : index_ptr_(std::make_shared<KMerIndexT>()),
+              k_(k) {}
 
-    IndexWrapper(size_t k, const std::string &workdir, std::shared_ptr<KMerIndexT> index_ptr)
-            : IndexWrapper(k, workdir) {
+    IndexWrapper(unsigned k, std::shared_ptr<KMerIndexT> index_ptr)
+            : IndexWrapper(k) {
         index_ptr_ = index_ptr;
     }
 
-    ~IndexWrapper() {
-        fs::remove_dir(workdir_);
-    }
+    ~IndexWrapper() {}
 
     void clear() {
         index_ptr_->clear();
@@ -78,10 +72,6 @@ public:
     void BinRead(Reader &reader, const std::string &) {
         clear();
         index_ptr_->deserialize(reader);
-    }
-
-    const std::string &workdir() const {
-        return workdir_;
     }
 };
 
@@ -104,11 +94,10 @@ public:
         return KeyBase::valid(kwh.idx());
     }
 
-    PerfectHashMap(size_t k, const std::string &workdir) : KeyBase(k, workdir) {
-    }
+    PerfectHashMap(unsigned k) : KeyBase(k) {}
 
-    PerfectHashMap(size_t k, const std::string &workdir, std::shared_ptr<KMerIndexT> index_ptr)
-        : KeyBase(k, workdir, index_ptr) {
+    PerfectHashMap(unsigned k, std::shared_ptr<KMerIndexT> index_ptr)
+        : KeyBase(k, index_ptr) {
         ValueBase::resize(index_ptr_->size());
     }
 
@@ -221,10 +210,8 @@ public:
         BinReadKmers(reader, FileName);
     }
 
-    KeyStoringMap(size_t k, const std::string &workdir)
-            : base(k, workdir), kmers_(nullptr) {}
-
-    ~KeyStoringMap() {}
+    KeyStoringMap(size_t k)
+            : base(k), kmers_(nullptr) {}
 
     KMer true_kmer(KeyWithHash kwh) const {
         VERIFY(this->valid(kwh));
@@ -318,8 +305,8 @@ public:
 
 public:
 
-    KeyIteratingMap(size_t k, const std::string &workdir)
-            : base(k, workdir), KMersFilename_("") {}
+    KeyIteratingMap(unsigned k)
+            : base(k), KMersFilename_("") {}
 
     ~KeyIteratingMap() {}
 

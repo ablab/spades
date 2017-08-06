@@ -61,27 +61,28 @@ public:
 
 public:
     template<class Index, class Streams>
-    ReadStatistics BuildExtensionIndexFromStream(Index &index, Streams &streams, io::SingleStream *contigs_stream = 0,
+    ReadStatistics BuildExtensionIndexFromStream(const std::string &workdir,
+                                                 Index &index, Streams &streams, io::SingleStream *contigs_stream = 0,
                                                  size_t read_buffer_size = 0) const {
         unsigned nthreads = (unsigned) streams.size();
 
         // First, build a k+1-mer index
         DeBruijnReadKMerSplitter<typename Streams::ReadT,
                 StoringTypeFilter<typename Index::storing_type>>
-                splitter(index.workdir(), index.k() + 1, 0xDEADBEEF, streams,
+                splitter(workdir, index.k() + 1, 0xDEADBEEF, streams,
                          contigs_stream, read_buffer_size);
-        KMerDiskCounter<RtSeq> counter(index.workdir(), splitter);
+        KMerDiskCounter<RtSeq> counter(workdir, splitter);
         counter.CountAll(nthreads, nthreads, /* merge */false);
 
         // Now, count unique k-mers from k+1-mers
         DeBruijnKMerKMerSplitter<StoringTypeFilter<typename Index::storing_type> >
-                splitter2(index.workdir(), index.k(),
+                splitter2(workdir, index.k(),
                           index.k() + 1, Index::storing_type::IsInvertable(), read_buffer_size);
         for (unsigned i = 0; i < nthreads; ++i)
             splitter2.AddKMers(counter.GetMergedKMersFname(i));
-        KMerDiskCounter<RtSeq> counter2(index.workdir(), splitter2);
+        KMerDiskCounter<RtSeq> counter2(workdir, splitter2);
 
-        BuildIndex(index, counter2, 16, nthreads);
+        BuildIndex(workdir, index, counter2, 16, nthreads);
 
         // Build the kmer extensions
         INFO("Building k-mer extensions from k+1-mers");

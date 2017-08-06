@@ -75,13 +75,13 @@ private:
 public:
     MappingDescription GetSeedsFromRead(const Sequence &s) const;
 
-    PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_, bool ignore_map_to_middle, string out_dir, debruijn_graph::config::debruijn_config::pacbio_processor pb_config )
+    PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_, bool ignore_map_to_middle, const std::string &out_dir, debruijn_graph::config::debruijn_config::pacbio_processor pb_config )
             : g_(g),
               pacbio_k(k),
               debruijn_k(debruijn_k_),
-              tmp_index((unsigned) pacbio_k, out_dir), ignore_map_to_middle(ignore_map_to_middle), pb_config_(pb_config) {
+              tmp_index((unsigned) pacbio_k), ignore_map_to_middle(ignore_map_to_middle), pb_config_(pb_config) {
         DEBUG("PB Mapping Index construction started");
-        debruijn_graph::EdgeIndexRefiller().Refill(tmp_index, g_);
+        debruijn_graph::EdgeIndexRefiller(out_dir).Refill(tmp_index, g_);
         INFO("Index constructed");
         FillBannedKmers();
         read_count = 0;

@@ -34,7 +34,7 @@ class SimplePerfectHashMap : public utils::KeyIteratingMap<RtSeq, uint32_t> {
     using base = utils::KeyIteratingMap<RtSeq, uint32_t>;
   public:
     SimplePerfectHashMap(size_t k, const std::string &workdir)
-            : base(k, workdir) {}
+            : base(k) {}
 };
 
 class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {

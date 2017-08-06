@@ -22,8 +22,9 @@ void construct_graph(io::ReadStreamList<Read>& streams,
     config::debruijn_config::construction params = cfg::get().con;
     params.early_tc.enable &= !cfg::get().gap_closer_enable;
 
-    utils::ReadStatistics stats = ConstructGraphWithCoverage(params, streams, gp.g,
-                                                      gp.index, gp.flanking_cov, contigs_stream);
+    std::string workdir = fs::make_temp_dir(gp.workdir, "construction");
+    utils::ReadStatistics stats = ConstructGraphWithCoverage(params, workdir, streams, gp.g,
+                                                             gp.index, gp.flanking_cov, contigs_stream);
     size_t rl = stats.max_read_length_;
 
     if (!cfg::get().ds.RL()) {

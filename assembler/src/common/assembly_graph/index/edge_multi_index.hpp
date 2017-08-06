@@ -106,8 +106,8 @@ class DeBruijnEdgeMultiIndex : public utils::KeyStoringMap<Seq, EdgeInfoStorage<
 //  typedef typename base::IdType IdType;
   //todo move this typedef up in hierarchy (need some c++ tricks)
 
-  DeBruijnEdgeMultiIndex(unsigned k, const std::string &workdir)
-      : base(k, workdir) {
+  DeBruijnEdgeMultiIndex(unsigned k)
+      : base(k) {
       INFO("Constructing multi-kmer index");
   }
 

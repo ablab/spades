@@ -37,11 +37,11 @@ struct graph_pack: private boost::noncopyable {
     typedef RtSeq seq_t;
     typedef EdgeIndex<graph_t> index_t;
     using PairedInfoIndicesT = omnigraph::de::PairedInfoIndicesT<Graph>;
-    //typedef omnigraph::de::PairedInfoIndicesT<Graph> PairedInfoIndicesT;
     typedef omnigraph::de::UnclusteredPairedInfoIndicesT<Graph> UnclusteredPairedInfoIndicesT;
     typedef LongReadContainer<Graph> LongReadContainerT;
 
     size_t k_value;
+    std::string workdir;
 
     graph_t g;
     index_t index;
@@ -60,13 +60,15 @@ struct graph_pack: private boost::noncopyable {
     ConnectedComponentCounter components;
     path_extend::PathContainer contig_paths;
 
-    graph_pack(size_t k, const std::string &workdir, size_t lib_count,
-                        const std::vector<std::string> &genome = std::vector<std::string>(0),
-                        size_t flanking_range = 50,
-                        size_t max_mapping_gap = 0,
-                        size_t max_gap_diff = 0,
-                        bool detach_indices = true)
-            : k_value(k), g(k), index(g, workdir),
+    graph_pack(size_t k,
+               const std::string &workdir, size_t lib_count,
+               const std::vector<std::string> &genome = std::vector<std::string>(0),
+               size_t flanking_range = 50,
+               size_t max_mapping_gap = 0,
+               size_t max_gap_diff = 0,
+               bool detach_indices = true)
+            : k_value(k), workdir(workdir),
+              g(k), index(g, workdir),
               kmer_mapper(g),
               flanking_cov(g, flanking_range),
               paired_indices(g, lib_count),
@@ -78,11 +80,9 @@ struct graph_pack: private boost::noncopyable {
               edge_qual(g),
               edge_pos(g, max_mapping_gap + k, max_gap_diff),
               components(g),
-              contig_paths()
-    { 
-        if (detach_indices) {
+              contig_paths() {
+        if (detach_indices)
             DetachAll();
-        }
     }
 
     void FillQuality() {
@@ -95,11 +95,12 @@ struct graph_pack: private boost::noncopyable {
     }
 
     void EnsureIndex() {
-        if (!index.IsAttached()) {
-            INFO("Index refill");
-            index.Refill();
-            index.Attach();
-        }
+        if (index.IsAttached())
+            return;
+
+        INFO("Index refill");
+        index.Refill();
+        index.Attach();
     }
 
     void EnsureBasicMapping() {
@@ -111,23 +112,24 @@ struct graph_pack: private boost::noncopyable {
     }
 
     void EnsureQuality() {
-        if (!edge_qual.IsAttached()) {
-            ClearQuality();
-            FillQuality();
-            edge_qual.Attach();
-        }
+        if (edge_qual.IsAttached())
+            return;
+
+        ClearQuality();
+        FillQuality();
+        edge_qual.Attach();
     }
 
-    //positions are refilled every time
     void EnsurePos() {
-        if (!edge_pos.IsAttached()) {
+        if (!edge_pos.IsAttached())
             edge_pos.Attach();
-        }
+
+        // Positions are refilled every time
         edge_pos.clear();
         visualization::position_filler::FillPos(*this, genome.str(), "ref0");
         visualization::position_filler::FillPos(*this, ReverseComplement(genome.str()), "ref1");
     }
-    
+
     void EnsureDebugInfo() {
         EnsureBasicMapping();
         EnsureQuality();

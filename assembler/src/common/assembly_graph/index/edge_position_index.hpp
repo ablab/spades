@@ -83,8 +83,8 @@ public:
 
 public:
 
-    KmerFreeEdgeIndex(const Graph &graph, const std::string &workdir)
-            : base(unsigned(graph.k() + 1), workdir), graph_(graph) {}
+    KmerFreeEdgeIndex(const Graph &graph)
+            : base(unsigned(graph.k() + 1)), graph_(graph) {}
 
     /**
      * Shows if kmer has some entry associated with it
@@ -103,7 +103,7 @@ public:
     void PutInIndex(KeyWithHash &kwh, IdType id, size_t offset) {
         if (!valid(kwh))
             return;
-        
+
         KmerPos &entry = this->get_raw_value_reference(kwh);
         if (entry.removed()) {
             //VERIFY(false);
@@ -162,8 +162,8 @@ public:
   using base::ConstructKWH;
 
 
-  KmerStoringEdgeIndex(const Graph& g, const std::string &workdir)
-          : base(unsigned(g.k() + 1), workdir) {}
+  KmerStoringEdgeIndex(const Graph& g)
+          : base(unsigned(g.k() + 1)) {}
 
   ~KmerStoringEdgeIndex() {}
 
@@ -200,15 +200,17 @@ public:
 
   void PutInIndex(KeyWithHash &kwh, IdType id, size_t offset) {
       //here valid already checks equality of query-kmer and stored-kmer sequences
-      if (base::valid(kwh)) {
-          KmerPos &entry = this->get_raw_value_reference(kwh);
-          if (entry.removed())
-              return;
-          if (!entry.clean()) {
-              this->put_value(kwh, KmerPos(id, (unsigned)offset, entry.count));
-          } else {
-              entry.remove();
-          }
+      if (!base::valid(kwh))
+        return;
+
+      KmerPos &entry = this->get_raw_value_reference(kwh);
+      if (entry.removed())
+        return;
+
+      if (!entry.clean()) {
+        this->put_value(kwh, KmerPos(id, (unsigned)offset, entry.count));
+      } else {
+        entry.remove();
       }
   }
 };

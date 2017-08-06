@@ -22,7 +22,7 @@ using namespace spades;
 
 namespace dipspades {
 
-void construct_graph_from_contigs(debruijn_graph::conj_graph_pack &graph_pack){
+void construct_graph_from_contigs(debruijn_graph::conj_graph_pack &graph_pack) {
     auto fnames = GetAllLinesFromFile(dsp_cfg::get().io.haplocontigs);
     ReadStreamList<SingleRead> streams;
     for(auto fname = fnames.begin(); fname != fnames.end(); fname++)
@@ -39,11 +39,14 @@ void construct_graph_from_contigs(debruijn_graph::conj_graph_pack &graph_pack){
     params.keep_perfect_loops = true;
     params.read_buffer_size = dsp_cfg::get().bp.read_buffer_size;
 
+    std::string workdir = fs::make_temp_dir(graph_pack.workdir, "construction");
+
     ConstructGraphWithCoverage(params,
-            streams,
-            graph_pack.g,
-            graph_pack.index,
-            graph_pack.flanking_cov);
+                               workdir,
+                               streams,
+                               graph_pack.g,
+                               graph_pack.index,
+                               graph_pack.flanking_cov);
 }
 
 

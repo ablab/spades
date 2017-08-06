@@ -17,8 +17,10 @@ using EdgeIndex = KmerFreeEdgeIndex<ConjugateDeBruijnGraph>;
 template<>
 void EdgeIndexRefiller::Refill(EdgeIndex &index,
                                const ConjugateDeBruijnGraph &g) {
+    std::string workdir = fs::make_temp_dir(workdir_, "edge_index");
+
     typedef typename EdgeIndexHelper<EdgeIndex>::GraphPositionFillingIndexBuilderT IndexBuilder;
-    IndexBuilder().BuildIndexFromGraph(index, g);
+    IndexBuilder().BuildIndexFromGraph(index, g, workdir);
 }
 
 using PacIndex = DeBruijnEdgeMultiIndex<ConjugateDeBruijnGraph::EdgeId>;
@@ -26,8 +28,10 @@ using PacIndex = DeBruijnEdgeMultiIndex<ConjugateDeBruijnGraph::EdgeId>;
 template<>
 void EdgeIndexRefiller::Refill(PacIndex &index,
                                const ConjugateDeBruijnGraph &g) {
+    std::string workdir = fs::make_temp_dir(workdir_, "edge_index");
+
     typedef typename debruijn_graph::EdgeIndexHelper<PacIndex>::GraphPositionFillingIndexBuilderT Builder;
-    Builder().BuildIndexFromGraph(index, g);
+    Builder().BuildIndexFromGraph(index, g, workdir);
 }
 
 }

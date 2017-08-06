@@ -228,9 +228,8 @@ public:
     typedef AbstractDeEdge<KeyWithHash> DeEdge;
     using base::ConstructKWH;
 
-    DeBruijnExtensionIndex(unsigned K, const std::string &workdir)
-            : base((size_t) K, workdir) {
-    }
+    DeBruijnExtensionIndex(unsigned K)
+            : base(K) {}
 
     void AddOutgoing(const KeyWithHash &kwh, char nucl) {
         TRACE("Add outgoing " << kwh << " " << size_t(nucl) << " " << kwh.is_minimal());
