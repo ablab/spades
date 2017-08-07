@@ -24,8 +24,8 @@ inline void OutputEdgeSequences(const Graph &g,
 
     for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
         EdgeId e = *it;
-        oss << g.EdgeNucls(e).str();
         oss << g.coverage(e);
+        oss << g.EdgeNucls(e).str();
     }
 }
 
