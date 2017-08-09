@@ -440,7 +440,8 @@ BOOST_AUTO_TEST_CASE( TestDeduplicateDiff ) {
 
     FormPaths(g, finder, cov_map, container, path_ids);
 
-    PathsInit result_ids = {{20129, 17993, 20131, 17993, 19506}};
+    //PathsInit result_ids = {{20129, 17993, 20131, 17993, 19506}};
+    PathsInit result_ids = {{20129, 17993, 19506}};
 
     size_t min_edge_len = 0;
     size_t max_diff = 100;
@@ -466,7 +467,8 @@ BOOST_AUTO_TEST_CASE( TestDeduplicateDiffGap ) {
     FormPaths(g, finder, cov_map, container, path_ids);
     container.Get(1)->SetGapAt(2, Gap(100));
 
-    PathsInit result_ids = {{20129, 17993, 20131, 17993, 19506}};
+    //PathsInit result_ids = {{20129, 17993, 20131, 17993, 19506}};
+    PathsInit result_ids = {{20129, 17993, 19506}};
 
     size_t min_edge_len = 0;
     size_t max_diff = 100;
