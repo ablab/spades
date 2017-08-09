@@ -334,8 +334,7 @@ public:
         vector<vector<EdgeId>> res;
         EdgeId prev_edge = EdgeId(0);
 
-        for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();
-                ++iter) {
+        for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();) {
             EdgeId cur_edge = iter->second->edgeId;
             if (prev_edge != EdgeId(0)) {
 //Need to find sequence of edges between clusters
@@ -391,6 +390,7 @@ public:
             }
             cur_sorted.push_back(cur_edge);
             prev_edge = cur_edge;
+            ++iter;
         }
         if (cur_sorted.size() > 0)
             res.push_back(cur_sorted);
