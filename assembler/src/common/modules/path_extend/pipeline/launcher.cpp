@@ -233,8 +233,6 @@ void PathExtendLauncher::FinalizePaths(PathContainer &paths,
                                        const PathExtendResolver &resolver) const {
     INFO("Finalizing paths");
 
-    //sorting is currently needed to retain overlaps in longest paths
-    paths.SortByLength(false);
     INFO("Deduplicating paths");
     Deduplicate(gp_.g, paths, cover_map, params_.min_edge_len,
                          params_.max_path_diff);

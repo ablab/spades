@@ -710,8 +710,7 @@ public:
 
     void DeleteAllPaths() {
         for (size_t i = 0; i < data_.size(); ++i) {
-            delete data_[i].first;
-            delete data_[i].second;
+            DeletePathPair(data_[i]);
         }
         clear();
     }
@@ -782,21 +781,28 @@ public:
 
     //FIXME implement as filter
     void FilterEmptyPaths() {
-        DEBUG ("try to delete empty paths");
-        for (Iterator iter = begin(); iter != end();) {
-            if (iter.get()->Size() == 0) {
-                // FIXME: This is trash. PathContainer should own paths
-                delete iter.get();
-                delete iter.getConjugate();
-                iter = erase(iter);
-            } else {
-                ++iter;
+        DEBUG("Removing empty paths");
+        for (auto &pp : data_) {
+            if (pp.first->Size() == 0) {
+                VERIFY(pp.first->Size() == 0);
+                DeletePathPair(pp);
             }
         }
-        DEBUG("empty paths are removed");
+
+        const PathPair empty_pp(nullptr, nullptr);
+        data_.erase(std::remove(data_.begin(), data_.end(), empty_pp), data_.end());
+        DEBUG("Empty paths removed");
     }
 
 private:
+
+    void DeletePathPair(PathPair &pp) {
+        delete pp.first;
+        pp.first = nullptr;
+        delete pp.second;
+        pp.second = nullptr;
+    }
+
     std::vector<PathPair> data_;
 
 protected:

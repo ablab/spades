@@ -258,8 +258,8 @@ private:
 inline void Deduplicate(const Graph &g, PathContainer &paths, GraphCoverageMap &coverage_map,
                  size_t min_edge_len, size_t max_path_diff,
                  bool equal_only = false) {
-    //sorting is currently needed to retain longest paths
-    paths.SortByLength(false);
+    //add sorting to guarantee survival of longest paths if max_path_diff used
+    //paths.SortByLength(false);
     PathDeduplicator deduplicator(g, paths, coverage_map, min_edge_len, max_path_diff, equal_only);
     deduplicator.Deduplicate();
     paths.FilterEmptyPaths();
@@ -298,6 +298,11 @@ public:
                         bool end_start_only, bool cut_all) const {
         INFO("Removing overlaps");
         //VERIFY(min_edge_len == 0 && max_path_diff == 0);
+        if (!cut_all) {
+            INFO("Sorting paths");
+            //sorting is currently needed to retain overlap instance in longest paths
+            paths.SortByLength(false);
+        }
 
         OverlapRemover overlap_remover(g_, paths, coverage_map,
                                              min_edge_len, max_path_diff);
