@@ -20,6 +20,7 @@ import datetime
 import argparse
 import subprocess
 import glob
+import math
 from traceback import print_exc
 
 sys.path.append('./src/spades_pipeline/')
@@ -52,10 +53,6 @@ def parse_args_ut():
     parser.set_defaults(force_to_update = "")
     parser.add_argument("--overwrite_if_satisfies", dest="overwrite_if_satisfies", help="overwrite threshold even if metric satisfies current value", action='store_true')
     parser.set_defaults(overwrite_if_satisfies=False)
-    parser.add_argument("--upper", "-u", help="upper coefficient, >= 1.0 (1.1 by default)", type=float)
-    parser.set_defaults(upper=1.1)
-    parser.add_argument("--lower", "-l", help="lower coefficient, >= 0.0 and <= 1.0  (0.9 by default)", type=float)
-    parser.set_defaults(lower=0.9)
 
     args = parser.parse_args()
     return args
@@ -71,6 +68,22 @@ def metric_in_list(metric, mlist):
 #use threshold update policy set by user
 def shall_update_threshold(args, metric, entry):
     return (args.add_metrics == "all") or (args.add_metrics == "basic" and metric in BASIC_METRICS) or (args.add_metrics == "none" and entry.assess) or metric_in_list(entry.config_name, args.force_to_update)
+
+
+#calculate new metric treshold
+def calculate_treshold(entry, value):
+    result = 0.0
+    coeff = -1 if entry.should_be_higher_than_theshold else 1
+
+    if entry.relative_delta:
+        result = value * (1.0 + coeff * entry.delta_value)
+    else:
+        result = value + coeff * entry.delta_value
+
+    if entry.is_int:
+        result = math.floor(result) if entry.should_be_higher_than_theshold else math.ceil(result)
+    result = max(0.0, result)
+    return int(result) if entry.is_int else result
 
 
 #update metrics using given quast report
@@ -94,7 +107,7 @@ def process_quast_report(args, report, limit_map):
                 if entry.should_be_higher_than_theshold:
                     if result_map[metric] < entry.value or args.overwrite_if_satisfies or metric_in_list(param_name, args.force_to_update):
                         #either not satisies or overwrite anyways
-                        to_update[param_name] = result_map[metric] * args.lower
+                        to_update[param_name] = calculate_treshold(entry, result_map[metric])
                         log.log("New value for " + param_name + " is set to " + str(to_update[param_name]))
                     else:
                         log.log(param_name + " will not be updated, " + metric + " = " + str(result_map[metric]) + " >= " + str(entry.value))
@@ -103,7 +116,7 @@ def process_quast_report(args, report, limit_map):
                 else:
                     if result_map[metric] > entry.value or args.overwrite_if_satisfies or metric_in_list(param_name, args.force_to_update):
                         #either not satisies or overwrite anyways
-                        to_update[param_name] = result_map[metric] * args.upper
+                        to_update[param_name] = calculate_treshold(entry, result_map[metric])
                         log.log("New value for " + param_name + " is set to " + str(to_update[param_name]))
                     else:
                         log.log(param_name + " will not be updated, " + metric + " = " + str(result_map[metric]) + " <= " + str(entry.value))
@@ -234,14 +247,6 @@ def check_args(args):
 
     if (args.etalon_contigs_prefix != "" or args.etalon_contigs_suffix) and args.config_dir != "":
         log.err("Etalon contigs cannot be set when using multiple config files from config")
-        correct = False
-
-    if args.upper < 1.0:
-        log.err("Upper threshold should be higher than 1 (current value is " + str(args.upper))
-        correct = False
-
-    if args.lower > 1.0 or args.lower < 0:
-        log.err("Lower threshold should be between 0 and 1 (current value is " + str(args.lower))
         correct = False
 
     return correct

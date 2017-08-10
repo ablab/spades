@@ -57,14 +57,20 @@ class MetricEntry:
     config_name = ''
     quast_name = ''
     should_be_higher_than_theshold = True
+    is_int = False
+    relative_delta = True
+    delta_value = 0.1
     simple_parsing = True
     value = 0.0
     assess = True
 
-    def __init__(self, cfg_name, name, higher, simple_parse = True):
+    def __init__(self, cfg_name, name, higher, is_integer, rela_delta, delta_val, simple_parse = True):
         self.config_name = cfg_name
         self.quast_name = name
         self.should_be_higher_than_theshold = higher
+        self.is_int = is_integer
+        self.relative_delta = rela_delta
+        self.delta_value = delta_val
         if self.should_be_higher_than_theshold:
             self.value = float('inf')
         else:
@@ -84,7 +90,7 @@ class MetricEntry:
 # Construct limit map for given metrics ---  list of triplets (config_name, report_name, should_be_higher_that_threshold)
 def construct_limit_map(dataset_info, prefix, metric_list, add_all_params = False):
     limit_map = {}
-    params = map(lambda x: MetricEntry(prefix + x[0], x[1], x[2]), metric_list)
+    params = map(lambda x: MetricEntry(prefix + x[0], x[1], x[2], x[3], x[4], x[5]), metric_list)
 
     if add_all_params or (prefix + 'assess' in dataset_info.__dict__ and dataset_info.__dict__[prefix + 'assess']):
         log.log("Assessing quality results...")
@@ -108,27 +114,29 @@ def construct_limit_map(dataset_info, prefix, metric_list, add_all_params = Fals
 # Compare map of metrics with the thesholds
 def assess_map(result_map, limit_map):
     res = 0
-
     for metric in sorted(result_map.keys()):
         if metric in limit_map and len(limit_map[metric]) > 0:
             for entry in limit_map[metric]:
+                metric_value = int(result_map[metric]) if entry.is_int else result_map[metric]
                 if not entry.assess:
-                    log.log(metric + " = " + str(result_map[metric]))
+                    log.log(metric + " = " + str(metric_value))
                     continue
+
+                threshold_value = int(entry.value) if entry.is_int else entry.value
                 #that metric shouold be higher than threshold (e.g. N50)
                 if entry.should_be_higher_than_theshold:
-                    if result_map[metric] < entry.value:
-                        log.err(metric + " = " + str(result_map[metric]) + " is less than expected: " + str(entry.value))
+                    if metric_value < threshold_value:
+                        log.err(metric + " = " + str(metric_value) + " is less than expected: " + str(threshold_value))
                         res = -1
                     else:
-                        log.log(metric + " = " + str(result_map[metric]) + " >= " + str(entry.value) + " (OK)")
+                        log.log(metric + " = " + str(metric_value) + " >= " + str(threshold_value) + " (OK)")
                 #that metric shouold be less than threshold (e.g. misassemblies)
                 else:
                     if result_map[metric] > entry.value:
-                        log.err(metric + " = " + str(result_map[metric]) + " is higher than expected: " + str(entry.value))
+                        log.err(metric + " = " + str(metric_value) + " is higher than expected: " + str(threshold_value))
                         res = -1
                     else:
-                        log.log(metric + " = " + str(result_map[metric]) + " <= " + str(entry.value) + " (OK)")
+                        log.log(metric + " = " + str(metric_value) + " <= " + str(threshold_value) + " (OK)")
         else:
             log.log(metric + " = " + str(result_map[metric]))
 
@@ -165,8 +173,9 @@ def assess_report(report, limit_map, name = ""):
 
 # Construct limit map for reads quality metrics
 def construct_reads_limit_map(dataset_info, prefix):
-    return construct_limit_map(dataset_info, prefix, [('min_genome_mapped', "Genome mapped (%)", True) , 
-                                                      ('min_aligned', " Uniquely aligned reads", True)])
+#                                                      metric name, QUAST name, higher than threshold, is int, relative delta, delta value
+    return construct_limit_map(dataset_info, prefix, [('min_genome_mapped', "Genome mapped (%)", True, False, False, 0.5),
+                                                      ('min_aligned', "Uniquely aligned reads", True, False, False, 0.5)])
 
 
 # Run reads quality util
@@ -198,7 +207,7 @@ def run_reads_assessment(dataset_info, working_dir, output_dir):
         else:
             # Assessing reads quality report
             limit_map = construct_reads_limit_map(dataset_info, "")
-            if assess_report(os.path.join(rq_output_dir, "report.horizontal.tsv"), limit_map) != 0:
+            if assess_report(os.path.join(rq_output_dir, "report.tsv"), limit_map) != 0:
                 exit_code = 7
 
     return exit_code
@@ -253,40 +262,43 @@ def run_quast(dataset_info, contigs, quast_output_dir, opts):
 
 # Construct limit map for QUAST metrics
 def construct_quast_limit_map(dataset_info, prefix, add_all_params = False):
-    return construct_limit_map(dataset_info, prefix, [('min_n50', "N50", True),
-                                        ('max_n50', "N50", False),
-                                        ('min_ng50', "NG50", True) ,
-                                        ('max_ng50', "NG50", False),
-                                        ('min_lg50', "LG50", True) ,
-                                        ('max_lg50', "LG50", False),
-                                        ('max_mis', "# misassemblies", False),
-                                        ('min_mis', "# misassemblies", True),
-                                        ('min_genome_mapped', "Genome fraction (%)", True),
-                                        ('min_genes', "# genes", True),       
-                                        ('max_indels', "# indels per 100 kbp", False), 
-                                        ('max_subs', "# mismatches per 100 kbp", False),
-                                        ('max_localmis', "# local misassemblies", False), 
-                                        ('max_ns', "# N's per 100 kbp", False),
-                                        ('max_dr', "Duplication ratio", False)], add_all_params)
+#                                       metric name,  QUAST name, higher than threshold, is int, relative delta, delta value
+    return construct_limit_map(dataset_info, prefix, [
+                                        ('min_n50',         "N50",                      True,   True, True, 0.1),
+                                        ('max_n50',         "N50",                      False,  True, True, 0.1),
+                                        ('min_ng50',        "NG50",                     True,   True, True, 0.1) ,
+                                        ('max_ng50',        "NG50",                     False,  True, True, 0.1),
+                                        ('min_lg50',        "LG50",                     True,   True, True, 0.05) ,
+                                        ('max_lg50',        "LG50",                     False,  True, True, 0.05),
+                                        ('max_mis',         "# misassemblies",          False,  True, False, 1),
+                                        ('min_mis',         "# misassemblies",          True,   True, False, 1),
+                                        ('min_genome_mapped', "Genome fraction (%)",    True,   False, False, 0.5),
+                                        ('min_genes',       "# genes",                  True,   True, True, 0.01),
+                                        ('max_indels',      "# indels per 100 kbp",     False,  False, True, 0.05),
+                                        ('max_subs',        "# mismatches per 100 kbp", False,  False, True, 0.05),
+                                        ('max_localmis',    "# local misassemblies",    False,  True, False, 1),
+                                        ('max_ns',          "# N's per 100 kbp",        False,  False, True, 0.05),
+                                        ('max_dr',          "Duplication ratio",        False,  False, False, 0.03)], add_all_params)
 
 # Construct limit map for rnaQUAST metrics
 def construct_rnaquast_limit_map(dataset_info, prefix, add_all_params = False):
+#                                       metric name, QUAST name, higher than threshold, is int, relative delta, delta value
     return construct_limit_map(dataset_info, prefix, [
-                                        ('min_transcripts', "Transcripts", True),
-                                        ('min_transcripts_500', "Transcripts > 500 bp", True),
-                                        ('min_aligned', "Aligned", True),
-                                        ('max_unaligned', "Unaligned", False),
-                                        ('min_db_cov', "Database coverage", True),
-                                        ('max_db_cov', "Database coverage", False),
-                                        ('min_50_genes', "50%-assembled genes", True),
-                                        ('min_95_genes', "95%-assembled genes", True),
-                                        ('max_95_genes', "95%-assembled genes", False),
-                                        ('min_95_cov_genes', "95%-covered genes", True),
-                                        ('min_95_cov_genes', "95%-covered genes", True),
-                                        ('min_50_iso', "50%-assembled isoforms", True),
-                                        ('min_95_iso', "95%-assembled isoforms", True),
-                                        ('max_95_iso', "95%-assembled isoforms", False),
-                                        ('max_mis', "Misassemblies", False)], add_all_params)
+                                        ('min_transcripts',     "Transcripts",          True,   True, True, 0.1),
+                                        ('min_transcripts_500', "Transcripts > 500 bp", True,   True, True, 0.05),
+                                        ('min_aligned',         "Aligned",              True,   True, True, 0.05),
+                                        ('max_unaligned',       "Unaligned",            False,  True, True, 0.05),
+                                        ('min_db_cov',          "Database coverage",    True,   False, True, 0.1),
+                                        ('max_db_cov',          "Database coverage",    False,  False, True, 0.1),
+                                        ('min_50_genes',        "50%-assembled genes",  True,   True, True, 0.05),
+                                        ('min_95_genes',        "95%-assembled genes",  True,   True, True, 0.05),
+                                        ('max_95_genes',        "95%-assembled genes",  False,  True, True, 0.05),
+                                        ('min_95_cov_genes',    "95%-covered genes",    True,   True, True, 0.05),
+                                        ('min_95_cov_genes',    "95%-covered genes",    True,   True, True, 0.05),
+                                        ('min_50_iso',          "50%-assembled isoforms", True,  True, True, 0.05),
+                                        ('min_95_iso',          "95%-assembled isoforms", True,  True, True, 0.05),
+                                        ('max_95_iso',          "95%-assembled isoforms", False, True, True, 0.05),
+                                        ('max_mis',             "Misassemblies",        False,   True, True, 0.05)], add_all_params)
 
 
 # Run QUAST and assess its report for a single contig file
