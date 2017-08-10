@@ -502,7 +502,7 @@ public:
         size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + pacbio_k;
         size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
         if (seq_start > seq_end) {
-            INFO("Overlapping flanks not supported yet");
+            DEBUG("Overlapping flanks not supported yet");
             return GapDescription();
         }
         return GapDescription(a.edgeId,
