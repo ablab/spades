@@ -424,16 +424,16 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
       }
 
       if (centersInCluster[k] == -1u) {
-        unsigned new_idx = 0;
-        #pragma omp critical
-        {
-          KMer newkmer(bestCenters[k].center_);
-
-          KMerStat kms(0 /* cnt */, 1.0 /* total quality */, NULL /*quality */);
-          kms.mark_good();
-          new_idx = (unsigned)data_.push_back(newkmer, kms);
-          if (data_.kmer(data_.seq_idx(newkmer)) != newkmer)
+        KMer newkmer(bestCenters[k].center_);
+        size_t new_idx = data_.checking_seq_idx(newkmer);
+        if (new_idx == -1ULL) {
+          #pragma omp critical
+          {
+            KMerStat kms(0 /* cnt */, 1.0 /* total quality */, NULL /*quality */);
+            kms.mark_good();
+            new_idx = data_.push_back(newkmer, kms);
             newkmers += 1;
+          }
         }
         v.insert(v.begin(), new_idx);
       }
