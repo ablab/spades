@@ -1,236 +1,268 @@
 <!doctype html>
 <html>
 <head>
-  <title>WebVis</title>
-  <link rel="stylesheet" href="static/style.css">
-  <style>
-  div.console { font-size: 14px; font-family: monospace }
-  div.console div.jquery-console-inner
-  { height:640px; padding: 0.5em; overflow: auto; word-break: break-all }
-  div.console div.jquery-console-focus span.jquery-console-cursor
-  { background: #111; color: #333; font-weight: bold }
-  div.console span.jquery-console-prompt-label { font-weight: bold }
-  div#graph {max-width: 800px; height: 640px; margin: auto}
-  input#command {width: 100%}
-  iframe {width: 100%; height: 640px; overflow: scroll}
-  .bordered {border: 2px solid #777}
-  </style>
-  <!--Basic interaction plugins-->
-  <script type="text/javascript" src="static/jquery.js"></script>
-  <script type="text/javascript" src="static/center-loader.min.js"></script>
-  <script type="text/javascript" src="static/jquery.console.js"></script>
-  <!--Dynamic graph rendering-->
-  <script src="static/sigma.min.js"></script>
-  <!--script src="static/plugins/sigma.parsers.json.min.js"></script-->
-  <script src="static/plugins/sigma.layout.forceAtlas2.min.js"></script>
-  <!--Local stuff-->
-  <script type="text/javascript">
-//Commands autocomplete
-//TODO: get commands from help
+    <title>WebVis</title>
+    <link rel="stylesheet" href="static/style.css">
+    <style>
+    html, body { width: 100%; height: 100%; margin: 0; padding: 0 }
+    div.console { font-size: 14px; font-family: monospace }
+    div.console div.jquery-console-inner
+    { height:120px; padding: 0.5em; overflow: auto; word-break: break-all }
+    div.console div.jquery-console-focus span.jquery-console-cursor
+    { background: #111; color: #333; font-weight: bold }
+    div.console span.jquery-console-prompt-label { font-weight: bold }
+    div.pathlist {padding: 0.5em; word-break: break-all}
+    div#dirhist { flex: 0 1 240px; overflow: auto }
+    div#filelist { flex: 1 1 auto; height: 0px; overflow: auto }
+    .bordered {border: 2px solid #777}
+    table { height: 100% }
+    td { padding: 5px }
+    #toolbar { height: 100%; display: flex; flex-flow: column }
+    iframe { height: 100%; width: 100%; }
+    </style>
+    <!--Basic interaction plugins-->
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/center-loader.min.js"></script>
+    <script type="text/javascript" src="static/jquery.console.js"></script>
+    <!--Dynamic graph rendering-->
+    <script src="static/sigma.min.js"></script>
+    <!--script src="static/plugins/sigma.parsers.json.min.js"></script-->
+    <script src="static/plugins/sigma.layout.forceAtlas2.min.js"></script>
+    <!--Local stuff-->
+    <script type="text/javascript">
+    //Commands autocomplete
+    //TODO: get commands from help
 var standardCommands = ["batch", "clear_pos", "clip_tips", "draw_connected", "draw_contig",
-  "draw_contigs", "draw_edge", "draw_part_of_genome", "draw_polymorphic", "draw_poorly_assembled",
-  "draw_position", "draw_unresolved_wrt_assembly", "draw_unresolved_wrt_reference", "draw_vertex",
-  "exit", "fill_pos", "help", "junction_sequence", "list", "load", "load_genome", "log",
-  "print_contigs_stats", "print_edge", "print_paths", "replay", "save", "set_file_name",
-  "set_folder", "set_max_vertices", "show_position", "switch_env"
+    "draw_contigs", "draw_edge", "draw_part_of_genome", "draw_polymorphic", "draw_poorly_assembled",
+    "draw_position", "draw_unresolved_wrt_assembly", "draw_unresolved_wrt_reference", "draw_vertex",
+    "exit", "fill_pos", "help", "junction_sequence", "list", "load", "load_genome", "log",
+    "print_contigs_stats", "print_edge", "print_paths", "replay", "save", "set_file_name",
+    "set_folder", "set_max_vertices", "show_position", "switch_env"
 ]
 
+String.prototype.hashCode = function() {
+  var hash = 0, i, chr;
+  if (this.length === 0) return hash;
+  for (i = 0; i < this.length; i++) {
+    chr   = this.charCodeAt(i);
+    hash  = ((hash << 5) - hash) + chr;
+    hash |= 0; // Convert to 32bit integer
+  }
+  return hash;
+};
+
 function startWheel(where) {
-  $(where).loader("show", "<img src=\"static/assets/wheel.gif\">");
+    $(where).loader("show", "<img src=\"static/assets/wheel.gif\">");
 }
 
 function stopWheel(where) {
-  $(where).loader("hide");
+    $(where).loader("hide");
 }
 
 function sendCommand(command, callback) {
-  startWheel("#console_container");
-  $.ajax({
-    url: "command",
-    type: "GET",
-    data: {command: command},
-    success: function(response) {
-      stopWheel("#console_container");
-      callback(response);
-    },
-    error: function(xhr, status, errmsg) {
-      stopWheel("#console_container");
-      callback(status + " " + errmsg);
-    }
-  });
+    startWheel("#console_container");
+    $.ajax({
+        url: "command",
+        type: "GET",
+        data: {command: command},
+        success: function(response) {
+            stopWheel("#console_container");
+            callback(response);
+        },
+        error: function(xhr, status, errmsg) {
+            stopWheel("#console_container");
+            callback(status + " " + errmsg);
+        }
+    });
 }
 
 function drawVertex(id) {
-  $(function() {
-    $("#graph").html($("<iframe>").attr("src", "/vertex/" + id));
-  });
+    $(function() {
+        $("#graph").html($("<iframe>").attr("src", "/vertex/" + id));
+    });
 }
 
 function drawDynamic(id) {
-  $.ajax({
-    url: "/vertex/" + id + ".json",
-    success: function(response) {
-      $("#graph").empty();
-      sWrap = new sigma("graph");
-      sWrap.graph.unionWith(JSON.parse(response));
-      sWrap.bind("clickNode", function(e) {
-        var nodeId = e.data.node.id;
-        addNodes(nodeId);
-      });
-      sWrap.refresh();
-      sWrap.startForceAtlas2();
-    }
-  });
+    $.ajax({
+        url: "/vertex/" + id + ".json",
+        success: function(response) {
+            $("#graph").empty();
+            sWrap = new sigma("graph");
+            sWrap.graph.unionWith(JSON.parse(response));
+            sWrap.bind("clickNode", function(e) {
+                var nodeId = e.data.node.id;
+                addNodes(nodeId);
+            });
+            sWrap.refresh();
+            sWrap.startForceAtlas2();
+        }
+    });
 }
 
 function addNodes(id) {
-  var vertexId = id.split("_")[1]; //vertex_id1_id2
-  $.ajax({
-    url: "/vertex/" + vertexId + ".json",
-    success: function(response) {
-      graph = JSON.parse(response);
-      sWrap.killForceAtlas2();
-      sWrap.graph.unionWith(graph);
-      sWrap.refresh();
-      sWrap.startForceAtlas2();
-    }
-  });
+    var vertexId = id.split("_")[1]; //vertex_id1_id2
+    $.ajax({
+        url: "/vertex/" + vertexId + ".json",
+        success: function(response) {
+            graph = JSON.parse(response);
+            sWrap.killForceAtlas2();
+            sWrap.graph.unionWith(graph);
+            sWrap.refresh();
+            sWrap.startForceAtlas2();
+        }
+    });
 }
 
 var specialFunctions = {
-  "draw_dynamic": drawDynamic
+    "draw_dynamic": drawDynamic
 }
 
 var initLog;
 $.ajax({
-  url: "/log",
-  async: false,
-  success: function(response) {
-    initLog = response;
-  }
+    url: "/log",
+    async: false,
+    success: function(response) {
+        initLog = response;
+    }
 });
 
 sigma.classes.graph.addMethod("hasNode", function(id) {
-  return typeof(this.nodes(id)) != "undefined";
+    return typeof(this.nodes(id)) != "undefined";
 });
 
 sigma.classes.graph.addMethod("hasEdge", function(id) {
-  return typeof(this.edges(id)) != "undefined";
+    return typeof(this.edges(id)) != "undefined";
 });
 
 sigma.classes.graph.addMethod("unionWith", function(graph) {
-  var self = this;
-  graph.nodes.forEach(function(node) {
-    //if (!self.hasNode(node))
-    if (typeof(self.nodes(node.id)) == "undefined")
-      self.addNode(node);
-  });
-  graph.edges.forEach(function(edge) {
-    //if (!self.hasEdge(edge))
-    if (typeof(self.edges(edge.id)) == "undefined")
-      self.addEdge(edge);
-  });
+    var self = this;
+    graph.nodes.forEach(function(node) {
+        //if (!self.hasNode(node))
+        if (typeof(self.nodes(node.id)) == "undefined")
+        self.addNode(node);
+    });
+    graph.edges.forEach(function(edge) {
+        //if (!self.hasEdge(edge))
+        if (typeof(self.edges(edge.id)) == "undefined")
+        self.addEdge(edge);
+    });
 });
 var sWrap;
 
 $(function() {
-  var controller = $(".console").console({
-    promptLabel: "GAF$> ",
-    welcomeMessage: initLog,
-    commandValidate: function(line) {
-      return (line != "");
-    },
-    //Sending the command on return
-    commandHandle: function(line) {
-      cArgs = line.split(" ");
-      //Some special commands don't have handlers in online_vis,
-      //let's process 'em ad-hoc way
-      if (specialFunctions[cArgs[0]]) {
-        specialFunctions[cArgs[0]](cArgs[1]);
-      } else {
-        sendCommand(line, function getLog(response) {
-          $(function() {
-            controller.report(response.log);
-            if (!response.complete)
-              sendCommand("", getLog);
-          });
-        });
-      }
-      return true;
-    },
-    cols: 80,
-    animateScroll: true,
-    promptHistory: true,
-    completeHandle: function(prefix) {
-      var ret = [];
-      var args = prefix.split(" ");
-      if (args.length == 1) {
-        //Completing the command name
-        standardCommands.forEach(function(command) {
-          if (command.lastIndexOf(prefix, 0) === 0) {
-            ret.push(command.substring(prefix.length));
-          }
-        });
-      } else {
-        var path = args[args.length - 1];
-        //Completing the arg-path
-        $.ajax({
-          url: "/ls?path=" + path + "*",
-          async: false,
-          success: function (response) {
-            ret = response.split(" ").map(function (name) {
-              return name.substr(path.length);
-            });
-          }
-        });
-      }
-      return ret;
-    }
-  });
+    var controller = $("#console").console({
+        promptLabel: "GAF$> ",
+        welcomeMessage: initLog,
+        commandValidate: function(line) {
+            return (line != "");
+        },
+        //Sending the command on return
+        commandHandle: function(line) {
+            cArgs = line.split(" ");
+            //Some special commands don't have handlers in online_vis,
+            //let's process 'em ad-hoc way
+            if (specialFunctions[cArgs[0]]) {
+                specialFunctions[cArgs[0]](cArgs[1]);
+            } else {
+                sendCommand(line, function getLog(response) {
+                    $(function() {
+                        controller.report(response.log);
+                        if (!response.complete)
+                        sendCommand("", getLog);
+                    });
+                });
+            }
+            return true;
+        },
+        cols: 80,
+        animateScroll: true,
+        promptHistory: true,
+        completeHandle: function(prefix) {
+            var ret = [];
+            var args = prefix.split(" ");
+            if (args.length == 1) {
+                //Completing the command name
+                standardCommands.forEach(function(command) {
+                    if (command.lastIndexOf(prefix, 0) === 0) {
+                        ret.push(command.substring(prefix.length));
+                    }
+                });
+            } else {
+                var path = args[args.length - 1];
+                //Completing the arg-path
+                $.ajax({
+                    url: "/ls?path=" + path + "*",
+                    async: false,
+                    success: function (response) {
+                        ret = response.split(" ").map(function (name) {
+                            return name.substr(path.length);
+                        });
+                    }
+                });
+            }
+            return ret;
+        }
+    });
 
-  //Clicking on .dot files loads them as an svg
-  $(".console").on("click", "[href$='.dot']", function(event) {
+    //Clicking on .dot files loads them as an svg
+    /*$(".console").on("click", "[href$='.dot']", function(event) {
     event.preventDefault();
     var url = $(this).attr("href");
     startWheel("#graph");
     $.ajax({
-      url: url,
-      success: function (response) {
-        stopWheel("#graph");
-        $("#graph").html($("<iframe>").attr("src", response));
-      }
-    });
-  });
+    url: url,
+    success: function (response) {
+    stopWheel("#graph");
+    $("#graph").html($("<iframe>").attr("src", response));
+}
+});
+});*/
 
-  $(".console").on("click", "[href$='/']", function(event) {
+$(".console").on("click", "[href$='/']", function(event) {
     event.preventDefault();
     var url = $(this).attr("href");
     $.ajax({
-      url: url,
-      success: function (response) {
-        $(function () {controller.report(response);});
-      }
+        url: url,
+        success: function (response) {
+            var path = url.substring(url.indexOf("path=") + 5);
+            var hash = path.hashCode();
+            $("#"+hash).remove();
+            $("#dirhist").prepend($("<div>").attr("id", hash).html($("<a>").attr("href", url).text(path)));
+            $("#curdir").text(path);
+            $("#filelist").html(response);
+        }
     });
-  });
+});
+
 });
 </script>
 </head>
 
 <body>
-  <table width="100%"><tr height="100%">
-    <td width="50%" id="console_container">
-      <table>
-        <tr>
-          <td width=100%>Welcome to WebVis, {{username}}</td>
-          <td><a href="/logout">Logout</a></td>
+    <table>
+        <tr style="height: 80px">
+            <td width="360">
+                <!--img src="static/assets/logo.png"/><br/-->
+                Welcome to WebVis, <b>{{username}}</b><br/>
+                <a href="/logout">Logout</a>
+            </td>
+            <td class="bordered">
+                <div class="console" id="console"></div>
+            </td>
         </tr>
-      </table>
-      <div class="console bordered"></div>
-    </td>
-    <td class="bordered">
-      <div id="graph"></div>
-      <!--The rendered graph will be displayed here-->
-    </td>
-  </tr></table>
+        <tr height="100%">
+            <td valign="top" id="toolbar">
+                <div id="toolbar">Directory history
+                <div class="console pathlist bordered" id="dirhist"></div>
+                Content of
+                <div class="console pathlist" id="curdir">somedir</div>
+                <div class="console pathlist bordered" id="filelist"></div>
+                </div>
+            </td>
+            <td>
+                <iframe class="bordered" name="graph" frameborder="0"></iframe>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

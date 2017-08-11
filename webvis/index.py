@@ -2,7 +2,7 @@ from __future__ import print_function
 #Flask imports
 import flask
 from flask import Flask, session, request
-from flask.ext.session import Session
+from flask_session import Session
 from jinja2 import Markup
 #Aux imports
 import re
@@ -38,12 +38,14 @@ def make_url(string):
     res = string
     for f in files:
         method = None
+        attr = ""
         if f.endswith(DOT):
             method = "render"
+            attr = " target=\"graph\""
         elif f.endswith("/"):
             method = "ls"
         if method is not None:
-            url = "<a href=\"/%s?path=%s\">%s</a>" % (method, quote(f), f)
+            url = "<a href=\"/%s?path=%s\"%s>%s</a>" % (method, quote(f), attr, f)
             res = res.replace(f, url, 1)
     return res
 
@@ -53,7 +55,14 @@ def format_output(lines):
 env_path = ""
 caching = False
 cache_path = "static/cache/"
+img_path = "img/"
 shellders = dict()
+
+def mkdir(path):
+    try:
+        os.mkdir(path)
+    except OSError:
+        pass
 
 @app.route("/", methods=['GET'])
 def index():
@@ -79,10 +88,8 @@ def login():
         #TODO: server name validation
         if not name:
             name = "gaf"
-        try:
-            os.mkdir(path.join(cache_path, name))
-        except OSError:
-            pass
+        mkdir(path.join(cache_path, name))
+        mkdir(path.join(img_path, name))
         if name not in shellders:
             try:
                 launch = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)
@@ -135,7 +142,7 @@ def get():
         return flask.abort(404)
 
 def make_cached(basename):
-    return path.join(cache_path, session["username"], basename)
+    return path.join(img_path, session["username"], basename)
 
 def do_render(full_path):
     file_name = path.basename(full_path)
@@ -148,7 +155,7 @@ def do_render(full_path):
     subprocess.call(["dot", "-Tsvg", full_path], stdout=result)
     result.close()
     _debug("Written to", res_path)
-    return res_path
+    return flask.redirect(res_path)
 
 @app.route("/render")
 def render():
@@ -158,6 +165,12 @@ def render():
         return do_render(full_path)
     except:
         flask.abort(500)
+
+@app.route("/img/<name>/<file>")
+def img(name, file):
+    full_path = os.path.join(img_path, name, file)
+    _debug("Showing", full_path)
+    return flask.send_file(full_path)
 
 def do_graph(full_path):
     file_name = path.basename(full_path)
