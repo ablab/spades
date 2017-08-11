@@ -795,12 +795,11 @@ public:
         }
     }
 
-    //FIXME implement as filter
-    void FilterEmptyPaths() {
+    void FilterPaths(const func::TypedPredicate<const BidirectionalPath&>& pred) {
         DEBUG("Removing empty paths");
         for (auto &pp : data_) {
-            if (pp.first->Size() == 0) {
-                VERIFY(pp.first->Size() == 0);
+            if (pred(*pp.first)) {
+                VERIFY(pred(*pp.second)); //do we need it?
                 DeletePathPair(pp);
             }
         }

@@ -260,12 +260,12 @@ void PathExtendLauncher::RemoveOverlapsAndArtifacts(PathContainer &paths,
 
 void PathExtendLauncher::CleanPaths(PathContainer &paths, const pe_config::ParamSetT::PathFiltrationT &path_filtration) const {
     if (path_filtration.enabled) {
-        LengthPathFilter(gp_.g, GetLengthCutoff(path_filtration.min_length, path_filtration.rel_cutoff)).filter(paths);
-        LowCoveredPathFilter(gp_.g,
-                             GetLengthCutoff(path_filtration.min_length_for_low_covered, path_filtration.rel_low_covered_cutoff),
-                             path_filtration.min_coverage).filter(paths);
-        IsolatedPathFilter(gp_.g, GetLengthCutoff(path_filtration.isolated_min_length, path_filtration.rel_isolated_cutoff),
-                             path_filtration.isolated_min_cov).filter(paths);
+        paths.FilterPaths(LengthPathCondition(GetLengthCutoff(path_filtration.min_length, path_filtration.rel_cutoff)));
+        paths.FilterPaths(func::And(CoveragePathCondition(gp_.g, path_filtration.min_coverage),
+                                    LengthPathCondition(GetLengthCutoff(path_filtration.min_length_for_low_covered, path_filtration.rel_low_covered_cutoff))));
+        paths.FilterPaths(func::And(IsolatedPathCondition(gp_.g),
+                                    func::And(LengthPathCondition(GetLengthCutoff(path_filtration.isolated_min_length, path_filtration.rel_isolated_cutoff)),
+                                              CoveragePathCondition(gp_.g, path_filtration.isolated_min_cov))));
     }
 
     paths.SortByLength();

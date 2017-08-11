@@ -19,167 +19,60 @@
 
 namespace path_extend {
 
-class CopyOnWritePathFilter {
+typedef func::AbstractPredicate<const BidirectionalPath&> AbstractPathCondition;
 
-protected:
-    const Graph& g;
-
+class EmptyPathCondition: public AbstractPathCondition {
 public:
-    CopyOnWritePathFilter(const Graph& g_): g(g_) {
-    }
+    EmptyPathCondition() {}
 
-    virtual bool predicate(BidirectionalPath& path) = 0;
-
-    PathContainer filter(PathContainer& paths) {
-        PathContainer result;
-
-        for (size_t i = 0; i < paths.size(); ++i) {
-            if (predicate(*paths.Get(i)) || predicate(*paths.GetConjugate(i))) {
-                result.AddPair(paths.Get(i), paths.GetConjugate(i));
-            }
-        }
-
-        return result;
-    }
-
-};
-
-
-class IdFilter: public CopyOnWritePathFilter {
-
-protected:
-    std::set<size_t> ids;
-
-public:
-
-    IdFilter(const Graph& g_, std::set<size_t> ids_): CopyOnWritePathFilter(g_), ids(ids_) {
-    }
-
-    virtual bool predicate(BidirectionalPath& path) {
-        return ids.count(path.GetId()) > 0;
+    bool Check(checked_type p) const override {
+        return p.Empty();
     }
 };
 
-
-class DuplicateFilter {
-
-protected:
-    const Graph& g;
-
-public:
-    DuplicateFilter(const Graph& g_): g(g_) {
-    }
-
-    PathContainer filter(PathContainer& paths) {
-        PathContainer result;
-
-        for (size_t i = 0; i < paths.size(); ++i) {
-            bool duplicate = false;
-            for (size_t j = 0; j < result.size(); ++j) {
-                if (result[j] == paths[j])
-                    duplicate = true;
-            }
-            if (!duplicate) {
-                result.AddPair(paths.Get(i), paths.GetConjugate(i));
-            }
-        }
-
-        return result;
-    }
-
-};
-
-class ErasingPathFilter {
-
-protected:
-    const Graph& g;
-
-public:
-    ErasingPathFilter(const Graph& g_): g(g_) {
-    }
-
-    virtual bool predicate(BidirectionalPath& path) = 0;
-
-    void filter(PathContainer& paths) {
-        for (PathContainer::Iterator iter = paths.begin(); iter != paths.end(); ) {
-            if (predicate(*iter.get()) || predicate(*iter.getConjugate())) {
-                iter = paths.erase(iter);
-            }
-            else {
-                ++iter;
-            }
-        }
-    }
-
-};
-
-class LengthPathFilter: public ErasingPathFilter {
-
-protected:
-    size_t minLength;
-
-public:
-    LengthPathFilter(const Graph& g_, size_t len): ErasingPathFilter(g_), minLength(len) {
-    }
-
-    virtual bool predicate(BidirectionalPath& path) {
-        return path.Length() <= minLength;
-    }
-};
-
-
-class IsolatedPathFilter: public ErasingPathFilter {
-
-protected:
+class LengthPathCondition: public AbstractPathCondition {
     size_t min_length_;
+public:
+    LengthPathCondition(size_t min_length): min_length_(min_length) {}
 
-    double min_cov_;
+    bool Check(checked_type p) const override {
+        return p.Length() <= min_length_;
+    }
+};
+
+class CoveragePathCondition: public AbstractPathCondition {
+    const Graph& g_;
+    double cov_;
 
 public:
-    IsolatedPathFilter(const Graph& g_, size_t min_length, double min_cov = 10000000.0):
-        ErasingPathFilter(g_),
-        min_length_(min_length),
-        min_cov_(min_cov) {
-    }
+    CoveragePathCondition(const Graph& g, double cov): g_(g), cov_(cov) {}
 
-    virtual bool predicate(BidirectionalPath& path) {
-        if (path.Empty())
+    bool Check(checked_type p) const override {
+        for (size_t i = 0; i < p.Size(); ++i) {
+            if (math::gr(g_.coverage(p[i]), cov_))
+                return false;
+        }
+        return true;
+    }
+};
+
+class IsolatedPathCondition: public AbstractPathCondition {
+    const Graph& g_;
+public:
+    IsolatedPathCondition(const Graph& g): g_(g) {}
+
+    bool Check(checked_type p) const override {
+        if (p.Empty())
             return true;
 
-        if (path.Size() <= 2) {
-            auto v1 = g.EdgeStart(path.Front());
-            auto v2 = g.EdgeEnd(path.Back());
+        if (p.Size() <= 2) {
+            auto v1 = g_.EdgeStart(p.Front());
+            auto v2 = g_.EdgeEnd(p.Back());
 
-            return g.IncomingEdgeCount(v1) == 0 &&
-                g.OutgoingEdgeCount(v2) == 0 &&
-                path.Length() <= min_length_ &&
-                math::le(path.Coverage(), min_cov_);
+            return g_.IncomingEdgeCount(v1) == 0 &&
+                   g_.OutgoingEdgeCount(v2) == 0;
         }
         return false;
-    }
-};
-
-class LowCoveredPathFilter: public ErasingPathFilter {
-
-protected:
-    size_t min_length_;
-
-    double min_cov_;
-
-public:
-    LowCoveredPathFilter(const Graph& g_, size_t min_length, double min_cov):
-            ErasingPathFilter(g_),
-            min_length_(min_length),
-            min_cov_(min_cov) {
-    }
-
-    virtual bool predicate(BidirectionalPath& path) {
-        for (size_t i = 0; i < path.Size(); ++i) {
-            if (math::gr(g.coverage(path[i]), min_cov_)) {
-                return false;
-            }
-        }
-        return path.Length() <= min_length_;
     }
 };
 

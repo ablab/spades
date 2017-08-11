@@ -262,7 +262,7 @@ inline void Deduplicate(const Graph &g, PathContainer &paths, GraphCoverageMap &
     //paths.SortByLength(false);
     PathDeduplicator deduplicator(g, paths, coverage_map, min_edge_len, max_path_diff, equal_only);
     deduplicator.Deduplicate();
-    paths.FilterEmptyPaths();
+    paths.FilterPaths(EmptyPathCondition());
 }
 
 class PathExtendResolver {

@@ -786,8 +786,7 @@ public:
     void GrowAll(PathContainer& paths, PathContainer& result) {
         result.clear();
         GrowAllPaths(paths, result);
-        LengthPathFilter filter(g_, 0);
-        filter.filter(result);
+        result.FilterPaths(EmptyPathCondition());
     }
 
     void GrowPath(BidirectionalPath& path, PathContainer* paths_storage) {
