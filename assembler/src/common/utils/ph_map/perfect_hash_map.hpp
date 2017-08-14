@@ -210,7 +210,7 @@ public:
         BinReadKmers(reader, FileName);
     }
 
-    KeyStoringMap(size_t k)
+    KeyStoringMap(unsigned k)
             : base(k), kmers_(nullptr) {}
 
     KMer true_kmer(KeyWithHash kwh) const {

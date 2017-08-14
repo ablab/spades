@@ -19,5 +19,15 @@ public:
     void run(conj_graph_pack &gp, const char *);
 };
 
+struct ConstructionStorage;
+
+class ConstructionNew : public spades::CompositeStageDeferred<ConstructionStorage> {
+public:
+    ConstructionNew();
+    ~ConstructionNew();
+
+    void init(debruijn_graph::conj_graph_pack &gp, const char *) override;
+};
+
 }
 
