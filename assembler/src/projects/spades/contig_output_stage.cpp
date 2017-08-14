@@ -82,7 +82,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
             Deduplicate(gp.g, broken_scaffolds, cover_map,
                     /*min_edge_len*/0,
                     /*max_path_diff*/0);
-            broken_scaffolds.FilterPaths(EmptyPathCondition());
+            broken_scaffolds.FilterEmptyPaths();
             broken_scaffolds.SortByLength();
 
             writer.OutputPaths(broken_scaffolds,

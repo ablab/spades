@@ -14,6 +14,7 @@
 #pragma once
 
 #include "extension_chooser.hpp"
+#include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "path_filter.hpp"
 #include "overlap_analysis.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
@@ -786,7 +787,7 @@ public:
     void GrowAll(PathContainer& paths, PathContainer& result) {
         result.clear();
         GrowAllPaths(paths, result);
-        result.FilterPaths(EmptyPathCondition());
+        result.FilterEmptyPaths();
     }
 
     void GrowPath(BidirectionalPath& path, PathContainer* paths_storage) {
