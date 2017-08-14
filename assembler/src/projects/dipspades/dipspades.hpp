@@ -60,17 +60,16 @@ public:
 
 
 class DipSPAdes : public CompositeStage<DipSPAdesStorage> {
-    DipSPAdesStorage dsp_params_;
 public:
     DipSPAdes() : CompositeStage<DipSPAdesStorage>("dipSPAdes", "dipspades") { }
 
     void load(debruijn_graph::conj_graph_pack&,
             const std::string &,
-            const char*) { }
+            const char*) override { }
 
     void save(const debruijn_graph::conj_graph_pack&,
             const std::string &,
-            const char*) const { }
+            const char*) const override { }
 
     virtual ~DipSPAdes() { }
 };
@@ -90,7 +89,6 @@ public:
         std::string p = fs::append_path(load_from, prefix == NULL ? id() : prefix);
         INFO("Loading current state from " << p);
         debruijn_graph::graphio::ScanAll(p, gp, false);
-
     }
 
     void save(const debruijn_graph::conj_graph_pack& gp,
@@ -179,13 +177,14 @@ public:
         DipSPAdes::Phase("Consensus contigs construction", "consensus_construction") { }
 
     void run(debruijn_graph::conj_graph_pack &graph_pack, const char*){
-        if(dsp_cfg::get().cc.enabled){
-            ConsensusContigsConstructor consensus_constructor(graph_pack, storage().bulge_len_histogram);
-            consensus_constructor.Run();
-            storage().composite_storage = consensus_constructor.CompositeContigsStorage();
-            storage().default_storage = consensus_constructor.DefaultContigsStorage();
-            storage().redundancy_map = consensus_constructor.RedundancyResult();
-        }
+        if (!dsp_cfg::get().cc.enabled)
+            return;
+
+        ConsensusContigsConstructor consensus_constructor(graph_pack, storage().bulge_len_histogram);
+        consensus_constructor.Run();
+        storage().composite_storage = consensus_constructor.CompositeContigsStorage();
+        storage().default_storage = consensus_constructor.DefaultContigsStorage();
+        storage().redundancy_map = consensus_constructor.RedundancyResult();
     }
 
     void load(debruijn_graph::conj_graph_pack& gp,
