@@ -71,7 +71,12 @@ class PhaseIdComparator {
 
 void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
                              const char* started_from) {
+    // The logic here is as follows. By this time StageManager already called
+    // load() function of the Stage itself. Therefore we only need to do
+    // storage-related things (if any) and therefore just call the init()
+    // function. Phases are supposed only to load the differences.
     VERIFY(parent_);
+    init(gp, started_from);
     auto start_phase = phases_.begin();
     if (started_from &&
         strstr(started_from, ":") &&
@@ -103,7 +108,6 @@ void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
 
             phase->save(gp, parent_->saves_policy().save_to_, composite_id.c_str());
         }
-
     }
 }
 

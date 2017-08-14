@@ -75,7 +75,7 @@ public:
         return *this;
     }
 
-    virtual void init(debruijn_graph::conj_graph_pack &, const char * = nullptr) {}
+    virtual void init(debruijn_graph::conj_graph_pack &, const char * = nullptr) = 0;
     void run(debruijn_graph::conj_graph_pack &gp, const char * = nullptr);
 
 private:
@@ -83,33 +83,67 @@ private:
 };
 
 template<class Storage>
-class CompositeStage : public CompositeStageBase {
+class CompositeStageWithStorage : public CompositeStageBase {
 public:
     class Phase : public PhaseBase {
     public:
         Phase(const char *name, const char *id)
                 : PhaseBase(name, id) { }
 
-        CompositeStage<Storage> *parent() { return static_cast<CompositeStage<Storage> *>(parent_stage_); }
-        const CompositeStage<Storage> *parent() const { return static_cast<const CompositeStage<Storage> *>(parent_stage_); }
+        CompositeStageWithStorage<Storage> *parent() { return static_cast<CompositeStageWithStorage<Storage> *>(parent_stage_); }
+        const CompositeStageWithStorage<Storage> *parent() const { return static_cast<const CompositeStageWithStorage<Storage> *>(parent_stage_); }
 
         Storage &storage() { return parent()->storage(); }
         const Storage &storage() const { return parent()->storage(); }
     };
 
-    CompositeStage(const char *name, const char *id)
+    CompositeStageWithStorage(const char *name, const char *id)
             : CompositeStageBase(name, id) { }
 
-    Storage &storage() { return storage_; }
+    void init(debruijn_graph::conj_graph_pack &, const char * = nullptr) override {};
 
-    const Storage &storage() const { return storage_; }
+    virtual Storage &storage() = 0;
+    virtual const Storage &storage() const = 0;
+};
+
+// FIXME: Make storage a policy
+template<class Storage>
+class CompositeStage : public CompositeStageWithStorage<Storage> {
+public:
+    CompositeStage(const char *name, const char *id)
+            : CompositeStageWithStorage<Storage>(name, id) { }
+
+    Storage &storage() override { return storage_; }
+    const Storage &storage() const override { return storage_; }
 
 private:
     Storage storage_;
 };
 
-class StageManager {
+template<class Storage>
+class CompositeStageDeferred : public CompositeStageWithStorage<Storage> {
+public:
+    CompositeStageDeferred(const char *name, const char *id)
+            : CompositeStageWithStorage<Storage>(name, id) { }
 
+    Storage &storage() override { return *storage_; }
+    const Storage &storage() const override { return *storage_; }
+
+protected:
+    bool has_storage() const { return (bool)storage_; }
+
+    template <typename...Args> void init_storage(Args&&... args) {
+        storage_.reset(new Storage(std::forward<Args>(args)...));
+    }
+
+private:
+    // std::optional would be better, but it requires complete Storage type at
+    // this point.
+    std::unique_ptr<Storage> storage_;
+};
+
+
+class StageManager {
 public:
     struct SavesPolicy {
         bool make_saves_;
