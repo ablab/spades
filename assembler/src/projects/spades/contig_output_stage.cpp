@@ -86,7 +86,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
             broken_scaffolds.SortByLength();
 
             writer.OutputPaths(broken_scaffolds,
-                               CreatePathsWriters(output_dir + cfg::get().co.contigs_name,
+                               CreatePathsWriters(output_dir + contigs_name_,
                                                   fastg_writer));
         }
 
@@ -98,7 +98,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
     } else {
         //FIXME weird logic
         OutputEdgeSequences(gp.g, output_dir + "simplified_contigs");
-        OutputEdgeSequences(gp.g, output_dir + cfg::get().co.contigs_name);
+        OutputEdgeSequences(gp.g, output_dir + contigs_name_);
     }
 }
 

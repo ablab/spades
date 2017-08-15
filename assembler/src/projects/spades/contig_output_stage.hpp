@@ -15,9 +15,10 @@ namespace debruijn_graph {
 class ContigOutput : public spades::AssemblyStage {
 private:
     bool output_paths_;
+    std::string contigs_name_;
 public:
-    ContigOutput(bool output_paths = true)
-        : AssemblyStage("Contig Output", "contig_output"), output_paths_(output_paths) { }
+    ContigOutput(bool output_paths = true, std::string contigs_name = cfg::get().co.contigs_name)
+        : AssemblyStage("Contig Output", "contig_output"), output_paths_(output_paths), contigs_name_(contigs_name) { }
 
     void load(conj_graph_pack &, const std::string &, const char *) { }
 

@@ -119,7 +119,7 @@ void assemble_genome() {
 
         //No graph modification allowed after HybridLibrariesAligning stage!
 
-        SPAdes.add(new debruijn_graph::ContigOutput(false))
+        SPAdes.add(new debruijn_graph::ContigOutput(false, "intermediate_contigs"))
               .add(new debruijn_graph::PairInfoCount())
               .add(new debruijn_graph::DistanceEstimation())
               .add(new debruijn_graph::RepeatResolution());
