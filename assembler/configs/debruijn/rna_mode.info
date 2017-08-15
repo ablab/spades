@@ -73,9 +73,6 @@ simp
     ier
     {
         enabled                     false
-        max_length                  100
-        max_coverage                2
-        max_length_any_cov          0 ; will be taken max with read_length
     }
     ; hidden ec remover
     her

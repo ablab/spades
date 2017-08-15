@@ -495,11 +495,15 @@ AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
     if (!ier.enabled) {
         return nullptr;
     }
-    size_t max_length_any_cov = std::max(info.read_length(), ier.max_length_any_cov);
+    size_t max_length_any_cov = ier.use_rl_for_max_length_any_cov ?
+                                std::max(info.read_length(), ier.max_length_any_cov) : ier.max_length_any_cov;
+    size_t max_length = ier.use_rl_for_max_length ?
+                                std::max(info.read_length(), ier.max_length) : ier.max_length;
+
 
     auto condition = func::And(IsolatedEdgeCondition<Graph>(g),
                               func::Or(LengthUpperBound<Graph>(g, max_length_any_cov),
-                                      func::And(LengthUpperBound<Graph>(g, ier.max_length),
+                                      func::And(LengthUpperBound<Graph>(g, max_length),
                                                CoverageUpperBound<Graph>(g, ier.max_coverage))));
 
     return std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>(g,

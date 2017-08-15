@@ -287,8 +287,10 @@ struct debruijn_config {
 
         struct isolated_edge_remover {
             bool enabled;
+            bool use_rl_for_max_length; // max_length will be taken max with read_length
             size_t max_length;
             double max_coverage;
+            bool use_rl_for_max_length_any_cov;
             size_t max_length_any_cov;
         };
 

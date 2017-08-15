@@ -298,8 +298,10 @@ void load(debruijn_config::simplification::isolated_edge_remover& ier,
   using config_common::load;
   load(ier.enabled, pt, "enabled", complete);
   load(ier.max_length, pt, "max_length", complete);
+  load(ier.use_rl_for_max_length, pt, "use_rl_for_max_length", complete);
   load(ier.max_coverage, pt, "max_coverage", complete);
   load(ier.max_length_any_cov, pt, "max_length_any_cov", complete);
+  load(ier.use_rl_for_max_length_any_cov, pt, "use_rl_for_max_length_any_cov", complete);
 }
 
 void load(debruijn_config::simplification::low_covered_edge_remover& lcer,

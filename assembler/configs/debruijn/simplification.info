@@ -145,9 +145,11 @@ simp
     ier
     {
         enabled                     true
-        max_length                  0
+        use_rl_for_max_length         false ; max_length will be taken max with read_length
+        use_rl_for_max_length_any_cov true ; use_rl_for_max_length_any_cov will be taken max with read_length
+        max_length                  0 ; will be taken max with read_length if option above is set
         max_coverage                2
-        max_length_any_cov          150 ; will be taken max with read_length 
+        max_length_any_cov          150 ; will be taken max with read_length if option above is set
     }
     
     ; topology tip clipper:
@@ -195,9 +197,11 @@ simp
         ier
         {
             enabled                     true
-            max_length                  0
+            use_rl_for_max_length         false ; max_length will be taken max with read_length
+            use_rl_for_max_length_any_cov true ; use_rl_for_max_length_any_cov will be taken max with read_length
+            max_length                  0 ; will be taken max with read_length if option above is set
             max_coverage                0
-            max_length_any_cov          0 ; will be taken max with read_length 
+            max_length_any_cov          0 ; will be taken max with read_length if option above is set
         }
 
         tip_condition   "{ tc_lb 3.5, cb auto }"

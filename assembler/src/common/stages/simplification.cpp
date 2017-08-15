@@ -543,8 +543,10 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
 
     auto isolated_edge_remover =
         IsolatedEdgeRemoverInstance(gp.g, cfg::get().simp.ier, info_container, (EdgeRemovalHandlerF<Graph>)nullptr);
-    if (isolated_edge_remover != nullptr)
+    if (isolated_edge_remover != nullptr) {
+        INFO("Removing isolated edges");
         isolated_edge_remover->Run();
+    }
 
     double low_threshold = gp.ginfo.trusted_bound();
     if (math::gr(low_threshold, 0.0)) {
