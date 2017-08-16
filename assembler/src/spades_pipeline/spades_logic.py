@@ -148,6 +148,9 @@ def add_configs(command, configs_dir):
             if mode == "rna" or mode == "meta":
                 command.append(os.path.join(configs_dir, "mda_mode.info"))
             command.append(os.path.join(configs_dir, config + ".info"))
+    # special case: extra config
+    if options_storage.rna and options_storage.fast:
+        command.append(os.path.join(configs_dir, "rna_fast_mode.info"))
     
 
 def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):

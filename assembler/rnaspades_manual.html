@@ -13,8 +13,9 @@
 1. <a href="#sec1">About rnaSPAdes</a><br>
 2. <a href="#sec2">rnaSPAdes specifics</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;2.1. <a href="#sec2.1">Running rnaSPAdes</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.2">rnaSPAdes output</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.3. <a href="#sec2.3">rnaSPAdes output</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.2">rnaSPAdes-specific options</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.3">Assemblying strand-specific RNA-Seq</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;2.3. <a href="#sec2.4">rnaSPAdes output</a><br>
 3. <a href="#sec3">Assembly evaluation</a><br>
 4. <a href="#sec4">Citation</a><br>
 5. <a href="#sec5">Feedback and bug reports</a><br>
@@ -56,9 +57,15 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
         <li>rnaSPAdes works using only a single k-mer size (automatically detected using read length by the default). We strongly recommend not to change this parameter. In case you have any doubts about your run, do not hesitate to contact us using e-mail given below.</li>
     </ul>
 
-
 <a name="sec2.2"></a>
-<h3>2.2 Assemblying strand-specific RNA-Seq</h3>
+<h3>2.2 rnaSPAdes-specific options</h3>
+<p>
+    <code>--fast</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Speeds up isoform detection stage by removing short low-covered isolated edges from the graph. Note, that short low-expressed transcripts may be missing when this option is used.
+</p>
+
+<a name="sec2.3"></a>
+<h3>2.3 Assemblying strand-specific RNA-Seq</h3>
 <p>rnaSPAdes now supports strand-specific RNA-Seq dataset. You can indicate that the dataset is strand-specific using one of the following options:
 
 <p>
@@ -74,8 +81,8 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 If the data set is single-end use <code>--ss-fr</code> option in case when reads correspond to gene strand and <code>--ss-rf</code> otherwise.
 
 
-<a name="sec2.3"></a>
-<h3>2.3 rnaSPAdes output</h3>
+<a name="sec2.4"></a>
+<h3>2.4 rnaSPAdes output</h3>
 <p>
 rnaSPAdes outputs one main FASTA file named <code>transcripts.fasta</code>. The corresponding file with paths in the <code>assembly_graph.fastg</code> is <code>transcripts.paths</code>.
 

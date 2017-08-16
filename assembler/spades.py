@@ -248,6 +248,10 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                 options_storage.strand_specific = True
             elif opt == "--ss-fr":
                 options_storage.strand_specific = False
+        elif opt == "--fast":  # fast run, RNA-Seq only
+            options_storage.fast = True
+        elif opt == "--fast:false":
+            options_storage.fast = False
 
         elif opt == "--iontorrent":
             options_storage.iontorrent = True
