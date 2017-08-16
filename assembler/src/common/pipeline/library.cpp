@@ -77,6 +77,7 @@ void SequencingLibraryBase::yamlize(llvm::yaml::IO &io) {
     io.mapOptional("orientation", orientation_, LibraryOrientation::Undefined);
     io.mapOptional("left reads", left_paired_reads_);
     io.mapOptional("right reads", right_paired_reads_);
+    io.mapOptional("merged reads", merged_reads_);
     io.mapOptional("single reads", single_reads_);
 }
 
@@ -128,6 +129,8 @@ void SequencingLibraryBase::update_relative_reads_filenames(const std::string &i
     std::transform(left_paired_reads_.begin(), left_paired_reads_.end(), left_paired_reads_.begin(),
                    std::bind2nd(update_relative_filename(), input_dir));
     std::transform(right_paired_reads_.begin(), right_paired_reads_.end(), right_paired_reads_.begin(),
+                   std::bind2nd(update_relative_filename(), input_dir));
+    std::transform(merged_reads_.begin(), merged_reads_.end(), merged_reads_.begin(),
                    std::bind2nd(update_relative_filename(), input_dir));
     std::transform(single_reads_.begin(), single_reads_.end(), single_reads_.begin(),
                    std::bind2nd(update_relative_filename(), input_dir));

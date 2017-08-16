@@ -105,6 +105,7 @@ public:
     void clear() {
         left_paired_reads_.clear();
         right_paired_reads_.clear();
+        merged_reads_.clear();
         single_reads_.clear();
     }
 
@@ -112,6 +113,10 @@ public:
 
     void push_back_single(const std::string &reads) {
         single_reads_.push_back(reads);
+    }
+
+    void push_back_merged(const std::string &reads) {
+        merged_reads_.push_back(reads);
     }
 
     void push_back_paired(const std::string &left, const std::string &right) {
@@ -130,10 +135,23 @@ public:
         return adt::make_range(paired_begin(), paired_end());
     }
 
+    single_reads_iterator merged_begin() const {
+        return single_reads_iterator(merged_reads_.begin(), merged_reads_.end());
+    }
+    single_reads_iterator merged_end() const {
+        // NOTE: Do not forget about the contract with single_begin here!
+        return single_reads_iterator(merged_reads_.end(), merged_reads_.end());
+    }
+
+    adt::iterator_range<single_reads_iterator> merged_reads() const {
+        return adt::make_range(merged_begin(), merged_end());
+    }
+
     single_reads_iterator reads_begin() const {
         // NOTE: We have a contract with single_end here. Single reads always go last!
         single_reads_iterator res(left_paired_reads_.begin(), left_paired_reads_.end());
         res.join(right_paired_reads_.begin(), right_paired_reads_.end());
+        res.join(merged_reads_.begin(), merged_reads_.end());
         res.join(single_reads_.begin(), single_reads_.end());
         
         return res;
@@ -229,6 +247,7 @@ private:
 
     std::vector<std::string> left_paired_reads_;
     std::vector<std::string> right_paired_reads_;
+    std::vector<std::string> merged_reads_;
     std::vector<std::string> single_reads_;
 };
 

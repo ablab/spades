@@ -506,6 +506,8 @@ def get_data_type(option):
         data_type = 'right reads'
     elif option.endswith('-s') or is_single_read_type(option) or get_long_reads_type(option):
         data_type = 'single reads'
+    elif option.endswith('-m') or option.endswith('-merged'):
+        data_type = 'merged reads'
     else: # -rf, -ff, -fr
         data_type = 'orientation'
     return data_type

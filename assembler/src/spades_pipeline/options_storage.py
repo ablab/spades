@@ -24,7 +24,7 @@ ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in ALLOWED_READS_EXTENSIONS]
 
 # we support up to MAX_LIBS_NUMBER libs for each type of short-reads libs
 MAX_LIBS_NUMBER = 9
-OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s"]
+OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s", "--merged"]
 SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs", "nxmate": "nxmate"}
 # other libs types:
 LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "tslr", "trusted-contigs", "untrusted-contigs"]
@@ -130,7 +130,7 @@ dict_of_prefixes = dict()
 dict_of_rel2abs = dict()
 
 # list of spades.py options
-long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc iontorrent meta large-genome rna plasmid "\
+long_options = "12= merged= threads= memory= tmp-dir= iterations= phred-offset= sc iontorrent meta large-genome rna plasmid "\
                "only-error-correction only-assembler "\
                "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
                "help version test debug debug:false reference= series-analysis= config-file= dataset= "\
@@ -149,6 +149,8 @@ for i in range(MAX_LIBS_NUMBER):
             reads_options += ("%s%d-1= %s%d-2=" % tuple([type, i + 1] * 2)).split()
         else:  # paired-end, mate-pairs, hq-mate-pairs
             reads_options += ("%s%d-1= %s%d-2= %s%d-12= %s%d-s= %s%d-rf %s%d-fr %s%d-ff" % tuple([type, i + 1] * 7)).split()
+            if type == 'pe':  # special case: paired-end may include merged reads (-m)
+                reads_options += ["%s%d-m=" % (type, i+1)]
 reads_options += list(map(lambda x: x + '=', LONG_READS_TYPES))
 long_options += reads_options
 # for checking whether option corresponds to reads or not
@@ -209,6 +211,7 @@ def usage(spades_version, show_hidden=False, mode=None):
     sys.stderr.write("-1\t<filename>\tfile with forward paired-end reads" + "\n")
     sys.stderr.write("-2\t<filename>\tfile with reverse paired-end reads" + "\n")
     sys.stderr.write("-s\t<filename>\tfile with unpaired reads" + "\n")
+    sys.stderr.write("--merged\t<filename>\tfile with merged forward and reverse paired-end reads" + "\n")
     sys.stderr.write("--pe<#>-12\t<filename>\tfile with interlaced"\
                          " reads for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--pe<#>-1\t<filename>\tfile with forward reads"\
@@ -216,6 +219,8 @@ def usage(spades_version, show_hidden=False, mode=None):
     sys.stderr.write("--pe<#>-2\t<filename>\tfile with reverse reads"\
                          " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--pe<#>-s\t<filename>\tfile with unpaired reads"\
+                         " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
+    sys.stderr.write("--pe<#>-m\t<filename>\tfile with merged reads"\
                          " for paired-end library number <#> (<#> = 1,2,..,9)" + "\n")
     sys.stderr.write("--pe<#>-<or>\torientation of reads"\
                          " for paired-end library number <#> (<#> = 1,2,..,9; <or> = fr, rf, ff)" + "\n")
