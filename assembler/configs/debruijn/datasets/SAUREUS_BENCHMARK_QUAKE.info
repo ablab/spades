@@ -1,7 +1,0 @@
-reads	SAUREUS_BENCHMARK_QUAKE.yaml
-single_cell	false
-reference_genome	../../../data/input/S.aureus/USA300_FPR3757.fasta.gz
-
-; RL	100
-; IS	170
-; delta	21

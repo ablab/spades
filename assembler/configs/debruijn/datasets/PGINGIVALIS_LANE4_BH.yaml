@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/P.gingivalis/lane_4/02.reads.0.right.corrected.fastq.gz]
-  orientation: fr
-  right reads: [../../../data/input/P.gingivalis/lane_4/02.reads.0.left.corrected.fastq.gz]
-  single reads: [../../../data/input/P.gingivalis/lane_4/02.reads.0.left.unpaired.fastq.gz,
-    ../../../data/input/P.gingivalis/lane_4/02.reads.0.right.unpaired.fastq.gz]
-  type: paired-end

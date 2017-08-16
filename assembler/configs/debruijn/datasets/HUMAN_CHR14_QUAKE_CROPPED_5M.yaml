@@ -1,4 +1,0 @@
-- left reads: [../../../data/input/H.sapiens/chr14/cropped/frag_20M-25M_2.fastq]
-  orientation: fr
-  right reads: [../../../data/input/H.sapiens/chr14/cropped/frag_20M-25M_1.fastq]
-  type: paired-end

@@ -1,6 +1,0 @@
-reads	CSMUELLERI_BH.yaml
-single_cell	false
-reference_genome	../../../data/input/C.S.muelleri/4085179.chromosome1.final.fasta.gz
-
-; RL	36
-; IS	36

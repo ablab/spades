@@ -1,6 +1,0 @@
-reads	TRASH_SAUREUS_JCVI_0412_it2.yaml
-single_cell	true
-reference_genome	../../../data/input/S.aureus/USA300_FPR3757.fasta.gz
-
-; RL	100
-; IS	208

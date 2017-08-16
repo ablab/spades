@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/A.fumigatus/AF1163/SRR068950_2.cor.fastq.gz]
-  orientation: fr
-  right reads: [../../../data/input/A.fumigatus/AF1163/SRR068950_1.cor.fastq.gz]
-  single reads: [../../../data/input/A.fumigatus/AF1163/SRR068950_1.cor_single.fastq.gz,
-    ../../../data/input/A.fumigatus/AF1163/SRR068950_2.cor_single.fastq.gz]
-  type: paired-end

@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/Delta.Bacteria/lane1_reads_corrected_right.fastq]
-  orientation: fr
-  right reads: [../../../data/input/Delta.Bacteria/lane1_reads_corrected_left.fastq]
-  single reads: [../../../data/input/Delta.Bacteria/lane1_reads_corrected_single_left.fastq,
-    ../../../data/input/Delta.Bacteria/lane1_reads_corrected_single_right.fastq]
-  type: paired-end

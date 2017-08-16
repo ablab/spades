@@ -1,6 +1,0 @@
-reads	PSTIPITIS_QUAKE.yaml
-single_cell	false
-reference_genome	../../../data/input/P.stipitis/Pichia_stipitis_Sanger_reference.fa.gz
-
-; RL	75
-; IS	280

@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/Delta.Bacteria/hammer/it4/04.reads_right.corrected.fastq.gz]
-  orientation: fr
-  right reads: [../../../data/input/Delta.Bacteria/hammer/it4/04.reads_left.corrected.fastq.gz]
-  single reads: [../../../data/input/Delta.Bacteria/hammer/it4/04.reads_single_left.corrected.fastq.gz,
-    ../../../data/input/Delta.Bacteria/hammer/it4/04.reads_single_right.corrected.fastq.gz]
-  type: paired-end

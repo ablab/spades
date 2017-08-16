@@ -1,5 +1,0 @@
-- left reads: [../../../data/input/SAG_G1_L16/04.reads.0.right.corrected.fastq]
-  orientation: fr
-  right reads: [../../../data/input/SAG_G1_L16/04.reads.0.left.corrected.fastq]
-  single reads: [../../../data/input/SAG_G1_L16/04.reads.0.left.unpaired.fastq, ../../../data/input/SAG_G1_L16/04.reads.0.right.unpaired.fastq]
-  type: paired-end

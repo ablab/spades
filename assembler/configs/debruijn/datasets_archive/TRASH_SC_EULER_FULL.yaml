@@ -1,4 +1,0 @@
-- left reads: [../../../data/input/E.coli/SC_EULER/sc_2.cor.fasta.gz]
-  orientation: fr
-  right reads: [../../../data/input/E.coli/SC_EULER/sc_1.cor.fasta.gz]
-  type: paired-end

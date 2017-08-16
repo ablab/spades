@@ -1,5 +1,0 @@
-- left reads: [/Johnny/smallnas/teamcity_ants/ace/3c84821930354741/assembler/spades_output/ECOLI_IS220_ACE/corrected/s_6_1.fastq.00.cor.fastq]
-  orientation: fr
-  right reads: [/Johnny/smallnas/teamcity_ants/ace/3c84821930354741/assembler/spades_output/ECOLI_IS220_ACE/corrected/s_6_2.fastq.00.cor.fastq]
-  single reads: [/Johnny/smallnas/teamcity_ants/ace/3c84821930354741/assembler/spades_output/ECOLI_IS220_ACE/corrected/s_6_unpaired.00.cor.fastq]
-  type: paired-end

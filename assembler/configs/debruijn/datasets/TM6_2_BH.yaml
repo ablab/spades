@@ -1,5 +1,0 @@
-- left reads: [/Johnny/data/projects/JCVI.SingleCell.PacBio/Tm6/Illumina/TM6MDA2_s_8_1_sequence.00.cor.fastq.gz]
-  orientation: fr
-  right reads: [/Johnny/data/projects/JCVI.SingleCell.PacBio/Tm6/Illumina/TM6MDA2_s_8_2_sequence.00.cor.fastq.gz]
-  single reads: [/Johnny/data/projects/JCVI.SingleCell.PacBio/Tm6/Illumina/TM6MDA2_s_8__unpaired.00.cor.fastq.gz]
-  type: paired-end

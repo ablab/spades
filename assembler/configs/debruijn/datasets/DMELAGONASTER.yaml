@@ -1,4 +1,0 @@
-- left reads: [/storage/data/input/D.melanogaster/DGRP-892/SRR060822_1.fastq.gz]
-  orientation: fr
-  right reads: [/storage/data/input/D.melanogaster/DGRP-892/SRR060822_2.fastq.gz]
-  type: paired-end

@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/S.aureus/jcvi/bh20111208/02.reads.right.corrected.fastq.gz]
-  orientation: fr
-  right reads: [../../../data/input/S.aureus/jcvi/bh20111208/02.reads.left.corrected.fastq.gz]
-  single reads: [../../../data/input/S.aureus/jcvi/bh20111208/02.reads.left.unpaired.fastq.gz,
-    ../../../data/input/S.aureus/jcvi/bh20111208/02.reads.right.unpaired.fastq.gz]
-  type: paired-end

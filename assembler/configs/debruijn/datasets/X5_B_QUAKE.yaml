@@ -1,5 +1,0 @@
-- left reads: [../../../data/input/x5/b/right_l.cor.fastq.gz]
-  orientation: fr
-  right reads: [../../../data/input/x5/b/left_l.cor.fastq.gz]
-  single reads: [../../../data/input/x5/b/left_l.cor_single.fastq.gz, ../../../data/input/x5/b/right_l.cor_single.fastq.gz]
-  type: paired-end

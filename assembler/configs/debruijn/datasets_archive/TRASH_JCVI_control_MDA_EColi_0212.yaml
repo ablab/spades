@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/E.coli/SC/correted_0211/00.reads_right.corrected.fastq]
-  orientation: fr
-  right reads: [../../../data/input/E.coli/SC/correted_0211/00.reads_left.corrected.fastq]
-  single reads: [../../../data/input/E.coli/SC/correted_0211/00.reads_single_left.corrected.fastq,
-    ../../../data/input/E.coli/SC/correted_0211/00.reads_single_right.corrected.fastq]
-  type: paired-end

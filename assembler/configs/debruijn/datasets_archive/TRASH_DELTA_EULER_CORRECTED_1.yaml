@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/Delta.Bacteria/delta_euler_sr_ec_right.fasta]
-  orientation: fr
-  right reads: [../../../data/input/Delta.Bacteria/delta_euler_sr_ec_left.fasta]
-  single reads: [../../../data/input/Delta.Bacteria/delta_euler_sr_ec_single_left.fasta,
-    ../../../data/input/Delta.Bacteria/delta_euler_sr_ec_single_right.fastq]
-  type: paired-end

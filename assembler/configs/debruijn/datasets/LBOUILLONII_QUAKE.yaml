@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/L.bouillonii/gerwick-read2.cor.fastq.gz]
-  orientation: fr
-  right reads: [../../../data/input/L.bouillonii/gerwick-read1.cor.fastq.gz]
-  single reads: [../../../data/input/L.bouillonii/gerwick-read1.cor_single.fastq.gz,
-    ../../../data/input/L.bouillonii/gerwick-read2.cor_single.fastq.gz]
-  type: paired-end

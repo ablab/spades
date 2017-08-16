@@ -1,5 +1,0 @@
-- left reads: [../../../data/input/Bacteria/E.coli/K12/is220/s_6_2.cor.fastq.gz]
-  orientation: fr
-  right reads: [../../../data/input/Bacteria/E.coli/K12/is220/s_6_1.cor.fastq.gz]
-  single reads: [../../../data/input/Bacteria/E.coli/K12/is220/s_6_1.cor_single.fastq.gz, ../../../data/input/Bacteria/E.coli/K12/is220/s_6_2.cor_single.fastq.gz]
-  type: paired-end

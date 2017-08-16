@@ -1,8 +1,0 @@
-reads	LGASSERI_QUAKE.yaml
-single_cell	false
-reference_genome	../../../data/input/L.gasseri/ref.fasta.gz
-
-; RL	150
-; IS	250
-; jump_rl	150
-; jump_is	7450

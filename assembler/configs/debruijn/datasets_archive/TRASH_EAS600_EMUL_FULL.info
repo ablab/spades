@@ -1,6 +1,0 @@
-reads	TRASH_EAS600_EMUL_FULL.yaml
-single_cell	false
-reference_genome	../../../data/input/E.coli/MG1655-K12.fasta.gz
-
-; RL	100
-; IS	500

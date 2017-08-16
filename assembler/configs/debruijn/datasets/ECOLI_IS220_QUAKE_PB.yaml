@@ -1,7 +1,0 @@
-- left reads: [/johnny/data/input/Bacteria/E.coli/K12/is220/s_6_2.cor.fastq.gz]
-  orientation: fr
-  right reads: [/johnny/data/input/Bacteria/E.coli/K12/is220/s_6_1.cor.fastq.gz]
-  single reads: [/johnny/data/input/Bacteria/E.coli/K12/is220/s_6_1.cor_single.fastq.gz, /johnny/data/input/Bacteria/E.coli/K12/is220/s_6_2.cor_single.fastq.gz]
-  type: paired-end
-- type: pacbio
-  single reads: [/johnny/data/input/Bacteria/E.coli/K12/pacbio/filtered_subreads.fastq]

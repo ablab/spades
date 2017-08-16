@@ -1,4 +1,0 @@
-- left reads: [../../../data/input/E.coli/EAS600_70/emulation/reads_2.fastq]
-  orientation: fr
-  right reads: [../../../data/input/E.coli/EAS600_70/emulation/reads_1.fastq]
-  type: paired-end

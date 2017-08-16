@@ -1,8 +1,0 @@
-reads	SSMARAGDINAE_QUAKE.yaml
-single_cell	false
-reference_genome	../../../data/input/S.smaragdinae/ref.fasta.gz
-
-; RL	150
-; IS	380
-; jump_rl	75
-; jump_is	6700

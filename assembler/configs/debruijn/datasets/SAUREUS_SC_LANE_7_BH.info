@@ -1,6 +1,0 @@
-reads	SAUREUS_SC_LANE_7_BH.yaml
-single_cell	true
-reference_genome	../../../data/input/S.aureus/USA300_FPR3757.fasta.gz
-
-; RL	100
-; IS	300

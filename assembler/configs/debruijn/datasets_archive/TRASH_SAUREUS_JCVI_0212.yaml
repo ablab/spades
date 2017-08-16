@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/JCVI/JCVI_control_MDA_Saureus_cleared_0212/00.reads.right.corrected.fastq]
-  orientation: fr
-  right reads: [../../../data/input/JCVI/JCVI_control_MDA_Saureus_cleared_0212/00.reads.left.corrected.fastq]
-  single reads: [../../../data/input/JCVI/JCVI_control_MDA_Saureus_cleared_0212/00.reads.left.unpaired.fastq,
-    ../../../data/input/JCVI/JCVI_control_MDA_Saureus_cleared_0212/00.reads.right.unpaired.fastq]
-  type: paired-end

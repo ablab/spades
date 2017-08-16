@@ -1,6 +1,0 @@
-reads	ECOLI_IS480_QUAKE_1000K.yaml
-single_cell	false
-reference_genome	../../../data/input/Bacteria/E.coli/K12/MG1655-K12.first1000K.fasta.gz
-
-; RL	100
-; IS	480

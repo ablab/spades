@@ -1,6 +1,0 @@
-reads	TRASH_SAUREUS_CORRECTED_MS.yaml
-single_cell	false
-reference_genome	../../../data/input/S.aureus/USA300_FPR3757.fasta.gz
-
-; RL	100
-; IS	180

@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.right.corrected.fastq.gz]
-  orientation: fr
-  right reads: [../../../data/input/HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.left.corrected.fastq.gz]
-  single reads: [../../../data/input/HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.left.unpaired.fastq.gz,
-    ../../../data/input/HMP/hmp_mda_pilot_jcvi_0003/hammer/00.reads.right.unpaired.fastq.gz]
-  type: paired-end

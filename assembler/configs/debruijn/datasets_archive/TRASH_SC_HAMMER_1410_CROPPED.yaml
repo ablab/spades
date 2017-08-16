@@ -1,4 +1,0 @@
-- left reads: [../../../data/input/E.coli/SC_cor/cropped/E.Coli.400K.from_2M.cor.2.fastq]
-  orientation: fr
-  right reads: [../../../data/input/E.coli/SC_cor/cropped/E.Coli.400K.from_2M.cor.1.fastq]
-  type: paired-end

@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/E.coli/SC_cor/human_filtered/filtered_paired_2.fasta]
-  orientation: fr
-  right reads: [../../../data/input/E.coli/SC_cor/human_filtered/filtered_paired_1.fasta]
-  single reads: [../../../data/input/E.coli/SC_cor/human_filtered/filtered_single_1.fasta,
-    ../../../data/input/E.coli/SC_cor/human_filtered/filtered_single_2.fasta]
-  type: paired-end

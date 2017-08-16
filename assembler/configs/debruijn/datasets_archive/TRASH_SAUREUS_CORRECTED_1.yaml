@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/S.Aureus.USA300_FPR3757/saureus_cor_right.fasta]
-  orientation: fr
-  right reads: [../../../data/input/S.Aureus.USA300_FPR3757/saureus_cor_left.fasta]
-  single reads: [../../../data/input/S.Aureus.USA300_FPR3757/saureus_cor_single_left.fasta,
-    ../../../data/input/S.Aureus.USA300_FPR3757/saureus_cor_single_right.fasta]
-  type: paired-end

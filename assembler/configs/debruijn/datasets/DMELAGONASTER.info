@@ -1,4 +1,0 @@
-reads	DMELAGONASTER.yaml
-single_cell	false
-reference_genome	"/storage/data/input/D.melanogaster/dmel-all-chromosome-r5.47.fasta.gz"
-

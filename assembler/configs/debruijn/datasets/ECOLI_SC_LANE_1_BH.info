@@ -1,6 +1,0 @@
-reads	ECOLI_SC_LANE_1_BH.yaml
-single_cell	true
-reference_genome	../../../data/input/Bacteria/E.coli/K12/MG1655-K12.fasta.gz
-
-; RL	100
-; IS	270

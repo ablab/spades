@@ -1,4 +1,0 @@
-- left reads: [../../../data/input/E.coli/SC/2909_tau1_099_04_right.fastq.gz]
-  orientation: fr
-  right reads: [../../../data/input/E.coli/SC/2909_tau1_099_04_left.fastq.gz]
-  type: paired-end

@@ -1,6 +1,0 @@
-- left reads: [../../../data/input/S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_2.cor.fastq]
-  orientation: fr
-  right reads: [../../../data/input/S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_1.cor.fastq]
-  single reads: [../../../data/input/S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_1.cor_single.fastq,
-    ../../../data/input/S.Aureus.USA300_FPR3757/Reads/Quaked/SRR022868_2.cor_single.fastq]
-  type: paired-end
