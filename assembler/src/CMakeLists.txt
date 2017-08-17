@@ -131,6 +131,9 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../test_dataset_truspades"
         DESTINATION share/spades)
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../test_dataset_plasmid"
         DESTINATION share/spades)
+#biosyntheticSPAdes default HMM profiles
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../biosynthetic_spades_hmms"
+        DESTINATION share/spades)
 # manual, LICENSE, and GPLv2
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../manual.html"
         DESTINATION share/spades

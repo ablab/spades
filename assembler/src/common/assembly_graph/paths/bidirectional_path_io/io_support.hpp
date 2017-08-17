@@ -144,7 +144,6 @@ public:
     }
 };
 
-
 inline std::shared_ptr<ContigNameGenerator> MakeContigNameGenerator(config::pipeline_type mode,
                                                                     const conj_graph_pack &gp) {
     std::shared_ptr<path_extend::ContigNameGenerator> name_generator;

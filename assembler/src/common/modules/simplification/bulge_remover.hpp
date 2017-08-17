@@ -106,7 +106,7 @@ template<class Graph>
 class BulgeGluer {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef std::function<void(EdgeId edge, const std::vector<EdgeId> &path)> BulgeCallbackF;
+    typedef std::function<bool(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
     Graph& g_;
     BulgeCallbackF opt_callback_;
     std::function<void(EdgeId)> removal_handler_;
@@ -169,9 +169,10 @@ public:
 
     }
 
-    void operator()(EdgeId edge, const std::vector<EdgeId> &path) {
-        if (opt_callback_)
-            opt_callback_(edge, path);
+    void operator()(EdgeId edge, const vector<EdgeId>& path) {
+        if (opt_callback_ && opt_callback_(edge, path)) {
+                return;
+        }
 
         if (removal_handler_)
             removal_handler_(edge);
@@ -355,7 +356,7 @@ protected:
 
 public:
 
-    typedef std::function<void(EdgeId edge, const std::vector<EdgeId> &path)> BulgeCallbackF;
+    typedef std::function<bool(EdgeId edge, const vector<EdgeId> &path)> BulgeCallbackF;
 
     BulgeRemover(Graph& g, size_t chunk_cnt,
             const AlternativesAnalyzer<Graph>& alternatives_analyzer,
@@ -629,7 +630,7 @@ private:
 
 public:
 
-    typedef std::function<void(EdgeId edge, const std::vector<EdgeId> &path)> BulgeCallbackF;
+    typedef std::function<bool(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
 
     ParallelBulgeRemover(Graph& g,
                          size_t chunk_cnt,

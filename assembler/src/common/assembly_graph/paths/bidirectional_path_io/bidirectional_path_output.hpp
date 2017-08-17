@@ -44,6 +44,7 @@ public:
 
 };
 
+
 class GFAPathWriter : public gfa::GFAWriter {
     void WritePath(const std::string &name, size_t segment_id,
                    const std::vector<std::string> &edge_strs,
@@ -105,6 +106,11 @@ public:
             segmented_path.push_back(edge_namer_.EdgeOrientationString(p.Back()));
             WritePath(scaffold_info.name, segment_id, segmented_path, "");
         }
+    }
+
+    void Write(const GraphComponent<Graph>& component) {
+        WriteSegments(component);
+        WriteLinks(component);
     }
 
 };

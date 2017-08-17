@@ -12,6 +12,7 @@
 #include "stages/simplification_pipeline/single_cell_simplification.hpp"
 #include "stages/simplification_pipeline/rna_simplification.hpp"
 #include "modules/simplification/cleaner.hpp"
+#include "common/utils/filesystem/path_helper.hpp"
 
 #include "simplification.hpp"
 
@@ -53,9 +54,10 @@ class GraphSimplifier {
     Graph& g_;
     SimplifInfoContainer info_container_;
     const debruijn_config::simplification simplif_cfg_;
-
     HandlerF removal_handler_;
     stats::detail_info_printer& printer_;
+    DynamicEdgeSet<Graph> restricted_edges_;
+    CountingCallback<Graph> cnt_callback_;
 
     bool PerformInitCleaning() {
         if (simplif_cfg_.init_clean.early_it_only && info_container_.main_iteration()) {
@@ -120,7 +122,10 @@ public:
               info_container_(info_container),
               simplif_cfg_(simplif_cfg),
               removal_handler_(removal_handler),
-              printer_(printer) {
+              printer_(printer),
+              restricted_edges_(gp.g) {
+
+        restricted_edges_.Fill(FillRestrictedEdges());
 
     }
 
@@ -236,6 +241,9 @@ public:
                     "Topology tip clipper");
         }
 
+        auto lambda_func = [this](EdgeId e, const vector<EdgeId>& path){
+            return restricted_edges_.count(e) > 0;
+        };
         algo.AddAlgo(
                 RelativeECRemoverInstance(gp_.g,
                                           simplif_cfg_.rcec, info_container_, removal_handler_),
@@ -257,7 +265,7 @@ public:
                 "Complex tip clipper");
 
         algo.AddAlgo(
-                ComplexBRInstance(gp_.g, simplif_cfg_.cbr, info_container_),
+                ComplexBRInstance(gp_.g, simplif_cfg_.cbr, restricted_edges_, info_container_),
                 "Complex bulge remover");
 
         algo.AddAlgo(
@@ -272,12 +280,12 @@ public:
 
         algo.AddAlgo(
                 BRInstance(g_, simplif_cfg_.br,
-                                   info_container_, removal_handler_),
+                           info_container_, lambda_func, removal_handler_),
                 "Bulge remover");
 
         algo.AddAlgo(
                 BRInstance(g_, simplif_cfg_.final_br,
-                                   info_container_, removal_handler_),
+                                   info_container_, lambda_func, removal_handler_),
                 "Final bulge remover");
 
         //TODO need better configuration
@@ -350,6 +358,7 @@ public:
         }
 
         printer_(info_printer_pos::final_simplified);
+
     }
 
     void SimplifyGraph() {
@@ -357,6 +366,10 @@ public:
 
         INFO("Graph simplification started");
         printer_(info_printer_pos::before_simplification);
+
+        auto lambda_func = [this](EdgeId e, const vector<EdgeId>& path){
+            return restricted_edges_.count(e) > 0;
+        };
 
         size_t iteration = 0;
         auto message_callback = [&] () {
@@ -369,7 +382,7 @@ public:
                             "Tip clipper");
         algo_tc_br->AddAlgo(DeadEndInstance(g_, simplif_cfg_.dead_end, info_container_, removal_handler_),
                             "Dead end clipper");
-        algo_tc_br->AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_),
+        algo_tc_br->AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, lambda_func, removal_handler_),
                             "Bulge remover");
 
 //        algo.AddAlgo(
@@ -394,6 +407,28 @@ public:
 
         AlgorithmRunningHelper<Graph>::LoopedRun(algo, /*min it count*/1, /*max it count*/10);
     }
+
+    std::vector<EdgeId> FillRestrictedEdges() {
+        if(!fs::check_existence(cfg::get().output_dir + "temp_anti/restricted_edges.fasta")) {
+            return std::vector<EdgeId>();
+        }
+
+        auto mapper = MapperInstance(gp_);
+        auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(cfg::get().output_dir + "temp_anti/restricted_edges.fasta"));
+
+        std::vector<EdgeId> a_domain_edges;
+        while (!reader->eof()) {
+            io::SingleRead read;
+            (*reader) >> read;
+            std::vector<EdgeId> edges = mapper->MapSequence(read.sequence()).simple_path();
+            for(auto edge : edges) {
+                a_domain_edges.push_back(edge);
+                a_domain_edges.push_back(g_.conjugate(edge));
+            }
+        }
+        return a_domain_edges;
+    }
+
 };
 
 std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultGPColorer(
@@ -426,9 +461,9 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
 
     //no other handlers here, todo change with DetachAll
-    if (gp.index.IsAttached())
-        gp.index.Detach();
-    gp.index.clear();
+    //if (gp.index.IsAttached())
+    //    gp.index.Detach();
+    //gp.index.clear();
 
     visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     
@@ -451,8 +486,8 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
                                preliminary_ ? *cfg::get().preliminary_simp : cfg::get().simp,
                                nullptr/*removal_handler_f*/,
                                printer);
-
     simplifier.SimplifyGraph();
+    CompressAllVertices(gp.g);
 }
 
 void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {

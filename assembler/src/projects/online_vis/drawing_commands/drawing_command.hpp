@@ -35,10 +35,10 @@ protected:
         curr_env.picture_counter_++;
     }
 
-    void DrawPicturesAlongPath(DebruijnEnvironment& curr_env, const vector<EdgeId>& path, string label = "") const {
+    void DrawPicturesAlongPath(DebruijnEnvironment& curr_env, const vector<EdgeId>& path, string label = "", size_t length = 0) const {
         make_dir(curr_env.folder_);
         stringstream namestream;
-        namestream << curr_env.folder_ << "/" << label << "_" << curr_env.file_name_base_  << "_" << curr_env.GetFormattedPictureCounter() << "/";
+        namestream << curr_env.folder_ << "/" << curr_env.GetFormattedPictureCounter() << "_" << "edges_" << path.size() << "_" << "length_" << length << "_"<< curr_env.file_name_base_ << "/";
         string directory = namestream.str();
         make_dir(directory);
         namestream << label << "_";
@@ -50,7 +50,7 @@ protected:
 
     void DrawPicturesAlongContig(DebruijnEnvironment& curr_env, io::SingleRead contig) const {
         string label = contig.name();
-        DrawPicturesAlongPath(curr_env, curr_env.mapper().MapRead(contig).simple_path(), label);
+        DrawPicturesAlongPath(curr_env, curr_env.mapper().MapRead(contig).simple_path(), label, contig.size());
         LOG("Contig " << contig.name() << " has been drawn");
     }
 

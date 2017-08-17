@@ -127,7 +127,12 @@ private:
             });
 
             std::sort(incoming.begin(), incoming.end(), [&] (EdgeId e1, EdgeId e2) {
-                return dijkstra_.GetDistance(g_.EdgeStart(e1)) < dijkstra_.GetDistance(g_.EdgeStart(e2));
+                auto first = dijkstra_.GetDistance(g_.EdgeStart(e1));
+                auto second = dijkstra_.GetDistance(g_.EdgeStart(e2));
+                if (first != second) {
+                    return first < second;
+                }
+                return g_.coverage(e1) > g_.coverage(e2);
             });
 
             for (EdgeId e : incoming) {

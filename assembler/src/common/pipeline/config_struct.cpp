@@ -81,6 +81,7 @@ std::vector<std::string> PipelineTypeNames() {
                     {"isolate", pipeline_type::isolate},
                     {"mda", pipeline_type::mda},
                     {"meta", pipeline_type::meta},
+                    {"anti", pipeline_type::anti},
                     {"moleculo", pipeline_type::moleculo},
                     {"rna", pipeline_type::rna},
                     {"plasmid", pipeline_type::plasmid},
@@ -730,6 +731,9 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.co, pt, "contig_output", complete);
 
     load(cfg.pb, pt, "pacbio_processor", complete);
+
+    load(cfg.biosynthetic_mode, pt, "bio", complete);
+    load(cfg.hmm_set, pt, "set_of_hmms", complete);
 
     load(cfg.two_step_rr, pt, "two_step_rr", complete);
 //TODO::how to do it normally??

@@ -474,13 +474,14 @@ template<class Graph>
 AlgoPtr<Graph> ComplexBRInstance(
     Graph &g,
     config::debruijn_config::simplification::complex_bulge_remover cbr_config,
+    DynamicEdgeSet<Graph>& a_domain_edges,
     const SimplifInfoContainer &info) {
     if (!cbr_config.enabled)
         return nullptr;
     size_t max_length = (size_t) ((double) g.k() * cbr_config.max_relative_length);
     size_t max_diff = cbr_config.max_length_difference;
-    return std::make_shared<omnigraph::complex_br::ComplexBulgeRemover<Graph>>(g, max_length,
-                                                                               max_diff, info.chunk_cnt());
+    return std::make_shared<omnigraph::complex_br::ComplexBulgeRemover<Graph>>(g, max_length, max_diff,
+                                                                               a_domain_edges, info.chunk_cnt());
 }
 
 template<class Graph>
@@ -624,10 +625,13 @@ AlgoPtr<Graph> TopologyTipClipperInstance(
                               condition, info, removal_handler, /*track changes*/false);
 }
 
+typedef std::function<bool(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
+
 template<class Graph>
 AlgoPtr<Graph> BRInstance(Graph &g,
                           const config::debruijn_config::simplification::bulge_remover &br_config,
                           const SimplifInfoContainer &info,
+                          BulgeCallbackF callback,
                           EdgeRemovalHandlerF<Graph> removal_handler = nullptr) {
     if (!br_config.enabled || (br_config.main_iteration_only && !info.main_iteration())) {
         return nullptr;
@@ -643,7 +647,7 @@ AlgoPtr<Graph> BRInstance(Graph &g,
                 br_config.buff_cov_diff,
                 br_config.buff_cov_rel_diff,
                 alternatives_analyzer,
-                nullptr,
+                callback,
                 removal_handler,
                 /*track_changes*/true);
     } else {
@@ -651,7 +655,7 @@ AlgoPtr<Graph> BRInstance(Graph &g,
         return std::make_shared<omnigraph::BulgeRemover<Graph>>(g,
                 info.chunk_cnt(),
                 alternatives_analyzer,
-                nullptr,
+                callback,
                 removal_handler,
                 /*track_changes*/true);
     }

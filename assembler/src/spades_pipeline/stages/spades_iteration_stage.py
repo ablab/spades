@@ -60,7 +60,9 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one or K >= options_storage.GAP_CLOSER_ENABLE_MIN_K)
     subst_dict["rr_enable"] = bool_to_str(last_one and cfg.rr_enable)
-    #    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
+    subst_dict["bio"] = bool_to_str(cfg.bio)
+    subst_dict["set_of_hmms"] = cfg.set_of_hmms
+#    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
     subst_dict["save_gp"] = bool_to_str(cfg.save_gp)

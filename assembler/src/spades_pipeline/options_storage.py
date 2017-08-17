@@ -44,6 +44,9 @@ scaffolds_paths = "scaffolds.paths"
 transcripts_name = "transcripts.fasta"
 transcripts_paths = "transcripts.paths"
 filtering_types = ["hard", "soft", "default"]
+bgc_stats_name = "bgc_statistics.txt"
+gene_clusters_name = "gene_clusters.fasta"
+domain_graph_name = "domain_graph.dot"
 
 pipeline_state_dir = "pipeline_state"
 

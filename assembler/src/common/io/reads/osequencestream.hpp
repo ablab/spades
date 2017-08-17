@@ -17,7 +17,7 @@
 
 namespace io {
 
-inline void WriteWrapped(const std::string &s, std::ostream &os, size_t max_width = 60) {
+inline void WriteWrapped(const std::string &s, ostream &os, size_t max_width = 60) {
     size_t cur = 0;
     while (cur < s.size()) {
         os << s.substr(cur, max_width) << "\n";
@@ -79,6 +79,29 @@ public:
 
     using osequencestream::operator<<;
 
+};
+
+class osequencestream_bgc: public osequencestream {
+protected:
+    int cluster_;
+    int candidate_;
+
+    virtual void write_header(const std::string& s) {
+        // Velvet format: NODE_1_length_24705_cov_358.255249
+        ofstream_ << ">" << AddClusterId(MakeContigId(id_++, s.size()), cluster_, candidate_) << std::endl;
+    }
+
+
+public:
+    osequencestream_bgc(const std::string& filename)
+            : osequencestream(filename), cluster_(0), candidate_(0) { }
+
+    void SetCluster(int cluster, int candidate) {
+        cluster_ = cluster;
+        candidate_ = candidate;
+    }
+
+    using osequencestream::operator<<;
 };
 
 struct FastaWriter {

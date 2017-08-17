@@ -17,7 +17,6 @@ import support
 import options_storage
 from process_cfg import empty_config
 
-
 def get_mode():
     mode = None
     script_basename = basename(options_storage.first_command_line[0])
@@ -28,12 +27,15 @@ def get_mode():
     mode_parser.add_argument("--rna", dest="rna", action="store_true")
     mode_parser.add_argument("--plasmid", dest="plasmid", action="store_true")
     mode_parser.add_argument("--meta", dest="meta", action="store_true")
+    mode_parser.add_argument("--bio", dest="bio", action="store_true")
     nargs, unknown_args = mode_parser.parse_known_args(options)
 
     if script_basename == "rnaspades.py" or nargs.rna:
         mode = "rna"
     elif script_basename == "plasmidspades.py" or nargs.plasmid:
         mode = "plasmid"
+    elif nargs.bio:
+        mode = "bio"
     elif script_basename == "metaspades.py" or nargs.meta:
         mode = "meta"
     if script_basename == "metaplasmidspades.py" or (nargs.plasmid and nargs.meta):
@@ -47,11 +49,15 @@ def add_mode_to_args(args):
         args.rna = True
     elif mode == "plasmid":
         args.plasmid = True
+    elif mode == "bio":
+        args.meta = True
+        args.bio = True
     elif mode == "meta":
         args.meta = True
     elif mode == "metaplasmid":
         args.meta = True
         args.plasmid = True
+
 
 
 def version():
@@ -290,6 +296,11 @@ def add_basic_args(pgroup_basic):
     pgroup_basic.add_argument("--meta",
                               dest="meta",
                               help="this flag is required for metagenomic sample data"
+                              if not help_hidden else argparse.SUPPRESS,
+                              action="store_true")
+    pgroup_basic.add_argument("--bio",
+                              dest="bio",
+                              help="this flag is required for biosyntheticSPAdes mode"
                               if not help_hidden else argparse.SUPPRESS,
                               action="store_true")
     pgroup_basic.add_argument("--rna",
@@ -853,6 +864,13 @@ def add_to_cfg(cfg, log, bin_home, args):
     cfg["common"].__dict__["developer_mode"] = args.developer_mode
     if args.series_analysis:
         cfg["common"].__dict__["series_analysis"] = args.series_analysis
+    cfg["common"].__dict__["bio"] = args.bio
+    if args.bio:
+        cfg["common"].__dict__["set_of_hmms"] = ",".join([os.path.join(biosyntheticspades_hmms, hmmfile) for hmmfile in os.listdir(biosyntheticspades_hmms)
+                                                          if os.path.isfile(os.path.join(biosyntheticspades_hmms, hmmfile))
+                                                          and (hmmfile.endswith("hmm") or hmmfile.endswith("hmm.gz"))])
+    else:
+        cfg["common"].__dict__["set_of_hmms"] = "";
 
     # dataset section
     cfg["dataset"].__dict__["yaml_filename"] = args.dataset_yaml_filename
@@ -914,6 +932,8 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
             support.add_to_dataset("-1", os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"), dataset_data)
             support.add_to_dataset("-2", os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz"), dataset_data)
 
+    if args.bio:
+        args.meta = True
     if not args.output_dir:
         support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
     if not os.path.isdir(args.output_dir):
@@ -1010,6 +1030,9 @@ def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False
     cfg = dict()
     parser = create_parser()
 
+    global parser
+    global biosyntheticspades_hmms
+    biosyntheticspades_hmms = os.path.join(spades_home, "biosynthetic_spades_hmms")
     if secondary_filling:
         old_output_dir = options_storage.args.output_dir
         old_stop_after = options_storage.args.stop_after

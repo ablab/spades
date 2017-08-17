@@ -172,4 +172,17 @@ TypedPredicate<T> AlwaysFalse() {
     return AlwaysFalseOperator<T>();
 }
 
+
+    template<class T>
+    std::function<void(T)> CombineCallbacks(const std::function<void(T)>& f1,
+                                            const std::function<void(T)>& f2) {
+        return [=] (T t) {
+            if (f1)
+                f1(t);
+            if (f2)
+                f2(t);
+        };
+    }
+
+
 } // namespace func

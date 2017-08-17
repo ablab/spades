@@ -310,7 +310,70 @@ public:
     }
 };
 
-/**
+
+
+template<class Graph>
+class DynamicEdgeSet : public GraphActionHandler<Graph>{
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    set<EdgeId> edge_set_;
+public:
+    DynamicEdgeSet(const Graph &graph) :
+            omnigraph::GraphActionHandler<Graph>(graph, "DynamicEdgeSet") {
+    }
+
+    virtual void HandleAdd(EdgeId /*e*/) {
+    }
+
+    virtual void HandleDelete(EdgeId e) {
+        edge_set_.erase(e);
+    }
+
+    virtual void HandleMerge(const vector<EdgeId> &old_edges, EdgeId new_edge) {
+        for (auto edge : old_edges) {
+            if (edge_set_.count(edge)) {
+                edge_set_.erase(edge);
+                edge_set_.insert(new_edge);
+            }
+        }
+    }
+
+    virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
+        if (edge_set_.count(edge1) || edge_set_.count(edge2)) {
+            edge_set_.insert(new_edge);
+            edge_set_.erase(edge1);
+            edge_set_.erase(edge2);
+        }
+    }
+
+    virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
+                             EdgeId new_edge2) {
+        if (edge_set_.count(old_edge)) {
+            edge_set_.erase(old_edge);
+            edge_set_.insert(new_edge1);
+            edge_set_.insert(new_edge2);
+        }
+    }
+
+    void Fill(const vector<EdgeId> &container) {
+        for (auto elem : container) {
+            edge_set_.insert(elem);
+        }
+    }
+
+    int count(EdgeId edge) {
+        return edge_set_.count(edge);
+    }
+
+    size_t size() {
+        return edge_set_.size();
+    }
+
+private:
+    DECL_LOGGER("DynamicEdgeSet");
+};
+
+    /**
  * SmartVertexIterator iterates through vertices of graph. It listens to AddVertex/DeleteVertex graph events
  * and correspondingly edits the set of vertices to iterate through. Note: high level event handlers are
  * triggered before low level event handlers like H>andleAdd/HandleDelete. Thus if Comparator uses certain

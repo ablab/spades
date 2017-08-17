@@ -26,6 +26,7 @@
 #include "series_analysis.hpp"
 #include "pipeline/stage.hpp"
 #include "contig_output_stage.hpp"
+#include "domain_graph_construction.hpp"
 
 namespace spades {
 
@@ -173,6 +174,9 @@ void assemble_genome() {
     }
 
     SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration);
+
+    if(cfg::get().biosynthetic_mode && cfg::get().rr_enable)
+        SPAdes.add(new debruijn_graph::DomainGraphConstruction());
 
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 
