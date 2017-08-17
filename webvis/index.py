@@ -124,10 +124,11 @@ def command():
         sh = shellders[session["username"]]
         com = request.args.get("command", "")
         try:
-            _debug("Sending `%s`..." % com)
-            session["log"].append(">" + com)
-            sh.send(com)
-            (result, complete) = sh.get_output(5)
+            if len(com):
+                _debug("Sending `%s`..." % com)
+                session["log"].append(">" + com)
+                sh.send(com)
+            (result, complete) = sh.get_output(3)
             session["status"] = 0 if complete else 1
             session["log"].extend(result)
         except:
@@ -236,7 +237,7 @@ def ls():
         #For path completion
         try:
             files = subprocess.check_output("ls -pd " + full_path, shell=True).split("\n")[0:-1]
-            _debug(files)
+            _debug(len(files), "completions")
             #TODO: unify
             return " ".join(files)
         except:
@@ -245,7 +246,7 @@ def ls():
         #For accessing folder content
         content = [path + f for f in os.listdir(full_path)]
         files = [f for f in content if isfile(augment(f))]
-        _debug(files)
+        _debug(len(files), "files")
         return format_output(files)
     except IOError as err:
         return err.strerror
