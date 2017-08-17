@@ -626,10 +626,9 @@ def get_max_reads_length(reads_file, log, num_checked):
     if not file_type:
         error('Incorrect type of reads file: ' + reads_file, log)
 
-    with SeqIO.Open(reads_file, "r") as reads_file_handle:
-        max_reads_length = max([len(rec) for rec in itertools.islice(SeqIO.parse(reads_file_handle, file_type), num_checked)])
-        log.info('Max reads length: ' + str(max_reads_length))
-        return max_reads_length
+    max_reads_length = max([len(rec) for rec in itertools.islice(SeqIO.parse(SeqIO.Open(reads_file, "r"), file_type), num_checked)])
+    log.info('Max reads length: ' + str(max_reads_length))
+    return max_reads_length
 
 
 def check_dataset_reads(dataset_data, only_assembler, log):
