@@ -53,16 +53,37 @@ NAME_TEMPLATE = "(\w+\.?)?\d+"
 #Group samples
 GROUP_SAMPLES = config["assembly"]["groups"]
 #Form /N groups
-if type(GROUP_SAMPLES) == str and GROUP_SAMPLES[0] == "/":
+if type(GROUP_SAMPLES) == str:
+    if not GROUP_SAMPLES[0] == "/":
+        raise WorkflowException("Wrong format of assembly groups")
     group_size = SAMPLE_COUNT // int(GROUP_SAMPLES[1:])
     GROUP_SAMPLES = [["sample"+str(j) for j in range(i, min(i + group_size, SAMPLE_COUNT + 1))]
                      for i in range(1, SAMPLE_COUNT, group_size)]
-USED_SAMPLES = set(chain(*GROUP_SAMPLES))
-#Replace the wildcard group with unused samples
-if GROUP_SAMPLES and GROUP_SAMPLES[-1] == "*":
-    GROUP_SAMPLES[-1] = [sample for sample in SAMPLES if sample not in USED_SAMPLES]
-#Otherwise, add a single-sample group from the rest of the samples
 else:
+    USED_SAMPLES = set()
+
+    def process_sample(i):
+        if type(i) == int:
+            res = "sample" + str(i)
+        elif type(i) == str and i.startswith("sample"):
+            res = i
+        else:
+            raise WorkflowException("Samples in groups must be named either sampleXX or XX, but got " + str(i))
+        return res
+
+    def process_group(g):
+        if type(g) == list:
+            res = list(map(process_sample, g))
+        elif type(g) == str and g == "*": #Replace the wildcard group with unused samples
+            res = [sample for sample in SAMPLES if sample not in USED_SAMPLES]
+        else:
+            raise WorkflowException("Groups must be either list of samples or a wildcard *, but got " + str(g))
+        USED_SAMPLES.update(res)
+        return res
+
+    GROUP_SAMPLES = list(map(process_group, GROUP_SAMPLES))
+
+    #Add a single-sample group from the rest of the samples
     for sample in SAMPLES:
         if sample not in USED_SAMPLES:
             GROUP_SAMPLES.append([sample])
