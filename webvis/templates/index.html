@@ -60,17 +60,17 @@ function stopWheel(where) {
 }
 
 function sendCommand(command, callback) {
-    startWheel("#console_container");
+    startWheel("#console");
     $.ajax({
         url: "command",
         type: "GET",
         data: {command: command},
         success: function(response) {
-            stopWheel("#console_container");
+            stopWheel("#console");
             callback(response);
         },
         error: function(xhr, status, errmsg) {
-            stopWheel("#console_container");
+            stopWheel("#console");
             callback(status + " " + errmsg);
         }
     });
@@ -149,60 +149,71 @@ sigma.classes.graph.addMethod("unionWith", function(graph) {
 });
 var sWrap;
 
-$(function() {
-    var controller = $("#console").console({
-        promptLabel: "GAF$> ",
-        welcomeMessage: initLog,
-        commandValidate: function(line) {
-            return (line != "");
-        },
-        //Sending the command on return
-        commandHandle: function(line) {
+$(function() { //documentLoad
+
+function getLog(response) {
+    $(function() {
+        controller.report(response.log);
+        if (!response.complete)
+            sendCommand("", getLog);
+    });
+}
+
+var status = {{status}};
+if (status)
+    getLog();
+
+var controller = $("#console").console({
+    promptLabel: "GAF$> ",
+    welcomeMessage: initLog,
+    commandValidate: function(line) {
+        return line != "";
+        //line.match(/^[\x00-\x7F]+$/);
+    },
+    //Sending the command on return
+    commandHandle: function(input) {
+        lines = input.split("\n");
+        for (line of lines) {
             cArgs = line.split(" ");
             //Some special commands don't have handlers in online_vis,
             //let's process 'em ad-hoc way
             if (specialFunctions[cArgs[0]]) {
                 specialFunctions[cArgs[0]](cArgs[1]);
             } else {
-                sendCommand(line, function getLog(response) {
-                    $(function() {
-                        controller.report(response.log);
-                        if (!response.complete)
-                        sendCommand("", getLog);
-                    });
-                });
+                sendCommand(line, getLog);
             }
-            return true;
-        },
-        cols: 80,
-        animateScroll: true,
-        promptHistory: true,
-        completeHandle: function(prefix) {
-            var ret = [];
-            var args = prefix.split(" ");
-            if (args.length == 1) {
-                //Completing the command name
-                standardCommands.forEach(function(command) {
-                    if (command.lastIndexOf(prefix, 0) === 0) {
-                        ret.push(command.substring(prefix.length));
-                    }
-                });
-            } else {
-                var path = args[args.length - 1];
-                //Completing the arg-path
-                $.ajax({
-                    url: "/ls?path=" + path + "*",
-                    async: false,
-                    success: function (response) {
-                        ret = response.split(" ").map(function (name) {
-                            return name.substr(path.length);
-                        });
-                    }
-                });
-            }
-            return ret;
         }
-    });
+        return true;
+    },
+    cols: 80,
+    animateScroll: true,
+    promptHistory: true,
+    completeHandle: function(prefix) {
+        var ret = [];
+        var args = prefix.split(" ");
+        if (args.length == 1) {
+            //Completing the command name
+            standardCommands.forEach(function(command) {
+                if (command.lastIndexOf(prefix, 0) === 0) {
+                    ret.push(command.substring(prefix.length));
+                }
+            });
+        } else {
+            var path = args[args.length - 1];
+            //Completing the arg-path
+            $.ajax({
+                url: "/ls?path=" + path + "*",
+                async: false,
+                success: function (response) {
+                    ret = response.split(" ").map(function (name) {
+                        return name.substr(path.length);
+                    });
+                }
+            });
+        }
+        return ret;
+    }
+});
 
     //Clicking on .dot files loads them as an svg
     /*$(".console").on("click", "[href$='.dot']", function(event) {
@@ -221,6 +232,7 @@ $(function() {
 $(".console").on("click", "[href$='/']", function(event) {
     event.preventDefault();
     var url = $(this).attr("href");
+    startWheel("#filelist");
     $.ajax({
         url: url,
         success: function (response) {
@@ -230,6 +242,10 @@ $(".console").on("click", "[href$='/']", function(event) {
             $("#dirhist").prepend($("<div>").attr("id", hash).html($("<a>").attr("href", url).text(path)));
             $("#curdir").text(path);
             $("#filelist").html(response);
+            stopWheel("#filelist");
+        },
+        error: function (response) {
+            stopWheel("#filelist");
         }
     });
 });

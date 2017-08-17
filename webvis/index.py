@@ -54,8 +54,6 @@ def format_output(lines):
 
 env_path = ""
 caching = False
-cache_path = "static/cache/"
-img_path = "img/"
 shellders = dict()
 
 def mkdir(path):
@@ -67,7 +65,7 @@ def mkdir(path):
 @app.route("/", methods=['GET'])
 def index():
     if "username" in session:
-        return flask.render_template("index.html", username=session["username"])
+        return flask.render_template("index.html", username=session["username"], status=session.get("status", 0))
     else:
         logged = ", ".join(shellders.keys())
         return flask.render_template("login.html", names=logged)
@@ -88,11 +86,11 @@ def login():
         #TODO: server name validation
         if not name:
             name = "gaf"
-        mkdir(path.join(cache_path, name))
-        mkdir(path.join(img_path, name))
+        mkdir(os.path.join("sessions", name))
+        mkdir(os.path.join("sessions", name, "img"))
         if name not in shellders:
             try:
-                launch = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)
+                launch = Shellder("sessions/%s/vis_in" % name, "sessions/%s/vis_out" % name, env_path)
                 _debug("Started an instance", launch.pid())
                 shellders[name] = launch
                 session["log"] = launch.get_output()
@@ -125,12 +123,18 @@ def command():
     else:
         sh = shellders[session["username"]]
         com = request.args.get("command", "")
-        if len(com):
+        try:
             _debug("Sending `%s`..." % com)
             session["log"].append(">" + com)
             sh.send(com)
-        (result, complete) = sh.get_output(5)
-        session["log"].extend(result)
+            (result, complete) = sh.get_output(5)
+            session["status"] = 0 if complete else 1
+            session["log"].extend(result)
+        except:
+            err = str(sys.exc_info()[0])
+            _debug("Error: " + err)
+            session["status"] = 0
+            (result, complete) = ([err], True)
     return flask.jsonify(log=format_output(result), complete=complete)
 
 @app.route("/get")
@@ -141,21 +145,18 @@ def get():
     except IOError:
         return flask.abort(404)
 
-def make_cached(basename):
-    return path.join(img_path, session["username"], basename)
+def img_path(basename):
+    return path.join("sessions", session["username"], "img", basename)
 
 def do_render(full_path):
     file_name = path.basename(full_path)
     name_only, ext = path.splitext(file_name)
-    #if not ext == DOT:
-    #    raise RuntimeError()
-    name = session["username"]
-    res_path = make_cached(name_only + SVG)
-    result = open(res_path, "w")
-    subprocess.call(["dot", "-Tsvg", full_path], stdout=result)
-    result.close()
+    res_name = name_only + SVG
+    res_path = img_path(res_name)
+    with open(res_path, "w") as result:
+        subprocess.call(["dot", "-Tsvg", full_path], stdout=result)
     _debug("Written to", res_path)
-    return flask.redirect(res_path)
+    return flask.redirect("img/" + res_name)
 
 @app.route("/render")
 def render():
@@ -166,9 +167,9 @@ def render():
     except:
         flask.abort(500)
 
-@app.route("/img/<name>/<file>")
-def img(name, file):
-    full_path = os.path.join(img_path, name, file)
+@app.route("/img/<file>")
+def img(file):
+    full_path = img_path(file)
     _debug("Showing", full_path)
     return flask.send_file(full_path)
 
@@ -207,13 +208,13 @@ def vertex(name):
         try:
             full_path = augment(re.finditer(FILENAME_REGEXP, out).next().group())
             if ext == SVG:
-                return flask.redirect(do_render(full_path))
+                return do_render(full_path)
             elif ext == JSON:
                 return do_graph(full_path)
             else:
                 return flask.error(500)
         except:
-            res_path = make_cached(vertex_id + "_err.txt")
+            res_path = img_path(vertex_id + "_err.txt")
             result = open(res_path, "w")
             result.write(out)
             result.close()
@@ -249,19 +250,26 @@ def ls():
     except IOError as err:
         return err.strerror
 
+def close_all():
+    for login, sh in shellders.items():
+        _debug("Stopping %s (pid %d)" % (login, sh.pid()))
+        sh.close()
+
 if __name__ == "__main__":
     #We need to stop all online_vis instances manually on exit
     def handler(signum, frame):
-        _debug("Stopping instances...")
-        for _, sh in shellders.items():
-            sh.close()
+        close_all()
         sys.exit(0)
     signal.signal(signal.SIGINT, handler)
     signal.signal(signal.SIGTERM, handler)
     config = ConfigParser()
     config.readfp(open("webvis.cfg"))
     env_path = config.get("server", "env")
-    port = config.getint("server", "port")
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else config.getint("server", "port")
     app.debug = config.getboolean("server", "debug")
     app.secret_key = "somekey"
-    app.run(port=port)
+    try:
+        app.run(port=port)
+    except:
+        close_all()
+        raise
