@@ -229,7 +229,7 @@ public:
 
 protected:
     bool HasIdealInfo(EdgeId e1, EdgeId e2, size_t dist) const {
-        return math::gr(wc_->lib().IdealPairedInfo(e1, e2, (int) dist), 0.);
+        return math::gr(wc_->PairedLibrary()->IdealPairedInfo(e1, e2, (int) dist), 0.);
     }
 
     bool HasIdealInfo(const BidirectionalPath& p, EdgeId e, size_t gap) const {
@@ -689,7 +689,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
 
     void GetDistances(EdgeId e1, EdgeId e2, std::vector<int>& dist,
             std::vector<double>& w) const {
-        wc_->lib().CountDistances(e1, e2, dist, w);
+        wc_->PairedLibrary()->CountDistances(e1, e2, dist, w);
     }
 
     void CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) const {
@@ -730,15 +730,15 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
 
     set<EdgeId> FindCandidates(const BidirectionalPath& path) const {
         set<EdgeId> jumping_edges;
-        const auto& lib = wc_->lib();
+        auto lib = wc_->PairedLibrary();
         //todo lib (and FindJumpEdges) knows its var so it can be counted there
-        int is_scatter = int(math::round(lib.GetIsVar() * is_scatter_coeff_));
-        for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib.GetISMax(); --i) {
+        int is_scatter = int(math::round(lib->GetIsVar() * is_scatter_coeff_));
+        for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib->GetISMax(); --i) {
             set<EdgeId> jump_edges_i;
-            lib.FindJumpEdges(path.At(i), jump_edges_i,
+            lib->FindJumpEdges(path.At(i), jump_edges_i,
                                std::max(0, (int)path.LengthAt(i) - is_scatter),
                                //FIXME do we need is_scatter here?
-                               int((path.LengthAt(i) + lib.GetISMax() + is_scatter)),
+                               int((path.LengthAt(i) + lib->GetISMax() + is_scatter)),
                                0);
             for (EdgeId e : jump_edges_i) {
                 if (IsTip(e)) {

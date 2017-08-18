@@ -80,7 +80,7 @@ class IdealInfoProvider {
 public:
     virtual ~IdealInfoProvider() {}
 
-    virtual std::vector<EdgeWithPairedInfo> FindCoveredEdges(const BidirectionalPath& path, EdgeId candidate) const = 0;
+    virtual std::vector<EdgeWithPairedInfo> FindCoveredEdges(const BidirectionalPath& path, EdgeId candidate, int gap = 0) const = 0;
 protected:
     DECL_LOGGER("IdealInfoProvider");
 };
@@ -91,11 +91,11 @@ public:
     BasicIdealInfoProvider(const shared_ptr<PairedInfoLibrary>& lib) : lib_(lib) {
     }
 
-    std::vector<EdgeWithPairedInfo> FindCoveredEdges(const BidirectionalPath& path, EdgeId candidate) const override {
+    std::vector<EdgeWithPairedInfo> FindCoveredEdges(const BidirectionalPath& path, EdgeId candidate, int gap) const override {
         std::vector<EdgeWithPairedInfo> covered;
         for (int i = (int) path.Size() - 1; i >= 0; --i) {
             double w = lib_->IdealPairedInfo(path[i], candidate,
-                                            (int) path.LengthAt(i));
+                                            (int) path.LengthAt(i) + gap);
             //FIXME think if we need extremely low ideal weights
             if (math::gr(w, 0.)) {
                 covered.push_back(EdgeWithPairedInfo(i, w));
@@ -109,13 +109,13 @@ class WeightCounter {
 
 protected:
     const Graph& g_;
-    const shared_ptr<PairedInfoLibrary> lib_;
+    shared_ptr<PairedInfoLibrary> lib_;
     bool normalize_weight_;
     shared_ptr<IdealInfoProvider> ideal_provider_;
 
 public:
 
-    WeightCounter(const Graph& g, const shared_ptr<PairedInfoLibrary>& lib, 
+    WeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary> lib,
                   bool normalize_weight = true, 
                   shared_ptr<IdealInfoProvider> ideal_provider = nullptr) :
             g_(g), lib_(lib), normalize_weight_(normalize_weight), ideal_provider_(ideal_provider) {
@@ -130,8 +130,8 @@ public:
     virtual double CountWeight(const BidirectionalPath& path, EdgeId e,
             const std::set<size_t>& excluded_edges = std::set<size_t>(), int gapLength = 0) const = 0;
 
-    const PairedInfoLibrary& lib() const {
-        return *lib_;
+    shared_ptr<PairedInfoLibrary> PairedLibrary() const {
+        return lib_;
     }
 
 protected:
@@ -144,7 +144,7 @@ class ReadCountWeightCounter: public WeightCounter {
             int add_gap = 0) const {
         std::vector<EdgeWithPairedInfo> answer;
 
-        for (const EdgeWithPairedInfo& e_w_pi : ideal_provider_->FindCoveredEdges(path, e)) {
+        for (const EdgeWithPairedInfo& e_w_pi : ideal_provider_->FindCoveredEdges(path, e, add_gap)) {
             double w = lib_->CountPairedInfo(path[e_w_pi.e_], e,
                     (int) path.LengthAt(e_w_pi.e_) + add_gap);
 
@@ -255,7 +255,7 @@ public:
             const std::set<size_t>& excluded_edges, int gap) const override {
         TRACE("Counting weight for edge " << g_.str(e));
         double lib_weight = 0.;
-        const auto ideal_coverage = ideal_provider_->FindCoveredEdges(path, e);
+        const auto ideal_coverage = ideal_provider_->FindCoveredEdges(path, e, gap);
 
         for (const auto& e_w_pi : CountLib(path, e, ideal_coverage, gap)) {
             if (!excluded_edges.count(e_w_pi.e_)) {
@@ -275,7 +275,7 @@ public:
     std::set<size_t> PairInfoExist(const BidirectionalPath& path, EdgeId e, 
                                     int gap = 0) const override {
         std::set<size_t> answer;
-        for (const auto& e_w_pi : CountLib(path, e, ideal_provider_->FindCoveredEdges(path, e), gap)) {
+        for (const auto& e_w_pi : CountLib(path, e, ideal_provider_->FindCoveredEdges(path, e, gap), gap)) {
             if (math::gr(e_w_pi.pi_, 0.)) {
                 answer.insert(e_w_pi.e_);
             }
@@ -307,7 +307,7 @@ public:
     }
 
     //TODO optimize number of calls of EstimatePathCoverage(path)
-    std::vector<EdgeWithPairedInfo> FindCoveredEdges(const BidirectionalPath& path, EdgeId candidate) const override {
+    std::vector<EdgeWithPairedInfo> FindCoveredEdges(const BidirectionalPath& path, EdgeId candidate, int gap) const override {
         VERIFY(read_length_ != -1ul);
         //bypassing problems with ultra-low coverage estimates
         double estimated_coverage = max(EstimatePathCoverage(path), 1.0);
@@ -315,7 +315,7 @@ public:
         TRACE("Estimated coverage " << estimated_coverage);
         TRACE("Correction coefficient " << correction_coeff);
 
-        std::vector<EdgeWithPairedInfo> answer = BasicIdealInfoProvider::FindCoveredEdges(path, candidate);
+        std::vector<EdgeWithPairedInfo> answer = BasicIdealInfoProvider::FindCoveredEdges(path, candidate, gap);
         for (auto& e_w_pi : answer) {
             e_w_pi.pi_ *= correction_coeff;
         }

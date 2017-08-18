@@ -355,17 +355,33 @@ public:
     //
     //edges -- first edge is loop's back edge, second is loop exit edge
     void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) const {
-        UndoCycles(path, edges.first);
-        double lopp_edge_weight = wc_.CountWeight(path, edges.first);
+        EdgeId back_cycle_edge = edges.first;
+        EdgeId forward_cycle_edge = path.Back();
+        EdgeId loop_exit = edges.second;
+
+        UndoCycles(path, back_cycle_edge);
+        double lopp_edge_weight = wc_.CountWeight(path, back_cycle_edge);
 
         if (math::gr(lopp_edge_weight, weight_threshold_)) {
             //Paired information on loop back edges exits => at leat one iteration
-            MakeCycleStep(path, edges.first);
-            path.PushBack(edges.second, Gap(int(g_.k() + BASIC_N_CNT)));
+            path.PushBack(back_cycle_edge);
+
+            //Looking for paired information supporting more than 1 cycle
+            if (NoSelfPairedInfo(back_cycle_edge, forward_cycle_edge)) {
+                //More likely to be a single cycle
+                DEBUG("Single loop");
+                path.PushBack(forward_cycle_edge);
+                path.PushBack(loop_exit);
+            }
+            else {
+                DEBUG("Multiple cycles");
+                //More likely to be a 2 or more cycles
+                path.PushBack(loop_exit, Gap(int(g_.k() + BASIC_N_CNT)));
+            }
         }
         else {
             //No information on loop back edges exits => 0 iterations
-            path.PushBack(edges.second);
+            path.PushBack(loop_exit);
         }
     }
 
@@ -378,6 +394,27 @@ public:
         }
     }
 
+private:
+
+    bool NoSelfPairedInfo(EdgeId back_cycle_edge, EdgeId forward_cycle_edge) const {
+        size_t is = wc_.PairedLibrary()->GetISMax();
+        int forward_len = (int) g_.length(forward_cycle_edge);
+        bool exists_pi = true;
+
+        BidirectionalPath cycle(g_, back_cycle_edge);
+        while (cycle.Length() < is + g_.length(back_cycle_edge)) {
+            auto w = wc_.CountWeight(cycle, back_cycle_edge, std::set<size_t>(), forward_len);
+            if (math::gr(w, weight_threshold_)) {
+                //Paired information found within loop
+                DEBUG("Found PI with back weight " << w << ", weight threshold " << weight_threshold_);
+                exists_pi = false;
+                break;
+            }
+            cycle.PushBack(back_cycle_edge, Gap(forward_len));
+        }
+
+        return exists_pi;
+    }
 };
 
 //TODO move to gap_closing.hpp
