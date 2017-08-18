@@ -141,13 +141,19 @@ def add_configs(command, configs_dir):
                            ("rna", "rna_mode"),
                            ("large_genome", "large_genome_mode"),
                            ("plasmid", "plasmid_mode"),
-                           ("careful", "careful_mode"),
+                           #("careful", "careful_mode"),
                            ("diploid_mode", "diploid_mode")]
     for (mode, config) in mode_config_mapping:
         if options_storage.__dict__[mode]:
             if mode == "rna" or mode == "meta":
                 command.append(os.path.join(configs_dir, "mda_mode.info"))
             command.append(os.path.join(configs_dir, config + ".info"))
+    if options_storage.__dict__["careful"]:
+        if options_storage.__dict__["single_cell"]:
+            command.append(os.path.join(configs_dir, "careful_mda_mode.info"))
+        else:
+            command.append(os.path.join(configs_dir, "careful_mode.info"))
+
     # special case: extra config
     if options_storage.rna and options_storage.fast:
         command.append(os.path.join(configs_dir, "rna_fast_mode.info"))

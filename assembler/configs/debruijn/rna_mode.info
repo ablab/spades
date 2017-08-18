@@ -69,11 +69,13 @@ simp
         max_ec_length_coefficient   30
         max_coverage_coeff  5.0
     }
+
     ;all topology based erroneous connection removers are off
     ier
     {
         enabled                     false
     }
+
     ; hidden ec remover
     her
     {
