@@ -1,9 +1,8 @@
 #pragma once
 
-#include "extension_chooser_checker.hpp"
 #include "utils/logger/logger.hpp"
 #include "common/pipeline/stage.hpp"
-#include "general_barcode_statistics.hpp"
+#include "old_extender_stats/general_barcode_statistics.hpp"
 
 namespace debruijn_graph {
     class ReadCloudStatisticsStage : public spades::AssemblyStage {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "contracted_graph.hpp"
+#include "common/barcode_index/contracted_graph.hpp"
 #include "statistics_processor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 
@@ -16,11 +16,13 @@ namespace scaffold_graph_utils {
                                  const Graph &g_) : unique_storage_(unique_storage_), distance_(distance_), g_(g_) {}
 
         ScaffoldGraph ConstructScaffoldGraphUsingDijkstra() {
-            ScaffoldGraph scaffold_graph;
+            ScaffoldGraph scaffold_graph(g_);
             auto dij = omnigraph::CreateUniqueDijkstra(g_, distance_, unique_storage_);
-    //        DijkstraHelper<Graph>::BoundedDijkstra d = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, distance_, 10000);
+    //        auto bounded_dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, distance_, 10000);
 
-            edge_it_helper edge_iterator(g_);
+            for (const auto unique_edge: unique_storage_) {
+                scaffold_graph.AddVertex(unique_edge);
+            }
             for (const auto unique_edge: unique_storage_) {
                 dij.Run(g_.EdgeEnd(unique_edge));
                 for (auto v: dij.ReachedVertices()) {
@@ -29,8 +31,8 @@ namespace scaffold_graph_utils {
                         for (auto connected: g_.OutgoingEdges(v)) {
                             if (unique_storage_.IsUnique(connected) and connected != unique_edge
                                 and connected != g_.conjugate(unique_edge)) {
-                                path_extend::EdgeWithDistance next(connected, distance);
-                                scaffold_graph.AddEdge(unique_edge, next);
+                                ScaffoldGraph::ScaffoldEdge scaffold_edge(unique_edge, connected, (size_t) -1, 0, distance);
+                                scaffold_graph.AddEdge(scaffold_edge);
                             }
                         }
                     }
@@ -40,13 +42,13 @@ namespace scaffold_graph_utils {
         }
 
         ScaffoldGraph ConstructScaffoldGraphFromContractedGraph(const contracted_graph::ContractedGraph &contracted_graph) {
-            ScaffoldGraph scaffold_graph;
+            ScaffoldGraph scaffold_graph(g_);
             unordered_set<EdgeId> incoming_set;
             unordered_set<EdgeId> outcoming_set;
             unordered_set<EdgeId> union_set;
             unordered_set<VertexId> vertices;
-            for (const auto &entry: contracted_graph) {
-                VertexId vertex = entry.first;
+
+            for (const auto &vertex: contracted_graph) {
                 DEBUG("Vertex: " << vertex.int_id());
                 vertices.insert(vertex);
                 vector<EdgeId> incoming_vector;
@@ -58,6 +60,7 @@ namespace scaffold_graph_utils {
                         incoming_vector.push_back(edge);
                         incoming_set.insert(edge);
                         union_set.insert(edge);
+                        scaffold_graph.AddVertex(edge);
                     }
                 }
                 for (auto it_out = contracted_graph.outcoming_begin(vertex);
@@ -67,13 +70,14 @@ namespace scaffold_graph_utils {
                         outcoming_vector.push_back(edge);
                         outcoming_set.insert(edge);
                         union_set.insert(edge);
+                        scaffold_graph.AddVertex(edge);
                     }
                 }
                 for (const auto& in_edge: incoming_vector) {
                     for (const auto& out_edge: outcoming_vector) {
-                        path_extend::EdgeWithDistance ewd(out_edge, 0);
                         DEBUG("Adding edge");
-                        scaffold_graph.AddEdge(in_edge, ewd);
+                        ScaffoldGraph::ScaffoldEdge scaffold_edge(in_edge, out_edge);
+                        scaffold_graph.AddEdge(scaffold_edge);
                     }
                 }
             }
@@ -84,22 +88,6 @@ namespace scaffold_graph_utils {
         }
 
         DECL_LOGGER("ScaffoldGraphConstructor");
-    };
-
-    class TransposedScaffoldGraphConstructor {
-     public:
-        ScaffoldGraph ConstructTransposedScaffoldGraph(const ScaffoldGraph& scaffold_graph) {
-            ScaffoldGraph result;
-            for (const auto& vertex: scaffold_graph) {
-                for (auto it = scaffold_graph.adjacent_begin(vertex.first); it != scaffold_graph.adjacent_end(vertex.first); ++it) {
-                    EdgeId tail = (*it).e_;
-                    int distance = (*it).d_;
-                    path_extend::EdgeWithDistance new_tail(vertex.first, distance);
-                    result.AddEdge(tail, new_tail);
-                }
-            }
-            return result;
-        }
     };
 
     class OutDegreeDistribuiton: public read_cloud_statistics::Statistic {
@@ -154,44 +142,19 @@ namespace scaffold_graph_utils {
 
         OutDegreeDistribuiton GetOutDegreeDistribution() const {
             OutDegreeDistribuiton distribution;
-            for (const auto &entry: graph_) {
-                size_t degree = entry.second.size();
-                distribution.Insert(degree);
+            for (const ScaffoldGraph::ScaffoldVertex &vertex: graph_.vertices()) {
+                distribution.Insert(graph_.OutgoingEdgeCount(vertex));
             }
             return distribution;
         }
 
         EdgeToDegree GetEdgeToDegree() const {
             EdgeToDegree edge_to_degree;
-            for (const auto& entry: graph_) {
-                size_t degree = entry.second.size();
-                edge_to_degree.Insert(entry.first, degree);
+            for (const ScaffoldGraph::ScaffoldVertex& vertex: graph_.vertices()) {
+                size_t degree = graph_.OutgoingEdgeCount(vertex);
+                edge_to_degree.Insert(vertex, degree);
             }
             return edge_to_degree;
-        }
-
-        bool IsSubgraph(const ScaffoldGraph& subgraph) const {
-            bool is_subgraph = true;
-            size_t subgraph_edges = 0;
-            size_t in_graph = 0;
-            for (const auto& entry: subgraph) {
-                EdgeId first = entry.first;
-                DEBUG("First id: " << first.int_id());
-                for (const auto& ewd: entry.second) {
-                    EdgeId second = ewd.e_;
-                    DEBUG("Second id: " << second.int_id());
-                    ++subgraph_edges;
-                    DEBUG("Checking edge.");
-                    if (not graph_.HasEdge(first, second)) {
-                        is_subgraph = false;
-                    } else {
-                        ++in_graph;
-                    }
-                }
-            }
-            INFO("Subgraph edges: " << subgraph_edges);
-            INFO("In graph: " << in_graph);
-            return is_subgraph;
         }
 
         DECL_LOGGER("ScaffoldGraphAnalyzer")

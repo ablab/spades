@@ -1526,7 +1526,7 @@ class InitialTenXFilter: public InternalTenXFilter {
             DEBUG("10XStats: No barcodes on last edges");
             return candidates;
         }
-        const size_t candidate_segment_len = 2000;
+        const size_t candidate_segment_len = cfg::get().ts_res.edge_length_threshold;
         //Find edges with barcode score greater than some threshold
         EdgeContainer initial_candidates = InitialSharedBarcodesFilter(candidates, last_unique_edges,
                                                                        tenx_configs_.absolute_barcode_threshold,

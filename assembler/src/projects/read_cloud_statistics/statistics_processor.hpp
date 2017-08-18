@@ -26,11 +26,11 @@ class StatisticProcessor {
     void SerializeStatistics(const string& base_path) {
         const string path = fs::append_path(base_path, name_);
         fs::make_dir(path);
-        INFO(base_path)
-        INFO(path);
-        for (const auto& stat_pointer: statistics_) {
+        DEBUG("Base statistics path: " << base_path);
+        DEBUG("Processor path: " << path);
+        for (auto stat_pointer: statistics_) {
             const string new_path = fs::append_path(path, stat_pointer->GetName());
-            INFO(new_path);
+            DEBUG("Stasistics path: " << new_path);
             stat_pointer->Serialize(new_path);
         }
     }

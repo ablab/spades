@@ -1,8 +1,7 @@
 #pragma once
 
 #include "transitions.hpp"
-#include "contracted_graph.hpp"
-#include "cluster_storage_builder.hpp"
+#include "common/barcode_index/contracted_graph.hpp"
 #include "cluster_storage_analyzer.hpp"
 
 namespace contracted_graph {
@@ -540,22 +539,26 @@ namespace contracted_graph {
 
     class ContractedGraphAnalyzer: public read_cloud_statistics::StatisticProcessor {
         const Graph& graph_;
+        const cluster_storage::ClusterGraphAnalyzer ordering_analyzer_;
         const FrameBarcodeIndexInfoExtractor& barcode_extractor_;
         const cluster_statistics::PathClusterStorage& path_cluster_storage_;
         contracted_graph::ContractedGraph contracted_graph_;
         const unordered_map<string, transitions::ContigTransitionStorage>& name_to_transition_storage_;
         const transitions::ContigTransitionStorage& reference_transition_storage_;
-        const cluster_statistics::ClusterStorage& cluster_storage_;
+        const cluster_storage::ClusterStorage& cluster_storage_;
         const size_t min_read_threshold_;
      public:
-        ContractedGraphAnalyzer(const Graph& graph, const FrameBarcodeIndexInfoExtractor& barcode_extractor,
+        ContractedGraphAnalyzer(const Graph& graph, const cluster_storage::ClusterGraphAnalyzer& ordering_analyzer,
+                                const FrameBarcodeIndexInfoExtractor& barcode_extractor,
                                 const cluster_statistics::PathClusterStorage &path_cluster_storage_,
                                 const ContractedGraph &contracted_graph_,
                                 const unordered_map<string, transitions::ContigTransitionStorage>& name_to_storage,
                                 const transitions::ContigTransitionStorage& reference_transition_storage,
-                                const cluster_statistics::ClusterStorage& cluster_storage,
+                                const cluster_storage::ClusterStorage& cluster_storage,
                                 size_t min_read_threshold) :
-            StatisticProcessor("transition_statistics_extractor"), graph_(graph), barcode_extractor_(barcode_extractor),
+            StatisticProcessor("transition_statistics_extractor"), graph_(graph),
+            ordering_analyzer_(ordering_analyzer),
+            barcode_extractor_(barcode_extractor),
             path_cluster_storage_(path_cluster_storage_), contracted_graph_(contracted_graph_),
             name_to_transition_storage_(name_to_storage),
             reference_transition_storage_(reference_transition_storage),
@@ -574,8 +577,7 @@ namespace contracted_graph {
      private:
         VertexDataStats GetVertexDataStats() {
             VertexDataStats stats;
-            for (const auto& entry: contracted_graph_) {
-                VertexId vertex = entry.first;
+            for (const auto& vertex: contracted_graph_) {
                 size_t outcoming = contracted_graph_.GetOutcoming(vertex).size();
                 size_t incoming = contracted_graph_.GetIncoming(vertex).size();
                 size_t capacity = contracted_graph_.GetCapacity(vertex);
@@ -589,8 +591,7 @@ namespace contracted_graph {
             auto cluster_storage_map = BuildTransitionClusterStorages(path_cluster_storage_);
             auto edge_cluster_storage = BuildNonPathClusterStorage(cluster_storage_);
             INFO("Getting transition statistics...")
-            for (const auto& entry: contracted_graph_) {
-                VertexId vertex = entry.first;
+            for (const auto& vertex: contracted_graph_) {
                 DEBUG("Vertex: " << vertex.int_id());
                 DetailedVertexData vertex_data;
                 vector<EdgeId> incoming = contracted_graph_.GetIncoming(vertex);
@@ -750,10 +751,10 @@ namespace contracted_graph {
             return result;
         };
 
-        cluster_statistics::EdgeClusterStorage BuildNonPathClusterStorage(const cluster_statistics::ClusterStorage &cluster_storage) {
+        cluster_statistics::EdgeClusterStorage BuildNonPathClusterStorage(const cluster_storage::ClusterStorage &cluster_storage) {
             INFO("Edge cluster storage")
             cluster_statistics::EdgeClusterStorageBuilder edge_cluster_storage_builder;
-            auto non_path_predicate = cluster_statistics::NonPathClusterPredicate(2, min_read_threshold_);
+            auto non_path_predicate = cluster_statistics::NonPathClusterPredicate(2, min_read_threshold_, ordering_analyzer_);
             return edge_cluster_storage_builder.BuildEdgeClusterStorage(cluster_storage, non_path_predicate);
         }
 
