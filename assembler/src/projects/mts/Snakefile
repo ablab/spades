@@ -12,7 +12,7 @@ def final_stage(w):
         return ["propagation.done", "reassembly/bins_total.prof"] #Stop after the bin choosing
     if config["propagation"]["enabled"]:
         return "propagation.done" #Stop on the propagation
-    return "binning/{}/binning.done".format(BINNER) #Stop on the preliminary binning
+    return "binning/{}/filtered_bins.tsv".format(BINNER) #Stop on the preliminary binning
 
 rule all:
     input:   final_stage
@@ -154,24 +154,46 @@ rule filter_contigs:
     shell:   "cut -f1 < {input.profile} > tmp/names_tmp.txt && sed -i '1d' tmp/names_tmp.txt && "
              "{SCRIPTS}/contig_name_filter.py {input.contigs} tmp/names_tmp.txt {output.contigs}"
 
-#---- Binning ------------------------------------------------------------------
+#---- Common binning tasks -----------------------------------------------------
 
+# Postprocessing
 rule extract_bins:
-    input:   "assembly/splits/all.fasta", "binning/binning.tsv"
+    input:   "assembly/splits/all.fasta", "binning/{}/unified_binning.tsv".format(BINNER)
     output:  touch("binning/{}/binning.done".format(BINNER))
     message: "Extracting {BINNER} bins"
     shell:   "mkdir -p binning/bins && {SCRIPTS}/split_bins.py {input} binning/bins"
 
+rule binning_format:
+    input:   "binning/{}/binning.out".format(BINNER)
+    output:  "binning/{}/unified_binning.tsv".format(BINNER)
+    message: "Making unified binning results"
+    shell:   "{SCRIPTS}/convert_output.py -t {BINNER} -o {output} {input} && "
+             "cp {output} binning/binning.tsv" #For stats
+
+rule bin_profiles:
+    input:   "profile/{}/all.tsv".format(PROFILER), "binning/{}/unified_binning.tsv".format(BINNER)
+    output:  "binning/{}/bins.prof".format(BINNER)
+    message: "Deriving bin profiles"
+    shell:   "{SCRIPTS}/bin_profiles.py {input} > {output}"
+
+rule choose_bins:
+    input:   binning="binning/{}/unified_binning.tsv".format(BINNER),
+             flag="binning/{}/binning.done".format(BINNER)
+    output:  "binning/{}/filtered_bins.tsv".format(BINNER)
+    message: "Filter small bins"
+    shell:   "{SCRIPTS}/choose_bins.py {BIN_LENGTH} {input.binning} >{output}"
+
+#---- Binners ------------------------------------------------------------------
+
 # Binning with Canopy
 rule canopy:
     input:   "binning/canopy/profiles_{}.in".format(PROFILER)
-    output:  out="binning/canopy/binning.out", prof="binning/canopy/bins.prof"
+    output:  "binning/canopy/binning.out"
     threads: THREADS
     log:     "binning/canopy.log"
     message: "Running canopy clustering"
-    shell:   "{SOFT}/cc.bin --filter_max_dominant_obs 1 -n {threads}"
-             " -i {input} -o {output.out} -c binning/canopy/canopy_bins.prof >{log} 2>&1 && "
-             "sed 's/CAG/BIN/g' binning/canopy/canopy_bins.prof >{output.prof}"
+    shell:   "{SOFT}/cc.bin --filter_max_dominant_obs 1 -n {threads} -p BIN"
+             " -i {input} -o {output} -c binning/canopy/canopy_bins.prof >{log} 2>&1"
 
 # Binning with CONCOCT
 rule concoct:
@@ -217,7 +239,7 @@ rule maxbin:
 
 rule maxbin_post:
      input:   "binning/maxbin/cluster.summary"
-     output:  flag=touch("binning/maxbin/binning.done"), binning="binning/maxbin/binning.out"
+     output:  flag=touch("binning/maxbin/binning.done"), binning="binning/maxbin/unified_binning.tsv"
      threads: THREADS
      message: "Postprocessing of MaxBin results"
      shell:   "rm -f {output.binning}\n"
@@ -231,6 +253,7 @@ rule maxbin_post:
               "cp {output.binning} binning/binning.tsv"
 
 ruleorder: maxbin_post > extract_bins
+ruleorder: maxbin_post > binning_format
 
 # Binning with GATTACA
 # conda create -n py27 python=2.7.9 numpy scipy scikit-learn anaconda
@@ -256,23 +279,10 @@ rule binsanity:
              " -f ./ -l {input.contigs} -c {input.profiles} -o binning/binsanity/BINSANITY-RESULTS > {log}  && "
              "{SCRIPTS}/clusters2csv.py binning/binsanity/BINSANITY-RESULTS/KMEAN-BINS {output} && mv Binsanity-log.txt binning/ "
 
-# Postprocessing
-rule binning_format:
-    input:   "binning/{}/binning.out".format(BINNER)
-    output:  "binning/binning.tsv".format(BINNER)
-    message: "Making unified binning results"
-    shell:   "{SCRIPTS}/convert_output.py -t {BINNER} -o {output} {input}"
-
-rule bin_profiles:
-    input:   "profile/{}/all.tsv".format(PROFILER), "binning/binning.tsv"
-    output:  "binning/bins.prof".format(BINNER)
-    message: "Deriving bin profiles"
-    shell:   "{SCRIPTS}/bin_profiles.py {input} > {output}"
-
-ruleorder: canopy > bin_profiles
+#---- Post-clustering pipeline -------------------------------------------------
 
 rule annotate:
-    input:   "binning/binning.tsv".format(BINNER)
+    input:   "binning/{}/unified_binning.tsv".format(BINNER)
     output:  expand("binning/annotation/{sample}.ann", sample=GROUPS)
     params:  "binning/annotation/"
     message: "Preparing raw annotations"
@@ -302,9 +312,6 @@ rule annotate:
                 for contig in samples_annotation[sample]:
                     print(contig, "\t", " ".join(annotation[contig]), sep="", file=sample_out)
 
-
-#---- Post-clustering pipeline -------------------------------------------------
-
 # Propagation stage
 #Path to saves of necessary assembly stage
 SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(ASSEMBLY_K)
@@ -312,7 +319,7 @@ SAVES = "K{0}/saves/01_before_repeat_resolution/graph_pack".format(ASSEMBLY_K)
 rule prop_binning:
     input:   contigs="assembly/spades/{group}.fasta", splits="assembly/splits/{group}.fasta",
              ann="binning/annotation/{group}.ann",    left=left_reads, right=right_reads,
-             bins="binning/filtered_bins.tsv"
+             bins="binning/{}/filtered_bins.tsv".format(BINNER)
     output:  ann="propagation/annotation/{group}.ann", edges="propagation/edges/{group}.fasta"
     params:  saves=os.path.join("assembly/spades/{group}/", SAVES),
              samples=lambda wildcards: " ".join(GROUPS[wildcards.group])
@@ -328,14 +335,8 @@ rule prop_all:
     output:  touch("propagation.done")
     message: "Finished propagation of all annotations."
 
-rule choose_bins:
-    input:   "binning/binning.tsv"
-    output:  "binning/filtered_bins.tsv"
-    message: "Filter small bins"
-    shell:   "{SCRIPTS}/choose_bins.py {input} >{output} 2>&1"
-
 rule choose_samples:
-    input:   "binning/bins.prof", "binning/filtered_bins.tsv"
+    input:   "binning/{}/bins.prof".format(BINNER), "binning/{}/filtered_bins.tsv".format(BINNER)
     output:  "reassembly/bins_total.prof"
     log:     "binning/choose_samples.log"
     message: "Choosing bins for reassembly and samples for them"

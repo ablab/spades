@@ -58,9 +58,10 @@ stats_targets = {"checkm": "{}_checkm.tsv",
                  "report": "{}_report.html"}
 if config["stats"].get("refs"):
     #stats_targets["gf"]      = "{}_gf.tsv"
-    stats_targets["f1"]      = "{}_f1.txt"
-    stats_targets["summary"] = "{}_summary.tsv"
-    #stats_targets["nga"]     = "{}_nga.tsv"
+    stats_targets["f1"]       = "{}_f1.txt"
+    stats_targets["summary"]  = "{}_summary.tsv"
+    stats_targets["nga"]      = "{}_nga.tsv"
+
 STAGES = ["binning", "propagation", "reassembly"]
 for stage in STAGES:
     if not config.get(stage, {}).get("enabled", True):
@@ -108,8 +109,8 @@ rule binning_nga:
 
 #---- F1 stats -----------------------------------------------------------------
 rule combine_bins:
-    input:   expand("{{stage}}/{{frags}}/{bin}.fasta", bin=BINS)
-    output:  "{stage,(binning|propagation|reassembly)}/{frags}/all.fasta"
+    input:   expand("{{stage}}/bins/{bin}.fasta", bin=BINS)
+    output:  "{stage,(binning|propagation|reassembly)}/bins/all.fasta"
     message: "Combine all {wildcards.stage} {wildcards.frags} contigs"
     shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
 

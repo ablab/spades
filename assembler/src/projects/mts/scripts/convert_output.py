@@ -5,8 +5,9 @@ import argparse
 import os.path
 import re
 
+BINNERS = ["canopy", "concoct", "maxbin", "metabat", "gattaca", "binsanity"]
 argparser = argparse.ArgumentParser(description="Binner output formatter")
-argparser.add_argument("--type", "-t", choices=["canopy", "concoct", "maxbin", "gattaca", "binsanity"], help="Binner type", default="canopy")
+argparser.add_argument("--type", "-t", choices=BINNERS, help="Binner type", default="canopy")
 argparser.add_argument("--output", "-o", type=str, help="Output file with unified binning results")
 argparser.add_argument("input", type=str, help="File with binning info")
 

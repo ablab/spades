@@ -21,7 +21,8 @@ ASSEMBLY_K = config["assembly"]["k"]
 PROFILE_K = config["profile"]["k"]
 PROFILER = config["profile"]["profiler"]
 SPLIT_LENGTH = config["profile"]["split"]
-MIN_CONTIG_LENGTH = config["binning"]["min_length"]
+MIN_CONTIG_LENGTH = config["binning"]["contig_length"]
+BIN_LENGTH = config["binning"]["bin_length"]
 MIN_NONZEROES = config["binning"]["min_nonzeroes"]
 THREADS = config["threads"]
 BINNER = config["binning"]["binner"]
@@ -105,7 +106,7 @@ def is_fastq(wildcards):
     return False
 
 rule combine_samples:
-    input:   expand("assembly/{{frags}}/{group}.fasta", assembler=ASSEMBLER, group=GROUPS)
-    output:  "assembly/{frags}/all.fasta"
-    message: "Combine all {wildcards.frags} contigs"
+    input:   expand("{{dir}}/{group}.fasta", group=GROUPS)
+    output:  "{dir}/all.fasta"
+    message: "Combine all contigs from {wildcards.dir}"
     shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"

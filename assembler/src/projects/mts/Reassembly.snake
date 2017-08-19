@@ -67,7 +67,7 @@ rule reassemble:
                 sample_data = line.split()
                 if sample_data[0][0] == "+":
                     subtotal += float(sample_data[1])
-        bin_cov = COV_THRESHOLD * subtotal * READ_LENGTH / (READ_LENGTH - PROFILE_K)
+        bin_cov = COV_THRESHOLD * subtotal * (READ_LENGTH - ASSEMBLY_K) / (READ_LENGTH - PROFILE_K)
         shell("{REASSEMBLER_DIR}/spades.py --only-assembler -t {threads}"
              " {params.left} {params.right} --pe1-ff -o {params.out}"
              " --hidden-cov-cutoff {bin_cov} --series-analysis {input.config}"

@@ -12,7 +12,7 @@ default_values = {
     "threads":     16,
     "assembly":    {"assembler": "spades", "k": 55, "groups": []},
     "profile":     {"profiler": "mts", "k": 21, "split": 10000},
-    "binning":     {"binner": "canopy", "min_length": 2000, "min_nonzeroes": 3},
+    "binning":     {"binner": "canopy", "contig_length": 2000, "min_nonzeroes": 3, "bin_length": 500000},
     "propagation": {"enabled": True},
     "reassembly":  {"enabled": True}
 }
@@ -77,7 +77,12 @@ def get_id(internal_id, sample):
     return sample + "-" + res
 
 id_re = re.compile("\\d+")
+split_format = re.compile("^([\w.-]+)_\(\d+_\d+\)$")
+
 def extract_id(contig_id):
+    split_part = split_format.match(contig_id)
+    if split_part:
+        contig_id = split_part.group(1)
     params = contig_id.split("_")
     if len(params) > 1:
         return params[1]
@@ -102,9 +107,11 @@ def load_annotation(file, normalize=True):
     return res
 
 def contig_length(name):
-    if "(" in name:
-        start, end = re.search("\((\d+)_(\d+)\)", name).groups()
-        return int(end) - int(start)
+    # Length of contig split
+    split = re.search("\((\d+)_(\d+)\)", name)
+    if split:
+        return int(split.group(2)) - int(split.group(1))
+    #Default format
     else:
         return int(name.split("_")[3])
 
