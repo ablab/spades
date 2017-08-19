@@ -7,6 +7,7 @@ namespace debruijn_graph {
 typedef std::string bin_id;
 typedef std::string contig_id;
 typedef std::vector<bin_id> Bins;
+typedef std::set<bin_id> BinSet;
 typedef std::pair<contig_id, Bins> ContigAnnotation;
 
 inline contig_id GetId(const io::SingleRead& contig) {

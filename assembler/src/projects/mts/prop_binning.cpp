@@ -64,33 +64,42 @@ int main(int argc, char** argv) {
             >> Option('c', contigs_path)
             >> Option('f', splits_path)
             >> Option('a', annotation_path)
-            >> Option('n', sample_names)
-            >> Option('l', left_reads)
-            >> Option('r', right_reads)
-            >> Option('o', out_root)
-            >> Option('p', propagation_dump, "")
-            >> Option('e', edges_dump, "")
-            >> Option('b', bins_file)
             >> Option('t', length_threshold, (size_t)2000)
-            >> OptionPresent('D', "no-binning", no_binning)
+            >> Option('b', bins_file, "")
+            >> Option('n', "names", sample_names, {})
+            >> Option('l', "lefts", left_reads, {})
+            >> Option('r', "rights", right_reads, {})
+            >> Option('o', "out", out_root, "")
+            >> Option('p', "dump-annotation", propagation_dump, "")
+            >> Option('e', "dump-edges", edges_dump, "")
         ;
+        if (sample_names.empty() == left_reads.empty()  && //All options of this group
+            left_reads.empty()   == right_reads.empty() && //must simultaneously present or not
+            right_reads.empty()  == out_root.empty())
+            no_binning = sample_names.empty();
+        else {
+            cerr << "All of -n -l -r -o options must present for read binning" << endl;
+            throw OptionNotFoundEx();
+        }
     } catch(GetOptEx &ex) {
-        cout << "Usage: prop_binning -k <K> -s <saves path> -c <contigs path> -f <splits path> "
-                "-a <binning annotation> -n <sample names> -l <left reads> -r <right reads> "
-                "-o <reads output root> -b <bins to propagate> [-D to disable binning] "
+        cerr << "Usage: prop_binning -k <K> -s <saves path> -c <contigs path> -f <splits path> "
+                "-a <binning annotation> [-t <length threshold>] [-b <bins to propagate>] "
+                "[-n <sample names> -l <left reads> -r <right reads> -o <reads output root>] "
                 "[-p <propagation info dump>] [-e <propagated edges dump>]"  << endl;
         exit(1);
     }
 
     vector<bin_id> bins_of_interest;
-    ifstream bins_stream(bins_file);
-    bin_id bin;
-    while (!bins_stream.eof()) {
-        bins_stream >> bin;
-        bins_of_interest.push_back(bin);
-        bins_stream.ignore(numeric_limits<std::streamsize>::max(), '\n'); //Skip the rest of bin info
+    if (!bins_file.empty()) {
+        ifstream bins_stream(bins_file);
+        bin_id bin;
+        while (!bins_stream.eof()) {
+            bins_stream >> bin;
+            bins_of_interest.push_back(bin);
+            bins_stream.ignore(numeric_limits<std::streamsize>::max(), '\n'); //Skip the rest of bin info
+        }
+        INFO("Loaded " << bins_of_interest.size() << " interesting bins");
     }
-    INFO("Loaded " << bins_of_interest.size() << " interesting bins");
 
     conj_graph_pack gp(k, "tmp", 1);
     gp.kmer_mapper.Attach();
@@ -124,13 +133,10 @@ int main(int argc, char** argv) {
     }
 
     //Binning stage
-    if (no_binning) {
-        INFO("Binning was disabled with -p flag");
-        return 0;
+    if (!no_binning) {
+        INFO("Binning reads into " << out_root);
+        for (size_t i = 0; i < sample_names.size(); ++i)
+            BinReads(gp, out_root, sample_names[i], left_reads[i], right_reads[i], edge_annotation, bins_of_interest);
     }
-
-    for (size_t i = 0; i < sample_names.size(); ++i)
-        BinReads(gp, out_root, sample_names[i], left_reads[i], right_reads[i], edge_annotation, bins_of_interest);
-
     return 0;
 }

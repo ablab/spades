@@ -109,7 +109,7 @@ class ConnectingPathPropagator : public EdgeAnnotationPropagator {
                 auto callback = AdapterCallback<Graph>([&](const vector<EdgeId>& path) {
                     utils::insert_all(answer, path);
                 }, true);
-                DEBUG("Launching path search between edge " << g().str(e) << " and vertex "
+                TRACE("Launching path search between edge " << g().str(e) << " and vertex "
                         << g().str(v) << " with length bound " << path_length_threshold_);
                 path_searcher.Process(v, 0, path_length_threshold_, callback, path_edge_cnt_);
             }
@@ -138,12 +138,15 @@ class PairedInfoPropagator : public EdgeAnnotationPropagator {
         for (EdgeId e1 : edges) {
             DEBUG("Searching for paired neighbours of " << g().str(e1));
             for (const auto& index : gp().clustered_indices)
-                for (auto i : index.Get(e1))
+                for (auto i : index.Get(e1)) {
+                    if (e1 == i.first) //No sense in self-propagation
+                        continue;
                     for (auto point : i.second)
                         if (math::ge(point.weight, weight_threshold_)) {
-                            DEBUG("Adding (" << g().str(e1) << "," << g().str(i.first) << "); " << point);
+                            TRACE("Adding (" << g().str(e1) << "," << g().str(i.first) << "); " << point);
                             answer.insert(i.first);
                         }
+                }
         }
         return answer;
     }
@@ -267,7 +270,7 @@ void AnnotationPropagator::Run(io::SingleStream& /*contigs*/,
                      /*const string& annotation_out_fn*/) {
     std::vector<std::shared_ptr<EdgeAnnotationPropagator>> propagator_pipeline {
         make_propagator<ConnectingPathPropagator>(8000, 10),
-        make_propagator<TipPropagator>(),
+//        make_propagator<TipPropagator>(),
         make_propagator<PairedInfoPropagator>(10.)};//,
 //        std::make_shared<ContigPropagator>(gp_, contigs)};//,
 //        std::make_shared<ConnectingPathPropagator>(gp_, 8000, 10, edge_annotation),

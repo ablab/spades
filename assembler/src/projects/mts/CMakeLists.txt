@@ -27,6 +27,7 @@ if (SPADES_STATIC_BUILD)
 endif()
 
 add_executable(prop_binning
+               annotation.cpp
                propagate.cpp
                read_binning.cpp
                prop_binning.cpp
@@ -39,6 +40,7 @@ if (SPADES_STATIC_BUILD)
 endif()
 
 add_executable(stats
+               annotation.cpp
                stats.cpp)
 
 target_link_libraries(stats common_modules nlopt BamTools ssw getopt_pp ${COMMON_LIBRARIES})
