@@ -59,14 +59,18 @@ public:
 
   virtual size_t Count(unsigned num_buckets, unsigned num_threads) = 0;
   virtual size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) = 0;
-  virtual void MergeBuckets(unsigned num_buckets) = 0;
+  virtual void MergeBuckets() = 0;
 
   virtual std::unique_ptr<RawKMerStorage> GetBucket(size_t idx, bool unlink = true) = 0;
   virtual std::unique_ptr<FinalKMerStorage> GetFinalKMers() = 0;
 
   virtual ~KMerCounter() {}
 
-protected:
+  unsigned num_buckets() const { return num_buckets_; }
+
+ protected:
+  unsigned num_buckets_;
+
   DECL_LOGGER("K-mer Counting");
 };
 
@@ -101,6 +105,7 @@ public:
   }
 
   size_t Count(unsigned num_buckets, unsigned num_threads) override {
+    this->num_buckets_ = num_buckets;
     unsigned K = splitter_.K();
     unsigned num_files = num_buckets * num_threads;
 
@@ -133,7 +138,7 @@ public:
     return kmers;
   }
 
-  void MergeBuckets(unsigned num_buckets) override {
+  void MergeBuckets() override {
     unsigned K = splitter_.K();
 
     INFO("Merging final buckets.");
@@ -141,7 +146,7 @@ public:
     MMappedRecordArrayWriter<typename Seq::DataType> os(GetFinalKMersFname(), Seq::GetDataSize(K));
     std::string ofname = GetFinalKMersFname();
     std::ofstream ofs(ofname.c_str(), std::ios::out | std::ios::binary);
-    for (unsigned j = 0; j < num_buckets; ++j) {
+    for (unsigned j = 0; j < this->num_buckets_; ++j) {
       auto bucket = GetBucket(j, /* unlink */ true);
       ofs.write((const char*)bucket->data(), bucket->data_size());
     }
@@ -151,7 +156,7 @@ public:
   size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) override {
     size_t kmers = Count(num_buckets, num_threads);
     if (merge)
-      MergeBuckets(num_buckets);
+      MergeBuckets();
 
     return kmers;
   }
@@ -314,7 +319,7 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
     index.bucket_starts_[iFile] += index.bucket_starts_[iFile - 1];
 
   if (save_final)
-    counter.MergeBuckets(num_buckets_);
+    counter.MergeBuckets();
 
   double bits_per_kmer = 8.0 * (double)index.mem_size() / (double)kmers;
   INFO("Index built. Total " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
