@@ -14,15 +14,12 @@ namespace utils {
 
 struct PerfectHashMapBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
-    void BuildIndex(const std::string &workdir,
-                    PerfectHashMap<K, V, traits, StoringType> &index,
+    void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
                     Counter& counter, size_t bucket_num,
                     size_t thread_num, bool save_final = true) const {
         using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
 
-        KMerIndexBuilder<KMerIndex> builder(workdir,
-                                            (unsigned) bucket_num,
-                                            (unsigned) thread_num);
+        KMerIndexBuilder<KMerIndex> builder((unsigned)bucket_num, (unsigned)thread_num);
         size_t sz = builder.BuildIndex(*index.index_ptr_, counter, save_final);
         index.resize(sz);
     }
@@ -30,11 +27,10 @@ struct PerfectHashMapBuilder {
 
 struct KeyStoringIndexBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
-    void BuildIndex(const std::string &workdir,
-                    KeyStoringMap<K, V, traits, StoringType> &index,
+    void BuildIndex(KeyStoringMap<K, V, traits, StoringType> &index,
                     Counter& counter, size_t bucket_num,
                     size_t thread_num, bool save_final = true) const {
-        phm_builder_.BuildIndex(workdir, index, counter, bucket_num, thread_num, save_final);
+        phm_builder_.BuildIndex(index, counter, bucket_num, thread_num, save_final);
         VERIFY(!index.kmers_.get());
         index.kmers_ = counter.GetFinalKMers();
         VERIFY(index.kmers_.get());
@@ -47,11 +43,10 @@ struct KeyStoringIndexBuilder {
 
 struct KeyIteratingIndexBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
-    void BuildIndex(const std::string &workdir,
-                    KeyIteratingMap<K, V, traits, StoringType> &index,
+    void BuildIndex(KeyIteratingMap<K, V, traits, StoringType> &index,
                     Counter& counter, size_t bucket_num,
                     size_t thread_num, bool save_final = true) const {
-        phm_builder_.BuildIndex(workdir, index, counter, bucket_num, thread_num, save_final);
+        phm_builder_.BuildIndex(index, counter, bucket_num, thread_num, save_final);
         index.KMersFilename_ = counter.GetFinalKMersFname();
     }
 
@@ -60,28 +55,25 @@ struct KeyIteratingIndexBuilder {
 };
 
 template<class K, class V, class traits, class StoringType, class Counter>
-void BuildIndex(const std::string &workdir,
-                KeyIteratingMap<K, V, traits, StoringType> &index,
+void BuildIndex(KeyIteratingMap<K, V, traits, StoringType> &index,
                 Counter& counter, size_t bucket_num,
                 size_t thread_num, bool save_final = true) {
-    KeyIteratingIndexBuilder().BuildIndex(workdir, index, counter, bucket_num, thread_num, save_final);
+    KeyIteratingIndexBuilder().BuildIndex(index, counter, bucket_num, thread_num, save_final);
 }
 
 
 template<class K, class V, class traits, class StoringType, class Counter>
-void BuildIndex(const std::string &workdir,
-                KeyStoringMap<K, V, traits, StoringType> &index,
+void BuildIndex(KeyStoringMap<K, V, traits, StoringType> &index,
                 Counter& counter, size_t bucket_num,
                 size_t thread_num, bool save_final = true) {
-    KeyStoringIndexBuilder().BuildIndex(workdir, index, counter, bucket_num, thread_num, save_final);
+    KeyStoringIndexBuilder().BuildIndex(index, counter, bucket_num, thread_num, save_final);
 }
 
 template<class K, class V, class traits, class StoringType, class Counter>
-void BuildIndex(const std::string &workdir,
-                PerfectHashMap<K, V, traits, StoringType> &index,
+void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
                 Counter& counter, size_t bucket_num,
                 size_t thread_num, bool save_final = true) {
-    PerfectHashMapBuilder().BuildIndex(workdir, index, counter, bucket_num, thread_num, save_final);
+    PerfectHashMapBuilder().BuildIndex(index, counter, bucket_num, thread_num, save_final);
 }
 
 template<class Index, class Streams>
@@ -93,7 +85,7 @@ size_t BuildIndexFromStream(const std::string &workdir,
                              StoringTypeFilter<typename Index::storing_type>>
             splitter(workdir, index.k(), 0, streams, contigs_stream);
     KMerDiskCounter<RtSeq> counter(workdir, splitter);
-    BuildIndex(workdir, index, counter, 16, streams.size());
+    BuildIndex(index, counter, 16, streams.size());
     return 0;
 }
 

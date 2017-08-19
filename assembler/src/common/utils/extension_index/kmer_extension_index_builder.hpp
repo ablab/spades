@@ -74,15 +74,27 @@ public:
         KMerDiskCounter<RtSeq> counter(workdir, splitter);
         counter.CountAll(nthreads, nthreads, /* merge */false);
 
+        BuildExtensionIndexFromKPOMers(workdir, index, counter,
+                                       nthreads, read_buffer_size);
+
+        return splitter.stats();
+    }
+
+    template<class Index, class Counter>
+    void BuildExtensionIndexFromKPOMers(const std::string &workdir,
+                                        Index &index, Counter &counter,
+                                        unsigned nthreads, size_t read_buffer_size = 0) const {
+        VERIFY(counter.k() == index.k() + 1);
+
         // Now, count unique k-mers from k+1-mers
         DeBruijnKMerKMerSplitter<StoringTypeFilter<typename Index::storing_type> >
-                splitter2(workdir, index.k(),
-                          index.k() + 1, Index::storing_type::IsInvertable(), read_buffer_size);
+                splitter(workdir, index.k(),
+                         index.k() + 1, Index::storing_type::IsInvertable(), read_buffer_size);
         for (unsigned i = 0; i < nthreads; ++i)
-            splitter2.AddKMers(counter.GetMergedKMersFname(i));
-        KMerDiskCounter<RtSeq> counter2(workdir, splitter2);
+            splitter.AddKMers(counter.GetMergedKMersFname(i));
+        KMerDiskCounter<RtSeq> counter2(workdir, splitter);
 
-        BuildIndex(workdir, index, counter2, 16, nthreads);
+        BuildIndex(index, counter2, 16, nthreads);
 
         // Build the kmer extensions
         INFO("Building k-mer extensions from k+1-mers");
@@ -90,8 +102,6 @@ public:
         for (unsigned i = 0; i < nthreads; ++i)
             FillExtensionsFromIndex(counter.GetMergedKMersFname(i), index);
         INFO("Building k-mer extensions from k+1-mers finished.");
-
-        return splitter.stats();
     }
 
 private:

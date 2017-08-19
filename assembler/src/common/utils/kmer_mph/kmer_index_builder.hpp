@@ -49,7 +49,7 @@ namespace utils {
 
 template<class Seq, class traits = kmer_index_traits<Seq> >
 class KMerCounter {
- public:
+public:
   typedef typename traits::raw_data_iterator       iterator;
   typedef typename traits::raw_data_const_iterator const_iterator;
   typedef typename traits::RawKMerStorage          RawKMerStorage;
@@ -88,6 +88,8 @@ public:
     ::close(fd_);
     ::unlink(kmer_prefix_.c_str());
   }
+
+  unsigned k() const { return splitter_.K(); }
 
   size_t kmer_size() const override {
     return Seq::GetDataSize(splitter_.K()) * sizeof(typename Seq::DataType);
@@ -239,7 +241,7 @@ private:
         fclose(g);
         total += 1;
       }
-      
+
       return total;
     } else {
       // Sort the stuff
@@ -263,16 +265,14 @@ class KMerIndexBuilder {
   typedef typename Index::KMerSeq Seq;
   typedef typename Index::kmer_index_traits kmer_index_traits;
 
-  std::string work_dir_;
   unsigned num_buckets_;
   unsigned num_threads_;
 
  public:
-  KMerIndexBuilder(const std::string &workdir,
-                   unsigned num_buckets, unsigned num_threads)
-      : work_dir_(workdir), num_buckets_(num_buckets), num_threads_(num_threads) {}
+  KMerIndexBuilder(unsigned num_buckets, unsigned num_threads)
+      : num_buckets_(num_buckets), num_threads_(num_threads) {}
   size_t BuildIndex(Index &out, KMerCounter<Seq> &counter,
-                    bool save_final = false);
+                    bool save_final = false, bool count = true);
 
   unsigned num_buckets() const { return num_buckets_; }
 
@@ -283,7 +283,7 @@ class KMerIndexBuilder {
 
 template<class Index>
 size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &counter,
-                                           bool save_final) {
+                                           bool save_final, bool count) {
   index.clear();
 
   INFO("Building kmer index ");

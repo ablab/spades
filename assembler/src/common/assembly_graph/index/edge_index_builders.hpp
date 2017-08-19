@@ -99,7 +99,7 @@ public:
                                   utils::StoringTypeFilter<typename Index::storing_type>>
                 splitter(workdir, index.k(), g, read_buffer_size);
         utils::KMerDiskCounter<RtSeq> counter(workdir, splitter);
-        BuildIndex(workdir, index, counter, 16, nthreads);
+        BuildIndex(index, counter, 16, nthreads);
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Collecting k-mer coverage information from graph, this takes a while.");

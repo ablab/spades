@@ -335,13 +335,13 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
                                            [&] (const KMer &k) { return mcounter.count(k) > 1; });
       utils::KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
 
-      kmers = utils::KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
+      kmers = utils::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
       final_kmers = counter.GetFinalKMersFname();
   } else {
       HammerFilteringKMerSplitter splitter(workdir);
       utils::KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
 
-      kmers = utils::KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
+      kmers = utils::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
       final_kmers = counter.GetFinalKMersFname();
   }
 
