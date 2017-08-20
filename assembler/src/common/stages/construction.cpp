@@ -21,6 +21,7 @@ struct ConstructionStorage {
             : ext_index(k) {}
 
     utils::DeBruijnExtensionIndex<> ext_index;
+    std::unique_ptr<utils::KMerDiskCounter<RtSeq>> counter;
     config::debruijn_config::construction params;
     io::ReadStreamList<io::SingleReadSeq> read_streams;
     io::SingleStreamPtr contigs_stream;
@@ -67,27 +68,30 @@ void ConstructionNew::init(debruijn_graph::conj_graph_pack &gp, const char *) {
 
 ConstructionNew::~ConstructionNew() {}
 
-class ExtensionIndexBuilder : public ConstructionNew::Phase {
+class KMerCounting : public ConstructionNew::Phase {
 public:
-    ExtensionIndexBuilder()
-            : ConstructionNew::Phase("Extension index construction", "extension_index_construction") { }
+    KMerCounting()
+            : ConstructionNew::Phase("k+1-mer counting", "kpomer_counting") { }
 
-    virtual ~ExtensionIndexBuilder() = default;
+    virtual ~KMerCounting() = default;
 
     void run(debruijn_graph::conj_graph_pack &, const char*) override {
         auto &read_streams = storage().read_streams;
         auto &contigs_stream = storage().contigs_stream;
+        const auto &index = storage().ext_index;
 
         VERIFY_MSG(read_streams.size(), "No input streams specified");
 
-        // FIXME: All these helpers are junk
-        typedef typename utils::ExtensionIndexHelper<decltype(storage().ext_index)>::DeBruijnExtensionIndexBuilderT ExtensionIndexBuilder;
-        auto stats =
-                ExtensionIndexBuilder().BuildExtensionIndexFromStream(storage().workdir,
-                                                                      storage().ext_index,
-                                                                      read_streams,
-                                                                      (contigs_stream == 0) ? 0 : &(*contigs_stream),
-                                                                      storage().params.read_buffer_size);
+        unsigned nthreads = (unsigned)read_streams.size();
+        utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
+                                        utils::StoringTypeFilter<decltype(storage().ext_index)::storing_type>>
+                splitter(storage().workdir, index.k() + 1, 0xDEADBEEF,
+                         read_streams,(contigs_stream == 0) ? 0 : &(*contigs_stream),
+                         storage().params.read_buffer_size);
+        storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
+        storage().counter->CountAll(nthreads, nthreads, /* merge */false);
+
+        auto stats = splitter.stats();
         size_t rl = stats.max_read_length_;
         if (!cfg::get().ds.RL()) {
             INFO("Figured out: read length = " << rl);
@@ -96,6 +100,36 @@ public:
         } else if (cfg::get().ds.RL() != rl)
             WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL() << ", not " << rl);
         storage().read_stats = stats;
+    }
+
+    void load(debruijn_graph::conj_graph_pack&,
+              const std::string &,
+              const char*) override {
+        VERIFY_MSG(false, "implement me");
+    }
+
+    void save(const debruijn_graph::conj_graph_pack&,
+              const std::string &,
+              const char*) const override {
+        VERIFY_MSG(false, "implement me");
+    }
+};
+
+
+class ExtensionIndexBuilder : public ConstructionNew::Phase {
+public:
+    ExtensionIndexBuilder()
+            : ConstructionNew::Phase("Extension index construction", "extension_index_construction") { }
+
+    virtual ~ExtensionIndexBuilder() = default;
+
+    void run(debruijn_graph::conj_graph_pack &, const char*) override {
+        // FIXME: We just need files here, not the full counter. Implement refererence counting scheme!
+        utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromKPOMers(storage().workdir,
+                                                                              storage().ext_index,
+                                                                              *storage().counter,
+                                                                              unsigned(storage().read_streams.size()),
+                                                                              storage().params.read_buffer_size);
     }
 
     void load(debruijn_graph::conj_graph_pack&,
@@ -218,9 +252,35 @@ public:
     }
 };
 
+class CQFCoverageFiller : public ConstructionNew::Phase {
+public:
+    CQFCoverageFiller()
+            : ConstructionNew::Phase("Filling coverage indices (CQF)", "coverage_filling_cqf") {}
+    virtual ~CQFCoverageFiller() = default;
+
+    void run(debruijn_graph::conj_graph_pack &gp, const char *) override {
+        INFO("Filling coverage and flanking coverage from index");
+        FillCoverageAndFlanking(gp.index.inner_index(), gp.g, gp.flanking_cov);
+    }
+
+    void load(debruijn_graph::conj_graph_pack&,
+              const std::string &,
+              const char*) override {
+        VERIFY_MSG(false, "implement me");
+    }
+
+    void save(const debruijn_graph::conj_graph_pack&,
+              const std::string &,
+              const char*) const override {
+        VERIFY_MSG(false, "implement me");
+    }
+
+};
+
 
 ConstructionNew::ConstructionNew()
         : spades::CompositeStageDeferred<ConstructionStorage>("de Bruijn graph construction", "construction") {
+    add<KMerCounting>();
     add<ExtensionIndexBuilder>();
     if (cfg::get().con.early_tc.enable && !cfg::get().gap_closer_enable)
         add<EarlyTipClipper>();

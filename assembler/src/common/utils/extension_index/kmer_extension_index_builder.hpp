@@ -108,13 +108,4 @@ private:
     DECL_LOGGER("DeBruijnExtensionIndexBuilder");
 };
 
-template<class Index>
-struct ExtensionIndexHelper {
-    using IndexT = Index;
-    typedef typename Index::traits_t traits_t;
-    typedef typename Index::KMer Kmer;
-    typedef typename Index::KMerIdx KMerIdx;
-    using DeBruijnExtensionIndexBuilderT = DeBruijnExtensionIndexBuilder;
-};
-
 }

@@ -88,16 +88,12 @@ utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_c
     VERIFY_MSG(streams.size(), "No input streams specified");
 
     TRACE("... in parallel");
-    // FIXME: output_dir here is damn ugly!
-    typedef utils::DeBruijnExtensionIndex<> ExtensionIndex;
-    typedef typename utils::ExtensionIndexHelper<ExtensionIndex>::DeBruijnExtensionIndexBuilderT ExtensionIndexBuilder;
-    ExtensionIndex ext(k);
+    utils::DeBruijnExtensionIndex<> ext(k);
 
-    //fixme hack
     utils::ReadStatistics stats =
-            ExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext,
-                                                                  streams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
-                                                                  params.read_buffer_size);
+            utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext,
+                                                                                 streams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
+                                                                                 params.read_buffer_size);
 
     EarlyClipTips(k, params, stats.max_read_length_, ext);
 
