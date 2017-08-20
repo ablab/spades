@@ -230,11 +230,11 @@ namespace read_cloud_statistics {
             };
 
 
-//            INFO("Analyzing contig paths");
+            INFO("Analyzing contig paths");
             AnalyzeContigPaths(base_output_path);
 
-            INFO("Analyzing path clusters");
-//            LaunchAnalyzerForMultipleDistances(base_output_path, path_cluster_analyzer, distances);
+//            INFO("Analyzing path clusters");
+//            LaunchAnalyzerForMultipleDistances(base_output_path, path_cluster_analyzer, distances, cfg::get().max_threads);
 //            AnalyzePathClusters(base_output_path, distance);
 //
 //            AnalyzeTransitions(base_output_path, distance);
@@ -242,6 +242,22 @@ namespace read_cloud_statistics {
         }
 
      private:
+
+        transitions::ContigTransitionStorage BuildFilteredTransitionStorage(const transitions::ContigPathBuilder& contig_path_builder,
+                                                                            shared_ptr<transitions::TransitionStorageBuilder> transition_builder,
+                                                                            const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
+                                                                            const string& path_to_contigs) {
+            const string EMPTY_STRING = "";
+            transitions::ContigTransitionStorage result;
+            if (path_to_contigs != EMPTY_STRING) {
+                auto reference_paths = contig_path_builder.GetContigPaths(path_to_contigs);
+                transitions::ContigPathFilter contig_path_filter(unique_storage);
+                result = transition_builder->GetTransitionStorage(contig_path_filter.FilterPathsUsingUniqueStorage(
+                    reference_paths));
+            }
+            INFO("Transition storage size: " << result.Size());
+            return result;
+        }
 
         std::unordered_map<string, transitions::ContigTransitionStorage>
         BuildTransitionStorages(const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage) {
@@ -256,32 +272,23 @@ namespace read_cloud_statistics {
 
             transitions::ContigPathBuilder contig_path_builder(gp_);
 
-            transitions::StrictTransitionStorageBuilder strict_transition_builder(unique_storage, contig_path_builder);
-            transitions::ApproximateTransitionStorageBuilder approximate_transition_builder(unique_storage, contig_path_builder);
+            auto strict_transition_builder = make_shared<transitions::StrictTransitionStorageBuilder>(contig_path_builder);
+            auto approximate_transition_builder = make_shared<transitions::ApproximateTransitionStorageBuilder>(contig_path_builder);
 
-            if (path_to_reference != EMPTY_STRING) {
-                INFO("Reference transitions...");
-                auto reference_paths = contig_path_builder.GetContigPaths(path_to_reference);
-                auto reference_transition_storage = strict_transition_builder.GetTransitionStorage(reference_paths);
-                INFO("Reference transition storage size: " << reference_transition_storage.Size());
-                name_to_transition_storage.insert({"Reference", reference_transition_storage});
-            }
+            auto reference_transition_storage =
+                BuildFilteredTransitionStorage(contig_path_builder, strict_transition_builder,
+                                               unique_storage, path_to_reference);
+            name_to_transition_storage.insert({"Reference", reference_transition_storage});
 
-            if (path_to_base_contigs != EMPTY_STRING) {
-                INFO("Contig transitions...");
-                auto base_contig_paths = contig_path_builder.GetContigPaths(path_to_base_contigs);
-                auto contig_transition_storage = approximate_transition_builder.GetTransitionStorage(base_contig_paths);
-                INFO("Contig transition storage size: " << contig_transition_storage.Size());
-                name_to_transition_storage.insert({"Contig", contig_transition_storage});
-            }
+            auto contig_transition_storage =
+                BuildFilteredTransitionStorage(contig_path_builder, approximate_transition_builder,
+                                               unique_storage, path_to_base_contigs);
+            name_to_transition_storage.insert({"Contig", contig_transition_storage});
 
-            if (path_to_cloud_contigs != EMPTY_STRING) {
-                INFO("Read cloud contig transitions...");
-                auto cloud_contig_paths = contig_path_builder.GetContigPaths(path_to_cloud_contigs);
-                auto read_cloud_transition_storage = approximate_transition_builder.GetTransitionStorage(cloud_contig_paths);
-                INFO("Read cloud contig transition storage size: " << read_cloud_transition_storage.Size());
-                name_to_transition_storage.insert({"Read cloud contig", read_cloud_transition_storage});
-            }
+            auto cloud_transition_storage =
+                BuildFilteredTransitionStorage(contig_path_builder, approximate_transition_builder,
+                                               unique_storage, path_to_cloud_contigs);
+            name_to_transition_storage.insert({"Read cloud contig", contig_transition_storage});
 
             return name_to_transition_storage;
         }
@@ -345,9 +352,9 @@ namespace read_cloud_statistics {
             INFO("Building reference transition storage")
             const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
             transitions::ContigPathBuilder contig_path_builder(gp_);
-            transitions::StrictTransitionStorageBuilder strict_transition_builder(unique_storage_, contig_path_builder);
-            auto reference_paths = contig_path_builder.GetContigPaths(path_to_reference);
-            auto reference_transition_storage = strict_transition_builder.GetTransitionStorage(reference_paths);
+            auto transition_builder = make_shared<transitions::StrictTransitionStorageBuilder>(contig_path_builder);
+            auto reference_transition_storage = BuildFilteredTransitionStorage(contig_path_builder, transition_builder,
+                                                                               unique_storage_, path_to_reference);
             INFO("Reference transition storage size: " << reference_transition_storage.Size());
 
             INFO("Building path cluster storage")
@@ -380,7 +387,7 @@ namespace read_cloud_statistics {
             INFO("Cloud contig path: " << cloud_contigs_path);
 
             transitions::ContigPathBuilder contig_path_builder(gp_);
-            transitions::StrictTransitionStorageBuilder strict_transition_builder(unique_storage_, contig_path_builder);
+            transitions::StrictTransitionStorageBuilder strict_transition_builder(contig_path_builder);
             auto reference_paths = contig_path_builder.GetContigPaths(reference_path);
             auto contig_paths = contig_path_builder.GetContigPaths(cloud_contigs_path);
 
@@ -390,23 +397,20 @@ namespace read_cloud_statistics {
             unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
             INFO(reference_paths.size() << " reference paths");
             INFO(contig_paths.size() << " contig paths");
-            auto filtered_reference_paths = contig_path_builder.FilterPaths(reference_paths, large_unique_storage);
-            auto filtered_contig_paths = contig_path_builder.FilterPaths(contig_paths, large_unique_storage);
 
+            transitions::ContigPathFilter contig_path_filter(large_unique_storage);
+            auto filtered_reference_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths);
+            auto filtered_contig_paths = contig_path_filter.FilterPathsUsingUniqueStorage(contig_paths);
             INFO(filtered_reference_paths.size() << " filtered reference paths");
             INFO(filtered_contig_paths.size() << " filtered contig paths");
 
             const string reference_output_path = fs::append_path(stats_base_path, "reference_paths");
             ofstream fout_reference(reference_output_path);
-            size_t path_id = 0;
-            for (const auto& path: filtered_reference_paths) {
-                fout_reference << "Path id: " << path_id << std::endl;
-                fout_reference << path.size() << " edges." << std::endl;
-                for (const auto& edge: path) {
-                    fout_reference << edge.edge_.int_id() << std::endl;
-                }
-                ++path_id;
-            }
+            PrintContigPaths(reference_paths, fout_reference);
+
+            const string filtered_output_path = fs::append_path(stats_base_path, "filtered_reference_paths");
+            ofstream fout_filt_ref(filtered_output_path);
+            PrintContigPaths(filtered_reference_paths, fout_filt_ref);
 
             transitions::PathStatisticsExtractor path_stats_extractor(min_length, filtered_reference_paths,
                                                                       filtered_contig_paths, gp_.g);
@@ -415,7 +419,8 @@ namespace read_cloud_statistics {
 
             INFO("Constructing scaffold graph");
             const size_t scaffolding_distance = 100000;
-            auto scaffold_graph_constructor = scaffold_graph_utils::ScaffoldGraphConstructor(large_unique_storage, scaffolding_distance, gp_.g);
+            auto scaffold_graph_constructor = scaffold_graph_utils::ScaffoldGraphConstructor(large_unique_storage,
+                                                                                             scaffolding_distance, gp_.g);
             auto scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphUsingDijkstra();
             INFO(scaffold_graph.EdgeCount() << " edges in scaffold graph");
             const string scaffold_graph_path = fs::append_path(stats_base_path, "scaffold_graph");
@@ -430,13 +435,26 @@ namespace read_cloud_statistics {
             path_extend::InitialTenXFilter initial_tenx_filter(gp_.g, barcode_extractor_ptr, tenx_resolver_configs);
 
             INFO("Constructing initial filter analyzer");
-            transitions::InitialFilterStatisticsExtractor initial_filter_extractor(scaffold_graph, filtered_reference_paths,
+            transitions::InitialFilterStatisticsExtractor initial_filter_extractor(scaffold_graph,
+                                                                                   reference_paths,
                                                                                    barcode_extractor_ptr,
                                                                                    initial_tenx_filter,
                                                                                    gp_.g, large_unique_storage);
             INFO("Analyzing initial filter");
             initial_filter_extractor.FillStatistics();
             initial_filter_extractor.SerializeStatistics(stats_base_path);
+        }
+
+        void PrintContigPaths(const vector<vector<transitions::EdgeWithMapping>>& contig_paths, ostream& stream) {
+            size_t path_id = 0;
+            for (const auto& path: contig_paths) {
+                stream << "Path id: " << path_id << std::endl;
+                stream << path.size() << " edges." << std::endl;
+                for (const auto& edge: path) {
+                    stream << edge.edge_.int_id() << std::endl;
+                }
+                ++path_id;
+            }
         }
 
         void AnalyzeContractedGraph(const string& stats_base_path, size_t distance) {
@@ -487,8 +505,8 @@ namespace read_cloud_statistics {
 
         void LaunchAnalyzerForMultipleDistances(const string& stats_base_path,
                                                 const std::function<void(const string&, size_t)> analyzer_function,
-                                                const vector<size_t>& distances) {
-#pragma omp parallel for
+                                                const vector<size_t>& distances, size_t threads) {
+#pragma omp parallel for num_threads(threads)
             for (size_t i = 0; i < distances.size(); ++i) {
                 size_t distance = distances[i];
                 string stat_path = fs::append_path(stats_base_path, "distance_" + std::to_string(distance));

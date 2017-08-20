@@ -67,7 +67,8 @@ namespace contracted_graph {
 
         LoopPathClusterStatistics GetLoopPathClusterStatistics (const vector<Cluster>& clusters) const {
             DEBUG("Extracting loop edges")
-            auto loop_edges = ExtractLoopEdges(contracted_graph_);
+            const size_t MIN_LOOP_LENGTH = 10000;
+            auto loop_edges = ExtractLoopEdges(contracted_graph_, MIN_LOOP_LENGTH);
             DEBUG(loop_edges.size() << " loop edges");
             auto edge_to_loop_neighbourhood = GetEdgeToLoopNeighbourhood(loop_edges, reference_storage_);
             DEBUG("Edge to loop neighbourhood size: " << edge_to_loop_neighbourhood.size());
@@ -115,13 +116,15 @@ namespace contracted_graph {
             }
         }
 
-        unordered_set<EdgeId> ExtractLoopEdges(const ContractedGraph& contracted_graph) const {
+        unordered_set<EdgeId> ExtractLoopEdges(const ContractedGraph& contracted_graph, size_t min_length) const {
             unordered_set<EdgeId> result;
             for (const auto& vertex: contracted_graph) {
                 for (auto it = contracted_graph.outcoming_begin(vertex); it != contracted_graph.outcoming_end(vertex); ++it) {
                     if (it->first == vertex) {
                         for (const auto& edge: it->second) {
-                            result.insert(edge);
+                            if (g_.length(edge) > min_length) {
+                                result.insert(edge);
+                            }
                         }
                     }
                 }

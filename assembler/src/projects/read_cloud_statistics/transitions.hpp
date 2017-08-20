@@ -42,6 +42,7 @@ class ContigTransitionStorage {
  public:
     typedef std::unordered_set<Transition>::const_iterator const_iterator;
     void InsertTransition(const EdgeId& first, const EdgeId& second) {
+        VERIFY(IsEdgeCovered(first) and IsEdgeCovered(second));
         transitions_.insert({{first, second}});
     }
 
@@ -67,9 +68,7 @@ class ContigTransitionStorage {
     }
 
     bool CheckTransition(const Transition& transition) const {
-        bool are_edges_covered = IsEdgeCovered(transition.first_) and IsEdgeCovered(transition.second_);
-        bool contains_transition = transitions_.find(transition) != transitions_.end();
-        return contains_transition or !are_edges_covered;
+        return transitions_.find(transition) != transitions_.end();
     }
 
     bool IsEdgeCovered(const EdgeId& edge) const {
@@ -108,23 +107,6 @@ class ContigPathBuilder {
         auto fixed_paths = FixMappingPaths(raw_contig_paths);
         INFO(fixed_paths.size() << " fixed paths");
         return fixed_paths;
-    }
-
-    vector<vector<EdgeWithMapping>> FilterPaths(const vector<vector<EdgeWithMapping>>& paths,
-                                                const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage) const {
-        vector<vector<EdgeWithMapping>> result;
-        for (const auto& path: paths) {
-            vector<EdgeWithMapping> filtered_path;
-            for (const auto& ewm: path) {
-                if (unique_storage.IsUnique(ewm.edge_)) {
-                    filtered_path.push_back(ewm);
-                }
-            }
-            if (filtered_path.size() > 0) {
-                result.push_back(filtered_path);
-            }
-        }
-        return result;
     }
 
  protected:
@@ -171,22 +153,92 @@ class ContigPathBuilder {
     }
 };
 
+class ContigPathFilter {
+    const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
+
+ public:
+    ContigPathFilter(const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_)
+        : unique_storage_(unique_storage_) {}
+
+    vector<vector<EdgeWithMapping>> FilterPathsUsingUniqueStorage(const vector<vector<EdgeWithMapping>>& paths) const {
+        vector<vector<EdgeWithMapping>> result;
+        for (const auto& path: paths) {
+            vector<EdgeWithMapping> filtered_path;
+            for (const auto& ewm: path) {
+                if (unique_storage_.IsUnique(ewm.edge_)) {
+                    filtered_path.push_back(ewm);
+                }
+            }
+            if (not filtered_path.empty()) {
+                result.push_back(filtered_path);
+            }
+        }
+        return MergeSameEdges(result);
+    }
+
+    vector<vector<EdgeWithMapping>> FilterPathsUsingLength(const vector<vector<EdgeWithMapping>>& paths,
+                                                           const size_t min_length, const Graph& g) const {
+        vector<vector<EdgeWithMapping>> result;
+        for (const auto& path: paths) {
+            vector<EdgeWithMapping> filtered_path;
+            for (const auto& ewm: path) {
+                if (g.length(ewm.edge_) >= min_length) {
+                    filtered_path.push_back(ewm);
+                }
+            }
+            if (not filtered_path.empty()) {
+                result.push_back(filtered_path);
+            }
+        }
+        return MergeSameEdges(result);
+    }
+
+    vector<vector<EdgeWithMapping>> MergeSameEdges(const vector<vector<EdgeWithMapping>>& paths) const {
+        vector<vector<EdgeWithMapping>> result;
+        for (const auto& path: paths) {
+            vector<EdgeWithMapping> current_path;
+            for (const auto& ewm: path) {
+                if (current_path.empty() or current_path.back().edge_ != ewm.edge_) {
+                    current_path.push_back(ewm);
+                } else {
+                    if (not current_path.empty()) {
+                        Range prev_mapping = current_path.back().mapping_;
+                        Range new_mapping(prev_mapping.start_pos, ewm.mapping_.end_pos);
+                        EdgeWithMapping new_ewm(ewm.edge_, new_mapping);
+                        current_path.back() = new_ewm;
+                    }
+                }
+            }
+
+            //merge last and first edge for cycle paths
+            auto last_ewm = current_path.back();
+            auto first_ewm = current_path[0];
+            if (last_ewm.edge_ == first_ewm.edge_ and current_path.size() > 1) {
+                Range new_mapping(std::min(last_ewm.mapping_.start_pos, first_ewm.mapping_.start_pos),
+                                  std::max(last_ewm.mapping_.end_pos, first_ewm.mapping_.end_pos));
+                current_path[0].mapping_ = new_mapping;
+                current_path.pop_back();
+            }
+            if (not current_path.empty()) {
+                result.push_back(current_path);
+            }
+        }
+        return result;
+    }
+};
+
 class TransitionStorageBuilder {
 //    using namespace debruijn_graph;
 
-    const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
     const ContigPathBuilder& contig_path_builder_;
  public:
-    TransitionStorageBuilder(const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,
-                             const ContigPathBuilder& contig_path_builder) : unique_storage_(unique_storage),
-                                                                             contig_path_builder_(contig_path_builder) {}
+    TransitionStorageBuilder(const ContigPathBuilder& contig_path_builder) : contig_path_builder_(contig_path_builder) {}
 
     ContigTransitionStorage GetTransitionStorage(const vector<vector<EdgeWithMapping>>& contig_paths) const {
-        auto long_paths = contig_path_builder_.FilterPaths(contig_paths, unique_storage_);
 
-        INFO(long_paths.size() << " paths");
+        INFO(contig_paths.size() << " paths");
 
-        return BuildStorage(long_paths);
+        return BuildStorage(contig_paths);
     }
 
     virtual ~TransitionStorageBuilder() = default;
@@ -200,9 +252,8 @@ class TransitionStorageBuilder {
 
 class StrictTransitionStorageBuilder : public TransitionStorageBuilder {
  public:
-    StrictTransitionStorageBuilder(const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,
-                                   const ContigPathBuilder& contig_path_builder)
-        : TransitionStorageBuilder(unique_storage, contig_path_builder) {}
+    StrictTransitionStorageBuilder(const ContigPathBuilder& contig_path_builder)
+        : TransitionStorageBuilder(contig_path_builder) {}
 
  protected:
     ContigTransitionStorage BuildStorage(const vector<vector<EdgeWithMapping>>& long_edges) const override {
@@ -212,9 +263,9 @@ class StrictTransitionStorageBuilder : public TransitionStorageBuilder {
                  it1 != path.end() and it2 != path.end(); ++it1, ++it2) {
                 EdgeId edge1 = (*it1).edge_;
                 EdgeId edge2 = (*it2).edge_;
-                storage.InsertTransition(edge1, edge2);
                 storage.InsertEdge(edge1);
                 storage.InsertEdge(edge2);
+                storage.InsertTransition(edge1, edge2);
             }
         }
         return storage;
@@ -223,9 +274,8 @@ class StrictTransitionStorageBuilder : public TransitionStorageBuilder {
 
 class ApproximateTransitionStorageBuilder : public TransitionStorageBuilder {
  public:
-    ApproximateTransitionStorageBuilder(const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,
-                                        const ContigPathBuilder& contig_path_builder)
-        : TransitionStorageBuilder(unique_storage, contig_path_builder) {}
+    ApproximateTransitionStorageBuilder(const ContigPathBuilder& contig_path_builder)
+        : TransitionStorageBuilder(contig_path_builder) {}
 
  protected:
     ContigTransitionStorage BuildStorage(const vector<vector<EdgeWithMapping>>& long_edges) const override {
@@ -233,9 +283,13 @@ class ApproximateTransitionStorageBuilder : public TransitionStorageBuilder {
         const size_t threshold = 5000;
         const size_t mapping_error_threshold = 500;
         for (const auto& path: long_edges) {
+            for (const auto& ewm: path) {
+                storage.InsertEdge(ewm.edge_);
+            }
+        }
+        for (const auto& path: long_edges) {
             for (auto it = path.begin(); it != path.end(); ++it) {
                 EdgeId first = (*it).edge_;
-                storage.InsertEdge(first);
                 size_t pos = (*it).mapping_.end_pos;
                 for (auto it_next = std::next(it); it_next != path.end(); ++it_next) {
                     EdgeId second = (*it_next).edge_;
