@@ -3,7 +3,7 @@
 //
 
 #pragma once
-
+#include "common/modules/path_extend/read_cloud_path_extend/read_cloud_connection_conditions.hpp"
 #include "scaffold_graph.hpp"
 
 namespace path_extend {
@@ -73,6 +73,44 @@ public:
     {}
 
     std::shared_ptr<ScaffoldGraph> Construct() override;
+};
+
+class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
+ public:
+    typedef path_extend::ScaffoldEdgePredicate EdgePairPredicate;
+ protected:
+    const ScaffoldGraph& old_graph_;
+    const shared_ptr<EdgePairPredicate> predicate_;
+
+ public:
+    PredicateScaffoldGraphConstructor(const Graph& assembly_graph,
+                                      const ScaffoldGraph& old_graph_,
+                                      const shared_ptr<EdgePairPredicate>& predicate_);
+
+    shared_ptr<ScaffoldGraph> Construct() override;
+ protected:
+    void ConstructFromGraphAndPredicate(const ScaffoldGraph& old_graph, const shared_ptr<EdgePairPredicate> predicate);
+
+};
+
+class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
+    typedef path_extend::EdgePairScoreFunction EdgePairScoreFunction;
+ protected:
+    const ScaffoldGraph& old_graph_;
+    const shared_ptr<EdgePairScoreFunction> score_function_;
+    const double score_threshold_;
+    const size_t num_threads_;
+ public:
+    ScoreFunctionScaffoldGraphConstructor(const Graph& assembly_graph,
+                                          const ScaffoldGraph& old_graph_,
+                                          const shared_ptr<EdgePairScoreFunction>& score_function_,
+                                          const double score_threshold, size_t num_threads);
+
+    shared_ptr<ScaffoldGraph> Construct() override;
+ protected:
+    void ConstructFromGraphAndScore(const ScaffoldGraph& graph, const shared_ptr<EdgePairScoreFunction> score_function,
+                                    double score_threshold, size_t threads);
+    DECL_LOGGER("ScoreFunctionScaffoldGraphConstructor")
 };
 
 

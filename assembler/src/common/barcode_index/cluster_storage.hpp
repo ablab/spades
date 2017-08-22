@@ -144,6 +144,14 @@ class Cluster {
             size_t NumberOfVertices() const {
                 return vertices_.size();
             }
+
+            size_t GetOutdegree(const Vertex& vertex) const {
+                return edge_to_outcoming_.at(vertex).size();
+            }
+
+            size_t GetIndegree(const Vertex& vertex) const {
+                return edge_to_incoming_.at(vertex).size();
+            }
         };
 
         typedef SimpleGraph<EdgeId> InternalGraph;
