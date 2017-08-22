@@ -114,6 +114,8 @@ public:
 
     bool HasOnlyMPLibs() const;
 
+    bool HasOnlySingleReads() const;
+
     bool IsForSingleReadExtender(const io::SequencingLibrary<config::DataSetData> &lib) const;
 
     bool IsForSingleReadScaffolder(const io::SequencingLibrary<config::DataSetData> &lib) const;

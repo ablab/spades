@@ -17,6 +17,15 @@ bool PELaunchSupport::HasOnlyMPLibs() const {
     return true;
 }
 
+bool PELaunchSupport::HasOnlySingleReads() const {
+    for (const auto &lib : dataset_info_.reads) {
+        if (!(lib.type() == io::LibraryType::SingleReads && lib.data().single_reads_mapped)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 pe_config::ParamSetT::ExtensionOptionsT PELaunchSupport::GetExtensionOpts(shared_ptr<PairedInfoLibrary> lib,
                                                                           const pe_config::ParamSetT &pset) const {
     return lib->IsMp() ? pset.mate_pair_options : pset.extension_options;
@@ -49,7 +58,7 @@ bool PELaunchSupport::IsForScaffoldingExtender(const io::SequencingLibrary<confi
 
 //TODO: review usage
 bool PELaunchSupport::UseCoverageResolverForSingleReads(const io::LibraryType &type) const {
-    return HasOnlyMPLibs() && (type == io::LibraryType::HQMatePairs);
+    return (HasOnlyMPLibs() && type == io::LibraryType::HQMatePairs) || HasOnlySingleReads();
 }
 
 std::string PELaunchSupport::LibStr(size_t count) const {
