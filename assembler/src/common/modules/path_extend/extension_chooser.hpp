@@ -222,9 +222,8 @@ public:
         return wc_ != nullptr;
     }
 
-    const WeightCounter& wc() const {
-        VERIFY(wc_);
-        return *wc_;
+    shared_ptr<WeightCounter> wc() const {
+        return wc_;
     }
 
 protected:
