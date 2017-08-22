@@ -178,39 +178,53 @@ static UniqueDijkstra CreateUniqueDijkstra(const Graph& graph, size_t length_bou
 //------------------------------
 
 template<class Graph, typename distance_t = size_t>
-class BarcodePutChecker : public VertexPutChecker<Graph, distance_t> {
+class BarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t> {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph& g_;
     const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
+    const vector<barcode_index::BarcodeId>& barcode_intersection_;
     const size_t barcode_threshold_;
     const size_t count_threshold_;
-    EdgeId first_edge_;
-    EdgeId second_edge_;
+    const size_t tail_threshold_;
+    const size_t edge_length_threshold_;
 
  public:
-    BarcodePutChecker(const Graph& g,
-                      const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_info_extractor,
-                      const size_t barcode_threshold,
-                      const size_t count_threshold,
-                      EdgeId first_edge,
-                      EdgeId second_edge) :
+    BarcodedPathPutChecker(const Graph& g, const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_info_extractor,
+                           const vector<barcode_index::BarcodeId>& barcodes,
+                           size_t barcode_threshold, size_t count_threshold,
+                           size_t tail_threshold, size_t edge_length_threshold) :
         VertexPutChecker<Graph, distance_t>(),
         g_(g),
         barcode_extractor_(barcode_info_extractor),
+        barcode_intersection_(barcodes),
         barcode_threshold_(barcode_threshold),
         count_threshold_(count_threshold),
-        first_edge_(first_edge),
-        second_edge_(second_edge) {}
+        tail_threshold_(tail_threshold),
+        edge_length_threshold_(edge_length_threshold) {}
 
-    //This method performs simple checks on nearby edges to compose candidate set for further filtering
     bool Check(VertexId, EdgeId edge, distance_t ) const override {
         DEBUG("Checking edge " << edge.int_id());
         DEBUG("Length " << g_.length(edge))
-        size_t tail_threshold = std::max({g_.length(first_edge_), g_.length(second_edge_), g_.length(edge)});
-        return barcode_extractor_.AreEnoughSharedBarcodesWithFilter(first_edge_, edge, barcode_threshold_,
-                                                                    count_threshold_, tail_threshold);
+        if (g_.length(edge) <= edge_length_threshold_) {
+            return true;
+        }
+        vector<barcode_index::BarcodeId> middle_intersection;
+        vector<barcode_index::BarcodeId> middle_barcodes = barcode_extractor_.GetBarcodes(edge);
+        std::set_intersection(barcode_intersection_.begin(), barcode_intersection_.end(),
+                              middle_barcodes.begin(), middle_barcodes.end(),
+                              std::back_inserter(middle_intersection));
+        return middle_intersection.size() >= barcode_threshold_;
+    }
+
+ private:
+    bool CheckBarcode(const EdgeId& first, const EdgeId& second, barcode_index::BarcodeId barcode,
+                      size_t count_threshold, size_t tail_threshold) const {
+        return barcode_extractor_.GetMaxPos(first, barcode) + tail_threshold > g_.length(first) and
+            barcode_extractor_.GetMinPos(second, barcode) < tail_threshold and
+            barcode_extractor_.GetNumberOfReads(first, barcode) >= count_threshold and
+            barcode_extractor_.GetNumberOfReads(second, barcode) >= count_threshold;
     }
 
     DECL_LOGGER("BarcodePutChecker")
@@ -219,9 +233,11 @@ class BarcodePutChecker : public VertexPutChecker<Graph, distance_t> {
 static CompositePutChecker<Graph>
 CreateLongGapCloserPutChecker(const Graph& g, const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
                               const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor,
-                              size_t barcode_threshold, size_t count_threshold, EdgeId first, EdgeId second) {
-    auto barcode_put_checker = make_shared<BarcodePutChecker<Graph>>(g, barcode_extractor, barcode_threshold, count_threshold,
-                                                              first, second);
+                              const vector<barcode_index::BarcodeId>& barcode_intersection,
+                              size_t barcode_threshold, size_t count_threshold, size_t tail_threshold, size_t len_threshold) {
+    auto barcode_put_checker = make_shared<BarcodedPathPutChecker<Graph>>(g, barcode_extractor, barcode_intersection,
+                                                                          barcode_threshold, count_threshold,
+                                                                          tail_threshold, len_threshold);
     auto unique_put_checker = make_shared<UniquePutChecker<Graph>>(g, unique_storage);
     vector<shared_ptr<VertexPutChecker<Graph>>> put_checkers({unique_put_checker, barcode_put_checker});
     return CompositePutChecker<Graph>(put_checkers);
@@ -236,16 +252,18 @@ typedef ComposedDijkstraSettings<Graph,
 typedef Dijkstra<Graph, LongGapCloserDijkstraSettings> LongGapCloserDijkstra;
 
 static LongGapCloserDijkstra CreateLongGapCloserDijkstra(const Graph& graph, size_t length_bound,
-                                                         path_extend::ScaffoldingUniqueEdgeStorage unique_storage,
+                                                         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
                                                          const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor,
-                                                         size_t barcode_threshold, size_t count_threshold, EdgeId first,
-                                                         EdgeId second, size_t max_vertex_number = -1ul) {
+                                                         const vector<barcode_index::BarcodeId>& barcode_intersection,
+                                                         size_t barcode_threshold, size_t count_threshold, size_t tail_threshold,
+                                                         size_t len_threshold, size_t max_vertex_number = -1ul) {
     return LongGapCloserDijkstra(graph,
                           LongGapCloserDijkstraSettings(
                               LengthCalculator<Graph>(graph),
                               BoundProcessChecker<Graph>(length_bound),
-                              CreateLongGapCloserPutChecker(graph, unique_storage, barcode_extractor, barcode_threshold,
-                              count_threshold, first, second),
+                              CreateLongGapCloserPutChecker(graph, unique_storage, barcode_extractor, barcode_intersection,
+                                                            barcode_threshold, count_threshold, tail_threshold,
+                                                            len_threshold),
                               ForwardNeighbourIteratorFactory<Graph>(graph)),
                           max_vertex_number);
 }

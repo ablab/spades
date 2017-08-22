@@ -7,7 +7,7 @@
 #include "common/barcode_index/contracted_graph.hpp"
 #include "contracted_graph_stats/contracted_graph_analyzer.hpp"
 #include "cluster_storage_analyzer.hpp"
-#include "scaffold_graph.hpp"
+#include "scaffold_graph_utils.hpp"
 #include "statistics_launcher.hpp"
 #include "contig_path_analyzer.hpp"
 
