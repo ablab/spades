@@ -392,6 +392,30 @@ private:
     }
 };
 
+class CombinedLoopEstimator: public ShortLoopEstimator {
+public:
+    CombinedLoopEstimator(const conj_graph_pack& gp, shared_ptr<WeightCounter> wc, double weight_threshold = 0.0)
+        : ShortLoopEstimator(),
+          pi_estimator_(gp.g, wc, weight_threshold),
+          cov_estimator_(gp) {}
+
+
+    size_t EstimateSimpleCycleCount(const BidirectionalPath& path, EdgeId backward_edge, EdgeId exit_edge) const override {
+        size_t result = pi_estimator_.EstimateSimpleCycleCount(path, backward_edge, exit_edge);
+        if (result == 1) {
+            //Verify using coverage
+            size_t coverage_count = cov_estimator_.EstimateSimpleCycleCount(path, backward_edge, exit_edge);
+            if (coverage_count > 1)
+                result = coverage_count;
+        }
+        return result;
+    }
+
+private:
+    PairedInfoLoopEstimator pi_estimator_;
+    CoverageLoopEstimator cov_estimator_;
+};
+
 
 
 //TODO move to gap_closing.hpp
@@ -1047,7 +1071,7 @@ public:
                    double weight_threshold = 0.0):
         LoopDetectingPathExtender(gp, cov_map, unique, investigate_short_loops, use_short_loop_cov_resolver, is),
         extensionChooser_(ec),
-        loop_resolver_(gp.g, make_shared<PairedInfoLoopEstimator>(gp.g, extensionChooser_->wc(), weight_threshold)),
+        loop_resolver_(gp.g, make_shared<CombinedLoopEstimator>(gp, extensionChooser_->wc(), weight_threshold)),
         weight_threshold_(weight_threshold) {}
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
