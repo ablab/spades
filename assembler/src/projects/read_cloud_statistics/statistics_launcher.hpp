@@ -1,15 +1,18 @@
 #pragma once
 
+#include "scaffolder_validation.hpp"
+#include <common/modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp>
 #include "common/barcode_index/contracted_graph.hpp"
 #include "contracted_graph_stats/contracted_graph_analyzer.hpp"
 #include "cluster_storage_analyzer.hpp"
-#include "scaffold_graph.hpp"
+#include "scaffold_graph_utils.hpp"
 #include "statistics_processor.hpp"
 #include "transitions.hpp"
 #include "../../common/modules/path_extend/pipeline/launch_support.hpp"
 #include "../../common/assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "contig_path_analyzer.hpp"
 #include "contracted_graph_stats/contracted_graph_local_statistics.hpp"
+#include "scaffolder_statistics/scaffolder_stats.hpp"
 
 namespace read_cloud_statistics {
 
@@ -229,9 +232,10 @@ namespace read_cloud_statistics {
               this->AnalyzeContractedGraph(path, dist);
             };
 
+            AnalyzeScaffoldGraph(base_output_path);
 
-            INFO("Analyzing contig paths");
-            AnalyzeContigPaths(base_output_path);
+//            INFO("Analyzing contig paths");
+//            AnalyzeContigPaths(base_output_path);
 
 //            INFO("Analyzing path clusters");
 //            LaunchAnalyzerForMultipleDistances(base_output_path, path_cluster_analyzer, distances, cfg::get().max_threads);
@@ -250,12 +254,13 @@ namespace read_cloud_statistics {
             const string EMPTY_STRING = "";
             transitions::ContigTransitionStorage result;
             if (path_to_contigs != EMPTY_STRING) {
-                auto reference_paths = contig_path_builder.GetContigPaths(path_to_contigs);
+                auto named_reference_paths = contig_path_builder.GetContigPaths(path_to_contigs);
+                auto reference_paths = contig_path_builder.StripNames(named_reference_paths);
                 transitions::ContigPathFilter contig_path_filter(unique_storage);
                 result = transition_builder->GetTransitionStorage(contig_path_filter.FilterPathsUsingUniqueStorage(
                     reference_paths));
             }
-            INFO("Transition storage size: " << result.Size());
+            INFO("Transition storage size: " << result.size());
             return result;
         }
 
@@ -272,8 +277,8 @@ namespace read_cloud_statistics {
 
             transitions::ContigPathBuilder contig_path_builder(gp_);
 
-            auto strict_transition_builder = make_shared<transitions::StrictTransitionStorageBuilder>(contig_path_builder);
-            auto approximate_transition_builder = make_shared<transitions::ApproximateTransitionStorageBuilder>(contig_path_builder);
+            auto strict_transition_builder = make_shared<transitions::StrictTransitionStorageBuilder>();
+            auto approximate_transition_builder = make_shared<transitions::ApproximateTransitionStorageBuilder>();
 
             auto reference_transition_storage =
                 BuildFilteredTransitionStorage(contig_path_builder, strict_transition_builder,
@@ -319,6 +324,134 @@ namespace read_cloud_statistics {
             INFO(path_clusters << " path clusters.");
         }
 
+        path_extend::ScaffolderParams GetScaffolderParams(size_t min_length) {
+            path_extend::ScaffolderParams params;
+            params.initial_distance_ = 100000;
+            params.tail_threshold_ = min_length;
+            params.count_threshold_ = 2;
+            params.score_threshold_ = 5.0;
+            params.barcode_threshold_ = 10;
+            params.length_threshold_ = 400;
+            params.middle_fraction_ = 0.5;
+            params.split_procedure_strictness_ = 0.85;
+            return params;
+        }
+
+        scaffold_graph_utils::ScaffoldGraphStorage BuildScaffoldGraphStorage(const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
+                                                                             const path_extend::ScaffolderParams& params,
+                                                                             const string& initial_name,
+                                                                             const string& score_name,
+                                                                             const string& connection_name,
+                                                                             const string& ordering_name,
+                                                                             const string& far_next_name,
+                                                                             const string& transitive_name) {
+            scaffold_graph_utils::ScaffoldGraphStorage storage;
+            size_t scaffolding_distance = params.initial_distance_;
+            size_t tail_threshold = params.tail_threshold_;
+            size_t count_threshold = params.count_threshold_;
+            double score_threshold = params.score_threshold_;
+
+            path_extend::LongGapDijkstraParams long_gap_params(params.barcode_threshold_,
+                                                               params.count_threshold_,
+                                                               params.tail_threshold_,
+                                                               params.length_threshold_,
+                                                               params.initial_distance_);
+
+            INFO("Constructing scaffold graph");
+            auto scaffold_helper = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage,
+                                                                                  scaffolding_distance,
+                                                                                  gp_.g);
+//            auto unique_condition =
+//                make_shared<path_extend::AssemblyGraphUniqueConnectionCondition>(gp_.g, scaffolding_distance, large_unique_storage);
+//            vector<shared_ptr<path_extend::ConnectionCondition>> conditions({unique_condition});
+//            path_extend::scaffold_graph::SimpleScaffoldGraphConstructor constructor(gp_.g,
+//                                                                                    large_unique_storage.unique_edges(),
+//                                                                                    conditions);
+//            auto scaffold_graph = *(constructor.Construct());
+            auto scaffold_graph = scaffold_helper.ConstructScaffoldGraphUsingDijkstra();
+            INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
+
+            INFO("Constructing score scaffold graph");
+
+            auto score_scaffold_graph = scaffold_helper.ConstructBarcodeScoreScaffoldGraph(scaffold_graph, *barcode_extractor_ptr_,
+                                                                                           gp_.g, count_threshold, tail_threshold,
+                                                                                           score_threshold);
+            INFO(score_scaffold_graph.VertexCount() << " vertices and " << score_scaffold_graph.EdgeCount() << " edges in score scaffold graph");
+
+            auto connection_scaffold_graph = scaffold_helper.ConstructLongGapScaffoldGraph(score_scaffold_graph, unique_storage,
+                                                                                           *barcode_extractor_ptr_, gp_.g,
+                                                                                           long_gap_params);
+            INFO(connection_scaffold_graph.VertexCount() << " vertices and "
+                                                         << connection_scaffold_graph.EdgeCount()
+                                                         << " edges in connection scaffold graph");
+
+            auto ordering_scaffold_graph = scaffold_helper.ConstructOrderingScaffoldGraph(connection_scaffold_graph,
+                                                                                          *barcode_extractor_ptr_, gp_.g,
+                                                                                          long_gap_params.count_threshold_,
+                                                                                          params.split_procedure_strictness_);
+            auto far_next_scaffold_graph = scaffold_helper.ConstructFarNextScaffoldGraph(ordering_scaffold_graph,
+                                                                                         *barcode_extractor_ptr_, gp_.g,
+                                                                                         params.count_threshold_,
+                                                                                         params.middle_fraction_);
+            auto transitive_scaffold_graph = scaffold_helper.ConstructNonTransitiveGraph(ordering_scaffold_graph, gp_.g);
+            storage.insert(initial_name, scaffold_graph);
+            storage.insert(score_name, score_scaffold_graph);
+            storage.insert(connection_name, connection_scaffold_graph);
+            storage.insert(ordering_name, ordering_scaffold_graph);
+//            storage.insert(far_next_name, far_next_scaffold_graph);
+            storage.insert(transitive_name, transitive_scaffold_graph);
+            return storage;
+        }
+
+        void AnalyzeScaffoldGraph(const string& stats_base_path) {
+            const string reference_path = cfg::get().ts_res.statistics.genome_path;
+            const string cloud_contigs_path = cfg::get().ts_res.statistics.cloud_contigs_path;
+            INFO("Reference path: " << reference_path);
+            INFO("Cloud contig path: " << cloud_contigs_path);
+
+            const size_t min_length = 20000;
+            path_extend::ScaffoldingUniqueEdgeStorage large_unique_storage;
+            path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, 100);
+            unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
+
+            transitions::ContigPathBuilder contig_path_builder(gp_);
+            auto named_reference_paths = contig_path_builder.GetContigPaths(reference_path);
+            auto reference_paths = contig_path_builder.StripNames(named_reference_paths);
+            INFO(reference_paths.size() << " reference paths");
+            transitions::ContigPathFilter contig_path_filter(large_unique_storage);
+            auto filtered_reference_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths);
+
+            auto params = GetScaffolderParams(min_length);
+            const string initial_name = "Initial scaffold graph";
+            const string score_name = "Score scaffold graph";
+            const string connection_name = "Connection scaffold graph";
+            const string ordering_name = "Ordering scaffold graph";
+            const string far_next_name = "Far next scaffold graph";
+            const string transitive_name = "Transitive graph";
+
+            scaffolder_statistics::ScaffolderStatisticsExtractor stats_extractor(gp_.g, large_unique_storage, params,
+                                                                                 reference_paths, barcode_extractor_ptr_);
+            stats_extractor.FillStatistics();
+            stats_extractor.SerializeStatistics(stats_base_path);
+
+            auto scaffold_graph_storage = BuildScaffoldGraphStorage(large_unique_storage, params, initial_name,
+                                                                    score_name, connection_name, ordering_name,
+                                                                    far_next_name, transitive_name);
+            scaffold_graph_utils::ScaffolderAnalyzer scaffolder_analyzer(filtered_reference_paths, scaffold_graph_storage, gp_.g);
+            scaffolder_analyzer.FillStatistics();
+            INFO("Printing stats")
+            scaffolder_analyzer.SerializeStatistics(stats_base_path);
+
+            INFO("Getting graph");
+            auto transitive_scaffold_graph = scaffold_graph_storage.at(transitive_name).graph;
+            INFO("Printing graph");
+            scaffold_graph_utils::MetaScaffoldGraphPrinter meta_printer(gp_.g);
+            string scaffold_output_path = fs::append_path(stats_base_path, "scaffold_graph_output");
+            fs::remove_if_exists(scaffold_output_path);
+            fs::make_dir(scaffold_output_path);
+            meta_printer.PrintGraphAsMultiple(transitive_scaffold_graph, named_reference_paths, scaffold_output_path);
+        }
+
         void AnalyzePathClusters(const string& stats_base_path, size_t distance) {
             INFO("Distance: " << distance);
             contracted_graph::ContractedGraphBuilder contracted_graph_builder(gp_.g, unique_storage_);
@@ -345,6 +478,7 @@ namespace read_cloud_statistics {
             cluster_storage::ClusterStorageExtractor cluster_storage_extractor;
             auto high_covered_clusters = cluster_storage_extractor.FilterClusterStorage(cluster_storage, min_read_filter);
 
+
             cluster_storage::ClusterGraphAnalyzer ordering_analyzer(contracted_graph_builder);
 
             CountBasicClusterStats(cluster_storage, ordering_analyzer);
@@ -352,10 +486,10 @@ namespace read_cloud_statistics {
             INFO("Building reference transition storage")
             const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
             transitions::ContigPathBuilder contig_path_builder(gp_);
-            auto transition_builder = make_shared<transitions::StrictTransitionStorageBuilder>(contig_path_builder);
+            auto transition_builder = make_shared<transitions::StrictTransitionStorageBuilder>();
             auto reference_transition_storage = BuildFilteredTransitionStorage(contig_path_builder, transition_builder,
                                                                                unique_storage_, path_to_reference);
-            INFO("Reference transition storage size: " << reference_transition_storage.Size());
+            INFO("Reference transition storage size: " << reference_transition_storage.size());
 
             INFO("Building path cluster storage")
             cluster_statistics::PathClusterStorageBuilder path_cluster_builder;
@@ -387,16 +521,27 @@ namespace read_cloud_statistics {
             INFO("Cloud contig path: " << cloud_contigs_path);
 
             transitions::ContigPathBuilder contig_path_builder(gp_);
-            transitions::StrictTransitionStorageBuilder strict_transition_builder(contig_path_builder);
-            auto reference_paths = contig_path_builder.GetContigPaths(reference_path);
-            auto contig_paths = contig_path_builder.GetContigPaths(cloud_contigs_path);
+            transitions::StrictTransitionStorageBuilder strict_transition_builder;
+            auto named_reference_paths = contig_path_builder.GetContigPaths(reference_path);
+            auto reference_paths = contig_path_builder.StripNames(named_reference_paths);
+            auto named_contig_paths = contig_path_builder.GetContigPaths(cloud_contigs_path);
+            auto contig_paths = contig_path_builder.StripNames(named_contig_paths);
+            INFO(reference_paths.size() << " reference paths");
+            INFO(contig_paths.size() << " contig paths");
 
             const size_t min_length = 20000;
             path_extend::ScaffoldingUniqueEdgeStorage large_unique_storage;
             path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, 100);
             unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
-            INFO(reference_paths.size() << " reference paths");
-            INFO(contig_paths.size() << " contig paths");
+
+            INFO("Constructing scaffold graph");
+            auto scaffolding_params = GetScaffolderParams(min_length);
+            const size_t scaffolding_distance = scaffolding_params.initial_distance_;
+            auto scaffold_helper = scaffold_graph_utils::ScaffoldGraphConstructor(large_unique_storage,
+                                                                                  scaffolding_distance,
+                                                                                  gp_.g);
+            auto scaffold_graph = scaffold_helper.ConstructScaffoldGraphUsingDijkstra();
+            INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
 
             transitions::ContigPathFilter contig_path_filter(large_unique_storage);
             auto filtered_reference_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths);
@@ -412,20 +557,10 @@ namespace read_cloud_statistics {
             ofstream fout_filt_ref(filtered_output_path);
             PrintContigPaths(filtered_reference_paths, fout_filt_ref);
 
-            transitions::PathStatisticsExtractor path_stats_extractor(min_length, filtered_reference_paths,
-                                                                      filtered_contig_paths, gp_.g);
-            path_stats_extractor.FillStatistics();
-            path_stats_extractor.SerializeStatistics(stats_base_path);
-
-            INFO("Constructing scaffold graph");
-            const size_t scaffolding_distance = 100000;
-            auto scaffold_graph_constructor = scaffold_graph_utils::ScaffoldGraphConstructor(large_unique_storage,
-                                                                                             scaffolding_distance, gp_.g);
-            auto scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphUsingDijkstra();
-            INFO(scaffold_graph.EdgeCount() << " edges in scaffold graph");
-            const string scaffold_graph_path = fs::append_path(stats_base_path, "scaffold_graph");
-            ofstream fout(scaffold_graph_path);
-            scaffold_graph.Print(fout);
+//            transitions::PathStatisticsExtractor path_stats_extractor(min_length, filtered_reference_paths,
+//                                                                      filtered_contig_paths, gp_.g);
+//            path_stats_extractor.FillStatistics();
+//            path_stats_extractor.SerializeStatistics(stats_base_path);
 
 
             INFO("Constructing initial tenx filter");

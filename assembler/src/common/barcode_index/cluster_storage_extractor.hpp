@@ -440,7 +440,7 @@ class ClusterGraphAnalyzer {
         for (const auto& vertex: graph) {
             for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
                 for (const auto& edge: it->second) {
-                    TRACE(vertex.int_id() << " -> " << it->first.int_id());
+                    TRACE(vertex.int_id() << " -> " << it->first.int_id() << ", (" << edge.int_id() << ")");
                 }
             }
         }
