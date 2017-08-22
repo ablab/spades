@@ -229,7 +229,7 @@ static void ProcessSingleReads(conj_graph_pack &gp,
     LongReadMapper read_mapper(gp.g, gp.single_long_reads[ilib],
                                ChooseProperReadPathExtractor(gp.g, reads.type()));
 
-    if (ShouldObtainSingleReadsPaths(ilib)) {
+    if (ShouldObtainSingleReadsPaths(ilib) || reads.is_contig_lib()) {
         //FIXME pretty awful, would be much better if listeners were shared ptrs
         notifier.Subscribe(ilib, &read_mapper);
         cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;
