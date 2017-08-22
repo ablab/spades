@@ -17,11 +17,14 @@
 namespace debruijn_graph {
 
 struct ConstructionStorage {
+    using CoverageMap = utils::CQFHashMap<RtSeq, utils::slim_kmer_index_traits<RtSeq>, utils::DefaultStoring>;
+
     ConstructionStorage(unsigned k)
             : ext_index(k) {}
 
     utils::DeBruijnExtensionIndex<> ext_index;
     std::unique_ptr<utils::KMerDiskCounter<RtSeq>> counter;
+    std::unique_ptr<CoverageMap> coverage_map;
     config::debruijn_config::construction params;
     io::ReadStreamList<io::SingleReadSeq> read_streams;
     io::SingleStreamPtr contigs_stream;
@@ -86,7 +89,7 @@ public:
         utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
                                         utils::StoringTypeFilter<decltype(storage().ext_index)::storing_type>>
                 splitter(storage().workdir, index.k() + 1, 0xDEADBEEF,
-                         read_streams,(contigs_stream == 0) ? 0 : &(*contigs_stream),
+                         read_streams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
                          storage().params.read_buffer_size);
         storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
         storage().counter->CountAll(nthreads, nthreads, /* merge */false);
@@ -253,14 +256,77 @@ public:
 };
 
 class CQFCoverageFiller : public ConstructionNew::Phase {
+    struct CoverageHashMapBuilder : public utils::CQFHashMapBuilder {
+        template<class ReadStream, class Index>
+        void FillCoverageFromStream(ReadStream &stream, Index &index) const {
+            typedef typename Index::KeyType Kmer;
+            unsigned k = index.k();
+
+            while (!stream.eof()) {
+                typename ReadStream::ReadT r;
+                stream >> r;
+
+                const Sequence &seq = r.sequence();
+                if (seq.size() < k)
+                    continue;
+
+                typename Index::KeyWithHash kwh = index.ConstructKWH(seq.start<Kmer>(k) >> 'A');
+                for (size_t j = k - 1; j < seq.size(); ++j) {
+                    kwh <<= seq[j];
+                    if (!kwh.is_minimal() || !index.valid(kwh))
+                        continue;
+
+                    index.add_value(kwh, 1);
+                }
+            }
+        }
+
+        template<class K, class traits, class StoringType, class Counter, class Streams>
+        void BuildIndex(utils::CQFHashMap<K, traits, StoringType> &index,
+                        Counter& counter, size_t bucket_num,
+                        Streams &streams,
+                        bool save_final = false) const {
+            unsigned nthreads = (unsigned)streams.size();
+
+            utils::CQFHashMapBuilder::BuildIndex(index, counter, bucket_num, nthreads, save_final);
+            INFO("Collecting k-mer coverage information from reads, this takes a while.");
+
+            streams.reset();
+#           pragma omp parallel for num_threads(nthreads)
+            for (size_t i = 0; i < streams.size(); ++i) {
+                FillCoverageFromStream(streams[i], index);
+            }
+        }
+    };
+
 public:
     CQFCoverageFiller()
             : ConstructionNew::Phase("Filling coverage indices (CQF)", "coverage_filling_cqf") {}
     virtual ~CQFCoverageFiller() = default;
 
     void run(debruijn_graph::conj_graph_pack &gp, const char *) override {
-        INFO("Filling coverage and flanking coverage from index");
-        FillCoverageAndFlanking(gp.index.inner_index(), gp.g, gp.flanking_cov);
+        storage().coverage_map.reset(new ConstructionStorage::CoverageMap(storage().counter->k()));
+
+        CoverageHashMapBuilder().BuildIndex(*storage().coverage_map,
+                                            *storage().counter,
+                                            16,
+                                            storage().read_streams);
+        INFO("Checking the CQF map");
+
+        auto &index = gp.index.inner_index();
+        for (auto I = index.value_cbegin(), E = index.value_cend();
+             I != E; ++I) {
+            const auto& edge_info = *I;
+
+            Sequence sk = gp.g.EdgeNucls(edge_info.edge_id).Subseq(edge_info.offset, edge_info.offset + index.k());
+            auto kwh = storage().coverage_map->ConstructKWH(sk.start<RtSeq>(index.k()));
+
+            if (edge_info.count != storage().coverage_map->get_value(kwh))
+                INFO("" << kwh << ":" << edge_info.count << ":" << storage().coverage_map->get_value(kwh));
+        }
+
+        INFO("Filling coverage and flanking coverage from index CQF");
+        //FillCoverageAndFlanking(gp.index.inner_index(), gp.g, gp.flanking_cov);
     }
 
     void load(debruijn_graph::conj_graph_pack&,
@@ -281,12 +347,14 @@ public:
 ConstructionNew::ConstructionNew()
         : spades::CompositeStageDeferred<ConstructionStorage>("de Bruijn graph construction", "construction") {
     add<KMerCounting>();
+
     add<ExtensionIndexBuilder>();
     if (cfg::get().con.early_tc.enable && !cfg::get().gap_closer_enable)
         add<EarlyTipClipper>();
     add<GraphCondenser>();
     add<EdgeIndexFiller>();
     add<CoverageFiller>();
+    add<CQFCoverageFiller>();
 }
 
 template<class Read>
