@@ -233,7 +233,7 @@ namespace read_cloud_statistics {
             INFO("Analyzing contig paths");
             AnalyzeContigPaths(base_output_path);
 
-//            INFO("Analyzing path clusters");
+            INFO("Analyzing path clusters");
 //            LaunchAnalyzerForMultipleDistances(base_output_path, path_cluster_analyzer, distances, cfg::get().max_threads);
 //            AnalyzePathClusters(base_output_path, distance);
 //

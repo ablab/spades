@@ -314,12 +314,26 @@ class ClusterTransitionExtractor {
     ClusterTransitionExtractor(const cluster_storage::ClusterGraphAnalyzer& ordering_analyzer_) : ordering_analyzer_(
         ordering_analyzer_) {}
 
-    vector<transitions::Transition> ExtractTransitionsFromNonPathCluster(const cluster_storage::Cluster& cluster) {
+    vector<transitions::Transition> ExtractAllTransitionsFromNonPathCluster(const cluster_storage::Cluster& cluster) {
         const auto& internal_graph = cluster.GetInternalGraph();
         vector<transitions::Transition> result;
         for (const auto& vertex: internal_graph) {
             for (auto it = internal_graph.outcoming_begin(vertex); it != internal_graph.outcoming_end(vertex); ++it) {
                 result.emplace_back(vertex, *it);
+            }
+        }
+        return result;
+    }
+
+    vector<transitions::Transition> ExtractGoodTransitionsFromNonPathCluster(const cluster_storage::Cluster& cluster) {
+        const auto& internal_graph = cluster.GetInternalGraph();
+        vector<transitions::Transition> result;
+        for (const auto& start: internal_graph) {
+            for (auto it = internal_graph.outcoming_begin(start); it != internal_graph.outcoming_end(start); ++it) {
+                auto end = *it;
+                if (internal_graph.GetIndegree(end) == 1 and internal_graph.GetOutdegree(start) == 1) {
+                    result.emplace_back(start, end);
+                }
             }
         }
         return result;

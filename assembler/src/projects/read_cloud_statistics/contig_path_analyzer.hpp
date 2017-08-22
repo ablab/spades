@@ -1,6 +1,7 @@
 #pragma once
 
 #include "statistics_processor.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/long_gap_closer.hpp"
 
 namespace transitions {
 
@@ -426,9 +427,9 @@ class InitialFilterStatisticsExtractor: public read_cloud_statistics::StatisticP
                                                             const vector<vector<EdgeWithMapping>>& filtered_reference_paths) {
         std::map <size_t, BarcodedPathConnectivityStats> length_to_stats;
         vector<size_t> lengths;
-        const size_t max_length = 1000;
-        const size_t min_length = 1000;
-        const size_t step = 100;
+        const size_t max_length = 2000;
+        const size_t min_length = 2000;
+        const size_t step = 200;
         for (size_t i = min_length; i <= max_length; i += step) {
             lengths.push_back(i);
         }
@@ -451,7 +452,7 @@ class InitialFilterStatisticsExtractor: public read_cloud_statistics::StatisticP
                     min_edge_length = std::min(min_edge_length, g_.length(ewm.edge_));
                 }
             }
-            INFO("Min reference edge length = " << min_edge_length);
+            DEBUG("Min reference edge length = " << min_edge_length);
             auto stats = GetConnectivityStats(next_paths, filtered_reference_paths, long_edges);
             length_to_stats.insert({length, stats});
             current_paths = next_paths;
@@ -510,22 +511,32 @@ class InitialFilterStatisticsExtractor: public read_cloud_statistics::StatisticP
     }
 
     bool AreConnectedByBarcodePath(const vector<EdgeWithMapping>& reference_path, size_t first_pos, size_t second_pos) {
-        const size_t barcode_threshold = 5;
-        const size_t count_threshold = 2;
+        const size_t barcode_threshold = 3;
+//        const size_t count_threshold = 2;
         VERIFY(first_pos < second_pos);
         VERIFY(second_pos < reference_path.size());
         EdgeId first = reference_path[first_pos].edge_;
         EdgeId second = reference_path[second_pos].edge_;
-        const size_t tail_threshold = std::max(g_.length(first), g_.length(second));
+        const size_t tail_threshold = 20000;
+        auto barcode_intersection = barcode_extractor_ptr_->GetSharedBarcodes(first, second);
+        vector<BarcodeId> filtered_barcode_intersection;
+        for (const auto& barcode: barcode_intersection) {
+            if (barcode_extractor_ptr_->GetMaxPos(first, barcode) + tail_threshold > g_.length(first) and
+                barcode_extractor_ptr_->GetMinPos(second, barcode) < tail_threshold) {
+                filtered_barcode_intersection.push_back(barcode);
+            }
+        }
         for (size_t i = first_pos + 1; i < second_pos; ++i) {
             EdgeId current = reference_path[i].edge_;
-            bool enough_shared_with_first =
-                barcode_extractor_ptr_->AreEnoughSharedBarcodesWithFilter(first, current, barcode_threshold,
-                                                                          count_threshold, tail_threshold);
-            bool enough_shared_with_second =
-                barcode_extractor_ptr_->AreEnoughSharedBarcodesWithFilter(current, second, barcode_threshold,
-                                                                          count_threshold, tail_threshold);
-            if (not enough_shared_with_first or not enough_shared_with_second) {
+            vector<BarcodeId> middle_intersection;
+            vector<BarcodeId> middle_barcodes = barcode_extractor_ptr_->GetBarcodes(current);
+            std::set_intersection(filtered_barcode_intersection.begin(), filtered_barcode_intersection.end(),
+                                  middle_barcodes.begin(), middle_barcodes.end(),
+                                  std::back_inserter(middle_intersection));
+            if (middle_intersection.size() < barcode_threshold) {
+                DEBUG("Barcode intersection: " << filtered_barcode_intersection.size());
+                DEBUG("Middle barcodes: " << middle_barcodes.size());
+                DEBUG("Middle intersection: " << middle_intersection.size());
                 return false;
             }
         }

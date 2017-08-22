@@ -236,7 +236,7 @@ typedef ComposedDijkstraSettings<Graph,
 typedef Dijkstra<Graph, LongGapCloserDijkstraSettings> LongGapCloserDijkstra;
 
 static LongGapCloserDijkstra CreateLongGapCloserDijkstra(const Graph& graph, size_t length_bound,
-                                                         path_extend::ScaffoldingUniqueEdgeStorage unique_storage,
+                                                         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
                                                          const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor,
                                                          size_t barcode_threshold, size_t count_threshold, EdgeId first,
                                                          EdgeId second, size_t max_vertex_number = -1ul) {
