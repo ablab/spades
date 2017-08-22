@@ -31,8 +31,8 @@ class Log:
         print(s)
 
     def warn(self, s):
-        msg = "WARNING: " + s 
-        self.text += msg + "\n" 
+        msg = "WARNING: " + s + "\n"
+        self.text += msg
         sys.stdout.write(msg)
         sys.stdout.flush()
 
@@ -510,7 +510,7 @@ def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir)
                 if not cmp_misassemblies(quast_output_dir, "latest_" + name, file_name):
                     rewrite_latest = False
             else:
-                log.warn('Fiailed to find ' + latest_ctg + ', nothing to compare misassemblies with')
+                log.warn('Failed to find ' + latest_ctg + ', nothing to compare misassemblies with')
 
     return exit_code, rewrite_latest
 
