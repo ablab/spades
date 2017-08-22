@@ -90,7 +90,7 @@ public:
         DeBruijnKMerKMerSplitter<StoringTypeFilter<typename Index::storing_type> >
                 splitter(workdir, index.k(),
                          index.k() + 1, Index::storing_type::IsInvertable(), read_buffer_size);
-        for (unsigned i = 0; i < nthreads; ++i)
+        for (unsigned i = 0; i < counter.num_buckets(); ++i)
             splitter.AddKMers(counter.GetMergedKMersFname(i));
         KMerDiskCounter<RtSeq> counter2(workdir, splitter);
 

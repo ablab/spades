@@ -305,14 +305,16 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
     counter.Count(num_buckets_, num_threads_);
 
   size_t kmers = counter.kmers();
-  index.num_buckets_ = num_buckets_;
-  index.bucket_starts_.resize(num_buckets_ + 1);
-  index.index_ = new typename KMerIndex<kmer_index_traits>::KMerDataIndex[num_buckets_];
+  unsigned buckets = counter.num_buckets();
+
+  index.num_buckets_ = buckets;
+  index.bucket_starts_.resize(buckets + 1);
+  index.index_ = new typename KMerIndex<kmer_index_traits>::KMerDataIndex[buckets];
 
   INFO("Building perfect hash indices");
 
 # pragma omp parallel for shared(index) num_threads(num_threads_)
-  for (unsigned iFile = 0; iFile < num_buckets_; ++iFile) {
+  for (unsigned iFile = 0; iFile < buckets; ++iFile) {
     typename KMerIndex<kmer_index_traits>::KMerDataIndex &data_index = index.index_[iFile];
     auto bucket = counter.GetBucket(iFile, !save_final);
     size_t sz = bucket->end() - bucket->begin();
@@ -324,7 +326,7 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
   }
 
   // Finally, record the sizes of buckets.
-  for (unsigned iFile = 1; iFile < num_buckets_; ++iFile)
+  for (unsigned iFile = 1; iFile < buckets; ++iFile)
     index.bucket_starts_[iFile] += index.bucket_starts_[iFile - 1];
 
   if (save_final)
