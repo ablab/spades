@@ -102,7 +102,7 @@ public:
         BuildIndex(index, counter, 16, nthreads);
 
         // Now use the index to fill the coverage and EdgeId's
-        INFO("Collecting k-mer coverage information from graph, this takes a while.");
+        INFO("Collecting edge information from graph, this takes a while.");
         EdgeInfoUpdater<Index, Graph> updater(g, index);
         updater.UpdateAll();
     }
@@ -146,15 +146,13 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
     }
 
     template<class ReadStream>
-    size_t FillCoverageFromStream(ReadStream &stream,
-                                  IndexT &index, bool check_contains) const {
+    void FillCoverageFromStream(ReadStream &stream,
+                                IndexT &index, bool check_contains) const {
         unsigned k = index.k();
-        size_t rl = 0;
 
         while (!stream.eof()) {
             typename ReadStream::ReadT r;
             stream >> r;
-            rl = std::max(rl, r.size());
 
             const Sequence &seq = r.sequence();
             if (seq.size() < k)
@@ -170,31 +168,20 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
                 }
             }
         }
-
-        return rl;
     }
 
  public:
 
     template<class Streams>
-    size_t ParallelFillCoverage(IndexT &index,
-                                Streams &streams,
-                                bool check_contains = true) const {
+    void ParallelFillCoverage(IndexT &index,
+                              Streams &streams,
+                              bool check_contains = true) const {
         INFO("Collecting k-mer coverage information from reads, this takes a while.");
         unsigned nthreads = (unsigned) streams.size();
-        size_t rl = 0;
         streams.reset();
-#pragma omp parallel for num_threads(nthreads) shared(rl)
+#pragma omp parallel for num_threads(nthreads)
         for (size_t i = 0; i < nthreads; ++i) {
-            size_t crl = FillCoverageFromStream(streams[i], index, check_contains);
-
-            // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
-#pragma omp flush(rl)
-            if (crl > rl)
-#pragma omp critical
-            {
-                rl = std::max(rl, crl);
-            }
+            FillCoverageFromStream(streams[i], index, check_contains);
         }
 
         // Contigs have zero coverage!
@@ -215,28 +202,7 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
 //            VERIFY(index[k].count == index[!k].count);
 //        }
 //#endif
-
-        return rl;
     }
-
-    template<class Streams>
-    size_t BuildIndexFromStream(IndexT &index,
-                                Streams &streams,
-                                io::SingleStream* contigs_stream = 0) const {
-        utils::BuildIndexFromStream(index, streams, contigs_stream);
-
-        return ParallelFillCoverage(index, streams, false);
-    }
-
-//    template<class Streams>
-//    size_t BuildIndexWithCoverageFromGraph(
-//            GraphT &graph, IndexT &index,
-//            Streams &streams,
-//            SingleReadStream* contigs_stream = 0) const {
-//        this->BuildIndexFromGraph(index, graph);
-//
-//        return ParallelFillCoverage(index, streams, contigs_stream, true);
-//    }
 };
 
 template<class Index>
