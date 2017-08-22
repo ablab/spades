@@ -19,11 +19,17 @@ except KeyError:
     QUAST = "quast"
     METAQUAST = "metaquast"
 
-#Autodetect bins
+#Autodetect bins and stage
 if config["reassembly"]["enabled"]:
+    LAST_STAGE = "reassembly"
     BINS, = glob_wildcards("reassembly/{{bin,{}}}.info".format(NAME_TEMPLATE))
 else:
-    BINS, = glob_wildcards("binning/bins/{{bin,{}}}.fasta".format(NAME_TEMPLATE))
+    if config["propagation"]["enabled"]:
+        LAST_STAGE = "propagation"
+    else:
+        LAST_STAGE = "binning"
+    with open("binning/{}/filtered_bins.tsv".format(BINNER)) as input:
+        BINS = [line.split()[0] for line in input]
 if not BINS:
     raise WorkflowError("No bins detected!")
 BINS.sort()
@@ -63,6 +69,7 @@ if config["stats"].get("refs"):
     stats_targets["nga"]      = "{}_nga.tsv"
 
 STAGES = ["binning", "propagation", "reassembly"]
+print(config["stats"])
 for stage in STAGES:
     if not config.get(stage, {}).get("enabled", True):
         continue
@@ -71,9 +78,11 @@ for stage in STAGES:
         stats = stats_targets.keys()
     else:
         stats = stage_stats + config["stats"].get("all", [])
+    if stage == LAST_STAGE:
+        stats.extend(config["stats"].get("last", []))
     enabled_stats.extend(os.path.join("stats/summary", stats_targets[st].format(stage)) for st in stats)
 
-misc_targets = {"ref_profiles": "ref_profiles.tsv", "binning_nga": "full_binning_nga.tsv"}
+misc_targets = {"ref_profiles": "ref_profiles.tsv"}
 enabled_stats.extend(os.path.join("stats/summary", misc_targets[st].format(stage)) for st in config["stats"].get("misc", []))
 
 rule all_stats:
@@ -84,7 +93,7 @@ rule all_stats:
 #---- Statistics section -------------------------------------------------------
 #===============================================================================
 
-#---- Binning NGA --------------------------------------------------------------
+#---- NGA ----------------------------------------------------------------------
 rule glue_bins:
     input:   "assembly/{}/all.fasta".format(ASSEMBLER), "binning/binning.tsv"
     output:  touch("binning/full.done")
@@ -104,14 +113,21 @@ rule binning_gf:
 
 rule binning_nga:
     input:   "stats/nga_binning.done"
-    output:  "stats/summary/full_binning_nga.tsv"
-    shell:   "{SCRIPTS}/gather_stats.py --nga stats/nga_binning stats/summary/full_binning"
+    output:  "stats/summary/binning_nga.tsv"
+    message: "Gathering full binning NGA"
+    shell:   "{SCRIPTS}/gather_stats.py --nga --plot stats/nga_binning stats/summary/binning"
+
+rule reassembly_nga:
+    input:   "stats/q_reassembly.done"
+    output:  "stats/summary/reassembly_nga.tsv"
+    message: "Gathering reassembly NGA"
+    shell:   "{SCRIPTS}/gather_stats.py --nga --plot stats/q_reassembly stats/summary/reassembly"
 
 #---- F1 stats -----------------------------------------------------------------
 rule combine_bins:
     input:   expand("{{stage}}/bins/{bin}.fasta", bin=BINS)
     output:  "{stage,(binning|propagation|reassembly)}/bins/all.fasta"
-    message: "Combine all {wildcards.stage} {wildcards.frags} contigs"
+    message: "Combine all {wildcards.stage} bins"
     shell:   "{SCRIPTS}/combine_contigs.py {input} > {output}"
 
 rule filter_ref_alignments:
@@ -121,7 +137,7 @@ rule filter_ref_alignments:
              prefix=lambda w: "| awk -v b=$bin '{{print b \"-\" $0}}'" if w.stage == "reassembly" else ""
     message: "Filtering alignments from {wildcards.stage} onto {wildcards.ref}"
     shell:   "rm -f {output}\n"
-             "for bin in {params}\ndo\n"
+             "for bin in {params.bins}\ndo\n"
              "    file=stats/q_{wildcards.stage}/runs_per_reference/{wildcards.ref}/contigs_reports/contigs_report_$bin.stdout\n"
              "    if [ -f $file ] ; then\n"
              "        {SCRIPTS}/filter_nucmer.py $file {MIN_CONTIG_LENGTH} 70 {params.prefix} >> {output}\n"
@@ -179,7 +195,7 @@ rule quast_all:
 rule gather_stats:
     input:   "stats/q_{stage}.done"
     output:  "stats/summary/{stage}_summary.tsv"
-    params:  "--gf", "--problematic", "--nga", "--plot", "stats/q_{stage}", "stats/summary/{stage}"
+    params:  "--gf", "--problematic", "--plot", "stats/q_{stage}", "stats/summary/{stage}"
     message: "Gathering {wildcards.stage} stats"
     shell:   "{SCRIPTS}/gather_stats.py {params}"
 

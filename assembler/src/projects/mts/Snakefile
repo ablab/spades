@@ -9,7 +9,7 @@ onstart:
 
 def final_stage(w):
     if config["reassembly"]["enabled"]:
-        return ["propagation.done", "reassembly/bins_total.prof"] #Stop after the bin choosing
+        return "reassembly/choose.done" #Stop after the bin choosing
     if config["propagation"]["enabled"]:
         return "propagation.done" #Stop on the propagation
     return "binning/{}/filtered_bins.tsv".format(BINNER) #Stop on the preliminary binning
@@ -52,13 +52,14 @@ rule spades:
 
 rule copy_contigs:
     input:   "assembly/{}/{{group}}.fasta".format(ASSEMBLER)
-    output:  "assembly/full/{group,(sample|group\d+)}.fasta"
+    output:  "assembly/full/{group,(sample|group)\d+}.fasta"
+    message: "Prepare full contigs of {wildcards.group}"
     shell:   "cp {input} {output}"
 
 rule split_contigs:
     input:   "assembly/{}/{{group}}.fasta".format(ASSEMBLER)
     output:  "assembly/splits/{group,(sample|group)\d+}.fasta"
-    message: "Cutting {wildcards.group} into {SPLIT_LENGTH} bp splits"
+    message: "Cutting contigs from {wildcards.group} into {SPLIT_LENGTH} bp splits"
     shell:   "{SCRIPTS}/cut_fasta.py -c {SPLIT_LENGTH} -o 0 -m {input} > {output}"
 
 #---- Generating profiles/depths -----------------------------------------------
@@ -85,13 +86,13 @@ rule align:
 
 rule depth:
     input:   expand("profile/jgi/{{frags}}/{sample}.bam", sample=SAMPLES)
-    output:  "profile/jgi/{frags}/depth_metabat.txt"
-    log:     "profile/jgi/{frags}/depths.log"
+    output:  "profile/jgi/{frags}/depth.txt"
+    log:     "profile/jgi/{frags}/depth.log"
     message: "Calculating contig depths"
     shell:   "{SOFT}/metabat/jgi_summarize_bam_contig_depths --outputDepth {output} {input} >{log} 2>&1"
 
 rule convert_depth:
-    input:   "profile/jgi/splits/depth_metabat.txt"
+    input:   "profile/jgi/splits/depth.txt"
     output:  "binning/{BINNER}/profiles_jgi.in"
     message: "Converting depth file into {BINNER} format"
     shell:   "{SCRIPTS}/make_input.py -t {BINNER} -n {SAMPLE_COUNT} --jgi {input} {output}"
@@ -124,9 +125,9 @@ rule multiplicities:
 
 rule abundancies:
     input:   contigs="assembly/splits/{group}.fasta", mpl="profile/mts/kmers.kmm"
-    output:  "profile/mts/{group}.tsv"
+    output:  "profile/mts/{group,(sample|group)\d+}.tsv"
     log:     "profile/mts/{group}.log"
-    message: "Counting contig abundancies for {wildcards.group}"
+    message: "Counting split contig abundancies for {wildcards.group}"
     shell:   "{BIN}/contig_abundance_counter -k {PROFILE_K} -w tmp -c {input.contigs}"
              " -n {SAMPLE_COUNT} -m profile/mts/kmers -o {output}"
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
@@ -211,7 +212,7 @@ rule concoct:
 
 # Binning with MetaBAT
 rule metabat:
-    input:   contigs="assembly/full/all.fasta", profiles="profile/jgi/full/depth_metabat.txt"
+    input:   contigs="assembly/full/all.fasta", profiles="profile/jgi/full/depth.txt"
     output:  flag=touch("binning/metabat/binning.done"),
              out="binning/metabat/binning.out"
     threads: THREADS
@@ -259,7 +260,7 @@ ruleorder: maxbin_post > binning_format
 # conda create -n py27 python=2.7.9 numpy scipy scikit-learn anaconda
 # conda install -c bioconda pysam=0.11.2.2
 rule gattaca:
-    input:   contigs="assembly/splits/all_filtered.fasta", profiles="binning/gattaca/profiles_{}.in".format(PROFILER)
+    input:   contigs="assembly/full/all_filtered.fasta", profiles="binning/gattaca/profiles_{}.in".format(PROFILER)
     output:  "binning/gattaca/binning.out"
     threads: THREADS
     log:     "binning/gattaca.log"
@@ -336,9 +337,10 @@ rule prop_all:
     message: "Finished propagation of all annotations."
 
 rule choose_samples:
-    input:   "binning/{}/bins.prof".format(BINNER), "binning/{}/filtered_bins.tsv".format(BINNER)
-    output:  "reassembly/bins_total.prof"
-    log:     "binning/choose_samples.log"
+    input:   prof="binning/{}/bins.prof".format(BINNER), bins="binning/{}/filtered_bins.tsv".format(BINNER),
+             flag="propagation.done"
+    output:  touch("reassembly/choose.done")
+    log:     "reassembly/choose_samples.log"
     message: "Choosing bins for reassembly and samples for them"
     shell:   "rm -f reassembly/*.info && rm -rf reassembly/excluded && "
-             "{SCRIPTS}/choose_samples.py {input} {output} reassembly >{log} 2>&1"
+             "{SCRIPTS}/choose_samples.py {input.prof} {input.bins} reads reassembly >{log} 2>&1"

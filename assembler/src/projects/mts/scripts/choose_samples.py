@@ -8,13 +8,13 @@ import sys
 import yaml
 
 if len(sys.argv) < 3:
-    print("Usage: choose_samples.py <input table> <input bins> <output table> <output dir> ")
+    print("Usage: choose_samples.py <input table> <input bins> <input reads> <output dir> ")
     exit(1)
 
 PROF = sys.argv[1]
 FILTERED_BINS = sys.argv[2]
-PROF_OUT = sys.argv[3]
-DIR = sys.argv[4]
+READ_DIR = sys.argv[3]
+OUT_DIR = sys.argv[4]
 BINS = set()
 with open(FILTERED_BINS) as input:
     for line in input:
@@ -28,7 +28,7 @@ MIN_TOTAL_ABUNDANCE = 15
 prof_dict = dict()
 
 make_excluded = True
-excluded_dir = os.path.join(DIR, "excluded")
+excluded_dir = os.path.join(OUT_DIR, "excluded")
 
 #Assuming that samples are enumerated consecutively from 1 to N
 #(it is forced by the pipeline)
@@ -37,15 +37,13 @@ with open(PROF) as input:
         exclude = False
         samples = []
         params = line.split()
-        print(params)
         bin = params[0]
         profile = list(map(float, params[1:]))
+        print("Profile of", bin, ":", profile)
         if bin not in BINS:
             print(bin, "was excluded from reassembly")
             exclude = True
         else:
-            print("Profile of", bin, ":", profile)
-
             #Sort samples by their abundancies
             weighted_profile = list((i, ab)
                 for i, ab in enumerate(profile) if ab >= MIN_ABUNDANCE)
@@ -61,6 +59,9 @@ with open(PROF) as input:
 
             #Current strategy: collect the desired abundance from samples, starting from the largest
             for i, _ in reversed(weighted_profile):
+                if not os.path.exists(os.path.join(READ_DIR, bin, "sample{}_1.fastq.gz".format(i))):
+                    print("WARNING: sample", i, "does not contain reads for", bin)
+                    continue
                 total += profile[i]
                 samples.append(i + 1)
                 if total >= DESIRED_ABUNDANCE:
@@ -73,19 +74,17 @@ with open(PROF) as input:
                 print(bin, "is too scarce; skipping")
                 exclude = True
 
-        config_dir = DIR
+        config_dir = OUT_DIR
         if exclude:
             if make_excluded and not os.path.isdir(excluded_dir):
                 os.mkdir(excluded_dir)
             make_excluded = False
             config_dir = excluded_dir
         config_path = os.path.join(config_dir, bin + ".info")
+        print("Dumping config into", config_path)
         with open(config_path, "w") as out:
             print("total", sum(profile), file=out)
             for i, ab in enumerate(profile, start=1):
                 if i in samples:
-                    print("+", file=out, end="")
+                    print("+", end="", file=out)
                 print("sample" + str(i), ab, file=out)
-
-with open(PROF_OUT, "w") as prof_out:
-    yaml.dump(prof_dict, prof_out)
