@@ -154,6 +154,7 @@ static inline void qf_spin_unlock(volatile int *lock)
 	return;
 }
 
+/*
 static void modify_metadata(QF *qf, uint64_t *metadata, int cnt)
 {
 #ifdef LOG_WAIT_TIME
@@ -165,6 +166,12 @@ static void modify_metadata(QF *qf, uint64_t *metadata, int cnt)
 	qf_spin_unlock(&qf->mem->metadata_lock);
 	return;
 }
+*/
+
+static void modify_metadata(QF *qf, uint64_t *metadata, int cnt) {
+    __sync_fetch_and_add(metadata, cnt);
+}
+
 
 static inline int popcnt(uint64_t val) {
        asm("popcnt %[val], %[val]"
@@ -772,16 +779,16 @@ static inline void insert_replace_slots_and_shift_remainders_and_runends_and_off
 	for (i = 0; i < total_remainders; i++)
 		set_slot(qf, overwrite_index + i, remainders[i]);
 
-	/*modify_metadata(qf, &qf->metadata->noccupied_slots, ninserts);*/
+	modify_metadata(qf, &qf->metadata->noccupied_slots, ninserts);
 }
 
-static inline void remove_replace_slots_and_shift_remainders_and_runends_and_offsets(QF		        *qf, 
-																																										 int		 operation, 
-																																										 uint64_t		 bucket_index,
-																																										 uint64_t		 overwrite_index,
-																																										 const uint64_t	*remainders, 
-																																										 uint64_t		 total_remainders,
-																																										 uint64_t		 nremovals)
+static inline void remove_replace_slots_and_shift_remainders_and_runends_and_offsets(QF	*qf, 
+                                                                                     int		 operation, 
+                                                                                     uint64_t		 bucket_index,
+                                                                                     uint64_t		 overwrite_index,
+                                                                                     const uint64_t	*remainders, 
+                                                                                     uint64_t		 total_remainders,
+                                                                                     uint64_t		 nremovals)
 {
 	uint64_t i;
 
@@ -828,10 +835,8 @@ static inline void remove_replace_slots_and_shift_remainders_and_runends_and_off
 
 	}
 
-	/*modify_metadata(qf, &qf->metadata->noccupied_slots, -nremovals);*/
+	modify_metadata(qf, &qf->metadata->noccupied_slots, -nremovals);
 }
-
-
 
 
 /*****************************************************************************
@@ -1031,9 +1036,9 @@ static inline bool insert1(QF *qf, uint64_t hash, bool lock, bool spin)
 		METADATA_WORD(qf, occupieds, hash_bucket_index) |= 1ULL <<
 			(hash_bucket_block_offset % 64);
 
-		/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
-		/*modify_metadata(qf, &qf->metadata->noccupied_slots, 1);*/
-		/*modify_metadata(qf, &qf->metadata->nelts, 1);*/
+		modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
+		modify_metadata(qf, &qf->metadata->noccupied_slots, 1);
+		modify_metadata(qf, &qf->metadata->nelts, 1);
 	} else {
 		uint64_t runend_index              = run_end(qf, hash_bucket_index);
 		int operation = 0; /* Insert into empty bucket */
@@ -1101,7 +1106,7 @@ static inline bool insert1(QF *qf, uint64_t hash, bool lock, bool spin)
 				operation = 1;
 				insert_index = runstart_index;
 				new_value = hash_remainder;
-				/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
+				modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
 
 				/* This is the first time we're inserting this remainder, but
 					 there are larger remainders already in the run. */
@@ -1109,7 +1114,7 @@ static inline bool insert1(QF *qf, uint64_t hash, bool lock, bool spin)
 				operation = 2; /* Inserting */
 				insert_index = runstart_index;
 				new_value = hash_remainder;
-				/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
+				modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
 
 				/* Cases below here: we're incrementing the (simple or
 					 extended) counter for this remainder. */
@@ -1243,9 +1248,9 @@ static inline bool insert1(QF *qf, uint64_t hash, bool lock, bool spin)
 					get_block(qf, i)->offset++;
 				//assert(get_block(qf, i)->offset != 0);
 			}
-			/*modify_metadata(qf, &qf->metadata->noccupied_slots, 1);*/
+			modify_metadata(qf, &qf->metadata->noccupied_slots, 1);
 		}
-		/*modify_metadata(qf, &qf->metadata->nelts, 1);*/
+		modify_metadata(qf, &qf->metadata->nelts, 1);
 		METADATA_WORD(qf, occupieds, hash_bucket_index) |= 1ULL <<
 			(hash_bucket_block_offset % 64);
 	}
@@ -1303,9 +1308,9 @@ static inline bool insert(QF *qf,uint64_t hash, uint64_t count, bool lock,
 		METADATA_WORD(qf, occupieds, hash_bucket_index) |= 1ULL <<
 			(hash_bucket_block_offset % 64);
 		
-		/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
-		/*modify_metadata(qf, &qf->metadata->noccupied_slots, 1);*/
-		/*modify_metadata(qf, &qf->metadata->nelts, 1);*/
+		modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
+		modify_metadata(qf, &qf->metadata->noccupied_slots, 1);
+		modify_metadata(qf, &qf->metadata->nelts, 1);
 		/* This trick will, I hope, keep the fast case fast. */
 		if (count > 1) {
 			qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
@@ -1316,19 +1321,19 @@ static inline bool insert(QF *qf,uint64_t hash, uint64_t count, bool lock,
 	} else { /* Non-empty slot */
 		uint64_t new_values[67];
 		int64_t runstart_index = hash_bucket_index == 0 ? 0 : run_end(qf,
-																																	hash_bucket_index
-																																	- 1) + 1;
+                                                                      hash_bucket_index
+                                                                      - 1) + 1;
 
 		if (!is_occupied(qf, hash_bucket_index)) { /* Empty bucket, but its slot is occupied. */
 			uint64_t *p = encode_counter(qf, hash_remainder, count, &new_values[67]);
 			insert_replace_slots_and_shift_remainders_and_runends_and_offsets(qf, 
-																																				0, 
-																																				hash_bucket_index, 
-																																				runstart_index, 
-																																				p, 
-																																				&new_values[67] - p, 
-																																				0);
-			/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
+                                                                              0, 
+                                                                              hash_bucket_index, 
+                                                                              runstart_index, 
+                                                                              p, 
+                                                                              &new_values[67] - p, 
+                                                                              0);
+			modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
 		} else { /* Non-empty bucket */
 
 			uint64_t current_remainder, current_count, current_end;
@@ -1353,7 +1358,7 @@ static inline bool insert(QF *qf,uint64_t hash, uint64_t count, bool lock,
 																																					p, 
 																																					&new_values[67] - p, 
 																																					0);
-				/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
+				modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
 				/* Found a counter for this remainder.  Add in the new count. */
 			} else if (current_remainder == hash_remainder) {
 				uint64_t *p = encode_counter(qf, hash_remainder, current_count + count, &new_values[67]);
@@ -1375,12 +1380,12 @@ static inline bool insert(QF *qf,uint64_t hash, uint64_t count, bool lock,
 																																					p, 
 																																					&new_values[67] - p, 
 																																					0);	
-				/*modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);*/
+				modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
 			}
 		}
 		METADATA_WORD(qf, occupieds, hash_bucket_index) |= 1ULL << (hash_bucket_block_offset % 64);
 		
-		/*modify_metadata(qf, &qf->metadata->nelts, count);*/
+		modify_metadata(qf, &qf->metadata->nelts, count);
 	}
 
 	if (lock) {
@@ -1443,7 +1448,7 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 		nslots >>= 1;
 	}
 
-	fprintf(stderr, "%lu %lu %lu\n", key_bits, key_remainder_bits, value_bits);
+	fprintf(stderr, "%llu %llu %llu\n", key_bits, key_remainder_bits, value_bits);
 	bits_per_slot = key_remainder_bits + value_bits;
 	assert (BITS_PER_SLOT == 0 || BITS_PER_SLOT == bits_per_slot);
 	assert(bits_per_slot > 1);
