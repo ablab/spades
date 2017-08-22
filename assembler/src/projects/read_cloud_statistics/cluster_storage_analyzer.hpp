@@ -3,7 +3,7 @@
 #include "common/barcode_index/cluster_storage.hpp"
 #include "common/barcode_index/cluster_storage_extractor.hpp"
 #include "transitions.hpp"
-#include "scaffold_graph.hpp"
+#include "scaffold_graph_utils.hpp"
 
 namespace cluster_statistics {
 
@@ -142,12 +142,15 @@ struct ClusterSetStatistics {
 struct SummaryClusterStatistics: public read_cloud_statistics::Statistic {
     ClusterSetStatistics path_cluster_statistics_;
     ClusterSetStatistics nonpath_cluster_statistics_;
+    ClusterSetStatistics filtered_nonpath_cluster_statistics_;
 
   SummaryClusterStatistics(const ClusterSetStatistics& path_cluster_statistics_,
-                           const ClusterSetStatistics& nonpath_cluster_statistics_)
+                           const ClusterSetStatistics& nonpath_cluster_statistics_,
+                           const ClusterSetStatistics& filtered_nonpath_cluster_statistics)
       : Statistic("summary_cluster_statistics"),
         path_cluster_statistics_(path_cluster_statistics_),
-        nonpath_cluster_statistics_(nonpath_cluster_statistics_) {}
+        nonpath_cluster_statistics_(nonpath_cluster_statistics_),
+        filtered_nonpath_cluster_statistics_(filtered_nonpath_cluster_statistics){}
 
   void Serialize(const string& path) override {
         ofstream fout(path);
@@ -155,7 +158,9 @@ struct SummaryClusterStatistics: public read_cloud_statistics::Statistic {
         fout << "true_pos_rate" << sep << "avg_true_coverage" << sep << "false_transitions" << sep << "true_transitions"
              << sep << "false_transitions_rate" << sep << "false_single_rate" << sep << "average_false_transition_coverage"
              << std::endl;
-        vector<ClusterSetStatistics> stats({path_cluster_statistics_, nonpath_cluster_statistics_});
+        vector<ClusterSetStatistics> stats({path_cluster_statistics_,
+                                            nonpath_cluster_statistics_,
+                                            filtered_nonpath_cluster_statistics_});
         for (const auto& stat: stats) {
             fout << stat.reference_transition_recall_ << sep << stat.average_transition_coverage_ << sep
                  << stat.false_transitions_ << sep << stat.true_transitions_ << sep << stat.false_transitions_rate_
@@ -516,30 +521,34 @@ class PathClusterStorageBuilder {
                                                              const transitions::ContigTransitionStorage& transition_storage) {
             PreliminaryClusterSetStats path_cluster_preliminary_stats;
             PreliminaryClusterSetStats nonpath_cluster_preliminary_stats;
+            PreliminaryClusterSetStats filtered_non_path_preliminary_stats;
             transitions::ClusterTransitionExtractor transition_extractor(ordering_analyzer_);
             INFO("Initial false: " << nonpath_cluster_preliminary_stats.false_transitions_);
             for (const auto& cluster: clusters) {
                 vector<EdgeId> ordering = ordering_analyzer_.GetOrderingFromCluster(cluster);
-                vector<transitions::Transition> transitions;
                 if (ordering.size() != 0) {
-                    transitions = transition_extractor.ExtractTransitionsFromOrdering(ordering);
+                    auto transitions = transition_extractor.ExtractTransitionsFromOrdering(ordering);
                     path_cluster_preliminary_stats.Update(transition_storage, transitions);
                 } else {
-                    transitions = transition_extractor.ExtractTransitionsFromNonPathCluster(cluster);
-                    nonpath_cluster_preliminary_stats.Update(transition_storage, transitions);
+                    auto all_transitions = transition_extractor.ExtractAllTransitionsFromNonPathCluster(cluster);
+                    nonpath_cluster_preliminary_stats.Update(transition_storage, all_transitions);
+                    auto filtered_transitions = transition_extractor.ExtractGoodTransitionsFromNonPathCluster(cluster);
+                    filtered_non_path_preliminary_stats.Update(transition_storage, filtered_transitions);
                 }
             }
             INFO("Path cluster stats")
             auto path_cluster_stats = GetClusterSetStatistics(path_cluster_preliminary_stats, transition_storage);
             INFO("Non path cluster stats")
             auto nonpath_cluster_stats = GetClusterSetStatistics(nonpath_cluster_preliminary_stats, transition_storage);
-            return SummaryClusterStatistics(path_cluster_stats, nonpath_cluster_stats);
+            INFO("Filtered non path cluster stats")
+            auto filtered_nonpath_cluster_stats = GetClusterSetStatistics(filtered_non_path_preliminary_stats, transition_storage);
+            return SummaryClusterStatistics(path_cluster_stats, nonpath_cluster_stats, filtered_nonpath_cluster_stats);
         }
 
         ClusterSetStatistics GetClusterSetStatistics(const PreliminaryClusterSetStats& preliminary_stats,
                                                      const transitions::ContigTransitionStorage& transtition_storage) {
             ClusterSetStatistics result;
-            size_t overall_true_transitions = transtition_storage.Size();
+            size_t overall_true_transitions = transtition_storage.size();
             size_t true_transitions = preliminary_stats.true_transitions_;
             size_t false_transitions = preliminary_stats.false_transitions_;
             INFO("True transitions with multiplicity: " << true_transitions);

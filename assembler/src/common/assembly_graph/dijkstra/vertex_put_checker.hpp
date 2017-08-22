@@ -92,7 +92,7 @@ class CompositePutChecker : public VertexPutChecker<Graph, distance_t> {
         auto put_check_predicate = [vertex, edge, length] (std::shared_ptr<VertexPutChecker<Graph, distance_t>> put_checker) {
           return put_checker->Check(vertex, edge, length);
         };
-        return std::any_of(put_checkers_.begin(), put_checkers_.end(), put_check_predicate);
+        return std::all_of(put_checkers_.begin(), put_checkers_.end(), put_check_predicate);
     }
 };
 
