@@ -33,17 +33,17 @@ private:
     }
 public:
 
-    SimpleKeyWithHash(Key key, const HashFunction &hash) : hash_(hash), key_(key), idx_(0), ready_(false) {
-    }
+    SimpleKeyWithHash(Key key, const HashFunction &hash)
+            : hash_(hash), key_(key), idx_(0), ready_(false) {}
 
     Key key() const {
         return key_;
     }
 
     IdxType idx() const {
-        if(!ready_) {
+        if (!ready_)
             CountIdx();
-        }
+
         return idx_;
     }
 
@@ -116,7 +116,7 @@ private:
     void CountIdx() const {
         ready_ = true;
         is_minimal_ = key_.IsMinimal();
-        if(is_minimal_)
+        if (is_minimal_)
             idx_ = hash_.seq_idx(key_);
         else{
             idx_ = hash_.seq_idx(!key_);
@@ -175,7 +175,7 @@ private:
     }
 
     InvertableKeyWithHash operator!() const {
-        if(!ready_)
+        if (!ready_)
             return InvertableKeyWithHash(!key_, hash_);
         return InvertableKeyWithHash(!key_, hash_, !is_minimal_, idx_, ready_);
     }

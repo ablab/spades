@@ -6,12 +6,6 @@
 //***************************************************************************
 
 #pragma once
-/*
- * key_with_hash.hpp
- *
- *  Created on: Nov 7, 2013
- *      Author: anton
- */
 
 namespace utils {
 
