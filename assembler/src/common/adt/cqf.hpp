@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gqf/gqf.h"
+#include <mutex>
 
 namespace qf {
 
@@ -39,9 +40,32 @@ class cqf {
 
     cqf(cqf&&) = default;
 
+    void replace_hasher(hasher h) {
+        hasher_ = std::move(h);
+        clear();
+    }
+
     bool add(digest d, uint64_t count = 1,
              bool lock = true, bool spin = true) {
+        if (full()) {
+            std::lock_guard<std::mutex> lock(resize_mutex_);
+            if (full())
+                expand();
+        }
+
         return qf_insert(&qf_, d & range_mask_, 0, count, lock, spin);
+    }
+
+    void expand() {
+        // Create new QF having the same hash bits, but double the slots
+        QF nqf;
+        qf_init(&nqf, 2 * num_slots_, num_hash_bits_, 0, 239);
+
+        merge(&nqf, &qf_);
+
+        qf_destroy(&qf_);
+        memcpy(&qf_, &nqf, sizeof(qf_));
+        num_slots_ = 2 * num_slots_;
     }
 
     bool add(const T &o, uint64_t count = 1,
@@ -51,15 +75,7 @@ class cqf {
     }
 
     void merge(cqf<T> &other) {
-        QFi other_cfi;
-
-        if (qf_iterator(&other.qf_, &other_cfi, 0)) {
-            do {
-                uint64_t key = 0, value = 0, count = 0;
-                qfi_get(&other_cfi, &key, &value, &count);
-                qf_insert(&qf_, key, value, count, true, true);
-            } while (!qfi_next(&other_cfi));
-        }
+        merge(&qf_, &other.qf_);
         other.clear();
     }
 
@@ -68,26 +84,41 @@ class cqf {
         insertions_ = 0;
     }
 
+    bool full() const {
+        return occupied_slots() >= 0.95 * slots();
+    }
+
     size_t insertions() const { return insertions_; }
-
-    unsigned hash_bits() const {
-        return num_hash_bits_;
-    }
-
-    uint64_t slots() const {
-        return num_slots_;
-    }
+    unsigned hash_bits() const { return num_hash_bits_; }
+    uint64_t range_mask() const { return range_mask_; }
+    uint64_t slots() const { return num_slots_; }
+    uint64_t occupied_slots() const { return qf_.metadata->noccupied_slots; }
+    uint64_t distinct() const { return qf_.metadata->ndistinct_elts; }
 
     size_t lookup(digest d, bool lock = false) const {
         return qf_count_key_value(&qf_, d & range_mask_, 0, lock);
     }
 
-    size_t lookup(const T&o, bool lock = false) const {
-        digest d = hasher_(o);
+    size_t lookup(const T &o, bool lock = false) const {
+        digest d = hasher_(o, 0);
         return lookup(d, lock);
     }
 
-protected:
+private:
+    void merge(QF *qf, QF *other) {
+        QFi other_cfi;
+
+        if (qf_iterator(other, &other_cfi, 0)) {
+            do {
+                uint64_t key = 0, value = 0, count = 0;
+                qfi_get(&other_cfi, &key, &value, &count);
+                qf_insert(qf, key, value, count, true, true);
+            } while (!qfi_next(&other_cfi));
+        }
+    }
+
+    std::mutex resize_mutex_;
+
     hasher hasher_;
     QF qf_;
     unsigned num_hash_bits_;
