@@ -25,6 +25,49 @@ struct PerfectHashMapBuilder {
     }
 };
 
+struct CQFHashMapBuilder {
+    static uint64_t hash_64(uint64_t key, uint64_t mask) {
+        key = (~key + (key << 21)) & mask; // key = (key << 21) - key - 1;
+        key = key ^ key >> 24;
+        key = ((key + (key << 3)) + (key << 8)) & mask; // key * 265
+        key = key ^ key >> 14;
+        key = ((key + (key << 2)) + (key << 4)) & mask; // key * 21
+        key = key ^ key >> 28;
+        key = (key + (key << 31)) & mask;
+        return key;
+    }
+
+    template<class K, class traits, class StoringType, class Counter>
+    void BuildIndex(CQFHashMap<K, traits, StoringType> &index,
+                    Counter& counter, size_t bucket_num, size_t thread_num,
+                    bool save_final = false) const {
+        using Index = CQFHashMap<K, traits, StoringType>;
+        using KMerIndex = typename Index::KMerIndexT;
+
+        // Step 1: build PHM
+        utils::KMerIndexBuilder<KMerIndex> builder((unsigned) bucket_num,
+                                                   (unsigned) thread_num);
+        size_t sz = builder.BuildIndex(*index.index_ptr_, counter, save_final);
+
+        // Step 2: allocate CQF
+
+        // Hasher here is dummy, we will need to know the CQF range
+        index.values_.reset(
+            new typename Index::ValueStorage(
+                [](const typename Index::KeyWithHash &, uint64_t) {
+                    return 42;
+                },
+                sz));
+
+        // Now we know the CQF range, so we could initialize the inthash properly
+        uint64_t range_mask = index.values_->range_mask();
+        index.values_->replace_hasher(
+            [=](const typename Index::KeyWithHash &h, uint64_t) {
+                return hash_64(h.idx(), range_mask);
+            });
+    }
+};
+
 struct KeyStoringIndexBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
     void BuildIndex(KeyStoringMap<K, V, traits, StoringType> &index,
