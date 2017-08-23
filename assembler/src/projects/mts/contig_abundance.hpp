@@ -2,6 +2,7 @@
 
 #include "pipeline/graph_pack.hpp"
 #include "utils/ph_map/perfect_hash_map_builder.hpp"
+#include "io/kmers/mmapped_reader.hpp"
 
 namespace debruijn_graph {
 
@@ -12,43 +13,69 @@ static const Mpl INVALID_MPL = Mpl(-1);
 typedef typename std::vector<Mpl> MplVector;
 typedef typename std::vector<double> AbundanceVector;
 
-void SetSampleCount(size_t sample_cnt);
-size_t SampleCount();
+class KmerProfileIndex {
+private:
+    typedef typename utils::InvertableStoring::trivial_inverter<Offset> InverterT;
+    typedef utils::KeyStoringMap<conj_graph_pack::seq_t,
+        Offset,
+        utils::kmer_index_traits<conj_graph_pack::seq_t>,
+        utils::InvertableStoring> IndexT;
 
-class KmerProfile {
+    static size_t sample_cnt_;
 
 public:
-    typedef Mpl value_type;
+    static void SetSampleCount(size_t sample_cnt) { sample_cnt_ = sample_cnt; }
+    static size_t SampleCount() { return sample_cnt_; }
 
-    KmerProfile(const value_type* ptr = nullptr):
-        ptr_(ptr) {
-    }
+    class KmerProfile {
 
-    KmerProfile(const MplVector& vec):
-        ptr_(&vec.front()) {
-    }
+    public:
+        typedef Mpl value_type;
 
-    size_t size() const {
-        return SampleCount();
-    }
+        KmerProfile(const value_type* ptr = nullptr):
+            ptr_(ptr) {
+        }
 
-    Mpl operator[](size_t i) const {
-        VERIFY(i < size());
-        return ptr_[i];
-    }
+        KmerProfile(const MplVector& vec):
+            ptr_(&vec.front()) {
+        }
 
-    const value_type* begin() const {
-        return ptr_;
-    }
+        size_t size() const {
+            return SampleCount();
+        }
 
-    const value_type* end() const {
-        return ptr_ + size();
-    }
+        Mpl operator[](size_t i) const {
+            VERIFY(i < size());
+            return ptr_[i];
+        }
+
+        const value_type* begin() const {
+            return ptr_;
+        }
+
+        const value_type* end() const {
+            return ptr_ + size();
+        }
+
+    private:
+        const value_type* ptr_;
+    };
+
+    typedef typename IndexT::KeyType KeyType;
+    typedef typename IndexT::KeyWithHash KeyWithHash;
+
+    KmerProfileIndex(unsigned k, const std::string& index_prefix, const std::string& work_dir);
+    KeyWithHash Construct(const KeyType& seq) const;
+    boost::optional<KmerProfile> operator[](const KeyWithHash& kwh) const;
 
 private:
-    const value_type* ptr_;
+    typedef MMappedRecordArrayReader<Mpl> ProfilesT;
+    InverterT inverter_;
+    IndexT index_;
+    boost::optional<ProfilesT> profiles_;
 };
 
+using KmerProfile = KmerProfileIndex::KmerProfile;
 typedef std::vector<KmerProfile> KmerProfiles;
 
 template<class CovVecs>
@@ -120,32 +147,20 @@ private:
 };
 
 class ContigAbundanceCounter {
-    typedef typename utils::InvertableStoring::trivial_inverter<Offset> InverterT;
-
-    typedef utils::KeyStoringMap<conj_graph_pack::seq_t,
-                          Offset,
-                          utils::kmer_index_traits<conj_graph_pack::seq_t>,
-                          utils::InvertableStoring> IndexT;
-
     unsigned k_;
-    shared_ptr<ClusterAnalyzer> cluster_analyzer_;
+    std::unique_ptr<ClusterAnalyzer> cluster_analyzer_;
     double min_earmark_share_;
-    IndexT kmer_mpl_;
-    InverterT inverter_;
-    std::vector<Mpl> mpl_data_;
 
     vector<std::string> SplitOnNs(const std::string& seq) const;
 
+    KmerProfileIndex profile_index_;
+
 public:
     ContigAbundanceCounter(unsigned k,
-                           shared_ptr<ClusterAnalyzer> cluster_analyzer,
+                           std::unique_ptr<ClusterAnalyzer> cluster_analyzer,
+                           const std::string& index_prefix,
                            const std::string& work_dir,
-                           double min_earmark_share = 0.7) :
-        k_(k),
-        cluster_analyzer_(cluster_analyzer),
-        min_earmark_share_(min_earmark_share),
-        kmer_mpl_(k_, work_dir) {
-    }
+                           double min_earmark_share = 0.7);
 
     void Init(const std::string& kmer_mpl_file);
 

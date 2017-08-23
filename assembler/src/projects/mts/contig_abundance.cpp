@@ -3,16 +3,6 @@
 
 namespace debruijn_graph {
 
-size_t sample_cnt_ = 0;
-
-void SetSampleCount(size_t sample_cnt) {
-    sample_cnt_ = sample_cnt;
-}
-
-size_t SampleCount() {
-    return sample_cnt_;
-}
-
 MplVector SampleMpls(const KmerProfiles& kmer_mpls, size_t sample) {
     MplVector answer;
     answer.reserve(kmer_mpls.size());
@@ -31,14 +21,15 @@ Mpl SampleMedian(const KmerProfiles& kmer_mpls, size_t sample) {
 
 MplVector MedianVector(const KmerProfiles& kmer_mpls) {
     VERIFY(kmer_mpls.size() != 0);
-    MplVector answer(SampleCount(), 0);
-    for (size_t i = 0; i < SampleCount(); ++i) {
+    MplVector answer(KmerProfileIndex::SampleCount(), 0);
+    for (size_t i = 0; i < answer.size(); ++i) {
         answer[i] = SampleMedian(kmer_mpls, i);
     }
     return answer;
 }
 
-bool SingleClusterAnalyzer::AreClose(const KmerProfile& c, const KmerProfile& v) const {
+bool SingleClusterAnalyzer::AreClose(const KmerProfileIndex::KmerProfile& c,
+                                     const KmerProfileIndex::KmerProfile& v) const {
     //VERIFY(c.size() == v.size());
     double sum = 0;
     size_t non_zero_cnt = 0;
@@ -121,17 +112,45 @@ vector<std::string> ContigAbundanceCounter::SplitOnNs(const std::string& seq) co
     return answer;
 }
 
-void ContigAbundanceCounter::Init(const std::string& file_prefix) {
-    VERIFY(SampleCount() != 0);
-    INFO("Loading kmer index");
-    std::ifstream kmers_in(file_prefix + ".kmm", std::ios::binary);
-    kmer_mpl_.BinRead(kmers_in, file_prefix + ".kmm");
+size_t KmerProfileIndex::sample_cnt_ = 0;
 
-    INFO("Loading kmer profiles data");
-    const size_t data_size = SampleCount() * kmer_mpl_.size();
-    mpl_data_.resize(data_size);
-    std::ifstream mpls_in(file_prefix + ".bpr", std::ios::binary);
-    mpls_in.read((char *)&mpl_data_[0], data_size * sizeof(Mpl));
+KmerProfileIndex::KmerProfileIndex(unsigned k,
+                                   const std::string& index_prefix,
+                                   const std::string& workdir):
+    index_(k, workdir) {
+    std::string index_file = index_prefix + ".kmm";
+    INFO("Loading kmer index from " << index_file);
+    std::ifstream kmers_in(index_file, std::ios::binary);
+    index_.BinRead(kmers_in, index_file);
+
+    const size_t data_size = SampleCount() * index_.size();
+    std::string profiles_file = index_prefix + ".bpr";
+    INFO("Loading profiles data of " << data_size << " elements from " << profiles_file);
+    profiles_ = ProfilesT(profiles_file, data_size, false);
+}
+
+KmerProfileIndex::KeyWithHash KmerProfileIndex::Construct(const KmerProfileIndex::KeyType& key) const {
+    KmerProfileIndex::KeyWithHash kwh = index_.ConstructKWH(key);
+    kwh >>= 'A';
+    return kwh;
+}
+
+boost::optional<KmerProfile> KmerProfileIndex::operator[](const KmerProfileIndex::KeyWithHash& kwh) const {
+    if (index_.valid(kwh)) {
+        return KmerProfile(profiles_->data() + index_.get_value(kwh, inverter_));
+    } else
+        return boost::none;
+}
+
+ContigAbundanceCounter::ContigAbundanceCounter(unsigned k,
+                       std::unique_ptr<ClusterAnalyzer> cluster_analyzer,
+                       const std::string& index_prefix,
+                       const std::string& work_dir,
+                       double min_earmark_share) :
+    k_(k),
+    cluster_analyzer_(std::move(cluster_analyzer)),
+    min_earmark_share_(min_earmark_share),
+    profile_index_(k_, index_prefix, work_dir) {
 }
 
 boost::optional<AbundanceVector> ContigAbundanceCounter::operator()(
@@ -143,20 +162,24 @@ boost::optional<AbundanceVector> ContigAbundanceCounter::operator()(
         if (seq.size() < k_)
             continue;
 
-        auto kwh = kmer_mpl_.ConstructKWH(RtSeq(k_, seq));
-        kwh >>= 'A';
+        //auto kwh = kmer_mpl_.ConstructKWH(RtSeq(k_, seq));
+        auto kwh = profile_index_.Construct(RtSeq(k_, seq));
+        //kwh >>= 'A';
 
         for (size_t j = k_ - 1; j < seq.size(); ++j) {
             kwh <<= seq[j];
             TRACE("Processing kmer " << kwh.key().str());
-            if (kmer_mpl_.valid(kwh)) {
+            auto prof = profile_index_[kwh];
+            if (prof) {
+            //if (kmer_mpl_.valid(kwh)) {
                 TRACE("Valid");
-                KmerProfile prof(&mpl_data_[kmer_mpl_.get_value(kwh, inverter_)]);
-                kmer_mpls.push_back(prof);
+                //KmerProfile prof(&mpl_data_[kmer_mpl_.get_value(kwh, inverter_)]);
+                //kmer_mpls.push_back(prof);
+                kmer_mpls.push_back(*prof);
                 //if (!name.empty()) {
                 //    os << PrintVector(kmer_mpl_.get_value(kwh, inverter_), sample_cnt_) << std::endl;
                 //}
-                TRACE(PrintVector(prof));
+                TRACE(PrintVector(*prof));
             } else {
                 TRACE("Invalid");
             }

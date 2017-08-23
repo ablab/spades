@@ -72,9 +72,8 @@ int main(int argc, char** argv) {
     //TmpFolderFixture fixture("tmp");
     create_console_logger();
 
-    SetSampleCount(sample_cnt);
-    ContigAbundanceCounter abundance_counter(k, make_shared<TrivialClusterAnalyzer>(), work_dir);
-    abundance_counter.Init(kmer_mult_fn);
+    KmerProfileIndex::SetSampleCount(sample_cnt);
+    ContigAbundanceCounter abundance_counter(k, std::unique_ptr<ClusterAnalyzer>(new TrivialClusterAnalyzer()), kmer_mult_fn, work_dir);
 
     io::FileReadStream contigs_stream(contigs_path);
 

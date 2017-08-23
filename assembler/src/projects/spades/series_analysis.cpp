@@ -191,14 +191,16 @@ boost::optional<AbundanceVector> InferAbundance(const std::string& bin_mult_fn,
     while (true) {
         is >> name;
         if (!is.fail()) {
-            AbundanceVector vec(SampleCount(), 0.0);
-            for (size_t i = 0; i < SampleCount(); ++i) {
+            if (name != b_id) {
+                is.ignore(numeric_limits<std::streamsize>::max(), '\n');
+                continue;
+            }
+            AbundanceVector vec(KmerProfileIndex::SampleCount(), 0.0);
+            for (size_t i = 0; i < vec.size(); ++i) {
                 is >> vec[i];
                 VERIFY(!is.fail());
             }
-            if (name == b_id) {
-                abundances.push_back(vec);
-            }
+            abundances.push_back(vec);
         } else {
             INFO("Read " << abundances.size() << " profiles for bin " << b_id);
             break;
@@ -248,14 +250,14 @@ void SeriesAnalysis::run(conj_graph_pack &gp, const char *) {
     SeriesAnalysisConfig config;
     yin >> config;
 
-    SetSampleCount(config.sample_cnt);
-
-    ContigAbundanceCounter abundance_counter(config.k,
-                                             make_shared<TrivialClusterAnalyzer>(),
-                                             cfg::get().tmp_dir);
+    KmerProfileIndex::SetSampleCount(config.sample_cnt);
 
     DEBUG("Initiating abundance counter");
-    abundance_counter.Init(config.kmer_mult);
+    ContigAbundanceCounter abundance_counter(config.k,
+                                             std::unique_ptr<ClusterAnalyzer>(new TrivialClusterAnalyzer()),
+                                             config.kmer_mult,
+                                             cfg::get().tmp_dir);
+
     DEBUG("Abundance counter ready");
 
     if (!config.edges_sqn.empty()) {
