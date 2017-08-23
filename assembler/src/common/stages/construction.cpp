@@ -17,7 +17,7 @@
 namespace debruijn_graph {
 
 struct ConstructionStorage {
-    using CoverageMap = utils::CQFHashMap<RtSeq, utils::slim_kmer_index_traits<RtSeq>, utils::DefaultStoring>;
+    using CoverageMap = utils::PerfectHashMap<RtSeq, uint32_t, utils::slim_kmer_index_traits<RtSeq>, utils::DefaultStoring>;
 
     ConstructionStorage(unsigned k)
             : ext_index(k) {}
@@ -256,7 +256,7 @@ public:
 };
 
 class CQFCoverageFiller : public ConstructionNew::Phase {
-    struct CoverageHashMapBuilder : public utils::CQFHashMapBuilder {
+    struct CoverageHashMapBuilder : public utils::PerfectHashMapBuilder {
         template<class ReadStream, class Index>
         void FillCoverageFromStream(ReadStream &stream, Index &index) const {
             typedef typename Index::KeyType Kmer;
@@ -276,19 +276,21 @@ class CQFCoverageFiller : public ConstructionNew::Phase {
                     if (!kwh.is_minimal() || !index.valid(kwh))
                         continue;
 
-                    index.add_value(kwh, 1);
+                    //index.add_value(kwh, 1);
+#                   pragma omp atomic
+                    index.get_raw_value_reference(kwh) += 1;
                 }
             }
         }
 
         template<class K, class traits, class StoringType, class Counter, class Streams>
-        void BuildIndex(utils::CQFHashMap<K, traits, StoringType> &index,
+        void BuildIndex(utils::PerfectHashMap<K, uint32_t, traits, StoringType> &index,
                         Counter& counter, size_t bucket_num,
                         Streams &streams,
                         bool save_final = false) const {
             unsigned nthreads = (unsigned)streams.size();
 
-            utils::CQFHashMapBuilder::BuildIndex(index, counter, bucket_num, nthreads, save_final);
+            utils::PerfectHashMapBuilder::BuildIndex(index, counter, bucket_num, nthreads, save_final);
             INFO("Collecting k-mer coverage information from reads, this takes a while.");
 
             streams.reset();
@@ -321,8 +323,9 @@ public:
             Sequence sk = gp.g.EdgeNucls(edge_info.edge_id).Subseq(edge_info.offset, edge_info.offset + index.k());
             auto kwh = storage().coverage_map->ConstructKWH(sk.start<RtSeq>(index.k()));
 
-            if (edge_info.count != storage().coverage_map->get_value(kwh))
-                INFO("" << kwh << ":" << edge_info.count << ":" << storage().coverage_map->get_value(kwh));
+            uint32_t cov = storage().coverage_map->get_value(kwh, utils::InvertableStoring::trivial_inverter<uint32_t>());
+            if (edge_info.count != cov)
+                INFO("" << kwh << ":" << edge_info.count << ":" << cov);
         }
 
         INFO("Filling coverage and flanking coverage from index CQF");
