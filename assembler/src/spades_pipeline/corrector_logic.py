@@ -32,7 +32,8 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
     data["max_nthreads"] = cfg.max_threads
     data["bwa"] = cfg.bwa
     file_c = open(filename, 'w')
-    pyyaml.dump(data, file_c, default_flow_style = False, default_style='"', width=100500)
+    pyyaml.dump(data, file_c,
+                default_flow_style=False, default_style='"', width=float("inf"))
     file_c.close()
 
 

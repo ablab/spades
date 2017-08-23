@@ -431,7 +431,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         #    support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
 
     if existing_dataset_data is None:
-        pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
+        pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'),
+                    default_flow_style=False, default_style='"', width=float("inf"))
 
     options_storage.set_default_values()
     ### FILLING cfg
@@ -689,7 +690,8 @@ def main(args):
         if support.dataset_has_additional_contigs(dataset_data):
             dataset_data = support.process_Ns_in_additional_contigs(dataset_data, dir_for_split_reads, log)
         options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
-        pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
+        pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'),
+                    default_flow_style=False, default_style='"', width=float("inf"))
         cfg["dataset"].yaml_filename = options_storage.dataset_yaml_filename
 
     try:
