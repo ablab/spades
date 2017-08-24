@@ -1,5 +1,6 @@
 #pragma once
 
+#include <common/modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp>
 #include "common/barcode_index/contracted_graph.hpp"
 #include "contracted_graph_stats/contracted_graph_analyzer.hpp"
 #include "cluster_storage_analyzer.hpp"
@@ -345,6 +346,7 @@ namespace read_cloud_statistics {
             cluster_storage::ClusterStorageExtractor cluster_storage_extractor;
             auto high_covered_clusters = cluster_storage_extractor.FilterClusterStorage(cluster_storage, min_read_filter);
 
+
             cluster_storage::ClusterGraphAnalyzer ordering_analyzer(contracted_graph_builder);
 
             CountBasicClusterStats(cluster_storage, ordering_analyzer);
@@ -390,13 +392,33 @@ namespace read_cloud_statistics {
             transitions::StrictTransitionStorageBuilder strict_transition_builder(contig_path_builder);
             auto reference_paths = contig_path_builder.GetContigPaths(reference_path);
             auto contig_paths = contig_path_builder.GetContigPaths(cloud_contigs_path);
+            INFO(reference_paths.size() << " reference paths");
+            INFO(contig_paths.size() << " contig paths");
 
             const size_t min_length = 20000;
             path_extend::ScaffoldingUniqueEdgeStorage large_unique_storage;
             path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, 100);
             unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
-            INFO(reference_paths.size() << " reference paths");
-            INFO(contig_paths.size() << " contig paths");
+
+            INFO("Constructing scaffold graph");
+            const size_t scaffolding_distance = 100000;
+            auto scaffold_graph_constructor = scaffold_graph_utils::ScaffoldGraphConstructor(large_unique_storage,
+                                                                                             scaffolding_distance, gp_.g);
+            auto scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphUsingDijkstra();
+            INFO(scaffold_graph.VertexCount() << " vertices  and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
+            const string scaffold_graph_path = fs::append_path(stats_base_path, "scaffold_graph");
+            ofstream fout(scaffold_graph_path);
+            scaffold_graph.Print(fout);
+
+            auto unique_condition =
+                make_shared<path_extend::AssemblyGraphUniqueConnectionCondition>(gp_.g, scaffolding_distance, large_unique_storage);
+            vector<shared_ptr<path_extend::ConnectionCondition>> conditions({unique_condition});
+            path_extend::scaffold_graph::SimpleScaffoldGraphConstructor constructor(gp_.g,
+                                                                                    large_unique_storage.unique_edges(),
+                                                                                    conditions);
+            auto alternative_scaffold_graph = constructor.Construct();
+            INFO(alternative_scaffold_graph->VertexCount() << " vertices and "
+                                                          << alternative_scaffold_graph->EdgeCount() << " edges in alternative scaffold graph");
 
             transitions::ContigPathFilter contig_path_filter(large_unique_storage);
             auto filtered_reference_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths);
@@ -417,32 +439,22 @@ namespace read_cloud_statistics {
             path_stats_extractor.FillStatistics();
             path_stats_extractor.SerializeStatistics(stats_base_path);
 
-            INFO("Constructing scaffold graph");
-            const size_t scaffolding_distance = 100000;
-            auto scaffold_graph_constructor = scaffold_graph_utils::ScaffoldGraphConstructor(large_unique_storage,
-                                                                                             scaffolding_distance, gp_.g);
-            auto scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphUsingDijkstra();
-            INFO(scaffold_graph.EdgeCount() << " edges in scaffold graph");
-            const string scaffold_graph_path = fs::append_path(stats_base_path, "scaffold_graph");
-            ofstream fout(scaffold_graph_path);
-            scaffold_graph.Print(fout);
 
-
-            INFO("Constructing initial tenx filter");
-            auto tenx_resolver_configs = cfg::get().ts_res.tenx;
-            typedef barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor_t;
-            auto barcode_extractor_ptr = make_shared<barcode_extractor_t>(gp_.barcode_mapper_ptr, gp_.g);
-            path_extend::InitialTenXFilter initial_tenx_filter(gp_.g, barcode_extractor_ptr, tenx_resolver_configs);
-
-            INFO("Constructing initial filter analyzer");
-            transitions::InitialFilterStatisticsExtractor initial_filter_extractor(scaffold_graph,
-                                                                                   reference_paths,
-                                                                                   barcode_extractor_ptr,
-                                                                                   initial_tenx_filter,
-                                                                                   gp_.g, large_unique_storage);
-            INFO("Analyzing initial filter");
-            initial_filter_extractor.FillStatistics();
-            initial_filter_extractor.SerializeStatistics(stats_base_path);
+//            INFO("Constructing initial tenx filter");
+//            auto tenx_resolver_configs = cfg::get().ts_res.tenx;
+//            typedef barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor_t;
+//            auto barcode_extractor_ptr = make_shared<barcode_extractor_t>(gp_.barcode_mapper_ptr, gp_.g);
+//            path_extend::InitialTenXFilter initial_tenx_filter(gp_.g, barcode_extractor_ptr, tenx_resolver_configs);
+//
+//            INFO("Constructing initial filter analyzer");
+//            transitions::InitialFilterStatisticsExtractor initial_filter_extractor(scaffold_graph,
+//                                                                                   reference_paths,
+//                                                                                   barcode_extractor_ptr,
+//                                                                                   initial_tenx_filter,
+//                                                                                   gp_.g, large_unique_storage);
+//            INFO("Analyzing initial filter");
+//            initial_filter_extractor.FillStatistics();
+//            initial_filter_extractor.SerializeStatistics(stats_base_path);
         }
 
         void PrintContigPaths(const vector<vector<transitions::EdgeWithMapping>>& contig_paths, ostream& stream) {

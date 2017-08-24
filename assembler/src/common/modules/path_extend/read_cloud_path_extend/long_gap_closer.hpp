@@ -10,13 +10,13 @@ namespace path_extend {
         const barcode_index::FrameBarcodeIndexInfoExtractor& extractor_;
         size_t barcode_threshold_;
         size_t count_threshold_;
+        size_t tail_threshold_;
 
      public:
         BarcodePathConnectionChecker(const Graph& g_,
-                                       const ScaffoldingUniqueEdgeStorage& unique_storage_,
-                                       const barcode_index::FrameBarcodeIndexInfoExtractor& extractor_,
-                                       size_t barcode_threshold_,
-                                       size_t count_threshold_);
+                                     const ScaffoldingUniqueEdgeStorage& unique_storage_,
+                                     const barcode_index::FrameBarcodeIndexInfoExtractor& extractor_,
+                                     size_t barcode_threshold_, size_t count_threshold_, size_t tail_threshold);
 
         bool Check(const EdgeId& first, const EdgeId& second, size_t distance) const;
     };

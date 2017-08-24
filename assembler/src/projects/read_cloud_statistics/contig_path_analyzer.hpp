@@ -244,25 +244,41 @@ struct InitialFilterStats : public read_cloud_statistics::Statistic {
 };
 
 struct BarcodedPathConnectivityStats {
-  size_t covered_connections_;
-  size_t overall_connections_;
+  std::map<size_t, size_t> threshold_to_covered_;
 
-  BarcodedPathConnectivityStats(size_t covered_connections, size_t overall_connections_) : covered_connections_(
-      covered_connections), overall_connections_(overall_connections_) {}
+  void Serialize(ofstream& fout, const string& sep) const {
+      for (const auto& entry: threshold_to_covered_) {
+          fout << entry.second << sep;
+      }
+      fout << std::endl;
+  }
 };
 
 struct LengthConnectivityStats : public read_cloud_statistics::Statistic {
   std::map<size_t, BarcodedPathConnectivityStats> length_to_stats_;
+  std::vector<size_t> thresholds_;
+  size_t overall_connections_;
 
-  LengthConnectivityStats(const map<size_t, BarcodedPathConnectivityStats>& length_to_stats_)
-      : Statistic("length_connectivity_stats"), length_to_stats_(length_to_stats_) {}
+  LengthConnectivityStats(const map<size_t, BarcodedPathConnectivityStats>& length_to_stats_,
+                          const vector<size_t>& thresholds,
+                          size_t overall_connections)
+      : Statistic("length_connectivity_stats"),
+        length_to_stats_(length_to_stats_),
+        thresholds_(thresholds),
+        overall_connections_(overall_connections) {}
 
   void Serialize(const string& path) override {
       ofstream fout(path);
+      fout << "Overall connections: " << overall_connections_ << std::endl;
       const string sep("\t");
-      fout << "Length" << sep << "Covered connections" << sep << "Overall connections" << std::endl;
+      fout << "*" << sep;
+      for (const auto& threshold: thresholds_) {
+          fout << threshold << sep;
+      }
+      fout << endl;
       for (const auto& entry: length_to_stats_) {
-          fout << entry.first << sep << entry.second.covered_connections_ << sep << entry.second.overall_connections_ << std::endl;
+          fout << entry.first << sep;
+          entry.second.Serialize(fout, sep);
       }
   }
 };
@@ -423,16 +439,15 @@ class InitialFilterStatisticsExtractor: public read_cloud_statistics::StatisticP
         return stats;
     }
 
+    struct ConnectivityParams {
+      size_t overall_connections;
+      vector <size_t> lengths;
+      vector <size_t> thresholds;
+    };
+
     LengthConnectivityStats GetLengthConnectivityStatistics(const vector<vector<EdgeWithMapping>>& reference_paths,
                                                             const vector<vector<EdgeWithMapping>>& filtered_reference_paths) {
         std::map <size_t, BarcodedPathConnectivityStats> length_to_stats;
-        vector<size_t> lengths;
-        const size_t max_length = 2000;
-        const size_t min_length = 2000;
-        const size_t step = 200;
-        for (size_t i = min_length; i <= max_length; i += step) {
-            lengths.push_back(i);
-        }
         vector<vector<EdgeWithMapping>> current_paths = reference_paths;
         transitions::ContigPathFilter contig_path_filter(unique_storage_);
 
@@ -442,7 +457,10 @@ class InitialFilterStatisticsExtractor: public read_cloud_statistics::StatisticP
                 long_edges.insert(ewm.edge_);
             }
         }
-        for (auto length: lengths) {
+
+        ConnectivityParams params = GetConnectivityParams(filtered_reference_paths);
+
+        for (auto length: params.lengths) {
             DEBUG("Length: " << length);
             auto next_paths = contig_path_filter.FilterPathsUsingLength(current_paths, length, g_);
             DEBUG("Next paths size: " << next_paths.size());
@@ -453,19 +471,49 @@ class InitialFilterStatisticsExtractor: public read_cloud_statistics::StatisticP
                 }
             }
             DEBUG("Min reference edge length = " << min_edge_length);
-            auto stats = GetConnectivityStats(next_paths, filtered_reference_paths, long_edges);
+            auto stats = GetConnectivityStats(next_paths, filtered_reference_paths, long_edges, params.thresholds);
             length_to_stats.insert({length, stats});
             current_paths = next_paths;
         }
 
-        return LengthConnectivityStats(length_to_stats);
+        return LengthConnectivityStats(length_to_stats, params.thresholds, params.overall_connections);
+    }
+
+    ConnectivityParams GetConnectivityParams(const vector<vector<EdgeWithMapping>>& filtered_paths) const {
+        size_t overall_connections = 0;
+        for (const auto& path: filtered_paths) {
+            overall_connections += (path.size() - 1);
+        }
+        vector<size_t> lengths;
+        const size_t max_length = 2000;
+        const size_t min_length = 100;
+        const size_t step = 100;
+        for (size_t i = min_length; i <= max_length; i += step) {
+            lengths.push_back(i);
+        }
+        vector<size_t> thresholds;
+        const size_t max_threshold = 100;
+        const size_t min_threshold = 100;
+        const size_t thr_step = 5;
+        for (size_t i = min_threshold; i <= max_threshold; i += thr_step) {
+            thresholds.push_back(i);
+        }
+        ConnectivityParams result;
+        result.lengths = std::move(lengths);
+        result.thresholds = std::move(thresholds);
+        result.overall_connections = overall_connections;
+        return result;
     }
 
     BarcodedPathConnectivityStats GetConnectivityStats(const vector<vector<EdgeWithMapping>>& raw_paths,
                                                        const vector<vector<EdgeWithMapping>>& filtered_paths,
-                                                       const unordered_set<EdgeId>& long_edges) {
-        BarcodedPathConnectivityStats result(0, 0);
-
+                                                       const unordered_set<EdgeId>& long_edges,
+                                                       const vector<size_t>& thresholds) {
+        BarcodedPathConnectivityStats result;
+        std::map<size_t, size_t> thresholds_to_covered;
+        for (size_t threshold: thresholds) {
+            thresholds_to_covered[threshold] = 0;
+        }
         auto long_edge_path_index = BuildLongEdgePathIndex(long_edges, raw_paths);
         for (const auto& path: filtered_paths) {
             for (auto first_it = path.begin(), second_it = std::next(path.begin()); second_it != path.end();
@@ -480,17 +528,11 @@ class InitialFilterStatisticsExtractor: public read_cloud_statistics::StatisticP
                 const vector<EdgeWithMapping>& raw_path = raw_paths[first_path_id];
                 size_t first_pos = long_edge_path_index.at(first).position_;
                 size_t second_pos = long_edge_path_index.at(second).position_;
-
                 VERIFY(first_pos < second_pos);
-                if (AreConnectedByBarcodePath(raw_path, first_pos, second_pos)) {
-                    result.covered_connections_++;
-                } else {
-                    DEBUG("First edge: " << first.int_id() << ", pos: " << first_pos << ", mapping: " << (*first_it).mapping_);
-                    DEBUG("Second edge: " << second.int_id() << ", pos: " << second_pos << ", mapping: " << (*second_it).mapping_);
-                }
-                result.overall_connections_++;
+                UpdateStatsForTwoEdges(raw_path, first_pos, second_pos, thresholds, thresholds_to_covered);
             }
         }
+        result.threshold_to_covered_ = thresholds_to_covered;
         return result;
     }
 
@@ -510,33 +552,61 @@ class InitialFilterStatisticsExtractor: public read_cloud_statistics::StatisticP
         return index;
     }
 
-    bool AreConnectedByBarcodePath(const vector<EdgeWithMapping>& reference_path, size_t first_pos, size_t second_pos) {
-        const size_t barcode_threshold = 3;
-//        const size_t count_threshold = 2;
-        VERIFY(first_pos < second_pos);
-        VERIFY(second_pos < reference_path.size());
+    void UpdateStatsForTwoEdges(const vector<EdgeWithMapping>& reference_path, size_t first_pos, size_t second_pos,
+                           const vector<size_t>& thresholds, std::map<size_t, size_t>& thresholds_to_covered) {
         EdgeId first = reference_path[first_pos].edge_;
         EdgeId second = reference_path[second_pos].edge_;
+        Range first_mapping = reference_path[first_pos].mapping_;
+        Range second_mapping = reference_path[second_pos].mapping_;
         const size_t tail_threshold = 20000;
-        auto barcode_intersection = barcode_extractor_ptr_->GetSharedBarcodes(first, second);
+        const size_t count_threshold = 2;
+        auto barcode_intersection = GetIntersection(first, second, tail_threshold, count_threshold);
+        for (size_t threshold: thresholds) {
+            if (AreConnectedByBarcodePath(reference_path, first_pos, second_pos, threshold, barcode_intersection)) {
+                thresholds_to_covered[threshold]++;
+            } else {
+                DEBUG("First edge: " << first.int_id() << ", pos: " << first_pos << ", mapping: "
+                                     << first_mapping);
+                DEBUG("Second edge: " << second.int_id() << ", pos: " << second_pos << ", mapping: "
+                                      << second_mapping);
+            }
+        }
+    }
+
+    vector<BarcodeId> GetIntersection(const EdgeId& first, const EdgeId& second,
+                                      size_t tail_threshold, size_t count_threshold) {
         vector<BarcodeId> filtered_barcode_intersection;
+        auto barcode_intersection = barcode_extractor_ptr_->GetSharedBarcodes(first, second);
         for (const auto& barcode: barcode_intersection) {
             if (barcode_extractor_ptr_->GetMaxPos(first, barcode) + tail_threshold > g_.length(first) and
-                barcode_extractor_ptr_->GetMinPos(second, barcode) < tail_threshold) {
+                barcode_extractor_ptr_->GetMinPos(second, barcode) < tail_threshold and
+                barcode_extractor_ptr_->GetNumberOfReads(first, barcode) >= count_threshold and
+                barcode_extractor_ptr_->GetNumberOfReads(second, barcode) >= count_threshold) {
                 filtered_barcode_intersection.push_back(barcode);
             }
         }
+        return filtered_barcode_intersection;
+    }
+
+    bool AreConnectedByBarcodePath(const vector<EdgeWithMapping>& reference_path, size_t first_pos, size_t second_pos,
+                                   size_t barcode_threshold, const vector<BarcodeId>& barcode_intersection) {
+        VERIFY(first_pos < second_pos);
+        VERIFY(second_pos < reference_path.size());
         for (size_t i = first_pos + 1; i < second_pos; ++i) {
             EdgeId current = reference_path[i].edge_;
             vector<BarcodeId> middle_intersection;
             vector<BarcodeId> middle_barcodes = barcode_extractor_ptr_->GetBarcodes(current);
-            std::set_intersection(filtered_barcode_intersection.begin(), filtered_barcode_intersection.end(),
+            std::set_intersection(barcode_intersection.begin(), barcode_intersection.end(),
                                   middle_barcodes.begin(), middle_barcodes.end(),
                                   std::back_inserter(middle_intersection));
             if (middle_intersection.size() < barcode_threshold) {
-                DEBUG("Barcode intersection: " << filtered_barcode_intersection.size());
+                DEBUG("Middle edge: " << current.int_id());
+                DEBUG("Position: " << i);
+                DEBUG("Barcode intersection: " << barcode_intersection.size());
+                DEBUG("Threshold: " << barcode_threshold);
                 DEBUG("Middle barcodes: " << middle_barcodes.size());
                 DEBUG("Middle intersection: " << middle_intersection.size());
+                DEBUG("Length: " << g_.length(current));
                 return false;
             }
         }

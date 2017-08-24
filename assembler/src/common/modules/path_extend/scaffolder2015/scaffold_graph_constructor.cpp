@@ -23,6 +23,7 @@ void BaseScaffoldGraphConstructor::ConstructFromSet(const set<EdgeId> edge_set,
                                                 vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                                                 bool use_terminal_vertices_only) {
     graph_->AddVertices(edge_set);
+    INFO("Added vertices")
     ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
 }
 
@@ -39,6 +40,7 @@ void BaseScaffoldGraphConstructor::ConstructFromConditions(vector<shared_ptr<Con
 
 void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const shared_ptr<ConnectionCondition> condition,
                                                             bool use_terminal_vertices_only) {
+    INFO("Terminal vertices only: " << (use_terminal_vertices_only ? "True" : "False"));
     for (const auto& v : graph_->vertices()) {
         TRACE("Vertex " << graph_->int_id(v));
 

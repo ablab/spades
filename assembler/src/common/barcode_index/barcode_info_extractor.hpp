@@ -467,5 +467,6 @@ namespace barcode_index {
             return info.GetRightMost() * frame_size;
         }
 
+
     };
 }
