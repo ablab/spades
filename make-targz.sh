@@ -45,8 +45,6 @@ cp assembler/GPLv2.txt $TARGET_DIR/
 
 cd $TARGET_DIR/
 touch src/CMakeListsInternal.txt
-rm -r configs/debruijn/datasets_archive
-rm -r configs/debruijn/datasets
 find . -name ".?*" | xargs rm -r
 
 cd ..
