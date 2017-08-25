@@ -7,6 +7,9 @@
 
 #pragma once
 
+#include <vector>
+#include <cstdlib>
+
 namespace utils {
 
 template<class V>

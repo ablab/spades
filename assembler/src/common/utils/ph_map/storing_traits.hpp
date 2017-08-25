@@ -8,6 +8,7 @@
 #pragma once
 
 #include "values.hpp"
+#include "utils/verify.hpp"
 
 namespace utils {
 

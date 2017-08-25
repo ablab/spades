@@ -5,8 +5,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include <io/sam/read.hpp>
-#include <io/sam/sam_reader.hpp>
+#include "io/sam/read.hpp"
+#include "io/sam/sam_reader.hpp"
+
+#include "utils/verify.hpp"
 
 namespace sam_reader {
 

@@ -7,15 +7,8 @@
 
 #pragma once
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <unistd.h>
-
 #include <string>
 #include <vector>
-#include "utils/logger/logger.hpp"
-#include "utils/verify.hpp"
 
 namespace fs {
 //todo review and make names consistent!

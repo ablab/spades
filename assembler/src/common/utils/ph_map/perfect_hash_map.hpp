@@ -7,16 +7,17 @@
 //***************************************************************************
 
 #include "utils/parallel/openmp_wrapper.h"
-#include "utils/filesystem/path_helper.hpp"
-#include "io/kmers/kmer_iterator.hpp"
-
-#include "utils/kmer_mph/kmer_index.hpp"
-
-#include "adt/cqf.hpp"
 
 #include "key_with_hash.hpp"
 #include "values.hpp"
 #include "storing_traits.hpp"
+
+#include "adt/cqf.hpp"
+#include "io/kmers/kmer_iterator.hpp"
+#include "utils/filesystem/path_helper.hpp"
+#include "utils/kmer_mph/kmer_index.hpp"
+#include "utils/logger/logger.hpp"
+#include "utils/verify.hpp"
 
 #include <vector>
 #include <cstdlib>

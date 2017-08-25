@@ -7,13 +7,14 @@
 
 #pragma once
 
+#include "utils/logger/logger.hpp"
+#include "utils/verify.hpp"
+
 #if __DARWIN || __DARWIN_UNIX03
-#include <mach/task.h>
-#include <mach/mach.h>
+# include <mach/task.h>
+# include <mach/mach.h>
 #else
-
-#include <sys/resource.h>
-
+# include <sys/resource.h>
 #endif
 
 #include <sys/time.h>
@@ -22,9 +23,7 @@
 #include "config.hpp"
 
 #ifdef SPADES_USE_JEMALLOC
-
 # include <jemalloc/jemalloc.h>
-
 #endif
 
 #include <common/utils/logger/logger.hpp>

@@ -21,6 +21,7 @@
 #include <time.h>
 #include <signal.h>
 #include <execinfo.h>
+#include <cassert>
 
 #include <iostream>
 #include <iterator>
