@@ -229,7 +229,7 @@ def run_quast(dataset_info, contigs, quast_output_dir, opts):
     #Preparing params
     path_options = ['-R', '-G', '-O']
     if dataset_info.mode == "rna":
-        path_options = ['-r', '--reference', '--gmap_index', '--gene_database', '-gtf']
+        path_options = ['-r', '--reference', '--gmap_index', '--gene_db', '--gtf']
 
     quast_params = [opts]
     if 'quast_params' in dataset_info.__dict__ and dataset_info.quast_params:
@@ -294,7 +294,7 @@ def construct_rnaquast_limit_map(dataset_info, prefix, add_all_params = False):
                                         ('min_95_genes',        "95%-assembled genes",  True,   True, True, 0.05),
                                         ('max_95_genes',        "95%-assembled genes",  False,  True, True, 0.05),
                                         ('min_95_cov_genes',    "95%-covered genes",    True,   True, True, 0.05),
-                                        ('min_95_cov_genes',    "95%-covered genes",    True,   True, True, 0.05),
+                                        ('max_95_cov_genes',    "95%-covered genes",    False,   True, True, 0.05),
                                         ('min_50_iso',          "50%-assembled isoforms", True,  True, True, 0.05),
                                         ('min_95_iso',          "95%-assembled isoforms", True,  True, True, 0.05),
                                         ('max_95_iso',          "95%-assembled isoforms", False, True, True, 0.05),
