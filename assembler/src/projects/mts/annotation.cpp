@@ -203,13 +203,13 @@ BinSet AnnotationFiller::DetermineBins(const vector<EdgeId>& path,
              return p1.second < p2.second;
         });
     //Majority strategy: choose the longest coloring
-    if (it != path_colors.end() && !IsSpurious(it->second, total_len))
-        answer.insert(it->first);
-    /*for (auto color_info : path_colors) {
+    //if (it != path_colors.end() && !IsSpurious(it->second, total_len))
+    //    answer.insert(it->first);
+    for (auto color_info : path_colors) {
         if (!IsSpurious(color_info.second, total_len)) {
             answer.insert(color_info.first);
         }
-    }*/
+    }
     return answer;
 }
 
