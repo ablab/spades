@@ -30,7 +30,7 @@ def force_symlinks(contig_dir):
     force_symlinks_for_suffix(contig_dir, "contigs", "latest_contigs.fasta")
     force_symlinks_for_suffix(contig_dir, "scaffolds", "latest_scaffolds.fasta")
     force_symlinks_for_suffix(contig_dir, "before_rr", "latest_before_rr.fasta")
-
+    force_symlinks_for_suffix(contig_dir, "preliminary", "latest_preliminary.fasta")
 
 
 def force_symlinks_recursive(storage_dir):
