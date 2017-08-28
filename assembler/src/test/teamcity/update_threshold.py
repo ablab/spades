@@ -67,7 +67,7 @@ def metric_in_list(metric, mlist):
 
 #use threshold update policy set by user
 def shall_update_threshold(args, metric, entry):
-    return (args.add_metrics == "all") or (args.add_metrics == "basic" and metric in BASIC_METRICS) or (args.add_metrics == "none" and entry.assess) or metric_in_list(entry.config_name, args.force_to_update)
+    return (args.add_metrics == "all") or (args.add_metrics == "basic" and metric in BASIC_METRICS) or entry.assess or metric_in_list(entry.config_name, args.force_to_update)
 
 
 #calculate new metric treshold
@@ -207,7 +207,7 @@ def update_thresholds_for_config(args, config):
         log.log("======= PROCESSING " + name.upper() + " =======")
         if prefix != "":
             prefix = prefix + "_"
-        to_update.update(quast_run_and_update(dataset_info, full_etalon_contigs_prefix + name + etalon_contigs_suffix + ".fasta", os.path.join(args.tmp_dir, "QUAST_RESULTS_" + name.upper()), name, prefix, opts))
+        to_update.update(quast_run_and_update(dataset_info, full_etalon_contigs_prefix + name + etalon_contigs_suffix + ".fasta", os.path.join(args.tmp_dir, "QUAST_RESULTS_"  + dataset_info.name.upper() + "_" + name.upper()), name, prefix, opts))
 
     substitute_params(config, to_update)
     log.log("    <<<<<<<< Finished updating " + config)
