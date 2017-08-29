@@ -16,16 +16,24 @@ unsupported = set(["main_metabat", "main_maxbin", "spades_canopy", "megahit_cano
 
 parser.add_argument("--threads", "-t", type=int, default=8, help="Number of threads for each run")
 parser.add_argument("dir", type=str, help="Output directory")
-parser.add_argument("--config", "-c", type=str, help="Base config")
+parser.add_argument("--config", "-c", type=str, default=None, help="Base config")
 parser.add_argument("--pipelines", "-p", type=str, nargs="+", default=[], help="Pipeline configurations to run")
 parser.add_argument("--assemblers", "-a", type=str, nargs="+", default=all_assemblers, help="Assemblers to use")
 parser.add_argument("--binners", "-b", type=str, nargs="+", default=all_binners, help="Binners to use")
 parser.add_argument("--exclude", "-e", type=str, nargs="+", default=[], help="Excluded (skipped) configurations")
 parser.add_argument("--no-stats", "-S", action="store_true", help="Skip the stats section (overrides the config value)")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
+parser.add_argument("--reuse-from", type=str, default=None, help="Reuse assemblies from another multirun")
 parser.add_argument("--ignore-errors", action="store_true")
 
 args = parser.parse_args()
+
+if not args.config:
+    path = os.path.join(args.dir, "config.yaml")
+    if not os.path.isfile(path):
+        print("\033[31mError: no config provided with -c and no config found in the multirun directory\033[0m")
+        sys.exit(1)
+    args.config = path
 
 with open(args.config) as config_in:
     config_template = yaml.load(config_in)
@@ -71,6 +79,15 @@ for pipeline in pipelines():
     if prev_run:
         print("Reusing same data from", prev_run)
         call_params.extend(["--reuse-from", prev_run])
+    elif args.reuse_from:
+        for run in os.listdir(args.reuse_from):
+            if run.startswith(assembly_name + "_"):
+                path = os.path.join(args.reuse_from, run, "assembly")
+                if os.path.isdir(path):
+                    print("Reusing assembly from", path)
+                    call_params.extend(["--reuse-assemblies", path])
+                    break
+
     #TODO: rewrite using Snakemake API
     errcode = subprocess.call(call_params)
     if errcode:
