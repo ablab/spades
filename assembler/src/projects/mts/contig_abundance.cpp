@@ -130,9 +130,7 @@ KmerProfileIndex::KmerProfileIndex(unsigned k,
 }
 
 KmerProfileIndex::KeyWithHash KmerProfileIndex::Construct(const KmerProfileIndex::KeyType& key) const {
-    KmerProfileIndex::KeyWithHash kwh = index_.ConstructKWH(key);
-    kwh >>= 'A';
-    return kwh;
+    return index_.ConstructKWH(key);
 }
 
 boost::optional<KmerProfile> KmerProfileIndex::operator[](const KmerProfileIndex::KeyWithHash& kwh) const {
@@ -162,19 +160,15 @@ boost::optional<AbundanceVector> ContigAbundanceCounter::operator()(
         if (seq.size() < k_)
             continue;
 
-        //auto kwh = kmer_mpl_.ConstructKWH(RtSeq(k_, seq));
         auto kwh = profile_index_.Construct(RtSeq(k_, seq));
-        //kwh >>= 'A';
+        kwh >>= 'A';
 
         for (size_t j = k_ - 1; j < seq.size(); ++j) {
             kwh <<= seq[j];
             TRACE("Processing kmer " << kwh.key().str());
             auto prof = profile_index_[kwh];
             if (prof) {
-            //if (kmer_mpl_.valid(kwh)) {
                 TRACE("Valid");
-                //KmerProfile prof(&mpl_data_[kmer_mpl_.get_value(kwh, inverter_)]);
-                //kmer_mpls.push_back(prof);
                 kmer_mpls.push_back(*prof);
                 //if (!name.empty()) {
                 //    os << PrintVector(kmer_mpl_.get_value(kwh, inverter_), sample_cnt_) << std::endl;

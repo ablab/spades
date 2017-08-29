@@ -96,20 +96,19 @@ rule all_stats:
 #---- NGA ----------------------------------------------------------------------
 rule glue_bins:
     input:   "assembly/{}/all.fasta".format(ASSEMBLER), "binning/binning.tsv"
-    output:  touch("binning/full.done")
+    output:  expand("binning/full/{bin}.fasta", bin=BINS)
     log:     "binning/glue.log"
     message: "Distributing full contigs between bins"
     shell:   "mkdir -p binning/full && {SCRIPTS}/split_bins.py {input} binning/full -g >{log}"
 
-rule binning_gf:
-    input:   "binning/full.done"
+rule binning_nga_quast:
+    input:   expand("binning/full/{bin}.fasta", bin=BINS)
     output:  touch("stats/nga_binning.done")
     params:  out="stats/nga_binning"
     log:     "stats/nga_binning.log"
     threads: THREADS
     message: "Calculating NGA of binning"
-    shell:   "{METAQUAST} -t {threads} -R {REFS_STR} `ls binning/full/*.fasta` -o {params.out} >/dev/null 2>&1 && "
-             "cp {params.out}/summary/TSV/NGA50.tsv {output}"
+    shell:   "{METAQUAST} -t {threads} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1"
 
 rule binning_nga:
     input:   "stats/nga_binning.done"

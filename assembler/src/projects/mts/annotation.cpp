@@ -154,7 +154,7 @@ AnnotationFiller::ColoringMap AnnotationFiller::FillColorInfo(io::SingleStream& 
 }
 
 bool AnnotationFiller::IsSpurious(size_t colored_len, size_t full_len) {
-    return math::ls(double(colored_len) / double(full_len), 0.3);
+    return math::ls(double(colored_len) / double(full_len), 0.3); //FIXME: extract magic constant to config
 }
 
 void AnnotationFiller::FilterSpuriousInfo(ColoringMap& coloring) const {
@@ -234,7 +234,7 @@ EdgeAnnotation AnnotationFiller::operator() (io::SingleStream& contig_stream,
         for (const auto& ep : raw_path) { //Filter the poorly mapped edges
             EdgeId e = ep.first;
             size_t edge_len = gp_.g.length(e);
-            if (math::ge(double(ep.second.mapped_range.size()) / double(edge_len), 0.9))
+            if (math::ge(double(ep.second.mapped_range.size()) / double(edge_len), 0.9)) //FIXME: extract magic constant to config
                 path.push_back(e);
         }
         auto bins = DetermineBins(path, coloring);

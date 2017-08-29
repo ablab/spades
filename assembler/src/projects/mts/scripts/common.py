@@ -11,8 +11,8 @@ import re
 default_values = {
     "threads":     16,
     "assembly":    {"assembler": "spades", "k": 55, "groups": []},
-    "profile":     {"profiler": "mts", "k": 21, "split": 10000},
-    "binning":     {"binner": "canopy", "contig_length": 2000, "min_nonzeroes": 3, "bin_length": 500000},
+    "profile":     {"profiler": "mts", "k": 21, "split": 10000, "min_mult": 2, "max_mult": 65535, "min_samples": 2},
+    "binning":     {"binner": "canopy", "contig_length": 2000, "min_nonzeroes": 3, "bin_length": 500000, "max_clusters": 400},
     "propagation": {"enabled": True},
     "reassembly":  {"enabled": True}
 }
