@@ -130,8 +130,8 @@ public:
     virtual double CountWeight(const BidirectionalPath& path, EdgeId e,
             const std::set<size_t>& excluded_edges = std::set<size_t>(), int gapLength = 0) const = 0;
 
-    shared_ptr<PairedInfoLibrary> PairedLibrary() const {
-        return lib_;
+    const PairedInfoLibrary& PairedLibrary() const {
+        return *lib_;
     }
 
 protected:

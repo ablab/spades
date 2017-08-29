@@ -19,7 +19,7 @@ bool PELaunchSupport::HasOnlyMPLibs() const {
 
 bool PELaunchSupport::HasOnlySingleReads() const {
     for (const auto &lib : dataset_info_.reads) {
-        if (!(lib.type() == io::LibraryType::SingleReads && lib.data().single_reads_mapped)) {
+        if (lib.type() != io::LibraryType::SingleReads || !lib.data().single_reads_mapped) {
             return false;
         }
     }
