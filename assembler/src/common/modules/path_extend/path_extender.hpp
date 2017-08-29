@@ -225,7 +225,8 @@ inline BidirectionalPath* AddPath(PathContainer &paths,
 
 class ShortLoopEstimator {
 public:
-    //Path must edge with forward cycle edge, contain at least 2 edges and must not contain backwaed cycle edges
+    //Path must end with forward cycle edge, contain at least 2 edges and must not contain backward cycle edges
+    //Returns 0 (for no loops), 1 (for a single loop) or 2 (for many loops)
     virtual size_t EstimateSimpleCycleCount(const BidirectionalPath& path, EdgeId backward_edge, EdgeId exit_edge) const = 0;
 
     virtual ~ShortLoopEstimator() {};
@@ -239,10 +240,11 @@ public:
             : g_(g), loop_estimator_(loop_estimator) { }
 
     void ResolveShortLoop(BidirectionalPath& path) const {
-        pair<EdgeId, EdgeId> edges;
-        if (path.Size() >=1 && GetLoopAndExit(g_, path.Back(), edges)) {
+        EdgeId back_cycle_edge;
+        EdgeId loop_exit;
+        if (path.Size() >=1 && GetLoopAndExit(g_, path.Back(), back_cycle_edge, loop_exit)) {
             DEBUG("Resolving short loop...");
-            MakeBestChoice(path, edges);
+            MakeBestChoice(path, back_cycle_edge, loop_exit);
             DEBUG("Resolving short loop done");
         }
     }
@@ -268,12 +270,11 @@ private:
     }
 
     //edges -- first edge is loop's back edge, second is loop exit edge
-    void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) const {
-        EdgeId back_cycle_edge = edges.first;
+    void MakeBestChoice(BidirectionalPath& path, EdgeId back_cycle_edge, EdgeId loop_exit) const {
         EdgeId forward_cycle_edge = path.Back();
-        EdgeId loop_exit = edges.second;
         UndoCycles(path, back_cycle_edge);
 
+        //Expects 0 (for no loops), 1 (for a single loop) or 2 (for many loops, will insert back_cycle_edge and Ns)
         size_t loop_count = loop_estimator_->EstimateSimpleCycleCount(path, back_cycle_edge, loop_exit);
         if (loop_count > 0) {
             path.PushBack(back_cycle_edge);
@@ -295,33 +296,34 @@ private:
 
 class CoverageLoopEstimator : public ShortLoopEstimator {
 public:
-    CoverageLoopEstimator(const conj_graph_pack& gp)
-            : ShortLoopEstimator(), gp_(gp) {
+    CoverageLoopEstimator(const Graph& g, const FlankingCoverage<Graph>& flanking_cov)
+            : g_(g), flanking_cov_(flanking_cov) {
 
     }
 
+    //Path must end with forward cycle edge, contain at least 2 edges and must not contain backward cycle edges
+    //Returns 0 (for no loops), 1 (for a single loop) or 2 (for many loops)
     size_t EstimateSimpleCycleCount(const BidirectionalPath& path, EdgeId backward_edge, EdgeId exit_edge) const override {
         VERIFY(path.Size() > 1);
         EdgeId forward_edge = path.Back();
         EdgeId incoming_edge = path[path.Size() - 2];
-        double in_cov = gp_.flanking_cov.GetOutCov(incoming_edge);
-        double out_cov = gp_.flanking_cov.GetInCov(exit_edge);
+        double in_cov = flanking_cov_.GetOutCov(incoming_edge);
+        double out_cov = flanking_cov_.GetInCov(exit_edge);
         double avg_coverage = (in_cov + out_cov) / 2.0;
 
-        double fwd_count = math::round(gp_.g.coverage(forward_edge) / avg_coverage);
-        double back_count = math::round(gp_.g.coverage(backward_edge) / avg_coverage);
+        double fwd_count = math::round(g_.coverage(forward_edge) / avg_coverage);
+        double back_count = math::round(g_.coverage(backward_edge) / avg_coverage);
         size_t result = (size_t) math::round(std::max(0.0, std::min(fwd_count - 1.0, back_count)));
 
-
-        DEBUG("loop with start " << gp_.g.int_id(incoming_edge)
-                <<" e1 " << gp_.g.int_id(forward_edge)
-                << " e2 " << gp_.g.int_id(backward_edge)
-                << " out " <<gp_.g.int_id(exit_edge)
+        DEBUG("loop with start " << g_.int_id(incoming_edge)
+                <<" e1 " << g_.int_id(forward_edge)
+                << " e2 " << g_.int_id(backward_edge)
+                << " out " <<g_.int_id(exit_edge)
                 << " cov in = " << in_cov
                 << " cov out " << out_cov
                 << " cov " << avg_coverage
-                << " cov e1 = " << gp_.g.coverage(forward_edge)
-                << " cov e2 = " << gp_.g.coverage(backward_edge)
+                << " cov e1 = " << g_.coverage(forward_edge)
+                << " cov e2 = " << g_.coverage(backward_edge)
                 << " fwd_count = " << fwd_count
                 << " back_count = " << back_count
                 << " result = " << result);
@@ -330,7 +332,8 @@ public:
     }
 
 private:
-    const conj_graph_pack& gp_;
+    const Graph& g_;
+    const FlankingCoverage<Graph>& flanking_cov_;
 };
 
 class PairedInfoLoopEstimator: public ShortLoopEstimator {
@@ -340,11 +343,12 @@ class PairedInfoLoopEstimator: public ShortLoopEstimator {
 
 public:
     PairedInfoLoopEstimator(const Graph& g, shared_ptr<WeightCounter> wc, double weight_threshold = 0.0)
-            : ShortLoopEstimator(),
-              g_(g),
+            : g_(g),
               wc_(wc),
               weight_threshold_(weight_threshold) { }
 
+    //Path must end with forward cycle edge, contain at least 2 edges and must not contain backward cycle edges
+    //Returns 0 (for no loops), 1 (for a single loop) or 2 (for many loops)
     size_t EstimateSimpleCycleCount(const BidirectionalPath& path, EdgeId backward_edge, EdgeId /*exit_edge*/) const override {
         VERIFY(path.Size() > 1);
         VERIFY(wc_ != nullptr);
@@ -372,7 +376,7 @@ public:
 private:
 
     bool NoSelfPairedInfo(EdgeId back_cycle_edge, EdgeId forward_cycle_edge) const {
-        size_t is = wc_->PairedLibrary()->GetISMax();
+        size_t is = wc_->PairedLibrary().GetISMax();
         int forward_len = (int) g_.length(forward_cycle_edge);
         bool exists_pi = true;
 
@@ -394,19 +398,21 @@ private:
 
 class CombinedLoopEstimator: public ShortLoopEstimator {
 public:
-    CombinedLoopEstimator(const conj_graph_pack& gp, shared_ptr<WeightCounter> wc, double weight_threshold = 0.0)
-        : ShortLoopEstimator(),
-          pi_estimator_(gp.g, wc, weight_threshold),
-          cov_estimator_(gp) {}
+    CombinedLoopEstimator(const Graph& g,
+                          const FlankingCoverage<Graph>& flanking_cov,
+                          shared_ptr<WeightCounter> wc,
+                          double weight_threshold = 0.0)
+        : pi_estimator_(g, wc, weight_threshold),
+          cov_estimator_(g, flanking_cov) {}
 
-
+    //Path must end with forward cycle edge, contain at least 2 edges and must not contain backward cycle edges
+    //Returns 0 (for no loops), 1 (for a single loop) or 2 (for many loops)
     size_t EstimateSimpleCycleCount(const BidirectionalPath& path, EdgeId backward_edge, EdgeId exit_edge) const override {
         size_t result = pi_estimator_.EstimateSimpleCycleCount(path, backward_edge, exit_edge);
         if (result == 1) {
             //Verify using coverage
-            size_t coverage_count = cov_estimator_.EstimateSimpleCycleCount(path, backward_edge, exit_edge);
-            if (coverage_count > 1)
-                result = coverage_count;
+            if (cov_estimator_.EstimateSimpleCycleCount(path, backward_edge, exit_edge) > 1)
+                result = 2;
         }
         return result;
     }
@@ -977,7 +983,7 @@ public:
                               size_t is)
             : PathExtender(gp.g),
               use_short_loop_cov_resolver_(use_short_loop_cov_resolver),
-              cov_loop_resolver_(gp.g, make_shared<CoverageLoopEstimator>(gp)),
+              cov_loop_resolver_(gp.g, make_shared<CoverageLoopEstimator>(gp.g, gp.flanking_cov)),
               is_detector_(gp.g, is),
               used_storage_(unique),
               investigate_short_loops_(investigate_short_loops),
@@ -1071,7 +1077,7 @@ public:
                    double weight_threshold = 0.0):
         LoopDetectingPathExtender(gp, cov_map, unique, investigate_short_loops, use_short_loop_cov_resolver, is),
         extensionChooser_(ec),
-        loop_resolver_(gp.g, make_shared<CombinedLoopEstimator>(gp, extensionChooser_->wc(), weight_threshold)),
+        loop_resolver_(gp.g, make_shared<CombinedLoopEstimator>(gp.g, gp.flanking_cov, extensionChooser_->wc(), weight_threshold)),
         weight_threshold_(weight_threshold) {}
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {

@@ -218,27 +218,24 @@ public:
 };
 
 //result -- first edge is loop's back edge, second is loop exit edge
-inline bool GetLoopAndExit(const Graph& g, EdgeId e, pair<EdgeId, EdgeId>& result) {
+inline bool GetLoopAndExit(const Graph& g, EdgeId e, EdgeId& back_cycle_edge, EdgeId& loop_exit) {
     VertexId v = g.EdgeEnd(e);
     VertexId start = g.EdgeStart(e);
     if (g.OutgoingEdgeCount(v) != 2 || g.IncomingEdgeCount(v) != 1 || g.OutgoingEdgeCount(start) != 1 || g.IncomingEdgeCount(start) != 2) {
         return false;
     }
-    EdgeId loop;
-    EdgeId exit;
     bool loop_found = false;
     bool exit_found = false;
     auto edges = g.OutgoingEdges(v);
     for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
         if (g.EdgeEnd(*edge) == g.EdgeStart(e) && *edge != e) {
-            loop = *edge;
+            back_cycle_edge = *edge;
             loop_found = true;
         } else if (*edge != e) {
-            exit = *edge;
+            loop_exit = *edge;
             exit_found = true;
         }
     }
-    result = make_pair(loop, exit);
     return exit_found && loop_found;
 }
 
@@ -363,8 +360,9 @@ inline void LoopDetector::RemoveLoop(size_t skip_identical_edges, bool fullRemov
 }
 
 inline bool LoopDetector::EdgeInShortLoop(EdgeId e) const {
-    pair<EdgeId, EdgeId> temp;
-    return GetLoopAndExit(path_->graph(), e, temp);
+    EdgeId back_cycle_edge;
+    EdgeId loop_exit;
+    return GetLoopAndExit(path_->graph(), e, back_cycle_edge, loop_exit);
 }
 
 inline bool LoopDetector::PrevEdgeInShortLoop() const {
