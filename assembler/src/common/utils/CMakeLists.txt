@@ -8,8 +8,9 @@
 project(utils CXX)
 
 set(utils_src
-        filesystem/copy_file.cpp
-        filesystem/path_helper.cpp
+    filesystem/copy_file.cpp
+    filesystem/path_helper.cpp
+    filesystem/temporary.cpp
     logger/logger_impl.cpp)
 
 if (READLINE_FOUND)
