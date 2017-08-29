@@ -109,6 +109,8 @@ void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
             phase->save(gp, parent_->saves_policy().save_to_, composite_id.c_str());
         }
     }
+
+    fini(gp);
 }
 
 void StageManager::run(debruijn_graph::conj_graph_pack& g,

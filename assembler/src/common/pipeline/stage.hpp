@@ -76,6 +76,7 @@ public:
     }
 
     virtual void init(debruijn_graph::conj_graph_pack &, const char * = nullptr) = 0;
+    virtual void fini(debruijn_graph::conj_graph_pack &) = 0;
     void run(debruijn_graph::conj_graph_pack &gp, const char * = nullptr);
 
 private:
@@ -101,6 +102,7 @@ public:
             : CompositeStageBase(name, id) { }
 
     void init(debruijn_graph::conj_graph_pack &, const char * = nullptr) override {};
+    void fini(debruijn_graph::conj_graph_pack &) override {};
 
     virtual Storage &storage() = 0;
     virtual const Storage &storage() const = 0;
@@ -134,6 +136,9 @@ protected:
 
     template <typename...Args> void init_storage(Args&&... args) {
         storage_.reset(new Storage(std::forward<Args>(args)...));
+    }
+    void reset_storage() {
+        storage_.reset();
     }
 
 private:
