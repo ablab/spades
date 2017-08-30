@@ -95,7 +95,7 @@ public:
         unsigned nthreads = (unsigned)read_streams.size();
         utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
                                         utils::StoringTypeFilter<decltype(storage().ext_index)::storing_type>>
-                splitter(storage().workdir, index.k() + 1, 0xDEADBEEF,
+                splitter(storage().workdir, index.k() + 1, 0,
                          read_streams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
                          storage().params.read_buffer_size);
         storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
@@ -121,7 +121,7 @@ public:
     void save(const debruijn_graph::conj_graph_pack&,
               const std::string &,
               const char*) const override {
-        VERIFY_MSG(false, "implement me");
+        // VERIFY_MSG(false, "implement me");
     }
 };
 
@@ -151,7 +151,7 @@ public:
     void save(const debruijn_graph::conj_graph_pack&,
               const std::string &,
               const char*) const override {
-        VERIFY_MSG(false, "implement me");
+        // VERIFY_MSG(false, "implement me");
     }
 };
 
@@ -179,7 +179,7 @@ public:
     void save(const debruijn_graph::conj_graph_pack&,
               const std::string &,
               const char*) const override {
-        VERIFY_MSG(false, "implement me");
+        // VERIFY_MSG(false, "implement me");
     }
 };
 
@@ -204,7 +204,7 @@ public:
     void save(const debruijn_graph::conj_graph_pack&,
               const std::string &,
               const char*) const override {
-        VERIFY_MSG(false, "implement me");
+        // VERIFY_MSG(false, "implement me");
     }
 };
 
@@ -229,7 +229,7 @@ public:
     void save(const debruijn_graph::conj_graph_pack&,
               const std::string &,
               const char*) const override {
-        VERIFY_MSG(false, "implement me");
+        // VERIFY_MSG(false, "implement me");
     }
 };
 
@@ -258,7 +258,7 @@ public:
     void save(const debruijn_graph::conj_graph_pack&,
               const std::string &,
               const char*) const override {
-        VERIFY_MSG(false, "implement me");
+        // VERIFY_MSG(false, "implement me");
     }
 };
 
@@ -308,6 +308,89 @@ class PHMCoverageFiller : public ConstructionNew::Phase {
         }
     };
 
+    template<class Graph, class PHM>
+    class GraphCoverageFiller {
+        typedef typename omnigraph::GraphEdgeIterator<Graph> EdgeIt;
+        typedef typename Graph::EdgeId EdgeId;
+        typedef typename adt::iterator_range<EdgeIt> EdgeRange;
+
+        const Graph& g_;
+        const PHM& phm_;
+        omnigraph::FlankingCoverage<Graph>& flanking_coverage_;
+        omnigraph::CoverageIndex<Graph>& coverage_index_;
+        unsigned k_;
+        size_t avg_range_;
+      public:
+        GraphCoverageFiller(const Graph& g, unsigned k, const PHM& phm,
+                            omnigraph::FlankingCoverage<Graph>& flanking_coverage,
+                            omnigraph::CoverageIndex<Graph>& coverage_index)
+                : g_(g),
+                  phm_(phm),
+                  flanking_coverage_(flanking_coverage),
+                  coverage_index_(coverage_index),
+                  k_(k), avg_range_(flanking_coverage_.averaging_range()) {}
+
+        void inc_coverage(EdgeId edge_id, size_t offset, uint32_t value) {
+            coverage_index_.IncRawCoverage(edge_id, value);
+            if (offset < avg_range_)
+                flanking_coverage_.IncRawCoverage(edge_id, value);
+        }
+
+        size_t FillCoverageFromEdges(EdgeRange &r) {
+            size_t seqs = 0;
+            for (auto &it = r.begin(); it != r.end() && seqs < 100000; ++it) {
+                EdgeId e = *it;
+                const Sequence &seq = g_.EdgeNucls(e);
+
+                seqs += 1;
+                RtSeq kmer = seq.start<RtSeq>(this->k_) >> 'A';
+                for (size_t j = this->k_ - 1; j < seq.size(); ++j) {
+                    kmer <<= seq[j];
+
+                    auto kwh = phm_.ConstructKWH(kmer);
+                    uint32_t cov = phm_.get_value(kwh, utils::InvertableStoring::trivial_inverter<uint32_t>());
+                    inc_coverage(e, j - this->k_ + 1, cov);
+                }
+            }
+
+            return seqs;
+        }
+
+
+        void Fill(unsigned nthreads) {
+            omnigraph::IterationHelper<Graph, EdgeId> edges(g_);
+            auto its = edges.Chunks(nthreads);
+
+            // Turn chunks into iterator ranges
+            std::vector<EdgeRange> ranges;
+            for (size_t i = 0; i < its.size() - 1; ++i)
+                ranges.emplace_back(its[i], its[i+1]);
+
+            VERIFY(ranges.size() <= nthreads);
+
+            size_t counter = 0, n = 10;
+            while (!std::all_of(ranges.begin(), ranges.end(),
+                                [](const EdgeRange &r) { return r.begin() == r.end(); })) {
+#               pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
+                for (size_t i = 0; i < ranges.size(); ++i)
+                    counter += FillCoverageFromEdges(ranges[i]);
+
+                if (counter >> n) {
+                    INFO("Processed " << counter << " edges");
+                    n += 1;
+                }
+            }
+        }
+    };
+
+    template<class Graph, class PHM>
+    void FillCoverageAndFlanking(const PHM& phm, Graph& g,
+                                 FlankingCoverage<Graph>& flanking_coverage) {
+        GraphCoverageFiller<Graph, PHM>(g,
+                                        storage().counter->k(), phm,
+                                        flanking_coverage, g.coverage_index()).Fill(omp_get_num_threads());
+    }
+
 public:
     PHMCoverageFiller()
             : ConstructionNew::Phase("Filling coverage indices (PHM)", "coverage_filling_phm") {}
@@ -315,8 +398,9 @@ public:
 
     void run(debruijn_graph::conj_graph_pack &gp, const char *) override {
         storage().coverage_map.reset(new ConstructionStorage::CoverageMap(storage().counter->k()));
+        auto &coverage_map = *storage().coverage_map;
 
-        CoverageHashMapBuilder().BuildIndex(*storage().coverage_map,
+        CoverageHashMapBuilder().BuildIndex(coverage_map,
                                             *storage().counter,
                                             16,
                                             storage().read_streams);
@@ -328,15 +412,33 @@ public:
             const auto& edge_info = *I;
 
             Sequence sk = gp.g.EdgeNucls(edge_info.edge_id).Subseq(edge_info.offset, edge_info.offset + index.k());
-            auto kwh = storage().coverage_map->ConstructKWH(sk.start<RtSeq>(index.k()));
+            auto kwh = coverage_map.ConstructKWH(sk.start<RtSeq>(index.k()));
 
-            uint32_t cov = storage().coverage_map->get_value(kwh, utils::InvertableStoring::trivial_inverter<uint32_t>());
+            uint32_t cov = coverage_map.get_value(kwh, utils::InvertableStoring::trivial_inverter<uint32_t>());
             if (edge_info.count != cov)
                 INFO("" << kwh << ":" << edge_info.count << ":" << cov);
         }
 
-        INFO("Filling coverage and flanking coverage from index PHM");
-        //FillCoverageAndFlanking(gp.index.inner_index(), gp.g, gp.flanking_cov);
+        INFO("Filling coverage and flanking coverage from PHM");
+        FillCoverageAndFlanking(coverage_map, gp.g, gp.flanking_cov);
+
+        std::vector<size_t> hist;
+        size_t maxcov = 0;
+        size_t kmer_per_record = 1;
+        if (conj_graph_pack::index_t::InnerIndex::storing_type::IsInvertable())
+            kmer_per_record = 2;
+
+        for (auto I = coverage_map.value_cbegin(), E = coverage_map.value_cend(); I != E;  ++I) {
+            size_t ccov = *I;
+            if (!ccov)
+                continue;
+            maxcov = std::max(ccov, maxcov);
+            if (maxcov > hist.size())
+                hist.resize(maxcov, 0);
+            hist[ccov - 1] += kmer_per_record;
+        }
+
+        gp.ginfo.set_cov_histogram(hist);
     }
 
     void load(debruijn_graph::conj_graph_pack&,
@@ -348,7 +450,7 @@ public:
     void save(const debruijn_graph::conj_graph_pack&,
               const std::string &,
               const char*) const override {
-        VERIFY_MSG(false, "implement me");
+        // VERIFY_MSG(false, "implement me");
     }
 
 };
@@ -362,8 +464,6 @@ ConstructionNew::ConstructionNew()
     if (cfg::get().con.early_tc.enable && !cfg::get().gap_closer_enable)
         add<EarlyTipClipper>();
     add<GraphCondenser>();
-    add<EdgeIndexFiller>();
-    add<CoverageFiller>();
     add<PHMCoverageFiller>();
 }
 

@@ -101,21 +101,6 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
         gp.ginfo.set_cov_histogram(extract(hist));
         gp.ginfo.set_ec_bound(std::min(avg, gthr));
     } else {
-        // First, get k-mer coverage histogram
-        std::map<size_t, size_t> tmp;
-        size_t maxcov = 0;
-        size_t kmer_per_record = 1;
-        if (conj_graph_pack::index_t::InnerIndex::storing_type::IsInvertable())
-            kmer_per_record = 2;
-
-        for (auto I = gp.index.inner_index().value_cbegin(), E = gp.index.inner_index().value_cend(); I != E;  ++I) {
-            size_t ccov = I->count;
-            maxcov = std::max(ccov, maxcov);
-            tmp[ccov] += kmer_per_record;
-        }
-
-        gp.ginfo.set_cov_histogram(extract(tmp));
-
         // Fit the coverage model and get the threshold
         coverage_model::KMerCoverageModel CovModel(gp.ginfo.cov_histogram(), cfg::get().kcm.probability_threshold, cfg::get().kcm.strong_probability_threshold);
         CovModel.Fit();

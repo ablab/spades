@@ -491,7 +491,8 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
 
     //no other handlers here, todo change with DetachAll
-    gp.index.Detach();
+    if (gp.index.IsAttached())
+        gp.index.Detach();
     gp.index.clear();
 
     visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
