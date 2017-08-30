@@ -262,7 +262,7 @@ public:
     }
 };
 
-class CQFCoverageFiller : public ConstructionNew::Phase {
+class PHMCoverageFiller : public ConstructionNew::Phase {
     struct CoverageHashMapBuilder : public utils::PerfectHashMapBuilder {
         template<class ReadStream, class Index>
         void FillCoverageFromStream(ReadStream &stream, Index &index) const {
@@ -309,9 +309,9 @@ class CQFCoverageFiller : public ConstructionNew::Phase {
     };
 
 public:
-    CQFCoverageFiller()
-            : ConstructionNew::Phase("Filling coverage indices (CQF)", "coverage_filling_cqf") {}
-    virtual ~CQFCoverageFiller() = default;
+    PHMCoverageFiller()
+            : ConstructionNew::Phase("Filling coverage indices (PHM)", "coverage_filling_phm") {}
+    virtual ~PHMCoverageFiller() = default;
 
     void run(debruijn_graph::conj_graph_pack &gp, const char *) override {
         storage().coverage_map.reset(new ConstructionStorage::CoverageMap(storage().counter->k()));
@@ -320,7 +320,7 @@ public:
                                             *storage().counter,
                                             16,
                                             storage().read_streams);
-        INFO("Checking the CQF map");
+        INFO("Checking the PHM");
 
         auto &index = gp.index.inner_index();
         for (auto I = index.value_cbegin(), E = index.value_cend();
@@ -335,7 +335,7 @@ public:
                 INFO("" << kwh << ":" << edge_info.count << ":" << cov);
         }
 
-        INFO("Filling coverage and flanking coverage from index CQF");
+        INFO("Filling coverage and flanking coverage from index PHM");
         //FillCoverageAndFlanking(gp.index.inner_index(), gp.g, gp.flanking_cov);
     }
 
@@ -364,7 +364,7 @@ ConstructionNew::ConstructionNew()
     add<GraphCondenser>();
     add<EdgeIndexFiller>();
     add<CoverageFiller>();
-    add<CQFCoverageFiller>();
+    add<PHMCoverageFiller>();
 }
 
 template<class Read>
