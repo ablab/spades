@@ -38,6 +38,7 @@ struct KMerComparator {
 
 class HammerFilteringKMerSplitter : public utils::KMerSortingSplitter<hammer::KMer> {
  public:
+  using typename utils::KMerSortingSplitter<hammer::KMer>::raw_kmers;
   typedef std::function<bool(const KMer&)> KMerFilter;
 
   HammerFilteringKMerSplitter(std::string &work_dir,
@@ -45,7 +46,7 @@ class HammerFilteringKMerSplitter : public utils::KMerSortingSplitter<hammer::KM
       : KMerSortingSplitter<hammer::KMer>(work_dir, hammer::K),
       filter_(std::move(filter)) {}
 
-  fs::files_t Split(size_t num_files, unsigned nthreads) override;
+  raw_kmers Split(size_t num_files, unsigned nthreads) override;
 
  private:
   KMerFilter filter_;
@@ -85,10 +86,10 @@ class BufferFiller {
   }
 };
 
-fs::files_t HammerFilteringKMerSplitter::Split(size_t num_files, unsigned nthreads) {
+HammerFilteringKMerSplitter::raw_kmers HammerFilteringKMerSplitter::Split(size_t num_files, unsigned nthreads) {
   size_t reads_buffer_size = cfg::get().count_split_buffer;
 
-  fs::files_t out = PrepareBuffers(num_files, nthreads, reads_buffer_size);
+  auto out = PrepareBuffers(num_files, nthreads, reads_buffer_size);
 
   size_t n = 15, processed = 0;
   BufferFiller filler(*this);
@@ -273,7 +274,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
 
   // Optionally perform a filtering step
   size_t kmers = 0;
-  std::string final_kmers;
+  typename KMerData::traits::ResultFile final_kmers;
   if (cfg::get().count_filter_singletons) {
       size_t buffer_size;
       {
@@ -336,15 +337,14 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
       utils::KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
 
       kmers = utils::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
-      final_kmers = counter.GetFinalKMersFname();
+      final_kmers = counter.final_kmers_file();
   } else {
       HammerFilteringKMerSplitter splitter(workdir);
       utils::KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
 
       kmers = utils::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
-      final_kmers = counter.GetFinalKMersFname();
+      final_kmers = counter.final_kmers_file();
   }
-
 
   // Check, whether we'll ever have enough memory for running BH and bail out earlier
   double needed = 1.25 * (double)kmers * (sizeof(KMerStat) + sizeof(hammer::KMer));
@@ -359,7 +359,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
     data.kmers_.set_data(new hammer::KMer::DataType[kmers * hammer::KMer::GetDataSize(hammer::K)]);
 
     unsigned nthreads = std::min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
-    auto kmers_its = io::make_kmer_iterator<hammer::KMer>(final_kmers, hammer::K, 16*nthreads);
+    auto kmers_its = io::make_kmer_iterator<hammer::KMer>(final_kmers->file(), hammer::K, 16*nthreads);
 
 #   pragma omp parallel for num_threads(nthreads) schedule(guided)
     for (size_t i = 0; i < kmers_its.size(); ++i) {
@@ -369,8 +369,6 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
             memcpy(data.kmers_[kidx].data(), *kmer_it, hammer::KMer::TotalBytes);
         }
     }
-
-    unlink(final_kmers.c_str());
   }
 }
 

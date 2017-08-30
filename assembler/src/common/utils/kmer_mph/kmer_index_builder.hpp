@@ -52,6 +52,7 @@ class KMerCounter {
 public:
   typedef typename traits::raw_data_iterator       iterator;
   typedef typename traits::raw_data_const_iterator const_iterator;
+  typedef typename traits::ResultFile              ResultFile;
   typedef typename traits::RawKMerStorage          RawKMerStorage;
   typedef typename traits::FinalKMerStorage        FinalKMerStorage;
 
@@ -85,21 +86,19 @@ template<class Seq, class traits = kmer_index_traits<Seq> >
 class KMerDiskCounter : public KMerCounter<Seq> {
   typedef KMerCounter<Seq, traits> __super;
   typedef typename traits::RawKMerStorage BucketStorage;
+  typedef typename traits::ResultFile ResultFile;
 public:
-  KMerDiskCounter(const std::string &work_dir,
+  KMerDiskCounter(fs::TmpDir work_dir,
                   KMerSplitter<Seq> &splitter)
       : work_dir_(work_dir), splitter_(splitter), k_(splitter.K()) {
-    std::string prefix = fs::append_path(work_dir, "kmers_XXXXXX");
-    char *tempprefix = strcpy(new char[prefix.length() + 1], prefix.c_str());
-    VERIFY_MSG(-1 != (fd_ = ::mkstemp(tempprefix)), "Cannot create temporary file");
-    kmer_prefix_ = tempprefix;
-    delete[] tempprefix;
+    kmer_prefix_ = work_dir_->tmp_file("kmers");
   }
 
-  ~KMerDiskCounter() {
-    ::close(fd_);
-    ::unlink(kmer_prefix_.c_str());
-  }
+  KMerDiskCounter(const std::string &work_dir,
+                  KMerSplitter<Seq> &splitter)
+      : KMerDiskCounter(fs::tmp::make_temp_dir(work_dir, "kmer_counter"), splitter) {}
+
+  ~KMerDiskCounter() {}
 
   unsigned k() const { return k_; }
 
@@ -117,14 +116,15 @@ public:
     unsigned num_files = num_buckets * num_threads;
 
     // Split k-mers into buckets.
-    INFO("Splitting kmer instances into " << num_files << " buckets using " << num_threads << " threads. This might take a while.");
-    fs::files_t raw_kmers = splitter_.Split(num_files, num_threads);
+    INFO("Splitting kmer instances into " << num_files << " files using " << num_threads << " threads. This might take a while.");
+    auto raw_kmers = splitter_.Split(num_files, num_threads);
 
     INFO("Starting k-mer counting.");
     size_t kmers = 0;
 #   pragma omp parallel for shared(raw_kmers) num_threads(num_threads) schedule(dynamic) reduction(+:kmers)
     for (unsigned iFile = 0; iFile < raw_kmers.size(); ++iFile) {
-      kmers += MergeKMers(raw_kmers[iFile], GetUniqueKMersFname(iFile));
+      kmers += MergeKMers(raw_kmers[iFile]->file(), GetUniqueKMersFname(iFile));
+      raw_kmers[iFile].reset();
     }
     INFO("K-mer counting done. There are " << kmers << " kmers in total. ");
     if (!kmers) {
@@ -151,9 +151,8 @@ public:
   void MergeBuckets() override {
     INFO("Merging final buckets.");
 
-    MMappedRecordArrayWriter<typename Seq::DataType> os(GetFinalKMersFname(), Seq::GetDataSize(k_));
-    std::string ofname = GetFinalKMersFname();
-    std::ofstream ofs(ofname.c_str(), std::ios::out | std::ios::binary);
+    final_kmers_ = work_dir_->tmp_file("final_kmers");
+    std::ofstream ofs(final_kmers_->file(), std::ios::out | std::ios::binary);
     for (unsigned j = 0; j < this->num_buckets_; ++j) {
       auto bucket = GetBucket(j, /* unlink */ true);
       ofs.write((const char*)bucket->data(), bucket->data_size());
@@ -170,27 +169,28 @@ public:
   }
 
   std::unique_ptr<typename __super::FinalKMerStorage> GetFinalKMers() override {
-    VERIFY_MSG(this->counted_, "k-mers were not counted yet");
-    return std::unique_ptr<typename __super::FinalKMerStorage>(new typename __super::FinalKMerStorage(GetFinalKMersFname(), Seq::GetDataSize(k_), /* unlink */ true));
+    VERIFY_MSG(this->final_kmers_, "k-mers were not counted yet");
+    return std::unique_ptr<typename __super::FinalKMerStorage>(new typename __super::FinalKMerStorage(final_kmers_file()->file(), Seq::GetDataSize(k_), /* unlink */ true));
   }
 
   std::string GetMergedKMersFname(unsigned suffix) const {
-    return kmer_prefix_ + ".merged." + std::to_string(suffix);
+    return kmer_prefix_->file() + ".merged." + std::to_string(suffix);
   }
 
-  std::string GetFinalKMersFname() const {
-    return kmer_prefix_ + ".final";
+  ResultFile final_kmers_file() {
+    VERIFY_MSG(this->final_kmers_, "k-mers were not counted yet");
+    return final_kmers_;
   }
 
 private:
-  std::string work_dir_;
+  fs::TmpDir work_dir_;
+  fs::TmpFile kmer_prefix_;
+  fs::TmpFile final_kmers_;
   KMerSplitter<Seq> &splitter_;
-  int fd_;
-  std::string kmer_prefix_;
   unsigned k_;
 
   std::string GetUniqueKMersFname(unsigned suffix) const {
-    return kmer_prefix_ + ".unique." + std::to_string(suffix);
+    return kmer_prefix_->file() + ".unique." + std::to_string(suffix);
   }
 
   size_t MergeKMers(const std::string &ifname, const std::string &ofname) {

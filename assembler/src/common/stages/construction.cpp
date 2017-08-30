@@ -7,11 +7,14 @@
 
 #include "io/reads/vector_reader.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
-#include "pipeline/graph_pack.hpp"
 #include "io/dataset_support/read_converter.hpp"
 
 #include "modules/graph_construction.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
+
+#include "utils/filesystem/temporary.hpp"
+
+#include "pipeline/graph_pack.hpp"
 #include "construction.hpp"
 
 namespace debruijn_graph {
@@ -29,7 +32,7 @@ struct ConstructionStorage {
     io::ReadStreamList<io::SingleReadSeq> read_streams;
     io::SingleStreamPtr contigs_stream;
     utils::ReadStatistics read_stats;
-    std::string workdir;
+    fs::TmpDir workdir;
 };
 
 void ConstructionNew::init(debruijn_graph::conj_graph_pack &gp, const char *) {
@@ -66,8 +69,12 @@ void ConstructionNew::init(debruijn_graph::conj_graph_pack &gp, const char *) {
 
     storage().read_streams = io::single_binary_readers_for_libs(dataset, libs_for_construction, true, true);
     storage().params = cfg::get().con;
-    storage().workdir = fs::make_temp_dir(gp.workdir, "construction");
-};
+    storage().workdir = fs::tmp::make_temp_dir(gp.workdir, "construction");
+}
+
+void ConstructionNew::fini(debruijn_graph::conj_graph_pack &) {
+    reset_storage();
+}
 
 ConstructionNew::~ConstructionNew() {}
 
@@ -366,7 +373,7 @@ void construct_graph(io::ReadStreamList<Read>& streams,
     config::debruijn_config::construction params = cfg::get().con;
     params.early_tc.enable &= !cfg::get().gap_closer_enable;
 
-    std::string workdir = fs::make_temp_dir(gp.workdir, "construction");
+    auto workdir = fs::tmp::make_temp_dir(gp.workdir, "construction");
     utils::ReadStatistics stats = ConstructGraphWithCoverage(params, workdir, streams, gp.g,
                                                              gp.index, gp.flanking_cov, contigs_stream);
     size_t rl = stats.max_read_length_;

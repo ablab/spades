@@ -9,6 +9,7 @@
 #include "io/reads/splitting_wrapper.hpp"
 #include "modules/graph_construction.hpp"
 #include "pipeline/stage.hpp"
+#include "utils/filesystem/temporary.hpp"
 
 #include "dipspades_config.hpp"
 
@@ -39,7 +40,7 @@ void construct_graph_from_contigs(debruijn_graph::conj_graph_pack &graph_pack) {
     params.keep_perfect_loops = true;
     params.read_buffer_size = dsp_cfg::get().bp.read_buffer_size;
 
-    std::string workdir = fs::make_temp_dir(graph_pack.workdir, "construction");
+    auto workdir = fs::tmp::make_temp_dir(graph_pack.workdir, "construction");
 
     ConstructGraphWithCoverage(params,
                                workdir,

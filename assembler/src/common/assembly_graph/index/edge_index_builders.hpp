@@ -17,19 +17,20 @@ class DeBruijnGraphKMerSplitter : public utils::DeBruijnKMerSplitter<KmerFilter>
     typedef typename omnigraph::GraphEdgeIterator<Graph> EdgeIt;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename adt::iterator_range<EdgeIt> EdgeRange;
+    using typename utils::DeBruijnKMerSplitter<KmerFilter>::raw_kmers;
 
     const Graph &g_;
 
     size_t FillBufferFromEdges(EdgeRange &r, unsigned thread_id);
 
 public:
-    DeBruijnGraphKMerSplitter(const std::string &work_dir,
+    DeBruijnGraphKMerSplitter(fs::TmpDir work_dir,
                               unsigned K, const Graph &g,
                               size_t read_buffer_size = 0)
             : utils::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size),
               g_(g) {}
 
-    fs::files_t Split(size_t num_files, unsigned nthreads) override;
+    raw_kmers Split(size_t num_files, unsigned nthreads) override;
 };
 
 template<class Graph, class KmerFilter>
@@ -49,8 +50,8 @@ DeBruijnGraphKMerSplitter<Graph, KmerFilter>::FillBufferFromEdges(EdgeRange &r,
 }
 
 template<class Graph, class KmerFilter>
-fs::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files, unsigned nthreads) {
-    fs::files_t out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
+typename DeBruijnGraphKMerSplitter<Graph, KmerFilter>::raw_kmers DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files, unsigned nthreads) {
+    auto out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
     omnigraph::IterationHelper<Graph, EdgeId> edges(g_);
     auto its = edges.Chunks(nthreads);
@@ -92,7 +93,7 @@ public:
 
     template<class Graph>
     void BuildIndexFromGraph(Index &index, const Graph &g,
-                             const std::string &workdir, size_t read_buffer_size = 0) const {
+                             fs::TmpDir workdir, size_t read_buffer_size = 0) const {
         unsigned nthreads = omp_get_max_threads();
 
         DeBruijnGraphKMerSplitter<Graph,

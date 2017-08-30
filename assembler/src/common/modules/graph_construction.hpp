@@ -78,7 +78,7 @@ void EarlyClipTips(size_t k, const config::debruijn_config::construction& params
 
 template<class Graph, class Read, class Index>
 utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_config::construction params,
-                                                        const std::string &workdir,
+                                                        fs::TmpDir workdir,
                                                         io::ReadStreamList<Read>& streams, Graph& g,
                                                         Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     unsigned k = unsigned(g.k());
@@ -112,7 +112,7 @@ utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_c
 
 template<class Graph, class Index, class Streams>
 utils::ReadStatistics ConstructGraph(const config::debruijn_config::construction &params,
-                                     const std::string &workdir,
+                                     fs::TmpDir workdir,
                                      Streams& streams, Graph& g,
                                      Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     if (params.con_mode == config::construction_mode::extention) {
@@ -128,7 +128,7 @@ utils::ReadStatistics ConstructGraph(const config::debruijn_config::construction
 
 template<class Graph, class Index, class Streams>
 utils::ReadStatistics ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
-                                                 const std::string &workdir,
+                                                 fs::TmpDir workdir,
                                                  Streams& streams, Graph& g,
                                                  Index& index, FlankingCoverage<Graph>& flanking_cov,
                                                  io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {

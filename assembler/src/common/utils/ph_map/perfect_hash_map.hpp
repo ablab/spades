@@ -351,7 +351,7 @@ template<class K, class V, class traits = kmer_index_traits<K>, class StoringTyp
 class KeyIteratingMap : public PerfectHashMap<K, V, traits, StoringType> {
     typedef PerfectHashMap<K, V, traits, StoringType> base;
 
-    std::string KMersFilename_;
+    typename traits::ResultFile kmers_;
 
 public:
     typedef StoringType storing_type;
@@ -363,18 +363,20 @@ public:
 public:
 
     KeyIteratingMap(unsigned k)
-            : base(k), KMersFilename_("") {}
+            : base(k) {}
 
     ~KeyIteratingMap() {}
 
     typedef MMappedFileRecordArrayIterator<typename KMer::DataType> kmer_iterator;
 
     kmer_iterator kmer_begin() const {
-        return kmer_iterator(this->KMersFilename_, KMer::GetDataSize(base::k()));
+        VERIFY(kmers_ && "Index should be built");
+        return kmer_iterator(this->kmers_->file(), KMer::GetDataSize(base::k()));
     }
 
     std::vector<kmer_iterator> kmer_begin(size_t parts) const {
-        return io::make_kmer_iterator<KMer>(this->KMersFilename_, base::k(), parts);
+        VERIFY(kmers_ && "Index should be built");
+        return io::make_kmer_iterator<KMer>(this->kmers_->file(), base::k(), parts);
     }
 
     friend struct KeyIteratingIndexBuilder;

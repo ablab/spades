@@ -160,12 +160,7 @@ public:
                            std::unique_ptr<ClusterAnalyzer> cluster_analyzer,
                            const std::string& index_prefix,
                            const std::string& work_dir,
-                           double min_earmark_share = 0.7) :
-        k_(k),
-        cluster_analyzer_(cluster_analyzer),
-        min_earmark_share_(min_earmark_share),
-        kmer_mpl_(k_) {
-    }
+                           double min_earmark_share = 0.7);
 
     void Init(const std::string& kmer_mpl_file);
 

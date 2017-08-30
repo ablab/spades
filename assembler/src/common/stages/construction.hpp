@@ -27,6 +27,7 @@ public:
     ~ConstructionNew();
 
     void init(debruijn_graph::conj_graph_pack &gp, const char *) override;
+    void fini(debruijn_graph::conj_graph_pack &gp) override;
 };
 
 }

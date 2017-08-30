@@ -6,12 +6,14 @@
 //***************************************************************************
 
 #include "io/kmers/mmapped_reader.hpp"
+#include "utils/filesystem/temporary.hpp"
 
 namespace utils {
 
 template<class Seq>
 struct kmer_index_traits {
   typedef Seq SeqType;
+  typedef fs::TmpFile ResultFile;
   typedef MMappedRecordArrayReader<typename Seq::DataType> RawKMerStorage;
   typedef MMappedRecordArrayReader<typename Seq::DataType> FinalKMerStorage;
   typedef typename RawKMerStorage::iterator             raw_data_iterator;

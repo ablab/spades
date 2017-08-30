@@ -9,6 +9,7 @@
 
 #include "io/reads/io_helper.hpp"
 #include "utils/filesystem/file_limit.hpp"
+#include "utils/filesystem/temporary.hpp"
 
 namespace utils {
 
@@ -16,13 +17,17 @@ template<class Seq>
 class KMerSplitter {
 public:
     typedef typename Seq::hash hash_function;
+    typedef std::vector<fs::DependentTmpFile> raw_kmers;
 
     KMerSplitter(const std::string &work_dir, unsigned K, uint32_t seed = 0)
+            : KMerSplitter(fs::tmp::make_temp_dir(work_dir, "kmer_splitter"), K, seed) {}
+
+    KMerSplitter(fs::TmpDir work_dir, unsigned K, uint32_t seed = 0)
             : work_dir_(work_dir), K_(K), seed_(seed) {}
 
     virtual ~KMerSplitter() {}
 
-    virtual fs::files_t Split(size_t num_files, unsigned nthreads) = 0;
+    virtual raw_kmers Split(size_t num_files, unsigned nthreads) = 0;
 
     size_t kmer_size() const {
         return Seq::GetDataSize(K_) * sizeof(typename Seq::DataType);
@@ -31,7 +36,7 @@ public:
     unsigned K() const { return K_; }
 
 protected:
-    const std::string &work_dir_;
+    fs::TmpDir work_dir_;
     hash_function hash_;
     unsigned K_;
     uint32_t seed_;
@@ -42,7 +47,12 @@ protected:
 template<class Seq>
 class KMerSortingSplitter : public KMerSplitter<Seq> {
 public:
+    using typename KMerSplitter<Seq>::raw_kmers;
+
     KMerSortingSplitter(const std::string &work_dir, unsigned K, uint32_t seed = 0)
+            : KMerSplitter<Seq>(work_dir, K, seed), cell_size_(0), num_files_(0) {}
+
+    KMerSortingSplitter(fs::TmpDir work_dir, unsigned K, uint32_t seed = 0)
             : KMerSplitter<Seq>(work_dir, K, seed), cell_size_(0), num_files_(0) {}
 
 protected:
@@ -53,13 +63,14 @@ protected:
     size_t cell_size_;
     size_t num_files_;
 
-    fs::files_t PrepareBuffers(size_t num_files, unsigned nthreads, size_t reads_buffer_size) {
+    raw_kmers PrepareBuffers(size_t num_files, unsigned nthreads, size_t reads_buffer_size) {
         num_files_ = num_files;
 
         // Determine the set of output files
-        fs::files_t out;
+        raw_kmers out;
+        auto tmp_prefix = this->work_dir_->tmp_file("kmers_raw");
         for (unsigned i = 0; i < num_files_; ++i)
-            out.push_back(this->GetRawKMersFname(i));
+            out.emplace_back(tmp_prefix->create_dep(std::to_string(i)));
 
         size_t file_limit = num_files_ + 2*nthreads;
         size_t res = limit_file(file_limit);
@@ -97,7 +108,7 @@ protected:
         return entry[idx].size() > cell_size_;
     }
 
-    void DumpBuffers(const fs::files_t &ostreams) {
+    void DumpBuffers(const raw_kmers &ostreams) {
         VERIFY(ostreams.size() == num_files_ && kmer_buffers_[0].size() == num_files_);
 
 #   pragma omp parallel for
@@ -122,13 +133,13 @@ protected:
                 size_t cnt =  it - SortBuffer.begin();
 
                 // Write k-mers
-                FILE *f = fopen(ostreams[k].c_str(), "ab");
+                FILE *f = fopen(ostreams[k]->file().c_str(), "ab");
                 VERIFY_MSG(f, "Cannot open temporary file to write");
                 fwrite(SortBuffer.data(), SortBuffer.el_data_size(), cnt, f);
                 fclose(f);
 
                 // Write index
-                f = fopen((ostreams[k] + ".idx").c_str(), "ab");
+                f = fopen((ostreams[k]->file() + ".idx").c_str(), "ab");
                 VERIFY_MSG(f, "Cannot open temporary file to write");
                 fwrite(&cnt, sizeof(cnt), 1, f);
                 fclose(f);
@@ -146,10 +157,6 @@ protected:
                 eentry.clear();
                 eentry.shrink_to_fit();
             }
-    }
-
-    std::string GetRawKMersFname(unsigned suffix) const {
-        return fs::append_path(this->work_dir_, "kmers.raw." + std::to_string(suffix));
     }
 
     unsigned GetFileNumForSeq(const Seq &s, unsigned total) const {
@@ -204,7 +211,7 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
   }
 
  public:
-  DeBruijnKMerSplitter(const std::string &work_dir,
+  DeBruijnKMerSplitter(fs::TmpDir work_dir,
                        unsigned K, KmerFilter kmer_filter, size_t read_buffer_size = 0, uint32_t seed = 0)
       : RtSeqKMerSplitter(work_dir, K, seed), kmer_filter_(kmer_filter), read_buffer_size_(read_buffer_size) {
   }
@@ -230,7 +237,8 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   ReadStatistics rs_;
 
  public:
-  DeBruijnReadKMerSplitter(const std::string &work_dir,
+  using typename DeBruijnKMerSplitter<KmerFilter>::raw_kmers;
+  DeBruijnReadKMerSplitter(fs::TmpDir work_dir,
                            unsigned K, uint32_t seed,
                            io::ReadStreamList<Read>& streams,
                            io::SingleStream* contigs_stream = 0,
@@ -238,7 +246,7 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size, seed),
       streams_(streams), contigs_(contigs_stream), rs_({0 ,0 ,0}) {}
 
-  fs::files_t Split(size_t num_files, unsigned nthreads) override;
+  raw_kmers Split(size_t num_files, unsigned nthreads) override;
 
   size_t read_length() const { return rs_.max_read_length_; }
   ReadStatistics stats() const { return rs_; }
@@ -264,8 +272,9 @@ DeBruijnReadKMerSplitter<Read, KmerFilter>::FillBufferFromStream(ReadStream &str
 }
 
 template<class Read, class KmerFilter>
-fs::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files, unsigned nthreads) {
-  fs::files_t out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
+typename DeBruijnReadKMerSplitter<Read, KmerFilter>::raw_kmers
+DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files, unsigned nthreads) {
+  auto out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
   size_t counter = 0, rl = 0, bases = 0, n = 15;
   streams_.reset();
@@ -326,7 +335,9 @@ class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
                              unsigned thread_id);
 
  public:
-  DeBruijnKMerKMerSplitter(const std::string &work_dir,
+  using typename DeBruijnKMerSplitter<KmerFilter>::raw_kmers;
+
+  DeBruijnKMerKMerSplitter(fs::TmpDir work_dir,
                            unsigned K_target, unsigned K_source, bool add_rc, size_t read_buffer_size = 0)
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K_target, KmerFilter(), read_buffer_size),
         K_source_(K_source), add_rc_(add_rc) {}
@@ -335,7 +346,7 @@ class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
     kmers_.push_back(file);
   }
 
-    fs::files_t Split(size_t num_files, unsigned nthreads) override;
+  raw_kmers Split(size_t num_files, unsigned nthreads) override;
 };
 
 template<class KmerFilter>
@@ -358,10 +369,11 @@ inline size_t DeBruijnKMerKMerSplitter<KmerFilter>::FillBufferFromKMers(kmer_ite
 }
 
 template<class KmerFilter>
-fs::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_files, unsigned nthreads) {
+typename DeBruijnKMerKMerSplitter<KmerFilter>::raw_kmers
+DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_files, unsigned nthreads) {
   unsigned nit = (unsigned) kmers_.size();
 
-  fs::files_t out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
+  auto out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
   size_t counter = 0, n = 10;
   std::vector<kmer_iterator> its;

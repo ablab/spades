@@ -117,7 +117,7 @@ size_t KmerProfileIndex::sample_cnt_ = 0;
 KmerProfileIndex::KmerProfileIndex(unsigned k,
                                    const std::string& index_prefix,
                                    const std::string& workdir):
-    index_(k, workdir) {
+    index_(k) {
     std::string index_file = index_prefix + ".kmm";
     INFO("Loading kmer index from " << index_file);
     std::ifstream kmers_in(index_file, std::ios::binary);

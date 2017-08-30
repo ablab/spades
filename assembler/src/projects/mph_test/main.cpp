@@ -33,7 +33,7 @@ void create_console_logger() {
 class SimplePerfectHashMap : public utils::KeyIteratingMap<RtSeq, uint32_t> {
     using base = utils::KeyIteratingMap<RtSeq, uint32_t>;
   public:
-    SimplePerfectHashMap(size_t k, const std::string &workdir)
+    SimplePerfectHashMap(unsigned k)
             : base(k) {}
 };
 
@@ -77,6 +77,7 @@ class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {
 
 
   public:
+    using utils::KMerSortingSplitter<RtSeq>::raw_kmers;
     ParallelSortingSplitter(const std::string &workdir, unsigned K, size_t read_buffer_size = 0)
             : KMerSortingSplitter<Seq>(workdir, K), read_buffer_size_(read_buffer_size) {}
 
@@ -84,8 +85,8 @@ class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {
         files_.push_back(filename);
     }
 
-    fs::files_t Split(size_t num_files, unsigned nthreads) override {
-        fs::files_t out = PrepareBuffers(num_files, nthreads, read_buffer_size_);
+    raw_kmers Split(size_t num_files, unsigned nthreads) override {
+        auto out = PrepareBuffers(num_files, nthreads, read_buffer_size_);
 
         size_t n = 10;
         BufferFiller filler(*this, K());
@@ -156,7 +157,7 @@ int main(int argc, char* argv[]) {
         INFO("K-mer length set to " << K);
         INFO("# of threads to use: " << nthreads);
 
-        SimplePerfectHashMap index(K, workdir);
+        SimplePerfectHashMap index(K);
         ParallelSortingSplitter splitter(workdir, K, read_buffer_size);
         if (options.count("dataset")) {
             io::DataSet<> idataset;
@@ -169,7 +170,8 @@ int main(int argc, char* argv[]) {
         }
         utils::KMerDiskCounter<RtSeq> counter(workdir, splitter);
         counter.CountAll(16, nthreads);
-        INFO("K-mer counting done, kmers saved to " << counter.GetFinalKMersFname());
+        auto final_kmers = counter.final_kmers_file();
+        INFO("K-mer counting done, kmers saved to " << final_kmers->file());
     } catch (std::string const &s) {
         std::cerr << s;
         return EINTR;

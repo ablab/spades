@@ -61,7 +61,7 @@ public:
 
 public:
     template<class Index, class Streams>
-    ReadStatistics BuildExtensionIndexFromStream(const std::string &workdir,
+    ReadStatistics BuildExtensionIndexFromStream(fs::TmpDir workdir,
                                                  Index &index, Streams &streams, io::SingleStream *contigs_stream = 0,
                                                  size_t read_buffer_size = 0) const {
         unsigned nthreads = (unsigned) streams.size();
@@ -81,7 +81,7 @@ public:
     }
 
     template<class Index, class Counter>
-    void BuildExtensionIndexFromKPOMers(const std::string &workdir,
+    void BuildExtensionIndexFromKPOMers(fs::TmpDir workdir,
                                         Index &index, Counter &counter,
                                         unsigned nthreads, size_t read_buffer_size = 0) const {
         VERIFY(counter.k() == index.k() + 1);

@@ -90,7 +90,7 @@ struct KeyIteratingIndexBuilder {
                     Counter& counter, size_t bucket_num,
                     size_t thread_num, bool save_final = true) const {
         phm_builder_.BuildIndex(index, counter, bucket_num, thread_num, save_final);
-        index.KMersFilename_ = counter.GetFinalKMersFname();
+        index.kmers_ = counter.final_kmers_file();
     }
 
   private:
