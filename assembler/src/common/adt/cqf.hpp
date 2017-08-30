@@ -3,6 +3,7 @@
 #include "gqf/gqf.h"
 #include <mutex>
 #include <cmath>
+#include <cstring>
 
 namespace qf {
 

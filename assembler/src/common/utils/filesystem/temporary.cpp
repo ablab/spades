@@ -11,6 +11,7 @@
 #include "utils/logger/logger.hpp"
 
 #include <cerrno>
+#include <cstring>
 #include <unistd.h>
 
 namespace fs {

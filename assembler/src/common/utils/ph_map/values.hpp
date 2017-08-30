@@ -8,7 +8,9 @@
 #pragma once
 
 #include <vector>
+#include <string>
 #include <cstdlib>
+#include <cstdint>
 
 namespace utils {
 
