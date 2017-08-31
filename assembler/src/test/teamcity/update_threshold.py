@@ -138,12 +138,15 @@ def quast_run_and_update(dataset_info, fn, output_dir, name, prefix, opts):
         log.err("Failed to run QUAST!")
 	return {}
 
-    limit_map = construct_quast_limit_map(dataset_info, prefix, True)
+    limit_map = construct_rnaquast_limit_map(dataset_info, prefix, True) if dataset_info.mode == "rna" else construct_quast_limit_map(dataset_info, prefix, True)
 
     report_path = output_dir
     if dataset_info.mode == "meta":
         report_path = os.path.join(report_path, "combined_reference")
-    report_path = os.path.join(report_path, "report.tsv")
+    if dataset_info.mode == "rna":
+        report_path = os.path.join(report_path, "short_report.tsv")
+    else:
+        report_path = os.path.join(report_path, "report.tsv")
 
     return process_quast_report(args, report_path, limit_map)
 
