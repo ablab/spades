@@ -43,10 +43,12 @@ def error(err_str, log=None, dipspades=False, prefix=SPADES_PY_ERROR_MESSAGE):
         log.info("\n\n" + prefix + " " + err_str)
         log_warnings(log, with_error=True)
         log.info("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@cab.spbu.ru")
+        log.info("or report an issue on our GitHub repository github.com/ablab/spades")
         log.info("Please provide us with params.txt and " + binary_name.lower() + ".log files from the output directory.")
     else:
         sys.stderr.write("\n\n" + prefix + " " + err_str + "\n\n")
         sys.stderr.write("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@cab.spbu.ru\n")
+        sys.stderr.write("or report an issue on our GitHub repository github.com/ablab/spades\n")
         sys.stderr.write("Please provide us with params.txt and " + binary_name.lower() + ".log files from the output directory.\n")
         sys.stderr.flush()
     if current_tmp_dir and os.path.isdir(current_tmp_dir):
