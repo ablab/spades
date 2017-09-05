@@ -148,11 +148,25 @@ class ContigPathBuilder {
                 (gp_.g, index, kmer_mapper);
             MappingPath<EdgeId> path = mapper->MapRead(contig);
             if (path.size() > 0 and path.back().second.initial_range.end_pos > contig_length_threshold) {
-                NamedPath named_path(path, contig.name());
+                NamedPath named_path(path, RemoveSpacesFromName(contig.name()));
                 contig_paths.push_back(named_path);
             }
         }
         return contig_paths;
+    }
+
+    string RemoveSpacesFromName(const string& name) const {
+        string result;
+        const char old_space = ' ';
+        const char new_space = '_';
+        for (const char c: name) {
+            if (c != old_space) {
+                result.push_back(c);
+            } else {
+                result.push_back(new_space);
+            }
+        }
+        return result;
     }
 
     vector<NamedSimplePath> FixMappingPaths(const vector<NamedPath>& contig_paths) const {
