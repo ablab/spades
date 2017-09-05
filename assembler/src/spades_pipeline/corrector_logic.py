@@ -27,7 +27,7 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
     data = pyyaml.load(open(filename, 'r'))
     data["dataset"] = cfg.dataset
     data["output_dir"] = cfg.output_dir
-    data["work_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
+    data["work_dir"] = cfg.tmp_dir
     #data["hard_memory_limit"] = cfg.max_memory
     data["max_nthreads"] = cfg.max_threads
     data["bwa"] = cfg.bwa
