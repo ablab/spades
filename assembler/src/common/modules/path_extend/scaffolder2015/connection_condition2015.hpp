@@ -46,6 +46,7 @@ public:
     virtual map<EdgeId, double> ConnectedWith(EdgeId e, const ScaffoldingUniqueEdgeStorage& storage) const;
     virtual int GetMedianGap(EdgeId e1, EdgeId e2) const = 0;
     virtual size_t GetLibIndex() const = 0;
+    virtual bool IsLast() const;
     virtual ~ConnectionCondition() {
     }
 };
@@ -138,6 +139,7 @@ public:
     void AddInterestingEdges(func::TypedPredicate<typename Graph::EdgeId> edge_condition);
     map<EdgeId, double> ConnectedWith(EdgeId e) const override;
     size_t GetLibIndex() const override;
+    virtual bool IsLast() const override;
     int GetMedianGap(EdgeId, EdgeId ) const override;
 };
 }

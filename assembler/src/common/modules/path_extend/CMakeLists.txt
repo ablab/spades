@@ -17,8 +17,7 @@ add_library(path_extend STATIC pe_config_struct.cpp
                     scaffolder2015/scaffold_graph_visualizer.cpp
                     scaffolder2015/connection_condition2015.cpp 
                     scaffolder2015/path_polisher.cpp
-                    read_cloud_path_extend/long_gap_closer.cpp
-                    read_cloud_path_extend/read_cloud_connection_conditions.cpp)
+        read_cloud_path_extend/read_cloud_connection_conditions.cpp read_cloud_path_extend/conjugate_score_extractor.hpp)
 
 target_link_libraries(path_extend assembly_graph ssw)
 

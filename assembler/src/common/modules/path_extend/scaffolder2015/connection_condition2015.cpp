@@ -12,6 +12,9 @@ map <debruijn_graph::EdgeId, double> ConnectionCondition::ConnectedWith(debruijn
     }
     return res;
 }
+bool ConnectionCondition::IsLast() const {
+    return false;
+}
 
 PairedLibConnectionCondition::PairedLibConnectionCondition(const debruijn_graph::Graph &graph,
                              shared_ptr <PairedInfoLibrary> lib,
@@ -255,6 +258,9 @@ size_t AssemblyGraphConnectionCondition::GetLibIndex() const {
 
 int AssemblyGraphConnectionCondition::GetMedianGap (debruijn_graph::EdgeId, debruijn_graph::EdgeId) const {
     return 0;
+}
+bool AssemblyGraphConnectionCondition::IsLast() const {
+    return true;
 }
 
 }

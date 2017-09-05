@@ -3,7 +3,7 @@
 #include "common/barcode_index/cluster_storage.hpp"
 #include "common/barcode_index/cluster_storage_extractor.hpp"
 #include "transitions.hpp"
-#include "scaffold_graph.hpp"
+#include "scaffold_graph_utils.hpp"
 
 namespace cluster_statistics {
 
@@ -548,7 +548,7 @@ class PathClusterStorageBuilder {
         ClusterSetStatistics GetClusterSetStatistics(const PreliminaryClusterSetStats& preliminary_stats,
                                                      const transitions::ContigTransitionStorage& transtition_storage) {
             ClusterSetStatistics result;
-            size_t overall_true_transitions = transtition_storage.Size();
+            size_t overall_true_transitions = transtition_storage.size();
             size_t true_transitions = preliminary_stats.true_transitions_;
             size_t false_transitions = preliminary_stats.false_transitions_;
             INFO("True transitions with multiplicity: " << true_transitions);
