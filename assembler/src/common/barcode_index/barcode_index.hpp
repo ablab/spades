@@ -148,16 +148,17 @@ namespace barcode_index {
     class BarcodeIndex : public AbstractBarcodeIndex {
     friend class BarcodeIndexBuilder<EdgeEntryT>;
     friend class BarcodeIndexInfoExtractor<EdgeEntryT>;
-    friend class BarcodeStatisticsCollector;
     protected:
         typedef std::unordered_map <EdgeId, EdgeEntryT> barcode_map_t;
         using AbstractBarcodeIndex::g_;
         barcode_map_t edge_to_entry_;
+        size_t number_of_barcodes_;
 
     public:
         BarcodeIndex (const Graph &g) :
                 AbstractBarcodeIndex(g),
-                edge_to_entry_()
+                edge_to_entry_(),
+                number_of_barcodes_(0)
         {}
 
         BarcodeIndex (const BarcodeIndex& other) = default;
@@ -219,6 +220,14 @@ namespace barcode_index {
 
         const EdgeEntryT& GetEntry(const EdgeId &edge) const {
             return edge_to_entry_.at(edge);
+        }
+
+        void SetNumberOfBarcodes(size_t number_of_barcodes) {
+            number_of_barcodes_ = number_of_barcodes;
+        }
+
+        size_t GetNumberOfBarcodes() {
+            return number_of_barcodes_;
         }
     };
 
