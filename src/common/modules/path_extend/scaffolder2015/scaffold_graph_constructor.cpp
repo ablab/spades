@@ -79,8 +79,10 @@ std::shared_ptr<ScaffoldGraph> DefaultScaffoldGraphConstructor::Construct() {
 
 PredicateScaffoldGraphConstructor::PredicateScaffoldGraphConstructor(const Graph& assembly_graph,
                                                                      const ScaffoldGraph& old_graph_,
-                                                                     const shared_ptr<EdgePairPredicate>& predicate_)
-    : BaseScaffoldGraphConstructor(assembly_graph), old_graph_(old_graph_), predicate_(predicate_) {}
+                                                                     const shared_ptr<EdgePairPredicate>& predicate_,
+                                                                     size_t max_threads)
+    : BaseScaffoldGraphConstructor(assembly_graph), old_graph_(old_graph_),
+      predicate_(predicate_), max_threads_(max_threads) {}
 
 void PredicateScaffoldGraphConstructor::ConstructFromGraphAndPredicate(const ScaffoldGraph& old_graph,
                                                                        const shared_ptr<EdgePairPredicate> predicate) {
@@ -93,7 +95,7 @@ void PredicateScaffoldGraphConstructor::ConstructFromGraphAndPredicate(const Sca
     }
     size_t counter = 0;
     const size_t block_size = scaffold_edges.size() / 10;
-    size_t threads = cfg::get().max_threads;
+    size_t threads = max_threads_;
 #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < scaffold_edges.size(); ++i) {
         auto edge = scaffold_edges[i];

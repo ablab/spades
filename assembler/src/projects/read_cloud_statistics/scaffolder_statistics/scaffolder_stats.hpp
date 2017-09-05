@@ -81,6 +81,20 @@ struct BarcodesInTheMiddleStats: read_cloud_statistics::Statistic {
   }
 };
 
+struct ScoreStats: read_cloud_statistics::Statistic {
+  size_t overall_;
+  size_t passed_;
+
+  ScoreStats(size_t overall_, size_t passed_)
+      : Statistic("score_stats"), overall_(overall_), passed_(passed_) {}
+
+  void Serialize(const string& path) override {
+      ofstream fout(path);
+      fout << "Passed: " << passed_ << endl;
+      fout << "Overall: " << overall_ << endl;
+  }
+};
+
 struct LongEdgePos {
   size_t path_id_;
   size_t position_;
@@ -123,12 +137,55 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
 //        AddStatistic(length_connectivity_stats);
         auto split_intersection_stats = make_shared<NextSplitIntersectionStats>(GetNextSplitStats(filtered_paths));
         AddStatistic(split_intersection_stats);
-        auto barcode_in_the_middle_stats = make_shared<BarcodesInTheMiddleStats>(GetBarcodesInTheMiddleStats(filtered_paths));
-        AddStatistic(barcode_in_the_middle_stats);
+//        auto barcode_in_the_middle_stats = make_shared<BarcodesInTheMiddleStats>(GetBarcodesInTheMiddleStats(filtered_paths));
+//        AddStatistic(barcode_in_the_middle_stats);
+//        auto score_stats = make_shared<ScoreStats>(GetScoreStats(filtered_paths));
+//        AddStatistic(score_stats);
 
     }
 
  private:
+
+    ScoreStats GetScoreStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
+        size_t count_threshold = scaff_params_.count_threshold_;
+        size_t tail_threshold = scaff_params_.tail_threshold_;
+        path_extend::BarcodeScoreFunction score_function(count_threshold, tail_threshold, *barcode_extractor_ptr_, g_);
+        size_t overall = 0;
+        size_t passed = 0;
+        vector<double> scores;
+        for (const auto& path: reference_paths) {
+            for (auto first = path.begin(), second = std::next(first); second != path.end(); ++first, ++second) {
+                EdgeWithMapping first_ewm = *first;
+                EdgeWithMapping second_ewm = *second;
+                EdgeId first_edge = first_ewm.edge_;
+                EdgeId second_edge = second_ewm.edge_;
+                auto first_barcodes = barcode_extractor_ptr_->GetBarcodesFromRange(first_edge, count_threshold,
+                                                                                   g_.length(first_edge) - tail_threshold,
+                                                                                   g_.length(first_edge));
+                auto second_barcodes = barcode_extractor_ptr_->GetBarcodesFromRange(second_edge, count_threshold,
+                                                                                    0, tail_threshold);
+                ScaffoldGraph::ScaffoldEdge scaffold_edge(first_ewm.edge_, second_ewm.edge_);
+                double score = score_function.GetScore(scaffold_edge);
+                if (score > scaff_params_.score_threshold_) {
+                    ++passed;
+                }
+                DEBUG("First id: " << first_ewm.edge_.int_id());
+                DEBUG("Second id: " << second_ewm.edge_.int_id());
+                DEBUG("First barcodes: " << first_barcodes.size());
+                DEBUG("Second barcodes: " << second_barcodes.size());
+                DEBUG("Shared barcodes: " << barcode_extractor_ptr_->GetSharedBarcodesWithFilter(first_edge, second_edge,
+                                                                                                 count_threshold, tail_threshold).size());
+                DEBUG("Distance: " << second_ewm.mapping_.start_pos - first_ewm.mapping_.end_pos);
+                DEBUG("Score: " << score);
+                scores.push_back(score);
+                ++overall;
+            }
+        }
+        std::sort(scores.begin(), scores.end());
+        DEBUG(scores);
+        ScoreStats result(overall, passed);
+        return result;
+    }
 
     NextSplitIntersectionStats GetNextSplitStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
         transitions::GeneralTransitionStorageBuilder forward_storage_builder(g_, 1, false, false);
@@ -145,8 +202,8 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
             }
             ++overall;
         }
-        INFO("Overall reference transitions: " << forward_transitions.size());
-        INFO("Split check passed: " << split_check_passed);
+        DEBUG("Overall reference transitions: " << forward_transitions.size());
+        DEBUG("Split check passed: " << split_check_passed);
         NextSplitIntersectionStats result(split_check_passed, overall);
         return result;
     }
@@ -178,9 +235,9 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
             ++overall;
         }
         BarcodesInTheMiddleStats middle_stats(overall, correct_passed, incorrect_passed);
-        INFO("Correct passed: " << correct_passed);
-        INFO("Incorrect passed: " << incorrect_passed);
-        INFO("Overall: " << overall);
+        DEBUG("Correct passed: " << correct_passed);
+        DEBUG("Incorrect passed: " << incorrect_passed);
+        DEBUG("Overall: " << overall);
         return middle_stats;
     }
 
@@ -375,5 +432,7 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
         }
         return true;
     }
+
+    DECL_LOGGER("ScaffolderStatisticsExtractor")
 };
 }

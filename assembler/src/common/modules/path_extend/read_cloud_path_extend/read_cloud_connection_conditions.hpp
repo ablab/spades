@@ -134,17 +134,49 @@ namespace path_extend {
         bool Check(const ScaffoldEdge& scaffold_edge) const override;
     };
 
+    class SimpleSearcher {
+     public:
+        typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+        typedef ScaffoldGraph::ScaffoldVertex ScaffoldVertex;
+     private:
+        const ScaffoldGraph& scaff_graph_;
+        const Graph& g_;
+        size_t distance_threshold_;
+
+        struct VertexWithDistance {
+          ScaffoldVertex vertex;
+          size_t distance;
+          VertexWithDistance(const ScaffoldVertex& vertex, size_t distance);
+        };
+
+     public:
+        SimpleSearcher(const scaffold_graph::ScaffoldGraph& graph_, const Graph& g, size_t distance_);
+
+        vector<ScaffoldVertex> GetReachableVertices(const ScaffoldVertex& vertex, const ScaffoldGraph::ScaffoldEdge& restricted_edge);
+
+        void ProcessVertex(std::queue<VertexWithDistance>& vertex_queue, const VertexWithDistance& vertex,
+                           std::unordered_set<ScaffoldVertex>& visited, const ScaffoldGraph::ScaffoldEdge& restricted_edge);
+
+        bool AreEqual(const ScaffoldGraph::ScaffoldEdge& first, const ScaffoldGraph::ScaffoldEdge& second);
+
+        DECL_LOGGER("SimpleSearcher");
+    };
+
     class TransitiveEdgesPredicate: public ScaffoldEdgePredicate {
      public:
         using ScaffoldEdgePredicate::ScaffoldEdge;
         typedef scaffold_graph::ScaffoldGraph::ScaffoldVertex ScaffoldVertex;
 
      private:
-        const std::function<vector<ScaffoldVertex>(ScaffoldVertex)>& candidates_getter_;
+        const scaffold_graph::ScaffoldGraph scaffold_graph_;
+        const Graph& g_;
+        size_t distance_threshold_;
      public:
-        TransitiveEdgesPredicate(const std::function<vector<ScaffoldVertex>(ScaffoldVertex)>& candidates_getter_);
+        TransitiveEdgesPredicate(const scaffold_graph::ScaffoldGraph& graph, const Graph& g, size_t distance_threshold);
 
         bool Check(const ScaffoldEdge& scaffold_edge) const override;
+
+        DECL_LOGGER("TransitiveEdgesPredicate");
     };
 
     class EdgePairScoreFunction {
@@ -156,6 +188,7 @@ namespace path_extend {
     class BarcodeScoreFunction: public EdgePairScoreFunction {
         const size_t read_count_threshold_;
         const size_t tail_threshold_;
+        const size_t total_barcodes_;
         const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
         const Graph& graph_;
 
@@ -165,6 +198,6 @@ namespace path_extend {
                              const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
                              const Graph& graph);
 
-        virtual double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const;
+        double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
     };
 }

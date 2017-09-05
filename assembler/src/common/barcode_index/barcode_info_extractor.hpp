@@ -42,11 +42,11 @@ namespace barcode_index {
         typedef typename distribution_t::mapped_type barcode_info_value_t;
         typedef typename distribution_t::value_type barcode_info_pair_t;
     protected:
-        shared_ptr<barcode_index::BarcodeIndex<barcode_entry_t>> mapper_;
+        shared_ptr<barcode_index::BarcodeIndex<barcode_entry_t>> index_;
         const Graph &g_;
     public:
         BarcodeIndexInfoExtractor(shared_ptr<AbstractBarcodeIndex> abstract_mapper, const Graph &g) :
-                mapper_(std::dynamic_pointer_cast<barcode_index::BarcodeIndex<barcode_entry_t>>(abstract_mapper)),
+                index_(std::dynamic_pointer_cast<barcode_index::BarcodeIndex<barcode_entry_t>>(abstract_mapper)),
                 g_(g) {}
 
         /**
@@ -55,7 +55,7 @@ namespace barcode_index {
          * @return Number of barcodes contained by the edge
          */
         size_t GetNumberOfBarcodes(const EdgeId &edge) const override {
-            return mapper_->GetEntry(edge).Size();
+            return index_->GetEntry(edge).Size();
         }
 
         /**
@@ -79,8 +79,8 @@ namespace barcode_index {
          * @return Number of barcodes shared by edge1 and edge2
          */
         size_t GetNumberOfSharedBarcodes (const EdgeId &edge1, const EdgeId &edge2) const override {
-            auto it_tail = mapper_->GetEntryTailsIterator(edge1);
-            auto it_head = mapper_->GetEntryHeadsIterator(edge2);
+            auto it_tail = index_->GetEntryTailsIterator(edge1);
+            auto it_head = index_->GetEntryHeadsIterator(edge2);
             return (it_tail->second).GetIntersectionSize(it_head->second);
         }
 
@@ -90,7 +90,7 @@ namespace barcode_index {
          * @return True if the edge contains the barcode
          */
         bool HasBarcode(const EdgeId &edge, const BarcodeId& barcode) const override {
-            return mapper_->GetEntry(edge).has_barcode(barcode);
+            return index_->GetEntry(edge).has_barcode(barcode);
         }
 
         /**
@@ -130,8 +130,8 @@ namespace barcode_index {
         }
 
         size_t GetUnionSize(const EdgeId &edge1, const EdgeId &edge2) const override {
-            auto it_tail = mapper_->GetEntryTailsIterator(edge1);
-            auto it_head = mapper_->GetEntryHeadsIterator(edge2);
+            auto it_tail = index_->GetEntryTailsIterator(edge1);
+            auto it_head = index_->GetEntryHeadsIterator(edge2);
             return (it_tail->second).GetUnionSize(it_head->second);
         }
 
@@ -144,12 +144,12 @@ namespace barcode_index {
         }
 
         typename distribution_t::const_iterator barcode_iterator_begin(const EdgeId &edge) const {
-            auto entry_it = mapper_->GetEntryHeadsIterator(edge);
+            auto entry_it = index_->GetEntryHeadsIterator(edge);
             return entry_it->second.begin();
         }
 
         typename distribution_t::const_iterator barcode_iterator_end(const EdgeId &edge) const {
-            auto entry_it = mapper_->GetEntryHeadsIterator(edge);
+            auto entry_it = index_->GetEntryHeadsIterator(edge);
             return entry_it->second.end();
         }
 
@@ -308,7 +308,7 @@ namespace barcode_index {
         }
 
         const barcode_entry_t& GetEntry(const EdgeId& edge) const {
-            return mapper_->GetEntry(edge);
+            return index_->GetEntry(edge);
         }
 
     };
@@ -487,6 +487,8 @@ namespace barcode_index {
             return info.GetRightMost() * frame_size;
         }
 
-
+        size_t GetTotalNumberOfBarcodes() const {
+            return index_->GetNumberOfBarcodes();
+        }
     };
 }
