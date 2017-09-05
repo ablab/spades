@@ -81,11 +81,13 @@ class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
  protected:
     const ScaffoldGraph& old_graph_;
     const shared_ptr<EdgePairPredicate> predicate_;
+    const size_t max_threads_;
 
  public:
     PredicateScaffoldGraphConstructor(const Graph& assembly_graph,
                                       const ScaffoldGraph& old_graph_,
-                                      const shared_ptr<EdgePairPredicate>& predicate_);
+                                      const shared_ptr<EdgePairPredicate>& predicate_,
+                                      const size_t max_threads);
 
     shared_ptr<ScaffoldGraph> Construct() override;
  protected:
