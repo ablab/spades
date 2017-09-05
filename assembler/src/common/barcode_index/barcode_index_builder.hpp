@@ -19,7 +19,7 @@ namespace barcode_index {
     class BarcodeIndexBuilder {
     protected:
         const Graph &g_;
-        shared_ptr <barcode_index::BarcodeIndex<barcode_entry_t>> mapper_;
+        shared_ptr <barcode_index::BarcodeIndex<barcode_entry_t>> index_ptr_;
         size_t tail_threshold_;
         BarcodeEncoder barcode_codes_;
         typedef vector<io::SequencingLibrary<debruijn_graph::config::DataSetData>> lib_vector_t;
@@ -27,7 +27,7 @@ namespace barcode_index {
     public:
         BarcodeIndexBuilder(const Graph &g, size_t tail_threshold) :
                 g_(g),
-                mapper_(make_shared<barcode_index::BarcodeIndex<barcode_entry_t>>(g)),
+                index_ptr_(make_shared<barcode_index::BarcodeIndex<barcode_entry_t>>(g)),
                 tail_threshold_(tail_threshold),
                 barcode_codes_() {}
 
@@ -36,7 +36,7 @@ namespace barcode_index {
         DECL_LOGGER("BarcodeMapperBuilder")
 
         shared_ptr <barcode_index::BarcodeIndex<barcode_entry_t>> GetMapper() {
-            return mapper_;
+            return index_ptr_;
         }
 
         void FillMapFromDemultiplexedDataset(const Index &index, const KmerSubs &kmer_mapper) {
@@ -185,6 +185,7 @@ namespace barcode_index {
                     VERBOSE_POWER_T2(counter, 100, "Processed " << counter << " reads.");
                 }
             }
+            index_ptr_->SetNumberOfBarcodes(barcode_codes_.GetSize());
             INFO("FillMap finished")
         }
 
@@ -200,7 +201,7 @@ namespace barcode_index {
 
         void InsertEntry(const EdgeId &edge, barcode_entry_t &entry) {
             auto key_and_value = std::make_pair(edge, entry);
-            mapper_->edge_to_entry_.insert({edge, entry});
+            index_ptr_->edge_to_entry_.insert({edge, entry});
         }
 
         string GetTenXBarcodeFromRead(const io::SingleRead &read, const vector<string>& barcode_prefixes) {
@@ -256,7 +257,7 @@ namespace barcode_index {
 
 
         void InsertBarcode(const BarcodeId &barcode, const EdgeId &edge, size_t count, const Range &range) {
-            mapper_->edge_to_entry_.at(edge).InsertBarcode(barcode, count, range);
+            index_ptr_->edge_to_entry_.at(edge).InsertBarcode(barcode, count, range);
         }
 
         bool IsAtEdgeTail(const EdgeId &edge, const Range &range) {
@@ -343,7 +344,7 @@ namespace barcode_index {
 
     class SimpleMapperBuilder : public BarcodeIndexBuilder<SimpleEdgeEntry> {
         using BarcodeIndexBuilder::g_;
-        using BarcodeIndexBuilder::mapper_;
+        using BarcodeIndexBuilder::index_ptr_;
     public:
         SimpleMapperBuilder(const Graph &g, const size_t tail_threshold) :
                 BarcodeIndexBuilder(g, tail_threshold) {}
@@ -360,7 +361,7 @@ namespace barcode_index {
 
     class FrameMapperBuilder : public BarcodeIndexBuilder<FrameEdgeEntry> {
         using BarcodeIndexBuilder::g_;
-        using BarcodeIndexBuilder::mapper_;
+        using BarcodeIndexBuilder::index_ptr_;
         const size_t frame_size_;
     public:
         FrameMapperBuilder(const Graph &g, const size_t tail_threshold, const size_t frame_size) :

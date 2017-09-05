@@ -138,15 +138,13 @@ class ScaffolderAnalyzer : public read_cloud_statistics::StatisticProcessor {
         std::map<string, ScaffoldGraphStats> name_to_stats;
         for (const pair<string, NamedScaffoldGraph>& entry: storage.entries()) {
             string name = entry.first;
-            if (name == "Transitive graph") {
-                INFO("Getting stats for " << name);
-                auto reference_path_index = BuildReferenceIndex(reference_paths_);
-                auto stats = GetScaffoldGraphStats(entry.second.graph, reference_transitions,
-                                                   reverse_transitions, conjugate_transitions,
-                                                   near_in_both_strands_transitions,
-                                                   forward_neighbouring_transitions, reference_path_index);
-                name_to_stats.insert({name, stats});
-            }
+            INFO("Getting stats for " << name);
+            auto reference_path_index = BuildReferenceIndex(reference_paths_);
+            auto stats = GetScaffoldGraphStats(entry.second.graph, reference_transitions,
+                                               reverse_transitions, conjugate_transitions,
+                                               near_in_both_strands_transitions,
+                                               forward_neighbouring_transitions, reference_path_index);
+            name_to_stats.insert({name, stats});
         }
         ScaffolderStats result(name_to_stats, reference_transitions.size());
         return result;
@@ -225,11 +223,11 @@ class ScaffolderAnalyzer : public read_cloud_statistics::StatisticProcessor {
             if (not reference_transtions.CheckTransition(start, end) and start_covered and end_covered) {
                 auto start_info = reference_index.at(start);
                 auto end_info = reference_index.at(end);
-                INFO("(Path: " << start_info.path_ << ", pos: " << start_info.pos_ << ", rev: " << start_info.rev_pos_
+                DEBUG("(Path: " << start_info.path_ << ", pos: " << start_info.pos_ << ", rev: " << start_info.rev_pos_
                                <<  ")" << " ->" << "(Path: " << end_info.path_ << ", pos: " << end_info.pos_
                                << ", rev: " << end_info.rev_pos_ << "), " << "Score: " << edge.getWeight());
-                INFO("Start id: " << start.int_id() << ", coverage: " << g_.coverage(start));
-                INFO("End id: " << end.int_id() << ", coverage: " << g_.coverage(end));
+                DEBUG("Start id: " << start.int_id() << ", coverage: " << g_.coverage(start));
+                DEBUG("End id: " << end.int_id() << ", coverage: " << g_.coverage(end));
                 ++result;
             }
         }
