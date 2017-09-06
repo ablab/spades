@@ -14,7 +14,7 @@
 
 #ifndef IDEAL_PAIR_INFO_HPP_
 #define IDEAL_PAIR_INFO_HPP_
-#import <vector>
+#include <vector>
 #include "pipeline/graph_pack.hpp"
 
 namespace path_extend {
