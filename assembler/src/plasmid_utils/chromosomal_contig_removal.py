@@ -25,6 +25,6 @@ prodigal="/Nancy/mrayko/Libs/Prodigal/prodigal"
 
 os.system (prodigal + " -i " + sys.argv[1] + " -a proteins.fa -o genes.fa" )
 os.system (hmmscan + " -o out_pfam --tblout tblout --cpu 10 "+ chrom_hmms + " proteins.fa")
-os.system ("tail -n +4 tblout | head -n -10 | awk '$5<0.001 {print $3}' > chromosomal_contigs_names.txt")
+os.system ("tail -n +4 tblout | head -n -10 | awk '$5<0.001 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > chromosomal_contigs_names.txt")
 
 
