@@ -359,19 +359,17 @@ class PHMCoverageFiller : public ConstructionNew::Phase {
 
         void Fill(unsigned nthreads) {
             omnigraph::IterationHelper<Graph, EdgeId> edges(g_);
-            auto its = edges.Chunks(nthreads);
+            auto its = edges.Chunks(10*nthreads);
 
             // Turn chunks into iterator ranges
             std::vector<EdgeRange> ranges;
             for (size_t i = 0; i < its.size() - 1; ++i)
                 ranges.emplace_back(its[i], its[i+1]);
 
-            VERIFY(ranges.size() <= nthreads);
-
             size_t counter = 0, n = 10;
             while (!std::all_of(ranges.begin(), ranges.end(),
                                 [](const EdgeRange &r) { return r.begin() == r.end(); })) {
-#               pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
+#               pragma omp parallel for num_threads(nthreads) reduction(+ : counter) schedule(guided)
                 for (size_t i = 0; i < ranges.size(); ++i)
                     counter += FillCoverageFromEdges(ranges[i]);
 
@@ -388,7 +386,7 @@ class PHMCoverageFiller : public ConstructionNew::Phase {
                                  FlankingCoverage<Graph>& flanking_coverage) {
         GraphCoverageFiller<Graph, PHM>(g,
                                         storage().counter->k(), phm,
-                                        flanking_coverage, g.coverage_index()).Fill(omp_get_num_threads());
+                                        flanking_coverage, g.coverage_index()).Fill(omp_get_max_threads());
     }
 
 public:
