@@ -156,6 +156,7 @@ namespace path_extend {
     class BarcodeScoreFunction: public EdgePairScoreFunction {
         const size_t read_count_threshold_;
         const size_t tail_threshold_;
+        const size_t total_barcodes_;
         const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
         const Graph& graph_;
 
@@ -165,6 +166,6 @@ namespace path_extend {
                              const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
                              const Graph& graph);
 
-        virtual double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const;
+        double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
     };
 }

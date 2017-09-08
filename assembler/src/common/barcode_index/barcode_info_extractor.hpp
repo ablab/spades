@@ -487,7 +487,7 @@ namespace barcode_index {
             return info.GetRightMost() * frame_size;
         }
 
-        size_t GetNumberOfBarcodes() const {
+        size_t GetTotalNumberOfBarcodes() const {
             return index_->GetNumberOfBarcodes();
         }
     };

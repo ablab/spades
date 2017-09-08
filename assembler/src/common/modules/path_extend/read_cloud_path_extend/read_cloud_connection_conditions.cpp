@@ -36,22 +36,32 @@ bool AssemblyGraphUniqueConnectionCondition::IsLast() const {
     return false;
 }
 
+//fixme use total barcodes from index
 BarcodeScoreFunction::BarcodeScoreFunction(const size_t read_count_threshold,
                                            const size_t tail_threshold,
                                            const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
                                            const Graph& graph)
     : read_count_threshold_(read_count_threshold),
       tail_threshold_(tail_threshold),
+      total_barcodes_(1000000),
       barcode_extractor_(barcode_extractor_),
       graph_(graph){}
 double BarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const {
     EdgeId first = edge.getStart();
     EdgeId second = edge.getEnd();
-    size_t shared_count = barcode_extractor_.CountSharedBarcodesWithFilter(first, second, read_count_threshold_,
-                                                                           tail_threshold_);
-    double second_coverage = graph_.coverage(second);
+    size_t first_length = graph_.length(first);
+    VERIFY(graph_.length(first) >= tail_threshold_);
+    VERIFY(graph_.length(second) >= tail_threshold_);
+    auto first_barcodes = barcode_extractor_.GetBarcodesFromRange(first, read_count_threshold_,
+                                                                  first_length - tail_threshold_, first_length);
+    auto second_barcodes = barcode_extractor_.GetBarcodesFromRange(second, read_count_threshold_, 0, tail_threshold_);
+    size_t shared_count = barcode_extractor_.CountSharedBarcodesWithFilter(first, second, read_count_threshold_, tail_threshold_);
+//    double second_coverage = graph_.coverage(second);
+    double first_barcodes_size = static_cast<double>(first_barcodes.size());
+    double second_barcodes_size = static_cast<double>(second_barcodes.size());
+    double total_barcodes = static_cast<double>(total_barcodes_);
 
-    return static_cast<double>(shared_count) / second_coverage;
+    return static_cast<double>(shared_count) * total_barcodes / (first_barcodes_size * second_barcodes_size);
 }
 LongGapDijkstraPredicate::LongGapDijkstraPredicate(const Graph& g,
                                                    const ScaffoldingUniqueEdgeStorage& unique_storage_,

@@ -329,11 +329,11 @@ namespace read_cloud_statistics {
             params.initial_distance_ = 100000;
             params.tail_threshold_ = min_length;
             params.count_threshold_ = 2;
-            params.score_threshold_ = 5.0;
+            params.score_threshold_ = 7.0;
             params.barcode_threshold_ = 10;
             params.length_threshold_ = 400;
             params.middle_fraction_ = 0.5;
-            params.split_procedure_strictness_ = 0.85;
+            params.split_procedure_strictness_ = 0.9;
             return params;
         }
 
@@ -434,22 +434,22 @@ namespace read_cloud_statistics {
             stats_extractor.FillStatistics();
             stats_extractor.SerializeStatistics(stats_base_path);
 
-            auto scaffold_graph_storage = BuildScaffoldGraphStorage(large_unique_storage, params, initial_name,
-                                                                    score_name, connection_name, ordering_name,
-                                                                    far_next_name, transitive_name);
-            scaffold_graph_utils::ScaffolderAnalyzer scaffolder_analyzer(filtered_reference_paths, scaffold_graph_storage, gp_.g);
-            scaffolder_analyzer.FillStatistics();
-            INFO("Printing stats")
-            scaffolder_analyzer.SerializeStatistics(stats_base_path);
-
-            INFO("Getting graph");
-            auto transitive_scaffold_graph = scaffold_graph_storage.at(transitive_name).graph;
-            INFO("Printing graph");
-            scaffold_graph_utils::MetaScaffoldGraphPrinter meta_printer(gp_.g);
-            string scaffold_output_path = fs::append_path(stats_base_path, "scaffold_graph_output");
-            fs::remove_if_exists(scaffold_output_path);
-            fs::make_dir(scaffold_output_path);
-            meta_printer.PrintGraphAsMultiple(transitive_scaffold_graph, named_reference_paths, scaffold_output_path);
+//            auto scaffold_graph_storage = BuildScaffoldGraphStorage(large_unique_storage, params, initial_name,
+//                                                                    score_name, connection_name, ordering_name,
+//                                                                    far_next_name, transitive_name);
+//            scaffold_graph_utils::ScaffolderAnalyzer scaffolder_analyzer(filtered_reference_paths, scaffold_graph_storage, gp_.g);
+//            scaffolder_analyzer.FillStatistics();
+//            INFO("Printing stats")
+//            scaffolder_analyzer.SerializeStatistics(stats_base_path);
+//
+//            INFO("Getting graph");
+//            auto transitive_scaffold_graph = scaffold_graph_storage.at(transitive_name).graph;
+//            INFO("Printing graph");
+//            scaffold_graph_utils::MetaScaffoldGraphPrinter meta_printer(gp_.g);
+//            string scaffold_output_path = fs::append_path(stats_base_path, "scaffold_graph_output");
+//            fs::remove_if_exists(scaffold_output_path);
+//            fs::make_dir(scaffold_output_path);
+//            meta_printer.PrintGraphAsMultiple(transitive_scaffold_graph, named_reference_paths, scaffold_output_path);
         }
 
         void AnalyzePathClusters(const string& stats_base_path, size_t distance) {
