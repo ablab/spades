@@ -283,7 +283,6 @@ class PHMCoverageFiller : public ConstructionNew::Phase {
                     if (!kwh.is_minimal() || !index.valid(kwh))
                         continue;
 
-                    //index.add_value(kwh, 1);
 #                   pragma omp atomic
                     index.get_raw_value_reference(kwh) += 1;
                 }
@@ -402,6 +401,7 @@ public:
                                             *storage().counter,
                                             16,
                                             storage().read_streams);
+        /*
         INFO("Checking the PHM");
 
         auto &index = gp.index.inner_index();
@@ -415,7 +415,7 @@ public:
             uint32_t cov = coverage_map.get_value(kwh, utils::InvertableStoring::trivial_inverter<uint32_t>());
             if (edge_info.count != cov)
                 INFO("" << kwh << ":" << edge_info.count << ":" << cov);
-        }
+        } */
 
         INFO("Filling coverage and flanking coverage from PHM");
         FillCoverageAndFlanking(coverage_map, gp.g, gp.flanking_cov);
@@ -452,7 +452,6 @@ public:
     }
 
 };
-
 
 ConstructionNew::ConstructionNew()
         : spades::CompositeStageDeferred<ConstructionStorage>("de Bruijn graph construction", "construction") {
