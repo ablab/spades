@@ -23,12 +23,12 @@ if __name__ == "__main__":
             #print (fullname)
             for i in range (0, 2*len(contigs)):
                 count.append(0)	
-            for contig in contigs:
+#            for contig in contigs:
              #   print contig[0]
-                arr = contig[0].strip(';').split('_')
-              #  print len (count) 
+             #   arr = contig[0].strip(';').split('_')
+               # print len (count) 
                # print arr[-1]
-                count[int(arr[-1])] += 1
+              #  count[int(arr[-1])] += 1
             for contig in contigs:
                 arr = contig[0].strip(';').split('_')
                 comp_id = int(arr[-1])
