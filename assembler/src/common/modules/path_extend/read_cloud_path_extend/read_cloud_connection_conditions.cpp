@@ -225,21 +225,75 @@ bool NextFarEdgesPredicate::Check(const ScaffoldEdgePredicate::ScaffoldEdge& sca
     return true;
 }
 
-TransitiveEdgesPredicate::TransitiveEdgesPredicate(const std::function<vector<TransitiveEdgesPredicate::ScaffoldVertex>(
-    TransitiveEdgesPredicate::ScaffoldVertex)>& candidates_getter_) : candidates_getter_(candidates_getter_) {}
+
+
+TransitiveEdgesPredicate::TransitiveEdgesPredicate(const scaffold_graph::ScaffoldGraph& graph, const Graph& g, size_t distance_threshold) :
+    scaffold_graph_(graph), g_(g), distance_threshold_(distance_threshold) {}
 bool TransitiveEdgesPredicate::Check(const ScaffoldEdgePredicate::ScaffoldEdge& scaffold_edge) const {
     ScaffoldVertex current = scaffold_edge.getStart();
     ScaffoldVertex candidate = scaffold_edge.getEnd();
-
-    for (const auto& other: candidates_getter_(current)) {
-        if (other != candidate) {
-            for (const auto& candidate_of_other: candidates_getter_(other)) {
-                if (candidate_of_other == candidate) {
-                    return false;
-                }
-            }
+    //fixme replace with dijkstra and length threshold
+    DEBUG("Checking edge (" << current.int_id() << ", " << candidate.int_id() << ")");
+    DEBUG("Lengths: " << g_.length(current) << ", " << g_.length(candidate));
+    SimpleSearcher simple_searcher(scaffold_graph_, g_, distance_threshold_);
+    auto reachable_vertices = simple_searcher.GetReachableVertices(current, scaffold_edge);
+    for (const auto& vertex: reachable_vertices) {
+        if (candidate == vertex) {
+            DEBUG("Found another path, false");
+            return false;
         }
     }
+    DEBUG("True";)
     return true;
 }
+SimpleSearcher::SimpleSearcher(const scaffold_graph::ScaffoldGraph& graph_, const Graph& g,  size_t distance_)
+    : scaff_graph_(graph_), g_(g), distance_threshold_(distance_) {}
+vector<SimpleSearcher::ScaffoldVertex> SimpleSearcher::GetReachableVertices(const SimpleSearcher::ScaffoldVertex& vertex,
+                                                                            const ScaffoldGraph::ScaffoldEdge& restricted_edge) {
+    vector<ScaffoldVertex> result;
+    VertexWithDistance new_vertex(vertex, 0);
+    std::queue<VertexWithDistance> vertex_queue;
+    vertex_queue.push(new_vertex);
+    unordered_set<ScaffoldVertex> visited;
+    while (not vertex_queue.empty()) {
+        auto current_vertex = vertex_queue.front();
+        vertex_queue.pop();
+        DEBUG("Popped vertex with length: " << g_.length(current_vertex.vertex));
+        DEBUG("Id: " << current_vertex.vertex.int_id());
+        DEBUG("Distance: " << current_vertex.distance);
+        if (current_vertex.distance <= distance_threshold_) {
+            DEBUG("Passed threshold. Processing")
+            ProcessVertex(vertex_queue, current_vertex, visited, restricted_edge);
+            DEBUG("Processing finished");
+            result.push_back(current_vertex.vertex);
+        }
+    }
+    return result;
+}
+
+void SimpleSearcher::ProcessVertex(std::queue<VertexWithDistance>& vertex_queue,
+                                   const VertexWithDistance& vertex,
+                                   std::unordered_set<ScaffoldVertex>& visited,
+                                   const ScaffoldGraph::ScaffoldEdge& restricted_edge) {
+    size_t current_distance = vertex.distance;
+    size_t new_distance = current_distance + 1;
+    for (const ScaffoldGraph::ScaffoldEdge& edge: scaff_graph_.OutgoingEdges(vertex.vertex)) {
+        DEBUG("Checking vertex: " << edge.getEnd().int_id());
+        DEBUG("With length: " << g_.length(edge.getEnd()));
+        DEBUG("Visited: " << (visited.find(edge.getEnd()) != visited.end()));
+        DEBUG("Edge restricted: " << AreEqual(edge, restricted_edge));
+        if (visited.find(edge.getEnd()) == visited.end() and not AreEqual(edge, restricted_edge)) {
+            DEBUG("Passed");
+            vertex_queue.emplace(edge.getEnd(), new_distance);
+            visited.insert(edge.getEnd());
+        }
+    }
+}
+bool SimpleSearcher::AreEqual(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& first,
+                              const scaffold_graph::ScaffoldGraph::ScaffoldEdge& second) {
+    return first.getStart() == second.getStart() and first.getEnd() == second.getEnd();
+}
+
+SimpleSearcher::VertexWithDistance::VertexWithDistance(const SimpleSearcher::ScaffoldVertex& vertex, size_t distance)
+    : vertex(vertex), distance(distance) {}
 }
