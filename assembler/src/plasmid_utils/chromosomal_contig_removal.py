@@ -31,7 +31,7 @@ print name
 #os.system (hmmscan + " -o out_pfam --tblout tblout --cpu 10 "+ chrom_hmms + " proteins.fa")
 #os.system ("tail -n +4 tblout | head -n -10 | awk '$5<0.001 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > chromosomal_contigs_names.txt")
 
-os.system (prodigal + " -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa" )
+os.system (prodigal + " -i " + sys.argv[1] + " -a "+name+"_proteins.fa -o "+name+"_genes.fa -p meta"  )
 os.system (hmmscan + " -o "+name+"_out_pfam --tblout "+name+"_tblout --cpu 10 "+ chrom_hmms + " "+name+"_proteins.fa")
 os.system ("tail -n +4 "+name+"_tblout | head -n -10 | awk '$5<0.001 {print $3}'| sed 's/_[^_]*$//g'| sort | uniq > "+name+"_chromosomal_contigs_names.txt")
 
