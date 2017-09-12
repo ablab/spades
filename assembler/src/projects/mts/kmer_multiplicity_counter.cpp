@@ -69,7 +69,7 @@ class KmerMultiplicityCounter {
         return true;
     }
 
-    void FilterCombinedKmers(const std::vector<string>& files, size_t all_min) {
+    fs::TmpFile FilterCombinedKmers(fs::TmpDir workdir, const std::vector<string>& files, size_t all_min) {
         size_t n = files.size();
         vector<std::unique_ptr<ifstream>> infiles;
         infiles.reserve(n);
@@ -86,8 +86,11 @@ class KmerMultiplicityCounter {
             alive[i] = ReadKmerWithCount(*infiles[i], top_kmer[i]);
         }
 
-        std::ofstream output_kmer(file_prefix_ + ".kmer", std::ios::binary);
-        std::ofstream output_cnt(file_prefix_ + ".mpl");
+        auto kmer_file = fs::tmp::make_temp_file("kmer", workdir);
+
+        typedef uint16_t Mpl;
+        std::ofstream output_kmer(kmer_file->file(), std::ios::binary);
+        std::ofstream mpl_file(file_prefix_ + ".bpr", std::ios_base::binary);
 
         RtSeq::less3 kmer_less;
         while (true) {
@@ -116,12 +119,10 @@ class KmerMultiplicityCounter {
                         cnt_vector[i] += top_kmer[i].second;
                     }
                 }
-                string delim = "";
-                for (auto cnt : cnt_vector) {
-                    output_cnt << delim << cnt;
-                    delim = " ";
+
+                for (size_t mpl : cnt_vector) {
+                    mpl_file.write(reinterpret_cast<char *>(&mpl), sizeof(Mpl));
                 }
-                output_cnt << std::endl;
             }
             for (size_t i = 0; i < n; ++i) {
                 if (alive[i] && top_kmer[i].first == *min_kmer) {
@@ -129,43 +130,30 @@ class KmerMultiplicityCounter {
                 }
             }
         }
+        return kmer_file;
     }
 
-    void BuildKmerIndex(size_t sample_cnt, const std::string& workdir, size_t nthreads) {
+    void BuildKmerIndex(fs::TmpDir workdir, fs::TmpFile kmer_file, size_t sample_cnt, size_t nthreads) {
         INFO("Initializing kmer profile index");
 
-        //TODO: extract into a common header
         typedef size_t Offset;
-        typedef uint16_t Mpl;
         using namespace utils;
-
-        KeyStoringMap<RtSeq, Offset, kmer_index_traits<RtSeq>, InvertableStoring>
-            kmer_mpl(k_, workdir);
-        InvertableStoring::trivial_inverter<Offset> inverter;
 
         static const size_t read_buffer_size = 0; //FIXME some buffer size
         DeBruijnKMerKMerSplitter<StoringTypeFilter<InvertableStoring>>
-            splitter(kmer_mpl.workdir(), k_, k_, true, read_buffer_size);
+            splitter(workdir, k_, k_, true, read_buffer_size);
+        splitter.AddKMers(kmer_file->file());
 
-        //TODO: get rid of temporary .mker & .mpl files
-        splitter.AddKMers(file_prefix_ + ".kmer");
-
-        KMerDiskCounter<RtSeq> counter(kmer_mpl.workdir(), splitter);
-
+        KMerDiskCounter<RtSeq> counter(workdir, splitter);
+        KeyStoringMap<RtSeq, Offset, kmer_index_traits<RtSeq>, InvertableStoring> kmer_mpl(k_);
         BuildIndex(kmer_mpl, counter, 16, nthreads);
+        INFO("Built index with " << kmer_mpl.size() << " kmers");
 
-        INFO("Kmer profile fill start");
-        //We must allocate the whole buffer for all profiles at once
-        //to avoid pointer invalidation after possible vector resize
-        const size_t data_size = sample_cnt * kmer_mpl.size();
-
-        std::vector<Mpl> mpl_data;
-        mpl_data.reserve(data_size);
-        INFO("Allocated buffer of " << data_size << " elements");
-        std::ifstream kmers_in(file_prefix_ + ".kmer", std::ios::binary);
-        std::ifstream kmers_mpl_in(file_prefix_ + ".mpl");
-        while (true) {
-            RtSeq kmer(k_);
+        //Building kmer->profile offset index
+        std::ifstream kmers_in(kmer_file->file(), std::ios::binary);
+        InvertableStoring::trivial_inverter<Offset> inverter;
+        RtSeq kmer(k_);
+        for (Offset offset = 0; ; offset += sample_cnt) {
             kmer.BinRead(kmers_in);
             if (kmers_in.fail()) {
                 break;
@@ -175,16 +163,6 @@ class KmerMultiplicityCounter {
 //            conj_graph_pack::seq_t kmer(k_, kmer_str.c_str());
 //            kmer = gp_.kmer_mapper.Substitute(kmer);
 
-            Offset offset = mpl_data.size();
-            for (size_t i = 0; i < sample_cnt; ++i) {
-                Mpl mpl;
-                kmers_mpl_in >> mpl;
-                VERIFY(!kmers_mpl_in.fail());
-                mpl_data.push_back(mpl);
-            }
-            //Double-check we haven't invalidated vector views
-            VERIFY(mpl_data.size() <= data_size);
-
             auto kwh = kmer_mpl.ConstructKWH(kmer);
             VERIFY(kmer_mpl.valid(kwh));
             kmer_mpl.put_value(kwh, offset, inverter);
@@ -192,11 +170,7 @@ class KmerMultiplicityCounter {
 
         std::ofstream map_file(file_prefix_ + ".kmm", std::ios_base::binary | std::ios_base::out);
         kmer_mpl.BinWrite(map_file);
-
-        std::ofstream mpl_file(file_prefix_ + ".bpr", std::ios_base::binary | std::ios_base::out);
-        mpl_file.write((const char *)&mpl_data[0], mpl_data.size() * sizeof(Mpl));
-
-        INFO("Kmer profile fill finish");
+        INFO("Saved kmer profile map");
     }
 
 public:
@@ -204,9 +178,10 @@ public:
         k_(k), file_prefix_(std::move(file_prefix)) {
     }
 
-    void CombineMultiplicities(const vector<string>& input_files, size_t min_samples, const string& work_dir, size_t nthreads = 1) {
-        FilterCombinedKmers(input_files, min_samples);
-        BuildKmerIndex(input_files.size(), work_dir, nthreads);
+    void CombineMultiplicities(const vector<string>& input_files, size_t min_samples, const string& tmpdir, size_t nthreads = 1) {
+        auto workdir = fs::tmp::make_temp_dir(tmpdir, "kmidx");
+        auto kmer_file = FilterCombinedKmers(workdir, input_files, min_samples);
+        BuildKmerIndex(workdir, kmer_file, input_files.size(), nthreads);
     }
 private:
     DECL_LOGGER("KmerMultiplicityCounter");
