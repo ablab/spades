@@ -49,21 +49,19 @@ int main(int argc, char** argv) {
 
     unsigned k;
     size_t sample_cnt, min_length_bound;
-    std::string work_dir, contigs_path;
-    std::string kmer_mult_fn, contigs_abundance_fn;
+    std::string contigs_path, kmer_mult_fn, contigs_abundance_fn;
 
     try {
         GetOpt_pp ops(argc, argv);
         ops.exceptions_all();
         ops >> Option('k', k)
-            >> Option('w', work_dir)
             >> Option('c', contigs_path)
             >> Option('n', sample_cnt)
             >> Option('m', kmer_mult_fn)
             >> Option('o', contigs_abundance_fn)
             >> Option('l', min_length_bound, size_t(0));
     } catch(GetOptEx &ex) {
-        std::cout << "Usage: contig_abundance_counter -k <K> -w <work_dir> -c <contigs path> "
+        std::cout << "Usage: contig_abundance_counter -k <K> -c <contigs path> "
                 "-n <sample cnt> -m <kmer multiplicities path> "
                 "-o <contigs abundance path> [-l <contig length bound> (default: 0)]"  << std::endl;
         exit(1);
@@ -73,7 +71,7 @@ int main(int argc, char** argv) {
     create_console_logger();
 
     KmerProfileIndex::SetSampleCount(sample_cnt);
-    ContigAbundanceCounter abundance_counter(k, std::unique_ptr<ClusterAnalyzer>(new TrivialClusterAnalyzer()), kmer_mult_fn, work_dir);
+    ContigAbundanceCounter abundance_counter(k, std::unique_ptr<ClusterAnalyzer>(new TrivialClusterAnalyzer()), kmer_mult_fn);
 
     io::FileReadStream contigs_stream(contigs_path);
 

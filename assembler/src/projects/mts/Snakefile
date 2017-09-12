@@ -128,7 +128,7 @@ rule abundancies:
     output:  "profile/mts/{group,(sample|group)\d+}.tsv"
     log:     "profile/mts/{group}.log"
     message: "Counting split contig abundancies for {wildcards.group}"
-    shell:   "{BIN}/contig_abundance_counter -k {PROFILE_K} -w tmp -c {input.contigs}"
+    shell:   "{BIN}/contig_abundance_counter -k {PROFILE_K} -c {input.contigs}"
              " -n {SAMPLE_COUNT} -m profile/mts/kmers -o {output}"
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 

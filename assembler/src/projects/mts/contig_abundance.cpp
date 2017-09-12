@@ -115,8 +115,7 @@ vector<std::string> ContigAbundanceCounter::SplitOnNs(const std::string& seq) co
 size_t KmerProfileIndex::sample_cnt_ = 0;
 
 KmerProfileIndex::KmerProfileIndex(unsigned k,
-                                   const std::string& index_prefix,
-                                   const std::string& workdir):
+                                   const std::string& index_prefix):
     index_(k) {
     std::string index_file = index_prefix + ".kmm";
     INFO("Loading kmer index from " << index_file);
@@ -143,12 +142,11 @@ boost::optional<KmerProfile> KmerProfileIndex::operator[](const KmerProfileIndex
 ContigAbundanceCounter::ContigAbundanceCounter(unsigned k,
                        std::unique_ptr<ClusterAnalyzer> cluster_analyzer,
                        const std::string& index_prefix,
-                       const std::string& work_dir,
                        double min_earmark_share) :
     k_(k),
     cluster_analyzer_(std::move(cluster_analyzer)),
     min_earmark_share_(min_earmark_share),
-    profile_index_(k_, index_prefix, work_dir) {
+    profile_index_(k_, index_prefix) {
 }
 
 boost::optional<AbundanceVector> ContigAbundanceCounter::operator()(

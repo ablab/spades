@@ -64,7 +64,7 @@ public:
     typedef typename IndexT::KeyType KeyType;
     typedef typename IndexT::KeyWithHash KeyWithHash;
 
-    KmerProfileIndex(unsigned k, const std::string& index_prefix, const std::string& work_dir);
+    KmerProfileIndex(unsigned k, const std::string& index_prefix);
     KeyWithHash Construct(const KeyType& seq) const;
     boost::optional<KmerProfile> operator[](const KeyWithHash& kwh) const;
 
@@ -159,7 +159,6 @@ public:
     ContigAbundanceCounter(unsigned k,
                            std::unique_ptr<ClusterAnalyzer> cluster_analyzer,
                            const std::string& index_prefix,
-                           const std::string& work_dir,
                            double min_earmark_share = 0.7);
 
     void Init(const std::string& kmer_mpl_file);
