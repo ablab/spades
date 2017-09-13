@@ -20,6 +20,7 @@ import ntpath
 
 #chrom_hmms="/Nancy/mrayko/db/chromosomal_proteins_pfam/chromosome_uniq_hmms.hmm" ### Black list (2208)
 chrom_hmms="/Nancy/mrayko/db/chromosomal_proteins_pfam/chromosome_uniq_genbank_hmms.hmm" ### Deep Black list (508)
+#chrom_hmms="/Nancy/mrayko/db/chromosomal_proteins_pfam/non_plasmid_pfamA_hmms.hmm" ### All non-plasmid Pfam (7317)
 hmmscan=" /Nancy/mrayko/Libs/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmscan"
 prodigal="/Nancy/mrayko/Libs/Prodigal/prodigal"
 
