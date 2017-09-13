@@ -68,6 +68,28 @@ size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
     }
     return ans;
 }
+double ChromosomeRemoval::RemoveEdgesByList( conj_graph_pack &gp , string &s) {
+//    string s = "/Sid/dantipov/meta_plasmid/zymo_3.11_analysis/chromosomal/chromosomal_contig_ids.txt";
+    std::ifstream is(s); 
+    set<size_t> ids;
+    size_t id;
+    while (!is.eof()) {
+        is >> id;
+        ids.insert(id);
+    }
+    size_t deleted = 0;
+    INFO("Forbidding " << ids.size() << " ids");    
+    for (auto iter = gp.g.SmartEdgeBegin(); ! iter.IsEnd(); ++iter){
+        if (ids.find(gp.g.int_id(*iter)) != ids.end()) {
+            DEBUG(" Edge " << gp.g.int_id(*iter) << "  deleted");
+            deleted++;
+            gp.g.DeleteEdge(*iter);
+        }
+    }
+    INFO("deleted " << deleted);
+
+    return -100000;
+}
 
 double ChromosomeRemoval::RemoveLongGenomicEdges(conj_graph_pack &gp, size_t long_edge_bound, double coverage_limits, double external_chromosome_coverage){
     INFO("Removing of long chromosomal edges started");
@@ -139,7 +161,14 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     //FIXME Seriously?! cfg::get().ds like hundred times...
     OutputEdgeSequences(gp.g, cfg::get().output_dir + "before_chromosome_removal");
     INFO("Before iteration " << 0 << ", " << gp.g.size() << " vertices in graph");
-    double chromosome_coverage = RemoveLongGenomicEdges(gp, cfg::get().pd->long_edge_length, cfg::get().pd->relative_coverage );
+    string additional_list = cfg::get().pd->remove_list;
+    bool use_chromosomal_list = (additional_list != "");
+
+    double chromosome_coverage;
+    if (use_chromosomal_list)
+        chromosome_coverage = RemoveEdgesByList(gp, additional_list);
+    else
+        chromosome_coverage = RemoveLongGenomicEdges(gp, cfg::get().pd->long_edge_length, cfg::get().pd->relative_coverage );
     PlasmidSimplify(gp, cfg::get().pd->long_edge_length);
 //TODO:: reconsider and move somewhere(not to config)
     size_t max_iteration_count = 30;
@@ -147,7 +176,8 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     for (size_t i = 0; i < max_iteration_count; i++) {
         size_t graph_size = gp.g.size();
         INFO("Before iteration " << i + 1 << " " << graph_size << " vertices in graph");
-        RemoveLongGenomicEdges(gp, cfg::get().pd->long_edge_length, cfg::get().pd->relative_coverage, chromosome_coverage );
+        if (!use_chromosomal_list)
+            RemoveLongGenomicEdges(gp, cfg::get().pd->long_edge_length, cfg::get().pd->relative_coverage, chromosome_coverage );
         INFO("Before dead_end simplification " << i << " " << gp.g.size() << " vertices in graph");
 
         PlasmidSimplify(gp, cfg::get().pd->long_edge_length);

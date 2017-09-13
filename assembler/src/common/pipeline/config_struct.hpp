@@ -389,6 +389,7 @@ struct debruijn_config {
         double small_component_relative_coverage;
         size_t min_component_length;
         size_t min_isolated_length;
+        std::string remove_list;
     };
 
     struct position_handler {

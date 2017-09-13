@@ -9,4 +9,5 @@ plasmid
     small_component_relative_coverage 2
     min_component_length 10000
     min_isolated_length 1000
+    remove_list ""
 }
