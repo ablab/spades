@@ -87,7 +87,7 @@ double ChromosomeRemoval::RemoveEdgesByList( conj_graph_pack &gp , string &s) {
         }
     }
     INFO("deleted " << deleted);
-
+    CompressAll(gp.g);
     return -100000;
 }
 
