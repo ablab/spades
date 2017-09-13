@@ -191,13 +191,16 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
 //Small repetitive components after filtering
     std::unordered_map<VertexId, size_t> old_vertex_weights (long_vertex_component_.begin(), long_vertex_component_.end());
     for (size_t i = 0; i < max_iteration_count; i++) {
+        DEBUG("Iteration " << i);
         size_t graph_size = gp.g.size();
         long_vertex_component_.clear();
         long_component_.clear();
         deadends_count_.clear();    
+        DEBUG("calculating compontent sizes");
         for (auto iter = gp.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            CalculateComponentSize(*iter, gp.g);
+            CalculateComponentSize(*iter, gp.g);          
         }
+        DEBUG("component sizes calculated");
 
         for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (gp.g.IsDeadEnd(gp.g.EdgeEnd(*iter)) && gp.g.IsDeadStart(gp.g.EdgeStart(*iter))
@@ -208,18 +211,21 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
                 gp.g.DeleteEdge(*iter);
             }
         }
-        for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-            if (long_component_[*iter] < 2 * cfg::get().pd->small_component_size) {
-                if (old_vertex_weights.find(gp.g.EdgeStart(*iter)) != old_vertex_weights.end() &&
-                    old_vertex_weights[gp.g.EdgeStart(*iter)] >
-                    long_component_[*iter] + cfg::get().pd->long_edge_length * 2 &&
-                        gp.g.coverage(*iter) < chromosome_coverage * (1 + cfg::get().pd->small_component_relative_coverage)
-                       && gp.g.coverage(*iter) > chromosome_coverage * (1 - cfg::get().pd->small_component_relative_coverage)) {
-                    DEBUG("Deleting edge from fake small component, length " << gp.g.length(*iter) << " component_size " << old_vertex_weights[gp.g.EdgeStart(*iter)]) ;
-                    gp.g.DeleteEdge(*iter);
+        if (! use_chromosomal_list) {
+            for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+                if (long_component_[*iter] < 2 * cfg::get().pd->small_component_size) {
+                    if (old_vertex_weights.find(gp.g.EdgeStart(*iter)) != old_vertex_weights.end() &&
+                        old_vertex_weights[gp.g.EdgeStart(*iter)] >
+                        long_component_[*iter] + cfg::get().pd->long_edge_length * 2 &&
+                            gp.g.coverage(*iter) < chromosome_coverage * (1 + cfg::get().pd->small_component_relative_coverage)
+                           && gp.g.coverage(*iter) > chromosome_coverage * (1 - cfg::get().pd->small_component_relative_coverage)) {
+                        DEBUG("Deleting edge from fake small component, length " << gp.g.length(*iter) << " component_size " << old_vertex_weights[gp.g.EdgeStart(*iter)]) ;
+                        gp.g.DeleteEdge(*iter);
+                    }
                 }
             }
         }
+//      TODO: some similar ideas for list-based removal
         for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (long_component_[*iter] < 2 * cfg::get().pd->min_component_length &&
                                   !(deadends_count_[*iter] == 0 &&
