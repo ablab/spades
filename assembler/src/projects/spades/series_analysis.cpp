@@ -255,8 +255,7 @@ void SeriesAnalysis::run(conj_graph_pack &gp, const char *) {
     DEBUG("Initiating abundance counter");
     ContigAbundanceCounter abundance_counter(config.k,
                                              std::unique_ptr<ClusterAnalyzer>(new TrivialClusterAnalyzer()),
-                                             config.kmer_mult,
-                                             cfg::get().tmp_dir);
+                                             config.kmer_mult);
 
     DEBUG("Abundance counter ready");
 
