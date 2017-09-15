@@ -467,9 +467,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
 
             const size_t temp_distance = 5000;
             const size_t temp_min_read_threshold = 10;
-            cluster_storage::ClusterStorageBuilder cluster_storage_builder(gp_.g, scaffold_graph, barcode_extractor_ptr,
-                                                                           unique_data_.unique_read_cloud_storage_,
-                                                                           temp_distance, temp_min_read_threshold);
+            const size_t num_threads = cfg::get().max_threads;
 
             //Creating read cloud unique storage
             FillReadCloudUniqueEdgeStorage();

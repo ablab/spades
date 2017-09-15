@@ -50,6 +50,13 @@ public:
             length_(length){
         }
 
+        //for consistency with dijkstra
+        explicit ScaffoldEdge(size_t ): id_(scaffold_edge_id_++), start_(nullptr), end_(nullptr),
+                                        color_((size_t) -1), weight_(0), length_(0) {}
+
+        ScaffoldEdge(): id_(scaffold_edge_id_++), start_(nullptr), end_(nullptr),
+                        color_((size_t) -1), weight_(0), length_(0) {}
+
         ScaffoldEdgeIdT getId() const {
             return id_;
         }
@@ -82,6 +89,11 @@ public:
         bool operator==(const ScaffoldEdge &e) {
             return color_ == e.color_ && weight_ == e.weight_ && start_ == e.start_ && end_ == e.end_;
         }
+
+        bool operator<(const ScaffoldEdge& rhs) const;
+        bool operator>(const ScaffoldEdge& rhs) const;
+        bool operator<=(const ScaffoldEdge& rhs) const;
+        bool operator>=(const ScaffoldEdge& rhs) const;
     };
 
     //typedef for possibility to use in templated graph visualizers
@@ -225,6 +237,10 @@ public:
     ScaffoldEdge UniqueIncoming(ScaffoldVertex assembly_graph_edge) const;
 
     void Print(std::ostream &os) const;
+
+    string str(const ScaffoldVertex& vertex) const;
+
+    string str(const ScaffoldGraph::ScaffoldEdge& edge) const;
 
 };
 

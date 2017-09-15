@@ -487,6 +487,20 @@ struct debruijn_config {
 
         tenx_resolver tenx;
 
+        size_t very_long_edge_length;
+        size_t long_edge_length;
+
+        struct scaffold_polisher {
+          size_t max_scaffold_dijkstra_distance;
+          double share_threshold;
+          size_t read_count_threshold;
+          size_t path_cluster_linkage_distance;
+          double path_cluster_score_threshold;
+          size_t path_cluster_min_reads;
+        };
+
+        scaffold_polisher scaff_pol;
+
         struct stats {
             std::string genome_path;
             std::string base_contigs_path;
