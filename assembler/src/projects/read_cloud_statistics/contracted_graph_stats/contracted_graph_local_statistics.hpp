@@ -26,19 +26,21 @@ namespace contracted_graph {
     class ContractedGraphClusterStatistics: public read_cloud_statistics::StatisticProcessor {
      public:
         typedef cluster_storage::Cluster Cluster;
-        typedef transitions::Transition Transition;
+        typedef path_extend::transitions::Transition Transition;
+        typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
+        typedef path_extend::validation::ClusterTransitionExtractor ClusterTransitionExtractor;
      private:
         const Graph& g_;
         const ContractedGraph& contracted_graph_;
         const cluster_storage::ClusterGraphAnalyzer ordering_analyzer_;
         const vector<Cluster>& clusters_;
-        const transitions::ContigTransitionStorage& reference_storage_;
+        const ContigTransitionStorage& reference_storage_;
      public:
         ContractedGraphClusterStatistics(const Graph& g_,
                                          const ContractedGraph& contracted_graph_,
                                          const cluster_storage::ClusterGraphAnalyzer& ordering_analyzer_,
                                          const vector<Cluster>& clusters_,
-                                         const transitions::ContigTransitionStorage& reference_storage_)
+                                         const ContigTransitionStorage& reference_storage_)
             : StatisticProcessor("contracted_cluster_statistics"),
               g_(g_),
               contracted_graph_(contracted_graph_),
@@ -75,11 +77,11 @@ namespace contracted_graph {
 
             LoopPathClusterStatistics loop_path_stats;
 
-            unordered_set<transitions::Transition> covered_targets;
+            unordered_set<Transition> covered_targets;
             auto target_transitions = GetTargetTransitions(edge_to_loop_neighbourhood);
             DEBUG(target_transitions.size() << " target transitions");
             for (const auto& cluster: clusters) {
-                transitions::ClusterTransitionExtractor transition_extractor(ordering_analyzer_);
+                ClusterTransitionExtractor transition_extractor(ordering_analyzer_);
                 auto transitions = transition_extractor.ExtractTransitionsFromPathCluster(cluster);
                 for (const auto& transition: transitions) {
                     UpdateLoopPathStats(loop_path_stats, covered_targets, edge_to_loop_neighbourhood,
@@ -119,7 +121,7 @@ namespace contracted_graph {
         unordered_set<EdgeId> ExtractLoopEdges(const ContractedGraph& contracted_graph, size_t min_length) const {
             unordered_set<EdgeId> result;
             for (const auto& vertex: contracted_graph) {
-                for (auto it = contracted_graph.outcoming_begin(vertex); it != contracted_graph.outcoming_end(vertex); ++it) {
+                for (auto it = contracted_graph.out_begin(vertex); it != contracted_graph.out_end(vertex); ++it) {
                     if (it->first == vertex) {
                         for (const auto& edge: it->second) {
                             if (g_.length(edge) > min_length) {
@@ -134,7 +136,7 @@ namespace contracted_graph {
 
         unordered_map<EdgeId, LoopNeighbourhood>
         GetEdgeToLoopNeighbourhood(unordered_set<EdgeId>& loops,
-                                   const transitions::ContigTransitionStorage& reference_storage) const {
+                                   const ContigTransitionStorage& reference_storage) const {
             unordered_map<EdgeId, EdgeId> loop_to_prev;
             unordered_map<EdgeId, EdgeId> loop_to_next;
             unordered_map<EdgeId, LoopNeighbourhood> loop_to_neighbourhood;
@@ -164,8 +166,8 @@ namespace contracted_graph {
             return loop_to_neighbourhood;
         }
 
-        unordered_set<transitions::Transition> GetTargetTransitions(unordered_map<EdgeId, LoopNeighbourhood>& edge_to_neighbourhood) const {
-            unordered_set<transitions::Transition> target_transitions;
+        unordered_set<Transition> GetTargetTransitions(unordered_map<EdgeId, LoopNeighbourhood>& edge_to_neighbourhood) const {
+            unordered_set<Transition> target_transitions;
             for (const auto& entry: edge_to_neighbourhood) {
                 auto neighbourhood = entry.second;
                 target_transitions.emplace(neighbourhood.prev_, neighbourhood.loop_);

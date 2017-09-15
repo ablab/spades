@@ -13,6 +13,19 @@ namespace scaffold_graph {
 
 std::atomic<ScaffoldGraph::ScaffoldEdgeIdT> ScaffoldGraph::ScaffoldEdge::scaffold_edge_id_{0};
 
+bool ScaffoldGraph::ScaffoldEdge::operator<(const ScaffoldGraph::ScaffoldEdge& rhs) const {
+    return id_ < rhs.id_;
+}
+bool ScaffoldGraph::ScaffoldEdge::operator>(const ScaffoldGraph::ScaffoldEdge& rhs) const {
+    return rhs < *this;
+}
+bool ScaffoldGraph::ScaffoldEdge::operator<=(const ScaffoldGraph::ScaffoldEdge& rhs) const {
+    return !(rhs < *this);
+}
+bool ScaffoldGraph::ScaffoldEdge::operator>=(const ScaffoldGraph::ScaffoldEdge& rhs) const {
+    return !(*this < rhs);
+}
+
 void ScaffoldGraph::AddEdgeSimple(const ScaffoldGraph::ScaffoldEdge &e) {
     edges_.emplace(e.getId(), e);
     outgoing_edges_.emplace(e.getStart(), e.getId());
@@ -259,6 +272,12 @@ bool ScaffoldGraph::RemoveEdge(const ScaffoldGraph::ScaffoldEdge &e) {
 
 bool ScaffoldGraph::AddEdge(const ScaffoldGraph::ScaffoldEdge &e) {
     return AddEdge(e.getStart(), e.getEnd(), e.getColor(), e.getWeight(), e.getLength());
+}
+string ScaffoldGraph::str(const ScaffoldGraph::ScaffoldVertex& vertex) const {
+    return assembly_graph_.str(vertex);
+}
+string ScaffoldGraph::str(const ScaffoldGraph::ScaffoldEdge& edge) const {
+    return "(" + std::to_string(edge.getStart().int_id()) + ", " + std::to_string(edge.getEnd().int_id()) + ")";
 }
 
 } //scaffold_graph
