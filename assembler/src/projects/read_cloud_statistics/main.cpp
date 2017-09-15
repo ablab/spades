@@ -73,7 +73,8 @@ int main(int argc, char **argv) {
 
         INFO("Getting stats  (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);
 
-        spades::run_statistics_extractor();
+//        spades::run_statistics_extractor();
+        spades::run_scaffolder_analysis();
 
     } catch (std::bad_alloc const &e) {
         std::cerr << "Not enough memory to run SPAdes. " << e.what() << std::endl;

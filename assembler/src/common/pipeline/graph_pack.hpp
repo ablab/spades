@@ -27,6 +27,7 @@
 #include "visualization/position_filler.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "common/modules/alignment/rna/ss_coverage.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_storage.hpp"
 
 namespace debruijn_graph {
 
@@ -57,6 +58,7 @@ struct graph_pack: private boost::noncopyable {
     GenomicInfo ginfo;
 
     std::shared_ptr <BMapper> barcode_mapper_ptr;
+    path_extend::ScaffoldGraphStorage scaffold_graph_storage;
 
     GenomeStorage genome;
     EdgeQuality<Graph> edge_qual;
@@ -81,6 +83,7 @@ struct graph_pack: private boost::noncopyable {
               single_long_reads(g, lib_count),
               barcode_mapper_ptr(),
               ss_coverage(lib_count, SSCoverageStorage(g)),
+              scaffold_graph_storage(g),
               genome(genome),
               edge_qual(g),
               edge_pos(g, max_mapping_gap + k, max_gap_diff),

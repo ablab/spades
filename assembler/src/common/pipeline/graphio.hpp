@@ -28,6 +28,7 @@
 #include <fstream>
 #include <cstdio>
 #include "common/barcode_index/barcode_index_builder.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_storage.hpp"
 
 namespace debruijn_graph {
 
@@ -288,6 +289,11 @@ class DataPrinter {
         }
     }
 
+    void SaveScaffoldGraphStorage(const string& file_name, const path_extend::ScaffoldGraphStorage& scaffold_graph_storage) const {
+        string new_file_name = file_name + ".scg";
+        scaffold_graph_storage.Save(new_file_name);
+    }
+
   private:
     void Save(FILE* file, EdgeId eid) const {
         fprintf(file, "%s\n", ToPrint(eid).c_str());
@@ -508,6 +514,20 @@ class DataScanner {
         }
         fclose(file);
         return true;
+    }
+
+    void LoadScaffoldGraphStorage(const string& file_name, path_extend::ScaffoldGraphStorage& scaffold_graph_storage,
+                                  bool force_exists = true) {
+        string new_file_name = file_name + ".scg";
+        INFO("Loading scaffold graph storage from " << new_file_name);
+        bool file_exists = fs::check_existence(new_file_name);
+        if (force_exists) {
+            VERIFY(file_exists);
+        } else if (not file_exists) {
+            WARN(new_file_name << " was not found, skipping");
+        }
+
+        scaffold_graph_storage.Load(new_file_name, this->edge_id_map());
     }
 
   private:
@@ -796,7 +816,6 @@ void PrintBarcodeIndex(const string &path,
     if (!barcodeMapper or barcodeMapper->IsEmpty()) {
         return;
     }
-    INFO(barcodeMapper->size())
     index_file << barcodeMapper->size() << std::endl;
     omnigraph::IterationHelper <Graph, typename Graph::EdgeId> helper(g);
     for (auto it = helper.begin(); it != helper.end(); ++it) {
@@ -804,6 +823,11 @@ void PrintBarcodeIndex(const string &path,
     }
 }
 
+template <class graph_pack>
+void PrintScaffoldGraphStorage(const string& file_name, DataPrinter<typename graph_pack::graph_t>& printer,
+                               const graph_pack& gp) {
+    printer.SaveScaffoldGraphStorage(file_name, gp.scaffold_graph_storage);
+}
 
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp) {
@@ -814,6 +838,7 @@ void PrintAll(const string& file_name, const graph_pack& gp) {
     PrintScaffoldingIndices(file_name, printer, gp.scaffolding_indices);
     PrintSingleLongReads(file_name, gp.single_long_reads);
     PrintBarcodeIndex(file_name, gp.barcode_mapper_ptr, gp.g);
+    PrintScaffoldGraphStorage(file_name, printer, gp);
     gp.ginfo.Save(file_name + ".ginfo");
 }
 
@@ -988,6 +1013,12 @@ void ScanScaffoldingIndices(const std:: string& file_name, DataScanner<Graph>& s
         ScanScaffoldingIndex(file_name  + "_" + std::to_string(i), scanner, paired_indices[i], force_exists);
 }
 
+template <class Graph>
+void ScanScaffoldGraphStorage(const string& file_name, DataScanner<Graph>& scanner,
+                              path_extend::ScaffoldGraphStorage& scaffold_graph_storage, bool force_exists = true) {
+    scanner.LoadScaffoldGraphStorage(file_name, scaffold_graph_storage, force_exists);
+}
+
 template<class Graph>
 void ScanScaffoldIndices(const string& file_name, DataScanner<Graph>& scanner,
         PairedInfoIndicesT<Graph>& scaffold_indices) {
@@ -1087,10 +1118,11 @@ void ScanAll(const std::string& file_name, graph_pack& gp,
              bool force_exists = true) {
     ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g); //TODO: remove this!!!
     ScanGraphPack(file_name, scanner, gp);
+    ScanSingleLongReads(file_name,  gp.single_long_reads);
     ScanPairedIndices(file_name, scanner, gp.paired_indices, force_exists);
     ScanClusteredIndices(file_name, scanner, gp.clustered_indices, force_exists);
     ScanScaffoldingIndices(file_name, scanner, gp.scaffolding_indices, force_exists);
-    ScanSingleLongReads(file_name,  gp.single_long_reads);
+    ScanScaffoldGraphStorage(file_name, scanner, gp.scaffold_graph_storage, force_exists);
     gp.ginfo.Load(file_name + ".ginfo");
 }
 }

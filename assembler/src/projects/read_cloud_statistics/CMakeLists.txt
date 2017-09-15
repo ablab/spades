@@ -6,7 +6,7 @@ add_executable(read_cloud_statistics main.cpp
                    read_cloud_statistics_extractor.cpp
                     ../spades/repeat_resolving.cpp contig_path_analyzer.hpp
                     contracted_graph_stats/contracted_graph_local_statistics.hpp scaffolder_validation.hpp scaffold_graph_utils.hpp
-                    scaffolder_statistics/scaffolder_stats.hpp)
+                    scaffolder_statistics/scaffolder_stats.hpp scaffold_graph_construction_stage.cpp scaffold_graph_construction_stage.hpp scaffolder_analysis_stage.cpp scaffolder_analysis_stage.hpp)
 
 target_link_libraries(read_cloud_statistics ConsensusCore common_modules nlopt BamTools ssw ${COMMON_LIBRARIES})
 

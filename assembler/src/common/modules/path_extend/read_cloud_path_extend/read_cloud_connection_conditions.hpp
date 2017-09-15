@@ -18,17 +18,6 @@ namespace path_extend {
         virtual bool IsLast() const override;
     };
 
-    struct ScaffolderParams {
-      size_t tail_threshold_;
-      size_t count_threshold_;
-      double score_threshold_;
-      size_t barcode_threshold_;
-      size_t length_threshold_;
-      size_t initial_distance_;
-      double middle_fraction_;
-      double split_procedure_strictness_;
-    };
-
     class ScaffoldEdgePredicate {
      public:
         typedef scaffold_graph::ScaffoldGraph::ScaffoldEdge ScaffoldEdge;

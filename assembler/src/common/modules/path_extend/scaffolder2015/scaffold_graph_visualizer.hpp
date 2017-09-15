@@ -6,6 +6,8 @@
 #define PROJECT_SCAFFOLD_GRAPH_VISUALIZER_HPP
 
 #include "pipeline/graphio.hpp"
+#include "common/visualization/graph_colorer.hpp"
+#include "common/visualization/graph_printer.hpp"
 #include "scaffold_graph.hpp"
 
 namespace path_extend { namespace scaffold_graph {

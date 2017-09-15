@@ -71,17 +71,6 @@ namespace debruijn_graph {
         return path_extender_ptr;
     }
 
-//    path_extend::TenXExtensionChecker ConstructTenXChecker(const conj_graph_pack& gp) {
-//        auto pe_params = GetPEParams();
-//        auto read_cloud_storage = GetUniqueStorage(gp, pe_params);
-//        auto path_extender_ptr = ConstructExtender(gp, pe_params, read_cloud_storage);
-//        shared_ptr<ExtensionChooser> extension_chooser_ptr(path_extender_ptr->GetExtensionChooser());
-//        shared_ptr<TenXExtensionChooser> read_cloud_extension_chooser_ptr =
-//                std::dynamic_pointer_cast<TenXExtensionChooser> (extension_chooser_ptr);
-//        TenXExtensionChecker checker(*read_cloud_extension_chooser_ptr, path_extender_ptr, gp, read_cloud_storage);
-//        return checker;
-//    }
-
     void RunBarcodeStatisticsCounters(const vector<shared_ptr<BarcodeStatisticsCounter>>& barcode_statistics_counters) {
         const string stats_path = cfg::get().output_dir + "barcode_stats";
         for (const auto& counter: barcode_statistics_counters) {

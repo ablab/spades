@@ -1,7 +1,7 @@
 #include "../statistics_processor.hpp"
-#include "../transitions.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/conjugate_score_extractor.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp"
 namespace scaffolder_statistics {
 struct ConnectivityParams {
   size_t overall_connections;
@@ -107,7 +107,7 @@ typedef std::unordered_map<EdgeId, LongEdgePos> LongEdgePathIndex;
 
 class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProcessor {
  public:
-    typedef transitions::EdgeWithMapping EdgeWithMapping;
+    typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
  private:
     const Graph& g_;
@@ -130,7 +130,7 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
           barcode_extractor_ptr_(barcode_extractor_ptr_) {}
 
     void FillStatistics() override {
-        transitions::ContigPathFilter contig_path_filter(unique_storage_);
+        path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
         auto filtered_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths_);
 //        auto length_connectivity_stats = make_shared<LengthConnectivityStats>(GetLengthConnectivityStatistics(reference_paths_,
 //                                                                                                              filtered_paths));
@@ -188,7 +188,7 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
     }
 
     NextSplitIntersectionStats GetNextSplitStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
-        transitions::GeneralTransitionStorageBuilder forward_storage_builder(g_, 1, false, false);
+        path_extend::validation::GeneralTransitionStorageBuilder forward_storage_builder(g_, 1, false, false);
         auto forward_transitions = forward_storage_builder.GetTransitionStorage(reference_paths);
         const size_t count_threshold = scaff_params_.count_threshold_;
         const double strictness = scaff_params_.split_procedure_strictness_;
@@ -209,7 +209,7 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
     }
 
     BarcodesInTheMiddleStats GetBarcodesInTheMiddleStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
-        transitions::GeneralTransitionStorageBuilder forward_storage_builder(g_, 1, false, false);
+        path_extend::validation::GeneralTransitionStorageBuilder forward_storage_builder(g_, 1, false, false);
         auto forward_transitions = forward_storage_builder.GetTransitionStorage(reference_paths);
         size_t correct_passed = 0;
         size_t overall = 0;
@@ -245,7 +245,7 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
                                                             const vector <vector<EdgeWithMapping>>& filtered_reference_paths) {
         std::map <size_t, BarcodedPathConnectivityStats> length_to_stats;
         vector <vector<EdgeWithMapping>> current_paths = reference_paths;
-        transitions::ContigPathFilter contig_path_filter(unique_storage_);
+        path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
 
         unordered_set <EdgeId> long_edges;
         for (const auto& path: filtered_reference_paths) {
@@ -283,8 +283,8 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
         vector <size_t> lengths;
 //        const size_t max_length = 2000;
 //        const size_t min_length = 100;
-        const size_t min_length = scaff_params_.length_threshold_;
-        const size_t max_length = scaff_params_.length_threshold_;
+        const size_t min_length = scaff_params_.connection_length_threshold_;
+        const size_t max_length = scaff_params_.connection_length_threshold_;
         const size_t step = 100;
         for (size_t i = min_length; i <= max_length; i += step) {
             lengths.push_back(i);
@@ -292,8 +292,8 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
         vector <size_t> thresholds;
 //        const size_t max_threshold = 100;
 //        const size_t min_threshold = 100;
-        const size_t max_threshold = scaff_params_.barcode_threshold_;
-        const size_t min_threshold = scaff_params_.barcode_threshold_;
+        const size_t max_threshold = scaff_params_.connection_barcode_threshold_;
+        const size_t min_threshold = scaff_params_.connection_barcode_threshold_;
         const size_t thr_step = 5;
         for (size_t i = min_threshold; i <= max_threshold; i += thr_step) {
             thresholds.push_back(i);
@@ -366,7 +366,7 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
                 long_params(threshold,
                             count_threshold,
                             tail_threshold,
-                            scaff_params_.length_threshold_,
+                            scaff_params_.connection_length_threshold_,
                             scaff_params_.initial_distance_);
             auto dij_predicate = make_shared<path_extend::LongGapDijkstraPredicate>(g_,
                                                                                     unique_storage_,

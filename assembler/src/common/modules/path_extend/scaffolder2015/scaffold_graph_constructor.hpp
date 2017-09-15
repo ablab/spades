@@ -30,28 +30,30 @@ protected:
     void ConstructFromSingleCondition(const shared_ptr<ConnectionCondition> condition,
                                       bool use_terminal_vertices_only);
 
-    void ConstructFromConditions(vector<shared_ptr<ConnectionCondition>> &connection_conditions,
+    void ConstructFromConditions(const vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                                  bool use_terminal_vertices_only = false);
 
     void ConstructFromSet(const set<EdgeId> edge_set,
-                          vector<shared_ptr<ConnectionCondition>> &connection_conditions,
+                          const vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                           bool use_terminal_vertices_only = false);
 
     void ConstructFromEdgeConditions(func::TypedPredicate<typename Graph::EdgeId> edge_condition,
-                                     vector<shared_ptr<ConnectionCondition>> &connection_conditions,
+                                     const vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                                      bool use_terminal_vertices_only = false);
+
+    DECL_LOGGER("BaseScaffoldGraphConstructor");
 };
 
 
 class SimpleScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
 protected:
     const set<EdgeId>& edge_set_;
-    vector<shared_ptr<ConnectionCondition>>& connection_conditions_;
+    const vector<shared_ptr<ConnectionCondition>>& connection_conditions_;
 
 public:
     SimpleScaffoldGraphConstructor(const debruijn_graph::Graph& assembly_graph,
                                     const set<EdgeId>& edge_set,
-                                    vector<shared_ptr<ConnectionCondition>> &connection_conditions):
+                                    const vector<shared_ptr<ConnectionCondition>> &connection_conditions):
         BaseScaffoldGraphConstructor(assembly_graph),
         edge_set_(edge_set), connection_conditions_(connection_conditions) {}
 
@@ -85,12 +87,12 @@ class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
  public:
     PredicateScaffoldGraphConstructor(const Graph& assembly_graph,
                                       const ScaffoldGraph& old_graph_,
-                                      const shared_ptr<EdgePairPredicate>& predicate_,
-                                      const size_t max_threads);
+                                      shared_ptr<EdgePairPredicate> predicate_,
+                                      size_t max_threads);
 
     shared_ptr<ScaffoldGraph> Construct() override;
  protected:
-    void ConstructFromGraphAndPredicate(const ScaffoldGraph& old_graph, const shared_ptr<EdgePairPredicate> predicate);
+    void ConstructFromGraphAndPredicate(const ScaffoldGraph& old_graph, shared_ptr<EdgePairPredicate> predicate);
 
 };
 
@@ -104,12 +106,12 @@ class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor
  public:
     ScoreFunctionScaffoldGraphConstructor(const Graph& assembly_graph,
                                           const ScaffoldGraph& old_graph_,
-                                          const shared_ptr<EdgePairScoreFunction>& score_function_,
+                                          shared_ptr<EdgePairScoreFunction> score_function_,
                                           const double score_threshold, size_t num_threads);
 
     shared_ptr<ScaffoldGraph> Construct() override;
  protected:
-    void ConstructFromGraphAndScore(const ScaffoldGraph& graph, const shared_ptr<EdgePairScoreFunction> score_function,
+    void ConstructFromGraphAndScore(const ScaffoldGraph& graph, shared_ptr<EdgePairScoreFunction> score_function,
                                     double score_threshold, size_t threads);
     DECL_LOGGER("ScoreFunctionScaffoldGraphConstructor")
 };

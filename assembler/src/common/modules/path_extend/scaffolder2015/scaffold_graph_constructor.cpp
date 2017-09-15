@@ -9,7 +9,7 @@ namespace scaffold_graph {
 
 
 void BaseScaffoldGraphConstructor::ConstructFromEdgeConditions(func::TypedPredicate<typename Graph::EdgeId> edge_condition,
-                                                           vector<shared_ptr<ConnectionCondition>> &connection_conditions,
+                                                           const vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                                                            bool use_terminal_vertices_only) {
     for (auto e = graph_->AssemblyGraph().ConstEdgeBegin(); !e.IsEnd(); ++e) {
         if (edge_condition(*e)) {
@@ -20,17 +20,21 @@ void BaseScaffoldGraphConstructor::ConstructFromEdgeConditions(func::TypedPredic
 }
 
 void BaseScaffoldGraphConstructor::ConstructFromSet(const set<EdgeId> edge_set,
-                                                vector<shared_ptr<ConnectionCondition>> &connection_conditions,
+                                                const vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                                                 bool use_terminal_vertices_only) {
     graph_->AddVertices(edge_set);
-    INFO("Added vertices")
+    TRACE("Added vertices");
     ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
 }
 
-void BaseScaffoldGraphConstructor::ConstructFromConditions(vector<shared_ptr<ConnectionCondition>> &connection_conditions,
+void BaseScaffoldGraphConstructor::ConstructFromConditions(const vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                                                        bool use_terminal_vertices_only) {
 //TODO :: awful. It depends on ordering of connected conditions.
+    TRACE("Constructing from conditions");
+    TRACE(connection_conditions.size() << " conditions.");
+    TRACE(connection_conditions.back()->IsLast());
     for (auto condition : connection_conditions) {
+        TRACE("Checking condition");
         if (condition->IsLast())
             ConstructFromSingleCondition(condition, true);
         else
@@ -40,7 +44,7 @@ void BaseScaffoldGraphConstructor::ConstructFromConditions(vector<shared_ptr<Con
 
 void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const shared_ptr<ConnectionCondition> condition,
                                                             bool use_terminal_vertices_only) {
-    INFO("Terminal only: " << (use_terminal_vertices_only ? "True" : "False"));
+    TRACE("Terminal only: " << (use_terminal_vertices_only ? "True" : "False"));
     for (const auto& v : graph_->vertices()) {
         TRACE("Vertex " << graph_->int_id(v));
 
@@ -74,13 +78,13 @@ shared_ptr<ScaffoldGraph> DefaultScaffoldGraphConstructor::Construct() {
 
 PredicateScaffoldGraphConstructor::PredicateScaffoldGraphConstructor(const Graph& assembly_graph,
                                                                      const ScaffoldGraph& old_graph_,
-                                                                     const shared_ptr<EdgePairPredicate>& predicate_,
+                                                                     shared_ptr<EdgePairPredicate> predicate_,
                                                                      size_t max_threads)
     : BaseScaffoldGraphConstructor(assembly_graph), old_graph_(old_graph_),
       predicate_(predicate_), max_threads_(max_threads) {}
 
 void PredicateScaffoldGraphConstructor::ConstructFromGraphAndPredicate(const ScaffoldGraph& old_graph,
-                                                                       const shared_ptr<EdgePairPredicate> predicate) {
+                                                                       shared_ptr<EdgePairPredicate> predicate) {
     for (const auto& vertex: old_graph.vertices()) {
         graph_->AddVertex(vertex);
     }
@@ -114,13 +118,13 @@ shared_ptr<ScaffoldGraph> PredicateScaffoldGraphConstructor::Construct() {
 }
 ScoreFunctionScaffoldGraphConstructor::ScoreFunctionScaffoldGraphConstructor(const Graph& assembly_graph,
                                                                              const ScaffoldGraph& old_graph_,
-                                                                             const shared_ptr<EdgePairScoreFunction>& score_function_,
+                                                                             shared_ptr<EdgePairScoreFunction> score_function_,
                                                                              const double score_threshold, size_t num_threads)
     : BaseScaffoldGraphConstructor(assembly_graph), old_graph_(old_graph_),
       score_function_(score_function_), score_threshold_(score_threshold), num_threads_(num_threads) {}
 
 void ScoreFunctionScaffoldGraphConstructor::ConstructFromGraphAndScore(const ScaffoldGraph& graph,
-                                                                       const shared_ptr<EdgePairScoreFunction> score_function,
+                                                                       shared_ptr<EdgePairScoreFunction> score_function,
                                                                        double score_threshold, size_t threads) {
     //fixme score overwrites previous weight!
     for (const auto& vertex: graph.vertices()) {

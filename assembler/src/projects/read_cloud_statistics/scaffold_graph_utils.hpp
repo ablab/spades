@@ -139,7 +139,6 @@ namespace scaffold_graph_utils {
         }
 
         ScaffoldGraph ConstructNonTransitiveGraph(const ScaffoldGraph& scaffold_graph, const Graph& graph) {
-            typedef ScaffoldGraph::ScaffoldVertex ScaffoldVertex;
             size_t distance_threshold = 3;
             size_t max_threads = 1;
             auto predicate = make_shared<path_extend::TransitiveEdgesPredicate>(scaffold_graph, graph, distance_threshold);
@@ -231,9 +230,9 @@ namespace scaffold_graph_utils {
 
     class ScaffoldGraphSplitter {
      public:
-        typedef transitions::EdgeWithMapping EdgeWithMapping;
+        typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
         typedef vector<EdgeWithMapping> ContigPath;
-        typedef transitions::NamedSimplePath NamedSimplePath;
+        typedef path_extend::validation::NamedSimplePath NamedSimplePath;
      private:
         const Graph& g_;
         const vector<NamedSimplePath>& reference_paths_;
@@ -305,7 +304,7 @@ namespace scaffold_graph_utils {
 
     class ScaffoldGraphPrinter {
      public:
-        typedef transitions::EdgeWithMapping EdgeWithMapping;
+        typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
         typedef vector<EdgeWithMapping> ContigPath;
      private:
         const Graph& g_;
@@ -374,7 +373,7 @@ namespace scaffold_graph_utils {
      public:
         MetaScaffoldGraphPrinter(const Graph& g_) : g_(g_) {}
 
-        void PrintGraphAsMultiple(const ScaffoldGraph& graph, const vector<transitions::NamedSimplePath>& reference_paths,
+        void PrintGraphAsMultiple(const ScaffoldGraph& graph, const vector<path_extend::validation::NamedSimplePath>& reference_paths,
                              const string& output_path) {
             ScaffoldGraphSplitter splitter(g_, reference_paths);
             auto name_to_signed_graph = splitter.SplitAndSignScaffoldGraph(graph);
