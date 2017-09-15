@@ -1,7 +1,6 @@
 #pragma once
 
-#include "transitions.hpp"
-#include "common/barcode_index/contracted_graph.hpp"
+#include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
 #include "cluster_storage_analyzer.hpp"
 
 namespace contracted_graph {
@@ -33,26 +32,27 @@ namespace contracted_graph {
     };
 
     struct VertexClusterData {
+      typedef path_extend::transitions::Transition Transition;
       std::string name_;
       std::size_t clusters_;
       std::size_t correct_clusters_;
-      std::map<transitions::Transition, size_t> transition_to_clusters_;
-      std::map<transitions::Transition, size_t> correct_transition_to_clusters_;
+      std::map<Transition, size_t> transition_to_clusters_;
+      std::map<Transition, size_t> correct_transition_to_clusters_;
       bool has_correct_;
 
       VertexClusterData(const string &name = "", bool has_correct = true)
           : name_(name), clusters_(0), correct_clusters_(0), transition_to_clusters_(),
             correct_transition_to_clusters_(), has_correct_(has_correct) {}
 
-      void AddTransitionWithCluster(const transitions::Transition& transition, size_t clusters) {
+      void AddTransitionWithCluster(const Transition& transition, size_t clusters) {
           transition_to_clusters_[transition] = clusters;
       }
 
-      void AddCorrectTransitionWithCluster(const transitions::Transition& transition, size_t clusters) {
+      void AddCorrectTransitionWithCluster(const Transition& transition, size_t clusters) {
           correct_transition_to_clusters_[transition] = clusters;
       }
 
-      size_t GetClusters(const transitions::Transition& transition) const {
+      size_t GetClusters(const Transition& transition) const {
           return transition_to_clusters_.at(transition);
       }
 
@@ -73,7 +73,7 @@ namespace contracted_graph {
           fout << sep;
       }
 
-      void PrintMap(ofstream& fout, const std::map<transitions::Transition, size_t>& transition_map) const {
+      void PrintMap(ofstream& fout, const std::map<Transition, size_t>& transition_map) const {
           vector<size_t> weights;
           string buffer;
           for (const auto &transition_entry: transition_map) {
@@ -90,7 +90,8 @@ namespace contracted_graph {
     };
 
     struct TransitionVertexData {
-      std::set<transitions::Transition> transitions_;
+      typedef path_extend::transitions::Transition Transition;
+      std::set<Transition> transitions_;
       std::set<EdgeId> incoming_set_;
       std::set<EdgeId> outcoming_set_;
       std::map<EdgeId, size_t> incoming_edge_to_pos_;
@@ -115,7 +116,7 @@ namespace contracted_graph {
       TransitionVertexData(const TransitionVertexData& other) = default;
 
       void InsertTransition(const EdgeId& incoming, const EdgeId& outcoming) {
-          transitions_.insert(transitions::Transition(incoming, outcoming));
+          transitions_.insert(Transition(incoming, outcoming));
       }
 
       void Print(ofstream& fout, const string& separator) const {
@@ -134,7 +135,7 @@ namespace contracted_graph {
           fout << separator;
       }
 
-      bool Contains(const transitions::Transition transition) const {
+      bool Contains(const Transition transition) const {
           return transitions_.find(transition) != transitions_.end();
       }
 
@@ -157,6 +158,9 @@ namespace contracted_graph {
     };
 
     class TransitionStatistics: public read_cloud_statistics::Statistic {
+     public:
+        typedef path_extend::transitions::Transition Transition;
+     private:
         std::map<VertexId, DetailedVertexData> data_;
 
      public:
@@ -204,7 +208,7 @@ namespace contracted_graph {
         }
 
         struct GreedyOrderData {
-          vector<transitions::Transition> transition_order_;
+          vector<path_extend::transitions::Transition> transition_order_;
           vector<EdgeId> incoming_order_;
           vector<EdgeId> outcoming_order_;
         };
@@ -250,9 +254,6 @@ namespace contracted_graph {
                         if (transition_data.GetName() == "Reference" and transition_data.Contains(transition)) {
                             fout << "(R) ";
                         }
-                        if (transition_data.GetName() == "Read cloud contig" and transition_data.Contains(transition)) {
-                            fout << "(C) ";
-                        }
                     }
                     fout << sep;
                     ++counter;
@@ -269,8 +270,8 @@ namespace contracted_graph {
 
         }
 
-        std::map<transitions::Transition, size_t> GetScoreMap(const DetailedVertexData& vertex_data) {
-            std::map<transitions::Transition, size_t> score_map;
+        std::map<Transition, size_t> GetScoreMap(const DetailedVertexData& vertex_data) {
+            std::map<Transition, size_t> score_map;
             for (const auto& entry: vertex_data.vertex_to_nonpath_data_.transition_to_clusters_) {
                 auto transition = entry.first;
                 size_t nonpath_score = entry.second;
@@ -287,8 +288,8 @@ namespace contracted_graph {
             return score_map;
         };
 
-        GreedyOrderData GetGreedySequence(std::map<transitions::Transition, size_t>& transition_to_clusters) {
-            vector<std::pair<transitions::Transition, size_t>> sorted_entries;
+        GreedyOrderData GetGreedySequence(std::map<Transition, size_t>& transition_to_clusters) {
+            vector<std::pair<Transition, size_t>> sorted_entries;
             std::set<EdgeId> incoming;
             std::set<EdgeId> outcoming;
             for (const auto& entry: transition_to_clusters) {
@@ -297,7 +298,7 @@ namespace contracted_graph {
                 sorted_entries.push_back(entry);
             }
             std::sort(sorted_entries.begin(), sorted_entries.end(),
-                      [](const std::pair<transitions::Transition, size_t>& first, const std::pair<transitions::Transition, size_t>& second) {
+                      [](const std::pair<Transition, size_t>& first, const std::pair<Transition, size_t>& second) {
                         return first.second > second.second;
                       });
             vector<EdgeId> incoming_order;
@@ -332,7 +333,7 @@ namespace contracted_graph {
             result.outcoming_order_ = outcoming_order;
             for (const auto& in_edge: incoming_order) {
                 for (const auto& out_edge: outcoming_order) {
-                    result.transition_order_.push_back(transitions::Transition(in_edge, out_edge));
+                    result.transition_order_.push_back(Transition(in_edge, out_edge));
                 }
             }
             VERIFY(result.transition_order_.size() == transition_to_clusters.size());
@@ -450,101 +451,18 @@ namespace contracted_graph {
       }
     };
 
-//    class ContractedVertexResolver {
-//
-//     public:
-//        virtual ~ContractedVertexResolver() {}
-//
-//        virtual vector<transitions::Transition> ResolveVertex(const VertexId& vertex, const DetailedVertexData& vertex_data) = 0;
-//    };
-//
-//    class CautiousContractedVertexResolver {
-//        double barcode_connection_threshold;
-//        const Graph& g_;
-//     public:
-//        CautiousContractedVertexResolver(double barcode_connection_threshold, const Graph &g_)
-//            : barcode_connection_threshold(barcode_connection_threshold), g_(g_) {}
-//        virtual ~CautiousContractedVertexResolver() {}
-//
-//        vector<transitions::Transition> ResolveVertex(const VertexId& vertex, const DetailedVertexData& vertex_data) {
-//
-//        }
-//
-//        unordered_set<transitions::Transition> GetVertexGraph(const DetailedVertexData& vertex_data) {
-//            unordered_set<transitions::Transition> result;
-//            const vector<EdgeId> &incoming = vertex_data.incoming_;
-//            const vector<EdgeId> &outcoming = vertex_data.outcoming_;
-//            for (const auto &in_edge: incoming) {
-//                for (const auto &out_edge: outcoming) {
-//                    transitions::Transition transition(in_edge, out_edge);
-//                    size_t score = 0;
-//                    for (const auto &cluster_transition: vertex_data.vertex_to_cluster_data_) {
-//                        score+= cluster_transition.GetClusters(transition);
-//                    }
-//                    if (static_cast<double>(score) / g_.coverage(out_edge) > barcode_connection_threshold) {
-//                        result.insert(transition);
-//                    }
-//                }
-//            }
-//            return result;
-//        }
-//
-//        vector<transitions::Transition> GetUniqueMatching(const unordered_set<transitions::Transition> edges,
-//                                                          const unordered_set<EdgeId>& incoming,
-//                                                          const unordered_set<EdgeId>& outcoming) {
-//            auto remaining_incoming = incoming;
-//            auto remaining_outcoming = outcoming;
-//            std::map<EdgeId, size_t> indegree;
-//            std::map<EdgeId, size_t> outdegree;
-//            for (const auto& in_edge: incoming) {
-//                outdegree[in_edge] = 0;
-//            }
-//            for (const auto& out_edge: outcoming) {
-//                indegree[out_edge] = 0;
-//            }
-//            for (const auto& transition: edges) {
-//                outdegree[transition.first_]++;
-//                indegree[transition.second_]++;
-//            }
-//            vector<transitions::Transition> global_result;
-//            vector<transitions::Transition> current_result;
-//            bool failed = false;
-//            while(remaining_incoming.size() > 0 or remaining_outcoming.size() > 0 or failed) {
-//                for (const auto& in_edge: remaining_incoming) {
-//                    if (outdegree[in_edge] == 1) {
-//                        for (const auto& transition: edges) {
-//                            if (in_edge == transition.first_) {
-//                                EdgeId second = transition.second_;
-//                                if (remaining_outcoming.find(second) != remaining_outcoming.end()) {
-//                                    transitions::Transition correct(in_edge, second);
-//                                    current_result.push_back(correct);
-//                                    remaining_incoming.erase(in_edge);
-//                                    remaining_outcoming.erase(second);
-//                                    inf
-//                                } else {
-//                                    return global_result;
-//                                }
-//                            }
-//                            break;
-//                        }
-//                    }
-//                    break;
-//                }
-//                for (const auto& in_edge: remaining_incoming) {
-//                    if (outdegre[in])
-//                }
-//            }
-//        }
-//    };
-
     class ContractedGraphAnalyzer: public read_cloud_statistics::StatisticProcessor {
+     public:
+        typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
+        typedef path_extend::transitions::Transition Transition;
+     private:
         const Graph& graph_;
         const cluster_storage::ClusterGraphAnalyzer ordering_analyzer_;
         const FrameBarcodeIndexInfoExtractor& barcode_extractor_;
         const cluster_statistics::PathClusterStorage& path_cluster_storage_;
         contracted_graph::ContractedGraph contracted_graph_;
-        const unordered_map<string, transitions::ContigTransitionStorage>& name_to_transition_storage_;
-        const transitions::ContigTransitionStorage& reference_transition_storage_;
+        const unordered_map<string, ContigTransitionStorage>& name_to_transition_storage_;
+        const ContigTransitionStorage& reference_transition_storage_;
         const cluster_storage::ClusterStorage& cluster_storage_;
         const size_t min_read_threshold_;
      public:
@@ -552,8 +470,8 @@ namespace contracted_graph {
                                 const FrameBarcodeIndexInfoExtractor& barcode_extractor,
                                 const cluster_statistics::PathClusterStorage &path_cluster_storage_,
                                 const ContractedGraph &contracted_graph_,
-                                const unordered_map<string, transitions::ContigTransitionStorage>& name_to_storage,
-                                const transitions::ContigTransitionStorage& reference_transition_storage,
+                                const unordered_map<string, ContigTransitionStorage>& name_to_storage,
+                                const ContigTransitionStorage& reference_transition_storage,
                                 const cluster_storage::ClusterStorage& cluster_storage,
                                 size_t min_read_threshold) :
             StatisticProcessor("transition_statistics_extractor"), graph_(graph),
@@ -578,9 +496,9 @@ namespace contracted_graph {
         VertexDataStats GetVertexDataStats() {
             VertexDataStats stats;
             for (const auto& vertex: contracted_graph_) {
-                size_t outcoming = contracted_graph_.GetOutcoming(vertex).size();
-                size_t incoming = contracted_graph_.GetIncoming(vertex).size();
-                size_t capacity = contracted_graph_.GetCapacity(vertex);
+                size_t outcoming = contracted_graph_.getOutcomingEdges(vertex).size();
+                size_t incoming = contracted_graph_.getIncomingEdges(vertex).size();
+                size_t capacity = contracted_graph_.capacity(vertex);
                 stats.Insert(vertex, incoming, outcoming, capacity);
             }
             return stats;
@@ -594,11 +512,11 @@ namespace contracted_graph {
             for (const auto& vertex: contracted_graph_) {
                 DEBUG("Vertex: " << vertex.int_id());
                 DetailedVertexData vertex_data;
-                vector<EdgeId> incoming = contracted_graph_.GetIncoming(vertex);
-                vector<EdgeId> outcoming = contracted_graph_.GetOutcoming(vertex);
+                vector<EdgeId> incoming = contracted_graph_.getIncomingEdges(vertex);
+                vector<EdgeId> outcoming = contracted_graph_.getOutcomingEdges(vertex);
                 vertex_data.incoming_ = incoming;
                 vertex_data.outcoming_ = outcoming;
-                vertex_data.capacity_ = contracted_graph_.GetCapacity(vertex);
+                vertex_data.capacity_ = contracted_graph_.capacity(vertex);
 
                 vector<VertexClusterData> vertex_to_cluster_storages = {VertexClusterData("Path clusters assigned to the vertex (2 edges)"),
                                                                         VertexClusterData("Path clusters assigned to the vertex (3 edges)"),
@@ -627,12 +545,12 @@ namespace contracted_graph {
                     vertex_data.coverages_.push_back(graph_.coverage(edge));
                     vertex_data.barcode_coverages_.push_back(GetBarcodeCoverage(edge, coverage_read_threshold));
                 }
-                vector<transitions::Transition> transitions;
+                vector<Transition> transitions;
                 for (const auto& in_edge: incoming_set) {
                     for (const auto& out_edge: outcoming_set) {
                         DEBUG("Incoming edge: " << in_edge.int_id());
                         DEBUG("Outcoming edge: " << out_edge.int_id());
-                        transitions::Transition transition(in_edge, out_edge);
+                        Transition transition(in_edge, out_edge);
                         transitions.push_back(transition);
                     }
                 }
@@ -672,7 +590,7 @@ namespace contracted_graph {
             }
         }
 
-        void UpdateTransitionToClusters(VertexClusterData& vertex_cluster_data, const transitions::Transition& transition,
+        void UpdateTransitionToClusters(VertexClusterData& vertex_cluster_data, const Transition& transition,
                                         const cluster_statistics::TransitionClusterStorage& transition_cluster_storage,
                                         size_t min_read_threshold) {
             size_t clusters = GetNumberOfClusters(transition, transition_cluster_storage, min_read_threshold);
@@ -685,9 +603,9 @@ namespace contracted_graph {
             }
         }
 
-        void UpdateNonPathClusters(VertexClusterData& vertex_cluster_data, const vector<transitions::Transition> transitions,
+        void UpdateNonPathClusters(VertexClusterData& vertex_cluster_data, const vector<Transition> transitions,
                                    const cluster_statistics::EdgeClusterStorage &edge_cluster_storage) {
-            unordered_map<size_t, transitions::Transition> cluster_to_transition;
+            unordered_map<size_t, Transition> cluster_to_transition;
             unordered_set<size_t> removed_clusters;
             for (const auto& transition: transitions) {
                 vector<size_t> supporting_clusters = std::move(GetClusterIntersection(transition, edge_cluster_storage));
@@ -710,7 +628,7 @@ namespace contracted_graph {
             }
         }
 
-        vector<size_t> GetClusterIntersection(const transitions::Transition& transition,
+        vector<size_t> GetClusterIntersection(const Transition& transition,
                                               const cluster_statistics::EdgeClusterStorage& edge_cluster_storage) {
             const EdgeId first = transition.first_;
             const EdgeId second = transition.second_;
@@ -758,7 +676,7 @@ namespace contracted_graph {
             return edge_cluster_storage_builder.BuildEdgeClusterStorage(cluster_storage, non_path_predicate);
         }
 
-        size_t GetNumberOfClusters(const transitions::Transition& transition,
+        size_t GetNumberOfClusters(const Transition& transition,
                                    const cluster_statistics::TransitionClusterStorage& transition_cluster_storage,
                                    size_t min_read_threshold) const {
             if (transition_cluster_storage.HasKey(transition)) {

@@ -116,7 +116,7 @@ public:
 
         return ppair;
     }
-    
+
     // This guy acquires the ownership of paths
     std::pair<BidirectionalPath&, BidirectionalPath&>
     AddPair(std::unique_ptr<BidirectionalPath> p, std::unique_ptr<BidirectionalPath> cp) {
@@ -201,6 +201,10 @@ private:
 
 protected:
     DECL_LOGGER("BidirectionalPath");
+
+};
+
+class PrevVertexMapContainer: public PathContainer {
 
 };
 

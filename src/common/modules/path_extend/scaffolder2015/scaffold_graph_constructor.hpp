@@ -48,6 +48,8 @@ protected:
     void ConstructFromEdgeConditions(func::TypedPredicate<typename Graph::EdgeId> edge_condition,
                                      ConnectionConditions &connection_conditions,
                                      bool use_terminal_vertices_only = false);
+
+    DECL_LOGGER("BaseScaffoldGraphConstructor");
 };
 
 
@@ -82,6 +84,21 @@ public:
     std::shared_ptr<ScaffoldGraph> Construct() override;
 };
 
+//todo refactor connection conditions to avoid code duplication
+class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
+    const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
+    const size_t distance_;
+
+ public:
+    UniqueScaffoldGraphConstructor(
+        const Graph& assembly_graph,
+        const ScaffoldingUniqueEdgeStorage& unique_storage_,
+        const size_t distance_);
+
+ public:
+    shared_ptr<ScaffoldGraph> Construct() override;
+};
+
 class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
  public:
     typedef path_extend::ScaffoldEdgePredicate EdgePairPredicate;
@@ -93,17 +110,17 @@ class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
  public:
     PredicateScaffoldGraphConstructor(const Graph& assembly_graph,
                                       const ScaffoldGraph& old_graph_,
-                                      const shared_ptr<EdgePairPredicate>& predicate_,
-                                      const size_t max_threads);
+                                      shared_ptr<EdgePairPredicate> predicate_,
+                                      size_t max_threads);
 
     shared_ptr<ScaffoldGraph> Construct() override;
  protected:
-    void ConstructFromGraphAndPredicate(const ScaffoldGraph& old_graph, const shared_ptr<EdgePairPredicate> predicate);
+    void ConstructFromGraphAndPredicate(const ScaffoldGraph& old_graph, shared_ptr<EdgePairPredicate> predicate);
 
 };
 
 class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
-    typedef path_extend::EdgePairScoreFunction EdgePairScoreFunction;
+    typedef path_extend::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
  protected:
     const ScaffoldGraph& old_graph_;
     const shared_ptr<EdgePairScoreFunction> score_function_;
@@ -112,12 +129,12 @@ class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor
  public:
     ScoreFunctionScaffoldGraphConstructor(const Graph& assembly_graph,
                                           const ScaffoldGraph& old_graph_,
-                                          const shared_ptr<EdgePairScoreFunction>& score_function_,
+                                          shared_ptr<EdgePairScoreFunction> score_function_,
                                           const double score_threshold, size_t num_threads);
 
     shared_ptr<ScaffoldGraph> Construct() override;
  protected:
-    void ConstructFromGraphAndScore(const ScaffoldGraph& graph, const shared_ptr<EdgePairScoreFunction> score_function,
+    void ConstructFromGraphAndScore(const ScaffoldGraph& graph, shared_ptr<EdgePairScoreFunction> score_function,
                                     double score_threshold, size_t threads);
     DECL_LOGGER("ScoreFunctionScaffoldGraphConstructor")
 };

@@ -1,6 +1,10 @@
 #pragma once
+#include "common/modules/path_extend/pipeline/launch_support.hpp"
+#include "common/modules/path_extend/extension_chooser.hpp"
 #include "common/modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/gap_closer_predicates.hpp"
 
 namespace path_extend {
     //Same as AssemblyGraphConnectionCondition, but stops after reaching unique edges.
@@ -18,53 +22,78 @@ namespace path_extend {
         virtual bool IsLast() const override;
     };
 
-    struct ScaffolderParams {
-      size_t tail_threshold_;
-      size_t count_threshold_;
-      double score_threshold_;
-      size_t barcode_threshold_;
-      size_t length_threshold_;
-      size_t initial_distance_;
-      double middle_fraction_;
-      double split_procedure_strictness_;
-    };
-
     class ScaffoldEdgePredicate {
      public:
+        typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
         typedef scaffold_graph::ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
 
         virtual bool Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const = 0;
         virtual ~ScaffoldEdgePredicate() = default;
     };
 
-    struct LongGapDijkstraParams {
-      const size_t barcode_threshold_;
+    struct ReadCloudMiddleDijkstraParams {
+      const double score_threshold_;
       const size_t count_threshold_;
+      const size_t middle_count_threshold_;
       const size_t tail_threshold_;
       const size_t len_threshold_;
       const size_t distance_;
 
-      LongGapDijkstraParams(const size_t barcode_threshold_,
-                                  const size_t count_threshold_,
-                                  const size_t tail_threshold_,
-                                  const size_t len_threshold_,
-                                  const size_t distance);
+      ReadCloudMiddleDijkstraParams(const double score_threshold, const size_t count_threshold_, size_t middle_count_threshold,
+                            const size_t tail_threshold_, const size_t len_threshold_,
+                            const size_t distance);
     };
 
-    class LongGapDijkstraPredicate: public ScaffoldEdgePredicate {
+    class ReadCloudMiddleDijkstraPredicate: public ScaffoldEdgePredicate {
         using ScaffoldEdgePredicate::ScaffoldEdge;
 
         const Graph& g;
         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
-        const LongGapDijkstraParams params_;
+        const ReadCloudMiddleDijkstraParams params_;
      public:
-        LongGapDijkstraPredicate(const Graph& g,
+        ReadCloudMiddleDijkstraPredicate(const Graph& g,
                                          const ScaffoldingUniqueEdgeStorage& unique_storage_,
                                          const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
-                                         const LongGapDijkstraParams& params);
+                                         const ReadCloudMiddleDijkstraParams& params);
         bool Check(const ScaffoldEdge& scaffold_edge) const override;
 
+    };
+
+    struct PairedEndDijkstraParams {
+      const size_t paired_lib_index_;
+      const size_t prefix_length_;
+      const config::dataset& dataset_info;
+      const path_extend::PathExtendParamsContainer pe_params_;
+
+      PairedEndDijkstraParams(const size_t paired_lib_index_,
+                              const size_t prefix_length_,
+                              const config::dataset &dataset_info,
+                              const PathExtendParamsContainer &pe_params_);
+    };
+
+    class PairedEndDijkstraPredicate: public ScaffoldEdgePredicate {
+        using ScaffoldEdgePredicate::ScaffoldEdge;
+
+        const Graph& g_;
+        const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
+        const omnigraph::de::PairedInfoIndicesT<Graph>& clustered_indices_;
+        const size_t length_bound_;
+        const PairedEndDijkstraParams params_;
+
+     public:
+        PairedEndDijkstraPredicate(const Graph &g_,
+                                   const ScaffoldingUniqueEdgeStorage &unique_storage_,
+                                   const de::PairedInfoIndicesT<debruijn_graph::DeBruijnGraph> &clustered_indices_,
+                                   const size_t length_bound_,
+                                   const PairedEndDijkstraParams &params_);
+
+        bool Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const override;
+
+     private:
+        shared_ptr<path_extend::ExtensionChooser> ConstructSimpleExtensionChooser() const;
+
+        DECL_LOGGER("PairedEndDijkstraPredicate");
     };
 
     class EdgeSplitPredicate: public ScaffoldEdgePredicate {
@@ -179,25 +208,59 @@ namespace path_extend {
         DECL_LOGGER("TransitiveEdgesPredicate");
     };
 
-    class EdgePairScoreFunction {
+    class ScaffoldEdgeScoreFunction {
+     protected:
+        typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+        typedef scaffold_graph::ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
      public:
         virtual double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const = 0;
-        virtual ~EdgePairScoreFunction() = default;
+        virtual ~ScaffoldEdgeScoreFunction() = default;
     };
 
-    class BarcodeScoreFunction: public EdgePairScoreFunction {
+    class AbstractBarcodeScoreFunction: public ScaffoldEdgeScoreFunction {
+     protected:
+        const Graph& graph_;
+        const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
+
+     public:
+        AbstractBarcodeScoreFunction(
+            const Graph& graph_,
+            const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_);
+    };
+
+    class NormalizedBarcodeScoreFunction: public AbstractBarcodeScoreFunction {
+        using AbstractBarcodeScoreFunction::barcode_extractor_;
+        using AbstractBarcodeScoreFunction::graph_;
         const size_t read_count_threshold_;
         const size_t tail_threshold_;
         const size_t total_barcodes_;
-        const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
-        const Graph& graph_;
 
      public:
-        BarcodeScoreFunction(const size_t read_count_threshold,
-                             const size_t tail_threshold,
-                             const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
-                             const Graph& graph);
+        NormalizedBarcodeScoreFunction(
+            const Graph& graph_,
+            const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
+            const size_t read_count_threshold_,
+            const size_t tail_threshold_);
 
-        double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
+        virtual double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
+
+        DECL_LOGGER("NormalizedBarcodeScoreFunction");
     };
+
+    class TrivialBarcodeScoreFunction: public AbstractBarcodeScoreFunction {
+        using AbstractBarcodeScoreFunction::barcode_extractor_;
+        using AbstractBarcodeScoreFunction::graph_;
+        const size_t read_count_threshold_;
+        const size_t tail_threshold_;
+
+     public:
+        TrivialBarcodeScoreFunction(
+            const Graph& graph_,
+            const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
+            const size_t read_count_threshold_,
+            const size_t tail_threshold_);
+
+        virtual double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
+    };
+
 }

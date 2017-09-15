@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cluster_storage.hpp"
-#include "contracted_graph.hpp"
+#include "common/assembly_graph/contracted_graph/contracted_graph_helper.hpp"
 
 namespace cluster_storage {
 
@@ -9,9 +9,9 @@ class CondensationAnalyzer {
  public:
     typedef contracted_graph::ContractedGraph ContractedGraph;
  private:
-    const contracted_graph::ContractedGraphBuilder& contracted_builder_;
+    const contracted_graph::ContractedGraphFactoryHelper& contracted_builder_;
  public:
-    explicit CondensationAnalyzer(const contracted_graph::ContractedGraphBuilder& contracted_builder):
+    explicit CondensationAnalyzer(const contracted_graph::ContractedGraphFactoryHelper& contracted_builder):
         contracted_builder_(contracted_builder) {}
 
     ContractedGraph GetCondensation(const ContractedGraph& graph) {
@@ -46,7 +46,7 @@ class CondensationAnalyzer {
             condensation.InsertVertex(entry.second);
         }
         for (const auto &vertex: graph) {
-            for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
+            for (auto it = graph.out_begin(vertex); it != graph.out_end(vertex); ++it) {
                 VertexId next = it->first;
                 VertexId prev_root = vertex_to_root.at(vertex);
                 VertexId next_root = vertex_to_root.at(next);
@@ -61,7 +61,7 @@ class CondensationAnalyzer {
 
     vector<unordered_set<VertexId>> GetStronglyConnectedComponents(const ContractedGraph& graph) const {
         TRACE("Transposing graph")
-        auto transposed_graph = contracted_builder_.BuildTransposedGraph(graph);
+        auto transposed_graph = contracted_builder_.TransposeContractedGraph(graph);
 
         std::unordered_map<VertexId, bool> vertex_to_visited;
         for (const auto &vertex: graph) {
@@ -104,7 +104,7 @@ class CondensationAnalyzer {
     void GetExitTimeOrdering(const VertexId& vertex, const ContractedGraph& graph,
                              std::unordered_map<VertexId, bool>& vertex_to_visited, vector<VertexId>& ordering) const {
         vertex_to_visited.at(vertex) = true;
-        for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
+        for (auto it = graph.out_begin(vertex); it != graph.out_end(vertex); ++it) {
             VertexId next = it->first;
             if (not vertex_to_visited.at(next)) {
                 GetExitTimeOrdering(next, graph, vertex_to_visited, ordering);
@@ -119,7 +119,7 @@ class CondensationAnalyzer {
                             unordered_set<VertexId> &component) const {
         vertex_to_visited.at(vertex) = true;
         component.insert(vertex);
-        for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
+        for (auto it = graph.out_begin(vertex); it != graph.out_end(vertex); ++it) {
             VertexId next = it->first;
             if (not vertex_to_visited.at(next)) {
                 GetStrConComponent(next, graph, vertex_to_visited, component);
@@ -143,14 +143,14 @@ class ConnectedComponentIndex {
 
 class ClusterGraphAnalyzer {
 
-    const contracted_graph::ContractedGraphBuilder contracted_builder_;
+    const contracted_graph::ContractedGraphFactoryHelper& contracted_builder_;
 
  public:
     typedef contracted_graph::ContractedGraph ContractedGraph;
 
  public:
 
-    explicit ClusterGraphAnalyzer(const contracted_graph::ContractedGraphBuilder& contracted_builder) :
+    explicit ClusterGraphAnalyzer(const contracted_graph::ContractedGraphFactoryHelper& contracted_builder) :
         contracted_builder_(contracted_builder) {}
 
     enum vertex_state {
@@ -166,7 +166,7 @@ class ClusterGraphAnalyzer {
     }
 
     bool IsEulerianCluster(const Cluster& cluster) const {
-        auto contracted_graph = contracted_builder_.BuildContractedGraphFromInternalGraph(cluster.GetInternalGraph());
+        auto contracted_graph = contracted_builder_.ConstructFromInternalGraph(cluster.GetInternalGraph());
         return IsEulerianPath(contracted_graph);
     }
 
@@ -175,8 +175,9 @@ class ClusterGraphAnalyzer {
             WARN("Ordering size is not equal to number of vertices!");
             return false;
         }
+//        auto contracted_graph = contracted_builder_.BuildContractedGraphFromInternalGraph(graph);
 //        for (auto first = ordering.begin(), second = std::next(ordering.begin()); second != ordering.end(); ++first, ++second) {
-//            if (not graph.ContainsEdge(*first, *second)) {
+//            if (not contracted_graph.ContainsEdge(*first, *second)) {
 //                WARN("One of ordering transitions is not correct!");
 //                return false;
 //            }
@@ -195,7 +196,7 @@ class ClusterGraphAnalyzer {
 
  private:
     vector<EdgeId> GetOrdering(const Cluster::InternalGraph &graph) const {
-        auto contracted_graph = contracted_builder_.BuildContractedGraphFromInternalGraph(graph);
+        auto contracted_graph = contracted_builder_.ConstructFromInternalGraph(graph);
         vector<EdgeId> result;
         if (not IsEulerianPath(contracted_graph)) {
             TRACE("Contracted graph does not contain eulerian path")
@@ -208,17 +209,17 @@ class ClusterGraphAnalyzer {
         ContractedGraph condensation = condensation_analyzer.GetCondensation(contracted_graph,
                                                                              strongly_connected_components);
         auto condensation_map = GetCondensationMap(condensation, strongly_connected_components);
-        TRACE("Printing condensation")
-//        condensation.Print(std::cout);
+        TRACE("Printing condensation");
+        PrintContractedGraph(condensation);
         if (not IsSimplePath(condensation)) {
             TRACE("Condensation is not simple path");
             return result;
         }
 
         for (const auto& component: strongly_connected_components) {
-            auto component_subgraph = contracted_builder_.BuildSubgraph(contracted_graph, component);
+            auto component_subgraph = contracted_builder_.ExtractContractedSubgraph(contracted_graph, component);
             TRACE("Printing component");
-//            component_subgraph.Print(std::cout);
+            PrintContractedGraph(component_subgraph);
             if (not IsSimpleCycle(component_subgraph)) {
                 TRACE("Component is not a simple cycle");
                 return result;
@@ -242,7 +243,7 @@ class ClusterGraphAnalyzer {
     VertexId FindStartVertex(const ContractedGraph& graph) const {
         VertexId result;
         for (const auto& vertex: graph) {
-            if (graph.GetOutDegree(vertex) > graph.GetInDegree(vertex)) {
+            if (graph.getOutDegree(vertex) > graph.getInDegree(vertex)) {
                 result = vertex;
             }
         }
@@ -260,7 +261,7 @@ class ClusterGraphAnalyzer {
         EulerianPathTraverser(const ContractedGraph& graph_, const ConnectedComponentIndex& connected_component_index_)
             : ordering_(), edge_to_visited_(), graph_(graph_), connected_component_index_(connected_component_index_) {
             for (const auto& vertex: graph_) {
-                for (auto it = graph_.outcoming_begin(vertex); it != graph_.outcoming_end(vertex); ++it) {
+                for (auto it = graph_.out_begin(vertex); it != graph_.out_end(vertex); ++it) {
                     for (const auto& edge: it->second) {
                         edge_to_visited_.insert({edge, false});
                     }
@@ -271,7 +272,7 @@ class ClusterGraphAnalyzer {
         void Run(const VertexId& vertex) {
             TRACE("Traversing from vertex " << vertex.int_id());
             std::deque<std::pair<VertexId, EdgeId>> next_pairs;
-            for (auto it = graph_.outcoming_begin(vertex); it != graph_.outcoming_end(vertex); ++it) {
+            for (auto it = graph_.out_begin(vertex); it != graph_.out_end(vertex); ++it) {
                 VertexId next = it->first;
                 TRACE("Next : " << next.int_id());
                 VERIFY((it->second).size() == 1);
@@ -332,9 +333,9 @@ class ClusterGraphAnalyzer {
                 }
             }
         }
-        VERIFY(result.size() == condensation.NumberOfVertices());
+        VERIFY(result.size() == condensation.size());
         return result;
-    };
+    }
 
     std::unordered_map<VertexId, size_t> GetIndegrees(const ContractedGraph& graph) const {
         std::unordered_map<VertexId, size_t> indegree;
@@ -342,12 +343,12 @@ class ClusterGraphAnalyzer {
             indegree[vertex] = 0;
         }
         for (const auto& vertex: graph) {
-            for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
+            for (auto it = graph.out_begin(vertex); it != graph.out_end(vertex); ++it) {
                 indegree[it->first] += it->second.size();
             }
         }
         return indegree;
-    };
+    }
 
     std::unordered_map<VertexId, size_t> GetOutdegrees(const ContractedGraph& graph) const {
         std::unordered_map<VertexId, size_t> outdegree;
@@ -355,12 +356,12 @@ class ClusterGraphAnalyzer {
             outdegree[vertex] = 0;
         }
         for (const auto& vertex: graph) {
-            for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
+            for (auto it = graph.out_begin(vertex); it != graph.out_end(vertex); ++it) {
                 outdegree[vertex] += it->second.size();
             }
         }
         return outdegree;
-    };
+    }
 
     bool IsSimplePath(const ContractedGraph& contracted_graph) const {
         auto indegrees = GetIndegrees(contracted_graph);
@@ -368,7 +369,7 @@ class ClusterGraphAnalyzer {
         size_t start_vertices = 0;
         size_t end_vertices = 0;
         size_t middle_vertices = 0;
-        if (contracted_graph.NumberOfVertices() == 1 and outdegrees.at(*(contracted_graph.begin())) == 0) {
+        if (contracted_graph.size() == 1 and outdegrees.at(*(contracted_graph.begin())) == 0) {
             return true;
         }
         for (const auto& vertex: contracted_graph) {
@@ -389,13 +390,16 @@ class ClusterGraphAnalyzer {
     }
 
     bool IsSimpleCycle(const ContractedGraph& contracted_graph) const {
-        if (contracted_graph.NumberOfVertices() == 1) {
-            if (contracted_graph.GetOutDegree(*(contracted_graph.begin())) == 0) {
+        if (contracted_graph.size() == 1) {
+            TRACE("Single vertex");
+            if (contracted_graph.getOutDegree(*(contracted_graph.begin())) == 0) {
                 return true;
             }
         }
         for (const auto& vertex: contracted_graph) {
-            if (contracted_graph.GetInDegree(vertex) != 1 or contracted_graph.GetOutDegree(vertex) != 1) {
+            TRACE("Outdegree: " << contracted_graph.getOutDegree(vertex));
+            TRACE("Indegree: " << contracted_graph.getInDegree(vertex));
+            if (contracted_graph.getInDegree(vertex) != 1 or contracted_graph.getOutDegree(vertex) != 1) {
                 return false;
             }
         }
@@ -438,7 +442,7 @@ class ClusterGraphAnalyzer {
 
     void PrintContractedGraph(const ContractedGraph& graph) const {
         for (const auto& vertex: graph) {
-            for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
+            for (auto it = graph.out_begin(vertex); it != graph.out_end(vertex); ++it) {
                 for (const auto& edge: it->second) {
                     TRACE(vertex.int_id() << " -> " << it->first.int_id() << ", (" << edge.int_id() << ")");
                 }
@@ -468,7 +472,31 @@ struct PathClusterFilter: public ClusterFilter {
 
   PathClusterFilter(const ClusterGraphAnalyzer& ordering_analyzer_) : ordering_analyzer_(ordering_analyzer_) {}
   bool Check(const Cluster& cluster) const override {
-      return ordering_analyzer_.IsPathCluster(cluster);
+      return cluster.Size() >= 2 and ordering_analyzer_.IsPathCluster(cluster);
+  }
+};
+
+struct MaxSpanClusterFilter: public ClusterFilter {
+
+  const size_t max_span_;
+
+  MaxSpanClusterFilter(const size_t max_span_) : max_span_(max_span_) {}
+  bool Check(const Cluster& cluster) const override {
+      INFO("Cluster span: " << cluster.GetSpan());
+      return cluster.GetSpan() <= max_span_;
+  }
+};
+
+struct CompositeClusterFilter: public ClusterFilter {
+  const vector<shared_ptr<ClusterFilter>> cluster_filters_;
+
+  CompositeClusterFilter(const vector<shared_ptr<ClusterFilter>>& cluster_filters_)
+      : cluster_filters_(cluster_filters_) {}
+
+  bool Check(const Cluster& cluster) const override {
+      return std::all_of(cluster_filters_.begin(), cluster_filters_.end(), [this, &cluster](shared_ptr<ClusterFilter> filter) {
+        return filter->Check(cluster);
+      });
   }
 };
 
@@ -478,9 +506,16 @@ class ClusterStorageExtractor {
 
     vector<Cluster> FilterClusterStorage(const ClusterStorage& cluster_storage, shared_ptr<ClusterFilter> filter) {
         vector<Cluster> result;
+        size_t clusters = cluster_storage.Size();
+        size_t counter = 0;
+        size_t block_size = clusters / 10;
         for (const auto& entry: cluster_storage) {
             if (filter->Check(entry.second)) {
                 result.push_back(entry.second);
+            }
+            ++counter;
+            if (counter % block_size == 0) {
+                DEBUG("Processed " << counter << " clusters out of " << clusters);
             }
         }
         return result;

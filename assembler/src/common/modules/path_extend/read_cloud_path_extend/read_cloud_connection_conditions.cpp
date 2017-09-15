@@ -1,5 +1,6 @@
 #include "read_cloud_connection_conditions.hpp"
 #include "read_cloud_dijkstras.hpp"
+#include "path_extend_dijkstras.hpp"
 
 namespace path_extend {
 
@@ -22,7 +23,7 @@ map<EdgeId, double> AssemblyGraphUniqueConnectionCondition::ConnectedWith(EdgeId
         for (auto connected: g_.OutgoingEdges(v)) {
             if (interesting_edge_set_.find(connected) != interesting_edge_set_.end() &&
                 dij.GetDistance(v) < max_connection_length_ && connected != g_.conjugate(e)) {
-                stored_distances_[e].insert(make_pair(connected, 1));
+                stored_distances_[e].insert(make_pair(connected, static_cast<double>(dij.GetDistance(v))));
             }
         }
     }
@@ -36,49 +37,52 @@ bool AssemblyGraphUniqueConnectionCondition::IsLast() const {
     return false;
 }
 
-//fixme use total barcodes from index
-BarcodeScoreFunction::BarcodeScoreFunction(const size_t read_count_threshold,
-                                           const size_t tail_threshold,
-                                           const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
-                                           const Graph& graph)
-    : read_count_threshold_(read_count_threshold),
-      tail_threshold_(tail_threshold),
-      total_barcodes_(1000000),
-      barcode_extractor_(barcode_extractor_),
-      graph_(graph){}
-double BarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const {
+double NormalizedBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const {
     EdgeId first = edge.getStart();
     EdgeId second = edge.getEnd();
     size_t first_length = graph_.length(first);
+    size_t second_length = graph_.length(second);
+    DEBUG("First length: " << first_length);
+    DEBUG("Second length: " << second_length);
     VERIFY(graph_.length(first) >= tail_threshold_);
     VERIFY(graph_.length(second) >= tail_threshold_);
     auto first_barcodes = barcode_extractor_.GetBarcodesFromRange(first, read_count_threshold_,
                                                                   first_length - tail_threshold_, first_length);
     auto second_barcodes = barcode_extractor_.GetBarcodesFromRange(second, read_count_threshold_, 0, tail_threshold_);
     size_t shared_count = barcode_extractor_.CountSharedBarcodesWithFilter(first, second, read_count_threshold_, tail_threshold_);
-//    double second_coverage = graph_.coverage(second);
     double first_barcodes_size = static_cast<double>(first_barcodes.size());
     double second_barcodes_size = static_cast<double>(second_barcodes.size());
     double total_barcodes = static_cast<double>(total_barcodes_);
 
     return static_cast<double>(shared_count) * total_barcodes / (first_barcodes_size * second_barcodes_size);
 }
-LongGapDijkstraPredicate::LongGapDijkstraPredicate(const Graph& g,
+NormalizedBarcodeScoreFunction::NormalizedBarcodeScoreFunction(
+    const Graph& graph_,
+    const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
+    const size_t read_count_threshold_,
+    const size_t tail_threshold_) : AbstractBarcodeScoreFunction(graph_, barcode_extractor_),
+                                    read_count_threshold_(read_count_threshold_),
+                                    tail_threshold_(tail_threshold_),
+                                    //fixme use total barcodes from index
+                                    total_barcodes_(1000000){}
+
+ReadCloudMiddleDijkstraPredicate::ReadCloudMiddleDijkstraPredicate(const Graph& g,
                                                    const ScaffoldingUniqueEdgeStorage& unique_storage_,
                                                    const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
-                                                   const LongGapDijkstraParams& params)
+                                                   const ReadCloudMiddleDijkstraParams& params)
     : g(g),
       unique_storage_(unique_storage_),
       barcode_extractor_(barcode_extractor_),
       params_(params) {}
 
-bool LongGapDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const {
+bool ReadCloudMiddleDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const {
     auto barcode_intersection = barcode_extractor_.GetSharedBarcodesWithFilter(scaffold_edge.getStart(), scaffold_edge.getEnd(),
                                                                                params_.count_threshold_, params_.tail_threshold_);
     auto long_gap_dijkstra = CreateLongGapCloserDijkstra(g, params_.distance_, unique_storage_,
                                                          barcode_extractor_, barcode_intersection,
-                                                         params_.barcode_threshold_, params_.count_threshold_,
-                                                         params_.tail_threshold_, params_.len_threshold_);
+                                                         scaffold_edge.getStart(), scaffold_edge.getEnd(),
+                                                         params_.score_threshold_, params_.middle_count_threshold_,
+                                                         params_.len_threshold_, params_.tail_threshold_);
     long_gap_dijkstra.Run(g.EdgeEnd(scaffold_edge.getStart()));
     VertexId target = g.EdgeStart(scaffold_edge.getEnd());
     for (const auto& vertex: long_gap_dijkstra.ReachedVertices()) {
@@ -88,13 +92,15 @@ bool LongGapDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph::Scaffo
     }
     return false;
 }
-LongGapDijkstraParams::LongGapDijkstraParams(const size_t barcode_threshold_,
+ReadCloudMiddleDijkstraParams::ReadCloudMiddleDijkstraParams(const double score_threshold,
                                              const size_t count_threshold_,
+                                             const size_t middle_count_threshold,
                                              const size_t tail_threshold_,
                                              const size_t len_threshold_,
                                              const size_t distance)
-    : barcode_threshold_(barcode_threshold_),
+    : score_threshold_(score_threshold),
       count_threshold_(count_threshold_),
+      middle_count_threshold_(middle_count_threshold),
       tail_threshold_(tail_threshold_),
       len_threshold_(len_threshold_),
       distance_(distance){}
@@ -176,7 +182,6 @@ bool EdgeSplitPredicate::Check(const ScaffoldEdge& scaffold_edge) const {
         DEBUG("Previous check failed.");
     }
     return next_conjugate_check and previous_conjugate_check and previous_check;
-
 }
 EdgeInTheMiddlePredicate::EdgeInTheMiddlePredicate(const Graph& g_,
                                                    const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
@@ -296,4 +301,84 @@ bool SimpleSearcher::AreEqual(const scaffold_graph::ScaffoldGraph::ScaffoldEdge&
 
 SimpleSearcher::VertexWithDistance::VertexWithDistance(const SimpleSearcher::ScaffoldVertex& vertex, size_t distance)
     : vertex(vertex), distance(distance) {}
+
+AbstractBarcodeScoreFunction::AbstractBarcodeScoreFunction(const Graph& graph_,
+    const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_):
+      graph_(graph_),
+      barcode_extractor_(barcode_extractor_) {}
+TrivialBarcodeScoreFunction::TrivialBarcodeScoreFunction(
+    const Graph& graph_,
+    const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
+    const size_t read_count_threshold_,
+    const size_t tail_threshold_) : AbstractBarcodeScoreFunction(graph_,
+                                                                 barcode_extractor_),
+                                    read_count_threshold_(read_count_threshold_),
+                                    tail_threshold_(tail_threshold_) {}
+double TrivialBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const {
+    EdgeId first = edge.getStart();
+    EdgeId second = edge.getEnd();
+    size_t shared_count = barcode_extractor_.CountSharedBarcodesWithFilter(first, second, read_count_threshold_, tail_threshold_);
+//    INFO("Shared count: " << shared_count << ", " << static_cast<double>(shared_count));
+
+    return static_cast<double>(shared_count);
+}
+bool PairedEndDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const {
+    auto extension_chooser = ConstructSimpleExtensionChooser();
+    EdgeId start_edge = scaffold_edge.getStart();
+    DEBUG("Checking edge " << start_edge.int_id() << " -> " << scaffold_edge.getEnd().int_id());
+    auto dij = CreatePairedEndDijkstra(g_, unique_storage_, length_bound_, extension_chooser, params_.prefix_length_,
+    g_.EdgeEnd(start_edge), start_edge);
+    dij.Run(g_.EdgeEnd(start_edge));
+    VERIFY(dij.finished());
+    VertexId target = g_.EdgeStart(scaffold_edge.getEnd());
+    for (const auto& reached: dij.ReachedVertices()) {
+        if (reached == target) {
+            DEBUG("Check passed");
+            return true;
+        }
+    }
+    DEBUG("Check failed");
+    return false;
+
+}
+shared_ptr<path_extend::ExtensionChooser> PairedEndDijkstraPredicate::ConstructSimpleExtensionChooser() const {
+    auto opts = params_.pe_params_.pset.extension_options;
+    const size_t lib_index = params_.paired_lib_index_;
+    const auto& lib = params_.dataset_info.reads[lib_index];
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(g_, lib, clustered_indices_[lib_index]);
+    shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
+    path_extend::PELaunchSupport support(params_.dataset_info, params_.pe_params_);
+    if (opts.use_default_single_threshold) {
+        if (params_.pe_params_.uneven_depth) {
+            iip = make_shared<CoverageAwareIdealInfoProvider>(g_, paired_lib, params_.dataset_info.RL());
+        } else {
+            double lib_cov = support.EstimateLibCoverage(lib_index);
+            INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
+            iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(g_, paired_lib, params_.dataset_info.RL(), lib_cov);
+        }
+    }
+
+    auto wc = make_shared<PathCoverWeightCounter>(g_, paired_lib, params_.pe_params_.pset.normalize_weight,
+                                                  support.SingleThresholdForLib(params_.pe_params_.pset,
+                                                                                lib.data().pi_threshold),
+                                                  iip);
+    auto extension_chooser = make_shared<SimpleExtensionChooser>(g_, wc, opts.weight_threshold, opts.priority_coeff);
+    return extension_chooser;
+}
+PairedEndDijkstraPredicate::PairedEndDijkstraPredicate(const Graph &g_,
+                                                       const ScaffoldingUniqueEdgeStorage &unique_storage_,
+                                                       const de::PairedInfoIndicesT<debruijn_graph::DeBruijnGraph> &clustered_indices_,
+                                                       const size_t length_bound_,
+                                                       const PairedEndDijkstraParams &params_)
+    : g_(g_),
+      unique_storage_(unique_storage_),
+      clustered_indices_(clustered_indices_),
+      length_bound_(length_bound_),
+      params_(params_) {}
+
+PairedEndDijkstraParams::PairedEndDijkstraParams(const size_t paired_lib_index_,
+                                                 const size_t prefix_length_,
+                                                 const config::dataset &dataset_info,
+                                                 const PathExtendParamsContainer &pe_params_) : paired_lib_index_(
+    paired_lib_index_), prefix_length_(prefix_length_), dataset_info(dataset_info), pe_params_(pe_params_) {}
 }

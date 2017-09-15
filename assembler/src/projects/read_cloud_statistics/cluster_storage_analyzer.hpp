@@ -2,8 +2,9 @@
 
 #include "common/barcode_index/cluster_storage.hpp"
 #include "common/barcode_index/cluster_storage_extractor.hpp"
-#include "transitions.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 #include "scaffold_graph_utils.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
 
 namespace cluster_statistics {
 
@@ -274,11 +275,12 @@ class KeyClusterStorage {
 };
 
 typedef KeyClusterStorage<SimplePath> PathClusterStorage;
-typedef KeyClusterStorage<transitions::Transition> TransitionClusterStorage;
+typedef KeyClusterStorage<path_extend::transitions::Transition> TransitionClusterStorage;
 typedef KeyClusterStorage<EdgeId> EdgeClusterStorage;
 
 class PathClusterStorageBuilder {
  public:
+    typedef path_extend::transitions::Transition Transition;
     PathClusterStorage BuildPathClusterStorage(const cluster_storage::ClusterGraphAnalyzer ordering_analyzer,
                                                const vector<Cluster> &clusters) {
         PathClusterStorage result;
@@ -343,7 +345,7 @@ class PathClusterStorageBuilder {
                 if (path_predicate(entry.first)) {
                     for (auto it_first = entry.first.data_.begin(), it_second = std::next(it_first);
                          it_second != entry.first.data_.end(); ++it_first, ++it_second) {
-                        transitions::Transition transition(*it_first, *it_second);
+                        path_extend::transitions::Transition transition(*it_first, *it_second);
                         std::for_each(entry.second.begin(), entry.second.end(), [&result, &transition](const Cluster& cluster) {
                           result.InsertKeyWithCluster(transition, cluster);
                         });
@@ -371,11 +373,15 @@ class PathClusterStorageBuilder {
         }
     };
 
-
     class ClusterStorageAnalyzer: public read_cloud_statistics::StatisticProcessor {
+     public:
+        typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
+        typedef path_extend::validation::ClusterTransitionExtractor ClusterTransitionExtractor;
+        typedef path_extend::transitions::Transition Transition;
+     private:
         const cluster_storage::ClusterGraphAnalyzer& ordering_analyzer_;
         const scaffold_graph_utils::ScaffoldGraph& scaffold_graph_;
-        const transitions::ContigTransitionStorage& reference_tranisition_storage_;
+        const ContigTransitionStorage& reference_tranisition_storage_;
         const PathClusterStorage& path_cluster_storage_;
         const vector<Cluster>& clusters_;
 
@@ -383,7 +389,7 @@ class PathClusterStorageBuilder {
 
         ClusterStorageAnalyzer(const cluster_storage::ClusterGraphAnalyzer ordering_analyzer,
                                const scaffold_graph_utils::ScaffoldGraph &scaffold_graph_,
-                               const transitions::ContigTransitionStorage &transition_storage_,
+                               const ContigTransitionStorage &transition_storage_,
                                const PathClusterStorage &path_storage, const vector<Cluster>& clusters)
             : StatisticProcessor("cluster_statistics"),
               ordering_analyzer_(ordering_analyzer),
@@ -461,8 +467,8 @@ class PathClusterStorageBuilder {
 
 
         TransitionCoverageDistribution GetTransitionCoverageDistribution(const vector<Cluster>& clusters,
-                                                                         const transitions::ContigTransitionStorage& transition_storage) {
-            std::unordered_map<transitions::Transition, size_t> transition_to_coverage_;
+                                                                         const ContigTransitionStorage& transition_storage) {
+            std::unordered_map<Transition, size_t> transition_to_coverage_;
             for (const auto& transition: transition_storage) {
                 transition_to_coverage_[transition] = 0;
             }
@@ -472,7 +478,7 @@ class PathClusterStorageBuilder {
                 if (ordering.size() >= 2) {
                     for (auto first = ordering.begin(), second = std::next(ordering.begin()); second != ordering.end();
                          ++first, ++second) {
-                        transitions::Transition transition(*first, *second);
+                        Transition transition(*first, *second);
                         if (transition_to_coverage_.find(transition) != transition_to_coverage_.end()) {
                             transition_to_coverage_.at(transition)++;
                         } else {
@@ -491,16 +497,16 @@ class PathClusterStorageBuilder {
         struct PreliminaryClusterSetStats {
             size_t true_transitions_ = 0;
             size_t false_transitions_ = 0;
-            unordered_set<transitions::Transition> true_transition_set_;
-            unordered_set<transitions::Transition> false_transition_set_;
-            unordered_map<transitions::Transition, size_t> true_coverage_map_;
-            unordered_map<transitions::Transition, size_t> false_coverage_map_;
+            unordered_set<Transition> true_transition_set_;
+            unordered_set<Transition> false_transition_set_;
+            unordered_map<Transition, size_t> true_coverage_map_;
+            unordered_map<Transition, size_t> false_coverage_map_;
 
             PreliminaryClusterSetStats() = default;
 
          public:
-          void Update(const transitions::ContigTransitionStorage& transition_storage,
-                      const vector<transitions::Transition>& transitions) {
+          void Update(const ContigTransitionStorage& transition_storage,
+                      const vector<Transition>& transitions) {
               for (const auto& transition: transitions) {
                   if (transition_storage.CheckTransition(transition)) {
                       true_transitions_++;
@@ -518,11 +524,11 @@ class PathClusterStorageBuilder {
         };
 
         SummaryClusterStatistics GetSummaryClusterStatistics(const vector<Cluster>& clusters,
-                                                             const transitions::ContigTransitionStorage& transition_storage) {
+                                                             const ContigTransitionStorage& transition_storage) {
             PreliminaryClusterSetStats path_cluster_preliminary_stats;
             PreliminaryClusterSetStats nonpath_cluster_preliminary_stats;
             PreliminaryClusterSetStats filtered_non_path_preliminary_stats;
-            transitions::ClusterTransitionExtractor transition_extractor(ordering_analyzer_);
+            ClusterTransitionExtractor transition_extractor(ordering_analyzer_);
             INFO("Initial false: " << nonpath_cluster_preliminary_stats.false_transitions_);
             for (const auto& cluster: clusters) {
                 vector<EdgeId> ordering = ordering_analyzer_.GetOrderingFromCluster(cluster);
@@ -546,7 +552,7 @@ class PathClusterStorageBuilder {
         }
 
         ClusterSetStatistics GetClusterSetStatistics(const PreliminaryClusterSetStats& preliminary_stats,
-                                                     const transitions::ContigTransitionStorage& transtition_storage) {
+                                                     const ContigTransitionStorage& transtition_storage) {
             ClusterSetStatistics result;
             size_t overall_true_transitions = transtition_storage.size();
             size_t true_transitions = preliminary_stats.true_transitions_;

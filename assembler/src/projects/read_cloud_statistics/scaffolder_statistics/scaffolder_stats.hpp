@@ -1,16 +1,19 @@
 #include "../statistics_processor.hpp"
-#include "../transitions.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/conjugate_score_extractor.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp"
+#include "common/barcode_index/cluster_storage_extractor.hpp"
+#include <random>
+
 namespace scaffolder_statistics {
 struct ConnectivityParams {
   size_t overall_connections;
   vector <size_t> lengths;
-  vector <size_t> thresholds;
+  vector <double> score_thresolds;
 };
 
 struct BarcodedPathConnectivityStats {
-  std::map<size_t, size_t> threshold_to_covered_;
+  std::map<double, size_t> threshold_to_covered_;
 
   void Serialize(ofstream& fout, const string& sep) const {
       for (const auto& entry: threshold_to_covered_) {
@@ -23,16 +26,16 @@ struct BarcodedPathConnectivityStats {
 struct LengthConnectivityStats : public read_cloud_statistics::Statistic {
  private:
   std::map<size_t, BarcodedPathConnectivityStats> length_to_stats_;
-  std::vector<size_t> thresholds_;
+  std::vector<double> score_thresholds_;
   size_t overall_connections_;
  public:
 
   LengthConnectivityStats(const map<size_t, BarcodedPathConnectivityStats>& length_to_stats_,
-                          const vector<size_t>& thresholds,
+                          const vector<double>& thresholds,
                           size_t overall_connections)
       : Statistic("length_connectivity_stats"),
         length_to_stats_(length_to_stats_),
-        thresholds_(thresholds),
+        score_thresholds_(thresholds),
         overall_connections_(overall_connections) {}
 
   void Serialize(const string& path) override {
@@ -40,7 +43,7 @@ struct LengthConnectivityStats : public read_cloud_statistics::Statistic {
       fout << "Overall connections: " << overall_connections_ << std::endl;
       const string sep("\t");
       fout << "*" << sep;
-      for (const auto& threshold: thresholds_) {
+      for (const auto& threshold: score_thresholds_) {
           fout << threshold << sep;
       }
       fout << endl;
@@ -95,6 +98,71 @@ struct ScoreStats: read_cloud_statistics::Statistic {
   }
 };
 
+struct ScoreDistributionPair {
+  vector<double> close_scores_;
+  vector<double> random_scores_;
+
+  ScoreDistributionPair(const vector<double>& close_scores_, const vector<double>& random_scores_)
+      : close_scores_(close_scores_), random_scores_(random_scores_) {}
+
+  void Serialize(ofstream& fout) {
+      for (const auto& score: close_scores_) {
+          fout << score << " ";
+      }
+      fout << endl;
+      for (const auto& score: random_scores_) {
+          fout << score << " ";
+      }
+      fout << endl;
+  }
+
+};
+
+struct ScoreDistributionInfo: read_cloud_statistics::Statistic {
+  std::map<string, ScoreDistributionPair> distribution_pairs_;
+
+  explicit ScoreDistributionInfo(const map<string, ScoreDistributionPair>& distribution_pairs_) :
+      Statistic("score_distribution_info"), distribution_pairs_(distribution_pairs_) {}
+
+  void Serialize(const string& path) override {
+      ofstream fout(path);
+      fout << distribution_pairs_.size() << endl;
+      for (auto& entry: distribution_pairs_) {
+          fout << entry.first << endl;
+          entry.second.Serialize(fout);
+      }
+  }
+};
+
+struct DistanceThresholdFailedStats: read_cloud_statistics::Statistic {
+  std::map<size_t, std::map<double, size_t>> distance_to_thr_to_failed_;
+
+  DistanceThresholdFailedStats(const map<size_t, map<double, size_t>>& distance_to_thr_to_failed_)
+      : Statistic("threshold_distance"), distance_to_thr_to_failed_(distance_to_thr_to_failed_) {}
+
+  void Serialize(const string& path) override {
+      ofstream fout(path);
+      const string sep = "\t";
+      fout << distance_to_thr_to_failed_.size() << std::endl;
+      VERIFY(distance_to_thr_to_failed_.size() > 0);
+      auto first_entry = *distance_to_thr_to_failed_.begin();
+      fout << first_entry.second.size() << std::endl;
+      fout << "*" << sep;
+      for (const auto& thr_failed: first_entry.second) {
+          fout << thr_failed.first << sep;
+      }
+      fout << endl;
+
+      for (const auto& distance_map : distance_to_thr_to_failed_) {
+          fout << distance_map.first << sep;
+          for (const auto& thr_failed: distance_map.second) {
+              fout << thr_failed.second << sep;
+          }
+          fout << endl;
+      }
+  }
+};
+
 struct LongEdgePos {
   size_t path_id_;
   size_t position_;
@@ -105,9 +173,9 @@ struct LongEdgePos {
 typedef std::unordered_map<EdgeId, LongEdgePos> LongEdgePathIndex;
 
 
-class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProcessor {
+class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor {
  public:
-    typedef transitions::EdgeWithMapping EdgeWithMapping;
+    typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
  private:
     const Graph& g_;
@@ -117,7 +185,7 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
     shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_;
 
  public:
-    ScaffolderStatisticsExtractor(const Graph& g_,
+    ScaffolderStageAnalyzer(const Graph& g_,
                                   const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_,
                                   const path_extend::ScaffolderParams& scaff_params_,
                                   const vector<vector<EdgeWithMapping>>& reference_paths_,
@@ -130,26 +198,186 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
           barcode_extractor_ptr_(barcode_extractor_ptr_) {}
 
     void FillStatistics() override {
-        transitions::ContigPathFilter contig_path_filter(unique_storage_);
+        path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
         auto filtered_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths_);
-//        auto length_connectivity_stats = make_shared<LengthConnectivityStats>(GetLengthConnectivityStatistics(reference_paths_,
-//                                                                                                              filtered_paths));
-//        AddStatistic(length_connectivity_stats);
-        auto split_intersection_stats = make_shared<NextSplitIntersectionStats>(GetNextSplitStats(filtered_paths));
-        AddStatistic(split_intersection_stats);
+
+        auto length_connectivity_stats = make_shared<LengthConnectivityStats>(GetLengthConnectivityStatistics(reference_paths_, filtered_paths));
+        AddStatistic(length_connectivity_stats);
+
+//        auto split_intersection_stats = make_shared<NextSplitIntersectionStats>(GetNextSplitStats(filtered_paths));
+//        AddStatistic(split_intersection_stats);
+
 //        auto barcode_in_the_middle_stats = make_shared<BarcodesInTheMiddleStats>(GetBarcodesInTheMiddleStats(filtered_paths));
 //        AddStatistic(barcode_in_the_middle_stats);
+
 //        auto score_stats = make_shared<ScoreStats>(GetScoreStats(filtered_paths));
 //        AddStatistic(score_stats);
+
+//        auto score_distribution_info = make_shared<ScoreDistributionInfo>(GetScoreDistributionInfo(filtered_paths));
+//        AddStatistic(score_distribution_info);
+
+//        auto distance_threshold_failed = make_shared<DistanceThresholdFailedStats>(GetDistanceThresholdStats(filtered_paths));
+//        AddStatistic(distance_threshold_failed);
 
     }
 
  private:
 
+    DistanceThresholdFailedStats GetDistanceThresholdStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
+        path_extend::validation::GeneralTransitionStorageBuilder forward_transition_builder(g_, 1, false, false);
+        auto reference_transition_storage = forward_transition_builder.GetTransitionStorage(reference_paths);
+        size_t min_distance = 50000;
+        size_t max_distance = 151000;
+        size_t distance_step = 10000;
+        double min_threshold = 1.0;
+        double max_threshold = 10.0;
+        double threshold_step = 1.0;
+        vector<size_t> distances;
+        vector<double> thresholds;
+        for (size_t i = min_distance; i < max_distance; i+=distance_step) {
+            distances.push_back(i);
+        }
+        for (double i = min_threshold; i < max_threshold; i+=threshold_step) {
+            thresholds.push_back(i);
+        }
+
+        size_t count_threshold = scaff_params_.count_threshold_;
+        size_t tail_threshold = scaff_params_.tail_threshold_;
+        INFO("Count threshold : " << count_threshold);
+        INFO("Tail threshold: " << tail_threshold);
+        path_extend::NormalizedBarcodeScoreFunction normalized_score_function(g_, *barcode_extractor_ptr_, count_threshold, tail_threshold);
+        auto transition_to_distance = GetDistanceMap(reference_paths);
+
+        std::map<size_t, std::map<double, size_t>> dist_thr_failed;
+        for (const auto& distance: distances) {
+            for (const auto& threshold: thresholds) {
+                dist_thr_failed[distance][threshold] = 0;
+            }
+        }
+
+        for (const auto& entry: transition_to_distance) {
+            ScaffoldGraph::ScaffoldEdge edge(entry.first.first_, entry.first.second_);
+            double score = normalized_score_function.GetScore(edge);
+            size_t distance = entry.second;
+            for (const auto& dist: distances) {
+                if (distance <= dist) {
+                    for (const auto& threshold: thresholds) {
+                        if (math::ls(score, threshold)) {
+                            ++dist_thr_failed.at(dist).at(threshold);
+                        }
+                    }
+                }
+            }
+        }
+
+        DistanceThresholdFailedStats result(dist_thr_failed);
+        return result;
+    }
+
+    std::map<path_extend::transitions::Transition, size_t> GetDistanceMap(const vector<vector<EdgeWithMapping>>& reference_paths) {
+        std::map<path_extend::transitions::Transition, size_t> result;
+        for (const auto& path: reference_paths) {
+            for (auto first = path.begin(), second = std::next(first); second != path.end(); ++first, ++second) {
+                size_t first_end = (*first).mapping_.end_pos;
+                size_t second_beginning = (*second).mapping_.start_pos;
+                if (second_beginning >= first_end) {
+                    size_t distance = second_beginning - first_end;
+                    path_extend::transitions::Transition t(first->edge_, second->edge_);
+                    result.insert({t, distance});
+                }
+            }
+        }
+        INFO(result.size() << "distances counted");
+        return result;
+    };
+
+    ScoreDistributionInfo GetScoreDistributionInfo(const vector<vector<EdgeWithMapping>>& reference_paths) {
+        path_extend::validation::GeneralTransitionStorageBuilder forward_transition_builder(g_, 1, false, false);
+        auto reference_transition_storage = forward_transition_builder.GetTransitionStorage(reference_paths);
+        const size_t close_distance = 5;
+        path_extend::validation::GeneralTransitionStorageBuilder close_transition_builder(g_, close_distance, true, true);
+        auto close_transition_storage = close_transition_builder.GetTransitionStorage(reference_paths);
+        auto covered_edges_set = reference_transition_storage.GetCoveredEdges();
+        vector<EdgeId> reference_edges(covered_edges_set.begin(), covered_edges_set.end());
+
+        size_t count_threshold = scaff_params_.count_threshold_;
+        size_t tail_threshold = scaff_params_.tail_threshold_;
+        INFO("Count threshold : " << count_threshold);
+        INFO("Tail threshold: " << tail_threshold);
+        path_extend::NormalizedBarcodeScoreFunction normalized_score_function(g_, *barcode_extractor_ptr_, count_threshold, tail_threshold);
+        path_extend::TrivialBarcodeScoreFunction trivial_score_function(g_, *barcode_extractor_ptr_, count_threshold, tail_threshold);
+        const string trivial_name = "Simple score function";
+        const string normalized_name = "Normalized score function";
+        std::map<string, const path_extend::ScaffoldEdgeScoreFunction&> name_to_function;
+        name_to_function.insert({trivial_name, trivial_score_function});
+        name_to_function.insert({normalized_name, normalized_score_function});
+
+        std::map<string, ScoreDistributionPair> name_to_pair;
+        for (const auto& entry: name_to_function) {
+            auto distribution_pair = GetScoreDistributionPair(reference_edges, reference_transition_storage,
+                                                              close_transition_storage, entry.second);
+            name_to_pair.insert({entry.first, distribution_pair});
+        }
+        ScoreDistributionInfo result(name_to_pair);
+        return result;
+    }
+
+    ScoreDistributionPair GetScoreDistributionPair(const vector<EdgeId>& reference_edges,
+                                                   const path_extend::validation::ContigTransitionStorage& reference_transition_storage,
+                                                   const path_extend::validation::ContigTransitionStorage& close_transition_storage,
+                                                   const path_extend::ScaffoldEdgeScoreFunction& score_function) const {
+        vector<double> close_scores;
+        for (const auto& transition: reference_transition_storage) {
+            ScaffoldGraph::ScaffoldEdge edge(transition.first_, transition.second_);
+            double score = score_function.GetScore(edge);
+            close_scores.push_back(score);
+        }
+        std::sort(close_scores.begin(), close_scores.end());
+
+        vector<double> random_scores;
+        const size_t sample_size = 2000;
+        std::random_device rd;
+        std::mt19937 generator(rd());
+        size_t range_size = reference_edges.size();
+        INFO("Covered edges: " << range_size);
+        VERIFY(range_size > 0);
+        std::uniform_int_distribution<size_t> distribution(0, range_size - 1);
+        size_t counter = 0;
+        size_t random_pairs = 0;
+        while (counter <= sample_size) {
+            size_t first_idx = distribution(generator);
+            size_t second_idx = distribution(generator);
+            EdgeId first_edge = reference_edges[first_idx];
+            EdgeId second_edge = reference_edges[second_idx];
+            if (AreNotClose(close_transition_storage, first_edge, second_edge)) {
+                ScaffoldGraph::ScaffoldEdge edge(first_edge, second_edge);
+                random_scores.push_back(score_function.GetScore(edge));
+                ++random_pairs;
+            }
+            ++counter;
+            if (counter % (sample_size / 10) == 0) {
+                INFO("Processed " << counter << " pairs out of " << sample_size);
+                INFO(random_pairs << " random pairs.");
+            }
+        }
+        std::sort(random_scores.begin(), random_scores.end());
+        INFO("Random pairs: " << random_pairs);
+
+        ScoreDistributionPair distribution_pair(close_scores, random_scores);
+        return distribution_pair;
+    }
+
+    bool AreNotClose(const path_extend::validation::ContigTransitionStorage& close_transition_storage,
+                     const EdgeId& first, const EdgeId& second) const {
+        bool are_close = first == second or g_.conjugate(first) == second or
+            close_transition_storage.CheckTransition(first, second);
+        return not are_close;
+    }
+
     ScoreStats GetScoreStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
         size_t count_threshold = scaff_params_.count_threshold_;
         size_t tail_threshold = scaff_params_.tail_threshold_;
-        path_extend::BarcodeScoreFunction score_function(count_threshold, tail_threshold, *barcode_extractor_ptr_, g_);
+        path_extend::NormalizedBarcodeScoreFunction score_function(g_, *barcode_extractor_ptr_, count_threshold, tail_threshold);
         size_t overall = 0;
         size_t passed = 0;
         vector<double> scores;
@@ -188,7 +416,7 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
     }
 
     NextSplitIntersectionStats GetNextSplitStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
-        transitions::GeneralTransitionStorageBuilder forward_storage_builder(g_, 1, false, false);
+        path_extend::validation::GeneralTransitionStorageBuilder forward_storage_builder(g_, 1, false, false);
         auto forward_transitions = forward_storage_builder.GetTransitionStorage(reference_paths);
         const size_t count_threshold = scaff_params_.count_threshold_;
         const double strictness = scaff_params_.split_procedure_strictness_;
@@ -209,7 +437,7 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
     }
 
     BarcodesInTheMiddleStats GetBarcodesInTheMiddleStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
-        transitions::GeneralTransitionStorageBuilder forward_storage_builder(g_, 1, false, false);
+        path_extend::validation::GeneralTransitionStorageBuilder forward_storage_builder(g_, 1, false, false);
         auto forward_transitions = forward_storage_builder.GetTransitionStorage(reference_paths);
         size_t correct_passed = 0;
         size_t overall = 0;
@@ -245,7 +473,7 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
                                                             const vector <vector<EdgeWithMapping>>& filtered_reference_paths) {
         std::map <size_t, BarcodedPathConnectivityStats> length_to_stats;
         vector <vector<EdgeWithMapping>> current_paths = reference_paths;
-        transitions::ContigPathFilter contig_path_filter(unique_storage_);
+        path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
 
         unordered_set <EdgeId> long_edges;
         for (const auto& path: filtered_reference_paths) {
@@ -260,19 +488,13 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
             DEBUG("Length: " << length);
             auto next_paths = contig_path_filter.FilterPathsUsingLength(current_paths, length, g_);
             DEBUG("Next paths size: " << next_paths.size());
-            size_t min_edge_length = 10000;
-            for (const auto& path: next_paths) {
-                for (const auto& ewm: path) {
-                    min_edge_length = std::min(min_edge_length, g_.length(ewm.edge_));
-                }
-            }
-            DEBUG("Min reference edge length = " << min_edge_length);
-            auto stats = GetConnectivityStats(next_paths, filtered_reference_paths, long_edges, params.thresholds);
+            auto stats = GetConnectivityStats(next_paths, filtered_reference_paths, long_edges,
+                                              params.score_thresolds, length);
             length_to_stats.insert({length, stats});
             current_paths = next_paths;
         }
 
-        return LengthConnectivityStats(length_to_stats, params.thresholds, params.overall_connections);
+        return LengthConnectivityStats(length_to_stats, params.score_thresolds, params.overall_connections);
     }
 
     ConnectivityParams GetConnectivityParams(const vector <vector<EdgeWithMapping>>& filtered_paths) const {
@@ -281,26 +503,23 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
             overall_connections += (path.size() - 1);
         }
         vector <size_t> lengths;
-//        const size_t max_length = 2000;
-//        const size_t min_length = 100;
-        const size_t min_length = scaff_params_.length_threshold_;
-        const size_t max_length = scaff_params_.length_threshold_;
-        const size_t step = 100;
+        const size_t min_length = 50;
+        const size_t max_length = 500;
+        const size_t step = 150;
         for (size_t i = min_length; i <= max_length; i += step) {
             lengths.push_back(i);
         }
-        vector <size_t> thresholds;
-//        const size_t max_threshold = 100;
-//        const size_t min_threshold = 100;
-        const size_t max_threshold = scaff_params_.barcode_threshold_;
-        const size_t min_threshold = scaff_params_.barcode_threshold_;
-        const size_t thr_step = 5;
-        for (size_t i = min_threshold; i <= max_threshold; i += thr_step) {
-            thresholds.push_back(i);
+        vector <double> score_thresholds;
+        const double min_threshold = 0.05;
+        const double max_threshold = 0.5;
+        const double thr_step = 0.1;
+
+        for (double i = min_threshold; i <= max_threshold; i += thr_step) {
+            score_thresholds.push_back(i);
         }
         ConnectivityParams result{};
         result.lengths = std::move(lengths);
-        result.thresholds = std::move(thresholds);
+        result.score_thresolds = std::move(score_thresholds);
         result.overall_connections = overall_connections;
         return result;
     }
@@ -308,29 +527,33 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
     BarcodedPathConnectivityStats GetConnectivityStats(const vector <vector<EdgeWithMapping>>& raw_paths,
                                                        const vector <vector<EdgeWithMapping>>& filtered_paths,
                                                        const unordered_set <EdgeId>& long_edges,
-                                                       const vector <size_t>& thresholds) {
+                                                       const vector <double>& thresholds,
+                                                       size_t length_threshold) {
         BarcodedPathConnectivityStats result;
-        std::map <size_t, size_t> thresholds_to_covered;
-        for (size_t threshold: thresholds) {
+        std::map <double, size_t> thresholds_to_covered;
+        for (double threshold: thresholds) {
             thresholds_to_covered[threshold] = 0;
         }
         auto long_edge_path_index = BuildLongEdgePathIndex(long_edges, raw_paths);
-        for (const auto& path: filtered_paths) {
-            for (auto first_it = path.begin(), second_it = std::next(path.begin()); second_it != path.end();
-                 ++first_it, ++second_it) {
-                EdgeId first = (*first_it).edge_;
-                EdgeId second = (*second_it).edge_;
-                VERIFY(long_edge_path_index.find(first) != long_edge_path_index.end());
-                VERIFY(long_edge_path_index.find(second) != long_edge_path_index.end());
-                size_t first_path_id = long_edge_path_index.at(first).path_id_;
-                size_t second_path_id = long_edge_path_index.at(second).path_id_;
-                VERIFY(first_path_id == second_path_id);
-                const vector <EdgeWithMapping>& raw_path = raw_paths[first_path_id];
-                size_t first_pos = long_edge_path_index.at(first).position_;
-                size_t second_pos = long_edge_path_index.at(second).position_;
-                VERIFY(first_pos < second_pos);
-                UpdateStatsForTwoEdges(raw_path, first_pos, second_pos, thresholds, thresholds_to_covered);
+        path_extend::validation::StrictTransitionStorageBuilder transition_storage_builder;
+        auto transition_storage = transition_storage_builder.GetTransitionStorage(filtered_paths);
+        for (const auto& transition: transition_storage) {
+            EdgeId first = transition.first_;
+            EdgeId second = transition.second_;
+            VERIFY(long_edge_path_index.find(first) != long_edge_path_index.end());
+            VERIFY(long_edge_path_index.find(second) != long_edge_path_index.end());
+            size_t first_path_id = long_edge_path_index.at(first).path_id_;
+            size_t second_path_id = long_edge_path_index.at(second).path_id_;
+            if (first_path_id != second_path_id) {
+                WARN("Reference transition edges" << first.int_id() << " and " << second.int_id()
+                                                  << "belong to different references. Skipping.");
+                continue;
             }
+            const vector <EdgeWithMapping>& raw_path = raw_paths[first_path_id];
+            size_t first_pos = long_edge_path_index.at(first).position_;
+            size_t second_pos = long_edge_path_index.at(second).position_;
+            VERIFY(first_pos < second_pos);
+            UpdateStatsForTwoEdges(raw_path, first_pos, second_pos, thresholds, thresholds_to_covered, length_threshold);
         }
         result.threshold_to_covered_ = thresholds_to_covered;
         return result;
@@ -353,7 +576,8 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
     }
 
     void UpdateStatsForTwoEdges(const vector <EdgeWithMapping>& reference_path, size_t first_pos, size_t second_pos,
-                                const vector <size_t>& thresholds, std::map <size_t, size_t>& thresholds_to_covered) {
+                                const vector <double>& thresholds, std::map <double, size_t>& thresholds_to_covered,
+                                const size_t length_threshold) {
         EdgeId first = reference_path[first_pos].edge_;
         EdgeId second = reference_path[second_pos].edge_;
         Range first_mapping = reference_path[first_pos].mapping_;
@@ -361,19 +585,23 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
         const size_t tail_threshold = scaff_params_.tail_threshold_;
         const size_t count_threshold = scaff_params_.count_threshold_;
         auto barcode_intersection = GetIntersection(first, second, tail_threshold, count_threshold);
-        for (size_t threshold: thresholds) {
-            path_extend::LongGapDijkstraParams
-                long_params(threshold,
+        const size_t middle_count_threshold = 1;
+        for (double score_threshold: thresholds) {
+            path_extend::ReadCloudMiddleDijkstraParams
+                long_params(score_threshold,
                             count_threshold,
+                            scaff_params_.connection_count_threshold_,
                             tail_threshold,
-                            scaff_params_.length_threshold_,
+                            scaff_params_.connection_length_threshold_,
                             scaff_params_.initial_distance_);
-            auto dij_predicate = make_shared<path_extend::LongGapDijkstraPredicate>(g_,
+            auto dij_predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(g_,
                                                                                     unique_storage_,
                                                                                     *barcode_extractor_ptr_,
                                                                                     long_params);
-            if (AreConnectedByBarcodePath(reference_path, first_pos, second_pos, threshold, barcode_intersection)) {
-                thresholds_to_covered[threshold]++;
+            DEBUG("Score threshold: " << score_threshold);
+            if (AreConnectedByBarcodePath(reference_path, first_pos, second_pos,
+                                          score_threshold, barcode_intersection, length_threshold, middle_count_threshold, tail_threshold)) {
+                thresholds_to_covered[score_threshold]++;
                 ScaffoldGraph::ScaffoldEdge
                     scaffold_edge(first, second, (size_t) - 1, 0, scaff_params_.initial_distance_);
                 bool check_dij_predicate = dij_predicate->Check(scaffold_edge);
@@ -409,24 +637,18 @@ class ScaffolderStatisticsExtractor: public read_cloud_statistics::StatisticProc
     }
 
     bool AreConnectedByBarcodePath(const vector <EdgeWithMapping>& reference_path, size_t first_pos, size_t second_pos,
-                                   size_t barcode_threshold, const vector <BarcodeId>& barcode_intersection) {
+                                   double score_threshold, const vector <BarcodeId>& barcode_intersection,
+                                   size_t length_threshold, size_t count_threshold, size_t tail_threshold) {
         VERIFY(first_pos < second_pos);
         VERIFY(second_pos < reference_path.size());
+        EdgeId start = reference_path[first_pos].edge_;
+        EdgeId end = reference_path[second_pos].edge_;
+        const bool normalize_using_cov = false;
+        path_extend::LongEdgePairGapCloserPredicate gap_closer_predicate(g_, *barcode_extractor_ptr_, count_threshold,
+                                                                         length_threshold, tail_threshold, score_threshold, start, end,
+                                                                         barcode_intersection, normalize_using_cov);
         for (size_t i = first_pos + 1; i < second_pos; ++i) {
-            EdgeId current = reference_path[i].edge_;
-            vector <BarcodeId> middle_intersection;
-            vector <BarcodeId> middle_barcodes = barcode_extractor_ptr_->GetBarcodes(current);
-            std::set_intersection(barcode_intersection.begin(), barcode_intersection.end(),
-                                  middle_barcodes.begin(), middle_barcodes.end(),
-                                  std::back_inserter(middle_intersection));
-            if (middle_intersection.size() < barcode_threshold) {
-                DEBUG("Middle edge: " << current.int_id());
-                DEBUG("Position: " << i);
-                DEBUG("Barcode intersection: " << barcode_intersection.size());
-                DEBUG("Threshold: " << barcode_threshold);
-                DEBUG("Middle barcodes: " << middle_barcodes.size());
-                DEBUG("Middle intersection: " << middle_intersection.size());
-                DEBUG("Length: " << g_.length(current));
+            if (not gap_closer_predicate.Check(reference_path[i].edge_)) {
                 return false;
             }
         }

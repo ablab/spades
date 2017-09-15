@@ -1,7 +1,8 @@
 #pragma once
 
 #include <common/io/reads/osequencestream.hpp>
-#include "common/barcode_index/contracted_graph.hpp"
+#include <common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp>
+#include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
 #include "statistics_processor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
@@ -56,8 +57,8 @@ namespace scaffold_graph_utils {
                 vertices.insert(vertex);
                 vector<EdgeId> incoming_vector;
                 vector<EdgeId> outcoming_vector;
-                for (auto it_in = contracted_graph.incoming_begin(vertex);
-                     it_in != contracted_graph.incoming_end(vertex); ++it_in) {
+                for (auto it_in = contracted_graph.in_begin(vertex);
+                     it_in != contracted_graph.in_end(vertex); ++it_in) {
                     for (const auto& edge: (*it_in).second) {
                         DEBUG("Incoming: " << edge.int_id());
                         incoming_vector.push_back(edge);
@@ -66,8 +67,8 @@ namespace scaffold_graph_utils {
                         scaffold_graph.AddVertex(edge);
                     }
                 }
-                for (auto it_out = contracted_graph.outcoming_begin(vertex);
-                     it_out != contracted_graph.outcoming_end(vertex); ++it_out) {
+                for (auto it_out = contracted_graph.out_begin(vertex);
+                     it_out != contracted_graph.out_end(vertex); ++it_out) {
                     for (const auto& edge: (*it_out).second) {
                         DEBUG("Outcoming: " << edge.int_id());
                         outcoming_vector.push_back(edge);
@@ -93,7 +94,8 @@ namespace scaffold_graph_utils {
         ScaffoldGraph ConstructBarcodeScoreScaffoldGraph(const ScaffoldGraph& scaffold_graph, const FrameBarcodeIndexInfoExtractor& extractor,
                                                          const Graph& graph, size_t count_threshold,
                                                          size_t tail_threshold, double score_threshold) {
-            auto score_function = make_shared<path_extend::BarcodeScoreFunction>(count_threshold, tail_threshold, extractor, graph);
+            auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(graph, extractor,
+                                                                                           count_threshold, tail_threshold);
             size_t num_threads = cfg::get().max_threads;
             path_extend::scaffold_graph::ScoreFunctionScaffoldGraphConstructor
                 scaffold_graph_constructor(graph, scaffold_graph, score_function, score_threshold, num_threads);
@@ -102,13 +104,23 @@ namespace scaffold_graph_utils {
 
         ScaffoldGraph ConstructLongGapScaffoldGraph(const ScaffoldGraph& scaffold_graph, const path_extend::ScaffoldingUniqueEdgeStorage& storage,
                                                     const FrameBarcodeIndexInfoExtractor& extractor,
-                                                    const Graph& graph, const path_extend::LongGapDijkstraParams& params) {
-            auto predicate = make_shared<path_extend::LongGapDijkstraPredicate>(graph, storage, extractor,
+                                                    const Graph& graph, const path_extend::ReadCloudMiddleDijkstraParams& params) {
+            auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(graph, storage, extractor,
                                                                                 params);
             size_t max_threads = cfg::get().max_threads;
             path_extend::scaffold_graph::PredicateScaffoldGraphConstructor constructor(graph, scaffold_graph,
                                                                                        predicate, max_threads);
             return *(constructor.Construct());
+        }
+
+        ScaffoldGraph ConstructPairedEndScaffoldGraph(const ScaffoldGraph& scaffold_graph,
+                                                      const path_extend::ScaffolderParams& params,
+                                                      const debruijn_graph::conj_graph_pack& gp,
+                                                      const path_extend::ScaffoldingUniqueEdgeStorage& storage) {
+            const size_t max_threads = cfg::get().max_threads;
+            path_extend::PEConnectionConstructorCaller pe_constructor_caller(gp, unique_storage_, max_threads);
+            auto scaffold_graph_constructor = pe_constructor_caller.GetScaffoldGraphConstuctor(params, scaffold_graph);
+            return *(scaffold_graph_constructor->Construct());
         }
 
         ScaffoldGraph ConstructOrderingScaffoldGraph(const ScaffoldGraph& scaffold_graph,
@@ -139,7 +151,6 @@ namespace scaffold_graph_utils {
         }
 
         ScaffoldGraph ConstructNonTransitiveGraph(const ScaffoldGraph& scaffold_graph, const Graph& graph) {
-            typedef ScaffoldGraph::ScaffoldVertex ScaffoldVertex;
             size_t distance_threshold = 3;
             size_t max_threads = 1;
             auto predicate = make_shared<path_extend::TransitiveEdgesPredicate>(scaffold_graph, graph, distance_threshold);
@@ -231,9 +242,9 @@ namespace scaffold_graph_utils {
 
     class ScaffoldGraphSplitter {
      public:
-        typedef transitions::EdgeWithMapping EdgeWithMapping;
+        typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
         typedef vector<EdgeWithMapping> ContigPath;
-        typedef transitions::NamedSimplePath NamedSimplePath;
+        typedef path_extend::validation::NamedSimplePath NamedSimplePath;
      private:
         const Graph& g_;
         const vector<NamedSimplePath>& reference_paths_;
@@ -305,7 +316,7 @@ namespace scaffold_graph_utils {
 
     class ScaffoldGraphPrinter {
      public:
-        typedef transitions::EdgeWithMapping EdgeWithMapping;
+        typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
         typedef vector<EdgeWithMapping> ContigPath;
      private:
         const Graph& g_;
@@ -374,7 +385,7 @@ namespace scaffold_graph_utils {
      public:
         MetaScaffoldGraphPrinter(const Graph& g_) : g_(g_) {}
 
-        void PrintGraphAsMultiple(const ScaffoldGraph& graph, const vector<transitions::NamedSimplePath>& reference_paths,
+        void PrintGraphAsMultiple(const ScaffoldGraph& graph, const vector<path_extend::validation::NamedSimplePath>& reference_paths,
                              const string& output_path) {
             ScaffoldGraphSplitter splitter(g_, reference_paths);
             auto name_to_signed_graph = splitter.SplitAndSignScaffoldGraph(graph);
