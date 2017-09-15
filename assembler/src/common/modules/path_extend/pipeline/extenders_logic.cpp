@@ -609,5 +609,32 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
     PrintExtenders(result);
     return result;
 }
+shared_ptr<ExtensionChooser> ExtendersGenerator::MakeSimpleExtensionChooser(size_t lib_index) const {
+    const auto &lib = dataset_info_.reads[lib_index];
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
+    VERIFY_MSG(!paired_lib->IsMp(), "Tried to create PE extender for MP library");
+    auto opts = params_.pset.extension_options;
+//    INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
+
+    shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
+    if (opts.use_default_single_threshold) {
+        if (params_.uneven_depth) {
+            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL());
+        } else {
+            double lib_cov = support_.EstimateLibCoverage(lib_index);
+            INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
+            iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), lib_cov);
+        }
+    }
+    auto wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight,
+                                                  support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold),
+                                                  iip);
+
+    auto extension_chooser = make_shared<SimpleExtensionChooser>(gp_.g, wc,
+                                                                 opts.weight_threshold,
+                                                                 opts.priority_coeff);
+
+    return extension_chooser;
+}
 
 }

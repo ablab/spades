@@ -15,7 +15,7 @@ typedef std::unordered_map<EdgeId, ReferenceEdgeInfo> ReferenceEdgeIndex;
 struct LongEdgePathInfo {
   size_t length_;
   bool correct_;
-  vector<EdgeWithMapping> path_;
+  vector<path_extend::validation::EdgeWithMapping> path_;
 };
 
 struct PathStats : public read_cloud_statistics::Statistic {
@@ -58,6 +58,8 @@ struct PathStats : public read_cloud_statistics::Statistic {
 
 
 class PathStatisticsExtractor : public read_cloud_statistics::StatisticProcessor {
+ public:
+    typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
  private:
 
     const size_t min_length_;
@@ -247,6 +249,7 @@ class InitialFilterStatisticsExtractor: public read_cloud_statistics::StatisticP
     typedef std::unordered_map<EdgeId, EdgeId> NextInReferenceIndex;
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor_t;
+    typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
  private:
     const ScaffoldGraph& scaffold_graph_;
     const vector<vector<EdgeWithMapping>> reference_paths_;
@@ -268,7 +271,7 @@ class InitialFilterStatisticsExtractor: public read_cloud_statistics::StatisticP
     {}
 
     void FillStatistics() override {
-        transitions::ContigPathFilter contig_path_filter(unique_storage_);
+        path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
         auto filtered_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths_);
         auto initial_filter_stats = make_shared<InitialFilterStats>(GetInitialFilterStats(filtered_paths));
         AddStatistic(initial_filter_stats);
@@ -279,7 +282,7 @@ class InitialFilterStatisticsExtractor: public read_cloud_statistics::StatisticP
         InitialFilterStats stats;
         std::unordered_map<EdgeId, PathEndInfo> path_end_to_info;
 
-        transitions::ContigPathFilter contig_path_filter(unique_storage_);
+        path_extend::validation::ContigPathFilter contig_path_filter(unique_storage_);
         auto filtered_reference_paths = contig_path_filter.FilterPathsUsingUniqueStorage(reference_paths);
         auto next_in_reference_index = BuildNextInReferenceIndex(reference_paths);
         size_t counter = 0;

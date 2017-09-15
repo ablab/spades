@@ -10,6 +10,9 @@ project(assembly_graph CXX)
 add_library(assembly_graph STATIC
             core/id_distributor.cpp
             components/connected_component.cpp
+            contracted_graph/contracted_graph.cpp
+            contracted_graph/contracted_graph_builder.cpp
+            contracted_graph/contracted_graph_helper.cpp
             paths/bidirectional_path.cpp
             paths/bidirectional_path_io/io_support.cpp
             paths/bidirectional_path_io/bidirectional_path_output.cpp

@@ -1801,7 +1801,7 @@ class InitialTenXFilter: public InternalTenXFilter {
                            max_score = score;
                        }
 
-                       return score >= score_threshold;
+                       return math::ge(score, static_cast<double>(score_threshold));
                      });
         TRACE("Max score: " << max_score);
         return result;

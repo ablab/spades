@@ -4,7 +4,7 @@
 #include "read_cloud_statistics_extractor.hpp"
 #include "old_extender_stats/reliable_barcodes_checker.hpp"
 #include "old_extender_stats/gap_distribution_extractor.hpp"
-#include "common/barcode_index/contracted_graph.hpp"
+#include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
 #include "contracted_graph_stats/contracted_graph_analyzer.hpp"
 #include "cluster_storage_analyzer.hpp"
 #include "scaffold_graph_utils.hpp"
@@ -18,6 +18,7 @@ namespace debruijn_graph {
     PathExtendParamsContainer GetPEParams() {
         path_extend::PathExtendParamsContainer params(cfg::get().ds,
                                                       cfg::get().pe_params,
+                                                      cfg::get().ss,
                                                       cfg::get().output_dir,
                                                       cfg::get().mode,
                                                       cfg::get().uneven_depth,
@@ -70,17 +71,6 @@ namespace debruijn_graph {
         auto path_extender_ptr = std::dynamic_pointer_cast<ReadCloudExtender>(read_cloud_extenders[0]);
         return path_extender_ptr;
     }
-
-//    path_extend::TenXExtensionChecker ConstructTenXChecker(const conj_graph_pack& gp) {
-//        auto pe_params = GetPEParams();
-//        auto read_cloud_storage = GetUniqueStorage(gp, pe_params);
-//        auto path_extender_ptr = ConstructExtender(gp, pe_params, read_cloud_storage);
-//        shared_ptr<ExtensionChooser> extension_chooser_ptr(path_extender_ptr->GetExtensionChooser());
-//        shared_ptr<TenXExtensionChooser> read_cloud_extension_chooser_ptr =
-//                std::dynamic_pointer_cast<TenXExtensionChooser> (extension_chooser_ptr);
-//        TenXExtensionChecker checker(*read_cloud_extension_chooser_ptr, path_extender_ptr, gp, read_cloud_storage);
-//        return checker;
-//    }
 
     void RunBarcodeStatisticsCounters(const vector<shared_ptr<BarcodeStatisticsCounter>>& barcode_statistics_counters) {
         const string stats_path = cfg::get().output_dir + "barcode_stats";
