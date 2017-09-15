@@ -477,6 +477,17 @@ void load(debruijn_config::read_cloud_resolver::stats& statistics,
     load(statistics.cloud_contigs_path, pt, "cloud_contigs_path");
 }
 
+void load(debruijn_config::read_cloud_resolver::scaffold_polisher& scaff_pol,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(scaff_pol.share_threshold, pt, "share_threshold");
+    load(scaff_pol.read_count_threshold, pt, "read_count_threshold");
+    load(scaff_pol.max_scaffold_dijkstra_distance, pt, "max_scaffold_distance");
+    load(scaff_pol.path_cluster_linkage_distance, pt, "path_cluster_linkage_distance");
+    load(scaff_pol.path_cluster_min_reads, pt, "path_cluster_min_reads");
+    load(scaff_pol.path_cluster_score_threshold, pt, "path_cluster_score_threshold");
+}
+
 void load(debruijn_config::read_cloud_resolver& ts_res,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
@@ -495,6 +506,9 @@ void load(debruijn_config::read_cloud_resolver& ts_res,
     load(ts_res.fragment_len, pt, "fragment_len");
     load(ts_res.read_cloud_resolution_on, pt, "read_cloud_resolution_on");
     load(ts_res.tenx, pt, "tenx_resolver");
+    load(ts_res.scaff_pol, pt, "scaffold_polisher");
+    load(ts_res.very_long_edge_length, pt, "very_long_edge_length");
+    load(ts_res.long_edge_length, pt, "long_edge_length");
     load(ts_res.statistics, pt, "statistics");
 }
 

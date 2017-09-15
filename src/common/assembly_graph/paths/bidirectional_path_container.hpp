@@ -211,4 +211,8 @@ protected:
 
 };
 
+class PrevVertexMapContainer: public PathContainer {
+
+};
+
 }
