@@ -67,6 +67,20 @@ protected:
     size_t FileSize, BlockOffset, BytesRead, BlockSize;
     off_t InitialOffset;
 
+private:
+    void cleanup() {
+        if (StreamFile != -1)
+            close(StreamFile);
+        if (MappedRegion)
+            munmap(MappedRegion, BlockSize);
+
+        if (Unlink) {
+            int res = unlink(FileName.c_str());
+            VERIFY_MSG(res == 0,
+                       "unlink(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+        }
+    }
+
 public:
     MMappedReader()
             : StreamFile(-1), Unlink(false), FileName(""), MappedRegion(0), FileSize(0), BytesRead(0),
@@ -104,41 +118,33 @@ public:
     }
 
     MMappedReader(MMappedReader &&other) {
-        // First, copy out the stuff
-        MappedRegion = other.MappedRegion;
-        FileSize = other.FileSize;
-        BlockOffset = other.BlockOffset;
-        BytesRead = other.BytesRead;
-        BlockSize = other.BlockSize;
-        FileName = std::move(other.FileName);
-        Unlink = other.Unlink;
-        StreamFile = other.StreamFile;
-        InitialOffset = other.InitialOffset;
-
-        // Now, zero out inside other, so we won't do crazy thing in dtor
-        other.StreamFile = -1;
-        other.Unlink = false;
-        other.MappedRegion = 0;
+        *this = std::move(other);
     }
 
     MMappedReader &operator=(MMappedReader &&other) {
         if (this != &other) {
-            *this = std::move(other);
+            cleanup();
+            // First, copy out the stuff
+            MappedRegion = other.MappedRegion;
+            FileSize = other.FileSize;
+            BlockOffset = other.BlockOffset;
+            BytesRead = other.BytesRead;
+            BlockSize = other.BlockSize;
+            FileName = std::move(other.FileName);
+            Unlink = other.Unlink;
+            StreamFile = other.StreamFile;
+            InitialOffset = other.InitialOffset;
+
+            // Now, zero out inside other, so we won't do crazy thing in dtor
+            other.StreamFile = -1;
+            other.Unlink = false;
+            other.MappedRegion = 0;
         }
         return *this;
     }
 
     virtual ~MMappedReader() {
-        if (StreamFile != -1)
-            close(StreamFile);
-        if (MappedRegion)
-            munmap(MappedRegion, BlockSize);
-
-        if (Unlink) {
-            int res = unlink(FileName.c_str());
-            VERIFY_MSG(res == 0,
-                       "unlink(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
-        }
+        cleanup();
     }
 
     void read(void *buf, size_t amount) {
