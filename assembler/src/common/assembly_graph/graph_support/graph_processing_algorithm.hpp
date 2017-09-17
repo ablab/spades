@@ -105,12 +105,6 @@ private:
 };
 
 template<class Graph>
-std::function<void(typename Graph::EdgeId)> AddCountingCallback(CountingCallback<Graph>& cnt_callback, std::function<void(typename Graph::EdgeId)> handler) {
-    std::function<void(typename Graph::EdgeId)> cnt_handler = std::bind(&CountingCallback<Graph>::HandleDelete, std::ref(cnt_callback), std::placeholders::_1);
-    return func::CombineCallbacks<typename Graph::EdgeId>(handler, cnt_handler);
-}
-
-template<class Graph>
 class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
     typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;

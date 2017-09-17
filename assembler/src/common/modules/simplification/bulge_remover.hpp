@@ -404,8 +404,6 @@ private:
     //todo remove
     bool tracking_;
 
-    size_t curr_iteration_;
-
     SmartEdgeSet it_;
 
     static vector<EdgeId> EmptyPath() {
@@ -659,7 +657,6 @@ public:
                          gluer_(g, opt_callback, removal_handler),
                          interesting_edge_finder_(BulgeCandidateFinder(g, alternatives_analyzer, chunk_cnt)),
                          tracking_(track_changes),
-                         curr_iteration_(0),
                          it_(g, /*add new*/true,
                              CoverageComparator<Graph>(g),
                              /*canonical only*/true,
@@ -668,15 +665,17 @@ public:
         it_.Detach();
     }
 
-    size_t Run(bool force_primary_launch = false) override {
-        bool primary_launch = force_primary_launch ? true : curr_iteration_ == 0;
+    size_t Run(bool force_primary_launch, double /*iter_run_progress*/) override {
         //todo remove if not needed;
         //potentially can vary coverage threshold in coordination with ec threshold
         auto proceed_condition = func::AlwaysTrue<EdgeId>();
 
+        bool primary_launch = force_primary_launch ;
         if (!it_.IsAttached()) {
             it_.Attach();
+            primary_launch = true;
         }
+
         if (primary_launch) {
             it_.clear();
             DEBUG("Primary launch.");
@@ -721,8 +720,6 @@ public:
         DEBUG("Finished processing. Triggered = " << triggered);
         if (!tracking_)
             it_.Detach();
-
-        curr_iteration_++;
 
         return triggered;
     }

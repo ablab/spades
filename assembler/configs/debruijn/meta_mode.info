@@ -128,6 +128,13 @@ preliminary_simp
         disconnect_flank_cov    0.8
     }
 
+    ; relative edge disconnector:
+    relative_ed
+    {
+        enabled true
+        diff_mult  5.
+    }
+
     post_simplif_enabled false
 
 	; bulge remover:
