@@ -117,7 +117,8 @@ public:
         BlockOffset = BytesRead = 0;
     }
 
-    MMappedReader(MMappedReader &&other) {
+    MMappedReader(MMappedReader &&other)
+            : MMappedReader() {
         *this = std::move(other);
     }
 
