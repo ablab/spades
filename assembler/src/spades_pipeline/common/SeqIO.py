@@ -13,9 +13,11 @@ fastq_ext = ['.fq', 'fastq']
 
 def Open(f, mode):
     if f.endswith(".gz"):
+        if not mode.endswith('b'):
+            mode += 't'
         return gzip.open(f, mode)
     else:
-        return open(f, mode)
+        return open(f, mode, encoding='utf-8')
 
 class Reader:
     def __init__(self, handler):
