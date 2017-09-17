@@ -479,9 +479,9 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if options_storage.k_mers:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
         elif options_storage.rna:
-            k_value = options_storage.K_MERS_RNA
+            k_value = options_storage.K_MERS_RNA[0]
             if not options_storage.iontorrent:
-                k_value = support.get_reads_length(dataset_data, log) / 2 - 1
+                k_value = int(support.get_reads_length(dataset_data, log) / 2) - 1
                 if k_value % 2 == 0:
                     k_value -= 1
             cfg["assembly"].__dict__["iterative_K"] = k_value
