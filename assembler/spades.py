@@ -158,7 +158,7 @@ def print_used_values(cfg, log):
 
 
 def fill_cfg(options_to_parse, log, secondary_filling=False):
-    skip_output_dir=secondary_filling
+    skip_output_dir = secondary_filling
     skip_stop_after = secondary_filling
     load_processed_dataset=secondary_filling
 
@@ -484,6 +484,14 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                 k_value = int(support.get_reads_length(dataset_data, log) / 2) - 1
                 if k_value % 2 == 0:
                     k_value -= 1
+                if k_value < options_storage.MIN_K:
+                    support.warning('wrong k value ' + str(k_value) + ': all k values should be between %d and %d. k=%d will be attached.' %
+                                                                  (options_storage.MIN_K, options_storage.MAX_K, options_storage.MIN_K), log)
+                    k_value = options_storage.MIN_K
+                if k_value > options_storage.MAX_K:
+                    support.warning('wrong k value ' + str(k_value) + ': all k values should be between %d and %d. k=%d will be attached.' %
+                                                                  (options_storage.MIN_K, options_storage.MAX_K, options_storage.MAX_K) + '', log)
+                    k_value = options_storage.MAX_K
             cfg["assembly"].__dict__["iterative_K"] = k_value
         else:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_SHORT
