@@ -109,8 +109,7 @@ public:
         }
     }
 private:
-    DECL_LOGGER("TipsProjector")
-    ;
+    DECL_LOGGER("TipsProjector");
 };
 
 //todo improve logging

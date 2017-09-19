@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "func/func.hpp"
 #include "func/pred.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/core/directions.hpp"

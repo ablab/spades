@@ -133,7 +133,6 @@ inline void assertion_failed_msg(char const * expr, char const * msg,
 //our
 //math
 #include "math/xmath.h"
-#include "func/func.hpp"
 #include "utils/verify.hpp"
 // log
 #include "utils/logger/logger.hpp"

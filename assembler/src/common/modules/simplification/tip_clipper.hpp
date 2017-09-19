@@ -8,7 +8,6 @@
 #pragma once
 
 #include "math/xmath.h"
-#include "func/func.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "sequence/sequence.hpp"

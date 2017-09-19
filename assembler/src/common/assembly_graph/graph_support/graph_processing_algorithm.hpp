@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "func/func.hpp"
 #include <boost/none.hpp>
 #include <atomic>
 #include "assembly_graph/core/graph_iterators.hpp"
@@ -91,7 +90,7 @@ public:
             Report();
     }
 
-    void HandleDelete(EdgeId /*e*/) {
+    void operator()(EdgeId /*e*/) {
         cnt_++;
     }
 

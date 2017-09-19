@@ -287,11 +287,10 @@ EdgeRemovalHandlerF<typename gp_t::graph_t> WrapWithProjectionCallback(
     typedef typename gp_t::graph_t Graph;
     typedef typename Graph::EdgeId EdgeId;
     TipsProjector<gp_t> tip_projector(gp);
-
-    EdgeRemovalHandlerF<Graph> projecting_callback = std::bind(&TipsProjector<gp_t>::ProjectTip,
-                                             tip_projector, std::placeholders::_1);
-
-    return func::CombineCallbacks<EdgeId>(std::ref(removal_handler), projecting_callback);
+    return [=](EdgeId e) {
+        if (removal_handler) removal_handler(e);
+        tip_projector.ProjectTip(e);
+    };
 }
 
 template<class Graph>

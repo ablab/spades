@@ -59,7 +59,7 @@ class GraphSimplifier {
         return true;
     }
 
-    void RemoveShortPolyATEdges(HandlerF removal_handler, size_t chunk_cnt) {
+    size_t RemoveShortPolyATEdges(HandlerF removal_handler, size_t chunk_cnt) {
         INFO("Removing short polyAT");
         EdgeRemover<Graph> er(g_, removal_handler);
         ATCondition<Graph> condition(g_, 0.8, false);
@@ -84,12 +84,19 @@ class GraphSimplifier {
                 "Self conjugate edge remover");
 
         if (info_container_.mode() == config::pipeline_type::rna){
-            //FIXME create algo
-            RemoveShortPolyATEdges(removal_handler_, info_container_.chunk_cnt());
-            algo.AddAlgo(std::make_shared<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>(g_, func::And(LengthUpperBound<Graph>(g_, 1),
-                                                                                                      ATCondition<Graph>(g_, 0.8, false)),
-                                                                                           info_container_.chunk_cnt(), removal_handler_, true),
-                         "Short PolyA/T Edges");
+            algo.AddAlgo<AdapterAlgorithm<Graph>>(
+                    "Remover of short poly-AT edges", g_,
+                    [=]() {
+                        return RemoveShortPolyATEdges(removal_handler_,
+                                                      info_container_.chunk_cnt());
+                    });
+
+            algo.AddAlgo<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>("Short PolyA/T Edges", g_,
+                                                                          func::And(LengthUpperBound<Graph>(g_, 1),
+                                                                                    ATCondition<Graph>(g_, 0.8, false)),
+                                                                          info_container_.chunk_cnt(), removal_handler_,
+                                                                          true);
+
             algo.AddAlgo(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips");
         }
 
@@ -128,25 +135,25 @@ class GraphSimplifier {
         }
     }
 
-    bool AllTopology() {
-        bool res = TopologyRemoveErroneousEdges(gp_.g, simplif_cfg_.tec,
-                                                removal_handler_);
-        res |= TopologyReliabilityRemoveErroneousEdges(gp_.g, simplif_cfg_.trec,
-                                                       removal_handler_);
-        res |= RemoveThorns(gp_.g, simplif_cfg_.isec, removal_handler_);
-        res |= MultiplicityCountingRemoveErroneousEdges(gp_.g, simplif_cfg_.tec,
-                                                        removal_handler_);
-        return res;
-    }
-
     bool FinalRemoveErroneousEdges() {
-        //FIXME reintroduce CountingHandler here
-        bool changed = false;
-        if (simplif_cfg_.topology_simplif_enabled && info_container_.main_iteration()) {
-            changed |= AllTopology();
-            changed |= MaxFlowRemoveErroneousEdges(gp_.g, simplif_cfg_.mfec,
-                                                   removal_handler_);
-        }
+        CountingCallback<Graph> counting_callback;
+        HandlerF handler = [&] (EdgeId e) {
+            if (removal_handler_)
+                removal_handler_(e);
+            counting_callback(e);
+        };
+
+        INFO("Topology-based removal procedures");
+        bool changed = TopologyRemoveErroneousEdges(gp_.g, simplif_cfg_.tec,
+                                               handler);
+        changed |= TopologyReliabilityRemoveErroneousEdges(gp_.g, simplif_cfg_.trec,
+                                                           handler);
+        changed |= RemoveThorns(gp_.g, simplif_cfg_.isec, removal_handler_);
+        changed |= MultiplicityCountingRemoveErroneousEdges(gp_.g, simplif_cfg_.tec,
+                                                            handler);
+        changed |= MaxFlowRemoveErroneousEdges(gp_.g, simplif_cfg_.mfec,
+                                               handler);
+        counting_callback.Report();
         return changed;
     }
 
@@ -185,9 +192,11 @@ class GraphSimplifier {
 
         CompositeAlgorithm<Graph> algo(g_);
 
-        //FIXME check that it is working
-        algo.AddAlgo(std::make_shared<AdapterAlgorithm<Graph>>(gp_.g,
-                                                               [&]() {return FinalRemoveErroneousEdges();}));
+        if (simplif_cfg_.topology_simplif_enabled && info_container_.main_iteration()) {
+            algo.AddAlgo<AdapterAlgorithm<Graph>>("", gp_.g,
+                                                  [&]() { return FinalRemoveErroneousEdges(); });
+
+        }
 
         algo.AddAlgo(
                 RelativeECRemoverInstance(gp_.g,
@@ -198,7 +207,6 @@ class GraphSimplifier {
                 RelativeCoverageComponentRemoverInstance(gp_.g, gp_.flanking_cov,
                                                          simplif_cfg_.rcc, info_container_, set_removal_handler_f),
                 "Relative coverage component remover");
-
 
         algo.AddAlgo(
                 RelativelyLowCoverageDisconnectorInstance(gp_.g, gp_.flanking_cov,
@@ -254,13 +262,12 @@ class GraphSimplifier {
                           },
 
                       And(UniqueIncomingPathLengthLowerBound(g_, simplif_cfg_.isec.uniqueness_length),
-
                           //todo configure!
                           TopologicalThornCondition<Graph>(g_, simplif_cfg_.isec.span_distance, /*max edge cnt*/5))));
 
-            algo.AddAlgo(std::make_shared<ParallelEdgeRemovingAlgorithm<Graph>>(g_, meta_thorn_condition, info_container_.chunk_cnt(),
-                      removal_handler_),
-                      "Thorn remover (meta)");
+            algo.AddAlgo<ParallelEdgeRemovingAlgorithm<Graph>>("Thorn remover (meta)", g_, meta_thorn_condition,
+                                                               info_container_.chunk_cnt(),
+                                                               removal_handler_);
         }
 
         if (info_container_.mode() == config::pipeline_type::rna) {
@@ -310,61 +317,39 @@ public:
 
     }
 
-    void SimplifyGraph() {
+    void SimplifyGraph(bool rna_mode = false) {
         printer_(info_printer_pos::before_simplification);
         INFO("Graph simplification started");
 
         InitialCleaning();
 
-        AlgoStorageT algos;
-
         CompositeAlgorithm<Graph> algo(g_);
-        algo.AddAlgo(TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_),
-                      "Tip clipper");
-        algo.AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_),
-                      "Bulge remover");
-        algo.AddAlgo(ECRemoverInstance(g_, simplif_cfg_.ec, info_container_, removal_handler_),
-                    "Low coverage edge remover");
+        if (rna_mode) {
+            auto algo_tc_br = std::make_shared<CompositeAlgorithm<Graph>>(g_);
+            algo_tc_br->AddAlgo(TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_),
+                                "Tip clipper");
+            algo_tc_br->AddAlgo(DeadEndInstance(g_, simplif_cfg_.dead_end, info_container_, removal_handler_),
+                                "Dead end clipper");
+            algo_tc_br->AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_),
+                                "Bulge remover");
 
-        AlgorithmRunningHelper<Graph>::IterativeThresholdsRun(algo, simplif_cfg_.cycle_iter_count);
-        AlgorithmRunningHelper<Graph>::LoopedRun(algo);
-
-        printer_(info_printer_pos::before_post_simplification);
-
-        if (simplif_cfg_.post_simplif_enabled) {
-            PostSimplification();
+            algo.AddAlgo<LoopedAlgorithm<Graph>>("", g_, algo_tc_br);
         } else {
-            INFO("PostSimplification disabled");
+            algo.AddAlgo(TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_),
+                         "Tip clipper");
+            algo.AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_),
+                         "Bulge remover");
+//        algo.AddAlgo(
+//                RelativelyLowCoverageDisconnectorInstance(gp_.g, gp_.flanking_cov,
+//                                                          simplif_cfg_.relative_ed, info_container_),
+//                "Disconnecting edges with relatively low coverage");
         }
-    }
-
-    //TODO reduce code duplication
-    void SimplifyRNAGraph() {
-        printer_(info_printer_pos::before_simplification);
-        INFO("Graph simplification started");
-
-        InitialCleaning();
-
-        if (gp_.genome.GetSequence().size() > 0) {
-            DEBUG("Reference genome length = " + std::to_string(gp_.genome.GetSequence().size()));
-        }
-
-        auto algo_tc_br = std::make_shared<CompositeAlgorithm<Graph>>(g_);
-        algo_tc_br->AddAlgo(TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_),
-                     "Tip clipper");
-        algo_tc_br->AddAlgo(DeadEndInstance(g_, simplif_cfg_.dead_end, info_container_, removal_handler_),
-                    "Dead end clipper");
-        algo_tc_br->AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, removal_handler_),
-                     "Bulge remover");
-
-        CompositeAlgorithm<Graph> algo(g_);
-        algo.AddAlgo(std::make_shared<LoopedAlgorithm<Graph>>(g_, algo_tc_br));
         algo.AddAlgo(ECRemoverInstance(g_, simplif_cfg_.ec, info_container_,
                                        removal_handler_),
                      "Low coverage edge remover");
 
-        //all primary option to closely mimic previous behavior
-        AlgorithmRunningHelper<Graph>::IterativeThresholdsRun(algo, simplif_cfg_.cycle_iter_count, /*all_primary*/true);
+        //all primary option set to closely mimic previous rna behavior
+        AlgorithmRunningHelper<Graph>::IterativeThresholdsRun(algo, simplif_cfg_.cycle_iter_count, /*all_primary*/rna_mode);
         AlgorithmRunningHelper<Graph>::LoopedRun(algo);
 
         printer_(info_printer_pos::before_post_simplification);
@@ -375,6 +360,7 @@ public:
             INFO("PostSimplification disabled");
         }
     }
+
 };
 
 shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultGPColorer(
@@ -412,22 +398,21 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
     SimplifInfoContainer info_container(cfg::get().mode);
     info_container.set_read_length(cfg::get().ds.RL())
         .set_main_iteration(cfg::get().main_iteration)
-        .set_chunk_cnt(5 * cfg::get().max_threads);
+        .set_chunk_cnt(5 * cfg::get().max_threads)
+        //0 if model didn't converge
+        //todo take max with trusted_bound
+        .set_detected_coverage_bound(gp.ginfo.ec_bound());
 
-    //0 if model didn't converge
-    //todo take max with trusted_bound
-    //FIXME add warning when used for uneven coverage applications
-    info_container.set_detected_mean_coverage(gp.ginfo.estimated_mean())
-            .set_detected_coverage_bound(gp.ginfo.ec_bound());
+    if (!cfg::get().uneven_depth) {
+        info_container.set_detected_mean_coverage(gp.ginfo.estimated_mean());
+    }
 
     GraphSimplifier simplifier(gp, info_container,
                                preliminary_ ? *cfg::get().preliminary_simp : cfg::get().simp,
                                nullptr/*removal_handler_f*/,
                                printer);
-    if (cfg::get().mode == pipeline_type::rna)
-        simplifier.SimplifyRNAGraph();
-    else
-        simplifier.SimplifyGraph();
+
+    simplifier.SimplifyGraph(cfg::get().mode == pipeline_type::rna);
 
 }
 

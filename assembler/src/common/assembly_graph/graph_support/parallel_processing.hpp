@@ -136,6 +136,12 @@ protected:
 public:
     virtual ~PersistentAlgorithmBase() {}
 
+    /**
+     * Launches graph processing
+     * @param force_primary_launch flag forcing the refilling of the set of elements of interest
+     * @param iter_run_progress progress coefficient for iterative algorithms passed here
+     * @return number of trigger events
+     */
     virtual size_t Run(bool force_primary_launch = false,
                        double iter_run_progress = 1.) = 0;
 
@@ -159,17 +165,8 @@ public:
         if (!comment.empty()) {INFO("Running " << comment);}
         size_t triggered = algo.Run(force_primary_launch, iter_run_progress);
         if (!comment.empty()) {INFO(comment << " triggered " << triggered << " times");}
-        //cnt_callback_.Report();
         return triggered;
     }
-
-//    static bool RunAlgos(AlgoStorageT& algos, bool force_primary_launch = false) {
-//        bool changed = false;
-//        for (auto algo_comment : algos) {
-//            changed |= RunAlgo(algo_comment.first, algo_comment.second, force_primary_launch);
-//        }
-//        return changed;
-//    }
 
     static size_t IterativeThresholdsRun(Algo &algo,
                                          const size_t iteration_cnt = 1,
@@ -233,6 +230,11 @@ public:
             PersistentAlgorithmBase<Graph>(g) {
     }
 
+    template<typename Algo, typename... Args>
+    void AddAlgo(const std::string &desc, Args&&... args) {
+        AddAlgo(std::make_shared<Algo>(std::forward<Args>(args)...), desc);
+    };
+
     void AddAlgo(AlgoPtr<Graph> algo, const std::string &desc = "") {
         if (algo)
             algos_.push_back(std::make_pair(algo, desc));
@@ -251,11 +253,6 @@ public:
         return triggered;
     }
 
-//    std::string GenerateDesc() {
-//        std::stringstream ss;
-//        std::transform(algos_.begin(), algos_.end(), ostream_iterator<string>(ss, "; "), std::get<1>);
-//        return "Composite: [" + ss.str() + "]";
-//    }
 };
 
 template<class Graph>
