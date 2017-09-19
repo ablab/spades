@@ -22,7 +22,7 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
         iterative_constructor_callers.push_back(make_shared<EdgeSplitConstructorCaller>(gp_.g, barcode_extractor_, max_threads_));
         iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, barcode_extractor_, max_threads_));
     }
-    //fixme allow to copy scaffold graphs or change predicate graph constructor to avoid copying
+    //todo make effective version of predicate graph constructor to avoid copying
     vector<ScaffoldGraph> graphs;
     graphs.push_back(initial_graph);
     for (const auto& caller: iterative_constructor_callers) {
@@ -35,7 +35,7 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
     INFO("Constructing scaffold graph with length threshold " << min_length);
     ScaffolderParamsConstructor params_constructor;
     auto params = params_constructor.ConstructScaffolderParams(min_length);
-    //fixme make it consistent or something
+    //fixme coverage threshold consistent over unique storage constructions where coverage is irrelevant
     const double max_relative_coverage = 50.0;
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, max_relative_coverage);
     ScaffoldingUniqueEdgeStorage unique_storage;

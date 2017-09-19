@@ -189,4 +189,34 @@ namespace path_extend {
 
         double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
     };
+
+    class GapCloserPredicate {
+     public:
+        virtual bool Check(const scaffold_graph::ScaffoldGraph::ScaffoldVertex& Vertex) const = 0;
+        virtual ~GapCloserPredicate() = default;
+    };
+
+    class LongEdgePairGapCloserPredicate: public GapCloserPredicate {
+     public:
+        typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+     private:
+        const Graph& g_;
+        const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
+        const size_t count_threshold_;
+        const size_t initial_tail_threshold_;
+        const size_t check_tail_threshold_;
+        const double raw_score_threshold_;
+        const ScaffoldGraph::ScaffoldVertex start_;
+        const ScaffoldGraph::ScaffoldVertex end_;
+        const vector<barcode_index::BarcodeId> barcodes_;
+
+     public:
+        LongEdgePairGapCloserPredicate(const Graph& g, const barcode_index::FrameBarcodeIndexInfoExtractor& extractor,
+                                       size_t count_threshold, size_t initial_tail_threshold,
+                                       size_t check_tail_threshold, double share_threshold,
+                                       const ScaffoldGraph::ScaffoldEdge& edge);
+
+        bool Check(const ScaffoldGraph::ScaffoldVertex& vertex) const override;
+        DECL_LOGGER("LongEdgePairGapCloserPredicate");
+    };
 }

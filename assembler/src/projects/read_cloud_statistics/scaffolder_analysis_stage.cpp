@@ -1,11 +1,13 @@
+#include <common/modules/path_extend/scaffolder2015/scaffold_graph.hpp>
 #include "scaffolder_analysis_stage.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_gap_closer.hpp"
 
 void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pack& graph_pack, const char*) {
     auto scaffold_graph_storage = graph_pack.scaffold_graph_storage;
-    auto large_scaffold_graph = scaffold_graph_storage.GetLargeScaffoldGraph();
-    auto small_scaffold_graph = scaffold_graph_storage.GetSmallScaffoldGraph();
+    const auto& large_scaffold_graph = scaffold_graph_storage.GetLargeScaffoldGraph();
+    const auto& small_scaffold_graph = scaffold_graph_storage.GetSmallScaffoldGraph();
     INFO(large_scaffold_graph.VertexCount() << " vertices and " << large_scaffold_graph.EdgeCount()
                                             << " edges in large scaffold graph.");
     INFO(small_scaffold_graph.VertexCount() << "vertices and " << small_scaffold_graph.EdgeCount()
@@ -28,7 +30,16 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
     INFO("Small scaffold graph stats");
     short_stats.Serialize(std::cout);
 
-    path_extend::ScaffoldGraphExtractor extractor;
-    auto univocal_edges = extractor.ExtractUnivocalEdges(large_scaffold_graph);
-    INFO(univocal_edges.size() << " univocal edges in large scaffold graph");
+    const size_t distance_threshold = 3;
+    const double share_threshold = 0.15;
+    const size_t count_threshold = 2;
+    barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor(graph_pack.barcode_mapper_ptr, graph_pack.g);
+    path_extend::ScaffoldGraphGapCloser gap_closer(graph_pack.g, barcode_extractor, distance_threshold, share_threshold,
+                                                   count_threshold, small_length_threshold, large_length_threshold);
+    auto new_small_scaffold_graph = gap_closer.ExtractGapClosingPaths(large_scaffold_graph, small_scaffold_graph);
+    INFO(new_small_scaffold_graph.VertexCount() << "vertices and " << new_small_scaffold_graph.EdgeCount()
+                                                << "edges in new small scaffold graph");
+    auto new_short_stats = scaffold_graph_validator.GetScaffoldGraphStats(new_small_scaffold_graph, short_edge_reference_paths);
+    INFO("Resulting scaffold graph stats");
+    new_short_stats.Serialize(std::cout);
 }

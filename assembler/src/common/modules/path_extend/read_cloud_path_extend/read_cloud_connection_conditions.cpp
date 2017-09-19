@@ -296,4 +296,51 @@ bool SimpleSearcher::AreEqual(const scaffold_graph::ScaffoldGraph::ScaffoldEdge&
 
 SimpleSearcher::VertexWithDistance::VertexWithDistance(const SimpleSearcher::ScaffoldVertex& vertex, size_t distance)
     : vertex(vertex), distance(distance) {}
+LongEdgePairGapCloserPredicate::LongEdgePairGapCloserPredicate(const Graph& g,
+                                                               const barcode_index::FrameBarcodeIndexInfoExtractor& extractor,
+                                                               size_t count_threshold, size_t initial_tail_threshold,
+                                                               size_t check_tail_threshold, double share_threshold,
+                                                               const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge):
+    g_(g), barcode_extractor_(extractor), count_threshold_(count_threshold), initial_tail_threshold_(initial_tail_threshold),
+    check_tail_threshold_(check_tail_threshold), raw_score_threshold_(share_threshold),
+    start_(edge.getStart()), end_(edge.getEnd()),
+    barcodes_(extractor.GetSharedBarcodesWithFilter(start_, end_, count_threshold, initial_tail_threshold)) {}
+
+bool LongEdgePairGapCloserPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldVertex& vertex) const {
+    vector<barcode_index::BarcodeId> middle_barcodes = barcode_extractor_.GetBarcodesFromRange(vertex, count_threshold_,
+                                                                                               0, g_.length(vertex));
+//    size_t left_intersection = barcode_extractor_.CountSharedBarcodesWithFilter(start_, vertex, count_threshold_, initial_tail_threshold_);
+//    size_t right_intersection = barcode_extractor_.CountSharedBarcodesWithFilter(vertex, end_, count_threshold_, initial_tail_threshold_);
+    vector<barcode_index::BarcodeId> middle_intersection;
+    std::set_intersection(middle_barcodes.begin(), middle_barcodes.end(), barcodes_.begin(), barcodes_.end(),
+                          std::back_inserter(middle_intersection));
+    double length_coefficient = static_cast<double>(g_.length(vertex)) / static_cast<double>(initial_tail_threshold_);
+    double coverage_coefficient = (2 * g_.coverage(vertex)) / (g_.coverage(start_) + g_.coverage(end_));
+    double score_threshold = raw_score_threshold_ * length_coefficient * coverage_coefficient;
+
+//    size_t left_barcodes = barcode_extractor_.GetBarcodesFromRange(start_, count_threshold_,
+//                                                                   g_.length(start_) - g_.length(vertex) ,
+//                                                                   g_.length(start_)).size();
+//    size_t right_barcodes = barcode_extractor_.GetBarcodesFromRange(end_, count_threshold_, 0, g_.length(vertex)).size();
+//    double barcode_coefficient = 2 * static_cast<double>(middle_barcodes.size()) /
+//        static_cast<double>(left_barcodes + right_barcodes);
+//    double score_threshold = raw_score_threshold_ * std::min(1.0, barcode_coefficient);
+
+    double score = static_cast<double>(middle_intersection.size()) / static_cast<double>(barcodes_.size());
+    bool threshold_passed = math::ge(score, score_threshold);
+    TRACE("Threshold passed: " << (threshold_passed ? "True" : "False"));
+    if (not threshold_passed) {
+        DEBUG("Score: " << score);
+        DEBUG("Raw threshold: " << raw_score_threshold_);
+        DEBUG("Score threshold: " << score_threshold);
+        DEBUG("Intersection: " << barcodes_.size());
+        DEBUG("Middle barcodes: " << middle_barcodes.size());
+        DEBUG("Middle intersection: " << middle_intersection.size());
+        DEBUG("Vertex length: " << g_.length(vertex));
+        DEBUG("Vertex coverage: " << g_.coverage(vertex));
+        DEBUG("Left coverage: " << g_.coverage(start_));
+        DEBUG("Right coverage: " << g_.coverage(end_) << endl);
+    }
+    return threshold_passed;
+}
 }

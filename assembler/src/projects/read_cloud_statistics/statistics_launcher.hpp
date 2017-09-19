@@ -14,6 +14,7 @@
 #include "scaffolder_statistics/scaffolder_stats.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
+#include "scaffolder_statistics/gap_closer_stats.hpp"
 
 namespace read_cloud_statistics {
 
@@ -230,7 +231,6 @@ namespace read_cloud_statistics {
 
         void Launch(const string& base_output_path) {
             INFO("Transition stats:");
-            size_t distance = cfg::get().ts_res.distance;
             vector<size_t> distances = {1000, 2500, 5000, 7500, 10000, 20000, 35000, 50000};
 
             std::function<void(const string&, size_t)> path_cluster_analyzer = [=](const string& path, size_t dist) {
@@ -240,7 +240,9 @@ namespace read_cloud_statistics {
             std::function<void(const string&, size_t)> contracted_graph_analyzer = [=](const string& path, size_t dist) {
               this->AnalyzeContractedGraph(path, dist);
             };
+//            size_t distance = cfg::get().ts_res.distance;
 
+//            AnalyzeScaffoldGapCloser(base_output_path);
             AnalyzeScaffoldGraph(base_output_path);
 
 //            INFO("Analyzing contig paths");
@@ -392,7 +394,7 @@ namespace read_cloud_statistics {
             INFO("Reference path: " << reference_path);
             INFO("Cloud contig path: " << cloud_contigs_path);
 
-            const size_t min_length = 20000;
+            const size_t min_length = 5000;
             path_extend::ScaffoldingUniqueEdgeStorage large_unique_storage;
             path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, 100);
             unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
@@ -433,6 +435,22 @@ namespace read_cloud_statistics {
             fs::remove_if_exists(scaffold_output_path);
             fs::make_dir(scaffold_output_path);
             meta_printer.PrintGraphAsMultiple(transitive_scaffold_graph, named_reference_paths, scaffold_output_path);
+        }
+
+        void AnalyzeScaffoldGapCloser(const string& stats_base_path) {
+            const size_t large_length_threshold = 20000;
+            const size_t small_length_threshold = 5000;
+            const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
+            path_extend::validation::FilteredReferencePathHelper helper(gp_);
+            auto filtered_reference_paths = helper.GetFilteredReferencePathsFromLength(path_to_reference,
+                                                                                       small_length_threshold);
+            const size_t count_threshold = 2;
+            barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor(gp_.barcode_mapper_ptr, gp_.g);
+            scaffolder_statistics::GapCloserDijkstraAnalyzer analyzer(gp_.g, filtered_reference_paths, barcode_extractor,
+                                                                      count_threshold, small_length_threshold,
+                                                                      large_length_threshold);
+            analyzer.FillStatistics();
+            analyzer.SerializeStatistics(stats_base_path);
         }
 
         void AnalyzePathClusters(const string& stats_base_path, size_t distance) {

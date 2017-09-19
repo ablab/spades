@@ -217,16 +217,6 @@ class BarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t> {
                               std::back_inserter(middle_intersection));
         return middle_intersection.size() >= barcode_threshold_;
     }
-
- private:
-    bool CheckBarcode(const EdgeId& first, const EdgeId& second, barcode_index::BarcodeId barcode,
-                      size_t count_threshold, size_t tail_threshold) const {
-        return barcode_extractor_.GetMaxPos(first, barcode) + tail_threshold > g_.length(first) and
-            barcode_extractor_.GetMinPos(second, barcode) < tail_threshold and
-            barcode_extractor_.GetNumberOfReads(first, barcode) >= count_threshold and
-            barcode_extractor_.GetNumberOfReads(second, barcode) >= count_threshold;
-    }
-
     DECL_LOGGER("BarcodePutChecker")
 };
 

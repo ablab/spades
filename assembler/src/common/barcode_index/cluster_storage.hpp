@@ -3,7 +3,7 @@
 #include "barcode_info_extractor.hpp"
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/utility/result_of.hpp>
-#include "common/assembly_graph/dijkstra/dijkstra_helper.hpp"
+#include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #define BOOST_RESULT_OF_USE_DECLTYPE
 
@@ -79,16 +79,18 @@ class Cluster {
             void AddVertex(const Vertex& vertex) {
                 if (vertices_.insert(vertex).second) {
                     unordered_set<Vertex> empty_entry;
-                    edge_to_incoming_[vertex] = empty_entry;
+//                    edge_to_incoming_.insert({vertex, empty_entry});
+//                    edge_to_outcoming_.insert({vertex, empty_entry});
                     edge_to_outcoming_[vertex] = empty_entry;
+                    edge_to_incoming_[vertex] = empty_entry;
                 }
             }
 
             void AddEdge(const Vertex& first, const Vertex& second) {
                 VERIFY(vertices_.find(first) != vertices_.end());
                 VERIFY(vertices_.find(second) != vertices_.end());
-                edge_to_outcoming_[first].insert(second);
-                edge_to_incoming_[second].insert(first);
+                edge_to_outcoming_.at(first).insert(second);
+                edge_to_incoming_.at(second).insert(first);
             }
 
             bool ContainsVertex(const Vertex& vertex) const {
@@ -151,6 +153,19 @@ class Cluster {
 
             size_t GetIndegree(const Vertex& vertex) const {
                 return edge_to_incoming_.at(vertex).size();
+            }
+
+            size_t GetVertexCount() const {
+                return vertices_.size();
+            }
+
+            size_t GetEdgesCount() const {
+                size_t result = 0;
+                for (auto it = begin(); it != end(); ++it) {
+                    auto vertex = *it;
+                    result += GetOutdegree(vertex);
+                }
+                return result;
             }
         };
 

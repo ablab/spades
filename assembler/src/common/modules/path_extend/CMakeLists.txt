@@ -19,10 +19,13 @@ add_library(path_extend STATIC pe_config_struct.cpp
                     scaffolder2015/path_polisher.cpp
                     read_cloud_path_extend/read_cloud_connection_conditions.cpp
                     read_cloud_path_extend/conjugate_score_extractor.hpp
-        read_cloud_path_extend/scaffold_graph_construction_pipeline.cpp
+                    read_cloud_path_extend/scaffold_graph_construction_pipeline.cpp
                     read_cloud_path_extend/scaffold_graph_storage.cpp
                     read_cloud_path_extend/validation/scaffold_graph_validation.cpp
-                    read_cloud_path_extend/validation/transition_extractor.cpp read_cloud_path_extend/scaffold_graph_extractor.cpp read_cloud_path_extend/scaffold_graph_extractor.hpp)
+                    read_cloud_path_extend/validation/transition_extractor.cpp
+                    read_cloud_path_extend/scaffold_graph_extractor.cpp
+                    read_cloud_path_extend/scaffold_graph_gap_closer.cpp
+                    read_cloud_path_extend/scaffold_graph_dijkstra.hpp)
 
 target_link_libraries(path_extend assembly_graph ssw)
 
