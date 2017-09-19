@@ -62,11 +62,16 @@ stats_targets = {"checkm": "{}_checkm.tsv",
                  "pca":    "{}_pca.png",
                  "tsne":   "{}_tsne.png",
                  "report": "{}_report.html"}
+
 if config["stats"].get("refs"):
     #stats_targets["gf"]      = "{}_gf.tsv"
     stats_targets["f1"]       = "{}_f1.txt"
     stats_targets["summary"]  = "{}_summary.tsv"
     stats_targets["nga"]      = "{}_nga.tsv"
+    stats_targets["lost"]     = "{}_lost.tsv"
+
+def unsupported_target(stage, stat):
+    return stat == "lost" and stage != "binning"
 
 STAGES = ["binning", "propagation", "reassembly"]
 print(config["stats"])
@@ -75,7 +80,7 @@ for stage in STAGES:
         continue
     stage_stats = config["stats"].get(stage, [])
     if stage_stats == "all":
-        stats = stats_targets.keys()
+        stats = [target for target in stats_targets if not unsupported_target(stage, target)]
     else:
         stats = stage_stats + config["stats"].get("all", [])
     if stage == LAST_STAGE:
@@ -186,10 +191,9 @@ rule quast_all:
     input:   expand("{{stage}}/bins/{bin}.fasta", bin=BINS) #stats_input
     output:  touch("stats/q_{stage}.done")
     params:  out="stats/q_{stage}"
-    log:     "stats/q_{stage}/.log"
     threads: THREADS
     message: "Aligning all of {wildcards.stage} on all references"
-    shell:   "{METAQUAST} -t {threads} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1"
+    shell:   "{METAQUAST} --fast -t {threads} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1"
 
 rule gather_stats:
     input:   "stats/q_{stage}.done"
@@ -233,14 +237,55 @@ rule filter_prop:
 #     input:   expand("stats/prop_{cag}/{sample}.tsv", sample=GROUPS, cag=BINS)
 #     message: "Calculated propagation statistics"
 
+#---- Lost contigs -------------------------------------------------------------
+rule binned_list:
+    input:   "binning/{}/unified_binning.tsv".format(BINNER)
+    output:  "binning/{}/all.info".format(BINNER)
+    message: "Filtering list of contigs which were binned"
+    shell:   "awk '{{print $1}}' {input} > {output}"
+
+rule lost_contigs:
+    input:   "binning/{}/all.info".format(BINNER)
+    output:  "binning/bins/lost.fasta"
+    message: "Filtering contigs which were not binned"
+    shell:   "{SCRIPTS}/contig_name_filter.py assembly/splits/all.fasta binning/{BINNER}/all.info {output} remove"
+
+rule lost_gf:
+    input:   "binning/bins/lost.fasta"
+    output:  "stats/summary/binning_lost.tsv"
+    params:  out="stats/lost_binning"
+    message: "Aligning lost binned contigs on all references"
+    shell:   "{METAQUAST} --fast -t {THREADS} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1 && "
+             "cp {params.out}/summary/Genome_fraction_\(%\).tsv {output}"
+
 #===============================================================================
 #---- Reference-free stats and metrics -----------------------------------------
 #===============================================================================
 
+#---- Minimus for pre-reassembly stages ----------------------------------------
+rule to_amos:
+    input:   "{stage}/bins/{bin}.fasta"
+    output:  "{stage}/merged/{bin}.afg"
+    log:     "{stage}/merged/to_amos_{bin}.log"
+    message: "Converting {wildcards.bin} contigs from {wildcards.stage} into AMOS format"
+    shell:   "toAmos -s {input} -o {output} >{log} 2>&1"
+
+rule minimus:
+    input:   "{stage}/merged/{bin}.afg"
+    output:  "{stage}/merged/{bin}.fasta"
+    params:  "{stage}/merged/{bin}"
+    log:     "{stage}/merged/{bin}.log"
+    message: "Merging {wildcards.bin} from {wildcards.stage} with minimus2"
+    shell:   "minimus2 {params} >{log} 2>&1 && cat {params}.singletons.seq >> {output}"
+
 #---- CheckM stats -------------------------------------------------------------
+def checkm_input_dir(w):
+    return w.stage + ("/bins" if (w.stage == "reassembly" or len(GROUPS) == 1) else "/merged")
+
 rule checkm:
+    input:   lambda w: expand("{dir}/{bin}.fasta", dir=checkm_input_dir(w), bin=BINS)
     output:  qa="stats/checkm_{stage}/qa.tsv", tree_qa="stats/checkm_{stage}/tree_qa.tsv"
-    params:  dir="{stage}/bins", out="stats/checkm_{stage}",
+    params:  dir=checkm_input_dir, out="stats/checkm_{stage}"
     threads: THREADS
     log:     "stats/checkm_{stage}.log"
     message: "Running CheckM for results of {wildcards.stage}"
@@ -258,8 +303,8 @@ rule checkm:
              "checkm qa -t {THREADS} -o 2 --tab_table -f {output.qa} {params.out}/lineage.ms {params.out} >>{log} 2>&1")
 
 rule parse_checkm:
-    input:   qa=rules.checkm.output.qa, tree_qa=rules.checkm.output.tree_qa
-    output:  "stats/summary/checkm_{stage}.tsv"
+    input:   qa="stats/checkm_{stage}/qa.tsv", tree_qa="stats/checkm_{stage}/tree_qa.tsv"
+    output:  "stats/summary/{stage}_checkm.tsv"
     message: "Parse CheckM results for {wildcards.stage}"
     run:
         table = pandas.read_table(input.qa, dtype="str")
