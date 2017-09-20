@@ -75,8 +75,7 @@ struct KeyStoringIndexBuilder {
                     size_t thread_num, bool save_final = true) const {
         phm_builder_.BuildIndex(index, counter, bucket_num, thread_num, save_final);
         VERIFY(!index.kmers_.get());
-        index.kmers_ = counter.GetFinalKMers();
-        VERIFY(index.kmers_.get());
+        index.kmers_file_ = counter.final_kmers_file();
         index.SortUniqueKMers();
     }
 

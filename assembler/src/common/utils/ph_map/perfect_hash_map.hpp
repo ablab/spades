@@ -218,15 +218,22 @@ public:
     typedef traits traits_t;
     typedef K KMer;
     typedef typename base::IdxType KMerIdx;
-    typedef typename traits::FinalKMerStorage::iterator kmer_iterator;
-    typedef typename traits::FinalKMerStorage::const_iterator const_kmer_iterator;
+
+    typedef MMappedRecordArrayReader<typename KMer::DataType> KMerStorage;
+    typedef typename KMerStorage::iterator kmer_iterator;
+    typedef typename KMerStorage::const_iterator const_kmer_iterator;
+
     typedef typename base::KeyWithHash KeyWithHash;
     using base::ConstructKWH;
 
 private:
-    std::unique_ptr<typename traits::FinalKMerStorage> kmers_;
+    typename traits::ResultFile kmers_file_;
+    mutable std::unique_ptr<KMerStorage> kmers_;
 
     void SortUniqueKMers() const {
+        if (!kmers_)
+            kmers_.reset(new KMerStorage(kmers_file_->file(), KMer::GetDataSize(base::k())));
+
         size_t swaps = 0;
         INFO("Arranging kmers in hash map order");
         for (auto I = kmers_->begin(), E = kmers_->end(); I != E; ++I) {
@@ -279,7 +286,7 @@ public:
 
     void clear() {
         base::clear();
-        kmers_ = nullptr;
+        kmers_.reset(nullptr);
     }
 
     kmer_iterator kmer_begin() {

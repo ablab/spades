@@ -172,8 +172,6 @@ template<class Seq>
 struct slim_kmer_index_traits : public utils::kmer_index_traits<Seq> {
     typedef utils::kmer_index_traits<Seq> __super;
 
-    typedef MMappedRecordReader<typename Seq::DataType> FinalKMerStorage;
-
     template<class Writer>
     static void raw_serialize(Writer&, typename __super::RawKMerStorage*) {
         VERIFY(false && "Cannot save extension index");

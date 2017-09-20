@@ -54,7 +54,6 @@ public:
   typedef typename traits::raw_data_const_iterator const_iterator;
   typedef typename traits::ResultFile              ResultFile;
   typedef typename traits::RawKMerStorage          RawKMerStorage;
-  typedef typename traits::FinalKMerStorage        FinalKMerStorage;
 
   KMerCounter()
       : kmers_(0), counted_(false) {}
@@ -66,7 +65,6 @@ public:
   virtual void MergeBuckets() = 0;
 
   virtual std::unique_ptr<RawKMerStorage> GetBucket(size_t idx, bool unlink = true) = 0;
-  virtual std::unique_ptr<FinalKMerStorage> GetFinalKMers() = 0;
 
   virtual ~KMerCounter() {}
 
@@ -166,11 +164,6 @@ public:
       MergeBuckets();
 
     return kmers;
-  }
-
-  std::unique_ptr<typename __super::FinalKMerStorage> GetFinalKMers() override {
-    VERIFY_MSG(this->final_kmers_, "k-mers were not counted yet");
-    return std::unique_ptr<typename __super::FinalKMerStorage>(new typename __super::FinalKMerStorage(final_kmers_file()->file(), Seq::GetDataSize(k_), /* unlink */ true));
   }
 
   std::string GetMergedKMersFname(unsigned suffix) const {

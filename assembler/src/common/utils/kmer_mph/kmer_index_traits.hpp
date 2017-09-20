@@ -15,7 +15,6 @@ struct kmer_index_traits {
   typedef Seq SeqType;
   typedef fs::TmpFile ResultFile;
   typedef MMappedRecordArrayReader<typename Seq::DataType> RawKMerStorage;
-  typedef MMappedRecordArrayReader<typename Seq::DataType> FinalKMerStorage;
   typedef typename RawKMerStorage::iterator             raw_data_iterator;
   typedef typename RawKMerStorage::const_iterator       raw_data_const_iterator;
   typedef typename RawKMerStorage::iterator::value_type KMerRawData;

@@ -20,7 +20,6 @@ template<>
 struct kmer_index_traits<cap::LSeq> {
     typedef cap::LSeq SeqType;
     typedef std::vector<cap::LSeq> RawKMerStorage;
-    typedef std::vector<cap::LSeq> FinalKMerStorage;
 
     typedef RawKMerStorage::iterator             raw_data_iterator;
     typedef RawKMerStorage::const_iterator       raw_data_const_iterator;
@@ -163,16 +162,6 @@ namespace cap {
                 TRACE("RELEASE BUCKET");
                 delete bucket;
                 bucket = NULL;
-            }
-
-            virtual RawKMerStorage* GetFinalKMers() {
-                OpenBucket(0);
-                VERIFY(bucket != NULL);
-
-                RawKMerStorage *ret = bucket;
-                bucket = NULL;
-
-                return ret;
             }
 
             virtual typename __super::iterator bucket_begin(size_t /* idx */) {
