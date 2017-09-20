@@ -102,7 +102,9 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, const GraphCov
         }
     }
 //TODO: small plasmid, paths a-b-a, b-a-b ?
-    if (loop_weight > 1 && loop_weight * overwhelming_majority_ > nonloop_weight)
+//2 - hybrid paths weight doubles (conjugate paths)
+//TODO: remove weight dublication
+    if (loop_weight > 2 && loop_weight * overwhelming_majority_ > nonloop_weight)
             return false;
         else
             DEBUG (gp_.g.int_id(e) << " loop/nonloop weight " << loop_weight << " " << nonloop_weight);
@@ -122,8 +124,8 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, const GraphCov
                 maxx = pair.second;
             }
         for (const auto &pair: voting)
-            //TODO:: 1 from config?
-            if (pair.first != next_unique && pair.second > 1)
+//2 - hybrid paths weight doubles (conjugate paths)
+            if (pair.first != next_unique && pair.second > 2)
                 alt += pair.second;
         if (maxx < lr_config.unique_edge_priority * double(alt)) {
             DEBUG("edge " << gp_.g.int_id(e) <<" dir "<< direction << " was not unique" );
