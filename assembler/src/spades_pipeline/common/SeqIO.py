@@ -7,15 +7,15 @@
 import itertools
 import sys
 import gzip
+import codecs
 
 fasta_ext = ['.fa', '.fas', '.fasta', '.seq', '.fsa', '.fna', '.ffn', '.frn']
 fastq_ext = ['.fq', 'fastq']
 
 def Open(f, mode):
     if f.endswith(".gz"):
-        if not mode.endswith('b'):
-            mode += 't'
-        return gzip.open(f, mode)
+        # TODO encoding
+        return codecs.getreader('UTF-8')(gzip.open(f, mode))
     else:
         return open(f, mode, encoding='utf-8')
 
