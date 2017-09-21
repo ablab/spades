@@ -42,8 +42,10 @@ with open(nucmer_output_fn, "r") as nucmer_output:
         contig_len = int(res.group(2))
         line = nucmer_output.readline()
         if contig_len < min_length:
-            continue
+            continue #Too short
         res = align_data.search(line)
+        if res is None:
+            continue #Unaligned contig
         score = float(res.group(1))
         per = 100.0 * score / contig_len
         if per > threshold:

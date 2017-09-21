@@ -193,8 +193,9 @@ rule canopy:
     threads: THREADS
     log:     "binning/canopy.log"
     message: "Running canopy clustering"
-    shell:   "{SOFT}/cc.bin --filter_max_dominant_obs 1 -n {threads} -p BIN"
-             " -i {input} -o {output} -c binning/canopy/canopy_bins.prof >{log} 2>&1"
+    shell:   "{SOFT}/cc.bin -n {threads} --filter_max_dominant_obs 1 "
+             " --filter_min_obs {MIN_SAMPLES} --filter_zero_medians {MIN_SAMPLES} "
+             " -p BIN -i {input} -o {output} -c binning/canopy/canopy_bins.prof >{log} 2>&1"
 
 # Binning with CONCOCT
 rule concoct:
