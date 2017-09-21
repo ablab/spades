@@ -341,7 +341,8 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
                                                 cfg::get().K,
                                                 cfg::get().pb.ignore_middle_alignment,
                                                 cfg::get().output_dir,
-                                                cfg::get().pb);
+                                                cfg::get().pb,
+                                                alignment::BWAIndex::AlignmentMode::PacBio);
 
     PacbioAligner aligner(pac_index, path_storage, gap_storage);
 

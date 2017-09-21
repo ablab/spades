@@ -9,6 +9,7 @@
 
 #include "assembly_graph/index/edge_multi_index.hpp"
 #include "modules/alignment/edge_index_refiller.hpp"
+#include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 // FIXME: Layering violation, get rid of this
@@ -72,14 +73,19 @@ private:
     size_t read_count;
     bool ignore_map_to_middle;
     debruijn_graph::config::debruijn_config::pacbio_processor pb_config_;
+
+    alignment::BWAReadMapper<Graph> bwa_mapper;
+
 public:
     MappingDescription GetSeedsFromRead(const Sequence &s) const;
 
-    PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_, bool ignore_map_to_middle, const std::string &out_dir, debruijn_graph::config::debruijn_config::pacbio_processor pb_config )
+
+    PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_, bool ignore_map_to_middle, string out_dir, 
+                        debruijn_graph::config::debruijn_config::pacbio_processor pb_config, alignment::BWAIndex::AlignmentMode mode)
             : g_(g),
               pacbio_k(k),
               debruijn_k(debruijn_k_),
-              tmp_index((unsigned) pacbio_k), ignore_map_to_middle(ignore_map_to_middle), pb_config_(pb_config) {
+              tmp_index((unsigned) pacbio_k, out_dir), ignore_map_to_middle(ignore_map_to_middle), pb_config_(pb_config), bwa_mapper(g, mode) {
         DEBUG("PB Mapping Index construction started");
         debruijn_graph::EdgeIndexRefiller(out_dir).Refill(tmp_index, g_);
         INFO("Index constructed");
@@ -166,6 +172,34 @@ public:
             }
         }
     }
+
+    ClustersSet GetBWAClusters(const Sequence &s) const {
+        INFO("BWA started")
+        ClustersSet res;
+        if (s.size() < g_.k()){
+            return res;
+        }
+        omnigraph::MappingPath<EdgeId> seeds = bwa_mapper.MapSequence(s);
+        TRACE(read_count << " read_count");
+        INFO("BWA ended")
+        DEBUG(seeds.size() <<"  clusters");
+        size_t k = g_.k();
+        for (auto iter = seeds.begin(); iter != seeds.end(); ++iter) {
+            EdgeId e = iter->first;
+            INFO("BWA loading edge=" << g_.int_id(iter->first) << " e_start=" << iter->second.mapped_range.start_pos << " e_end=" << iter->second.mapped_range.end_pos 
+                                                                    << " r_start=" << iter->second.initial_range.start_pos << " r_end=" << iter->second.initial_range.end_pos );
+            
+            int dif =  min(g_.length(e), iter->second.mapped_range.end_pos) - max(k, iter->second.mapped_range.start_pos);
+            size_t edge_start_pos = iter->second.mapped_range.start_pos;
+            size_t edge_end_pos = iter->second.mapped_range.end_pos;
+            size_t read_start_pos = iter->second.initial_range.start_pos;
+            size_t read_end_pos = iter->second.initial_range.end_pos;
+            res.insert(KmerCluster<Graph>(e, edge_start_pos, edge_end_pos, read_start_pos, read_end_pos));
+        }
+        INFO("Ended loading bwa")
+        return res;
+    }
+
     ClustersSet GetOrderClusters(const Sequence &s) const {
         MappingDescription descr = GetSeedsFromRead(s);
         ClustersSet res;
@@ -545,7 +579,7 @@ public:
     }
 
     OneReadMapping GetReadAlignment(Sequence &s) const {
-        ClustersSet mapping_descr = GetOrderClusters(s);
+        ClustersSet mapping_descr = GetBWAClusters(s); //GetOrderClusters(s);
         vector<int> colors = GetWeightedColors(mapping_descr);
         size_t len =  mapping_descr.size();
         vector<size_t> real_length;

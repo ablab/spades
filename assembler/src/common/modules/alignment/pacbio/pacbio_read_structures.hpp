@@ -84,6 +84,17 @@ struct KmerCluster {
         FillTrustableIndeces();
     }
 
+    KmerCluster(EdgeId e, size_t edge_start_pos, size_t edge_end_pos, size_t read_start_pos, size_t read_end_pos) {
+        last_trustable_index = 1;
+        first_trustable_index = 0;
+        sorted_positions.push_back(MappingInstance(edge_start_pos, read_start_pos, 1));
+        sorted_positions.push_back(MappingInstance(edge_end_pos, read_end_pos, 1));
+        size = 2;
+        average_read_position = (read_start_pos + read_end_pos)/2;
+        average_edge_position = (edge_start_pos + edge_end_pos)/2;
+        edgeId = e;
+    }
+
     bool operator <(const KmerCluster & b) const {
         return (average_read_position < b.average_read_position ||(average_read_position == b.average_read_position && edgeId < b.edgeId) ||
                 (average_read_position == b.average_read_position && edgeId == b.edgeId && sorted_positions < b.sorted_positions));
@@ -209,6 +220,12 @@ private:
 inline int StringDistance(string &a, string &b) {
     int a_len = (int) a.length();
     int b_len = (int) b.length();
+    if (a_len == 0){
+        return b_len;
+    }
+    if (b_len == 0){
+        return a_len;
+    }
     int d = min(a_len / 3, b_len / 3);
     d = max(d, 10);
     DEBUG(a_len << " " << b_len << " " << d);
