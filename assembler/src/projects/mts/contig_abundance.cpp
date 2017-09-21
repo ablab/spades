@@ -126,6 +126,11 @@ KmerProfileIndex::KmerProfileIndex(unsigned k,
     std::string profiles_file = index_prefix + ".bpr";
     INFO("Loading profiles data of " << data_size << " elements from " << profiles_file);
     profiles_ = ProfilesT(profiles_file, data_size, false);
+    //Prefetch mmapped data by force
+    Mpl checksum = 0;
+    for (const Mpl* ptr = profiles_->data(); ptr < profiles_->data() + data_size; ptr += 4096 / sizeof(Mpl))
+        checksum += *ptr;
+    INFO("Kmer index loaded; checksum: " << checksum);
 }
 
 KmerProfileIndex::KeyWithHash KmerProfileIndex::Construct(const KmerProfileIndex::KeyType& key) const {
