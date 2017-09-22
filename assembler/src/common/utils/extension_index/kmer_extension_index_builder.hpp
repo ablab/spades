@@ -7,8 +7,10 @@
 #pragma once
 
 #include "kmer_extension_index.hpp"
+#include "utils/kmer_mph/kmer_index_builder.hpp"
 #include "utils/kmer_mph/kmer_splitters.hpp"
 #include "utils/kmer_counting.hpp"
+#include "utils/ph_map/perfect_hash_map_builder.hpp"
 
 namespace utils {
 

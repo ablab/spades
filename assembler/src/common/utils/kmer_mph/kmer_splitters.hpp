@@ -7,9 +7,13 @@
 
 #pragma once
 
+#include "adt/kmer_vector.hpp"
 #include "io/reads/io_helper.hpp"
 #include "utils/filesystem/file_limit.hpp"
 #include "utils/filesystem/temporary.hpp"
+#include "utils/memory_limit.hpp"
+
+#include <libcxx/sort.hpp>
 
 namespace utils {
 
