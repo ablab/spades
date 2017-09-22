@@ -226,10 +226,13 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
             }
         }
 //      TODO: some similar ideas for list-based removal
+
         for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+            bool should_leave = deadends_count_[*iter] == 0;
+            if (!use_chromosomal_list)
+                should_leave &= gp.g.length(*iter) > cfg::get().pd->min_isolated_length;
             if (long_component_[*iter] < 2 * cfg::get().pd->min_component_length &&
-                                  !(deadends_count_[*iter] == 0 &&
-                                    gp.g.length(*iter) > cfg::get().pd->min_isolated_length)) {
+                                  !should_leave) {
                 gp.g.DeleteEdge(*iter);
             }
         }
