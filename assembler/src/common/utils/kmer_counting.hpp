@@ -8,14 +8,15 @@
 namespace utils {
 
 typedef qf::cqf<RtSeq> CQFKmerFilter;
-typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
+//typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
+typedef SymmetricCyclicHash<uint8_t, uint64_t> SeqHasher;
 
 template<class Hasher, class KmerFilter = StoringTypeFilter<SimpleStoring>>
 class KmerHashProcessor {
     typedef typename Hasher::digest HashT;
     typedef typename Hasher::char_t CharT;
     typedef std::function<void (const RtSeq&, HashT)> ProcessF;
-    const Hasher hasher_;
+    Hasher hasher_;
     ProcessF process_f_;
     const KmerFilter filter_;
     RtSeq kmer_;

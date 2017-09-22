@@ -16,7 +16,8 @@
 namespace io {
 
 typedef qf::cqf<RtSeq> CQFKmerFilter;
-typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
+//typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
+typedef SymmetricCyclicHash<uint8_t, uint64_t> SeqHasher;
 
 template<class ReadType>
 class CoverageFilteringReaderWrapper: public DelegatingWrapper<ReadType> {
@@ -102,7 +103,7 @@ inline ReadStreamList<ReadType> CovFilteringWrap(ReadStreamList<ReadType> &reade
     return answer;
 }
 
-inline unsigned CountMedianMlt(const Sequence &s, unsigned k, const SeqHasher &hasher, const CQFKmerFilter &kmer_mlt_index) {
+inline unsigned CountMedianMlt(const Sequence &s, unsigned k, SeqHasher &hasher, const CQFKmerFilter &kmer_mlt_index) {
     std::vector<unsigned> mlts;
 
     auto process_f = [&] (const RtSeq& kmer, uint64_t hash) {
@@ -129,7 +130,7 @@ inline ReadStreamList<PairedReadType> PairedCovFilteringWrap(const ReadStreamLis
     auto single_readers = io::SquashingWrap<PairedReadType>(readers);
 
     size_t kmers_cnt_est = EstimateCardinality(k, single_readers, filter);
-    auto cqf = make_shared<CQFKmerFilter>([=](const RtSeq &s) { return hasher.hash(s); },
+    auto cqf = make_shared<CQFKmerFilter>([&](const RtSeq &s) { return hasher.hash(s); },
                                           kmers_cnt_est);
 
     utils::FillCoverageHistogram(*cqf, k, single_readers, filter, thr + 1);

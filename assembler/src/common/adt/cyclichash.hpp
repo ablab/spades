@@ -1,5 +1,4 @@
-#ifndef CYCLICHASH_HPP
-#define CYCLICHASH_HPP
+#pragma once
 
 #include <cstdint>
 #include <cstdlib>
@@ -188,4 +187,93 @@ class CyclicHash {
     const digest maskn_;
 };
 
-#endif 
+//Ask Anton about maxval and seed
+template<typename chartype = uint8_t, typename digest = uint64_t>
+class TrivialDNASeqHash {
+    static constexpr digest dA = 0x3c8bfbb395c60474;
+    static constexpr digest dC = 0x3193c18562a02b4c;
+    static constexpr digest dG = 0x20323ed082572324;
+    static constexpr digest dT = 0x295549f54be24456;
+    
+    //FIXME make static?
+    digest dtab_[256] = {
+        [0] = dA,   [1] = dC, [2] = dG, [3] = dT,
+        ['a'] = dA, ['c'] = dC, ['g'] = dG, ['t'] = dT,
+        ['A'] = dA, ['C'] = dC, ['G'] = dG, ['T'] = dT
+    };
+
+  public:
+    TrivialDNASeqHash() {}
+
+    digest operator()(chartype val) const {
+        return (digest) dtab_[(unsigned)val];
+    }
+};
+
+template<typename chartype = uint8_t,
+         typename digesttype = uint64_t,
+         typename hasher = TrivialDNASeqHash<chartype, digesttype>>
+class SymmetricCyclicHash {
+  public:
+    //todo rename
+    typedef digesttype digest;
+    typedef chartype char_t;
+  private:
+    static const unsigned precision = std::numeric_limits<digest>::digits;
+    hasher hasher_;
+    unsigned k_;
+    digest fwd_;
+    digest rvs_;
+    chartype first_;
+
+    digest rol(digest x, unsigned s = 1) {
+        return x << s | x >> (precision - s);
+    }
+
+    digest ror(digest x, unsigned s = 1) {
+        return x >> s | x << (precision - s);
+    }
+
+  public:
+    
+    /*
+     * Reimplementation of ntHash
+     * Adapted from https://bioinformatics.stackexchange.com/questions/19/are-there-any-rolling-hash-functions-that-can-hash-a-dna-sequence-and-its-revers
+     */
+    SymmetricCyclicHash(unsigned k): k_(k), fwd_(0), rvs_(0) {
+    }
+
+    template<class Seq>
+    digest operator()(const Seq &s) {
+        VERIFY(s.size() == k_);
+        fwd_ = 0;
+        rvs_ = 0;
+        for (size_t i = 0; i < s.size(); ++i)
+            fwd_ = rol(fwd_) ^ hasher_(s[i]);
+        for (size_t i = 0; i < s.size(); ++i)
+            rvs_ = rol(rvs_) ^ hasher_(nucl_complement(s[k_-1-i]));
+        return operator()();   
+    }
+    
+    digest update(chartype outchar, chartype inchar) {
+        fwd_ = rol(fwd_) ^ rol(hasher_(outchar), k_) ^ hasher_(inchar);
+        rvs_ = ror(rvs_) ^ ror(hasher_(nucl_complement(outchar))) ^ rol(hasher_(nucl_complement(inchar)), k_ - 1);
+        return operator()();   
+    }
+
+    digest operator()() const {
+        return std::min(fwd_, rvs_);
+    }
+
+    //backwards compatibility
+    template<class Seq>
+    digest hash(const Seq &s) {
+        return operator()(s);
+    }
+
+    digest hash_update(digest hash, chartype outchar, chartype inchar) {
+        VERIFY(hash == operator()());
+        return update(outchar, inchar);
+    }
+
+};

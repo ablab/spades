@@ -6,10 +6,11 @@
 //***************************************************************************
 
 #include <cxxopts/cxxopts.hpp>
-#include <omp.h>
+//#include <omp.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string>
+#include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 
@@ -36,7 +37,8 @@ void create_console_logger() {
 
 int main(int argc, char* argv[]) {
     typedef qf::cqf<RtSeq> CQFKmerFilter;
-    typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
+    //typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
+    typedef SymmetricCyclicHash<uint8_t, uint64_t> SeqHasher;
     utils::perf_counter pc;
 
     srand(42);
@@ -102,14 +104,14 @@ int main(int argc, char* argv[]) {
         io::BinarySingleStreams single_readers = io::single_binary_readers(dataset, /*followed by rc*/true, /*including paired*/true);
         INFO("Estimating kmer cardinality");
         size_t kmers_cnt_est = EstimateCardinality(k, single_readers, filter);
-        CQFKmerFilter cqf([=](const RtSeq &s) { return hasher.hash(s); },
+        CQFKmerFilter cqf([&](const RtSeq &s) { return hasher.hash(s); },
                                               kmers_cnt_est);
 
         INFO("Filling kmer coverage");
         utils::FillCoverageHistogram(cqf, k, single_readers, filter, thr + 1);
         INFO("Kmer coverage filled");
         
-        auto filter_f = [=,&cqf] (io::PairedRead& p_r) { 
+        auto filter_f = [&] (io::PairedRead& p_r) { 
             return (p_r.first().size() >= k && io::CountMedianMlt(p_r.first().sequence(), k, hasher, cqf) > thr) ||
                        (p_r.second().size() >= k && io::CountMedianMlt(p_r.second().sequence(), k, hasher, cqf) > thr); };
 
