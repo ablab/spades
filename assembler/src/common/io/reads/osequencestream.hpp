@@ -114,6 +114,7 @@ public:
 class OutputSequenceStream {
     std::ofstream ofstream_;
 public:
+    typedef SingleRead ReadT;
 
     OutputSequenceStream(const std::string& filename):
             ofstream_(filename) {
@@ -131,6 +132,8 @@ class PairedOutputSequenceStream {
     OutputSequenceStream os_r_;
 
 public:
+    typedef PairedRead ReadT;
+
     PairedOutputSequenceStream(const std::string& filename1,
                                const std::string &filename2) :
             os_l_(filename1),
@@ -149,6 +152,8 @@ class OSingleReadStream {
     std::ofstream os_;
 
 public:
+    typedef SingleRead ReadT;
+
     OSingleReadStream(const std::string& fn) :
             os_(fn) {
     }
@@ -171,6 +176,8 @@ class OPairedReadStream {
     OSingleReadStream r_os_;
 
 public:
+    typedef PairedRead ReadT;
+
     OPairedReadStream(const std::string& l_fn, const std::string& r_fn) :
             l_os_(l_fn), r_os_(r_fn) {
     }

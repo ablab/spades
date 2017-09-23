@@ -15,6 +15,7 @@
 
 #include <string>
 #include <vector>
+#include "utils/verify.hpp"
 
 // Forward decls for YAML API
 namespace llvm { namespace yaml { class IO; template<typename T> struct MappingTraits; } }
@@ -173,6 +174,15 @@ public:
 
     single_reads_iterator single_end() const {
         return single_reads_iterator(single_reads_.end(), single_reads_.end());
+    }
+
+    bool has_paired() const {
+        VERIFY(left_paired_reads_.size() == right_paired_reads_.size());
+        return !left_paired_reads_.empty();
+    }
+
+    bool has_single() const {
+        return !single_reads_.empty();
     }
 
     adt::iterator_range<single_reads_iterator> single_reads() const {

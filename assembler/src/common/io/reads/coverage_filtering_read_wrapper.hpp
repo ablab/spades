@@ -121,23 +121,23 @@ inline unsigned CountMedianMlt(const Sequence &s, unsigned k, SeqHasher &hasher,
     return mlts[n];
 }
 
-template<class PairedReadType>
-inline ReadStreamList<PairedReadType> PairedCovFilteringWrap(const ReadStreamList<PairedReadType> &readers,
-                                                  unsigned k,
-                                                  unsigned thr) {
-    utils::StoringTypeFilter<utils::InvertableStoring> filter;
-    SeqHasher hasher(k);
-    auto single_readers = io::SquashingWrap<PairedReadType>(readers);
-
-    size_t kmers_cnt_est = EstimateCardinality(k, single_readers, filter);
-    auto cqf = make_shared<CQFKmerFilter>([&](const RtSeq &s) { return hasher.hash(s); },
-                                          kmers_cnt_est);
-
-    utils::FillCoverageHistogram(*cqf, k, single_readers, filter, thr + 1);
-
-    auto filter_f = [=] (io::PairedRead& p_r) { return CountMedianMlt(p_r.first().sequence(), k, hasher, *cqf) > thr ||
-                    CountMedianMlt(p_r.second().sequence(), k, hasher, *cqf) > thr; };
-    return io::FilteringWrap<PairedReadType>(readers, filter_f);
-}
+//template<class PairedReadType>
+//inline ReadStreamList<PairedReadType> PairedCovFilteringWrap(const ReadStreamList<PairedReadType> &readers,
+//                                                  unsigned k,
+//                                                  unsigned thr) {
+//    utils::StoringTypeFilter<utils::InvertableStoring> filter;
+//    SeqHasher hasher(k);
+//    auto single_readers = io::SquashingWrap<PairedReadType>(readers);
+//
+//    size_t kmers_cnt_est = EstimateCardinality(k, single_readers, filter);
+//    auto cqf = make_shared<CQFKmerFilter>([&](const RtSeq &s) { return hasher.hash(s); },
+//                                          kmers_cnt_est);
+//
+//    utils::FillCoverageHistogram(*cqf, k, single_readers, filter, thr + 1);
+//
+//    auto filter_f = [=] (io::PairedRead& p_r) { return CountMedianMlt(p_r.first().sequence(), k, hasher, *cqf) > thr ||
+//                    CountMedianMlt(p_r.second().sequence(), k, hasher, *cqf) > thr; };
+//    return io::FilteringWrap<PairedReadType>(readers, filter_f);
+//}
 
 }

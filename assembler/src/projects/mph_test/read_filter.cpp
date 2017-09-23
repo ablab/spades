@@ -35,6 +35,16 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
+//FIXME find utility method?
+template<class IS, class OS>
+void Transfer(IS &input, OS &output) {
+    typename OS::ReadT read;
+    while (!input.eof()) {
+        input >> read;
+        output << read;
+    }
+}
+
 int main(int argc, char* argv[]) {
     typedef qf::cqf<RtSeq> CQFKmerFilter;
     //typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
@@ -111,23 +121,31 @@ int main(int argc, char* argv[]) {
         utils::FillCoverageHistogram(cqf, k, single_readers, filter, thr + 1);
         INFO("Kmer coverage filled");
         
-        auto filter_f = [&] (io::PairedRead& p_r) { 
+        auto paired_filter_f = [&] (io::PairedRead& p_r) { 
             return (p_r.first().size() >= k && io::CountMedianMlt(p_r.first().sequence(), k, hasher, cqf) > thr) ||
                        (p_r.second().size() >= k && io::CountMedianMlt(p_r.second().sequence(), k, hasher, cqf) > thr); };
 
+        auto single_filter_f = [&] (io::SingleRead& s_r) { 
+            return (s_r.size() >= k && io::CountMedianMlt(s_r.sequence(), k, hasher, cqf) > thr); };
+
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
             INFO("Filtering library " << i);
-            auto filtered = io::FilteringWrap<io::PairedRead>(io::paired_easy_library_reader(dataset[i], 
-                        /*followed by rc*/false, /*insert size*/0),
-                                                              filter_f);
-            io::OPairedReadStream ostream(workdir + "/" + to_string(i + 1) + ".1.fastq",
-                                          workdir + "/" + to_string(i + 1) + ".2.fastq");
+            if (dataset[i].has_paired()) {
+                auto filtered = io::FilteringWrap<io::PairedRead>(io::paired_easy_library_reader(dataset[i], 
+                            /*followed by rc*/false, /*insert size*/0),
+                                                                  paired_filter_f);
+                io::OPairedReadStream ostream(workdir + "/" + to_string(i + 1) + ".1.fastq",
+                                              workdir + "/" + to_string(i + 1) + ".2.fastq");
+                Transfer(*filtered, ostream);
+            }
 
-            //FIXME find utility method?
-            io::PairedRead paired_read;
-            while (!filtered->eof()) {
-                (*filtered) >> paired_read;
-                ostream << paired_read;
+            if (dataset[i].has_paired()) {
+                auto filtered = io::FilteringWrap<io::SingleRead>(io::single_easy_library_reader(dataset[i],
+                                               /*followed_by_rc*/ false,
+                                               /*including_paired_reads*/ false), 
+                                                                   single_filter_f);
+                io::OSingleReadStream ostream(workdir + "/" + to_string(i + 1) + ".s.fastq");
+                Transfer(*filtered, ostream);
             }
         }
     } catch (std::string const &s) {
