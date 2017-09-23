@@ -103,17 +103,15 @@ inline ReadStreamList<ReadType> CovFilteringWrap(ReadStreamList<ReadType> &reade
     return answer;
 }
 
-inline unsigned CountMedianMlt(const Sequence &s, unsigned k, SeqHasher &hasher, const CQFKmerFilter &kmer_mlt_index) {
+template<class Hasher>
+unsigned CountMedianMlt(const Sequence &s, unsigned k, const CQFKmerFilter &kmer_mlt_index) {
     std::vector<unsigned> mlts;
 
-    auto process_f = [&] (const RtSeq& kmer, uint64_t hash) {
-        if (!kmer.IsMinimal()) {
-            hash = hasher.hash(!kmer);
-        }
+    auto process_f = [&] (const RtSeq& /*kmer*/, uint64_t hash) {
         mlts.push_back(unsigned(kmer_mlt_index.lookup(hash)));
     };
 
-    utils::KmerHashProcessor<SeqHasher> processor(hasher, process_f);
+    utils::KmerHashProcessor<Hasher> processor(process_f);
     processor.ProcessSequence(s, k);
 
     size_t n = mlts.size() / 2;

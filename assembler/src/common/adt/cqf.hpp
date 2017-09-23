@@ -22,7 +22,7 @@ class cqf {
 
     ~cqf() { qf_destroy(&qf_); }
 
-    cqf(hasher h, uint64_t maxn) noexcept
+    cqf(uint64_t maxn, hasher h = nullptr)
             : hasher_(std::move(h)), insertions_(0) {
         unsigned qbits = unsigned(ceil(log2(maxn))) + 1;
         num_hash_bits_ = qbits + 8;
@@ -32,7 +32,7 @@ class cqf {
         assert((range_mask_ & qf_.metadata->range) == 0);
         fprintf(stderr, "%llu %llu %u %llu\n", maxn, num_slots_, num_hash_bits_, qf_.metadata->range);
     }
-    cqf(hasher h, uint64_t num_slots, unsigned hash_bits) noexcept
+    cqf(uint64_t num_slots, unsigned hash_bits, hasher h = nullptr)
             : hasher_(std::move(h)),
               num_hash_bits_(hash_bits), num_slots_(num_slots), insertions_(0) {
         qf_init(&qf_, num_slots_, num_hash_bits_, 0, 239);
@@ -73,6 +73,7 @@ class cqf {
 
     bool add(const T &o, uint64_t count = 1,
              bool lock = true, bool spin = true) {
+        VERIFY(hasher_);
         digest d = hasher_(o);
         return add(d, count, lock, spin);
     }

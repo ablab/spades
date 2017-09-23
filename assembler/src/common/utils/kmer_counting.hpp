@@ -16,36 +16,28 @@ class KmerHashProcessor {
     typedef typename Hasher::digest HashT;
     typedef typename Hasher::char_t CharT;
     typedef std::function<void (const RtSeq&, HashT)> ProcessF;
-    Hasher hasher_;
     ProcessF process_f_;
     const KmerFilter filter_;
-    RtSeq kmer_;
-    HashT hash_;
+
 public:
-    KmerHashProcessor(const Hasher &hasher,
-                      const ProcessF &process_f,
+    KmerHashProcessor(const ProcessF &process_f,
                       const KmerFilter &filter = StoringTypeFilter<SimpleStoring>()) :
-            hasher_(hasher), process_f_(process_f), filter_(filter) {
-    }
-
-    void Init(const RtSeq &kmer) {
-        kmer_ = kmer;
-        hash_ = hasher_.hash(kmer);
-    }
-
-    void ProcessKmer(char inchar) {
-        hash_ = hasher_.hash_update(hash_, (CharT) kmer_[0], (CharT) inchar);
-        kmer_ <<= inchar;
-        if (!filter_.filter(kmer_))
-            return;
-        process_f_(kmer_, hash_);
+            process_f_(process_f), filter_(filter) {
     }
 
     //todo use unsigned type for k
-    void ProcessSequence(const Sequence &s, size_t k) {
-        Init(s.start<RtSeq>(k) >> 'A');
+    void ProcessSequence(const Sequence &s, unsigned k) {
+        Hasher hasher(k);
+        RtSeq kmer = s.start<RtSeq>(k) >> 'A';
+        HashT hash = hasher.hash(kmer);
         for (size_t j = k - 1; j < s.size(); ++j) {
-            ProcessKmer(s[j]);
+            CharT inchar = (CharT) s[j];
+            hash = hasher.update((CharT) kmer[0], inchar);
+            //TODO can be optimized, no need to shift the kmer
+            kmer <<= inchar;
+            if (!filter_.filter(kmer))
+                return;
+            process_f_(kmer, hash);
         }
     }
 
@@ -65,13 +57,13 @@ public:
 
 };
 
+//FIXME parameterize by hasher
 template<class ReadStream, class Processor, class KmerFilter>
 size_t FillFromStream(ReadStream &stream, Processor &processor, unsigned k,
                       const KmerFilter &filter = KmerFilter()) {
     size_t reads = 0;
 
-    KmerHashProcessor<SeqHasher, KmerFilter> kmer_hash_processor(SeqHasher(k),
-                                                                 [&](const RtSeq &kmer, uint64_t hash) { processor.ProcessKmer(kmer, hash); },
+    KmerHashProcessor<SeqHasher, KmerFilter> kmer_hash_processor([&](const RtSeq &kmer, uint64_t hash) { processor.ProcessKmer(kmer, hash); },
                                                                  filter);
     typename ReadStream::ReadT r;
     while (!stream.eof()) {
@@ -127,16 +119,16 @@ public:
 };
 
 //FIXME further reduce code duplication
-template<class ReadStream, class KMerFilter>
+template<class ReadStream, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
 size_t EstimateCardinality(unsigned k, ReadStream &streams,
-                           const KMerFilter &filter) {
+                           const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
     unsigned nthreads = (unsigned) streams.size();
     SeqHasher hasher(k);
 
-    std::vector<hll::hll<RtSeq>> hlls;
-    hlls.reserve(nthreads);
-    for (unsigned i = 0; i < nthreads; ++i)
-        hlls.emplace_back([&](const RtSeq &s) { return hasher.hash(s); });
+    std::vector<hll::hll<RtSeq>> hlls(nthreads);
+    //hlls.reserve(nthreads);
+    //for (unsigned i = 0; i < nthreads; ++i)
+    //    hlls.emplace_back([&](const RtSeq &s) { return hasher.hash(s); });
 
     streams.reset();
     size_t reads = 0, n = 15;
@@ -167,18 +159,16 @@ size_t EstimateCardinality(unsigned k, ReadStream &streams,
     return size_t(res.first);
 }
 
-template<class ReadStream, class KMerFilter>
+template<class ReadStream, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
 void FillCoverageHistogram(qf::cqf<RtSeq> &cqf, unsigned k, ReadStream &streams,
-                           const KMerFilter &filter, unsigned thr) {
+                           unsigned thr, const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
     unsigned nthreads = (unsigned) streams.size();
-    SeqHasher hasher(k);
 
     // Create fallback per-thread CQF using same hash_size (important!) but different # of slots
     std::vector<qf::cqf<RtSeq>> local_cqfs;
     local_cqfs.reserve(nthreads);
     for (unsigned i = 0; i < nthreads; ++i)
-        local_cqfs.emplace_back([&](const RtSeq &s) { return hasher.hash(s); },
-                                1 << 16, cqf.hash_bits());
+        local_cqfs.emplace_back(1 << 16, cqf.hash_bits());
 
     INFO("Counting threshold " << thr);
     streams.reset();

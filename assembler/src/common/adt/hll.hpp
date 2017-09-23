@@ -25,13 +25,13 @@ public:
     /// The hash function type.
     typedef std::function<digest(const T)> hasher;
 
-    hll(hasher h)
-            : hasher_(std::move(h)), data_(1ull << precision, 0) { }
-
+    hll(hasher h = nullptr)
+      : hasher_(std::move(h)), data_(1ull << precision, 0) { }
 
     /// @tparam T The type of the element to insert.
     /// @param o An instance of type `T`.
     void add(const T &o) {
+      VERIFY(hasher_);
       digest d = hasher_(o);
       add(d);
     }

@@ -72,13 +72,12 @@ public:
             size_t kmers = EstimateCardinality(kplusone, streams, KmerFilter());
 
             // Create main CQF using # of slots derived from estimated # of k-mers
-            qf::cqf<RtSeq> cqf([&](const RtSeq &s) { return hasher.hash(s); },
-                               kmers);
+            qf::cqf<RtSeq> cqf(kmers); //[&](const RtSeq &s) { return hasher.hash(s); }
 
             INFO("Building k-mer coverage histogram");
             unsigned kthr = 2;
             unsigned rthr = 2;
-            FillCoverageHistogram(cqf, kplusone, streams, KmerFilter(), std::max(kthr, rthr));
+            FillCoverageHistogram(cqf, kplusone, streams, std::max(kthr, rthr), KmerFilter());
 
             // First, build a k+1-mer index
             auto wstreams = io::CovFilteringWrap(streams, kplusone, cqf, rthr);

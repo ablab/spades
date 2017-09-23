@@ -45,10 +45,14 @@ void Transfer(IS &input, OS &output) {
     }
 }
 
+bool WellCovered(const io::SingleRead &r, unsigned k, unsigned thr, const qf::cqf<RtSeq> &cqf) {
+    typedef SymmetricCyclicHash<uint8_t, uint64_t> SeqHasher;
+    return r.size() >= k && io::CountMedianMlt<SeqHasher>(r.sequence(), k, cqf) > thr;
+}
+
 int main(int argc, char* argv[]) {
     typedef qf::cqf<RtSeq> CQFKmerFilter;
     //typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
-    typedef SymmetricCyclicHash<uint8_t, uint64_t> SeqHasher;
     utils::perf_counter pc;
 
     srand(42);
@@ -109,24 +113,23 @@ int main(int argc, char* argv[]) {
         fs::make_dir(workdir + "/tmp/");
         debruijn_graph::config::init_libs(dataset, nthreads, buff_size, workdir + "/tmp/");
 
-        utils::StoringTypeFilter<utils::InvertableStoring> filter;
-        SeqHasher hasher(k);
-        io::BinarySingleStreams single_readers = io::single_binary_readers(dataset, /*followed by rc*/true, /*including paired*/true);
+        io::BinarySingleStreams single_readers = io::single_binary_readers(dataset, /*followed by rc*/false, /*including paired*/true);
         INFO("Estimating kmer cardinality");
-        size_t kmers_cnt_est = EstimateCardinality(k, single_readers, filter);
-        CQFKmerFilter cqf([&](const RtSeq &s) { return hasher.hash(s); },
-                                              kmers_cnt_est);
+        size_t kmers_cnt_est = utils::EstimateCardinality(k, single_readers);
+        CQFKmerFilter cqf(kmers_cnt_est);
 
         INFO("Filling kmer coverage");
-        utils::FillCoverageHistogram(cqf, k, single_readers, filter, thr + 1);
+        utils::FillCoverageHistogram(cqf, k, single_readers, thr + 1);
         INFO("Kmer coverage filled");
         
-        auto paired_filter_f = [&] (io::PairedRead& p_r) { 
-            return (p_r.first().size() >= k && io::CountMedianMlt(p_r.first().sequence(), k, hasher, cqf) > thr) ||
-                       (p_r.second().size() >= k && io::CountMedianMlt(p_r.second().sequence(), k, hasher, cqf) > thr); };
+        auto paired_filter_f = [&] (const io::PairedRead &p_r) { 
+            return WellCovered(p_r.first(), k, thr, cqf) ||
+                       WellCovered(p_r.second(), k, thr, cqf); 
+        };
 
-        auto single_filter_f = [&] (io::SingleRead& s_r) { 
-            return (s_r.size() >= k && io::CountMedianMlt(s_r.sequence(), k, hasher, cqf) > thr); };
+        auto single_filter_f = [&] (const io::SingleRead &s_r) { 
+            return WellCovered(s_r, k, thr, cqf); 
+        };
 
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
             INFO("Filtering library " << i);
