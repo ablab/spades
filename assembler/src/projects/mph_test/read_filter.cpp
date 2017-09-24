@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
                 Transfer(*filtered, ostream);
             }
 
-            if (dataset[i].has_paired()) {
+            if (dataset[i].has_single()) {
                 auto filtered = io::FilteringWrap<io::SingleRead>(io::single_easy_library_reader(dataset[i],
                                                /*followed_by_rc*/ false,
                                                /*including_paired_reads*/ false), 
