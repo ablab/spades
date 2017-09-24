@@ -262,7 +262,7 @@ void BWAIndex::Init() {
 
 omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetShortMappingPath(const mem_alnreg_v &ar, const std::string &seq) const {
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
-    VERIFY(0 && "Not implemented yet");
+    VERIFY_MSG(false, "Not implemented yet");
 
     return res;
 }

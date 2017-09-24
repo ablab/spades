@@ -381,7 +381,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
         }
     }
 
-    SensitiveReadMapper<Graph>::EraseIndices();
+    //SensitiveReadMapper<Graph>::EraseIndices();
 }
 
 }

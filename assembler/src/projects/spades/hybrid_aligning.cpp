@@ -55,7 +55,8 @@ class GapTrackingListener : public SequenceMapperListener {
     CreateDescription(const ReadT& read, size_t seq_start, size_t seq_end,
                       EdgeId left, size_t left_offset,
                       EdgeId right, size_t right_offset) const {
-        VERIFY(left_offset > 0 && right_offset < g_.length(right));
+        VERIFY(left_offset > 0 && right_offset >= 0 && 
+                left_offset <= g_.length(left) && right_offset < g_.length(right));
 
         DEBUG("Creating gap description");
 
@@ -84,6 +85,8 @@ class GapTrackingListener : public SequenceMapperListener {
             auto gap_seq = Subseq(read, seq_start, seq_end);
             if (gap_seq) {
                 DEBUG("Gap info successfully created");
+                VERIFY(left_offset > 0 && right_offset >= 0 && 
+                        left_offset <= g_.length(left) && right_offset < g_.length(right));
                 return GapDescription(left, right,
                                       *gap_seq,
                                       g_.length(left) - left_offset,
@@ -248,8 +251,9 @@ class PacbioAligner {
             size_t thread_num = omp_get_thread_num();
             Sequence seq(reads[i].sequence());
             auto current_read_mapping = pac_index_.GetReadAlignment(seq);
-            for (const auto& gap : current_read_mapping.gaps)
+            for (const auto& gap : current_read_mapping.gaps) {
                 gaps_by_thread[thread_num].AddGap(gap);
+            }
 
             const auto& aligned_edges = current_read_mapping.main_storage;
             for (const auto& path : aligned_edges)

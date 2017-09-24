@@ -56,7 +56,7 @@ private:
     DECL_LOGGER("PacIndex")
 
     const Graph &g_;
-    size_t pacbio_k;
+    //size_t pacbio_k;
     size_t debruijn_k;
     const static int short_edge_cutoff = 0;
     const static size_t min_cluster_size = 8;
@@ -67,14 +67,14 @@ private:
     int half_bad_follow = 0;
     int bad_follow = 0;
 
-    set<Sequence> banned_kmers;
-    debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> tmp_index;
+    //set<Sequence> banned_kmers;
+    //debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> tmp_index;
     mutable map<pair<VertexId, VertexId>, size_t> distance_cashed;
     size_t read_count;
     bool ignore_map_to_middle;
     debruijn_graph::config::debruijn_config::pacbio_processor pb_config_;
 
-    alignment::BWAReadMapper<Graph> bwa_mapper;
+    alignment::BWAReadMapper<Graph> bwa_mapper_;
 
 public:
     MappingDescription GetSeedsFromRead(const Sequence &s) const;
@@ -83,37 +83,41 @@ public:
     PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_, bool ignore_map_to_middle, string out_dir, 
                         debruijn_graph::config::debruijn_config::pacbio_processor pb_config, alignment::BWAIndex::AlignmentMode mode)
             : g_(g),
-              pacbio_k(k),
+        //      pacbio_k(k),
               debruijn_k(debruijn_k_),
-              tmp_index((unsigned) pacbio_k, out_dir), ignore_map_to_middle(ignore_map_to_middle), pb_config_(pb_config), bwa_mapper(g, mode) {
+        //      tmp_index((unsigned) pacbio_k, out_dir), 
+              ignore_map_to_middle(ignore_map_to_middle), 
+              pb_config_(pb_config),
+              bwa_mapper_(g, mode){
+              //minimap_mapper(g, out_dir){
         DEBUG("PB Mapping Index construction started");
-        debruijn_graph::EdgeIndexRefiller(out_dir).Refill(tmp_index, g_);
-        INFO("Index constructed");
-        FillBannedKmers();
+        //debruijn_graph::EdgeIndexRefiller().Refill(tmp_index, g_);
+        DEBUG("Index constructed");
+        //FillBannedKmers();
         read_count = 0;
     }
     ~PacBioMappingIndex(){
         DEBUG("good/ugly/bad counts:" << good_follow << " "<<half_bad_follow << " " << bad_follow);
     }
     
-    void FillBannedKmers() {
-        for (int i = 0; i < 4; i++) {
-            auto base = nucl((unsigned char) i);
-            for (int j = 0; j < 4; j++) {
-                auto other = nucl((unsigned char) j);
-                for (size_t other_pos = 0; other_pos < pacbio_k; other_pos++) {
-                    string s = "";
-                    for (size_t k = 0; k < pacbio_k; k++) {
-                        if (k != other_pos)
-                            s += base;
-                        else
-                            s += other;
-                    }
-                    banned_kmers.insert(Sequence(s));
-                }
-            }
-        }
-    }
+    //void FillBannedKmers() {
+    //    for (int i = 0; i < 4; i++) {
+    //        auto base = nucl((unsigned char) i);
+    //        for (int j = 0; j < 4; j++) {
+    //            auto other = nucl((unsigned char) j);
+    //            for (size_t other_pos = 0; other_pos < pacbio_k; other_pos++) {
+    //                string s = "";
+    //                for (size_t k = 0; k < pacbio_k; k++) {
+    //                    if (k != other_pos)
+    //                        s += base;
+    //                    else
+    //                        s += other;
+    //                }
+    //                banned_kmers.insert(Sequence(s));
+    //            }
+    //        }
+    //    }
+    //}
 
     bool similar(const MappingInstance &a, const MappingInstance &b,
                         int shift = 0) const {
@@ -174,193 +178,197 @@ public:
     }
 
     ClustersSet GetBWAClusters(const Sequence &s) const {
-        INFO("BWA started")
+        DEBUG("BWA started")
         ClustersSet res;
         if (s.size() < g_.k()){
             return res;
         }
-        omnigraph::MappingPath<EdgeId> seeds = bwa_mapper.MapSequence(s);
+        omnigraph::MappingPath<EdgeId> seeds = bwa_mapper_.MapSequence(s);
         TRACE(read_count << " read_count");
-        INFO("BWA ended")
+        DEBUG("BWA ended")
         DEBUG(seeds.size() <<"  clusters");
-        size_t k = g_.k();
-        for (auto iter = seeds.begin(); iter != seeds.end(); ++iter) {
-            EdgeId e = iter->first;
-            INFO("BWA loading edge=" << g_.int_id(iter->first) << " e_start=" << iter->second.mapped_range.start_pos << " e_end=" << iter->second.mapped_range.end_pos 
-                                                                    << " r_start=" << iter->second.initial_range.start_pos << " r_end=" << iter->second.initial_range.end_pos );
+        for (const auto &e_mr : seeds) {
+            EdgeId e = e_mr.first;
+            omnigraph::MappingRange mr = e_mr.second;
+            DEBUG("BWA loading edge=" << g_.int_id(e) << " e_start=" << mr.mapped_range.start_pos << " e_end=" << mr.mapped_range.end_pos 
+                                                                    << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos );
             
-            int dif =  min(g_.length(e), iter->second.mapped_range.end_pos) - max(k, iter->second.mapped_range.start_pos);
-            size_t edge_start_pos = iter->second.mapped_range.start_pos;
-            size_t edge_end_pos = iter->second.mapped_range.end_pos;
-            size_t read_start_pos = iter->second.initial_range.start_pos;
-            size_t read_end_pos = iter->second.initial_range.end_pos;
+            size_t edge_start_pos = mr.mapped_range.start_pos;
+            size_t edge_end_pos = mr.mapped_range.end_pos;
+            size_t read_start_pos = mr.initial_range.start_pos;
+            size_t read_end_pos = mr.initial_range.end_pos;
             res.insert(KmerCluster<Graph>(e, edge_start_pos, edge_end_pos, read_start_pos, read_end_pos));
+            
         }
-        INFO("Ended loading bwa")
+        DEBUG("Ended loading bwa")
         return res;
     }
 
-    ClustersSet GetOrderClusters(const Sequence &s) const {
-        MappingDescription descr = GetSeedsFromRead(s);
-        ClustersSet res;
-        TRACE(read_count << " read_count");
+    //ClustersSet GetOrderClusters(const Sequence &s) const {
+    //    MappingDescription descr = GetSeedsFromRead(s);
+    //    ClustersSet res;
+    //    TRACE(read_count << " read_count");
 
-        DEBUG(descr.size() <<"  clusters");
-        for (auto iter = descr.begin(); iter != descr.end(); ++iter) {
-            size_t edge_id = g_.int_id(iter->first);
-            DEBUG(edge_id);
-            sort(iter->second.begin(), iter->second.end(), ReadPositionComparator());
-            set<vector<MappingInstance> > edge_cluster_set;
-            size_t len = iter->second.size();
-            vector<vector<size_t> > similarity_list(len);
-            int cnt = 0;
-            for (size_t i = 0; i < len; i++){
-                for (size_t j = i + 1; j < len; j++){
-                    if (iter->second[i].read_position + max_similarity_distance < iter->second[j].read_position) {
-                        break;
-                    }
-                    if (similar(iter->second[i], iter->second[j])) {
-                        similarity_list[i].push_back(j);
-                        cnt ++;
-                        if (cnt % 10000 == 0) {
-                            DEBUG(cnt);
-                        }
-                    }
-                }
-            }
+    //    DEBUG(descr.size() <<"  clusters");
+    //    for (auto iter = descr.begin(); iter != descr.end(); ++iter) {
+    //        size_t edge_id = g_.int_id(iter->first);
+    //        DEBUG(edge_id);
+    //        sort(iter->second.begin(), iter->second.end(), ReadPositionComparator());
+    //        set<vector<MappingInstance> > edge_cluster_set;
+    //        size_t len = iter->second.size();
+    //        vector<vector<size_t> > similarity_list(len);
+    //        int cnt = 0;
+    //        for (size_t i = 0; i < len; i++){
+    //            for (size_t j = i + 1; j < len; j++){
+    //                if (iter->second[i].read_position + max_similarity_distance < iter->second[j].read_position) {
+    //                    break;
+    //                }
+    //                if (similar(iter->second[i], iter->second[j])) {
+    //                    similarity_list[i].push_back(j);
+    //                    cnt ++;
+    //                    if (cnt % 10000 == 0) {
+    //                        DEBUG(cnt);
+    //                    }
+    //                }
+    //            }
+    //        }
 
-            DEBUG(len <<"  kmers in cluster");
-            vector<int> used(len);
-            for (size_t i = 0; i < len; i++) {
-                if (!used[i]) {
-                    vector<size_t> new_cluster(len);
-                    vector<size_t> prev(len);
-                    for(size_t j = i; j < len; j++) {
-                        if (!used[j]) {
-                            if (new_cluster[j] == 0) new_cluster[j] = 1, prev[j] = size_t(-1);
-                            for(size_t k = 0; k < similarity_list[j].size(); k++) {
-                                size_t next_ind = similarity_list[j][k];
-                                if (!used[next_ind]) {
-                                    if (new_cluster[next_ind] < new_cluster[j] + 1){
-                                        new_cluster[next_ind] = new_cluster[j] + 1;
-                                        prev[next_ind] = j;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    size_t maxx = 0;
-                    size_t maxj = i;
-                    for(size_t j = i; j < len; j++) {
-                        if (new_cluster[j] > maxx) maxj = j, maxx = new_cluster[j];
-                    }
-                    vector<MappingInstance> to_add;
-                    size_t real_maxj = maxj, first_j = maxj;
-                    while (maxj != size_t(-1)) {
-                        to_add.push_back(iter->second[maxj]);
-                        first_j = maxj;
-                        maxj = prev[maxj];
-                    }
-                    for (auto j = first_j; j < real_maxj; j++)
-                        used[j] = 1;
-                    reverse(to_add.begin(), to_add.end());
-                    TRACE("adding cluster "" edge "<< edge_id << " len " <<to_add.size() )
-                    res.insert(KmerCluster<Graph>(iter->first, to_add));
-                }
-            }
-        }
-        FilterClusters(res);
-        return res;
-    }
+    //        DEBUG(len <<"  kmers in cluster");
+    //        vector<int> used(len);
+    //        for (size_t i = 0; i < len; i++) {
+    //            if (!used[i]) {
+    //                vector<size_t> new_cluster(len);
+    //                vector<size_t> prev(len);
+    //                for(size_t j = i; j < len; j++) {
+    //                    if (!used[j]) {
+    //                        if (new_cluster[j] == 0) new_cluster[j] = 1, prev[j] = size_t(-1);
+    //                        for(size_t k = 0; k < similarity_list[j].size(); k++) {
+    //                            size_t next_ind = similarity_list[j][k];
+    //                            if (!used[next_ind]) {
+    //                                if (new_cluster[next_ind] < new_cluster[j] + 1){
+    //                                    new_cluster[next_ind] = new_cluster[j] + 1;
+    //                                    prev[next_ind] = j;
+    //                                }
+    //                            }
+    //                        }
+    //                    }
+    //                }
+    //                size_t maxx = 0;
+    //                size_t maxj = i;
+    //                for(size_t j = i; j < len; j++) {
+    //                    if (new_cluster[j] > maxx) maxj = j, maxx = new_cluster[j];
+    //                }
+    //                vector<MappingInstance> to_add;
+    //                size_t real_maxj = maxj, first_j = maxj;
+    //                while (maxj != size_t(-1)) {
+    //                    to_add.push_back(iter->second[maxj]);
+    //                    first_j = maxj;
+    //                    maxj = prev[maxj];
+    //                }
+    //                for (auto j = first_j; j < real_maxj; j++)
+    //                    used[j] = 1;
+    //                reverse(to_add.begin(), to_add.end());
+    //                TRACE("adding cluster "" edge "<< edge_id << " len " <<to_add.size() )
+    //                res.insert(KmerCluster<Graph>(iter->first, to_add));
+    //            }
+    //        }
+    //    }
+    //    FilterClusters(res);
+    //    return res;
+    //}
 
     //Filter incapsulated clusters caused by similar regions
-    void FilterDominatedClusters(ClustersSet &clusters) const {
-        for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
-            size_t edge_id = g_.int_id(i_iter->edgeId);
-            auto sorted_by_edge = i_iter->sorted_positions;
+    //void FilterDominatedClusters(ClustersSet &clusters) const {
+    //    for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
+    //        size_t edge_id = g_.int_id(i_iter->edgeId);
+    //        auto sorted_by_edge = i_iter->sorted_positions;
 
-            DEBUG("filtering  with cluster edge, stage 2 "<< edge_id << " len " << sorted_by_edge.size() << " clusters still alive: "<< clusters.size());
-            for (auto j_iter = clusters.begin(); j_iter != clusters.end();) {
-                if (i_iter != j_iter) {
-                    if (dominates(*i_iter, *j_iter)) {
-                        TRACE("cluster is dominated");
-                        auto tmp_iter = j_iter;
-                        tmp_iter++;
-                        TRACE("cluster on edge " << g_.int_id(j_iter->edgeId));
-                        TRACE("erased - dominated");
-                        clusters.erase(j_iter);
-                        j_iter = tmp_iter;
-                    } else {
-                        j_iter++;
-                    }
-                } else {
-                    j_iter++;
-                }
-            }
-            DEBUG("cluster size "<< i_iter->sorted_positions.size() << "survived filtering");
-            i_iter++;
-        }
-    }
-    
-    //filter clusters that are too small or fully located on a vertex or dominated by some other cluster.
-    void FilterClusters(ClustersSet &clusters) const {
-        for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
-            size_t edge_id = g_.int_id(i_iter->edgeId);
+    //        DEBUG("filtering  with cluster edge, stage 2 "<< edge_id << " len " << sorted_by_edge.size() << " clusters still alive: "<< clusters.size());
+    //        for (auto j_iter = clusters.begin(); j_iter != clusters.end();) {
+    //            if (i_iter != j_iter) {
+    //                if (dominates(*i_iter, *j_iter)) {
+    //                    TRACE("cluster is dominated");
+    //                    auto tmp_iter = j_iter;
+    //                    tmp_iter++;
+    //                    TRACE("cluster on edge " << g_.int_id(j_iter->edgeId));
+    //                    TRACE("erased - dominated");
+    //                    clusters.erase(j_iter);
+    //                    j_iter = tmp_iter;
+    //                } else {
+    //                    j_iter++;
+    //                }
+    //            } else {
+    //                j_iter++;
+    //            }
+    //        }
+    //        DEBUG("cluster size "<< i_iter->sorted_positions.size() << "survived filtering");
+    //        i_iter++;
+    //    }
+    //}
+    //
+    ////filter clusters that are too small or fully located on a vertex or dominated by some other cluster.
+    //void FilterClusters(ClustersSet &clusters) const {
+    //    //FIXME awful iteration cycle
+    //    for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
+    //        size_t edge_id = g_.int_id(i_iter->edgeId);
 
-            int len = (int) g_.length(i_iter->edgeId);
-            auto sorted_by_edge = i_iter->sorted_positions;
-            sort(sorted_by_edge.begin(), sorted_by_edge.end());
-            double good = 0;
-            DEBUG("filtering cluster of size " << sorted_by_edge.size());
-            DEBUG(edge_id <<" : edgeId");
-            for (auto iter = sorted_by_edge.begin(); iter < sorted_by_edge.end(); iter++) {
-                if (iter->IsUnique())
-                    good++;
-//TODO:: back to quality for laaarge genomes (kmer size)?
-                //good += 1.0 / (iter->quality * iter->quality);
-            }
-            DEBUG("good " << good);
+    //        int len = (int) g_.length(i_iter->edgeId);
+    //        auto sorted_by_edge = i_iter->sorted_positions;
+    //        sort(sorted_by_edge.begin(), sorted_by_edge.end());
+    //        double good = 0;
+    //        DEBUG("filtering cluster of size " << sorted_by_edge.size());
+    //        DEBUG(edge_id <<" : edgeId");
+    //        for (auto iter = sorted_by_edge.begin(); iter < sorted_by_edge.end(); iter++) {
+    //            if (iter->IsUnique())
+    //                good++;
+//TO//DO:: back to quality for laaarge genomes (kmer size)?
+    //            //good += 1.0 / (iter->quality * iter->quality);
+    //        }
+    //        DEBUG("good " << good);
 
-            if (good < min_cluster_size || (len < short_edge_cutoff)) {
-                if (len < short_edge_cutoff) {
-                    DEBUG("Life is too long, and edge is too short!");
-                }
-                auto tmp_iter = i_iter;
-                tmp_iter++;
-                clusters.erase(i_iter);
-                i_iter = tmp_iter;
-            } else {
-                if (sorted_by_edge[0].edge_position >= len
-                        || sorted_by_edge[i_iter->size - 1].edge_position
-                                <= int(debruijn_k) - int(pacbio_k)) {
-                    DEBUG("All anchors in vertex");
-                    auto tmp_iter = i_iter;
-                    tmp_iter++;
-                    clusters.erase(i_iter);
-                    i_iter = tmp_iter;
-                } else {
-                    i_iter++;
-                }
-            }
-        }
-        FilterDominatedClusters(clusters);
-    }
+    //        if (good < min_cluster_size || (len < short_edge_cutoff)) {
+    //            if (len < short_edge_cutoff) {
+    //                DEBUG("Life is too long, and edge is too short!");
+    //            }
+    //            auto tmp_iter = i_iter;
+    //            tmp_iter++;
+    //            clusters.erase(i_iter);
+    //            i_iter = tmp_iter;
+    //        } else {
+    //            //FIXME hopefully those cases are impossible
+    //            VERIFY(sorted_by_edge[0].edge_position < len
+    //                    && sorted_by_edge[i_iter->size - 1].edge_position <= len);
+    //            //if (sorted_by_edge[0].edge_position >= len
+    //            //        || sorted_by_edge[i_iter->size - 1].edge_position
+    //            //                <= int(debruijn_k) - int(pacbio_k)) {
+    //            //    DEBUG("All anchors in vertex");
+    //            //    auto tmp_iter = i_iter;
+    //            //    tmp_iter++;
+    //            //    clusters.erase(i_iter);
+    //            //    i_iter = tmp_iter;
+    //            //} else {
+    //            i_iter++;
+    //            //}
+    //        }
+    //    }
+    //    FilterDominatedClusters(clusters);
+    //}
 
-    // is "non strictly dominates" required?
-    bool dominates(const KmerCluster<Graph> &a,
-                          const KmerCluster<Graph> &b) const {
-        size_t a_size = a.size;
-        size_t b_size = b.size;
-        if ((double) a_size < (double) b_size * pb_config_.domination_cutoff
-                || a.sorted_positions[a.first_trustable_index].read_position
-                        > b.sorted_positions[b.first_trustable_index].read_position
-                || a.sorted_positions[a.last_trustable_index].read_position
-                        < b.sorted_positions[b.last_trustable_index].read_position) {
-            return false;
-        } else {
-            return true;
-        }
-    }
+    //// is "non strictly dominates" required?
+    //bool dominates(const KmerCluster<Graph> &a,
+    //                      const KmerCluster<Graph> &b) const {
+    //    size_t a_size = a.size;
+    //    size_t b_size = b.size;
+    //    if ((double) a_size < (double) b_size * pb_config_.domination_cutoff
+    //            || a.sorted_positions[a.first_trustable_index].read_position
+    //                    > b.sorted_positions[b.first_trustable_index].read_position
+    //            || a.sorted_positions[a.last_trustable_index].read_position
+    //                    < b.sorted_positions[b.last_trustable_index].read_position) {
+    //        return false;
+    //    } else {
+    //        return true;
+    //    }
+    //}
 
     vector<vector<EdgeId>> FillGapsInCluster(const vector<pair<size_t, typename ClustersSet::iterator> > &cur_cluster,
                                      const Sequence &s) const {
@@ -411,7 +419,7 @@ public:
 
                     vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
                     if (intermediate_path.size() == 0) {
-                        DEBUG("Tangled region between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(debruijn_k - pacbio_k ) << " and seq "<< - seq_start + seq_end);
+                        //DEBUG("Tangled region between edges "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(debruijn_k - pacbio_k ) << " and seq "<< - seq_start + seq_end);
                         res.push_back(cur_sorted);
                         cur_sorted.clear();
                         prev_edge = EdgeId(0);
@@ -533,17 +541,21 @@ public:
     GapDescription CreateGapDescription(const KmerCluster<debruijn_graph::Graph>& a,
                                         const KmerCluster<debruijn_graph::Graph>& b,
                                         const Sequence& read) const {
-        size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + pacbio_k;
+        size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + debruijn_k;
         size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
-        if (seq_start > seq_end) {
-            DEBUG("Overlapping flanks not supported yet");
+        if (seq_start >= seq_end) {
+            //FIXME deal with this problem (already done before)
+            WARN("Overlapping flanks not supported yet");
             return GapDescription();
         }
-        return GapDescription(a.edgeId,
+        GapDescription answer(a.edgeId,
                               b.edgeId,
                               read.Subseq(seq_start, seq_end),
-                              g_.length(a.edgeId) - a.sorted_positions[a.last_trustable_index].edge_position - pacbio_k + debruijn_k,
+                              g_.length(a.edgeId) - a.sorted_positions[a.last_trustable_index].edge_position,
                               b.sorted_positions[b.first_trustable_index].edge_position);
+        VERIFY(answer.left_trim() < g_.length(answer.left()));
+        VERIFY(answer.right_trim() < g_.length(answer.right()));
+        return answer;
     }
 
     OneReadMapping AddGapDescriptions(const vector<typename ClustersSet::iterator> &start_clusters,
@@ -593,6 +605,7 @@ public:
             used[i] = 0;
             DEBUG(colors[i] <<" " << iter->str(g_));
         }
+        //FIXME ferther code is AWFUL
         for (size_t i = 0; i < len; i++) {
             if (!used[i]) {
                 DEBUG("starting new subread");
@@ -702,6 +715,7 @@ public:
         size_t result = size_t(-1);
         bool not_found = true;
         auto distance_it = distance_cashed.begin();
+        //FIXME why critical section?
 #pragma omp critical(pac_index)
         {
             distance_it = distance_cashed.find(vertex_pair);
@@ -714,6 +728,7 @@ public:
             if (dijkstra.DistanceCounted(end_v)) {
                 result = dijkstra.GetDistance(end_v);
             }
+        //FIXME why critical section?
 #pragma omp critical(pac_index)
             {
                 distance_it = distance_cashed.insert({vertex_pair, result}).first;
@@ -753,6 +768,7 @@ public:
         return 0;
     }
 
+    //FIXME use common function
     string PathToString(const vector<EdgeId>& path) const {
         string res = "";
         for (auto iter = path.begin(); iter != path.end(); iter++) {
@@ -762,7 +778,7 @@ public:
         }
         return res;
     }
-//TODO this should be replaced by Dijkstra based graph-read alignment
+
     vector<EdgeId> BestScoredPath(const Sequence &s, VertexId start_v, VertexId end_v,
                                   int path_min_length, int path_max_length,
                                   int start_pos, int end_pos, string &s_add,
@@ -819,115 +835,115 @@ public:
     }
 
     // Short read alignment
-    omnigraph::MappingPath<EdgeId> GetShortReadAlignment(const Sequence &s) const {
-        ClustersSet mapping_descr = GetOrderClusters(s);
-        map<EdgeId, KmerCluster<Graph> > largest_clusters;
+    //omnigraph::MappingPath<EdgeId> GetShortReadAlignment(const Sequence &s) const {
+    //    ClustersSet mapping_descr = GetOrderClusters(s);
+    //    map<EdgeId, KmerCluster<Graph> > largest_clusters;
 
-        //Selecting the biggest cluster for each edge
-        for (auto iter = mapping_descr.begin(); iter != mapping_descr.end(); ++iter) {
+    //    //Selecting the biggest cluster for each edge
+    //    for (auto iter = mapping_descr.begin(); iter != mapping_descr.end(); ++iter) {
 
-            auto first_cluster = iter->sorted_positions[iter->first_trustable_index];
-            auto last_cluster = iter->sorted_positions[iter->last_trustable_index];
-            int read_range = last_cluster.read_position - first_cluster.read_position;
-            int edge_range = last_cluster.edge_position - first_cluster.edge_position;
-            int cluster_szie = iter->last_trustable_index - iter->first_trustable_index;
-            if (cluster_szie > 2 * read_range || edge_range < 0 || 2 * edge_range < read_range || edge_range > 2 * read_range) {
-                //skipping cluster
-                continue;
-            }
+    //        auto first_cluster = iter->sorted_positions[iter->first_trustable_index];
+    //        auto last_cluster = iter->sorted_positions[iter->last_trustable_index];
+    //        int read_range = last_cluster.read_position - first_cluster.read_position;
+    //        int edge_range = last_cluster.edge_position - first_cluster.edge_position;
+    //        int cluster_szie = iter->last_trustable_index - iter->first_trustable_index;
+    //        if (cluster_szie > 2 * read_range || edge_range < 0 || 2 * edge_range < read_range || edge_range > 2 * read_range) {
+    //            //skipping cluster
+    //            continue;
+    //        }
 
-            auto edge_cluster = largest_clusters.find(iter->edgeId);
-            if (edge_cluster != largest_clusters.end()) {
-                if (edge_cluster->second.last_trustable_index - edge_cluster->second.first_trustable_index
-                        < iter->last_trustable_index - iter->first_trustable_index) {
+    //        auto edge_cluster = largest_clusters.find(iter->edgeId);
+    //        if (edge_cluster != largest_clusters.end()) {
+    //            if (edge_cluster->second.last_trustable_index - edge_cluster->second.first_trustable_index
+    //                    < iter->last_trustable_index - iter->first_trustable_index) {
 
-                    edge_cluster->second = *iter;
-                }
-            } else {
-                largest_clusters.insert(make_pair(iter->edgeId, *iter));
-            }
-        }
+    //                edge_cluster->second = *iter;
+    //            }
+    //        } else {
+    //            largest_clusters.insert(make_pair(iter->edgeId, *iter));
+    //        }
+    //    }
 
-        omnigraph::MappingPath<EdgeId> result;
-        for (auto iter = largest_clusters.begin(); iter != largest_clusters.end(); ++iter) {
-            auto first_cluster = iter->second.sorted_positions[iter->second.first_trustable_index];
-            auto last_cluster = iter->second.sorted_positions[iter->second.last_trustable_index];
-            omnigraph::MappingRange range(Range(first_cluster.read_position, last_cluster.read_position),
-                                          Range(first_cluster.edge_position, last_cluster.edge_position));
-            result.join({iter->second.edgeId, range});
-        }
+    //    omnigraph::MappingPath<EdgeId> result;
+    //    for (auto iter = largest_clusters.begin(); iter != largest_clusters.end(); ++iter) {
+    //        auto first_cluster = iter->second.sorted_positions[iter->second.first_trustable_index];
+    //        auto last_cluster = iter->second.sorted_positions[iter->second.last_trustable_index];
+    //        omnigraph::MappingRange range(Range(first_cluster.read_position, last_cluster.read_position),
+    //                                      Range(first_cluster.edge_position, last_cluster.edge_position));
+    //        result.join({iter->second.edgeId, range});
+    //    }
 
-        return result;
-    }
+    //    return result;
+    //}
 
-    std::pair<EdgeId, size_t> GetUniqueKmerPos(const RtSeq& kmer) const {
-        KeyWithHash kwh = tmp_index.ConstructKWH(kmer);
+    //std::pair<EdgeId, size_t> GetUniqueKmerPos(const RtSeq& kmer) const {
+    //    KeyWithHash kwh = tmp_index.ConstructKWH(kmer);
 
-        if (tmp_index.valid(kwh.key())) {
-            auto keys = tmp_index.get(kwh);
-            if (keys.size() == 1) {
-                return make_pair(keys[0].edge_id, keys[0].offset);
-            }
-        }
-        return std::make_pair(EdgeId(0), -1u);
-    }
+    //    if (tmp_index.valid(kwh.key())) {
+    //        auto keys = tmp_index.get(kwh);
+    //        if (keys.size() == 1) {
+    //            return make_pair(keys[0].edge_id, keys[0].offset);
+    //        }
+    //    }
+    //    return std::make_pair(EdgeId(0), -1u);
+    //}
 
 
 };
 
-template<class Graph>
-typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>::GetSeedsFromRead(const Sequence &s) const {
-    MappingDescription res;
-    //WARNING: removed read_count from here to make const methods
-    int local_read_count = 0;
-    ++local_read_count;
-    if (s.size() < pacbio_k)
-        return res;
-
-    //RtSeq kmer = s.start<RtSeq>(pacbio_k);
-    KeyWithHash kwh = tmp_index.ConstructKWH(s.start<RtSeq>(pacbio_k));
-
-    for (size_t j = pacbio_k; j < s.size(); ++j) {
-        kwh = kwh << s[j];
-        if (!tmp_index.valid(kwh.key())) {
-//          INFO("not valid kmer");
-            continue;
-        }
-        auto keys = tmp_index.get(kwh);
-        TRACE("Valid key, size: "<< keys.size());
-
-        int quality = (int) keys.size();
-        if (quality > 1000) {
-            DEBUG ("Ignoring repretive kmer")
-            continue;
-        }
-        for (auto iter = keys.begin(); iter != keys.end(); ++iter) {
-
-            TRACE("and quality:" << quality);
-            int offset = (int)iter->offset;
-            int s_stretched = int ((double)s.size() * 1.2 + 50);
-            int edge_len = int(g_.length(iter->edge_id));
-            //No alignment in vertex, and further than s+eps bp from edge ends;
-            bool correct_alignment = offset > int(debruijn_k - pacbio_k) && offset < edge_len;
-            if (ignore_map_to_middle) {
-                correct_alignment &= (offset < int(debruijn_k - pacbio_k) + s_stretched || offset > edge_len - s_stretched);
-            }
-            if (correct_alignment) {
-                res[iter->edge_id].push_back(MappingInstance((int) iter->offset, (int) (j - pacbio_k + 1), quality));
-            }
-        }
-    }
-
-    for (auto iter = res.begin(); iter != res.end(); ++iter) {
-        sort(iter->second.begin(), iter->second.end());
-        DEBUG("read count "<< local_read_count);
-        DEBUG("edge: " << g_.int_id(iter->first) << "size: " << iter->second.size());
-        for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter++) {
-            DEBUG(j_iter->str());
-        }
-    }
-
-    return res;
-}
+//template<class Graph>
+//typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>::GetSeedsFromRead(const Sequence &s) const {
+//    MappingDescription res;
+//    //WARNING: removed read_count from here to make const methods
+//    int local_read_count = 0;
+//    ++local_read_count;
+//    if (s.size() < pacbio_k)
+//        return res;
+//
+//    //RtSeq kmer = s.start<RtSeq>(pacbio_k);
+//    KeyWithHash kwh = tmp_index.ConstructKWH(s.start<RtSeq>(pacbio_k));
+//
+//    for (size_t j = pacbio_k; j < s.size(); ++j) {
+//        kwh = kwh << s[j];
+//        if (!tmp_index.valid(kwh.key())) {
+////          INFO("not valid kmer");
+//            continue;
+//        }
+//        auto keys = tmp_index.get(kwh);
+//        TRACE("Valid key, size: "<< keys.size());
+//
+//        int quality = (int) keys.size();
+//        if (quality > 1000) {
+//            DEBUG ("Ignoring repretive kmer")
+//            continue;
+//        }
+//        for (auto iter = keys.begin(); iter != keys.end(); ++iter) {
+//
+//            TRACE("and quality:" << quality);
+//            int offset = (int)iter->offset;
+//            int s_stretched = int ((double)s.size() * 1.2 + 50);
+//            int edge_len = int(g_.length(iter->edge_id));
+//            //No alignment in vertex, and further than s+eps bp from edge ends;
+//            bool correct_alignment = offset > int(debruijn_k - pacbio_k) && offset < edge_len;
+//            if (ignore_map_to_middle) {
+//                correct_alignment &= (offset < int(debruijn_k - pacbio_k) + s_stretched || offset > edge_len - s_stretched);
+//            }
+//            if (correct_alignment) {
+//                res[iter->edge_id].push_back(MappingInstance((int) iter->offset, (int) (j - pacbio_k + 1), quality));
+//            }
+//        }
+//    }
+//
+//    for (auto iter = res.begin(); iter != res.end(); ++iter) {
+//        sort(iter->second.begin(), iter->second.end());
+//        DEBUG("read count "<< local_read_count);
+//        DEBUG("edge: " << g_.int_id(iter->first) << "size: " << iter->second.size());
+//        for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter++) {
+//            DEBUG(j_iter->str());
+//        }
+//    }
+//
+//    return res;
+//}
 
 }

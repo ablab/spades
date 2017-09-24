@@ -29,11 +29,7 @@ public:
         return index_.AlignSequence(sequence);
     }
 
-    ~BWAReadMapper() {
-    }
-
     BWAIndex index_;
 };
 
 }
-

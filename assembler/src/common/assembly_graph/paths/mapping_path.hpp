@@ -402,10 +402,6 @@ public:
         right_ = e;
     }
 
-    void set_left_trim(size_t trim) {
-        left_trim_ = trim;
-    }
-
     void set_estimated_dist(int dist) {
         VERIFY_MSG(!filling_seq_, "Filling sequence specified");
         estimated_dist_ = dist;
@@ -428,8 +424,8 @@ public:
 
     string str(const Graph &g) const {
         stringstream s;
-        s << "left: " << g.int_id(left_)
-          << "; right: " << g.int_id(right_)
+        s << "left: " << g.str(left_)
+          << "; right: " << g.str(right_)
           << "; estimated distance : " << estimated_dist_
           << "; left trim: " << left_trim_
           << "; right trim: " << right_trim_
