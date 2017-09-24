@@ -145,7 +145,6 @@ public:
                 continue;
             }
             res.insert(KmerCluster<Graph>(e, edge_start_pos, edge_end_pos, read_start_pos, read_end_pos));
-
         }
         DEBUG("Ended loading bwa")
         return res;
@@ -419,6 +418,7 @@ public:
             used[i] = 0;
             DEBUG(colors[i] <<" " << iter->str(g_));
         }
+        //FIXME ferther code is AWFUL
         for (size_t i = 0; i < len; i++) {
             int cur_color = colors[i];
             if (!used[i] && cur_color != DELETED_COLOR) {
@@ -610,5 +610,4 @@ public:
         return paths[best_path_ind];
     }
 };
-
 }
