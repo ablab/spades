@@ -13,7 +13,7 @@ typedef SymmetricCyclicHash<uint8_t, uint64_t> SeqHasher;
 
 template<class Hasher, class KmerFilter = StoringTypeFilter<SimpleStoring>>
 class KmerHashProcessor {
-    typedef typename Hasher::digest HashT;
+    typedef uint64_t HashT;
     typedef typename Hasher::char_t CharT;
     typedef std::function<void (const RtSeq&, HashT)> ProcessF;
     ProcessF process_f_;
@@ -29,15 +29,15 @@ public:
     void ProcessSequence(const Sequence &s, unsigned k) {
         Hasher hasher(k);
         RtSeq kmer = s.start<RtSeq>(k) >> 'A';
-        HashT hash = hasher.hash(kmer);
+        auto hash = hasher.hash(kmer);
         for (size_t j = k - 1; j < s.size(); ++j) {
             CharT inchar = (CharT) s[j];
-            hash = hasher.update((CharT) kmer[0], inchar);
+            hash = hasher.hash_update(hash, (CharT) kmer[0], inchar);
             //TODO can be optimized, no need to shift the kmer
             kmer <<= inchar;
             if (!filter_.filter(kmer))
                 return;
-            process_f_(kmer, hash);
+            process_f_(kmer, (HashT) hash);
         }
     }
 

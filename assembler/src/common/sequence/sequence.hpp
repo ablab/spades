@@ -183,6 +183,7 @@ public:
     char operator[](const size_t index) const {
         VERIFY_DEV(index < size_);
         const ST *bytes = data_->data();
+        //        const ST *bytes = data_.get();
         if (rtl_) {
             size_t i = from_ + size_ - 1 - index;
             return complement((bytes[i >> STNBits] >> ((i & (STN - 1)) << 1)) & 3);

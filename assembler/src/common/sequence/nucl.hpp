@@ -44,6 +44,18 @@ const  char nucl_complement_map['T' + 1] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
     'T', 0, 'G', 0, 0, 0, 'C', 0, 0, 0, 0, 0, 0, 'N', 0, 0, 0, 0, 0, 'A'};
 
+const char universal_complement_map[256] = {
+    [0] = 3, [1] = 2, [2] = 1, [3] = 0,
+    ['a'] = 't', ['c'] = 'g', ['g'] = 'c', ['t'] = 'a',
+    ['A'] = 'T', ['C'] = 'G', ['G'] = 'C', ['T'] = 'A'
+};
+
+const char universal_isnucl_map[256] = {
+    [0] = 1, [1] = 1, [2] = 1, [3] = 1,
+    ['a'] = 1, ['c'] = 1, ['g'] = 1, ['t'] = 1,
+    ['A'] = 1, ['C'] = 1, ['G'] = 1, ['T'] = 1
+};
+
 /**
  * ACGT -> true
  * @param char c
@@ -51,6 +63,15 @@ const  char nucl_complement_map['T' + 1] = {
  */
 inline bool is_nucl(char c) { // is ACGT
     return isnucl_map[(unsigned)c];
+}
+
+inline bool universal_is_nucl(char c) { // is ACGT
+    return universal_isnucl_map[(unsigned)c];
+}
+
+inline char universal_complement(char c) {
+    VERIFY(universal_is_nucl(c));
+    return universal_complement_map[(unsigned)c];
 }
 
 /**
@@ -87,7 +108,7 @@ struct nucl_complement_functor { // still unused
 
 inline char nucl_complement(char c){
     // TODO: deal with 'N' case
-    //VERIFY(is_nucl(c));
+    VERIFY(is_nucl(c));
     char cc = nucl_complement_map[(unsigned)c];
     return cc ? cc : 'N';
 }
@@ -98,7 +119,8 @@ inline char nucl_complement(char c){
  * @return 0 => 'A', 1 => 'C', 2 => 'G', 3 => 'T'
  */
 inline char nucl(char c) {
-    return nucl_map[(unsigned)c];
+    VERIFY(universal_is_nucl(c));
+    return is_dignucl(c) ? nucl_map[(unsigned)c] : c;
 }
 
 /**

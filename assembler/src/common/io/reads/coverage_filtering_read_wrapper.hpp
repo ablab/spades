@@ -19,6 +19,22 @@ typedef qf::cqf<RtSeq> CQFKmerFilter;
 //typedef CyclicHash<64, uint8_t, NDNASeqHash<uint8_t>> SeqHasher;
 typedef SymmetricCyclicHash<uint8_t, uint64_t> SeqHasher;
 
+template<class Hasher>
+unsigned CountMedianMlt(const Sequence &s, unsigned k, const CQFKmerFilter &kmer_mlt_index) {
+    std::vector<unsigned> mlts;
+
+    auto process_f = [&] (const RtSeq& /*kmer*/, uint64_t hash) {
+        mlts.push_back(unsigned(kmer_mlt_index.lookup(hash)));
+    };
+
+    utils::KmerHashProcessor<Hasher> processor(process_f);
+    processor.ProcessSequence(s, k);
+
+    size_t n = mlts.size() / 2;
+    std::nth_element(mlts.begin(), mlts.begin() + n, mlts.end());
+    return mlts[n];
+}
+
 template<class ReadType>
 class CoverageFilteringReaderWrapper: public DelegatingWrapper<ReadType> {
     typedef std::shared_ptr<ReadStream<ReadType>> ReadStreamPtr;
@@ -27,8 +43,7 @@ public:
                                             unsigned k,
                                             const CQFKmerFilter &filter, unsigned thr)
             : DelegatingWrapper<ReadType>(reader),
-              k_(k), filter_(filter), thr_(thr),
-              hasher_(k) {
+              k_(k), filter_(filter), thr_(thr) {
         StepForward();
     }
 
@@ -50,10 +65,8 @@ private:
     unsigned k_;
     const CQFKmerFilter &filter_;
     unsigned thr_;
-    SeqHasher hasher_;
 
     ReadType next_read_;
-    std::vector<unsigned> cov_;
 
     void StepForward() {
         while (!this->eof()) {
@@ -64,21 +77,7 @@ private:
             if (seq.size() < k_)
                 continue;
 
-            cov_.clear();
-            RtSeq kmer = seq.start<RtSeq>(k_) >> 'A';
-            SeqHasher::digest d;
-            for (size_t j = k_ - 1; j < seq.size(); ++j) {
-                kmer <<= seq[j];
-                if (!kmer.IsMinimal())
-                    d = hasher_.hash(!kmer);
-                else
-                    d = hasher_.hash(kmer);
-                cov_.push_back(unsigned(filter_.lookup(d)));
-            }
-
-            size_t n = cov_.size() / 2;
-            std::nth_element(cov_.begin(), cov_.begin() + n, cov_.end());
-             if (cov_[n] >= thr_)
+            if (CountMedianMlt<SeqHasher>(seq, k_, filter_) >= thr_)
                 return;
         }
     }
@@ -101,22 +100,6 @@ inline ReadStreamList<ReadType> CovFilteringWrap(ReadStreamList<ReadType> &reade
                                           k, filter, thr));
 
     return answer;
-}
-
-template<class Hasher>
-unsigned CountMedianMlt(const Sequence &s, unsigned k, const CQFKmerFilter &kmer_mlt_index) {
-    std::vector<unsigned> mlts;
-
-    auto process_f = [&] (const RtSeq& /*kmer*/, uint64_t hash) {
-        mlts.push_back(unsigned(kmer_mlt_index.lookup(hash)));
-    };
-
-    utils::KmerHashProcessor<Hasher> processor(process_f);
-    processor.ProcessSequence(s, k);
-
-    size_t n = mlts.size() / 2;
-    std::nth_element(mlts.begin(), mlts.begin() + n, mlts.end());
-    return mlts[n];
 }
 
 //template<class PairedReadType>

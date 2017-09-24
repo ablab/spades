@@ -191,7 +191,7 @@ class KMerMultiplicityCounter {
 
   public:
   KMerMultiplicityCounter(size_t size)
-      : cqf_([](const KMer &k) { return k.GetHash(); }, size) {}
+      : cqf_(size, [](const KMer &k) { return k.GetHash(); }) {}
 
   ~KMerMultiplicityCounter() {}
 
