@@ -183,20 +183,28 @@ public:
         if (s.size() < g_.k()){
             return res;
         }
-        omnigraph::MappingPath<EdgeId> seeds = bwa_mapper_.MapSequence(s);
+        omnigraph::MappingPath<EdgeId> mapped_path = bwa_mapper_.MapSequence(s);
         TRACE(read_count << " read_count");
         DEBUG("BWA ended")
-        DEBUG(seeds.size() <<"  clusters");
-        for (const auto &e_mr : seeds) {
+        DEBUG(mapped_path.size() <<"  clusters");
+        for (const auto &e_mr : mapped_path) {
             EdgeId e = e_mr.first;
             omnigraph::MappingRange mr = e_mr.second;
             DEBUG("BWA loading edge=" << g_.int_id(e) << " e_start=" << mr.mapped_range.start_pos << " e_end=" << mr.mapped_range.end_pos 
                                                                     << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos );
-            
+            size_t cut = 0;
             size_t edge_start_pos = mr.mapped_range.start_pos;
+            if (edge_start_pos < g_.k()) {
+                cut = g_.k() - edge_start_pos;
+                edge_start_pos = g_.k();
+            }
             size_t edge_end_pos = mr.mapped_range.end_pos;
-            size_t read_start_pos = mr.initial_range.start_pos;
+            size_t read_start_pos = mr.initial_range.start_pos + cut;
             size_t read_end_pos = mr.initial_range.end_pos;
+            if (edge_start_pos >= edge_end_pos || read_start_pos >= read_end_pos) {
+                DEBUG ("skipping extra-short alignment");
+                continue;
+            }
             res.insert(KmerCluster<Graph>(e, edge_start_pos, edge_end_pos, read_start_pos, read_end_pos));
             
         }
