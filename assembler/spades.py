@@ -485,12 +485,12 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                 if k_value % 2 == 0:
                     k_value -= 1
                 if k_value < options_storage.MIN_K:
-                    support.warning('wrong k value ' + str(k_value) + ': all k values should be between %d and %d. k=%d will be attached.' %
-                                                                  (options_storage.MIN_K, options_storage.MAX_K, options_storage.MIN_K), log)
+                    log.info("\n" + 'Default k value (' + str(k_value) + ') is too small, all k values should be between %d and %d. Setting k=%d.\n'
+                             % (options_storage.MIN_K, options_storage.MAX_K, options_storage.MIN_K))
                     k_value = options_storage.MIN_K
                 if k_value > options_storage.MAX_K:
-                    support.warning('wrong k value ' + str(k_value) + ': all k values should be between %d and %d. k=%d will be attached.' %
-                                                                  (options_storage.MIN_K, options_storage.MAX_K, options_storage.MAX_K) + '', log)
+                    log.info("\n" + 'Default k value (' + str(k_value) + ') is too large, all k values should be between %d and %d. Setting k=%d.\n'
+                             % (options_storage.MIN_K, options_storage.MAX_K, options_storage.MAX_K))
                     k_value = options_storage.MAX_K
             cfg["assembly"].__dict__["iterative_K"] = k_value
         else:
