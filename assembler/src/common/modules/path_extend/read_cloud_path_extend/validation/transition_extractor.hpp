@@ -4,42 +4,15 @@
 #include <common/modules/path_extend/extension_chooser.hpp>
 #include <common/modules/alignment/long_read_mapper.hpp>
 #include "common/barcode_index/cluster_storage_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
 
 namespace path_extend {
 namespace validation {
 
-struct Transition {
-    EdgeId first_;
-    EdgeId second_;
- public:
-    Transition(const EdgeId& first, const EdgeId& second) : first_(first), second_(second) {}
-    bool operator==(const Transition& other) const {
-        return first_ == other.first_ and second_ == other.second_;
-    };
-
-    bool operator<(const Transition& other) const {
-        return first_.int_id() < other.first_.int_id() or (first_.int_id() == other.first_.int_id() and
-            second_.int_id() < other.second_.int_id());
-    }
-
-    Transition& operator=(const Transition& other) = default;
-};
-}
-}
-
-namespace std {
-template<>
-struct hash<path_extend::validation::Transition> {
-  size_t operator()(const path_extend::validation::Transition &transition) const {
-      using std::hash;
-      return hash<size_t>()(transition.first_.int_id() + transition.second_.int_id());
-  }
-};
-}
-
-namespace path_extend {
-namespace validation {
 class ContigTransitionStorage {
+ public:
+    typedef path_extend::transitions::Transition Transition;
+ private:
     std::unordered_set<Transition> transitions_;
     std::unordered_set<EdgeId> covered_edges_;
 
@@ -220,10 +193,13 @@ class ApproximateTransitionStorageBuilder : public TransitionStorageBuilder {
 };
 
 class ClusterTransitionExtractor {
+ public:
+    typedef path_extend::transitions::Transition Transition;
+ private:
     const cluster_storage::ClusterGraphAnalyzer& ordering_analyzer_;
 
  public:
-    ClusterTransitionExtractor(const cluster_storage::ClusterGraphAnalyzer& ordering_analyzer_) : ordering_analyzer_(
+    explicit ClusterTransitionExtractor(const cluster_storage::ClusterGraphAnalyzer& ordering_analyzer_) : ordering_analyzer_(
         ordering_analyzer_) {}
 
     vector<Transition> ExtractAllTransitionsFromNonPathCluster(const cluster_storage::Cluster& cluster);

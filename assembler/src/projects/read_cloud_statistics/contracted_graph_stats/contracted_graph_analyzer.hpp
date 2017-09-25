@@ -32,7 +32,7 @@ namespace contracted_graph {
     };
 
     struct VertexClusterData {
-      typedef path_extend::validation::Transition Transition;
+      typedef path_extend::transitions::Transition Transition;
       std::string name_;
       std::size_t clusters_;
       std::size_t correct_clusters_;
@@ -90,7 +90,7 @@ namespace contracted_graph {
     };
 
     struct TransitionVertexData {
-      typedef path_extend::validation::Transition Transition;
+      typedef path_extend::transitions::Transition Transition;
       std::set<Transition> transitions_;
       std::set<EdgeId> incoming_set_;
       std::set<EdgeId> outcoming_set_;
@@ -159,7 +159,7 @@ namespace contracted_graph {
 
     class TransitionStatistics: public read_cloud_statistics::Statistic {
      public:
-        typedef path_extend::validation::Transition Transition;
+        typedef path_extend::transitions::Transition Transition;
      private:
         std::map<VertexId, DetailedVertexData> data_;
 
@@ -208,7 +208,7 @@ namespace contracted_graph {
         }
 
         struct GreedyOrderData {
-          vector<path_extend::validation::Transition> transition_order_;
+          vector<path_extend::transitions::Transition> transition_order_;
           vector<EdgeId> incoming_order_;
           vector<EdgeId> outcoming_order_;
         };
@@ -457,7 +457,7 @@ namespace contracted_graph {
     class ContractedGraphAnalyzer: public read_cloud_statistics::StatisticProcessor {
      public:
         typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
-        typedef path_extend::validation::Transition Transition;
+        typedef path_extend::transitions::Transition Transition;
      private:
         const Graph& graph_;
         const cluster_storage::ClusterGraphAnalyzer ordering_analyzer_;

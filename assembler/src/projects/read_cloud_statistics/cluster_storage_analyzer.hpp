@@ -274,12 +274,12 @@ class KeyClusterStorage {
 };
 
 typedef KeyClusterStorage<SimplePath> PathClusterStorage;
-typedef KeyClusterStorage<path_extend::validation::Transition> TransitionClusterStorage;
+typedef KeyClusterStorage<path_extend::transitions::Transition> TransitionClusterStorage;
 typedef KeyClusterStorage<EdgeId> EdgeClusterStorage;
 
 class PathClusterStorageBuilder {
  public:
-    typedef path_extend::validation::Transition Transition;
+    typedef path_extend::transitions::Transition Transition;
     PathClusterStorage BuildPathClusterStorage(const cluster_storage::ClusterGraphAnalyzer ordering_analyzer,
                                                const vector<Cluster> &clusters) {
         PathClusterStorage result;
@@ -344,7 +344,7 @@ class PathClusterStorageBuilder {
                 if (path_predicate(entry.first)) {
                     for (auto it_first = entry.first.data_.begin(), it_second = std::next(it_first);
                          it_second != entry.first.data_.end(); ++it_first, ++it_second) {
-                        path_extend::validation::Transition transition(*it_first, *it_second);
+                        path_extend::transitions::Transition transition(*it_first, *it_second);
                         std::for_each(entry.second.begin(), entry.second.end(), [&result, &transition](const Cluster& cluster) {
                           result.InsertKeyWithCluster(transition, cluster);
                         });
@@ -377,7 +377,7 @@ class PathClusterStorageBuilder {
      public:
         typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
         typedef path_extend::validation::ClusterTransitionExtractor ClusterTransitionExtractor;
-        typedef path_extend::validation::Transition Transition;
+        typedef path_extend::transitions::Transition Transition;
      private:
         const cluster_storage::ClusterGraphAnalyzer& ordering_analyzer_;
         const scaffold_graph_utils::ScaffoldGraph& scaffold_graph_;

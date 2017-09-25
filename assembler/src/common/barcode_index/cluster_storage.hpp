@@ -409,13 +409,15 @@ class ClusterStorageBuilder {
     const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
     const uint64_t distance_threshold_;
     const size_t min_read_threshold_;
+    const size_t num_threads_;
  public:
     ClusterStorageBuilder(const Graph &g, const ScaffoldGraph &scaffold_graph_,
                           const shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_,
                           const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_, const size_t distance,
-                          const size_t min_read_threshold)
+                          const size_t min_read_threshold, size_t num_threads)
         : g_(g), scaffold_graph_(scaffold_graph_), barcode_extractor_ptr_(barcode_extractor_ptr_),
-          unique_storage_(unique_storage_), distance_threshold_(distance), min_read_threshold_(min_read_threshold) {}
+          unique_storage_(unique_storage_), distance_threshold_(distance), min_read_threshold_(min_read_threshold),
+          num_threads_(num_threads) {}
 
 
     ClusterStorage ConstructClusterStorage() {
@@ -432,14 +434,14 @@ class ClusterStorageBuilder {
         return cluster_storage;
     }
 
-    void ConstructClusterStorageFromUnique(ClusterStorage &cluster_storage, InternalEdgeClusterStorage &edge_cluster_storage) {
+    void ConstructClusterStorageFromUnique(ClusterStorage& cluster_storage, InternalEdgeClusterStorage& edge_cluster_storage) {
         for (const auto &unique_edge: unique_storage_) {
             ExtractClustersFromEdge(unique_edge, distance_threshold_, min_read_threshold_, edge_cluster_storage,
                                     cluster_storage);
         }
     }
 
-    void MergeClustersUsingScaffoldGraph(ClusterStorage &cluster_storage, InternalEdgeClusterStorage &edge_cluster_storage,
+    void MergeClustersUsingScaffoldGraph(ClusterStorage &cluster_storage, InternalEdgeClusterStorage& edge_cluster_storage,
                                          ScaffoldGraph &scaffold_graph) {
         for (auto it = scaffold_graph.ebegin(); it != scaffold_graph.eend(); ++it) {
                 EdgeId head = it->getStart();

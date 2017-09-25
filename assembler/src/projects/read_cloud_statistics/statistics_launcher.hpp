@@ -212,7 +212,7 @@ namespace read_cloud_statistics {
     class StatisticsLauncher {
      public:
         typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
-        typedef path_extend::validation::Transition Transition;
+        typedef path_extend::transitions::Transition Transition;
         typedef path_extend::validation::ContigPathBuilder ContigPathBuilder;
         typedef path_extend::validation::TransitionStorageBuilder TransitionStorageBuilder;
         typedef path_extend::validation::ClusterTransitionExtractor ClusterTransitionExtractor;
@@ -227,7 +227,8 @@ namespace read_cloud_statistics {
                            const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_,
                            shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
                            const StatisticsConfigs &configs_) : gp_(gp), unique_storage_(unique_storage_),
-                                                                barcode_extractor_ptr_(barcode_extractor_ptr), configs_(configs_) {}
+                                                                barcode_extractor_ptr_(barcode_extractor_ptr),
+                                                                configs_(configs_) {}
 
         void Launch(const string& base_output_path) {
             INFO("Transition stats:");
@@ -242,8 +243,8 @@ namespace read_cloud_statistics {
             };
 //            size_t distance = cfg::get().ts_res.distance;
 
-//            AnalyzeScaffoldGapCloser(base_output_path);
-            AnalyzeScaffoldGraph(base_output_path);
+            AnalyzeScaffoldGapCloser(base_output_path);
+//            AnalyzeScaffoldGraph(base_output_path);
 
 //            INFO("Analyzing contig paths");
 //            AnalyzeContigPaths(base_output_path);
@@ -446,11 +447,46 @@ namespace read_cloud_statistics {
                                                                                        small_length_threshold);
             const size_t count_threshold = 2;
             barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor(gp_.barcode_mapper_ptr, gp_.g);
-            scaffolder_statistics::GapCloserDijkstraAnalyzer analyzer(gp_.g, filtered_reference_paths, barcode_extractor,
+            scaffolder_statistics::GapCloserDijkstraAnalyzer gap_closer_analyzer(gp_.g, filtered_reference_paths, barcode_extractor,
                                                                       count_threshold, small_length_threshold,
                                                                       large_length_threshold);
-            analyzer.FillStatistics();
-            analyzer.SerializeStatistics(stats_base_path);
+
+            path_extend::ScaffoldingUniqueEdgeAnalyzer analyzer(gp_, small_length_threshold, 100);
+            path_extend::ScaffoldingUniqueEdgeStorage unique_storage;
+            analyzer.FillUniqueEdgeStorage(unique_storage);
+            auto scaffold_helper = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage,
+                                                                                  100000,
+                                                                                  gp_.g);
+            auto initial_scaffold_graph = scaffold_helper.ConstructScaffoldGraphUsingDijkstra();
+            const size_t linkage_distance = 10000;
+            const size_t read_threshold = 15;
+            const size_t num_threads = cfg::get().max_threads;
+            auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
+            cluster_storage::ClusterStorageBuilder cluster_storage_builder(gp_.g, initial_scaffold_graph, barcode_extractor_ptr,
+                                                                           unique_storage, linkage_distance, read_threshold, num_threads);
+            auto cluster_storage = cluster_storage_builder.ConstructClusterStorage();
+            INFO(cluster_storage.Size() << " clusters");
+            contracted_graph::ContractedGraphBuilder contracted_builder(gp_.g, unique_storage);
+            cluster_storage::ClusterGraphAnalyzer cluster_graph_analyzer(contracted_builder);
+            auto path_cluster_filter_ptr = make_shared<cluster_storage::PathClusterFilter>(cluster_graph_analyzer);
+            cluster_storage::ClusterStorageExtractor cluster_extractor;
+            INFO("Processing");
+            auto path_clusters = cluster_extractor.FilterClusterStorage(cluster_storage, path_cluster_filter_ptr);
+            INFO(path_clusters.size() << " path clusters");
+            auto path_cluster_extractor = make_shared<path_extend::transitions::PathClusterTransitionExtractor>(cluster_graph_analyzer);
+            path_extend::transitions::ClusterTransitionStorageBuilder transition_storage_builder;
+            INFO("Building transition storage");
+            transition_storage_builder.BuildFromClusters(path_clusters, path_cluster_extractor);
+            path_extend::transitions::ClusterTransitionStorage transition_storage = *(transition_storage_builder.GetStorage());
+            INFO("Transition storage size: " << transition_storage.size());
+            scaffolder_statistics::PathClusterScaffoldGraphAnalyzer path_cluster_analyzer(gp_.g, filtered_reference_paths,
+                                                                                          transition_storage, path_clusters,
+                                                                                          cluster_graph_analyzer);
+
+            path_cluster_analyzer.FillStatistics();
+            path_cluster_analyzer.SerializeStatistics(stats_base_path);
+//            gap_closer_analyzer.FillStatistics();
+//            gap_closer_analyzer.SerializeStatistics(stats_base_path);
         }
 
         void AnalyzePathClusters(const string& stats_base_path, size_t distance) {
@@ -470,9 +506,10 @@ namespace read_cloud_statistics {
 
             const size_t edge_read_threshold = configs_.edge_read_cluster_threshold;
             const size_t analyzer_read_threshold = configs_.global_read_cluster_threshold;
+            const size_t num_threads = cfg::get().max_threads;
             auto cluster_storage_builder = cluster_storage::ClusterStorageBuilder(gp_.g, scaffold_graph,
                                                                                   barcode_extractor_ptr_, unique_storage_,
-                                                                                  distance, edge_read_threshold);
+                                                                                  distance, edge_read_threshold, num_threads);
             auto cluster_storage = cluster_storage_builder.ConstructClusterStorage();
 
             auto min_read_filter = make_shared<cluster_storage::MinReadClusterFilter>(analyzer_read_threshold);
@@ -606,10 +643,10 @@ namespace read_cloud_statistics {
             INFO("Contracted scaffold graph edges: " << contracted_scaffold_graph.EdgeCount());
             const size_t edge_read_threshold = configs_.edge_read_cluster_threshold;
             const size_t analyzer_read_threshold = configs_.global_read_cluster_threshold;
-
+            const size_t num_threads = cfg::get().max_threads;
             auto cluster_storage_builder = cluster_storage::ClusterStorageBuilder(gp_.g, scaffold_graph,
                                                                                   barcode_extractor_ptr_, unique_storage_,
-                                                                                  distance, edge_read_threshold);
+                                                                                  distance, edge_read_threshold, num_threads);
             auto cluster_storage = cluster_storage_builder.ConstructClusterStorage();
 
 

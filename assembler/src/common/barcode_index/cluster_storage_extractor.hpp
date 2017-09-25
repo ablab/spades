@@ -175,8 +175,9 @@ class ClusterGraphAnalyzer {
             WARN("Ordering size is not equal to number of vertices!");
             return false;
         }
+//        auto contracted_graph = contracted_builder_.BuildContractedGraphFromInternalGraph(graph);
 //        for (auto first = ordering.begin(), second = std::next(ordering.begin()); second != ordering.end(); ++first, ++second) {
-//            if (not graph.ContainsEdge(*first, *second)) {
+//            if (not contracted_graph.ContainsEdge(*first, *second)) {
 //                WARN("One of ordering transitions is not correct!");
 //                return false;
 //            }
@@ -468,7 +469,7 @@ struct PathClusterFilter: public ClusterFilter {
 
   PathClusterFilter(const ClusterGraphAnalyzer& ordering_analyzer_) : ordering_analyzer_(ordering_analyzer_) {}
   bool Check(const Cluster& cluster) const override {
-      return ordering_analyzer_.IsPathCluster(cluster);
+      return cluster.Size() >= 2 and ordering_analyzer_.IsPathCluster(cluster);
   }
 };
 
@@ -478,9 +479,16 @@ class ClusterStorageExtractor {
 
     vector<Cluster> FilterClusterStorage(const ClusterStorage& cluster_storage, shared_ptr<ClusterFilter> filter) {
         vector<Cluster> result;
+        size_t clusters = cluster_storage.Size();
+        size_t counter = 0;
+        size_t block_size = clusters / 10;
         for (const auto& entry: cluster_storage) {
             if (filter->Check(entry.second)) {
                 result.push_back(entry.second);
+            }
+            ++counter;
+            if (counter % block_size == 0) {
+                INFO("Processed " << counter << " clusters out of " << clusters);
             }
         }
         return result;

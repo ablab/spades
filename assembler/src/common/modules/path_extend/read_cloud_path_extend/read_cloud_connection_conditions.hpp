@@ -1,6 +1,7 @@
 #pragma once
 #include "common/modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
 
 namespace path_extend {
     //Same as AssemblyGraphConnectionCondition, but stops after reaching unique edges.
@@ -186,6 +187,18 @@ namespace path_extend {
                              const size_t tail_threshold,
                              const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
                              const Graph& graph);
+
+        double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
+    };
+
+    class PathClusterScoreFunction: public EdgePairScoreFunction {
+     public:
+        typedef path_extend::transitions::ClusterTransitionStorage ClusterTransitionStorage;
+     private:
+        const ClusterTransitionStorage& transition_storage;
+
+     public:
+        PathClusterScoreFunction(const ClusterTransitionStorage& transition_storage);
 
         double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
     };

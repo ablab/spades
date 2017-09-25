@@ -26,7 +26,7 @@ namespace contracted_graph {
     class ContractedGraphClusterStatistics: public read_cloud_statistics::StatisticProcessor {
      public:
         typedef cluster_storage::Cluster Cluster;
-        typedef path_extend::validation::Transition Transition;
+        typedef path_extend::transitions::Transition Transition;
         typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
         typedef path_extend::validation::ClusterTransitionExtractor ClusterTransitionExtractor;
      private:

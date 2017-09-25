@@ -76,6 +76,13 @@ public:
     shared_ptr<ScaffoldGraph> Construct() override;
 };
 
+//class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
+//    const ScaffoldGraph& old_graph_;
+//    const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
+//
+//
+//};
+
 class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
  public:
     typedef path_extend::ScaffoldEdgePredicate EdgePairPredicate;

@@ -2,6 +2,7 @@
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/conjugate_score_extractor.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp"
+#include "common/barcode_index/cluster_storage_extractor.hpp"
 namespace scaffolder_statistics {
 struct ConnectivityParams {
   size_t overall_connections;

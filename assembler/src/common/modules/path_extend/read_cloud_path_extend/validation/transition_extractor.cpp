@@ -256,7 +256,8 @@ ContigTransitionStorage ApproximateTransitionStorageBuilder::BuildStorage(const 
     }
     return storage;
 }
-vector<Transition> ClusterTransitionExtractor::ExtractAllTransitionsFromNonPathCluster(const cluster_storage::Cluster& cluster) {
+vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::ExtractAllTransitionsFromNonPathCluster(
+        const cluster_storage::Cluster& cluster) {
     const auto& internal_graph = cluster.GetInternalGraph();
     vector<Transition> result;
     for (const auto& vertex: internal_graph) {
@@ -266,7 +267,8 @@ vector<Transition> ClusterTransitionExtractor::ExtractAllTransitionsFromNonPathC
     }
     return result;
 }
-vector<Transition> ClusterTransitionExtractor::ExtractGoodTransitionsFromNonPathCluster(const cluster_storage::Cluster& cluster) {
+vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::ExtractGoodTransitionsFromNonPathCluster(
+        const cluster_storage::Cluster& cluster) {
     const auto& internal_graph = cluster.GetInternalGraph();
     vector<Transition> result;
     for (const auto& start: internal_graph) {
@@ -279,7 +281,8 @@ vector<Transition> ClusterTransitionExtractor::ExtractGoodTransitionsFromNonPath
     }
     return result;
 }
-vector<Transition> ClusterTransitionExtractor::ExtractTransitionsFromOrdering(const vector<EdgeId>& ordering) {
+vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::ExtractTransitionsFromOrdering(
+        const vector<EdgeId>& ordering) {
     VERIFY(ordering.size() != 0);
     vector<Transition> result;
     for (auto first = ordering.begin(), second = std::next(ordering.begin()); second != ordering.end(); ++first, ++second) {

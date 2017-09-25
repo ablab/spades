@@ -25,7 +25,7 @@ add_library(path_extend STATIC pe_config_struct.cpp
                     read_cloud_path_extend/validation/transition_extractor.cpp
                     read_cloud_path_extend/scaffold_graph_extractor.cpp
                     read_cloud_path_extend/scaffold_graph_gap_closer.cpp
-                    read_cloud_path_extend/scaffold_graph_dijkstra.hpp)
+                    read_cloud_path_extend/scaffold_graph_dijkstra.hpp read_cloud_path_extend/transitions/transitions.cpp read_cloud_path_extend/transitions/transitions.hpp)
 
 target_link_libraries(path_extend assembly_graph ssw)
 

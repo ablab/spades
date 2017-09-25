@@ -22,7 +22,7 @@ map<EdgeId, double> AssemblyGraphUniqueConnectionCondition::ConnectedWith(EdgeId
         for (auto connected: g_.OutgoingEdges(v)) {
             if (interesting_edge_set_.find(connected) != interesting_edge_set_.end() &&
                 dij.GetDistance(v) < max_connection_length_ && connected != g_.conjugate(e)) {
-                stored_distances_[e].insert(make_pair(connected, 1));
+                stored_distances_[e].insert(make_pair(connected, static_cast<double>(dij.GetDistance(v))));
             }
         }
     }
@@ -342,5 +342,15 @@ bool LongEdgePairGapCloserPredicate::Check(const scaffold_graph::ScaffoldGraph::
         DEBUG("Right coverage: " << g_.coverage(end_) << endl);
     }
     return threshold_passed;
+}
+PathClusterScoreFunction::PathClusterScoreFunction(const ClusterTransitionStorage& transition_storage)
+    : transition_storage(transition_storage) {}
+double PathClusterScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const {
+    double result = 0;
+    path_extend::transitions::Transition transition(edge.getStart(), edge.getEnd());
+    if (transition_storage.find(transition) != transition_storage.end()) {
+        result = static_cast<double>(transition_storage.at(transition));
+    }
+    return result;
 }
 }

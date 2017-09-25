@@ -1,12 +1,13 @@
 #pragma once
 #include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
 
 namespace scaffolder_statistics {
-    struct GapCloserStatistics: public read_cloud_statistics::Statistic {
+    struct InitialGapCloserStatistics: public read_cloud_statistics::Statistic {
       const size_t overall_short_edges_;
       std::map<double, size_t> threshold_to_failed;
 
-      GapCloserStatistics(const size_t overall_short_edges_,
+      InitialGapCloserStatistics(const size_t overall_short_edges_,
                           const map<double, size_t>& threshold_to_passed_)
           : Statistic("gap_closer_stats"), overall_short_edges_(overall_short_edges_),
             threshold_to_failed(threshold_to_passed_) {}
@@ -20,11 +21,234 @@ namespace scaffolder_statistics {
       }
     };
 
-//    struct PathClusterResolverStatistics: public read_cloud_statistics::Statistic {
-//      const size_t overall_;
-//
-//      std::map<double, size_t> threshold_to_f
-//    };
+    struct PathClusterStats: read_cloud_statistics::Statistic {
+      size_t overall_;
+      size_t passed_;
+
+      PathClusterStats(size_t overall_, size_t passed_)
+          : Statistic("path_cluster_stats"), overall_(overall_), passed_(passed_) {}
+
+      void Serialize(const string& path) override {
+          ofstream fout(path);
+          fout << "Passed: " << passed_ << endl;
+          fout << "Overall: " << overall_ << endl;
+      }
+    };
+
+
+    class PathClusterScaffoldGraphAnalyzer: public read_cloud_statistics::StatisticProcessor {
+     public:
+        typedef path_extend::validation::EdgeWithMapping EdgeWithMapping;
+        typedef path_extend::transitions::Transition Transition;
+        typedef cluster_storage::Cluster Cluster;
+        typedef std::unordered_map<Transition, std::unordered_set<Cluster>> TransitionClusterStorage;
+        typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
+
+     private:
+        const Graph& g_;
+        const vector<vector<EdgeWithMapping>> reference_paths_;
+        const path_extend::transitions::ClusterTransitionStorage storage_;
+        const vector<cluster_storage::Cluster>& path_clusters_;
+        const cluster_storage::ClusterGraphAnalyzer& graph_analyzer_;
+
+     public:
+        PathClusterScaffoldGraphAnalyzer(const Graph& g_,
+                                         const vector<vector<EdgeWithMapping>>& reference_paths_,
+                                         const path_extend::transitions::ClusterTransitionStorage& storage_,
+                                         const vector<cluster_storage::Cluster>& path_clusters,
+                                         const cluster_storage::ClusterGraphAnalyzer& graph_analyzer)
+            : StatisticProcessor("path_cluster_analyzer"), g_(g_), reference_paths_(reference_paths_),
+              storage_(storage_), path_clusters_(path_clusters), graph_analyzer_(graph_analyzer) {}
+
+        void FillStatistics() override {
+            auto path_cluster_stats = make_shared<PathClusterStats>(GetPathClusterStats(reference_paths_));
+            AddStatistic(path_cluster_stats);
+        }
+
+        DECL_LOGGER("PathClusterScaffoldGraphAnalyzer");
+
+     private:
+        PathClusterStats GetPathClusterStats(const vector<vector<EdgeWithMapping>>& reference_paths) {
+            path_extend::validation::GeneralTransitionStorageBuilder forward_storage_builder(g_, 1, false, false);
+            auto forward_transitions = forward_storage_builder.GetTransitionStorage(reference_paths);
+            size_t passed = 0;
+            size_t strict_passed = 0;
+            const size_t reference_distance_threshold = 10000;
+            size_t overall = 0;
+            INFO("Getting path cluster score statistics");
+            vector<Transition> failed_transitions_;
+            auto transition_distance_map = GetTransitionToDistance(reference_paths);
+            for (const auto& transition: forward_transitions) {
+                path_extend::PathClusterScoreFunction score_function(storage_);
+                path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge correct_edge(transition.first_, transition.second_);
+                path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge rc_edge(transition.first_,
+                                                                                      g_.conjugate(transition.second_));
+                double correct_score = score_function.GetScore(correct_edge);
+                double rc_score = score_function.GetScore(rc_edge);
+                size_t distance = 15000;
+                if (transition_distance_map.find(transition) != transition_distance_map.end()) {
+                    distance = transition_distance_map.at(transition);
+                }
+                bool distance_passed = distance <= reference_distance_threshold;
+                double score = score_function.GetScore(correct_edge);
+                if (score >= score_function.GetScore(rc_edge) or not distance_passed) {
+                    ++passed;
+                } else {
+                    DEBUG(correct_score);
+                    DEBUG(rc_score);
+                    failed_transitions_.push_back(transition);
+                }
+                if (score > score_function.GetScore(rc_edge) and distance_passed) {
+                    ++strict_passed;
+                }
+                ++overall;
+            }
+
+            DEBUG("Strict passed: " << strict_passed);
+            DEBUG("Passed: " << passed);
+            DEBUG("Overall: " << overall);
+
+            AnalyzeFailedTransitions(failed_transitions_, forward_transitions);
+            PathClusterStats result(passed, overall);
+            return result;
+        }
+
+        TransitionClusterStorage BuildTransitionClusterStorage(const vector<cluster_storage::Cluster>& clusters,
+                                                               const unordered_set<Transition>& transitions) {
+            TransitionClusterStorage result;
+            for (const auto& transition: transitions) {
+                std::unordered_set<Cluster> empty;
+                result.insert({transition, empty});
+            }
+            for (const auto& cluster: clusters) {
+                path_extend::transitions::PathClusterTransitionExtractor extractor(graph_analyzer_);
+                auto cluster_transitions = extractor.ExtractTransitions(cluster);
+                for (const auto& transition: cluster_transitions) {
+                    if (result.find(transition) != result.end()) {
+                        result.at(transition).insert(cluster);
+                    }
+                }
+            }
+            return result;
+        }
+
+        std::unordered_map<EdgeId, EdgeId> BuildTransitionMap(const ContigTransitionStorage& transitions) {
+            std::unordered_map<EdgeId, EdgeId> result;
+            for (const auto& transition: transitions) {
+                result.insert({transition.first_, transition.second_});
+            }
+            return result;
+        };
+
+        std::unordered_map<EdgeId, EdgeId> BuildReverseTransitionMap(const ContigTransitionStorage& transitions) {
+            std::unordered_map<EdgeId, EdgeId> result;
+            for (const auto& transition: transitions) {
+                result.insert({transition.second_, transition.first_});
+            }
+            return result;
+        };
+
+        std::unordered_map<Transition, size_t> GetTransitionToDistance(const vector<vector<EdgeWithMapping>>& reference_paths) {
+            std::unordered_map<Transition, size_t> result;
+            for (const auto& path: reference_paths) {
+                for (auto first = path.begin(), second = std::next(first); second != path.end(); ++first, ++second) {
+                    EdgeWithMapping first_ewm = *first;
+                    EdgeWithMapping second_ewm = *second;
+                    Transition t(first_ewm.edge_, second_ewm.edge_);
+                    size_t first_end = first_ewm.mapping_.end_pos;
+                    size_t second_beginning = second_ewm.mapping_.start_pos;
+                    if (second_beginning < first_end) {
+                        DEBUG("First end: " << first_end);
+                        DEBUG("Second beginning: " << second_beginning);
+                        result.insert({t, 0});
+                    }
+                    result.insert({t, second_beginning - first_end});
+                }
+            }
+            return result;
+        };
+
+        std::vector<EdgeId> GetPathNeighbourhood(const std::unordered_map<EdgeId, EdgeId>& forward_map,
+                                                 const std::unordered_map<EdgeId, EdgeId>& reverse_map,
+                                                 const EdgeId& edge, size_t distance) {
+            std::deque<EdgeId> result_deque;
+            EdgeId current_edge = edge;
+            result_deque.push_back(current_edge);
+            for (size_t i = 0; i < distance; ++i) {
+                current_edge = forward_map.at(current_edge);
+                result_deque.push_back(current_edge);
+            }
+            current_edge = edge;
+            for (size_t i = 0; i < distance; ++i) {
+                current_edge = reverse_map.at(current_edge);
+                result_deque.push_front(current_edge);
+            }
+            std::vector<EdgeId> result(result_deque.begin(), result_deque.end());
+            return result;
+        }
+
+        void AnalyzeFailedTransitions(const vector<Transition>& failed_transitions,
+                                      const path_extend::validation::ContigTransitionStorage& forward_transitions) {
+            std::unordered_set<Transition> transition_set;
+            for (const auto& transition: failed_transitions) {
+                transition_set.insert(transition);
+                Transition rc_transition(transition.first_, g_.conjugate(transition.second_));
+                transition_set.insert(rc_transition);
+            }
+            auto forward_transition_map = BuildTransitionMap(forward_transitions);
+            auto reverse_transition_map = BuildReverseTransitionMap(forward_transitions);
+            auto transition_cluster_storage = BuildTransitionClusterStorage(path_clusters_, transition_set);
+            DEBUG("Transition cluster storage size: " << transition_cluster_storage.size());
+            for (const auto& transition: failed_transitions) {
+                DEBUG("Getting info for transition:");
+                DEBUG("(" << transition.first_.int_id() << ", " << transition.second_.int_id() << ")");
+                Transition rc_transition(transition.first_, g_.conjugate(transition.second_));
+                DEBUG("Conjugate transition:");
+                DEBUG("(" << rc_transition.first_.int_id() << ", " << rc_transition.second_ << ")");
+                DEBUG("Lengths: ");
+                DEBUG("(" << g_.length(transition.first_) << ", " << g_.length(transition.second_) << ")");
+                const size_t distance = 3;
+                auto path_neighbourhood = GetPathNeighbourhood(forward_transition_map, reverse_transition_map,
+                                                               transition.first_, distance);
+                std::string neighbourhood_string;
+                for (const auto& edge: path_neighbourhood) {
+                    neighbourhood_string += (std::to_string(edge.int_id()) + ", ");
+                }
+                DEBUG("Neighbourhood: ");
+                DEBUG(neighbourhood_string);
+                std::string rc_neighbourhood_string;
+                for (const auto& edge: path_neighbourhood) {
+                    rc_neighbourhood_string += (std::to_string(g_.conjugate(edge).int_id()) + ", ");
+                }
+                DEBUG("Conjugate neighbourhood: ");
+                DEBUG(rc_neighbourhood_string);
+                DEBUG("Printing orderings for failed: ");
+                PrintOrderingsForTransition(transition_cluster_storage, transition);
+                DEBUG("Printing orderings for conjugate:");
+                PrintOrderingsForTransition(transition_cluster_storage, rc_transition);
+            }
+        }
+
+        void PrintOrderingsForTransition(const TransitionClusterStorage& storage, const Transition& transition) {
+            unordered_set<Cluster> cluster_set = storage.at(transition);
+            DEBUG(cluster_set.size() << " clusters");
+            std::map<vector<EdgeId>, size_t> orderings;
+            for (const auto& cluster: cluster_set) {
+                auto ordering = graph_analyzer_.GetOrderingFromCluster(cluster);
+                VERIFY(ordering.size() > 0);
+                orderings[ordering] += 1;
+            }
+            DEBUG(orderings.size() << " orderings");
+            for (const auto& entry: orderings) {
+                string ordering_string;
+                for (const auto& edge: entry.first) {
+                    ordering_string += (std::to_string(edge.int_id()) + ", ");
+                }
+                DEBUG("Ordering: " << ordering_string);
+                DEBUG("Weight: " << entry.second);
+            }
+        }
+    };
 
     class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcessor {
      public:
@@ -53,12 +277,12 @@ namespace scaffolder_statistics {
             large_length_threshold_(large_length_threshold_) {}
 
         void FillStatistics() override {
-            auto gap_closer_stats = make_shared<GapCloserStatistics>(GetGapCloserStatistics());
+            auto gap_closer_stats = make_shared<InitialGapCloserStatistics>(GetGapCloserStatistics());
             AddStatistic(gap_closer_stats);
         }
 
      private:
-        GapCloserStatistics GetGapCloserStatistics() {
+        InitialGapCloserStatistics GetGapCloserStatistics() {
             auto thresholds = GetThresholdRange();
             size_t overall_short_edges = GetNumberOfShortEdges();
             DEBUG("Getting gap closer statistics");
@@ -68,7 +292,7 @@ namespace scaffolder_statistics {
                 size_t passed_edges = CountFailedEdges(threshold);
                 threshold_to_passed.insert({threshold, passed_edges});
             }
-            GapCloserStatistics result(overall_short_edges, threshold_to_passed);
+            InitialGapCloserStatistics result(overall_short_edges, threshold_to_passed);
             return result;
         }
 
