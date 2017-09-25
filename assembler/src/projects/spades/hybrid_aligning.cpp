@@ -335,6 +335,12 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
 
     INFO("Using seed size: " << cfg::get().pb.pacbio_k);
 
+    alignment::BWAIndex::AlignmentMode mode;
+    if (lib.type() == io::LibraryType::PacBioReads){
+        mode = alignment::BWAIndex::AlignmentMode::PacBio;
+    } else {
+        mode = alignment::BWAIndex::AlignmentMode::Ont2D;
+    }
     //initializing index
     pacbio::PacBioMappingIndex<Graph> pac_index(gp.g,
                                                 cfg::get().pb.pacbio_k,
@@ -342,7 +348,7 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
                                                 cfg::get().pb.ignore_middle_alignment,
                                                 cfg::get().output_dir,
                                                 cfg::get().pb,
-                                                alignment::BWAIndex::AlignmentMode::PacBio);
+                                                mode);
 
     PacbioAligner aligner(pac_index, path_storage, gap_storage);
 
