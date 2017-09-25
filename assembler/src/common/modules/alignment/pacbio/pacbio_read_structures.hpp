@@ -89,7 +89,8 @@ struct KmerCluster {
         first_trustable_index = 0;
         sorted_positions.push_back(MappingInstance((int)edge_start_pos, (int)read_start_pos, 1));
         sorted_positions.push_back(MappingInstance((int)edge_end_pos, (int)read_end_pos, 1));
-        size = 2;
+        VERIFY_MSG(edge_start_pos < edge_end_pos, "range size should be positive");
+        size = int (edge_end_pos - edge_start_pos);
         average_read_position = (read_start_pos + read_end_pos)/2;
         average_edge_position = (edge_start_pos + edge_end_pos)/2;
         edgeId = e;
