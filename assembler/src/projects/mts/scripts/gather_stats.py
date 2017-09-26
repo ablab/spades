@@ -7,9 +7,15 @@ from operator import add
 import shutil
 import sys
 
+from sklearn.cluster.bicluster import SpectralCoclustering
 import numpy as np
 import pandas
 from pandas import DataFrame
+
+def bicluster(table):
+    model = SpectralCoclustering(n_clusters=table.shape[1], random_state=0)
+    model.fit(table.as_matrix())
+    return table.iloc[np.argsort(model.row_labels_), np.argsort(model.column_labels_)]
 
 parser = argparse.ArgumentParser(description="MTS stats extractor")
 parser.add_argument("dir", type=str, help="QUAST output directory")
@@ -27,9 +33,13 @@ gf_table = pandas.read_table(os.path.join(args.dir, "summary", "TSV", "Genome_fr
 gfs = gf_table.apply(pandas.to_numeric, errors="coerce")
 #Drop zeroes
 gfs.fillna(0, inplace=True)
-gfs = gfs.loc[gfs.apply(lambda row: row.sum() > 0, axis=1), gfs.apply(lambda col: col.sum() > 0)]
+EPS = 0.01
+presented_refs = gfs.apply(lambda row: row.sum() > EPS, axis=1)
+lost_refs = gfs.index[~presented_refs]
+gfs = gfs.loc[presented_refs, gfs.apply(lambda col: col.sum() > EPS)]
 
 best_ref = gfs.apply(lambda col: col.idxmax())
+best_bin = gfs.apply(lambda row: row.idxmax(), axis=1)
 
 with open(args.name + "_best.tsv", "w") as out_file:
     best_ref.to_csv(out_file, sep="\t")
@@ -65,12 +75,7 @@ if args.gf:
 
     # Draw GF heatmap
     if args.plot:
-        from sklearn.cluster.bicluster import SpectralCoclustering
-        model = SpectralCoclustering(n_clusters=gfs.shape[1], random_state=0)
-        model.fit(gfs.as_matrix())
-        fit_data = gfs.iloc[np.argsort(model.row_labels_), np.argsort(model.column_labels_)]
-
-        plot = sns.heatmap(fit_data, square=True)
+        plot = sns.heatmap(bicluster(gfs), square=True)
         fig = plot.get_figure()
         fig.savefig(args.name + "_gf.png", bbox_inches="tight")
         plt.gcf().clear()
@@ -97,6 +102,8 @@ if args.problematic:
     nonzeroes_cnt_ref = nonzeroes.sum(1)
     good_refs = list()
     with open(args.name + "_problems.txt", "w") as out_file:
+        for ref in lost_refs:
+            print(ref, "is missing completely", file=out_file)
         for ref, gf in total_gf_ref.iteritems():
             if max_gf_ref[ref] < BAD_THRESHOLD:
                 if gf < BAD_THRESHOLD:
@@ -116,8 +123,11 @@ if args.problematic:
             else:
                 good_bins.append(bin)
     if args.plot:
-        bad_table = gfs.drop(good_refs, axis=0).drop(good_bins, axis=1)
+        drop_refs = [ref for ref in good_refs if best_bin[ref] in good_bins]
+        drop_bins = [bin for bin in good_bins if best_ref[bin] in good_refs]
+        bad_table = gfs.drop(drop_refs, axis=0).drop(drop_bins, axis=1)
+        bad_table = bad_table[bad_table.apply(lambda row: row.sum() > EPS, axis=1)]
         if bad_table.size:
-            plot = sns.heatmap(bad_table, square=True)
+            plot = sns.heatmap(bicluster(bad_table), square=True)
             fig = plot.get_figure()
             fig.savefig(args.name + "_bad.png", bbox_inches="tight")
