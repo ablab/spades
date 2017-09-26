@@ -267,10 +267,6 @@ class PacbioAligner {
                 longer_500++;
                 if (aligned_edges.size() > 0) {
                     aligned++;
-                    stats_by_thread[thread_num].seeds_percentage[
-                            size_t(floor(double(current_read_mapping.seed_num) * 1000.0
-                                         / (double) seq.size()))]++;
-
                     if (IsNontrivialAlignment(aligned_edges)) {
                         nontrivial_aligned++;
                     }

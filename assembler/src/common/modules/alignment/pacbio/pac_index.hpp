@@ -30,13 +30,10 @@ struct OneReadMapping {
     vector<vector<debruijn_graph::EdgeId>> main_storage;
     vector<GapDescription> gaps;
     vector<size_t> real_length;
-    //Total used seeds. sum over all subreads;
-    size_t seed_num;
     OneReadMapping(const vector<vector<debruijn_graph::EdgeId>>& main_storage_,
                    const vector<GapDescription>& gaps_,
-                   const vector<size_t>& real_length_,
-                   size_t seed_num_) :
-            main_storage(main_storage_), gaps(gaps_), real_length(real_length_), seed_num(seed_num_) {
+                   const vector<size_t>& real_length_) :
+            main_storage(main_storage_), gaps(gaps_), real_length(real_length_) {
     }
 
 };
@@ -378,28 +375,24 @@ public:
     //    }
     //}
 
-    vector<vector<EdgeId>> FillGapsInCluster(const vector<pair<size_t, typename ClustersSet::iterator> > &cur_cluster,
+    vector<vector<EdgeId>> FillGapsInCluster(const vector<typename ClustersSet::iterator> &cur_cluster,
                                      const Sequence &s) const {
         vector<EdgeId> cur_sorted;
         vector<vector<EdgeId>> res;
         EdgeId prev_edge = EdgeId(0);
 
         for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();) {
-            EdgeId cur_edge = iter->second->edgeId;
+            EdgeId cur_edge = (*iter)->edgeId;
             if (prev_edge != EdgeId(0)) {
 //Need to find sequence of edges between clusters
                 VertexId start_v = g_.EdgeEnd(prev_edge);
                 VertexId end_v = g_.EdgeStart(cur_edge);
                 auto prev_iter = iter - 1;
-                MappingInstance cur_first_index =
-                        iter->second->sorted_positions[iter->second
-                                ->first_trustable_index];
-                MappingInstance prev_last_index = prev_iter->second
-                        ->sorted_positions[prev_iter->second
-                        ->last_trustable_index];
+                MappingInstance cur_first_index = (*iter)->sorted_positions[(*iter)->first_trustable_index];
+                MappingInstance prev_last_index = (*prev_iter)->sorted_positions[(*prev_iter)->last_trustable_index];
 
                 if (start_v != end_v ||
-                    (start_v == end_v &&
+                        (start_v == end_v &&
                      (double) (cur_first_index.read_position - prev_last_index.read_position) >
                      (double) (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
                     DEBUG(" traversing tangled hregion between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
@@ -414,10 +407,7 @@ public:
                                        g_.length(prev_edge) - prev_last_index.edge_position);
                     tmp = g_.EdgeNucls(cur_edge).str();
                     e_add = tmp.substr(0, cur_first_index.edge_position);
-                    pair<int, int> limits = GetPathLimits(*(prev_iter->second),
-                                                          *(iter->second),
-                                                          (int) s_add.length(),
-                                                          (int) e_add.length());
+                    pair<int, int> limits = GetPathLimits(**prev_iter, **iter, (int) s_add.length(), (int) e_add.length());
                     if (limits.first == -1) {
                         res.push_back(cur_sorted);
                         cur_sorted.clear();
@@ -569,7 +559,7 @@ public:
     OneReadMapping AddGapDescriptions(const vector<typename ClustersSet::iterator> &start_clusters,
                                       const vector<typename ClustersSet::iterator> &end_clusters,
                                       const vector<vector<EdgeId>> &sortedEdges, const Sequence &s,
-                                      const vector<bool> &block_gap_closer, size_t used_seeds_count) const {
+                                      const vector<bool> &block_gap_closer) const {
         DEBUG("adding gaps between subreads");
         vector<GapDescription> illumina_gaps;
         for (size_t i = 0; i + 1 < sortedEdges.size() ; i++) {
@@ -595,7 +585,52 @@ public:
             }
 
         }
-        return OneReadMapping(sortedEdges, illumina_gaps, vector<size_t>(0), used_seeds_count);
+        return OneReadMapping(sortedEdges, illumina_gaps, vector<size_t>(0));
+    }
+
+    void ProcessCluster(vector<typename ClustersSet::iterator> &cur_cluster,
+                        vector<typename ClustersSet::iterator> &start_clusters,
+                        vector<typename ClustersSet::iterator> &end_clusters,
+                        vector<vector<EdgeId>> &sortedEdges, const Sequence &s,
+                        vector<bool> &block_gap_closer) const {
+        sort(cur_cluster.begin(), cur_cluster.end(),
+             [](const typename ClustersSet::iterator& a, const typename ClustersSet::iterator& b) {
+            return (a->average_read_position < b->average_read_position);
+        });
+        VERIFY(cur_cluster.size() > 0);
+        auto cur_cluster_start = cur_cluster.begin();
+        for (auto iter = cur_cluster.begin(); iter != cur_cluster.end(); ++iter) {
+            auto next_iter = iter + 1;
+            if (next_iter == cur_cluster.end() || !IsConsistent(**iter, **next_iter)) {
+                if (next_iter != cur_cluster.end()) {
+                    DEBUG("clusters splitted:");
+                    DEBUG("on "<< (*iter)->str(g_));
+                    DEBUG("and " << (*next_iter)->str(g_));
+                }
+                vector<typename ClustersSet::iterator> splitted_cluster(cur_cluster_start, next_iter);
+                auto res = FillGapsInCluster(splitted_cluster, s);
+                for (auto &cur_sorted:res) {
+                    DEBUG("Adding " <<res.size() << " subreads, cur alignments " << cur_sorted.size());
+                    if (cur_sorted.size() > 0) {
+                        for(EdgeId eee: cur_sorted) {
+                            DEBUG (g_.int_id(eee));
+                        }
+                        start_clusters.push_back(*cur_cluster_start);
+                        end_clusters.push_back(*iter);
+                        sortedEdges.push_back(cur_sorted);
+                        //Blocking gap closing inside clusters;
+                        block_gap_closer.push_back(true);
+                    }
+                }
+                if (block_gap_closer.size() > 0)
+                    block_gap_closer[block_gap_closer.size() - 1] = false;
+                cur_cluster_start = next_iter;
+            } else {
+                DEBUG("connected consecutive clusters:");
+                DEBUG("on "<< (*iter)->str(g_));
+                DEBUG("and " << (*next_iter)->str(g_));
+            }
+        }
     }
 
     OneReadMapping GetReadAlignment(Sequence &s) const {
@@ -607,80 +642,28 @@ public:
         vector<bool> block_gap_closer;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
         vector<int> used(len);
-        size_t used_seed_count = 0;
         auto iter = mapping_descr.begin();
         for (size_t i = 0; i < len; i++, iter ++) {
             used[i] = 0;
             DEBUG(colors[i] <<" " << iter->str(g_));
         }
-        //FIXME ferther code is AWFUL
         for (size_t i = 0; i < len; i++) {
-            if (!used[i]) {
+            int cur_color = colors[i];
+            if (!used[i] && cur_color != DELETED_COLOR) {
                 DEBUG("starting new subread");
-                size_t cur_seed_count = 0;
-                vector<pair<size_t, typename ClustersSet::iterator> > cur_cluster;
+                vector<typename ClustersSet::iterator> cur_cluster;
                 used[i] = 1;
                 int j = 0;
-                int cur_color = colors[i];
-                if (cur_color == DELETED_COLOR)
-                    continue;
-                for (auto i_iter = mapping_descr.begin();
-                        i_iter != mapping_descr.end(); ++i_iter, ++j) {
+                for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end(); ++i_iter, ++j) {
                     if (colors[j] == cur_color) {
-                        cur_cluster.push_back(
-                                make_pair(
-                                        i_iter->average_read_position,
-                                        i_iter));
+                        cur_cluster.push_back(i_iter);
                         used[j] = 1;
-                        cur_seed_count += i_iter->sorted_positions.size();
                     }
                 }
-                sort(cur_cluster.begin(), cur_cluster.end(),
-                     pair_iterator_less<typename ClustersSet::iterator>());
-                VERIFY(cur_cluster.size() > 0);
-                //if (cur_seed_count > used_seed_count)
-                used_seed_count += cur_seed_count;
-                auto cur_cluster_start = cur_cluster.begin();
-                for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();
-                        ++iter) {
-                    auto next_iter = iter + 1;
-                    if (next_iter == cur_cluster.end()
-                            || !IsConsistent(*(iter->second),
-                                             *(next_iter->second))) {
-                        if (next_iter != cur_cluster.end()) {
-                            DEBUG("clusters splitted:");
-                            DEBUG("on "<< iter->second->str(g_));
-                DEBUG("and " << next_iter->second->str(g_));
-                        }
-                        vector<pair<size_t, typename ClustersSet::iterator> > splitted_cluster(
-                                cur_cluster_start, next_iter);
-                        auto res = FillGapsInCluster(
-                                splitted_cluster, s);
-                        for (auto &cur_sorted:res) {
-                            DEBUG("Adding " <<res.size() << " subreads, cur alignments " << cur_sorted.size());
-                            if (cur_sorted.size() > 0) {
-                                for(EdgeId eee: cur_sorted) {
-                                    DEBUG (g_.int_id(eee));
-                                }
-                                start_clusters.push_back(cur_cluster_start->second);
-                                end_clusters.push_back(iter->second);
-                                sortedEdges.push_back(cur_sorted);
-                                //Blocking gap closing inside clusters;
-                                block_gap_closer.push_back(true);
-                            }
-                        }
-                        if (block_gap_closer.size() > 0)
-                            block_gap_closer[block_gap_closer.size() - 1] = false;
-                        cur_cluster_start = next_iter;
-                    } else {
-                        DEBUG("connected consecutive clusters:");
-                        DEBUG("on "<< iter->second->str(g_));
-                        DEBUG("and " << next_iter->second->str(g_));
-                    }
-                }
+                ProcessCluster(cur_cluster, start_clusters, end_clusters, sortedEdges, s, block_gap_closer);
             }
         }
-        return AddGapDescriptions(start_clusters,end_clusters, sortedEdges, s, block_gap_closer, used_seed_count);
+        return AddGapDescriptions(start_clusters, end_clusters, sortedEdges, s, block_gap_closer);
     }
 
     std::pair<int, int> GetPathLimits(const KmerCluster<Graph> &a,
@@ -710,6 +693,8 @@ public:
         size_t a_id =  g_.int_id(a_edge);
         size_t b_id =  g_.int_id(b_edge);
         DEBUG("clusters on " << a_id << " and " << b_id );
+//FIXME
+//Is this check useful?
         if (a.sorted_positions[a.last_trustable_index].read_position + (int) pb_config_.max_path_in_dijkstra <
             b.sorted_positions[b.first_trustable_index].read_position) {
             DEBUG ("Clusters are too far in read");
@@ -723,7 +708,6 @@ public:
         size_t result = size_t(-1);
         bool not_found = true;
         auto distance_it = distance_cashed.begin();
-        //FIXME why critical section?
 #pragma omp critical(pac_index)
         {
             distance_it = distance_cashed.find(vertex_pair);
@@ -736,7 +720,6 @@ public:
             if (dijkstra.DistanceCounted(end_v)) {
                 result = dijkstra.GetDistance(end_v);
             }
-        //FIXME why critical section?
 #pragma omp critical(pac_index)
             {
                 distance_it = distance_cashed.insert({vertex_pair, result}).first;
@@ -751,29 +734,11 @@ public:
             return 0;
         }
         //TODO: Serious optimization possible
-        int near_to_cluster_end = 500;
-        for (auto a_iter = a.sorted_positions.begin();
-                a_iter != a.sorted_positions.end(); ++a_iter) {
-            if (a_iter - a.sorted_positions.begin() > near_to_cluster_end &&  a.sorted_positions.end() - a_iter > near_to_cluster_end) continue;
-            int cnt = 0;
-            for (auto b_iter = b.sorted_positions.begin();
-                    b_iter != b.sorted_positions.end() && cnt < near_to_cluster_end; ++b_iter, cnt ++) {
-                if (similar_in_graph(*a_iter, *b_iter, (int) (result + addition))) {
-                    return 1;
-                }
-            }
-            cnt = 0;
-            if ( (int) b.sorted_positions.size() > near_to_cluster_end) {
-                for (auto b_iter = b.sorted_positions.end() - 1;
-                                        b_iter != b.sorted_positions.begin() && cnt < near_to_cluster_end; --b_iter, cnt ++) {
-                    if (similar_in_graph(*a_iter, *b_iter,
-                                (int) (result + addition))) {
-                        return 1;
-                    }
-                }
-            }
+        if (similar_in_graph(a.sorted_positions[a.sorted_positions.size() -1], b.sorted_positions[0]), result + addition) {
+            return 1;
+        } else {
+            return 0;
         }
-        return 0;
     }
 
     //FIXME use common function

@@ -25,6 +25,7 @@ struct pair_iterator_less {
     }
 };
 
+
 struct MappingInstance {
     int edge_position;
     int read_position;
