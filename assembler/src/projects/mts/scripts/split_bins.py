@@ -29,7 +29,7 @@ if glue:
             contig_bins.setdefault(bin, 0)
             contig_bins[bin] += 1
 
-subprocess.call("rm -f {}/*.fasta".format(out_dir, sample), shell=True)
+subprocess.call("rm -f {}/*.fasta".format(out_dir), shell=True)
 
 cags = set()
 for seq in SeqIO.parse(contigs, "fasta"):

@@ -47,7 +47,7 @@ void ContigBinner::Run(io::PairedStream& paired_reads) {
     }
 }
 
-int BinReads(const conj_graph_pack& gp, const std::string& out_root,
+void BinReads(const conj_graph_pack& gp, const std::string& out_root,
              const std::string& sample,
              const std::string& left_reads, const std::string& right_reads,
              const EdgeAnnotation& edge_annotation,
@@ -57,8 +57,6 @@ int BinReads(const conj_graph_pack& gp, const std::string& out_root,
     auto paired_stream = io::PairedEasyStream(left_reads, right_reads, false, 0);
     INFO("Running binner on " << left_reads << " and " << right_reads);
     binner.Run(*paired_stream);
-    binner.close();
-    return 0;
 }
 
 };

@@ -89,14 +89,14 @@ public:
                      bins_of_interest_(bins_of_interest.begin(), bins_of_interest.end()) {
     }
 
-    void Run(io::PairedStream& paired_reads);
-
-    void close() {
+    ~ContigBinner() {
         out_streams_.clear();
     }
+
+    void Run(io::PairedStream& paired_reads);
 };
 
-int BinReads(const conj_graph_pack& gp, const std::string& out_root,
+void BinReads(const conj_graph_pack& gp, const std::string& out_root,
              const std::string& sample,
              const std::string& left_reads, const std::string& right_reads,
              const EdgeAnnotation& edge_annotation,

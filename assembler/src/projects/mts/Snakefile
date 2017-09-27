@@ -23,7 +23,7 @@ rule all:
 # Assemble with MegaHIT
 rule megahit:
     input:   left=left_reads, right=right_reads
-    output:  "assembly/megahit/{group}.fasta"
+    output:  "assembly/megahit/{group}/final.contigs.fasta"
     params:  left=lambda w: ",".join(left_reads(w)),
              right=lambda w: ",".join(right_reads(w)),
              dir="assembly/megahit/{group}"
@@ -33,7 +33,12 @@ rule megahit:
     shell:   "rm -rf {params.dir} &&"
              " {SOFT}/megahit/megahit -1 {params.left} -2 {params.right}"
              " -t {threads} -o {params.dir} >{log} 2>&1 &&"
-             " cp {params.dir}/final.contigs.fa {output}"
+
+rule megahit_convert:
+    input:   "assembly/megahit/{group}/final.contigs.fa"
+    output:  "assembly/megahit/{group}.fasta"
+    message: "Converting megahit contig names from {wildcards.group} into our format"
+    shell:   "sed -r 's/>(k[0-9]+)_([0-9]+) flag=. multi=([0-9]+|[0-9]+\.[0-9]+) len=([0-9]+)/>NODE_\\2_length_\\4_cov_\\3/' {input} > {output}"
 
 # Assemble with SPAdes
 rule spades:
@@ -69,9 +74,11 @@ rule split_contigs:
 rule bowtie_index:
     input:   "assembly/{frags}/all.fasta"
     output:  "profile/jgi/{frags}/index.done"
+    threads: THREADS
     log:     "profile/jgi/{frags}/bowtie-build.log"
     message: "Building bowtie index"
-    shell:   "bowtie2-build {input} profile/jgi/index_{wildcards.frags} >{log} 2>&1 && touch {output}"
+    shell:   "bowtie2-build {input} profile/jgi/index_{wildcards.frags}"
+             " --threads {THREADS} >{log} 2>&1 && touch {output}"
 
 rule align:
     input:   left=left_sample_reads, right=right_sample_reads,
@@ -167,7 +174,7 @@ rule extract_bins:
 rule binning_format:
     input:   "binning/{}/binning.out".format(BINNER)
     output:  "binning/{}/unified_binning.tsv".format(BINNER)
-    message: "Making unified binning results"
+    message: "Making unified binning results from {BINNER} results"
     shell:   "{SCRIPTS}/convert_output.py -t {BINNER} -o {output} {input} && "
              "cp {output} binning/binning.tsv" #For stats
 
