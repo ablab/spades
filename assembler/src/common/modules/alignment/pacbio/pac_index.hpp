@@ -148,7 +148,7 @@ public:
         }
         omnigraph::MappingPath<EdgeId> mapped_path = bwa_mapper_.MapSequence(s);
         TRACE(read_count << " read_count");
-        DEBUG("BWA ended")
+        TRACE("BWA ended")
         DEBUG(mapped_path.size() <<"  clusters");
         for (const auto &e_mr : mapped_path) {
             EdgeId e = e_mr.first;
@@ -541,7 +541,8 @@ public:
             return 0;
         }
         //TODO: Serious optimization possible
-        if (similar_in_graph(a.sorted_positions[a.sorted_positions.size() -1], b.sorted_positions[0]), result + addition) {
+        if (similar_in_graph(a.sorted_positions[a.sorted_positions.size() -1], b.sorted_positions[0], result + addition)) {
+            DEBUG(" similar! ")
             return 1;
         } else {
             return 0;
@@ -563,30 +564,31 @@ public:
                                   int path_min_length, int path_max_length,
                                   int start_pos, int end_pos, string &s_add,
                                   string &e_add) const {
-        DEBUG(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
+        TRACE(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
         omnigraph::PathStorageCallback<Graph> callback(g_);
         ProcessPaths(g_,
                     path_min_length, path_max_length,
                     start_v, end_v,
                     callback);
         vector<vector<EdgeId> > paths = callback.paths();
-        DEBUG("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());
+        TRACE("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());
         int s_len = int(s.size());
         string seq_string = s.Subseq(start_pos, min(end_pos + 1, s_len)).str();
         size_t best_path_ind = paths.size();
         int best_score = STRING_DIST_INF;
-        DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
         if (paths.size() == 0) {
+            DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
             DEBUG ("no paths");
             return vector<EdgeId>(0);
         }
         if (seq_string.length() > pb_config_.max_contigs_gap_length) {
+            DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
             DEBUG("Gap is too large");
             return vector<EdgeId>(0);
         }
         for (size_t i = 0; i < paths.size(); i++) {
             string cur_string = s_add + PathToString(paths[i]) + e_add;
-            DEBUG("cur_string: " << cur_string <<"\n seq_string " << seq_string);
+            TRACE("cur_string: " << cur_string <<"\n seq_string " << seq_string);
             if (paths.size() > 1 && paths.size() < 10) {
                 TRACE("candidate path number "<< i << " , len " << cur_string.length());
                 TRACE("graph candidate: " << cur_string);
@@ -605,11 +607,11 @@ public:
                 best_path_ind = i;
             }
         }
-        DEBUG(best_score);
+        TRACE(best_score);
         if (best_score == STRING_DIST_INF)
             return vector<EdgeId>(0);
         if (paths.size() > 1 && paths.size() < 10) {
-            DEBUG("best score found! Path " <<best_path_ind <<" score "<< best_score);
+            TRACE("best score found! Path " <<best_path_ind <<" score "<< best_score);
         }
         return paths[best_path_ind];
     }
