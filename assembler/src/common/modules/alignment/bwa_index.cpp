@@ -192,7 +192,9 @@ void BWAIndex::Init() {
     ids_.clear();
 
     for (auto it = g_.ConstEdgeBegin(true); !it.IsEnd(); ++it)
-        ids_.push_back(*it);
+        if (g_.length(*it) > 2* g_.k()){
+            ids_.push_back(*it);
+        }
 
     // construct the forward-only pac
     uint8_t* fwd_pac = seqlib_make_pac(g_, ids_, true); // true->for_only
