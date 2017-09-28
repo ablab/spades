@@ -43,13 +43,13 @@ enum class CenterType { COUNT_ARGMAX, CONSENSUS, BY_POSTERIOR_QUALITY };
   HammerStage start_stage;
 
   double sample_rate = 1.0;
-  uint max_full_del = 1;
-  uint max_indel = 3;
-  uint max_second_indel = 1;
-  uint max_from_zero_insertion = 1;
+  unsigned max_full_del = 1;
+  unsigned max_indel = 3;
+  unsigned max_second_indel = 1;
+  unsigned max_from_zero_insertion = 1;
   std::string oracle_path = "";
 
-  uint subcluster_min_count = 15;
+  unsigned subcluster_min_count = 15;
   double good_threshold = -0.69;
   double skip_threshold = -0.01;
   double subcluster_threshold = -0.001;
@@ -64,7 +64,7 @@ enum class CenterType { COUNT_ARGMAX, CONSENSUS, BY_POSTERIOR_QUALITY };
   double count_dist_eps = 1e-3;
   double count_dist_skip_quantile = 0.05;
 
-  uint noise_filter_count_threshold = 3;
+  unsigned noise_filter_count_threshold = 3;
   CenterType center_type = CenterType::COUNT_ARGMAX;
 };
 
