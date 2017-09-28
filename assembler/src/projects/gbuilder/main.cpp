@@ -111,8 +111,8 @@ int main(int argc, char* argv[]) {
         // Step 3: output stuff
         size_t idx = 1;
         for (const auto &edge: edge_sequences) {
-            std::cout << ">" << idx++ << '\n';
-            std::cout << edge << '\n';
+            std::cerr << ">" << idx++ << '\n';
+            std::cerr << edge << '\n';
         }
     } catch (std::string const &s) {
         std::cerr << s;
