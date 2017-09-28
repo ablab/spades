@@ -173,7 +173,7 @@ graph_read_corr
 bwa_aligner
 {
     ;stupid naming since spades.py cannot change config normally
-    bwa_enable false
+    bwa_enable true
     debug false
     path_to_bwa ./bin/bwa-spades
     min_contig_len 0

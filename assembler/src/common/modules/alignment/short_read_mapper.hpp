@@ -74,14 +74,15 @@ template<class graph_pack, class SequencingLib>
 std::shared_ptr<SequenceMapper<typename graph_pack::graph_t>> ChooseProperMapper(const graph_pack& gp, const SequencingLib& library, bool use_bwa = true) {
     typedef typename graph_pack::graph_t Graph;
     if (library.type() == io::LibraryType::MatePairs) {
-        if (use_bwa) {
-            INFO("Mapping mate-pairs using BWA lib mapper");
-            return std::make_shared<alignment::BWAReadMapper<Graph>>(gp.g);
-        } else {
-            VERIFY(false);
-            //INFO("Mapping mate-pair library, selecting sensitive read mapper with k=" << cfg::get().sensitive_map.k);
-            //return std::make_shared<SensitiveReadMapper<Graph>>(gp.g, cfg::get().sensitive_map.k, gp.k_value);
-        }
+        //if (use_bwa) {
+        VERIFY(use_bwa);
+        INFO("Mapping mate-pairs using BWA lib mapper");
+        return std::make_shared<alignment::BWAReadMapper<Graph>>(gp.g);
+        //} else {
+        //    VERIFY(false);
+        //    //INFO("Mapping mate-pair library, selecting sensitive read mapper with k=" << cfg::get().sensitive_map.k);
+        //    //return std::make_shared<SensitiveReadMapper<Graph>>(gp.g, cfg::get().sensitive_map.k, gp.k_value);
+        //}
     }
     size_t read_length = library.data().unmerged_read_length;
     if (read_length < gp.k_value && library.type() == io::LibraryType::PairedEnd) {
