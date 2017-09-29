@@ -157,10 +157,11 @@ public:
                                                                     << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos );
             size_t cut = 0;
             size_t edge_start_pos = mr.mapped_range.start_pos;
-            if (edge_start_pos < g_.k()) {
+/*          if (edge_start_pos < g_.k()) {
                 cut = g_.k() - edge_start_pos;
                 edge_start_pos = g_.k();
             }
+*/
             size_t edge_end_pos = mr.mapped_range.end_pos;
             size_t read_start_pos = mr.initial_range.start_pos + cut;
             size_t read_end_pos = mr.initial_range.end_pos;
