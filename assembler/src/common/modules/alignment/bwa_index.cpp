@@ -273,15 +273,18 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
     omnigraph::MappingPath<debruijn_graph::EdgeId> res;
 
     // Turn read length into k-mers
-    size_t read_length = seq.length();
-    VERIFY(read_length >= g_.k());
-    read_length = read_length - g_.k();
+    //size_t read_length = seq.length();
+    if (seq.length() <= g_.k()) {
+        return res;
+    }
+
+    //read_length = read_length - g_.k();
 
     for (size_t i = 0; i < ar.n; ++i) {
         const mem_alnreg_t &a = ar.a[i];
         if (a.secondary >= 0) continue; // skip secondary alignments
-        if (size_t(a.qe - a.qb) < g_.k()) continue; // skip short alignments
-        if (size_t(a.re - a.rb) < g_.k()) continue;
+        if (size_t(a.qe - a.qb) <= g_.k()) continue; // skip short alignments
+        if (size_t(a.re - a.rb) <= g_.k()) continue;
 
         int is_rev = 0;
         size_t pos = bns_depos(idx_->bns, a.rb < idx_->bns->l_pac? a.rb : a.re - 1, &is_rev) - idx_->bns->anns[a.rid].offset;
@@ -296,7 +299,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
                             { pos, mapping_range_end}});
         } else {
             res.push_back(g_.conjugate(ids_[a.rid]),
-                          { Range(a.qb, initial_range_end), //.Invert(read_length),
+                          { { a.qb, initial_range_end }, //.Invert(read_length),
                             Range(pos,  mapping_range_end).Invert(g_.length(ids_[a.rid])) });
 
         }
