@@ -120,9 +120,9 @@ public:
     INFO("Starting k-mer counting.");
     size_t kmers = 0;
 #   pragma omp parallel for shared(raw_kmers) num_threads(num_threads) schedule(dynamic) reduction(+:kmers)
-    for (unsigned iFile = 0; iFile < raw_kmers.size(); ++iFile) {
-      kmers += MergeKMers(raw_kmers[iFile]->file(), GetUniqueKMersFname(iFile));
-      raw_kmers[iFile].reset();
+    for (unsigned i = 0; i < raw_kmers.size(); ++i) {
+      kmers += MergeKMers(raw_kmers[i]->file(), GetUniqueKMersFname(i));
+      raw_kmers[i].reset();
     }
     INFO("K-mer counting done. There are " << kmers << " kmers in total. ");
     if (!kmers) {
@@ -307,11 +307,11 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
   INFO("Building perfect hash indices");
 
 # pragma omp parallel for shared(index) num_threads(num_threads_)
-  for (unsigned iFile = 0; iFile < buckets; ++iFile) {
-    typename KMerIndex<kmer_index_traits>::KMerDataIndex &data_index = index.index_[iFile];
-    auto bucket = counter.GetBucket(iFile, !save_final);
+  for (unsigned i = 0; i < buckets; ++i) {
+    typename KMerIndex<kmer_index_traits>::KMerDataIndex &data_index = index.index_[i];
+    auto bucket = counter.GetBucket(i, !save_final);
     size_t sz = bucket->end() - bucket->begin();
-    index.bucket_starts_[iFile + 1] = sz;
+    index.bucket_starts_[i + 1] = sz;
 
     data_index = typename Index::KMerDataIndex(sz,
                                                boomphf::range(bucket->begin(), bucket->end()),
@@ -319,8 +319,8 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
   }
 
   // Finally, record the sizes of buckets.
-  for (unsigned iFile = 1; iFile < buckets; ++iFile)
-    index.bucket_starts_[iFile] += index.bucket_starts_[iFile - 1];
+  for (unsigned i = 1; i < buckets; ++i)
+    index.bucket_starts_[i] += index.bucket_starts_[i - 1];
 
   if (save_final)
     counter.MergeBuckets();

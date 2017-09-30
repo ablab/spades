@@ -38,7 +38,7 @@ struct KMerComparator {
 
 class HammerFilteringKMerSplitter : public utils::KMerSortingSplitter<hammer::KMer> {
  public:
-  using typename utils::KMerSortingSplitter<hammer::KMer>::raw_kmers;
+  using typename utils::KMerSortingSplitter<hammer::KMer>::RawKMers;
   typedef std::function<bool(const KMer&)> KMerFilter;
 
   HammerFilteringKMerSplitter(std::string &work_dir,
@@ -46,7 +46,7 @@ class HammerFilteringKMerSplitter : public utils::KMerSortingSplitter<hammer::KM
       : KMerSortingSplitter<hammer::KMer>(work_dir, hammer::K),
       filter_(std::move(filter)) {}
 
-  raw_kmers Split(size_t num_files, unsigned nthreads) override;
+  RawKMers Split(size_t num_files, unsigned nthreads) override;
 
  private:
   KMerFilter filter_;
@@ -86,7 +86,7 @@ class BufferFiller {
   }
 };
 
-HammerFilteringKMerSplitter::raw_kmers HammerFilteringKMerSplitter::Split(size_t num_files, unsigned nthreads) {
+HammerFilteringKMerSplitter::RawKMers HammerFilteringKMerSplitter::Split(size_t num_files, unsigned nthreads) {
   size_t reads_buffer_size = cfg::get().count_split_buffer;
 
   auto out = PrepareBuffers(num_files, nthreads, reads_buffer_size);

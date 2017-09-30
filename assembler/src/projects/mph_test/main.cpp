@@ -77,7 +77,7 @@ class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {
 
 
   public:
-    using utils::KMerSortingSplitter<RtSeq>::raw_kmers;
+    using utils::KMerSortingSplitter<RtSeq>::RawKMers;
     ParallelSortingSplitter(const std::string &workdir, unsigned K, size_t read_buffer_size = 0)
             : KMerSortingSplitter<Seq>(workdir, K), read_buffer_size_(read_buffer_size) {}
 
@@ -85,7 +85,7 @@ class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {
         files_.push_back(filename);
     }
 
-    raw_kmers Split(size_t num_files, unsigned nthreads) override {
+    RawKMers Split(size_t num_files, unsigned nthreads) override {
         auto out = PrepareBuffers(num_files, nthreads, read_buffer_size_);
 
         size_t n = 10;

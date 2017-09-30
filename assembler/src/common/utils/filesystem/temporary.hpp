@@ -42,7 +42,7 @@ class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl> {
     }
     int fd() const { return fd_; }
     void close();
-    DependentTmpFile create_dep(const std::string &suffix);
+    DependentTmpFile CreateDep(const std::string &suffix);
             
   private:
     std::string file_;

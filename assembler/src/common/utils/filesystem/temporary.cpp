@@ -51,7 +51,7 @@ void TmpFileImpl::close() {
     ::close(fd_);
 }
 
-DependentTmpFile TmpFileImpl::create_dep(const std::string &suffix) {
+DependentTmpFile TmpFileImpl::CreateDep(const std::string &suffix) {
     return new DependentTmpFileImpl(suffix, this);
 }
 

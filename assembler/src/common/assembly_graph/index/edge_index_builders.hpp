@@ -17,7 +17,7 @@ class DeBruijnGraphKMerSplitter : public utils::DeBruijnKMerSplitter<KmerFilter>
     typedef typename omnigraph::GraphEdgeIterator<Graph> EdgeIt;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename adt::iterator_range<EdgeIt> EdgeRange;
-    using typename utils::DeBruijnKMerSplitter<KmerFilter>::raw_kmers;
+    using typename utils::DeBruijnKMerSplitter<KmerFilter>::RawKMers;
 
     const Graph &g_;
 
@@ -30,7 +30,7 @@ public:
             : utils::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size),
               g_(g) {}
 
-    raw_kmers Split(size_t num_files, unsigned nthreads) override;
+    RawKMers Split(size_t num_files, unsigned nthreads) override;
 };
 
 template<class Graph, class KmerFilter>
@@ -50,7 +50,8 @@ DeBruijnGraphKMerSplitter<Graph, KmerFilter>::FillBufferFromEdges(EdgeRange &r,
 }
 
 template<class Graph, class KmerFilter>
-typename DeBruijnGraphKMerSplitter<Graph, KmerFilter>::raw_kmers DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files, unsigned nthreads) {
+typename DeBruijnGraphKMerSplitter<Graph, KmerFilter>::RawKMers
+DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files, unsigned nthreads) {
     auto out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
     omnigraph::IterationHelper<Graph, EdgeId> edges(g_);
