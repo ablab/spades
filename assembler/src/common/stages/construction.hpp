@@ -11,20 +11,12 @@
 
 namespace debruijn_graph {
 
-class Construction : public spades::AssemblyStage {
-public:
-    Construction()
-            : AssemblyStage("Construction", "construction") { }
-
-    void run(conj_graph_pack &gp, const char *);
-};
-
 struct ConstructionStorage;
 
-class ConstructionNew : public spades::CompositeStageDeferred<ConstructionStorage> {
+class Construction : public spades::CompositeStageDeferred<ConstructionStorage> {
 public:
-    ConstructionNew();
-    ~ConstructionNew();
+    Construction();
+    ~Construction();
 
     void init(debruijn_graph::conj_graph_pack &gp, const char *) override;
     void fini(debruijn_graph::conj_graph_pack &gp) override;
