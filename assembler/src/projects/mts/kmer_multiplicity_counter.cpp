@@ -89,7 +89,7 @@ class KmerMultiplicityCounter {
         auto kmer_file = fs::tmp::make_temp_file("kmer", workdir);
 
         typedef uint16_t Mpl;
-        std::ofstream output_kmer(kmer_file->file(), std::ios::binary);
+        std::ofstream output_kmer(*kmer_file, std::ios::binary);
         std::ofstream mpl_file(file_prefix_ + ".bpr", std::ios_base::binary);
 
         RtSeq::less3 kmer_less;
@@ -142,7 +142,7 @@ class KmerMultiplicityCounter {
         static const size_t read_buffer_size = 0; //FIXME some buffer size
         DeBruijnKMerKMerSplitter<StoringTypeFilter<InvertableStoring>>
             splitter(workdir, k_, k_, true, read_buffer_size);
-        splitter.AddKMers(kmer_file->file());
+        splitter.AddKMers(*kmer_file);
 
         KMerDiskCounter<RtSeq> counter(workdir, splitter);
         KeyStoringMap<RtSeq, Offset, kmer_index_traits<RtSeq>, InvertableStoring> kmer_mpl(k_);
@@ -150,7 +150,7 @@ class KmerMultiplicityCounter {
         INFO("Built index with " << kmer_mpl.size() << " kmers");
 
         //Building kmer->profile offset index
-        std::ifstream kmers_in(kmer_file->file(), std::ios::binary);
+        std::ifstream kmers_in(*kmer_file, std::ios::binary);
         InvertableStoring::trivial_inverter<Offset> inverter;
         RtSeq kmer(k_);
         for (Offset offset = 0; ; offset += sample_cnt) {

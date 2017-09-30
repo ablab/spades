@@ -24,6 +24,7 @@ class TmpDirImpl : public llvm::ThreadSafeRefCountedBase<TmpDirImpl> {
     ~TmpDirImpl();
 
     const std::string &dir() const { return dir_; }
+    operator std::string() const { return dir_; }
     TmpFile tmp_file(const std::string &prefix = "tmp");
 
   private:
@@ -36,6 +37,7 @@ class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl> {
     ~TmpFileImpl();
 
     const std::string &file() const { return file_; }
+    operator std::string() const { return file_; }
     const std::string &dir() const {
         static std::string noparent("");
         return (parent_ ? parent_->dir() : noparent);
@@ -43,7 +45,7 @@ class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl> {
     int fd() const { return fd_; }
     void close();
     DependentTmpFile CreateDep(const std::string &suffix);
-            
+
   private:
     std::string file_;
     TmpDir parent_;
@@ -57,6 +59,7 @@ class DependentTmpFileImpl : public llvm::ThreadSafeRefCountedBase<DependentTmpF
 
     const std::string &file() const { return file_; }
     const std::string &dir() const { return parent_->dir(); }
+    operator std::string() const { return file_; }
 
   private:
     TmpFile parent_;

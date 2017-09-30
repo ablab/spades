@@ -140,11 +140,13 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
     DEBUG("Asserting graph");
     typedef io::VectorReadStream<io::SingleRead> RawStream;
     Graph g(k);
-    graph_pack<Graph>::index_t index(g, "tmp");
+    auto workdir = fs::tmp::make_temp_dir("tmp", "tests");
+    graph_pack<Graph>::index_t index(g, *workdir);
     index.Detach();
 
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads))));
-    ConstructGraph(config::debruijn_config::construction(), streams, g, index);
+    ConstructGraph(config::debruijn_config::construction(), workdir,
+                   streams, g, index);
 
     AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 }
@@ -207,10 +209,13 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl
     DEBUG("Streams initialized");
 
     conj_graph_pack gp(k, "tmp", 1);
+    auto workdir = fs::tmp::make_temp_dir(gp.workdir, "tests");
+
     DEBUG("Graph pack created");
 
     io::ReadStreamList<io::SingleRead> single_stream_vector = io::SquashingWrap<io::PairedRead>(paired_streams);
-    ConstructGraphWithCoverage(config::debruijn_config::construction(), single_stream_vector, gp.g, gp.index, gp.flanking_cov);
+    ConstructGraphWithCoverage(config::debruijn_config::construction(), workdir,
+                               single_stream_vector, gp.g, gp.index, gp.flanking_cov);
 
     gp.InitRRIndices();
     gp.kmer_mapper.Attach();
@@ -231,9 +236,10 @@ template<class graph_pack>
 void CheckIndex(vector<string> reads, size_t k) {
     typedef io::VectorReadStream<io::SingleRead> RawStream;
     graph_pack gp(k, "tmp", 0);
+    auto workdir = fs::tmp::make_temp_dir(gp.workdir, "tests");
     auto stream = io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads)));
     io::ReadStreamList<io::SingleRead> streams(stream);
-    ConstructGraph(config::debruijn_config::construction(), streams, gp.g, gp.index);
+    ConstructGraph(config::debruijn_config::construction(), workdir, streams, gp.g, gp.index);
     stream->reset();
     io::SingleRead read;
     while(!(stream->eof())) {

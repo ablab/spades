@@ -232,7 +232,7 @@ private:
 
     void SortUniqueKMers() const {
         if (!kmers_)
-            kmers_.reset(new KMerStorage(kmers_file_->file(), KMer::GetDataSize(base::k())));
+            kmers_.reset(new KMerStorage(*kmers_file_, KMer::GetDataSize(base::k())));
 
         size_t swaps = 0;
         INFO("Arranging kmers in hash map order");
@@ -378,12 +378,12 @@ public:
 
     kmer_iterator kmer_begin() const {
         VERIFY(kmers_ && "Index should be built");
-        return kmer_iterator(this->kmers_->file(), KMer::GetDataSize(base::k()));
+        return kmer_iterator(*this->kmers_, KMer::GetDataSize(base::k()));
     }
 
     std::vector<kmer_iterator> kmer_begin(size_t parts) const {
         VERIFY(kmers_ && "Index should be built");
-        return io::make_kmer_iterator<KMer>(this->kmers_->file(), base::k(), parts);
+        return io::make_kmer_iterator<KMer>(*this->kmers_, base::k(), parts);
     }
 
     friend struct KeyIteratingIndexBuilder;

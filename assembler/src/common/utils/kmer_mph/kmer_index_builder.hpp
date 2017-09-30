@@ -121,7 +121,7 @@ public:
     size_t kmers = 0;
 #   pragma omp parallel for shared(raw_kmers) num_threads(num_threads) schedule(dynamic) reduction(+:kmers)
     for (unsigned i = 0; i < raw_kmers.size(); ++i) {
-      kmers += MergeKMers(raw_kmers[i]->file(), GetUniqueKMersFname(i));
+      kmers += MergeKMers(*raw_kmers[i], GetUniqueKMersFname(i));
       raw_kmers[i].reset();
     }
     INFO("K-mer counting done. There are " << kmers << " kmers in total. ");
@@ -150,7 +150,7 @@ public:
     INFO("Merging final buckets.");
 
     final_kmers_ = work_dir_->tmp_file("final_kmers");
-    std::ofstream ofs(final_kmers_->file(), std::ios::out | std::ios::binary);
+    std::ofstream ofs(*final_kmers_, std::ios::out | std::ios::binary);
     for (unsigned j = 0; j < this->num_buckets_; ++j) {
       auto bucket = GetBucket(j, /* unlink */ true);
       ofs.write((const char*)bucket->data(), bucket->data_size());
