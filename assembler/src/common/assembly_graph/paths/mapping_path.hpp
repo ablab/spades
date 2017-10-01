@@ -9,6 +9,8 @@
 
 #include "sequence/sequence.hpp"
 #include "sequence/range.hpp"
+//FIXME bad dependency
+#include "io/reads/single_read.hpp"
 #include <boost/iterator/iterator_facade.hpp>
 
 namespace omnigraph {
@@ -297,6 +299,33 @@ inline std::ostream& operator<<(std::ostream& os, const MappingPath<ElementId>& 
     return os;
 }
 
+inline boost::optional<Sequence> Subseq(const io::SingleRead& read, size_t start, size_t end) {
+    //DEBUG("Requesting subseq of read length " << read.size() << " from " << start << " to " << end);
+    VERIFY(end > start);
+    //if (end == start) {
+    //    DEBUG("Returning empty sequence");
+    //    return boost::make_optional(Sequence());
+    //}
+    auto subread = read.Substr(start, end);
+    if (subread.IsValid()) {
+        //DEBUG("Gap seq valid. Length " << subread.size());
+        return boost::make_optional(subread.sequence());
+    } else {
+        //DEBUG("Gap seq invalid. Length " << subread.size());
+        //DEBUG("sequence: " << subread.GetSequenceString());
+        return boost::none;
+    }
+}
+
+inline boost::optional<Sequence> Subseq(const io::SingleReadSeq& read, size_t start, size_t end) {
+    return boost::make_optional(read.sequence().Subseq(start, end));
+}
+
+inline boost::optional<Sequence> Subseq(const Sequence& s, size_t start, size_t end) {
+    return boost::make_optional(s.Subseq(start, end));
+}
+
+//FIXME move somewhere else
 template<class Graph>
 class GapDescription {
     typedef typename Graph::EdgeId EdgeId;
@@ -338,6 +367,60 @@ class GapDescription {
 
 public:
     static const int INVALID_GAP = std::numeric_limits<int>::min();
+    //static const GapDescription INVALID_GAP_DESC; //= GapDescription();
+
+    template<class ReadT>
+    static GapDescription CreateFixOverlap(const Graph &g, const ReadT& read, 
+                                           size_t seq_start, size_t seq_end,
+                                           EdgeId left, size_t left_offset,
+                                           EdgeId right, size_t right_offset) {
+        VERIFY(left_offset > 0 && right_offset >= 0 && 
+                left_offset <= g.length(left) && right_offset < g.length(right));
+
+        DEBUG("Creating gap description");
+
+        //trying to shift on the left edge
+        if (seq_start >= seq_end) {
+            //+1 is a trick to avoid empty gap sequences
+            size_t overlap = seq_start - seq_end + 1;
+            DEBUG("Overlap of size " << overlap << " detected. Fixing.");
+            size_t left_shift = std::min(overlap, left_offset - 1);
+            VERIFY(seq_start >= left_shift);
+            seq_start -= left_shift;
+            left_offset -= left_shift;
+        }
+
+        //trying to shift on the right edge
+        if (seq_start >= seq_end) {
+            //+1 is a trick to avoid empty gap sequences
+            size_t overlap = seq_start - seq_end + 1;
+            DEBUG("Overlap of size " << overlap << " remained. Fixing.");
+            size_t right_shift = std::min(overlap, g.length(right) - right_offset - 1);
+            VERIFY(seq_end + right_shift <= read.size());
+            seq_end += right_shift;
+            right_offset += right_shift;
+        }
+
+        if (seq_start < seq_end) {
+            auto gap_seq = Subseq(read, seq_start, seq_end);
+            if (gap_seq) {
+                DEBUG("Gap info successfully created");
+                VERIFY(left_offset > 0 && right_offset >= 0 && 
+                        left_offset <= g.length(left) && right_offset < g.length(right));
+                return GapDescription(left, right,
+                                      *gap_seq,
+                                      g.length(left) - left_offset,
+                                      right_offset);
+            } else {
+                DEBUG("Something wrong with read subsequence");
+            }
+        } else {
+            size_t overlap = seq_start - seq_end + 1;
+            //FIXME remove warn
+            WARN("Failed to fix overlap of size " << overlap);
+        }
+        return GapDescription();
+    }
 
     GapDescription(EdgeId left, EdgeId right,
                    int estimated_dist,
@@ -444,6 +527,8 @@ public:
     bool operator==(const GapDescription rhs) const {
         return !(*this != rhs);
     }
+private:
+    DECL_LOGGER("GapDescription");
 
 };
 

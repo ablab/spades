@@ -389,25 +389,11 @@ public:
         return colors;
     }
 
-    GapDescription CreateGapDescription(const KmerCluster<debruijn_graph::Graph>& a,
-                                        const KmerCluster<debruijn_graph::Graph>& b,
-                                        const Sequence& read) const {
-        size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + debruijn_k;
-        size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
-        if (seq_start >= seq_end) {
-            //FIXME deal with this problem (already done before)
-            WARN("Overlapping flanks not supported yet");
-            return GapDescription();
-        }
-        GapDescription answer(a.edgeId,
-                              b.edgeId,
-                              read.Subseq(seq_start, seq_end),
-                              g_.length(a.edgeId) - a.sorted_positions[a.last_trustable_index].edge_position,
-                              b.sorted_positions[b.first_trustable_index].edge_position);
-        VERIFY(answer.left_trim() < g_.length(answer.left()));
-        VERIFY(answer.right_trim() < g_.length(answer.right()));
-        return answer;
-    }
+    //GapDescription CreateGapDescription(const KmerCluster<debruijn_graph::Graph>& a,
+    //                                    const KmerCluster<debruijn_graph::Graph>& b,
+    //                                    const Sequence& read) const {
+
+    //}
 
     OneReadMapping AddGapDescriptions(const vector<typename ClustersSet::iterator> &start_clusters,
                                       const vector<typename ClustersSet::iterator> &end_clusters,
@@ -425,9 +411,17 @@ public:
             if (before_gap != after_gap && before_gap != g_.conjugate(after_gap)) {
                 if (TopologyGap(before_gap, after_gap, true)) {
                     if (start_clusters[j]->CanFollow(*end_clusters[i])) {
-                        auto gap = CreateGapDescription(*end_clusters[i],
-                                                        *start_clusters[j],
-                                                        s);
+                        const auto &a = *end_clusters[i];
+                        const auto &b = *start_clusters[j];
+                        size_t seq_start = a.sorted_positions[a.last_trustable_index].read_position + debruijn_k;
+                        size_t seq_end = b.sorted_positions[b.first_trustable_index].read_position;
+                        //FIXME check index: left_offsed should be potentially equal to edge_length
+                        size_t left_offset = a.sorted_positions[a.last_trustable_index].edge_position;
+                        size_t right_offset = b.sorted_positions[b.first_trustable_index].edge_position;
+                        auto gap = GapDescription::CreateFixOverlap(g_, s, 
+                                seq_start, seq_end,
+                                a.edgeId, left_offset,
+                                b.edgeId, right_offset);
                         if (gap != GapDescription()) {
                             illumina_gaps.push_back(gap);
                             DEBUG("adding gap between alignments number " << i<< " and " << j);
@@ -486,6 +480,7 @@ public:
         }
     }
 
+    //FIXME change to io::SingleRead
     OneReadMapping GetReadAlignment(Sequence &s) const {
         ClustersSet mapping_descr = GetBWAClusters(s); //GetOrderClusters(s);
         vector<int> colors = GetWeightedColors(mapping_descr);

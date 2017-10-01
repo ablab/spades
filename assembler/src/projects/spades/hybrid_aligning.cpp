@@ -28,79 +28,6 @@ class GapTrackingListener : public SequenceMapperListener {
 
     const GapDescription INVALID_GAP;
 
-    boost::optional<Sequence> Subseq(const io::SingleRead& read, size_t start, size_t end) const {
-        DEBUG("Requesting subseq of read length " << read.size() << " from " << start << " to " << end);
-        VERIFY(end > start);
-        //if (end == start) {
-        //    DEBUG("Returning empty sequence");
-        //    return boost::make_optional(Sequence());
-        //}
-        auto subread = read.Substr(start, end);
-        if (subread.IsValid()) {
-            DEBUG("Gap seq valid. Length " << subread.size());
-            return boost::make_optional(subread.sequence());
-        } else {
-            DEBUG("Gap seq invalid. Length " << subread.size());
-            DEBUG("sequence: " << subread.GetSequenceString());
-            return boost::none;
-        }
-    }
-
-    boost::optional<Sequence> Subseq(const io::SingleReadSeq& read, size_t start, size_t end) const {
-        return boost::make_optional(read.sequence().Subseq(start, end));
-    }
-
-    template<class ReadT>
-    GapDescription
-    CreateDescription(const ReadT& read, size_t seq_start, size_t seq_end,
-                      EdgeId left, size_t left_offset,
-                      EdgeId right, size_t right_offset) const {
-        VERIFY(left_offset > 0 && right_offset >= 0 && 
-                left_offset <= g_.length(left) && right_offset < g_.length(right));
-
-        DEBUG("Creating gap description");
-
-        //trying to shift on the left edge
-        if (seq_start >= seq_end) {
-            //+1 is a trick to avoid empty gap sequences
-            size_t overlap = seq_start - seq_end + 1;
-            DEBUG("Overlap of size " << overlap << " detected. Fixing.");
-            size_t left_shift = std::min(overlap, left_offset - 1);
-            VERIFY(seq_start >= left_shift);
-            seq_start -= left_shift;
-            left_offset -= left_shift;
-        }
-        //trying to shift on the right edge
-        if (seq_start >= seq_end) {
-            //+1 is a trick to avoid empty gap sequences
-            size_t overlap = seq_start - seq_end + 1;
-            DEBUG("Overlap of size " << overlap << " remained. Fixing.");
-            size_t right_shift = std::min(overlap, g_.length(right) - right_offset - 1);
-            VERIFY(seq_end + right_shift <= read.size());
-            seq_end += right_shift;
-            right_offset += right_shift;
-        }
-
-        if (seq_start < seq_end) {
-            auto gap_seq = Subseq(read, seq_start, seq_end);
-            if (gap_seq) {
-                DEBUG("Gap info successfully created");
-                VERIFY(left_offset > 0 && right_offset >= 0 && 
-                        left_offset <= g_.length(left) && right_offset < g_.length(right));
-                return GapDescription(left, right,
-                                      *gap_seq,
-                                      g_.length(left) - left_offset,
-                                      right_offset);
-            } else {
-                DEBUG("Something wrong with read subsequence");
-            }
-        } else {
-            size_t overlap = seq_start - seq_end + 1;
-            DEBUG("Failed to fix overlap of size " << overlap);
-        }
-        return INVALID_GAP;
-    }
-
     template<class ReadT>
     vector<GapDescription> InferGaps(const ReadT& read,
             const MappingPath<EdgeId>& mapping) const {
@@ -124,9 +51,9 @@ class GapTrackingListener : public SequenceMapperListener {
                 size_t seq_start = mr1.initial_range.end_pos + g_.k();
                 size_t seq_end = mr2.initial_range.start_pos;
 
-                auto gap = CreateDescription(read, seq_start, seq_end,
-                                             e1, mr1.mapped_range.end_pos,
-                                             e2, mr2.mapped_range.start_pos);
+                auto gap = GapDescription::CreateFixOverlap(g_, read, seq_start, seq_end,
+                                                            e1, mr1.mapped_range.end_pos,
+                                                            e2, mr2.mapped_range.start_pos);
 
                 if (gap != INVALID_GAP) {
                     answer.push_back(gap);
