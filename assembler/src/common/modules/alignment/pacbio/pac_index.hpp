@@ -140,13 +140,58 @@ public:
         }
     }
 
+    typename omnigraph::MappingPath<EdgeId> FilterSpuriousAlignments(typename omnigraph::MappingPath<EdgeId> mp_path, size_t seq_len) const {
+        omnigraph::MappingPath<EdgeId> res;
+        vector<pair<EdgeId,typename omnigraph::MappingRange> > mapped_path;
+        for (size_t i = 0; i < mp_path.size(); i++) 
+            mapped_path.push_back(make_pair(mp_path[i].first, mp_path[i].second));
+        std::sort(mapped_path.begin(), mapped_path.end(),
+                     [](const std::pair<EdgeId, typename omnigraph::MappingRange> &a, const std::pair<EdgeId, typename omnigraph::MappingRange> &b) {
+            return (a.second.initial_range.end_pos+ a.second.initial_range.start_pos < b.second.initial_range.end_pos+ b.second.initial_range.start_pos); 
+        });
+
+        for (size_t i = 0; i < mapped_path.size(); i++) {
+            bool flag = false;
+            if (mapped_path.size() > 1 && (i ==0 || i == mapped_path.size() - 1)) {
+                size_t expected_alignment_length = 0;
+                if (i == 0)
+                    expected_alignment_length = std::min(mapped_path[i].second.initial_range.end_pos,
+                                                         mapped_path[i].second.mapped_range.end_pos);
+                else
+                    expected_alignment_length = std::min(seq_len - mapped_path[i].second.initial_range.start_pos,
+                                                         g_.length(mapped_path[i].first) -
+                                                         mapped_path[i].second.mapped_range.start_pos);
+                size_t rlen =
+                        mapped_path[i].second.initial_range.end_pos - mapped_path[i].second.initial_range.start_pos;
+//FIXME more reasonable condition
+                if (rlen < 500 && rlen * 3 < expected_alignment_length) {
+                    INFO ("Skipping spurious alignment " << i);
+                    flag = true;
+                }
+            }
+            if (!flag)
+                res.push_back(mapped_path[i].first, mapped_path[i].second);
+        }
+        if (res.size() != mapped_path.size()) {
+            INFO("Seq len " << seq_len);
+            for (const auto &e_mr : mapped_path) {
+                EdgeId e = e_mr.first;
+                omnigraph::MappingRange mr = e_mr.second;
+                INFO("Alignents were" << g_.int_id(e) << " e_start=" << mr.mapped_range.start_pos << " e_end=" <<
+                     mr.mapped_range.end_pos
+                     << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos);
+            }
+        }
+        return res;
+    }
+
     ClustersSet GetBWAClusters(const Sequence &s) const {
         DEBUG("BWA started")
         ClustersSet res;
         if (s.size() < g_.k()){
             return res;
         }
-        omnigraph::MappingPath<EdgeId> mapped_path = bwa_mapper_.MapSequence(s);
+        omnigraph::MappingPath<EdgeId> mapped_path = FilterSpuriousAlignments(bwa_mapper_.MapSequence(s), s.size());
         TRACE(read_count << " read_count");
         TRACE("BWA ended")
         DEBUG(mapped_path.size() <<"  clusters");
