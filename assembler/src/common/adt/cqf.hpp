@@ -4,6 +4,7 @@
 #include <mutex>
 #include <cmath>
 #include <cstring>
+#include <functional>
 
 namespace qf {
 
