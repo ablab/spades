@@ -240,12 +240,15 @@ public:
                 if (start_v != end_v ||
                         (start_v == end_v &&
                      (double) (cur_first_index.read_position - prev_last_index.read_position) >
-                     (double) (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
+//FIXME:: is g_.k() relevant
+                     (double) (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3 + g_.k() )) {
                     if (start_v == end_v) {
                         DEBUG("looking for path from vertex to itself, read pos"
                               << cur_first_index.read_position << " " << prev_last_index.read_position
                               << " edge pos: "<< cur_first_index.edge_position << " " << prev_last_index.edge_position
                               <<" edge len " << g_.length(prev_edge));
+                        DEBUG((double) (cur_first_index.read_position - prev_last_index.read_position) << " " << (double) 
+                        (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3 + g_.k());
                     }
                     DEBUG(" traversing tangled hregion between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
                     DEBUG(" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
