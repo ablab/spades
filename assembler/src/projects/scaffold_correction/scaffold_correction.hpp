@@ -187,12 +187,12 @@ namespace scaffold_correction {
 
 
         bool CheckPath(const vector<Graph::EdgeId> &path) const {
-            if(path.size() == 0)
+            if (!path.size())
                 return false;
-            for(size_t i = 1; i < path.size(); i++) {
-                if(gp_.g.EdgeEnd(path[i - 1]) != gp_.g.EdgeStart(path[i])) {
+
+            for (size_t i = 1; i < path.size(); i++) {
+                if (gp_.g.EdgeEnd(path[i - 1]) != gp_.g.EdgeStart(path[i]))
                     return false;
-                }
             }
             return true;
         }
@@ -206,21 +206,20 @@ namespace scaffold_correction {
         }
 
     public:
-        ScaffoldCorrector(const graph_pack &gp, const CarefulPathFixer &fixer) : gp_(gp), fixer_(fixer) {
-        }
+        ScaffoldCorrector(const graph_pack &gp, const CarefulPathFixer &fixer)
+                : gp_(gp), fixer_(fixer) {}
 
         Sequence correct(const vector<Sequence> &scaffold) const {
             auto mapper = debruijn_graph::MapperInstance(gp_);
             MappingPath <debruijn_graph::EdgeId> path;
-            for(auto it = scaffold.begin(); it != scaffold.end(); ++it) {
+            for (auto it = scaffold.begin(); it != scaffold.end(); ++it) {
                 path.join(mapper->MapSequence(*it));
             }
             vector<Graph::EdgeId> corrected_path = fixer_.TryFixPath(path.simple_path());
-            if(CheckPath(corrected_path)) {
+            if (CheckPath(corrected_path))
                 return ConstructSequence(corrected_path);
-            } else {
-                return Sequence();
-            }
+
+            return Sequence();
         }
     };
 }
@@ -241,12 +240,12 @@ namespace spades {
 
         vector<Sequence> CollectScaffoldParts(const io::SingleRead &scaffold) const {
             vector<Sequence> result;
-            for(size_t i = 0; i < scaffold.size(); i++) {
+            for (size_t i = 0; i < scaffold.size(); i++) {
                 size_t j = i;
-                while(j < scaffold.size() && is_nucl(scaffold.GetSequenceString()[j])) {
+                while (j < scaffold.size() && is_nucl(scaffold.GetSequenceString()[j])) {
                     j++;
                 }
-                if(j > i) {
+                if (j > i) {
                     result.push_back(scaffold.Substr(i, j).sequence());
                     i = j - 1;
                 }
@@ -256,7 +255,7 @@ namespace spades {
 
         void OutputResults(const vector<io::SingleRead> &results) {
             io::OutputSequenceStream oss(output_file_);
-            for(size_t i = 0; i < results.size(); i++) {
+            for (size_t i = 0; i < results.size(); i++) {
                 string sequence = results[i].GetSequenceString();
                 if (sequence != "") {
                     oss << io::SingleRead(results[i].name(), sequence);
@@ -267,7 +266,7 @@ namespace spades {
         vector<io::SingleRead> ReadScaffolds(const string &scaffolds_file) {
             io::FileReadStream scaffold_stream(scaffolds_file);
             vector<io::SingleRead> scaffolds;
-            while(!scaffold_stream.eof()) {
+            while (!scaffold_stream.eof()) {
                 io::SingleRead scaffold;
                 scaffold_stream >> scaffold;
                 scaffolds.push_back(scaffold);
@@ -301,6 +300,7 @@ namespace spades {
             scaffold_correction::CarefulPathFixer fixer(graph_pack.g, config_.max_cut_length, config_.max_insert);
             scaffold_correction::ScaffoldCorrector corrector(graph_pack, fixer);
             vector<io::SingleRead> scaffolds = ReadScaffolds(config_.scaffolds_file);
+            graph_pack.EnsureIndex();
             vector<io::SingleRead> results = RunParallelCorrection(scaffolds, corrector);
             OutputResults(results);
             INFO(scaffolds.size() << " reads processed");
@@ -322,8 +322,8 @@ namespace spades {
         StageManager manager({cfg::get().developer_mode,
                               cfg::get().load_from,
                               cfg::get().output_saves});
-        manager.add(new debruijn_graph::Construction())
-               .add(new ScaffoldCorrectionStage(cfg::get().output_dir + "corrected_scaffolds.fasta", *cfg::get().sc_cor));
+        manager.add<debruijn_graph::Construction>()
+               .add<ScaffoldCorrectionStage>(cfg::get().output_dir + "corrected_scaffolds.fasta", *cfg::get().sc_cor);
         INFO("Output directory: " << cfg::get().output_dir);
         conj_gp.kmer_mapper.Attach();
         manager.run(conj_gp, cfg::get().entry_point.c_str());
