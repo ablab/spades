@@ -299,7 +299,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
                             { pos, mapping_range_end}});
         } else {
             res.push_back(g_.conjugate(ids_[a.rid]),
-                          { { a.qb, initial_range_end }, //.Invert(read_length),
+                          { { (size_t)a.qb, initial_range_end }, //.Invert(read_length),
                             Range(pos,  mapping_range_end).Invert(g_.length(ids_[a.rid])) });
 
         }
