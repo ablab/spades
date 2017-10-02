@@ -2,6 +2,7 @@
 // Created by andrey on 04.12.15.
 //
 
+#include "read_cloud_path_extend/read_cloud_dijkstras.hpp"
 #include "scaffold_graph_constructor.hpp"
 
 namespace path_extend {
@@ -159,5 +160,34 @@ shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
     ConstructFromGraphAndScore(old_graph_, score_function_, score_threshold_, num_threads_);
     return graph_;
 }
+shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
+    auto dij = omnigraph::CreateUniqueDijkstra(graph_->AssemblyGraph(), distance_, unique_storage_);
+    //        auto bounded_dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, distance_, 10000);
+
+    for (const auto unique_edge: unique_storage_) {
+        graph_->AddVertex(unique_edge);
+    }
+    for (const auto unique_edge: unique_storage_) {
+        dij.Run(graph_->AssemblyGraph().EdgeEnd(unique_edge));
+        for (auto v: dij.ReachedVertices()) {
+            size_t distance = dij.GetDistance(v);
+            if (distance < distance_) {
+                for (auto connected: graph_->AssemblyGraph().OutgoingEdges(v)) {
+                    if (unique_storage_.IsUnique(connected) and connected != unique_edge
+                        and connected != graph_->AssemblyGraph().conjugate(unique_edge)) {
+                        ScaffoldGraph::ScaffoldEdge scaffold_edge(unique_edge, connected, (size_t) -1, 0, distance);
+                        graph_->AddEdge(scaffold_edge);
+                    }
+                }
+            }
+        }
+    }
+    return graph_;
+}
+UniqueScaffoldGraphConstructor::UniqueScaffoldGraphConstructor(
+    const Graph& assembly_graph,
+    const ScaffoldingUniqueEdgeStorage& unique_storage_,
+    const size_t distance_)
+    : BaseScaffoldGraphConstructor(assembly_graph), unique_storage_(unique_storage_), distance_(distance_) {}
 } //scaffold_graph
 } //path_extend

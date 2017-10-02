@@ -89,27 +89,6 @@ class PairedConnectionNeighbourIteratorFactory {
     }
 };
 
-    typedef ComposedDijkstraSettings<Graph,
-            LengthCalculator<Graph>,
-            BoundProcessChecker<Graph>,
-            UniquePutChecker<Graph>,
-            PairedConnectionNeighbourIteratorFactory<Graph> > PairedDijkstraSettings;
-
-    typedef Dijkstra<Graph, PairedDijkstraSettings> PairedDijkstra;
-
-    static PairedDijkstra CreatePairedDijkstra(const Graph &graph, size_t length_bound,
-                                               const path_extend::ScaffoldingUniqueEdgeStorage unique_storage,
-                                               const path_extend::PairedLibConnectionCondition& paired_connection_condition,
-                                               size_t max_vertex_number = -1ul) {
-        return PairedDijkstra(graph,
-                PairedDijkstraSettings(
-                    LengthCalculator<Graph>(graph),
-                    BoundProcessChecker<Graph>(length_bound),
-                    UniquePutChecker<Graph>(graph, unique_storage),
-                    PairedConnectionNeighbourIteratorFactory<Graph>(graph, paired_connection_condition)),
-                max_vertex_number);
-    }
-
 //------------------------------
 // unique based dijkstra
 //------------------------------
@@ -152,6 +131,27 @@ class UniquePutChecker : public VertexPutChecker<Graph, distance_t> {
 
     DECL_LOGGER("UniquePutChecker")
 };
+
+//    typedef ComposedDijkstraSettings<Graph,
+//            LengthCalculator<Graph>,
+//            BoundProcessChecker<Graph>,
+//            UniquePutChecker<Graph>,
+//            PairedConnectionNeighbourIteratorFactory<Graph> > PairedDijkstraSettings;
+//
+//    typedef Dijkstra<Graph, PairedDijkstraSettings> PairedDijkstra;
+//
+//    static PairedDijkstra CreatePairedDijkstra(const Graph &graph, size_t length_bound,
+//                                               const path_extend::ScaffoldingUniqueEdgeStorage unique_storage,
+//                                               const path_extend::PairedLibConnectionCondition& paired_connection_condition,
+//                                               size_t max_vertex_number = -1ul) {
+//        return PairedDijkstra(graph,
+//                PairedDijkstraSettings(
+//                    LengthCalculator<Graph>(graph),
+//                    BoundProcessChecker<Graph>(length_bound),
+//                    UniquePutChecker<Graph>(graph, unique_storage),
+//                    PairedConnectionNeighbourIteratorFactory<Graph>(graph, paired_connection_condition)),
+//                max_vertex_number);
+//    }
 
 typedef ComposedDijkstraSettings<Graph,
                                  LengthCalculator<Graph>,

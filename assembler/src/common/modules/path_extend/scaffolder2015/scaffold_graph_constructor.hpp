@@ -76,12 +76,20 @@ public:
     shared_ptr<ScaffoldGraph> Construct() override;
 };
 
-//class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
-//    const ScaffoldGraph& old_graph_;
-//    const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
-//
-//
-//};
+//todo refactor connection conditions to avoid code duplication
+class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
+    const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
+    const size_t distance_;
+
+ public:
+    UniqueScaffoldGraphConstructor(
+        const Graph& assembly_graph,
+        const ScaffoldingUniqueEdgeStorage& unique_storage_,
+        const size_t distance_);
+
+ public:
+    shared_ptr<ScaffoldGraph> Construct() override;
+};
 
 class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
  public:

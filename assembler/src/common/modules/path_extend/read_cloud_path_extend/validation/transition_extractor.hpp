@@ -213,5 +213,6 @@ class ClusterTransitionExtractor {
         return ExtractTransitionsFromOrdering(ordering);
     }
 };
+
 }
 }

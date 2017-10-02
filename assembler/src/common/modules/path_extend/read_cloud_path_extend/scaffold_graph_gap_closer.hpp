@@ -6,13 +6,23 @@
 #include "common/barcode_index/barcode_info_extractor.hpp"
 
 namespace path_extend {
-    class ScaffoldGraphSubgraphExtractor {
+    class ScaffoldSubgraphExtractor {
      public:
         typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
         typedef ScaffoldGraph::ScaffoldVertex ScaffoldVertex;
         typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
-        typedef debruijn_graph::Graph Graph;
         typedef cluster_storage::Cluster::SimpleGraph<ScaffoldVertex> SimpleGraph;
+
+        virtual SimpleGraph ExtractSubgraphBetweenVertices(const ScaffoldGraph& scaffold_graph, const ScaffoldVertex& first,
+                                                           const ScaffoldVertex& second) const = 0;
+    };
+
+    class CloudScaffoldSubgraphExtractor: public ScaffoldSubgraphExtractor {
+     public:
+        using ScaffoldSubgraphExtractor::ScaffoldGraph;
+        using ScaffoldSubgraphExtractor::ScaffoldVertex;
+        using ScaffoldSubgraphExtractor::ScaffoldEdge;
+        using ScaffoldSubgraphExtractor::SimpleGraph;
      private:
         const Graph& g_;
         const barcode_index::FrameBarcodeIndexInfoExtractor& extractor_;
@@ -24,7 +34,7 @@ namespace path_extend {
      public:
 
      public:
-        ScaffoldGraphSubgraphExtractor(const Graph& g_,
+        CloudScaffoldSubgraphExtractor(const Graph& g_,
                                         const barcode_index::FrameBarcodeIndexInfoExtractor& extractor_,
                                         const size_t distance_threshold_,
                                         double share_threshold,
@@ -33,12 +43,14 @@ namespace path_extend {
                                         const size_t large_length_threshold);
 
         SimpleGraph ExtractSubgraphBetweenVertices(const ScaffoldGraph& scaffold_graph, const ScaffoldVertex& first,
-                                                   const ScaffoldVertex& second);
+                                                   const ScaffoldVertex& second) const override;
 
         bool CheckSubGraphVertex (const ScaffoldVertex& vertex, const ScaffoldVertex& first, const ScaffoldVertex& second) const;
 
         bool CheckSubgraphEdge (const ScaffoldEdge& edge, const ScaffoldVertex& first,
                                 const ScaffoldVertex& second, const unordered_set<ScaffoldVertex>& subgraph_vertices) const;
+
+        SimpleGraph RemoveDisconnectedVertices(const SimpleGraph& graph, const EdgeId& source, const EdgeId& sink) const ;
 
         DECL_LOGGER("ScaffoldGraphSubgraphExtractor");
     };
@@ -97,7 +109,6 @@ namespace path_extend {
         vector<EdgeId> ExtractPathFromSubgraph(const SimpleGraph& graph, const EdgeId& source, const EdgeId& sink);
 
      private:
-        SimpleGraph RemoveDisconnectedVertices(const SimpleGraph& graph, const EdgeId& source, const EdgeId& sink);
 
         vector<EdgeId> GetSimplePath(const SimpleGraph& graph, const EdgeId& source, const EdgeId& sink);
      public:

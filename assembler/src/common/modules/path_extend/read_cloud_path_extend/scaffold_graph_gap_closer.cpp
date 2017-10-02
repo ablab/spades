@@ -4,10 +4,10 @@
 
 namespace path_extend {
 
-ScaffoldGraphSubgraphExtractor::SimpleGraph ScaffoldGraphSubgraphExtractor::ExtractSubgraphBetweenVertices(
-    const ScaffoldGraphSubgraphExtractor::ScaffoldGraph& scaffold_graph,
-    const ScaffoldGraphSubgraphExtractor::ScaffoldVertex& first,
-    const ScaffoldGraphSubgraphExtractor::ScaffoldVertex& second) {
+CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::ExtractSubgraphBetweenVertices(
+        const CloudScaffoldSubgraphExtractor::ScaffoldGraph& scaffold_graph,
+        const CloudScaffoldSubgraphExtractor::ScaffoldVertex& first,
+        const CloudScaffoldSubgraphExtractor::ScaffoldVertex& second) const {
     SimpleGraph result;
     unordered_set<ScaffoldVertex> forward_vertices;
     unordered_set<ScaffoldVertex> backward_vertices;
@@ -66,9 +66,13 @@ ScaffoldGraphSubgraphExtractor::SimpleGraph ScaffoldGraphSubgraphExtractor::Extr
             result.AddEdge(edge.getStart(), edge.getEnd());
         }
     }
-    return result;
+
+    auto cleaned_graph = RemoveDisconnectedVertices(result, first, second);
+    DEBUG(cleaned_graph.GetVertexCount() << " vertices in cleaned subgraph");
+    DEBUG(cleaned_graph.GetEdgesCount() << " edges in cleaned subgraph");
+    return cleaned_graph;
 }
-ScaffoldGraphSubgraphExtractor::ScaffoldGraphSubgraphExtractor(const ScaffoldGraphSubgraphExtractor::Graph& g_,
+CloudScaffoldSubgraphExtractor::CloudScaffoldSubgraphExtractor(const Graph& g_,
                                                                const barcode_index::FrameBarcodeIndexInfoExtractor& extractor_,
                                                                const size_t distance_threshold_,
                                                                const double share_threshold_,
@@ -82,7 +86,7 @@ ScaffoldGraphSubgraphExtractor::ScaffoldGraphSubgraphExtractor(const ScaffoldGra
       count_threshold_(count_threshold_),
       small_length_threshold_(small_length_threshold),
       large_length_threshold_(large_length_threshold) {}
-bool ScaffoldGraphSubgraphExtractor::CheckSubgraphEdge(const ScaffoldEdge& edge,
+bool CloudScaffoldSubgraphExtractor::CheckSubgraphEdge(const ScaffoldEdge& edge,
                                                        const ScaffoldVertex& first,
                                                        const ScaffoldVertex& second,
                                                        const unordered_set<ScaffoldVertex>& subgraph_vertices) const {
@@ -91,9 +95,9 @@ bool ScaffoldGraphSubgraphExtractor::CheckSubgraphEdge(const ScaffoldEdge& edge,
         edge.getStart() != edge.getEnd() and edge.getStart() != second and edge.getEnd() != first;
 }
 
-bool ScaffoldGraphSubgraphExtractor::CheckSubGraphVertex(const ScaffoldGraphSubgraphExtractor::ScaffoldVertex& vertex,
-                                                         const ScaffoldGraphSubgraphExtractor::ScaffoldVertex& first,
-                                                         const ScaffoldGraphSubgraphExtractor::ScaffoldVertex& second) const {
+bool CloudScaffoldSubgraphExtractor::CheckSubGraphVertex(const CloudScaffoldSubgraphExtractor::ScaffoldVertex& vertex,
+                                                         const CloudScaffoldSubgraphExtractor::ScaffoldVertex& first,
+                                                         const CloudScaffoldSubgraphExtractor::ScaffoldVertex& second) const {
     return vertex != g_.conjugate(first) and vertex != g_.conjugate(second);
 }
 ScaffoldGraph ScaffoldGraphGapCloser::ExtractGapClosingPaths(const ScaffoldGraphGapCloser::ScaffoldGraph& large_scaffold_graph,
@@ -187,7 +191,7 @@ InsertedVerticesData ScaffoldGraphGapCloser::GetInsertedConnections(const vector
                                                                     const ScaffoldGraph& current_graph) const {
     unordered_map<ScaffoldVertex, ScaffoldVertex> inserted_vertices_map;
     size_t internal_inserted = 0;
-    ScaffoldGraphSubgraphExtractor subgraph_extractor(g_, barcode_extractor_, distance_threshold_, share_threshold_,
+    CloudScaffoldSubgraphExtractor subgraph_extractor(g_, barcode_extractor_, distance_threshold_, share_threshold_,
                                                       count_threshold_, small_length_threshold_, large_length_threshold_);
     SubgraphPathExtractor subgraph_path_extractor;
     set<ScaffoldEdge> closed_edges;
@@ -216,22 +220,19 @@ InsertedVerticesData ScaffoldGraphGapCloser::GetInsertedConnections(const vector
 
 vector<EdgeId> SubgraphPathExtractor::ExtractPathFromSubgraph(const cluster_storage::Cluster::SimpleGraph<EdgeId>& graph,
                                                                   const EdgeId& source, const EdgeId& sink) {
-        auto cleaned_graph = RemoveDisconnectedVertices(graph, source, sink);
-        DEBUG(cleaned_graph.GetVertexCount() << " vertices in cleaned subgraph");
-        DEBUG(cleaned_graph.GetEdgesCount() << " edges in cleaned subgraph");
 
-        for (auto it = cleaned_graph.begin(); it != cleaned_graph.end(); ++it) {
+        for (auto it = graph.begin(); it != graph.end(); ++it) {
             auto vertex = *it;
             DEBUG("Vertex: " << vertex.int_id());
-            for (auto next_it = cleaned_graph.outcoming_begin(vertex); next_it != cleaned_graph.outcoming_end(vertex);
+            for (auto next_it = graph.outcoming_begin(vertex); next_it != graph.outcoming_end(vertex);
                  ++next_it) {
                 auto next = *next_it;
                 DEBUG("(" << vertex.int_id() << " , " << next.int_id() << ")");
             }
         }
         vector<EdgeId> gap_closing_path;
-        if (cleaned_graph.GetVertexCount() != 0) {
-            gap_closing_path = GetSimplePath(cleaned_graph, source, sink);
+        if (graph.GetVertexCount() != 0) {
+            gap_closing_path = GetSimplePath(graph, source, sink);
             if (gap_closing_path.size() > 0) {
                 DEBUG("Printing gap closing path");
                 for (const auto& vertex: gap_closing_path) {
@@ -243,9 +244,9 @@ vector<EdgeId> SubgraphPathExtractor::ExtractPathFromSubgraph(const cluster_stor
         }
         return gap_closing_path;
     }
-    SubgraphPathExtractor::SimpleGraph SubgraphPathExtractor::RemoveDisconnectedVertices(const SimpleGraph& graph,
-                                                                                         const EdgeId& source,
-                                                                                         const EdgeId& sink) {
+    CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::RemoveDisconnectedVertices(const SimpleGraph& graph,
+                                                                                                           const EdgeId& source,
+                                                                                                           const EdgeId& sink) const {
         SimpleGraph result;
         DEBUG("Removing disconnected vertices");
         ForwardReachabilityChecker forward_checker(graph);
@@ -310,14 +311,19 @@ vector<EdgeId> SubgraphPathExtractor::ExtractPathFromSubgraph(const cluster_stor
         DEBUG("Processing vertex: " << vertex.int_id());
         visited_.insert(vertex);
         bool result = false;
+        if (vertex == target or passed_.find(vertex) != passed_.end()) {
+            return true;
+        }
         for (auto it = GetBeginIterator(vertex); it != GetEndIterator(vertex); ++it) {
             auto next = *it;
             DEBUG("Checking neighbour: " << next.int_id());
             if (next == target) {
                 DEBUG("Found target");
                 passed_.insert(vertex);
+                DEBUG("Inserting " << vertex.int_id());
                 passed_.insert(target);
-                return true;
+                DEBUG("Inserting " << target.int_id());
+                result = true;
             }
             if (visited_.find(next) == visited_.end()) {
                 DEBUG("Not visited, processing");
@@ -326,6 +332,11 @@ vector<EdgeId> SubgraphPathExtractor::ExtractPathFromSubgraph(const cluster_stor
                 }
             } else {
                 DEBUG("Visited");
+                if (passed_.find(next) != passed_.end()) {
+                    passed_.insert(vertex);
+                    DEBUG("Inserting " << vertex.int_id());
+                    result = true;
+                }
             }
         }
         if (result) {

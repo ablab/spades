@@ -15,6 +15,8 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
 
     path_extend::validation::ScaffoldGraphValidator scaffold_graph_validator(graph_pack.g);
     const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
+    INFO("Path to reference: " << path_to_reference);
+    INFO("Path exists: " << fs::check_existence(path_to_reference));
 
     //fixme configs
     const size_t large_length_threshold = 20000;

@@ -10,9 +10,8 @@ CloudScaffoldGraphConstuctor::CloudScaffoldGraphConstuctor(const size_t max_thre
 
 CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::ConstructScaffoldGraphFromStorage(
     const ScaffolderParams& params, const ScaffoldingUniqueEdgeStorage& unique_storage) const {
-    auto conditions = GetGraphConnectionConditions(params, unique_storage);
-    auto constructor = make_shared<scaffold_graph::SimpleScaffoldGraphConstructor>(gp_.g, unique_storage.unique_edges(),
-                                                                                   conditions);
+//    auto conditions = GetGraphConnectionConditions(params, unique_storage);
+    auto constructor = make_shared<scaffold_graph::UniqueScaffoldGraphConstructor>(gp_.g, unique_storage, params.initial_distance_);
     auto initial_graph = *(constructor->Construct());
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
     iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, barcode_extractor_, max_threads_));

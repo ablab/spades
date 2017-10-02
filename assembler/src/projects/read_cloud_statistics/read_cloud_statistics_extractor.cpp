@@ -18,6 +18,7 @@ namespace debruijn_graph {
     PathExtendParamsContainer GetPEParams() {
         path_extend::PathExtendParamsContainer params(cfg::get().ds,
                                                       cfg::get().pe_params,
+                                                      cfg::get().ss,
                                                       cfg::get().output_dir,
                                                       cfg::get().mode,
                                                       cfg::get().uneven_depth,
