@@ -46,7 +46,7 @@ with open(PROF) as input:
         else:
             #Sort samples by their abundancies
             weighted_profile = list((i, ab)
-                for i, ab in enumerate(profile) if ab >= MIN_ABUNDANCE)
+                for i, ab in enumerate(profile, start=1) if ab >= MIN_ABUNDANCE)
             weighted_profile.sort(key = itemgetter(1))
 
             total = 0
@@ -58,12 +58,12 @@ with open(PROF) as input:
             # except StopIteration:
 
             #Current strategy: collect the desired abundance from samples, starting from the largest
-            for i, _ in reversed(weighted_profile):
+            for i, cov in reversed(weighted_profile):
                 if not os.path.exists(os.path.join(READ_DIR, bin, "sample{}_1.fastq.gz".format(i))):
                     print("WARNING: sample", i, "does not contain reads for", bin)
                     continue
-                total += profile[i]
-                samples.append(i + 1)
+                total += cov
+                samples.append(i)
                 if total >= DESIRED_ABUNDANCE:
                     break
 
