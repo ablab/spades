@@ -46,6 +46,7 @@ except KeyError:
 #Detect references
 REFS = dict(gather_refs(config["stats"].get("refs", [])))
 REFS_STR = ",".join(path for path in sorted(REFS.values()))
+METAQUAST_PARAMS = "--fragmented --fast"
 
 def ref_path(wildcards):
     return REFS[wildcards.ref]
@@ -113,7 +114,8 @@ rule binning_nga_quast:
     log:     "stats/nga_binning.log"
     threads: THREADS
     message: "Calculating NGA of binning"
-    shell:   "{METAQUAST} -t {threads} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1"
+    shell:   "{METAQUAST} {METAQUAST_PARAMS} -t {threads} -R {REFS_STR} {input}"
+             " -o {params.out} >/dev/null 2>&1"
 
 rule binning_nga:
     input:   "stats/nga_binning.done"
@@ -169,7 +171,8 @@ rule calc_f1:
     output:  "stats/summary/{stage}_f1.txt"
     log:     "stats/f1_{stage}.log"
     message: "Calculating F1 metrics for {wildcards.stage}"
-    shell:   "{SCRIPTS}/validate.pl --ffile={input.contigs} --cfile={input.binning} --sfile={input.etalons} --ofile={log} > {output}"
+    shell:   "{SCRIPTS}/validate.pl --ffile={input.contigs} --cfile={input.binning}"
+             " --sfile={input.etalons} --ofile={log} >{output} 2>&1"
 
 #---- Reference profiles -------------------------------------------------------
 rule combine_refs:
@@ -188,12 +191,13 @@ rule ref_profiles:
 
 #---- Genome fraction etc. -----------------------------------------------------
 rule quast_all:
-    input:   expand("{{stage}}/bins/{bin}.fasta", bin=BINS) #stats_input
+    input:   expand("{{stage}}/bins/{bin}.fasta", bin=BINS)
     output:  touch("stats/q_{stage}.done")
     params:  out="stats/q_{stage}"
     threads: THREADS
     message: "Aligning all of {wildcards.stage} on all references"
-    shell:   "{METAQUAST} --fast -t {threads} -R {REFS_STR} {input} -o {params.out} >/dev/null 2>&1"
+    shell:   "{METAQUAST} {METAQUAST_PARAMS} -t {threads} -R {REFS_STR}"
+             " {input} -o {params.out} >/dev/null 2>&1"
 
 rule gather_stats:
     input:   "stats/q_{stage}.done"
@@ -214,12 +218,11 @@ rule prop_annotation:
             shell("sed -e 's/^/{sample}-/' {sample_ann} >> {output}")
 
 #Redistribute sample pieces to corresponding bins
-rule filter_prop:
-    input:   contigs="propagation/edges/all.fasta",
-             ann="propagation/binning.tsv"
-    output:  "propagation/bins/{bin,\w*\d+}.fasta"
-    message: "Filtering propagated contigs from {wildcards.bin}"
-    shell:   "{SCRIPTS}/filter_bin.py {input.contigs} {input.ann} {wildcards.bin} >{output}"
+rule extract_prop_bins:
+    input:   "propagation/edges/all.fasta", "propagation/binning.tsv"
+    output:  expand("propagation/bins/{bin}.fasta", bin=BINS)
+    message: "Distribute propagated contigs between bins"
+    shell:   "{SCRIPTS}/split_bins.py {input} propagation/bins/"
 
 # rule prop_stats:
 #     input:   prelim="binning/annotation/{sample}.ann", prop="propagation/annotation/{sample}.ann",

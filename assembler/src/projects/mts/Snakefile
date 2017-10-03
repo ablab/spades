@@ -9,7 +9,7 @@ onstart:
 
 def final_stage(w):
     if config["reassembly"]["enabled"]:
-        return "reassembly/choose.done" #Stop after the bin choosing
+        return ("reassembly/choose.done", "propagation.done") #Stop after the bin choosing
     if config["propagation"]["enabled"]:
         return "propagation.done" #Stop on the propagation
     return "binning/{}/filtered_bins.tsv".format(BINNER) #Stop on the preliminary binning
