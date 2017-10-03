@@ -49,8 +49,8 @@ template<class Graph, typename distance_t = size_t>
 class BoundPutChecker {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-
     const distance_t bound_;
+
 public:
     BoundPutChecker(distance_t bound) :
         bound_(bound) { }
@@ -58,5 +58,22 @@ public:
         return length <= bound_;
     }
 };
+
+template<class Graph, typename distance_t = size_t>
+class CoveragePutChecker : public VertexPutChecker<Graph, distance_t> {
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+
+    double coverage_low_bound_;
+    const Graph &g_;
+    const distance_t bound_;
+public:
+    CoveragePutChecker(double coverage_low_bound, const Graph &g, distance_t bound) : VertexPutChecker<Graph, distance_t>(),
+                            coverage_low_bound_(coverage_low_bound), g_(g), bound_(bound){ }
+    bool Check(VertexId, EdgeId edge, distance_t length) const {
+        return (math::gr(g_.coverage(edge), coverage_low_bound_) && length <= bound_);
+    }
+};
+
 
 }

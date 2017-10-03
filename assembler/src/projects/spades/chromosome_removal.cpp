@@ -69,8 +69,7 @@ size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
     return ans;
 }
 double ChromosomeRemoval::RemoveEdgesByList( conj_graph_pack &gp , string &s) {
-//    string s = "/Sid/dantipov/meta_plasmid/zymo_3.11_analysis/chromosomal/chromosomal_contig_ids.txt";
-    std::ifstream is(s); 
+    std::ifstream is(s);
     set<size_t> ids;
     size_t id;
     while (!is.eof()) {
@@ -157,8 +156,70 @@ void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bo
     gp.EnsureIndex();
 }
 
+    typedef ComposedDijkstraSettings<Graph,
+            LengthCalculator<Graph>,
+            BoundProcessChecker<Graph>,
+            CoveragePutChecker<Graph>,
+            ForwardNeighbourIteratorFactory<Graph> > CoverageBoundedDijkstraSettings;
+
+    typedef Dijkstra<Graph, CoverageBoundedDijkstraSettings> CoverageBoundedDijkstra;
+
+    static CoverageBoundedDijkstra CreateCoverageBoundedDijkstra(const Graph &graph, size_t length_bound, double min_coverage,
+                                                 size_t max_vertex_number = -1ul){
+        return CoverageBoundedDijkstra(graph, CoverageBoundedDijkstraSettings(
+                LengthCalculator<Graph>(graph),
+                BoundProcessChecker<Graph>(length_bound),
+                CoveragePutChecker<Graph>(min_coverage, graph, length_bound),
+                ForwardNeighbourIteratorFactory<Graph>(graph)),
+                               max_vertex_number);
+    }
+
+void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
+    size_t min_len = 2000;
+    double min_coverage = 50;
+    size_t max_loop = 150000;
+    vector<std::pair<size_t, EdgeId>> long_edges;
+    for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+        if ((gp.g.length(*it) >= min_len) && (math::gr(gp.g.coverage(*it), min_coverage))) {
+            long_edges.push_back(std::make_pair(min_len, *it));
+        }
+    }
+    //length decrease order
+    std::sort(long_edges.rbegin(), long_edges.rend());
+    size_t paths_0 = 0;
+    size_t paths_1 = 0;
+    size_t paths_many = 0;
+    size_t too_long = 0;
+    for (const auto &pair: long_edges) {
+        if (pair.first > max_loop) {
+            too_long ++;
+            continue;
+        }
+        EdgeId e = pair.second;
+        VertexId start_v= gp.g.EdgeStart(e);
+        VertexId end_v= gp.g.EdgeEnd(e);
+        auto dijkstra = CreateCoverageBoundedDijkstra(gp.g, max_loop - gp.g.length(e),0.7 * gp.g.coverage(e));
+        dijkstra.Run(end_v);
+        DEBUG("Edge "<< e.int_id());
+        VertexId v;
+        for (v: dijkstra.ReachedVertices()) {
+            if (v == start_v) {
+                DEBUG("is possible plasmid due to cycle");
+                paths_many ++;
+                break;
+            }
+        }
+        if (v != start_v) {
+            DEBUG("has no chance to be in a plasmid");
+            paths_0 ++;
+        }
+    }
+    INFO("Edges with no paths " << paths_0 <<" with many(1) " << paths_many <<" too long " << too_long);
+}
+
 void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     //FIXME Seriously?! cfg::get().ds like hundred times...
+    MetaChromosomeRemoval(gp);
     OutputEdgeSequences(gp.g, cfg::get().output_dir + "before_chromosome_removal");
     INFO("Before iteration " << 0 << ", " << gp.g.size() << " vertices in graph");
     string additional_list = cfg::get().pd->remove_list;

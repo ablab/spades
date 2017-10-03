@@ -32,5 +32,8 @@ private:
                                             std::function<void(typename Graph::EdgeId)> removal_handler = 0);
     void CompressAll(Graph &g);
     double RemoveEdgesByList(conj_graph_pack &gp, std::string &s);
+    void MetaChromosomeRemoval(conj_graph_pack &gp);
+
+    DECL_LOGGER("ChromosomeRemoval");
 };
 }
