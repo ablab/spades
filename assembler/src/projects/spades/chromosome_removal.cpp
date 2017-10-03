@@ -156,23 +156,23 @@ void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bo
     gp.EnsureIndex();
 }
 
-    typedef ComposedDijkstraSettings<Graph,
-            LengthCalculator<Graph>,
-            BoundProcessChecker<Graph>,
-            CoveragePutChecker<Graph>,
-            ForwardNeighbourIteratorFactory<Graph> > CoverageBoundedDijkstraSettings;
+typedef ComposedDijkstraSettings<Graph,
+        LengthCalculator<Graph>,
+        BoundProcessChecker<Graph>,
+        CoveragePutChecker<Graph>,
+        ForwardNeighbourIteratorFactory<Graph> > CoverageBoundedDijkstraSettings;
 
-    typedef Dijkstra<Graph, CoverageBoundedDijkstraSettings> CoverageBoundedDijkstra;
+typedef Dijkstra<Graph, CoverageBoundedDijkstraSettings> CoverageBoundedDijkstra;
 
-    static CoverageBoundedDijkstra CreateCoverageBoundedDijkstra(const Graph &graph, size_t length_bound, double min_coverage,
-                                                 size_t max_vertex_number = -1ul){
-        return CoverageBoundedDijkstra(graph, CoverageBoundedDijkstraSettings(
-                LengthCalculator<Graph>(graph),
-                BoundProcessChecker<Graph>(length_bound),
-                CoveragePutChecker<Graph>(min_coverage, graph, length_bound),
-                ForwardNeighbourIteratorFactory<Graph>(graph)),
-                               max_vertex_number);
-    }
+static CoverageBoundedDijkstra CreateCoverageBoundedDijkstra(const Graph &graph, size_t length_bound, double min_coverage,
+                                             size_t max_vertex_number = -1ul){
+    return CoverageBoundedDijkstra(graph, CoverageBoundedDijkstraSettings(
+            LengthCalculator<Graph>(graph),
+            BoundProcessChecker<Graph>(length_bound),
+            CoveragePutChecker<Graph>(min_coverage, graph, length_bound),
+            ForwardNeighbourIteratorFactory<Graph>(graph)),
+                           max_vertex_number);
+}
 
 void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
     size_t min_len = 2000;
@@ -190,6 +190,7 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
     size_t paths_1 = 0;
     size_t paths_many = 0;
     size_t too_long = 0;
+
     for (const auto &pair: long_edges) {
         if (pair.first > max_loop) {
             too_long ++;
@@ -198,18 +199,22 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
         EdgeId e = pair.second;
         VertexId start_v= gp.g.EdgeStart(e);
         VertexId end_v= gp.g.EdgeEnd(e);
+
         auto dijkstra = CreateCoverageBoundedDijkstra(gp.g, max_loop - gp.g.length(e),0.7 * gp.g.coverage(e));
         dijkstra.Run(end_v);
+
         DEBUG("Edge "<< e.int_id());
-        VertexId v;
-        for (v: dijkstra.ReachedVertices()) {
+        bool found =false;
+        for (auto v: dijkstra.ReachedVertices()) {
             if (v == start_v) {
                 DEBUG("is possible plasmid due to cycle");
                 paths_many ++;
+                found == true;
                 break;
             }
+
         }
-        if (v != start_v) {
+        if (! found) {
             DEBUG("has no chance to be in a plasmid");
             paths_0 ++;
         }
