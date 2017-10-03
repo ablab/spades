@@ -121,7 +121,7 @@ namespace contracted_graph {
         unordered_set<EdgeId> ExtractLoopEdges(const ContractedGraph& contracted_graph, size_t min_length) const {
             unordered_set<EdgeId> result;
             for (const auto& vertex: contracted_graph) {
-                for (auto it = contracted_graph.outcoming_begin(vertex); it != contracted_graph.outcoming_end(vertex); ++it) {
+                for (auto it = contracted_graph.out_begin(vertex); it != contracted_graph.out_end(vertex); ++it) {
                     if (it->first == vertex) {
                         for (const auto& edge: it->second) {
                             if (g_.length(edge) > min_length) {

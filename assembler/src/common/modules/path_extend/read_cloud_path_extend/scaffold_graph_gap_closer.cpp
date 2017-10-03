@@ -68,7 +68,7 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
     }
 
     auto cleaned_graph = RemoveDisconnectedVertices(result, first, second);
-    DEBUG(cleaned_graph.GetVertexCount() << " vertices in cleaned subgraph");
+    DEBUG(cleaned_graph.size() << " vertices in cleaned subgraph");
     DEBUG(cleaned_graph.GetEdgesCount() << " edges in cleaned subgraph");
     return cleaned_graph;
 }
@@ -231,7 +231,7 @@ vector<EdgeId> SubgraphPathExtractor::ExtractPathFromSubgraph(const cluster_stor
             }
         }
         vector<EdgeId> gap_closing_path;
-        if (graph.GetVertexCount() != 0) {
+        if (graph.size() != 0) {
             gap_closing_path = GetSimplePath(graph, source, sink);
             if (gap_closing_path.size() > 0) {
                 DEBUG("Printing gap closing path");

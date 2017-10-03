@@ -18,9 +18,9 @@
 #include "path_extend_test.hpp"
 #include "overlap_removal_test.hpp"
 #include "overlap_analysis_test.hpp"
+#include "contracted_graph_test.hpp"
 //#include "detail_coverage_test.hpp"
 #include "paired_info_test.hpp"
-#include "barcode_index_test.hpp"
 //fixme why is it disabled
 //#include "pair_info_test.hpp"
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <common/io/reads/osequencestream.hpp>
-#include "common/barcode_index/contracted_graph.hpp"
+#include "common/barcode_index/contracted_graph_builder.hpp"
 #include "statistics_processor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
@@ -56,8 +56,8 @@ namespace scaffold_graph_utils {
                 vertices.insert(vertex);
                 vector<EdgeId> incoming_vector;
                 vector<EdgeId> outcoming_vector;
-                for (auto it_in = contracted_graph.incoming_begin(vertex);
-                     it_in != contracted_graph.incoming_end(vertex); ++it_in) {
+                for (auto it_in = contracted_graph.in_begin(vertex);
+                     it_in != contracted_graph.in_end(vertex); ++it_in) {
                     for (const auto& edge: (*it_in).second) {
                         DEBUG("Incoming: " << edge.int_id());
                         incoming_vector.push_back(edge);
@@ -66,8 +66,8 @@ namespace scaffold_graph_utils {
                         scaffold_graph.AddVertex(edge);
                     }
                 }
-                for (auto it_out = contracted_graph.outcoming_begin(vertex);
-                     it_out != contracted_graph.outcoming_end(vertex); ++it_out) {
+                for (auto it_out = contracted_graph.out_begin(vertex);
+                     it_out != contracted_graph.out_end(vertex); ++it_out) {
                     for (const auto& edge: (*it_out).second) {
                         DEBUG("Outcoming: " << edge.int_id());
                         outcoming_vector.push_back(edge);

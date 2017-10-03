@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/barcode_index/contracted_graph.hpp"
+#include "common/barcode_index/contracted_graph_builder.hpp"
 #include "cluster_storage_analyzer.hpp"
 
 namespace contracted_graph {
@@ -254,9 +254,6 @@ namespace contracted_graph {
                         if (transition_data.GetName() == "Reference" and transition_data.Contains(transition)) {
                             fout << "(R) ";
                         }
-                        if (transition_data.GetName() == "Read cloud contig" and transition_data.Contains(transition)) {
-                            fout << "(C) ";
-                        }
                     }
                     fout << sep;
                     ++counter;
@@ -499,9 +496,9 @@ namespace contracted_graph {
         VertexDataStats GetVertexDataStats() {
             VertexDataStats stats;
             for (const auto& vertex: contracted_graph_) {
-                size_t outcoming = contracted_graph_.GetOutcoming(vertex).size();
-                size_t incoming = contracted_graph_.GetIncoming(vertex).size();
-                size_t capacity = contracted_graph_.GetCapacity(vertex);
+                size_t outcoming = contracted_graph_.getOutcomingEdges(vertex).size();
+                size_t incoming = contracted_graph_.getIncomingEdges(vertex).size();
+                size_t capacity = contracted_graph_.capacity(vertex);
                 stats.Insert(vertex, incoming, outcoming, capacity);
             }
             return stats;
@@ -515,11 +512,11 @@ namespace contracted_graph {
             for (const auto& vertex: contracted_graph_) {
                 DEBUG("Vertex: " << vertex.int_id());
                 DetailedVertexData vertex_data;
-                vector<EdgeId> incoming = contracted_graph_.GetIncoming(vertex);
-                vector<EdgeId> outcoming = contracted_graph_.GetOutcoming(vertex);
+                vector<EdgeId> incoming = contracted_graph_.getIncomingEdges(vertex);
+                vector<EdgeId> outcoming = contracted_graph_.getOutcomingEdges(vertex);
                 vertex_data.incoming_ = incoming;
                 vertex_data.outcoming_ = outcoming;
-                vertex_data.capacity_ = contracted_graph_.GetCapacity(vertex);
+                vertex_data.capacity_ = contracted_graph_.capacity(vertex);
 
                 vector<VertexClusterData> vertex_to_cluster_storages = {VertexClusterData("Path clusters assigned to the vertex (2 edges)"),
                                                                         VertexClusterData("Path clusters assigned to the vertex (3 edges)"),

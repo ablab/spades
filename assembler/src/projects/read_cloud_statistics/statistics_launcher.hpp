@@ -2,7 +2,7 @@
 
 #include "scaffolder_validation.hpp"
 #include <common/modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp>
-#include "common/barcode_index/contracted_graph.hpp"
+#include "common/barcode_index/contracted_graph_builder.hpp"
 #include "contracted_graph_stats/contracted_graph_analyzer.hpp"
 #include "cluster_storage_analyzer.hpp"
 #include "scaffold_graph_utils.hpp"
@@ -31,11 +31,11 @@ namespace read_cloud_statistics {
         };
      private:
         const debruijn_graph::conj_graph_pack& gp_;
-        const contracted_graph::ContractedGraphBuilder contracted_graph_builder_;
+        const contracted_graph::ContractedGraphFactoryHelper contracted_graph_builder_;
 
      public:
         ClusterGraphAnalyzerTester(const debruijn_graph::conj_graph_pack& gp_,
-                                   const contracted_graph::ContractedGraphBuilder& contracted_graph_builder) :
+                                   const contracted_graph::ContractedGraphFactoryHelper& contracted_graph_builder) :
             gp_(gp_), contracted_graph_builder_(contracted_graph_builder) {}
 
         //fixme move to unit tests
@@ -194,7 +194,7 @@ namespace read_cloud_statistics {
         }
 
         void TestGraph(const InternalGraph& graph, const cluster_storage::ClusterGraphAnalyzer analyzer) {
-            auto contracted_graph = contracted_graph_builder_.BuildContractedGraphFromInternalGraph(graph);
+            auto contracted_graph = contracted_graph_builder_.ConstructFromInternalGraph(graph);
             cluster_storage::Cluster test_cluster(graph);
             string is_path = analyzer.IsPathCluster(test_cluster) ? "True" : "False";
             INFO("Is path cluster: " << is_path);
@@ -242,10 +242,13 @@ namespace read_cloud_statistics {
             std::function<void(const string&, size_t)> contracted_graph_analyzer = [=](const string& path, size_t dist) {
               this->AnalyzeContractedGraph(path, dist);
             };
-//            size_t distance = cfg::get().ts_res.distance;
+            size_t distance = cfg::get().ts_res.distance;
 
-            AnalyzeScaffoldGapCloser(base_output_path);
+//            AnalyzeScaffoldGapCloser(base_output_path);
 //            AnalyzeScaffoldGraph(base_output_path);
+
+            AnalyzeContractedGraph(base_output_path, distance);
+//            LaunchAnalyzerForMultipleDistances(base_output_path, contracted_graph_analyzer, distances, cfg::get().max_threads);
 
 //            INFO("Analyzing contig paths");
 //            AnalyzeContigPaths(base_output_path);
@@ -504,13 +507,13 @@ namespace read_cloud_statistics {
 
         void AnalyzePathClusters(const string& stats_base_path, size_t distance) {
             INFO("Distance: " << distance);
-            contracted_graph::ContractedGraphBuilder contracted_graph_builder(gp_.g, unique_storage_);
+            contracted_graph::ContractedGraphFactoryHelper contracted_graph_builder(gp_.g);
             INFO("Building contracted graph");
 
             ClusterGraphAnalyzerTester tester(gp_, contracted_graph_builder);
             tester.LaunchTests();
 
-            auto contracted_graph = contracted_graph_builder.BuildContractedGraphFromDBG();
+            auto contracted_graph = contracted_graph_builder.ConstructFromUniqueStorage(unique_storage_);
             auto scaffold_graph_constructor = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage_, distance, gp_.g);
             auto scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphUsingDijkstra();
             auto contracted_scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphFromContractedGraph(contracted_graph);
@@ -646,9 +649,9 @@ namespace read_cloud_statistics {
 
         void AnalyzeContractedGraph(const string& stats_base_path, size_t distance) {
             INFO("Distance: " << distance);
-            contracted_graph::ContractedGraphBuilder contracted_graph_builder(gp_.g, unique_storage_);
+            contracted_graph::ContractedGraphFactoryHelper contracted_graph_builder(gp_.g);
             INFO("Building contracted graph");
-            auto contracted_graph = contracted_graph_builder.BuildContractedGraphFromDBG();
+            auto contracted_graph = contracted_graph_builder.ConstructFromUniqueStorage(unique_storage_);
             auto scaffold_graph_constructor = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage_, distance, gp_.g);
             auto scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphUsingDijkstra();
             auto contracted_scaffold_graph = scaffold_graph_constructor.ConstructScaffoldGraphFromContractedGraph(contracted_graph);

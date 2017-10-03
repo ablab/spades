@@ -155,7 +155,7 @@ class Cluster {
                 return edge_to_incoming_.at(vertex).size();
             }
 
-            size_t GetVertexCount() const {
+            size_t size() const {
                 return vertices_.size();
             }
 
