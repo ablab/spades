@@ -191,7 +191,7 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
     size_t paths_1 = 0;
     size_t paths_many = 0;
     size_t too_long = 0;
-
+    set<EdgeId> to_delete;
     for (const auto &pair: long_edges) {
         if (pair.first > max_loop) {
             too_long ++;
@@ -212,13 +212,15 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
                 found = true;
                 break;
             }
-
         }
         if (!found) {
             DEBUG("Edge "<< e.int_id() << "has no chance to be in a plasmid, deleting");
-            gp.g.DeleteEdge(e);
+            to_delete.insert(std::min(e, gp.g.conjugate(e)));
             paths_0 ++;
         }
+    }
+    for (auto e: to_delete){
+        gp.g.DeleteEdge(e);
     }
     for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
         if (gp.g.coverage(*it) < too_little && gp.g.EdgeEnd(*it) != gp.g.EdgeStart(*it)) {
