@@ -27,14 +27,14 @@ void ChromosomeRemoval::CompressAll(Graph &g) {
 }
 
 size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
-    std::stack<EdgeId> next;
+    std::unordered_set<EdgeId> next;
     size_t deadend_count = 0;
-    next.push(e);
+    next.insert(e);
     std::unordered_set<EdgeId> used;
     size_t ans = 0;
     while (!next.empty()){
-        auto cur = next.top();
-        next.pop();
+        auto cur = *next.begin();
+        next.erase(next.begin());
         if (used.find(cur) != used.end()) {
             continue;
         }
@@ -56,7 +56,7 @@ size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
         neighbours.insert(neighbours.end(), tmp.begin(), tmp.end());
         for (auto ee:neighbours) {
             if (used.find(ee) == used.end()) {
-                next.push(ee);
+                next.insert(ee);
             }
         }
     }
