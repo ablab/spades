@@ -176,7 +176,8 @@ static CoverageBoundedDijkstra CreateCoverageBoundedDijkstra(const Graph &graph,
 
 void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
     size_t min_len = 2000;
-    double min_coverage = 50;
+    double min_coverage = 20;
+    double too_little = 5;
     size_t max_loop = 150000;
     vector<std::pair<size_t, EdgeId>> long_edges;
     for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
@@ -203,11 +204,10 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
         auto dijkstra = CreateCoverageBoundedDijkstra(gp.g, max_loop - gp.g.length(e),0.7 * gp.g.coverage(e));
         dijkstra.Run(end_v);
 
-        DEBUG("Edge "<< e.int_id());
         bool found =false;
         for (auto v: dijkstra.ReachedVertices()) {
             if (v == start_v) {
-                DEBUG("is possible plasmid due to cycle");
+                DEBUG("Edge "<< e.int_id() << "is possible plasmid due to cycle");
                 paths_many ++;
                 found = true;
                 break;
@@ -215,26 +215,36 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
 
         }
         if (!found) {
-            DEBUG("has no chance to be in a plasmid");
+            DEBUG("Edge "<< e.int_id() << "has no chance to be in a plasmid, deleting");
+            gp.g.DeleteEdge(e);
             paths_0 ++;
         }
     }
+    for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        if (gp.g.coverage(*it) < too_little && gp.g.EdgeEnd(*it) != gp.g.EdgeStart(*it)) {
+            DEBUG("Deleting edge "<< gp.g.int_id(*it)<<" because of low coverage");
+            gp.g.DeleteEdge(*it);
+        }
+    }
+    CompressAll(gp.g);
     INFO("Edges with no paths " << paths_0 <<" with many(1) " << paths_many <<" too long " << too_long);
 }
 
 void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     //FIXME Seriously?! cfg::get().ds like hundred times...
-    MetaChromosomeRemoval(gp);
     OutputEdgeSequences(gp.g, cfg::get().output_dir + "before_chromosome_removal");
     INFO("Before iteration " << 0 << ", " << gp.g.size() << " vertices in graph");
     string additional_list = cfg::get().pd->remove_list;
     bool use_chromosomal_list = (additional_list != "");
 
     double chromosome_coverage;
-    if (use_chromosomal_list)
+    if (use_chromosomal_list) {
         chromosome_coverage = RemoveEdgesByList(gp, additional_list);
+        MetaChromosomeRemoval(gp);
+    }
     else
-        chromosome_coverage = RemoveLongGenomicEdges(gp, cfg::get().pd->long_edge_length, cfg::get().pd->relative_coverage );
+        chromosome_coverage = RemoveLongGenomicEdges(gp, cfg::get().pd->long_edge_length,
+                                                     cfg::get().pd->relative_coverage);
     PlasmidSimplify(gp, cfg::get().pd->long_edge_length);
 //TODO:: reconsider and move somewhere(not to config)
     size_t max_iteration_count = 30;
