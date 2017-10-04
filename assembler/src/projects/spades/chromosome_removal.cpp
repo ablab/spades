@@ -263,8 +263,10 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
         long_component_.clear();
         deadends_count_.clear();    
         DEBUG("calculating compontent sizes");
-        for (auto iter = gp.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            CalculateComponentSize(*iter, gp.g);          
+        for (auto iter = gp.g.ConstEdgeBegin(); ! iter.IsEnd(); ++iter) {
+            if (long_component_.find(*iter) == long_component_.end()) {
+                CalculateComponentSize(*iter, gp.g);
+            }
         }
         DEBUG("component sizes calculated");
 
