@@ -123,7 +123,9 @@ static bool CollectLibInformation(const conj_graph_pack &gp,
 
     SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
     auto &data = reads.data();
-    auto paired_streams = paired_binary_readers(reads, false);
+    VERIFY(reads.data().read_length != 0);
+    auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, /*insert_size*/0,
+                                                /*include_merged*/true, reads.data().read_length);
 
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable));
     //Check read length after lib processing since mate pairs a not used until this step
@@ -184,7 +186,8 @@ void ProcessSingleReads(conj_graph_pack &gp,
 }
 
 static void ProcessPairedReads(conj_graph_pack &gp,
-                               std::unique_ptr<PairedInfoFilter> filter, unsigned filter_threshold,
+                               std::unique_ptr<PairedInfoFilter> filter,
+                               unsigned filter_threshold,
                                size_t ilib) {
     SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
     const auto &data = reads.data();
@@ -232,7 +235,8 @@ static void ProcessPairedReads(conj_graph_pack &gp,
                               gp.paired_indices[ilib]);
     notifier.Subscribe(ilib, &pif);
 
-    auto paired_streams = paired_binary_readers(reads, false, (size_t) data.mean_insert_size);
+    auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
+                                                /*include merged*/true, data.read_length);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable));
     cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
 }
@@ -354,8 +358,8 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
                         DEFilter filter_counter(*filter, gp.g);
                         notifier.Subscribe(i, &filter_counter);
 
-                        auto reads = paired_binary_readers(lib, false);
                         VERIFY(lib.data().read_length != 0);
+                        auto reads = paired_binary_readers(lib, /*followed by rc*/false, 0, /*include merged*/true, lib.data().read_length);
                         notifier.ProcessLibrary(reads, i, *ChooseProperMapper(gp, lib, cfg::get().bwa.bwa_enable));
                     }
                 }

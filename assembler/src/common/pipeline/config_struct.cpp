@@ -867,6 +867,7 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
         lib.data().binary_reads_info.bin_reads_info_file = cfg.temp_bin_reads_path + "INFO_" + std::to_string(i);
         lib.data().binary_reads_info.buffer_size = cfg.buffer_size;
         lib.data().binary_reads_info.paired_read_prefix = cfg.temp_bin_reads_path + "paired_" + std::to_string(i);
+        lib.data().binary_reads_info.merged_read_prefix = cfg.temp_bin_reads_path + "merged_" + std::to_string(i);
         lib.data().binary_reads_info.single_read_prefix = cfg.temp_bin_reads_path + "single_" + std::to_string(i);
     }
 }

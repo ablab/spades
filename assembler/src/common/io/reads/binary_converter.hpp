@@ -1,4 +1,4 @@
-//***************************************************************************
+//***************************************************************************d
 //* Copyright (c) 2015 Saint Petersburg State University
 //* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
@@ -237,21 +237,21 @@ public:
         return ToBinary(stream, buf_size_ / (2 * file_num_), orientation);
     }
 
-    ReadStreamStat ToBinaryForThread(io::ReadStream<io::SingleReadSeq>& stream, size_t thread_num) {
-        return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num, LibraryOrientation::Undefined);
-    }
-
-    ReadStreamStat ToBinaryForThread(io::ReadStream<io::SingleRead>& stream, size_t thread_num) {
-        return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num, LibraryOrientation::Undefined);
-    }
-
-    ReadStreamStat ToBinaryForThread(io::ReadStream<io::PairedReadSeq>& stream, size_t thread_num) {
-        return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num, LibraryOrientation::Undefined);
-    }
-
-    ReadStreamStat ToBinaryForThread(io::ReadStream<io::PairedRead>& stream, size_t thread_num, LibraryOrientation orientation) {
-        return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num, orientation);
-    }
+//    ReadStreamStat ToBinaryForThread(io::ReadStream<io::SingleReadSeq>& stream, size_t thread_num) {
+//        return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num, LibraryOrientation::Undefined);
+//    }
+//
+//    ReadStreamStat ToBinaryForThread(io::ReadStream<io::SingleRead>& stream, size_t thread_num) {
+//        return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num, LibraryOrientation::Undefined);
+//    }
+//
+//    ReadStreamStat ToBinaryForThread(io::ReadStream<io::PairedReadSeq>& stream, size_t thread_num) {
+//        return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num, LibraryOrientation::Undefined);
+//    }
+//
+//    ReadStreamStat ToBinaryForThread(io::ReadStream<io::PairedRead>& stream, size_t thread_num, LibraryOrientation orientation) {
+//        return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num, orientation);
+//    }
 
 };
 

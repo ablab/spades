@@ -19,7 +19,7 @@ namespace io {
 // == Deprecated classes ==
 // Use FileReadStream and InsertSizeModyfing instead
 
-class BinaryFileSingleStream: public PredictableReadStream<SingleReadSeq> {
+class BinaryFileSingleStream: public ReadStream<SingleReadSeq> {
 private:
     std::ifstream stream_;
     ReadStreamStat read_stat_;
@@ -32,18 +32,19 @@ public:
         fname = file_name_prefix + "_" + std::to_string(file_num) + ".seq";
         stream_.open(fname.c_str(), std::ios_base::binary | std::ios_base::in);
 
+        //FIXME method call in constructor
         reset();
     }
 
-    virtual bool is_open() {
+    bool is_open() override {
         return stream_.is_open();
     }
 
-    virtual bool eof() {
+    bool eof() override {
         return current_ == read_stat_.read_count_;
     }
 
-    virtual BinaryFileSingleStream& operator>>(SingleReadSeq& read) {
+    BinaryFileSingleStream& operator>>(SingleReadSeq& read) override {
         read.BinRead(stream_);
         VERIFY(current_ < read_stat_.read_count_);
 
@@ -51,12 +52,12 @@ public:
         return *this;
     }
 
-    virtual void close() {
+    void close() override {
         current_ = 0;
         stream_.close();
     }
 
-    virtual void reset() {
+    void reset() override {
         stream_.clear();
         stream_.seekg(0);
         VERIFY(stream_.good());
@@ -64,27 +65,83 @@ public:
         current_ = 0;
     }
 
-    virtual size_t size() const {
-        return read_stat_.read_count_;
-    }
-
-    virtual ReadStreamStat get_stat() const {
+    //FIXME remove get_stat for good
+    ReadStreamStat get_stat() const override {
         return read_stat_;
     }
 
 };
 
-class BinaryFilePairedStream: public PredictableReadStream<PairedReadSeq> {
-
-private:
-    std::ifstream stream_;
-
+//returns FF oriented paired reads
+class BinaryUnMergedPairedStream: public ReadStream<PairedReadSeq> {
+    BinaryFileSingleStream stream_;
     size_t insert_size_;
+    size_t read_length_;
 
+    PairedReadSeq Convert(const SingleReadSeq &read) const {
+        //FIXME fill-in
+        VERIFY(read_length_ >= read.GetLeftOffset() &&
+                       read_length_ >= read.GetRightOffset());
+
+        read.GetRightOffset();
+        const size_t left_length = std::min(read.size(),
+                                      read_length_ - read.GetLeftOffset());
+        const size_t right_length = std::min(read.size(),
+                                      read_length_ - read.GetRightOffset());
+        SingleReadSeq left(read.sequence().Subseq(0, left_length),
+                           read.GetLeftOffset(), 0);
+        SingleReadSeq right(read.sequence().Subseq(read.size() - right_length),
+                            0, read.GetRightOffset());
+        VERIFY(insert_size_ > (size_t) read.GetLeftOffset() + (size_t) read.GetRightOffset())
+        return PairedReadSeq(left, right, insert_size_ - (size_t) read.GetLeftOffset() - (size_t) read.GetRightOffset());
+    }
+
+public:
+    BinaryUnMergedPairedStream(const std::string& file_name_prefix,
+                               size_t file_num,
+                               size_t insert_size,
+                               size_t read_length) :
+            stream_(file_name_prefix, file_num),
+            insert_size_(insert_size),
+            read_length_(read_length) {
+    }
+
+    bool is_open() override {
+        return stream_.is_open();
+    }
+
+    bool eof() override {
+        return stream_.eof();
+    }
+
+    BinaryUnMergedPairedStream& operator>>(PairedReadSeq& read) override {
+        SingleReadSeq single_read;
+        stream_ >> single_read;
+        read = Convert(single_read);
+        return *this;
+    }
+
+    void close() override {
+        stream_.close();
+    }
+
+    void reset() override {
+        stream_.reset();
+    }
+
+    ReadStreamStat get_stat() const override {
+        auto stat = stream_.get_stat();
+        stat.read_count_ *= 2;
+        return stat;
+    }
+
+};
+
+class BinaryFilePairedStream: public ReadStream<PairedReadSeq> {
+    std::ifstream stream_;
+    size_t insert_size_;
     ReadStreamStat read_stat_;
-
     size_t current_;
-
 
 public:
 
@@ -96,15 +153,15 @@ public:
         reset();
     }
 
-    virtual bool is_open() {
+    bool is_open() override {
         return stream_.is_open();
     }
 
-    virtual bool eof() {
+    bool eof() override {
         return current_ >= read_stat_.read_count_;
     }
 
-    virtual BinaryFilePairedStream& operator>>(PairedReadSeq& read) {
+    BinaryFilePairedStream& operator>>(PairedReadSeq& read) override {
         read.BinRead(stream_, insert_size_);
         VERIFY(current_ < read_stat_.read_count_);
 
@@ -112,13 +169,13 @@ public:
         return *this;
     }
 
-    virtual void close() {
+    void close() override {
         current_ = 0;
         stream_.close();
     }
 
 
-    virtual void reset() {
+    void reset() override {
         stream_.clear();
         stream_.seekg(0);
         VERIFY(stream_.good());
@@ -126,11 +183,7 @@ public:
         current_ = 0;
     }
 
-    virtual size_t size() const {
-        return read_stat_.read_count_;
-    }
-
-    ReadStreamStat get_stat() const {
+    ReadStreamStat get_stat() const override {
         ReadStreamStat stat = read_stat_;
         stat.read_count_ *= 2;
         return stat;

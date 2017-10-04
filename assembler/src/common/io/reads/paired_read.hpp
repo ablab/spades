@@ -109,10 +109,11 @@ private:
 public:
     PairedReadSeq() : first_(), second_(), insert_size_(0) { }
 
-    bool BinRead(std::istream &file, size_t is = 0) {
+    bool BinRead(std::istream &file, size_t is) {
         first_.BinRead(file);
         second_.BinRead(file);
 
+        VERIFY(is >= (size_t) first_.GetLeftOffset() + (size_t) second_.GetRightOffset());
         insert_size_ = is - (size_t) first_.GetLeftOffset() - (size_t) second_.GetRightOffset();
         return !file.fail();
     }

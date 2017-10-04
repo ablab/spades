@@ -108,10 +108,4 @@ class ReadStream: boost::noncopyable {
 
 };
 
-template<class Read>
-class PredictableReadStream: public ReadStream<Read> {
-public:
-    virtual size_t size() const = 0;
-};
-
 }

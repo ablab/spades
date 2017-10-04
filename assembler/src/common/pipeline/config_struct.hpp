@@ -130,6 +130,7 @@ struct DataSetData {
         bool binary_coverted;
         std::string bin_reads_info_file;
         std::string paired_read_prefix;
+        std::string merged_read_prefix;
         std::string single_read_prefix;
         size_t chunk_num;
         size_t buffer_size;

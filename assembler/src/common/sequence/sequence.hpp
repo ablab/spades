@@ -54,7 +54,6 @@ class Sequence {
         ST *data() { return getTrailingObjects<ST>(); }
     };
 
-private:
     size_t from_;
     size_t size_;
     bool rtl_; // Right to left + complimentary (?)
@@ -121,6 +120,10 @@ private:
     Sequence(size_t size, int)
             : from_(0), size_(size), rtl_(false), data_(ManagedNuclBuffer::create(size_)) {}
 
+    //FIXME DO NOT USE THIS CONSTRUCTOR
+    Sequence(const Sequence &seq, size_t from, size_t size, bool rtl)
+            : from_(from), size_(size), rtl_(rtl), data_(seq.data_) {}
+
 public:
     /**
      * Sequence initialization (arbitrary size string)
@@ -159,9 +162,6 @@ public:
             : Sequence(kmer.size(), 0) {
         kmer.copy_data(data_->data());
     }
-
-    Sequence(const Sequence &seq, size_t from, size_t size, bool rtl)
-            : from_(from), size_(size), rtl_(rtl), data_(seq.data_) {}
 
     Sequence(const Sequence &s)
             : Sequence(s, s.from_, s.size_, s.rtl_) {}

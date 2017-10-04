@@ -603,6 +603,8 @@ void corrected_and_save_reads(const conj_graph_pack& gp) {
             cfg::get().buffer_size);
         paired_converter.ToBinary(refined_paired_stream);
 
+        //FIXME add merged reads here
+
         INFO("Correcting single reads");
         io::BinaryWriter single_converter(
             cfg::get().single_read_prefix + "_cor", cfg::get().max_threads,

@@ -61,61 +61,79 @@ SingleStreamPtr single_easy_reader(const SequencingLibrary<debruijn_graph::confi
 }
 
 inline
-PairedStreamPtr paired_easy_reader_for_libs(std::vector<size_t> libs,
-                                            bool followed_by_rc,
-                                            size_t insert_size,
-                                            bool change_read_order = false,
-                                            bool use_orientation = true,
-                                            OffsetType offset_type = PhredOffset) {
-    ReadStreamList<io::PairedRead> streams;
-    for (size_t i = 0; i < libs.size(); ++i) {
-      streams.push_back(paired_easy_reader(cfg::get().ds.reads[libs[i]],
-                                           followed_by_rc, insert_size, change_read_order, use_orientation, offset_type));
-    }
-    return MultifileWrap<PairedRead>(streams);
-}
-
-
-inline
-PairedStreamPtr paired_easy_reader(bool followed_by_rc,
-                                   size_t insert_size,
-                                   bool change_read_order = false,
-                                   bool use_orientation = true,
-                                   OffsetType offset_type = PhredOffset) {
-
-    std::vector<size_t> all_libs(cfg::get().ds.reads.lib_count());
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-        all_libs[i] = i;
-
-    // FIXME: Should we use only first library?
-    // No, this one is for all libs together
-    return paired_easy_reader_for_libs(all_libs, followed_by_rc, insert_size, change_read_order, use_orientation, offset_type);
-}
-
-
-inline
-SingleStreamPtr single_easy_reader_for_libs(vector<size_t> libs,
-                                            bool followed_by_rc,
-                                            bool including_paired_reads,
-                                            OffsetType offset_type = PhredOffset) {
+ReadStreamList<SingleRead> merged_easy_readers(const SequencingLibrary<debruijn_graph::config::DataSetData> &lib,
+                                               bool followed_by_rc,
+                                               //FIXME change Ns handling
+                                               bool handle_Ns = true,
+                                               OffsetType offset_type = PhredOffset) {
     ReadStreamList<SingleRead> streams;
-    for (size_t i = 0; i < libs.size(); ++i) {
-        streams.push_back(single_easy_reader(cfg::get().ds.reads[libs[i]],
-                                             followed_by_rc, including_paired_reads, offset_type));
+    for (const auto& read : lib.merged_reads()) {
+        streams.push_back(EasyStream(read, followed_by_rc, handle_Ns, offset_type));
     }
-    return MultifileWrap<SingleRead>(streams);
+    return streams;
 }
 
 inline
-SingleStreamPtr single_easy_reader(bool followed_by_rc,
-                                   bool including_paired_reads,
+SingleStreamPtr merged_easy_reader(const SequencingLibrary<debruijn_graph::config::DataSetData> &lib,
+                                   bool followed_by_rc,
+                                   bool handle_Ns = true,
                                    OffsetType offset_type = PhredOffset) {
-
-    std::vector<size_t> all_libs(cfg::get().ds.reads.lib_count());
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-        all_libs[i] = i;
-
-    return single_easy_reader_for_libs(all_libs, followed_by_rc, including_paired_reads, offset_type);
+    return MultifileWrap<io::SingleRead>(
+            merged_easy_readers(lib, followed_by_rc, handle_Ns, offset_type));
 }
+
+//inline
+//PairedStreamPtr paired_easy_reader_for_libs(std::vector<size_t> libs,
+//                                            bool followed_by_rc,
+//                                            size_t insert_size,
+//                                            bool change_read_order = false,
+//                                            bool use_orientation = true,
+//                                            OffsetType offset_type = PhredOffset) {
+//    ReadStreamList<io::PairedRead> streams;
+//    for (size_t i = 0; i < libs.size(); ++i) {
+//      streams.push_back(paired_easy_reader(cfg::get().ds.reads[libs[i]],
+//                                           followed_by_rc, insert_size, change_read_order, use_orientation, offset_type));
+//    }
+//    return MultifileWrap<PairedRead>(streams);
+//}
+//
+//inline
+//PairedStreamPtr paired_easy_reader(bool followed_by_rc,
+//                                   size_t insert_size,
+//                                   bool change_read_order = false,
+//                                   bool use_orientation = true,
+//                                   OffsetType offset_type = PhredOffset) {
+//
+//    std::vector<size_t> all_libs(cfg::get().ds.reads.lib_count());
+//    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
+//        all_libs[i] = i;
+//
+//    return paired_easy_reader_for_libs(all_libs, followed_by_rc, insert_size, change_read_order, use_orientation, offset_type);
+//}
+//
+//inline
+//SingleStreamPtr single_easy_reader_for_libs(vector<size_t> libs,
+//                                            bool followed_by_rc,
+//                                            bool including_paired_reads,
+//                                            OffsetType offset_type = PhredOffset) {
+//    ReadStreamList<SingleRead> streams;
+//    for (size_t i = 0; i < libs.size(); ++i) {
+//        streams.push_back(single_easy_reader(cfg::get().ds.reads[libs[i]],
+//                                             followed_by_rc, including_paired_reads, offset_type));
+//    }
+//    return MultifileWrap<SingleRead>(streams);
+//}
+//
+//inline
+//SingleStreamPtr single_easy_reader(bool followed_by_rc,
+//                                   bool including_paired_reads,
+//                                   OffsetType offset_type = PhredOffset) {
+//
+//    std::vector<size_t> all_libs(cfg::get().ds.reads.lib_count());
+//    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
+//        all_libs[i] = i;
+//
+//    return single_easy_reader_for_libs(all_libs, followed_by_rc, including_paired_reads, offset_type);
+//}
 
 }

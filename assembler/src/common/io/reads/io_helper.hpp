@@ -35,35 +35,6 @@ namespace io {
     typedef std::shared_ptr<BinaryPairedStream> BinaryPairedStreamPtr;
     typedef ReadStreamList<PairedReadSeq> BinaryPairedStreams;
 
-    inline BinarySingleStreams apply_single_wrappers(bool followed_by_rc,
-                                                     BinarySingleStreams& single_readers,
-                                                     BinaryPairedStreams* paired_readers = 0) {
-        VERIFY(single_readers.size() != 0);
-        BinarySingleStreams readers = single_readers;
-
-        if (paired_readers != 0) {
-            VERIFY(single_readers.size() == paired_readers->size());
-            BinarySingleStreams squashed_paired = SquashingWrap<PairedReadSeq>(*paired_readers);
-            readers = WrapPairsInMultifiles<SingleReadSeq>(squashed_paired, readers);
-        }
-
-        if (followed_by_rc) {
-            readers = RCWrap<SingleReadSeq>(readers);
-        }
-        return readers;
-    }
-
-    //todo make deprecated
-    inline BinaryPairedStreams apply_paired_wrappers(bool followed_by_rc,
-                                                     BinaryPairedStreams& readers) {
-        VERIFY(readers.size() != 0);
-        if (followed_by_rc) {
-            return RCWrap<PairedReadSeq>(readers);
-        } else {
-            return readers;
-        }
-    }
-    
     inline SingleStreamPtr EasyStream(const std::string& filename, bool followed_by_rc,
                                       bool handle_Ns = true, OffsetType offset_type = PhredOffset) {
         SingleStreamPtr reader = make_shared<FileReadStream>(filename, offset_type);
