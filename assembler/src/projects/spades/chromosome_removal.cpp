@@ -209,12 +209,12 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
             if (v == start_v) {
                 DEBUG("is possible plasmid due to cycle");
                 paths_many ++;
-                found == true;
+                found = true;
                 break;
             }
 
         }
-        if (! found) {
+        if (!found) {
             DEBUG("has no chance to be in a plasmid");
             paths_0 ++;
         }
