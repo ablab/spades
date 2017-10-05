@@ -220,8 +220,8 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
                         paths[0].push_back(e);
                         std::stringstream ss;
                         for (EdgeId e: paths[0]) {
-                            string tmp = gp.g.str(e);
-                            ss << tmp.substr(0, tmp.length() - gp.g.k());
+                            ss << gp.g.EdgeNucls(e).Subseq(gp.g.k()).str();
+
                         }
                         res_strings.push_back(ss.str());
                         to_save.insert(std::min(e, gp.g.conjugate(e)));
@@ -262,8 +262,9 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
     std::ofstream is(out_file);
     size_t count = 0;
     for (const auto &s: res_strings) {
-        is << "NODE_" << count << endl;
+        is << ">NODE_" << count << endl;
         is << s << endl;
+        count ++;
     }
 }
 
