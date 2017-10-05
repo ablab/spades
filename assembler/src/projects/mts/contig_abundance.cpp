@@ -12,22 +12,52 @@ MplVector SampleMpls(const KmerProfiles& kmer_mpls, size_t sample) {
     return answer;
 }
 
-Mpl SampleMedian(const KmerProfiles& kmer_mpls, size_t sample) {
+template<typename T>
+T SampleMedian(const KmerProfiles& kmer_mpls, size_t sample);
+
+template<>
+Abundance SampleMedian(const KmerProfiles& kmer_mpls, size_t sample) {
     std::vector<Mpl> sample_mpls = SampleMpls(kmer_mpls, sample);
 
-    std::nth_element(sample_mpls.begin(), sample_mpls.begin() + sample_mpls.size()/2, sample_mpls.end());
-    return sample_mpls[sample_mpls.size()/2];
+    std::nth_element(sample_mpls.begin(), sample_mpls.begin() + sample_mpls.size() / 2, sample_mpls.end());
+    return (Abundance)sample_mpls[sample_mpls.size() / 2];
 }
 
-MplVector MedianVector(const KmerProfiles& kmer_mpls) {
+template<>
+AbVar SampleMedian(const KmerProfiles& kmer_mpls, size_t sample) {
+    //TODO: refactor duplicated code
+    std::vector<Mpl> sample_mpls = SampleMpls(kmer_mpls, sample);
+
+    std::nth_element(sample_mpls.begin(), sample_mpls.begin() + sample_mpls.size() / 2, sample_mpls.end());
+    Mpl median = sample_mpls[sample_mpls.size() / 2];
+
+    //Unbiased sample variance
+    int tmp = 0;
+    int sqmed = median * median;
+    for (Mpl mpl : sample_mpls)
+        tmp += mpl * mpl;
+    tmp -= (int)sample_mpls.size() * sqmed;
+    Var var = (Var)tmp / (Var)(sample_mpls.size() - 1);
+
+    return {(Abundance)median, var};
+}
+
+template<typename T>
+std::vector<T> MedianVector(const KmerProfiles& kmer_mpls) {
     VERIFY(kmer_mpls.size() != 0);
-    MplVector answer(KmerProfileIndex::SampleCount(), 0);
-    for (size_t i = 0; i < answer.size(); ++i) {
-        answer[i] = SampleMedian(kmer_mpls, i);
-    }
-    return answer;
+    std::vector<T> res;
+    res.reserve(KmerProfileIndex::SampleCount());
+    for (size_t i = 0; i < KmerProfileIndex::SampleCount(); ++i)
+        res.push_back(SampleMedian<T>(kmer_mpls, i));
+    return res;
 }
 
+template<typename T>
+typename ClusterAnalyzer<T>::Result TrivialClusterAnalyzer<T>::operator()(const KmerProfiles& kmer_mpls) const {
+    return typename ClusterAnalyzer<T>::Result(MedianVector<T>(kmer_mpls));
+}
+
+/*
 bool SingleClusterAnalyzer::AreClose(const KmerProfileIndex::KmerProfile& c,
                                      const KmerProfileIndex::KmerProfile& v) const {
     //VERIFY(c.size() == v.size());
@@ -57,12 +87,7 @@ KmerProfiles SingleClusterAnalyzer::CloseKmerMpls(const KmerProfiles& kmer_mpls,
     return answer;
 }
 
-boost::optional<AbundanceVector> TrivialClusterAnalyzer::operator()(const KmerProfiles& kmer_mpls) const {
-    auto med = MedianVector(kmer_mpls);
-    return AbundanceVector(med.begin(), med.end());
-}
-
-boost::optional<AbundanceVector> SingleClusterAnalyzer::operator()(const KmerProfiles& kmer_mpls) const {
+ClusterAnalyzer::Result SingleClusterAnalyzer::operator()(const KmerProfiles& kmer_mpls) const {
     MplVector center = MedianVector(kmer_mpls);
     auto locality = CloseKmerMpls(kmer_mpls, KmerProfile(center));
 
@@ -79,7 +104,7 @@ boost::optional<AbundanceVector> SingleClusterAnalyzer::operator()(const KmerPro
             DEBUG("Detected central area contains too few k-mers: share " << center_share
                       << " ; center size " << locality.size()
                       << " ; total size " << kmer_mpls.size());
-            return boost::none;
+            return ClusterAnalyzer::Result();
         }
 
         MplVector update = MedianVector(locality);
@@ -94,10 +119,10 @@ boost::optional<AbundanceVector> SingleClusterAnalyzer::operator()(const KmerPro
         locality = CloseKmerMpls(kmer_mpls, center);
     }
 
-    return boost::optional<AbundanceVector>(MeanVector(locality));
-}
+    return ClusterAnalyzer::Result(MeanVector(locality));
+}*/
 
-vector<std::string> ContigAbundanceCounter::SplitOnNs(const std::string& seq) const {
+vector<std::string> SplitOnNs(const std::string& seq) {
     vector<std::string> answer;
     for (size_t i = 0; i < seq.size(); i++) {
         size_t j = i;
@@ -129,8 +154,14 @@ KmerProfileIndex::KmerProfileIndex(unsigned k,
     //Prefetch mmapped data by force
     Mpl checksum = 0;
     for (const Mpl* ptr = profiles_->data(); ptr < profiles_->data() + data_size; ptr += 4096 / sizeof(Mpl))
-        checksum += *ptr;
+        checksum = (Mpl)(checksum + *ptr); //silence the warning
     INFO("Kmer index loaded; checksum: " << checksum);
+}
+
+KmerProfileIndex::KmerProfileIndex(KmerProfileIndex&& other):
+    inverter_(std::move(other.inverter_)),
+    index_(std::move(other.index_)),
+    profiles_(std::move(other.profiles_)) {
 }
 
 KmerProfileIndex::KeyWithHash KmerProfileIndex::Construct(const KmerProfileIndex::KeyType& key) const {
@@ -144,17 +175,27 @@ boost::optional<KmerProfile> KmerProfileIndex::operator[](const KmerProfileIndex
         return boost::none;
 }
 
-ContigAbundanceCounter::ContigAbundanceCounter(unsigned k,
-                       std::unique_ptr<ClusterAnalyzer> cluster_analyzer,
-                       const std::string& index_prefix,
-                       double min_earmark_share) :
+template<typename T>
+ProfileCounter<T>::ProfileCounter(unsigned k,
+                                  std::unique_ptr<ClusterAnalyzer<T>> cluster_analyzer,
+                                  const std::string& index_prefix,
+                                  double min_earmark_share) :
     k_(k),
     cluster_analyzer_(std::move(cluster_analyzer)),
     min_earmark_share_(min_earmark_share),
     profile_index_(k_, index_prefix) {
 }
 
-boost::optional<AbundanceVector> ContigAbundanceCounter::operator()(
+template<typename T>
+ProfileCounter<T>::ProfileCounter(ProfileCounter&& other):
+    k_(other.k_),
+    cluster_analyzer_(std::move(other.cluster_analyzer_)),
+    min_earmark_share_(other.min_earmark_share_),
+    profile_index_(std::move(other.profile_index_)) {
+}
+
+template<typename T>
+typename ClusterAnalyzer<T>::Result ProfileCounter<T>::operator()(
         const std::string& s,
         const std::string& /*name*/) const {
     KmerProfiles kmer_mpls;
@@ -194,5 +235,13 @@ boost::optional<AbundanceVector> ContigAbundanceCounter::operator()(
 
     return (*cluster_analyzer_)(kmer_mpls);
 }
+
+//Explicit instantiations for what we can estimate
+#define INSTANTIATE(type) \
+template class TrivialClusterAnalyzer<type>; \
+template class ProfileCounter<type>;
+
+INSTANTIATE(Abundance);
+INSTANTIATE(AbVar);
 
 }

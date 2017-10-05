@@ -104,9 +104,6 @@ public:
         ValueBase::resize(index_ptr_->size());
     }
 
-    ~PerfectHashMap() {
-    }
-
     void clear() {
         KeyBase::clear();
         ValueBase::clear();
@@ -276,6 +273,9 @@ public:
 
     KeyStoringMap(unsigned k)
             : base(k), kmers_(nullptr) {}
+
+    KeyStoringMap(KeyStoringMap&& other)
+            : base(std::move(other)), kmers_(std::move(other.kmers_)) {}
 
     KMer true_kmer(KeyWithHash kwh) const {
         VERIFY(this->valid(kwh));

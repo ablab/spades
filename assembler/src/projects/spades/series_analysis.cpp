@@ -49,6 +49,9 @@ template<> struct MappingTraits<debruijn_graph::SeriesAnalysisConfig> {
 
 namespace debruijn_graph {
 
+typedef Profile<Abundance> AbundanceVector;
+typedef ProfileCounter<Abundance> ContigAbundanceCounter;
+
 template<class graph_pack>
 shared_ptr<visualization::graph_colorer::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
     const graph_pack& gp) {
@@ -253,9 +256,8 @@ void SeriesAnalysis::run(conj_graph_pack &gp, const char *) {
     KmerProfileIndex::SetSampleCount(config.sample_cnt);
 
     DEBUG("Initiating abundance counter");
-    ContigAbundanceCounter abundance_counter(config.k,
-                                             std::unique_ptr<ClusterAnalyzer>(new TrivialClusterAnalyzer()),
-                                             config.kmer_mult);
+    ContigAbundanceCounter abundance_counter =
+        make_trivial<Abundance>(config.k, config.kmer_mult);
 
     DEBUG("Abundance counter ready");
 
