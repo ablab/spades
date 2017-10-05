@@ -19,12 +19,11 @@ inline
 PairedStreamPtr paired_easy_reader(const SequencingLibrary<debruijn_graph::config::DataSetData> &lib,
                                    bool followed_by_rc,
                                    size_t insert_size,
-                                   bool change_read_order = false,
-                                   bool use_orientation = true,
-                                   OffsetType offset_type = PhredOffset) {
+                                   bool use_orientation/* = true*/,
+                                   OffsetType offset_type/* = PhredOffset*/) {
     ReadStreamList<PairedRead> streams;
     for (auto read_pair : lib.paired_reads()) {
-        streams.push_back(PairedEasyStream(read_pair.first, read_pair.second, followed_by_rc, insert_size, change_read_order,
+        streams.push_back(PairedEasyStream(read_pair.first, read_pair.second, followed_by_rc, insert_size,
                                            use_orientation, lib.orientation(), offset_type));
     }
     return MultifileWrap<PairedRead>(streams);
@@ -63,7 +62,6 @@ SingleStreamPtr single_easy_reader(const SequencingLibrary<debruijn_graph::confi
 inline
 ReadStreamList<SingleRead> merged_easy_readers(const SequencingLibrary<debruijn_graph::config::DataSetData> &lib,
                                                bool followed_by_rc,
-                                               //FIXME change Ns handling
                                                bool handle_Ns = true,
                                                OffsetType offset_type = PhredOffset) {
     ReadStreamList<SingleRead> streams;

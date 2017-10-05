@@ -121,7 +121,7 @@ const vector<PairedRead> MakePairedReads(const vector<MyPairedRead>& paired_read
     DEBUG("Making paired reads");
     vector<PairedRead> ans;
     for (size_t i = 0; i < paired_reads.size(); ++i) {
-        ans.push_back(PairedRead(MakeRead(paired_reads[i].first), MakeRead(paired_reads[i].second), insert_size));
+        ans.push_back(PairedRead::Create(MakeRead(paired_reads[i].first), MakeRead(paired_reads[i].second), insert_size));
     }
     DEBUG("Made paired reads");
     return ans;

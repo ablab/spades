@@ -15,6 +15,7 @@
 
 namespace io {
 
+//FIXME Create orientation using wrapper
 class SeparatePairedReadStream : public ReadStream<PairedRead> {
  public:
   /*
@@ -26,11 +27,10 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    * @param offset The offset of the read quality.
    */
   explicit SeparatePairedReadStream(const std::string& filename1, const std::string& filename2,
-         size_t insert_size, bool change_order = false,
+         size_t insert_size,
          bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
          OffsetType offset_type = PhredOffset)
       : insert_size_(insert_size),
-        change_order_(change_order),
         use_orientation_(use_orientation),
         changer_(GetOrientationChanger<PairedRead>(orientation)),
         offset_type_(offset_type),
@@ -44,7 +44,7 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    *
    * @return true of the stream is opened and false otherwise.
    */
-  /* virtual */ bool is_open() {
+  bool is_open() override {
     return first_->is_open() && second_->is_open();
   }
 
@@ -54,7 +54,7 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    * @return true if the end of stream is reached and false
    * otherwise.
    */
-  /* virtual */ bool eof() {
+  bool eof() override {
 
     if (first_->eof() != second_->eof()) {
         if (first_->eof()) {
@@ -74,20 +74,15 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    *
    * @return Reference to this stream.
    */
-  /* virtual */ SeparatePairedReadStream& operator>>(PairedRead& pairedread) {
+  //FIXME if we can simplify without new variables
+  SeparatePairedReadStream& operator>>(PairedRead& pairedread) override {
     SingleRead sr1, sr2;
     (*first_) >> sr1;
     (*second_) >> sr2;
 
+    pairedread = PairedRead::Create(sr1, sr2, insert_size_);
     if (use_orientation_) {
-        pairedread = changer_->Perform(PairedRead(sr1, sr2, insert_size_));
-    }
-    else {
-        pairedread = PairedRead(sr1, sr2, insert_size_);
-    }
-
-    if (change_order_) {
-        pairedread = PairedRead(pairedread.second(), pairedread.first(), insert_size_);
+        pairedread = changer_->Perform(pairedread);
     }
 
     return *this;
@@ -96,7 +91,7 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
   /*
    * Close the stream.
    */
-  /* virtual */ void close() {
+  void close() override {
     first_->close();
     second_->close();
   }
@@ -104,42 +99,39 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
   /*
    * Close the stream and open it again.
    */
-  /* virtual */ void reset() {
+  void reset() override {
     first_->reset();
     second_->reset();
   }
 
-  ReadStreamStat get_stat() const {
+  ReadStreamStat get_stat() const override {
     return ReadStreamStat();
   }
 
  private:
 
-  size_t insert_size_;
+  const size_t insert_size_;
+  const bool use_orientation_;
 
-  bool change_order_;
-
-  bool use_orientation_;
-
-  std::unique_ptr<OrientationChanger<PairedRead>> changer_;
+  const std::unique_ptr<OrientationChanger<PairedRead>> changer_;
 
   /*
    * @variable Quality offset type.
    */
-  OffsetType offset_type_;
+  const OffsetType offset_type_;
 
   /*
    * @variable The first stream (reads from first file).
    */
-  std::unique_ptr<ReadStream<SingleRead>> first_;
+  const std::unique_ptr<ReadStream<SingleRead>> first_;
   /*
    * @variable The second stream (reads from second file).
    */
-  std::unique_ptr<ReadStream<SingleRead>> second_;
+  const std::unique_ptr<ReadStream<SingleRead>> second_;
 
   //Only for providing information about error for users
-  std::string filename1_;
-  std::string filename2_;
+  const std::string filename1_;
+  const std::string filename2_;
 };
 
 class InterleavingPairedReadStream : public ReadStream<PairedRead> {
@@ -151,11 +143,10 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    * @param distance Distance between parts of PairedReads.
    * @param offset The offset of the read quality.
    */
-  explicit InterleavingPairedReadStream(const std::string& filename, size_t insert_size, bool change_order = false,
+  explicit InterleavingPairedReadStream(const std::string& filename, size_t insert_size,
           bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
           OffsetType offset_type = PhredOffset)
       : filename_(filename), insert_size_(insert_size),
-        change_order_(change_order),
         use_orientation_(use_orientation),
         changer_(GetOrientationChanger<PairedRead>(orientation)),
         offset_type_(offset_type),
@@ -166,7 +157,7 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    *
    * @return true of the stream is opened and false otherwise.
    */
-  /* virtual */ bool is_open() {
+  bool is_open() override {
     return single_->is_open();
   }
 
@@ -176,7 +167,7 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    * @return true if the end of stream is reached and false
    * otherwise.
    */
-  /* virtual */ bool eof() {
+  bool eof() override {
     return single_->eof();
   }
 
@@ -187,20 +178,15 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    *
    * @return Reference to this stream.
    */
-  /* virtual */ InterleavingPairedReadStream& operator>>(PairedRead& pairedread) {
+  InterleavingPairedReadStream& operator>>(PairedRead& pairedread) override {
     SingleRead sr1, sr2;
     (*single_) >> sr1;
     (*single_) >> sr2;
 
-    if (use_orientation_) {
-        pairedread = changer_->Perform(PairedRead(sr1, sr2, insert_size_));
-    }
-    else {
-        pairedread = PairedRead(sr1, sr2, insert_size_);
-    }
+    pairedread = PairedRead::Create(sr1, sr2, insert_size_);
 
-    if (change_order_) {
-        pairedread = PairedRead(pairedread.second(), pairedread.first(), insert_size_);
+    if (use_orientation_) {
+        pairedread = changer_->Perform(pairedread);
     }
 
     return *this;
@@ -209,44 +195,40 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
   /*
    * Close the stream.
    */
-  /* virtual */ void close() {
+  void close() override {
     single_->close();
   }
 
   /*
    * Close the stream and open it again.
    */
-  /* virtual */ void reset() {
+  void reset() override {
     single_->reset();
   }
 
-  ReadStreamStat get_stat() const {
-        return ReadStreamStat();
+  ReadStreamStat get_stat() const override {
+    return ReadStreamStat();
   }
 
  private:
   /*
    * @variable The names of the file which stream reads from.
    */
-  std::string filename_;
+  const std::string filename_;
+  const size_t insert_size_;
+  const bool use_orientation_;
 
-  size_t insert_size_;
-
-  bool change_order_;
-
-  bool use_orientation_;
-
-  std::unique_ptr<OrientationChanger<PairedRead>> changer_;
+  const std::unique_ptr<OrientationChanger<PairedRead>> changer_;
 
   /*
    * @variable Quality offset type.
    */
-  OffsetType offset_type_;
+  const OffsetType offset_type_;
 
   /*
    * @variable The single read stream.
    */
-  std::unique_ptr<ReadStream<SingleRead>> single_;
+  const std::unique_ptr<ReadStream<SingleRead>> single_;
 
 };
 }

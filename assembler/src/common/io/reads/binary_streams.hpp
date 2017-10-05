@@ -79,7 +79,6 @@ class BinaryUnMergedPairedStream: public ReadStream<PairedReadSeq> {
     size_t read_length_;
 
     PairedReadSeq Convert(const SingleReadSeq &read) const {
-        //FIXME fill-in
         VERIFY(read_length_ >= read.GetLeftOffset() &&
                        read_length_ >= read.GetRightOffset());
 
@@ -93,7 +92,7 @@ class BinaryUnMergedPairedStream: public ReadStream<PairedReadSeq> {
         SingleReadSeq right(read.sequence().Subseq(read.size() - right_length),
                             0, read.GetRightOffset());
         VERIFY(insert_size_ > (size_t) read.GetLeftOffset() + (size_t) read.GetRightOffset())
-        return PairedReadSeq(left, right, insert_size_ - (size_t) read.GetLeftOffset() - (size_t) read.GetRightOffset());
+        return PairedReadSeq::Create(left, right, insert_size_);
     }
 
 public:

@@ -346,7 +346,7 @@ int main(int argc, char** argv) {
 
         io::PairedOutputSequenceStream ors(outcorl, outcorr);
 
-        io::SeparatePairedReadStream irs(I->first, I->second, 0, false, false);
+        io::SeparatePairedReadStream irs(I->first, I->second, 0, false);
         PairedReadsCorrector read_corrector(kmerData, calcerFactory, debug_pred,
                                             select_pred);
         hammer::ReadProcessor(cfg::get().max_nthreads)

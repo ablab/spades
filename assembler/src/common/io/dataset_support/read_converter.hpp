@@ -87,7 +87,7 @@ private:
                                           data.binary_reads_info.chunk_num,
                                           data.binary_reads_info.buffer_size);
 
-        PairedStreamPtr paired_reader = paired_easy_reader(lib, false, 0, false, false);
+        PairedStreamPtr paired_reader = paired_easy_reader(lib, false, 0, false, PhredOffset);
         ReadStreamStat read_stat = paired_converter.ToBinary(*paired_reader, lib.orientation());
         read_stat.read_count_ *= 2;
 

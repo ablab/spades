@@ -24,6 +24,7 @@ namespace io {
 * PhredOffset is equal to "offset = 33".
 * SolexaOffset is equal to "offset = 64".
 */
+//FIXME change to enum class
 enum OffsetType {
     UnknownOffset = 0,
     PhredOffset = 33,
@@ -31,9 +32,7 @@ enum OffsetType {
 };
 
 //todo extract code about offset from here
-
 typedef uint16_t SequenceOffsetT;
-
 
 class SingleRead {
 public:
@@ -190,6 +189,11 @@ public:
         return !file.fail();
     }
 
+    bool BinRead(std::istream &/*file*/) {
+        VERIFY(false);
+        return false;
+    }
+
 private:
     /*
      * @variable The name of SingleRead in input file.
@@ -246,7 +250,7 @@ inline std::ostream &operator<<(std::ostream &os, const SingleRead &read) {
 class SingleReadSeq {
 
 public:
-    SingleReadSeq(const Sequence &s,
+    explicit SingleReadSeq(const Sequence &s,
                   SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
             seq_(s), left_offset_(left_offset), right_offset_(right_offset) {
     }

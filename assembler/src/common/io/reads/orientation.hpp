@@ -11,6 +11,7 @@
 
 namespace io {
 
+//FIXME use std::function
 template<typename ReadType>
 class OrientationChanger {
 
@@ -38,7 +39,7 @@ class ReverseSecondChanger : public OrientationChanger<ReadType> {
 public:
 
     virtual ReadType Perform(const ReadType& r) const {
-        return ReadType(r.first(), !r.second(), r.insert_size());
+        return ReadType::Create(r.first(), !r.second(), r.orig_insert_size());
     }
 };
 
@@ -48,7 +49,7 @@ class ReverseFirstChanger : public OrientationChanger<ReadType> {
 public:
 
     virtual ReadType Perform(const ReadType& r) const {
-        return ReadType(!r.first(), r.second(), r.insert_size());
+        return ReadType::Create(!r.first(), r.second(), r.orig_insert_size());
     }
 };
 
@@ -58,7 +59,7 @@ class ReverseChanger : public OrientationChanger<ReadType> {
 public:
 
     virtual ReadType Perform(const ReadType& r) const {
-        return ReadType(!r.first(), !r.second(), r.insert_size());
+        return ReadType::Create(!r.first(), !r.second(), r.orig_insert_size());
     }
 };
 

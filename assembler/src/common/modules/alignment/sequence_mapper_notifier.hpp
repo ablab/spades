@@ -135,7 +135,6 @@ inline void SequenceMapperNotifier::NotifyProcessRead(const io::PairedReadSeq& r
     MappingPath<EdgeId> path1 = mapper.MapSequence(read1);
     MappingPath<EdgeId> path2 = mapper.MapSequence(read2);
     for (const auto& listener : listeners_[ilib]) {
-        TRACE("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
         listener->ProcessPairedRead(ithread, r, path1, path2);
         listener->ProcessSingleRead(ithread, r.first(), path1);
         listener->ProcessSingleRead(ithread, r.second(), path2);
@@ -150,7 +149,6 @@ inline void SequenceMapperNotifier::NotifyProcessRead(const io::PairedRead& r,
     MappingPath<EdgeId> path1 = mapper.MapRead(r.first());
     MappingPath<EdgeId> path2 = mapper.MapRead(r.second());
     for (const auto& listener : listeners_[ilib]) {
-        TRACE("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
         listener->ProcessPairedRead(ithread, r, path1, path2);
         listener->ProcessSingleRead(ithread, r.first(), path1);
         listener->ProcessSingleRead(ithread, r.second(), path2);

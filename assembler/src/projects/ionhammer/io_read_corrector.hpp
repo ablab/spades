@@ -221,7 +221,7 @@ public:
     if (!corrected_r || !corrected_l) return nullptr;
 
     return std::unique_ptr<io::PairedRead>(
-        new io::PairedRead(*corrected_r, *corrected_l, 0));
+        new io::PairedRead(io::PairedRead::Create(*corrected_r, *corrected_l, 0)));
   }
 };
 

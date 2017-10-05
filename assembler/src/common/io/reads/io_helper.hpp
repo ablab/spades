@@ -47,37 +47,33 @@ namespace io {
         return reader;
     }
 
-    inline PairedStreamPtr WrapPairedStream(PairedStreamPtr reader,
-                                            bool followed_by_rc,
-                                            bool use_orientation = false,
-                                            LibraryOrientation orientation = LibraryOrientation::Undefined) {
-        PairedStreamPtr answer = reader;
-        answer = CarefulFilteringWrap<PairedRead>(answer, use_orientation, orientation);
+    inline PairedStreamPtr EasyWrapPairedStream(PairedStreamPtr reader,
+                                            bool followed_by_rc) {
+        reader = CarefulFilteringWrap<PairedRead>(reader);
         if (followed_by_rc) {
-            answer = RCWrap<PairedRead>(answer);
+            reader = RCWrap<PairedRead>(reader);
         }
-        return answer;
+        return reader;
 
     }
 
     inline PairedStreamPtr PairedEasyStream(const std::string& filename1, const std::string& filename2,
-                                     bool followed_by_rc, size_t insert_size, bool change_read_order = false,
+                                     bool followed_by_rc, size_t insert_size,
                                      bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
                                      OffsetType offset_type = PhredOffset) {
         PairedStreamPtr reader = make_shared<SeparatePairedReadStream>(filename1, filename2, insert_size,
-                                                             change_read_order, use_orientation,
+                                                             use_orientation,
                                                              orientation, offset_type);
-        //Use orientation for IS calculation if it's not done by changer
-        return WrapPairedStream(reader, followed_by_rc, !use_orientation, orientation);
+        //FIXME is it really correct logic with use_orientation and !use_orientation?!!!
+        return EasyWrapPairedStream(reader, followed_by_rc);
     }
 
     inline PairedStreamPtr PairedEasyStream(const std::string& filename, bool followed_by_rc,
-            size_t insert_size, bool change_read_order = false,
+            size_t insert_size,
             bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
             OffsetType offset_type = PhredOffset) {
-        PairedStreamPtr reader = make_shared<InterleavingPairedReadStream>(filename, insert_size, change_read_order,
+        PairedStreamPtr reader = make_shared<InterleavingPairedReadStream>(filename, insert_size,
                                 use_orientation, orientation, offset_type);
-        //Use orientation for IS calculation if it's not done by changer
-        return WrapPairedStream(reader, followed_by_rc, !use_orientation, orientation);
+        return EasyWrapPairedStream(reader, followed_by_rc);
     }
 }
