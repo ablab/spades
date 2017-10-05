@@ -9,12 +9,12 @@
 #include "modules/simplification/ec_threshold_finder.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "chromosome_removal.hpp"
-
 #include "math/xmath.h"
+#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 
 
 namespace debruijn_graph {
-
+using namespace std;
 //TODO replace with standard methods
 void ChromosomeRemoval::CompressAll(Graph &g) {
     for (auto it = g.SmartVertexBegin(); ! it.IsEnd(); ++it) {
@@ -68,7 +68,7 @@ size_t ChromosomeRemoval::CalculateComponentSize(EdgeId e, Graph &g_) {
     }
     return ans;
 }
-double ChromosomeRemoval::RemoveEdgesByList( conj_graph_pack &gp , string &s) {
+double ChromosomeRemoval::RemoveEdgesByList( conj_graph_pack &gp , std::string &s) {
     std::ifstream is(s);
     set<size_t> ids;
     size_t id;
@@ -156,30 +156,12 @@ void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bo
     gp.EnsureIndex();
 }
 
-typedef ComposedDijkstraSettings<Graph,
-        LengthCalculator<Graph>,
-        BoundProcessChecker<Graph>,
-        CoveragePutChecker<Graph>,
-        ForwardNeighbourIteratorFactory<Graph> > CoverageBoundedDijkstraSettings;
-
-typedef Dijkstra<Graph, CoverageBoundedDijkstraSettings> CoverageBoundedDijkstra;
-
-static CoverageBoundedDijkstra CreateCoverageBoundedDijkstra(const Graph &graph, size_t length_bound, double min_coverage,
-                                             size_t max_vertex_number = -1ul){
-    return CoverageBoundedDijkstra(graph, CoverageBoundedDijkstraSettings(
-            LengthCalculator<Graph>(graph),
-            BoundProcessChecker<Graph>(length_bound),
-            CoveragePutChecker<Graph>(min_coverage, graph, length_bound),
-            ForwardNeighbourIteratorFactory<Graph>(graph)),
-                           max_vertex_number);
-}
-
 void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
     size_t min_len = 2000;
     double min_coverage = 20;
     double too_little = 5;
     size_t max_loop = 150000;
-    vector<std::pair<size_t, EdgeId>> long_edges;
+    std::vector<std::pair<size_t, EdgeId>> long_edges;
     for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         if ((gp.g.length(*it) >= min_len) && (math::gr(gp.g.coverage(*it), min_coverage))) {
             long_edges.push_back(std::make_pair(min_len, *it));
@@ -201,14 +183,34 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
         VertexId start_v= gp.g.EdgeStart(e);
         VertexId end_v= gp.g.EdgeEnd(e);
 
-        auto dijkstra = CreateCoverageBoundedDijkstra(gp.g, max_loop - gp.g.length(e),0.7 * gp.g.coverage(e));
+        auto dijkstra = omnigraph::DijkstraHelper<Graph>::CreateCoverageBoundedDijkstra(gp.g, max_loop - gp.g.length(e),0.7 * gp.g.coverage(e));
         dijkstra.Run(end_v);
 
         bool found =false;
         for (auto v: dijkstra.ReachedVertices()) {
-            if (v == start_v) {
-                DEBUG("Edge "<< e.int_id() << "is possible plasmid due to cycle");
-                paths_many ++;
+            if (v == start_v && dijkstra.DistanceCounted(v)) {
+                size_t dist = dijkstra.GetDistance(v);
+                omnigraph::PathStorageCallback<Graph> callback(gp.g);
+                size_t res = ProcessPaths(gp.g,
+                             dist - 1, std::min(2 * dist, max_loop - pair.first),
+                             end_v, start_v,
+                             callback, 50, 0.7 * gp.g.coverage(e));
+                if (res == 0 && callback.size() == 1) {
+                    DEBUG("Edge "<< e.int_id() << "is plasmid!! due to unique cycle");
+                    DEBUG("len " << pair.first << " cov " << gp.g.coverage(e));
+                    vector<vector<EdgeId> > paths = callback.paths();
+                    for (EdgeId e: paths[0]) {
+                        DEBUG ("id " << gp.g.int_id(e) <<" len  "<< gp.g.length(e) << " cov " << gp.g.coverage(e));
+                    }
+                    paths_1 ++;
+                } else if (res == 0) {
+                    DEBUG("Edge "<< e.int_id() << "is possible plasmid due to multiple cycles");
+                    paths_many ++;
+                } else {
+                    DEBUG("Edge "<< e.int_id() << "is possible plasmid, but pathProcessor halted");
+                    paths_many ++;
+
+                }
                 found = true;
                 break;
             }
@@ -229,14 +231,14 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
         }
     }
     CompressAll(gp.g);
-    INFO("Edges with no paths " << paths_0 <<" with many(1) " << paths_many <<" too long " << too_long);
+    INFO("Edges with no paths " << paths_0 <<" with 1 " << paths_1 << "with many " << paths_many <<" too long " << too_long);
 }
 
 void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     //FIXME Seriously?! cfg::get().ds like hundred times...
     OutputEdgeSequences(gp.g, cfg::get().output_dir + "before_chromosome_removal");
     INFO("Before iteration " << 0 << ", " << gp.g.size() << " vertices in graph");
-    string additional_list = cfg::get().pd->remove_list;
+    std::string additional_list = cfg::get().pd->remove_list;
     bool use_chromosomal_list = (additional_list != "");
 
     double chromosome_coverage;

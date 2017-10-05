@@ -4,7 +4,9 @@
 
 #include "connected_component.hpp"
 #include <stack>
-
+#include <vector>
+#include <set>
+#include <unordered_set>
 
 namespace debruijn_graph {
 
@@ -18,7 +20,7 @@ void ConnectedComponentCounter::CalculateComponents() const {
         if (component_ids.find(*e) == component_ids.end()) {
             std::unordered_set <EdgeId> next;
             next.insert(*e);
-            set <EdgeId> used;
+            std::set <EdgeId> used;
             size_t ans = 0;
             while (!next.empty()) {
                 auto cur = *next.begin();

@@ -30,8 +30,8 @@ class PathProcessor {
 
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef vector<EdgeId> Path;
-    typedef typename DijkstraHelper<Graph>::BoundedDijkstra DijkstraT;
+    typedef std::vector<EdgeId> Path;
+    typedef typename DijkstraHelper<Graph>::CoverageBoundedDijkstra DijkstraT;
 public:
     class Callback {
 
@@ -180,10 +180,10 @@ private:
 public:
 
     PathProcessor(const Graph& g, VertexId start, size_t length_bound,
-                  size_t dijkstra_vertex_limit = MAX_DIJKSTRA_VERTICES) :
+                  size_t dijkstra_vertex_limit = MAX_DIJKSTRA_VERTICES, double cov_limit = 0) :
               g_(g),
               start_(start),
-              dijkstra_(DijkstraHelper<Graph>::CreateBoundedDijkstra(g, length_bound,
+              dijkstra_(DijkstraHelper<Graph>::CreateCoverageBoundedDijkstra(g, length_bound, cov_limit,
                                                                      dijkstra_vertex_limit)) {
         TRACE("Dijkstra launched");
         dijkstra_.Run(start);
@@ -214,12 +214,11 @@ public:
         return error_code;
     }
 
-private:
     static const size_t MAX_CALL_CNT = 3000;
     static const size_t MAX_DIJKSTRA_VERTICES = 3000;
     static const size_t VERTEX_USAGE_ENABLE_THRESHOLD = 500;
     static const size_t MAX_VERTEX_USAGE = 5;
-
+private:
     const Graph& g_;
     VertexId start_;
     DijkstraT dijkstra_;
@@ -231,8 +230,8 @@ template<class Graph>
 int ProcessPaths(const Graph& g, size_t min_len, size_t max_len,
                  typename Graph::VertexId start, typename Graph::VertexId end,
                  typename PathProcessor<Graph>::Callback& callback,
-                 size_t max_edge_cnt = std::numeric_limits<size_t>::max()) {
-    PathProcessor<Graph> processor(g, start, max_len);
+                 size_t max_edge_cnt = std::numeric_limits<size_t>::max(), double min_coverage = 0) {
+    PathProcessor<Graph> processor(g, start, max_len, PathProcessor<Graph>::MAX_DIJKSTRA_VERTICES, min_coverage);
     return processor.Process(end, min_len, max_len, callback, max_edge_cnt);
 }
 

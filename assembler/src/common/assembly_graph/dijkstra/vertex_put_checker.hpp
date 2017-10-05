@@ -6,6 +6,7 @@
 //***************************************************************************
 
 #pragma once
+#include "math/xmath.h"
 
 namespace omnigraph {
 
