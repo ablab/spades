@@ -159,9 +159,12 @@ void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bo
 void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
     size_t min_len = 2000;
     double min_coverage = 20;
-    double too_little = 5;
+    double too_little = 10;
     size_t max_loop = 150000;
+    string out_file = "circulars.fasta";
+
     set<EdgeId> to_save;
+    vector<string> res_strings;
     for (size_t count = 0; count < 3; count++) {
         vector<std::pair<size_t, EdgeId>> long_edges;
         for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
@@ -177,13 +180,17 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
         size_t too_long = 0;
         set<EdgeId> to_delete;
         for (const auto &pair: long_edges) {
+            EdgeId e = pair.second;
+            if (to_save.find(std::min(e, gp.g.conjugate(e))) != to_save.end()) {
+                DEBUG ("already found a plasmid with edge " << e << " processing stopped");
+            }
             if (pair.first > max_loop) {
                 too_long++;
-                EdgeId e = pair.second;
                 to_delete.insert(std::min(e, gp.g.conjugate(e)));
                 continue;
             }
-            EdgeId e = pair.second;
+
+
             VertexId start_v = gp.g.EdgeStart(e);
             VertexId end_v = gp.g.EdgeEnd(e);
 
@@ -205,10 +212,18 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
                         DEBUG("Edge " << e.int_id() << "is plasmid!! due to unique cycle");
                         DEBUG("len " << pair.first << " cov " << gp.g.coverage(e));
                         vector<vector<EdgeId> > paths = callback.paths();
+
                         for (EdgeId e: paths[0]) {
                             DEBUG ("id " << gp.g.int_id(e) << " len  " << gp.g.length(e) << " cov " <<
                                    gp.g.coverage(e));
                         }
+                        paths[0].push_back(e);
+                        std::stringstream ss;
+                        for (EdgeId e: paths[0]) {
+                            string tmp = gp.g.str(e);
+                            ss << tmp.substr(0, tmp.length() - gp.g.k());
+                        }
+                        res_strings.push_back(ss.str());
                         to_save.insert(std::min(e, gp.g.conjugate(e)));
                         paths_1++;
                     } else if (res == 0) {
@@ -217,7 +232,6 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
                     } else {
                         DEBUG("Edge " << e.int_id() << "is possible plasmid, but pathProcessor halted");
                         paths_many++;
-
                     }
                     found = true;
                     break;
@@ -236,7 +250,7 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
             }
         }
         for (auto e: to_delete){
-            if (to_save.find(e) == to_save.end())
+            if (to_save.find(std::min(e, gp.g.conjugate(e))) == to_save.end())
                 gp.g.DeleteEdge(e);
             else {
                 DEBUG("Edge "<<e.int_id()<<" saved from deletion because of cycle")
@@ -244,6 +258,12 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
         }
         CompressAll(gp.g);
         INFO("Edges with no paths " << paths_0 <<" with 1 " << paths_1 << "with many " << paths_many <<" too long " << too_long);
+    }
+    std::ofstream is(out_file);
+    size_t count = 0;
+    for (const auto &s: res_strings) {
+        is << "NODE_" << count << endl;
+        is << s << endl;
     }
 }
 
