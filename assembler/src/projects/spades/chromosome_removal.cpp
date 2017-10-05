@@ -164,7 +164,7 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
     std::vector<std::pair<size_t, EdgeId>> long_edges;
     for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         if ((gp.g.length(*it) >= min_len) && (math::gr(gp.g.coverage(*it), min_coverage))) {
-            long_edges.push_back(std::make_pair(min_len, *it));
+            long_edges.push_back(std::make_pair(gp.g.length(*it), *it));
         }
     }
     //length decrease order
@@ -177,6 +177,8 @@ void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
     for (const auto &pair: long_edges) {
         if (pair.first > max_loop) {
             too_long ++;
+            EdgeId e = pair.second;
+            to_delete.insert(std::min(e, gp.g.conjugate(e)));
             continue;
         }
         EdgeId e = pair.second;
