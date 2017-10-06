@@ -23,38 +23,6 @@
 
 using namespace llvm;
 
-namespace io {
-template<>
-void SequencingLibrary<debruijn_graph::config::DataSetData>::yamlize(llvm::yaml::IO &io) {
-  // First, load the "common stuff"
-  SequencingLibraryBase::yamlize(io);
-
-  // Now load the remaining stuff
-  io.mapOptional("read length"                , data_.read_length);
-//  io.mapOptional("average read length"        , data_.avg_read_length);
-  io.mapOptional("insert size mean"           , data_.mean_insert_size);
-  io.mapOptional("insert size deviation"      , data_.insert_size_deviation);
-  io.mapOptional("insert size left quantile"  , data_.insert_size_left_quantile);
-  io.mapOptional("insert size right quantile" , data_.insert_size_right_quantile);
-  io.mapOptional("insert size median"         , data_.median_insert_size);
-  io.mapOptional("insert size mad"            , data_.insert_size_mad);
-  io.mapOptional("insert size distribution"   , data_.insert_size_distribution);
-//  io.mapOptional("average coverage"           , data_.average_coverage);
-  io.mapOptional("pi threshold"               , data_.pi_threshold);
-  io.mapOptional("binary converted"           , data_.binary_reads_info.binary_coverted);
-  io.mapOptional("single reads mapped"        , data_.single_reads_mapped);
-  io.mapOptional("library index"              , data_.lib_index);
-//  io.mapOptional("number of reads"            , data_.read_count);
-  io.mapOptional("total nucleotides"          , data_.total_nucls);
-}
-
-template<>
-void SequencingLibrary<debruijn_graph::config::DataSetData>::validate(llvm::yaml::IO &io, llvm::StringRef &res) {
-  // Simply ask base class to validate for us
-  SequencingLibraryBase::validate(io, res);
-}
-}
-
 #include "pipeline/library.inl"
 
 namespace llvm { namespace yaml {
@@ -65,7 +33,29 @@ template<> struct MappingTraits<debruijn_graph::config::dataset> {
         io.mapRequired("average read length", cfg.average_read_length);
         io.mapRequired("average coverage", cfg.average_coverage);
         //FIXME return it!
-        io.mapRequired("libraries", cfg.reads);
+//        io.mapRequired("libraries", cfg.reads);
+    }
+};
+
+template<> struct MappingTraits<debruijn_graph::config::DataSetData> {
+    static void mapping(IO& io, debruijn_graph::config::DataSetData& data) {
+
+        io.mapOptional("read length"                , data.read_length);
+//  io.mapOptional("average read length"        , ds.avg_read_length);
+        io.mapOptional("insert size mean"           , data.mean_insert_size);
+        io.mapOptional("insert size deviation"      , data.insert_size_deviation);
+        io.mapOptional("insert size left quantile"  , data.insert_size_left_quantile);
+        io.mapOptional("insert size right quantile" , data.insert_size_right_quantile);
+        io.mapOptional("insert size median"         , data.median_insert_size);
+        io.mapOptional("insert size mad"            , data.insert_size_mad);
+        io.mapOptional("insert size distribution"   , data.insert_size_distribution);
+//  io.mapOptional("average coverage"           , ds.average_coverage);
+        io.mapOptional("pi threshold"               , data.pi_threshold);
+        io.mapOptional("binary converted"           , data.binary_reads_info.binary_coverted);
+        io.mapOptional("single reads mapped"        , data.single_reads_mapped);
+        io.mapOptional("library index"              , data.lib_index);
+//  io.mapOptional("number of reads"            , ds.read_count);
+        io.mapOptional("total nucleotides"          , data.total_nucls);
     }
 };
 

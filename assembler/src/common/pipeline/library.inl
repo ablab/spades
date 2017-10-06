@@ -32,6 +32,19 @@ StringRef MappingTraits<Library<Data>>::validate(yaml::IO &io, Library<Data> &li
 }}
 
 template<class Data>
+void io::SequencingLibrary<Data>::yamlize(llvm::yaml::IO &io) {
+    // First, load the "common stuff"
+    SequencingLibraryBase::yamlize(io);
+    io.mapRequired("data", data_);
+}
+
+template<class Data>
+void io::SequencingLibrary<Data>::validate(llvm::yaml::IO &io, llvm::StringRef &res) {
+    // Simply ask base class to validate for us
+    SequencingLibraryBase::validate(io, res);
+}
+
+template<class Data>
 void io::DataSet<Data>::save(const std::string &filename) {
     std::error_code EC;
     llvm::raw_fd_ostream ofs(filename, EC, llvm::sys::fs::OpenFlags::F_Text);
