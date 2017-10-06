@@ -33,13 +33,12 @@ template<> struct MappingTraits<debruijn_graph::config::dataset> {
         io.mapRequired("average read length", cfg.average_read_length);
         io.mapRequired("average coverage", cfg.average_coverage);
         //FIXME return it!
-//        io.mapRequired("libraries", cfg.reads);
+        io.mapRequired("libraries", cfg.reads);
     }
 };
 
 template<> struct MappingTraits<debruijn_graph::config::DataSetData> {
     static void mapping(IO& io, debruijn_graph::config::DataSetData& data) {
-
         io.mapOptional("read length"                , data.read_length);
 //  io.mapOptional("average read length"        , ds.avg_read_length);
         io.mapOptional("insert size mean"           , data.mean_insert_size);
