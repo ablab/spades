@@ -116,50 +116,50 @@ public:
     }
 };
 
-template<class Graph>
-class BlackEdgesStat : public AbstractStatCounter {
-private:
-    typedef typename Graph::EdgeId EdgeId;
-    const Graph &graph_;
-    Path<EdgeId> path1_;
-    Path<EdgeId> path2_;
-public:
-    BlackEdgesStat(const Graph &graph, Path<EdgeId> path1, Path<EdgeId> path2) :
-            graph_(graph), path1_(path1), path2_(path2) {
-    }
-
-    virtual ~BlackEdgesStat() {
-    }
-
-    virtual void Count() {
-        size_t black_count = 0;
-        size_t edge_count = 0;
-        const vector <EdgeId> path_edges1 = path1_.sequence();
-        const vector <EdgeId> path_edges2 = path2_.sequence();
-        set <EdgeId> colored_edges;
-        colored_edges.insert(path_edges1.begin(), path_edges1.end());
-        colored_edges.insert(path_edges2.begin(), path_edges2.end());
-        size_t sum_length = 0;
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            edge_count++;
-            if (colored_edges.count(*it) == 0) {
-                black_count++;
-                sum_length += graph_.length(*it);
-            }
-        }
-        if (edge_count > 0) {
-            size_t total_genome_size = 0;
-            for (const auto &chr: cfg::get().ds.reference_genome)
-                total_genome_size += 2*chr.size();
-            INFO("Error edges count: " << black_count << " which is " <<
-                 100.0 * (double) black_count / (double) edge_count << "% of all edges");
-            INFO("Total length of all black edges: " << sum_length << ". While double genome length is " <<
-                 total_genome_size);
-        } else {
-            INFO("Error edges count: " << black_count << " which is 0% of all edges");
-        }
-    }
-};
+//template<class Graph>
+//class BlackEdgesStat : public AbstractStatCounter {
+//private:
+//    typedef typename Graph::EdgeId EdgeId;
+//    const Graph &graph_;
+//    Path<EdgeId> path1_;
+//    Path<EdgeId> path2_;
+//public:
+//    BlackEdgesStat(const Graph &graph, Path<EdgeId> path1, Path<EdgeId> path2) :
+//            graph_(graph), path1_(path1), path2_(path2) {
+//    }
+//
+//    virtual ~BlackEdgesStat() {
+//    }
+//
+//    virtual void Count() {
+//        size_t black_count = 0;
+//        size_t edge_count = 0;
+//        const vector <EdgeId> path_edges1 = path1_.sequence();
+//        const vector <EdgeId> path_edges2 = path2_.sequence();
+//        set <EdgeId> colored_edges;
+//        colored_edges.insert(path_edges1.begin(), path_edges1.end());
+//        colored_edges.insert(path_edges2.begin(), path_edges2.end());
+//        size_t sum_length = 0;
+//        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+//            edge_count++;
+//            if (colored_edges.count(*it) == 0) {
+//                black_count++;
+//                sum_length += graph_.length(*it);
+//            }
+//        }
+//        if (edge_count > 0) {
+//            size_t total_genome_size = 0;
+//            for (const auto &chr: cfg::get().ds.reference_genome)
+//                total_genome_size += 2*chr.size();
+//            INFO("Error edges count: " << black_count << " which is " <<
+//                 100.0 * (double) black_count / (double) edge_count << "% of all edges");
+//            INFO("Total length of all black edges: " << sum_length << ". While double genome length is " <<
+//                 total_genome_size);
+//        } else {
+//            INFO("Error edges count: " << black_count << " which is 0% of all edges");
+//        }
+//    }
+//};
 
 template<class Graph>
 class NStat : public AbstractStatCounter {

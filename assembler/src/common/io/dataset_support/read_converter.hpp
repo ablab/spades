@@ -36,6 +36,7 @@ private:
         return fs::FileExists(lib.data().binary_reads_info.bin_reads_info_file);
     }
 
+    //FIXME change to yaml
     static bool LoadLibIfExists(SequencingLibraryT& lib) {
         auto& data = lib.data();
 
@@ -66,7 +67,8 @@ private:
 
         INFO("Binary reads detected");
         info >> data.read_length;
-        info >> data.read_count;
+        info >> data.merged_length;
+        //info >> data.read_count;
         info >> data.total_nucls;
         data.binary_reads_info.binary_coverted = true;
 
@@ -74,6 +76,7 @@ private:
         return true;
     }
 
+    //FIXME change to yaml
     static void ConvertToBinary(SequencingLibraryT& lib) {
         auto& data = lib.data();
         std::ofstream info;
@@ -106,15 +109,17 @@ private:
         read_stat.merge(single_converter.ToBinary(*single_reader));
 
         data.read_length = read_stat.max_len_;
-        data.read_count = read_stat.read_count_;
+        //data.read_count = read_stat.read_count_;
         data.total_nucls = read_stat.total_len_;
 
+        //FIXME use yaml
         info.open(data.binary_reads_info.bin_reads_info_file.c_str(), std::ios_base::out);
         info << current_binary_format_version << " " <<
             data.binary_reads_info.chunk_num << " " <<
             data.lib_index << " " <<
             data.read_length << " " <<
-            data.read_count << " " <<
+            //data.read_count << " " <<
+            data.merged_length << " " <<
             data.total_nucls << "\n";
 
         info.close();

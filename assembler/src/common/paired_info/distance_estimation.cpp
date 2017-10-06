@@ -15,7 +15,7 @@ std::vector<size_t> GraphDistanceFinder::GetGraphDistancesLengths(EdgeId e1, Edg
 }
 
 void GraphDistanceFinder::FillGraphDistancesLengths(EdgeId e1, LengthMap &second_edges) const {
-    vector <size_t> path_lower_bounds;
+    vector<size_t> path_lower_bounds;
     size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), insert_size_, delta_);
     PathProcessor <Graph> paths_proc(graph_, graph_.EdgeEnd(e1), path_upper_bound);
 
@@ -26,7 +26,7 @@ void GraphDistanceFinder::FillGraphDistancesLengths(EdgeId e1, LengthMap &second
 
         TRACE("Bounds for paths are " << path_lower_bound << " " << path_upper_bound);
 
-        DistancesLengthsCallback <Graph> callback(graph_);
+        DistancesLengthsCallback<Graph> callback(graph_);
         paths_proc.Process(graph_.EdgeStart(e2), path_lower_bound, path_upper_bound, callback);
         GraphLengths lengths = callback.distances();
         for (size_t j = 0; j < lengths.size(); ++j) {

@@ -277,7 +277,6 @@ public:
     typedef SequencingLibrary<Data> Library;
     typedef std::vector<Library> LibraryStorage;
 
-public:
     typedef typename LibraryStorage::iterator iterator;
     typedef typename LibraryStorage::const_iterator const_iterator;
     typedef adt::chained_iterator<typename Library::single_reads_iterator> single_reads_iterator;

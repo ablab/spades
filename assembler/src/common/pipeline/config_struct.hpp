@@ -105,9 +105,12 @@ std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) 
     return names[size_t(mode)];
 }
 
+//FIXME rename to LibraryData
 struct DataSetData {
     size_t read_length;
-    double avg_read_length;
+    size_t merged_length;
+    //FIXME way of filling was very weird
+    //double avg_read_length;
     double mean_insert_size;
     double insert_size_deviation;
     double insert_size_left_quantile;
@@ -119,9 +122,10 @@ struct DataSetData {
     size_t lib_index;
     bool single_reads_mapped;
     uint64_t total_nucls;
-    size_t read_count;
+    //FIXME what should be the meaning for merged reads?
+    //size_t read_count;
 
-    double average_coverage;
+//    double average_coverage;
     double pi_threshold;
 
     struct BinaryReadsInfo {
@@ -137,7 +141,8 @@ struct DataSetData {
     } binary_reads_info;
 
 
-    DataSetData(): read_length(0), avg_read_length(0.0),
+    DataSetData(): read_length(0), //avg_read_length(0.0),
+                   merged_length(0),
                    mean_insert_size(0.0),
                    insert_size_deviation(0.0),
                    insert_size_left_quantile(0.0),
@@ -147,8 +152,8 @@ struct DataSetData {
                    lib_index(0),
                    single_reads_mapped(false),
                    total_nucls(0),
-                   read_count(0),
-                   average_coverage(0.0),
+                   //read_count(0),
+//                   average_coverage(0.0),
                    pi_threshold(0.0),
                    binary_reads_info() {}
 };
@@ -156,12 +161,12 @@ struct DataSetData {
 struct dataset {
     typedef io::DataSet<DataSetData>::Library Library;
 
-    io::DataSet<DataSetData> reads;
+    dataset() :
+        max_read_length(0),
+        average_read_length(0.0),
+        average_coverage(0.0) {}
 
-    size_t max_read_length;
-    double average_coverage;
-    double average_read_length;
-
+    //FIXME remove getters/setters
     size_t RL() const { return max_read_length; }
     void set_RL(size_t RL) {
         max_read_length = RL;
@@ -170,26 +175,19 @@ struct dataset {
     double aRL() const { return average_read_length; }
     void set_aRL(double aRL) {
         average_read_length = aRL;
-        for (size_t i = 0; i < reads.lib_count(); ++i) {
-            reads[i].data().avg_read_length = aRL;
-        }
     }
 
     double avg_coverage() const { return average_coverage; }
     void set_avg_coverage(double avg_coverage) {
         average_coverage = avg_coverage;
-        for (size_t i = 0; i < reads.lib_count(); ++i) {
-            reads[i].data().average_coverage = avg_coverage;
-        }
     }
 
-    std::string reference_genome_filename;
-    std::string reads_filename;
-
+    size_t max_read_length;
+    double average_read_length;
+    double average_coverage;
+    io::DataSet<DataSetData> reads;
     std::vector<std::string> reference_genome;
 
-    dataset(): max_read_length(0), average_coverage(0.0) {
-    }
 };
 
 // struct for debruijn project's configuration file
