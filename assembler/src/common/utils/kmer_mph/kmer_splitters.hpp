@@ -134,14 +134,20 @@ protected:
 
                 // Write k-mers
                 FILE *f = fopen(ostreams[k]->file().c_str(), "ab");
-                VERIFY_MSG(f, "Cannot open temporary file to write");
-                fwrite(SortBuffer.data(), SortBuffer.el_data_size(), cnt, f);
+                if (!f)
+                    FATAL_ERROR("Cannot open temporary file " << ostreams[k]->file() << " for writing");
+                size_t res = fwrite(SortBuffer.data(), SortBuffer.el_data_size(), cnt, f);
+                if (res != cnt)
+                    FATAL_ERROR("I/O error! Incomplete write! Reason: " << strerror(errno) << ". Error code: " << errno);
                 fclose(f);
 
                 // Write index
                 f = fopen((ostreams[k]->file() + ".idx").c_str(), "ab");
-                VERIFY_MSG(f, "Cannot open temporary file to write");
-                fwrite(&cnt, sizeof(cnt), 1, f);
+                if (!f)
+                    FATAL_ERROR("Cannot open temporary file " << ostreams[k]->file() << " for writing");
+                res = fwrite(&cnt, sizeof(cnt), 1, f);
+                if (res != 1)
+                    FATAL_ERROR("I/O error! Incomplete write! Reason: " << strerror(errno) << ". Error code: " << errno);
                 fclose(f);
             }
         }
