@@ -40,7 +40,7 @@ template<class Data>
 void io::SequencingLibrary<Data>::yamlize(llvm::yaml::IO &io) {
     // First, load the "common stuff"
     SequencingLibraryBase::yamlize(io);
-    io.mapRequired("data", data_);
+    io.mapOptional("data", data_);
 }
 
 template<class Data>

@@ -94,13 +94,6 @@ private:
         ReadStreamStat read_stat = paired_converter.ToBinary(*paired_reader, lib.orientation());
         read_stat.read_count_ *= 2;
 
-        INFO("Converting merged reads");
-        BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix,
-                                      data.binary_reads_info.chunk_num,
-                                      data.binary_reads_info.buffer_size);
-        SingleStreamPtr merged_reader = merged_easy_reader(lib, false, false);
-        read_stat.merge(merged_converter.ToBinary(*merged_reader));
-
         INFO("Converting single reads");
         BinaryWriter single_converter(data.binary_reads_info.single_read_prefix,
                                           data.binary_reads_info.chunk_num,
@@ -108,8 +101,19 @@ private:
         SingleStreamPtr single_reader = single_easy_reader(lib, false, false);
         read_stat.merge(single_converter.ToBinary(*single_reader));
 
+        INFO("Converting merged reads");
+        BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix,
+                                      data.binary_reads_info.chunk_num,
+                                      data.binary_reads_info.buffer_size);
+        SingleStreamPtr merged_reader = merged_easy_reader(lib, false, false);
+        auto merged_stats = merged_converter.ToBinary(*merged_reader);
+
+        data.merged_length = merged_stats.max_len_;
         data.read_length = read_stat.max_len_;
-        //data.read_count = read_stat.read_count_;
+
+        //delayed merging hack to keep length stats separate
+        read_stat.merge(merged_stats);
+        data.read_count = read_stat.read_count_;
         data.total_nucls = read_stat.total_len_;
 
         //FIXME use yaml
@@ -257,7 +261,7 @@ BinarySingleStreams single_binary_readers_for_libs(dataset& dataset_info,
 
     BinarySingleStreams joint_streams;
     for (size_t j = 0; j < chunk_num; ++j) {
-      joint_streams.push_back(MultifileWrap<SingleReadSeq>(streams[j]));
+        joint_streams.push_back(MultifileWrap<SingleReadSeq>(streams[j]));
     }
     return joint_streams;
 }

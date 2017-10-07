@@ -32,29 +32,26 @@ template<> struct MappingTraits<debruijn_graph::config::dataset> {
         io.mapRequired("max read length", cfg.max_read_length);
         io.mapRequired("average read length", cfg.average_read_length);
         io.mapRequired("average coverage", cfg.average_coverage);
-        //FIXME return it!
         io.mapRequired("libraries", cfg.reads);
     }
 };
 
 template<> struct MappingTraits<debruijn_graph::config::DataSetData> {
     static void mapping(IO& io, debruijn_graph::config::DataSetData& data) {
-        io.mapOptional("read length"                , data.read_length);
-//  io.mapOptional("average read length"        , ds.avg_read_length);
-        io.mapOptional("insert size mean"           , data.mean_insert_size);
-        io.mapOptional("insert size deviation"      , data.insert_size_deviation);
-        io.mapOptional("insert size left quantile"  , data.insert_size_left_quantile);
-        io.mapOptional("insert size right quantile" , data.insert_size_right_quantile);
-        io.mapOptional("insert size median"         , data.median_insert_size);
-        io.mapOptional("insert size mad"            , data.insert_size_mad);
-        io.mapOptional("insert size distribution"   , data.insert_size_distribution);
-//  io.mapOptional("average coverage"           , ds.average_coverage);
-        io.mapOptional("pi threshold"               , data.pi_threshold);
-        io.mapOptional("binary converted"           , data.binary_reads_info.binary_coverted);
-        io.mapOptional("single reads mapped"        , data.single_reads_mapped);
-        io.mapOptional("library index"              , data.lib_index);
-//  io.mapOptional("number of reads"            , ds.read_count);
-        io.mapOptional("total nucleotides"          , data.total_nucls);
+        io.mapRequired("read length"                , data.read_length);
+        io.mapRequired("insert size mean"           , data.mean_insert_size);
+        io.mapRequired("insert size deviation"      , data.insert_size_deviation);
+        io.mapRequired("insert size left quantile"  , data.insert_size_left_quantile);
+        io.mapRequired("insert size right quantile" , data.insert_size_right_quantile);
+        io.mapRequired("insert size median"         , data.median_insert_size);
+        io.mapRequired("insert size mad"            , data.insert_size_mad);
+        io.mapRequired("insert size distribution"   , data.insert_size_distribution);
+        io.mapRequired("pi threshold"               , data.pi_threshold);
+        io.mapRequired("binary converted"           , data.binary_reads_info.binary_coverted);
+        io.mapRequired("single reads mapped"        , data.single_reads_mapped);
+        io.mapRequired("library index"              , data.lib_index);
+        io.mapRequired("number of reads"            , data.read_count);
+        io.mapRequired("total nucleotides"          , data.total_nucls);
     }
 };
 

@@ -113,9 +113,9 @@ void EarlyClipTips(size_t k, const config::debruijn_config::construction& params
 }
 
 template<class Graph, class Read, class Index>
-utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_config::construction params,
-                                                 io::ReadStreamList<Read>& streams, Graph& g,
-                                                 Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+void ConstructGraphUsingExtentionIndex(const config::debruijn_config::construction params,
+                                       io::ReadStreamList<Read>& streams, Graph& g,
+                                       Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     size_t k = g.k();
     INFO("Constructing DeBruijn graph for k=" << k);
 
@@ -128,10 +128,11 @@ utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_c
     typedef typename utils::ExtensionIndexHelper<ExtensionIndex>::DeBruijnExtensionIndexBuilderT ExtensionIndexBuilder;
     ExtensionIndex ext((unsigned) k, index.inner_index().workdir());
 
-    //fixme hack
-    utils::ReadStatistics stats = ExtensionIndexBuilder().BuildExtensionIndexFromStream(ext, streams, (contigs_stream == 0) ? 0 : &(*contigs_stream), params.read_buffer_size);
+    ExtensionIndexBuilder().BuildExtensionIndexFromStream(ext, streams, (contigs_stream == 0) ? 0 : &(*contigs_stream), params.read_buffer_size);
 
-    EarlyClipTips(k, params, stats.max_read_length_, ext);
+    //FIXME get rid of cfg::get
+    VERIFY(cfg::get().ds.RL() > 0);
+    EarlyClipTips(k, params, cfg::get().ds.RL(), ext);
 
     INFO("Condensing graph");
     VERIFY(!index.IsAttached());
@@ -142,31 +143,23 @@ utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_c
     //todo pass buffer size
     index.Refill();
     index.Attach();
-
-    return stats;
 }
 
 template<class Graph, class Index, class Streams>
-utils::ReadStatistics ConstructGraph(const config::debruijn_config::construction &params,
+void ConstructGraph(const config::debruijn_config::construction &params,
                               Streams& streams, Graph& g,
                               Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-    if (params.con_mode == config::construction_mode::extention) {
-        return ConstructGraphUsingExtentionIndex(params, streams, g, index, contigs_stream);
-//    } else if(params.con_mode == construction_mode::con_old){
-//        return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
-    } else {
-        INFO("Invalid construction mode")
-        VERIFY(false);
-        return {0,0,0};
-    }
+    VERIFY(params.con_mode == config::construction_mode::extention);
+    ConstructGraphUsingExtentionIndex(params, streams, g, index, contigs_stream);
+//  ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
 }
 
 template<class Graph, class Index, class Streams>
-utils::ReadStatistics ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
+void ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
                                   Streams& streams, Graph& g,
                                   Index& index, FlankingCoverage<Graph>& flanking_cov,
                                   io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-    utils::ReadStatistics rs = ConstructGraph(params, streams, g, index, contigs_stream);
+    ConstructGraph(params, streams, g, index, contigs_stream);
 
     typedef typename Index::InnerIndex InnerIndex;
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
@@ -174,7 +167,6 @@ utils::ReadStatistics ConstructGraphWithCoverage(const config::debruijn_config::
     IndexBuilder().ParallelFillCoverage(index.inner_index(), streams);
     INFO("Filling coverage and flanking coverage from index");
     FillCoverageAndFlanking(index.inner_index(), g, flanking_cov);
-    return rs;
 }
 
 }

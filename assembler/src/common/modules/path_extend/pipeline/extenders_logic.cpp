@@ -189,7 +189,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t 
     const auto& lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
 
-    auto provider = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL());
+    auto provider = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().read_length);
 
     auto meta_wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib,
                                                        params_.pset.normalize_weight,
@@ -221,7 +221,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
 //    INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
-    auto cip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL());
+    auto cip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().read_length);
     shared_ptr<WeightCounter> wc =
         make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight,
                                             support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold),
@@ -252,11 +252,11 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
     shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
     if (opts.use_default_single_threshold) {
         if (params_.uneven_depth) {
-            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL());
+            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().read_length);
         } else {
             double lib_cov = support_.EstimateLibCoverage(lib_index);
             INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
-            iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, dataset_info_.RL(), lib_cov);
+            iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().read_length, lib_cov);
         }
     }
     auto wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight,

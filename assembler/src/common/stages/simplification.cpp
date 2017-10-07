@@ -568,6 +568,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     INFO("Counting average coverage");
     AvgCovereageCounter<Graph> cov_counter(gp.g);
 
+    VERIFY(cfg::get_writable().ds.avg_coverage() == 0.);
     cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
 
     INFO("Average coverage = " << cfg::get().ds.avg_coverage());

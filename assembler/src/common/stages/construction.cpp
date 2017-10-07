@@ -22,16 +22,8 @@ void construct_graph(io::ReadStreamList<Read>& streams,
     config::debruijn_config::construction params = cfg::get().con;
     params.early_tc.enable &= !cfg::get().gap_closer_enable;
 
-    utils::ReadStatistics stats = ConstructGraphWithCoverage(params, streams, gp.g,
-                                                      gp.index, gp.flanking_cov, contigs_stream);
-    size_t rl = stats.max_read_length_;
-
-    if (!cfg::get().ds.RL()) {
-        INFO("Figured out: read length = " << rl);
-        cfg::get_writable().ds.set_RL(rl);
-        cfg::get_writable().ds.set_aRL((double) stats.bases_ / (double) stats.reads_);
-    } else if (cfg::get().ds.RL() != rl)
-        WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL() << ", not " << rl);
+    ConstructGraphWithCoverage(params, streams, gp.g,
+                               gp.index, gp.flanking_cov, contigs_stream);
 }
 
 void Construction::run(conj_graph_pack &gp, const char*) {
@@ -64,6 +56,24 @@ void Construction::run(conj_graph_pack &gp, const char*) {
             libs_for_construction.push_back(i);
 
     auto streams = io::single_binary_readers_for_libs(dataset, libs_for_construction, true, true);
+
+    //Updating dataset stats
+    size_t max_len = 0;
+    uint64_t total_nucls = 0;
+    size_t read_count = 0;
+    for (size_t lib_id : libs_for_construction) {
+        auto lib_data = dataset.reads[lib_id].data();
+        //FIXME discuss this hack with read_length vs. merged_length
+        VERIFY(lib_data.read_length > 0);
+        max_len = std::max(max_len, lib_data.read_length);
+        max_len = std::max(max_len, lib_data.merged_length);
+        total_nucls += dataset.reads[lib_id].data().total_nucls;
+        read_count += dataset.reads[lib_id].data().read_count;
+    }
+    VERIFY(dataset.RL() == 0 && dataset.aRL() == 0.);
+    dataset.set_RL(max_len);
+    dataset.set_aRL(double(total_nucls) / double(read_count));
+
     construct_graph<io::SingleReadSeq>(streams, gp, contigs_stream);
 }
 

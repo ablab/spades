@@ -12,6 +12,7 @@
 
 namespace io {
 
+//FIXME rename fields
 struct ReadStreamStat {
     size_t read_count_;
     size_t max_len_;

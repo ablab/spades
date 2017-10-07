@@ -109,8 +109,6 @@ std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) 
 struct DataSetData {
     size_t read_length;
     size_t merged_length;
-    //FIXME way of filling was very weird
-    //double avg_read_length;
     double mean_insert_size;
     double insert_size_deviation;
     double insert_size_left_quantile;
@@ -123,7 +121,8 @@ struct DataSetData {
     bool single_reads_mapped;
     uint64_t total_nucls;
     //FIXME what should be the meaning for merged reads?
-    //size_t read_count;
+    size_t read_count;
+    //double avg_read_length;
 
 //    double average_coverage;
     double pi_threshold;
@@ -152,7 +151,7 @@ struct DataSetData {
                    lib_index(0),
                    single_reads_mapped(false),
                    total_nucls(0),
-                   //read_count(0),
+                   read_count(0),
 //                   average_coverage(0.0),
                    pi_threshold(0.0),
                    binary_reads_info() {}
@@ -167,6 +166,7 @@ struct dataset {
         average_coverage(0.0) {}
 
     //FIXME remove getters/setters
+    //FIXME review usages
     size_t RL() const { return max_read_length; }
     void set_RL(size_t RL) {
         max_read_length = RL;

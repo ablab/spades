@@ -212,12 +212,14 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
   DECL_LOGGER("DeBruijnKMerSplitter");
 };
 
+//FIXME exact duplication with ReadStreamStat
 struct ReadStatistics {
   size_t reads_;
   size_t max_read_length_;
   size_t bases_;
 };
 
+//FIXME we do not need read statistics here anymore :)
 template<class Read, class KmerFilter>
 class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   io::ReadStreamList<Read> &streams_;

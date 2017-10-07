@@ -61,7 +61,7 @@ public:
 
 public:
     template<class Index, class Streams>
-    ReadStatistics BuildExtensionIndexFromStream(Index &index, Streams &streams, io::SingleStream *contigs_stream = 0,
+    void BuildExtensionIndexFromStream(Index &index, Streams &streams, io::SingleStream *contigs_stream = 0,
                                                  size_t read_buffer_size = 0) const {
         unsigned nthreads = (unsigned) streams.size();
 
@@ -89,8 +89,6 @@ public:
         for (unsigned i = 0; i < nthreads; ++i)
             FillExtensionsFromIndex(counter.GetMergedKMersFname(i), index);
         INFO("Building k-mer extensions from k+1-mers finished.");
-
-        return splitter.stats();
     }
 
 private:
