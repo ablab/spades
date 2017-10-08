@@ -231,22 +231,22 @@ public:
             : base(K) {}
 
     void AddOutgoing(const KeyWithHash &kwh, char nucl) {
-        TRACE("Add outgoing " << kwh << " " << size_t(nucl) << " " << kwh.is_minimal());
+        TRACE("Add outgoing " << kwh << " " << ::nucl(nucl) << " " << kwh.is_minimal());
         this->get_raw_value_reference(kwh).AddOutgoing(nucl, kwh.is_minimal());
     }
 
     void AddIncoming(const KeyWithHash &kwh, char nucl) {
-        TRACE("Add incoming " << kwh << " " << size_t(nucl) << " " << kwh.is_minimal());
+        TRACE("Add incoming " << kwh << " " << ::nucl(nucl) << " " << kwh.is_minimal());
         this->get_raw_value_reference(kwh).AddIncoming(nucl, kwh.is_minimal());
     }
 
     void DeleteOutgoing(const KeyWithHash &kwh, char nucl) {
-        TRACE("Delete outgoing " << kwh << " " << size_t(nucl) << " " << kwh.is_minimal());
+        TRACE("Delete outgoing " << kwh << " " << ::nucl(nucl) << " " << kwh.is_minimal());
         this->get_raw_value_reference(kwh).DeleteOutgoing(nucl, kwh.is_minimal());
     }
 
     void DeleteIncoming(const KeyWithHash &kwh, char nucl) {
-        TRACE("Delete incoming " << kwh << " " << size_t(nucl) << " " << kwh.is_minimal());
+        TRACE("Delete incoming " << kwh << " " << ::nucl(nucl) << " " << kwh.is_minimal());
         this->get_raw_value_reference(kwh).DeleteIncoming(nucl, kwh.is_minimal());
     }
 
