@@ -79,7 +79,7 @@ inline char complement(char c) {
  */
 
 struct nucl_complement_functor { // still unused
-    inline bool operator() (char c) const {
+    inline char operator() (char c) const {
         char cc = nucl_complement_map[(unsigned)c];
         return cc ? cc : 'N';
     }
