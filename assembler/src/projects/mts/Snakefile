@@ -23,7 +23,7 @@ rule all:
 # Assemble with MegaHIT
 rule megahit:
     input:   left=left_reads, right=right_reads
-    output:  "assembly/megahit/{group}/final.contigs.fasta"
+    output:  "assembly/megahit/{group}/final.contigs.fa"
     params:  left=lambda w: ",".join(left_reads(w)),
              right=lambda w: ",".join(right_reads(w)),
              dir="assembly/megahit/{group}"
@@ -32,7 +32,7 @@ rule megahit:
     message: "Assembling {wildcards.group} with MegaHIT"
     shell:   "rm -rf {params.dir} &&"
              " {SOFT}/megahit/megahit -1 {params.left} -2 {params.right}"
-             " -t {threads} -o {params.dir} >{log} 2>&1 &&"
+             " -t {threads} -o {params.dir} >{log} 2>&1"
 
 rule megahit_convert:
     input:   "assembly/megahit/{group}/final.contigs.fa"
