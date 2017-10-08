@@ -78,6 +78,7 @@ int main(int argc, char* argv[]) {
         // Inform OpenMP runtime about this :)
         omp_set_num_threads((int) nthreads);
 
+        fs::make_dir(outdir);
         auto workdir = fs::tmp::make_temp_dir(outdir, "construction");
 
         io::DataSet<debruijn_graph::config::LibraryData> dataset;
