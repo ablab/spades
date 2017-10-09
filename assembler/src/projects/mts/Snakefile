@@ -59,13 +59,13 @@ rule copy_contigs:
     input:   "assembly/{}/{{group}}.fasta".format(ASSEMBLER)
     output:  "assembly/full/{group,(sample|group)\d+}.fasta"
     message: "Prepare full contigs of {wildcards.group}"
-    shell:   "cp {input} {output}"
+    shell:   "{SCRIPTS}/cut_fasta.py -l {MIN_CONTIG_LENGTH} -m {input} > {output}"
 
 rule split_contigs:
     input:   "assembly/{}/{{group}}.fasta".format(ASSEMBLER)
     output:  "assembly/splits/{group,(sample|group)\d+}.fasta"
     message: "Cutting contigs from {wildcards.group} into {SPLIT_LENGTH} bp splits"
-    shell:   "{SCRIPTS}/cut_fasta.py -c {SPLIT_LENGTH} -o 0 -m {input} > {output}"
+    shell:   "{SCRIPTS}/cut_fasta.py -c {SPLIT_LENGTH} -l {MIN_CONTIG_LENGTH} -m {input} > {output}"
 
 #---- Generating profiles/depths -----------------------------------------------
 
@@ -93,16 +93,12 @@ rule align:
 
 rule depth:
     input:   expand("profile/jgi/{{frags}}/{sample}.bam", sample=SAMPLES)
-    output:  "profile/jgi/{frags}/depth.txt"
+    output:  "profile/jgi/{frags}/all.tsv"
+    params:  "" if BINNER == "metabat" else "--noIntraDepthVariance"
     log:     "profile/jgi/{frags}/depth.log"
     message: "Calculating contig depths"
-    shell:   "{SOFT}/metabat/jgi_summarize_bam_contig_depths --outputDepth {output} {input} >{log} 2>&1"
-
-rule convert_depth:
-    input:   "profile/jgi/splits/depth.txt"
-    output:  "binning/{BINNER}/profiles_jgi.in"
-    message: "Converting depth file into {BINNER} format"
-    shell:   "{SCRIPTS}/make_input.py -t {BINNER} -n {SAMPLE_COUNT} --jgi {input} {output}"
+    shell:   "{SOFT}/metabat/jgi_summarize_bam_contig_depths {params}"
+             " --outputDepth {output} {input} >{log} 2>&1"
 
 # Our way
 rule kmc:
@@ -131,17 +127,18 @@ rule multiplicities:
              "rm tmp/*.sorted"
 
 rule abundancies:
-    input:   contigs="assembly/splits/{group}.fasta", mpl="profile/mts/kmers.kmm"
-    output:  "profile/mts/{group,(sample|group)\d+}.tsv"
-    log:     "profile/mts/{group}.log"
+    input:   contigs="assembly/{frags}/{group}.fasta", mpl="profile/mts/kmers.kmm"
+    output:  "profile/mts/{frags}/{group,(sample|group)\d+}.tsv"
+    log:     "profile/mts/{frags}/{group}.log"
+    params:  "-v" if BINNER == "metabat" else ""
     message: "Counting split contig abundancies for {wildcards.group}"
     shell:   "{BIN}/contig_abundance_counter -k {PROFILE_K} -c {input.contigs}"
-             " -n {SAMPLE_COUNT} -m profile/mts/kmers -o {output}"
+             " -n {SAMPLE_COUNT} -m profile/mts/kmers {params} -o {output}"
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
 
 rule combine_profiles:
-    input:   expand("profile/mts/{group}.tsv", group=GROUPS)
-    output:  "profile/mts/all.tsv"
+    input:   expand("profile/mts/{{frags}}/{group}.tsv", group=GROUPS)
+    output:  "profile/mts/{frags}/all.tsv"
     message: "Combine all profiles"
     run:
         shell("rm -f {output}")
@@ -149,11 +146,16 @@ rule combine_profiles:
             sample, _ = os.path.splitext(os.path.basename(sample_ann))
             shell("sed -e 's/^/{sample}-/' {sample_ann} >> {output}")
 
+#---- Common binning tasks -----------------------------------------------------
+
+# Preprocessing
 rule binning_pre:
-    input:   "profile/mts/all.tsv"
-    output:  "binning/{binner}/profiles_mts.in"
+    input:   "profile/{}/{}/all.tsv".format(PROFILER, FRAGS)
+    output:  "binning/{{binner}}/profiles_{}.in".format(PROFILER)
+    params:  "--jgi" if PROFILER == "jgi" else ""
     message: "Preparing input for {wildcards.binner}"
-    shell:   "{SCRIPTS}/make_input.py -n {SAMPLE_COUNT} -t {wildcards.binner} {input} {output}"
+    shell:   "{SCRIPTS}/make_input.py -n {SAMPLE_COUNT} -t {wildcards.binner}"
+             " {params} {input} {output}"
 
 rule filter_contigs:
     input:   contigs="assembly/splits/all.fasta", profile="binning/{}/profiles_{}.in".format(BINNER, PROFILER)
@@ -161,8 +163,6 @@ rule filter_contigs:
     message: "Leave contigs that have profile information"
     shell:   "cut -f1 < {input.profile} > tmp/names_tmp.txt && sed -i '1d' tmp/names_tmp.txt && "
              "{SCRIPTS}/contig_name_filter.py {input.contigs} tmp/names_tmp.txt {output.contigs}"
-
-#---- Common binning tasks -----------------------------------------------------
 
 # Postprocessing
 rule extract_bins:
@@ -179,7 +179,7 @@ rule binning_format:
              "cp {output} binning/binning.tsv" #For stats
 
 rule bin_profiles:
-    input:   "profile/{}/all.tsv".format(PROFILER), "binning/{}/unified_binning.tsv".format(BINNER)
+    input:   "profile/{}/{}/all.tsv".format(PROFILER, FRAGS), "binning/{}/unified_binning.tsv".format(BINNER)
     output:  "binning/{}/bins.prof".format(BINNER)
     message: "Deriving bin profiles"
     shell:   "{SCRIPTS}/bin_profiles.py {input} > {output}"
@@ -220,7 +220,7 @@ rule concoct:
 
 # Binning with MetaBAT
 rule metabat:
-    input:   contigs="assembly/full/all.fasta", profiles="profile/jgi/full/depth.txt"
+    input:   contigs="assembly/full/all.fasta", profiles="binning/metabat/profiles_{}.in".format(PROFILER)
     output:  flag=touch("binning/metabat/binning.done"),
              out="binning/metabat/binning.out"
     threads: THREADS

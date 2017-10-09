@@ -1,9 +1,9 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 """Cut up fasta file in non-overlapping or overlapping parts of equal length.
 """
 import argparse
+import sys
 from Bio import SeqIO
-
 
 def cut_up_fasta(fastfiles, chunk_size, overlap, min_length, merge_last):
     for ff in fastfiles:
@@ -24,7 +24,7 @@ def chunks(l, n, o, merge_last):
     """ Yield successive n-sized chunks from l with given overlap o between the
     chunks.
     """
-    assert n > o
+    assert(n > o)
 
     if not merge_last:
         for i in xrange(0, len(l), n - o):
@@ -37,9 +37,8 @@ def chunks(l, n, o, merge_last):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__,
                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument(
-        "contigs", nargs="+", help="Fasta files with contigs\n")
-    parser.add_argument("-c", "--chunk_size", default=10000, type=int, help="Chunk size\n")
+    parser.add_argument("contigs", nargs="+", help="Fasta files with contigs\n")
+    parser.add_argument("-c", "--chunk_size", default=sys.maxsize, type=int, help="Chunk size\n")
     parser.add_argument("-o", "--overlap_size", default=0, type=int, help="Overlap size\n")
     parser.add_argument("-l", "--min_length", default=2000, type=int, help="Minimum split/contig length")
     parser.add_argument("-m", "--merge_last", default=False, action="store_true", help="Concatenate final part to last contig\n")

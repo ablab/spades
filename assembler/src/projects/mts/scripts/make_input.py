@@ -13,16 +13,6 @@ import sys
 
 from common import contig_length
 
-parser = argparse.ArgumentParser(description="Binner input formatter")
-
-parser.add_argument("--type", "-t", choices=["binsanity", "canopy", "concoct", "gattaca", "maxbin"], help="Binner type", default="canopy")
-parser.add_argument("--count", "-n", type=int, help="Number of data samples")
-parser.add_argument("--jgi", action="store_true", help="Input data is in the JGI read-based profiler format")
-parser.add_argument("profiles", type=str, help="Groups profiles in .tsv format")
-parser.add_argument("out", type=str, help="Output path")
-
-args = parser.parse_args()
-
 class Formatter:
     def __init__(self, out, samples):
         self.out = open(out, "w")
@@ -62,11 +52,33 @@ class MaxBinFormatter:
         for out, mpl in zip(self.outs, profile):
             print(contig, mpl, sep="\t", file=out)
 
+class MetabatFormatter(Formatter):
+    def header(self, samples):
+        columns = ["contigName", "contigLen", "totalAvgDepth"]
+        for sample in samples:
+            columns += [sample + ".cov", sample + ".var"]
+        print(columns, sep="\t", file=self.out)
+
+    def profile(self, contig, length, profile):
+        total_cov = sum(map(float, profile[0::2]))
+        print(contig, length, total_cov, *profile, sep="\t", file=self.out)
+
 formatters = {"binsanity": Formatter,
               "canopy": CanopyFormatter,
               "concoct": ConcoctFormatter,
               "gattaca": GattacaFormatter,
-              "maxbin": MaxBinFormatter}
+              "maxbin": MaxBinFormatter,
+              "metabat": MetabatFormatter}
+
+parser = argparse.ArgumentParser(description="Binner input formatter")
+
+parser.add_argument("--type", "-t", choices=formatters.keys(), help="Binner type", default="canopy")
+parser.add_argument("--count", "-n", type=int, help="Number of data samples")
+parser.add_argument("--jgi", action="store_true", help="Input data is in the JGI read-based profiler format")
+parser.add_argument("profiles", type=str, help="Groups profiles in .tsv format")
+parser.add_argument("out", type=str, help="Output path")
+
+args = parser.parse_args()
 
 formatter = formatters[args.type](args.out, ["sample" + str(i) for i in range(1, args.count + 1)])
 
@@ -75,6 +87,11 @@ with open(args.profiles, "r") as input:
         input.readline() #Skip the header from JGI format
     for line in input:
         params = line.strip().split("\t")
-        length = params[1] if args.jgi else contig_length(params[0])
-        values = params[3::2] if args.jgi else params[1:] #Skip variance columns from JGI format
-        formatter.profile(params[0], length, values)
+        contig = params[0]
+        if args.jgi:
+            length = params[1] if args.jgi else contig_length(params[0])
+            offset = 3
+        else:
+            length = contig_length(params[0])
+            offset = 1
+        formatter.profile(contig, length, params[offset:])

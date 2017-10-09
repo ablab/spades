@@ -29,11 +29,9 @@ BIN_LENGTH = config["binning"]["bin_length"]
 MAX_CLUSTERS = config["binning"]["max_clusters"]
 THREADS = config["threads"]
 BINNER = config["binning"]["binner"]
+FRAGS = "full" if BINNER == "metabat" else "split"
 
 # Check for unsupported configurations
-if PROFILER != "jgi" and BINNER == "metabat":
-    raise WorkflowError("MetaBAT is supported only with JGI profiler")
-
 IS_COASSEMBLY = config["assembly"].get("groups") == ["*"]
 if not IS_COASSEMBLY and BINNER == "maxbin":
     raise WorkflowError("MaxBin is supported only in the full coassembly mode")

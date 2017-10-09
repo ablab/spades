@@ -31,15 +31,14 @@ AbVar SampleMedian(const KmerProfiles& kmer_mpls, size_t sample) {
     std::nth_element(sample_mpls.begin(), sample_mpls.begin() + sample_mpls.size() / 2, sample_mpls.end());
     Mpl median = sample_mpls[sample_mpls.size() / 2];
 
-    //Unbiased sample variance
-    int tmp = 0;
-    int sqmed = median * median;
-    for (Mpl mpl : sample_mpls)
-        tmp += mpl * mpl;
-    tmp -= (int)sample_mpls.size() * sqmed;
-    Var var = (Var)tmp / (Var)(sample_mpls.size() - 1);
+    //Median absolute deviation
+    for (auto& i: sample_mpls)
+        i = std::abs(int(i) - int(median));
 
-    return {(Abundance)median, var};
+    std::nth_element(sample_mpls.begin(), sample_mpls.begin() + sample_mpls.size() / 2, sample_mpls.end());
+    Var mad = (Var) sample_mpls[sample_mpls.size() / 2]; // * 1.4826; //constant scale factor for normal distibution
+
+    return {(Abundance)median, 0};//mad};
 }
 
 template<typename T>
