@@ -70,7 +70,7 @@ for pipeline in pipelines():
     else:
         config["assembly"]["assembler"] = params[0]
         config["assembly"]["groups"] = ["*"]
-        config["profile"]["profiler"] = ["jgi"]
+        config["profile"]["profiler"] = "jgi"
         config["propagation"] = {"enabled": False}
         config["reassembly"] = {"enabled": False}
 

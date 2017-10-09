@@ -109,7 +109,7 @@ if args.plot:
             return res
 
         def color(v1, v2):
-            return matplotlib.colors.hsv_to_rgb((v1 / 200. + 0.16, v2 / 100., 1))
+            return matplotlib.colors.hsv_to_rgb((v2 / 200. + 0.16, v1 / 100., 1))
 
         def combine_with(t1, t2, f):
             return t1.apply(lambda k: [f(x, y) for x, y in zip(k, t2[k.name])])
