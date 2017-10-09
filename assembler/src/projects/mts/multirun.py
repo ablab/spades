@@ -61,17 +61,20 @@ for pipeline in pipelines():
     if args.no_stats:
         call_params.extend(["--no-stats"])
     config = config_template.copy()
+    for stage in ["assembly", "profile", "binning"]:
+        config.setdefault(stage, dict())
     params = pipeline.split("_")
     assembly_name = params[0]
     if assembly_name == "main":
-        config["profile"] = {"profiler": "mts"}
+        config["profile"]["profiler"] = "mts"
     else:
-        config["assembly"] = {"assembler": params[0], "groups": ["*"]}
-        config["profile"] = {"profiler": "jgi"}
+        config["assembly"]["assembler"] = params[0]
+        config["assembly"]["groups"] = ["*"]
+        config["profile"]["profiler"] = ["jgi"]
         config["propagation"] = {"enabled": False}
         config["reassembly"] = {"enabled": False}
 
-    config["binning"] = {"binner": params[1]}
+    config["binning"]["binner"] = params[1]
     with open(os.path.join(cur_dir, "config.yaml"), "w") as config_out:
         yaml.dump(config, config_out)
     # Try to reuse assemblies from previous runs with the same assembler
