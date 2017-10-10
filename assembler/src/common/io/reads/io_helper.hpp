@@ -64,7 +64,6 @@ namespace io {
         PairedStreamPtr reader = make_shared<SeparatePairedReadStream>(filename1, filename2, insert_size,
                                                              use_orientation,
                                                              orientation, offset_type);
-        //FIXME is it really correct logic with use_orientation and !use_orientation?!!!
         return EasyWrapPairedStream(reader, followed_by_rc);
     }
 

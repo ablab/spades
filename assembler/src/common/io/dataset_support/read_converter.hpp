@@ -105,7 +105,7 @@ private:
         BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix,
                                       data.binary_reads_info.chunk_num,
                                       data.binary_reads_info.buffer_size);
-        SingleStreamPtr merged_reader = merged_easy_reader(lib, false, false);
+        SingleStreamPtr merged_reader = merged_easy_reader(lib, false);
         auto merged_stats = merged_converter.ToBinary(*merged_reader);
 
         //FIXME should we put merged only stats here (or max with unmerged)
