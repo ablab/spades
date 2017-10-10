@@ -72,9 +72,15 @@ void Construction::run(conj_graph_pack &gp, const char*) {
         read_count += dataset.reads[lib_id].data().read_count;
     }
     VERIFY(dataset.RL() == 0 && dataset.aRL() == 0.);
-    dataset.set_RL(std::max(no_merge_max_len, merged_max_len));
+    size_t max_read_length = std::max(no_merge_max_len, merged_max_len);
+    INFO("Max read length " << max_read_length);
+    dataset.set_RL(max_read_length);
+    if (merged_max_len > 0)
+        INFO("Max read length without merged " << no_merge_max_len);
     dataset.set_no_merge_RL(no_merge_max_len);
-    dataset.set_aRL(double(total_nucls) / double(read_count));
+    double average_read_length = double(total_nucls) / double(read_count);
+    INFO("Average read length " << average_read_length);
+    dataset.set_aRL(average_read_length);
 
     construct_graph<io::SingleReadSeq>(streams, gp, contigs_stream);
 }

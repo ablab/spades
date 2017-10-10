@@ -309,8 +309,7 @@ fs::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files, 
 
   this->ClearBuffers();
 
-  INFO("Used " << counter << " reads. Maximum read length " << rl);
-  INFO("Average read length " << double(bases) / double(counter));
+  INFO("Used " << counter << " reads");
   rs_ = { counter, rl, bases };
 
   return out;
