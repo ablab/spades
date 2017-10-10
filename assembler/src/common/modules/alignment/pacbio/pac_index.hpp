@@ -143,6 +143,7 @@ public:
     typename omnigraph::MappingPath<EdgeId> FilterSpuriousAlignments(typename omnigraph::MappingPath<EdgeId> mp_path, size_t seq_len) const {
         omnigraph::MappingPath<EdgeId> res;
         vector<pair<EdgeId,typename omnigraph::MappingRange> > mapped_path;
+//FIXME do we need this now?
         for (size_t i = 0; i < mp_path.size(); i++) 
             mapped_path.push_back(make_pair(mp_path[i].first, mp_path[i].second));
         std::sort(mapped_path.begin(), mapped_path.end(),
@@ -151,26 +152,23 @@ public:
         });
 
         for (size_t i = 0; i < mapped_path.size(); i++) {
-            bool flag = false;
-            if (mapped_path.size() > 1 && (i ==0 || i == mapped_path.size() - 1)) {
-                size_t expected_alignment_length = 0;
-                if (i == 0)
-                    expected_alignment_length = std::min(mapped_path[i].second.initial_range.end_pos,
-                                                         mapped_path[i].second.mapped_range.end_pos);
-                else
-                    expected_alignment_length = std::min(seq_len - mapped_path[i].second.initial_range.start_pos,
-                                                         g_.length(mapped_path[i].first) -
-                                                         mapped_path[i].second.mapped_range.start_pos);
-                size_t rlen =
-                        mapped_path[i].second.initial_range.end_pos - mapped_path[i].second.initial_range.start_pos;
+            omnigraph::MappingRange current = mapped_path[i].second;
+//Currently everything in kmers
+            size_t expected_additional_left = std::min(current.initial_range.start_pos, current.mapped_range.start_pos);
+            size_t expected_additional_right = std::min(seq_len - current.initial_range.end_pos - g_.k(),
+                                                       g_.length(mapped_path[i].first) - current.mapped_range.end_pos);
+
+            size_t rlen =
+                    mapped_path[i].second.initial_range.end_pos - mapped_path[i].second.initial_range.start_pos;
+
 //FIXME more reasonable condition
-                if (rlen < 500 && rlen * 3 < expected_alignment_length) {
-                    INFO ("Skipping spurious alignment " << i);
-                    flag = true;
-                }
-            }
-            if (!flag)
+//g_.k() to compare sequence lengths, not kmers
+            if (rlen < 500 && (rlen + g_.k()) * 2 < expected_additional_left + expected_additional_right) {
+                INFO ("Skipping spurious alignment " << i << " on edge " << mapped_path[i].first);
+            } else
                 res.push_back(mapped_path[i].first, mapped_path[i].second);
+
+
         }
         if (res.size() != mapped_path.size()) {
             INFO("Seq len " << seq_len);
