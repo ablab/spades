@@ -79,10 +79,13 @@ class BinaryUnMergedPairedStream: public ReadStream<PairedReadSeq> {
     size_t read_length_;
 
     PairedReadSeq Convert(const SingleReadSeq &read) const {
-        VERIFY(read_length_ >= read.GetLeftOffset() &&
-                       read_length_ >= read.GetRightOffset());
+        if (read.GetLeftOffset() >= read_length_ ||
+                read.GetRightOffset() >= read_length_) {
+            return PairedReadSeq();
+        }
+//        VERIFY(read_length_ >= read.GetLeftOffset() &&
+//                       read_length_ >= read.GetRightOffset());
 
-        read.GetRightOffset();
         const size_t left_length = std::min(read.size(),
                                       read_length_ - read.GetLeftOffset());
         const size_t right_length = std::min(read.size(),
@@ -91,7 +94,6 @@ class BinaryUnMergedPairedStream: public ReadStream<PairedReadSeq> {
                            read.GetLeftOffset(), 0);
         SingleReadSeq right(read.sequence().Subseq(read.size() - right_length),
                             0, read.GetRightOffset());
-        VERIFY(insert_size_ > (size_t) read.GetLeftOffset() + (size_t) read.GetRightOffset())
         return PairedReadSeq::Create(left, right, insert_size_);
     }
 
