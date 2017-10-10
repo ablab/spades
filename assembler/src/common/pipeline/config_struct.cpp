@@ -30,6 +30,7 @@ namespace llvm { namespace yaml {
 template<> struct MappingTraits<debruijn_graph::config::dataset> {
     static void mapping(IO& io, debruijn_graph::config::dataset& cfg) {
         io.mapRequired("max read length", cfg.max_read_length);
+        io.mapRequired("nomerge max read length", cfg.no_merge_max_rl);
         io.mapRequired("average read length", cfg.average_read_length);
         io.mapRequired("average coverage", cfg.average_coverage);
         io.mapRequired("libraries", cfg.reads);
@@ -39,6 +40,7 @@ template<> struct MappingTraits<debruijn_graph::config::dataset> {
 template<> struct MappingTraits<debruijn_graph::config::DataSetData> {
     static void mapping(IO& io, debruijn_graph::config::DataSetData& data) {
         io.mapRequired("read length"                , data.read_length);
+        io.mapRequired("merged length"              , data.merged_length);
         io.mapRequired("insert size mean"           , data.mean_insert_size);
         io.mapRequired("insert size deviation"      , data.insert_size_deviation);
         io.mapRequired("insert size left quantile"  , data.insert_size_left_quantile);

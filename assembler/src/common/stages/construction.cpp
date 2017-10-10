@@ -58,20 +58,22 @@ void Construction::run(conj_graph_pack &gp, const char*) {
     auto streams = io::single_binary_readers_for_libs(dataset, libs_for_construction, true, true);
 
     //Updating dataset stats
-    size_t max_len = 0;
+    size_t no_merge_max_len = 0;
+    size_t merged_max_len = 0;
     uint64_t total_nucls = 0;
     size_t read_count = 0;
     for (size_t lib_id : libs_for_construction) {
         auto lib_data = dataset.reads[lib_id].data();
         //FIXME discuss this hack with read_length vs. merged_length
         VERIFY(lib_data.read_length > 0);
-        max_len = std::max(max_len, lib_data.read_length);
-        max_len = std::max(max_len, lib_data.merged_length);
+        no_merge_max_len = std::max(no_merge_max_len, lib_data.read_length);
+        merged_max_len = std::max(merged_max_len, lib_data.merged_length);
         total_nucls += dataset.reads[lib_id].data().total_nucls;
         read_count += dataset.reads[lib_id].data().read_count;
     }
     VERIFY(dataset.RL() == 0 && dataset.aRL() == 0.);
-    dataset.set_RL(max_len);
+    dataset.set_RL(std::max(no_merge_max_len, merged_max_len));
+    dataset.set_no_merge_RL(no_merge_max_len);
     dataset.set_aRL(double(total_nucls) / double(read_count));
 
     construct_graph<io::SingleReadSeq>(streams, gp, contigs_stream);

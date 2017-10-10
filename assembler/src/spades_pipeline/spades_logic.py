@@ -81,7 +81,8 @@ def get_read_length(output_dir, K, ext_python_modules_home, log):
         elif sys.version.startswith('3.'):
             import pyyaml3 as pyyaml
         est_params_data = pyyaml.load(open(est_params_filename, 'r'))
-        max_read_length = int(est_params_data['max read length'])
+        max_read_length = int(est_params_data['nomerge max read length'])
+        log.info("Max read length detected as %d" % max_read_length)
     if max_read_length == 0:
         support.error("Failed to estimate maximum read length! File with estimated params: " + est_params_filename, log)
     return max_read_length

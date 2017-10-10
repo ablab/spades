@@ -107,6 +107,7 @@ std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) 
 
 //FIXME rename to LibraryData
 struct DataSetData {
+    //FIXME rename to stress that merged reads are not considered here
     size_t read_length;
     size_t merged_length;
     double mean_insert_size;
@@ -162,6 +163,7 @@ struct dataset {
 
     dataset() :
         max_read_length(0),
+        no_merge_max_rl(0),
         average_read_length(0.0),
         average_coverage(0.0) {}
 
@@ -177,12 +179,18 @@ struct dataset {
         average_read_length = aRL;
     }
 
+    size_t no_merge_RL() const { return no_merge_max_rl; }
+    void set_no_merge_RL(size_t RL) {
+        no_merge_max_rl = RL;
+    }
+
     double avg_coverage() const { return average_coverage; }
     void set_avg_coverage(double avg_coverage) {
         average_coverage = avg_coverage;
     }
 
     size_t max_read_length;
+    size_t no_merge_max_rl;
     double average_read_length;
     double average_coverage;
     io::DataSet<DataSetData> reads;

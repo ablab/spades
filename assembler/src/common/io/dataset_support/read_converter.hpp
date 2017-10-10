@@ -108,6 +108,7 @@ private:
         SingleStreamPtr merged_reader = merged_easy_reader(lib, false, false);
         auto merged_stats = merged_converter.ToBinary(*merged_reader);
 
+        //FIXME should we put merged only stats here (or max with unmerged)
         data.merged_length = merged_stats.max_len_;
         data.read_length = read_stat.max_len_;
 
