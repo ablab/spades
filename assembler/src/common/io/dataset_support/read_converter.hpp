@@ -68,7 +68,7 @@ private:
         INFO("Binary reads detected");
         info >> data.read_length;
         info >> data.merged_length;
-        //info >> data.read_count;
+        info >> data.read_count;
         info >> data.total_nucls;
         data.binary_reads_info.binary_coverted = true;
 
@@ -117,14 +117,14 @@ private:
         data.read_count = read_stat.read_count_;
         data.total_nucls = read_stat.total_len_;
 
-        //FIXME use yaml
+        //FIXME use yaml or reuse same data!!!
         info.open(data.binary_reads_info.bin_reads_info_file.c_str(), std::ios_base::out);
         info << current_binary_format_version << " " <<
             data.binary_reads_info.chunk_num << " " <<
             data.lib_index << " " <<
             data.read_length << " " <<
-            //data.read_count << " " <<
             data.merged_length << " " <<
+            data.read_count << " " <<
             data.total_nucls << "\n";
 
         info.close();
