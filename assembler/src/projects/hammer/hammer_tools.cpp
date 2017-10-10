@@ -245,6 +245,24 @@ size_t CorrectAllReads() {
       outlib.push_back_single(outcoru);
     }
 
+    //FIXME
+    for (auto I = lib.merged_begin(), E = lib.merged_end(); I != E; ++I, ++iread) {
+      INFO("Correcting merged reads: " << *I);
+      std::string usuffix = std::to_string(ilib) + "_" +
+                            std::to_string(iread) + ".cor.fastq";
+
+      std::string outcor = getReadsFilename(cfg::get().output_dir, *I, Globals::iteration_no, usuffix);
+      std::ofstream ofgood(outcor.c_str());
+      std::ofstream ofbad(getReadsFilename(cfg::get().output_dir, *I, Globals::iteration_no, "bad.fastq").c_str(),
+                          std::ios::out | std::ios::ate);
+
+      CorrectReadFile(*Globals::kmer_data,
+                      changedReads, changedNucleotides, uncorrectedNucleotides, totalNucleotides,
+                      *I,
+                      &ofgood, &ofbad);
+      outlib.push_back_merged(outcor);
+    }
+
     for (auto I = lib.single_begin(), E = lib.single_end(); I != E; ++I, ++iread) {
       INFO("Correcting single reads: " << *I);
       std::string usuffix =  std::to_string(ilib) + "_" +

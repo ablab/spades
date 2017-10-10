@@ -564,7 +564,7 @@ def correct_dataset(dataset_data):
         for key in reads_library.keys():
             if key.endswith('reads'):
                 has_reads = True
-            if key in ['interlaced reads', 'left reads', 'right reads']:
+            if key in ['interlaced reads', 'merged reads', 'left reads', 'right reads']:
                 has_paired_reads = True
                 break
         if not has_reads:
