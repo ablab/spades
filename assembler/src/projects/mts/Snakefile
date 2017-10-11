@@ -131,7 +131,7 @@ rule abundancies:
     output:  "profile/mts/{frags}/{group,(sample|group)\d+}.tsv"
     log:     "profile/mts/{frags}/{group}.log"
     params:  "-v" if BINNER == "metabat" else ""
-    message: "Counting split contig abundancies for {wildcards.group}"
+    message: "Counting {wildcards.frags} contig abundancies for {wildcards.group}"
     shell:   "{BIN}/contig_abundance_counter -k {PROFILE_K} -c {input.contigs}"
              " -n {SAMPLE_COUNT} -m profile/mts/kmers {params} -o {output}"
              " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
