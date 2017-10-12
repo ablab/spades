@@ -192,7 +192,7 @@ void BWAIndex::Init() {
     ids_.clear();
 
     for (auto it = g_.ConstEdgeBegin(true); !it.IsEnd(); ++it)
-        if (g_.length(*it) > g_.k()){
+        if (g_.length(*it) > 2 * g_.k()){
             ids_.push_back(*it);
         }
 
