@@ -268,8 +268,8 @@ public:
                         prev_edge = EdgeId(0);
                         continue;
                     }
-
                     vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
+
                     if (intermediate_path.size() == 0) {
                         DEBUG("Tangled region between edges "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position)  << " and seq "<< - seq_start + seq_end);
                         res.push_back(cur_sorted);
@@ -591,7 +591,8 @@ public:
             if  (a.size > 300 && b.size > 300 && - a.sorted_positions[1].edge_position +
                                                          result + addition + b.sorted_positions[0].edge_position  <=
                                                  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k()) {
-                WARN("overlapping range magic worked");
+                WARN("overlapping range magic worked, " << - a.sorted_positions[1].edge_position +
+                                                           result + addition + b.sorted_positions[0].edge_position  << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k());
                 WARN("Ranges:" << a.str(g_) << " " << b.str(g_) <<" llength and dijkstra shift :" << addition << " " << result);
                 return 1;
 
@@ -624,6 +625,10 @@ public:
         vector<vector<EdgeId> > paths = callback.paths();
         TRACE("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());
         int s_len = int(s.size());
+        if (end_pos < start_pos) {
+            WARN ("modifying limits because of some bullshit magic, seq length 0")
+            end_pos = start_pos;
+        }
         string seq_string = s.Subseq(start_pos, min(end_pos + 1, s_len)).str();
         size_t best_path_ind = paths.size();
         int best_score = STRING_DIST_INF;
@@ -659,8 +664,12 @@ public:
             }
         }
         TRACE(best_score);
-        if (best_score == STRING_DIST_INF)
+        if (best_score == STRING_DIST_INF) {
+
+            DEBUG ("failed with strings " << seq_string << " " << PathToString(paths[0]));
+            DEBUG (paths.size() << " paths availabke");
             return vector<EdgeId>(0);
+        }
         if (paths.size() > 1 && paths.size() < 10) {
             TRACE("best score found! Path " <<best_path_ind <<" score "<< best_score);
         }
