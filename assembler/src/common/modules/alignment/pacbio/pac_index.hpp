@@ -164,18 +164,18 @@ public:
 //FIXME more reasonable condition
 //g_.k() to compare sequence lengths, not kmers
             if (rlen < 500 && (rlen + g_.k()) * 2 < expected_additional_left + expected_additional_right) {
-                INFO ("Skipping spurious alignment " << i << " on edge " << mapped_path[i].first);
+                DEBUG ("Skipping spurious alignment " << i << " on edge " << mapped_path[i].first);
             } else
                 res.push_back(mapped_path[i].first, mapped_path[i].second);
 
 
         }
         if (res.size() != mapped_path.size()) {
-            INFO("Seq len " << seq_len);
+            DEBUG("Seq len " << seq_len);
             for (const auto &e_mr : mapped_path) {
                 EdgeId e = e_mr.first;
                 omnigraph::MappingRange mr = e_mr.second;
-                INFO("Alignents were" << g_.int_id(e) << " e_start=" << mr.mapped_range.start_pos << " e_end=" <<
+                DEBUG("Alignents were" << g_.int_id(e) << " e_start=" << mr.mapped_range.start_pos << " e_end=" <<
                      mr.mapped_range.end_pos
                      << " r_start=" << mr.initial_range.start_pos << " r_end=" << mr.initial_range.end_pos);
             }
