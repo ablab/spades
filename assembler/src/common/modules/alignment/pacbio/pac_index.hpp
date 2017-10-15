@@ -524,9 +524,10 @@ public:
         //int new_seq_len =
 //TODO::something more reasonable
         int path_min_len = max(int(floor((seq_len - int(debruijn_k)) * pb_config_.path_limit_pressing)), 0);
-        int path_max_len = (int) ((double) (seq_len + (int) debruijn_k) * pb_config_.path_limit_stretching);
+        int path_max_len = (int) ((double) (seq_len + (int) debruijn_k * 2) * pb_config_.path_limit_stretching);
         if (seq_len < 0) {
-            DEBUG("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
+            INFO("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
+            if (path_max_len < 0)
             return std::make_pair(-1, -1);
         }
         path_min_len = max(path_min_len - int(s_add_len + e_add_len), 0);
@@ -583,10 +584,18 @@ public:
             return 0;
         }
         //TODO: Serious optimization possible
-        if (similar_in_graph(a.sorted_positions[a.sorted_positions.size() -1], b.sorted_positions[0], result + addition)) {
+        if (similar_in_graph(a.sorted_positions[1], b.sorted_positions[0], result + addition)) {
             DEBUG(" similar! ")
             return 1;
         } else {
+            if  (a.size > 300 && b.size > 300 && - a.sorted_positions[1].edge_position +
+                                                         result + addition + b.sorted_positions[0].edge_position  <=
+                                                 b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k()) {
+                WARN("overlapping range magic worked");
+                WARN("Ranges:" << a.str(g_) << " " << b.str(g_) <<" llength and dijkstra shift :" << addition << " " << result);
+                return 1;
+
+            }
             return 0;
         }
     }
