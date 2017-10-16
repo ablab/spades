@@ -54,7 +54,7 @@ private:
 
     const Graph &g_;
     //size_t pacbio_k;
-    size_t debruijn_k;
+    int debruijn_k;
     const static int short_edge_cutoff = 0;
     const static size_t min_cluster_size = 8;
     const static int max_similarity_distance = 500;
@@ -140,7 +140,7 @@ public:
         }
     }
 
-    typename omnigraph::MappingPath<EdgeId> FilterSpuriousAlignments(typename omnigraph::MappingPath<EdgeId> mp_path, size_t seq_len) const {
+    typename omnigraph::MappingPath<EdgeId> FilterSpuriousAlignments(typename omnigraph::MappingPath<EdgeId> mp_path, int seq_len) const {
         omnigraph::MappingPath<EdgeId> res;
         vector<pair<EdgeId,typename omnigraph::MappingRange> > mapped_path;
 //FIXME do we need this now?
@@ -155,7 +155,7 @@ public:
             omnigraph::MappingRange current = mapped_path[i].second;
 //Currently everything in kmers
             size_t expected_additional_left = std::min(current.initial_range.start_pos, current.mapped_range.start_pos);
-            size_t expected_additional_right = std::min(seq_len - current.initial_range.end_pos - g_.k(),
+            size_t expected_additional_right = std::min(seq_len - current.initial_range.end_pos - debruijn_k,
                                                        g_.length(mapped_path[i].first) - current.mapped_range.end_pos);
 
             size_t rlen =
@@ -163,7 +163,7 @@ public:
 
 //FIXME more reasonable condition
 //g_.k() to compare sequence lengths, not kmers
-            if (rlen < 500 && (rlen + g_.k()) * 2 < expected_additional_left + expected_additional_right) {
+            if (rlen < 500 && (rlen + debruijn_k) * 2 < expected_additional_left + expected_additional_right) {
                 DEBUG ("Skipping spurious alignment " << i << " on edge " << mapped_path[i].first);
             } else
                 res.push_back(mapped_path[i].first, mapped_path[i].second);
@@ -239,14 +239,14 @@ public:
                         (start_v == end_v &&
                      (double) (cur_first_index.read_position - prev_last_index.read_position) >
 //FIXME:: is g_.k() relevant
-                     (double) (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3 + g_.k() )) {
+                     (double) (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3 + debruijn_k )) {
                     if (start_v == end_v) {
                         DEBUG("looking for path from vertex to itself, read pos"
                               << cur_first_index.read_position << " " << prev_last_index.read_position
                               << " edge pos: "<< cur_first_index.edge_position << " " << prev_last_index.edge_position
                               <<" edge len " << g_.length(prev_edge));
                         DEBUG((double) (cur_first_index.read_position - prev_last_index.read_position) << " " << (double) 
-                        (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3 + g_.k());
+                        (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3 + debruijn_k);
                     }
                     DEBUG(" traversing tangled hregion between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
                     DEBUG(" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
@@ -523,8 +523,8 @@ public:
         int seq_len = -start_pos + end_pos;
         //int new_seq_len =
 //TODO::something more reasonable
-        int path_min_len = max(int(floor((seq_len - int(debruijn_k)) * pb_config_.path_limit_pressing)), 0);
-        int path_max_len = (int) ((double) (seq_len + (int) debruijn_k * 2) * pb_config_.path_limit_stretching);
+        int path_min_len = max(int(floor((seq_len - debruijn_k) * pb_config_.path_limit_pressing)), 0);
+        int path_max_len = (int) ((double) (seq_len + debruijn_k * 2) * pb_config_.path_limit_stretching);
         if (seq_len < 0) {
             INFO("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
             if (path_max_len < 0)
@@ -590,9 +590,9 @@ public:
         } else {
             if  (a.size > 300 && b.size > 300 && - a.sorted_positions[1].edge_position +
                                                          result + addition + b.sorted_positions[0].edge_position  <=
-                                                 b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k()) {
+                                                 b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * debruijn_k) {
                 WARN("overlapping range magic worked, " << - a.sorted_positions[1].edge_position +
-                                                           result + addition + b.sorted_positions[0].edge_position  << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * g_.k());
+                                                           result + addition + b.sorted_positions[0].edge_position  << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * debruijn_k);
                 WARN("Ranges:" << a.str(g_) << " " << b.str(g_) <<" llength and dijkstra shift :" << addition << " " << result);
                 return 1;
 
