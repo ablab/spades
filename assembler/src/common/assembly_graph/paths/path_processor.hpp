@@ -91,16 +91,15 @@ private:
             curr_depth_--;
         }
 
-        bool CanGo(EdgeId e, VertexId start_v) {
+        bool CanGo(EdgeId e, VertexId start_v) const {
             if (!dijkstra_.DistanceCounted(start_v))
                 return false;
             if (dijkstra_.GetDistance(start_v) + g_.length(e) + curr_len_ > max_len_)
                 return false;
             if (curr_depth_ >= edge_depth_bound_)
                 return false;
-            if (vertex_cnts_.mult(start_v) >= PathProcessor::MAX_VERTEX_USAGE)
-                return false;
-            return true;
+            return call_cnt_ < PathProcessor::VERTEX_USAGE_ENABLE_THRESHOLD ||
+                    vertex_cnts_.mult(start_v) < PathProcessor::MAX_VERTEX_USAGE;
         }
 
         bool Go(VertexId v, const size_t min_len) {
@@ -211,6 +210,7 @@ public:
 private:
     static const size_t MAX_CALL_CNT = 3000;
     static const size_t MAX_DIJKSTRA_VERTICES = 3000;
+    static const size_t VERTEX_USAGE_ENABLE_THRESHOLD = 500;
     static const size_t MAX_VERTEX_USAGE = 5;
 
     const Graph& g_;
