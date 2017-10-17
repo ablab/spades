@@ -130,7 +130,7 @@ rule abundancies:
     input:   contigs="assembly/{frags}/{group}.fasta", mpl="profile/mts/kmers.kmm"
     output:  "profile/mts/{frags}/{group,(sample|group)\d+}.tsv"
     log:     "profile/mts/{frags}/{group}.log"
-    params:  "-v" if BINNER == "metabat" else ""
+    params:  "-v" if PROF_VAR else ""
     message: "Counting {wildcards.frags} contig abundancies for {wildcards.group}"
     shell:   "{BIN}/contig_abundance_counter -k {PROFILE_K} -c {input.contigs}"
              " -n {SAMPLE_COUNT} -m profile/mts/kmers {params} -o {output}"
@@ -181,8 +181,10 @@ rule binning_format:
 rule bin_profiles:
     input:   "profile/{}/{}/all.tsv".format(PROFILER, FRAGS), "binning/{}/unified_binning.tsv".format(BINNER)
     output:  "binning/{}/bins.prof".format(BINNER)
+    params:  "--jgi" if PROFILER == "jgi" else "",
+             "-v" if PROF_VAR else ""
     message: "Deriving bin profiles"
-    shell:   "{SCRIPTS}/bin_profiles.py {input} > {output}"
+    shell:   "{SCRIPTS}/bin_profiles.py {input} {params} >{output}"
 
 rule choose_bins:
     input:   binning="binning/{}/unified_binning.tsv".format(BINNER),
