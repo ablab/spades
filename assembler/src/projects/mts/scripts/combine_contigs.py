@@ -6,8 +6,6 @@ import os.path
 from Bio import SeqIO
 from common import sample_name
 
-replace = False
-
 files = sys.argv[1:]
 
 output = sys.stdout
