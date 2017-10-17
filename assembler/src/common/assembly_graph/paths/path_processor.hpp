@@ -66,6 +66,7 @@ private:
         size_t call_cnt_;
         Path reversed_edge_path_;
         adt::bag<VertexId> vertex_cnts_;
+        bool usage_limit_triggered_;
 
         const Graph& g_;
         const DijkstraT& dijkstra_;
@@ -91,17 +92,22 @@ private:
             curr_depth_--;
         }
 
-        bool CanGo(EdgeId e, VertexId start_v) const {
+        bool CanGo(EdgeId e, VertexId start_v) {
             if (!dijkstra_.DistanceCounted(start_v))
                 return false;
             if (dijkstra_.GetDistance(start_v) + g_.length(e) + curr_len_ > max_len_)
                 return false;
             if (curr_depth_ >= edge_depth_bound_)
                 return false;
-            return call_cnt_ < PathProcessor::VERTEX_USAGE_ENABLE_THRESHOLD ||
-                    vertex_cnts_.mult(start_v) < PathProcessor::MAX_VERTEX_USAGE;
+            if (call_cnt_ >= PathProcessor::VERTEX_USAGE_ENABLE_THRESHOLD &&
+                    vertex_cnts_.mult(start_v) >= PathProcessor::MAX_VERTEX_USAGE) {
+                usage_limit_triggered_ = true;
+                return false;
+            }
+            return true;
         }
 
+        //returns true iff call number limit exceeded
         bool Go(VertexId v, const size_t min_len) {
             TRACE("Got to vertex " << g_.str(v));
             if (++call_cnt_ >= PathProcessor::MAX_CALL_CNT) {
@@ -129,9 +135,9 @@ private:
                 VertexId start_v = g_.EdgeStart(e);
                 if (CanGo(e, start_v)) {
                     Push(e, start_v);
-                    bool exceeded_limits = Go(start_v, min_len);
+                    bool call_limit_triggered = Go(start_v, min_len);
                     Pop();
-                    if (exceeded_limits)
+                    if (call_limit_triggered)
                         return true;
                 }
             }
@@ -147,6 +153,7 @@ private:
             callback_(callback),
             edge_depth_bound_(edge_depth_bound),
             curr_len_(0), curr_depth_(0), call_cnt_(0),
+            usage_limit_triggered_(false),
             g_(outer.g_),
             dijkstra_(outer.dijkstra_) {
             reversed_edge_path_.reserve(PathProcessor::MAX_CALL_CNT);
@@ -159,12 +166,12 @@ private:
                 return false;
             }
 
-            bool code = Go(end_, min_len_);
+            bool call_limit_triggered = Go(end_, min_len_);
             VERIFY(curr_len_ == 0);
             VERIFY(curr_depth_ == 0);
             vertex_cnts_.take(end_);
             VERIFY(vertex_cnts_.size() == 0);
-            return code;
+            return call_limit_triggered || usage_limit_triggered_;
         }
     };
 
