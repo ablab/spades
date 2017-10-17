@@ -271,7 +271,31 @@ public:
                     vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
 
                     if (intermediate_path.size() == 0) {
-                        DEBUG("Tangled region between edges "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position)  << " and seq "<< - seq_start + seq_end);
+         pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
+                size_t result = size_t (-1);
+        bool not_found = true;
+        auto distance_it = distance_cashed.begin();
+
+#pragma omp critical(pac_index)
+        {
+            distance_it = distance_cashed.find(vertex_pair);
+            not_found = (distance_it == distance_cashed.end());
+        }
+        if (not_found) {
+            omnigraph::DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
+                    omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, pb_config_.max_path_in_dijkstra, pb_config_.max_vertex_in_dijkstra));
+            dijkstra.Run(start_v);
+            if (dijkstra.DistanceCounted(end_v)) {
+                result = dijkstra.GetDistance(end_v);
+            }
+        } else {
+            result = distance_it->second;
+        }
+#pragma omp critical(pac_index)
+
+
+
+                        DEBUG("Tangled region between edges "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position)  << " and seq "<< - seq_start + seq_end << " and shortest path " << result);
                         res.push_back(cur_sorted);
                         cur_sorted.clear();
                         prev_edge = EdgeId(0);
@@ -551,7 +575,7 @@ public:
             return 0;
         }
         VertexId start_v = g_.EdgeEnd(a_edge);
-        size_t addition = g_.length(a_edge);
+        int addition = int(g_.length(a_edge));
         VertexId end_v = g_.EdgeStart(b_edge);
         pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
 
@@ -589,10 +613,10 @@ public:
             return 1;
         } else {
             if  (a.size > 300 && b.size > 300 && - a.sorted_positions[1].edge_position +
-                                                         result + addition + b.sorted_positions[0].edge_position  <=
+                                                         (int)result + addition + b.sorted_positions[0].edge_position  <=
                                                  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * debruijn_k) {
                 WARN("overlapping range magic worked, " << - a.sorted_positions[1].edge_position +
-                                                           result + addition + b.sorted_positions[0].edge_position  << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * debruijn_k);
+                                                           (int)result + addition + b.sorted_positions[0].edge_position  << " and " <<  b.sorted_positions[0].read_position - a.sorted_positions[1].read_position + 2 * debruijn_k);
                 WARN("Ranges:" << a.str(g_) << " " << b.str(g_) <<" llength and dijkstra shift :" << addition << " " << result);
                 return 1;
 
@@ -618,10 +642,11 @@ public:
                                   string &e_add) const {
         TRACE(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
         omnigraph::PathStorageCallback<Graph> callback(g_);
-        ProcessPaths(g_,
+        int pres = ProcessPaths(g_,
                     path_min_length, path_max_length,
                     start_v, end_v,
                     callback);
+        DEBUG("PathProcessor result: " << pres << " limits " << path_min_length << " " << path_max_length);
         vector<vector<EdgeId> > paths = callback.paths();
         TRACE("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());
         int s_len = int(s.size());
@@ -643,6 +668,7 @@ public:
             return vector<EdgeId>(0);
         }
         for (size_t i = 0; i < paths.size(); i++) {
+            DEBUG("path len "<< paths[i].size());
             string cur_string = s_add + PathToString(paths[i]) + e_add;
             TRACE("cur_string: " << cur_string <<"\n seq_string " << seq_string);
             if (paths.size() > 1 && paths.size() < 10) {
@@ -667,7 +693,7 @@ public:
         if (best_score == STRING_DIST_INF) {
 
             DEBUG ("failed with strings " << seq_string << " " << PathToString(paths[0]));
-            DEBUG (paths.size() << " paths availabke");
+            DEBUG (paths.size() << " paths available");
             return vector<EdgeId>(0);
         }
         if (paths.size() > 1 && paths.size() < 10) {

@@ -177,6 +177,7 @@ class PacbioAligner {
         for (size_t i = 0; i < reads.size(); ++i) {
             size_t thread_num = omp_get_thread_num();
             Sequence seq(reads[i].sequence());
+            DEBUG(reads[i].name());
             auto current_read_mapping = pac_index_.GetReadAlignment(seq);
             for (const auto& gap : current_read_mapping.gaps) {
                 gaps_by_thread[thread_num].AddGap(gap);
