@@ -218,7 +218,7 @@ private:
     static const size_t MAX_CALL_CNT = 3000;
     static const size_t MAX_DIJKSTRA_VERTICES = 3000;
     static const size_t VERTEX_USAGE_ENABLE_THRESHOLD = 500;
-    static const size_t MAX_VERTEX_USAGE = 5;
+    static const size_t MAX_VERTEX_USAGE = 13;
 
     const Graph& g_;
     VertexId start_;

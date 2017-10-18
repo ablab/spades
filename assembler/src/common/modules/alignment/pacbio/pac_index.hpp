@@ -694,8 +694,11 @@ public:
         }
         TRACE(best_score);
         if (best_score == STRING_DIST_INF) {
-
-            DEBUG ("failed with strings " << seq_string << " " << PathToString(paths[0]));
+            if (paths.size() < 10) {            
+                for (size_t i = 0; i < paths.size(); i++) {
+                    DEBUG ("failed with strings " << seq_string << " " << s_add + PathToString(paths[i]) + e_add);
+                }
+            }
             DEBUG (paths.size() << " paths available");
             return vector<EdgeId>(0);
         }
