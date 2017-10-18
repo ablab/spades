@@ -222,21 +222,21 @@ private:
 inline int StringDistance(string &a, string &b) {
     int a_len = (int) a.length();
     int b_len = (int) b.length();
-    if (a_len == 0){
-        return b_len;
-    }
-    if (b_len == 0){
-        return a_len;
-    }
     int d = min(a_len / 3, b_len / 3);
     d = max(d, 10);
+    if ((a_len == 0 || b_len == 0) && d > 10){
+        return STRING_DIST_INF;
+    } else {
+        return d;
+    }
+    
     DEBUG(a_len << " " << b_len << " " << d);
     vector<vector<int> > table(a_len);
     //int d =
     for (int i = 0; i < a_len; i++) {
         table[i].resize(b_len);
         int low = max(max(0, i - d - 1), i + b_len - a_len - d - 1);
-        int high = min(min(b_len, i + d + 1), i + a_len - b_len + d + 1);
+        int high = min(min(b_len, i + d + 1), i + b_len - a_len + d + 1);
         TRACE(low << " " <<high);
         for (int j = low; j < high; j++)
             table[i][j] = STRING_DIST_INF;
@@ -249,7 +249,7 @@ inline int StringDistance(string &a, string &b) {
 
     for (int i = 0; i < a_len; i++) {
         int low = max(max(0, i - d), i + b_len - a_len - d);
-        int high = min(min(b_len, i + d), i + a_len - b_len + d);
+        int high = min(min(b_len, i + d), i + b_len - a_len + d);
 
         TRACE(low << " " <<high);
         for (int j = low; j < high; j++) {

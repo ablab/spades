@@ -669,6 +669,9 @@ public:
         }
         for (size_t i = 0; i < paths.size(); i++) {
             DEBUG("path len "<< paths[i].size());
+            if (paths[i].size() == 0) {
+                WARN ("Pathprocessor returns path with size = 0")
+            }
             string cur_string = s_add + PathToString(paths[i]) + e_add;
             TRACE("cur_string: " << cur_string <<"\n seq_string " << seq_string);
             if (paths.size() > 1 && paths.size() < 10) {
