@@ -35,11 +35,12 @@ enum {
 };
 
 struct OneReadMapping {
-    std::vector<std::vector<debruijn_graph::EdgeId>> main_storage;
+    std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > main_storage;
     std::vector<GapDescription> gaps;
-    OneReadMapping(const std::vector<std::vector<debruijn_graph::EdgeId>>& main_storage_,
-                   const std::vector<GapDescription>& gaps_)
-            :  main_storage(main_storage_), gaps(gaps_) {}
+    OneReadMapping(const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId>>& main_storage_,
+                   const std::vector<GapDescription>& gaps_) :
+            main_storage(main_storage_), gaps(gaps_){
+    }
 };
 
 template<class Graph>
@@ -160,10 +161,17 @@ public:
         return ss.str();
     }
 
+<<<<<<< HEAD
     std::vector<std::vector<EdgeId>> FillGapsInCluster(const std::vector<typename ClustersSet::iterator> &cur_cluster,
                                      const Sequence &s) const {
         std::vector<EdgeId> cur_sorted;
         std::vector<std::vector<EdgeId>> res;
+=======
+    vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > FillGapsInCluster(const vector<typename ClustersSet::iterator> &cur_cluster,
+                                     const Sequence &s) const {
+        omnigraph::MappingPath<debruijn_graph::EdgeId> cur_sorted;
+        vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > res;
+>>>>>>> Add aligner script
         EdgeId prev_edge = EdgeId();
 
         for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();) {
@@ -219,11 +227,14 @@ public:
                         continue;
                     }
                     for (EdgeId edge: intermediate_path) {
-                        cur_sorted.push_back(edge);
+                        cur_sorted.push_back(edge, omnigraph::MappingRange(Range(0, 0), Range(0, g_.EdgeNucls(edge).size()) ));
                     }
                 }
             }
-            cur_sorted.push_back(cur_edge);
+            MappingInstance cur_first_index = (*iter)->sorted_positions[(*iter)->first_trustable_index];
+            MappingInstance cur_last_index = (*iter)->sorted_positions[(*iter)->last_trustable_index];
+            cur_sorted.push_back(cur_edge, omnigraph::MappingRange(cur_first_index.read_position, cur_last_index.read_position, 
+                                                                        cur_first_index.edge_position, cur_last_index.edge_position ));
             prev_edge = cur_edge;
             ++iter;
         }
@@ -324,7 +335,7 @@ public:
 
     OneReadMapping AddGapDescriptions(const std::vector<typename ClustersSet::iterator> &start_clusters,
                                       const std::vector<typename ClustersSet::iterator> &end_clusters,
-                                      const std::vector<std::vector<EdgeId>> &sorted_edges, const Sequence &s,
+                                      const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_edges, const Sequence &s,
                                       const std::vector<bool> &block_gap_closer) const {
         DEBUG("adding gaps between subreads");
         std::vector<GapDescription> illumina_gaps;
@@ -332,8 +343,8 @@ public:
             if (block_gap_closer[i])
                 continue;
             size_t j = i + 1;
-            EdgeId before_gap = sorted_edges[i][sorted_edges[i].size() - 1];
-            EdgeId after_gap = sorted_edges[j][0];
+            EdgeId before_gap = sorted_edges[i][sorted_edges[i].size() - 1].first;
+            EdgeId after_gap = sorted_edges[j][0].first;
 //do not add "gap" for rc-jumping
             if (before_gap != after_gap && before_gap != g_.conjugate(after_gap)) {
                 if (TopologyGap(before_gap, after_gap, true)) {
@@ -364,7 +375,7 @@ public:
                         std::vector<typename ClustersSet::iterator> &cur_cluster,
                         std::vector<typename ClustersSet::iterator> &start_clusters,
                         std::vector<typename ClustersSet::iterator> &end_clusters,
-                        std::vector<std::vector<EdgeId>> &sorted_edges,
+                        vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &sorted_edges,
                         std::vector<bool> &block_gap_closer) const {
         std::sort(cur_cluster.begin(), cur_cluster.end(),
                   [](const typename ClustersSet::iterator& a, const typename ClustersSet::iterator& b) {
@@ -385,7 +396,7 @@ public:
                 for (auto &cur_sorted:res) {
                     DEBUG("Adding " <<res.size() << " subreads, cur alignments " << cur_sorted.size());
                     if (cur_sorted.size() > 0) {
-                        for(EdgeId eee: cur_sorted) {
+                        for(EdgeId eee: cur_sorted.path()) {
                             DEBUG (g_.int_id(eee));
                         }
                         start_clusters.push_back(*cur_cluster_start);
@@ -411,10 +422,10 @@ public:
         ClustersSet mapping_descr = GetBWAClusters(s); //GetOrderClusters(s);
         auto colors = GetWeightedColors(mapping_descr);
         size_t len =  mapping_descr.size();
-        std::vector<std::vector<EdgeId>> sorted_edges;
-        std::vector<bool> block_gap_closer;
-        std::vector<typename ClustersSet::iterator> start_clusters, end_clusters;
-        std::vector<int> used(len);
+        vector<omnigraph::MappingPath<debruijn_graph::EdgeId>> sorted_edges;
+        vector<bool> block_gap_closer;
+        vector<typename ClustersSet::iterator> start_clusters, end_clusters;
+        vector<int> used(len);
         auto iter = mapping_descr.begin();
         for (size_t i = 0; i < len; i++, iter ++) {
             used[i] = 0;

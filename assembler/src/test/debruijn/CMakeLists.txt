@@ -16,6 +16,12 @@ target_link_libraries(debruijn_test common_modules cityhash ssw ${COMMON_LIBRARI
 add_executable(component_generator generate_component.cpp)
 target_link_libraries(component_generator common_modules cityhash ${COMMON_LIBRARIES})
 
+add_executable(idealreads_aligner align_idealreads.cpp)
+target_link_libraries(idealreads_aligner common_modules cityhash minimap bwa ${COMMON_LIBRARIES})
+
+add_executable(longreads_aligner align_longreads.cpp)
+target_link_libraries(longreads_aligner common_modules cityhash minimap bwa ${COMMON_LIBRARIES})
+
 add_executable(reference_fixer reference_fixer.cpp)
 target_link_libraries(reference_fixer common_modules cityhash ${COMMON_LIBRARIES})
 

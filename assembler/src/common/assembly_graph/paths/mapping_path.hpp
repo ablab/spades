@@ -284,6 +284,11 @@ class MappingPath {
         range_mappings_.push_back(range);
     }
 
+    void clear() {
+        edges_.clear();
+        range_mappings_.clear();
+    }
+
  private:
     std::vector<ElementId> edges_;
     std::vector<MappingRange> range_mappings_;
