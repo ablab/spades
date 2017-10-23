@@ -46,7 +46,7 @@ def parser(f, out_dir):
     plasmids_bad = open(name[:-4]+"_plasmids_bad.names", "w")
     unclas = open(name[:-4]+"_unclassified.names", "w")
     records= NCBIXML.parse(xml_file)
-
+    viral = open(name[:-4]+"_viruses.names", "w")
     for item in records:
         print item.query
 	### We are taking query length from contig name provided by SPAdes. Weird, huh?
@@ -67,13 +67,20 @@ def parser(f, out_dir):
 
         pl = 0
         for seq in good_aln:
-	    if ((seq.find('hromosome') != -1) or ((seq.find("omplete genome") != -1) and not (seq.find('lasmid') != -1))):
-                chrom.write(item.query + '\n')
-                chrom.write(seq + '\n')
+            if (seq.find('hage') != -1 or seq.find('irus') != -1 ):
+                viral.write(item.query + '\n')
+                viral.write(seq + '\n')
                 pl = 1
                 break
-	if pl == 0:
-		for seq in good_aln:
+        if pl == 0:
+            for seq in good_aln:
+                if ((seq.find('hromosome') != -1) or ((seq.find("omplete genome") != -1) and not (seq.find('lasmid') != -1))):
+                    chrom.write(item.query + '\n')
+                    chrom.write(seq + '\n')
+                    pl = 1
+                    break
+    if pl == 0:
+        for seq in good_aln:
         	    if seq.find('lasmid') != -1:
                 	plasmids.write(item.query + '\n')
 	                plasmids.write(seq + '\n')
@@ -90,7 +97,12 @@ def parser(f, out_dir):
 #alignment is too small to decide
                 if total_len < pl_len * 0.1:
                     continue
-                if seq.find('lasmid') != -1:
+                if (seq.find('hage') != -1 or seq.find('irus') != -1 ):
+                    viral.write(item.query + '\n')
+                    viral.write(seq + '\n')
+                    pl = 1
+                    break
+                elif seq.find('lasmid') != -1:
                     plasmids_bad.write(item.query + '\n')
                     plasmids_bad.write(seq + "\n" + "len " + str (alignment.length) +" alnments lenghts:" + "\n")
                     for hsp in alignment.hsps:
