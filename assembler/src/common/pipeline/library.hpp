@@ -127,6 +127,7 @@ public:
     paired_reads_iterator paired_begin() const {
         return paired_reads_iterator(left_paired_reads_.begin(), right_paired_reads_.begin());
     }
+
     paired_reads_iterator paired_end() const {
         return paired_reads_iterator(left_paired_reads_.end(), right_paired_reads_.end());
     }
@@ -138,6 +139,7 @@ public:
     single_reads_iterator merged_begin() const {
         return single_reads_iterator(merged_reads_.begin(), merged_reads_.end());
     }
+
     single_reads_iterator merged_end() const {
         // NOTE: Do not forget about the contract with single_begin here!
         return single_reads_iterator(merged_reads_.end(), merged_reads_.end());
@@ -156,6 +158,7 @@ public:
         
         return res;
     }
+
     single_reads_iterator reads_end() const {
         // NOTE: Do not forget about the contract with single_begin here!
         return single_reads_iterator(single_reads_.end(), single_reads_.end());
@@ -168,6 +171,7 @@ public:
     single_reads_iterator single_begin() const {
         return single_reads_iterator(single_reads_.begin(), single_reads_.end());
     }
+
     single_reads_iterator single_end() const {
         // NOTE: Do not forget about the contract with single_begin here!
         return single_reads_iterator(single_reads_.end(), single_reads_.end());

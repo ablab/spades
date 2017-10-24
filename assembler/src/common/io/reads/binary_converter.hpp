@@ -181,7 +181,7 @@ private:
             stat.increase(r);
             ++current;
 
-            if (stat.read_count_ % buffer_reads == 0) {
+            if (stat.read_count % buffer_reads == 0) {
                 FlushBuffer(buf, read_writer, *file_ds_[thread_num]);
                 current = 0;
             }

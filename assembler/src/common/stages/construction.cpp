@@ -21,8 +21,9 @@ void construct_graph(io::ReadStreamList<Read>& streams,
                      conj_graph_pack& gp, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     config::debruijn_config::construction params = cfg::get().con;
     params.early_tc.enable &= !cfg::get().gap_closer_enable;
+    VERIFY(cfg::get().ds.RL() > 0);
 
-    ConstructGraphWithCoverage(params, streams, gp.g,
+    ConstructGraphWithCoverage(params, cfg::get().ds.RL(), streams, gp.g,
                                gp.index, gp.flanking_cov, contigs_stream);
 }
 
@@ -55,7 +56,7 @@ void Construction::run(conj_graph_pack &gp, const char*) {
         if (dataset.reads[i].is_graph_contructable())
             libs_for_construction.push_back(i);
 
-    auto streams = io::single_binary_readers_for_libs(dataset, libs_for_construction, true, true);
+    auto streams = io::single_binary_readers_for_libs(dataset, libs_for_construction);
 
     //Updating dataset stats
     size_t no_merge_max_len = 0;

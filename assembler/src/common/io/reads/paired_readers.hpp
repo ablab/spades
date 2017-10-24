@@ -104,10 +104,6 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
     second_->reset();
   }
 
-  ReadStreamStat get_stat() const override {
-    return ReadStreamStat();
-  }
-
  private:
 
   const size_t insert_size_;
@@ -204,10 +200,6 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    */
   void reset() override {
     single_->reset();
-  }
-
-  ReadStreamStat get_stat() const override {
-    return ReadStreamStat();
   }
 
  private:

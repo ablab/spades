@@ -120,7 +120,7 @@ class Sequence {
     Sequence(size_t size, int)
             : from_(0), size_(size), rtl_(false), data_(ManagedNuclBuffer::create(size_)) {}
 
-    //FIXME DO NOT USE THIS CONSTRUCTOR
+    //Low level constructor. Handle with care.
     Sequence(const Sequence &seq, size_t from, size_t size, bool rtl)
             : from_(from), size_(size), rtl_(rtl), data_(seq.data_) {}
 

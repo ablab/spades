@@ -27,13 +27,11 @@ public:
             base(reader), rc_read_(), was_rc_(true) {
     }
 
-    /* virtual */
-    bool eof() {
+    bool eof() override {
         return was_rc_ && base::eof();
     }
 
-    /* virtual */
-    RCWrapper& operator>>(ReadType& read) {
+    RCWrapper& operator>>(ReadType& read) override {
         if (was_rc_) {
             base::operator >>(read);
             rc_read_ = read;
@@ -44,17 +42,9 @@ public:
         return (*this);
     }
 
-    /* virtual */
-    void reset() {
+    void reset() override {
         was_rc_ = true;
         base::reset();
-    }
-
-    /* virtual */
-    ReadStreamStat get_stat() const {
-        ReadStreamStat stat = base::get_stat();
-        stat.merge(stat);
-        return stat;
     }
 
 private:

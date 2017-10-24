@@ -79,7 +79,7 @@ public:
             StepForward();
         }
 
-    /* virtual */ bool eof() {
+    bool eof() override {
         return eof_;
     }
 
@@ -90,14 +90,13 @@ public:
    *
    * @return Reference to this stream.
    */
-    /* virtual */ CarefulFilteringWrapper& operator>>(ReadType& read) {
+    CarefulFilteringWrapper& operator>>(ReadType& read) override {
         read = next_read_;
         StepForward();
         return *this;
     }
 
-    /* virtual */
-    void reset() {
+    void reset() override {
         base::reset();
         eof_ = false;
         StepForward();
@@ -107,7 +106,6 @@ private:
     bool eof_;
     ReadType next_read_;
 
-    //FIXME refactor
   /*
    * Read next valid read in the stream.
    */

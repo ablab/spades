@@ -20,10 +20,17 @@ namespace io {
 // Use FileReadStream and InsertSizeModyfing instead
 
 class BinaryFileSingleStream: public ReadStream<SingleReadSeq> {
-private:
     std::ifstream stream_;
     ReadStreamStat read_stat_;
     size_t current_;
+
+    void Init() {
+        stream_.clear();
+        stream_.seekg(0);
+        VERIFY(stream_.good());
+        read_stat_.read(stream_);
+        current_ = 0;
+    }
 
 public:
 
@@ -32,8 +39,7 @@ public:
         fname = file_name_prefix + "_" + std::to_string(file_num) + ".seq";
         stream_.open(fname.c_str(), std::ios_base::binary | std::ios_base::in);
 
-        //FIXME method call in constructor
-        reset();
+        Init();
     }
 
     bool is_open() override {
@@ -41,12 +47,12 @@ public:
     }
 
     bool eof() override {
-        return current_ == read_stat_.read_count_;
+        return current_ == read_stat_.read_count;
     }
 
     BinaryFileSingleStream& operator>>(SingleReadSeq& read) override {
         read.BinRead(stream_);
-        VERIFY(current_ < read_stat_.read_count_);
+        VERIFY(current_ < read_stat_.read_count);
 
         ++current_;
         return *this;
@@ -58,16 +64,7 @@ public:
     }
 
     void reset() override {
-        stream_.clear();
-        stream_.seekg(0);
-        VERIFY(stream_.good());
-        read_stat_.read(stream_);
-        current_ = 0;
-    }
-
-    //FIXME remove get_stat for good
-    ReadStreamStat get_stat() const override {
-        return read_stat_;
+        Init();
     }
 
 };
@@ -130,12 +127,6 @@ public:
         stream_.reset();
     }
 
-    ReadStreamStat get_stat() const override {
-        auto stat = stream_.get_stat();
-        stat.read_count_ *= 2;
-        return stat;
-    }
-
 };
 
 class BinaryFilePairedStream: public ReadStream<PairedReadSeq> {
@@ -159,12 +150,12 @@ public:
     }
 
     bool eof() override {
-        return current_ >= read_stat_.read_count_;
+        return current_ >= read_stat_.read_count;
     }
 
     BinaryFilePairedStream& operator>>(PairedReadSeq& read) override {
         read.BinRead(stream_, insert_size_);
-        VERIFY(current_ < read_stat_.read_count_);
+        VERIFY(current_ < read_stat_.read_count);
 
         ++current_;
         return *this;
@@ -184,11 +175,6 @@ public:
         current_ = 0;
     }
 
-    ReadStreamStat get_stat() const override {
-        ReadStreamStat stat = read_stat_;
-        stat.read_count_ *= 2;
-        return stat;
-    }
 };
 
 }

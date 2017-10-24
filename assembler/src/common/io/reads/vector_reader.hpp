@@ -48,14 +48,6 @@ public:
                pos_ = 0;
        }
 
-       ReadStreamStat get_stat() const {
-           //todo
-           ReadStreamStat stat;
-           stat.read_count_ = data_.size();
-
-           return stat;
-       }
-
 };
 
 }

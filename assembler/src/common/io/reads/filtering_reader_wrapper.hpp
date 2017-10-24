@@ -55,7 +55,7 @@ public:
    *
    * @return true of the stream is opened and false otherwise.
    */
-    /* virtual */ bool is_open() {
+    bool is_open() override {
         return reader_.is_open();
     }
 
@@ -65,7 +65,7 @@ public:
    * @return true if the end of stream is reached and false
    * otherwise.
    */
-    /* virtual */ bool eof() {
+    bool eof() override {
         return eof_;
     }
 
@@ -77,7 +77,7 @@ public:
    *
    * @return Reference to this stream.
    */
-    /* virtual */ FilteringReaderWrapper& operator>>(ReadType& read) {
+    FilteringReaderWrapper& operator>>(ReadType& read) override {
         read = next_read_;
         StepForward();
         return *this;
@@ -86,23 +86,17 @@ public:
     /*
      * Close the stream.
      */
-    /* virtual */
-    void close() {
+    void close() override {
         reader_.close();
     }
 
     /*
      * Close the stream and open it again.
      */
-    /* virtual */
-    void reset() {
+    void reset() override {
         reader_.reset();
         eof_ = false;
         StepForward();
-    }
-
-    ReadStat get_stat() const {
-        return reader_.get_stat();
     }
 
 private:

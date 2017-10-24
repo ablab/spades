@@ -23,7 +23,7 @@
 namespace hammer {
 
 /// initialize subkmer positions and log about it
-void InitializeSubKMerPositions();
+void InitializeSubKMerPositions(int tau);
 
 /// parallel correction of batch of reads
 void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
