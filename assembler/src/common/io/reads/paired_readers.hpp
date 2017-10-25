@@ -28,14 +28,10 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    */
   explicit SeparatePairedReadStream(const std::string& filename1, const std::string& filename2,
          size_t insert_size,
-         bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
          OffsetType offset_type = PhredOffset)
       : insert_size_(insert_size),
-        use_orientation_(use_orientation),
-        changer_(GetOrientationChanger<PairedRead>(orientation)),
-        offset_type_(offset_type),
-        first_(new FileReadStream(filename1, offset_type_)),
-        second_(new FileReadStream(filename2, offset_type_)),
+        first_(new FileReadStream(filename1, offset_type)),
+        second_(new FileReadStream(filename2, offset_type)),
         filename1_(filename1),
         filename2_(filename2){}
 
@@ -81,9 +77,6 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
     (*second_) >> sr2;
 
     pairedread = PairedRead::Create(sr1, sr2, insert_size_);
-    if (use_orientation_) {
-        pairedread = changer_(pairedread);
-    }
 
     return *this;
   }
@@ -107,14 +100,6 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
  private:
 
   const size_t insert_size_;
-  const bool use_orientation_;
-
-  const OrientationF<PairedRead> changer_;
-
-  /*
-   * @variable Quality offset type.
-   */
-  const OffsetType offset_type_;
 
   /*
    * @variable The first stream (reads from first file).
@@ -130,7 +115,6 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
   const std::string filename2_;
 };
 
-//FIXME refactor and reduce code duplication
 class InterleavingPairedReadStream : public ReadStream<PairedRead> {
  public:
   /*
@@ -140,14 +124,11 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    * @param distance Distance between parts of PairedReads.
    * @param offset The offset of the read quality.
    */
-  explicit InterleavingPairedReadStream(const std::string& filename, size_t insert_size,
-          bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
-          OffsetType offset_type = PhredOffset)
+  explicit InterleavingPairedReadStream(const std::string& filename,
+                                        size_t insert_size,
+                                        OffsetType offset_type = PhredOffset)
       : filename_(filename), insert_size_(insert_size),
-        use_orientation_(use_orientation),
-        changer_(GetOrientationChanger<PairedRead>(orientation)),
-        offset_type_(offset_type),
-        single_(new FileReadStream(filename_, offset_type_)) {}
+        single_(new FileReadStream(filename_, offset_type)) {}
 
   /*
    * Check whether the stream is opened.
@@ -182,10 +163,6 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
 
     pairedread = PairedRead::Create(sr1, sr2, insert_size_);
 
-    if (use_orientation_) {
-        pairedread = changer_(pairedread);
-    }
-
     return *this;
   }
 
@@ -209,14 +186,6 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    */
   const std::string filename_;
   const size_t insert_size_;
-  const bool use_orientation_;
-
-  const OrientationF<PairedRead> changer_;
-
-  /*
-   * @variable Quality offset type.
-   */
-  const OffsetType offset_type_;
 
   /*
    * @variable The single read stream.

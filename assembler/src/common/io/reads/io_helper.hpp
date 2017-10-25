@@ -48,31 +48,35 @@ namespace io {
     }
 
     inline PairedStreamPtr EasyWrapPairedStream(PairedStreamPtr reader,
-                                            bool followed_by_rc) {
+                                                bool followed_by_rc,
+                                                LibraryOrientation orientation) {
+        reader = make_shared<OrientationChangingWrapper<PairedRead>>(reader, orientation);
         reader = CarefulFilteringWrap<PairedRead>(reader);
         if (followed_by_rc) {
             reader = RCWrap<PairedRead>(reader);
         }
         return reader;
-
     }
 
     inline PairedStreamPtr PairedEasyStream(const std::string& filename1, const std::string& filename2,
                                      bool followed_by_rc, size_t insert_size,
                                      bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
                                      OffsetType offset_type = PhredOffset) {
-        PairedStreamPtr reader = make_shared<SeparatePairedReadStream>(filename1, filename2, insert_size,
-                                                             use_orientation,
-                                                             orientation, offset_type);
-        return EasyWrapPairedStream(reader, followed_by_rc);
+        PairedStreamPtr reader = make_shared<SeparatePairedReadStream>(filename1, filename2,
+                                                                       insert_size, offset_type);
+
+        return EasyWrapPairedStream(reader, followed_by_rc,
+                                    use_orientation ? orientation : LibraryOrientation::Undefined);
     }
 
     inline PairedStreamPtr PairedEasyStream(const std::string& filename, bool followed_by_rc,
             size_t insert_size,
             bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
             OffsetType offset_type = PhredOffset) {
-        PairedStreamPtr reader = make_shared<InterleavingPairedReadStream>(filename, insert_size,
-                                use_orientation, orientation, offset_type);
-        return EasyWrapPairedStream(reader, followed_by_rc);
+        PairedStreamPtr reader = make_shared<InterleavingPairedReadStream>(filename,
+                                                                           insert_size,
+                                                                           offset_type);
+        return EasyWrapPairedStream(reader, followed_by_rc,
+                                    use_orientation ? orientation : LibraryOrientation::Undefined);
     }
 }

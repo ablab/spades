@@ -71,7 +71,7 @@ class OrientationChangingWrapper: public DelegatingWrapper<ReadType> {
     typedef DelegatingWrapper<ReadType> base;
 public:
 
-    OrientationChangingWrapper(typename base::ReaderStreamPtrT reader,
+    OrientationChangingWrapper(typename base::ReadStreamPtrT reader,
                                LibraryOrientation orientation) :
             base(reader), changer_(GetOrientationChanger<ReadType>(orientation)) {
     }
