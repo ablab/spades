@@ -39,9 +39,9 @@ void construct_graph_from_contigs(debruijn_graph::conj_graph_pack &graph_pack){
     params.keep_perfect_loops = true;
     params.read_buffer_size = dsp_cfg::get().bp.read_buffer_size;
 
-    VERIFY(cfg::get().ds.RL() > 0);
+    VERIFY(cfg::get().ds.RL > 0);
     ConstructGraphWithCoverage(params,
-                               cfg::get().ds.RL(),
+                               cfg::get().ds.RL,
                                streams,
                                graph_pack.g,
                                graph_pack.index,

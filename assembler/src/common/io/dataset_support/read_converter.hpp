@@ -24,8 +24,8 @@
 namespace io {
 
 typedef debruijn_graph::config::dataset dataset;
-typedef debruijn_graph::config::DataSetData DataSetData;
-typedef SequencingLibrary<DataSetData> SequencingLibraryT;
+typedef debruijn_graph::config::LibraryData LibraryData;
+typedef SequencingLibrary<LibraryData> SequencingLibraryT;
 
 class ReadConverter {
 

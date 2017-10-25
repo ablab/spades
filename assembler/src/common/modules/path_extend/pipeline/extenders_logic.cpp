@@ -28,6 +28,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongReadsExtender(size_t lib_
     //TODO params
     size_t resolvable_repeat_length_bound = 10000ul;
     if (!dataset_info_.reads[lib_index].is_contig_lib()) {
+        //FIXME does max make sense here?
         resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().read_length);
     }
     INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
@@ -81,7 +82,7 @@ shared_ptr<GapAnalyzer> ExtendersGenerator::MakeGapAnalyzer(double is_variation)
                                                          pset.scaffolder_options.min_gap_score,
                                                          pset.scaffolder_options.short_overlap,
                                                          (int) pset.scaffolder_options.basic_overlap_coeff
-                                                             * dataset_info_.RL()));
+                                                             * dataset_info_.RL));
 
     //todo introduce explicit must_overlap_coeff and rename max_can_overlap -> can_overlap_coeff
     return std::make_shared<CompositeGapAnalyzer>(gp_.g,

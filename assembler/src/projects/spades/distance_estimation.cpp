@@ -98,7 +98,7 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
 }
 
 void estimate_distance(conj_graph_pack& gp,
-                       const io::SequencingLibrary<config::DataSetData> &lib,
+                       const io::SequencingLibrary<config::LibraryData> &lib,
                        const UnclusteredPairedIndexT& paired_index,
                        PairedIndexT& clustered_index,
                        PairedIndexT& scaffolding_index) {

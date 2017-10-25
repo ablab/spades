@@ -105,8 +105,7 @@ std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) 
     return names[size_t(mode)];
 }
 
-//FIXME rename to LibraryData
-struct DataSetData {
+struct LibraryData {
     //FIXME rename to stress that merged reads are not considered here
     size_t read_length;
     size_t merged_length;
@@ -141,7 +140,7 @@ struct DataSetData {
     } binary_reads_info;
 
 
-    DataSetData(): read_length(0), //avg_read_length(0.0),
+    LibraryData(): read_length(0), //avg_read_length(0.0),
                    merged_length(0),
                    mean_insert_size(0.0),
                    insert_size_deviation(0.0),
@@ -159,43 +158,20 @@ struct DataSetData {
 };
 
 struct dataset {
-    typedef io::DataSet<DataSetData>::Library Library;
+    typedef io::DataSet<LibraryData>::Library Library;
 
     dataset() :
-        max_read_length(0),
-        no_merge_max_rl(0),
-        average_read_length(0.0),
+        RL(0),
+        no_merge_RL(0),
+        aRL(0.0),
         average_coverage(0.0) {}
 
-    //FIXME remove getters/setters
-    //FIXME review usages
-    size_t RL() const { return max_read_length; }
-    void set_RL(size_t RL) {
-        max_read_length = RL;
-    }
-
-    double aRL() const { return average_read_length; }
-    void set_aRL(double aRL) {
-        average_read_length = aRL;
-    }
-
-    size_t no_merge_RL() const { return no_merge_max_rl; }
-    void set_no_merge_RL(size_t RL) {
-        no_merge_max_rl = RL;
-    }
-
-    double avg_coverage() const { return average_coverage; }
-    void set_avg_coverage(double avg_coverage) {
-        average_coverage = avg_coverage;
-    }
-
-    size_t max_read_length;
-    size_t no_merge_max_rl;
-    double average_read_length;
+    size_t RL;
+    size_t no_merge_RL;
+    double aRL;
     double average_coverage;
-    io::DataSet<DataSetData> reads;
+    io::DataSet<LibraryData> reads;
     std::vector<std::string> reference_genome;
-
 };
 
 // struct for debruijn project's configuration file

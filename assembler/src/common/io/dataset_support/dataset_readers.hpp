@@ -16,7 +16,7 @@
 namespace io {
 
 inline
-PairedStreamPtr paired_easy_reader(const SequencingLibrary<debruijn_graph::config::DataSetData> &lib,
+PairedStreamPtr paired_easy_reader(const SequencingLibrary<debruijn_graph::config::LibraryData> &lib,
                                    bool followed_by_rc,
                                    size_t insert_size,
                                    bool use_orientation/* = true*/,
@@ -30,7 +30,7 @@ PairedStreamPtr paired_easy_reader(const SequencingLibrary<debruijn_graph::confi
 }
 
 inline
-ReadStreamList<SingleRead> single_easy_readers(const SequencingLibrary<debruijn_graph::config::DataSetData> &lib,
+ReadStreamList<SingleRead> single_easy_readers(const SequencingLibrary<debruijn_graph::config::LibraryData> &lib,
                                                bool followed_by_rc,
                                                bool including_paired_reads,
                                                bool handle_Ns = true,
@@ -50,7 +50,7 @@ ReadStreamList<SingleRead> single_easy_readers(const SequencingLibrary<debruijn_
 }
 
 inline
-SingleStreamPtr single_easy_reader(const SequencingLibrary<debruijn_graph::config::DataSetData> &lib,
+SingleStreamPtr single_easy_reader(const SequencingLibrary<debruijn_graph::config::LibraryData> &lib,
                                    bool followed_by_rc,
                                    bool including_paired_reads,
                                    bool handle_Ns = true,
@@ -60,7 +60,7 @@ SingleStreamPtr single_easy_reader(const SequencingLibrary<debruijn_graph::confi
 }
 
 inline
-ReadStreamList<SingleRead> merged_easy_readers(const SequencingLibrary<debruijn_graph::config::DataSetData> &lib,
+ReadStreamList<SingleRead> merged_easy_readers(const SequencingLibrary<debruijn_graph::config::LibraryData> &lib,
                                                bool followed_by_rc,
                                                bool handle_Ns = true,
                                                OffsetType offset_type = PhredOffset) {
@@ -72,7 +72,7 @@ ReadStreamList<SingleRead> merged_easy_readers(const SequencingLibrary<debruijn_
 }
 
 inline
-SingleStreamPtr merged_easy_reader(const SequencingLibrary<debruijn_graph::config::DataSetData> &lib,
+SingleStreamPtr merged_easy_reader(const SequencingLibrary<debruijn_graph::config::LibraryData> &lib,
                                    bool followed_by_rc,
                                    bool handle_Ns = true,
                                    OffsetType offset_type = PhredOffset) {

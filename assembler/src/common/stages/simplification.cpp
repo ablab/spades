@@ -30,6 +30,14 @@ shared_ptr<visualization::graph_colorer::GraphColorer<typename graph_pack::graph
     return visualization::graph_colorer::DefaultColorer(gp.g, path1, path2);
 }
 
+SimplifInfoContainer CreateInfoContainer() {
+    SimplifInfoContainer info_container(cfg::get().mode);
+    info_container.set_read_length(cfg::get().ds.RL)
+            .set_main_iteration(cfg::get().main_iteration)
+            .set_chunk_cnt(5 * cfg::get().max_threads);
+    return info_container;
+}
+
 class GraphSimplifier {
     typedef std::function<void(EdgeId)> HandlerF;
 
@@ -510,10 +518,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 //            boost::ref(qual_removal_handler), _1);
 
 
-    SimplifInfoContainer info_container(cfg::get().mode);
-    info_container.set_read_length(cfg::get().ds.RL())
-        .set_main_iteration(cfg::get().main_iteration)
-        .set_chunk_cnt(5 * cfg::get().max_threads);
+    SimplifInfoContainer info_container = CreateInfoContainer();
 
     //0 if model didn't converge
     //todo take max with trusted_bound
@@ -534,12 +539,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 
 
 void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
-    SimplifInfoContainer info_container(cfg::get().mode);
-    info_container
-        .set_read_length(cfg::get().ds.RL())
-        .set_main_iteration(cfg::get().main_iteration)
-        .set_chunk_cnt(5 * cfg::get().max_threads);
-
+    SimplifInfoContainer info_container = CreateInfoContainer();
 
     auto isolated_edge_remover =
         IsolatedEdgeRemoverInstance(gp.g, cfg::get().simp.ier, info_container, (EdgeRemovalHandlerF<Graph>)nullptr);
@@ -568,12 +568,12 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     INFO("Counting average coverage");
     AvgCovereageCounter<Graph> cov_counter(gp.g);
 
-    VERIFY(cfg::get_writable().ds.avg_coverage() == 0.);
-    cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
+    VERIFY(cfg::get().ds.average_coverage == 0.);
+    cfg::get_writable().ds.average_coverage = cov_counter.Count();
 
-    INFO("Average coverage = " << cfg::get().ds.avg_coverage());
+    INFO("Average coverage = " << cfg::get().ds.average_coverage);
     if (!cfg::get().uneven_depth) {
-        if (cfg::get().ds.avg_coverage() < gp.ginfo.ec_bound())
+        if (math::ls(cfg::get().ds.average_coverage, gp.ginfo.ec_bound()))
             WARN("The determined erroneous connection coverage threshold may be determined improperly\n");
     }
 }

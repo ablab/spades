@@ -21,9 +21,9 @@ void construct_graph(io::ReadStreamList<Read>& streams,
                      conj_graph_pack& gp, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     config::debruijn_config::construction params = cfg::get().con;
     params.early_tc.enable &= !cfg::get().gap_closer_enable;
-    VERIFY(cfg::get().ds.RL() > 0);
+    VERIFY(cfg::get().ds.RL > 0);
 
-    ConstructGraphWithCoverage(params, cfg::get().ds.RL(), streams, gp.g,
+    ConstructGraphWithCoverage(params, cfg::get().ds.RL, streams, gp.g,
                                gp.index, gp.flanking_cov, contigs_stream);
 }
 
@@ -59,32 +59,30 @@ void Construction::run(conj_graph_pack &gp, const char*) {
     auto streams = io::single_binary_readers_for_libs(dataset, libs_for_construction);
 
     //Updating dataset stats
-    size_t no_merge_max_len = 0;
+    VERIFY(dataset.RL == 0 && dataset.aRL == 0.);
     size_t merged_max_len = 0;
     uint64_t total_nucls = 0;
     size_t read_count = 0;
     for (size_t lib_id : libs_for_construction) {
         auto lib_data = dataset.reads[lib_id].data();
-        //FIXME discuss this hack with read_length vs. merged_length
         if (lib_data.read_length == 0) {
             FATAL_ERROR("Failed to determine read length for library #" << lib_id << ". "
                     "Check that not only merged reads are present.");
         }
-        no_merge_max_len = std::max(no_merge_max_len, lib_data.read_length);
+        dataset.no_merge_RL = std::max(dataset.no_merge_RL, lib_data.read_length);
         merged_max_len = std::max(merged_max_len, lib_data.merged_length);
         total_nucls += dataset.reads[lib_id].data().total_nucls;
         read_count += dataset.reads[lib_id].data().read_count;
     }
-    VERIFY(dataset.RL() == 0 && dataset.aRL() == 0.);
-    size_t max_read_length = std::max(no_merge_max_len, merged_max_len);
-    INFO("Max read length " << max_read_length);
-    dataset.set_RL(max_read_length);
+
+    dataset.RL = std::max(dataset.no_merge_RL, merged_max_len);
+    INFO("Max read length " << dataset.RL);
+
     if (merged_max_len > 0)
-        INFO("Max read length without merged " << no_merge_max_len);
-    dataset.set_no_merge_RL(no_merge_max_len);
-    double average_read_length = double(total_nucls) / double(read_count);
-    INFO("Average read length " << average_read_length);
-    dataset.set_aRL(average_read_length);
+        INFO("Max read length without merged " << dataset.no_merge_RL);
+
+    dataset.aRL = double(total_nucls) / double(read_count);
+    INFO("Average read length " << dataset.aRL);
 
     construct_graph<io::SingleReadSeq>(streams, gp, contigs_stream);
 }

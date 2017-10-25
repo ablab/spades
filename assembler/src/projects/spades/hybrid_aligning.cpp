@@ -214,7 +214,7 @@ bool IsNontrivialAlignment(const vector<vector<EdgeId>>& aligned_edges) {
     return false;
 }
 
-io::SingleStreamPtr GetReadsStream(const io::SequencingLibrary<config::DataSetData>& lib) {
+io::SingleStreamPtr GetReadsStream(const io::SequencingLibrary<config::LibraryData>& lib) {
     io::ReadStreamList<io::SingleRead> streams;
     for (const auto& reads : lib.single_reads())
         //do we need input_file function here?
@@ -327,7 +327,7 @@ public:
 };
 
 void PacbioAlignLibrary(const conj_graph_pack& gp,
-                        const io::SequencingLibrary<config::DataSetData>& lib,
+                        const io::SequencingLibrary<config::LibraryData>& lib,
                         PathStorage<Graph>& path_storage,
                         GapStorage& gap_storage,
                         size_t thread_cnt) {

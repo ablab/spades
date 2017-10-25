@@ -213,8 +213,8 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     }
     INFO("Counting average coverage after genomic edge removal");
     AvgCovereageCounter<Graph> cov_counter(gp.g);
-    cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
-    INFO("Average coverage = " << cfg::get().ds.avg_coverage());
+    cfg::get_writable().ds.average_coverage = cov_counter.Count();
+    INFO("Average coverage = " << cfg::get().ds.average_coverage);
 }
 
 
