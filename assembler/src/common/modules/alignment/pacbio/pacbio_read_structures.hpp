@@ -224,12 +224,15 @@ inline int StringDistance(string &a, string &b) {
     int b_len = (int) b.length();
     int d = min(a_len / 3, b_len / 3);
     d = max(d, 10);
-    if ((a_len == 0 || b_len == 0) && d > 10){
-        return STRING_DIST_INF;
-    } else {
-        return d;
+    if (a_len == 0 || b_len == 0) {
+        if (d > 10) {
+            INFO ("zero length path , lengths " << a_len << " and " << b_len);
+            return STRING_DIST_INF;
+        } else {
+            return d;
+        }
     }
-    
+
     DEBUG(a_len << " " << b_len << " " << d);
     vector<vector<int> > table(a_len);
     //int d =
