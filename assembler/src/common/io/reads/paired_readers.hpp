@@ -82,7 +82,7 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
 
     pairedread = PairedRead::Create(sr1, sr2, insert_size_);
     if (use_orientation_) {
-        pairedread = changer_->Perform(pairedread);
+        pairedread = changer_(pairedread);
     }
 
     return *this;
@@ -109,7 +109,7 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
   const size_t insert_size_;
   const bool use_orientation_;
 
-  const std::unique_ptr<OrientationChanger<PairedRead>> changer_;
+  const OrientationF<PairedRead> changer_;
 
   /*
    * @variable Quality offset type.
@@ -130,6 +130,7 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
   const std::string filename2_;
 };
 
+//FIXME refactor and reduce code duplication
 class InterleavingPairedReadStream : public ReadStream<PairedRead> {
  public:
   /*
@@ -182,7 +183,7 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
     pairedread = PairedRead::Create(sr1, sr2, insert_size_);
 
     if (use_orientation_) {
-        pairedread = changer_->Perform(pairedread);
+        pairedread = changer_(pairedread);
     }
 
     return *this;
@@ -210,7 +211,7 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
   const size_t insert_size_;
   const bool use_orientation_;
 
-  const std::unique_ptr<OrientationChanger<PairedRead>> changer_;
+  const OrientationF<PairedRead> changer_;
 
   /*
    * @variable Quality offset type.
