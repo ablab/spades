@@ -20,6 +20,19 @@ public:
     typedef SingleReadType SingleReadT;
     typedef int32_t InsertSizeT;
 
+    //Prefer using creating new read with constructor to the next three methods
+    SingleReadT &first() {
+        return first_;
+    }
+
+    SingleReadT &second() {
+        return second_;
+    }
+
+    void set_orig_insert_size(size_t is) {
+        insert_size_ = is;
+    }
+
     const SingleReadT &first() const {
         return first_;
     }
@@ -76,7 +89,6 @@ public:
                insert_size_ == paired_read.insert_size_;
     }
 
-    //FIXME think if would be simpler to use static factory method; alternative constructor!
     bool BinRead(std::istream &file, size_t estimated_is) {
         first_.BinRead(file);
         second_.BinRead(file);

@@ -15,7 +15,6 @@
 
 namespace io {
 
-//FIXME Create orientation using wrapper
 class SeparatePairedReadStream : public ReadStream<PairedRead> {
  public:
   /*
@@ -70,14 +69,10 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    *
    * @return Reference to this stream.
    */
-  //FIXME if we can simplify without new variables
   SeparatePairedReadStream& operator>>(PairedRead& pairedread) override {
-    SingleRead sr1, sr2;
-    (*first_) >> sr1;
-    (*second_) >> sr2;
-
-    pairedread = PairedRead::Create(sr1, sr2, insert_size_);
-
+    pairedread.set_orig_insert_size(insert_size_);
+    (*first_) >> pairedread.first();
+    (*second_) >> pairedread.second();
     return *this;
   }
 
@@ -98,7 +93,6 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
   }
 
  private:
-
   const size_t insert_size_;
 
   /*
@@ -157,12 +151,9 @@ class InterleavingPairedReadStream : public ReadStream<PairedRead> {
    * @return Reference to this stream.
    */
   InterleavingPairedReadStream& operator>>(PairedRead& pairedread) override {
-    SingleRead sr1, sr2;
-    (*single_) >> sr1;
-    (*single_) >> sr2;
-
-    pairedread = PairedRead::Create(sr1, sr2, insert_size_);
-
+    pairedread.set_orig_insert_size(insert_size_);
+    (*single_) >> pairedread.first();
+    (*single_) >> pairedread.second();
     return *this;
   }
 

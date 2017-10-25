@@ -24,7 +24,7 @@ namespace io {
 * PhredOffset is equal to "offset = 33".
 * SolexaOffset is equal to "offset = 64".
 */
-//FIXME change to enum class
+//todo change to enum class
 enum OffsetType {
     UnknownOffset = 0,
     PhredOffset = 33,

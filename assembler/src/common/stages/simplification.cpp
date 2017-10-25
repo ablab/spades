@@ -578,46 +578,4 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     }
 }
 
-
-#if 0
-void corrected_and_save_reads(const conj_graph_pack& gp) {
-    //saving corrected reads
-    //todo read input files, correct, save and use on the next iteration
-
-    auto_ptr<io::IReader<io::PairedReadSeq>> paired_stream =
-            paired_binary_multireader(false, /*insert_size*/0);
-    io::ModifyingWrapper<io::PairedReadSeq> refined_paired_stream(
-        *paired_stream,
-        GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
-
-    auto_ptr<io::IReader<io::SingleReadSeq>> single_stream =
-            single_binary_multireader(false, /*include_paired_reads*/false);
-    io::ModifyingWrapper<io::SingleReadSeq> refined_single_stream(
-        *single_stream,
-        GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
-
-    if (cfg::get().graph_read_corr.binary) {
-        INFO("Correcting paired reads");
-
-        io::BinaryWriter paired_converter(
-            cfg::get().paired_read_prefix + "_cor", cfg::get().max_threads,
-            cfg::get().buffer_size);
-        paired_converter.ToBinary(refined_paired_stream);
-
-        //FIXME add merged reads here
-
-        INFO("Correcting single reads");
-        io::BinaryWriter single_converter(
-            cfg::get().single_read_prefix + "_cor", cfg::get().max_threads,
-            cfg::get().buffer_size);
-        single_converter.ToBinary(refined_single_stream);
-    } else {
-        //save in fasta
-        VERIFY(false);
-    }
-
-    INFO("Error correction done");
-}
-#endif
-
 } //debruijn_graph
