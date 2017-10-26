@@ -732,7 +732,7 @@ class mphf {
     mphf(size_t n, const Range &input_range,
          int num_thread = 1,
          double gamma = 2.0,
-         bool writeEach = true, bool progress =true, float perc_elem_loaded = 0.03)
+         bool writeEach = true, bool progress =true, float perc_elem_loaded = 0.03f)
             :
             _nb_levels(0), _gamma(gamma), _hash_domain(size_t(ceil(double(n) * gamma))), _nelem(n), _num_thread(num_thread), _percent_elem_loaded_for_fastMode (perc_elem_loaded), _withprogress(progress) {
         if (n ==0)
