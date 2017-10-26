@@ -106,19 +106,13 @@ public:
 
     UniversalPairedRead() : first_(), second_(), insert_size_(0) { }
 
-    static UniversalPairedRead Create(const SingleReadT &first,
-                                      const SingleReadT &second,
-                                      size_t estimated_is) {
-        return UniversalPairedRead(first, second, estimated_is);
-    }
-
-private:
-
     UniversalPairedRead(const SingleReadT &first,
-               const SingleReadT &second,
-               size_t insert_size)
+                        const SingleReadT &second,
+                        size_t insert_size)
             : first_(first), second_(second), insert_size_(insert_size) { }
 
+
+private:
     SingleReadT first_;
     SingleReadT second_;
     size_t insert_size_;

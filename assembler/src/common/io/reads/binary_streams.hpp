@@ -88,7 +88,7 @@ class BinaryUnmergingPairedStream: public ReadStream<PairedReadSeq> {
                            read.GetLeftOffset(), 0);
         SingleReadSeq right(read.sequence().Subseq(read.size() - right_length),
                             0, read.GetRightOffset());
-        return PairedReadSeq::Create(left, right, insert_size_);
+        return PairedReadSeq(left, right, insert_size_);
     }
 
 public:

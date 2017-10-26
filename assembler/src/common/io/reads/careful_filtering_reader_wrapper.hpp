@@ -57,7 +57,7 @@ inline PairedRead LongestValid(const PairedRead& r) {
         return r;
     }
 
-    return PairedRead::Create(r.first().Substr(c1.first, c1.second),
+    return PairedRead(r.first().Substr(c1.first, c1.second),
                       r.second().Substr(c2.first, c2.second),
                       r.orig_insert_size());
 }

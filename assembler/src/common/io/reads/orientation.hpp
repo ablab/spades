@@ -41,9 +41,9 @@ template<typename ReadType>
 OrientationF<ReadType> GetOrientationChanger(LibraryOrientation orientation) {
     auto rc_flags = GetRCFlags(orientation);
     return [=](const ReadType &r) {
-        return ReadType::Create(GetRCRead(r.first(), rc_flags.first),
-                                GetRCRead(r.second(), rc_flags.second),
-                                r.orig_insert_size());
+        return ReadType(GetRCRead(r.first(), rc_flags.first),
+                        GetRCRead(r.second(), rc_flags.second),
+                        r.orig_insert_size());
     };
 }
 
