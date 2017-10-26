@@ -6,6 +6,7 @@
 //***************************************************************************
 #pragma once
 
+#include "utils/verify.hpp"
 #include "pipeline/config_singl.hpp"
 #include "modules/path_extend/pe_config_struct.hpp"
 #include "pipeline/library.hpp"

@@ -28,7 +28,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongReadsExtender(size_t lib_
     //TODO params
     size_t resolvable_repeat_length_bound = 10000ul;
     if (!dataset_info_.reads[lib_index].is_contig_lib()) {
-        //FIXME does max make sense here?
+        //TODO does max make sense here?
         resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().unmerged_read_length);
     }
     INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);

@@ -137,15 +137,9 @@ vector<string> BrokenScaffoldsModeNames() {
 template<class T>
 void LoadFromYaml(const std::string& filename, T &t) {
     auto buf = llvm::MemoryBuffer::getFile(filename);
-    if (!buf) {
-        std::cerr << "Failed to load file " + filename;
-        throw;
-    }
+    VERIFY_MSG(buf, "Failed to load file " << filename);
     llvm::yaml::Input yin(*buf.get());
-    if (yin.error()) {
-        std::cerr << "Failed to load file " + filename;
-        throw;
-    }
+    VERIFY_MSG(!yin.error(), "Failed to load file " << filename);
     yin >> t;
 }
 
@@ -813,7 +807,6 @@ void load(debruijn_config &cfg, const std::string &cfg_fns) {
 }
 
 void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
-    //FIXME check that VERIFY_MSG works at this stage
     VERIFY_MSG(cfg_fns.size() > 0, "Should provide at least one config file");
     boost::property_tree::ptree base_pt;
     boost::property_tree::read_info(cfg_fns[0], base_pt);

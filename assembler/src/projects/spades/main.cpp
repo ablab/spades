@@ -36,15 +36,13 @@ void load_config(const vector<string>& cfg_fns) {
     make_dir(cfg::get().temp_bin_reads_path);
 }
 
-void create_console_logger(const string& dir) {
+void create_console_logger(const string& dir, string log_prop_fn) {
     using namespace logging;
 
-    string log_props_file = cfg::get().log_filename;
+    if (!fs::FileExists(log_prop_fn))
+        log_prop_fn = fs::append_path(dir, log_prop_fn);
 
-    if (!fs::FileExists(log_props_file))
-        log_props_file = fs::append_path(dir, cfg::get().log_filename);
-
-    logger *lg = create_logger(fs::FileExists(log_props_file) ? log_props_file : "");
+    logger *lg = create_logger(fs::FileExists(log_prop_fn) ? log_prop_fn : "");
     lg->add_writer(std::make_shared<console_writer>());
     //lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<console_writer>()));
     attach_logger(lg);
@@ -70,10 +68,10 @@ int main(int argc, char **argv) {
 
         load_config(cfg_fns);
 
-        create_console_logger(cfg_dir);
+        create_console_logger(cfg_dir, cfg::get().log_filename);
 
         for (const auto& cfg_fn : cfg_fns)
-            INFO("Loading config from " << cfg_fn);
+            INFO("Loaded config from " << cfg_fn);
 
         VERIFY(cfg::get().K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K);
         VERIFY(cfg::get().K % 2 != 0);
