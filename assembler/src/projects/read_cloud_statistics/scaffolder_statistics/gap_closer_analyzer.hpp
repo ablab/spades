@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/modules/path_extend/read_cloud_path_extend/scaffold_graph_gap_closer.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_gap_closer.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 
 class SubgraphExtractorAnalyzer {
@@ -8,7 +8,7 @@ class SubgraphExtractorAnalyzer {
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
     typedef path_extend::transitions::Transition Transition;
     typedef path_extend::validation::ContigTransitionStorage ContigTransitionStorage;
-    typedef cluster_storage::Cluster::SimpleGraph<EdgeId> SimpleGraph;
+    typedef cluster_storage::Cluster::InternalGraph SimpleGraph;
 
     const Graph& graph_;
     const vector<vector<path_extend::validation::EdgeWithMapping>> long_reference_paths_;

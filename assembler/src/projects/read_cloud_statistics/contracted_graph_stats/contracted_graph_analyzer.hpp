@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/barcode_index/contracted_graph_builder.hpp"
+#include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
 #include "cluster_storage_analyzer.hpp"
 
 namespace contracted_graph {

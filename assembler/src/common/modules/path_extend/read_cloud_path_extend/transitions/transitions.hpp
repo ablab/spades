@@ -65,6 +65,8 @@ class ClusterTransitionStorageBuilder {
     shared_ptr<ClusterTransitionStorage> GetStorage() {
         return storage_;
     }
+
+    DECL_LOGGER("ClusterTransitionStorageBuilder");
 };
 }
 }

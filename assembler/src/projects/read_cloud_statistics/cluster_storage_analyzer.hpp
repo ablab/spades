@@ -4,6 +4,7 @@
 #include "common/barcode_index/cluster_storage_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 #include "scaffold_graph_utils.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
 
 namespace cluster_statistics {
 
@@ -371,7 +372,6 @@ class PathClusterStorageBuilder {
             return result;
         }
     };
-
 
     class ClusterStorageAnalyzer: public read_cloud_statistics::StatisticProcessor {
      public:

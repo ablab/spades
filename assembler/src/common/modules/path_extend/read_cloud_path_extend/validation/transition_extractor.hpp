@@ -62,6 +62,10 @@ class ContigTransitionStorage {
         }
         return true;
     }
+
+    unordered_set<EdgeId> GetCoveredEdges() const {
+        return covered_edges_;
+    }
 };
 
 
@@ -144,6 +148,7 @@ class TransitionStorageBuilder {
 
     DECL_LOGGER("TransitionStorageBuilder");
 };
+
 
 class StrictTransitionStorageBuilder : public TransitionStorageBuilder {
 

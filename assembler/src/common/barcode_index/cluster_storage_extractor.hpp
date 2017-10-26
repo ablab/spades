@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cluster_storage.hpp"
-#include "contracted_graph_helper.hpp"
+#include "common/assembly_graph/contracted_graph/contracted_graph_helper.hpp"
 
 namespace cluster_storage {
 
@@ -476,6 +476,30 @@ struct PathClusterFilter: public ClusterFilter {
   }
 };
 
+struct MaxSpanClusterFilter: public ClusterFilter {
+
+  const size_t max_span_;
+
+  MaxSpanClusterFilter(const size_t max_span_) : max_span_(max_span_) {}
+  bool Check(const Cluster& cluster) const override {
+      INFO("Cluster span: " << cluster.GetSpan());
+      return cluster.GetSpan() <= max_span_;
+  }
+};
+
+struct CompositeClusterFilter: public ClusterFilter {
+  const vector<shared_ptr<ClusterFilter>> cluster_filters_;
+
+  CompositeClusterFilter(const vector<shared_ptr<ClusterFilter>>& cluster_filters_)
+      : cluster_filters_(cluster_filters_) {}
+
+  bool Check(const Cluster& cluster) const override {
+      return std::all_of(cluster_filters_.begin(), cluster_filters_.end(), [this, &cluster](shared_ptr<ClusterFilter> filter) {
+        return filter->Check(cluster);
+      });
+  }
+};
+
 class ClusterStorageExtractor {
 
  public:
@@ -491,7 +515,7 @@ class ClusterStorageExtractor {
             }
             ++counter;
             if (counter % block_size == 0) {
-                INFO("Processed " << counter << " clusters out of " << clusters);
+                DEBUG("Processed " << counter << " clusters out of " << clusters);
             }
         }
         return result;

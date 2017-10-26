@@ -530,7 +530,7 @@ class DataScanner {
         scaffold_graph_storage.Load(new_file_name, this->edge_id_map());
     }
 
-    void LoadBarcodeIndex(const string &path, shared_ptr<barcode_index::AbstractBarcodeIndex> barcodeMapper, const Graph &g)  {
+    void LoadBarcodeIndex(const string &path, shared_ptr<barcode_index::AbstractBarcodeIndex>& barcodeMapper, const Graph &g)  {
         string file_name = path + ".bmap";
         ifstream index_file(file_name);
         INFO("Loading barcode information from " << file_name)
@@ -539,7 +539,8 @@ class DataScanner {
         }
         barcode_index::FrameMapperBuilder mapper_builder(g, cfg::get().ts_res.edge_tail_len, cfg::get().ts_res.frame_size);
         mapper_builder.InitialFillMap();
-        barcodeMapper = mapper_builder.GetMapper();
+        auto mapper = std::static_pointer_cast<barcode_index::AbstractBarcodeIndex>(mapper_builder.GetMapper());
+        barcodeMapper.swap(mapper);
 
         size_t map_size;
         index_file >> map_size;
@@ -549,7 +550,7 @@ class DataScanner {
     }
 
     inline void DeserializeBarcodeMapEntry(ifstream& file, const std::map <size_t, EdgeId>& edge_map,
-                                           shared_ptr<barcode_index::AbstractBarcodeIndex>& barcodeMapper) {
+                                           shared_ptr<barcode_index::AbstractBarcodeIndex> barcodeMapper) {
         size_t edge_id;
         file >> edge_id;
         barcodeMapper->ReadEntry(file, edge_map.find(edge_id) -> second);
@@ -1007,7 +1008,7 @@ void ScanScaffoldGraphStorage(const string& file_name, DataScanner<Graph>& scann
 
 template <class Graph>
 void ScanBarcodeIndex(const string& file_name, DataScanner<Graph>& scanner, const Graph& g,
-                      std::shared_ptr<barcode_index::AbstractBarcodeIndex> barcode_mapper_ptr,
+                      std::shared_ptr<barcode_index::AbstractBarcodeIndex>& barcode_mapper_ptr,
                       bool force_exists = true) {
     scanner.LoadBarcodeIndex(file_name, barcode_mapper_ptr, g);
 }

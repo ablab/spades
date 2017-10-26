@@ -112,7 +112,7 @@ class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
 };
 
 class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
-    typedef path_extend::EdgePairScoreFunction EdgePairScoreFunction;
+    typedef path_extend::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
  protected:
     const ScaffoldGraph& old_graph_;
     const shared_ptr<EdgePairScoreFunction> score_function_;

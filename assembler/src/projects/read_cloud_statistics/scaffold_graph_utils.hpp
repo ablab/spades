@@ -1,7 +1,8 @@
 #pragma once
 
 #include <common/io/reads/osequencestream.hpp>
-#include "common/barcode_index/contracted_graph_builder.hpp"
+#include <common/modules/path_extend/read_cloud_path_extend/scaffold_graph_construction_pipeline.hpp>
+#include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
 #include "statistics_processor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
@@ -93,7 +94,8 @@ namespace scaffold_graph_utils {
         ScaffoldGraph ConstructBarcodeScoreScaffoldGraph(const ScaffoldGraph& scaffold_graph, const FrameBarcodeIndexInfoExtractor& extractor,
                                                          const Graph& graph, size_t count_threshold,
                                                          size_t tail_threshold, double score_threshold) {
-            auto score_function = make_shared<path_extend::BarcodeScoreFunction>(count_threshold, tail_threshold, extractor, graph);
+            auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(graph, extractor,
+                                                                                           count_threshold, tail_threshold);
             size_t num_threads = cfg::get().max_threads;
             path_extend::scaffold_graph::ScoreFunctionScaffoldGraphConstructor
                 scaffold_graph_constructor(graph, scaffold_graph, score_function, score_threshold, num_threads);
@@ -102,13 +104,23 @@ namespace scaffold_graph_utils {
 
         ScaffoldGraph ConstructLongGapScaffoldGraph(const ScaffoldGraph& scaffold_graph, const path_extend::ScaffoldingUniqueEdgeStorage& storage,
                                                     const FrameBarcodeIndexInfoExtractor& extractor,
-                                                    const Graph& graph, const path_extend::LongGapDijkstraParams& params) {
-            auto predicate = make_shared<path_extend::LongGapDijkstraPredicate>(graph, storage, extractor,
+                                                    const Graph& graph, const path_extend::ReadCloudMiddleDijkstraParams& params) {
+            auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(graph, storage, extractor,
                                                                                 params);
             size_t max_threads = cfg::get().max_threads;
             path_extend::scaffold_graph::PredicateScaffoldGraphConstructor constructor(graph, scaffold_graph,
                                                                                        predicate, max_threads);
             return *(constructor.Construct());
+        }
+
+        ScaffoldGraph ConstructPairedEndScaffoldGraph(const ScaffoldGraph& scaffold_graph,
+                                                      const path_extend::ScaffolderParams& params,
+                                                      const debruijn_graph::conj_graph_pack& gp,
+                                                      const path_extend::ScaffoldingUniqueEdgeStorage& storage) {
+            const size_t max_threads = cfg::get().max_threads;
+            path_extend::PEConnectionConstructorCaller pe_constructor_caller(gp, unique_storage_, max_threads);
+            auto scaffold_graph_constructor = pe_constructor_caller.GetScaffoldGraphConstuctor(params, scaffold_graph);
+            return *(scaffold_graph_constructor->Construct());
         }
 
         ScaffoldGraph ConstructOrderingScaffoldGraph(const ScaffoldGraph& scaffold_graph,

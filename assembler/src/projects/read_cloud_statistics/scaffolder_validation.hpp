@@ -82,7 +82,7 @@ class ScaffolderAnalyzer : public read_cloud_statistics::StatisticProcessor {
 
     ScaffolderStats GetScaffolderStats(const ScaffoldGraphStorage& storage) {
         path_extend::validation::ScaffoldGraphValidator validator(g_);
-        INFO("Getting name to stats")
+        INFO("Getting name to stats");
         std::map<string, path_extend::validation::ScaffoldGraphStats> name_to_stats;
         for (const auto& entry: storage.entries()) {
             string name = entry.first;
@@ -92,6 +92,11 @@ class ScaffolderAnalyzer : public read_cloud_statistics::StatisticProcessor {
         path_extend::validation::GeneralTransitionStorageBuilder reference_transition_builder(g_, 1, false, false);
         auto reference_transitions = reference_transition_builder.GetTransitionStorage(reference_paths_);
         ScaffolderStats result(name_to_stats, reference_transitions.size());
+        for (const auto& path: reference_paths_) {
+            for (const auto& edge: path) {
+                std::cout << edge.edge_.int_id() << std::endl;
+            }
+        }
         return result;
     };
 

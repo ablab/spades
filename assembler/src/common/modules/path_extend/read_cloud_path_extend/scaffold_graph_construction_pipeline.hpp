@@ -6,22 +6,24 @@
 
 namespace path_extend {
     struct ScaffolderParams {
-      size_t length_threshold_;
-      size_t tail_threshold_;
-      size_t count_threshold_;
-      double score_threshold_;
-      size_t connection_barcode_threshold_;
-      size_t connection_length_threshold_;
-      size_t initial_distance_;
-      double split_procedure_strictness_;
-      size_t transitive_distance_threshold_;
+      const size_t length_threshold_;
+      const size_t tail_threshold_;
+      const size_t count_threshold_;
+      const double score_threshold_;
+      const double connection_score_threshold_;
+      const size_t connection_length_threshold_;
+      const size_t connection_count_threshold_;
+      const size_t initial_distance_;
+      const double split_procedure_strictness_;
+      const size_t transitive_distance_threshold_;
 
       ScaffolderParams(size_t length_threshold_,
                        size_t tail_threshold_,
                        size_t count_threshold_,
                        double score_threshold_,
-                       size_t connection_barcode_threshold_,
+                       double connection_barcode_threshold_,
                        size_t connection_length_threshold_,
+                       size_t connection_count_threshold_,
                        size_t initial_distance_,
                        double split_procedure_strictness_,
                        size_t transitive_distance_threshold_);
@@ -68,6 +70,21 @@ namespace path_extend {
                                            const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
                                            const ScaffoldingUniqueEdgeStorage& unique_storage_,
                                            size_t max_threads);
+
+        shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const ScaffolderParams& params,
+                                                                                        const ScaffoldGraph& scaffold_graph) const override;
+    };
+
+    class PEConnectionConstructorCaller: public IterativeScaffoldGraphConstructorCaller {
+        using IterativeScaffoldGraphConstructorCaller::ScaffoldGraph;
+        const conj_graph_pack& gp_;
+        const ScaffoldingUniqueEdgeStorage& unique_storage_;
+        const size_t max_threads_;
+
+     public:
+        PEConnectionConstructorCaller(const conj_graph_pack &gp_,
+                                      const ScaffoldingUniqueEdgeStorage &unique_storage_,
+                                      const size_t max_threads_);
 
         shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const ScaffolderParams& params,
                                                                                         const ScaffoldGraph& scaffold_graph) const override;

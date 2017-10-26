@@ -2,7 +2,7 @@
 
 #include "scaffolder_validation.hpp"
 #include <common/modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp>
-#include "common/barcode_index/contracted_graph_builder.hpp"
+#include "common/assembly_graph/contracted_graph/contracted_graph_builder.hpp"
 #include "contracted_graph_stats/contracted_graph_analyzer.hpp"
 #include "cluster_storage_analyzer.hpp"
 #include "scaffold_graph_utils.hpp"
@@ -16,190 +16,10 @@
 #include "common/modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 #include "scaffolder_statistics/gap_closer_stats.hpp"
 #include "scaffolder_statistics/gap_closer_analyzer.hpp"
+#include "path_cluster_test.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/path_cluster_helper.hpp"
 
 namespace read_cloud_statistics {
-
-    class ClusterGraphAnalyzerTester {
-     public:
-        typedef cluster_storage::Cluster::InternalGraph InternalGraph;
-
-        struct TestableGraph {
-          InternalGraph graph_;
-          string name_;
-
-          TestableGraph(const InternalGraph& graph_, const string& name_) : graph_(graph_), name_(name_) {}
-        };
-     private:
-        const debruijn_graph::conj_graph_pack& gp_;
-        const contracted_graph::ContractedGraphFactoryHelper contracted_graph_builder_;
-
-     public:
-        ClusterGraphAnalyzerTester(const debruijn_graph::conj_graph_pack& gp_,
-                                   const contracted_graph::ContractedGraphFactoryHelper& contracted_graph_builder) :
-            gp_(gp_), contracted_graph_builder_(contracted_graph_builder) {}
-
-        //fixme move to unit tests
-        void LaunchTests() {
-            vector<TestableGraph> tests;
-            tests.push_back(GenerateLinearGraph());
-            tests.push_back(GenerateCycle());
-            tests.push_back(GenerateSelfLoop());
-            tests.push_back(GenerateSelfLoopWithEdge());
-            tests.push_back(GenerateOneLoopPath());
-            tests.push_back(GenerateTwoLoopPath());
-            auto cluster_graph_analyzer = cluster_storage::ClusterGraphAnalyzer(contracted_graph_builder_);
-            for (const auto& test: tests) {
-                INFO("TESTING " << test.name_);
-                TestGraph(test.graph_, cluster_graph_analyzer);
-            }
-        }
-
-        vector<EdgeId> GetEdges(size_t number_of_edges) {
-            unordered_set<EdgeId> edges;
-            unordered_set<VertexId> vertices;
-            omnigraph::IterationHelper<Graph, EdgeId> edge_iteration_helper(gp_.g);
-            size_t counter = 0;
-            for (const auto& edge: edge_iteration_helper) {
-                if (CheckEdge(edge, vertices, edges)) {
-                    edges.insert(edge);
-                    vertices.insert(gp_.g.EdgeEnd(edge));
-                    vertices.insert(gp_.g.EdgeStart(edge));
-                    ++counter;
-                }
-                if (counter >= number_of_edges) {
-                    break;
-                }
-            }
-            VERIFY(edges.size() * 2 == vertices.size());
-            vector<EdgeId> result;
-            std::copy(edges.begin(), edges.end(), std::back_inserter(result));
-            return result;
-        }
-
-        bool CheckEdge(const EdgeId& edge, const unordered_set<VertexId>& vertices, const unordered_set<EdgeId>& edges) {
-            bool conjugate_not_visited = edges.find(gp_.g.conjugate(edge)) == edges.end();
-            bool not_loop = gp_.g.EdgeEnd(edge) != gp_.g.EdgeStart(edge);
-            bool start_not_visited = vertices.find(gp_.g.EdgeStart(edge)) == vertices.end();
-            bool end_not_visited = vertices.find(gp_.g.EdgeEnd(edge)) == vertices.end();
-            return conjugate_not_visited and not_loop and start_not_visited and end_not_visited;
-        }
-
-        TestableGraph GenerateLinearGraph() {
-            size_t number_of_edges = 4;
-            auto edges = GetEdges(number_of_edges);
-            InternalGraph graph;
-            for (const auto& edge: edges) {
-                graph.AddVertex(edge);
-            }
-            for (auto first = edges.begin(), second = std::next(edges.begin()); second != edges.end(); ++first, ++second) {
-                EdgeId start = *first;
-                EdgeId end = *second;
-                graph.AddEdge(start, end);
-            }
-            string name = "Linear graph";
-            TestableGraph result(graph, name);
-            return result;
-        }
-
-        TestableGraph GenerateCycle() {
-            size_t number_of_edges = 4;
-            auto edges = GetEdges(number_of_edges);
-            InternalGraph graph;
-            for (const auto& edge: edges) {
-                graph.AddVertex(edge);
-            }
-            for (auto first = edges.begin(), second = std::next(edges.begin()); second != edges.end(); ++first, ++second) {
-                EdgeId start = *first;
-                EdgeId end = *second;
-                graph.AddEdge(start, end);
-            }
-            EdgeId start = edges.back();
-            EdgeId end = edges[0];
-
-            string name = "Cycle";
-            graph.AddEdge(start, end);
-            TestableGraph result(graph, name);
-            return result;
-        }
-
-        TestableGraph GenerateSelfLoop() {
-            size_t number_of_edges = 1;
-            auto edges = GetEdges(number_of_edges);
-            InternalGraph graph;
-            for (const auto& edge: edges) {
-                graph.AddVertex(edge);
-            }
-            graph.AddEdge(edges[0], edges[0]);
-
-            string name = "Self loop";
-            TestableGraph result(graph, name);
-            return result;
-        }
-
-        TestableGraph GenerateSelfLoopWithEdge() {
-            size_t number_of_edges = 2;
-            auto edges = GetEdges(number_of_edges);
-            InternalGraph graph;
-            for (const auto& edge: edges) {
-                graph.AddVertex(edge);
-            }
-            graph.AddEdge(edges[0], edges[0]);
-            graph.AddEdge(edges[0], edges[1]);
-
-            string name = "Self loop with edge";
-            TestableGraph result(graph, name);
-            return result;
-        }
-
-        TestableGraph GenerateOneLoopPath() {
-            size_t number_of_edges = 4;
-            auto edges = GetEdges(number_of_edges);
-            VERIFY(edges.size() == number_of_edges);
-            InternalGraph graph;
-            for (const auto& edge: edges) {
-                graph.AddVertex(edge);
-            }
-            graph.AddEdge(edges[0], edges[1]);
-            graph.AddEdge(edges[0], edges[3]);
-            graph.AddEdge(edges[1], edges[2]);
-            graph.AddEdge(edges[2], edges[3]);
-            graph.AddEdge(edges[2], edges[1]);
-            string name = "One loop path";
-            TestableGraph result(graph, name);
-            return result;
-        }
-
-        TestableGraph GenerateTwoLoopPath() {
-            size_t number_of_edges = 6;
-            auto edges = GetEdges(number_of_edges);
-            VERIFY(edges.size() == number_of_edges);
-            InternalGraph graph;
-            for (const auto& edge: edges) {
-                graph.AddVertex(edge);
-            }
-            graph.AddEdge(edges[0], edges[1]);
-            graph.AddEdge(edges[0], edges[3]);
-            graph.AddEdge(edges[0], edges[5]);
-            graph.AddEdge(edges[1], edges[2]);
-            graph.AddEdge(edges[2], edges[1]);
-            graph.AddEdge(edges[2], edges[3]);
-            graph.AddEdge(edges[2], edges[5]);
-            graph.AddEdge(edges[3], edges[4]);
-            graph.AddEdge(edges[4], edges[1]);
-            graph.AddEdge(edges[4], edges[3]);
-            graph.AddEdge(edges[4], edges[5]);
-            string name = "Two loop path";
-            TestableGraph result(graph, name);
-            return result;
-        }
-
-        void TestGraph(const InternalGraph& graph, const cluster_storage::ClusterGraphAnalyzer analyzer) {
-            auto contracted_graph = contracted_graph_builder_.ConstructFromInternalGraph(graph);
-            cluster_storage::Cluster test_cluster(graph);
-            string is_path = analyzer.IsPathCluster(test_cluster) ? "True" : "False";
-            INFO("Is path cluster: " << is_path);
-        }
-    };
 
     struct StatisticsConfigs {
       const size_t edge_read_cluster_threshold;
@@ -245,9 +65,9 @@ namespace read_cloud_statistics {
             size_t distance = cfg::get().ts_res.distance;
 
 //            AnalyzeScaffoldGapCloser(base_output_path);
-//            AnalyzeScaffoldGraph(base_output_path);
+            AnalyzeScaffoldGraph(base_output_path);
 
-            AnalyzeContractedGraph(base_output_path, distance);
+//            AnalyzeContractedGraph(base_output_path, distance);
 //            LaunchAnalyzerForMultipleDistances(base_output_path, contracted_graph_analyzer, distances, cfg::get().max_threads);
 
 //            INFO("Analyzing contig paths");
@@ -264,9 +84,9 @@ namespace read_cloud_statistics {
      private:
 
         ContigTransitionStorage BuildFilteredTransitionStorage(const ContigPathBuilder& contig_path_builder,
-                                                                            shared_ptr<TransitionStorageBuilder> transition_builder,
-                                                                            const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
-                                                                            const string& path_to_contigs) {
+                                                               shared_ptr<TransitionStorageBuilder> transition_builder,
+                                                               const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
+                                                               const string& path_to_contigs) {
             const string EMPTY_STRING = "";
             ContigTransitionStorage result;
             if (path_to_contigs != EMPTY_STRING) {
@@ -340,10 +160,12 @@ namespace read_cloud_statistics {
             INFO(path_clusters << " path clusters.");
         }
 
-        scaffold_graph_utils::ScaffoldGraphStorage BuildScaffoldGraphStorage(const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
+        scaffold_graph_utils::ScaffoldGraphStorage BuildScaffoldGraphStorage(const debruijn_graph::conj_graph_pack& graph_pack,
+                                                                             const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage,
                                                                              const path_extend::ScaffolderParams& params,
                                                                              const string& initial_name,
                                                                              const string& score_name,
+                                                                             const string& pe_name,
                                                                              const string& connection_name,
                                                                              const string& ordering_name,
                                                                              const string& transitive_name) {
@@ -353,8 +175,9 @@ namespace read_cloud_statistics {
             size_t count_threshold = params.count_threshold_;
             double score_threshold = params.score_threshold_;
 
-            path_extend::LongGapDijkstraParams long_gap_params(params.connection_barcode_threshold_,
+            path_extend::ReadCloudMiddleDijkstraParams long_gap_params(params.connection_score_threshold_,
                                                                params.count_threshold_,
+                                                               params.connection_count_threshold_,
                                                                params.tail_threshold_,
                                                                params.connection_length_threshold_,
                                                                params.initial_distance_);
@@ -373,23 +196,35 @@ namespace read_cloud_statistics {
                                                                                            score_threshold);
             INFO(score_scaffold_graph.VertexCount() << " vertices and " << score_scaffold_graph.EdgeCount() << " edges in score scaffold graph");
 
-            auto connection_scaffold_graph = scaffold_helper.ConstructLongGapScaffoldGraph(score_scaffold_graph, unique_storage,
-                                                                                           *barcode_extractor_ptr_, gp_.g,
-                                                                                           long_gap_params);
-            INFO(connection_scaffold_graph.VertexCount() << " vertices and "
-                                                         << connection_scaffold_graph.EdgeCount()
-                                                         << " edges in connection scaffold graph");
+            INFO("Constructing paired end scaffold graph");
 
-            auto ordering_scaffold_graph = scaffold_helper.ConstructOrderingScaffoldGraph(connection_scaffold_graph,
-                                                                                          *barcode_extractor_ptr_, gp_.g,
-                                                                                          long_gap_params.count_threshold_,
-                                                                                          params.split_procedure_strictness_);
-            auto transitive_scaffold_graph = scaffold_helper.ConstructNonTransitiveGraph(ordering_scaffold_graph, gp_.g);
+            auto paired_end_scaffold_graph = scaffold_helper.ConstructPairedEndScaffoldGraph(score_scaffold_graph, params,
+                                                                                             gp_, unique_storage);
+
+            INFO(score_scaffold_graph.VertexCount() << " vertices and " << score_scaffold_graph.EdgeCount() << " edges in paired end scaffold graph");
+
+//            INFO("Constructing connection scaffold graph");
+//
+//            auto connection_scaffold_graph = scaffold_helper.ConstructLongGapScaffoldGraph(score_scaffold_graph, unique_storage,
+//                                                                                           *barcode_extractor_ptr_, gp_.g,
+//                                                                                           long_gap_params);
+//            INFO(connection_scaffold_graph.VertexCount() << " vertices and "
+//                                                         << connection_scaffold_graph.EdgeCount()
+//                                                         << " edges in connection scaffold graph");
+//
+//            auto ordering_scaffold_graph = scaffold_helper.ConstructOrderingScaffoldGraph(connection_scaffold_graph,
+//                                                                                          *barcode_extractor_ptr_, gp_.g,
+//                                                                                          long_gap_params.count_threshold_,
+//                                                                                          params.split_procedure_strictness_);
+//            auto transitive_scaffold_graph = scaffold_helper.ConstructNonTransitiveGraph(ordering_scaffold_graph, gp_.g);
+
+
             storage.insert(initial_name, scaffold_graph);
             storage.insert(score_name, score_scaffold_graph);
-            storage.insert(connection_name, connection_scaffold_graph);
-            storage.insert(ordering_name, ordering_scaffold_graph);
-            storage.insert(transitive_name, transitive_scaffold_graph);
+            storage.insert(pe_name, paired_end_scaffold_graph);
+//            storage.insert(connection_name, connection_scaffold_graph);
+//            storage.insert(ordering_name, ordering_scaffold_graph);
+//            storage.insert(transitive_name, transitive_scaffold_graph);
             return storage;
         }
 
@@ -415,45 +250,46 @@ namespace read_cloud_statistics {
             auto params = params_constructor.ConstructScaffolderParams(min_length);
             const string initial_name = "Initial scaffold graph";
             const string score_name = "Score scaffold graph";
+            const string pe_name = "Paired end scaffold graph";
             const string connection_name = "Connection scaffold graph";
             const string ordering_name = "Ordering scaffold graph";
             const string transitive_name = "Transitive graph";
 
-            scaffolder_statistics::ScaffolderStatisticsExtractor stats_extractor(gp_.g, large_unique_storage, params,
-                                                                                 reference_paths, barcode_extractor_ptr_);
-            stats_extractor.FillStatistics();
-            stats_extractor.SerializeStatistics(stats_base_path);
+//            scaffolder_statistics::ScaffolderStageAnalyzer stats_extractor(gp_.g, large_unique_storage, params,
+//                                                                           reference_paths, barcode_extractor_ptr_);
+//            stats_extractor.FillStatistics();
+//            stats_extractor.SerializeStatistics(stats_base_path);
 
-            auto scaffold_graph_storage = BuildScaffoldGraphStorage(large_unique_storage, params, initial_name,
-                                                                    score_name, connection_name, ordering_name,
+            //scaffold graph stages table
+            auto scaffold_graph_storage = BuildScaffoldGraphStorage(gp_,large_unique_storage, params, initial_name,
+                                                                    score_name, pe_name, connection_name, ordering_name,
                                                                     transitive_name);
             scaffold_graph_utils::ScaffolderAnalyzer scaffolder_analyzer(filtered_reference_paths, scaffold_graph_storage, gp_.g);
             scaffolder_analyzer.FillStatistics();
             INFO("Printing stats")
             scaffolder_analyzer.SerializeStatistics(stats_base_path);
 
-            INFO("Getting graph");
-            auto transitive_scaffold_graph = scaffold_graph_storage.at(transitive_name).graph;
-            INFO("Printing graph");
-            scaffold_graph_utils::MetaScaffoldGraphPrinter meta_printer(gp_.g);
-            string scaffold_output_path = fs::append_path(stats_base_path, "scaffold_graph_output");
-            fs::remove_if_exists(scaffold_output_path);
-            fs::make_dir(scaffold_output_path);
-            meta_printer.PrintGraphAsMultiple(transitive_scaffold_graph, named_reference_paths, scaffold_output_path);
+            //scaffold graph printing
+//            INFO("Getting graph");
+//            auto transitive_scaffold_graph = scaffold_graph_storage.at(transitive_name).graph;
+//            INFO("Printing graph");
+//            scaffold_graph_utils::MetaScaffoldGraphPrinter meta_printer(gp_.g);
+//            string scaffold_output_path = fs::append_path(stats_base_path, "scaffold_graph_output");
+//            fs::remove_if_exists(scaffold_output_path);
+//            fs::make_dir(scaffold_output_path);
+//            meta_printer.PrintGraphAsMultiple(transitive_scaffold_graph, named_reference_paths, scaffold_output_path);
         }
 
         void AnalyzeScaffoldGapCloser(const string& stats_base_path) {
-            const size_t large_length_threshold = 20000;
-            const size_t small_length_threshold = 5000;
+            const size_t large_length_threshold = cfg::get().ts_res.very_long_edge_length;
+            const size_t small_length_threshold = cfg::get().ts_res.long_edge_length;
             const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
             path_extend::validation::FilteredReferencePathHelper helper(gp_);
             auto short_reference_paths = helper.GetFilteredReferencePathsFromLength(path_to_reference,
                                                                                        small_length_threshold);
+
             const size_t count_threshold = 2;
             barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor(gp_.barcode_mapper_ptr, gp_.g);
-            scaffolder_statistics::GapCloserDijkstraAnalyzer gap_closer_validator(gp_.g, short_reference_paths, barcode_extractor,
-                                                                      count_threshold, small_length_threshold,
-                                                                      large_length_threshold);
 
             path_extend::ScaffoldingUniqueEdgeAnalyzer analyzer(gp_, small_length_threshold, 100);
             path_extend::ScaffoldingUniqueEdgeStorage unique_storage;
@@ -462,16 +298,18 @@ namespace read_cloud_statistics {
                                                                                   100000,
                                                                                   gp_.g);
             auto initial_scaffold_graph = scaffold_helper.ConstructScaffoldGraphUsingDijkstra();
-            const size_t linkage_distance = 10000;
-            const size_t read_threshold = 15;
-            const size_t num_threads = cfg::get().max_threads;
-            auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-//            cluster_storage::ClusterStorageBuilder cluster_storage_builder(gp_.g, initial_scaffold_graph, barcode_extractor_ptr,
-//                                                                           unique_storage, linkage_distance, read_threshold, num_threads);
-//            auto cluster_storage = cluster_storage_builder.ConstructClusterStorage();
+
+            //Check path cluster methods
+//            const size_t linkage_distance = 10000;
+//            const size_t read_threshold = 15;
+//            const size_t num_threads = cfg::get().max_threads;
+//            auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
+//            cluster_storage::ClusterStorageHelper cluster_storage_helper(gp_.g, barcode_extractor_ptr, unique_storage,
+//                                                                         linkage_distance, read_threshold, num_threads);
+//            auto cluster_storage = cluster_storage_helper.ConstructClusterStorage(initial_scaffold_graph);
 //            INFO(cluster_storage.Size() << " clusters");
-//            contracted_graph::ContractedGraphBuilder contracted_builder(gp_.g, unique_storage);
-//            cluster_storage::ClusterGraphAnalyzer cluster_graph_analyzer(contracted_builder);
+//            contracted_graph::ContractedGraphFactoryHelper contracted_helper(gp_.g);
+//            cluster_storage::ClusterGraphAnalyzer cluster_graph_analyzer(contracted_helper);
 //            auto path_cluster_filter_ptr = make_shared<cluster_storage::PathClusterFilter>(cluster_graph_analyzer);
 //            cluster_storage::ClusterStorageExtractor cluster_extractor;
 //            INFO("Processing");
@@ -483,26 +321,38 @@ namespace read_cloud_statistics {
 //            transition_storage_builder.BuildFromClusters(path_clusters, path_cluster_extractor);
 //            path_extend::transitions::ClusterTransitionStorage transition_storage = *(transition_storage_builder.GetStorage());
 //            INFO("Transition storage size: " << transition_storage.size());
-//            scaffolder_statistics::PathClusterScaffoldGraphAnalyzer path_cluster_analyzer(gp_.g, short_reference_paths,
+
+//            scaffolder_statistics::PathClusterScoreAnalyzer path_cluster_analyzer(gp_.g, short_reference_paths,
 //                                                                                          transition_storage, path_clusters,
 //                                                                                          cluster_graph_analyzer);
 //
 //            path_cluster_analyzer.FillStatistics();
 //            path_cluster_analyzer.SerializeStatistics(stats_base_path);
+//
+//            const size_t distance_threshold = 3;
+//            const double share_threshold = 0.15;
 
-            const size_t distance_threshold = 3;
-            const double share_threshold = 0.15;
+//            Validate subgraph extraction
+//            path_extend::CloudScaffoldSubgraphExtractor subgraph_extractor(gp_.g, *barcode_extractor_ptr, distance_threshold,
+//                                                                  share_threshold, count_threshold, small_length_threshold,
+//                                                                  large_length_threshold);
+//            auto large_scaffold_graph = gp_.scaffold_graph_storage.GetLargeScaffoldGraph();
+//            auto small_scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
+//            auto long_reference_paths = helper.GetFilteredReferencePathsFromLength(path_to_reference, large_length_threshold);
+//            SubgraphExtractorAnalyzer gap_closer_analyzer(gp_.g, long_reference_paths, short_reference_paths, subgraph_extractor);
+//            gap_closer_analyzer.AnalyzeGapCloser(large_scaffold_graph, small_scaffold_graph);
+//
+//
+            //Validate path extraction strategies
+//            scaffolder_statistics::GapCloserDijkstraAnalyzer path_extraction_analyzer(gp_.g, short_reference_paths, barcode_extractor,
+//                                                                                  count_threshold, small_length_threshold,
+//                                                                                  large_length_threshold);
+//            path_extraction_analyzer.FillStatistics();
+//            path_extraction_analyzer.SerializeStatistics(stats_base_path);
 
-            path_extend::CloudScaffoldSubgraphExtractor subgraph_extractor(gp_.g, *barcode_extractor_ptr, distance_threshold,
-                                                                  share_threshold, count_threshold, small_length_threshold,
-                                                                  large_length_threshold);
-            auto large_scaffold_graph = gp_.scaffold_graph_storage.GetLargeScaffoldGraph();
-            auto small_scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
-            auto long_reference_paths = helper.GetFilteredReferencePathsFromLength(path_to_reference, large_length_threshold);
-            SubgraphExtractorAnalyzer gap_closer_analyzer(gp_.g, long_reference_paths, short_reference_paths, subgraph_extractor);
-            gap_closer_analyzer.AnalyzeGapCloser(large_scaffold_graph, small_scaffold_graph);
-//            gap_closer_validator.FillStatistics();
-//            gap_closer_validator.SerializeStatistics(stats_base_path);
+            scaffolder_statistics::GapCloserPathClusterAnalyzer path_cluster_analyzer(gp_, short_reference_paths);
+            path_cluster_analyzer.FillStatistics();
+            path_cluster_analyzer.SerializeStatistics(stats_base_path);
         }
 
         void AnalyzePathClusters(const string& stats_base_path, size_t distance) {
@@ -523,10 +373,10 @@ namespace read_cloud_statistics {
             const size_t edge_read_threshold = configs_.edge_read_cluster_threshold;
             const size_t analyzer_read_threshold = configs_.global_read_cluster_threshold;
             const size_t num_threads = cfg::get().max_threads;
-            auto cluster_storage_builder = cluster_storage::ClusterStorageBuilder(gp_.g, scaffold_graph,
-                                                                                  barcode_extractor_ptr_, unique_storage_,
-                                                                                  distance, edge_read_threshold, num_threads);
-            auto cluster_storage = cluster_storage_builder.ConstructClusterStorage();
+            auto cluster_storage_helper = cluster_storage::ClusterStorageHelper(gp_.g, barcode_extractor_ptr_,
+                                                                                 unique_storage_, distance,
+                                                                                 edge_read_threshold, num_threads);
+            auto cluster_storage = cluster_storage_helper.ConstructClusterStorage(scaffold_graph);
 
             auto min_read_filter = make_shared<cluster_storage::MinReadClusterFilter>(analyzer_read_threshold);
             cluster_storage::ClusterStorageExtractor cluster_storage_extractor;
@@ -540,7 +390,7 @@ namespace read_cloud_statistics {
             INFO("Building reference transition storage")
             const string path_to_reference = cfg::get().ts_res.statistics.genome_path;
             path_extend::validation::ContigPathBuilder contig_path_builder(gp_);
-            auto transition_builder = make_shared<path_extend::validation::StrictTransitionStorageBuilder>();
+            auto transition_builder = make_shared<path_extend::validation::GeneralTransitionStorageBuilder>(gp_.g, 1, false, false);
             auto reference_transition_storage = BuildFilteredTransitionStorage(contig_path_builder, transition_builder,
                                                                                unique_storage_, path_to_reference);
             INFO("Reference transition storage size: " << reference_transition_storage.size());
@@ -660,10 +510,10 @@ namespace read_cloud_statistics {
             const size_t edge_read_threshold = configs_.edge_read_cluster_threshold;
             const size_t analyzer_read_threshold = configs_.global_read_cluster_threshold;
             const size_t num_threads = cfg::get().max_threads;
-            auto cluster_storage_builder = cluster_storage::ClusterStorageBuilder(gp_.g, scaffold_graph,
-                                                                                  barcode_extractor_ptr_, unique_storage_,
-                                                                                  distance, edge_read_threshold, num_threads);
-            auto cluster_storage = cluster_storage_builder.ConstructClusterStorage();
+            auto cluster_storage_helper = cluster_storage::ClusterStorageHelper(gp_.g, barcode_extractor_ptr_,
+                                                                                unique_storage_, distance,
+                                                                                edge_read_threshold, num_threads);
+            auto cluster_storage = cluster_storage_helper.ConstructClusterStorage(scaffold_graph);
 
 
             cluster_storage::ClusterGraphAnalyzer ordering_analyzer(contracted_graph_builder);
