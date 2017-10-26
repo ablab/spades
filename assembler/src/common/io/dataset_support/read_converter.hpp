@@ -143,8 +143,7 @@ inline
 BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
                                           bool followed_by_rc,
                                           size_t insert_size,
-                                          bool include_merged,
-                                          size_t read_length) {
+                                          bool include_merged) {
     ReadConverter::ConvertToBinaryIfNeeded(lib);
     const auto& data = lib.data();
     VERIFY_MSG(data.binary_reads_info.binary_coverted, "Lib was not converted to binary, cannot produce binary stream");
@@ -155,10 +154,12 @@ BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
     for (size_t i = 0; i < n; ++i) {
         BinaryPairedStreamPtr stream = make_shared<BinaryFilePairedStream>(data.binary_reads_info.paired_read_prefix,
                                                      i, insert_size);
-        if (include_merged)
+        if (include_merged) {
+            VERIFY(lib.data().unmerged_read_length != 0);
             stream = MultifileWrap<PairedReadSeq>(stream,
-                make_shared<BinaryUnMergedPairedStream>(data.binary_reads_info.merged_read_prefix,
-                                                         i, insert_size, read_length));
+                                                  make_shared<BinaryUnmergingPairedStream>(data.binary_reads_info.merged_read_prefix,
+                                                                                           i, insert_size, lib.data().unmerged_read_length));
+        }
 
         paired_streams.push_back(stream);
     }

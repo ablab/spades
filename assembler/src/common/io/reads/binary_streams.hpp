@@ -16,9 +16,6 @@
 
 namespace io {
 
-// == Deprecated classes ==
-// Use FileReadStream and InsertSizeModyfing instead
-
 class BinaryFileSingleStream: public ReadStream<SingleReadSeq> {
     std::ifstream stream_;
     ReadStreamStat read_stat_;
@@ -70,7 +67,7 @@ public:
 };
 
 //returns FF oriented paired reads
-class BinaryUnMergedPairedStream: public ReadStream<PairedReadSeq> {
+class BinaryUnmergingPairedStream: public ReadStream<PairedReadSeq> {
     BinaryFileSingleStream stream_;
     size_t insert_size_;
     size_t read_length_;
@@ -95,7 +92,7 @@ class BinaryUnMergedPairedStream: public ReadStream<PairedReadSeq> {
     }
 
 public:
-    BinaryUnMergedPairedStream(const std::string& file_name_prefix,
+    BinaryUnmergingPairedStream(const std::string& file_name_prefix,
                                size_t file_num,
                                size_t insert_size,
                                size_t read_length) :
@@ -112,7 +109,7 @@ public:
         return stream_.eof();
     }
 
-    BinaryUnMergedPairedStream& operator>>(PairedReadSeq& read) override {
+    BinaryUnmergingPairedStream& operator>>(PairedReadSeq& read) override {
         SingleReadSeq single_read;
         stream_ >> single_read;
         read = Convert(single_read);
@@ -135,6 +132,14 @@ class BinaryFilePairedStream: public ReadStream<PairedReadSeq> {
     ReadStreamStat read_stat_;
     size_t current_;
 
+    void Init() {
+        stream_.clear();
+        stream_.seekg(0);
+        VERIFY(stream_.good());
+        read_stat_.read(stream_);
+        current_ = 0;
+    }
+
 public:
 
     BinaryFilePairedStream(const std::string& file_name_prefix, size_t file_num, size_t insert_szie): stream_(), insert_size_ (insert_szie) {
@@ -142,7 +147,7 @@ public:
         fname = file_name_prefix + "_" + std::to_string(file_num) + ".seq";
         stream_.open(fname.c_str(), std::ios_base::binary | std::ios_base::in);
 
-        reset();
+        Init();
     }
 
     bool is_open() override {
@@ -168,11 +173,7 @@ public:
 
 
     void reset() override {
-        stream_.clear();
-        stream_.seekg(0);
-        VERIFY(stream_.good());
-        read_stat_.read(stream_);
-        current_ = 0;
+        Init();
     }
 
 };

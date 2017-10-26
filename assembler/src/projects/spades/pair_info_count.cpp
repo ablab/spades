@@ -123,9 +123,8 @@ static bool CollectLibInformation(const conj_graph_pack &gp,
 
     SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
     auto &data = reads.data();
-    VERIFY(reads.data().unmerged_read_length != 0);
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, /*insert_size*/0,
-                                                /*include_merged*/true, reads.data().unmerged_read_length);
+                                                /*include_merged*/true);
 
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable));
     //Check read length after lib processing since mate pairs a not used until this step
@@ -236,7 +235,7 @@ static void ProcessPairedReads(conj_graph_pack &gp,
     notifier.Subscribe(ilib, &pif);
 
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
-                                                /*include merged*/true, data.unmerged_read_length);
+                                                /*include merged*/true);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads, cfg::get().bwa.bwa_enable));
     cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
 }
@@ -359,7 +358,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char *) {
                         notifier.Subscribe(i, &filter_counter);
 
                         VERIFY(lib.data().unmerged_read_length != 0);
-                        auto reads = paired_binary_readers(lib, /*followed by rc*/false, 0, /*include merged*/true, lib.data().unmerged_read_length);
+                        auto reads = paired_binary_readers(lib, /*followed by rc*/false, 0, /*include merged*/true);
                         notifier.ProcessLibrary(reads, i, *ChooseProperMapper(gp, lib, cfg::get().bwa.bwa_enable));
                     }
                 }
