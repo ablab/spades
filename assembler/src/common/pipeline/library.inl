@@ -29,7 +29,30 @@ StringRef MappingTraits<Library<Data>>::validate(yaml::IO &io, Library<Data> &li
 
     return res;
 }
+
+template<class Data>
+void MappingTraits<io::DataSet<Data>>::mapping(yaml::IO &io, io::DataSet<Data> &ds) {
+    ds.yamlize(io);
+}
 }}
+
+template<class Data>
+void io::SequencingLibrary<Data>::yamlize(llvm::yaml::IO &io) {
+    // First, load the "common stuff"
+    SequencingLibraryBase::yamlize(io);
+    io.mapOptional("data", data_);
+}
+
+template<class Data>
+void io::SequencingLibrary<Data>::validate(llvm::yaml::IO &io, llvm::StringRef &res) {
+    // Simply ask base class to validate for us
+    SequencingLibraryBase::validate(io, res);
+}
+
+template<class Data>
+void io::DataSet<Data>::yamlize(yaml::IO &io) {
+    llvm::yaml::yamlize(io, libraries_, true);
+}
 
 template<class Data>
 void io::DataSet<Data>::save(const std::string &filename) {

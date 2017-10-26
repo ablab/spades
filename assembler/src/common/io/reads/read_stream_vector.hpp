@@ -124,14 +124,6 @@ public:
         readers_.clear();
     }
 
-    ReadStreamStat get_stat() const {
-        ReadStreamStat stat;
-        for (size_t i = 0; i < readers_.size(); ++i) {
-            stat.merge(readers_[i]->get_stat());
-        }
-        return stat;
-    }
-
 };
 
 }

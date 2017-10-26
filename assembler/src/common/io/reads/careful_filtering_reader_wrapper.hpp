@@ -11,9 +11,9 @@
 
 namespace io {
 
-const size_t none = -1ul;
-
 inline std::pair<size_t, size_t> LongestValidCoords(const SingleRead& r) {
+    const size_t none = -1ul;
+
     size_t best_len = 0;
     size_t best_pos = none;
     size_t pos = none;
@@ -40,17 +40,12 @@ inline std::pair<size_t, size_t> LongestValidCoords(const SingleRead& r) {
     return std::make_pair(best_pos, best_pos + best_len);
 }
 
-inline SingleRead LongestValid(const SingleRead& r,
-                               bool /*use_orientation*/ = false,
-                               LibraryOrientation /*orientation*/ = LibraryOrientation::FR) {
-
+inline SingleRead LongestValid(const SingleRead& r) {
     std::pair<size_t, size_t> p = LongestValidCoords(r);
     return r.Substr(p.first, p.second);
 }
 
-inline PairedRead LongestValid(const PairedRead& r,
-                               bool use_orientation = false,
-                               LibraryOrientation orientation = LibraryOrientation::FR) {
+inline PairedRead LongestValid(const PairedRead& r) {
     std::pair<size_t, size_t> c1 = LongestValidCoords(r.first());
     std::pair<size_t, size_t> c2 = LongestValidCoords(r.second());
     size_t len1 = c1.second - c1.first;
@@ -62,36 +57,9 @@ inline PairedRead LongestValid(const PairedRead& r,
         return r;
     }
 
-    size_t is;
-    if (!use_orientation) {
-        is = r.insert_size() - c1.first - r.second().size() + c2.second;
-    }
-    else {
-        switch (orientation) {
-        case LibraryOrientation::FF:  {
-            is = r.insert_size() - c1.first - r.second().size() + c2.second;
-            break;
-        }
-        case LibraryOrientation::RR:  {
-            is = r.insert_size() - r.first().size() + c1.second  - c2.first;
-            break;
-        }
-        case LibraryOrientation::FR:  {
-            is = r.insert_size() - c1.first - c2.first;
-            break;
-        }
-        case LibraryOrientation::RF:  {
-            is = r.insert_size() - r.first().size() + c1.second - r.second().size() + c2.second;
-            break;
-        }
-        default: {
-            is = r.insert_size() - c1.first - r.second().size() + c2.second;
-            break;
-        }
-        }
-    }
-
-    return PairedRead(r.first().Substr(c1.first, c1.second), r.second().Substr(c2.first, c2.second), is);
+    return PairedRead(r.first().Substr(c1.first, c1.second),
+                      r.second().Substr(c2.first, c2.second),
+                      r.orig_insert_size());
 }
 
 
@@ -105,17 +73,13 @@ public:
    *
    * @param reader Reference to any other reader (child of IReader).
    */
-    CarefulFilteringWrapper(typename base::ReadStreamPtrT reader_ptr,
-                                     bool use_orientation = false,
-                                     LibraryOrientation orientation = LibraryOrientation::Undefined) :
+    CarefulFilteringWrapper(typename base::ReadStreamPtrT reader_ptr) :
                 base(reader_ptr),
-                eof_(false),
-                use_orientation_(use_orientation),
-                orientation_(orientation) {
+                eof_(false) {
             StepForward();
         }
 
-    /* virtual */ bool eof() {
+    bool eof() override {
         return eof_;
     }
 
@@ -126,14 +90,13 @@ public:
    *
    * @return Reference to this stream.
    */
-    /* virtual */ CarefulFilteringWrapper& operator>>(ReadType& read) {
+    CarefulFilteringWrapper& operator>>(ReadType& read) override {
         read = next_read_;
         StepForward();
         return *this;
     }
 
-    /* virtual */
-    void reset() {
+    void reset() override {
         base::reset();
         eof_ = false;
         StepForward();
@@ -141,8 +104,6 @@ public:
 
 private:
     bool eof_;
-    bool use_orientation_;
-    LibraryOrientation orientation_;
     ReadType next_read_;
 
   /*
@@ -151,7 +112,7 @@ private:
     void StepForward() {
         while (!base::eof()) {
             base::operator >>(next_read_);
-            next_read_ = LongestValid(next_read_, use_orientation_, orientation_);
+            next_read_ = LongestValid(next_read_);
             if (next_read_.IsValid()) {
                 return;
             }
@@ -161,21 +122,16 @@ private:
 };
 
 template<class ReadType>
-std::shared_ptr<ReadStream<ReadType>> CarefulFilteringWrap(std::shared_ptr<ReadStream<ReadType>> reader_ptr,
-                                                           bool use_orientation = false,
-                                                           LibraryOrientation orientation = LibraryOrientation::Undefined) {
+std::shared_ptr<ReadStream<ReadType>> CarefulFilteringWrap(std::shared_ptr<ReadStream<ReadType>> reader_ptr) {
     //return reader_ptr = make_shared<CarefulFilteringWrapper<ReadType>>(reader_ptr, false, LibraryOrientation::Undefined);
-    return std::shared_ptr<CarefulFilteringWrapper<ReadType> >(
-            new CarefulFilteringWrapper<ReadType>(reader_ptr, use_orientation, orientation));
+    return std::make_shared<CarefulFilteringWrapper<ReadType>>(reader_ptr);
 }
 
 template<class ReadType>
-ReadStreamList<ReadType> CarefulFilteringWrap(const ReadStreamList<ReadType>& readers,
-                                              bool use_orientation = false,
-                                              LibraryOrientation orientation = LibraryOrientation::Undefined) {
+ReadStreamList<ReadType> CarefulFilteringWrap(const ReadStreamList<ReadType>& readers) {
     ReadStreamList<ReadType> answer;
     for (size_t i = 0; i < readers.size(); ++i) {
-        answer.push_back(CarefulFilteringWrap<ReadType>(readers.ptr_at(i), use_orientation, orientation));
+        answer.push_back(CarefulFilteringWrap<ReadType>(readers.ptr_at(i)));
     }
     return answer;
 }

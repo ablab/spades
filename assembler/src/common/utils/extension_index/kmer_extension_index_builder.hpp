@@ -61,9 +61,9 @@ public:
 
 public:
     template<class Index, class Streams>
-    ReadStatistics BuildExtensionIndexFromStream(fs::TmpDir workdir,
-                                                 Index &index, Streams &streams, io::SingleStream *contigs_stream = 0,
-                                                 size_t read_buffer_size = 0) const {
+    void BuildExtensionIndexFromStream(fs::TmpDir workdir, Index &index,
+                                       Streams &streams, io::SingleStream *contigs_stream = 0,
+                                       size_t read_buffer_size = 0) const {
         unsigned nthreads = (unsigned) streams.size();
 
         // First, build a k+1-mer index
@@ -76,8 +76,6 @@ public:
 
         BuildExtensionIndexFromKPOMers(workdir, index, counter,
                                        nthreads, read_buffer_size);
-
-        return splitter.stats();
     }
 
     template<class Index, class Counter>

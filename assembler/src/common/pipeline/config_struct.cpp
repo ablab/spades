@@ -23,41 +23,43 @@
 
 using namespace llvm;
 
-namespace io {
-template<>
-void SequencingLibrary<debruijn_graph::config::DataSetData>::yamlize(llvm::yaml::IO &io) {
-  // First, load the "common stuff"
-  SequencingLibraryBase::yamlize(io);
-
-  // Now load the remaining stuff
-  io.mapOptional("read length"                , data_.read_length);
-  io.mapOptional("average read length"        , data_.avg_read_length);
-  io.mapOptional("insert size mean"           , data_.mean_insert_size);
-  io.mapOptional("insert size deviation"      , data_.insert_size_deviation);
-  io.mapOptional("insert size left quantile"  , data_.insert_size_left_quantile);
-  io.mapOptional("insert size right quantile" , data_.insert_size_right_quantile);
-  io.mapOptional("insert size median"         , data_.median_insert_size);
-  io.mapOptional("insert size mad"            , data_.insert_size_mad);
-  io.mapOptional("insert size distribution"   , data_.insert_size_distribution);
-  io.mapOptional("average coverage"           , data_.average_coverage);
-  io.mapOptional("pi threshold"               , data_.pi_threshold);
-  io.mapOptional("binary converted"           , data_.binary_reads_info.binary_coverted);
-  io.mapOptional("single reads mapped"        , data_.single_reads_mapped);
-  io.mapOptional("library index"              , data_.lib_index);
-  io.mapOptional("number of reads"            , data_.read_count);
-  io.mapOptional("total nucleotides"          , data_.total_nucls);
-}
-
-template<>
-void SequencingLibrary<debruijn_graph::config::DataSetData>::validate(llvm::yaml::IO &io, llvm::StringRef &res) {
-  // Simply ask base class to validate for us
-  SequencingLibraryBase::validate(io, res);
-}
-}
-
 #include "pipeline/library.inl"
 
-template class io::DataSet<debruijn_graph::config::DataSetData>;
+namespace llvm { namespace yaml {
+
+template<> struct MappingTraits<debruijn_graph::config::dataset> {
+    static void mapping(IO& io, debruijn_graph::config::dataset& cfg) {
+        io.mapRequired("max read length", cfg.RL);
+        io.mapRequired("nomerge max read length", cfg.no_merge_RL);
+        io.mapRequired("average read length", cfg.aRL);
+        io.mapRequired("average coverage", cfg.average_coverage);
+        io.mapRequired("libraries", cfg.reads);
+    }
+};
+
+template<> struct MappingTraits<debruijn_graph::config::LibraryData> {
+    static void mapping(IO& io, debruijn_graph::config::LibraryData& data) {
+        io.mapRequired("unmerged read length"       , data.unmerged_read_length);
+        io.mapRequired("merged read length"         , data.merged_read_length);
+        io.mapRequired("insert size mean"           , data.mean_insert_size);
+        io.mapRequired("insert size deviation"      , data.insert_size_deviation);
+        io.mapRequired("insert size left quantile"  , data.insert_size_left_quantile);
+        io.mapRequired("insert size right quantile" , data.insert_size_right_quantile);
+        io.mapRequired("insert size median"         , data.median_insert_size);
+        io.mapRequired("insert size mad"            , data.insert_size_mad);
+        io.mapRequired("insert size distribution"   , data.insert_size_distribution);
+        io.mapRequired("pi threshold"               , data.pi_threshold);
+        io.mapRequired("binary converted"           , data.binary_reads_info.binary_coverted);
+        io.mapRequired("single reads mapped"        , data.single_reads_mapped);
+        io.mapRequired("library index"              , data.lib_index);
+        io.mapRequired("number of reads"            , data.read_count);
+        io.mapRequired("total nucleotides"          , data.total_nucls);
+    }
+};
+
+} }
+
+template class io::DataSet<debruijn_graph::config::LibraryData>;
 
 namespace debruijn_graph {
 namespace config {
@@ -132,38 +134,35 @@ vector<string> BrokenScaffoldsModeNames() {
                                              {"break_all", output_broken_scaffolds::break_all}}, output_broken_scaffolds::total);
 }
 
+template<class T>
+void LoadFromYaml(const std::string& filename, T &t) {
+    auto buf = llvm::MemoryBuffer::getFile(filename);
+    VERIFY_MSG(buf, "Failed to load file " << filename);
+    llvm::yaml::Input yin(*buf.get());
+    VERIFY_MSG(!yin.error(), "Failed to load file " << filename);
+    yin >> t;
+}
+
+template<class T>
+void WriteToYaml(T &t, const std::string& filename) {
+    std::error_code EC;
+    llvm::raw_fd_ostream ofs(filename, EC, llvm::sys::fs::OpenFlags::F_Text);
+    llvm::yaml::Output yout(ofs);
+    yout << t;
+}
 
 void load_lib_data(const std::string& prefix) {
-  // First, load the data into separate libs
-  cfg::get_writable().ds.reads.load(prefix + ".lib_data");
-
-  // Now, infer the common parameters
-  size_t max_rl = 0;
-  double avg_cov = 0.0;
-  double avg_rl = 0.0;
-  for (const auto& lib : cfg::get().ds.reads.libraries()) {
-      auto const& data = lib.data();
-      if (lib.is_graph_contructable())
-          max_rl = std::max(max_rl, data.read_length);
-      if (data.average_coverage > 0)
-          avg_cov = data.average_coverage;
-      if (data.avg_read_length > 0)
-          avg_rl = data.avg_read_length;
-  }
-
-  cfg::get_writable().ds.set_RL(max_rl);
-  cfg::get_writable().ds.set_aRL(avg_rl);
-  cfg::get_writable().ds.set_avg_coverage(avg_cov);
+    LoadFromYaml(prefix + ".lib_data", cfg::get_writable().ds);
 }
 
 void write_lib_data(const std::string& prefix) {
-  cfg::get_writable().ds.reads.save(prefix + ".lib_data");
+    WriteToYaml(cfg::get_writable().ds, prefix + ".lib_data");
 }
 
 void load(debruijn_config::simplification::tip_clipper &tc,
           boost::property_tree::ptree const &pt, bool /*complete*/) {
-     using config_common::load;
-     load(tc.condition, pt, "condition");
+    using config_common::load;
+    load(tc.condition, pt, "condition");
 }
 
 void load(debruijn_config::simplification::dead_end_clipper& dead_end,
@@ -544,44 +543,39 @@ void load(debruijn_config::kmer_coverage_model& kcm,
 }
 
 void load(dataset &ds,
-          boost::property_tree::ptree const &pt, bool /*complete*/) {
+          boost::property_tree::ptree const &pt,
+          const std::string &input_dir) {
     using config_common::load;
 
-  load(ds.reads_filename, pt, "reads");
+    //loading reads
+    std::string reads_filename;
+    load(reads_filename, pt, "reads");
 
-    ds.reference_genome_filename = "";
+    if (reads_filename[0] != '/')
+        reads_filename = input_dir + reads_filename;
+    fs::CheckFileExistenceFATAL(reads_filename);
+    ds.reads.load(reads_filename);
+
+    //loading reference
+    std::string reference_genome_filename;
     boost::optional<std::string> refgen =
             pt.get_optional<std::string>("reference_genome");
     if (refgen && *refgen != "N/A") {
-        ds.reference_genome_filename = *refgen;
+        reference_genome_filename = *refgen;
     }
-}
 
-void load_reads(dataset &ds,
-                std::string input_dir) {
-    if (ds.reads_filename[0] != '/')
-        ds.reads_filename = input_dir + ds.reads_filename;
-    fs::CheckFileExistenceFATAL(ds.reads_filename);
-    ds.reads.load(ds.reads_filename);
-}
-
-void load_reference_genome(dataset &ds,
-                           std::string input_dir) {
-    if (ds.reference_genome_filename == "") {
-        ds.reference_genome = vector<std::string>(0);
+    if (reference_genome_filename == "")
         return;
-    }
-    if (ds.reference_genome_filename[0] != '/')
-        ds.reference_genome_filename = input_dir + ds.reference_genome_filename;
-    fs::CheckFileExistenceFATAL(ds.reference_genome_filename);
-    io::FileReadStream genome_stream(ds.reference_genome_filename);
+
+    if (reference_genome_filename[0] != '/')
+        reference_genome_filename = input_dir + reference_genome_filename;
+    fs::CheckFileExistenceFATAL(reference_genome_filename);
+    io::FileReadStream genome_stream(reference_genome_filename);
     while (!genome_stream.eof()) {
         io::SingleRead genome;
         genome_stream >> genome;
         ds.reference_genome.push_back(genome.GetSequenceString());
     }
-
-
 }
 
 void load(debruijn_config::simplification& simp,
@@ -724,9 +718,7 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
     fs::CheckFileExistenceFATAL(cfg.dataset_file);
     boost::property_tree::ptree ds_pt;
     boost::property_tree::read_info(cfg.dataset_file, ds_pt);
-    load(cfg.ds, ds_pt, true);
-    load_reads(cfg.ds, cfg.input_dir);
-    load_reference_genome(cfg.ds, cfg.input_dir);
+    load(cfg.ds, ds_pt, cfg.input_dir);
 }
 
 // main debruijn config load function
@@ -880,6 +872,7 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
         lib.data().binary_reads_info.bin_reads_info_file = cfg.temp_bin_reads_path + "INFO_" + std::to_string(i);
         lib.data().binary_reads_info.buffer_size = cfg.buffer_size;
         lib.data().binary_reads_info.paired_read_prefix = cfg.temp_bin_reads_path + "paired_" + std::to_string(i);
+        lib.data().binary_reads_info.merged_read_prefix = cfg.temp_bin_reads_path + "merged_" + std::to_string(i);
         lib.data().binary_reads_info.single_read_prefix = cfg.temp_bin_reads_path + "single_" + std::to_string(i);
     }
 }

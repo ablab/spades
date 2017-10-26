@@ -105,6 +105,7 @@ public:
     void clear() {
         left_paired_reads_.clear();
         right_paired_reads_.clear();
+        merged_reads_.clear();
         single_reads_.clear();
     }
 
@@ -112,6 +113,10 @@ public:
 
     void push_back_single(const std::string &reads) {
         single_reads_.push_back(reads);
+    }
+
+    void push_back_merged(const std::string &reads) {
+        merged_reads_.push_back(reads);
     }
 
     void push_back_paired(const std::string &left, const std::string &right) {
@@ -122,6 +127,7 @@ public:
     paired_reads_iterator paired_begin() const {
         return paired_reads_iterator(left_paired_reads_.begin(), right_paired_reads_.begin());
     }
+
     paired_reads_iterator paired_end() const {
         return paired_reads_iterator(left_paired_reads_.end(), right_paired_reads_.end());
     }
@@ -130,14 +136,29 @@ public:
         return adt::make_range(paired_begin(), paired_end());
     }
 
+    single_reads_iterator merged_begin() const {
+        return single_reads_iterator(merged_reads_.begin(), merged_reads_.end());
+    }
+
+    single_reads_iterator merged_end() const {
+        // NOTE: Do not forget about the contract with single_begin here!
+        return single_reads_iterator(merged_reads_.end(), merged_reads_.end());
+    }
+
+    adt::iterator_range<single_reads_iterator> merged_reads() const {
+        return adt::make_range(merged_begin(), merged_end());
+    }
+
     single_reads_iterator reads_begin() const {
         // NOTE: We have a contract with single_end here. Single reads always go last!
         single_reads_iterator res(left_paired_reads_.begin(), left_paired_reads_.end());
         res.join(right_paired_reads_.begin(), right_paired_reads_.end());
+        res.join(merged_reads_.begin(), merged_reads_.end());
         res.join(single_reads_.begin(), single_reads_.end());
         
         return res;
     }
+
     single_reads_iterator reads_end() const {
         // NOTE: Do not forget about the contract with single_begin here!
         return single_reads_iterator(single_reads_.end(), single_reads_.end());
@@ -150,6 +171,7 @@ public:
     single_reads_iterator single_begin() const {
         return single_reads_iterator(single_reads_.begin(), single_reads_.end());
     }
+
     single_reads_iterator single_end() const {
         // NOTE: Do not forget about the contract with single_begin here!
         return single_reads_iterator(single_reads_.end(), single_reads_.end());
@@ -229,6 +251,7 @@ private:
 
     std::vector<std::string> left_paired_reads_;
     std::vector<std::string> right_paired_reads_;
+    std::vector<std::string> merged_reads_;
     std::vector<std::string> single_reads_;
 };
 
@@ -258,7 +281,6 @@ public:
     typedef SequencingLibrary<Data> Library;
     typedef std::vector<Library> LibraryStorage;
 
-public:
     typedef typename LibraryStorage::iterator iterator;
     typedef typename LibraryStorage::const_iterator const_iterator;
     typedef adt::chained_iterator<typename Library::single_reads_iterator> single_reads_iterator;
@@ -269,6 +291,9 @@ public:
 
     void load(const std::string &filename);
     void save(const std::string &filename);
+
+    void yamlize(llvm::yaml::IO &io);
+    void validate(llvm::yaml::IO &io, llvm::StringRef &res);
 
     void clear() { libraries_.clear(); }
     void push_back(const Library &lib) {
@@ -361,6 +386,11 @@ template <class Data>
 struct MappingTraits<io::SequencingLibrary<Data> > {
     static void mapping(llvm::yaml::IO &io, io::SequencingLibrary<Data> &lib);
     static StringRef validate(llvm::yaml::IO &io, io::SequencingLibrary<Data> &lib);
+};
+
+template <class Data>
+struct MappingTraits<io::DataSet<Data> > {
+    static void mapping(llvm::yaml::IO &io, io::DataSet<Data> &lib);
 };
 
 }}

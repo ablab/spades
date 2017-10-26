@@ -30,6 +30,14 @@ shared_ptr<visualization::graph_colorer::GraphColorer<typename graph_pack::graph
     return visualization::graph_colorer::DefaultColorer(gp.g, path1, path2);
 }
 
+SimplifInfoContainer CreateInfoContainer() {
+    SimplifInfoContainer info_container(cfg::get().mode);
+    info_container.set_read_length(cfg::get().ds.RL)
+            .set_main_iteration(cfg::get().main_iteration)
+            .set_chunk_cnt(5 * cfg::get().max_threads);
+    return info_container;
+}
+
 class GraphSimplifier {
     typedef std::function<void(EdgeId)> HandlerF;
 
@@ -511,10 +519,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 //            boost::ref(qual_removal_handler), _1);
 
 
-    SimplifInfoContainer info_container(cfg::get().mode);
-    info_container.set_read_length(cfg::get().ds.RL())
-        .set_main_iteration(cfg::get().main_iteration)
-        .set_chunk_cnt(5 * cfg::get().max_threads);
+    SimplifInfoContainer info_container = CreateInfoContainer();
 
     //0 if model didn't converge
     //todo take max with trusted_bound
@@ -535,12 +540,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 
 
 void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
-    SimplifInfoContainer info_container(cfg::get().mode);
-    info_container
-        .set_read_length(cfg::get().ds.RL())
-        .set_main_iteration(cfg::get().main_iteration)
-        .set_chunk_cnt(5 * cfg::get().max_threads);
-
+    SimplifInfoContainer info_container = CreateInfoContainer();
 
     auto isolated_edge_remover =
         IsolatedEdgeRemoverInstance(gp.g, cfg::get().simp.ier, info_container, (EdgeRemovalHandlerF<Graph>)nullptr);
@@ -571,53 +571,14 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     INFO("Counting average coverage");
     AvgCovereageCounter<Graph> cov_counter(gp.g);
 
-    cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
+    VERIFY(cfg::get().ds.average_coverage == 0.);
+    cfg::get_writable().ds.average_coverage = cov_counter.Count();
 
-    INFO("Average coverage = " << cfg::get().ds.avg_coverage());
+    INFO("Average coverage = " << cfg::get().ds.average_coverage);
     if (!cfg::get().uneven_depth) {
-        if (cfg::get().ds.avg_coverage() < gp.ginfo.ec_bound())
+        if (math::ls(cfg::get().ds.average_coverage, gp.ginfo.ec_bound()))
             WARN("The determined erroneous connection coverage threshold may be determined improperly\n");
     }
 }
-
-
-#if 0
-void corrected_and_save_reads(const conj_graph_pack& gp) {
-    //saving corrected reads
-    //todo read input files, correct, save and use on the next iteration
-
-    auto_ptr<io::IReader<io::PairedReadSeq>> paired_stream =
-            paired_binary_multireader(false, /*insert_size*/0);
-    io::ModifyingWrapper<io::PairedReadSeq> refined_paired_stream(
-        *paired_stream,
-        GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
-
-    auto_ptr<io::IReader<io::SingleReadSeq>> single_stream =
-            single_binary_multireader(false, /*include_paired_reads*/false);
-    io::ModifyingWrapper<io::SingleReadSeq> refined_single_stream(
-        *single_stream,
-        GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
-
-    if (cfg::get().graph_read_corr.binary) {
-        INFO("Correcting paired reads");
-
-        io::BinaryWriter paired_converter(
-            cfg::get().paired_read_prefix + "_cor", cfg::get().max_threads,
-            cfg::get().buffer_size);
-        paired_converter.ToBinary(refined_paired_stream);
-
-        INFO("Correcting single reads");
-        io::BinaryWriter single_converter(
-            cfg::get().single_read_prefix + "_cor", cfg::get().max_threads,
-            cfg::get().buffer_size);
-        single_converter.ToBinary(refined_single_stream);
-    } else {
-        //save in fasta
-        VERIFY(false);
-    }
-
-    INFO("Error correction done");
-}
-#endif
 
 } //debruijn_graph

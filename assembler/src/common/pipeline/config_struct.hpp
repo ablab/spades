@@ -6,6 +6,7 @@
 //***************************************************************************
 #pragma once
 
+#include "utils/verify.hpp"
 #include "pipeline/config_singl.hpp"
 #include "modules/path_extend/pe_config_struct.hpp"
 #include "pipeline/library.hpp"
@@ -105,9 +106,9 @@ std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) 
     return names[size_t(mode)];
 }
 
-struct DataSetData {
-    size_t read_length;
-    double avg_read_length;
+struct LibraryData {
+    size_t unmerged_read_length;
+    size_t merged_read_length;
     double mean_insert_size;
     double insert_size_deviation;
     double insert_size_left_quantile;
@@ -121,7 +122,6 @@ struct DataSetData {
     uint64_t total_nucls;
     size_t read_count;
 
-    double average_coverage;
     double pi_threshold;
 
     struct BinaryReadsInfo {
@@ -130,13 +130,15 @@ struct DataSetData {
         bool binary_coverted;
         std::string bin_reads_info_file;
         std::string paired_read_prefix;
+        std::string merged_read_prefix;
         std::string single_read_prefix;
         size_t chunk_num;
         size_t buffer_size;
     } binary_reads_info;
 
 
-    DataSetData(): read_length(0), avg_read_length(0.0),
+    LibraryData(): unmerged_read_length(0),
+                   merged_read_length(0),
                    mean_insert_size(0.0),
                    insert_size_deviation(0.0),
                    insert_size_left_quantile(0.0),
@@ -147,48 +149,25 @@ struct DataSetData {
                    single_reads_mapped(false),
                    total_nucls(0),
                    read_count(0),
-                   average_coverage(0.0),
                    pi_threshold(0.0),
                    binary_reads_info() {}
 };
 
 struct dataset {
-    typedef io::DataSet<DataSetData>::Library Library;
+    typedef io::DataSet<LibraryData>::Library Library;
 
-    io::DataSet<DataSetData> reads;
+    dataset() :
+        RL(0),
+        no_merge_RL(0),
+        aRL(0.0),
+        average_coverage(0.0) {}
 
-    size_t max_read_length;
+    size_t RL;
+    size_t no_merge_RL;
+    double aRL;
     double average_coverage;
-    double average_read_length;
-
-    size_t RL() const { return max_read_length; }
-    void set_RL(size_t RL) {
-        max_read_length = RL;
-    }
-
-    double aRL() const { return average_read_length; }
-    void set_aRL(double aRL) {
-        average_read_length = aRL;
-        for (size_t i = 0; i < reads.lib_count(); ++i) {
-            reads[i].data().avg_read_length = aRL;
-        }
-    }
-
-    double avg_coverage() const { return average_coverage; }
-    void set_avg_coverage(double avg_coverage) {
-        average_coverage = avg_coverage;
-        for (size_t i = 0; i < reads.lib_count(); ++i) {
-            reads[i].data().average_coverage = avg_coverage;
-        }
-    }
-
-    std::string reference_genome_filename;
-    std::string reads_filename;
-
+    io::DataSet<LibraryData> reads;
     std::vector<std::string> reference_genome;
-
-    dataset(): max_read_length(0), average_coverage(0.0) {
-    }
 };
 
 // struct for debruijn project's configuration file

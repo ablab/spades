@@ -87,8 +87,6 @@ public:
         open();
     }
 
-    ReadStreamStat get_stat() const { return ReadStreamStat(); }
-
 private:
     BamTools::BamReader reader_;
     BamTools::BamAlignment seq_;

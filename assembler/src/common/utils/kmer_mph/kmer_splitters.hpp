@@ -219,12 +219,14 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
   DECL_LOGGER("DeBruijnKMerSplitter");
 };
 
+//TODO exact duplication with ReadStreamStat
 struct ReadStatistics {
   size_t reads_;
   size_t max_read_length_;
   size_t bases_;
 };
 
+//TODO we do not need read statistics here anymore :)
 template<class Read, class KmerFilter>
 class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   io::ReadStreamList<Read> &streams_;
@@ -244,12 +246,9 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
                            io::SingleStream* contigs_stream = 0,
                            size_t read_buffer_size = 0)
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size, seed),
-      streams_(streams), contigs_(contigs_stream), rs_({0 ,0 ,0}) {}
+        streams_(streams), contigs_(contigs_stream) {}
 
   RawKMers Split(size_t num_files, unsigned nthreads) override;
-
-  size_t read_length() const { return rs_.max_read_length_; }
-  ReadStatistics stats() const { return rs_; }
 };
 
 template<class Read, class KmerFilter> template<class ReadStream>
@@ -316,9 +315,7 @@ DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files, unsigned nth
 
   this->ClearBuffers();
 
-  INFO("Used " << counter << " reads. Maximum read length " << rl);
-  INFO("Average read length " << double(bases) / double(counter));
-  rs_ = { counter, rl, bases };
+  INFO("Used " << counter << " reads");
 
   return out;
 }

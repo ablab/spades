@@ -144,8 +144,13 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
     graph_pack<Graph>::index_t index(g, *workdir);
     index.Detach();
 
+    size_t max_rl = 0;
+    for (const auto &r : reads) {
+        max_rl = std::max(max_rl, r.size());
+    }
+
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads))));
-    ConstructGraph(config::debruijn_config::construction(), workdir,
+    ConstructGraph(config::debruijn_config::construction(), workdir, max_rl,
                    streams, g, index);
 
     AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
@@ -199,8 +204,7 @@ void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, co
     }
 }
 
-void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl*/, size_t insert_size, const vector<MyEdge>& etalon_edges
-        , const CoverageInfo& etalon_coverage, const EdgePairInfo& etalon_pair_info) {
+void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl*/, size_t insert_size, const vector<MyEdge>& etalon_edges, const CoverageInfo& etalon_coverage, const EdgePairInfo& etalon_pair_info) {
     typedef io::VectorReadStream<io::PairedRead> RawStream;
 
     DEBUG("Asserting graph with etalon data");
@@ -213,8 +217,14 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl
 
     DEBUG("Graph pack created");
 
+    size_t max_rl = 0;
+    for (const auto &r : paired_reads) {
+        max_rl = std::max(max_rl, r.first.size());
+        max_rl = std::max(max_rl, r.second.size());
+    }
+
     io::ReadStreamList<io::SingleRead> single_stream_vector = io::SquashingWrap<io::PairedRead>(paired_streams);
-    ConstructGraphWithCoverage(config::debruijn_config::construction(), workdir,
+    ConstructGraphWithCoverage(config::debruijn_config::construction(), workdir, max_rl,
                                single_stream_vector, gp.g, gp.index, gp.flanking_cov);
 
     gp.InitRRIndices();
@@ -233,13 +243,14 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl
 }
 
 template<class graph_pack>
-void CheckIndex(vector<string> reads, size_t k) {
+void CheckIndex(vector<string> reads, size_t k, size_t read_length) {
     typedef io::VectorReadStream<io::SingleRead> RawStream;
     graph_pack gp(k, "tmp", 0);
     auto workdir = fs::tmp::make_temp_dir(gp.workdir, "tests");
     auto stream = io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads)));
     io::ReadStreamList<io::SingleRead> streams(stream);
-    ConstructGraph(config::debruijn_config::construction(), workdir, streams, gp.g, gp.index);
+    ConstructGraph(config::debruijn_config::construction(), workdir,
+                   read_length, streams, gp.g, gp.index);
     stream->reset();
     io::SingleRead read;
     while(!(stream->eof())) {

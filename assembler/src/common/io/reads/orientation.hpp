@@ -11,83 +11,40 @@
 
 namespace io {
 
-template<typename ReadType>
-class OrientationChanger {
-
-public:
-
-    virtual ReadType Perform(const ReadType& r) const = 0;
-
-    virtual ~OrientationChanger() {
-    }
-};
-
-template<typename ReadType>
-class IdeticalChanger : public OrientationChanger<ReadType> {
-
-public:
-
-    virtual ReadType Perform(const ReadType& r) const {
-        return r;
-    }
-};
-
-template<typename ReadType>
-class ReverseSecondChanger : public OrientationChanger<ReadType> {
-
-public:
-
-    virtual ReadType Perform(const ReadType& r) const {
-        return ReadType(r.first(), !r.second(), r.insert_size());
-    }
-};
-
-template<typename ReadType>
-class ReverseFirstChanger : public OrientationChanger<ReadType> {
-
-public:
-
-    virtual ReadType Perform(const ReadType& r) const {
-        return ReadType(!r.first(), r.second(), r.insert_size());
-    }
-};
-
-template<typename ReadType>
-class ReverseChanger : public OrientationChanger<ReadType> {
-
-public:
-
-    virtual ReadType Perform(const ReadType& r) const {
-        return ReadType(!r.first(), !r.second(), r.insert_size());
-    }
-};
-
-template<typename ReadType>
-std::unique_ptr<OrientationChanger<ReadType>> GetOrientationChanger(LibraryOrientation orientation) {
-    OrientationChanger<ReadType> * result;
+static std::pair<bool, bool> GetRCFlags(LibraryOrientation orientation) {
     switch (orientation) {
-    case LibraryOrientation::FF:  {
-        result = new IdeticalChanger<ReadType>();
-        break;
+        case LibraryOrientation::RR: {
+            return make_pair(true, true);
+        }
+        case LibraryOrientation::FR: {
+            return make_pair(false, true);
+        }
+        case LibraryOrientation::RF: {
+            return make_pair(true, false);
+        }
+        case LibraryOrientation::FF:
+        default: {
+            return make_pair(false, false);
+        }
     }
-    case LibraryOrientation::RR:  {
-        result = new ReverseChanger<ReadType>();
-        break;
-    }
-    case LibraryOrientation::FR:  {
-        result = new ReverseSecondChanger<ReadType>();
-        break;
-    }
-    case LibraryOrientation::RF:  {
-        result = new ReverseFirstChanger<ReadType>();
-        break;
-    }
-    default: {
-        result = new IdeticalChanger<ReadType>();
-        break;
-    }
-    }
-    return std::unique_ptr<OrientationChanger<ReadType>>(result);
+}
+
+template<typename ReadType>
+ReadType GetRCRead(const ReadType &read, bool rc) {
+    return rc ? !read : read;
+}
+
+template<class ReadType>
+using OrientationF = std::function<ReadType (const ReadType&)>;
+
+template<typename ReadType>
+OrientationF<ReadType> GetOrientationChanger(LibraryOrientation orientation) {
+    auto rc_flags = GetRCFlags(orientation);
+    return [=](const ReadType &r) {
+        return ReadType(GetRCRead(r.first(), rc_flags.first),
+                        GetRCRead(r.second(), rc_flags.second),
+                        r.orig_insert_size());
+    };
 }
 
 }

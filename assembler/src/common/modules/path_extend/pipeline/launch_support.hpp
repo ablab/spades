@@ -116,15 +116,15 @@ public:
 
     bool HasOnlySingleReads() const;
 
-    bool IsForSingleReadExtender(const io::SequencingLibrary<config::DataSetData> &lib) const;
+    bool IsForSingleReadExtender(const io::SequencingLibrary<config::LibraryData> &lib) const;
 
-    bool IsForSingleReadScaffolder(const io::SequencingLibrary<config::DataSetData> &lib) const;
+    bool IsForSingleReadScaffolder(const io::SequencingLibrary<config::LibraryData> &lib) const;
 
-    bool IsForPEExtender(const io::SequencingLibrary<config::DataSetData> &lib) const;
+    bool IsForPEExtender(const io::SequencingLibrary<config::LibraryData> &lib) const;
 
-    bool IsForShortLoopExtender(const io::SequencingLibrary<config::DataSetData> &lib) const;
+    bool IsForShortLoopExtender(const io::SequencingLibrary<config::LibraryData> &lib) const;
 
-    bool IsForScaffoldingExtender(const io::SequencingLibrary<config::DataSetData> &lib) const;
+    bool IsForScaffoldingExtender(const io::SequencingLibrary<config::LibraryData> &lib) const;
 
     bool UseCoverageResolverForSingleReads(const io::LibraryType& type) const;
 

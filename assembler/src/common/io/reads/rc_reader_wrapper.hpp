@@ -27,13 +27,11 @@ public:
             base(reader), rc_read_(), was_rc_(true) {
     }
 
-    /* virtual */
-    bool eof() {
+    bool eof() override {
         return was_rc_ && base::eof();
     }
 
-    /* virtual */
-    RCWrapper& operator>>(ReadType& read) {
+    RCWrapper& operator>>(ReadType& read) override {
         if (was_rc_) {
             base::operator >>(read);
             rc_read_ = read;
@@ -44,17 +42,9 @@ public:
         return (*this);
     }
 
-    /* virtual */
-    void reset() {
+    void reset() override {
         was_rc_ = true;
         base::reset();
-    }
-
-    /* virtual */
-    ReadStreamStat get_stat() const {
-        ReadStreamStat stat = base::get_stat();
-        stat.merge(stat);
-        return stat;
     }
 
 private:
@@ -79,24 +69,21 @@ ReadStreamList<ReadType> RCWrap(ReadStreamList<ReadType>& readers) {
 template<typename ReadType>
 class OrientationChangingWrapper: public DelegatingWrapper<ReadType> {
     typedef DelegatingWrapper<ReadType> base;
-    typedef std::unique_ptr<OrientationChanger<ReadType>> ChangerPtrT;
 public:
 
-    OrientationChangingWrapper(typename base::ReaderStreamPtrT reader,
+    OrientationChangingWrapper(typename base::ReadStreamPtrT reader,
                                LibraryOrientation orientation) :
             base(reader), changer_(GetOrientationChanger<ReadType>(orientation)) {
     }
 
-    /*virtual*/
-    OrientationChangingWrapper& operator>>(ReadType& read) {
+    OrientationChangingWrapper& operator>>(ReadType& read) override {
         base::operator >>(read);
-        read = changer_->Perform(read);
+        read = changer_(read);
         return (*this);
     }
 
 private:
-    ChangerPtrT changer_;
-    bool delete_reader_;
+    OrientationF<ReadType> changer_;
 };
 
 template<typename ReadType>

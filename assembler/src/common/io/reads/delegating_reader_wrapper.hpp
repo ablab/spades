@@ -19,36 +19,28 @@ public:
 
     explicit DelegatingWrapper(ReadStreamPtrT reader) : reader_(reader) {}
 
-
-    /* virtual */ bool is_open() {
+    bool is_open() override {
         return reader_->is_open();
     }
 
-    /* virtual */ bool eof() {
+    bool eof() override {
         return reader_->eof();
     }
 
-    /* virtual */ DelegatingWrapper& operator>>(ReadType& read) {
+    DelegatingWrapper& operator>>(ReadType& read) override {
         (*reader_) >> read;
         return *this;
     }
 
-    /* virtual */
-    void close() {
+    void close() override {
         reader_->close();
     }
 
     /*
      * Close the stream and open it again.
      */
-    /* virtual */
-    void reset() {
+    void reset() override {
         reader_->reset();
-    }
-
-    /* virtual */
-    ReadStreamStat get_stat() const {
-        return reader_->get_stat();
     }
 
 protected:

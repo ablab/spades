@@ -30,13 +30,12 @@ using omnigraph::de::Point;
 
 class PairedInfoLibrary {
 public:
-    PairedInfoLibrary(size_t k, const Graph& g, size_t read_size, size_t is,
+    PairedInfoLibrary(const Graph& g, size_t read_size, size_t is,
                       size_t is_min, size_t is_max, double is_var,
                       bool is_mp,
                       const std::map<int, size_t>& is_distribution)
             : g_(g),
-              k_(k),
-              read_size_(read_size),
+              k_(g.k()),
               is_(is),
               is_min_(is_min),
               is_max_(is_max),
@@ -66,7 +65,6 @@ public:
 protected:
     const Graph& g_;
     size_t k_;
-    size_t read_size_;
     size_t is_;
     size_t is_min_;
     size_t is_max_;
@@ -81,10 +79,10 @@ class PairedInfoLibraryWithIndex : public PairedInfoLibrary {
     const Index& index_;
 
 public:
-    PairedInfoLibraryWithIndex(size_t k, const Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, double is_div,
+    PairedInfoLibraryWithIndex(const Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, double is_div,
                                const Index& index, bool is_mp,
                                const std::map<int, size_t>& is_distribution)
-        : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
+        : PairedInfoLibrary(g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
           index_(index) {}
 
     size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist, int max_dist, size_t min_len = 0) const override {
@@ -165,14 +163,13 @@ shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph& g,
                                          const debruijn_graph::config::dataset::Library &lib,
                                          const Index &paired_index) {
     //why all those local variables? :)
-    size_t read_length = lib.data().read_length;
+    size_t read_length = lib.data().unmerged_read_length;
     size_t is = (size_t) lib.data().mean_insert_size;
     int is_min = (int) lib.data().insert_size_left_quantile;
     int is_max = (int) lib.data().insert_size_right_quantile;
     double var = lib.data().insert_size_deviation;
     bool is_mp = lib.type() == io::LibraryType::MatePairs || lib.type() == io::LibraryType::HQMatePairs;
-    return make_shared<PairedInfoLibraryWithIndex<decltype(paired_index)>>(g.k(),
-                                                                           g,
+    return make_shared<PairedInfoLibraryWithIndex<decltype(paired_index)>>(g,
                                                                            read_length,
                                                                            is,
                                                                            is_min > 0 ? size_t(is_min) : 0,

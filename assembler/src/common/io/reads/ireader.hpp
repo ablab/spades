@@ -13,46 +13,45 @@
 namespace io {
 
 struct ReadStreamStat {
-    size_t read_count_;
-    size_t max_len_;
-    uint64_t total_len_;
+    size_t read_count;
+    size_t max_len;
+    uint64_t total_len;
 
-
-    ReadStreamStat(): read_count_(0), max_len_(0), total_len_(0) { }
+    ReadStreamStat(): read_count(0), max_len(0), total_len(0) { }
 
     void write(std::ostream& stream) const {
-        stream.write((const char *) &read_count_, sizeof(read_count_));
-        stream.write((const char *) &max_len_, sizeof(max_len_));
-        stream.write((const char *) &total_len_, sizeof(total_len_));
+        stream.write((const char *) &read_count, sizeof(read_count));
+        stream.write((const char *) &max_len, sizeof(max_len));
+        stream.write((const char *) &total_len, sizeof(total_len));
     }
 
     void read(std::istream& stream) {
-        stream.read((char *) &read_count_, sizeof(read_count_));
-        stream.read((char *) &max_len_, sizeof(max_len_));
-        stream.read((char *) &total_len_, sizeof(total_len_));
+        stream.read((char *) &read_count, sizeof(read_count));
+        stream.read((char *) &max_len, sizeof(max_len));
+        stream.read((char *) &total_len, sizeof(total_len));
     }
 
     template<class Read>
     void increase(const Read& read) {
         size_t len = read.size();
 
-        ++read_count_;
-        if (max_len_ < len) {
-            max_len_ = len;
+        ++read_count;
+        if (max_len < len) {
+            max_len = len;
         }
-        total_len_ += read.nucl_count();
+        total_len += read.nucl_count();
     }
 
     void merge(const ReadStreamStat& stat) {
-        read_count_ += stat.read_count_;
-        if (max_len_ < stat.max_len_) {
-            max_len_ = stat.max_len_;
+        read_count += stat.read_count;
+        if (max_len < stat.max_len) {
+            max_len = stat.max_len;
         }
-        total_len_ += stat.total_len_;
+        total_len += stat.total_len;
     }
 
     bool valid() const {
-        return read_count_ != 0;
+        return read_count != 0;
     }
 
 };
@@ -104,14 +103,6 @@ class ReadStream: boost::noncopyable {
    */
   virtual void reset() = 0;
 
-  virtual ReadStreamStat get_stat() const = 0;
-
-};
-
-template<class Read>
-class PredictableReadStream: public ReadStream<Read> {
-public:
-    virtual size_t size() const = 0;
 };
 
 }

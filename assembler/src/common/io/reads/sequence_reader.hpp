@@ -43,10 +43,6 @@ public:
         opened_ = true;
     }
 
-    ReadStreamStat get_stat() const {
-        return ReadStreamStat();
-    }
-
     SequenceReadStream &operator>>(ReadType &read);
 
 private:

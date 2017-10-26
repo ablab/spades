@@ -14,37 +14,47 @@
 
 namespace io {
 
-
-class PairedRead {
+template<class SingleReadType>
+class UniversalPairedRead {
 public:
-    typedef SingleRead SingleReadT;
-    typedef int16_t size_type;
+    typedef SingleReadType SingleReadT;
+    typedef int32_t InsertSizeT;
 
-    PairedRead() : first_(), second_(), insert_size_(0) { }
-
-    PairedRead(const SingleRead &first,
-               const SingleRead &second,
-               size_t insert_size)
-            : first_(first), second_(second), insert_size_(insert_size) { }
-
-    const SingleRead &first() const {
+    //Prefer using creating new read with constructor to the next three methods
+    SingleReadT &first() {
         return first_;
     }
 
-    const SingleRead &second() const {
+    SingleReadT &second() {
         return second_;
     }
 
-    size_t insert_size() const {
+    void set_orig_insert_size(size_t is) {
+        insert_size_ = is;
+    }
+
+    const SingleReadT &first() const {
+        return first_;
+    }
+
+    const SingleReadT &second() const {
+        return second_;
+    }
+
+    size_t orig_insert_size() const {
         return insert_size_;
     }
 
-    size_t distance() const {
-        return insert_size_ - second_.size();
+    InsertSizeT corrected_insert_size() const {
+        return InsertSizeT(insert_size_ - first_.GetLeftOffset() - second_.GetRightOffset());
     }
 
-    size_t gap() const {
-        return insert_size_ - first_.size() - second_.size();
+    InsertSizeT distance() const {
+        return corrected_insert_size() - (InsertSizeT) second_.size();
+    }
+
+    InsertSizeT gap() const {
+        return corrected_insert_size() - (InsertSizeT) nucl_count();
     }
 
     size_t size() const {
@@ -59,7 +69,7 @@ public:
         return first_.IsValid() && second_.IsValid();
     }
 
-    const SingleRead &operator[](size_t i) const {
+    const SingleReadT &operator[](size_t i) const {
         if (i == 0) {
             return first_;
         } else if (i == 1) {
@@ -69,14 +79,22 @@ public:
         return first_;
     }
 
-    const PairedRead operator!() const {
-        return PairedRead(!second_, !first_, insert_size_);
+    const UniversalPairedRead operator!() const {
+        return UniversalPairedRead(!second_, !first_, insert_size_);
     }
 
-    bool operator==(const PairedRead &pairedread) const {
-        return first_ == pairedread.first_ &&
-               second_ == pairedread.second_ &&
-               insert_size_ == pairedread.insert_size_;
+    bool operator==(const UniversalPairedRead &paired_read) const {
+        return first_ == paired_read.first_ &&
+               second_ == paired_read.second_ &&
+               insert_size_ == paired_read.insert_size_;
+    }
+
+    bool BinRead(std::istream &file, size_t estimated_is) {
+        first_.BinRead(file);
+        second_.BinRead(file);
+
+        insert_size_ = estimated_is;
+        return !file.fail();
     }
 
     bool BinWrite(std::ostream &file, bool rc1 = false, bool rc2 = false) const {
@@ -86,92 +104,28 @@ public:
         return !file.fail();
     }
 
-private:
-    SingleRead first_;
-    SingleRead second_;
-    size_t insert_size_;
+    UniversalPairedRead() : first_(), second_(), insert_size_(0) { }
 
+    UniversalPairedRead(const SingleReadT &first,
+                        const SingleReadT &second,
+                        size_t insert_size)
+            : first_(first), second_(second), insert_size_(insert_size) { }
+
+
+private:
+    SingleReadT first_;
+    SingleReadT second_;
+    size_t insert_size_;
 };
+
+typedef UniversalPairedRead<SingleRead> PairedRead;
 
 inline std::ostream &operator<<(std::ostream &os, const PairedRead &read) {
     os << "Single read first=" << read.first() << " second=" << read.second() << std::endl;
     return os;
 }
 
-class PairedReadSeq {
-public:
-    typedef SingleReadSeq SingleReadT;
-private:
-    SingleReadSeq first_;
-    SingleReadSeq second_;
-    size_t insert_size_;
-
-public:
-    PairedReadSeq() : first_(), second_(), insert_size_(0) { }
-
-    bool BinRead(std::istream &file, size_t is = 0) {
-        first_.BinRead(file);
-        second_.BinRead(file);
-
-        insert_size_ = is - (size_t) first_.GetLeftOffset() - (size_t) second_.GetRightOffset();
-        return !file.fail();
-    }
-
-    bool BinWrite(std::ostream &file, bool rc1 = false, bool rc2 = false) const {
-        first_.BinWrite(file, rc1);
-        second_.BinWrite(file, rc2);
-
-        return !file.fail();
-    }
-
-    const SingleReadSeq &first() const {
-        return first_;
-    }
-
-    const SingleReadSeq &second() const {
-        return second_;
-    }
-
-    size_t insert_size() const {
-        return insert_size_;
-    }
-
-    size_t distance() const {
-        return insert_size_ - second_.size();
-    }
-
-    size_t gap() const {
-        return insert_size_ - first_.size() - second_.size();
-    }
-
-    size_t size() const {
-        return std::max(first_.size(), second_.size());
-    }
-
-    size_t nucl_count() const {
-        return first_.size() + second_.size();
-    }
-
-    PairedReadSeq(const SingleReadSeq &first,
-                  const SingleReadSeq &second,
-                  size_t insert_size)
-            : first_(first), second_(second), insert_size_(insert_size) { }
-
-    const SingleReadSeq &operator[](size_t i) const {
-        if (i == 0) {
-            return first_;
-        } else if (i == 1) {
-            return second_;
-        }
-        VERIFY(false);
-        return first_;
-    }
-
-    const PairedReadSeq operator!() const {
-        return PairedReadSeq(!second_, !first_, insert_size_);
-    }
-
-};
+typedef UniversalPairedRead<SingleReadSeq> PairedReadSeq;
 
 inline std::ostream &operator<<(std::ostream &os, const PairedReadSeq &read) {
     os << "Paired read first=" << read.first() << " second=" << read.second() << std::endl;

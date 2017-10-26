@@ -113,75 +113,75 @@ private:
     ;
 };
 
-//todo improve logging
-template<class Graph, class Mapper>
-class GraphReadCorrector: public io::SequenceModifier {
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-
-    const Graph& graph_;
-    const Mapper mapper_;
-    const MappingPathFixer<Graph> path_fixer_;
-
-public:
-    /*virtual*/
-    Sequence Modify(const Sequence& s) {
-//        if(s < !s)
-//            return !Refine(!s);
-        omnigraph::MappingPath<EdgeId> mapping_path = mapper_.MapSequence(s);
-
-        if (mapping_path.size() == 0 || s.size() < graph_.k() + 1
-                || mapping_path.front().second.initial_range.start_pos != 0
-                || mapping_path.back().second.initial_range.end_pos
-                        != s.size() - graph_.k()) {
-            //todo reduce concat unmapped beginning and end in future???
-            TRACE(
-                    "Won't fix because wasn't mapped or start/end fell on unprojected tip/erroneous connection");
+////todo improve logging
+//template<class Graph, class Mapper>
+//class GraphReadCorrector: public io::SequenceModifier {
+//    typedef typename Graph::EdgeId EdgeId;
+//    typedef typename Graph::VertexId VertexId;
+//
+//    const Graph& graph_;
+//    const Mapper mapper_;
+//    const MappingPathFixer<Graph> path_fixer_;
+//
+//public:
+//    /*virtual*/
+//    Sequence Modify(const Sequence& s) {
+////        if(s < !s)
+////            return !Refine(!s);
+//        omnigraph::MappingPath<EdgeId> mapping_path = mapper_.MapSequence(s);
+//
+//        if (mapping_path.size() == 0 || s.size() < graph_.k() + 1
+//                || mapping_path.front().second.initial_range.start_pos != 0
+//                || mapping_path.back().second.initial_range.end_pos
+//                        != s.size() - graph_.k()) {
+//            //todo reduce concat unmapped beginning and end in future???
 //            TRACE(
-//                    "For sequence of length " << s.size()
-//                            << " returning empty sequence");
-            return s;
-//            return Sequence();
-        }
-
-        Path<EdgeId> path = path_fixer_.TryFixPath(mapping_path.path());
-//        TRACE("Mapped sequence to path " << graph_.str(path.sequence()));
-
-        if (!path_fixer_.CheckContiguous(path.sequence())) {
-            TRACE("Even fixed path wasn't contiguous");
-            return s;
-        } else {
-            TRACE("Fixed path is contiguous");
-            Sequence answer = PathSequence(graph_, path);
-//            if (answer != s) {
-//                if (answer.size() < 1000) {
-//                    TRACE(
-//                            "Initial sequence modified, edit distance= "
-//                                    << EditDistance(answer, s));
-//                } else {
-//                    TRACE("Sequence too large, won't count edit distance");
-//                }
-//            }
-            return answer;
-        }
-
-//        else {
-//            TRACE("Initial sequence unmodified!");
+//                    "Won't fix because wasn't mapped or start/end fell on unprojected tip/erroneous connection");
+////            TRACE(
+////                    "For sequence of length " << s.size()
+////                            << " returning empty sequence");
+//            return s;
+////            return Sequence();
 //        }
-    }
-
-    GraphReadCorrector(const Graph& graph, const Mapper& mapper) :
-            graph_(graph), mapper_(mapper), path_fixer_(graph) {
-    }
-
-private:
-    DECL_LOGGER("ContigRefiner");
-};
-
-template<class Graph, class Mapper>
-shared_ptr<GraphReadCorrector<Graph, Mapper>> GraphReadCorrectorInstance(
-        const Graph& graph, const Mapper& mapper) {
-    return std::make_shared<GraphReadCorrector<Graph, Mapper>>(graph, mapper);
-}
+//
+//        Path<EdgeId> path = path_fixer_.TryFixPath(mapping_path.path());
+////        TRACE("Mapped sequence to path " << graph_.str(path.sequence()));
+//
+//        if (!path_fixer_.CheckContiguous(path.sequence())) {
+//            TRACE("Even fixed path wasn't contiguous");
+//            return s;
+//        } else {
+//            TRACE("Fixed path is contiguous");
+//            Sequence answer = PathSequence(graph_, path);
+////            if (answer != s) {
+////                if (answer.size() < 1000) {
+////                    TRACE(
+////                            "Initial sequence modified, edit distance= "
+////                                    << EditDistance(answer, s));
+////                } else {
+////                    TRACE("Sequence too large, won't count edit distance");
+////                }
+////            }
+//            return answer;
+//        }
+//
+////        else {
+////            TRACE("Initial sequence unmodified!");
+////        }
+//    }
+//
+//    GraphReadCorrector(const Graph& graph, const Mapper& mapper) :
+//            graph_(graph), mapper_(mapper), path_fixer_(graph) {
+//    }
+//
+//private:
+//    DECL_LOGGER("ContigRefiner");
+//};
+//
+//template<class Graph, class Mapper>
+//shared_ptr<GraphReadCorrector<Graph, Mapper>> GraphReadCorrectorInstance(
+//        const Graph& graph, const Mapper& mapper) {
+//    return std::make_shared<GraphReadCorrector<Graph, Mapper>>(graph, mapper);
+//}
 
 }

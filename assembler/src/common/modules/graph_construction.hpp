@@ -77,11 +77,12 @@ void EarlyClipTips(size_t k, const config::debruijn_config::construction& params
 }
 
 template<class Graph, class Read, class Index>
-utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_config::construction params,
-                                                        fs::TmpDir workdir,
-                                                        io::ReadStreamList<Read>& streams, Graph& g,
-                                                        Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-    unsigned k = unsigned(g.k());
+void ConstructGraphUsingExtentionIndex(const config::debruijn_config::construction params,
+                                       fs::TmpDir workdir,
+                                       size_t read_length,
+                                       io::ReadStreamList<Read>& streams, Graph& g,
+                                       Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+    unsigned k = g.k();
     INFO("Constructing DeBruijn graph for k=" << k);
 
     TRACE("Filling indices");
@@ -90,12 +91,11 @@ utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_c
     TRACE("... in parallel");
     utils::DeBruijnExtensionIndex<> ext(k);
 
-    utils::ReadStatistics stats =
-            utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext,
-                                                                                 streams, (contigs_stream == 0) ? 0 : &(*contigs_stream),
-                                                                                 params.read_buffer_size);
+    utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext, streams,
+                                                          (contigs_stream == 0) ? 0 : &(*contigs_stream),
+                                                          params.read_buffer_size);
 
-    EarlyClipTips(k, params, stats.max_read_length_, ext);
+    EarlyClipTips(k, params, read_length, ext);
 
     INFO("Condensing graph");
     VERIFY(!index.IsAttached());
@@ -106,33 +106,27 @@ utils::ReadStatistics ConstructGraphUsingExtentionIndex(const config::debruijn_c
     //todo pass buffer size
     index.Refill();
     index.Attach();
-
-    return stats;
 }
 
+//FIXME these methods are tested, but not used!
 template<class Graph, class Index, class Streams>
-utils::ReadStatistics ConstructGraph(const config::debruijn_config::construction &params,
-                                     fs::TmpDir workdir,
-                                     Streams& streams, Graph& g,
-                                     Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-    if (params.con_mode == config::construction_mode::extention) {
-        return ConstructGraphUsingExtentionIndex(params, workdir, streams, g, index, contigs_stream);
-//    } else if(params.con_mode == construction_mode::con_old){
-//        return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
-    } else {
-        INFO("Invalid construction mode")
-        VERIFY(false);
-        return {0,0,0};
-    }
+void ConstructGraph(const config::debruijn_config::construction &params,
+                    fs::TmpDir workdir, size_t read_length,
+                    Streams& streams, Graph& g,
+                    Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+    VERIFY(params.con_mode == config::construction_mode::extention);
+    ConstructGraphUsingExtentionIndex(params, workdir, read_length, streams, g, index, contigs_stream);
+//  ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
 }
 
+//FIXME these methods are tested, but not used!
 template<class Graph, class Index, class Streams>
-utils::ReadStatistics ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
-                                                 fs::TmpDir workdir,
-                                                 Streams& streams, Graph& g,
-                                                 Index& index, FlankingCoverage<Graph>& flanking_cov,
-                                                 io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-    utils::ReadStatistics rs = ConstructGraph(params, workdir, streams, g, index, contigs_stream);
+void ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
+                                fs::TmpDir workdir, size_t read_length,
+                                Streams &streams, Graph &g,
+                                Index &index, FlankingCoverage<Graph> &flanking_cov,
+                                io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+    ConstructGraph(params, workdir, read_length, streams, g, index, contigs_stream);
 
     typedef typename Index::InnerIndex InnerIndex;
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
@@ -140,7 +134,6 @@ utils::ReadStatistics ConstructGraphWithCoverage(const config::debruijn_config::
     IndexBuilder().ParallelFillCoverage(index.inner_index(), streams);
     INFO("Filling coverage and flanking coverage from index");
     FillCoverageAndFlanking(index.inner_index(), g, flanking_cov);
-    return rs;
 }
 
 }

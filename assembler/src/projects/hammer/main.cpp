@@ -115,7 +115,7 @@ int main(int argc, char * argv[]) {
     }
 
     // initialize subkmer positions
-    hammer::InitializeSubKMerPositions();
+    hammer::InitializeSubKMerPositions(cfg::get().general_tau);
 
     INFO("Size of aux. kmer data " << sizeof(KMerStat) << " bytes");
 

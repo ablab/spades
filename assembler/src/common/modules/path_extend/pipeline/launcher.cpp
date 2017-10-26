@@ -271,9 +271,8 @@ void PathExtendLauncher::CleanPaths(PathContainer &paths, const pe_config::Param
     paths.SortByLength();
 }
 
-
 size_t PathExtendLauncher::GetLengthCutoff(size_t abs_cutoff, double rel_cutoff) const {
-    int rel_len = int(rel_cutoff * double(cfg::get().ds.RL())) - int(cfg::get().K);
+    int rel_len = int(rel_cutoff * double(cfg::get().ds.RL)) - int(cfg::get().K);
     int abs_len = int(abs_cutoff) - int(cfg::get().K);
     size_t result = (size_t) max(0, max(rel_len, abs_len));
 

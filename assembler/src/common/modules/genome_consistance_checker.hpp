@@ -149,7 +149,7 @@ class GenomeConsistenceChecker {
     //TODO: do we need circular/linear chromosomes support?
     set<EdgeId> circular_edges_;
 
-    io::DataSet<config::DataSetData> reads_;
+    io::DataSet<config::LibraryData> reads_;
     bool Consequent(const MappingRange &mr1, const MappingRange &mr2) const ;
 
     void PrintMisassemblyInfo(EdgeId e1, EdgeId e2) const;
@@ -205,7 +205,7 @@ public:
                              size_t unresolvable_len,
                              const ScaffoldingUniqueEdgeStorage &storage,
                              const vector<path_extend::GraphCoverageMap> &long_reads_cov_map,
-                             const io::DataSet<config::DataSetData> reads) :
+                             const io::DataSet<config::LibraryData> reads) :
             gp_(gp),
             absolute_max_gap_(max_gap),
             relative_max_gap_(relative_max_gap),

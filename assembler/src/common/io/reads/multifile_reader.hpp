@@ -20,6 +20,7 @@ template<typename ReadType>
 class MultifileStream: public ReadStream<ReadType> {
     typedef ReadStream<ReadType> StreamT;
     typedef std::shared_ptr<StreamT> ReadStreamPtrT;
+
 public:
     MultifileStream(const ReadStreamList<ReadType>& readers) :
         readers_(readers), current_reader_index_(0) {
@@ -32,41 +33,31 @@ public:
         readers_.push_back(reader_2);
     }
 
-    /* virtual */
-    bool is_open() {
+    bool is_open() override {
         return (readers_.size() > 0) && readers_[0].is_open();
     }
 
-    /* virtual */
-    bool eof() {
+    bool eof() override {
         while ((current_reader_index_ < readers_.size()) && readers_[current_reader_index_].eof()) {
             ++current_reader_index_;
         }
         return current_reader_index_ == readers_.size();
     }
 
-    /* virtual */
-    MultifileStream& operator>>(ReadType& read) {
+    MultifileStream& operator>>(ReadType& read) override {
         if (!eof()) {
             readers_[current_reader_index_] >> read;
         }
         return (*this);
     }
 
-    /* virtual */
-    void close() {
+    void close() override {
         readers_.close();
     }
 
-    /* virtual */
-    void reset() {
+    void reset() override {
         readers_.reset();
         current_reader_index_ = 0;
-    }
-
-    /* virtual */
-    ReadStreamStat get_stat() const {
-        return readers_.get_stat();
     }
 
 private:

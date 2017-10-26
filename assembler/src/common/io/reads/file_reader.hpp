@@ -106,10 +106,6 @@ public:
         }
     }
 
-    ReadStreamStat get_stat() const {
-        return ReadStreamStat();
-    }
-
 private:
     /*
      * @variable The name of the file which stream reads from.

@@ -33,7 +33,7 @@ namespace online_visualization {
             }
 
 //            void CountStatsAlongGenomePart(DebruijnEnvironment& curr_env, Sequence& piece_of_genome,
-//                    const io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> &lib) const {
+//                    const io::SequencingLibrary<debruijn_graph::debruijn_config::LibraryData> &lib) const {
 //
 //                omnigraph::de::GraphDistanceFinder<Graph> dist_finder(curr_env.graph(), size_t(lib.data().mean_insert_size), lib.data().read_length,
 //                        size_t(lib.data().insert_size_deviation));

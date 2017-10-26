@@ -37,22 +37,22 @@ double PELaunchSupport::SingleThresholdForLib(const pe_config::ParamSetT &pset,
                pset.extension_options.single_threshold : threshold;
 }
 
-bool PELaunchSupport::IsForSingleReadExtender(const io::SequencingLibrary<config::DataSetData> &lib) const {
+bool PELaunchSupport::IsForSingleReadExtender(const io::SequencingLibrary<config::LibraryData> &lib) const {
     return (lib.data().single_reads_mapped || lib.is_long_read_lib() || lib.is_contig_lib());
 }
-bool PELaunchSupport::IsForSingleReadScaffolder(const io::SequencingLibrary<config::DataSetData> &lib) const {
+bool PELaunchSupport::IsForSingleReadScaffolder(const io::SequencingLibrary<config::LibraryData> &lib) const {
     return (lib.is_long_read_lib() || (lib.is_contig_lib() && lib.type() != io::LibraryType::PathExtendContigs));
 }
 
-bool PELaunchSupport::IsForPEExtender(const io::SequencingLibrary<config::DataSetData> &lib) const {
+bool PELaunchSupport::IsForPEExtender(const io::SequencingLibrary<config::LibraryData> &lib) const {
     return (lib.type() == io::LibraryType::PairedEnd && lib.data().mean_insert_size > 0.0);
 }
 
-bool PELaunchSupport::IsForShortLoopExtender(const io::SequencingLibrary<config::DataSetData> &lib) const {
+bool PELaunchSupport::IsForShortLoopExtender(const io::SequencingLibrary<config::LibraryData> &lib) const {
     return (lib.type() == io::LibraryType::PairedEnd && lib.data().mean_insert_size > 0.0);
 }
 
-bool PELaunchSupport::IsForScaffoldingExtender(const io::SequencingLibrary<config::DataSetData> &lib) const {
+bool PELaunchSupport::IsForScaffoldingExtender(const io::SequencingLibrary<config::LibraryData> &lib) const {
     return (lib.type() == io::LibraryType::PairedEnd && lib.data().mean_insert_size > 0.0);
 }
 
@@ -117,7 +117,7 @@ bool PELaunchSupport::SingleReadsMapped() const {
 
 double PELaunchSupport::EstimateLibCoverage(size_t lib_index) const {
     double cov_fraction = double(dataset_info_.reads[lib_index].data().total_nucls) / double(TotalNuclsInGraph());
-    return cov_fraction * dataset_info_.avg_coverage();
+    return cov_fraction * dataset_info_.average_coverage;
 }
 
 size_t PELaunchSupport::TotalNuclsInGraph() const {

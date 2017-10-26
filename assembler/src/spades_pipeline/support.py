@@ -510,6 +510,8 @@ def get_data_type(option):
         data_type = 'right reads'
     elif option.endswith('-s') or is_single_read_type(option) or get_long_reads_type(option):
         data_type = 'single reads'
+    elif option.endswith('-m') or option.endswith('-merged'):
+        data_type = 'merged reads'
     else: # -rf, -ff, -fr
         data_type = 'orientation'
     return data_type
@@ -566,7 +568,7 @@ def correct_dataset(dataset_data):
         for key in reads_library.keys():
             if key.endswith('reads'):
                 has_reads = True
-            if key in ['interlaced reads', 'left reads', 'right reads']:
+            if key in ['interlaced reads', 'merged reads', 'left reads', 'right reads']:
                 has_paired_reads = True
                 break
         if not has_reads:
@@ -900,7 +902,7 @@ def process_nxmate_reads(dataset_data, dst, log):
 
 
 def pretty_print_reads(dataset_data, log, indent='    '):
-    READS_TYPES = ['left reads', 'right reads', 'interlaced reads', 'single reads']
+    READS_TYPES = ['left reads', 'right reads', 'interlaced reads', 'single reads', 'merged reads']
     for id, reads_library in enumerate(dataset_data):
         log.info(indent + 'Library number: ' + str(id + 1) + ', library type: ' + reads_library['type'])
         if 'orientation' in reads_library:
