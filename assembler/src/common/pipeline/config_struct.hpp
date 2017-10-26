@@ -106,9 +106,8 @@ std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) 
 }
 
 struct LibraryData {
-    //FIXME rename to stress that merged reads are not considered here
-    size_t read_length;
-    size_t merged_length;
+    size_t unmerged_read_length;
+    size_t merged_read_length;
     double mean_insert_size;
     double insert_size_deviation;
     double insert_size_left_quantile;
@@ -120,11 +119,8 @@ struct LibraryData {
     size_t lib_index;
     bool single_reads_mapped;
     uint64_t total_nucls;
-    //FIXME what should be the meaning for merged reads?
     size_t read_count;
-    //double avg_read_length;
 
-//    double average_coverage;
     double pi_threshold;
 
     struct BinaryReadsInfo {
@@ -140,8 +136,8 @@ struct LibraryData {
     } binary_reads_info;
 
 
-    LibraryData(): read_length(0), //avg_read_length(0.0),
-                   merged_length(0),
+    LibraryData(): unmerged_read_length(0),
+                   merged_read_length(0),
                    mean_insert_size(0.0),
                    insert_size_deviation(0.0),
                    insert_size_left_quantile(0.0),
@@ -152,7 +148,6 @@ struct LibraryData {
                    single_reads_mapped(false),
                    total_nucls(0),
                    read_count(0),
-//                   average_coverage(0.0),
                    pi_threshold(0.0),
                    binary_reads_info() {}
 };

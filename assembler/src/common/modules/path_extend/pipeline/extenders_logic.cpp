@@ -29,7 +29,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeLongReadsExtender(size_t lib_
     size_t resolvable_repeat_length_bound = 10000ul;
     if (!dataset_info_.reads[lib_index].is_contig_lib()) {
         //FIXME does max make sense here?
-        resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().read_length);
+        resolvable_repeat_length_bound = std::max(resolvable_repeat_length_bound, lib.data().unmerged_read_length);
     }
     INFO("resolvable_repeat_length_bound set to " << resolvable_repeat_length_bound);
     bool investigate_short_loop = lib.is_contig_lib() || lib.is_long_read_lib() || support_.UseCoverageResolverForSingleReads(lib.type());
@@ -190,7 +190,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeCoordCoverageExtender(size_t 
     const auto& lib = dataset_info_.reads[lib_index];
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
 
-    auto provider = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().read_length);
+    auto provider = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length);
 
     auto meta_wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib,
                                                        params_.pset.normalize_weight,
@@ -222,7 +222,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakeRNAExtender(size_t lib_index,
     shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
 //    INFO("Threshold for lib #" << lib_index << ": " << paired_lib->GetSingleThreshold());
 
-    auto cip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().read_length);
+    auto cip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length);
     shared_ptr<WeightCounter> wc =
         make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight,
                                             support_.SingleThresholdForLib(params_.pset, lib.data().pi_threshold),
@@ -253,11 +253,11 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
     shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
     if (opts.use_default_single_threshold) {
         if (params_.uneven_depth) {
-            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().read_length);
+            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length);
         } else {
             double lib_cov = support_.EstimateLibCoverage(lib_index);
             INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
-            iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().read_length, lib_cov);
+            iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, lib.data().unmerged_read_length, lib_cov);
         }
     }
     auto wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pset.normalize_weight,

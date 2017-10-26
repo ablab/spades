@@ -163,7 +163,7 @@ shared_ptr<PairedInfoLibrary> MakeNewLib(const Graph& g,
                                          const debruijn_graph::config::dataset::Library &lib,
                                          const Index &paired_index) {
     //why all those local variables? :)
-    size_t read_length = lib.data().read_length;
+    size_t read_length = lib.data().unmerged_read_length;
     size_t is = (size_t) lib.data().mean_insert_size;
     int is_min = (int) lib.data().insert_size_left_quantile;
     int is_max = (int) lib.data().insert_size_right_quantile;

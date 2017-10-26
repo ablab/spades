@@ -39,8 +39,8 @@ template<> struct MappingTraits<debruijn_graph::config::dataset> {
 
 template<> struct MappingTraits<debruijn_graph::config::LibraryData> {
     static void mapping(IO& io, debruijn_graph::config::LibraryData& data) {
-        io.mapRequired("read length"                , data.read_length);
-        io.mapRequired("merged length"              , data.merged_length);
+        io.mapRequired("unmerged read length"       , data.unmerged_read_length);
+        io.mapRequired("merged read length"         , data.merged_read_length);
         io.mapRequired("insert size mean"           , data.mean_insert_size);
         io.mapRequired("insert size deviation"      , data.insert_size_deviation);
         io.mapRequired("insert size left quantile"  , data.insert_size_left_quantile);

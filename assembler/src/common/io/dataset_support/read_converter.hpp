@@ -65,8 +65,8 @@ class ReadConverter {
         }
 
         INFO("Binary reads detected");
-        info >> data.read_length;
-        info >> data.merged_length;
+        info >> data.unmerged_read_length;
+        info >> data.merged_read_length;
         info >> data.read_count;
         info >> data.total_nucls;
         data.binary_reads_info.binary_coverted = true;
@@ -99,6 +99,7 @@ class ReadConverter {
         SingleStreamPtr single_reader = single_easy_reader(lib, false, false);
         read_stat.merge(single_converter.ToBinary(*single_reader));
 
+        data.unmerged_read_length = read_stat.max_len;
         INFO("Converting merged reads");
         BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix,
                                       data.binary_reads_info.chunk_num,
@@ -106,10 +107,7 @@ class ReadConverter {
         SingleStreamPtr merged_reader = merged_easy_reader(lib, false);
         auto merged_stats = merged_converter.ToBinary(*merged_reader);
 
-        data.merged_length = merged_stats.max_len;
-        data.read_length = read_stat.max_len;
-
-        //delayed merging hack to keep merged/unmerged length stats separate
+        data.merged_read_length = merged_stats.max_len;
         read_stat.merge(merged_stats);
         data.read_count = read_stat.read_count;
         data.total_nucls = read_stat.total_len;
@@ -119,8 +117,8 @@ class ReadConverter {
         info << BINARY_FORMAT_VERSION << " " <<
             data.binary_reads_info.chunk_num << " " <<
             data.lib_index << " " <<
-            data.read_length << " " <<
-            data.merged_length << " " <<
+            data.unmerged_read_length << " " <<
+            data.merged_read_length << " " <<
             data.read_count << " " <<
             data.total_nucls << "\n";
 

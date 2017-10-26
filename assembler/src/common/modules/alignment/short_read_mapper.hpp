@@ -79,7 +79,7 @@ std::shared_ptr<SequenceMapper<typename graph_pack::graph_t>> ChooseProperMapper
             return std::make_shared<SensitiveReadMapper<Graph>>(gp.g, cfg::get().sensitive_map.k, gp.k_value);
         }
     }
-    size_t read_length = library.data().read_length;
+    size_t read_length = library.data().unmerged_read_length;
     if (read_length < gp.k_value && library.type() == io::LibraryType::PairedEnd) {
         INFO("Read length = " << read_length << ", selecting short read mapper");
         return std::make_shared<SensitiveReadMapper<Graph>>(gp.g, read_length/ 3, gp.k_value);

@@ -107,7 +107,7 @@ void estimate_distance(conj_graph_pack& gp,
     const config::debruijn_config& config = cfg::get();
     size_t delta = size_t(lib.data().insert_size_deviation);
     size_t linkage_distance = size_t(config.de.linkage_distance_coeff * lib.data().insert_size_deviation);
-    GraphDistanceFinder dist_finder(gp.g,  (size_t)math::round(lib.data().mean_insert_size), lib.data().read_length, delta);
+    GraphDistanceFinder dist_finder(gp.g,  (size_t)math::round(lib.data().mean_insert_size), lib.data().unmerged_read_length, delta);
     size_t max_distance = size_t(config.de.max_distance_coeff * lib.data().insert_size_deviation);
 
     std::function<double(int)> weight_function;
@@ -186,7 +186,7 @@ void estimate_distance(conj_graph_pack& gp,
         size_t delta = size_t(is_var);
         size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
         GraphDistanceFinder dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
-                                               lib.data().read_length, delta);
+                                               lib.data().unmerged_read_length, delta);
         size_t max_distance = size_t(cfg::get().de.max_distance_coeff_scaff * is_var);
         std::function<double(int)> weight_function;
 

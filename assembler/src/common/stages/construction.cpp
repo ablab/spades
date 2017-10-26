@@ -65,12 +65,12 @@ void Construction::run(conj_graph_pack &gp, const char*) {
     size_t read_count = 0;
     for (size_t lib_id : libs_for_construction) {
         auto lib_data = dataset.reads[lib_id].data();
-        if (lib_data.read_length == 0) {
+        if (lib_data.unmerged_read_length == 0) {
             FATAL_ERROR("Failed to determine read length for library #" << lib_id << ". "
                     "Check that not only merged reads are present.");
         }
-        dataset.no_merge_RL = std::max(dataset.no_merge_RL, lib_data.read_length);
-        merged_max_len = std::max(merged_max_len, lib_data.merged_length);
+        dataset.no_merge_RL = std::max(dataset.no_merge_RL, lib_data.unmerged_read_length);
+        merged_max_len = std::max(merged_max_len, lib_data.merged_read_length);
         total_nucls += dataset.reads[lib_id].data().total_nucls;
         read_count += dataset.reads[lib_id].data().read_count;
     }
