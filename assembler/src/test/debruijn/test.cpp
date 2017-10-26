@@ -49,6 +49,11 @@
     log->add_writer(std::make_shared<logging::console_writer>());
     logging::attach_logger(log);
 
+    // Fix number of threads according to OMP capabilities.
+    int max_threads = std::min(4, omp_get_max_threads());
+    // Inform OpenMP runtime about this :)
+    omp_set_num_threads(max_threads);
+    
     using namespace ::boost::unit_test;
     char module_name [] = "debruijn_test";
 
