@@ -158,7 +158,7 @@ void CountStats(const graph_pack& gp) {
     Path<EdgeId> path2 = FindGenomeMappingPath(!gp.genome.GetSequence(), gp.g, gp.index,
                                       gp.kmer_mapper).path();
     stats.AddStat(new VertexEdgeStat<Graph>(gp.g));
-//    stats.AddStat(new BlackEdgesStat<Graph>(gp.g, path1, path2));
+    stats.AddStat(new BlackEdgesStat<Graph>(gp.g, path1, path2));
     stats.AddStat(new NStat<Graph>(gp.g, path1, 50));
     stats.AddStat(new SelfComplementStat<Graph>(gp.g));
     stats.AddStat(

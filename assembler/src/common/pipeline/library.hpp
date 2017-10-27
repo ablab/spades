@@ -141,7 +141,6 @@ public:
     }
 
     single_reads_iterator merged_end() const {
-        // NOTE: Do not forget about the contract with single_begin here!
         return single_reads_iterator(merged_reads_.end(), merged_reads_.end());
     }
 
@@ -173,7 +172,6 @@ public:
     }
 
     single_reads_iterator single_end() const {
-        // NOTE: Do not forget about the contract with single_begin here!
         return single_reads_iterator(single_reads_.end(), single_reads_.end());
     }
 

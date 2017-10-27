@@ -219,14 +219,13 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
   DECL_LOGGER("DeBruijnKMerSplitter");
 };
 
-//TODO exact duplication with ReadStreamStat
+//FIXME for AntonK: exact duplication with ReadStreamStat
 struct ReadStatistics {
   size_t reads_;
   size_t max_read_length_;
   size_t bases_;
 };
 
-//TODO we do not need read statistics here anymore :)
 template<class Read, class KmerFilter>
 class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   io::ReadStreamList<Read> &streams_;
@@ -246,7 +245,7 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
                            io::SingleStream* contigs_stream = 0,
                            size_t read_buffer_size = 0)
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size, seed),
-        streams_(streams), contigs_(contigs_stream) {}
+      streams_(streams), contigs_(contigs_stream), rs_({0 ,0 ,0}) {}
 
   RawKMers Split(size_t num_files, unsigned nthreads) override;
 };
