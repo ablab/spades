@@ -395,7 +395,6 @@ SPAdes supports mate-pair only assembly. However, we recommend to use only high-
 <p>
     By default, SPAdes assumes that paired-end and high-quality mate-pair reads have forward-reverse (fr) orientation and usual mate-pairs have reverse-forward (rf) orientation. However, different orientations can be set for any library by using SPAdes options. 
 
-
 <p>
     To distinguish reads in pairs we refer to them as left and right reads. For forward-reverse orientation, the forward reads correspond to the left reads and the reverse reads, to the right. Similarly, in reverse-forward orientation left and right reads correspond to reverse and forward reads, respectively, etc. 
 
@@ -404,21 +403,29 @@ SPAdes supports mate-pair only assembly. However, we recommend to use only high-
 
     <ul>
         <li> In file pairs. In this case left and right reads are placed in different files and go in the same order in respective files. </li>
-        <li> In merged files. In this case, the reads are interlaced, so that each right read goes after the corresponding paired left read. </li>
+        <li> In interleaved files. In this case, the reads are interlaced, so that each right read goes after the corresponding paired left read. </li>
     </ul>
 
 <p>
-    For example, Illumina produces paired-end reads in two files: <code>s_1_1_sequence.txt</code> and <code>s_1_2_sequence.txt</code>. If you choose to store reads in file pairs make sure that for every read from <code>s_1_1_sequence.txt</code> the corresponding paired read from <code>s_1_2_sequence.txt</code> is placed in the respective paired file on the same line number. If you choose to use merged files, every read from <code>s_1_1_sequence.txt</code> should be followed by the corresponding paired read from <code>s_1_2_sequence.txt</code>.
+    For example, Illumina produces paired-end reads in two files: <code>R1.fastq</code> and <code>R2.fastq</code>. If you choose to store reads in file pairs make sure that for every read from <code>R1.fastq</code> the corresponding paired read from <code>R2.fastq</code> is placed in the respective paired file on the same line number. If you choose to use interleaved files, every read from <code>R1.fastq</code> should be followed by the corresponding paired read from <code>R2.fastq</code>.
 
+<p>
+    If adapter and/or quality trimming software has been used prior to assembly, files with the orphan reads can be provided as "single read files" for the corresponding read-pair library.
+
+<p>
+If you have merged some of the reads from your paired-end (not mate-pair or high-quality mate-pair) library (using tools s.a. <a href="http://ccb.jhu.edu/software/FLASH/" target="_blank">FLASh</a>, <a href="https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmerge-guide/" target="_blank">BBMerge</a> or <a href="https://bitbucket.org/yaoornl/align_test/overview" target="_blank">STORM</a>), you should provide the file with resulting reads as a "merged read file" for the corresponding library.<br>
+    Note that non-empty files with remaining unmerged left/right reads (separate or interlaced) MUST be provided for the same library (for SPAdes to correctly detect the original read length).
+
+<p>
+    In an unlikely case some of the reads from your mate-pair (or high-quality mate-pair) library are "merged", you should provide the resulting reads as a SEPARATE single-read library.
 
 <h4>Unpaired (single-read) libraries</h4>
 <p>
     By using command line interface, you can specify up to nine different single-read libraries. To input more libraries, you can use <a href="#yaml">YAML data set file</a>.
 <p>
-    Single librairies are assumed to have high quality and a reasonable coverage. For example, you can provide PacBio CCS reads as a single-read library. Additionally, if you have merged a paired-end library with overlapping read-pairs (for example, using <a href="http://ccb.jhu.edu/software/FLASH/" target="_blank">FLASh</a>), you can provide the resulting reads as a single-read library.
+    Single librairies are assumed to have high quality and a reasonable coverage. For example, you can provide PacBio CCS reads as a single-read library. 
 <p>
     Note, that you should not specify PacBio CLR, Sanger reads or additional contigs as single-read libraries, each of them has a separate <a href="#inputdata">option</a>.
-
 
 <a name="pacbio"></a>
 <h4>PacBio and Oxford Nanopore reads</h4>
@@ -567,7 +574,7 @@ In comparison to the <code>--continue</code> option, you can change some of the 
 <a name="inputdata"></a>
 <h4>Input data</h4>
 
-<i><b>&nbsp;&nbsp;Specifying one library (previously used format)</i></b>
+<i><b>&nbsp;&nbsp;Specifying single library (paired-end or single-read)</i></b>
 <p>
     <code>--12 &lt;file_name> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced forward and reverse paired-end reads.
@@ -584,11 +591,18 @@ In comparison to the <code>--continue</code> option, you can change some of the 
 </p>
 
 <p>
+    <code>--merged &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with merged paired reads.<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;If the properties of the library permit, overlapping paired-end reads can be merged using special software.<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) must be provided for the same library for SPAdes to correctly detect the original read length.
+</p>
+
+<p>
     <code>-s &lt;file_name> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads.
 </p>
 
-<i><b>&nbsp;&nbsp;Specifying multiple libraries (new format)</i></b><br>
+<i><b>&nbsp;&nbsp;Specifying multiple libraries</i></b><br>
 <ul>
 
 <li><b>&nbsp;Single-read libraries</b></li>
@@ -617,6 +631,13 @@ In comparison to the <code>--continue</code> option, you can change some of the 
 <p>
     <code>--pe<b>&lt;#></b>-2 &lt;file_name> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9).
+</p>
+
+<p>
+    <code>--pe<b>&lt;#></b>-m &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with merged reads from paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,..,9) <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;If the properties of the library permit, paired reads can be merged using special software.
+    &nbsp;&nbsp;&nbsp;&nbsp;Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) must be provided for the same library for SPAdes to correctly detect the original read length.
 </p>
 
 <p>
