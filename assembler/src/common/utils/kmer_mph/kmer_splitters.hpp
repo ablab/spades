@@ -219,23 +219,14 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
   DECL_LOGGER("DeBruijnKMerSplitter");
 };
 
-//FIXME for AntonK: exact duplication with ReadStreamStat
-struct ReadStatistics {
-  size_t reads_;
-  size_t max_read_length_;
-  size_t bases_;
-};
-
 template<class Read, class KmerFilter>
 class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   io::ReadStreamList<Read> &streams_;
   io::SingleStream *contigs_;
 
   template<class ReadStream>
-  ReadStatistics
+  size_t
   FillBufferFromStream(ReadStream& stream, unsigned thread_id);
-
-  ReadStatistics rs_;
 
  public:
   using typename DeBruijnKMerSplitter<KmerFilter>::RawKMers;
@@ -245,28 +236,27 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
                            io::SingleStream* contigs_stream = 0,
                            size_t read_buffer_size = 0)
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size, seed),
-      streams_(streams), contigs_(contigs_stream), rs_({0 ,0 ,0}) {}
+      streams_(streams), contigs_(contigs_stream) {}
 
   RawKMers Split(size_t num_files, unsigned nthreads) override;
 };
 
 template<class Read, class KmerFilter> template<class ReadStream>
-ReadStatistics
+size_t
 DeBruijnReadKMerSplitter<Read, KmerFilter>::FillBufferFromStream(ReadStream &stream,
                                                                  unsigned thread_id) {
   typename ReadStream::ReadT r;
-  size_t reads = 0, rl = 0, bases = 0;
+  size_t reads = 0;
 
   while (!stream.eof()) {
     stream >> r;
-    rl = std::max(rl, r.size());
     reads += 1;
-    bases += r.size();
 
     if (this->FillBufferFromSequence(r.sequence(), thread_id))
       break;
   }
-  return { reads, rl, bases };
+
+  return reads;
 }
 
 template<class Read, class KmerFilter>
@@ -274,22 +264,12 @@ typename DeBruijnReadKMerSplitter<Read, KmerFilter>::RawKMers
 DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files, unsigned nthreads) {
   auto out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
-  size_t counter = 0, rl = 0, bases = 0, n = 15;
+  size_t counter = 0, n = 15;
   streams_.reset();
   while (!streams_.eof()) {
-#   pragma omp parallel for num_threads(nthreads) reduction(+ : counter) reduction(+ : bases) shared(rl)
+#   pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
     for (unsigned i = 0; i < (unsigned)streams_.size(); ++i) {
-      ReadStatistics stats = FillBufferFromStream(streams_[i], i);
-      counter += stats.reads_;
-      bases += stats.bases_;
-
-      // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
-#     pragma omp flush(rl)
-      if (stats.max_read_length_ > rl)
-#     pragma omp critical
-      {
-        rl = std::max(rl, stats.max_read_length_);
-      }
+      counter += FillBufferFromStream(streams_[i], i);
     }
 
     this->DumpBuffers(out);
