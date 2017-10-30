@@ -10,6 +10,7 @@
 #include "utils/ph_map/perfect_hash_map.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "assembly_graph/core/graph.hpp"
+#include "edlib/edlib.h"
 #include <algorithm>
 #include <map>
 #include <set>
@@ -234,49 +235,15 @@ inline int StringDistance(string &a, string &b) {
     }
 
     DEBUG(a_len << " " << b_len << " " << d);
-    vector<vector<int> > table(a_len);
-    //int d =
-    for (int i = 0; i < a_len; i++) {
-        table[i].resize(b_len);
-        int low = max(max(0, i - d - 1), i + b_len - a_len - d - 1);
-        int high = min(min(b_len, i + d + 1), i + b_len - a_len + d + 1);
-        TRACE(low << " " <<high);
-        for (int j = low; j < high; j++)
-            table[i][j] = STRING_DIST_INF;
+    edlib::EdlibAlignResult result = edlib::edlibAlign(a.c_str(), a_len, b.c_str(), b_len
+                                                   , edlib::edlibNewAlignConfig(2*d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
+                                                                         NULL, 0));
+    int score = STRING_DIST_INF;
+    if (result.status == edlib::EDLIB_STATUS_OK) {
+        score = result.editDistance;
     }
-    table[a_len - 1][b_len - 1] = STRING_DIST_INF;
-    table[0][0] = 0;
-//free deletions on begin
-//      for(int j = 0; j < b_len; j++)
-//          table[0][j] = 0;
-
-    for (int i = 0; i < a_len; i++) {
-        int low = max(max(0, i - d), i + b_len - a_len - d);
-        int high = min(min(b_len, i + d), i + b_len - a_len + d);
-
-        TRACE(low << " " <<high);
-        for (int j = low; j < high; j++) {
-
-            if (i > 0)
-                table[i][j] = min(table[i][j], table[i - 1][j] + 1);
-            if (j > 0)
-                table[i][j] = min(table[i][j], table[i][j - 1] + 1);
-            if (i > 0 && j > 0) {
-                int add = 1;
-                if (a[i] == b[j])
-                    add = 0;
-                table[i][j] = min(table[i][j], table[i - 1][j - 1] + add);
-            }
-        }
-    }
-    //return table[a_len - 1][b_len - 1];
-//free deletions on end
-    int res = table[a_len - 1][b_len - 1];
-    DEBUG(res);
-//      for(int j = 0; j < b_len; j++){
-//          res = min(table[a_len - 1][j], res);
-//      }
-    return res;
+    edlib::edlibFreeAlignResult(result);
+    return score;
 }
 
 
