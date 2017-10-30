@@ -41,7 +41,6 @@ def make_url(string):
         attr = ""
         if f.endswith(DOT):
             method = "render"
-            attr = " target=\"graph\""
         elif f.endswith("/"):
             method = "ls"
         if method is not None:
@@ -124,13 +123,17 @@ def command():
         sh = shellders[session["username"]]
         com = request.args.get("command", "")
         try:
+            skip = 0
             if len(com):
                 _debug("Sending `%s`..." % com)
-                session["log"].append(">" + com)
+                #session["log"].append(">" + com)
+                skip = 1
                 sh.send(com)
-            (result, complete) = sh.get_output(3)
-            session["status"] = 0 if complete else 1
+            (result, complete) = sh.get_output(5)
             session["log"].extend(result)
+            result = result[skip:]
+            #_debug("Received " + str(result))
+            session["status"] = 0 if complete else 1
         except:
             err = str(sys.exc_info()[0])
             _debug("Error: " + err)
