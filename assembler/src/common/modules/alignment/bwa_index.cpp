@@ -49,7 +49,7 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
                 memopt_->min_seed_len = 14;
             } else {
                 memopt_->min_chain_weight = 40;
-                memopt_->min_seed_len = 17;
+                memopt_->min_seed_len = 14;
             }
             break;
     };
