@@ -586,14 +586,15 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         const size_t count_threshold = scaff_params_.count_threshold_;
         auto barcode_intersection = GetIntersection(first, second, tail_threshold, count_threshold);
         const size_t middle_count_threshold = 1;
+
         for (double score_threshold: thresholds) {
+            path_extend::LongEdgePairGapCloserParams vertex_predicate_params(scaff_params_.connection_count_threshold_,
+                                                                             tail_threshold,
+                                                                             scaff_params_.connection_score_threshold_,
+                                                                             scaff_params_.connection_length_threshold_,
+                                                                             false);
             path_extend::ReadCloudMiddleDijkstraParams
-                long_params(score_threshold,
-                            count_threshold,
-                            scaff_params_.connection_count_threshold_,
-                            tail_threshold,
-                            scaff_params_.connection_length_threshold_,
-                            scaff_params_.initial_distance_);
+                long_params(count_threshold, tail_threshold, scaff_params_.initial_distance_, vertex_predicate_params);
             auto dij_predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(g_,
                                                                                     unique_storage_,
                                                                                     *barcode_extractor_ptr_,
@@ -644,9 +645,10 @@ class ScaffolderStageAnalyzer: public read_cloud_statistics::StatisticProcessor 
         EdgeId start = reference_path[first_pos].edge_;
         EdgeId end = reference_path[second_pos].edge_;
         const bool normalize_using_cov = false;
-        path_extend::LongEdgePairGapCloserPredicate gap_closer_predicate(g_, *barcode_extractor_ptr_, count_threshold,
-                                                                         length_threshold, tail_threshold, score_threshold, start, end,
-                                                                         barcode_intersection, normalize_using_cov);
+        path_extend::LongEdgePairGapCloserParams params(count_threshold, tail_threshold, score_threshold,
+                                                        length_threshold, normalize_using_cov);
+        path_extend::LongEdgePairGapCloserPredicate gap_closer_predicate(g_, *barcode_extractor_ptr_, params, start, end,
+                                                                         barcode_intersection);
         for (size_t i = first_pos + 1; i < second_pos; ++i) {
             if (not gap_closer_predicate.Check(reference_path[i].edge_)) {
                 return false;

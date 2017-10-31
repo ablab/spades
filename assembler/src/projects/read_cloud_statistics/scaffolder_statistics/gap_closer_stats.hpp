@@ -2,7 +2,7 @@
 #include <common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_gap_closer.hpp>
 #include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/gap_closer_predicates.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
 
 namespace scaffolder_statistics {
 struct InitialGapCloserStatistics: public read_cloud_statistics::Statistic {
@@ -597,11 +597,10 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
             EdgeId start = path[first_pos].edge_;
             EdgeId end = path[last_pos].edge_;
             path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge scaffold_edge(start, end);
+            path_extend::LongEdgePairGapCloserParams params(count_threshold_, large_length_threshold_, share_threshold,
+                                                            small_length_threshold_, true);
             auto gap_closer_predicate =
-                make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, barcode_extractor_, count_threshold_,
-                                                            large_length_threshold_,
-                                                            small_length_threshold_,
-                                                            share_threshold, scaffold_edge);
+                make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, barcode_extractor_, params, scaffold_edge);
             result += CountFailedEdgesWithPredicate(path, last_pos, path.size(), gap_closer_predicate);
             result += CountFailedEdgesWithPredicate(path, 0, first_pos, gap_closer_predicate);
         }
@@ -613,11 +612,10 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
         EdgeId start = reference_path[left].edge_;
         EdgeId end = reference_path[right].edge_;
         path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge scaffold_edge(start, end);
+        path_extend::LongEdgePairGapCloserParams params(count_threshold_, large_length_threshold_, share_threshold,
+                                                        small_length_threshold_, true);
         auto gap_closer_predicate =
-            make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, barcode_extractor_, count_threshold_,
-                                                        large_length_threshold_,
-                                                        small_length_threshold_,
-                                                        share_threshold, scaffold_edge);
+            make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, barcode_extractor_, params, scaffold_edge);
         return CountFailedEdgesWithPredicate(reference_path, left, right, gap_closer_predicate);
     }
 
