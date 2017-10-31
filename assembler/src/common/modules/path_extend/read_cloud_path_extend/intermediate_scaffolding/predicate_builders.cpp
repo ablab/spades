@@ -20,7 +20,7 @@ shared_ptr<ScaffoldEdgePredicate> FromPositivePredicateBuilder::GetPredicate(con
     for (const auto& vertex : graph) {
         for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
             ScaffoldEdgePredicate::ScaffoldEdge scaffold_edge(vertex, *it);
-            if (positive_predicate_->Check(scaffold_edge)) {
+            if ((*positive_predicate_)(scaffold_edge)) {
                 passed_starts.insert(vertex);
                 passed_ends.insert(*it);
                 passed_transitions.emplace(vertex, *it);

@@ -91,11 +91,11 @@ class ScaffoldBarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t
     const Graph& g_;
     const VertexId& first_;
     const VertexId& second_;
-    shared_ptr<path_extend::GapCloserPredicate> predicate_;
+    shared_ptr<path_extend::ScaffoldVertexPredicate> predicate_;
 
  public:
     ScaffoldBarcodedPathPutChecker(const Graph& g, const VertexId& first, const VertexId& second,
-                                   shared_ptr<path_extend::GapCloserPredicate> predicate) :
+                                   shared_ptr<path_extend::ScaffoldVertexPredicate> predicate) :
         VertexPutChecker<Graph, distance_t>(),
         g_(g),
         first_(first),
@@ -108,7 +108,7 @@ class ScaffoldBarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t
         if (target_reached) {
             return false;
         }
-        return predicate_-> Check(vertex);
+        return (*predicate_)(vertex);
     }
     DECL_LOGGER("ScaffoldBarcodePutChecker");
 };
@@ -129,7 +129,7 @@ static ForwardBoundedScaffoldDijkstra CreateForwardBoundedScaffoldDijkstra(
         const ScaffoldGraph::ScaffoldVertex first,
         const ScaffoldGraph::ScaffoldVertex second,
         size_t length_bound,
-        shared_ptr<path_extend::GapCloserPredicate> predicate,
+        shared_ptr<path_extend::ScaffoldVertexPredicate> predicate,
         size_t max_vertex_number = -1ul){
     return ForwardBoundedScaffoldDijkstra(graph, ForwardBoundedScaffoldDijkstraSettings(
         SimpleScaffoldGraphLengthCalculator<path_extend::scaffold_graph::ScaffoldGraph>(),
@@ -155,7 +155,7 @@ static BackwardBoundedScaffoldDijkstra CreateBackwardBoundedScaffoldDijkstra(
         const ScaffoldGraph::ScaffoldVertex first,
         const ScaffoldGraph::ScaffoldVertex second,
         size_t length_bound,
-        shared_ptr<path_extend::GapCloserPredicate> predicate,
+        shared_ptr<path_extend::ScaffoldVertexPredicate> predicate,
         size_t max_vertex_number = -1ul){
     return BackwardBoundedScaffoldDijkstra(graph, BackwardBoundedScaffoldDijkstraSettings(
         SimpleScaffoldGraphLengthCalculator<path_extend::scaffold_graph::ScaffoldGraph>(),

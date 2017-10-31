@@ -1,7 +1,7 @@
 #include "read_cloud_connection_conditions.hpp"
 #include "read_cloud_dijkstras.hpp"
 #include "path_extend_dijkstras.hpp"
-
+#include "path_extender.hpp"
 namespace path_extend {
 
 map<EdgeId, double> AssemblyGraphUniqueConnectionCondition::ConnectedWith(EdgeId e) const {
@@ -322,61 +322,101 @@ double TrivialBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph
 
     return static_cast<double>(shared_count);
 }
-bool PairedEndDijkstraPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const {
+bool CompositeConnectionPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const {
     auto extension_chooser = ConstructSimpleExtensionChooser();
+    auto long_gap_cloud_predicate = make_shared<path_extend::LongEdgePairGapCloserPredicate>(gp_.g, barcode_extractor_,
+                                                                                             predicate_params_,
+                                                                                             scaffold_edge);
+    auto uniqueness_predicate = make_shared<path_extend::UniquenessChecker>(unique_storage_);
+    auto scaffold_vertex_predicate = make_shared<path_extend::AndChecker>(uniqueness_predicate, long_gap_cloud_predicate);
+
     EdgeId start_edge = scaffold_edge.getStart();
     DEBUG("Checking edge " << start_edge.int_id() << " -> " << scaffold_edge.getEnd().int_id());
-    auto dij = CreatePairedEndDijkstra(g_, unique_storage_, length_bound_, extension_chooser, params_.prefix_length_,
-    g_.EdgeEnd(start_edge), start_edge);
-    dij.Run(g_.EdgeEnd(start_edge));
-    VERIFY(dij.finished());
-    VertexId target = g_.EdgeStart(scaffold_edge.getEnd());
-    for (const auto& reached: dij.ReachedVertices()) {
-        if (reached == target) {
-            DEBUG("Check passed");
-            return true;
+
+    auto multi_chooser = make_shared<path_extend::MultiExtensionChooser>(gp_.g, scaffold_vertex_predicate, extension_chooser);
+    const auto& lib = params_.dataset_info.reads[params_.paired_lib_index_];
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[params_.paired_lib_index_]);
+    GraphCoverageMap cover_map(gp_.g);
+    UsedUniqueStorage used_unique_storage(unique_storage_);
+    const bool investigate_loops = true;
+    const bool short_loop_resolver = false;
+    auto opts = params_.pe_params_.pset.extension_options;
+
+    path_extend::QueueContainer paths_container;
+    auto initial_path = make_shared<path_extend::BidirectionalPath>(gp_.g);
+    initial_path->PushBack(start_edge);
+    paths_container.push(initial_path);
+    path_extend::SearchingMultiExtender multi_extender(gp_,cover_map, used_unique_storage, multi_chooser,
+                                                      paired_lib->GetISMax(), investigate_loops,
+                                                      short_loop_resolver, opts.weight_threshold, length_bound_, paths_container);
+
+    const size_t max_path_growing_iterations = 1000;
+    const size_t max_paths_to_process = 100;
+    size_t path_processing_iterations = 0;
+    while(not paths_container.empty() and path_processing_iterations < max_paths_to_process) {
+        auto current_path = paths_container.back();
+        paths_container.pop();
+        size_t current_iterations = 0;
+        PathContainer *empty_storage = nullptr;
+        while (multi_extender.MakeGrowStep(current_path, empty_storage) and current_iterations < max_path_growing_iterations) {
+            ++current_iterations;
+        }
+        if (current_iterations >= max_path_growing_iterations) {
+            WARN("Stopped path growing because of too many steps");
+            continue;
         }
     }
-    DEBUG("Check failed");
-    return false;
+    if (path_processing_iterations >= max_paths_to_process) {
+        WARN("Had to process too many paths, returning");
+        return true;
+    }
 
+    VertexId target = gp_.g.EdgeStart(scaffold_edge.getEnd());
+    const auto &reached_vertices = multi_extender.GetReachedVertices();
+    return reached_vertices.find(target) != reached_vertices.end();
 }
-shared_ptr<path_extend::ExtensionChooser> PairedEndDijkstraPredicate::ConstructSimpleExtensionChooser() const {
+
+shared_ptr<path_extend::ExtensionChooser> CompositeConnectionPredicate::ConstructSimpleExtensionChooser() const {
     auto opts = params_.pe_params_.pset.extension_options;
     const size_t lib_index = params_.paired_lib_index_;
     const auto& lib = params_.dataset_info.reads[lib_index];
-    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(g_, lib, clustered_indices_[lib_index]);
+    shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, clustered_indices_[lib_index]);
     shared_ptr<CoverageAwareIdealInfoProvider> iip = nullptr;
     path_extend::PELaunchSupport support(params_.dataset_info, params_.pe_params_);
     if (opts.use_default_single_threshold) {
         if (params_.pe_params_.uneven_depth) {
-            iip = make_shared<CoverageAwareIdealInfoProvider>(g_, paired_lib, params_.dataset_info.RL());
+            iip = make_shared<CoverageAwareIdealInfoProvider>(gp_.g, paired_lib, params_.dataset_info.RL());
         } else {
             double lib_cov = support.EstimateLibCoverage(lib_index);
             INFO("Estimated coverage of library #" << lib_index << " is " << lib_cov);
-            iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(g_, paired_lib, params_.dataset_info.RL(), lib_cov);
+            iip = make_shared<GlobalCoverageAwareIdealInfoProvider>(gp_.g, paired_lib, params_.dataset_info.RL(), lib_cov);
         }
     }
 
-    auto wc = make_shared<PathCoverWeightCounter>(g_, paired_lib, params_.pe_params_.pset.normalize_weight,
+    auto wc = make_shared<PathCoverWeightCounter>(gp_.g, paired_lib, params_.pe_params_.pset.normalize_weight,
                                                   support.SingleThresholdForLib(params_.pe_params_.pset,
                                                                                 lib.data().pi_threshold),
                                                   iip);
-    auto extension_chooser = make_shared<SimpleExtensionChooser>(g_, wc, opts.weight_threshold, opts.priority_coeff);
+    auto extension_chooser = make_shared<SimpleExtensionChooser>(gp_.g, wc, opts.weight_threshold, opts.priority_coeff);
     return extension_chooser;
 }
-PairedEndDijkstraPredicate::PairedEndDijkstraPredicate(const Graph &g_,
-                                                       const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                                                       const de::PairedInfoIndicesT<debruijn_graph::DeBruijnGraph> &clustered_indices_,
-                                                       const size_t length_bound_,
-                                                       const PairedEndDijkstraParams &params_)
-    : g_(g_),
-      unique_storage_(unique_storage_),
-      clustered_indices_(clustered_indices_),
-      length_bound_(length_bound_),
-      params_(params_) {}
+CompositeConnectionPredicate::CompositeConnectionPredicate(const conj_graph_pack &gp_,
+                                                           const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
+                                                           const ScaffoldingUniqueEdgeStorage &unique_storage_,
+                                                           const de::PairedInfoIndicesT<debruijn_graph::DeBruijnGraph> &clustered_indices_,
+                                                           const size_t length_bound_,
+                                                           const CompositeConnectionParams &params_,
+                                                           const LongEdgePairGapCloserParams &predicate_params_) :
+    gp_(gp_),
+    barcode_extractor_(barcode_extractor_),
+    unique_storage_(unique_storage_),
+    clustered_indices_(clustered_indices_),
+    length_bound_(length_bound_),
+    params_(params_),
+    predicate_params_(predicate_params_) {}
 
-PairedEndDijkstraParams::PairedEndDijkstraParams(const size_t paired_lib_index_,
+
+CompositeConnectionParams::CompositeConnectionParams(const size_t paired_lib_index_,
                                                  const size_t prefix_length_,
                                                  const config::dataset &dataset_info,
                                                  const PathExtendParamsContainer &pe_params_) : paired_lib_index_(

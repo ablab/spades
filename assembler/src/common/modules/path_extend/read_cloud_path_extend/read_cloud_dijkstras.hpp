@@ -2,7 +2,7 @@
 
 #include "common/modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 #include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/gap_closer_predicates.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
 
 namespace omnigraph {
 //------------------------------

@@ -17,7 +17,8 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
     iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, barcode_extractor_, max_threads_));
 //    iterative_constructor_callers.push_back(make_shared<BarcodeConnectionConstructorCaller>(gp_.g, barcode_extractor_,
 //                                                                                            unique_storage, max_threads_));
-    iterative_constructor_callers.push_back(make_shared<PEConnectionConstructorCaller>(gp_, unique_storage, max_threads_));
+    iterative_constructor_callers.push_back(make_shared<CompositeConnectionConstructorCaller>(gp_, barcode_extractor_,
+                                                                                              unique_storage, max_threads_));
     if (params.length_threshold_ >= full_pipeline_length_) {
         iterative_constructor_callers.push_back(make_shared<EdgeSplitConstructorCaller>(gp_.g, barcode_extractor_, max_threads_));
         iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, barcode_extractor_, max_threads_));
@@ -129,6 +130,7 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> BarcodeConnectionConstructo
     path_extend::ReadCloudMiddleDijkstraParams long_gap_params(params.connection_score_threshold_, params.count_threshold_,
                                                        params.connection_count_threshold_, params.tail_threshold_,
                                                        params.connection_length_threshold_, params.initial_distance_);
+
     auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(g_, unique_storage_, barcode_extractor_, long_gap_params);
     auto constructor =
         make_shared<scaffold_graph::PredicateScaffoldGraphConstructor>(g_, scaffold_graph, predicate, max_threads);
@@ -160,10 +162,10 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> TransitiveConstructorCaller
         make_shared<scaffold_graph::PredicateScaffoldGraphConstructor>(g_, scaffold_graph, predicate, max_threads_);
     return constructor;
 }
-shared_ptr<scaffold_graph::ScaffoldGraphConstructor> PEConnectionConstructorCaller::GetScaffoldGraphConstuctor(
-        const ScaffolderParams& params,
-        const IterativeScaffoldGraphConstructorCaller::ScaffoldGraph& scaffold_graph) const {
 
+shared_ptr<scaffold_graph::ScaffoldGraphConstructor> CompositeConnectionConstructorCaller::GetScaffoldGraphConstuctor(
+    const ScaffolderParams &params,
+    const IterativeScaffoldGraphConstructorCaller::ScaffoldGraph &scaffold_graph) const {
     path_extend::PathExtendParamsContainer path_extend_params(cfg::get().ds, cfg::get().pe_params, cfg::get().ss,
                                                               cfg::get().output_dir, cfg::get().mode,
                                                               cfg::get().uneven_depth, cfg::get().avoid_rc_connections,
@@ -183,17 +185,25 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> PEConnectionConstructorCall
 
     //fixme replace with insert size
     const size_t prefix_length = 500;
-    PairedEndDijkstraParams paired_dij_params(paired_lib_index.get(), prefix_length, dataset_info, path_extend_params);
-    auto predicate =
-        make_shared<path_extend::PairedEndDijkstraPredicate>(gp_.g, unique_storage_, gp_.clustered_indices,
-                                                             params.initial_distance_, paired_dij_params);
+    CompositeConnectionParams paired_dij_params(paired_lib_index.get(), prefix_length, dataset_info, path_extend_params);
+
+    LongEdgePairGapCloserParams predicate_params(params.connection_count_threshold_,
+                                                 params.connection_length_threshold_,
+                                                 params.tail_threshold_,
+                                                 params.connection_score_threshold_,
+                                                 false);
+
+    auto predicate = make_shared<path_extend::CompositeConnectionPredicate>(gp_, barcode_extractor_, unique_storage_,
+                                                                            gp_.clustered_indices, params.initial_distance_,
+                                                                            paired_dij_params, predicate_params);
+    const size_t max_threads = 1;
     auto constructor =
-        make_shared<scaffold_graph::PredicateScaffoldGraphConstructor>(gp_.g, scaffold_graph, predicate, max_threads_);
+        make_shared<scaffold_graph::PredicateScaffoldGraphConstructor>(gp_.g, scaffold_graph, predicate, max_threads);
     return constructor;
 }
-PEConnectionConstructorCaller::PEConnectionConstructorCaller(const conj_graph_pack &gp_,
-                                                             const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                                                             const size_t max_threads_)
-    : gp_(gp_), unique_storage_(unique_storage_), max_threads_(max_threads_) {}
-
+CompositeConnectionConstructorCaller::CompositeConnectionConstructorCaller(const conj_graph_pack &gp_,
+                                                                           const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
+                                                                           const ScaffoldingUniqueEdgeStorage &unique_storage_,
+                                                                           const size_t max_threads_)
+    : gp_(gp_), barcode_extractor_(barcode_extractor_), unique_storage_(unique_storage_), max_threads_(max_threads_) {}
 }

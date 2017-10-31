@@ -2,7 +2,7 @@
 #include <common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_gap_closer.hpp>
 #include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/gap_closer_predicates.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
 
 namespace scaffolder_statistics {
 struct InitialGapCloserStatistics: public read_cloud_statistics::Statistic {
@@ -601,7 +601,7 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
                 make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, barcode_extractor_, count_threshold_,
                                                             large_length_threshold_,
                                                             small_length_threshold_,
-                                                            share_threshold, scaffold_edge);
+                                                            share_threshold, true, scaffold_edge);
             result += CountFailedEdgesWithPredicate(path, last_pos, path.size(), gap_closer_predicate);
             result += CountFailedEdgesWithPredicate(path, 0, first_pos, gap_closer_predicate);
         }
@@ -617,7 +617,7 @@ class GapCloserDijkstraAnalyzer: public read_cloud_statistics::StatisticProcesso
             make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_, barcode_extractor_, count_threshold_,
                                                         large_length_threshold_,
                                                         small_length_threshold_,
-                                                        share_threshold, scaffold_edge);
+                                                        share_threshold, true, scaffold_edge);
         return CountFailedEdgesWithPredicate(reference_path, left, right, gap_closer_predicate);
     }
 

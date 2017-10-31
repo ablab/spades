@@ -198,8 +198,9 @@ namespace read_cloud_statistics {
 
             INFO("Constructing paired end scaffold graph");
 
-            auto paired_end_scaffold_graph = scaffold_helper.ConstructPairedEndScaffoldGraph(score_scaffold_graph, params,
-                                                                                             gp_, unique_storage);
+            auto composite_connection_scaffold_graph =
+                scaffold_helper.ConstructCompositeConnectionScaffoldGraph(score_scaffold_graph, *barcode_extractor_ptr_,
+                                                                          params, gp_, unique_storage);
 
             INFO(score_scaffold_graph.VertexCount() << " vertices and " << score_scaffold_graph.EdgeCount() << " edges in paired end scaffold graph");
 
@@ -221,7 +222,7 @@ namespace read_cloud_statistics {
 
             storage.insert(initial_name, scaffold_graph);
             storage.insert(score_name, score_scaffold_graph);
-            storage.insert(pe_name, paired_end_scaffold_graph);
+            storage.insert(pe_name, composite_connection_scaffold_graph);
 //            storage.insert(connection_name, connection_scaffold_graph);
 //            storage.insert(ordering_name, ordering_scaffold_graph);
 //            storage.insert(transitive_name, transitive_scaffold_graph);

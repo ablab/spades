@@ -48,6 +48,7 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
                                                                                          params_.count_threshold_,
                                                                                          params_.large_length_threshold_,
                                                                                          params_.small_length_threshold_,
+                                                                                         true,
                                                                                          params_.share_threshold_, edge);
     auto barcode_intersection =
         extractor_.GetSharedBarcodesWithFilter(first, second, params_.count_threshold_, params_.large_length_threshold_);
@@ -667,7 +668,7 @@ SubgraphEdgeChecker::SimpleTransitionGraph SubgraphEdgeChecker::CleanGraphUsingP
     for (const auto& vertex: graph) {
         for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
             ScaffoldGraph::ScaffoldEdge scaffold_edge(vertex, *it);
-            if (predicate_ptr->Check(scaffold_edge)) {
+            if ((*predicate_ptr)(scaffold_edge)) {
                 result.AddEdge(vertex, *it);
             }
         }

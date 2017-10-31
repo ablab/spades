@@ -1241,6 +1241,85 @@ protected:
 
 };
 
+//todo add custom path predicate instead of length bound
+class SearchingMultiExtender: public SimpleExtender {
+ protected:
+    std::unordered_set<VertexId> visited_vertices_;
+    QueueContainer& path_container_;
+    const size_t length_bound_;
+
+ public:
+    SearchingMultiExtender(const conj_graph_pack &gp,
+                  const GraphCoverageMap &cov_map,
+                  UsedUniqueStorage &unique,
+                  shared_ptr<ExtensionChooser> ec,
+                  size_t is,
+                  bool investigate_short_loops,
+                  bool use_short_loop_cov_resolver,
+                  double weight_threshold,
+                  size_t length_bound,
+                  QueueContainer& path_container,
+                  size_t max_candidates = 0) :
+        SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold),
+        visited_vertices_(), path_container_(path_container), length_bound_(length_bound)
+    {}
+
+    std::unordered_set<VertexId> GetReachedVertices() {
+        return visited_vertices_;
+    }
+
+ protected:
+    bool AddCandidates(BidirectionalPath& path, PathContainer* paths_storage, ExtensionChooser::EdgeContainer& candidates) override {
+        if (candidates.size() == 0)
+            return false;
+
+        if (path.Length() > length_bound_) {
+            return false;
+        }
+
+        LoopDetector loop_detector(&path, cov_map_);
+        DEBUG("loop detecor");
+        if (!investigate_short_loops_ &&
+            (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
+            && extensionChooser_->WeightCounterBased()) {
+            DEBUG("loop deteced");
+            return false;
+        }
+
+        if (candidates.size() == 1) {
+            DEBUG("push");
+            EdgeId eid = candidates.back().e_;
+            path.PushBack(eid, Gap(candidates.back().d_));
+            visited_vertices_.insert(g_.EdgeEnd(eid));
+            DEBUG("push done");
+            return true;
+        }
+
+        //Creating new paths for other than new candidate.
+        for (const auto &candidate: candidates) {
+            DEBUG("push other candidates " << candidate.e_.int_id());
+            auto p = make_shared<BidirectionalPath>(path);
+            p->PushBack(candidate.e_, Gap(candidate.d_));
+            path_container_.push(p);
+            visited_vertices_.insert(g_.EdgeEnd(candidate.e_));
+        }
+
+        DEBUG("push");
+        path.PushBack(candidates.front().e_, Gap(candidates.front().d_));
+        DEBUG("push done");
+
+        if (candidates.size() > 1) {
+            DEBUG("Found " << candidates.size() << " candidates");
+        }
+
+        return true;
+    }
+
+ protected:
+    DECL_LOGGER("GeneralMultiExtender")
+
+};
+
 
 class ScaffoldingPathExtender: public LoopDetectingPathExtender {
     std::shared_ptr<ExtensionChooser> extension_chooser_;

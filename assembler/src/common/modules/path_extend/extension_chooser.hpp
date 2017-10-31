@@ -24,6 +24,7 @@
 #include "pe_utils.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "common/barcode_index/barcode_info_extractor.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
 
 //#include "scaff_supplementary.hpp"
 
@@ -1913,6 +1914,36 @@ class TenXExtensionChooser : public ReadCloudExtensionChooser {
     }
 
     DECL_LOGGER("10XExtensionChooser")
+};
+
+
+//fixme replace predicate with other extension chooser
+class MultiExtensionChooser: public ExtensionChooser {
+    shared_ptr<ScaffoldVertexPredicate> intermediate_predicate_;
+    shared_ptr<ExtensionChooser> pe_extension_chooser_;
+
+ public:
+    MultiExtensionChooser(const Graph& g,
+                          shared_ptr<ScaffoldVertexPredicate> intermediate_predicate,
+                          const shared_ptr<ExtensionChooser> &pe_extension_chooser_) :
+        ExtensionChooser(g),
+        intermediate_predicate_(intermediate_predicate),
+        pe_extension_chooser_(pe_extension_chooser_) {}
+
+ public:
+    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
+        EdgeContainer intermediate_edges;
+        for (const auto& edge: edges) {
+            if ((*intermediate_predicate_)(edge.e_)) {
+                intermediate_edges.push_back(edge);
+            }
+        }
+        EdgeContainer result = pe_extension_chooser_->Filter(path, intermediate_edges);
+        if (result.size() == 0) {
+            return intermediate_edges;
+        }
+        return result;
+    }
 };
 
 class ReadCloudGapExtensionChooser : public ExtensionChooser {
