@@ -60,15 +60,25 @@ public:
         if (current_mapping.size() > 0){
             std::string pathStr = "";
             std::string pathlenStr = "";
+            std::string str = "";
+            EdgeId last_edge= EdgeId();
+            omnigraph::MappingRange last_range;
             for (const auto &edge_mapping: current_mapping) {
                 EdgeId edgeid = edge_mapping.first;
                 omnigraph::MappingRange range= edge_mapping.second;
                 VertexId v1 = gp_.g.EdgeStart(edgeid);
                 VertexId v2 = gp_.g.EdgeEnd(edgeid);
-                //pathStr += std::to_string(edgeid.int_id()) + " (" + std::to_string(v1.int_id()) + "," + std::to_string(v2.int_id()) + ") ";
-                pathStr += std::to_string(edgeid.int_id()) + ",";
+                last_edge = edgeid;
+                last_range = range;
+                pathStr += std::to_string(edgeid.int_id()) + " (" + std::to_string(v1.int_id()) + "," + std::to_string(v2.int_id()) + ") ";
+                //pathStr += std::to_string(edgeid.int_id()) + ",";
                 pathlenStr += std::to_string(range.mapped_range.end_pos - range.mapped_range.start_pos) + ",";
+                string tmp = gp_.g.EdgeNucls(edgeid).str();
+                string to_add = tmp.substr(range.mapped_range.start_pos, range.mapped_range.end_pos - range.mapped_range.start_pos);
+                str += to_add;
             }
+            string tmp = gp_.g.EdgeNucls(last_edge).str();
+            str += tmp.substr(last_range.mapped_range.end_pos, gp_.g.k());
             INFO("Path: " << pathStr);
             INFO("Read " << read.name() << " length=" << seq.size() << "; path_len=" << current_mapping.size()  << "; aligned: " << pathStr);
             //INFO("Seq subs: " << subStr);
@@ -76,7 +86,7 @@ public:
         {
             ofstream myfile;
             myfile.open(output_file_ + ".tsv", std::ofstream::out | std::ofstream::app);
-            myfile << read.name() << "\t" << seq.size() << "\t" << current_mapping.size() << "\t" << pathStr << "\t" << pathlenStr << "\n";
+            myfile << read.name() << "\t" << seq.size() << "\t" << current_mapping.size() << "\t" << pathStr << "\t" << pathlenStr << "\t" << str << "\n";
             myfile.close();
         }
         }  

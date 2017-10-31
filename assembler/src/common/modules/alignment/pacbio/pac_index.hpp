@@ -218,8 +218,9 @@ public:
                         prev_edge = EdgeId();
                         continue;
                     }
+                    
                     for (EdgeId edge: intermediate_path) {
-                        cur_sorted.push_back(edge, omnigraph::MappingRange(Range(0, 0), Range(0, g_.EdgeNucls(edge).size()) ));
+                        cur_sorted.push_back(edge, omnigraph::MappingRange(Range(0, 0), Range(0, g_.length(edge)) ));
                     }
                 }
             }

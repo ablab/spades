@@ -144,27 +144,43 @@ public:
             for (const auto &path : aligned_mappings){
                 int seq_start = -1;
                 int seq_end = 0;
+                int mapping_start = 0;
+                int mapping_end = 0;
                 string cur_path = "";
                 string cur_path_len = "";
                 string cur_substr = "";
                 string str = "";
+                EdgeId last_edge= EdgeId();
+                omnigraph::MappingRange last_range;
                 for (int i = 0; i < (int) path.size(); ++ i) {
                     EdgeId edgeid = path.edge_at(i);
                     omnigraph::MappingRange mapping = path.mapping_at(i);
-                    cur_path += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping.mapped_range.start_pos) + "," + std::to_string(mapping.mapped_range.end_pos) + ") ["
+                    mapping_start = mapping.mapped_range.start_pos;
+                    mapping_end = mapping.mapped_range.end_pos;
+                    if (i > 0){
+                        mapping_start = 0;
+                    }
+                    if (i < path.size() - 1) {
+                        mapping_end = gp_.g.length(edgeid);
+                    }
+                    last_edge = edgeid;
+                    last_range = mapping;
+                    cur_path += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
                                + std::to_string(mapping.initial_range.start_pos) + "," + std::to_string(mapping.initial_range.end_pos) + "], ";
                     
                     string tmp = gp_.g.EdgeNucls(edgeid).str();
                     //cur_path += std::to_string(mapping.edgeId.int_id()) + ",";
-                    cur_path_len += std::to_string(mapping.mapped_range.end_pos - mapping.mapped_range.start_pos) + ",";
+                    cur_path_len += std::to_string(mapping_end - mapping_start) + ",";
                     cur_substr += std::to_string(mapping.initial_range.start_pos) + "-" + std::to_string(mapping.initial_range.end_pos) + ", ";
-                    string to_add = tmp.substr(mapping.mapped_range.start_pos, mapping.mapped_range.end_pos - mapping.mapped_range.start_pos);
+                    string to_add = tmp.substr(mapping_start, mapping_end - mapping_start);
                     str += to_add;
                     if (seq_start < 0){
                         seq_start = (int) mapping.initial_range.start_pos;
                     }
                     seq_end = (int) mapping.initial_range.end_pos;
                 }
+                string tmp = gp_.g.EdgeNucls(last_edge).str();
+                str += tmp.substr(last_range.mapped_range.end_pos, gp_.g.k());
                 pathStr += cur_path + "; ";
                 subStr += cur_substr + "\n";
                 if (seq_end - seq_start > max_len){
