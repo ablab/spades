@@ -32,6 +32,7 @@
 #include "pe_utils.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "barcode_index/barcode_info_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
 
 //#include "scaff_supplementary.hpp"
 
@@ -448,8 +449,10 @@ class ExcludingExtensionChooser: public ExtensionChooser {
     EdgeContainer FindPossibleEdges(const AlternativeContainer& weights,
             double max_weight) const {
         EdgeContainer top;
+        DEBUG("Possible edges:");
         auto possible_edge = weights.lower_bound(max_weight / prior_coeff_);
         for (auto iter = possible_edge; iter != weights.end(); ++iter) {
+            DEBUG("Edge: " << (*iter).second.e_ << ", weight: " << (*iter).first);
             top.push_back(iter->second);
         }
         return top;
@@ -460,6 +463,7 @@ class ExcludingExtensionChooser: public ExtensionChooser {
         AlternativeContainer weights = FindWeights(path, edges, to_exclude);
         VERIFY(!weights.empty());
         auto max_weight = (--weights.end())->first;
+        DEBUG("Max weight: " << max_weight);
         EdgeContainer top = FindPossibleEdges(weights, max_weight);
         DEBUG("Top-scored edges " << top.size());
         EdgeContainer result;
@@ -2142,6 +2146,56 @@ class TenXExtensionChooser : public ReadCloudExtensionChooser {
     }
 
     DECL_LOGGER("10XExtensionChooser")
+};
+
+
+//fixme replace predicate with other extension chooser
+class MultiExtensionChooser: public ExtensionChooser {
+    shared_ptr<ScaffoldVertexPredicate> intermediate_predicate_;
+    shared_ptr<ExtensionChooser> pe_extension_chooser_;
+
+ public:
+    MultiExtensionChooser(const Graph& g,
+                          shared_ptr<ScaffoldVertexPredicate> intermediate_predicate,
+                          const shared_ptr<ExtensionChooser> &pe_extension_chooser_) :
+        ExtensionChooser(g),
+        intermediate_predicate_(intermediate_predicate),
+        pe_extension_chooser_(pe_extension_chooser_) {}
+
+ public:
+    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
+        DEBUG("Last edge of the path: " << path.Back().int_id());
+
+        DEBUG(edges.size() << " input edges:");
+        for (const auto& edge: edges) {
+            DEBUG(edge.e_.int_id());
+        }
+        EdgeContainer intermediate_edges;
+        for (const auto& edge: edges) {
+            if ((*intermediate_predicate_)(edge.e_)) {
+                intermediate_edges.push_back(edge);
+            }
+        }
+        DEBUG(intermediate_edges.size() << " intermediate edges:");
+        for (const auto& edge: intermediate_edges) {
+            DEBUG(edge.e_.int_id());
+        }
+        EdgeContainer result = pe_extension_chooser_->Filter(path, intermediate_edges);
+        if (result.size() == 0) {
+            DEBUG("Filtered all edges");
+            return intermediate_edges;
+        }
+        if (result.size() < intermediate_edges.size()) {
+//            INFO("PE chooser helped");
+        }
+        DEBUG(result.size() << "final edges");
+        for (const auto& edge: result) {
+            DEBUG(edge.e_.int_id());
+        }
+        return result;
+    }
+
+    DECL_LOGGER("MultiExtensionChooser");
 };
 
 class ReadCloudGapExtensionChooser : public ExtensionChooser {

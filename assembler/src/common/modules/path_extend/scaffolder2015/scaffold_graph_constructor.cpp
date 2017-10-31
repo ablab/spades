@@ -94,7 +94,7 @@ void PredicateScaffoldGraphConstructor::ConstructFromGraphAndPredicate(const Sca
 #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < scaffold_edges.size(); ++i) {
         auto edge = scaffold_edges[i];
-        bool check_predicate = predicate->Check(edge);
+        bool check_predicate = (*predicate)(edge);
 #pragma omp critical
         {
             if (check_predicate) {

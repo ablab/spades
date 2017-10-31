@@ -203,8 +203,30 @@ protected:
 
 };
 
-class PrevVertexMapContainer: public PathContainer {
+//fixme needs static cast to use. usable only in searching path extender
+class QueueContainer {
+    std::queue<shared_ptr<BidirectionalPath>> path_storage_;
 
+ public:
+    void push(shared_ptr<BidirectionalPath> path) {
+        path_storage_.push(path);
+    }
+
+    bool empty() const {
+        return path_storage_.empty();
+    }
+
+    void pop() {
+        path_storage_.pop();
+    }
+
+    size_t size() {
+        return path_storage_.size();
+    }
+
+    shared_ptr<BidirectionalPath> front() const {
+        return path_storage_.front();
+    }
 };
 
 }

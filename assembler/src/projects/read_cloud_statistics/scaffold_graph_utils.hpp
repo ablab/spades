@@ -105,23 +105,26 @@ namespace scaffold_graph_utils {
         ScaffoldGraph ConstructLongGapScaffoldGraph(const ScaffoldGraph& scaffold_graph, const path_extend::ScaffoldingUniqueEdgeStorage& storage,
                                                     const FrameBarcodeIndexInfoExtractor& extractor,
                                                     const Graph& graph, const path_extend::ReadCloudMiddleDijkstraParams& params) {
-            auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(graph, storage, extractor,
-                                                                                params);
+            auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(graph, storage,
+                                                                                        extractor, params);
             size_t max_threads = cfg::get().max_threads;
             path_extend::scaffold_graph::PredicateScaffoldGraphConstructor constructor(graph, scaffold_graph,
                                                                                        predicate, max_threads);
             return *(constructor.Construct());
         }
 
-        ScaffoldGraph ConstructPairedEndScaffoldGraph(const ScaffoldGraph& scaffold_graph,
-                                                      const path_extend::ScaffolderParams& params,
-                                                      const debruijn_graph::conj_graph_pack& gp,
-                                                      const path_extend::ScaffoldingUniqueEdgeStorage& storage) {
+        ScaffoldGraph ConstructCompositeConnectionScaffoldGraph(const ScaffoldGraph& scaffold_graph,
+                                                                const FrameBarcodeIndexInfoExtractor& barcode_extractor,
+                                                                const path_extend::ScaffolderParams& params,
+                                                                const debruijn_graph::conj_graph_pack& gp,
+                                                                const path_extend::ScaffoldingUniqueEdgeStorage& storage) {
             const size_t max_threads = cfg::get().max_threads;
-            path_extend::PEConnectionConstructorCaller pe_constructor_caller(gp, unique_storage_, max_threads);
-            auto scaffold_graph_constructor = pe_constructor_caller.GetScaffoldGraphConstuctor(params, scaffold_graph);
+            path_extend::CompositeConnectionConstructorCaller composite_constructor_caller(gp, barcode_extractor,
+                                                                                           unique_storage_, max_threads);
+            auto scaffold_graph_constructor = composite_constructor_caller.GetScaffoldGraphConstuctor(params, scaffold_graph);
             return *(scaffold_graph_constructor->Construct());
         }
+
 
         ScaffoldGraph ConstructOrderingScaffoldGraph(const ScaffoldGraph& scaffold_graph,
                                                      const FrameBarcodeIndexInfoExtractor& extractor, const Graph& graph,
