@@ -173,11 +173,12 @@ public:
                                          bool all_primary = false,
                                          bool first_primary = true) {
         size_t total_triggered = 0;
-        for (size_t iteration = 0; iteration < iteration_cnt; ++iteration) {
-            //FIXME configure message
-            INFO("PROCEDURE == Simplification cycle, iteration " << iteration + 1);
-            total_triggered += algo.Run(all_primary || (iteration == 0 && first_primary),
-                                        double(iteration + 1) / double(iteration_cnt));
+        for (size_t i = 0; i < iteration_cnt; ++i) {
+            DEBUG("Iteration " << i);
+            size_t algo_triggered = algo.Run(all_primary || (i == 0 && first_primary),
+                                double(i + 1) / double(iteration_cnt));
+            DEBUG("Triggered " << algo_triggered << " times on iteration " << (i + 1));
+            total_triggered += algo_triggered;
         }
         return total_triggered;
     }
@@ -224,10 +225,14 @@ public:
 template<class Graph>
 class CompositeAlgorithm : public PersistentAlgorithmBase<Graph> {
     std::vector<std::pair<AlgoPtr<Graph>, std::string>> algos_;
+    //TODO consider moving up hierarchy or some other solution
+    std::function<void ()> launch_callback_;
 
 public:
-    CompositeAlgorithm(Graph& g) :
-            PersistentAlgorithmBase<Graph>(g) {
+    CompositeAlgorithm(Graph& g,
+                       std::function<void ()> launch_callback = nullptr) :
+            PersistentAlgorithmBase<Graph>(g),
+            launch_callback_(launch_callback) {
     }
 
     template<typename Algo, typename... Args>
@@ -242,6 +247,8 @@ public:
 
     size_t Run(bool force_primary_launch = false,
                double iter_run_progress = 1.) override {
+        if (launch_callback_)
+            launch_callback_();
         size_t triggered = 0;
 
         for (const auto &algo_info : algos_) {

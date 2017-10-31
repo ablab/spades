@@ -323,7 +323,12 @@ public:
 
         InitialCleaning();
 
-        CompositeAlgorithm<Graph> algo(g_);
+        size_t iteration = 0;
+        auto message_callback = [&] () {
+            INFO("PROCEDURE == Simplification cycle, iteration " << ++iteration);
+        };
+
+        CompositeAlgorithm<Graph> algo(g_, message_callback);
         if (rna_mode) {
             auto algo_tc_br = std::make_shared<CompositeAlgorithm<Graph>>(g_);
             algo_tc_br->AddAlgo(TipClipperInstance(g_, simplif_cfg_.tc, info_container_, removal_handler_),
@@ -349,7 +354,9 @@ public:
                      "Low coverage edge remover");
 
         //all primary option set to closely mimic previous rna behavior
-        AlgorithmRunningHelper<Graph>::IterativeThresholdsRun(algo, simplif_cfg_.cycle_iter_count, /*all_primary*/rna_mode);
+        AlgorithmRunningHelper<Graph>::IterativeThresholdsRun(algo,
+                                                              simplif_cfg_.cycle_iter_count,
+                                                              /*all_primary*/rna_mode);
         AlgorithmRunningHelper<Graph>::LoopedRun(algo);
 
         printer_(info_printer_pos::before_post_simplification);
@@ -360,7 +367,6 @@ public:
             INFO("PostSimplification disabled");
         }
     }
-
 };
 
 shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultGPColorer(
@@ -413,7 +419,6 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
                                printer);
 
     simplifier.SimplifyGraph(cfg::get().mode == pipeline_type::rna);
-
 }
 
 
