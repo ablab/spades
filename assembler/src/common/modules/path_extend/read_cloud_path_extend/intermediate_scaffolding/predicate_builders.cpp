@@ -20,7 +20,7 @@ shared_ptr<ScaffoldEdgePredicate> FromPositivePredicateBuilder::GetPredicate(con
     for (const auto& vertex : graph) {
         for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
             ScaffoldEdgePredicate::ScaffoldEdge scaffold_edge(vertex, *it);
-            if (positive_predicate_->Check(scaffold_edge)) {
+            if ((*positive_predicate_)(scaffold_edge)) {
                 passed_starts.insert(vertex);
                 passed_ends.insert(*it);
                 passed_transitions.emplace(vertex, *it);
@@ -120,9 +120,10 @@ PathClusterScoreFunctionBuilder::PathClusterScoreFunctionBuilder(
       initial_cluster_storage_(initial_cluster_storage_),
       linkage_distance_(linkage_distance_) {}
 
-shared_ptr<ScaffoldEdgeScoreFunction> PathClusterScoreFunctionBuilder::GetScoreFunction(const GapCloserScoreFunctionBuilder::SimpleTransitionGraph& graph,
-                                                                                        const EdgeId& source,
-                                                                                        const EdgeId& sink) const {
+shared_ptr<ScaffoldEdgeScoreFunction> PathClusterScoreFunctionBuilder::GetScoreFunction(
+        const GapCloserScoreFunctionBuilder::SimpleTransitionGraph& graph,
+        const EdgeId& /*source*/,
+        const EdgeId& /*sink*/) const {
     DEBUG("Constructing path cluster score function");
     cluster_storage::GraphClusterStorageBuilder cluster_storage_builder(g_, barcode_extractor_ptr_, linkage_distance_);
     DEBUG("Constructing cluster storage");

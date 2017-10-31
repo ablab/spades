@@ -15,9 +15,10 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
     auto initial_graph = *(constructor->Construct());
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
     iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, barcode_extractor_, max_threads_));
-//    iterative_constructor_callers.push_back(make_shared<BarcodeConnectionConstructorCaller>(gp_.g, barcode_extractor_,
-//                                                                                            unique_storage, max_threads_));
-    iterative_constructor_callers.push_back(make_shared<PEConnectionConstructorCaller>(gp_, unique_storage, max_threads_));
+    iterative_constructor_callers.push_back(make_shared<BarcodeConnectionConstructorCaller>(gp_.g, barcode_extractor_,
+                                                                                            unique_storage, max_threads_));
+    iterative_constructor_callers.push_back(make_shared<CompositeConnectionConstructorCaller>(gp_, barcode_extractor_,
+                                                                                              unique_storage, max_threads_));
     if (params.length_threshold_ >= full_pipeline_length_) {
         iterative_constructor_callers.push_back(make_shared<EdgeSplitConstructorCaller>(gp_.g, barcode_extractor_, max_threads_));
         iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, barcode_extractor_, max_threads_));
@@ -35,7 +36,7 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
     INFO("Constructing scaffold graph with length threshold " << min_length);
     ScaffolderParamsConstructor params_constructor;
     auto params = params_constructor.ConstructScaffolderParams(min_length);
-    //fixme coverage threshold consistent over unique storage constructions where coverage is irrelevant
+    //fixme make coverage threshold consistent over unique storage constructions where coverage is irrelevant
     const double max_relative_coverage = 50.0;
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, max_relative_coverage);
     ScaffoldingUniqueEdgeStorage unique_storage;
@@ -126,9 +127,13 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> BarcodeScoreConstructorCall
 
 shared_ptr<scaffold_graph::ScaffoldGraphConstructor> BarcodeConnectionConstructorCaller::GetScaffoldGraphConstuctor(
     const ScaffolderParams& params, const IterativeScaffoldGraphConstructorCaller::ScaffoldGraph& scaffold_graph) const {
-    path_extend::ReadCloudMiddleDijkstraParams long_gap_params(params.connection_score_threshold_, params.count_threshold_,
-                                                       params.connection_count_threshold_, params.tail_threshold_,
-                                                       params.connection_length_threshold_, params.initial_distance_);
+    path_extend::LongEdgePairGapCloserParams vertex_predicate_params(params.connection_count_threshold_,
+                                                                     params.tail_threshold_,
+                                                                     params.connection_score_threshold_,
+                                                                     params.connection_length_threshold_, false);
+    path_extend::ReadCloudMiddleDijkstraParams long_gap_params(params.count_threshold_, params.tail_threshold_,
+                                                               params.initial_distance_, vertex_predicate_params);
+
     auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(g_, unique_storage_, barcode_extractor_, long_gap_params);
     auto constructor =
         make_shared<scaffold_graph::PredicateScaffoldGraphConstructor>(g_, scaffold_graph, predicate, max_threads);
@@ -160,10 +165,10 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> TransitiveConstructorCaller
         make_shared<scaffold_graph::PredicateScaffoldGraphConstructor>(g_, scaffold_graph, predicate, max_threads_);
     return constructor;
 }
-shared_ptr<scaffold_graph::ScaffoldGraphConstructor> PEConnectionConstructorCaller::GetScaffoldGraphConstuctor(
-        const ScaffolderParams& params,
-        const IterativeScaffoldGraphConstructorCaller::ScaffoldGraph& scaffold_graph) const {
 
+shared_ptr<scaffold_graph::ScaffoldGraphConstructor> CompositeConnectionConstructorCaller::GetScaffoldGraphConstuctor(
+    const ScaffolderParams &params,
+    const IterativeScaffoldGraphConstructorCaller::ScaffoldGraph &scaffold_graph) const {
     path_extend::PathExtendParamsContainer path_extend_params(cfg::get().ds, cfg::get().pe_params, cfg::get().ss,
                                                               cfg::get().output_dir, cfg::get().mode,
                                                               cfg::get().uneven_depth, cfg::get().avoid_rc_connections,
@@ -176,24 +181,37 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> PEConnectionConstructorCall
 
         if (lib.type() == io::LibraryType::Clouds10x) {
             paired_lib_index = lib_index;
-            continue;
+            break;
         }
     }
     VERIFY_MSG(paired_lib_index.is_initialized(), "GemCode library was not found");
 
     //fixme replace with insert size
     const size_t prefix_length = 500;
-    PairedEndDijkstraParams paired_dij_params(paired_lib_index.get(), prefix_length, dataset_info, path_extend_params);
-    auto predicate =
-        make_shared<path_extend::PairedEndDijkstraPredicate>(gp_.g, unique_storage_, gp_.clustered_indices,
-                                                             params.initial_distance_, paired_dij_params);
+    CompositeConnectionParams paired_dij_params(paired_lib_index.get(), prefix_length, dataset_info, path_extend_params);
+
+    LongEdgePairGapCloserParams predicate_params(params.connection_count_threshold_,
+                                                 params.tail_threshold_,
+                                                 params.connection_score_threshold_,
+                                                 params.connection_length_threshold_,
+                                                 false);
+    INFO("Long edge pair gap closer params:");
+    INFO("Count threshold: " << params.connection_count_threshold_);
+    INFO("Tail threshold: " << params.tail_threshold_);
+    INFO("Score threshold: " << params.connection_score_threshold_);
+    INFO("Length threshold: " << params.connection_length_threshold_);
+
+    auto predicate = make_shared<path_extend::CompositeConnectionPredicate>(gp_, barcode_extractor_, unique_storage_,
+                                                                            gp_.clustered_indices, params.initial_distance_,
+                                                                            paired_dij_params, predicate_params);
+    const size_t max_threads = max_threads_;
     auto constructor =
-        make_shared<scaffold_graph::PredicateScaffoldGraphConstructor>(gp_.g, scaffold_graph, predicate, max_threads_);
+        make_shared<scaffold_graph::PredicateScaffoldGraphConstructor>(gp_.g, scaffold_graph, predicate, max_threads);
     return constructor;
 }
-PEConnectionConstructorCaller::PEConnectionConstructorCaller(const conj_graph_pack &gp_,
-                                                             const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                                                             const size_t max_threads_)
-    : gp_(gp_), unique_storage_(unique_storage_), max_threads_(max_threads_) {}
-
+CompositeConnectionConstructorCaller::CompositeConnectionConstructorCaller(const conj_graph_pack &gp_,
+                                                                           const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
+                                                                           const ScaffoldingUniqueEdgeStorage &unique_storage_,
+                                                                           const size_t max_threads_)
+    : gp_(gp_), barcode_extractor_(barcode_extractor_), unique_storage_(unique_storage_), max_threads_(max_threads_) {}
 }

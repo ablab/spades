@@ -165,8 +165,8 @@ namespace read_cloud_statistics {
                                                                              const path_extend::ScaffolderParams& params,
                                                                              const string& initial_name,
                                                                              const string& score_name,
-                                                                             const string& pe_name,
-                                                                             const string& connection_name,
+                                                                             const string& composite_connection_name,
+                                                                             const string& barcode_connection_name,
                                                                              const string& ordering_name,
                                                                              const string& transitive_name) {
             scaffold_graph_utils::ScaffoldGraphStorage storage;
@@ -175,12 +175,13 @@ namespace read_cloud_statistics {
             size_t count_threshold = params.count_threshold_;
             double score_threshold = params.score_threshold_;
 
-            path_extend::ReadCloudMiddleDijkstraParams long_gap_params(params.connection_score_threshold_,
-                                                               params.count_threshold_,
-                                                               params.connection_count_threshold_,
-                                                               params.tail_threshold_,
-                                                               params.connection_length_threshold_,
-                                                               params.initial_distance_);
+            path_extend::LongEdgePairGapCloserParams vertex_predicate_params(params.connection_count_threshold_,
+                                                                             params.tail_threshold_,
+                                                                             params.connection_score_threshold_,
+                                                                             params.connection_length_threshold_, false);
+
+            path_extend::ReadCloudMiddleDijkstraParams long_gap_params(params.count_threshold_, params.tail_threshold_,
+                                                                       params.initial_distance_, vertex_predicate_params);
 
             INFO("Constructing scaffold graph");
             auto scaffold_helper = scaffold_graph_utils::ScaffoldGraphConstructor(unique_storage,
@@ -196,35 +197,39 @@ namespace read_cloud_statistics {
                                                                                            score_threshold);
             INFO(score_scaffold_graph.VertexCount() << " vertices and " << score_scaffold_graph.EdgeCount() << " edges in score scaffold graph");
 
-            INFO("Constructing paired end scaffold graph");
+            INFO("Constructing barcode connection scaffold graph");
 
-            auto paired_end_scaffold_graph = scaffold_helper.ConstructPairedEndScaffoldGraph(score_scaffold_graph, params,
-                                                                                             gp_, unique_storage);
+            auto barcode_connection_scaffold_graph = scaffold_helper.ConstructLongGapScaffoldGraph(score_scaffold_graph, unique_storage,
+                                                                                           *barcode_extractor_ptr_, gp_.g,
+                                                                                           long_gap_params);
+            INFO(barcode_connection_scaffold_graph.VertexCount() << " vertices and "
+                                                         << barcode_connection_scaffold_graph.EdgeCount()
+                                                         << " edges in connection scaffold graph");
 
-            INFO(score_scaffold_graph.VertexCount() << " vertices and " << score_scaffold_graph.EdgeCount() << " edges in paired end scaffold graph");
+            INFO("Constructing paired end connection scaffold graph");
 
-//            INFO("Constructing connection scaffold graph");
-//
-//            auto connection_scaffold_graph = scaffold_helper.ConstructLongGapScaffoldGraph(score_scaffold_graph, unique_storage,
-//                                                                                           *barcode_extractor_ptr_, gp_.g,
-//                                                                                           long_gap_params);
-//            INFO(connection_scaffold_graph.VertexCount() << " vertices and "
-//                                                         << connection_scaffold_graph.EdgeCount()
-//                                                         << " edges in connection scaffold graph");
-//
-//            auto ordering_scaffold_graph = scaffold_helper.ConstructOrderingScaffoldGraph(connection_scaffold_graph,
-//                                                                                          *barcode_extractor_ptr_, gp_.g,
-//                                                                                          long_gap_params.count_threshold_,
-//                                                                                          params.split_procedure_strictness_);
-//            auto transitive_scaffold_graph = scaffold_helper.ConstructNonTransitiveGraph(ordering_scaffold_graph, gp_.g);
+            auto composite_connection_scaffold_graph =
+                scaffold_helper.ConstructCompositeConnectionScaffoldGraph(barcode_connection_scaffold_graph, *barcode_extractor_ptr_,
+                                                                          params, gp_, unique_storage);
+
+            INFO(composite_connection_scaffold_graph.VertexCount() << " vertices and "
+                                                                   << composite_connection_scaffold_graph.EdgeCount()
+                                                                   << " edges in paired end scaffold graph");
+
+
+            auto ordering_scaffold_graph = scaffold_helper.ConstructOrderingScaffoldGraph(composite_connection_scaffold_graph,
+                                                                                          *barcode_extractor_ptr_, gp_.g,
+                                                                                          long_gap_params.count_threshold_,
+                                                                                          params.split_procedure_strictness_);
+            auto transitive_scaffold_graph = scaffold_helper.ConstructNonTransitiveGraph(ordering_scaffold_graph, gp_.g);
 
 
             storage.insert(initial_name, scaffold_graph);
             storage.insert(score_name, score_scaffold_graph);
-            storage.insert(pe_name, paired_end_scaffold_graph);
-//            storage.insert(connection_name, connection_scaffold_graph);
-//            storage.insert(ordering_name, ordering_scaffold_graph);
-//            storage.insert(transitive_name, transitive_scaffold_graph);
+            storage.insert(barcode_connection_name, barcode_connection_scaffold_graph);
+            storage.insert(composite_connection_name, composite_connection_scaffold_graph);
+            storage.insert(ordering_name, ordering_scaffold_graph);
+            storage.insert(transitive_name, transitive_scaffold_graph);
             return storage;
         }
 
@@ -234,7 +239,7 @@ namespace read_cloud_statistics {
             INFO("Reference path: " << reference_path);
             INFO("Cloud contig path: " << cloud_contigs_path);
 
-            const size_t min_length = 5000;
+            const size_t min_length = 20000;
             path_extend::ScaffoldingUniqueEdgeStorage large_unique_storage;
             path_extend::ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, 100);
             unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
@@ -250,8 +255,8 @@ namespace read_cloud_statistics {
             auto params = params_constructor.ConstructScaffolderParams(min_length);
             const string initial_name = "Initial scaffold graph";
             const string score_name = "Score scaffold graph";
-            const string pe_name = "Paired end scaffold graph";
-            const string connection_name = "Connection scaffold graph";
+            const string composite_connection_name = "Composite connection scaffold graph";
+            const string barcode_connection_name = "Barcode connection scaffold graph";
             const string ordering_name = "Ordering scaffold graph";
             const string transitive_name = "Transitive graph";
 
@@ -262,7 +267,7 @@ namespace read_cloud_statistics {
 
             //scaffold graph stages table
             auto scaffold_graph_storage = BuildScaffoldGraphStorage(gp_,large_unique_storage, params, initial_name,
-                                                                    score_name, pe_name, connection_name, ordering_name,
+                                                                    score_name, composite_connection_name, barcode_connection_name, ordering_name,
                                                                     transitive_name);
             scaffold_graph_utils::ScaffolderAnalyzer scaffolder_analyzer(filtered_reference_paths, scaffold_graph_storage, gp_.g);
             scaffolder_analyzer.FillStatistics();
