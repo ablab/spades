@@ -75,16 +75,18 @@ namespace path_extend {
                                                                                         const ScaffoldGraph& scaffold_graph) const override;
     };
 
-    class PEConnectionConstructorCaller: public IterativeScaffoldGraphConstructorCaller {
+    class CompositeConnectionConstructorCaller: public IterativeScaffoldGraphConstructorCaller {
         using IterativeScaffoldGraphConstructorCaller::ScaffoldGraph;
         const conj_graph_pack& gp_;
+        const barcode_index::FrameBarcodeIndexInfoExtractor barcode_extractor_;
         const ScaffoldingUniqueEdgeStorage& unique_storage_;
         const size_t max_threads_;
 
      public:
-        PEConnectionConstructorCaller(const conj_graph_pack &gp_,
-                                      const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                                      const size_t max_threads_);
+        CompositeConnectionConstructorCaller(const conj_graph_pack &gp_,
+                                             const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
+                                             const ScaffoldingUniqueEdgeStorage &unique_storage_,
+                                             const size_t max_threads_);
 
         shared_ptr<scaffold_graph::ScaffoldGraphConstructor> GetScaffoldGraphConstuctor(const ScaffolderParams& params,
                                                                                         const ScaffoldGraph& scaffold_graph) const override;

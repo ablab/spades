@@ -482,7 +482,6 @@ struct MaxSpanClusterFilter: public ClusterFilter {
 
   MaxSpanClusterFilter(const size_t max_span_) : max_span_(max_span_) {}
   bool Check(const Cluster& cluster) const override {
-      INFO("Cluster span: " << cluster.GetSpan());
       return cluster.GetSpan() <= max_span_;
   }
 };

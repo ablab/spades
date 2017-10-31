@@ -2,7 +2,7 @@
 
 #include "common/modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 #include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/gap_closer_predicates.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
 
 namespace omnigraph {
 //------------------------------
@@ -184,24 +184,18 @@ class BarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t> {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph& g_;
-    const size_t edge_length_threshold_;
     const path_extend::LongEdgePairGapCloserPredicate gap_closer_predicate_;
 
  public:
     BarcodedPathPutChecker(const Graph& g, const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_info_extractor,
                            const vector<barcode_index::BarcodeId>& barcodes, const EdgeId& start, const EdgeId& end,
-                           double score_threshold, size_t count_threshold, size_t edge_length_threshold,
-                           size_t length_normalizer) :
-        VertexPutChecker<Graph, distance_t>(), g_(g), edge_length_threshold_(edge_length_threshold),
-        gap_closer_predicate_(g, barcode_info_extractor, count_threshold, edge_length_threshold, length_normalizer,
-                              score_threshold, start, end, barcodes, false) {}
+                           const path_extend::LongEdgePairGapCloserParams& params) :
+        VertexPutChecker<Graph, distance_t>(), g_(g),
+        gap_closer_predicate_(g, barcode_info_extractor, params, start, end, barcodes) {}
 
     bool Check(VertexId, EdgeId edge, distance_t ) const override {
         DEBUG("Checking edge " << edge.int_id());
         DEBUG("Length " << g_.length(edge))
-        if (g_.length(edge) <= edge_length_threshold_) {
-            return true;
-        }
         return gap_closer_predicate_.Check(edge);
     }
     DECL_LOGGER("BarcodePutChecker")
@@ -212,10 +206,9 @@ CreateLongGapCloserPutChecker(const Graph& g, const path_extend::ScaffoldingUniq
                               const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor,
                               const vector<barcode_index::BarcodeId>& barcode_intersection,
                               const EdgeId& start, const EdgeId& end,
-                              double score_threshold, size_t count_threshold, size_t len_threshold, size_t len_normalizer) {
+                              const path_extend::LongEdgePairGapCloserParams& params) {
     auto barcode_put_checker = make_shared<BarcodedPathPutChecker<Graph>>(g, barcode_extractor, barcode_intersection,
-                                                                          start, end, score_threshold,
-                                                                          count_threshold, len_threshold, len_normalizer);
+                                                                          start, end, params);
     auto unique_put_checker = make_shared<UniquePutChecker<Graph>>(g, unique_storage);
     vector<shared_ptr<VertexPutChecker<Graph>>> put_checkers({unique_put_checker, barcode_put_checker});
     return CompositePutChecker<Graph>(put_checkers);
@@ -234,16 +227,14 @@ static LongGapCloserDijkstra CreateLongGapCloserDijkstra(const Graph& graph, siz
                                                          const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor,
                                                          const vector<barcode_index::BarcodeId>& barcode_intersection,
                                                          const EdgeId& start, const EdgeId& end,
-                                                         double score_threshold, size_t count_threshold,
-                                                         size_t len_threshold, size_t len_normalizer,
+                                                         const path_extend::LongEdgePairGapCloserParams& vertex_predicate_params,
                                                          size_t max_vertex_number = -1ul) {
     return LongGapCloserDijkstra(graph,
                           LongGapCloserDijkstraSettings(
                               LengthCalculator<Graph>(graph),
                               BoundProcessChecker<Graph>(length_bound),
                               CreateLongGapCloserPutChecker(graph, unique_storage, barcode_extractor, barcode_intersection,
-                                                            start, end, score_threshold, count_threshold, len_threshold,
-                                                            len_normalizer),
+                                                            start, end, vertex_predicate_params),
                               ForwardNeighbourIteratorFactory<Graph>(graph)),
                           max_vertex_number);
 }

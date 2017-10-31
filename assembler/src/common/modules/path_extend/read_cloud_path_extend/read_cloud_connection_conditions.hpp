@@ -4,7 +4,7 @@
 #include "common/modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 #include "common/modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/gap_closer_predicates.hpp"
+#include "common/modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
 
 namespace path_extend {
     //Same as AssemblyGraphConnectionCondition, but stops after reaching unique edges.
@@ -22,26 +22,25 @@ namespace path_extend {
         virtual bool IsLast() const override;
     };
 
-    class ScaffoldEdgePredicate {
+    class ScaffoldEdgePredicate: public func::AbstractPredicate<const path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge&> {
      public:
         typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
         typedef scaffold_graph::ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
 
-        virtual bool Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const = 0;
         virtual ~ScaffoldEdgePredicate() = default;
     };
 
     struct ReadCloudMiddleDijkstraParams {
-      const double score_threshold_;
       const size_t count_threshold_;
-      const size_t middle_count_threshold_;
       const size_t tail_threshold_;
-      const size_t len_threshold_;
       const size_t distance_;
 
-      ReadCloudMiddleDijkstraParams(const double score_threshold, const size_t count_threshold_, size_t middle_count_threshold,
-                            const size_t tail_threshold_, const size_t len_threshold_,
-                            const size_t distance);
+      const LongEdgePairGapCloserParams edge_pair_gap_closer_params_;
+
+      ReadCloudMiddleDijkstraParams(const size_t count_threshold_,
+                                    const size_t tail_threshold_,
+                                    const size_t distance_,
+                                    const LongEdgePairGapCloserParams &edge_pair_gap_closer_params_);
     };
 
     class ReadCloudMiddleDijkstraPredicate: public ScaffoldEdgePredicate {
@@ -60,40 +59,45 @@ namespace path_extend {
 
     };
 
-    struct PairedEndDijkstraParams {
+    struct CompositeConnectionParams {
       const size_t paired_lib_index_;
       const size_t prefix_length_;
       const config::dataset& dataset_info;
       const path_extend::PathExtendParamsContainer pe_params_;
 
-      PairedEndDijkstraParams(const size_t paired_lib_index_,
+      CompositeConnectionParams(const size_t paired_lib_index_,
                               const size_t prefix_length_,
                               const config::dataset &dataset_info,
                               const PathExtendParamsContainer &pe_params_);
     };
 
-    class PairedEndDijkstraPredicate: public ScaffoldEdgePredicate {
+    class CompositeConnectionPredicate: public ScaffoldEdgePredicate {
         using ScaffoldEdgePredicate::ScaffoldEdge;
 
-        const Graph& g_;
+        const conj_graph_pack& gp_;
+        const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         const omnigraph::de::PairedInfoIndicesT<Graph>& clustered_indices_;
         const size_t length_bound_;
-        const PairedEndDijkstraParams params_;
+        const CompositeConnectionParams params_;
+        const LongEdgePairGapCloserParams predicate_params_;
 
      public:
-        PairedEndDijkstraPredicate(const Graph &g_,
-                                   const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                                   const de::PairedInfoIndicesT<debruijn_graph::DeBruijnGraph> &clustered_indices_,
-                                   const size_t length_bound_,
-                                   const PairedEndDijkstraParams &params_);
+
+        CompositeConnectionPredicate(const conj_graph_pack &gp_,
+                                     const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
+                                     const ScaffoldingUniqueEdgeStorage &unique_storage_,
+                                     const de::PairedInfoIndicesT<debruijn_graph::DeBruijnGraph> &clustered_indices_,
+                                     const size_t length_bound_,
+                                     const CompositeConnectionParams &params_,
+                                     const LongEdgePairGapCloserParams &predicate_params_);
 
         bool Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const override;
 
      private:
         shared_ptr<path_extend::ExtensionChooser> ConstructSimpleExtensionChooser() const;
 
-        DECL_LOGGER("PairedEndDijkstraPredicate");
+        DECL_LOGGER("CompositeConnectionPredicate");
     };
 
     class EdgeSplitPredicate: public ScaffoldEdgePredicate {
