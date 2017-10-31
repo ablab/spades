@@ -32,7 +32,13 @@ add_library(path_extend STATIC
             read_cloud_path_extend/validation/scaffold_graph_validation.cpp
             read_cloud_path_extend/validation/transition_extractor.cpp
             read_cloud_path_extend/scaffold_graph_gap_closer.cpp
-            read_cloud_path_extend/scaffold_graph_extractor.cpp)
+            read_cloud_path_extend/scaffold_graph_extractor.cpp
+            read_cloud_path_extend/scaffold_graph_dijkstra.hpp
+            read_cloud_path_extend/transitions/transitions.cpp
+            read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.cpp
+            read_cloud_path_extend/path_cluster_helper.cpp
+            read_cloud_path_extend/intermediate_scaffolding/pe_extraction.cpp
+            read_cloud_path_extend/intermediate_scaffolding/predicate_builders.cpp)
 
 target_link_libraries(path_extend modules assembly_graph ssw configs)
 
