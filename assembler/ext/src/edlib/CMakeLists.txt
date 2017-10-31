@@ -1,5 +1,10 @@
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(edlib)
+############################################################################
+# Copyright (c) 2016 Saint Petersburg State University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+project(edlib C)
 
 
 # Create libraries.
