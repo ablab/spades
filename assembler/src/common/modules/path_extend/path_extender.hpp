@@ -1012,6 +1012,7 @@ public:
 
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override {
+        DEBUG("cov map size: " << cov_map_.size());
         if (is_detector_.InExistingLoop(path)) {
             DEBUG("in existing loop");
             return false;
@@ -1258,8 +1259,7 @@ class SearchingMultiExtender: public SimpleExtender {
                   bool use_short_loop_cov_resolver,
                   double weight_threshold,
                   size_t length_bound,
-                  QueueContainer& path_container,
-                  size_t max_candidates = 0) :
+                  QueueContainer& path_container) :
         SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold),
         visited_vertices_(), path_container_(path_container), length_bound_(length_bound)
     {}
@@ -1269,20 +1269,24 @@ class SearchingMultiExtender: public SimpleExtender {
     }
 
  protected:
-    bool AddCandidates(BidirectionalPath& path, PathContainer* paths_storage, ExtensionChooser::EdgeContainer& candidates) override {
+    bool AddCandidates(BidirectionalPath& path, PathContainer* /*paths_storage*/, ExtensionChooser::EdgeContainer& candidates) override {
+
+
         if (candidates.size() == 0)
             return false;
 
-        if (path.Length() > length_bound_) {
+        VERIFY(path.Size() >= 1);
+        if (path.Size() > 1 and path.LengthAt(1) > length_bound_) {
+            DEBUG("Path is too long");
             return false;
         }
 
         LoopDetector loop_detector(&path, cov_map_);
-        DEBUG("loop detecor");
+        DEBUG("loop detector");
         if (!investigate_short_loops_ &&
             (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
             && extensionChooser_->WeightCounterBased()) {
-            DEBUG("loop deteced");
+            DEBUG("loop detected");
             return false;
         }
 
@@ -1296,17 +1300,21 @@ class SearchingMultiExtender: public SimpleExtender {
         }
 
         //Creating new paths for other than new candidate.
-        for (const auto &candidate: candidates) {
-            DEBUG("push other candidates " << candidate.e_.int_id());
+        for (size_t i = 1; i < candidates.size(); ++i) {
+            auto candidate = candidates[i];
+            DEBUG("push other candidate " << candidate.e_.int_id());
             auto p = make_shared<BidirectionalPath>(path);
             p->PushBack(candidate.e_, Gap(candidate.d_));
             path_container_.push(p);
+            DEBUG("Inserting vertex " << g_.EdgeEnd(candidate.e_));
             visited_vertices_.insert(g_.EdgeEnd(candidate.e_));
         }
 
         DEBUG("push");
         path.PushBack(candidates.front().e_, Gap(candidates.front().d_));
         DEBUG("push done");
+        DEBUG("Inserting vertex " << g_.EdgeEnd(candidates.front().e_));
+        visited_vertices_.insert(g_.EdgeEnd(candidates.front().e_));
 
         if (candidates.size() > 1) {
             DEBUG("Found " << candidates.size() << " candidates");
@@ -1316,7 +1324,7 @@ class SearchingMultiExtender: public SimpleExtender {
     }
 
  protected:
-    DECL_LOGGER("GeneralMultiExtender")
+    DECL_LOGGER("SearchingMultiExtender")
 
 };
 

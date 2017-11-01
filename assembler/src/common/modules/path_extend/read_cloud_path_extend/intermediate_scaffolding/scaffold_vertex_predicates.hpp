@@ -39,14 +39,14 @@ class AndChecker: public ScaffoldVertexPredicate {
 struct LongEdgePairGapCloserParams {
   const size_t count_threshold_;
   const size_t length_normalizer_;
-  const size_t edge_length_threshold_;
   const double raw_score_threshold_;
+  const size_t edge_length_threshold_;
   const bool normalize_using_cov_;
 
   LongEdgePairGapCloserParams(const size_t count_threshold_,
                               const size_t length_normalizer_,
-                              const size_t edge_length_threshold_,
                               const double raw_score_threshold_,
+                              const size_t edge_length_threshold_,
                               const bool normalize_using_cov_);
 };
 
@@ -63,24 +63,15 @@ class LongEdgePairGapCloserPredicate: public ScaffoldVertexPredicate {
 
  public:
     LongEdgePairGapCloserPredicate(const debruijn_graph::Graph& g, const barcode_index::FrameBarcodeIndexInfoExtractor& extractor,
-                                   std::size_t count_threshold, std::size_t initial_tail_threshold,
-                                   std::size_t check_tail_threshold, double share_threshold, bool normalize_using_cov,
+                                   const LongEdgePairGapCloserParams& params,
                                    const ScaffoldGraph::ScaffoldEdge& edge);
 
     LongEdgePairGapCloserPredicate(const debruijn_graph::Graph& g_,
                                    const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
-                                   const size_t count_threshold_,
-                                   const size_t initial_tail_threshold,
-                                   const size_t middle_tail_threshold,
-                                   const double raw_score_threshold_,
+                                   const LongEdgePairGapCloserParams& params,
                                    const ScaffoldGraph::ScaffoldVertex& start_,
                                    const ScaffoldGraph::ScaffoldVertex& end_,
-                                   const vector<barcode_index::BarcodeId>& barcodes_,
-                                   const bool normalize_using_cov_);
-
-    LongEdgePairGapCloserPredicate(const debruijn_graph::Graph& g, const barcode_index::FrameBarcodeIndexInfoExtractor& extractor,
-                                   const LongEdgePairGapCloserParams& params,
-                                   const ScaffoldGraph::ScaffoldEdge& edge);
+                                   const vector<barcode_index::BarcodeId>& barcodes_);
 
     bool Check(const ScaffoldGraph::ScaffoldVertex& vertex) const override;
     DECL_LOGGER("LongEdgePairGapCloserPredicate");

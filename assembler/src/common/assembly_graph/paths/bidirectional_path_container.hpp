@@ -224,8 +224,12 @@ class QueueContainer {
         path_storage_.pop();
     }
 
-    BidirectionalPath back() const {
-        return *(path_storage_.back());
+    size_t size() {
+        return path_storage_.size();
+    }
+
+    shared_ptr<BidirectionalPath> front() const {
+        return path_storage_.front();
     }
 };
 

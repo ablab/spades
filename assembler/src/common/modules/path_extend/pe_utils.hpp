@@ -124,6 +124,7 @@ public:
 
     //Inherited from PathListener
     void BackEdgeAdded(EdgeId e, BidirectionalPath * path, const Gap&) override {
+//        INFO("Edge " << e.int_id() << " added to coverage map!");
         EdgeAdded(e, path);
     }
 

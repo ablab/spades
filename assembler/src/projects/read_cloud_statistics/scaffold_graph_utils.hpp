@@ -105,8 +105,8 @@ namespace scaffold_graph_utils {
         ScaffoldGraph ConstructLongGapScaffoldGraph(const ScaffoldGraph& scaffold_graph, const path_extend::ScaffoldingUniqueEdgeStorage& storage,
                                                     const FrameBarcodeIndexInfoExtractor& extractor,
                                                     const Graph& graph, const path_extend::ReadCloudMiddleDijkstraParams& params) {
-            auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(graph, storage, extractor,
-                                                                                params);
+            auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(graph, storage,
+                                                                                        extractor, params);
             size_t max_threads = cfg::get().max_threads;
             path_extend::scaffold_graph::PredicateScaffoldGraphConstructor constructor(graph, scaffold_graph,
                                                                                        predicate, max_threads);

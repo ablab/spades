@@ -43,13 +43,11 @@ CloudScaffoldSubgraphExtractor::SimpleGraph CloudScaffoldSubgraphExtractor::Extr
     unordered_set<ScaffoldVertex> backward_vertices;
     unordered_set<ScaffoldVertex> subgraph_vertices;
     ScaffoldGraph::ScaffoldEdge edge(first, second);
+    path_extend::LongEdgePairGapCloserParams params(params_.count_threshold_, params_.large_length_threshold_,
+                                                    params_.share_threshold_, params_.small_length_threshold_, true);
     auto gap_closer_predicate = make_shared<path_extend::LongEdgePairGapCloserPredicate>(g_,
                                                                                          extractor_,
-                                                                                         params_.count_threshold_,
-                                                                                         params_.large_length_threshold_,
-                                                                                         params_.small_length_threshold_,
-                                                                                         true,
-                                                                                         params_.share_threshold_, edge);
+                                                                                         params, edge);
     auto barcode_intersection =
         extractor_.GetSharedBarcodesWithFilter(first, second, params_.count_threshold_, params_.large_length_threshold_);
     auto forward_dijkstra = omnigraph::CreateForwardBoundedScaffoldDijkstra(scaffold_graph, first, second,
@@ -565,6 +563,7 @@ shared_ptr<GapCloserScoreFunctionBuilder> PathExtractionPartsConstructor::Constr
     cluster_storage::InitialClusterStorageBuilder cluster_storage_builder(gp_.g, barcode_extractor_ptr,
                                                                           target_edges, linkage_distance,
                                                                           min_read_threshold, cfg::get().max_threads);
+    INFO("Constructing initial cluster storage");
     auto initial_cluster_storage = make_shared<cluster_storage::InitialClusterStorage>(cluster_storage_builder.ConstructInitialClusterStorage());
     INFO("Initial cluster storage size: " << initial_cluster_storage->get_cluster_storage().Size());
     auto cluster_score_builder = make_shared<path_extend::PathClusterScoreFunctionBuilder>(gp_.g,

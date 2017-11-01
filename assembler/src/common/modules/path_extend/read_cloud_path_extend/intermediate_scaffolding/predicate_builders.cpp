@@ -120,9 +120,10 @@ PathClusterScoreFunctionBuilder::PathClusterScoreFunctionBuilder(
       initial_cluster_storage_(initial_cluster_storage_),
       linkage_distance_(linkage_distance_) {}
 
-shared_ptr<ScaffoldEdgeScoreFunction> PathClusterScoreFunctionBuilder::GetScoreFunction(const GapCloserScoreFunctionBuilder::SimpleTransitionGraph& graph,
-                                                                                        const EdgeId& source,
-                                                                                        const EdgeId& sink) const {
+shared_ptr<ScaffoldEdgeScoreFunction> PathClusterScoreFunctionBuilder::GetScoreFunction(
+        const GapCloserScoreFunctionBuilder::SimpleTransitionGraph& graph,
+        const EdgeId& /*source*/,
+        const EdgeId& /*sink*/) const {
     DEBUG("Constructing path cluster score function");
     cluster_storage::GraphClusterStorageBuilder cluster_storage_builder(g_, barcode_extractor_ptr_, linkage_distance_);
     DEBUG("Constructing cluster storage");

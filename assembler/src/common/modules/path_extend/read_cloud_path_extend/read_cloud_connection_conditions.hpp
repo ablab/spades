@@ -31,16 +31,16 @@ namespace path_extend {
     };
 
     struct ReadCloudMiddleDijkstraParams {
-      const double score_threshold_;
       const size_t count_threshold_;
-      const size_t middle_count_threshold_;
       const size_t tail_threshold_;
-      const size_t len_threshold_;
       const size_t distance_;
 
-      ReadCloudMiddleDijkstraParams(const double score_threshold, const size_t count_threshold_, size_t middle_count_threshold,
-                            const size_t tail_threshold_, const size_t len_threshold_,
-                            const size_t distance);
+      const LongEdgePairGapCloserParams edge_pair_gap_closer_params_;
+
+      ReadCloudMiddleDijkstraParams(const size_t count_threshold_,
+                                    const size_t tail_threshold_,
+                                    const size_t distance_,
+                                    const LongEdgePairGapCloserParams &edge_pair_gap_closer_params_);
     };
 
     class ReadCloudMiddleDijkstraPredicate: public ScaffoldEdgePredicate {
