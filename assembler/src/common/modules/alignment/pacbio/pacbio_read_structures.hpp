@@ -239,7 +239,7 @@ inline int StringDistance(string &a, string &b) {
                                                    , edlib::edlibNewAlignConfig(2*d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
                                                                          NULL, 0));
     int score = STRING_DIST_INF;
-    if (result.status == edlib::EDLIB_STATUS_OK) {
+    if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
         score = result.editDistance;
     }
     edlib::edlibFreeAlignResult(result);

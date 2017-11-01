@@ -268,6 +268,7 @@ public:
                         prev_edge = EdgeId(0);
                         continue;
                     }
+                    
                     vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
 
                     if (intermediate_path.size() == 0) {
