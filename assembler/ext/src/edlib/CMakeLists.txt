@@ -1,10 +1,10 @@
 ############################################################################
-# Copyright (c) 2016 Saint Petersburg State University
+# Copyright (c) 2017 Saint Petersburg State University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
 
-project(edlib C)
+project(edlib CXX)
 
 
 # Create libraries.
