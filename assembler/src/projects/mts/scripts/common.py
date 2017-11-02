@@ -79,18 +79,17 @@ def get_id(internal_id, sample):
 id_re = re.compile("\\d+")
 split_format = re.compile("^([\w.-]+)_\(\d+_\d+\)$")
 
-def extract_id(contig_id):
-    split_part = split_format.match(contig_id)
-    if split_part:
-        contig_id = split_part.group(1)
-    params = contig_id.split("_")
+def extract_id(name):
+    bin_id = None
+    params = name.split("-", 1)
     if len(params) > 1:
-        return params[1]
-    params = id_re.findall(contig_id)
-    if contig_id.startswith("sample") or contig_id.startswith("group"):
-        return params[1]
+        bin_id = int(id_re.findall(params[0])[0])
+        name = params[1]
+    contig_id = int(id_re.findall(name)[0])
+    if bin_id is None:
+        return contig_id
     else:
-        return params[0]
+        return (bin_id, contig_id)
 
 def load_annotation(file, normalize=True):
     res = dict()
