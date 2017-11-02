@@ -140,7 +140,7 @@ class GraphSimplifier {
         HandlerF handler = [&] (EdgeId e) {
             if (removal_handler_)
                 removal_handler_(e);
-            counting_callback(e);
+            counting_callback.HandleDelete(e);
         };
 
         INFO("Topology-based removal procedures");

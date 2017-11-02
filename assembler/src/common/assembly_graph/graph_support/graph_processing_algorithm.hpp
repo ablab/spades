@@ -90,7 +90,7 @@ public:
             Report();
     }
 
-    void operator()(EdgeId /*e*/) {
+    void HandleDelete(EdgeId /*e*/) {
         cnt_++;
     }
 
