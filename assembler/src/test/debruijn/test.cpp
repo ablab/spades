@@ -19,6 +19,7 @@
 #include "histogram_test.hpp"
 #include "paired_info_test.hpp"
 #include "io_test.hpp"
+#include "graph_alignment_test.hpp"
 
 #define BOOST_TEST_SOURCE
 #include <boost/test/impl/unit_test_main.ipp>

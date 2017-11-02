@@ -11,7 +11,7 @@ add_executable(debruijn_test
                ${EXT_DIR}/include/teamcity_boost/teamcity_boost.cpp
                ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
                test.cpp)
-target_link_libraries(debruijn_test common_modules cityhash ssw ${COMMON_LIBRARIES})
+target_link_libraries(debruijn_test common_modules cityhash ssw edlib ${COMMON_LIBRARIES})
 
 add_executable(component_generator generate_component.cpp)
 target_link_libraries(component_generator common_modules cityhash ${COMMON_LIBRARIES})
