@@ -193,7 +193,7 @@ void BWAIndex::Init() {
 
     for (auto it = g_.ConstEdgeBegin(true); !it.IsEnd(); ++it)
 //TODO:: it is used in mate pairs too, so should be splitted
-        if (g_.length(*it) > 4 * g_.k()){
+        if (g_.length(*it) > 500){
             ids_.push_back(*it);
         }
 
