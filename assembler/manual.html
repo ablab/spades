@@ -413,8 +413,8 @@ SPAdes supports mate-pair only assembly. However, we recommend to use only high-
     If adapter and/or quality trimming software has been used prior to assembly, files with the orphan reads can be provided as "single read files" for the corresponding read-pair library.
 
 <p>
-If you have merged some of the reads from your paired-end (not mate-pair or high-quality mate-pair) library (using tools s.a. <a href="http://ccb.jhu.edu/software/FLASH/" target="_blank">FLASh</a>, <a href="https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmerge-guide/" target="_blank">BBMerge</a> or <a href="https://bitbucket.org/yaoornl/align_test/overview" target="_blank">STORM</a>), you should provide the file with resulting reads as a "merged read file" for the corresponding library.<br>
-    Note that non-empty files with remaining unmerged left/right reads (separate or interlaced) MUST be provided for the same library (for SPAdes to correctly detect the original read length).
+If you have merged some of the reads from your paired-end (not mate-pair or high-quality mate-pair) library (using tools s.a. <a href="https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmerge-guide/" target="_blank">BBMerge</a> or <a href="https://bitbucket.org/yaoornl/align_test/overview" target="_blank">STORM</a>), you should provide the file with resulting reads as a "merged read file" for the corresponding library.<br>
+    Note that non-empty files with the remaining unmerged left/right reads (separate or interlaced) must be provided for the same library (for SPAdes to correctly detect the original read length).
 
 <p>
     In an unlikely case some of the reads from your mate-pair (or high-quality mate-pair) library are "merged", you should provide the resulting reads as a SEPARATE single-read library.
