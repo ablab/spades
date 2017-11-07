@@ -25,6 +25,8 @@
 #include "barcode_index_construction.hpp"
 #include "pipeline/stage.hpp"
 #include "contig_output_stage.hpp"
+#include "scaffold_graph_construction_stage.hpp"
+#include "scaffolder_analysis_stage.hpp"
 
 namespace spades {
 
@@ -122,6 +124,8 @@ void assemble_genome() {
             .add(new debruijn_graph::BarcodeMapConstructionStage())
                .add<debruijn_graph::PairInfoCount>()
                .add<debruijn_graph::DistanceEstimation>()
+               .add(new debruijn_graph::ScaffoldGraphConstructionStage())
+               .add(new debruijn_graph::ScaffolderAnalysisStage())
                .add<debruijn_graph::RepeatResolution>();
     } else {
         SPAdes.add<debruijn_graph::ContigOutput>(false);

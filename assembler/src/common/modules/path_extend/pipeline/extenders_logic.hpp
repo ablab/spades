@@ -108,6 +108,8 @@ private:
 
     shared_ptr<SimpleExtender> MakeSimpleCoverageExtender(size_t lib_index) const;
 
+    shared_ptr<PathExtender> MakeScaffoldGraphExtender(size_t lib_index) const;
+
     shared_ptr<PathExtender> MakeReadCloudExtender(size_t lib_index, const ScaffoldingUniqueEdgeStorage& storage) const;
 
     void PrintExtenders(const vector<shared_ptr<PathExtender>> &extenders) const;

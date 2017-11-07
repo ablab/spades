@@ -3,8 +3,8 @@
 #include "common/pipeline/stage.hpp"
 #include "projects/spades/repeat_resolving.hpp"
 #include "read_cloud_statistics_extractor.hpp"
-#include "scaffold_graph_construction_stage.hpp"
-#include "scaffolder_analysis_stage.hpp"
+#include "projects/spades/scaffold_graph_construction_stage.hpp"
+#include "projects/spades/scaffolder_analysis_stage.hpp"
 
 namespace spades {
     void run_statistics_extractor() {

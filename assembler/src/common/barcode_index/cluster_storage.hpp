@@ -342,23 +342,67 @@ class InitialClusterStorageBuilder {
     InitialClusterStorage ConstructInitialClusterStorage() {
         ClusterStorage cluster_storage;
         InternalEdgeClusterStorage edge_cluster_storage;
-        DEBUG("Building clusters");
+        INFO("Constructing initial cluster storage");
         ConstructClusterStorageFromUnique(cluster_storage, edge_cluster_storage);
-        DEBUG("Constructing initial cluster storage");
+        INFO("Cluster storage construction finished");
         InitialClusterStorage result(std::move(cluster_storage), std::move(edge_cluster_storage));
         return result;
     }
 
     void ConstructClusterStorageFromUnique(ClusterStorage& cluster_storage, InternalEdgeClusterStorage& edge_cluster_storage) {
-        for (const auto &unique_edge: target_edges_) {
+        vector<EdgeId> target_edges_vector;
+        std::copy(target_edges_.begin(), target_edges_.end(), std::back_inserter(target_edges_vector));
+        size_t block_size = target_edges_vector.size() / 10;
+        INFO("Block size: " << block_size);
+        size_t processed_edges = 0;
+#pragma omp parallel for num_threads(num_threads_)
+        for (size_t i = 0; i < target_edges_vector.size(); ++i) {
+            auto unique_edge = target_edges_vector[i];
             DEBUG("Extracting clusters from edge " << unique_edge.int_id());
-            ExtractClustersFromEdge(unique_edge, distance_threshold_, min_read_threshold_, edge_cluster_storage,
-                                    cluster_storage);
+            auto barcode_to_clusters = ExtractClustersFromEdge(unique_edge, distance_threshold_, min_read_threshold_);
+#pragma omp critical
+            {
+                for (auto &barcode_and_clusters: barcode_to_clusters) {
+                    BarcodeId barcode = barcode_and_clusters.first;
+                    vector<Cluster> &clusters = barcode_and_clusters.second;
+                    AddClustersFromBarcodeOnEdge(unique_edge, barcode, distance_threshold_,
+                                                 edge_cluster_storage, cluster_storage, clusters);
+                }
+                processed_edges++;
+                if (processed_edges % block_size == 0) {
+                    INFO("Processed " << processed_edges << " out of " << target_edges_vector.size());
+                }
+            }
         }
     }
 
-    void ExtractClustersFromEdge(const EdgeId &edge, size_t distance, size_t min_read_threshold,
-                                 InternalEdgeClusterStorage &edge_cluster_storage, ClusterStorage &cluster_storage) {
+    void AddClustersFromBarcodeOnEdge(const EdgeId& edge, const BarcodeId& barcode, size_t distance,
+                                      InternalEdgeClusterStorage &edge_cluster_storage,
+                                      ClusterStorage &cluster_storage, vector<Cluster>& local_clusters) {
+        vector<size_t> local_ids;
+        for (auto& cluster: local_clusters) {
+            size_t id = cluster_storage.Add(cluster);
+            local_ids.push_back(id);
+            TRACE("Id: " << id);
+            TRACE("(" << cluster.GetMapping(edge).GetLeft() << ", " << cluster.GetMapping(edge).GetRight()
+                      << ")");
+        }
+        VERIFY(local_clusters.size() >= 1);
+        auto left_mapping = cluster_storage.Get(local_ids[0]).GetMapping(edge);
+        auto right_mapping = cluster_storage.Get(local_ids.back()).GetMapping(edge);
+        if (left_mapping.IsOnHead(distance)) {
+            edge_cluster_storage.InsertBarcodeOnHead(edge, barcode, local_ids[0]);
+            TRACE("Head cluster id: " << local_ids[0]);
+        }
+        if (right_mapping.IsOnTail(distance, g_.length(edge))) {
+            edge_cluster_storage.InsertBarcodeOnTail(edge, barcode, local_ids.back());
+            TRACE("Tail cluster id: " << local_ids.back());
+        }
+    }
+
+    std::unordered_map<BarcodeId, vector<Cluster>> ExtractClustersFromEdge(const EdgeId& edge, size_t distance,
+                                                                           size_t min_read_threshold) {
+        std::unordered_map<BarcodeId, vector<Cluster>> result;
         TRACE("Building clusters on edge " << edge.int_id());
         TRACE("Barcode coverage: " << barcode_extractor_ptr_->AverageBarcodeCoverage());
         for (auto barcode_it = barcode_extractor_ptr_->barcode_iterator_begin(edge);
@@ -367,28 +411,11 @@ class InitialClusterStorageBuilder {
             TRACE("For barcode: " << barcode);
             if (barcode_extractor_ptr_->GetNumberOfReads(edge, barcode) > min_read_threshold) {
                 auto local_clusters = ExtractClustersFromBarcodeOnEdge(edge, barcode, distance);
-                vector<size_t> local_ids;
-                for (auto& cluster: local_clusters) {
-                    size_t id = cluster_storage.Add(cluster);
-                    local_ids.push_back(id);
-                    TRACE("Id: " << id);
-                    TRACE("(" << cluster.GetMapping(edge).GetLeft() << ", " << cluster.GetMapping(edge).GetRight()
-                              << ")");
-                }
-                VERIFY(local_clusters.size() >= 1);
-                auto left_mapping = cluster_storage.Get(local_ids[0]).GetMapping(edge);
-                auto right_mapping = cluster_storage.Get(local_ids.back()).GetMapping(edge);
-                if (left_mapping.IsOnHead(distance)) {
-                    edge_cluster_storage.InsertBarcodeOnHead(edge, barcode, local_ids[0]);
-                    TRACE("Head cluster id: " << local_ids[0]);
-                }
-                if (right_mapping.IsOnTail(distance, g_.length(edge))) {
-                    edge_cluster_storage.InsertBarcodeOnTail(edge, barcode, local_ids.back());
-                    TRACE("Tail cluster id: " << local_ids.back());
-                }
+                result.insert({barcode, local_clusters});
             }
         }
-    }
+        return result;
+    };
 
     vector<Cluster> ExtractClustersFromBarcodeOnEdge(const EdgeId &edge, const BarcodeId &barcode,
                                                      size_t distance) {

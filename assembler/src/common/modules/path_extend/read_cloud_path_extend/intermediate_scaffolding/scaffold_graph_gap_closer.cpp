@@ -120,8 +120,8 @@ bool CloudScaffoldSubgraphExtractor::CheckSubGraphVertex(const CloudScaffoldSubg
                                                          const CloudScaffoldSubgraphExtractor::ScaffoldVertex& second) const {
     return vertex != g_.conjugate(first) and vertex != g_.conjugate(second);
 }
-ScaffoldGraph ScaffoldGraphGapCloser::CloseGapsInLargeGraph(const ScaffoldGraphGapCloser::ScaffoldGraph& large_scaffold_graph,
-                                                            const ScaffoldGraphGapCloser::ScaffoldGraph& small_scaffold_graph) const {
+ScaffoldGraph ScaffoldGraphGapCloser::CleanSmallGraphUsingLargeGraph(const ScaffoldGraphGapCloser::ScaffoldGraph &large_scaffold_graph,
+                                                                     const ScaffoldGraphGapCloser::ScaffoldGraph &small_scaffold_graph) const {
     ScaffoldGraphExtractor extractor;
     auto univocal_edges = extractor.ExtractUnivocalEdges(large_scaffold_graph);
     const size_t MAX_ITERATIONS = 10;
@@ -151,8 +151,14 @@ ScaffoldGraph ScaffoldGraphGapCloser::CloseGapsInLargeGraph(const ScaffoldGraphG
 }
 
 IterationResult ScaffoldGraphGapCloser::LaunchGapClosingIteration(
-        const ScaffoldGraph& current_graph,
+        const ScaffoldGraph& input_graph,
         const vector<ScaffoldGraphGapCloser::ScaffoldEdge>& univocal_edges) const {
+    DEBUG("Cleaning graph using cut vertices");
+    DEBUG(input_graph.VertexCount() << " vertices and " << input_graph.EdgeCount() << " edges in cut vertex graph");
+    auto current_graph = CleanGraphUsingCutVertices(input_graph, univocal_edges);
+
+    DEBUG(current_graph.VertexCount() << " vertices and " << current_graph.EdgeCount() << " edges in cut vertex graph");
+    DEBUG("Getting inserted path connections");
     auto inserted_vertices_data = GetInsertedConnections(univocal_edges, current_graph);
     std::unordered_map<ScaffoldVertex, ScaffoldVertex> inserted_vertices_map = inserted_vertices_data.GetInsertedConnectionsMap();
     size_t internal_inserted = inserted_vertices_data.GetInsertedVertices();
@@ -236,6 +242,102 @@ InsertedVerticesData ScaffoldGraphGapCloser::GetInsertedConnections(const vector
         }
     }
     return InsertedVerticesData(inserted_vertices_map, internal_inserted, closed_edges);
+}
+ScaffoldGraph ScaffoldGraphGapCloser::CleanGraphUsingCutVertices(const ScaffoldGraph &input_graph,
+                                                                 const vector<ScaffoldGraphGapCloser::ScaffoldEdge> &univocal_edges) const {
+    ScaffoldGraph result(g_);
+    size_t cut_conflicts = 0;
+    std::set<transitions::Transition> edges_to_keep;
+    std::unordered_set<EdgeId> cut_vertices_set;
+    CloudScaffoldSubgraphExtractor subgraph_extractor(g_, barcode_extractor_, subgraph_extractor_params_);
+    for (const auto &edge: univocal_edges) {
+        auto subgraph = subgraph_extractor.ExtractSubgraphBetweenVertices(input_graph, edge.getStart(), edge.getEnd());
+        DEBUG(subgraph.GetEdgesCount() << " edges in subgraph" << endl);
+        CutVerticesExtractor cut_vertices_extractor(subgraph);
+        EdgeId source = edge.getStart();
+        EdgeId sink = edge.getEnd();
+        auto cut_vertices = cut_vertices_extractor.GetCutVertices(source, sink);
+        for (const auto &cut: cut_vertices) {
+            bool result = cut_vertices_set.insert(cut).second;
+            if (not result) {
+                ++cut_conflicts;
+            }
+            for (auto it = subgraph.outcoming_begin(cut); it != subgraph.outcoming_end(cut); ++it) {
+                transitions::Transition t(cut, *it);
+                edges_to_keep.insert(t);
+            }
+            for (auto it = subgraph.incoming_begin(cut); it != subgraph.incoming_end(cut); ++it) {
+                transitions::Transition t(*it, cut);
+                edges_to_keep.insert(t);
+            }
+        }
+    }
+    DEBUG(edges_to_keep.size() << " edges to keep");
+    DEBUG(cut_vertices_set.size() << " cut vertices");
+    DEBUG(cut_conflicts << " cut conflicts");
+    size_t removed_edges = 0;
+    for (const auto &scaff_vertex: input_graph.vertices()) {
+        result.AddVertex(scaff_vertex);
+    }
+    for (const ScaffoldEdge &scaff_edge: input_graph.edges()) {
+        transitions::Transition t(scaff_edge.getStart(), scaff_edge.getEnd());
+        bool found_cut = cut_vertices_set.find(t.first_) != cut_vertices_set.end() or
+            cut_vertices_set.find(t.second_) != cut_vertices_set.end();
+        if (not found_cut or edges_to_keep.find(t) != edges_to_keep.end()) {
+            result.AddEdge(scaff_edge);
+        } else {
+            ++removed_edges;
+        }
+    }
+    DEBUG(removed_edges << " removed edges");
+    return result;
+}
+ScaffoldGraph ScaffoldGraphGapCloser::CloseGapsInLargeGraph(const ScaffoldGraph &large_scaffold_graph,
+                                                            const ScaffoldGraph &small_scaffold_graph) const {
+    ScaffoldGraph result(g_);
+
+    vector<ScaffoldEdge> new_edges;
+    const size_t length_bound = subgraph_extractor_params_.large_length_threshold_;
+    INFO("Length bound: " << length_bound);
+
+    for (const ScaffoldVertex &vertex: large_scaffold_graph.vertices()) {
+        auto dij = CreateLengthBasedScaffoldDijkstra(small_scaffold_graph, vertex, length_bound);
+        dij.Run(vertex);
+        for (const auto &reached: dij.ReachedVertices()) {
+            if (g_.length(reached) >= length_bound) {
+                ScaffoldEdge new_edge(vertex, reached);
+                if (vertex != reached and vertex != g_.conjugate(reached)) {
+                    new_edges.push_back(new_edge);
+                    INFO("Added edge: " << new_edge.getStart().int_id() << " -> " << new_edge.getEnd().int_id());
+                }
+            }
+        }
+    }
+
+    INFO("Found " << new_edges.size() << " new edges");
+    set<transitions::Transition> old_edges;
+
+    for (const auto& vertex: large_scaffold_graph.vertices()) {
+        result.AddVertex(vertex);
+    }
+
+    for (const ScaffoldEdge &edge: large_scaffold_graph.edges()) {
+        result.AddEdge(edge);
+        transitions::Transition old_edge(edge.getStart(), edge.getEnd());
+        old_edges.insert(old_edge);
+    }
+    size_t added_edges = 0;
+
+    for (const auto &edge: new_edges) {
+        transitions::Transition new_transition(edge.getStart(), edge.getEnd());
+        if (old_edges.find(new_transition) == old_edges.end()) {
+            result.AddEdge(edge);
+            ++added_edges;
+        }
+    }
+
+    INFO("Added " << added_edges << " added edges");
+    return result;
 }
 
 vector<EdgeId> SubgraphPathExtractor::ExtractSimplePathFromSubgraph(const path_extend::SimpleGraph<EdgeId>& graph,
@@ -528,7 +630,15 @@ ScaffoldGraph ScaffoldGraphGapCloserLauncher::GetFinalScaffoldGraph(const conj_g
     path_extend::ScaffoldGraphGapCloser gap_closer(graph_pack.g, barcode_extractor,
                                                    subgraph_extractor_params, path_extractor_parts);
 
-    auto new_small_scaffold_graph = gap_closer.CloseGapsInLargeGraph(large_scaffold_graph, small_scaffold_graph);
+    INFO(large_scaffold_graph.VertexCount() << " vertices and "
+                                            << large_scaffold_graph.EdgeCount() << " edges in old large scaffold graph");
+
+//    auto new_large_scaffold_graph = gap_closer.CloseGapsInLargeGraph(large_scaffold_graph, small_scaffold_graph);
+//    INFO(new_large_scaffold_graph.VertexCount() << " vertices and "
+//                                                << new_large_scaffold_graph.EdgeCount() << " edges in new large scaffold graph");
+
+    auto new_small_scaffold_graph =
+        gap_closer.CleanSmallGraphUsingLargeGraph(large_scaffold_graph, small_scaffold_graph);
     return new_small_scaffold_graph;
 }
 CloudSubgraphExtractorParams ScaffoldGraphGapCloserParamsConstructor::ConstructSubgraphExtractorParamsFromConfig() {
@@ -560,9 +670,11 @@ shared_ptr<GapCloserScoreFunctionBuilder> PathExtractionPartsConstructor::Constr
     std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::inserter(target_edges, target_edges.begin()));
     INFO(target_edges.size() << " target edges.");
     auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
+    size_t cluster_storage_builder_threads = cfg::get().max_threads;
     cluster_storage::InitialClusterStorageBuilder cluster_storage_builder(gp_.g, barcode_extractor_ptr,
                                                                           target_edges, linkage_distance,
-                                                                          min_read_threshold, cfg::get().max_threads);
+                                                                          min_read_threshold,
+                                                                          cluster_storage_builder_threads);
     INFO("Constructing initial cluster storage");
     auto initial_cluster_storage = make_shared<cluster_storage::InitialClusterStorage>(cluster_storage_builder.ConstructInitialClusterStorage());
     INFO("Initial cluster storage size: " << initial_cluster_storage->get_cluster_storage().Size());
@@ -674,27 +786,46 @@ SubgraphEdgeChecker::SimpleTransitionGraph SubgraphEdgeChecker::CleanGraphUsingP
     }
     return result;
 }
-//void CutVerticesExtractor::Run(const EdgeId& current, boost::optional<EdgeId> prev, size_t& current_time) {
-//    used_vertices_.insert(current);
-//    time_in_[current] = current_time;
-//    f_up_[current] = current_time;
-//    current_time++;
-//    size_t children = 0;
-//    for (auto it = graph_.outcoming_begin(current); it != graph_.outcoming_end(current); ++it) {
-//        EdgeId next = *it;
-//        if (prev.is_initialized() and next == prev) {
-//            continue;
-//        }
-//        if (used_vertices_.find(next) != used_vertices_.end()) {
-//            f_up_[current] = std::min(f_up_.at(current), time_in_.at(next));
-//        } else {
-//            Run(next, current, current_time);
-//            f_up_[current] = std::min(f_up_.at(current), f_up_.at(next));
-//            if (f_up_.at(next) >= time_in_[current] and prev.is_initialized()) {
-//                cutvertices_.insert(current);
-//                ++children;
-//            }
-//        }
-//    }
-//}
+bool CutVerticesExtractor::Check(const EdgeId &sink, const EdgeId &source, const EdgeId &candidate) {
+    std::queue<EdgeId> vertex_queue;
+    std::unordered_set<EdgeId> processed;
+    vertex_queue.push(sink);
+    while (not vertex_queue.empty()) {
+        auto current_vertex = vertex_queue.front();
+        vertex_queue.pop();
+        if (current_vertex != candidate and processed.find(current_vertex) == processed.end()) {
+            for (auto it = graph_.outcoming_begin(current_vertex); it != graph_.outcoming_end(current_vertex); ++it) {
+                EdgeId next = *it;
+                if (processed.find(next) == processed.end()) {
+                    vertex_queue.push(next);
+                }
+            }
+        }
+        processed.insert(current_vertex);
+    }
+    return processed.find(source) == processed.end();
+}
+vector<EdgeId> CutVerticesExtractor::GetCutVertices(const EdgeId &source, const EdgeId &sink) {
+    vector<EdgeId> result;
+    TRACE("Source: " << source.int_id());
+    TRACE("Sink: " << sink.int_id());
+    TRACE("Current graph: ");
+    for (const auto& vertex: graph_) {
+        for (auto it = graph_.outcoming_begin(vertex); it != graph_.outcoming_end(vertex); ++it) {
+            TRACE(vertex.int_id() << " -> " << (*it).int_id());
+        }
+    }
+    for (const auto &vertex: graph_) {
+        if (vertex != source and vertex != sink and Check(source, sink, vertex)) {
+            result.push_back(vertex);
+        }
+    }
+    TRACE(result.size() << " cut vertices:");
+    for (const auto &edge: result) {
+        TRACE(edge.int_id())
+    }
+    return result;
+}
+CutVerticesExtractor::CutVerticesExtractor(const CutVerticesExtractor::SimpleTransitionGraph &graph_)
+    : graph_(graph_) {}
 }

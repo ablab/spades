@@ -42,4 +42,8 @@ void debruijn_graph::ScaffolderAnalysisStage::run(debruijn_graph::conj_graph_pac
     auto new_short_stats = scaffold_graph_validator.GetScaffoldGraphStats(final_scaffold_graph, short_edge_reference_paths);
     INFO("Resulting scaffold graph stats");
     new_short_stats.Serialize(std::cout);
+    graph_pack.scaffold_graph_storage.SetSmallScaffoldGraph(final_scaffold_graph);
+    const auto& storage_graph = graph_pack.scaffold_graph_storage.GetSmallScaffoldGraph();
+    INFO(storage_graph.VertexCount() << "vertices and " << storage_graph.EdgeCount()
+                                            << "edges in new small scaffold graph");
 }

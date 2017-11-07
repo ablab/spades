@@ -18,6 +18,8 @@ add_executable(spades-core main.cpp
             hybrid_aligning.cpp
             chromosome_removal.cpp
             barcode_index_construction.cpp
+            scaffold_graph_construction_stage.cpp
+            scaffolder_analysis_stage.cpp
             series_analysis.cpp
             ../mts/contig_abundance.cpp)
 

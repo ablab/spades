@@ -37,7 +37,7 @@ public:
         size_t color_;
         //read pair weight or anything else
         double weight_;
-        //todo discuss
+        //todo discuss (distance between vertices by default)
         size_t length_;
 
     public:
