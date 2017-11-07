@@ -65,18 +65,22 @@ namespace path_extend {
 //        std::unordered_set<EdgeId> ExtractCutVertices(const SimpleTransitionGraph& graph, const EdgeId& source, const EdgeId& sink) const;
     };
 
-//    class CutVerticesExtractor {
-//     public:
-//        typedef SimpleGraph<EdgeId> SimpleTransitionGraph;
-//
-//        std::unordered_set<EdgeId> used_vertices_;
-//        std::unordered_map<EdgeId, size_t> time_in_;
-//        std::unordered_map<EdgeId, size_t> f_up_;
-//        std::unordered_set<EdgeId> cut_vertices_;
-//        const SimpleTransitionGraph& graph_;
-//
-//        void Run(const EdgeId& current, const EdgeId& prev, size_t& current_time);
-//    };
+    class CutVerticesExtractor {
+     public:
+        typedef SimpleGraph<EdgeId> SimpleTransitionGraph;
+
+     private:
+        const SimpleTransitionGraph& graph_;
+     public:
+        CutVerticesExtractor(const SimpleTransitionGraph &graph_);
+
+        vector<EdgeId> GetCutVertices(const EdgeId& source, const EdgeId& sink);
+
+     private:
+        bool Check(const EdgeId& sink, const EdgeId& source, const EdgeId& candidate);
+
+        DECL_LOGGER("CutVerticesExtractor");
+    };
 
     class CloudScaffoldSubgraphExtractor: public ScaffoldSubgraphExtractor {
      public:
@@ -277,6 +281,9 @@ namespace path_extend {
                                const CloudSubgraphExtractorParams& subgraph_extractor_params,
                                const PathExtractorParts& path_extractor_params);
 
+        ScaffoldGraph CleanSmallGraphUsingLargeGraph(const ScaffoldGraph &large_scaffold_graph,
+                                                     const ScaffoldGraph &small_scaffold_graph) const;
+
         ScaffoldGraph CloseGapsInLargeGraph(const ScaffoldGraph& large_scaffold_graph,
                                             const ScaffoldGraph& small_scaffold_graph) const;
 
@@ -285,6 +292,8 @@ namespace path_extend {
 
         InsertedVerticesData GetInsertedConnections(const vector<ScaffoldEdge>& univocal_edges,
                                                     const ScaffoldGraph& current_graph) const;
+
+        ScaffoldGraph CleanGraphUsingCutVertices(const ScaffoldGraph& input_graph, const vector<ScaffoldEdge>& univocal_edges) const;
         DECL_LOGGER("ScaffoldGraphGapCloser");
     };
 

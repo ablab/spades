@@ -11,13 +11,19 @@ namespace path_extend {
         return small_scaffold_graph_;
     }
     void ScaffoldGraphStorage::SetSmallScaffoldGraph(const ScaffoldGraph& small_scaffold_graph) {
-        CopyScaffoldGraph(small_scaffold_graph, small_scaffold_graph_);
+        ReplaceScaffoldGraph(small_scaffold_graph, small_scaffold_graph_);
     }
     void ScaffoldGraphStorage::SetLargeScaffoldGraph(const ScaffoldGraph& large_scaffold_graph) {
-        CopyScaffoldGraph(large_scaffold_graph, large_scaffold_graph_);
+        ReplaceScaffoldGraph(large_scaffold_graph, large_scaffold_graph_);
     }
     ScaffoldGraphStorage::ScaffoldGraphStorage(const debruijn_graph::Graph& g) : large_scaffold_graph_(g), small_scaffold_graph_(g) {}
-    void ScaffoldGraphStorage::CopyScaffoldGraph(const ScaffoldGraphStorage::ScaffoldGraph& from, ScaffoldGraph& to) {
+    void ScaffoldGraphStorage::ReplaceScaffoldGraph(const ScaffoldGraphStorage::ScaffoldGraph &from, ScaffoldGraph &to) {
+        for (const ScaffoldGraph::ScaffoldEdge& edge: to.edges()) {
+            to.RemoveEdge(edge);
+        }
+        for (const ScaffoldGraph::ScaffoldVertex& vertex: to.vertices()) {
+            to.RemoveVertex(vertex);
+        }
         for (const ScaffoldGraph::ScaffoldVertex& vertex: from.vertices()) {
             to.AddVertex(vertex);
         }
