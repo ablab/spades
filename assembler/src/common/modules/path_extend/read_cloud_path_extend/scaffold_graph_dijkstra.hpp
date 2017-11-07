@@ -113,6 +113,59 @@ class ScaffoldBarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t
     DECL_LOGGER("ScaffoldBarcodePutChecker");
 };
 
+template<class Graph, typename distance_t = size_t>
+class LengthBasedProcessChecker : public VertexProcessChecker<Graph, distance_t> {
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+
+    const Graph& g_;
+    const VertexId start_;
+    const size_t length_bound_;
+ public:
+    LengthBasedProcessChecker(const Graph &g_, const VertexId start_, const size_t length_bound_)
+        : g_(g_), start_(start_), length_bound_(length_bound_) {}
+
+    bool Check(VertexId vertex, distance_t /*distance*/) override {
+        return vertex == start_ or g_.AssemblyGraph().length(vertex) <= length_bound_;
+    }
+};
+
+template<class Graph, typename distance_t = size_t>
+class TrivialScaffoldPutChecker : public VertexPutChecker<Graph, distance_t> {
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+
+ public:
+    TrivialScaffoldPutChecker() {}
+
+    bool Check(VertexId vertex, EdgeId /*unused*/, distance_t distance) const override {
+        return true;
+    }
+    DECL_LOGGER("TrivialScaffoldPutChecker");
+};
+
+typedef ComposedDijkstraSettings<path_extend::scaffold_graph::ScaffoldGraph,
+                                 SimpleScaffoldGraphLengthCalculator<path_extend::scaffold_graph::ScaffoldGraph>,
+                                 LengthBasedProcessChecker<path_extend::scaffold_graph::ScaffoldGraph>,
+                                 TrivialScaffoldPutChecker<path_extend::scaffold_graph::ScaffoldGraph>,
+                                 ForwardNeighbourIteratorFactory<path_extend::scaffold_graph::ScaffoldGraph> >
+    LengthBasedScaffoldDijkstraSettings;
+
+typedef Dijkstra<path_extend::scaffold_graph::ScaffoldGraph, LengthBasedScaffoldDijkstraSettings> LengthBasedScaffoldDijkstra;
+
+static LengthBasedScaffoldDijkstra CreateLengthBasedScaffoldDijkstra(
+    const path_extend::scaffold_graph::ScaffoldGraph& graph,
+    const path_extend::scaffold_graph::ScaffoldGraph::ScaffoldVertex& vertex,
+    size_t length_bound,
+    size_t max_vertex_number = -1ul){
+    return LengthBasedScaffoldDijkstra(graph, LengthBasedScaffoldDijkstraSettings(
+        SimpleScaffoldGraphLengthCalculator<path_extend::scaffold_graph::ScaffoldGraph>(),
+        LengthBasedProcessChecker<path_extend::scaffold_graph::ScaffoldGraph>(graph, vertex, length_bound),
+        TrivialScaffoldPutChecker<path_extend::scaffold_graph::ScaffoldGraph>(),
+        ForwardNeighbourIteratorFactory<path_extend::scaffold_graph::ScaffoldGraph>(graph)),
+                                          max_vertex_number);
+}
+
 //forward scaffold dijkstra
 
 typedef ComposedDijkstraSettings<path_extend::scaffold_graph::ScaffoldGraph,

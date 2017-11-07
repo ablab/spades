@@ -418,7 +418,8 @@ Extenders ExtendersGenerator::MakeReadCloudExtenders(const ScaffoldingUniqueEdge
         const auto &lib = dataset_info_.reads[lib_index];
 
         if (lib.type() == io::LibraryType::Clouds10x) {
-            result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index, storage));
+//            result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index, storage));
+            result.emplace_back(lib.type(), lib_index, MakeScaffoldGraphExtender(lib_index));
         }
     }
     std::stable_sort(result.begin(), result.end());
@@ -635,6 +636,16 @@ shared_ptr<ExtensionChooser> ExtendersGenerator::MakeSimpleExtensionChooser(size
                                                                  opts.priority_coeff);
 
     return extension_chooser;
+}
+shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender(size_t lib_index) const {
+    const auto &lib = dataset_info_.reads[lib_index];
+    const auto &pset = params_.pset;
+    const auto &scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
+    INFO(scaffold_graph.VertexCount() << "vertices and " << scaffold_graph.EdgeCount()
+                                     << "edges in scaffold graph");
+
+    shared_ptr<ScaffoldGraphExtender> extender = make_shared<ScaffoldGraphExtender>(gp_.g, scaffold_graph, used_unique_storage_);
+    return extender;
 }
 
 }
