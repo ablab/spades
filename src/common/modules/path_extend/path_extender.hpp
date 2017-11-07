@@ -873,4 +873,70 @@ protected:
 
 };
 
+class ScaffoldGraphExtender: public PathExtender {
+    typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
+    typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
+    typedef ScaffoldGraph::ScaffoldVertex ScaffoldVertex;
+
+ protected:
+    const ScaffoldGraph &scaffold_graph_;
+    std::unordered_set<ScaffoldVertex> scaffold_graph_vertices_;
+    UsedUniqueStorage& used_storage_;
+
+ public:
+    ScaffoldGraphExtender(const Graph &g, const ScaffoldGraph &scaffold_graph_, UsedUniqueStorage& used_storage)
+        : PathExtender(g), scaffold_graph_(scaffold_graph_), used_storage_(used_storage) {
+        INFO("Constructing scaffold graph vertices");
+        for (const ScaffoldVertex &vertex: scaffold_graph_.vertices()) {
+            scaffold_graph_vertices_.insert(vertex);
+        }
+    }
+
+    bool MakeGrowStep(BidirectionalPath& path, PathContainer* /*paths_storage*/) override {
+        boost::optional<EdgeId> last_unique = FindLastUniqueInPath(path, scaffold_graph_vertices_);
+        DEBUG("Found last unique");
+        if (not last_unique.is_initialized()) {
+            return false;
+        } else {
+            DEBUG("Last unique is " << last_unique.get().int_id());
+            auto outgoing_edges = scaffold_graph_.OutgoingEdges(last_unique.get());
+            DEBUG("Found " << outgoing_edges.size() << " candidates");
+            if (outgoing_edges.size() != 1) {
+                return false;
+            }
+            ScaffoldEdge connection = outgoing_edges.back();
+            Gap gap(static_cast<int>(connection.getLength()));
+            EdgeId next = connection.getEnd();
+            return TryUseEdge(path, next, gap);
+        }
+    }
+
+ protected:
+    boost::optional<EdgeId> FindLastUniqueInPath(const BidirectionalPath& path,
+                                                 const unordered_set<ScaffoldVertex>& target_edges) const {
+        boost::optional<EdgeId> result;
+        for (int i =  (int)path.Size() - 1; i >= 0; --i) {
+            EdgeId current = path.At(i);
+            if (target_edges.find(current) != target_edges.end()) {
+                result = path.At(i);
+                return result;
+            }
+        }
+        return result;
+    }
+
+    //fixme code duplication with LoopDetectingPathExtender
+    bool TryUseEdge(BidirectionalPath &path, EdgeId e, const Gap &gap) {
+        bool success = used_storage_.TryUseEdge(path, e, gap);
+        if (success) {
+            DEBUG("Adding edge. PathId: " << path.GetId() << " path length: " << path.Length() - 1 << ", fixed gap : "
+                                          << gap.gap << ", trash length: " << gap.trash_previous << "-" << gap.trash_current);
+            INFO("Added edge " << e.int_id());
+        }
+        return success;
+    }
+
+    DECL_LOGGER("ScaffoldGraphExtender");
+};
+
 }

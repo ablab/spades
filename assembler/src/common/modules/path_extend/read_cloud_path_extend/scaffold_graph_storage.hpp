@@ -35,7 +35,7 @@ namespace path_extend {
                                const std::map<size_t, debruijn_graph::EdgeId>& edge_map) const;
 
      private:
-        void CopyScaffoldGraph(const ScaffoldGraph& from, ScaffoldGraph& to);
+        void ReplaceScaffoldGraph(const ScaffoldGraph &from, ScaffoldGraph &to);
 
 };
 }
