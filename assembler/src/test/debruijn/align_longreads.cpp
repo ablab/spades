@@ -183,13 +183,22 @@ public:
                 str += tmp.substr(last_range.mapped_range.end_pos, gp_.g.k());
                 pathStr += cur_path + "; ";
                 subStr += cur_substr + "\n";
+                int d = max((int) read.sequence().size(), 20);
+                edlib::EdlibAlignResult result = edlib::edlibAlign(read.sequence().str().c_str(), read.sequence().size(), str.c_str(), str.size()
+                                                   , edlib::edlibNewAlignConfig(d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
+                                                                         NULL, 0));
+                int score = pacbio::STRING_DIST_INF;
+                if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
+                    score = result.editDistance;
+                }
+                edlib::edlibFreeAlignResult(result);
                 if (seq_end - seq_start > max_len){
                     max_len = seq_end - seq_start;
                     max_str = read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t"  
-                                                    + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\t" + str + "\n";
+                                                    + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\t"+ std::to_string(score) + "\t" + str + "\n";
                 }
                 sum_str += read.name() + "\t" + std::to_string(seq_start) + "\t" + std::to_string(seq_end) + "\t" 
-                                                 + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\t" + str + "\n";
+                                                 + std::to_string(read.sequence().size())+  "\t" + cur_path + "\t" + cur_path_len + "\t" + std::to_string(score) + "\t" + str + "\n";
             }
             INFO("Read " << read.name() << " aligned and length=" << read.sequence().size() <<  " and max_len=" << max_len);
             INFO("Read " << read.name() << ". Paths with ends: " << pathStr );
