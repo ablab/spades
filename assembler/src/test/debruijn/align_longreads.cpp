@@ -61,15 +61,162 @@ public:
         return outStr;
     }
 
+    void getCIGAR(std::string &read, std::string aligned, std::string &cigar, int &score) {
+        int d = max((int) read.size(), 20);
+        edlib::EdlibAlignResult result = edlib::edlibAlign(aligned.c_str(), (int) aligned.size(), read.c_str(), (int) read.size()
+                                           , edlib::edlibNewAlignConfig(d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_PATH,
+                                                                 NULL, 0));
+        cigar = "";
+        score = pacbio::STRING_DIST_INF;
+        if (result.status == edlib::EDLIB_STATUS_OK && result.editDistance >= 0) {
+            score = result.editDistance;
+            cigar = edlib::edlibAlignmentToCigar(result.alignment, result.alignmentLength, edlib::EDLIB_CIGAR_EXTENDED);
+        }
+        edlib::edlibFreeAlignResult(result);
+        string cur_num = "";
+        int n = -1;
+        int len_r = 0;
+        int len_a = 0;
+        for (size_t i = 0; i < cigar.size(); ++ i) {
+            if (isdigit(cigar[i])) {
+                cur_num += cigar[i];
+            } else {
+                n = std::stoi(cur_num);
+                char c = cigar[i];
+                if (c == '=' || c == 'I' || c == 'X' || c == 'M'){
+                    len_a += n;
+                }
+                if (c != 'I'){
+                    len_r += n;
+                }
+                cur_num = "";
+                n = 0;
+            }
+        }
+        DEBUG("CIGAR: "<< len_a << " " << aligned.size()  << " " << len_r << " " << read.size());
+    }
+
+    void getByEdgeCIGAR(string &read, string &aligned, std::vector<size_t> &edgeblocks, size_t start, std::vector<string> &edgecigar, std::vector<Range> &edge_initial_ranges, int &score) {
+        std::string cigar;
+        getCIGAR(read, aligned, cigar, score);
+        DEBUG("CIGAR: " << "\n" << read << "\n" << aligned << "\n" << cigar );
+        string cur_num = "";
+        int n = 0;
+        size_t r_i = 0;
+        size_t a_i = 0;
+        size_t cur_block = 0;
+        string cur_cigar = "";
+        size_t cur_start_pos = start;
+        size_t cur_end_pos = start;
+        for (size_t i = 0; i < cigar.size(); ++ i) {
+            if (isdigit(cigar[i])) {
+                cur_num += cigar[i];
+            } else {
+                n = std::stoi(cur_num);
+                char c = cigar[i];
+                if (c == '=' || c == 'I' || c == 'X' || c == 'M'){
+                    while (a_i + n > edgeblocks[cur_block]) {
+                        DEBUG("CIGAR: " << n << c);
+                        n -= (int) (edgeblocks[cur_block] - a_i);
+                        if (c != 'I') {
+                            r_i += (edgeblocks[cur_block] - a_i);
+                            cur_end_pos += (edgeblocks[cur_block] - a_i);
+                        }
+                        edge_initial_ranges.push_back(Range(cur_start_pos, cur_end_pos));
+                        cur_start_pos = cur_end_pos;
+                        if (edgeblocks[cur_block] - a_i != 0) {
+                            edgecigar.push_back(cur_cigar + std::to_string(edgeblocks[cur_block] - a_i) + c);
+                        } else {
+                            edgecigar.push_back(cur_cigar);
+                        }
+                        DEBUG("CIGAR: " << a_i << " " << n << " " << edgeblocks[cur_block] << " " << edgecigar[edgecigar.size() - 1] << " " << i << " " << cigar.size());
+                        a_i = edgeblocks[cur_block];
+                        cur_cigar = "";
+                        cur_block ++;
+                        if (cur_block > edgeblocks.size()) {
+                            WARN("CIGAR: Blocks ended! Something wrong with CIGAR alignment");
+                            break;
+                        } 
+                    }
+                    a_i += n;
+                }
+                if (c != 'I'){  
+                    r_i += n;   
+                    cur_end_pos += n;
+                }
+                cur_cigar += std::to_string(n) + c;
+                cur_num = "";
+            }
+        }
+        if (cur_cigar != "") {
+            edgecigar.push_back(cur_cigar);
+            edge_initial_ranges.push_back(Range(cur_start_pos, cur_end_pos));
+            DEBUG("CIGAR: bounds  " << cur_start_pos << " " << cur_end_pos << " " << start << " " << r_i);
+        }
+    }
+
+    void getMappedString(const omnigraph::MappingPath<debruijn_graph::EdgeId> &mappingpath, string &aligned, std::vector<size_t> &edgeblocks) {
+        for (size_t i = 0; i < mappingpath.size(); ++ i) {
+            EdgeId edgeid = mappingpath.edge_at(i);
+            omnigraph::MappingRange mapping = mappingpath.mapping_at(i);
+            size_t mapping_start = mapping.mapped_range.start_pos;
+            size_t mapping_end = mapping.mapped_range.end_pos + gp_.g.k();
+            if (i > 0){
+                mapping_start = 0;
+            }
+            if (i < mappingpath.size() - 1) {
+                mapping_end = gp_.g.length(edgeid);
+            }
+            string tmp = gp_.g.EdgeNucls(edgeid).str();
+            string to_add = tmp.substr(mapping_start, mapping_end - mapping_start);
+            aligned += to_add;
+            edgeblocks.push_back(aligned.size());
+        }
+        return;
+    }
+
+    void getMappingOnRead(const omnigraph::MappingPath<debruijn_graph::EdgeId> &mappingpath, size_t &start, size_t &end) {
+        start = mappingpath.mapping_at(0).initial_range.start_pos;
+        end = mappingpath.mapping_at(mappingpath.size() - 1).initial_range.end_pos + gp_.g.k();
+        return;
+    }
+
+    std::string getSubRead(const omnigraph::MappingPath<debruijn_graph::EdgeId> &mappingpath, const io::SingleRead &read) {
+        size_t start;
+        size_t end;
+        getMappingOnRead(mappingpath, start, end);
+        std::string readStr = read.sequence().str();
+        return readStr.substr(start, end - start);
+    }
 
     void ToGPA(const std::vector<omnigraph::MappingPath<debruijn_graph::EdgeId> > &aligned_mappings, const io::SingleRead &read) {
         int nameIndex = 0;
         std::string res = "";
         for (const auto &mappingpath : aligned_mappings){
             string prev = "";
-            for (int i = 0; i < (int) mappingpath.size(); ++ i) {
+            string subread = getSubRead(mappingpath, read);
+            string alignment;
+            std::vector<size_t> edgeblocks;
+            getMappedString(mappingpath, alignment, edgeblocks);
+            std::vector<string>  edgecigar;
+            std::vector<Range> edge_initial_ranges;
+            int score;
+            size_t start;
+            size_t end;
+            getMappingOnRead(mappingpath, start, end);
+            getByEdgeCIGAR(subread, alignment, edgeblocks, start, edgecigar, edge_initial_ranges, score);
+
+            for (size_t i = 0; i < mappingpath.size(); ++ i) {
                 EdgeId edgeid = mappingpath.edge_at(i);
                 omnigraph::MappingRange mapping = mappingpath.mapping_at(i);
+                size_t mapping_start = mapping.mapped_range.start_pos;
+                size_t mapping_end = mapping.mapped_range.end_pos + gp_.g.k();
+                if (i > 0){
+                    mapping_start = 0;
+                }
+                if (i < mappingpath.size() - 1) {
+                    mapping_end = gp_.g.length(edgeid);
+                }
                 map<string, string> line = {{"Ind", "A"}, {"Name", ""}, {"ReadName", read.name()}, {"StartR", ""}, {"LenR", ""}, {"DirR", ""}
                                                                       , {"EdgeId", ""}, {"StartE", ""}, {"LenE", ""}, {"DirE", ""}
                                                                       , {"CIGAR", ""}, {"Prev", ""} , {"Next", ""}};
@@ -77,17 +224,17 @@ public:
                 nameIndex ++;                
                 line["Name"] = read.name() + "_" + std::to_string(nameIndex);
                 
-                line["StartR"] = std::to_string(mapping.initial_range.start_pos); // TODO
-                line["LenR"] = std::to_string(mapping.initial_range.end_pos - mapping.initial_range.start_pos); // TODO
+                line["StartR"] = std::to_string(edge_initial_ranges[i].start_pos); 
+                line["LenR"] = std::to_string(edge_initial_ranges[i].end_pos - 1 - edge_initial_ranges[i].start_pos); 
                 line["DirR"] = "?"; // TODO
 
 
                 line["EdgeId"] = std::to_string(edgeid.int_id());
-                line["StartE"] = std::to_string(mapping.mapped_range.start_pos);
-                line["LenE"] = std::to_string(mapping.mapped_range.end_pos - mapping.mapped_range.start_pos);
+                line["StartE"] = std::to_string(mapping_start);
+                line["LenE"] = std::to_string(mapping_end - mapping_start);
                 line["DirE"] = "?"; // TODO
 
-                line["CIGAR"] = "*";// TODO mapping.cigar;
+                line["CIGAR"] = edgecigar[i];
 
                 if (i > 0){
                     line["Prev"] = prev;
@@ -95,13 +242,12 @@ public:
                     line["Prev"] = "-";
                 }
                 prev = line["Name"]; 
-                if (i < (int) mappingpath.size() - 1){
+                if (i < mappingpath.size() - 1){
                     line["Next"] = read.name() + "_" + std::to_string(nameIndex + 1);
                 } else {
                     line["Next"] = "-";
                 }
                 res += print(line) + "\n";
-                
             }
         }
 #pragma omp critical
@@ -144,27 +290,23 @@ public:
             for (const auto &path : aligned_mappings){
                 int seq_start = -1;
                 int seq_end = 0;
-                int mapping_start = 0;
-                int mapping_end = 0;
+                size_t mapping_start = 0;
+                size_t mapping_end = 0;
                 string cur_path = "";
                 string cur_path_len = "";
                 string cur_substr = "";
                 string str = "";
-                EdgeId last_edge= EdgeId();
-                omnigraph::MappingRange last_range;
-                for (int i = 0; i < (int) path.size(); ++ i) {
+                for (size_t i = 0; i < path.size(); ++ i) {
                     EdgeId edgeid = path.edge_at(i);
                     omnigraph::MappingRange mapping = path.mapping_at(i);
                     mapping_start = mapping.mapped_range.start_pos;
-                    mapping_end = mapping.mapped_range.end_pos;
+                    mapping_end = mapping.mapped_range.end_pos + gp_.g.k();
                     if (i > 0){
                         mapping_start = 0;
                     }
                     if (i < path.size() - 1) {
                         mapping_end = gp_.g.length(edgeid);
                     }
-                    last_edge = edgeid;
-                    last_range = mapping;
                     cur_path += std::to_string(edgeid.int_id()) + " (" + std::to_string(mapping_start) + "," + std::to_string(mapping_end) + ") ["
                                + std::to_string(mapping.initial_range.start_pos) + "," + std::to_string(mapping.initial_range.end_pos) + "], ";
                     
@@ -179,12 +321,10 @@ public:
                     }
                     seq_end = (int) mapping.initial_range.end_pos;
                 }
-                string tmp = gp_.g.EdgeNucls(last_edge).str();
-                str += tmp.substr(last_range.mapped_range.end_pos, gp_.g.k());
                 pathStr += cur_path + "; ";
                 subStr += cur_substr + "\n";
                 int d = max((int) read.sequence().size(), 20);
-                edlib::EdlibAlignResult result = edlib::edlibAlign(read.sequence().str().c_str(), read.sequence().size(), str.c_str(), str.size()
+                edlib::EdlibAlignResult result = edlib::edlibAlign(read.sequence().str().c_str(), (int) read.sequence().size(), str.c_str(), (int) str.size()
                                                    , edlib::edlibNewAlignConfig(d, edlib::EDLIB_MODE_NW, edlib::EDLIB_TASK_DISTANCE,
                                                                          NULL, 0));
                 int score = pacbio::STRING_DIST_INF;
