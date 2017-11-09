@@ -8,6 +8,7 @@
 project(utils CXX)
 
 set(utils_src
+    memory_limit.cpp
     filesystem/copy_file.cpp
     filesystem/path_helper.cpp
     filesystem/temporary.cpp

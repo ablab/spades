@@ -5,14 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * main.cpp
- *
- *  Created on: 08.07.2011
- *      Author: snikolenko
- */
-
-
 #include "config_struct_hammer.hpp"
 #include "hammer_tools.hpp"
 #include "kmer_cluster.hpp"
@@ -25,7 +17,7 @@
 #include "io/reads/read_processor.hpp"
 #include "io/reads/ireadstream.hpp"
 
-#include "utils/perf/memory_limit.hpp"
+#include "utils/memory_limit.hpp"
 
 #include "utils/logger/logger.hpp"
 #include "utils/logger/log_writers.hpp"

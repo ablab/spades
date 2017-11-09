@@ -17,7 +17,7 @@
 #include "utils/logger/logger.hpp"
 #include "utils/filesystem/path_helper.hpp"
 
-#include "utils/perf/memory_limit.hpp"
+#include "utils/memory_limit.hpp"
 #include "utils/filesystem/file_limit.hpp"
 
 #include "adt/iterator_range.hpp"
