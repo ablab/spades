@@ -63,13 +63,16 @@ class GraphSimplifier {
         INFO("Removing short polyAT");
         EdgeRemover<Graph> er(g_, removal_handler);
         ATCondition<Graph> condition(g_, 0.8, false);
+        size_t cnt = 0;
         for (auto iter = g_.SmartEdgeBegin(/*canonical only*/true); !iter.IsEnd(); ++iter){
             if (g_.length(*iter) == 1 && condition.Check(*iter)) {
                 er.DeleteEdgeNoCompress(*iter);
+                cnt++;
             }
         }
         omnigraph::CompressAllVertices(g_, chunk_cnt);
         omnigraph::CleanIsolatedVertices(g_, chunk_cnt);
+        return cnt;
     }
 
     void InitialCleaning() {
