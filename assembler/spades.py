@@ -382,6 +382,11 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
             options_storage.save_restart_options(log)
         else:  # overriding previous run parameters
             options_storage.load_restart_options()
+    elif options_storage.continue_mode:  # it is just --continue, NOT --restart-from
+        if len(options) != 2:  # one for output_dir (required) and another one for --continue itself
+           support.error("you cannot specify any option except -o with --continue option! "
+                         "Please use --restart-from option if you need to change some "
+                         "of the options from the initial run.", log)
     if options_storage.meta:
         if options_storage.careful or options_storage.mismatch_corrector or options_storage.cov_cutoff != "off":
             support.error("you cannot specify --careful, --mismatch-correction or --cov-cutoff in metagenomic mode!", log)
