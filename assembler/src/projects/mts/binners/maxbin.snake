@@ -1,0 +1,43 @@
+# Binning with MAXBIN2
+from scripts.converters import ProfileFormatter, BinningParser
+
+class MaxbinFormatter(ProfileFormatter):
+    def header(self, first_line):
+        self.outs = list()
+        samples = ["sample" + str(i) for i in range(1, len(first_line) + 1)]
+        for sample in samples:
+            name = self.out.name + "." + sample
+            self.outs.append(open(name, "w"))
+            print(name, file=self.out)
+
+    def format(self, contig, profile):
+        for out, mpl in zip(self.outs, profile):
+            print(contig, mpl, sep="\t", file=out)
+
+rule maxbin_pre:
+    input:   "binning/profiles.tsv"
+    output:  "binning/maxbin/profiles.in"
+    message: "Preparing MaxBin input"
+    run:
+        MaxbinFormatter().run(input[0], output[0])
+
+rule maxbin:
+    input:   contigs="assembly/{}/all.fasta".format(FRAGS), profiles="binning/maxbin/profiles.in"
+    output:  "binning/maxbin/cluster.summary"
+    threads: THREADS
+    log:     "binning/maxbin.log"
+    message: "Running MaxBin2 clustering"
+    shell:   "perl {SOFT}/MaxBin/run_MaxBin.pl -thread {threads} -prob_threshold 0.3"
+             " -contig {input.contigs} -abund_list {input.profiles}"
+             " -min_contig_length {MIN_CONTIG_LENGTH} -out binning/maxbin/cluster >{log}"
+
+rule maxbin_post:
+    input:   "binning/maxbin/cluster.summary"
+    output:  "binning/binning.tsv"
+    message: "Postprocessing of MaxBin results"
+    shell:   "mkdir -p binning/bins\n"
+             "for file in binning/maxbin/*.fasta ; do\n"
+             "    bin=BIN${{file//[^0-9]}}\n"
+             "    grep '>' $file | cut -c 2- | awk -v b=$bin '{{print $0 \"\\t\" b}}' >> {output}\n"
+             "    mv $file binning/bins/$bin.fasta\n"
+             "done"

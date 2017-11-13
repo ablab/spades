@@ -1,0 +1,10 @@
+# Binning with BinSanity
+rule binsanity:
+    input:   contigs="assembly/splits/all_filtered.fasta", profiles="binning/binsanity/profiles_{}.in".format(PROFILER)
+    output:  "binning/binsanity/binning.out"
+    threads: THREADS
+    log:     "binning/binsanity.log"
+    message: "Running BinSanity clustering"
+    shell:   "python2 /home/tdvorkina/binsanity/src/BinSanity/test-scripts/Binsanity-lc "
+             " -f ./ -l {input.contigs} -c {input.profiles} -o binning/binsanity/BINSANITY-RESULTS >{log} && "
+             "{SCRIPTS}/clusters2csv.py binning/binsanity/BINSANITY-RESULTS/KMEAN-BINS {output} && mv Binsanity-log.txt binning/"

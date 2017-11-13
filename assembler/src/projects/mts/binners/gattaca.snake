@@ -1,0 +1,46 @@
+from scripts.common import contig_length
+from scripts.converters import ProfileFormatter, BinningParser
+
+class GattacaFormatter(ProfileFormatter):
+    def header(self, first_line):
+        sample_count = len(first_line)
+        print(*(["contig", "length"] + ["cov_mean_sample" + str(i) for i in range(1, sample_count + 1)]), sep="\t", file=self.out)
+
+    def format(self, contig, profile):
+        print(contig, contig_length(contig), *profile, sep="\t", file=self.out)
+
+rule gattaca_pre:
+    input:   "binning/profiles.tsv"
+    output:  "binning/gattaca/profiles.in"
+    message: "Preparing GATTACA input"
+    run:
+        GattacaFormatter().run(input[0], output[0])
+
+rule filter_contigs:
+    input:   contigs="assembly/{frags}/all.fasta", profile="binning/gattaca/profiles.in"
+    output:  contigs="assembly/{frags}/all_filtered.fasta"
+    message: "Filter {wildcards.frags} contigs that have profile information"
+    shell:   "cut -f1 < {input.profile} > tmp/names_tmp.txt && sed -i '1d' tmp/names_tmp.txt && "
+             "{SCRIPTS}/contig_name_filter.py {input.contigs} tmp/names_tmp.txt {output.contigs}"
+
+# Binning with GATTACA
+# conda create -n py27 python=2.7.9 numpy scipy scikit-learn anaconda
+# conda install -c bioconda pysam=0.11.2.2
+rule gattaca:
+    input:   contigs="assembly/{}/all_filtered.fasta".format(FRAGS), profiles="binning/gattaca/profiles.in"
+    output:  "binning/gattaca/binning.out"
+    threads: THREADS
+    log:     "binning/gattaca.log"
+    message: "Running GATTACA clustering"
+    shell:   "set +u; source activate py27; set -u\n"
+             "python {SOFT}/gattaca/src/python/gattaca.py cluster --contigs {input.contigs}"
+             " --coverage {input.profiles} --algorithm dirichlet --clusters {output} >{log} 2>&1\n"
+             "rm -f assembly/splits/all_filtered.fasta.fai"
+
+rule gattaca_post:
+    input:   contigs="assembly/{}/all.fasta".format(FRAGS), binning="binning/gattaca/binning.out"
+    output:  "binning/binning.tsv" #Also bins
+    message: "Postprocessing GATTACA results"
+    run:
+        BinningParser().run(input.binning, output[0])
+        shell("{SCRIPTS}/split_bins.py {input.contigs} {output} binning/bins")

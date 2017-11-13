@@ -1,0 +1,35 @@
+# Binning with CONCOCT
+from scripts.converters import ProfileFormatter, BinningParser
+
+class ConcoctFormatter(ProfileFormatter):
+    def header(self, first_line):
+        sample_count = len(first_line)
+        print(*(["contig"] + ["cov_mean_sample" + str(i) for i in range(1, sample_count + 1)]), sep="\t", file=self.out)
+
+rule concoct_pre:
+    input:   "binning/profiles.tsv"
+    output:  "binning/concoct/profiles.in"
+    message: "Preparing CONCOCT input"
+    run:
+        ConcoctFormatter().run(input[0], output[0])
+
+rule concoct:
+    input:   contigs="assembly/{}/all.fasta".format(FRAGS), profiles="binning/concoct/profiles.in"
+    output:  "binning/concoct/binning.out"
+    params:  out="binning/concoct"
+    threads: THREADS
+    log:     "binning/concoct.log"
+    message: "Running CONCOCT clustering"
+    shell:   "set +u; source activate py27; set -u\n"
+             "concoct -c {MAX_CLUSTERS} --composition_file {input.contigs}"
+             " --coverage_file {input.profiles} --length_threshold {MIN_CONTIG_LENGTH}"
+             " -b {params.out} >{log} 2>&1 && "
+             "cp binning/concoct/clustering_gt{MIN_CONTIG_LENGTH}.csv {output}"
+
+rule concoct_post:
+    input:   contigs="assembly/{}/all.fasta".format(FRAGS), binning="binning/concoct/binning.out"
+    output:  "binning/binning.tsv" #Also bins
+    message: "Postprocessing CONCOCT results"
+    run:
+        BinningParser().run(input.binning, output[0])
+        shell("{SCRIPTS}/split_bins.py {input.contigs} {output} binning/bins")

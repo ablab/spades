@@ -1,0 +1,47 @@
+# TODO: explanation of the profile counting strategy
+
+# Our way
+rule kmc:
+    output:  temp("tmp/{sample}.kmc_pre"), temp("tmp/{sample}.kmc_suf")
+    params:  tmp="tmp/{sample}_kmc", out="tmp/{sample}",
+             desc="profile/{sample}.desc",
+             left=left_sample_reads, right=right_sample_reads,
+             format=lambda w: "-fq" if is_fastq(w) else "-fa"
+    log:     "profile/kmc_{sample}.log"
+    threads: THREADS
+    message: "Running kmc for {wildcards.sample}"
+    shell:   "mkdir -p {params.tmp}\n"
+             "echo '{params.left}\n{params.right}' > {params.desc}\n"
+             "{SOFT}/kmc {params.format} -k{PROFILE_K} -t{threads} -ci{MIN_MULT}"
+             " -cs{MAX_MULT} @{params.desc} {params.out} {params.tmp} >{log} 2>&1 && "
+             "rm -rf {params.tmp}"
+
+rule multiplicities:
+    input:   expand("tmp/{sample}.kmc_pre", sample=SAMPLES), expand("tmp/{sample}.kmc_suf", sample=SAMPLES)
+    output:  "profile/mts/kmers.kmm"
+    params:  kmc_files=" ".join(expand("tmp/{sample}", sample=SAMPLES)), out="profile/mts/kmers"
+    log:     "profile/mts/kmers.log"
+    message: "Gathering {PROFILE_K}-mer multiplicities from all samples"
+    shell:   "{BIN}/kmer_multiplicity_counter -n {SAMPLE_COUNT} -k {PROFILE_K} -s {MIN_MULT}"
+             " -f tmp -t {threads} -o {params.out} >{log} 2>&1 && "
+             "rm tmp/*.sorted"
+
+rule abundancies:
+    input:   contigs="assembly/{frags}/{group}.fasta", mpl="profile/mts/kmers.kmm"
+    output:  "profile/mts/{frags}/{group,(sample|group)\d+}.{type,mpl|var}"
+    log:     "profile/mts/{frags}/{group}.log"
+    params:  lambda w: "-v" if w.type == "var" else ""
+    message: "Counting {wildcards.frags} contig abundancies for {wildcards.group}"
+    shell:   "{BIN}/contig_abundance_counter -k {PROFILE_K} -c {input.contigs}"
+             " -n {SAMPLE_COUNT} -m profile/mts/kmers {params} -o {output}"
+             " -l {MIN_CONTIG_LENGTH} >{log} 2>&1"
+
+rule combine_profiles:
+    input:   expand("profile/mts/{frags}/{group}.{type}", frags=FRAGS, group=GROUPS, type=PROF_TYPE)
+    output:  "binning/profiles.tsv"
+    message: "Combine all profiles"
+    run:
+        shell("rm -f {output}")
+        for sample_ann in input:
+            sample, _ = os.path.splitext(os.path.basename(sample_ann))
+            shell("sed -e 's/^/{sample}-/' {sample_ann} >> {output}")

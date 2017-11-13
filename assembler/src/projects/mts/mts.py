@@ -35,11 +35,10 @@ parser.add_argument("--reuse-from", type=str, help="Directory with another assem
 parser.add_argument("--no-stats", "-S", action="store_true", help="Skip the stats section (overrides the config value)")
 parser.add_argument("--verbose", "-v", action="store_true", help="Increase verbosity level")
 parser.add_argument("--dryrun", action="store_true", help="Show tasks, do not execute them")
-parser.add_argument("--alt", action="store_true", help=argparse.SUPPRESS)
 
 args = parser.parse_args()
 
-exec_dir=os.path.dirname(os.path.realpath(sys.argv[0]))
+exec_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 LOCAL_DIR = os.path.realpath(os.path.join(exec_dir, "../../../"))
 
 base_params = ["snakemake", "--directory", os.path.realpath(args.dir), "--cores", str(args.threads), "--config", "LOCAL_DIR" + "=" + LOCAL_DIR]

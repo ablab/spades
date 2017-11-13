@@ -29,8 +29,6 @@ BIN_LENGTH = config["binning"]["bin_length"]
 MAX_CLUSTERS = config["binning"]["max_clusters"]
 THREADS = config["threads"]
 BINNER = config["binning"]["binner"]
-PROF_VAR = BINNER == "metabat"
-FRAGS = "full" if BINNER == "metabat" else "splits"
 
 # Check for unsupported configurations
 IS_COASSEMBLY = config["assembly"].get("groups") == ["*"]

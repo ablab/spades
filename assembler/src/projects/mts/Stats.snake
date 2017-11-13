@@ -19,7 +19,7 @@ else:
         LAST_STAGE = "propagation"
     else:
         LAST_STAGE = "binning"
-    with open("binning/{}/filtered_bins.tsv".format(BINNER)) as input:
+    with open("binning/filtered_bins.tsv") as input:
         BINS = [line.split()[0] for line in input]
 if not BINS:
     raise WorkflowError("No bins detected!")
@@ -266,16 +266,16 @@ rule extract_prop_bins:
 
 #---- Lost contigs -------------------------------------------------------------
 rule binned_list:
-    input:   "binning/{}/unified_binning.tsv".format(BINNER)
-    output:  "binning/{}/all.info".format(BINNER)
+    input:   "binning/binning.tsv"
+    output:  "binning/binned.info"
     message: "Filtering list of contigs which were binned"
     shell:   "awk '{{print $1}}' {input} > {output}"
 
 rule lost_contigs:
-    input:   "binning/{}/all.info".format(BINNER)
+    input:   "assembly/splits/all.fasta", "binning/binned.info"
     output:  "binning/bins/lost.fasta"
     message: "Filtering contigs which were not binned"
-    shell:   "{SCRIPTS}/contig_name_filter.py assembly/splits/all.fasta binning/{BINNER}/all.info {output} remove"
+    shell:   "{SCRIPTS}/contig_name_filter.py {input} {output} remove"
 
 rule lost_gf:
     input:   "binning/bins/lost.fasta"
@@ -393,8 +393,7 @@ def fragments_info_by_stage(wildcards):
     return expand("stats/q_{stage}/runs_per_reference/{ref}/{fs}.info", stage=wildcards.stage, ref=wildcards.ref, fs=fragments)
 
 rule pca:
-    input:   "profile/{}/all.tsv".format(PROFILER),
-             "binning/{}/unified_binning.tsv".format(BINNER),
+    input:   "binning/profiles.tsv", "binning/binning.tsv",
              #"stats/q_{stage}/total.info"
     output:  "stats/summary/pca_{stage}.png"
     message: "Drawing PCA visualisation for {wildcards.stage}"
@@ -403,8 +402,7 @@ rule pca:
 #---- TSNE ---------------------------------------------------------------------
 
 rule tsne:
-    input:   "profile/{}/all.tsv".format(PROFILER),
-             "binning/{}/unified_binning.tsv".format(BINNER),
+    input:   "binning/profiles.tsv", "binning/binning.tsv",
     output:  "stats/summary/tsne_{stage}.png"
     message: "Drawing BH-TSNE visualisation for {wildcards.stage}"
     shell:   "python2 {SCRIPTS}/run_tsne.py {input} {output}"

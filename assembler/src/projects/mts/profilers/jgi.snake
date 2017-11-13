@@ -1,0 +1,37 @@
+# Read alignment-based profile counting using `jgi_summarize_bam_contig_depths`
+# from the MetaBAT pipeline
+
+rule bowtie_index:
+    input:   "assembly/{frags}/all.fasta"
+    output:  "profile/jgi/{frags}/index.done"
+    threads: THREADS
+    log:     "profile/jgi/{frags}/bowtie-build.log"
+    message: "Building bowtie index"
+    shell:   "bowtie2-build {input} profile/jgi/{wildcards.frags}/index"
+             " --threads {THREADS} >{log} 2>&1 && touch {output}"
+
+rule align:
+    input:   left=left_sample_reads, right=right_sample_reads,
+             index="profile/jgi/{frags}/index.done"
+    output:  "profile/jgi/{frags}/{sample}.bam"
+    params:  lambda w: "-q" if is_fastq(w) else "-f"
+    threads: THREADS
+    log:     "profile/jgi/{frags}/bowtie-{sample}.log"
+    message: "Aligning {wildcards.sample} with bowtie"
+    shell:   "bowtie2 -x profile/jgi/{wildcards.frags}/index {params} -p {threads}"
+             " -1 {input.left} -2 {input.right} 2>{log} | samtools view -bS - > {output}"
+
+rule depth:
+    input:   expand("profile/jgi/{{frags}}/{sample}.bam", sample=SAMPLES)
+    output:  "profile/jgi/{frags}/depth.{type,mpl|var}"
+    params:  lambda w: "" if w.type == "var" else "--noIntraDepthVariance"
+    log:     "profile/jgi/{frags}/depth.log"
+    message: "Calculating {wildcards.frags} contig depths"
+    shell:   "{SOFT}/metabat/jgi_summarize_bam_contig_depths {params}"
+             " --outputDepth {output} {input} >{log} 2>&1"
+
+rule convert:
+    input:   "profile/jgi/{}/depth.{}".format(FRAGS, PROF_TYPE)
+    output:  "binning/profiles.tsv"
+    message: "Converting JGI profiles into unified format"
+    shell:   "tail -n +2 {input} | cut -f1,4- >{output}"

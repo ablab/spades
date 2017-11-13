@@ -1,0 +1,40 @@
+from scripts.converters import ProfileFormatter, BinningParser
+
+class CanopyFormatter(ProfileFormatter):
+    def format(self, contig, profile):
+        print(contig, *profile, file=self.out)
+
+rule canopy_pre:
+    input:   "binning/profiles.tsv"
+    output:  "binning/canopy/profiles.in"
+    message: "Preparing canopy input"
+    run:
+        CanopyFormatter().run(input[0], output[0])
+
+# Binning with Canopy
+rule canopy:
+    input:   "binning/canopy/profiles.in"
+    output:  "binning/canopy/binning.out"
+    threads: THREADS
+    log:     "binning/canopy.log"
+    message: "Running canopy clustering"
+    shell:   "{SOFT}/cc.bin -n {threads} --filter_max_dominant_obs 1 "
+             " --filter_min_obs {MIN_SAMPLES} --filter_zero_medians {MIN_SAMPLES} "
+             " -p BIN -i {input} -o {output} -c binning/canopy/canopy_bins.prof >{log} 2>&1"
+
+class CanopyParser(BinningParser):
+    def parse(self, line):
+        annotation_str = line.split()
+        bin_id = annotation_str[0].strip()
+        if len(annotation_str) < 2:
+            print("Wrong!", annotation_str)
+        sample_contig = annotation_str[1].strip()
+        return (sample_contig, bin_id)
+
+rule canopy_post:
+    input:   contigs="assembly/{}/all.fasta".format(FRAGS), binning="binning/canopy/binning.out"
+    output:  "binning/binning.tsv" #Also bins
+    message: "Postprocessing canopy results"
+    run:
+        CanopyParser().run(input.binning, output[0])
+        shell("{SCRIPTS}/split_bins.py {input.contigs} {output} binning/bins")
