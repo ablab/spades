@@ -79,13 +79,13 @@ def parser(f, out_dir):
                     chrom.write(seq + '\n')
                     pl = 1
                     break
-    if pl == 0:
-        for seq in good_aln:
-        	    if seq.find('lasmid') != -1:
-                	plasmids.write(item.query + '\n')
-	                plasmids.write(seq + '\n')
-        	        pl = 1
-	                break
+        if pl == 0:
+            for seq in good_aln:
+                if seq.find('lasmid') != -1:
+                    plasmids.write(item.query + '\n')
+                    plasmids.write(seq + '\n')
+                    pl = 1
+                    break
 
 
         if pl == 0:
