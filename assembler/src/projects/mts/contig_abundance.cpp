@@ -23,7 +23,7 @@ Abundance SampleMedian(MplVector& sample_mpls) {
 
 template<>
 AbVar SampleMedian(MplVector& sample_mpls) {
-    Mpl median = SampleMedian<Abundance>(sample_mpls);
+    auto median = SampleMedian<Abundance>(sample_mpls);
 
     //Median absolute deviation
     for (auto& i: sample_mpls)
@@ -32,7 +32,7 @@ AbVar SampleMedian(MplVector& sample_mpls) {
     std::nth_element(sample_mpls.begin(), sample_mpls.begin() + sample_mpls.size() / 2, sample_mpls.end());
     Var mad = (Var) sample_mpls[sample_mpls.size() / 2]; // * 1.4826; //constant scale factor for normal distibution
 
-    return {(Abundance)median, mad};
+    return {median, mad};
 }
 
 template<typename T>
@@ -42,7 +42,7 @@ std::vector<T> MedianVector(const KmerProfiles& kmer_mpls) {
     res.reserve(KmerProfileIndex::SampleCount());
     for (size_t i = 0; i < KmerProfileIndex::SampleCount(); ++i) {
         std::vector<Mpl> sample_mpls = SampleMpls(kmer_mpls, i);
-        res.push_back(SampleMedian<T>(kmer_mpls, i));
+        res.push_back(SampleMedian<T>(sample_mpls));
     }
     return res;
 }
@@ -93,15 +93,15 @@ std::vector<T> WinsoredMeanVector(const KmerProfiles& kmer_mpls) {
     for (size_t i = 0; i < KmerProfileIndex::SampleCount(); ++i) {
         std::vector<Mpl> sample_mpls = SampleMpls(kmer_mpls, i);
         res.push_back(WinsoredMean<T>(sample_mpls));
-        INFO(sample_mpls << ": " << res.back());
+        TRACE(sample_mpls << ": " << res.back());
     }
     return res;
 }
 
 template<typename T>
 typename ClusterAnalyzer<T>::Result TrivialClusterAnalyzer<T>::operator()(const KmerProfiles& kmer_mpls) const {
-    //return typename ClusterAnalyzer<T>::Result(MedianVector<T>(kmer_mpls));
-    return typename ClusterAnalyzer<T>::Result(WinsoredMeanVector<T>(kmer_mpls));
+    return typename ClusterAnalyzer<T>::Result(MedianVector<T>(kmer_mpls));
+    //return typename ClusterAnalyzer<T>::Result(WinsoredMeanVector<T>(kmer_mpls));
 }
 
 /*

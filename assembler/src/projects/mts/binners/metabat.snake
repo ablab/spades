@@ -8,10 +8,10 @@ class MetabatFormatter(ProfileFormatter):
         for i in range(1, len(first_line) // 2 + 1):
             sample = "sample" + str(i)
             columns += [sample + ".cov", sample + ".var"]
-        print(columns, sep="\t", file=self.out)
+        print(*columns, sep="\t", file=self.out)
 
     def format(self, contig, profile):
-        total_cov = sum(map(float, profile[0::2]))
+        total_cov = "{:.2f}".format(sum(map(float, profile[0::2])))
         print(contig, contig_length(contig), total_cov, *profile, sep="\t", file=self.out)
 
 rule metabat_pre:
@@ -38,10 +38,10 @@ rule metabat_post:
     output:  "binning/binning.tsv" #Also bins
     message: "Postprocessing MetaBAT results"
     run:
-        BinningParser(sep="\t").run(input[0], output[0])
+        BinningParser(sep="\t", filter="0").run(input[0], output[0])
         shell(
              "mkdir -p binning/bins\n"
              "for file in binning/metabat/*.fa; do\n"
-             "    bin=${{file//[^0-9]}}\n"
-             "    mv $file binning/bins/BIN$bin.fasta\n"
+             "    bin=BIN${{file//[^0-9]}}\n"
+             "    mv $file binning/bins/$bin.fasta\n"
              "done")

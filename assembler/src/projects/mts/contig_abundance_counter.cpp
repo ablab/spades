@@ -24,7 +24,7 @@ public:
     static void Run(const ProfileCounter<T>& counter, size_t min_length_bound,
                     io::FileReadStream& contigs_stream, std::ofstream& out) {
         io::SingleRead contig;
-        out << std::defaultfloat << std::setprecision(2);
+        out << std::defaultfloat << std::fixed << std::setprecision(2);
         while (!contigs_stream.eof()) {
             contigs_stream >> contig;
             contig_id id = GetId(contig);
