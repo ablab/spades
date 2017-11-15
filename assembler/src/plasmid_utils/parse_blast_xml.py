@@ -90,19 +90,20 @@ def parser(f, out_dir):
 
         if pl == 0:
             found = False
+            arr = []
             for alignment in item.alignments:
                 seq = alignment.title
                 total_len = get_total_len(alignment)
-
+                arr.append(str(total_len))
 #alignment is too small to decide
                 if total_len < pl_len * 0.1:
                     continue
                 if (seq.find('hage') != -1 or seq.find('irus') != -1 ):
                     viral.write(item.query + '\n')
                     viral.write(seq + '\n')
-                    pl = 1
+                    found = True
                     break
-                elif seq.find('lasmid') != -1:
+                if seq.find('lasmid') != -1:
                     plasmids_bad.write(item.query + '\n')
                     plasmids_bad.write(seq + "\n" + "len " + str (alignment.length) +" alnments lenghts:" + "\n")
                     for hsp in alignment.hsps:
@@ -110,14 +111,17 @@ def parser(f, out_dir):
                         plasmids_bad.write("\n")
                     found = True
                     break
-                elif (seq.find('hromosome') != -1) or (seq.find("omplete genome") != -1):
+                if (seq.find('hromosome') != -1) or (seq.find("omplete genome") != -1):
                     chrom.write(item.query + '\n')
                     chrom.write(seq + '\n')
                     found = True
                     break
             if not found:
                 unclas.write(item.query + '\n')
-                unclas.write(item.alignments[0].title + '\n')
+                unclas.write("Best alignment to " + item.alignments[0].title + '\n' + "Total lengths of all alignments:")
+                for s in arr:
+                    unclas.write(s + " ")
+                unclas.write('\n')
     return
 
 

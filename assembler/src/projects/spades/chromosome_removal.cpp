@@ -144,8 +144,27 @@ double ChromosomeRemoval::RemoveLongGenomicEdges(conj_graph_pack &gp, size_t lon
     return median_long_edge_coverage;
 }
 
+void ChromosomeRemoval::CoverageFilter(conj_graph_pack &gp, double coverage_cutoff, set<EdgeId> &white_list) {
+    set<EdgeId> to_delete;
+    for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        if (gp.g.coverage(*it) < coverage_cutoff && gp.g.EdgeEnd(*it) != gp.g.EdgeStart(*it)) {
+            DEBUG("Deleting edge " << gp.g.int_id(*it) << " because of low coverage");
+            to_delete.insert(std::min(*it, gp.g.conjugate(*it)));
+        }
+    }
+    for (auto e: to_delete){
+        if (white_list.find(std::min(e, gp.g.conjugate(e))) == white_list.end()) {
+            gp.g.DeleteEdge(e);
+        } else {
+            DEBUG("Edge "<<e.int_id()<<" saved from deletion because of cycle")
+        }
+    }
+    CompressAll(gp.g);
+}
 void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bound,
                                         std::function<void (EdgeId)> removal_handler ) {
+    if (!cfg::get().pd->circular_removal)
+        return;
     DEBUG("Simplifying graph for plasmid project");
     size_t iteration_count = 10;
     for (size_t i = 0; i < iteration_count; i++) {
@@ -157,107 +176,93 @@ void ChromosomeRemoval::PlasmidSimplify(conj_graph_pack &gp, size_t long_edge_bo
 }
 
 void ChromosomeRemoval::MetaChromosomeRemoval(conj_graph_pack &gp) {
-    size_t min_len = 2000;
-    double min_coverage = 20;
-    double too_little = 10;
-    size_t max_loop = 150000;
+//For circular plasmid detection
+    size_t min_len = cfg::get().pd->min_start_edge_length;
+    double min_coverage = cfg::get().pd->min_start_coverage;
+    size_t max_loop = cfg::get().pd->max_loop;
+
     string out_file = "circulars.fasta";
 
     set<EdgeId> to_save;
     vector<string> res_strings;
     for (size_t count = 0; count < 3; count++) {
-        vector<std::pair<size_t, EdgeId>> long_edges;
-        for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if ((gp.g.length(*it) >= min_len) && (math::gr(gp.g.coverage(*it), min_coverage))) {
-                long_edges.push_back(std::make_pair(gp.g.length(*it), *it));
-            }
-        }
-        //length decrease order
-        std::sort(long_edges.rbegin(), long_edges.rend());
-        size_t paths_0 = 0;
-        size_t paths_1 = 0;
-        size_t paths_many = 0;
-        size_t too_long = 0;
-        set<EdgeId> to_delete;
-        for (const auto &pair: long_edges) {
-            EdgeId e = pair.second;
-            if (to_save.find(std::min(e, gp.g.conjugate(e))) != to_save.end()) {
-                DEBUG ("already found a plasmid with edge " << e << " processing stopped");
-            }
-            if (pair.first > max_loop) {
-                too_long++;
-                to_delete.insert(std::min(e, gp.g.conjugate(e)));
-                continue;
-            }
-
-
-            VertexId start_v = gp.g.EdgeStart(e);
-            VertexId end_v = gp.g.EdgeEnd(e);
-
-            auto dijkstra = omnigraph::DijkstraHelper<Graph>::CreateCoverageBoundedDijkstra(gp.g,
-                                                                                            max_loop - gp.g.length(e),
-                                                                                            0.7 * gp.g.coverage(e));
-            dijkstra.Run(end_v);
-
-            bool found = false;
-            for (auto v: dijkstra.ReachedVertices()) {
-                if (v == start_v && dijkstra.DistanceCounted(v)) {
-                    size_t dist = dijkstra.GetDistance(v);
-                    omnigraph::PathStorageCallback<Graph> callback(gp.g);
-                    size_t res = ProcessPaths(gp.g,
-                                              dist - 1, std::min(2 * dist, max_loop - pair.first),
-                                              end_v, start_v,
-                                              callback, 50, 0.7 * gp.g.coverage(e));
-                    if (res == 0 && callback.size() == 1) {
-                        DEBUG("Edge " << e.int_id() << "is plasmid!! due to unique cycle");
-                        DEBUG("len " << pair.first << " cov " << gp.g.coverage(e));
-                        vector<vector<EdgeId> > paths = callback.paths();
-
-                        for (EdgeId e: paths[0]) {
-                            DEBUG ("id " << gp.g.int_id(e) << " len  " << gp.g.length(e) << " cov " <<
-                                   gp.g.coverage(e));
-                        }
-                        paths[0].push_back(e);
-                        std::stringstream ss;
-                        for (EdgeId e: paths[0]) {
-                            ss << gp.g.EdgeNucls(e).Subseq(gp.g.k()).str();
-
-                        }
-                        res_strings.push_back(ss.str());
-                        to_save.insert(std::min(e, gp.g.conjugate(e)));
-                        paths_1++;
-                    } else if (res == 0) {
-                        DEBUG("Edge " << e.int_id() << "is possible plasmid due to multiple cycles");
-                        paths_many++;
-                    } else {
-                        DEBUG("Edge " << e.int_id() << "is possible plasmid, but pathProcessor halted");
-                        paths_many++;
-                    }
-                    found = true;
-                    break;
+        if (cfg::get().pd->circular_removal) {
+            vector<std::pair<size_t, EdgeId>> long_edges;
+            for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+                if ((gp.g.length(*it) >= min_len) && (math::gr(gp.g.coverage(*it), min_coverage))) {
+                    long_edges.push_back(std::make_pair(gp.g.length(*it), *it));
                 }
             }
-            if (!found) {
-                DEBUG("Edge " << e.int_id() << "has no chance to be in a plasmid, deleting");
+            //length decrease order
+            std::sort(long_edges.rbegin(), long_edges.rend());
+            size_t paths_0 = 0;
+            size_t paths_1 = 0;
+            size_t paths_many = 0;
+            size_t too_long = 0;
+            set<EdgeId> to_delete;
+            for (const auto &pair: long_edges) {
+                EdgeId e = pair.second;
+                if (to_save.find(std::min(e, gp.g.conjugate(e))) != to_save.end()) {
+                    DEBUG ("already found a plasmid with edge " << e << " processing stopped");
+                }
+                if (pair.first > max_loop) {
+                    too_long++;
+                    to_delete.insert(std::min(e, gp.g.conjugate(e)));
+                    continue;
+                }
+                VertexId start_v = gp.g.EdgeStart(e);
+                VertexId end_v = gp.g.EdgeEnd(e);
+                auto dijkstra = omnigraph::DijkstraHelper<Graph>::CreateCoverageBoundedDijkstra(gp.g,
+                                                                                                max_loop - gp.g.length(e),
+                                                                                                0.7 * gp.g.coverage(e));
+                dijkstra.Run(end_v);
+                bool found = false;
+                for (auto v: dijkstra.ReachedVertices()) {
+                    if (v == start_v && dijkstra.DistanceCounted(v)) {
+                        size_t dist = dijkstra.GetDistance(v);
+                        omnigraph::PathStorageCallback<Graph> callback(gp.g);
+                        size_t res = ProcessPaths(gp.g,
+                                                  dist - 1, std::min(2 * dist, max_loop - pair.first),
+                                                  end_v, start_v,
+                                                  callback, 50, 0.7 * gp.g.coverage(e));
+                        if (res == 0 && callback.size() == 1) {
+                            DEBUG("Edge " << e.int_id() << "is plasmid!! due to unique cycle");
+                            DEBUG("len " << pair.first << " cov " << gp.g.coverage(e));
+                            vector<vector<EdgeId> > paths = callback.paths();
 
-                paths_0++;
+                            for (EdgeId e: paths[0]) {
+                                DEBUG ("id " << gp.g.int_id(e) << " len  " << gp.g.length(e) << " cov " <<
+                                       gp.g.coverage(e));
+                            }
+                            paths[0].push_back(e);
+                            std::stringstream ss;
+                            for (EdgeId e: paths[0]) {
+                                ss << gp.g.EdgeNucls(e).Subseq(gp.g.k()).str();
+
+                            }
+                            res_strings.push_back(ss.str());
+                            to_save.insert(std::min(e, gp.g.conjugate(e)));
+                            paths_1++;
+                        } else if (res == 0) {
+                            DEBUG("Edge " << e.int_id() << "is possible plasmid due to multiple cycles");
+                            paths_many++;
+                        } else {
+                            DEBUG("Edge " << e.int_id() << "is possible plasmid, but pathProcessor halted");
+                            paths_many++;
+                        }
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    DEBUG("Edge " << e.int_id() << "has no chance to be in a plasmid, deleting");
+                    to_delete.insert(e);
+                    paths_0++;
+                }
             }
+            INFO("Edges with no paths " << paths_0 <<" with 1 " << paths_1 << "with many " << paths_many <<" too long " << too_long);
         }
-        for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-            if (gp.g.coverage(*it) < too_little && gp.g.EdgeEnd(*it) != gp.g.EdgeStart(*it)) {
-                DEBUG("Deleting edge " << gp.g.int_id(*it) << " because of low coverage");
-                to_delete.insert(std::min(*it, gp.g.conjugate(*it)));
-            }
-        }
-        for (auto e: to_delete){
-            if (to_save.find(std::min(e, gp.g.conjugate(e))) == to_save.end())
-                gp.g.DeleteEdge(e);
-            else {
-                DEBUG("Edge "<<e.int_id()<<" saved from deletion because of cycle")
-            }
-        }
-        CompressAll(gp.g);
-        INFO("Edges with no paths " << paths_0 <<" with 1 " << paths_1 << "with many " << paths_many <<" too long " << too_long);
+        CoverageFilter(gp, cfg::get().pd->absolute_coverage_cutoff,to_save);
     }
     std::ofstream is(out_file);
     size_t count = 0;

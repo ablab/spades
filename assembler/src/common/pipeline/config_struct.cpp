@@ -471,6 +471,12 @@ void load(debruijn_config::plasmid& pd,
     load(pd.small_component_relative_coverage, pt, "small_component_relative_coverage");
     load(pd.min_component_length, pt, "min_component_length");
     load(pd.min_isolated_length, pt, "min_isolated_length");
+    load(pd.remove_list, pt, "remove_list");
+    load(pd.absolute_coverage_cutoff, pt, "absolute_coverage_cutoff");
+    load(pd.circular_removal, pt, "circular_removal");
+    load(pd.min_start_edge_length, pt, "min_start_edge_length");
+    load(pd.min_start_coverage, pt, "min_start_coverage");
+    load(pd.max_loop, pt, "max_loop");
 }
 
 void load(debruijn_config::gap_closer& gc,

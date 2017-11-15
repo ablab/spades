@@ -10,4 +10,10 @@ plasmid
     min_component_length 10000
     min_isolated_length 1000
     remove_list ""
+    absolute_coverage_cutoff 5
+    circular_removal true
+;circular_removal
+    min_start_edge_length 2000
+    min_start_coverage 20
+    max_loop 150000
 }
