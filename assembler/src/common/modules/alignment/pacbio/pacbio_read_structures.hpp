@@ -157,5 +157,4 @@ public:
 private:
     DECL_LOGGER("StatsCounter");
 };
-
 }
