@@ -1,34 +1,54 @@
 #include "scaffold_graph_construction_pipeline.hpp"
+#include "barcode_index/scaffold_vertex_index_builder.hpp"
 
 namespace path_extend {
 
 CloudScaffoldGraphConstuctor::CloudScaffoldGraphConstuctor(const size_t max_threads_,
                                                            const size_t full_pipeline_length_threshold,
                                                            const conj_graph_pack& gp,
-                                                           const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor)
+                                                           shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor)
     : max_threads_(max_threads_), full_pipeline_length_(full_pipeline_length_threshold), gp_(gp), barcode_extractor_(barcode_extractor) {}
 
 CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::ConstructScaffoldGraphFromStorage(
     const ScaffolderParams& params, const ScaffoldingUniqueEdgeStorage& unique_storage) const {
 //    auto conditions = GetGraphConnectionConditions(params, unique_storage);
+
+    barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
+    const size_t tail_threshold = params.tail_threshold_;
+    const size_t length_threshold = 500;
+    const size_t count_threshold = params.count_threshold_;
+    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_, tail_threshold,
+                                                                     count_threshold, length_threshold,
+                                                                     max_threads_, unique_storage.unique_edges());
+    auto scaffold_index_extractor = std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
+
+    INFO("Constructed long edge barcode index");
     auto constructor = make_shared<scaffold_graph::UniqueScaffoldGraphConstructor>(gp_.g, unique_storage, params.initial_distance_);
     auto initial_graph = *(constructor->Construct());
+    INFO("Constructed initial graph");
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
-    iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, barcode_extractor_, max_threads_));
+    iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, scaffold_index_extractor, max_threads_));
     iterative_constructor_callers.push_back(make_shared<BarcodeConnectionConstructorCaller>(gp_.g, barcode_extractor_,
-                                                                                            unique_storage, max_threads_));
+                                                                                            scaffold_index_extractor,
+                                                                                            unique_storage, 1));
     iterative_constructor_callers.push_back(make_shared<CompositeConnectionConstructorCaller>(gp_, barcode_extractor_,
+                                                                                              scaffold_index_extractor,
                                                                                               unique_storage, max_threads_));
     if (params.length_threshold_ >= full_pipeline_length_) {
-        iterative_constructor_callers.push_back(make_shared<EdgeSplitConstructorCaller>(gp_.g, barcode_extractor_, max_threads_));
-        iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, barcode_extractor_, max_threads_));
+        iterative_constructor_callers.push_back(make_shared<EdgeSplitConstructorCaller>(gp_.g, *barcode_extractor_, max_threads_));
+        iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
     }
+    INFO("Created constructors");
     //todo make effective version of predicate graph constructor to avoid copying
     vector<ScaffoldGraph> graphs;
     graphs.push_back(initial_graph);
+    size_t counter = 0;
+    INFO("Calling constructors");
     for (const auto& caller: iterative_constructor_callers) {
+        INFO("Calling constructor " << counter);
         auto constructor = caller->GetScaffoldGraphConstuctor(params, graphs.back());
         graphs.push_back(*(constructor->Construct()));
+        INFO(graphs.back().EdgeCount() << " edges");
     }
     return graphs.back();
 }
@@ -90,7 +110,7 @@ path_extend::ScaffolderParams::ScaffolderParams(size_t length_threshold_, size_t
 ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorage() const {
     const size_t full_pipeline_length = 15000;
     const size_t num_threads = cfg::get().max_threads;
-    barcode_index::FrameBarcodeIndexInfoExtractor extractor(gp_.barcode_mapper_ptr, gp_.g);
+    auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
     CloudScaffoldGraphConstuctor constructor(num_threads, full_pipeline_length, gp_, extractor);
     ScaffoldGraphStorage storage(constructor.ConstructScaffoldGraphFromLength(large_length_threshold_),
                                  constructor.ConstructScaffoldGraphFromLength(small_length_threshold_));
@@ -102,15 +122,18 @@ ScaffoldGraphStorageConstructor::ScaffoldGraphStorageConstructor(size_t small_le
     small_length_threshold_), large_length_threshold_(large_length_threshold_), gp_(gp_) {}
 
 BarcodeScoreConstructorCaller::BarcodeScoreConstructorCaller(const Graph& g_,
-                                                             const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
+                                                             shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_,
                                                              size_t max_threads_)
     : g_(g_), barcode_extractor_(barcode_extractor_), max_threads_(max_threads_) {}
 
-BarcodeConnectionConstructorCaller::BarcodeConnectionConstructorCaller(const Graph& g_,
-                                                                       const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
-                                                                       const ScaffoldingUniqueEdgeStorage& unique_storage_,
-                                                                       size_t max_threads)
-    : g_(g_), barcode_extractor_(barcode_extractor_), unique_storage_(unique_storage_), max_threads(max_threads) {}
+BarcodeConnectionConstructorCaller::BarcodeConnectionConstructorCaller(
+        const Graph& g_,
+        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor,
+        shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor,
+        const ScaffoldingUniqueEdgeStorage& unique_storage_,
+        size_t max_threads)
+    : g_(g_), main_extractor_(main_extractor), long_edge_extractor_(long_edge_extractor),
+      unique_storage_(unique_storage_), max_threads(max_threads) {}
 
 shared_ptr<scaffold_graph::ScaffoldGraphConstructor> BarcodeScoreConstructorCaller::GetScaffoldGraphConstuctor(
         const ScaffolderParams& params,
@@ -134,7 +157,9 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> BarcodeConnectionConstructo
     path_extend::ReadCloudMiddleDijkstraParams long_gap_params(params.count_threshold_, params.tail_threshold_,
                                                                params.initial_distance_, vertex_predicate_params);
 
-    auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(g_, unique_storage_, barcode_extractor_, long_gap_params);
+    auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(g_, main_extractor_);
+    auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(g_, unique_storage_, short_edge_extractor,
+                                                                                long_edge_extractor_, long_gap_params);
     auto constructor =
         make_shared<scaffold_graph::PredicateScaffoldGraphConstructor>(g_, scaffold_graph, predicate, max_threads);
     return constructor;
@@ -153,9 +178,8 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> EdgeSplitConstructorCaller:
     return constructor;
 }
 TransitiveConstructorCaller::TransitiveConstructorCaller(const Graph& g_,
-                                                         const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
                                                          size_t max_threads_)
-    : g_(g_), barcode_extractor_(barcode_extractor_), max_threads_(max_threads_) {}
+    : g_(g_),  max_threads_(max_threads_) {}
 shared_ptr<scaffold_graph::ScaffoldGraphConstructor> TransitiveConstructorCaller::GetScaffoldGraphConstuctor(
         const ScaffolderParams& params,
         const ScaffoldGraph& scaffold_graph) const {
@@ -201,7 +225,10 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> CompositeConnectionConstruc
     INFO("Score threshold: " << params.connection_score_threshold_);
     INFO("Length threshold: " << params.connection_length_threshold_);
 
-    auto predicate = make_shared<path_extend::CompositeConnectionPredicate>(gp_, barcode_extractor_, unique_storage_,
+    auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(gp_.g, main_extractor_);
+
+    auto predicate = make_shared<path_extend::CompositeConnectionPredicate>(gp_, short_edge_extractor,
+                                                                            long_edge_extractor_, unique_storage_,
                                                                             gp_.clustered_indices, params.initial_distance_,
                                                                             paired_dij_params, predicate_params);
     const size_t max_threads = max_threads_;
@@ -210,8 +237,10 @@ shared_ptr<scaffold_graph::ScaffoldGraphConstructor> CompositeConnectionConstruc
     return constructor;
 }
 CompositeConnectionConstructorCaller::CompositeConnectionConstructorCaller(const conj_graph_pack &gp_,
-                                                                           const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
+                                                                           shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor,
+                                                                           shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor_,
                                                                            const ScaffoldingUniqueEdgeStorage &unique_storage_,
                                                                            const size_t max_threads_)
-    : gp_(gp_), barcode_extractor_(barcode_extractor_), unique_storage_(unique_storage_), max_threads_(max_threads_) {}
+    : gp_(gp_), main_extractor_(main_extractor), long_edge_extractor_(barcode_extractor_),
+      unique_storage_(unique_storage_), max_threads_(max_threads_) {}
 }

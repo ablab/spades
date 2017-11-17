@@ -1,36 +1,35 @@
 #include "scaffold_graph_storage.hpp"
 
 namespace path_extend {
-    ScaffoldGraphStorage::ScaffoldGraphStorage(const ScaffoldGraphStorage::ScaffoldGraph& large_scaffold_graph,
-                                               const ScaffoldGraphStorage::ScaffoldGraph& small_scaffold_graph)
-        : large_scaffold_graph_(large_scaffold_graph), small_scaffold_graph_(small_scaffold_graph) {}
-    const ScaffoldGraphStorage::ScaffoldGraph& ScaffoldGraphStorage::GetLargeScaffoldGraph() const {
-        return large_scaffold_graph_;
-    }
-    const ScaffoldGraphStorage::ScaffoldGraph& ScaffoldGraphStorage::GetSmallScaffoldGraph() const {
-        return small_scaffold_graph_;
-    }
-    void ScaffoldGraphStorage::SetSmallScaffoldGraph(const ScaffoldGraph& small_scaffold_graph) {
-        ReplaceScaffoldGraph(small_scaffold_graph, small_scaffold_graph_);
-    }
-    void ScaffoldGraphStorage::SetLargeScaffoldGraph(const ScaffoldGraph& large_scaffold_graph) {
-        ReplaceScaffoldGraph(large_scaffold_graph, large_scaffold_graph_);
-    }
-    ScaffoldGraphStorage::ScaffoldGraphStorage(const debruijn_graph::Graph& g) : large_scaffold_graph_(g), small_scaffold_graph_(g) {}
-    void ScaffoldGraphStorage::ReplaceScaffoldGraph(const ScaffoldGraphStorage::ScaffoldGraph &from, ScaffoldGraph &to) {
-        for (const ScaffoldGraph::ScaffoldEdge& edge: to.edges()) {
-            to.RemoveEdge(edge);
-        }
-        for (const ScaffoldGraph::ScaffoldVertex& vertex: to.vertices()) {
-            to.RemoveVertex(vertex);
-        }
-        for (const ScaffoldGraph::ScaffoldVertex& vertex: from.vertices()) {
-            to.AddVertex(vertex);
-        }
-        for (const ScaffoldGraph::ScaffoldEdge& edge: from.edges()) {
-            to.AddEdge(edge);
-        }
-    }
+ScaffoldGraphStorage::ScaffoldGraphStorage(const ScaffoldGraphStorage::ScaffoldGraph& large_scaffold_graph,
+                                           const ScaffoldGraphStorage::ScaffoldGraph& small_scaffold_graph)
+    : large_scaffold_graph_(large_scaffold_graph), small_scaffold_graph_(small_scaffold_graph) {}
+
+const ScaffoldGraphStorage::ScaffoldGraph& ScaffoldGraphStorage::GetLargeScaffoldGraph() const {
+    return large_scaffold_graph_;
+}
+
+const ScaffoldGraphStorage::ScaffoldGraph& ScaffoldGraphStorage::GetSmallScaffoldGraph() const {
+    return small_scaffold_graph_;
+}
+
+void ScaffoldGraphStorage::SetSmallScaffoldGraph(const ScaffoldGraph& small_scaffold_graph) {
+    ReplaceScaffoldGraph(small_scaffold_graph, small_scaffold_graph_);
+}
+
+void ScaffoldGraphStorage::SetLargeScaffoldGraph(const ScaffoldGraph& large_scaffold_graph) {
+    ReplaceScaffoldGraph(large_scaffold_graph, large_scaffold_graph_);
+}
+
+ScaffoldGraphStorage::ScaffoldGraphStorage(const debruijn_graph::Graph& g) : large_scaffold_graph_(g), small_scaffold_graph_(g) {}
+
+void ScaffoldGraphStorage::ReplaceScaffoldGraph(const ScaffoldGraphStorage::ScaffoldGraph &from, ScaffoldGraph &to) {
+    to = from;
+    VERIFY(to.EdgeCount() == from.EdgeCount());
+    VERIFY(to.VertexCount() == from.VertexCount());
+    INFO("Finished replacing");
+}
+
 void ScaffoldGraphStorage::LoadScaffoldGraph(ifstream& fin,
                                              ScaffoldGraphStorage::ScaffoldGraph& graph,
                                              const std::map<size_t, debruijn_graph::EdgeId>& edge_map) const {
@@ -62,7 +61,7 @@ void ScaffoldGraphStorage::Load(const string& path, const std::map<size_t, debru
 }
 void ScaffoldGraphStorage::SaveScaffoldGraph(ofstream& fout, const ScaffoldGraphStorage::ScaffoldGraph& graph) const {
     fout << graph.VertexCount() << std::endl;
-    for (const ScaffoldGraph::ScaffoldVertex& vertex: graph.vertices()) {
+    for (const ScaffoldGraph::ScaffoldGraphVertex& vertex: graph.vertices()) {
         fout << vertex.int_id() << std::endl;
     }
     fout << graph.EdgeCount() << std::endl;

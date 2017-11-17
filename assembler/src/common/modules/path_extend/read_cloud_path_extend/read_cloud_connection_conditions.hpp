@@ -19,7 +19,7 @@ namespace path_extend {
                                                size_t max_connection_length,
                                                const ScaffoldingUniqueEdgeStorage& unique_edges);
         map<EdgeId, double> ConnectedWith(EdgeId e) const override;
-        virtual bool IsLast() const override;
+        bool IsLast() const override;
     };
 
     class ScaffoldEdgePredicate: public func::AbstractPredicate<const path_extend::scaffold_graph::ScaffoldGraph::ScaffoldEdge&> {
@@ -37,9 +37,9 @@ namespace path_extend {
 
       const LongEdgePairGapCloserParams edge_pair_gap_closer_params_;
 
-      ReadCloudMiddleDijkstraParams(const size_t count_threshold_,
-                                    const size_t tail_threshold_,
-                                    const size_t distance_,
+      ReadCloudMiddleDijkstraParams(size_t count_threshold_,
+                                    size_t tail_threshold_,
+                                    size_t distance_,
                                     const LongEdgePairGapCloserParams &edge_pair_gap_closer_params_);
     };
 
@@ -48,15 +48,18 @@ namespace path_extend {
 
         const Graph& g;
         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
-        const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
+        const shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor_;
+        const shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor_;
         const ReadCloudMiddleDijkstraParams params_;
      public:
         ReadCloudMiddleDijkstraPredicate(const Graph& g,
                                          const ScaffoldingUniqueEdgeStorage& unique_storage_,
-                                         const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
+                                         shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
+                                         shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor,
                                          const ReadCloudMiddleDijkstraParams& params);
         bool Check(const ScaffoldEdge& scaffold_edge) const override;
 
+        DECL_LOGGER("ReadCloudMiddleDijkstraPredicate");
     };
 
     struct CompositeConnectionParams {
@@ -65,17 +68,18 @@ namespace path_extend {
       const config::dataset& dataset_info;
       const path_extend::PathExtendParamsContainer pe_params_;
 
-      CompositeConnectionParams(const size_t paired_lib_index_,
-                              const size_t prefix_length_,
-                              const config::dataset &dataset_info,
-                              const PathExtendParamsContainer &pe_params_);
+      CompositeConnectionParams(size_t paired_lib_index_,
+                                size_t prefix_length_,
+                                const config::dataset &dataset_info,
+                                const PathExtendParamsContainer &pe_params_);
     };
 
     class CompositeConnectionPredicate: public ScaffoldEdgePredicate {
         using ScaffoldEdgePredicate::ScaffoldEdge;
 
         const conj_graph_pack& gp_;
-        const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
+        shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor_;
+        shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor_;
         const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
         const omnigraph::de::PairedInfoIndicesT<Graph>& clustered_indices_;
         const size_t length_bound_;
@@ -85,10 +89,11 @@ namespace path_extend {
      public:
 
         CompositeConnectionPredicate(const conj_graph_pack &gp_,
-                                     const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
+                                     shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
+                                     shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor_,
                                      const ScaffoldingUniqueEdgeStorage &unique_storage_,
                                      const de::PairedInfoIndicesT<debruijn_graph::DeBruijnGraph> &clustered_indices_,
-                                     const size_t length_bound_,
+                                     size_t length_bound_,
                                      const CompositeConnectionParams &params_,
                                      const LongEdgePairGapCloserParams &predicate_params_);
 
@@ -105,13 +110,13 @@ namespace path_extend {
         typedef barcode_index::BarcodeId BarcodeId;
 
         const Graph& g_;
-        const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
+        const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_;
         const size_t count_threshold_;
         const double strictness_;
      public:
         EdgeSplitPredicate(const Graph& g_,
-                           const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
-                           const size_t count_threshold_,
+                           const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
+                           size_t count_threshold_,
                            double strictness);
 
         bool Check(const ScaffoldEdge& scaffold_edge) const override;
@@ -132,45 +137,24 @@ namespace path_extend {
 
      private:
         const Graph& g_;
-        const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
+        const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_;
         const size_t count_threshold_;
         const double shared_fraction_threshold_;
 
      public:
         EdgeInTheMiddlePredicate(const Graph& g_,
-                                         const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
-                                         size_t count_threshold,
-                                         double shared_fraction_threshold);
+                                 const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
+                                 size_t count_threshold,
+                                 double shared_fraction_threshold);
 
         bool IsCorrectOrdering(const EdgeId& first, const EdgeId& second, const EdgeId& third);
         DECL_LOGGER("EdgeInTheMiddlePredicate");
     };
 
-    class NextFarEdgesPredicate: public ScaffoldEdgePredicate {
-     public:
-        using ScaffoldEdgePredicate::ScaffoldEdge;
-        typedef scaffold_graph::ScaffoldGraph::ScaffoldVertex ScaffoldVertex;
-
-     private:
-        const Graph& g_;
-        const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
-        const size_t count_threshold_;
-        const double shared_fraction_threshold_;
-        const std::function<vector<ScaffoldVertex>(ScaffoldVertex)>& candidates_getter_;
-     public:
-        NextFarEdgesPredicate(const Graph& g_,
-                              const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
-                              const size_t count_threshold_,
-                              const double shared_fraction_threshold_,
-                              const std::function<vector<ScaffoldVertex>(ScaffoldVertex)>& candidates_getter_);
-
-        bool Check(const ScaffoldEdge& scaffold_edge) const override;
-    };
-
     class SimpleSearcher {
      public:
         typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
-        typedef ScaffoldGraph::ScaffoldVertex ScaffoldVertex;
+        typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
      private:
         const ScaffoldGraph& scaff_graph_;
         const Graph& g_;
@@ -198,7 +182,7 @@ namespace path_extend {
     class TransitiveEdgesPredicate: public ScaffoldEdgePredicate {
      public:
         using ScaffoldEdgePredicate::ScaffoldEdge;
-        typedef scaffold_graph::ScaffoldGraph::ScaffoldVertex ScaffoldVertex;
+        typedef scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
      private:
         const scaffold_graph::ScaffoldGraph scaffold_graph_;
@@ -224,12 +208,12 @@ namespace path_extend {
     class AbstractBarcodeScoreFunction: public ScaffoldEdgeScoreFunction {
      protected:
         const Graph& graph_;
-        const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_;
+        shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_;
 
      public:
         AbstractBarcodeScoreFunction(
             const Graph& graph_,
-            const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_);
+            shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_);
     };
 
     class NormalizedBarcodeScoreFunction: public AbstractBarcodeScoreFunction {
@@ -242,11 +226,11 @@ namespace path_extend {
      public:
         NormalizedBarcodeScoreFunction(
             const Graph& graph_,
-            const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
-            const size_t read_count_threshold_,
-            const size_t tail_threshold_);
+            shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_,
+            size_t read_count_threshold_,
+            size_t tail_threshold_);
 
-        virtual double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
+        double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
 
         DECL_LOGGER("NormalizedBarcodeScoreFunction");
     };
@@ -260,11 +244,11 @@ namespace path_extend {
      public:
         TrivialBarcodeScoreFunction(
             const Graph& graph_,
-            const barcode_index::FrameBarcodeIndexInfoExtractor& barcode_extractor_,
-            const size_t read_count_threshold_,
-            const size_t tail_threshold_);
+            shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_,
+            size_t read_count_threshold_,
+            size_t tail_threshold_);
 
-        virtual double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
+        double GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& edge) const override;
     };
 
 }
