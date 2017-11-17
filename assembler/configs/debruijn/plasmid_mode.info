@@ -11,7 +11,7 @@ plasmid
     min_component_length 10000
     min_isolated_length 1000
 ;meta
-    meta_mode false
+    meta_mode true
     remove_list ""
     absolute_coverage_cutoff 5
     circular_removal true
