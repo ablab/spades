@@ -18,6 +18,7 @@
 #include "scaffolder_statistics/gap_closer_analyzer.hpp"
 #include "path_cluster_test.hpp"
 #include "common/modules/path_extend/read_cloud_path_extend/path_cluster_helper.hpp"
+#include "common/barcode_index/scaffold_vertex_index_builder.hpp"
 
 namespace read_cloud_statistics {
 
@@ -175,6 +176,16 @@ namespace read_cloud_statistics {
             size_t count_threshold = params.count_threshold_;
             double score_threshold = params.score_threshold_;
 
+            INFO("Constructing long edge barcode index");
+            barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
+            auto long_edge_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_ptr_,
+                                                                       params.tail_threshold_,
+                                                                       params.count_threshold_,
+                                                                       cfg::get().max_threads;
+                                                                       500, unique_storage_.unique_edges());
+            auto long_edge_extractor = make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(long_edge_index);
+            auto short_edge_extractor = make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(gp_.g, *barcode_extractor_ptr_);
+
             path_extend::LongEdgePairGapCloserParams vertex_predicate_params(params.connection_count_threshold_,
                                                                              params.tail_threshold_,
                                                                              params.connection_score_threshold_,
@@ -192,16 +203,17 @@ namespace read_cloud_statistics {
 
             INFO("Constructing score scaffold graph");
 
-            auto score_scaffold_graph = scaffold_helper.ConstructBarcodeScoreScaffoldGraph(scaffold_graph, *barcode_extractor_ptr_,
+            auto score_scaffold_graph = scaffold_helper.ConstructBarcodeScoreScaffoldGraph(scaffold_graph, long_edge_extractor,
                                                                                            gp_.g, count_threshold, tail_threshold,
                                                                                            score_threshold);
             INFO(score_scaffold_graph.VertexCount() << " vertices and " << score_scaffold_graph.EdgeCount() << " edges in score scaffold graph");
 
             INFO("Constructing barcode connection scaffold graph");
 
-            auto barcode_connection_scaffold_graph = scaffold_helper.ConstructLongGapScaffoldGraph(score_scaffold_graph, unique_storage,
-                                                                                           *barcode_extractor_ptr_, gp_.g,
-                                                                                           long_gap_params);
+            auto barcode_connection_scaffold_graph =
+                scaffold_helper.ConstructLongGapScaffoldGraph(score_scaffold_graph, unique_storage,
+                                                              short_edge_extractor, long_edge_extractor,
+                                                              gp_.g, long_gap_params);
             INFO(barcode_connection_scaffold_graph.VertexCount() << " vertices and "
                                                          << barcode_connection_scaffold_graph.EdgeCount()
                                                          << " edges in connection scaffold graph");
@@ -209,7 +221,9 @@ namespace read_cloud_statistics {
             INFO("Constructing paired end connection scaffold graph");
 
             auto composite_connection_scaffold_graph =
-                scaffold_helper.ConstructCompositeConnectionScaffoldGraph(barcode_connection_scaffold_graph, *barcode_extractor_ptr_,
+                scaffold_helper.ConstructCompositeConnectionScaffoldGraph(barcode_connection_scaffold_graph,
+                                                                          barcode_extractor_ptr_,
+                                                                          long_edge_extractor,
                                                                           params, gp_, unique_storage);
 
             INFO(composite_connection_scaffold_graph.VertexCount() << " vertices and "

@@ -94,12 +94,21 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
                                             const std::filesystem::path &filename) const {
     using namespace scaffold_graph;
 
-    auto vertex_colorer = std::make_shared<ScaffoldVertexSetColorer>(main_edge_set);
+    set<ScaffoldVertex> scaff_vertex_set;
+    for (const auto& edge: main_edge_set) {
+        EdgeId copy = edge;
+        scaff_vertex_set.insert(copy);
+    }
+    auto vertex_colorer = std::make_shared<ScaffoldVertexSetColorer>(scaff_vertex_set);
     auto edge_colorer = std::make_shared<ScaffoldEdgeColorer>();
     graph_colorer::CompositeGraphColorer<ScaffoldGraph> colorer(vertex_colorer, edge_colorer);
 
     INFO("Visualizing scaffold graph");
-    ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, genome_checker.EdgeLabels());
+    map<ScaffoldVertex, string> scaff_vertex_labels;
+    for (const auto& entry: genome_checker.EdgeLabels()) {
+        scaff_vertex_labels.insert({entry.first, entry.second});
+    }
+    ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, scaff_vertex_labels);
     std::ofstream single_dot;
     single_dot.open(filename.native() + "_single.dot");
     singleVisualizer.Visualize(single_dot, colorer);
@@ -475,24 +484,8 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
         if (params_.pset.sm == sm_old) {
             INFO("Will not use read cloud path extend in this mode");
         } else {
-            //fixme move filtering elsewhere (to barcode index construction?)
-            INFO("Filtering barcode mapper");
-            const size_t barcode_number_threshold = cfg::get().ts_res.trimming_threshold;
-            const size_t initial_gap_threshold = cfg::get().ts_res.gap_threshold;
-            //Filtering
-            INFO("Barcode number threshold: " << barcode_number_threshold);
-            INFO("Gap threshold: " << initial_gap_threshold);
-            barcode_index::FrameBarcodeIndexInfoExtractor extractor(gp_.barcode_mapper_ptr, gp_.g);
-            auto barcode_extractor_ptr = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-            scaffold_graph::ScaffoldGraph scaffold_graph(gp_.g);
-
-            const size_t temp_distance = 5000;
-            const size_t temp_min_read_threshold = 10;
-            const size_t num_threads = cfg::get().max_threads;
-
             //Creating read cloud unique storage
             FillReadCloudUniqueEdgeStorage();
-
             INFO("Creating read cloud extenders");
             utils::push_back_all(extenders, ConstructReadCloudExtender(generator));
         }
@@ -537,12 +530,15 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
         }
          if (lib.type() == io::LibraryType::Clouds10x and cfg::get().ts_res.read_cloud_resolution_on) {
              auto barcode_extractor_ptr = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-             auto cloud_chooser_factory = std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.g, unique_data_.unique_read_cloud_storage_,
-                                                                                          barcode_extractor_ptr);
+             auto cloud_chooser_factory = std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.g,
+                                                                                                unique_data_.unique_read_cloud_storage_,
+                                                                                                barcode_extractor_ptr);
              auto simple_chooser = generator.MakeSimpleExtensionChooser(i);
              auto simple_chooser_factory = std::make_shared<SameChooserFactory>(gp_.g, simple_chooser);
-             auto composite_chooser_factory = std::make_shared<CompositeChooserFactory>(gp_.g, simple_chooser_factory, cloud_chooser_factory);
-             auto cloud_extender_factory = std::make_shared<SimpleExtenderFactory>(gp_, cover_map, used_unique_storage, composite_chooser_factory);
+             auto composite_chooser_factory = std::make_shared<CompositeChooserFactory>(gp_.g, simple_chooser_factory,
+                                                                                        cloud_chooser_factory);
+             auto cloud_extender_factory = std::make_shared<SimpleExtenderFactory>(gp_, cover_map, used_unique_storage,
+                                                                                   composite_chooser_factory);
              gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, cloud_extender_factory));
          }
     }

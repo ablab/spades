@@ -14,6 +14,7 @@
 #include <memory>
 #include <vector>
 #include <set>
+#include <queue>
 #include <map>
 
 namespace path_extend {
@@ -211,12 +212,20 @@ protected:
 
 };
 
-//fixme needs static cast to use. usable only in searching path extender
+//fixme leaks everywhere
 class QueueContainer {
-    std::queue<shared_ptr<BidirectionalPath>> path_storage_;
+    std::queue<BidirectionalPath*> path_storage_;
 
  public:
-    void push(shared_ptr<BidirectionalPath> path) {
+    ~QueueContainer() {
+        while (not path_storage_.empty()) {
+            auto current_path = path_storage_.front();
+            path_storage_.pop();
+            delete current_path;
+        }
+    }
+
+    void push(BidirectionalPath* path) {
         path_storage_.push(path);
     }
 
@@ -232,7 +241,7 @@ class QueueContainer {
         return path_storage_.size();
     }
 
-    shared_ptr<BidirectionalPath> front() const {
+    BidirectionalPath* front() const {
         return path_storage_.front();
     }
 };

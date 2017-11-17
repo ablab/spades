@@ -30,11 +30,11 @@ class DistanceBasedScaffoldGraphLengthCalculator: public LengthCalculator<Graph,
     }
 };
 
-template<>
+template <>
 class ForwardNeighbourIterator<ScaffoldGraph> : public NeighbourIterator<ScaffoldGraph>{
     typedef typename ScaffoldGraph::VertexId VertexId;
     typedef typename ScaffoldGraph::EdgeId EdgeId;
-    typedef typename vector<EdgeId>::const_iterator edge_const_iterator;
+    typedef typename vector<ScaffoldGraph::EdgeId>::const_iterator edge_const_iterator;
     vector<EdgeId> out_edges_;
     edge_const_iterator current_;
  public:
@@ -51,8 +51,8 @@ class ForwardNeighbourIterator<ScaffoldGraph> : public NeighbourIterator<Scaffol
         TRACE(current_->getStart().int_id() << ", " << current_->getEnd().int_id());
         vertex_neighbour<ScaffoldGraph> res(current_->getEnd(), *current_);
         current_++;
-        TRACE("After increment");
-        TRACE(current_->getStart().int_id() << ", " << current_->getEnd().int_id());
+//        TRACE("After increment");
+//        TRACE(current_->getStart().int_id() << ", " << current_->getEnd().int_id());
         return res;
     }
 
@@ -89,8 +89,8 @@ class ScaffoldBarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph& g_;
-    const VertexId& first_;
-    const VertexId& second_;
+    const VertexId first_;
+    const VertexId second_;
     shared_ptr<path_extend::ScaffoldVertexPredicate> predicate_;
 
  public:
@@ -100,15 +100,24 @@ class ScaffoldBarcodedPathPutChecker : public VertexPutChecker<Graph, distance_t
         g_(g),
         first_(first),
         second_(second),
-        predicate_(predicate) {}
+        predicate_(predicate) {
+        TRACE("Construction");
+        TRACE("First id: " << first_.int_id());
+        TRACE("Second id: " << second_.int_id());
+    }
 
     bool Check(VertexId vertex, EdgeId /*unused*/, distance_t distance) const override {
         TRACE("Checking vertex " << g_.str(vertex));
+        TRACE("Id: " << vertex.int_id());
+        TRACE("First id: " << first_.int_id());
+        TRACE("Second id: " << second_.int_id());
         bool target_reached = distance > 0 and (vertex == first_ or vertex == second_);
         if (target_reached) {
+            TRACE("Target reached");
             return false;
         }
-        return (*predicate_)(vertex);
+        TRACE("Checking");
+        return predicate_->Check(vertex);
     }
     DECL_LOGGER("ScaffoldBarcodePutChecker");
 };
@@ -126,7 +135,7 @@ class LengthBasedProcessChecker : public VertexProcessChecker<Graph, distance_t>
         : g_(g_), start_(start_), length_bound_(length_bound_) {}
 
     bool Check(VertexId vertex, distance_t /*distance*/) override {
-        return vertex == start_ or g_.AssemblyGraph().length(vertex) <= length_bound_;
+        return vertex == start_ or g_.length(vertex) <= length_bound_;
     }
 };
 
@@ -138,7 +147,7 @@ class TrivialScaffoldPutChecker : public VertexPutChecker<Graph, distance_t> {
  public:
     TrivialScaffoldPutChecker() {}
 
-    bool Check(VertexId vertex, EdgeId /*unused*/, distance_t distance) const override {
+    bool Check(VertexId /*unused*/, EdgeId /*unused*/, distance_t /*unused*/) const override {
         return true;
     }
     DECL_LOGGER("TrivialScaffoldPutChecker");
@@ -155,7 +164,7 @@ typedef Dijkstra<path_extend::scaffold_graph::ScaffoldGraph, LengthBasedScaffold
 
 static LengthBasedScaffoldDijkstra CreateLengthBasedScaffoldDijkstra(
     const path_extend::scaffold_graph::ScaffoldGraph& graph,
-    const path_extend::scaffold_graph::ScaffoldGraph::ScaffoldVertex& vertex,
+    const path_extend::scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex& vertex,
     size_t length_bound,
     size_t max_vertex_number = -1ul){
     return LengthBasedScaffoldDijkstra(graph, LengthBasedScaffoldDijkstraSettings(
@@ -179,8 +188,8 @@ typedef Dijkstra<path_extend::scaffold_graph::ScaffoldGraph, ForwardBoundedScaff
 
 static ForwardBoundedScaffoldDijkstra CreateForwardBoundedScaffoldDijkstra(
         const path_extend::scaffold_graph::ScaffoldGraph& graph,
-        const ScaffoldGraph::ScaffoldVertex first,
-        const ScaffoldGraph::ScaffoldVertex second,
+        const ScaffoldGraph::ScaffoldGraphVertex& first,
+        const ScaffoldGraph::ScaffoldGraphVertex& second,
         size_t length_bound,
         shared_ptr<path_extend::ScaffoldVertexPredicate> predicate,
         size_t max_vertex_number = -1ul){
@@ -205,8 +214,8 @@ typedef Dijkstra<path_extend::scaffold_graph::ScaffoldGraph, BackwardBoundedScaf
 
 static BackwardBoundedScaffoldDijkstra CreateBackwardBoundedScaffoldDijkstra(
         const path_extend::scaffold_graph::ScaffoldGraph&graph,
-        const ScaffoldGraph::ScaffoldVertex first,
-        const ScaffoldGraph::ScaffoldVertex second,
+        const ScaffoldGraph::ScaffoldGraphVertex first,
+        const ScaffoldGraph::ScaffoldGraphVertex second,
         size_t length_bound,
         shared_ptr<path_extend::ScaffoldVertexPredicate> predicate,
         size_t max_vertex_number = -1ul){
