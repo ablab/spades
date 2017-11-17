@@ -471,6 +471,7 @@ void load(debruijn_config::plasmid& pd,
     load(pd.small_component_relative_coverage, pt, "small_component_relative_coverage");
     load(pd.min_component_length, pt, "min_component_length");
     load(pd.min_isolated_length, pt, "min_isolated_length");
+    load(pd.meta_mode, pt, "meta_mode");
     load(pd.remove_list, pt, "remove_list");
     load(pd.absolute_coverage_cutoff, pt, "absolute_coverage_cutoff");
     load(pd.circular_removal, pt, "circular_removal");

@@ -281,7 +281,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
     bool use_chromosomal_list = (additional_list != "");
 
     double chromosome_coverage;
-    if (use_chromosomal_list) {
+    if (cfg::get().pd->meta_mode) {
         chromosome_coverage = RemoveEdgesByList(gp, additional_list);
         MetaChromosomeRemoval(gp);
     }

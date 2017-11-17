@@ -389,7 +389,7 @@ struct debruijn_config {
         double small_component_relative_coverage;
         size_t min_component_length;
         size_t min_isolated_length;
-
+        bool meta_mode;
         std::string remove_list;
         double absolute_coverage_cutoff;
         bool circular_removal;
