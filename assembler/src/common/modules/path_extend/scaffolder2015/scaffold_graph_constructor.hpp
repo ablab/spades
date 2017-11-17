@@ -90,6 +90,8 @@ class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
 
  public:
     shared_ptr<ScaffoldGraph> Construct() override;
+
+    DECL_LOGGER("UniqueScaffoldGraphConstructor");
 };
 
 class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {

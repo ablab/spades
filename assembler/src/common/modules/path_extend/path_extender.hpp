@@ -640,7 +640,7 @@ class SearchingMultiExtender: public SimpleExtender {
         for (size_t i = 1; i < candidates.size(); ++i) {
             auto candidate = candidates[i];
             DEBUG("push other candidate " << candidate.e_.int_id());
-            auto p = make_shared<BidirectionalPath>(path);
+            BidirectionalPath* p = new BidirectionalPath(path);
             p->PushBack(candidate.e_, Gap(candidate.d_));
             path_container_.push(p);
             DEBUG("Inserting vertex " << g_.EdgeEnd(candidate.e_));
@@ -922,7 +922,7 @@ private:
 class ScaffoldGraphExtender: public PathExtender {
     typedef path_extend::scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
-    typedef ScaffoldGraph::ScaffoldVertex ScaffoldVertex;
+    typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 
  protected:
     const ScaffoldGraph &scaffold_graph_;
@@ -952,8 +952,17 @@ class ScaffoldGraphExtender: public PathExtender {
             }
             ScaffoldEdge connection = outgoing_edges.back();
             Gap gap(static_cast<int>(connection.getLength()));
-            EdgeId next = connection.getEnd();
-            return TryUseEdge(path, next, gap);
+            ScaffoldVertex next_vertex = connection.getEnd();
+            scaffold_graph::ScaffoldVertexT type = next_vertex.getType();
+            switch (type) {
+                case scaffold_graph::Edge: {
+                    scaffold_graph::EdgeGetter getter;
+                    EdgeId next = getter.GetEdgeFromScaffoldVertex(next_vertex);
+                    return TryUseEdge(path, next, gap);
+                }
+                case scaffold_graph::Path: return false;
+            }
+            return false;
         }
     }
 
