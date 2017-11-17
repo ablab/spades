@@ -12,6 +12,7 @@ namespace validation {
 class ContigTransitionStorage {
  public:
     typedef path_extend::transitions::Transition Transition;
+    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
  private:
     std::unordered_set<Transition> transitions_;
     std::unordered_set<EdgeId> covered_edges_;
@@ -37,6 +38,11 @@ class ContigTransitionStorage {
 
     size_t size() const {
         return transitions_.size();
+    }
+
+    bool CheckTransition(const ScaffoldVertex &first, const ScaffoldVertex &second) const {
+        Transition t(first, second);
+        return CheckTransition(t);
     }
 
     bool CheckTransition(const EdgeId& first, const EdgeId& second) const {

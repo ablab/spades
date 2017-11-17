@@ -37,7 +37,7 @@ protected:
                           const vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                           bool use_terminal_vertices_only = false);
 
-    void ConstructFromEdgeConditions(func::TypedPredicate<typename Graph::EdgeId> edge_condition,
+    void ConstructFromEdgeConditions(func::TypedPredicate<EdgeId> edge_condition,
                                      const vector<shared_ptr<ConnectionCondition>> &connection_conditions,
                                      bool use_terminal_vertices_only = false);
 
@@ -89,6 +89,8 @@ class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
 
  public:
     shared_ptr<ScaffoldGraph> Construct() override;
+
+    DECL_LOGGER("UniqueScaffoldGraphConstructor");
 };
 
 class PredicateScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {

@@ -3,26 +3,31 @@
 
 namespace path_extend {
 
-bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldVertex &vertex) const {
-    if (g_.length(vertex) < params_.edge_length_threshold_) {
+bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldGraphVertex &vertex) const {
+    DEBUG(barcodes_.size() << " barcodes");
+    TRACE("Getting length");
+    size_t vertex_length = vertex.getLengthFromGraph(g_);
+    DEBUG("Vertex length: " << vertex_length);
+    double vertex_coverage = vertex.getCoverageFromGraph(g_);
+    if (vertex_length < params_.edge_length_threshold_) {
         DEBUG("Edge is too short");
         return true;
     }
-    vector<barcode_index::BarcodeId>
-        middle_barcodes = barcode_extractor_.GetBarcodesFromRange(vertex, params_.count_threshold_,
-                                                                  0, g_.length(vertex));
-    vector<barcode_index::BarcodeId> middle_intersection;
-    set_intersection(middle_barcodes.begin(), middle_barcodes.end(), barcodes_.begin(), barcodes_.end(),
-                     back_inserter(middle_intersection));
-    double
-        length_coefficient = static_cast<double>(g_.length(vertex)) / static_cast<double>(params_.length_normalizer_);
+    double length_coefficient = static_cast<double>(vertex.getLengthFromGraph(g_)) / static_cast<double>(params_.length_normalizer_);
     double coverage_coefficient = 1.0;
+    DEBUG("Getting coverages");
+    double start_coverage = start_.getCoverageFromGraph(g_);
+    double end_coverage = end_.getCoverageFromGraph(g_);
     if (params_.normalize_using_cov_) {
-        coverage_coefficient = (2 * g_.coverage(vertex)) / (g_.coverage(start_) + g_.coverage(end_));
+        coverage_coefficient = (2 * vertex_coverage) / (start_coverage + end_coverage);
     }
     double score_threshold = params_.raw_score_threshold_ * length_coefficient * coverage_coefficient;
-
-    double score = static_cast<double>(middle_intersection.size()) / static_cast<double>(barcodes_.size());
+    DEBUG("Score threshold: " << score_threshold);
+    DEBUG("Middle barcodes: " << barcode_extractor_->GetHeadSize(vertex));
+    DEBUG("Getting intersection size");
+    size_t intersection_size = barcode_extractor_->GetIntersectionSize(vertex, barcodes_);
+    DEBUG("Intersection size: " << intersection_size);
+    double score = static_cast<double>(intersection_size) / static_cast<double>(barcodes_.size());
     bool threshold_passed = math::ge(score, score_threshold);
     TRACE("Threshold passed: " << (threshold_passed ? "True" : "False"));
     if (not threshold_passed) {
@@ -31,44 +36,26 @@ bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldVertex &
         DEBUG("Raw threshold: " << params_.raw_score_threshold_);
         DEBUG("Score threshold: " << score_threshold);
         DEBUG("Intersection: " << barcodes_.size());
-        DEBUG("Middle barcodes: " << middle_barcodes.size());
-        DEBUG("Middle intersection: " << middle_intersection.size());
-        DEBUG("Vertex length: " << g_.length(vertex));
-        DEBUG("Vertex coverage: " << g_.coverage(vertex));
+        DEBUG("Middle barcodes: " << barcode_extractor_->GetHeadSize(vertex));
+        DEBUG("Middle intersection: " << intersection_size);
+        DEBUG("Vertex length: " << vertex_length);
+        DEBUG("Vertex coverage: " << vertex_coverage);
         DEBUG("Left: " << start_.int_id());
         DEBUG("Right: " << end_.int_id());
-        DEBUG("Left coverage: " << g_.coverage(start_));
-        DEBUG("Right coverage: " << g_.coverage(end_) << endl);
+        DEBUG("Left coverage: " << start_coverage);
+        DEBUG("Right coverage: " << end_coverage);
     }
     return threshold_passed;
 }
-LongEdgePairGapCloserPredicate::LongEdgePairGapCloserPredicate(const debruijn_graph::Graph &g,
-                                                               const barcode_index::FrameBarcodeIndexInfoExtractor &extractor,
-                                                               const LongEdgePairGapCloserParams &params,
-                                                               const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge)
-    :
-    g_(g),
-    barcode_extractor_(extractor),
-    params_(params),
-    start_(edge.getStart()),
-    end_(edge.getEnd()),
-    barcodes_(extractor.GetSharedBarcodesWithFilter(start_,
-                                                    end_,
-                                                    params.count_threshold_,
-                                                    params.length_normalizer_)) {}
-LongEdgePairGapCloserPredicate::LongEdgePairGapCloserPredicate(const debruijn_graph::Graph &g_,
-                                                               const barcode_index::FrameBarcodeIndexInfoExtractor &barcode_extractor_,
-                                                               const LongEdgePairGapCloserParams &params,
-                                                               const scaffold_graph::ScaffoldGraph::ScaffoldVertex &start_,
-                                                               const scaffold_graph::ScaffoldGraph::ScaffoldVertex &end_,
-                                                               const vector<barcode_index::BarcodeId> &barcodes_) :
-    g_(g_), barcode_extractor_(barcode_extractor_), params_(params), start_(start_), end_(end_), barcodes_(barcodes_) {}
 
-bool UniquenessChecker::Check(const scaffold_graph::ScaffoldGraph::ScaffoldVertex &edge) const {
-    return not unique_storage_.IsUnique(edge);
-}
-UniquenessChecker::UniquenessChecker(const ScaffoldingUniqueEdgeStorage &unique_storage_) : unique_storage_(
-    unique_storage_) {}
+LongEdgePairGapCloserPredicate::LongEdgePairGapCloserPredicate(const debruijn_graph::Graph &g_,
+                                                               shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> extractor,
+                                                               const LongEdgePairGapCloserParams &params,
+                                                               const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &start_,
+                                                               const scaffold_graph::ScaffoldGraph::ScaffoldGraphVertex &end_,
+                                                               const barcode_index::SimpleVertexEntry &barcodes_) :
+    g_(g_), barcode_extractor_(extractor), params_(params), start_(start_), end_(end_), barcodes_(barcodes_) {}
+
 AndChecker::AndChecker(const shared_ptr<ScaffoldVertexPredicate> &first_,
                        const shared_ptr<ScaffoldVertexPredicate> &second_) : first_(first_), second_(second_) {}
 bool AndChecker::Check(const ScaffoldVertexPredicate::ScaffoldVertex &scaffold_vertex) const {
@@ -84,4 +71,9 @@ path_extend::LongEdgePairGapCloserParams::LongEdgePairGapCloserParams(const size
       raw_score_threshold_(raw_score_threshold_),
       edge_length_threshold_(edge_length_threshold_),
       normalize_using_cov_(normalize_using_cov_) {}
+LengthChecker::LengthChecker(const size_t length_threshold_, const Graph &g_)
+    : length_threshold_(length_threshold_), g_(g_) {}
+bool LengthChecker::Check(const ScaffoldVertexPredicate::ScaffoldVertex &vertex) const {
+    return vertex.getLengthFromGraph(g_) < length_threshold_;
+}
 }

@@ -27,8 +27,8 @@ string ScaffoldGraphLabeler::label(VertexId v) const {
     auto it = additional_vertex_labels_.find(v);
     string additional_label = it == additional_vertex_labels_.end() ? "" : it->second + "\n";
     return "ID: " + std::to_string(graph_.int_id(v)) +
-        "\\n Len: " + std::to_string(graph_.AssemblyGraph().length(v)) +
-        "\\n Cov: " + std::to_string(graph_.AssemblyGraph().coverage(v)) + "\n" +
+        "\\n Len: " + std::to_string(graph_.length(v)) +
+        "\\n Cov: " + std::to_string(graph_.coverage(v)) + "\n" +
         additional_label;
 }
 

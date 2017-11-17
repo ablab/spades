@@ -3,8 +3,8 @@
 
 namespace path_extend {
 bool SetBasedPredicate::Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge& scaffold_edge) const {
-    EdgeId start = scaffold_edge.getStart();
-    EdgeId end = scaffold_edge.getEnd();
+    ScaffoldVertex start = scaffold_edge.getStart();
+    ScaffoldVertex end = scaffold_edge.getEnd();
     transitions::Transition transition(start, end);
     return passed_edges_.find(transition) != passed_edges_.end();
 }
@@ -12,10 +12,11 @@ SetBasedPredicate::SetBasedPredicate(const unordered_set<transitions::Transition
     passed_edges_) {}
 
 shared_ptr<ScaffoldEdgePredicate> FromPositivePredicateBuilder::GetPredicate(const FromPositivePredicateBuilder::SimpleTransitionGraph& graph,
-                                                             const EdgeId&, const EdgeId&) const {
+                                                                             const ScaffoldVertex&,
+                                                                             const ScaffoldVertex&) const {
     DEBUG("Creating negative predicate");
-    unordered_set<EdgeId> passed_starts;
-    unordered_set<EdgeId> passed_ends;
+    unordered_set<ScaffoldVertex> passed_starts;
+    unordered_set<ScaffoldVertex> passed_ends;
     unordered_set<transitions::Transition> passed_transitions;
     for (const auto& vertex : graph) {
         for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
@@ -31,13 +32,13 @@ shared_ptr<ScaffoldEdgePredicate> FromPositivePredicateBuilder::GetPredicate(con
     std::unordered_set<transitions::Transition> passed_pairs;
     for (const auto& vertex: graph) {
         for (auto it = graph.outcoming_begin(vertex); it != graph.outcoming_end(vertex); ++it) {
-            EdgeId next = *it;
+            ScaffoldVertex next = *it;
             transitions::Transition current(vertex, next);
             bool is_edge_removed = passed_transitions.find(current) == passed_transitions.end() and
                 (passed_starts.find(vertex) != passed_starts.end() or passed_ends.find(*it) != passed_ends.end());
             if (not is_edge_removed) {
-                EdgeId start = vertex;
-                EdgeId end = next;
+                ScaffoldVertex start = vertex;
+                ScaffoldVertex end = next;
                 transitions::Transition transition(start, end);
                 passed_pairs.insert(transition);
             }
@@ -50,8 +51,8 @@ FromPositivePredicateBuilder::FromPositivePredicateBuilder(shared_ptr<ScaffoldEd
     : positive_predicate_(positive_predicate_) {}
 
 shared_ptr<ScaffoldEdgePredicate> PathClusterPredicateBuilder::GetPredicate(const SimpleTransitionGraph& graph,
-                                                                const EdgeId&,
-                                                                const EdgeId&) const {
+                                                                const ScaffoldVertex&,
+                                                                const ScaffoldVertex&) const {
     DEBUG("Constructing path cluster predicate");
     cluster_storage::GraphClusterStorageBuilder cluster_storage_builder(g_, barcode_extractor_ptr_, linkage_distance_);
     DEBUG("Constructing cluster storage");
@@ -73,10 +74,10 @@ shared_ptr<ScaffoldEdgePredicate> PathClusterPredicateBuilder::GetPredicate(cons
     return result;
 }
 PathClusterPredicateBuilder::PathClusterPredicateBuilder(const Graph& g_,
-                                                         const shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor>& barcode_extractor_ptr_,
-                                                         const shared_ptr<InitialClusterStorage> initial_cluster_storage_,
-                                                         const size_t linkage_distance_,
-                                                         const double path_cluster_score_threshold_)
+                                                         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_,
+                                                         shared_ptr<InitialClusterStorage> initial_cluster_storage_,
+                                                         size_t linkage_distance_,
+                                                         double path_cluster_score_threshold_)
     : g_(g_),
       barcode_extractor_ptr_(barcode_extractor_ptr_),
       initial_cluster_storage_(initial_cluster_storage_),
@@ -111,19 +112,11 @@ double PathClusterScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::S
     return static_cast<double>(score);
 
 }
-PathClusterScoreFunctionBuilder::PathClusterScoreFunctionBuilder(
-        const Graph& g_,
-        const shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor>& barcode_extractor_ptr_,
-        const shared_ptr<PathClusterScoreFunctionBuilder::InitialClusterStorage>& initial_cluster_storage_,
-        size_t linkage_distance_)
-    : g_(g_), barcode_extractor_ptr_(barcode_extractor_ptr_),
-      initial_cluster_storage_(initial_cluster_storage_),
-      linkage_distance_(linkage_distance_) {}
 
 shared_ptr<ScaffoldEdgeScoreFunction> PathClusterScoreFunctionBuilder::GetScoreFunction(
         const GapCloserScoreFunctionBuilder::SimpleTransitionGraph& graph,
-        const EdgeId& /*source*/,
-        const EdgeId& /*sink*/) const {
+        const ScaffoldVertex& /*source*/,
+        const ScaffoldVertex& /*sink*/) const {
     DEBUG("Constructing path cluster score function");
     cluster_storage::GraphClusterStorageBuilder cluster_storage_builder(g_, barcode_extractor_ptr_, linkage_distance_);
     DEBUG("Constructing cluster storage");
@@ -143,5 +136,22 @@ shared_ptr<ScaffoldEdgeScoreFunction> PathClusterScoreFunctionBuilder::GetScoreF
         }
     }
     return result;
+}
+PathClusterScoreFunctionBuilder::PathClusterScoreFunctionBuilder(
+        const Graph &g_,
+        shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_,
+        shared_ptr<PathClusterScoreFunctionBuilder::InitialClusterStorage> initial_cluster_storage_,
+        size_t linkage_distance_)
+    : g_(g_),
+      barcode_extractor_ptr_(barcode_extractor_),
+      initial_cluster_storage_(initial_cluster_storage_),
+      linkage_distance_(linkage_distance_) {}
+double TrivialScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge) const {
+    return 1.0;
+}
+shared_ptr<ScaffoldEdgeScoreFunction> TrivialScoreFunctionBuilder::GetScoreFunction(const GapCloserScoreFunctionBuilder::SimpleTransitionGraph &graph,
+                                                                                    const GapCloserScoreFunctionBuilder::ScaffoldVertex &source,
+                                                                                    const GapCloserScoreFunctionBuilder::ScaffoldVertex &sink) const {
+    return make_shared<TrivialScoreFunction>();
 }
 }

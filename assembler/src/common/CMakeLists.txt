@@ -19,6 +19,6 @@ add_subdirectory(io)
 add_subdirectory(utils/kmer_mph)
 add_subdirectory(modules/coverage_model)
 
-add_library(common_modules STATIC empty.cpp)
+add_library(common_modules STATIC empty.cpp barcode_index/scaffold_vertex_index.hpp barcode_index/scaffold_vertex_index_builder.hpp)
 
 target_link_libraries(common_modules assembly_graph input pipeline sequence coverage_model paired_info path_extend stages utils mph_index modules)
