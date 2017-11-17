@@ -23,6 +23,7 @@ add_library(path_extend STATIC
             scaffolder2015/scaffold_graph_visualizer.cpp
             scaffolder2015/connection_condition2015.cpp
             scaffolder2015/path_polisher.cpp
+            scaffolder2015/scaffold_vertex.cpp
             read_cloud_path_extend/read_cloud_connection_conditions.cpp
             read_cloud_path_extend/conjugate_score_extractor.hpp
             read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_gap_closer.cpp

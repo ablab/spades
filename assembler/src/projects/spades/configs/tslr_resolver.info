@@ -74,15 +74,15 @@ ts_res
 		cloud_contigs_path ""
 	}
 
-	statistics
-	{
-		;Genome file
-		genome_path ""
+	very_long_edge_length 20000
+	long_edge_length 5000
 
-		;Baseline SPAdes contigs
-		base_contigs_path ""
-
-		;CloudSPAdes contigs
-		cloud_contigs_path ""
+	scaffold_polisher {
+		share_threshold 0.1
+		read_count_threshold 2
+		max_scaffold_distance 4
+		path_cluster_linkage_distance 2500
+		path_cluster_min_reads 1
+		path_cluster_score_threshold 10.0
 	}
 }

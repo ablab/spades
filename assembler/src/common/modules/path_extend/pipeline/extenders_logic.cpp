@@ -411,7 +411,7 @@ Extenders ExtendersGenerator::MakeMPExtenders(const ScaffoldingUniqueEdgeStorage
     return ExtractExtenders(result);
 }
 
-Extenders ExtendersGenerator::MakeReadCloudExtenders(const ScaffoldingUniqueEdgeStorage &storage) const {
+Extenders ExtendersGenerator::MakeReadCloudExtenders(const ScaffoldingUniqueEdgeStorage &/*storage*/) const {
     ExtenderTriplets result;
 
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
@@ -419,7 +419,7 @@ Extenders ExtendersGenerator::MakeReadCloudExtenders(const ScaffoldingUniqueEdge
 
         if (lib.type() == io::LibraryType::Clouds10x) {
 //            result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index, storage));
-            result.emplace_back(lib.type(), lib_index, MakeScaffoldGraphExtender(lib_index));
+            result.emplace_back(lib.type(), lib_index, MakeScaffoldGraphExtender());
         }
     }
     std::stable_sort(result.begin(), result.end());
@@ -429,7 +429,6 @@ Extenders ExtendersGenerator::MakeReadCloudExtenders(const ScaffoldingUniqueEdge
 
 shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_index, const ScaffoldingUniqueEdgeStorage &storage) const {
     const auto &lib = dataset_info_.reads[lib_index];
-    const auto &pset = params_.pset;
     auto tslr_resolver_params = cfg::get().ts_res;
     size_t distance_bound = tslr_resolver_params.distance_bound;
     const size_t fragment_length = tslr_resolver_params.fragment_len;
@@ -637,8 +636,7 @@ shared_ptr<ExtensionChooser> ExtendersGenerator::MakeSimpleExtensionChooser(size
 
     return extension_chooser;
 }
-shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender(size_t lib_index) const {
-    const auto &lib = dataset_info_.reads[lib_index];
+shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender() const {
     const auto &pset = params_.pset;
     const auto &scaffold_graph = gp_.scaffold_graph_storage.GetSmallScaffoldGraph();
     INFO(scaffold_graph.VertexCount() << "vertices and " << scaffold_graph.EdgeCount()

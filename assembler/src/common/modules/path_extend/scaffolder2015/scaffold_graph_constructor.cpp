@@ -47,7 +47,10 @@ void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const std::share
         if (use_terminal_vertices_only && graph_->OutgoingEdgeCount(v) > 0)
             continue;
 
-        auto connected_with = condition->ConnectedWith(v);
+        //fixme connection conditions for paths?
+        EdgeGetter getter;
+        EdgeId e = getter.GetEdgeFromScaffoldVertex(v);
+        auto connected_with = condition->ConnectedWith(e);
         for (const auto& pair : connected_with) {
             EdgeId connected = pair.first;
             double w = pair.second;
@@ -55,7 +58,7 @@ void BaseScaffoldGraphConstructor::ConstructFromSingleCondition(const std::share
             if (graph_->Exists(connected)) {
                 if (use_terminal_vertices_only && graph_->IncomingEdgeCount(connected) > 0)
                     continue;
-                graph_->AddEdge(v, connected, condition->GetLibIndex(), w, 0);
+                graph_->AddEdge(e, connected, condition->GetLibIndex(), w, 0);
             }
         }
     }
@@ -156,12 +159,15 @@ shared_ptr<ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
     return graph_;
 }
 shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
+    INFO("Scaffolding distance: " << distance_);
     auto dij = omnigraph::CreateUniqueDijkstra(graph_->AssemblyGraph(), distance_, unique_storage_);
     //        auto bounded_dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, distance_, 10000);
 
     for (const auto unique_edge: unique_storage_) {
         graph_->AddVertex(unique_edge);
     }
+    size_t counter = 0;
+    const size_t block_size = unique_storage_.size() / 10;
     for (const auto unique_edge: unique_storage_) {
         dij.Run(graph_->AssemblyGraph().EdgeEnd(unique_edge));
         for (auto v: dij.ReachedVertices()) {
@@ -170,11 +176,13 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
                 for (auto connected: graph_->AssemblyGraph().OutgoingEdges(v)) {
                     if (unique_storage_.IsUnique(connected) and connected != unique_edge
                         and connected != graph_->AssemblyGraph().conjugate(unique_edge)) {
-                        ScaffoldGraph::ScaffoldEdge scaffold_edge(unique_edge, connected, (size_t) -1, 0, distance);
-                        graph_->AddEdge(scaffold_edge);
+                        graph_->AddEdge(unique_edge, connected, (size_t) -1, 0, distance);
                     }
                 }
             }
+        }
+        ++counter;
+        if (counter % block_size == 0) {
         }
     }
     return graph_;

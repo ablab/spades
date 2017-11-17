@@ -1,4 +1,5 @@
 #include "scaffold_graph.hpp"
+#include "scaffold_vertex.hpp"
 
 
 namespace path_extend {
@@ -18,6 +19,9 @@ bool ScaffoldGraph::ScaffoldEdge::operator<=(const ScaffoldGraph::ScaffoldEdge& 
 bool ScaffoldGraph::ScaffoldEdge::operator>=(const ScaffoldGraph::ScaffoldEdge& rhs) const {
     return !(*this < rhs);
 }
+bool ScaffoldGraph::ScaffoldEdge::operator==(const ScaffoldGraph::ScaffoldEdge &e) const {
+    return color_ == e.color_ && weight_ == e.weight_ && start_ == e.start_ && end_ == e.end_;
+}
 
 void ScaffoldGraph::AddEdgeSimple(const ScaffoldGraph::ScaffoldEdge &e) {
     edges_.emplace(e.getId(), e);
@@ -27,23 +31,27 @@ void ScaffoldGraph::AddEdgeSimple(const ScaffoldGraph::ScaffoldEdge &e) {
 
 void ScaffoldGraph::DeleteOutgoing(const ScaffoldGraph::ScaffoldEdge &e) {
     auto e_range = outgoing_edges_.equal_range(e.getStart());
-    for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
+    for (auto edge_id = e_range.first; edge_id != e_range.second;) {
         if (edges_.at(edge_id->second) == e) {
-            outgoing_edges_.erase(edge_id);
+            edge_id = outgoing_edges_.erase(edge_id);
+        } else {
+            ++edge_id;
         }
     }
 }
 
 void ScaffoldGraph::DeleteIncoming(const ScaffoldGraph::ScaffoldEdge &e) {
     auto e_range = incoming_edges_.equal_range(e.getEnd());
-    for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
+    for (auto edge_id = e_range.first; edge_id != e_range.second;) {
         if (edges_.at(edge_id->second) == e) {
-            incoming_edges_.erase(edge_id);
+            edge_id = incoming_edges_.erase(edge_id);
+        } else {
+            ++edge_id;
         }
     }
 }
 
-void ScaffoldGraph::DeleteAllOutgoingEdgesSimple(ScaffoldGraph::ScaffoldVertex v) {
+void ScaffoldGraph::DeleteAllOutgoingEdgesSimple(ScaffoldVertex v) {
     auto e_range = outgoing_edges_.equal_range(v);
     for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
         DeleteIncoming(edges_.at(edge_id->second));
@@ -56,7 +64,7 @@ void ScaffoldGraph::DeleteEdgeFromStorage(const ScaffoldGraph::ScaffoldEdge &e) 
     edges_.erase(e.getId());
 }
 
-void ScaffoldGraph::DeleteAllIncomingEdgesSimple(ScaffoldGraph::ScaffoldVertex v) {
+void ScaffoldGraph::DeleteAllIncomingEdgesSimple(ScaffoldVertex v) {
     auto e_range = incoming_edges_.equal_range(v);
     for (auto edge_id = e_range.first; edge_id != e_range.second; ++edge_id) {
         DeleteOutgoing(edges_.at(edge_id->second));
@@ -64,7 +72,7 @@ void ScaffoldGraph::DeleteAllIncomingEdgesSimple(ScaffoldGraph::ScaffoldVertex v
     incoming_edges_.erase(v);
 }
 
-bool ScaffoldGraph::Exists(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
+bool ScaffoldGraph::Exists(ScaffoldVertex assembly_graph_edge) const {
     return vertices_.count(assembly_graph_edge) != 0;
 }
 
@@ -78,19 +86,19 @@ bool ScaffoldGraph::Exists(const ScaffoldGraph::ScaffoldEdge &e) const {
     return false;
 }
 
-ScaffoldGraph::ScaffoldVertex ScaffoldGraph::conjugate(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
-    return assembly_graph_.conjugate(assembly_graph_edge);
+ScaffoldVertex ScaffoldGraph::conjugate(ScaffoldVertex scaffold_vertex) const {
+    return scaffold_vertex.getConjugateFromGraph(assembly_graph_);
 }
 
 ScaffoldGraph::ScaffoldEdge ScaffoldGraph::conjugate(const ScaffoldGraph::ScaffoldEdge &e) const {
     return ScaffoldEdge(conjugate(e.getEnd()), conjugate(e.getStart()), e.getColor(), e.getWeight());
 }
 
-bool ScaffoldGraph::AddVertex(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) {
-    if (!Exists(assembly_graph_edge)) {
-        VERIFY(!Exists(conjugate(assembly_graph_edge)));
-        vertices_.insert(assembly_graph_edge);
-        vertices_.insert(conjugate(assembly_graph_edge));
+bool ScaffoldGraph::AddVertex(ScaffoldVertex scaffold_vertex) {
+    if (!Exists(scaffold_vertex)) {
+        VERIFY(!Exists(conjugate(scaffold_vertex)));
+        vertices_.insert(scaffold_vertex);
+        vertices_.insert(conjugate(scaffold_vertex));
         return true;
     }
     return false;
@@ -102,7 +110,9 @@ void ScaffoldGraph::AddVertices(const std::set<ScaffoldGraph::ScaffoldVertex> &v
     }
 }
 
-bool ScaffoldGraph::AddEdge(ScaffoldGraph::ScaffoldVertex v1, ScaffoldGraph::ScaffoldVertex v2, size_t lib_id, double weight, size_t length) {
+
+
+bool ScaffoldGraph::AddEdge(ScaffoldVertex v1, ScaffoldVertex v2, size_t lib_id, double weight, size_t length) {
     VERIFY(Exists(v1));
     VERIFY(Exists(v2));
 
@@ -110,7 +120,6 @@ bool ScaffoldGraph::AddEdge(ScaffoldGraph::ScaffoldVertex v1, ScaffoldGraph::Sca
     if (Exists(e)) {
         return false;
     }
-
 
     AddEdgeSimple(e);
     return true;
@@ -129,29 +138,29 @@ void ScaffoldGraph::Print(std::ostream &os) const {
     }
 }
 
-ScaffoldGraph::ScaffoldEdge ScaffoldGraph::UniqueIncoming(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
+ScaffoldGraph::ScaffoldEdge ScaffoldGraph::UniqueIncoming(ScaffoldVertex assembly_graph_edge) const {
     VERIFY(HasUniqueIncoming(assembly_graph_edge));
     return edges_.at(incoming_edges_.find(assembly_graph_edge)->second);
 }
 
-ScaffoldGraph::ScaffoldEdge ScaffoldGraph::UniqueOutgoing(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
+ScaffoldGraph::ScaffoldEdge ScaffoldGraph::UniqueOutgoing(ScaffoldVertex assembly_graph_edge) const {
     VERIFY(HasUniqueOutgoing(assembly_graph_edge));
     return edges_.at(outgoing_edges_.find(assembly_graph_edge)->second);
 }
 
-bool ScaffoldGraph::HasUniqueIncoming(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
+bool ScaffoldGraph::HasUniqueIncoming(ScaffoldVertex assembly_graph_edge) const {
     return IncomingEdgeCount(assembly_graph_edge) == 1;
 }
 
-bool ScaffoldGraph::HasUniqueOutgoing(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
+bool ScaffoldGraph::HasUniqueOutgoing(ScaffoldVertex assembly_graph_edge) const {
     return OutgoingEdgeCount(assembly_graph_edge) == 1;
 }
 
-size_t ScaffoldGraph::IncomingEdgeCount(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
+size_t ScaffoldGraph::IncomingEdgeCount(ScaffoldVertex assembly_graph_edge) const {
     return incoming_edges_.count(assembly_graph_edge);
 }
 
-size_t ScaffoldGraph::OutgoingEdgeCount(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
+size_t ScaffoldGraph::OutgoingEdgeCount(ScaffoldVertex assembly_graph_edge) const {
     return outgoing_edges_.count(assembly_graph_edge);
 }
 
@@ -185,11 +194,11 @@ size_t ScaffoldGraph::VertexCount() const {
     return vertices_.size();
 }
 
-ScaffoldGraph::ScaffoldVertex ScaffoldGraph::EdgeEnd(ScaffoldEdge e) const {
+ScaffoldVertex ScaffoldGraph::EdgeEnd(ScaffoldEdge e) const {
     return e.getEnd();
 }
 
-ScaffoldGraph::ScaffoldVertex ScaffoldGraph::EdgeStart(ScaffoldEdge e) const {
+ScaffoldVertex ScaffoldGraph::EdgeStart(ScaffoldEdge e) const {
     return e.getStart();
 }
 
@@ -197,8 +206,8 @@ size_t ScaffoldGraph::int_id(ScaffoldGraph::ScaffoldEdge e) const {
     return e.getId();
 }
 
-size_t ScaffoldGraph::int_id(ScaffoldGraph::ScaffoldVertex v) const {
-    return assembly_graph_.int_id(v);
+size_t ScaffoldGraph::int_id(ScaffoldVertex v) const {
+    return v.int_id();
 }
 
 ScaffoldGraph::ConstScaffoldEdgeIterator ScaffoldGraph::eend() const {
@@ -225,27 +234,27 @@ adt::iterator_range<ScaffoldGraph::ConstScaffoldEdgeIterator> ScaffoldGraph::edg
     return adt::make_range(ebegin(), eend());
 }
 
-bool ScaffoldGraph::IsVertexIsolated(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) const {
+bool ScaffoldGraph::IsVertexIsolated(ScaffoldVertex assembly_graph_edge) const {
     bool result = incoming_edges_.count(assembly_graph_edge) == 0 && outgoing_edges_.count(assembly_graph_edge) == 0;
     return result;
 }
 
-bool ScaffoldGraph::RemoveVertex(ScaffoldGraph::ScaffoldVertex assembly_graph_edge) {
-    if (Exists(assembly_graph_edge)) {
-        VERIFY(Exists(conjugate(assembly_graph_edge)));
+bool ScaffoldGraph::RemoveVertex(ScaffoldVertex scaffold_vertex) {
+    if (Exists(scaffold_vertex)) {
+        VERIFY(Exists(conjugate(scaffold_vertex)));
 
-        DeleteAllOutgoingEdgesSimple(assembly_graph_edge);
-        DeleteAllIncomingEdgesSimple(assembly_graph_edge);
-        DeleteAllOutgoingEdgesSimple(conjugate(assembly_graph_edge));
-        DeleteAllIncomingEdgesSimple(conjugate(assembly_graph_edge));
+        DeleteAllOutgoingEdgesSimple(scaffold_vertex);
+        DeleteAllIncomingEdgesSimple(scaffold_vertex);
+        DeleteAllOutgoingEdgesSimple(conjugate(scaffold_vertex));
+        DeleteAllIncomingEdgesSimple(conjugate(scaffold_vertex));
 
-        VERIFY(incoming_edges_.count(assembly_graph_edge) == 0);
-        VERIFY(outgoing_edges_.count(assembly_graph_edge) == 0);
-        VERIFY(incoming_edges_.count(conjugate(assembly_graph_edge)) == 0);
-        VERIFY(outgoing_edges_.count(conjugate(assembly_graph_edge)) == 0);
+        VERIFY(incoming_edges_.count(scaffold_vertex) == 0);
+        VERIFY(outgoing_edges_.count(scaffold_vertex) == 0);
+        VERIFY(incoming_edges_.count(conjugate(scaffold_vertex)) == 0);
+        VERIFY(outgoing_edges_.count(conjugate(scaffold_vertex)) == 0);
 
-        vertices_.erase(assembly_graph_edge);
-        vertices_.erase(conjugate(assembly_graph_edge));
+        vertices_.erase(scaffold_vertex);
+        vertices_.erase(conjugate(scaffold_vertex));
 
         return true;
     }
@@ -266,11 +275,36 @@ bool ScaffoldGraph::RemoveEdge(const ScaffoldGraph::ScaffoldEdge &e) {
 bool ScaffoldGraph::AddEdge(const ScaffoldGraph::ScaffoldEdge &e) {
     return AddEdge(e.getStart(), e.getEnd(), e.getColor(), e.getWeight(), e.getLength());
 }
-string ScaffoldGraph::str(const ScaffoldGraph::ScaffoldVertex& vertex) const {
-    return assembly_graph_.str(vertex);
+string ScaffoldGraph::str(const ScaffoldVertex& vertex) const {
+    return vertex.str(assembly_graph_);
 }
 string ScaffoldGraph::str(const ScaffoldGraph::ScaffoldEdge& edge) const {
     return "(" + std::to_string(edge.getStart().int_id()) + ", " + std::to_string(edge.getEnd().int_id()) + ")";
+}
+size_t ScaffoldGraph::length(const ScaffoldGraph::ScaffoldEdge &edge) const {
+    return edge.getLength();
+}
+size_t ScaffoldGraph::length(const ScaffoldVertex &vertex) const {
+    return vertex.getLengthFromGraph(assembly_graph_);
+}
+double ScaffoldGraph::coverage(const ScaffoldVertex &vertex) const {
+    return vertex.getCoverageFromGraph(assembly_graph_);
+}
+void ScaffoldGraph::AddVertices(const set<debruijn_graph::EdgeId> &vertices) {
+    for (const auto& v: vertices) {
+        AddVertex(v);
+    }
+}
+ScaffoldGraph &ScaffoldGraph::operator=(ScaffoldGraph other) {
+    swap(other);
+    return *this;
+}
+void ScaffoldGraph::swap(ScaffoldGraph &other) {
+    VERIFY(&assembly_graph_ == &other.assembly_graph_);
+    std::swap(vertices_, other.vertices_);
+    std::swap(edges_, other.edges_);
+    std::swap(outgoing_edges_, other.outgoing_edges_);
+    std::swap(incoming_edges_, other.incoming_edges_);
 }
 
 } //scaffold_graph
