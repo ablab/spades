@@ -91,7 +91,8 @@ namespace scaffold_graph_utils {
             return scaffold_graph;
         }
 
-        ScaffoldGraph ConstructBarcodeScoreScaffoldGraph(const ScaffoldGraph& scaffold_graph, const FrameBarcodeIndexInfoExtractor& extractor,
+        ScaffoldGraph ConstructBarcodeScoreScaffoldGraph(const ScaffoldGraph& scaffold_graph,
+                                                         shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> extractor,
                                                          const Graph& graph, size_t count_threshold,
                                                          size_t tail_threshold, double score_threshold) {
             auto score_function = make_shared<path_extend::NormalizedBarcodeScoreFunction>(graph, extractor,
@@ -102,11 +103,14 @@ namespace scaffold_graph_utils {
             return *(scaffold_graph_constructor.Construct());
         }
 
-        ScaffoldGraph ConstructLongGapScaffoldGraph(const ScaffoldGraph& scaffold_graph, const path_extend::ScaffoldingUniqueEdgeStorage& storage,
-                                                    const FrameBarcodeIndexInfoExtractor& extractor,
+        ScaffoldGraph ConstructLongGapScaffoldGraph(const ScaffoldGraph& scaffold_graph,
+                                                    const path_extend::ScaffoldingUniqueEdgeStorage& storage,
+                                                    shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
+                                                    shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor,
                                                     const Graph& graph, const path_extend::ReadCloudMiddleDijkstraParams& params) {
             auto predicate = make_shared<path_extend::ReadCloudMiddleDijkstraPredicate>(graph, storage,
-                                                                                        extractor, params);
+                                                                                        short_edge_extractor,
+                                                                                        long_edge_extractor, params);
             size_t max_threads = cfg::get().max_threads;
             path_extend::scaffold_graph::PredicateScaffoldGraphConstructor constructor(graph, scaffold_graph,
                                                                                        predicate, max_threads);
@@ -114,12 +118,14 @@ namespace scaffold_graph_utils {
         }
 
         ScaffoldGraph ConstructCompositeConnectionScaffoldGraph(const ScaffoldGraph& scaffold_graph,
-                                                                const FrameBarcodeIndexInfoExtractor& barcode_extractor,
+                                                                shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor,
+                                                                shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor,
                                                                 const path_extend::ScaffolderParams& params,
                                                                 const debruijn_graph::conj_graph_pack& gp,
                                                                 const path_extend::ScaffoldingUniqueEdgeStorage& storage) {
             const size_t max_threads = cfg::get().max_threads;
-            path_extend::CompositeConnectionConstructorCaller composite_constructor_caller(gp, barcode_extractor,
+            path_extend::CompositeConnectionConstructorCaller composite_constructor_caller(gp, main_extractor,
+                                                                                           long_edge_extractor,
                                                                                            unique_storage_, max_threads);
             auto scaffold_graph_constructor = composite_constructor_caller.GetScaffoldGraphConstuctor(params, scaffold_graph);
             return *(scaffold_graph_constructor->Construct());
@@ -127,7 +133,8 @@ namespace scaffold_graph_utils {
 
 
         ScaffoldGraph ConstructOrderingScaffoldGraph(const ScaffoldGraph& scaffold_graph,
-                                                     const FrameBarcodeIndexInfoExtractor& extractor, const Graph& graph,
+                                                     const barcode_index::FrameBarcodeIndexInfoExtractor& extractor,
+                                                     const Graph& graph,
                                                      size_t count_threshold, double strictness) {
             auto predicate = make_shared<path_extend::EdgeSplitPredicate>(graph, extractor, count_threshold, strictness);
             size_t max_threads = cfg::get().max_threads;
@@ -136,22 +143,6 @@ namespace scaffold_graph_utils {
             return *(constructor.Construct());
         }
 
-        ScaffoldGraph ConstructFarNextScaffoldGraph(const ScaffoldGraph& scaffold_graph, const FrameBarcodeIndexInfoExtractor& extractor,
-                                                    const Graph& graph, size_t count_threshold, double shared_fraction_threshold) {
-            typedef ScaffoldGraph::ScaffoldVertex ScaffoldVertex;
-            std::function<vector<ScaffoldVertex>(ScaffoldVertex)> out_getter = [&scaffold_graph](const ScaffoldVertex& vertex) {
-              std::vector<ScaffoldVertex> result;
-              for (const auto& out_edge: scaffold_graph.OutgoingEdges(vertex)) {
-                  result.push_back(out_edge.getEnd());
-              }
-              return result;
-            };
-            auto predicate = make_shared<path_extend::NextFarEdgesPredicate>(graph, extractor, count_threshold,
-                                                                             shared_fraction_threshold, out_getter);
-            size_t max_threads = cfg::get().max_threads;
-            path_extend::scaffold_graph::PredicateScaffoldGraphConstructor constructor(graph, scaffold_graph, predicate, max_threads);
-            return *(constructor.Construct());
-        }
 
         ScaffoldGraph ConstructNonTransitiveGraph(const ScaffoldGraph& scaffold_graph, const Graph& graph) {
             size_t distance_threshold = 3;
@@ -217,7 +208,7 @@ namespace scaffold_graph_utils {
 
         OutDegreeDistribuiton GetOutDegreeDistribution() const {
             OutDegreeDistribuiton distribution;
-            for (const ScaffoldGraph::ScaffoldVertex &vertex: graph_.vertices()) {
+            for (const ScaffoldGraph::ScaffoldGraphVertex &vertex: graph_.vertices()) {
                 distribution.Insert(graph_.OutgoingEdgeCount(vertex));
             }
             return distribution;
@@ -225,7 +216,7 @@ namespace scaffold_graph_utils {
 
         EdgeToDegree GetEdgeToDegree() const {
             EdgeToDegree edge_to_degree;
-            for (const ScaffoldGraph::ScaffoldVertex& vertex: graph_.vertices()) {
+            for (const ScaffoldGraph::ScaffoldGraphVertex& vertex: graph_.vertices()) {
                 size_t degree = graph_.OutgoingEdgeCount(vertex);
                 edge_to_degree.Insert(vertex, degree);
             }

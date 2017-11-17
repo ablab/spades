@@ -2,14 +2,21 @@
 
 #include "common/assembly_graph/core/graph.hpp"
 #include "common/barcode_index/cluster_storage_extractor.hpp"
+#include "common/modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
 namespace path_extend {
 namespace transitions {
 struct Transition {
     typedef debruijn_graph::EdgeId EdgeId;
+    typedef path_extend::scaffold_graph::ScaffoldVertex ScaffoldVertex;
     EdgeId first_;
     EdgeId second_;
  public:
     Transition(const EdgeId& first, const EdgeId& second) : first_(first), second_(second) {}
+
+    //fixme make it work with paths
+    Transition(const ScaffoldVertex &first, const ScaffoldVertex &second):
+        first_(first.getLastEdge()), second_(second.getFirstEdge()) {}
+
     bool operator==(const Transition& other) const {
         return first_ == other.first_ and second_ == other.second_;
     };
