@@ -282,7 +282,10 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
 
     double chromosome_coverage;
     if (cfg::get().pd->meta_mode) {
-        chromosome_coverage = RemoveEdgesByList(gp, additional_list);
+        if (use_chromosomal_list)
+            chromosome_coverage = RemoveEdgesByList(gp, additional_list);
+        else
+            chromosome_coverage = -1;
         MetaChromosomeRemoval(gp);
     }
     else
@@ -294,8 +297,7 @@ void ChromosomeRemoval::run(conj_graph_pack &gp, const char*) {
 
     for (size_t i = 0; i < max_iteration_count; i++) {
         size_t graph_size = gp.g.size();
-        INFO("Before iteration " << i + 1 << " " << graph_size << " vertices in graph");
-        if (!use_chromosomal_list)
+        if (!cfg::get().pd->meta_mode)
             RemoveLongGenomicEdges(gp, cfg::get().pd->long_edge_length, cfg::get().pd->relative_coverage, chromosome_coverage );
         INFO("Before dead_end simplification " << i << " " << gp.g.size() << " vertices in graph");
 
