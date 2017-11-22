@@ -26,7 +26,8 @@ namespace alignment {
 BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
         : g_(g),
           memopt_(mem_opt_init(), free),
-          idx_(nullptr, bwa_idx_destroy) {
+          idx_(nullptr, bwa_idx_destroy),
+          mode_(mode){
     memopt_->flag |= MEM_F_SOFTCLIP;
     switch (mode) {
         default:
@@ -192,8 +193,7 @@ void BWAIndex::Init() {
     ids_.clear();
 
     for (auto it = g_.ConstEdgeBegin(true); !it.IsEnd(); ++it)
-//TODO:: it is used in mate pairs too, so should be splitted
-        if (g_.length(*it) > 500){
+        if (mode_ == AlignmentMode::Default || g_.length(*it) > 500){
             ids_.push_back(*it);
         }
 

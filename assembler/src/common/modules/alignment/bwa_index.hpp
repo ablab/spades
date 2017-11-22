@@ -52,6 +52,8 @@ class BWAIndex {
     std::unique_ptr<bwaidx_t, void(*)(bwaidx_t*)> idx_;
 
     std::vector<debruijn_graph::EdgeId> ids_;
+
+    AlignmentMode mode_;
 };
 
 }
