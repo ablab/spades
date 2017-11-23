@@ -14,17 +14,14 @@
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
 #include "modules/path_extend/read_cloud_path_extend/extension_chooser_checker.hpp"
+#include "modules/path_extend/read_cloud_path_extend/path_scaffolder.hpp"
 
 #include "alignment/long_read_storage.hpp"
 #include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
 
-//fixme remove it later
-#include "barcode_index/cluster_storage.hpp"
-#include "barcode_index/cluster_storage_extractor.hpp"
 #include <unordered_set>
-
 namespace path_extend {
 
 using namespace debruijn_graph;
@@ -696,14 +693,34 @@ void PathExtendLauncher::Launch() {
         RemoveOverlapsAndArtifacts(paths, cover_map, resolver);
         DebugOutputPaths(paths, "before_path_polishing");
 
-        //TODO does path polishing correctly work with coverage map
-        PolishPaths(paths, contig_paths, cover_map);
-    }
+    PathContainer polished_paths;
 
-    GraphCoverageMap polished_map(graph_, contig_paths, true);
+    //TODO does path polishing correctly work with coverage map
+    PolishPaths(paths, polished_paths, cover_map);
+    DebugOutputPaths(polished_paths, "polished_paths");
+
+    //TODO use move assignment to original map here
+    GraphCoverageMap polished_map(gp_.g, polished_paths, true);
+    RemoveOverlapsAndArtifacts(polished_paths, polished_map, resolver);
+    DebugOutputPaths(polished_paths, "overlap_removed");
+
+    //todo discuss
+    //todo move config to path extend
+    if (cfg::get().ts_res.read_cloud_resolution_on) {
+        const size_t path_length_threshold = 10000;
+        PathScaffolder path_scaffolder(gp_, unique_data_.main_unique_storage_, path_length_threshold);
+        path_scaffolder.MergePaths(polished_paths);
+
+        PolishPaths(polished_paths, contig_paths, polished_map);
+        DebugOutputPaths(contig_paths, "merged_polished_paths");
+
+        GraphCoverageMap merged_polished_map(graph_, contig_paths, true);
     DebugOutputPaths(contig_paths, "polished_paths");
     TraverseLoops(contig_paths, polished_map);
     DebugOutputPaths(contig_paths, "loop_traveresed");
+
+    RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
+    DebugOutputPaths(contig_paths, "overlap_removed");
 
     RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
     DebugOutputPaths(contig_paths, "overlap_removed");

@@ -40,20 +40,27 @@ bool AssemblyGraphUniqueConnectionCondition::IsLast() const {
 double NormalizedBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge) const {
     auto first = edge.getStart();
     auto second = edge.getEnd();
+    DEBUG("Checking edge " << edge.getStart().int_id() << " -> " << edge.getEnd().int_id());
     size_t first_length = first.getLengthFromGraph(graph_);
     size_t second_length = second.getLengthFromGraph(graph_);
     DEBUG("First length: " << first_length);
     DEBUG("Second length: " << second_length);
-    VERIFY(first_length >= tail_threshold_);
-    VERIFY(second_length >= tail_threshold_);
-    size_t first_size = barcode_extractor_->GetHeadSize(first);
-    size_t second_size = barcode_extractor_->GetTailSize(second);
+    size_t first_size = barcode_extractor_->GetTailSize(first);
+    size_t second_size = barcode_extractor_->GetHeadSize(second);
     size_t shared_count = barcode_extractor_->GetIntersectionSize(first, second);
+    DEBUG("First size: " << first_size);
+    DEBUG("Second size: " << second_size);
+    DEBUG("Intersection: " << shared_count);
     double first_barcodes_size = static_cast<double>(first_size);
     double second_barcodes_size = static_cast<double>(second_size);
     double total_barcodes = static_cast<double>(total_barcodes_);
-
-    return static_cast<double>(shared_count) * total_barcodes / (first_barcodes_size * second_barcodes_size);
+    if (first_barcodes_size == 0 or second_barcodes_size == 0) {
+        WARN("No barcodes on long edge");
+        return 0.0;
+    }
+    double score = static_cast<double>(shared_count) * total_barcodes / (first_barcodes_size * second_barcodes_size);
+    DEBUG("Score: " << score);
+    return score;
 }
 NormalizedBarcodeScoreFunction::NormalizedBarcodeScoreFunction(
     const Graph &graph_,
