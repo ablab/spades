@@ -142,8 +142,11 @@ void ScoreFunctionScaffoldGraphConstructor::ConstructFromGraphAndScore(const Sca
         double score = score_function->GetScore(edge);
     #pragma omp critical
         {
-            TRACE("Adding edge");
+            TRACE("Checking edge " << edge.getStart().int_id() << " -> " << edge.getEnd().int_id());
+            TRACE("Score: " << score);
+            TRACE("Score threshold: " << score_threshold);
             if (math::ge(score, score_threshold)) {
+                TRACE("Success");
                 graph_->AddEdge(edge.getStart(), edge.getEnd(), edge.getColor(), score, edge.getLength());
             }
             TRACE("Edge added");
@@ -163,20 +166,35 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
     auto dij = omnigraph::CreateUniqueDijkstra(graph_->AssemblyGraph(), distance_, unique_storage_);
     //        auto bounded_dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, distance_, 10000);
 
-    for (const auto unique_edge: unique_storage_) {
-        graph_->AddVertex(unique_edge);
+    for (const auto& vertex: scaffold_vertices_) {
+        graph_->AddVertex(vertex);
+        INFO("Adding vertex " << vertex.int_id());
     }
     size_t counter = 0;
     const size_t block_size = unique_storage_.size() / 10;
-    for (const auto unique_edge: unique_storage_) {
-        dij.Run(graph_->AssemblyGraph().EdgeEnd(unique_edge));
+
+    auto is_unique = [this](const EdgeId& edge) {
+      return unique_storage_.IsUnique(edge);
+    };
+
+    std::unordered_map<EdgeId, ScaffoldVertex> first_unique_to_vertex;
+    for (const auto& vertex: scaffold_vertices_) {
+        auto first_unique = vertex.getFirstEdgeWithPredicate(is_unique);
+        VERIFY(first_unique.is_initialized());
+        first_unique_to_vertex.insert({first_unique.get(), vertex});
+    }
+
+    for (const auto &vertex: scaffold_vertices_) {
+        EdgeId last_edge = vertex.getLastEdge();
+        VertexId last_vertex = graph_->AssemblyGraph().EdgeEnd(last_edge);
+        dij.Run(last_vertex);
         for (auto v: dij.ReachedVertices()) {
             size_t distance = dij.GetDistance(v);
             if (distance < distance_) {
                 for (auto connected: graph_->AssemblyGraph().OutgoingEdges(v)) {
-                    if (unique_storage_.IsUnique(connected) and connected != unique_edge
-                        and connected != graph_->AssemblyGraph().conjugate(unique_edge)) {
-                        graph_->AddEdge(unique_edge, connected, (size_t) -1, 0, distance);
+                    if (CheckConnectedEdge(vertex, connected, first_unique_to_vertex)) {
+                        auto connected_scaff_vertex = first_unique_to_vertex.at(connected);
+                        graph_->AddEdge(vertex, connected_scaff_vertex, (size_t) -1, 0, distance);
                     }
                 }
             }
@@ -187,10 +205,10 @@ shared_ptr<ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
     }
     return graph_;
 }
-UniqueScaffoldGraphConstructor::UniqueScaffoldGraphConstructor(
-    const Graph& assembly_graph,
-    const ScaffoldingUniqueEdgeStorage& unique_storage_,
-    const size_t distance_)
-    : BaseScaffoldGraphConstructor(assembly_graph), unique_storage_(unique_storage_), distance_(distance_) {}
+UniqueScaffoldGraphConstructor::UniqueScaffoldGraphConstructor(const Graph &assembly_graph,
+                                                               const ScaffoldingUniqueEdgeStorage &unique_storage_,
+                                                               const set<ScaffoldVertex> &scaffold_vertices_,
+                                                               const size_t distance_) : BaseScaffoldGraphConstructor(
+    assembly_graph), unique_storage_(unique_storage_), scaffold_vertices_(scaffold_vertices_), distance_(distance_) {}
 } //scaffold_graph
 } //path_extend

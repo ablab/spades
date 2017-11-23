@@ -55,31 +55,43 @@ namespace barcode_index {
      private:
         SimpleVertexEntry ExtractEntryInner(shared_ptr<EdgeIdVertex> simple_edge_vertex) const {
             SimpleVertexEntry result;
-            const auto& entry = barcode_extractor_.GetBarcodesFromRange(simple_edge_vertex->get(), count_threshold_, 0, tail_threshold_);
+            TRACE("Extracting entry from edge");
+            const auto& entry = barcode_extractor_.GetBarcodesFromHead(simple_edge_vertex->get(), count_threshold_, tail_threshold_);
             std::copy(entry.begin(), entry.end(), std::inserter(result, result.end()));
             return result;
         }
 
         //fixme optimize later
         SimpleVertexEntry ExtractEntryInner(shared_ptr<PathVertex> path_vertex) const {
+            TRACE("Extracting entry from path");
             size_t current_prefix = 0;
             path_extend::BidirectionalPath* path = path_vertex->get();
             size_t path_size = path->Size();
-            SimpleVertexEntry old_result;
-            SimpleVertexEntry new_result;
+            SimpleVertexEntry result;
+            const size_t global_count_threshold = 5;
+            std::unordered_map<BarcodeId, size_t> barcode_to_count;
             for (size_t i = 0; i < path_size and current_prefix <= tail_threshold_; ++i) {
                 EdgeId current_edge = path->At(i);
                 if (g_.length(current_edge) < length_threshold_) {
+                    current_prefix += g_.length(current_edge);
                     continue;
                 }
                 size_t current_tail = tail_threshold_ - current_prefix;
-                const auto &current_entry = barcode_extractor_.GetBarcodesFromRange(current_edge, count_threshold_, 0, current_tail);
-                std::set_union(old_result.begin(), old_result.end(), current_entry.begin(),
-                               current_entry.end(), std::inserter(new_result, new_result.end()));
-                old_result.clear();
-                std::swap(old_result, new_result);
+                TRACE("Current tail: " << current_tail);
+                const auto &current_entry = barcode_extractor_.GetBarcodesAndCountsFromHead(current_edge, count_threshold_,current_tail);
+                for (const auto& barcode_and_reads: current_entry) {
+                    barcode_to_count[barcode_and_reads.first] += barcode_and_reads.second;
+                }
+                TRACE("Current entry size: " << barcode_to_count.size());
+                current_prefix += g_.length(current_edge);
             }
-            return new_result;
+            for (const auto& barcode_and_count: barcode_to_count) {
+                if (barcode_and_count.second >= global_count_threshold) {
+                    result.insert(barcode_and_count.first);
+                }
+            }
+            TRACE("Result size: " << result.size());
+            return result;
         }
     };
 
@@ -101,24 +113,22 @@ namespace barcode_index {
 
         template <class ContainerT>
         shared_ptr<ScaffoldVertexIndex<EdgeEntryT>> GetConstructedIndex(const ContainerT& vertex_container) {
-            vector<ScaffoldVertex> vertices_copy;
-            std::copy(vertex_container.begin(), vertex_container.end(), std::back_inserter(vertices_copy));
+
+            //todo make parallel using iterator chunks
             INFO("Constructing long edge index in " << max_threads_ << " threads");
-            size_t counter = 0;
-            const size_t block_size = vertices_copy.size() / 10;
-#pragma omp parallel for num_threads(max_threads_) 
-            for (size_t i = 0; i < vertices_copy.size(); ++i)
+//            size_t counter = 0;
+//            size_t block_size = vertex_container.size() / 10;
+            for (const auto& vertex: vertex_container)
             {
-                const ScaffoldVertex& vertex = vertices_copy[i];
                 auto entry = vertex_entry_extractor_->ExtractEntry(vertex);
-#pragma omp critical
+                TRACE("Entry size: " << entry.size());
                 {
                     index_->InsertEntry(vertex, std::move(entry));
-                    ++counter;
+//                    ++counter;
                 }
-                if (counter % block_size == 0) {
-                    INFO("Processed " << counter << " edges out of " << vertices_copy.size());
-                }
+//                if (counter % block_size == 0) {
+//                    INFO("Processed " << counter << " edges out of " << vertex_container.size());
+//                }
             }
             INFO("Constructed long edge index");
             return index_;
@@ -137,6 +147,10 @@ namespace barcode_index {
                                                                            size_t length_threshold,
                                                                            size_t max_threads,
                                                                            const ContainerT& vertex_container) {
+            INFO("Building simple long edge barcode index with parameters");
+            INFO("Tail threshold: " << tail_threshold);
+            INFO("Count threshold: " << count_threshold);
+            INFO("Length threshold: " << length_threshold);
             auto entry_extractor = make_shared<SimpleScaffoldVertexEntryExtractor>(g_, extractor, tail_threshold,
                                                                                        count_threshold, length_threshold);
             ScaffoldVertexIndexBuilder<SimpleVertexEntry> builder(g_, entry_extractor, max_threads);

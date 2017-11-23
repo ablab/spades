@@ -20,8 +20,9 @@ class InnerScaffoldVertex {
     virtual shared_ptr<InnerScaffoldVertex> getConjugateFromGraph(const debruijn_graph::Graph &g) const = 0;
     virtual debruijn_graph::VertexId getEndGraphVertex(const debruijn_graph::Graph &g) const = 0;
     virtual debruijn_graph::VertexId getStartGraphVertex(const debruijn_graph::Graph &g) const = 0;
+    virtual boost::optional<debruijn_graph::EdgeId> getLastEdgeWithPredicate(const func::TypedPredicate<EdgeId>& pred) const = 0;
+    virtual boost::optional<debruijn_graph::EdgeId> getFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId>& pred) const = 0;
 
-    //todo replace with custom edge predicate
     virtual debruijn_graph::EdgeId getLastEdge() const = 0;
     virtual EdgeId getFirstEdge() const = 0;
 
@@ -43,6 +44,8 @@ class EdgeIdVertex : public InnerScaffoldVertex {
     shared_ptr<InnerScaffoldVertex> getConjugateFromGraph(const debruijn_graph::Graph &g) const override;
     debruijn_graph::VertexId getEndGraphVertex(const debruijn_graph::Graph &g) const override;
     debruijn_graph::VertexId getStartGraphVertex(const debruijn_graph::Graph &g) const override;
+    optional<EdgeId> getLastEdgeWithPredicate(const func::TypedPredicate<EdgeId>& pred) const override;
+    optional<EdgeId> getFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId>& pred) const override;
 
     EdgeId getLastEdge() const override;
     EdgeId getFirstEdge() const override;
@@ -61,12 +64,14 @@ class PathVertex : public InnerScaffoldVertex {
     explicit PathVertex(BidirectionalPath *path_);
 
     size_t getId() const override;
-    ScaffoldVertexT getType() const;
+    ScaffoldVertexT getType() const override;
     size_t getLengthFromGraph(const debruijn_graph::Graph &g) const override;
     double getCoverageFromGraph(const debruijn_graph::Graph &g) const override;
     shared_ptr<InnerScaffoldVertex> getConjugateFromGraph(const debruijn_graph::Graph &g) const override;
     VertexId getEndGraphVertex(const debruijn_graph::Graph &g) const override;
     VertexId getStartGraphVertex(const debruijn_graph::Graph &g) const override;
+    optional<EdgeId> getLastEdgeWithPredicate(const func::TypedPredicate<EdgeId>& pred) const override;
+    optional<EdgeId> getFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId>& pred) const override;
 
     EdgeId getLastEdge() const override;
     EdgeId getFirstEdge() const override;
@@ -100,6 +105,8 @@ class ScaffoldVertex {
     ScaffoldVertex getConjugateFromGraph(const debruijn_graph::Graph &g) const;
     debruijn_graph::VertexId getEndGraphVertex(const debruijn_graph::Graph &g) const;
     debruijn_graph::VertexId getStartGraphVertex(const debruijn_graph::Graph &g) const;
+    boost::optional<debruijn_graph::EdgeId> getLastEdgeWithPredicate(const func::TypedPredicate<EdgeId>& pred) const;
+    boost::optional<debruijn_graph::EdgeId> getFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId>& pred) const;
 
     debruijn_graph::EdgeId getLastEdge() const;
     debruijn_graph::EdgeId getFirstEdge() const;
@@ -124,6 +131,16 @@ class EdgeGetter {
     EdgeId GetEdgeFromScaffoldVertex(const ScaffoldVertex& vertex) {
         VERIFY(vertex.getType() == Edge);
         auto inner_vertex = std::static_pointer_cast<EdgeIdVertex>(vertex.getInnerVertex());
+        return inner_vertex->get();
+    }
+};
+
+class PathGetter {
+ public:
+
+    BidirectionalPath* GetPathFromScaffoldVertex(const ScaffoldVertex& vertex) {
+        VERIFY(vertex.getType() == Path);
+        auto inner_vertex = std::static_pointer_cast<PathVertex>(vertex.getInnerVertex());
         return inner_vertex->get();
     }
 };
