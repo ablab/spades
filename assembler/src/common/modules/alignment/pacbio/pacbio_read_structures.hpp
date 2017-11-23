@@ -28,6 +28,7 @@ struct pair_iterator_less {
 
 
 struct MappingInstance {
+    //both positions g_.k() based
     int edge_position;
     int read_position;
     //Now quality is the same with multiplicity, so best quality is 1,

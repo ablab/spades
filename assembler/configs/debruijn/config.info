@@ -145,14 +145,11 @@ lcer
 
 pacbio_processor
 {
+    bwa_length_cutoff 500
 ;align and traverse.
-    pacbio_k 13
-    additional_debug_info false
     compression_cutoff 0.6
-    domination_cutoff 1.5
     path_limit_stretching 1.3
     path_limit_pressing 0.7
-    ignore_middle_alignment true
     max_path_in_dijkstra 15000
     max_vertex_in_dijkstra 2000
 ;gap_closer

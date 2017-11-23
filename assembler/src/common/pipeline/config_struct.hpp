@@ -405,21 +405,17 @@ struct debruijn_config {
     };
 
     struct pacbio_processor {
-  //align and traverse.
-      size_t  pacbio_k; //13
-      bool additional_debug_info; //false
-      double compression_cutoff;// 0.6
-      double domination_cutoff; //1.5
-      double path_limit_stretching; //1.3
-      double path_limit_pressing;//0.7
-      bool ignore_middle_alignment; //true; false for stats and mate_pairs;
-      size_t max_path_in_dijkstra; //15000
-      size_t max_vertex_in_dijkstra; //2000
-  //gap_closer
-      size_t long_seq_limit; //400
-      size_t pacbio_min_gap_quantity; //2
-      size_t contigs_min_gap_quantity; //1
-      size_t max_contigs_gap_length; // 10000
+        size_t bwa_length_cutoff; //500
+        double compression_cutoff; // 0.6
+        double path_limit_stretching; //1.3
+        double path_limit_pressing;//0.7
+        size_t max_path_in_dijkstra; //15000
+        size_t max_vertex_in_dijkstra; //2000
+//gap_closer
+        size_t long_seq_limit; //400
+        size_t pacbio_min_gap_quantity; //2
+        size_t contigs_min_gap_quantity; //1
+        size_t max_contigs_gap_length; // 10000
     };
 
     struct position_handler {

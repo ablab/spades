@@ -23,11 +23,12 @@ int is_bwt(uint8_t *T, bwtint_t n);
 
 namespace alignment {
 
-BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
+BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode, size_t length_cutoff)
         : g_(g),
           memopt_(mem_opt_init(), free),
           idx_(nullptr, bwa_idx_destroy),
-          mode_(mode){
+          mode_(mode),
+          length_cutoff_(length_cutoff) {
     memopt_->flag |= MEM_F_SOFTCLIP;
     switch (mode) {
         default:
@@ -193,7 +194,8 @@ void BWAIndex::Init() {
     ids_.clear();
 
     for (auto it = g_.ConstEdgeBegin(true); !it.IsEnd(); ++it)
-        if (mode_ == AlignmentMode::Default || g_.length(*it) > 500){
+//TODO:: is it correct logic in general?
+        if (mode_ == AlignmentMode::Default || g_.length(*it) > length_cutoff_){
             ids_.push_back(*it);
         }
 

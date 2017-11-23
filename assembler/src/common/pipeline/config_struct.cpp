@@ -460,15 +460,13 @@ void load(debruijn_config::bwa_aligner& bwa,
 void load(debruijn_config::pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
-  load(pb.pacbio_k, pt, "pacbio_k");
-  load(pb.additional_debug_info, pt, "additional_debug_info");
+
+  load(pb.bwa_length_cutoff, pt, "bwa_length_cutoff");
   load(pb.compression_cutoff, pt, "compression_cutoff");
-  load(pb.domination_cutoff, pt, "domination_cutoff");
   load(pb.path_limit_stretching, pt, "path_limit_stretching");
   load(pb.path_limit_pressing, pt, "path_limit_pressing");
   load(pb.max_path_in_dijkstra, pt, "max_path_in_dijkstra");
   load(pb.max_vertex_in_dijkstra, pt, "max_vertex_in_dijkstra");
-  load(pb.ignore_middle_alignment, pt, "ignore_middle_alignment");
   load(pb.long_seq_limit, pt, "long_seq_limit");
   load(pb.pacbio_min_gap_quantity, pt, "pacbio_min_gap_quantity");
   load(pb.contigs_min_gap_quantity, pt, "contigs_min_gap_quantity");

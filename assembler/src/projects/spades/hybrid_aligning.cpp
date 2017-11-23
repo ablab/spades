@@ -259,9 +259,8 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
                         PathStorage<Graph>& path_storage,
                         GapStorage& gap_storage,
                         size_t thread_cnt) {
-    INFO("Aligning library with Pacbio aligner");
-
-    INFO("Using seed size: " << cfg::get().pb.pacbio_k);
+    string lib_for_info = (lib.is_long_read_lib() ? "long reads" : "contigs");
+    INFO("Aligning "<< lib_for_info << " with bwa-mem based aligner");
 
     alignment::BWAIndex::AlignmentMode mode;
     if (lib.type() == io::LibraryType::PacBioReads){
@@ -271,9 +270,6 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
     }
     //initializing index
     pacbio::PacBioMappingIndex<Graph> pac_index(gp.g,
-                                                cfg::get().pb.pacbio_k,
-                                                cfg::get().K,
-                                                cfg::get().pb.ignore_middle_alignment,
                                                 cfg::get().output_dir,
                                                 cfg::get().pb,
                                                 mode);
@@ -283,9 +279,9 @@ void PacbioAlignLibrary(const conj_graph_pack& gp,
     auto stream = GetReadsStream(lib);
     aligner(*stream, thread_cnt);
 
-    INFO("For library of " << (lib.is_long_read_lib() ? "long reads" : "contigs") << " :");
+    INFO("For library of " << lib_for_info);
     aligner.stats().report();
-    INFO("PacBio aligning finished");
+    INFO("Aligning of " << lib_for_info <<" finished");
 }
 
 void CloseGaps(conj_graph_pack& gp, bool rtype,

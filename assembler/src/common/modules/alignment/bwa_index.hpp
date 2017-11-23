@@ -34,7 +34,7 @@ class BWAIndex {
 
     // bwaidx / memopt are incomplete below, therefore we need to outline ctor
     // and dtor.
-    BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode = AlignmentMode::Default);
+    BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode = AlignmentMode::Default, size_t length_cutoff = 0);
     ~BWAIndex();
 
     omnigraph::MappingPath<debruijn_graph::EdgeId> AlignSequence(const Sequence &sequence) const;
@@ -54,6 +54,8 @@ class BWAIndex {
     std::vector<debruijn_graph::EdgeId> ids_;
 
     AlignmentMode mode_;
+
+    size_t length_cutoff_;
 };
 
 }
