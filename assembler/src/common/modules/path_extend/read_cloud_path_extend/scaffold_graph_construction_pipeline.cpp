@@ -4,37 +4,46 @@
 namespace path_extend {
 
 CloudScaffoldGraphConstuctor::CloudScaffoldGraphConstuctor(const size_t max_threads_,
-                                                           const size_t full_pipeline_length_threshold,
                                                            const conj_graph_pack& gp,
                                                            shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor)
-    : max_threads_(max_threads_), full_pipeline_length_(full_pipeline_length_threshold), gp_(gp), barcode_extractor_(barcode_extractor) {}
+    : max_threads_(max_threads_), gp_(gp), barcode_extractor_(barcode_extractor) {}
 
 CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::ConstructScaffoldGraphFromStorage(
-    const ScaffolderParams& params, const ScaffoldingUniqueEdgeStorage& unique_storage) const {
+        const ScaffolderParams& params,
+        const ScaffoldingUniqueEdgeStorage& unique_storage,
+        const set<ScaffoldVertex>& scaffold_vertices,
+        bool launch_full_pipeline,
+        bool path_merge_pipeline) const {
 //    auto conditions = GetGraphConnectionConditions(params, unique_storage);
 
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     const size_t tail_threshold = params.tail_threshold_;
-    const size_t length_threshold = 500;
+    const size_t length_threshold = 1000;
     const size_t count_threshold = params.count_threshold_;
     auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(gp_.g, *barcode_extractor_, tail_threshold,
                                                                      count_threshold, length_threshold,
-                                                                     max_threads_, unique_storage.unique_edges());
+                                                                     max_threads_, scaffold_vertices);
     auto scaffold_index_extractor = std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
 
     INFO("Constructed long edge barcode index");
-    auto constructor = make_shared<scaffold_graph::UniqueScaffoldGraphConstructor>(gp_.g, unique_storage, params.initial_distance_);
+    auto constructor = make_shared<scaffold_graph::UniqueScaffoldGraphConstructor>(gp_.g, unique_storage,
+                                                                                   scaffold_vertices, params.initial_distance_);
     auto initial_graph = *(constructor->Construct());
     INFO("Constructed initial graph");
+    INFO(initial_graph.VertexCount() << " vertices and " << initial_graph.EdgeCount() << " edges in initial graph");
     vector<shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
     iterative_constructor_callers.push_back(make_shared<BarcodeScoreConstructorCaller>(gp_.g, scaffold_index_extractor, max_threads_));
     iterative_constructor_callers.push_back(make_shared<BarcodeConnectionConstructorCaller>(gp_.g, barcode_extractor_,
                                                                                             scaffold_index_extractor,
-                                                                                            unique_storage, 1));
-    iterative_constructor_callers.push_back(make_shared<CompositeConnectionConstructorCaller>(gp_, barcode_extractor_,
-                                                                                              scaffold_index_extractor,
-                                                                                              unique_storage, max_threads_));
-    if (params.length_threshold_ >= full_pipeline_length_) {
+                                                                                            unique_storage, max_threads_));
+    if (not path_merge_pipeline) {
+        iterative_constructor_callers.push_back(make_shared<CompositeConnectionConstructorCaller>(gp_,
+                                                                                                  barcode_extractor_,
+                                                                                                  scaffold_index_extractor,
+                                                                                                  unique_storage,
+                                                                                                  max_threads_));
+    }
+    if (launch_full_pipeline) {
         iterative_constructor_callers.push_back(make_shared<EdgeSplitConstructorCaller>(gp_.g, *barcode_extractor_, max_threads_));
         iterative_constructor_callers.push_back(make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
     }
@@ -49,10 +58,11 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
         auto constructor = caller->GetScaffoldGraphConstuctor(params, graphs.back());
         graphs.push_back(*(constructor->Construct()));
         INFO(graphs.back().EdgeCount() << " edges");
+        ++counter;
     }
     return graphs.back();
 }
-CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::ConstructScaffoldGraphFromLength(size_t min_length) const {
+CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::ConstructScaffoldGraphFromMinLength(size_t min_length) const {
     INFO("Constructing scaffold graph with length threshold " << min_length);
     ScaffolderParamsConstructor params_constructor;
     auto params = params_constructor.ConstructScaffolderParams(min_length);
@@ -61,7 +71,14 @@ CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::Constr
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, min_length, max_relative_coverage);
     ScaffoldingUniqueEdgeStorage unique_storage;
     unique_edge_analyzer.FillUniqueEdgeStorage(unique_storage);
-    return ConstructScaffoldGraphFromStorage(params, unique_storage);
+    const size_t min_pipeline_length = 15000;
+    bool launch_full_pipeline = min_length >= min_pipeline_length;
+    std::set<ScaffoldVertex> scaffold_vertices;
+    for (const auto& edge: unique_storage.unique_edges()) {
+        ScaffoldVertex sc_vertex(edge);
+        scaffold_vertices.insert(sc_vertex);
+    }
+    return ConstructScaffoldGraphFromStorage(params, unique_storage, scaffold_vertices, launch_full_pipeline);
 }
 vector<shared_ptr<ConnectionCondition>> CloudScaffoldGraphConstuctor::GetGraphConnectionConditions(const ScaffolderParams& params,
                                                                                                    const ScaffoldingUniqueEdgeStorage& unique_storage) const {
@@ -72,13 +89,31 @@ vector<shared_ptr<ConnectionCondition>> CloudScaffoldGraphConstuctor::GetGraphCo
     vector<shared_ptr<path_extend::ConnectionCondition>> conditions({unique_condition});
     return conditions;
 }
+CloudScaffoldGraphConstuctor::ScaffoldGraph CloudScaffoldGraphConstuctor::ConstructScaffoldGraphFromPathContainer(
+        const PathContainer &paths, const ScaffoldingUniqueEdgeStorage& unique_storage, size_t min_length) const {
+    INFO("Constructing scaffold graph with length threshold " << min_length);
+    ScaffolderParamsConstructor params_constructor;
+    auto params = params_constructor.ConstructScaffolderParams(min_length);
+    set<ScaffoldVertex> path_set;
+    for (const auto& path_pair: paths) {
+        if (path_pair.first->Length() >= min_length) {
+            ScaffoldVertex first_vertex(path_pair.first);
+            ScaffoldVertex second_vertex(path_pair.second);
+            path_set.insert(first_vertex);
+            path_set.insert(second_vertex);
+        }
+    }
+    params.tail_threshold_ = 20000;
+    params.count_threshold_ = 2;
+    return ConstructScaffoldGraphFromStorage(params, unique_storage, path_set, false, true);
+}
 
 ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParams(size_t min_length) {
     size_t length_threshold = min_length;
     size_t tail_threshold = min_length;
     size_t count_threshold = 2;
-    double score_threshold = 7.0;
-    double connection_score_threshold = 0.2;
+    double score_threshold = 3.0;
+    double connection_score_threshold = 0.15;
     size_t connection_length_threshold = 50;
     size_t connection_count_threshold = 1;
     size_t initial_distance = 100000;
@@ -108,12 +143,12 @@ path_extend::ScaffolderParams::ScaffolderParams(size_t length_threshold_, size_t
     transitive_distance_threshold_(transitive_distance_threshold_) {}
 
 ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorage() const {
-    const size_t full_pipeline_length = 15000;
+    //fixme move to configs
     const size_t num_threads = cfg::get().max_threads;
     auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper_ptr, gp_.g);
-    CloudScaffoldGraphConstuctor constructor(num_threads, full_pipeline_length, gp_, extractor);
-    ScaffoldGraphStorage storage(constructor.ConstructScaffoldGraphFromLength(large_length_threshold_),
-                                 constructor.ConstructScaffoldGraphFromLength(small_length_threshold_));
+    CloudScaffoldGraphConstuctor constructor(num_threads, gp_, extractor);
+    ScaffoldGraphStorage storage(constructor.ConstructScaffoldGraphFromMinLength(large_length_threshold_),
+                                 constructor.ConstructScaffoldGraphFromMinLength(small_length_threshold_));
     return storage;
 }
 ScaffoldGraphStorageConstructor::ScaffoldGraphStorageConstructor(size_t small_length_threshold_,

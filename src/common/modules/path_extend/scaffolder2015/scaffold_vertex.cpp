@@ -45,6 +45,20 @@ EdgeId EdgeIdVertex::getLastEdge() const {
 EdgeId EdgeIdVertex::getFirstEdge() const {
     return edge_;
 }
+optional<EdgeId> EdgeIdVertex::getLastEdgeWithPredicate(const func::TypedPredicate<EdgeId>& pred) const {
+    boost::optional<EdgeId> result;
+    if (pred(edge_)) {
+        result = edge_;
+    }
+    return result;
+}
+optional<EdgeId> EdgeIdVertex::getFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId>& pred) const {
+    boost::optional<EdgeId> result;
+    if (pred(edge_)) {
+        result = edge_;
+    }
+    return result;
+}
 
 size_t PathVertex::getId() const {
     return path_->GetId();
@@ -88,6 +102,28 @@ EdgeId PathVertex::getFirstEdge() const {
     const size_t path_size = path_->Size();
     VERIFY(path_size > 0);
     return path_->Front();
+}
+optional<EdgeId> PathVertex::getLastEdgeWithPredicate(const func::TypedPredicate<EdgeId>& pred) const {
+    boost::optional<EdgeId> result;
+    for (int i = static_cast<int>(path_->Size()) - 1; i >= 0; --i) {
+        EdgeId current = path_->At(i);
+        if (pred(current)) {
+            result = current;
+            return result;
+        }
+    }
+    return result;
+}
+optional<EdgeId> PathVertex::getFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId>& pred) const {
+    boost::optional<EdgeId> result;
+    for (size_t i = 0; i < path_->Size(); ++i) {
+        EdgeId current = path_->At(i);
+        if (pred(current)) {
+            result = current;
+            return result;
+        }
+    }
+    return result;
 }
 
 ScaffoldVertex::ScaffoldVertex(shared_ptr<InnerScaffoldVertex> vertex_ptr_) : vertex_ptr_(vertex_ptr_) {}
@@ -150,6 +186,12 @@ debruijn_graph::EdgeId ScaffoldVertex::getLastEdge() const {
     return vertex_ptr_->getLastEdge();
 }
 ScaffoldVertex::ScaffoldVertex(): vertex_ptr_(nullptr) {}
+boost::optional<debruijn_graph::EdgeId> ScaffoldVertex::getLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const {
+    return vertex_ptr_->getLastEdgeWithPredicate(pred);
+}
+boost::optional<debruijn_graph::EdgeId> ScaffoldVertex::getFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const {
+    return vertex_ptr_->getFirstEdgeWithPredicate(pred);
+}
 
 }
 

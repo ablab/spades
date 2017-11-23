@@ -1,14 +1,15 @@
 #pragma once
 
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
+#include "modules/path_extend/scaffolder2015/scaffold_vertex.hpp"
 #include "read_cloud_connection_conditions.hpp"
 #include "scaffold_graph_storage.hpp"
 
 namespace path_extend {
     struct ScaffolderParams {
       const size_t length_threshold_;
-      const size_t tail_threshold_;
-      const size_t count_threshold_;
+      size_t tail_threshold_;
+      size_t count_threshold_;
       const double score_threshold_;
       const double connection_score_threshold_;
       const size_t connection_length_threshold_;
@@ -127,22 +128,29 @@ namespace path_extend {
     class CloudScaffoldGraphConstuctor {
      public:
         typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
+        typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
         typedef scaffold_graph::ScaffoldGraphConstructor ScaffoldGraphConstructor;
         typedef path_extend::ScaffoldingUniqueEdgeStorage ScaffoldingUniqueEdgeStorage;
      private:
         const size_t max_threads_;
-        const size_t full_pipeline_length_;
         const conj_graph_pack& gp_;
         shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
 
      public:
         CloudScaffoldGraphConstuctor(size_t max_threads_,
-                                     size_t full_pipeline_length_threshold,
                                      const conj_graph_pack& gp,
                                      shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor);
-        ScaffoldGraph ConstructScaffoldGraphFromLength(size_t min_length) const;
+        ScaffoldGraph ConstructScaffoldGraphFromMinLength(size_t min_length) const;
 
-        ScaffoldGraph ConstructScaffoldGraphFromStorage(const ScaffolderParams& params, const ScaffoldingUniqueEdgeStorage& unique_storage) const;
+        ScaffoldGraph ConstructScaffoldGraphFromPathContainer(const PathContainer& paths,
+                                                              const ScaffoldingUniqueEdgeStorage& unique_storage,
+                                                              size_t min_length) const;
+
+        ScaffoldGraph ConstructScaffoldGraphFromStorage(const ScaffolderParams& params,
+                                                        const ScaffoldingUniqueEdgeStorage& unique_storage,
+                                                        const set<ScaffoldVertex>& scaffold_vertices,
+                                                        bool launch_full_pipeline,
+                                                        bool path_merge_pipeline = false) const;
 
      private:
 

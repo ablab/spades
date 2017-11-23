@@ -4,10 +4,7 @@
 namespace path_extend {
 
 bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldGraphVertex &vertex) const {
-    DEBUG(barcodes_.size() << " barcodes");
-    TRACE("Getting length");
     size_t vertex_length = vertex.getLengthFromGraph(g_);
-    DEBUG("Vertex length: " << vertex_length);
     double vertex_coverage = vertex.getCoverageFromGraph(g_);
     if (vertex_length < params_.edge_length_threshold_) {
         DEBUG("Edge is too short");
@@ -15,18 +12,13 @@ bool LongEdgePairGapCloserPredicate::Check(const ScaffoldGraph::ScaffoldGraphVer
     }
     double length_coefficient = static_cast<double>(vertex.getLengthFromGraph(g_)) / static_cast<double>(params_.length_normalizer_);
     double coverage_coefficient = 1.0;
-    DEBUG("Getting coverages");
     double start_coverage = start_.getCoverageFromGraph(g_);
     double end_coverage = end_.getCoverageFromGraph(g_);
     if (params_.normalize_using_cov_) {
         coverage_coefficient = (2 * vertex_coverage) / (start_coverage + end_coverage);
     }
     double score_threshold = params_.raw_score_threshold_ * length_coefficient * coverage_coefficient;
-    DEBUG("Score threshold: " << score_threshold);
-    DEBUG("Middle barcodes: " << barcode_extractor_->GetHeadSize(vertex));
-    DEBUG("Getting intersection size");
     size_t intersection_size = barcode_extractor_->GetIntersectionSize(vertex, barcodes_);
-    DEBUG("Intersection size: " << intersection_size);
     double score = static_cast<double>(intersection_size) / static_cast<double>(barcodes_.size());
     bool threshold_passed = math::ge(score, score_threshold);
     TRACE("Threshold passed: " << (threshold_passed ? "True" : "False"));
